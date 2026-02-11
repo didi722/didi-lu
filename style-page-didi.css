@@ -101,7 +101,7 @@ h1 {
 }
 
 .pkm-slot img:hover {
-    transform: scale(1.1);
+    transform: scale(1.5);
 }
 
 /* Posizionamento dei 6 slot in cerchio (Raggio 120px) */
@@ -437,11 +437,7 @@ h1 {
     border-radius: 10px;
 }
 .close-modal {
-    position: absolute;
-    right: 20px; top: 10px;
-    font-size: 28px;
-    cursor: pointer;
-    color: var(--bg-dark);
+    visibility: hidden;
 }
 
 .stat-panel-divider {
@@ -479,14 +475,6 @@ margin: 0 0;
     padding: 20px;
     box-shadow: none;
 
-}
-
-#teamModal .close-modal {
-    position: absolute;
-    right: 0px; top: 0px;
-    font-size: 28px;
-    cursor: pointer;
-    color: #eeeeee;
 }
 
 /* Griglia interna identica al Box Didi */

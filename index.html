@@ -2,10 +2,11 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poké-Tracker Hub</title>
+    <meta name="viewport" content="width=device-width">
+    <title>Poké-Tournament Didi Luca</title>
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-home.css">
+    <link rel="stylesheet" href="style-index.css">
 </head>
 <body>
 
@@ -15,89 +16,126 @@
         </div>
     </div>
 
-    <div class="container">
-        <h1>LEAGUE TABLE</h1>
-
-        <div class="leaderboard-flex" id="leaderboardContainer">
-            </div>
-
-        <div id="teamModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="chiudiModale()">&times;</span>
-                <div id="modalBody"></div>
-            </div>
+    <div class="main-wrapper">
+    
+    <div id="leaderboardContainer" class="cards-stack">
         </div>
+
+    <div class="bottom-nav">
+        <a href="matches.html" class="btn-archive">MATCH ARCHIVE</a>
     </div>
+</div>
+
 
 <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1283277155&single=true&output=csv';
+    const csvDidiTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
+    const csvLuTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv';
 
-    async function caricaHome() {
-        try {
-            const response = await fetch(csvUrl + '&t=' + new Date().getTime());
-            const text = await response.text();
-            const righe = text.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
-
-            // 1. GESTIONE NEWS TICKER (Ultimo Match)
-            const rMatch = righe[2];
-            const tickerWrap = document.getElementById('lastMatchTicker');
-            if (rMatch && rMatch[0]) {
-                const testoNews = ` BREAKING NEWS!! -- ${rMatch[0]} -- Last match -- ${rMatch[1]} -- LU [${rMatch[4]}] vs DIDI [${rMatch[5]}] -- Teams: ${rMatch[2]} (LU) vs ${rMatch[3]} (DIDI) -- Points scored: LU ${rMatch[6]} - DIDI ${rMatch[7]} -- `;
-                
-                // Duplichiamo il testo per rendere lo scorrimento infinito fluido
-                tickerWrap.innerHTML = `
-                    <div class="ticker-item">${testoNews}</div>
-                    <div class="ticker-item">${testoNews}</div>
-                    `;
-            }
-
-            // 2. GESTIONE CLASSIFICA A BOX
-            const giocatori = [righe[0], righe[1]].filter(g => g && g[0]);
-            giocatori.sort((a, b) => Number(b[1]) - Number(a[1]));
-
-            const leaderboardDiv = document.getElementById('leaderboardContainer');
-            leaderboardDiv.innerHTML = giocatori.map((g, index) => {
-                const nome = g[0].toUpperCase();
-                const isLu = nome === 'LU';
-                const themeClass = isLu ? 'lu-theme' : 'didi-theme';
-                const rankClass = index === 0 ? 'rank-1' : 'rank-2';
-                const linkBox = isLu ? 'box-lu.html' : 'box-didi.html';
-
-                return `
-    <a href="${linkBox}" class="player-card ${themeClass} ${rankClass}">
+async function caricaHome() {
+    try {
+        const response = await fetch(csvUrl + '&t=' + new Date().getTime());
+        const text = await response.text();
         
+        // Trasformiamo il CSV in un array di righe
+        const righeTutte = text.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
+        
+        console.log("Dati ricevuti:", righeTutte); // Debug: controlla in console (F12) se i dati arrivano
+
+        // MAPPARE I DATI (Indici basati sul tuo CSV)
+        // righeTutte[0] è l'intestazione (Nome, Punti...)
+        // righeTutte[1] è LUCA (Riga 2 del foglio)
+        // righeTutte[2] è DIDI (Riga 3 del foglio)
+        
+        const rLuca = righeTutte[1]; 
+        const rDidi = righeTutte[2]; 
+
+        if (!rLuca || !rDidi) {
+            console.error("Dati Luca o Didi mancanti nel CSV");
+            return;
+        }
+
+        const giocatori = [
+            {
+                nome: "LU",
+                punti: parseInt(rLuca[1]) || 0, // Colonna B
+                w: rLuca[2] || 0,               // Colonna C
+                l: rLuca[3] || 0,               // Colonna D
+                setW: rLuca[4] || 0,            // Colonna E
+                setL: rLuca[5] || 0,            // Colonna F
+                isLu: true
+            },
+            {
+                nome: "DIDI",
+                punti: parseInt(rDidi[1]) || 0, // Colonna B
+                w: rDidi[2] || 0,               // Colonna C
+                l: rDidi[3] || 0,               // Colonna D
+                setW: rDidi[4] || 0,            // Colonna E
+                setL: rDidi[5] || 0,            // Colonna F
+                isLu: false
+            }
+        ];
+
+        // Ordiniamo per chi ha più punti
+        giocatori.sort((a, b) => b.punti - a.punti);
+
+        // Popoliamo il contenitore delle card
+        const leaderboardDiv = document.getElementById('leaderboardContainer');
+        leaderboardDiv.innerHTML = giocatori.map((g, index) => {
+            const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
+            const rankClass = index === 0 ? 'rank-1' : 'rank-2';
+            const linkPagina = g.isLu ? 'page-lu.html' : 'page-didi.html';
+            const avatar = g.isLu ? 'immagini/lance.png' : 'immagini/sage.png';
+
+            return `
+    <div class="player-card ${themeClass} ${rankClass}">
         <div class="card-inner">
-            <div class="player-info">
-                <h2>${nome}</h2>
-                <div class="punti-main">${g[1]}</div>
+            <div class="left-section">
+                <div class="player-avatar">
+                    <img src="${avatar}" alt="Avatar">
+                </div>
+                <div class="player-info">
+                    <h2>${g.nome}</h2>
+                    <div class="punti-main">${g.punti}</div>
+                </div>
             </div>
-            <div class="player-avatar">
-                <img src="${isLu ? 'immagini/lance.png' : 'immagini/sage.png'}" alt="Avatar">
+
+            <div class="action-buttons">
+                <a href="${g.isLu ? 'page-lu.html' : 'page-didi.html'}" class="btn-action stats">
+                    <span>STATISTICS</span>
+                </a>
+                <a href="${g.isLu ? 'box-lu.html' : 'box-didi.html'}" class="btn-action box">
+                    <span>POKÉ BOX</span>
+                </a>
             </div>
         </div>
 
         <div class="stats-grid">
-            <div class="stat-item"><span>W/L</span><b>${g[2]}-${g[3]}</b></div>
-            <div class="stat-item"><span>SET</span><b>${g[4]}-${g[5]}</b></div>
+            <div class="stat-group">
+                <span class="stat-label">W/L</span>
+                <b class="stat-value">${g.w}-${g.l}</b>
+            </div>
+            <div class="stat-group">
+                <span class="stat-label">SET</span>
+                <b class="stat-value">${g.setW}-${g.setL}</b>
+            </div>
         </div>
-    </a>
-`;
-            }).join('');
+    </div>`;
 
-        } catch (e) {
-            console.error("Errore caricamento index:", e);
+        }).join('');
+
+        // 3. GESTIONE TICKER (Riga 4 del foglio = indice 3)
+        const rMatch = righeTutte[3];
+        if (rMatch && rMatch[0]) {
+            const tickerWrap = document.getElementById('lastMatchTicker');
+            const testoNews = ` BREAKING NEWS -- ${rMatch[0]} -- Last match -- ${rMatch[1]} -- LU [${rMatch[4]}] vs DIDI [${rMatch[5]}] -- Teams: ${rMatch[2]} (LU) vs ${rMatch[3]} (DIDI) -- Points scored: LU ${rMatch[6]} - DIDI ${rMatch[7]} -- `;
+            tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
         }
-    }
 
-    function chiudiModale() {
-        document.getElementById('teamModal').style.display = 'none';
+    } catch (e) {
+        console.error("Errore fatale caricamento:", e);
     }
-
-    // Qui puoi integrare la logica per mostrare i Pokémon nel modale
-    async function mostraTeamPartita(nomeTeam, proprietario) {
-        document.getElementById('teamModal').style.display = 'flex';
-        document.getElementById('modalBody').innerHTML = `<h3>Team: ${nomeTeam}</h3><p>Caricamento dati...</p>`;
-    }
+}
 
     caricaHome();
 </script>
