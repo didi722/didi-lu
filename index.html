@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poké-Tracker Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-home.css">
+</head>
+<body>
+
+    <div class="news-ticker">
+        <div class="ticker-wrap" id="lastMatchTicker">
+            <div class="ticker-item">Caricamento ultimi risultati in corso...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>LEAGUE TABLE</h1>
+
+        <div class="leaderboard-flex" id="leaderboardContainer">
+            </div>
+
+        <div id="teamModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="chiudiModale()">&times;</span>
+                <div id="modalBody"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1283277155&single=true&output=csv';
+
+    async function caricaHome() {
+        try {
+            const response = await fetch(csvUrl + '&t=' + new Date().getTime());
+            const text = await response.text();
+            const righe = text.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
+
+            // 1. GESTIONE NEWS TICKER (Ultimo Match)
+            const rMatch = righe[2];
+            const tickerWrap = document.getElementById('lastMatchTicker');
+            if (rMatch && rMatch[0]) {
+                const testoNews = ` BREAKING NEWS!! -- ${rMatch[0]} -- Last match -- ${rMatch[1]} -- LU [${rMatch[4]}] vs DIDI [${rMatch[5]}] -- Teams: ${rMatch[2]} (LU) vs ${rMatch[3]} (DIDI) -- Points scored: LU ${rMatch[6]} - DIDI ${rMatch[7]} -- `;
+                
+                // Duplichiamo il testo per rendere lo scorrimento infinito fluido
+                tickerWrap.innerHTML = `
+                    <div class="ticker-item">${testoNews}</div>
+                    <div class="ticker-item">${testoNews}</div>
+                    `;
+            }
+
+            // 2. GESTIONE CLASSIFICA A BOX
+            const giocatori = [righe[0], righe[1]].filter(g => g && g[0]);
+            giocatori.sort((a, b) => Number(b[1]) - Number(a[1]));
+
+            const leaderboardDiv = document.getElementById('leaderboardContainer');
+            leaderboardDiv.innerHTML = giocatori.map((g, index) => {
+                const nome = g[0].toUpperCase();
+                const isLu = nome === 'LU';
+                const themeClass = isLu ? 'lu-theme' : 'didi-theme';
+                const rankClass = index === 0 ? 'rank-1' : 'rank-2';
+                const linkBox = isLu ? 'box-lu.html' : 'box-didi.html';
+
+                return `
+    <a href="${linkBox}" class="player-card ${themeClass} ${rankClass}">
+        
+        <div class="card-inner">
+            <div class="player-info">
+                <h2>${nome}</h2>
+                <div class="punti-main">${g[1]}</div>
+            </div>
+            <div class="player-avatar">
+                <img src="${isLu ? 'immagini/lance.png' : 'immagini/sage.png'}" alt="Avatar">
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item"><span>W/L</span><b>${g[2]}-${g[3]}</b></div>
+            <div class="stat-item"><span>SET</span><b>${g[4]}-${g[5]}</b></div>
+        </div>
+    </a>
+`;
+            }).join('');
+
+        } catch (e) {
+            console.error("Errore caricamento index:", e);
+        }
+    }
+
+    function chiudiModale() {
+        document.getElementById('teamModal').style.display = 'none';
+    }
+
+    // Qui puoi integrare la logica per mostrare i Pokémon nel modale
+    async function mostraTeamPartita(nomeTeam, proprietario) {
+        document.getElementById('teamModal').style.display = 'flex';
+        document.getElementById('modalBody').innerHTML = `<h3>Team: ${nomeTeam}</h3><p>Caricamento dati...</p>`;
+    }
+
+    caricaHome();
+</script>
+</body>
+</html>

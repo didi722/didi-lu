@@ -1,0 +1,757 @@
+:root {
+    --didi-color: #7fe9bf; 
+    --accent-main-matches: #e1e1e1;
+    --card-bg-matches: #cc3d3d;
+    --borders: #970e0e;
+    --text-main-matches: #1a1a1a;
+    --lu-color: #db9cf9;
+    --accent-didi: #31c489;
+    --accent-lu: #8e44ad;
+    --bg-body-matches: #dfdfdf;          /* Il tuo viola forte */
+    --bg-gradient-end-matches: #4ace64;  /* Un viola più chiaro per il gradiente */
+    --didi-borders: #025534;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, var(--bg-body-matches) -50%, var(--bg-gradient-end-matches) 100%) !important;
+    color: var(--text-main-matches) !important;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    font-family: 'Josefin Sans', sans-serif;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--text-main-matches) !important;
+}
+
+#matchList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 15px;
+}
+
+/* CARD MATCH */
+.match-card {
+    background: var(--card-bg-matches);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 160px 1fr 140px 1fr 110px; 
+    align-items: center; /* Centra tutto sulla linea mediana orizzontale */
+    padding: 15px 25px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    min-height: 90px; /* Aumentiamo leggermente per dare respiro alla data */
+    gap: 10px;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+}
+/* INFO MATCH SINISTRA */
+
+.match-meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centra il contenuto verticalmente */
+    align-items: flex-start; /* Allinea a sinistra */
+    position: relative;      /* Serve per gestire la data sotto */
+    padding-right: 20px;
+    height: 60px;            /* Altezza fissa simile al badge per stabilità */
+    margin-bottom: 0;
+}
+
+/* --- BADGE CATEGORIA --- */
+.match-category {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 12px;
+    background: transparent;
+    color: #fff;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    /* Dimensioni fisse */
+    width: 100px;
+    min-height: 42px; 
+    padding: 5px;
+    
+    white-space: normal;
+    line-height: 1.1;
+}
+
+/* --- DATA ALLINEATA A SINISTRA SOTTO IL BADGE --- */
+.match-date {
+    font-size: 0.65rem;
+    color: #eeeeee;
+    font-weight: 500;
+    text-transform: uppercase;
+    position: absolute;
+    bottom: -25px; /* Lo sposta sotto il badge senza spingerlo su */
+    left: 2px;
+}
+
+.team-badge {
+    /* --- CENTRATURA TESTO --- */
+    display: flex;
+    align-items: center;      /* Centra verticalmente */
+    justify-content: center;   /* Centra orizzontalmente */
+    
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    
+    /* Altezza fissa per matchare la categoria e dare stabilità */
+    min-height: 50px; 
+    
+    white-space: normal; 
+    line-height: 1.2;
+}
+
+.team-didi-badge {
+    background: var(--accent-didi);
+    color: #1a1a1a;
+    border: 2px solid var(--didi-borders);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+    margin-left: 10px; /* Distanza dalla categoria */
+}
+
+.team-lu-badge {
+    color: #1a1a1a;
+    border: 2px solid #6c026c;
+    background: var(--accent-lu);
+    box-shadow: 5px 5px 0px #6c026c;
+    margin-right: 10px; /* Distanza dal tasto replay */
+}
+
+/* NOMI TEAM */
+.team-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.team-left { text-align: right; padding-right: 20px; color: var(--didi-color) !important; }
+.team-right { text-align: left; padding-left: 20px; color: var(--lu-color) !important; }
+
+/* SCOREBOARD CENTRALE */
+.score-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    background: #000;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    margin: 0 20px;
+}
+.score-digit {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.score-divider {
+    color: #444;
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+/* BOTTONE REPLAY */
+.btn-replay-icon {
+    background: transparent;
+    color: #fff;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-family: 'Josefin Sans';
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+    justify-self: end;
+}
+
+.btn-replay-icon:hover {
+    transform: scale(1.04);
+}
+
+/* MODALE */
+.replay-modal {
+    display: none; 
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.replay-content {
+    width: 314px;  /* Larghezza esatta della zona video */
+    height: 300px; /* Altezza esatta della zona video */
+    background: #000;
+    position: relative;
+    overflow: hidden; /* Fondamentale: taglia tutto ciò che esce */
+    box-shadow: 0 0 30px rgba(0,0,0,1);
+    margin: 0 auto;
+    z-index: 9999;
+}
+
+#replayFrame {
+    position: absolute;
+    top: -22px;  /* Sposta l'iframe in su per nascondere l'header */
+    left: -73px;  /* Sposta l'iframe a sinistra per nascondere i menu laterali */
+    width: 400px; /* Deve essere più grande del contenitore */
+    height: 300px; /* Deve essere più grande del contenitore */
+    border: none;
+    pointer-events: auto; /* Permette comunque di cliccare sui controlli video */
+    z-index: 9999;
+    width: 460px;
+    overflow: hidden;
+}
+
+.close-replay {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    color: #fff;
+    font-size: 50px;
+    cursor: pointer;
+    z-index: 10002; /* Sopra tutto */
+    line-height: 1;
+}
+
+.set-selector {
+    position: absolute;   /* Lo stacca dal calcolo dello spazio centrale */
+    right: 30px;          /* Lo ancora a destra dello schermo */
+    top: 50%;             /* Lo mette a metà altezza */
+    transform: translateY(-50%); /* Centratura verticale perfetta */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10001;
+    padding: 10px;
+    border-radius: 15px;
+}
+
+
+.btn-set {
+    width: 80%;               /* Prendono tutta la larghezza del selettore */
+    padding: 12px 15px;
+    text-align: center !important;
+    justify-content: center !important;
+    line-height: 1;
+    display: inline-flex;
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Colore se ha vinto Didi */
+.btn-set.vincitore-D {
+    border-color: var(--accent-didi);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+    color: var(--didi-color);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+}
+.btn-set.vincitore-D:hover {
+    transform: scale(1.03);
+}
+.btn-set.vincitore-D.active {
+    background: var(--accent-didi);
+    color: #000;
+}
+
+/* Colore se ha vinto Lu */
+.btn-set.vincitore-L {
+    border-color: var(--accent-lu);
+    color: var(--lu-color);
+    box-shadow: 5px 5px 0px #6c026c;
+}
+.btn-set.vincitore-L:hover {
+    transform: scale(1.03);
+}
+.btn-set.vincitore-L.active {
+    background: var(--accent-lu);
+    color: #fff;
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.gba-container {
+    position: relative;
+    width: 1150px; /* Mantieni la dimensione che preferisci */
+    flex-shrink: 0;
+    z-index: 5;
+    margin-top: 45px;
+}
+
+.gba-shell {
+    width: 100%;
+    height: auto;
+    display: block;
+    pointer-events: none; /* L'immagine non deve bloccare i click sul video */
+    margin: 0;
+}
+
+.gba-screen-area {
+    position: absolute;
+    top: 50.5%;                /* Centratura verticale sullo schermo viola */
+    left: 49.8%;               /* Centratura orizzontale */
+    transform: translate(-50%, -50%);
+    width: 34%;              /* Proporzioni calibrate sulla tua immagine */
+    height: 40%;
+    background: #000;
+    border-radius: 4px;
+    z-index: 5;
+    overflow: hidden !important;
+}
+
+.remote-controls {
+    width: 600px;
+    height: 100px; /* Altezza dei tasti di Showdown */
+    background: #222;
+    border: 3px solid #444;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.controls-clipper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Questo iframe deve essere identico al primo */
+#controlsFrame {
+    width: 1000px;
+    height: 1200px;
+    position: absolute;
+    /* Qui sta il trucco: lo spostiamo in SU per mostrare solo il fondo */
+    top: -550px; 
+    left: -50px;
+    transform: scale(0.8); /* Lo teniamo più grande per cliccare meglio */
+    transform-origin: top left;
+}
+
+#teamModal .modal-inner {
+    background: #1a1a1a; /* Colore scuro dei tuoi box */
+    max-width: 800px;
+    width: 90%;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+
+.team-badge {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.team-badge:hover {
+    transform: scale(1.03);
+}
+
+#teamModal.replay-modal {
+    display: none; /* Inizialmente nascosto */
+    overflow-y: auto; /* Permette di scrollare se il team è lungo */
+    padding: 20px;
+}
+
+/* La X del modale (usiamo la classe close-replay per consistenza) */
+#teamModal .close-replay {
+    position: fixed; /* Rimane fissa mentre scrolli il team */
+    top: 20px;
+    right: 30px;
+    z-index: 10010;
+}
+
+/* Fix per il contenuto del team */
+#teamModal .modal-inner {
+    background: #111; /* Nero come il box didi */
+    border: 2px solid #333;
+    max-width: 900px; /* Un po' più largo per le 2 colonne di pokemon */
+    margin: auto; /* Centra nel display flex */
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* Evita che il titolo del team finisca sotto la X */
+.modal-header-container {
+    padding-top: 10px;
+    padding-right: 50px; 
+}
+
+/* Dimensioni specifiche per i Tooltip del Modale Dettaglio */
+#teamModal .generic-tooltip {
+    width: 220px;          /* Larghezza fissa per non farla ballare */
+    padding: 12px;
+    font-size: 0.75rem;    /* Leggermente più piccolo per far stare tutto */
+    line-height: 1.3;
+    border-radius: 8px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Dimensioni specifiche per i Tooltip delle Mosse nel Modale */
+#teamModal .move-tooltip {
+    width: 180px;
+    padding: 10px;
+    font-size: 0.7rem;
+}
+
+/* Fix per le barre delle statistiche nel modale */
+#teamModal .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+#teamModal .stat-bar-bg {
+    flex-grow: 1;
+    height: 6px; /* Più sottile rispetto alla home per eleganza */
+    background: #333;
+    border-radius: 3px;
+}
+
+/* Quando il modale ha la classe Didi, usa i colori di Didi */
+#teamModal.proprietario-Didi {
+    --accent-dark: var(--accent-didi);
+    --accent-main: var(--accent-didi);
+    --bg-color: var(--didi-color);
+}
+
+/* Quando il modale ha la classe Lu, usa i colori di Lu */
+#teamModal.proprietario-Lu {
+    --accent-dark: var(--accent-lu);
+    --accent-main: var(--accent-lu);
+    --bg-color: var(--lu-color);
+}
+
+/* Quando il modale è di Lu, forziamo i bordi che puntano a Didi verso Lu */
+#teamModal.proprietario-Lu .modal-pkm-card {
+    border-color: var(--lu-color) !important;
+    background: var(--lu-color);
+    border: 2px solid #8e44ad !important;
+    box-shadow: 5px 5px 0px #8e44ad !important;
+}
+
+/* Se ci sono titoli o altri elementi che rimangono "pesca" nel modale di Lu */
+#teamModal.proprietario-Lu .team-score-banner {
+    border-color: var(--accent-lu) !important;
+    background: rgba(142, 68, 173, 0.1) !important;
+}
+
+/* Viceversa, assicuriamoci che Didi sia corretto (anche se probabilmente è il default) */
+#teamModal.proprietario-Didi .modal-pkm-card {
+    border-color: var(--didi-color) !important;
+    background: var(--didi-color);
+    border: 2px solid var(--accent-didi) !important;
+    box-shadow: 5px 5px 0px var(--accent-didi) !important;
+}
+#teamModal.proprietario-Didi .move-span {
+    border: 1px solid var(--didi-borders);
+    box-shadow: 2.5px 2.5px 0px var(--didi-borders);
+    background: var(--accent-didi);
+}
+
+#teamModal.proprietario-Didi .move-span:hover {
+    background: var(--didi-borders) !important;
+}
+
+.generic-tooltip {
+    display: none;
+    position: absolute;
+    left: 105%; 
+    top: 0;
+    width: 200px;
+    background: #33261c !important;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    font-size: 0.7rem;
+    line-height: 1.3;
+    pointer-events: none;
+    border: 1px solid #ddd;
+    color: #ddd
+}
+
+/* Modifica dei badge esistenti */
+.team-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    padding: 10px !important;
+    height: auto !important; /* Permette al badge di allungarsi */
+    gap: 8px;
+}
+
+.team-title {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Contenitore delle GIF */
+.mini-pkm-list {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    flex-wrap: wrap; /* Se non ci stanno, vanno a capo */
+}
+
+.mini-gif {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));
+}
+
+/* Opzionale: allarga la card del match se vedi che è tutto troppo stretto */
+.match-card {
+    min-height: 100px;
+    padding: 15px;
+    align-items: center;
+}
+
+.mini-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.side-lu { justify-content: flex-end; }
+
+.mini-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.75rem;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.mini-gifs-row {
+    display: flex;
+    gap: 2px;
+}
+
+.mini-gifs-row img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}   
+
+.replay-mini-header {
+    position: absolute; /* Rispetto al modale */
+    top: 20px;         /* Distanza dal bordo superiore dello schermo */
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    min-width: 400px;  /* Gli diamo un po' di respiro */
+    background: var(--card-bg-matches) !important;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 25px;
+    z-index: 10001; /* Sopra tutto */
+}
+
+/* Rendi le scritte più leggibili essendo sullo sfondo scuro */
+.mini-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    color: #eeeeee !important;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.mini-score-box {
+    background: white;
+    color: black;
+    padding: 4px 15px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 1rem;
+    margin: 0 20px;
+}
+
+.mini-gifs-row img {
+    width: 35px; /* Ora che c'è spazio, facciamole un po' più grandi */
+    height: 35px;
+}
+
+.mini-team-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+.side-lu { justify-content: flex-end; }
+.mini-name { font-size: 0.7rem; color: #fff; font-weight: bold; text-transform: uppercase; }
+.mini-gifs-row { display: flex; gap: 2px; }
+
+.replay-mini-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 78%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.mini-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-gif {
+    width: 35px;
+    height: 35px;
+    object-fit: contain;
+}
+
+.mini-gifs-row {
+    display: flex;
+    gap: 4px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.side-lu {
+    flex-direction: row; /* Nome a sinistra, GIF a destra */
+}
+
+.side-didi {
+    flex-direction: row; /* GIF a sinistra, nome a destra */
+}
+
+/* Struttura base del Menù */
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100000;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+    
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}

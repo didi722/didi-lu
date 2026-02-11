@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixtures Archive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-matches.css">
+    <link rel="stylesheet" href="style-box-didi.css">
+    <link rel="stylesheet" href="style-box-lu.css">
+</head>
+<body>
+
+    <nav class="hamburger-menu">
+    <input type="checkbox" id="menu-toggle" />
+    <label for="menu-toggle" class="menu-button-container">
+        <div class="menu-button"></div>
+    </label>
+    <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+        </ul>
+</nav>  
+
+    <h1>Archivio Storico Match</h1>
+
+    <div class="controls">
+    <input type="text" id="searchInput" placeholder="Cerca Team" oninput="applicaFiltri()">
+    <select id="categoryFilter" onchange="applicaFiltri()">
+    <option value="">Tutte le categorie</option>
+</select>
+    
+    </select>
+</div>
+
+    <div id="loadingArchivio">Caricamento Match...</div>
+    <div id="matchList"></div>
+
+    <div id="replayModal" class="replay-modal" onclick="chiudiSeFuori(event)">
+        <div class="gba-container">
+            <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
+            <div class="gba-screen-area">
+                 <div class="replay-content">
+                    <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="set-selector" id="setSelector"></div>
+        <span class="close-replay" onclick="chiudiReplay()">&times;</span>
+    </div>
+
+    <div id="teamModal" class="replay-modal" onclick="chiudiTeamSeFuori(event)">
+        <div class="modal-content team-detail-card" onclick="event.stopPropagation()">
+            <span class="close-replay" onclick="chiudiTeamModal()">&times;</span>
+            <div id="teamDetailContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let databaseDidi = [];
+        let databaseLu = [];
+        let tuttiITeamDidi = [];
+        let tuttiITeamLu = [];
+
+        const csvArchivioUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv';
+        const csvDidiTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
+        const csvLuTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv';
+
+        async function caricaArchivio() {
+    try {
+        const [resDidi, resLu] = await Promise.all([
+            fetch(csvDidiTeams).then(r => r.text()),
+            fetch(csvLuTeams).then(r => r.text())
+        ]);
+        
+        // SALVA NELLE VARIABILI GLOBALI (molto importante!)
+        databaseDidi = resDidi.split('\n').map(r => r.split(','));
+        databaseLu = resLu.split('\n').map(r => r.split(','));
+
+        const righeDidi = databaseDidi; // manteniamo compatibilità col resto del codice
+        const righeLu = databaseLu;
+        // 2. Carichiamo l'archivio match
+        const response = await fetch(csvArchivioUrl);
+        const text = await response.text();
+        let righe = text.split('\n')
+            .map(r => r.replace('\r', '').split(','))
+            .filter((r, index) => index !== 0 && r[1] && r[1].trim() !== "");
+
+        righe.reverse();
+
+        const container = document.getElementById('matchList');
+        container.innerHTML = ""; 
+        
+        righe.forEach(r => {
+            const matchID   = r[0].trim(); 
+            const data      = r[1].trim();
+            const categoria = r[2].trim();
+            const teamDidi  = r[3].trim();
+            const teamLu    = r[5].trim();
+            const setDidi   = r[4].trim();
+            const setLu     = r[6].trim();
+
+            // FUNZIONE INTERNA: Recupera le GIF per un team
+            const getGifs = (nomeTeam, database) => {
+                let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
+                if (idx === -1) return "";
+                let pkmRow = database[idx];
+                let htmlGifs = '<div class="mini-pkm-list">';
+                for (let col = 1; col <= 6; col++) {
+                    let pName = pkmRow[col]?.trim();
+                    if (pName) {
+                        const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        htmlGifs += `<img src="https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif" class="mini-gif" title="${pName}">`;
+                    }
+                }
+                return htmlGifs + '</div>';
+            };
+
+            const gifsDidi = generaHtmlGifs(teamDidi, databaseDidi);
+            const gifsLu = generaHtmlGifs(teamLu, databaseLu);
+
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            card.innerHTML = `
+                <div class="match-meta">
+                    <span class="match-category">${categoria}</span>
+                    <span class="match-date">${data}</span>
+                </div>
+                
+                <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('${teamDidi}', 'Didi')">
+                    <span class="team-title">${teamDidi}</span>
+                    ${gifsDidi}
+                </div>
+                
+                <div class="score-container">
+                    <span class="score-digit">${setDidi}</span>
+                    <span class="score-divider">:</span>
+                    <span class="score-digit">${setLu}</span>
+                </div>
+                
+                <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('${teamLu}', 'Lu')">
+                    <span class="team-title">${teamLu}</span>
+                    ${gifsLu}
+                </div>
+                
+                <button class="btn-replay-icon" onclick="apriMatch('${matchID}', '${teamDidi}', '${teamLu}', '${setDidi}', '${setLu}')">REPLAY</button>
+            `;
+            container.appendChild(card);
+        });
+        
+        document.getElementById('loadingArchivio').style.display = 'none';
+        popolaFiltroCategorie();
+
+    } catch (e) { console.error(e); }
+}
+
+function popolaFiltroCategorie() {
+    const select = document.getElementById('categoryFilter');
+    const matches = document.querySelectorAll('.match-category');
+    
+    // Usiamo un Set per avere solo valori univoci (niente duplicati)
+    const categorie = new Set();
+    
+    matches.forEach(cat => {
+        const testo = cat.textContent.trim();
+        if (testo) categorie.add(testo);
+    });
+
+    // Reset della select (manteniamo solo l'opzione "Tutte")
+    select.innerHTML = '<option value="tutte">Tutte le Categorie</option>';
+
+    // Aggiungiamo le categorie trovate
+    categorie.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    });
+}
+
+function applicaFiltri() {
+    const nomeCercato = document.getElementById('searchInput').value.toLowerCase();
+    const categoriaScelta = document.getElementById('categoryFilter').value;
+    const matches = document.querySelectorAll('.match-card');
+
+    matches.forEach(card => {
+        const nomeDidi = card.querySelector('.team-didi-badge')?.textContent.toLowerCase() || "";
+        const nomeLu = card.querySelector('.team-lu-badge')?.textContent.toLowerCase() || "";
+        const categoriaCard = card.querySelector('.match-category')?.textContent.trim() || "";
+
+        const matchNome = nomeDidi.includes(nomeCercato) || nomeLu.includes(nomeCercato);
+        const matchCategoria = (categoriaScelta === "tutte" || categoriaCard === categoriaScelta);
+
+        card.style.display = (matchNome && matchCategoria) ? "grid" : "none";
+    });
+}
+
+function chiudiSeFuori(event) {
+    // Se il click è avvenuto proprio sul replayModal (lo sfondo) e non sui suoi figli
+    if (event.target.id === 'replayModal') {
+        chiudiReplay();
+    }
+}
+
+async function apriDettaglioTeam(nomeTeam, proprietario) {
+    const modal = document.getElementById('teamModal');
+    const content = document.getElementById('teamDetailContent');
+    modal.classList.remove('proprietario-Didi', 'proprietario-Lu');
+    modal.classList.add('proprietario-' + proprietario);
+    content.innerHTML = '<div style="color:white; text-align:center;">Caricamento Team...</div>';
+    modal.style.display = 'flex';
+
+    const urlSorgente = (proprietario === 'Didi') ? csvDidiTeams : csvLuTeams;
+
+    try {
+        const response = await fetch(urlSorgente + '&t=' + new Date().getTime());
+        const data = await response.text();
+        const righe = data.split(/\r?\n/).map(r => r.split(','));
+
+        // Cerchiamo l'indice della riga dove si trova il team (Colonna A)
+        let i = righe.findIndex(r => r[0] && r[0].trim().toLowerCase() === nomeTeam.trim().toLowerCase());
+
+        if (i !== -1) {
+            // Ricostruiamo l'oggetto team identico a box-didi
+            let team = {
+                nome: righe[i][0].trim(),
+                vittorie: righe[i+3] ? righe[i+3][0].trim() : "0",
+                sconfitte: righe[i+4] ? righe[i+4][0].trim() : "0",
+                setVinti: righe[i+5] ? righe[i+5][0].trim() : "0",
+                setPersi: righe[i+6] ? righe[i+6][0].trim() : "0",
+                puntiFatti: righe[i+7] ? righe[i+7][0].trim() : "0",
+                pokemon: []
+            };
+
+            for (let col = 1; col <= 6; col++) {
+                let pName = righe[i][col]?.trim();
+                if (pName) {
+                    team.pokemon.push({
+                        nome: pName,
+                        abilita: righe[i+1] ? righe[i+1][col]?.trim() : "N/D",
+                        strumento: righe[i+2] ? righe[i+2][col]?.trim() : "Nessuno",
+                        mosse: [
+                            righe[i+3] ? righe[i+3][col]?.trim() : "-",
+                            righe[i+4] ? righe[i+4][col]?.trim() : "-",
+                            righe[i+5] ? righe[i+5][col]?.trim() : "-",
+                            righe[i+6] ? righe[i+6][col]?.trim() : "-"
+                        ],
+                        evs: righe[i+7] ? righe[i+7][col]?.trim() : "N/D"
+                    });
+                }
+            }
+
+            // Inseriamo l'HTML usando la struttura di box-didi
+            // Passiamo 'proprietario' per gestire eventuali differenze di stile
+            content.innerHTML = generaHtmlDettaglioTeam(team, proprietario);
+        } else {
+            content.innerHTML = `<div style="color:white; text-align:center;">Dati non trovati.</div>`;
+        }
+    } catch (e) {
+        console.error(e);
+        content.innerHTML = "Errore nel caricamento.";
+    }
+}
+
+function generaHtmlDettaglioTeam(team, proprietario) {
+    const sV = Number(team.setVinti) || 0;
+    const sP = Number(team.setPersi) || 0;
+    const totSet = sV + sP;
+    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+
+    return `
+        <div class="modal-header-container">
+            <h2>${team.nome}</h2>
+            <div class="team-score-banner">
+                <div class="score-item"><span>W/L</span><strong>${team.vittorie} - ${team.sconfitte}</strong></div>
+                <div class="score-item"><span>Sets</span><strong>${sV} - ${sP}</strong></div>
+                <div class="score-item"><span>Points</span><strong>${team.puntiFatti}</strong></div>
+                <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
+            </div>
+        </div>
+        <div class="modal-grid">
+            ${team.pokemon.map((p, pIndex) => {
+                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                const mIdPrefix = `types-${pIndex}`;
+                const statsId = `stats-${pIndex}`;
+                const abiId = `abi-${pIndex}`;
+                const itemId = `item-${pIndex}`;
+                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
+                
+                // Avviamo il caricamento dei tipi (PokeAPI)
+                caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
+                
+                return `
+                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                     onmouseenter="this.style.zIndex='999'"
+                     onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                    <div class="modal-left-column">
+                        <div id="${mIdPrefix}" class="modal-types"></div>
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
+                    </div>
+                    <div class="modal-pkm-info">
+                        <div class="info-container">
+                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                        </div>
+                        <div class="info-container">
+                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                        </div>
+                        <div class="info-container">
+                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
+                                <span>${p.strumento}</span>
+                            </div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                        </div>
+                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        <div class="modal-moves">
+                            ${p.mosse.map((m, mIndex) => {
+                                const mId = `mossa-${pIndex}-${mIndex}`;
+                                return `
+                                <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
+                                    ${m}
+                                    <div id="${mId}" class="move-tooltip">Caricamento...</div>
+                                </span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+
+// Funzioni di chiusura
+function chiudiTeamModal() { document.getElementById('teamModal').style.display = 'none'; }
+function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiTeamModal(); }
+
+async function apriMatch(matchID, teamDidi, teamLu, scoreDidi, scoreLu) {
+    const modal = document.getElementById('replayModal');
+    const selector = document.getElementById('setSelector');
+    
+    // Rimuovi header vecchio se esiste
+    const vecchiaHeader = document.querySelector('.replay-mini-header');
+    if (vecchiaHeader) vecchiaHeader.remove();
+
+    // Creiamo l'header con i contenitori vuoti per le GIF
+    const miniHeader = document.createElement('div');
+    miniHeader.className = 'replay-mini-header';
+    miniHeader.innerHTML = `
+        <div class="mini-team-info side-didi">
+            <div id="header-gifs-didi" class="mini-gifs-row"></div>
+            <span class="mini-name">${teamDidi}</span>
+        </div>
+        <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
+        <div class="mini-team-info side-lu">
+            <span class="mini-name">${teamLu}</span>
+            <div id="header-gifs-lu" class="mini-gifs-row"></div>
+        </div>
+    `;
+    
+    modal.appendChild(miniHeader);
+
+    // Funzione interna per caricare le GIF in modo intelligente
+    const caricaGifsInHeader = (nomeTeam, containerId, database) => {
+        const container = document.getElementById(containerId);
+        let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
+        if (idx === -1) return;
+
+        let pkmRow = database[idx];
+        for (let col = 1; col <= 6; col++) {
+            let pName = pkmRow[col]?.trim();
+            if (pName) {
+                const img = document.createElement('img');
+                img.src = getGifUrl(pName); // Usa la funzione globale
+                img.className = 'header-gif'; 
+                container.appendChild(img);
+            }
+        }
+    };
+
+    // Popoliamo le GIF
+    caricaGifsInHeader(teamDidi, 'header-gifs-didi', databaseDidi);
+    caricaGifsInHeader(teamLu, 'header-gifs-lu', databaseLu);
+
+    // Logica dei Set
+    selector.innerHTML = '<span style="color: white;">Verifica set disponibili...</span>';
+    modal.style.display = 'flex';
+    
+    let buttonsHtml = '';
+    for (let setNum = 1; setNum <= 5; setNum++) {
+        const vincitore = await verificaVincitoreSet(matchID, setNum);
+        if (vincitore) {
+            buttonsHtml += `
+                <button class="btn-set vincitore-${vincitore}" onclick="caricaVideoDirect('${matchID}', ${setNum}, '${vincitore}', this)">
+                ${setNum}
+                </button>`;
+        }
+    }
+    selector.innerHTML = buttonsHtml || '<span style="color: white;">Nessun video trovato.</span>';
+    const primoTasto = selector.querySelector('.btn-set');
+    if (primoTasto) primoTasto.click();
+}
+
+// Funzione magica che "indovina" chi ha vinto guardando se il file esiste
+async function verificaVincitoreSet(matchID, setNum) {
+    const giocatori = ['L', 'D'];
+    for (let g of giocatori) {
+        const path = `video/${matchID}_${setNum}_${g}.html`;
+        try {
+            const res = await fetch(path, { method: 'HEAD' }); // Chiede solo l'intestazione, è velocissimo
+            if (res.ok) return g; // Se il server dice "OK", il file esiste e il vincitore è g
+        } catch (e) {}
+    }
+    return null; // Se nessuno dei due file esiste
+}
+
+function caricaVideoDirect(matchID, setNum, vincitore, btnElement) {
+    document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    
+    const videoPath = `video/${matchID}_${setNum}_${vincitore}.html`;
+    document.getElementById('replayFrame').src = videoPath;
+}
+        function caricaVideo(matchID, setNum, vincitore, btnElement) {
+            // Rimuovi classe active da tutti i tasti
+            document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Costruisce il nome file: video/M0008_1_L.html
+            const videoPath = `video/${matchID}_${setNum}_${vincitore}.html`;
+            document.getElementById('replayFrame').src = videoPath;
+        }
+
+        function chiudiReplay() {
+            document.getElementById('replayModal').style.display = 'none';
+            document.getElementById('replayFrame').src = '';
+        }
+
+        caricaArchivio();
+
+        async function caricaInfoAbilita(nomeAbilita, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeAbilita || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeAbilita.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/ability/${cleanName}`);                 
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoStrumento(nomeStrumento, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeStrumento || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeStrumento.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/item/${cleanName}`);
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoMossa(nomeMossa, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    
+    // Se la mossa è vuota o già caricata, non fare nulla
+    if (!nomeMossa || nomeMossa.trim() === "-" || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // --- APPLICHIAMO IL COLORE AL TOOLTIP ---
+        const tipo = data.type.name; 
+        tooltip.className = `move-tooltip ${tipo}`; // Aggiunge la classe del tipo (es. "fire") al fumetto
+        // ----------------------------------------
+
+        const power = data.power || '--';
+        const accuracy = data.accuracy ? data.accuracy + '%' : '--';
+        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+
+        tooltip.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">
+                ${nomeMossa.toUpperCase()}
+            </div>
+            <b>POW:</b> ${power} &nbsp;&nbsp; <b>ACC:</b> ${accuracy}<br>
+            <div style="margin-top:6px; font-style:italic; font-size:0.7rem; line-height:1.2;">${effect}</div>
+        `;
+        
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Dati mossa non trovati.";
+        tooltip.style.background = "#33261c"; // Colore di fallback in caso di errore
+    }
+}
+async function caricaStats(pkmName, elementId) {
+    const tooltip = document.getElementById(elementId);
+    if (tooltip.dataset.loaded === "true") return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        const statsMap = {
+            'hp': 'HP',
+            'attack': 'ATK',
+            'defense': 'DEF',
+            'special-attack': 'SPA',
+            'special-defense': 'SPD',
+            'speed': 'SPE'
+        };
+
+        let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">BASE STATS</div>`;
+        
+        data.stats.forEach(s => {
+            const val = s.base_stat;
+            // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
+            const width = Math.min((val / 150) * 100, 100); 
+            statsHTML += `
+                <div class="stat-row">
+                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="width: 25px; text-align:right;">${val}</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${width}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        tooltip.innerHTML = statsHTML;
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Impossibile caricare le statistiche.";
+    }
+}
+
+// Nuova funzione per scaricare i tipi
+// Aggiunto "direzione" ai parametri
+async function caricaTipi(pkmName, elementId, direzione) {
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+        let effectiveness = {};
+        d_types.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        const creaBadge = (lista) => {
+            return `<div class="eff-badge-container">
+                ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+            </div>`;
+        };
+
+        let tooltipHTML = "";
+        if (result.x4.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-4">4x</span>${creaBadge(result.x4)}</div>`;
+        if (result.x2.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-2">2x</span>${creaBadge(result.x2)}</div>`;
+        if (result.x05.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${creaBadge(result.x05)}</div>`;
+        if (result.x025.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${creaBadge(result.x025)}</div>`;
+        if (result.x0.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-0">0x</span>${creaBadge(result.x0)}</div>`;
+
+        // --- APPLICAZIONE CLASSE DIREZIONE ---
+        container.innerHTML = data.types.map(t => 
+        `<div class="type-container">
+            <span class="type-badge ${t.type.name}">${t.type.name.toUpperCase()}</span>
+            <div class="type-effectiveness-tooltip ${direzione}">${tooltipHTML}</div>
+        </div>`
+    ).join('');
+
+    } catch (e) { console.error("Errore:", e); }
+}    
+
+// Funzione globale per generare l'URL della GIF
+function getGifUrl(pName) {
+    if (!pName) return "";
+    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
+// Funzione globale per generare l'HTML delle 6 mini-gif (usata nella lista match)
+function generaHtmlGifs(nomeTeam, database) {
+    let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
+    if (idx === -1) return "";
+    let pkmRow = database[idx];
+    let htmlGifs = '<div class="mini-pkm-list">';
+    for (let col = 1; col <= 6; col++) {
+        let pName = pkmRow[col]?.trim();
+        if (pName) {
+            htmlGifs += `<img src="${getGifUrl(pName)}" class="mini-gif" title="${pName}">`;
+        }
+    }
+    return htmlGifs + '</div>';
+}
+
+    </script>
+</body>
+</html>

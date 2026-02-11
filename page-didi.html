@@ -1,0 +1,1052 @@
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Didi Personal</title>
+        <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style-page-didi.css">
+        <link rel="stylesheet" href="style-box-didi.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+
+    <nav class="hamburger-menu">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-button-container">
+            <div class="menu-button"></div>
+        </label>
+        <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+        </ul>
+    </nav>  
+
+    <div class="profile-container">
+        <h1 id="trainer-name">Didi</h1>
+
+<div id="recent-trend" class="trend-container">
+    <span class="trend-label">LAST 5:</span>
+    <div id="trend-dots" class="trend-dots"></div>
+</div>
+
+        <div class="main-layout">
+            
+            <div class="side-column">
+                <aside class="stats-sidebar trainer-panel">
+                    <div class="panel-header">
+                        <span class="badge-accent">TRAINER STATS</span>
+                    </div>
+                    <div class="stats-grid-trainer">
+                        <div class="stat-row-new">
+                            <span class="stat-label">W / L</span>
+                            <span class="stat-value"><b id="global-win">--</b> / <b id="global-loss">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Sets W / L</span>
+                            <span class="stat-value"><b id="global-setv">--</b> / <b id="global-setp">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Global Points</span>
+                            <span id="global-punti" class="stat-value">--</span>
+                        </div>
+                        <hr class="panel-divider">
+                        <div class="stat-row-new">
+                            <span class="stat-label">% W</span>
+                            <span id="global-pct-win" class="stat-value">--</span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">% Sets W</span>
+                            <span id="global-pct-set" class="stat-value">--</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="horizontal-box trainer-extra">
+                    <span class="badge-accent">BEST CATEGORY</span>
+                    <div id="best-category-name" class="extra-value">--</div>
+                </div>
+            </div>
+
+            <header class="profile-header">
+                <div class="hof-container">
+                    <div class="trainer-node">
+                        <img src="immagini/sage.png" alt="Didi">
+                    </div>
+                    <div id="pokemon-orbit" class="orbit">
+                        <div class="pkm-slot slot-0"></div>
+                        <div class="pkm-slot slot-1"></div>
+                        <div class="pkm-slot slot-2"></div>
+                        <div class="pkm-slot slot-3"></div>
+                        <div class="pkm-slot slot-4"></div>
+                        <div class="pkm-slot slot-5"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="side-column">
+                <aside class="stats-sidebar team-panel">
+                    <div class="panel-header">
+                        <span class="badge-accent">BEST TEAM STATS</span>
+                    </div>
+                    <div class="stats-grid-trainer">
+                        <div class="stat-row-new">
+                            <span class="stat-label">W / L</span>
+                            <span class="stat-value"><b id="team-win">--</b> / <b id="team-loss">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Sets W / L</span>
+                            <span class="stat-value"><b id="team-setv">--</b> / <b id="team-setp">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Team Points</span>
+                            <span id="team-punti" class="stat-value">--</span>
+                        </div>
+                        <hr class="panel-divider">
+                        <div class="stat-row-new">
+                            <span class="stat-label">% W</span>
+                            <span id="team-pct-win" class="stat-value">--</span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">% Sets W</span>
+                            <span id="team-pct-set" class="stat-value">--</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="horizontal-box team-extra">
+                    <span class="badge-accent" id="team-category-badge">BEST TEAM</span>
+                    <div id="best-team-name-new" class="extra-value">Caricamento...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<div id="categoryModal" class="modal-page">
+    <div class="modal-content-page">
+        <div id="modal-floater-left" class="modal-floater">
+            <div class="stat-mini-box">
+                <span class="label">Points/Match</span>
+                <strong id="avg-points">0.0</strong>
+            </div>
+            <div class="stat-mini-box">
+                <span class="label">Winrate</span>
+                <div class="winrate-bar-container">
+                    <div id="win-bar" class="bar-fill win"></div>
+                    <div id="loss-bar" class="bar-fill loss"></div>
+                </div>
+                <div class="bar-labels">
+                    <span id="win-perc">0%</span>
+                    <span id="loss-perc">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-header-cat">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: 0; color:var(--didi-borders);">Trainer stats</h2>
+        </div>
+        
+        <div id="modal-body-stats"></div>
+
+        <div id="modal-floater-right" class="modal-floater">
+            <span class="label">Score distribution</span>
+            <div style="width: 140px; height: 140px; margin: 0 auto;">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="teamModal" class="modal">
+        <div class="modal-content"> <span class="close-modal" id="closeModal">&times;</span>
+            <div id="modalBody">
+                </div>
+        </div>
+    </div>
+
+    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+    <div class="modal-content pkm-single-card" onclick="event.stopPropagation()">
+        <span class="close" onclick="chiudiPkmModal()">&times;</span>
+        <div id="pkmModalBody">
+            </div>
+    </div>
+</div>
+
+    <script>
+    const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1697837543&single=true&output=csv";
+    const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv";
+
+    const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
+
+    const formatPct = (val) => {
+        if (!val || val === "" || val.toLowerCase().includes("nan")) return "0%";
+        let cleanVal = val.replace(/[^\d.,]/g, '').trim().replace(',', '.');
+        let num = parseFloat(cleanVal);
+        if (isNaN(num)) return "0%";
+        if (num > 0 && num <= 1) num = num * 100;
+        return Math.round(num) + "%";
+    };
+
+    // Funzione universale per aprire il modale
+    function apriModale(titolo, contenutoHtml) {
+        const modal = document.getElementById("categoryModal");
+        document.getElementById("modal-cat-name").innerText = titolo;
+        document.getElementById("modal-body-stats").innerHTML = contenutoHtml;
+        modal.style.display = "block";
+    }
+
+    function gestisciGraficiLaterali(v, s, pts, datiScore) {
+    const leftFloater = document.getElementById('modal-floater-left');
+    const rightFloater = document.getElementById('modal-floater-right');
+    
+    // Mostriamo i flottanti
+    leftFloater.style.display = "block";
+    rightFloater.style.display = "block";
+
+    // 1. Calcolo Media Punti
+    const vNum = parseInt(v) || 0;
+    const sNum = parseInt(s) || 0;
+    const ptsNum = parseInt(pts) || 0;
+    const totale = vNum + sNum;
+    const media = totale > 0 ? (ptsNum / totale).toFixed(1) : "0.0";
+    document.getElementById('avg-points').innerText = media;
+
+    // 2. Calcolo Winrate Bar
+    const winPerc = totale > 0 ? Math.round((vNum / totale) * 100) : 0;
+    document.getElementById('win-bar').style.width = winPerc + "%";
+    document.getElementById('loss-bar').style.width = (100 - winPerc) + "%";
+    document.getElementById('win-perc').innerText = winPerc + "%";
+    document.getElementById('loss-perc').innerText = (100 - winPerc) + "%";
+
+    // 3. Grafico a Torta (Richiede Chart.js nell'head)
+    const ctx = document.getElementById('scoreChart').getContext('2d');
+    if (window.myChart) window.myChart.destroy();
+    window.myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['5-0', '4-1', '3-2', '2-3', '1-4', '0-5'],
+            datasets: [{
+                data: datiScore,
+                backgroundColor: ['#2e7d32', '#66bb6a', '#a5d6a7', '#ef9a9a', '#e57373', '#c62828'],
+                borderWidth: 1
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, responsive: true }
+    });
+}
+
+    async function caricaDatiDidi() {
+        try {
+            const [resStats, resBox] = await Promise.all([
+                fetch(URL_STATS + '&t=' + Date.now()).then(r => r.text()),
+                fetch(URL_BOX + '&t=' + Date.now()).then(r => r.text())
+            ]);
+
+            const csvStats = resStats.split(/\r?\n/).map(r => r.split(',').map(clean));
+            const csvBox = resBox.split(/\r?\n/).map(r => r.split(',').map(clean));
+            window.csvBox = csvBox;
+            const riga = csvStats[1];
+
+            // Popolamento Trainer Stats
+            document.getElementById('global-win').innerText = riga[1] || "0";
+            document.getElementById('global-loss').innerText = riga[2] || "0";
+            document.getElementById('global-setv').innerText = riga[3] || "0";
+            document.getElementById('global-setp').innerText = riga[4] || "0";
+            document.getElementById('global-punti').innerText = riga[5] || "0";
+            document.getElementById('global-pct-win').innerText = formatPct(riga[8]);
+            document.getElementById('global-pct-set').innerText = formatPct(riga[10]);
+            
+            const nomeCategoria = riga[66] || "Nessuna Categoria";
+            document.getElementById('best-category-name').innerText = nomeCategoria;
+
+            // Popolamento Team Stats
+            document.getElementById('team-win').innerText = riga[50] || "0"; 
+            document.getElementById('team-loss').innerText = riga[51] || "0";
+            document.getElementById('team-setv').innerText = riga[52] || "0";
+            document.getElementById('team-setp').innerText = riga[53] || "0";
+            document.getElementById('team-punti').innerText = riga[54] || "0";
+            document.getElementById('team-pct-win').innerText = formatPct(riga[56]); 
+            document.getElementById('team-pct-set').innerText = formatPct(riga[59]);
+
+            const bestTeamNome = riga[48];
+            document.getElementById('best-team-name-new').innerText = bestTeamNome || "Nessun Team";
+
+            // --- DEFINIZIONE CLICK (SPOSTATI QUI DENTRO) ---
+            const segnaposto = `<div style="padding:20px; text-align:center;">[ inserisci qui i tuoi dati ]</div>`;
+
+            // 1. Trainer Stats
+            document.querySelector(".trainer-panel").onclick = () => {
+            const htmlCat = `
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[1]} / ${riga[2]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[3]} / ${riga[4]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[5]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[8])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[10])}</span></div>
+                    <hr class="stat-panel-divider">
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[11]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[12]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[13]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[14]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[15]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[16]}</span></div>`;
+                    apriModale("Trainer stats", htmlCat);
+                    gestisciGraficiLaterali(riga[1], riga[2], riga[5], [riga[11], riga[12], riga[13], riga[14], riga[15], riga[16]]);
+};
+
+            // 2. Best Category (Qui usiamo i tuoi dati reali già pronti)
+            document.querySelector(".trainer-extra").onclick = () => {
+                const htmlCat = `
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[67]} / ${riga[68]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[69]} / ${riga[70]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[71]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[74])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[76])}</span></div>
+                    <hr class="stat-panel-divider">
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[77]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[78]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[79]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[80]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[81]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[82]}</span></div>`;            apriModale(nomeCategoria, htmlCat);
+            gestisciGraficiLaterali(riga[67], riga[68], riga[71], [riga[77], riga[78], riga[79], riga[80], riga[81], riga[82]]);
+};
+
+            // 3. Best Team Stats
+            document.querySelector(".team-panel").onclick = () => {
+                const htmlCat = `
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[50]} / ${riga[51]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[52]} / ${riga[53]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[54]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[56])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[59])}</span></div>
+                    <hr class="stat-panel-divider">
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[60]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[61]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[62]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[63]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[64]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[65]}</span></div>`;
+            apriModale("Team performance", htmlCat);
+   gestisciGraficiLaterali(riga[50], riga[51], riga[54], [riga[60], riga[61], riga[62], riga[63], riga[64], riga[65]]);
+};
+            // 4. Box Nome Team (Destra Sotto)
+    // 4. Box Nome Team (Destra Sotto)
+    document.querySelector(".team-extra").onclick = () => {
+        if (!bestTeamNome) return;
+
+        let pkmTeamDati = [];
+
+        // Cerchiamo nel csvBox le info complete per il team vincitore
+        for (let i = 0; i < csvBox.length; i += 8) {
+            if (csvBox[i][0] && csvBox[i][0].toLowerCase() === bestTeamNome.toLowerCase()) {
+                // Trovato il team! Ora cicliamo i 6 slot (colonne 1-6)
+                for (let col = 1; col <= 6; col++) {
+                    const nomePkm = csvBox[i][col];
+                    if (nomePkm) {
+                        pkmTeamDati.push({
+                            nome: nomePkm,
+                            abilita: csvBox[i + 1][col] || "---",
+                            strumento: csvBox[i + 2][col] || "---",
+                            mosse: [
+                                csvBox[i + 3][col] || "-",
+                                csvBox[i + 4][col] || "-",
+                                csvBox[i + 5][col] || "-",
+                                csvBox[i + 6][col] || "-"
+                            ],
+                            evs: csvBox[i + 7][col] || ""
+                        });
+                    }
+                }
+                break;
+            }
+        }
+
+        // Creiamo l'oggetto team compatibile con apriDettagli
+        const teamSimulato = {
+            id: 999,
+            nome: bestTeamNome,
+            vittorie: riga[50],
+            sconfitte: riga[51],
+            setVinti: riga[52],
+            setPersi: riga[53],
+            puntiFatti: riga[54],
+            pokemon: pkmTeamDati
+        };
+
+        // Rendiamo i dati disponibili alle funzioni globali
+        window.tuttiITeam = [teamSimulato];
+        window.currentTeamId = 999;
+
+        // Chiamiamo la tua funzione che già conosciamo
+        apriDettagli(999);
+    };
+            // --- ORBITA POKEMON ---
+            if (bestTeamNome) {
+                for (let i = 0; i < csvBox.length; i += 8) {
+                    if (csvBox[i][0] && csvBox[i][0].toLowerCase() === bestTeamNome.toLowerCase()) {
+                        let pkmTeam = [];
+                        for (let col = 1; col <= 6; col++) { if (csvBox[i][col]) pkmTeam.push(csvBox[i][col]); }
+                        popolaCerchio(pkmTeam);
+                        break;
+                    }
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // Chiusura Modale
+    document.getElementById("closeModal").onclick = () => document.getElementById("categoryModal").style.display = "none";
+    window.onclick = (event) => {
+        const modal = document.getElementById("categoryModal");
+        if (event.target == modal) modal.style.display = "none";
+    };
+
+    function popolaCerchio(listaNomi) {
+    // Pulisci slot precedenti
+    for(let i=0; i<6; i++) {
+        const s = document.querySelector(`.slot-${i}`);
+        if(s) s.innerHTML = "";
+    }
+
+    listaNomi.forEach((nome, index) => {
+        const slot = document.querySelector(`.slot-${index}`);
+        if (slot && nome) {
+            const cleanName = nome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+            
+            // Creiamo l'elemento immagine
+            const img = document.createElement('img');
+            img.src = `https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif`;
+            img.style.cursor = "pointer"; 
+            
+            // Gestione errore sprite
+            img.onerror = function() { this.src = `https://play.pokemonshowdown.com/sprites/dex/${cleanName}.png`; };
+
+            // CLICK: Cerca i dati e apri il modale
+            img.onclick = () => {
+                const datiPkm = recuperaDatiPokemonDalTeam(nome);
+                if (datiPkm) {
+                    apriPkmDettaglio(datiPkm, cleanName);
+                }
+            };
+
+            slot.appendChild(img);
+        }
+    });
+}
+
+    function renderizza(lista) {
+        const grid = document.getElementById('teamsGrid');
+        grid.innerHTML = lista.map(team => `
+            <div class="card" onclick="apriDettagli(${team.id})">
+                <div class="card-header">
+                    <span class="category">${team.category || team.categoria}</span>
+                    <span class="stats">W: ${team.vittorie} / L: ${team.sconfitte}</span>
+                </div>
+                <h3>${team.nome}</h3>
+                <div class="pkm-grid">
+                    ${team.pokemon.map((p, index) => {
+                        const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        const itemNameUrl = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
+                        const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
+                        const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
+                        const pkmBoxId = `box-${team.id}-${index}`;
+                        
+                        setTimeout(() => applicaColoreBordo(p.nome, pkmBoxId), 50);
+
+                        // AGGIUNTO ONCLICK QUI SOTTO:
+                        return `
+                            <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation(); apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}')">
+                                <div class="pkm-sprite-container">
+                                    <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                                </div>
+                                <div class="pkm-info">
+                                    <span class="pkm-name">${p.nome}</span>
+                                    <div class="item-container">
+                                        <img src="${itemSprite}" class="item-icon" title="${p.strumento}" onerror="this.style.display='none'">
+                                        <span class="pkm-item">${p.strumento}</span>
+                                    </div>
+                                </div>
+
+                                <div class="pkm-hover-card ${sideClass}">
+                                    <strong>${p.nome}</strong>
+                                    <p>✨ ${p.abilita}</p>
+                                    <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs}</p>
+                                    <div class="hover-moves">
+                                        ${p.mosse.map(m => `<span>${m}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function apriDettagli(id) {
+        const team = tuttiITeam.find(t => t.id === id);
+        const modal = document.getElementById('teamModal');
+        const content = document.getElementById('modalBody'); // <--- MANCAVA QUESTA RIGA!
+
+        // Convertiamo in numeri per sicurezza (usando Number per gestire meglio i vuoti)
+        const sV = Number(team.setVinti) || 0;
+        const sP = Number(team.setPersi) || 0;
+        const w = team.vittorie || 0;
+        const l = team.sconfitte || 0;
+        const pts = team.puntiFatti || 0;
+
+        // Calcolo Partite Giocate: (Vinti + Persi) / 5
+        const totSet = sV + sP;
+        const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+        content.innerHTML = `
+            <div class="modal-header-container">
+                <h2>${team.nome}</h2>
+                <div class="team-score-banner">
+                    <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
+                    <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
+                    <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
+                    <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
+                </div>
+            </div>
+            <div class="modal-grid">
+                ${team.pokemon.map((p, pIndex) => {
+                    const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                    const mIdPrefix = `types-${pIndex}`;
+                    const statsId = `stats-${pIndex}`;
+                    const abiId = `abi-${pIndex}`;
+                    const itemId = `item-${pIndex}`;
+                    const direzioneTipi = pIndex < 3 ? 'v-down' : '';
+                    const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
+                    
+                    caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                    
+                    return `
+                    <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                        onmouseenter="this.style.zIndex='999'"
+                        onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                        <div class="modal-left-column">
+                            <div id="${mIdPrefix}" class="modal-types"></div>
+                            <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
+                        </div>
+                        <div class="modal-pkm-info">
+                            <div class="info-container" style="position: relative; display: inline-block;">
+                                <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                                <div id="${statsId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            </div>
+                            <div class="info-container" style="position: relative;">
+                                <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
+                                <div id="${abiId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            </div>
+                            <div class="info-container" style="position: relative;">
+                                <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
+                                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
+                                    <span>${p.strumento}</span>
+                                </div>
+                                <div id="${itemId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            </div>
+                            <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                            <div class="modal-moves">
+                                ${p.mosse.map((m, mIndex) => {
+                                    const mId = `mossa-${pIndex}-${mIndex}`;
+                                    return `
+                                    <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
+                                        ${m}
+                                        <div id="${mId}" class="move-tooltip">Caricamento...</div>
+                                    </span>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        `;
+        modal.style.display = "flex";
+    }
+    // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('teamModal');
+        if (modal.style.display === "flex") {
+            const currentIndex = tuttiITeam.findIndex(t => t.id === window.currentTeamId);
+            if (e.key === "ArrowLeft" && currentIndex > 0) {
+                apriDettagli(tuttiITeam[currentIndex - 1].id);
+            } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
+                apriDettagli(tuttiITeam[currentIndex + 1].id);
+            } else if (e.key === "Escape") {
+                modal.style.display = "none";
+            }
+        }
+    });
+
+
+
+    // Funzione universale per chiudere tutto
+    function chiudiTuttiIModali() {
+    document.getElementById("categoryModal").style.display = "none";
+    document.getElementById("teamModal").style.display = "none";
+    document.getElementById("pkmDetailModal").style.display = "none";
+}
+
+// Applica la chiusura a tutte le X
+document.querySelectorAll(".close-modal").forEach(btn => {
+    btn.onclick = chiudiTuttiIModali;
+});
+
+// Chiudi se clicchi fuori (sullo sfondo scuro)
+window.onclick = (event) => {
+    if (event.target.classList.contains('modal')) {
+        chiudiTuttiIModali();
+    }
+};
+
+    // Collega la funzione ai vari elementi di chiusura
+    document.querySelectorAll(".close-modal").forEach(btn => {
+        btn.onclick = chiudiTuttiIModali;
+    });
+
+    // Chiudi se si clicca fuori dal modale (sullo sfondo scuro)
+    window.onclick = (event) => {
+        const modCat = document.getElementById("categoryModal");
+        const modTeam = document.getElementById("teamModal");
+        if (event.target == modCat || event.target == modTeam) {
+            chiudiTuttiIModali();
+        }
+    };
+
+    // Chiudi con il tasto ESC (molto comodo per il modale team)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "Escape") {
+            chiudiTuttiIModali();
+        }
+    });
+
+    async function caricaTipi(pkmName, elementId, direzione) {
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+        let effectiveness = {};
+        d_types.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        const creaBadge = (lista) => {
+            return `<div class="eff-badge-container">
+                ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+            </div>`;
+        };
+
+        let tooltipHTML = "";
+        if (result.x4.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-4">4x</span>${creaBadge(result.x4)}</div>`;
+        if (result.x2.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-2">2x</span>${creaBadge(result.x2)}</div>`;
+        if (result.x05.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${creaBadge(result.x05)}</div>`;
+        if (result.x025.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${creaBadge(result.x025)}</div>`;
+        if (result.x0.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-0">0x</span>${creaBadge(result.x0)}</div>`;
+
+        // --- APPLICAZIONE CLASSE DIREZIONE ---
+        container.innerHTML = data.types.map(t => 
+        `<div class="type-container">
+            <span class="type-badge ${t.type.name}">${t.type.name.toUpperCase()}</span>
+            <div class="type-effectiveness-tooltip ${direzione}">${tooltipHTML}</div>
+        </div>`
+    ).join('');
+
+    } catch (e) { console.error("Errore:", e); }
+}  
+async function caricaDebolezzeStatiche(pkmName, elementId) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        // Lista completa dei tipi per il calcolo
+        const tuttiITipi = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
+        
+        let effectiveness = {};
+        tuttiITipi.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        // Raggruppiamo i risultati
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        // Funzione interna per creare i micro-badge colorati
+        const creaBadge = (lista) => `
+    <div class="types-wrapper">
+        ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+    </div>`;
+
+container.innerHTML = `
+    <div class="weakness-container">
+        ${result.x4.length > 0 ? `<div class="w-row"><b class="mult x4">4x</b> ${creaBadge(result.x4)}</div>` : ''}
+        ${result.x2.length > 0 ? `<div class="w-row"><b class="mult x2">2x</b> ${creaBadge(result.x2)}</div>` : ''}
+        ${result.x05.length > 0 ? `<div class="w-row"><b class="mult x05">0.5x</b> ${creaBadge(result.x05)}</div>` : ''}
+        ${result.x025.length > 0 ? `<div class="w-row"><b class="mult x025">0.25x</b> ${creaBadge(result.x025)}</div>` : ''}
+        ${result.x0.length > 0 ? `<div class="w-row"><b class="mult x0">0x</b> ${creaBadge(result.x0)}</div>` : ''}
+    </div>
+`;
+    } catch (e) { 
+        console.error(e);
+        container.innerHTML = "<span style='color:red'>Error.</span>"; 
+    }
+}
+
+async function caricaStats(pkmName, elementId) {
+    const tooltip = document.getElementById(elementId);
+    if (tooltip.dataset.loaded === "true") return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        const statsMap = {
+            'hp': 'HP',
+            'attack': 'ATK',
+            'defense': 'DEF',
+            'special-attack': 'SPA',
+            'special-defense': 'SPD',
+            'speed': 'SPE'
+        };
+
+        let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">BASE STATS</div>`;
+        
+        data.stats.forEach(s => {
+            const val = s.base_stat;
+            // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
+            const width = Math.min((val / 150) * 100, 100); 
+            statsHTML += `
+                <div class="stat-row">
+                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="width: 25px; text-align:right;">${val}</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${width}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        tooltip.innerHTML = statsHTML;
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Error.";
+    }
+}
+
+async function caricaInfoAbilita(nomeAbilita, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeAbilita || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeAbilita.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/ability/${cleanName}`);                 
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoStrumento(nomeStrumento, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeStrumento || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeStrumento.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/item/${cleanName}`);
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoMossa(nomeMossa, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    
+    // Se la mossa è vuota o già caricata, non fare nulla
+    if (!nomeMossa || nomeMossa.trim() === "-" || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // --- APPLICHIAMO IL COLORE AL TOOLTIP ---
+        const tipo = data.type.name; 
+        tooltip.className = `move-tooltip ${tipo}`; // Aggiunge la classe del tipo (es. "fire") al fumetto
+        // ----------------------------------------
+
+        const power = data.power || '--';
+        const accuracy = data.accuracy ? data.accuracy + '%' : '--';
+        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+
+        tooltip.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">
+                ${nomeMossa.toUpperCase()}
+            </div>
+            <b>POW:</b> ${power} &nbsp;&nbsp; <b>ACC:</b> ${accuracy}<br>
+            <div style="margin-top:6px; font-style:italic; font-size:0.7rem; line-height:1.2;">${effect}</div>
+        `;
+        
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Dati mossa non trovati.";
+        tooltip.style.background = "#33261c"; // Colore di fallback in caso di errore
+    }
+}
+
+async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
+    if (!nomeMossa || nomeMossa === "-") return;
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const data = await res.json();
+        const index = cardId.split('-').pop();
+        
+        const coloriTipi = {
+            fire: '#ff4422', water: '#3399ff', grass: '#77cc55', electric: '#ffcc33', ice: '#66ccff', 
+            fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', 
+            bug: '#aabb22', rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', 
+            steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
+        };
+
+        const tipo = data.type.name;
+        const colorePieno = coloriTipi[tipo] || '#ccc';
+        const card = document.getElementById(cardId);
+
+        card.style.backgroundColor = colorePieno;
+        card.style.borderLeft = "none";
+        card.classList.add('move-full-color');
+
+        document.getElementById(`m-pow-${index}`).innerText = data.power || '--';
+        document.getElementById(`m-acc-${index}`).innerText = data.accuracy ? data.accuracy : '--';
+
+        // --- 3. INSERIMENTO IMMAGINI PERSONALIZZATE ---
+        const catImgMap = { 
+            physical: 'immagini/move-physical.png', 
+            special: 'immagini/move-special.png', 
+            status: 'immagini/move-status.png' 
+        };
+        
+        const catContainer = document.getElementById(`m-cat-${index}`);
+        if (catContainer) {
+            const categoria = data.damage_class.name;
+            const percorsoImmagine = catImgMap[categoria];
+            // Creiamo il tag img invece di mettere l'emoji
+            catContainer.innerHTML = `<img src="${percorsoImmagine}" class="cat-icon-render" alt="${categoria}">`;
+        }
+
+        // --- 4. DESCRIZIONE INGLESE ---
+        const descElement = document.getElementById(`sm-${index}`);
+        if (descElement) {
+            let desc = data.flavor_text_entries.find(e => e.language.name === 'en');
+            if (desc) {
+                descElement.innerText = desc.flavor_text.replace(/[\n\f]/g, ' ');
+            }
+        }
+
+    } catch (e) { 
+        console.error("Errore caricamento mossa:", nomeMossa, e); 
+    }
+}
+
+function apriPkmDettaglio(pokemonData, pkmNameUrl) {
+    const modal = document.getElementById('pkmDetailModal');
+    const content = document.getElementById('pkmModalBody');
+    if(!modal || !content) return;
+
+    // Struttura a griglia identica al Box Didi
+    content.innerHTML = `
+        <div class="pkm-modal-grid">
+            <div class="area-header">
+                <div id="single-types" class="types-centered"></div>
+                <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
+                <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
+            </div>
+
+            <div class="area-weakness pkm-panel">
+                <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
+                <div id="static-weaknesses" class="weakness-content">Caricamento...</div>
+            </div>
+
+            <div class="area-info-strips">
+                <div class="pkm-panel info-box-compact">
+                    <div class="info-content-clean">
+                        <strong class="info-name">${pokemonData.abilita}</strong>
+                        <div id="single-abi" class="info-desc-tiny"></div>
+                    </div>
+                </div>
+                <div class="pkm-panel info-box-compact">
+                    <div class="info-content-clean">
+                        <div class="item-title-row-new">
+                            <strong class="info-name">${pokemonData.strumento}</strong>
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${pokemonData.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" class="item-icon-right" onerror="this.style.display='none'">
+                        </div>
+                        <div id="single-item" class="info-desc-tiny"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="area-stats pkm-panel">
+                <div id="single-stats"></div>
+                <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs}</div>
+            </div>
+
+            <div class="area-moves pkm-panel">
+                <h4 class="panel-title">MOVESET</h4>
+                <div class="moves-list-compact">
+                    ${pokemonData.mosse.map((m, i) => {
+                        if(!m || m === "-") return '';
+                        return `
+                        <div class="move-row-mini" id="move-card-${i}">
+                            <div class="move-left-part">
+                                <span id="m-cat-${i}" class="move-cat-icon"></span>
+                                <span class="move-name-mini">${m}</span>
+                            </div>
+                            <div id="sm-${i}" class="move-desc-inline"></div>
+                            <div class="move-right-part">
+                                <span class="m-val">P: <b id="m-pow-${i}">--</b></span>
+                                <span class="m-val">A: <b id="m-acc-${i}">--</b></span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = "flex";
+
+    // Caricamento dati dalle API
+    caricaTipi(pkmNameUrl, 'single-types', '');
+    caricaDebolezzeStatiche(pkmNameUrl, 'static-weaknesses');
+    caricaStats(pkmNameUrl, 'single-stats');
+    caricaInfoAbilita(pokemonData.abilita, 'single-abi');
+    caricaInfoStrumento(pokemonData.strumento, 'single-item');
+
+    pokemonData.mosse.forEach((m, i) => {
+        if(m && m !== "-") aggiornaColoreMossa(m, `move-card-${i}`, i);
+    });
+}
+
+function chiudiPkmModal() {
+    document.getElementById('pkmDetailModal').style.display = "none";
+}
+
+function recuperaDatiPokemonDalTeam(nomeCercato) {
+    if (!window.csvBox) return null;
+    for (let i = 0; i < window.csvBox.length; i += 8) {
+        for (let col = 1; col <= 6; col++) {
+            if (window.csvBox[i][col] && window.csvBox[i][col].toLowerCase() === nomeCercato.toLowerCase()) {
+                return {
+                    nome: window.csvBox[i][col],
+                    abilita: window.csvBox[i + 1][col] || "---",
+                    strumento: window.csvBox[i + 2][col] || "---",
+                    mosse: [window.csvBox[i+3][col], window.csvBox[i+4][col], window.csvBox[i+5][col], window.csvBox[i+6][col]],
+                    evs: window.csvBox[i + 7][col] || ""
+                };
+            }
+        }
+    }
+    return null;
+}
+
+async function caricaTrendRecente() {
+    const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
+    
+    try {
+        const response = await fetch(urlMatches);
+        const data = await response.text();
+        const rows = data.split('\n').map(row => row.split(','));
+
+        // Prendiamo i match, togliamo l'header e invertiamo per partire dal fondo (più recenti)
+        const recentRows = rows.slice(1).reverse();
+        
+        let count = 0;
+        const trendDots = document.getElementById('trend-dots');
+        trendDots.innerHTML = ""; 
+
+        for (let row of recentRows) {
+            if (count >= 5) break; 
+
+            const vincitore = row[7]?.trim().toLowerCase(); // Colonna H
+            
+            if (vincitore === "didi" || vincitore === "lu") {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                
+                if (vincitore === "didi") {
+                    dot.classList.add('win');
+                } else {
+                    dot.classList.add('loss');
+                }
+                
+                // USIAMO PREPEND: 
+                // Il match più recente (il primo trovato nel ciclo) viene messo per primo.
+                // Quelli successivi (più vecchi) vengono "spinti" a sinistra.
+                // Risultato: Il più nuovo finisce a DESTRA.
+                trendDots.prepend(dot);
+                count++;
+            }
+        }
+    } catch (error) {
+        console.error("Errore nel caricamento del trend:", error);
+    }
+}
+
+// Chiama la funzione quando la pagina è pronta
+document.addEventListener('DOMContentLoaded', caricaTrendRecente);
+
+    window.addEventListener('DOMContentLoaded', caricaDatiDidi);
+    </script>
+    </body>
+    </html>
