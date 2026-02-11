@@ -32,112 +32,147 @@
     const csvDidiTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
     const csvLuTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv';
 
+function getGifUrl(pName) {
+    if (!pName) return "";
+    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
+function getGifUrl(pName) {
+    if (!pName) return "";
+    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
 async function caricaHome() {
     try {
-        const response = await fetch(csvUrl + '&t=' + new Date().getTime());
-        const text = await response.text();
-        
-        // Trasformiamo il CSV in un array di righe
-        const righeTutte = text.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
-        
-        console.log("Dati ricevuti:", righeTutte); // Debug: controlla in console (F12) se i dati arrivano
+        const [resMain, resDidi, resLu] = await Promise.all([
+            fetch(csvUrl + '&t=' + new Date().getTime()).then(r => r.text()),
+            fetch(csvDidiTeams + '&t=' + new Date().getTime()).then(r => r.text()),
+            fetch(csvLuTeams + '&t=' + new Date().getTime()).then(r => r.text())
+        ]);
 
-        // MAPPARE I DATI (Indici basati sul tuo CSV)
-        // righeTutte[0] è l'intestazione (Nome, Punti...)
-        // righeTutte[1] è LUCA (Riga 2 del foglio)
-        // righeTutte[2] è DIDI (Riga 3 del foglio)
-        
+        const righeTutte = resMain.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
+        const dbDidi = resDidi.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
+        const dbLu = resLu.split(/\r?\n/).filter(r => r.trim() !== "").map(r => r.split(','));
+
         const rLuca = righeTutte[1]; 
         const rDidi = righeTutte[2]; 
+        const rMatch = righeTutte[3];
 
-        if (!rLuca || !rDidi) {
-            console.error("Dati Luca o Didi mancanti nel CSV");
-            return;
-        }
+        if (!rLuca || !rDidi) return;
 
         const giocatori = [
-            {
-                nome: "LU",
-                punti: parseInt(rLuca[1]) || 0, // Colonna B
-                w: rLuca[2] || 0,               // Colonna C
-                l: rLuca[3] || 0,               // Colonna D
-                setW: rLuca[4] || 0,            // Colonna E
-                setL: rLuca[5] || 0,            // Colonna F
-                isLu: true
-            },
-            {
-                nome: "DIDI",
-                punti: parseInt(rDidi[1]) || 0, // Colonna B
-                w: rDidi[2] || 0,               // Colonna C
-                l: rDidi[3] || 0,               // Colonna D
-                setW: rDidi[4] || 0,            // Colonna E
-                setL: rDidi[5] || 0,            // Colonna F
-                isLu: false
-            }
+            { nome: "LU", punti: parseInt(rLuca[1]) || 0, w: rLuca[2], l: rLuca[3], setW: rLuca[4], setL: rLuca[5], ultimoTeam: rMatch[2], database: dbLu, isLu: true },
+            { nome: "DIDI", punti: parseInt(rDidi[1]) || 0, w: rDidi[2], l: rDidi[3], setW: rDidi[4], setL: rDidi[5], ultimoTeam: rMatch[3], database: dbDidi, isLu: false }
         ];
 
-        // Ordiniamo per chi ha più punti
         giocatori.sort((a, b) => b.punti - a.punti);
 
-        // Popoliamo il contenitore delle card
         const leaderboardDiv = document.getElementById('leaderboardContainer');
         leaderboardDiv.innerHTML = giocatori.map((g, index) => {
             const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
             const rankClass = index === 0 ? 'rank-1' : 'rank-2';
-            const linkPagina = g.isLu ? 'page-lu.html' : 'page-didi.html';
-            const avatar = g.isLu ? 'immagini/lance.png' : 'immagini/sage.png';
+            
+            let pokemonHtml = '<div class="external-pokemon-grid">';
+            const teamRow = g.database.find(row => row[0] && row[0].trim().toLowerCase() === g.ultimoTeam.trim().toLowerCase());
 
-            return `
-    <div class="player-card ${themeClass} ${rankClass}">
-        <div class="card-inner">
-            <div class="left-section">
-                <div class="player-avatar">
-                    <img src="${avatar}" alt="Avatar">
-                </div>
-                <div class="player-info">
-                    <h2>${g.nome}</h2>
-                    <div class="punti-main">${g.punti}</div>
-                </div>
-            </div>
+            if (teamRow) {
+                const teamIdx = g.database.indexOf(teamRow);
+                const itemRow = g.database[teamIdx + 2]; // Riga Strumenti (+2)
+                const abiRow = g.database[teamIdx + 1];  // Riga Abilità (+1)
+                const evRow = g.database[teamIdx + 7];   // Riga EV (+7)
 
-            <div class="action-buttons">
-                <a href="${g.isLu ? 'page-lu.html' : 'page-didi.html'}" class="btn-action stats">
-                    <span>STATISTICS</span>
-                </a>
-                <a href="${g.isLu ? 'box-lu.html' : 'box-didi.html'}" class="btn-action box">
-                    <span>POKÉ BOX</span>
-                </a>
-            </div>
-        </div>
+                for (let i = 1; i <= 6; i++) {
+    const pName = teamRow[i] ? teamRow[i].trim() : "";
+    const itemName = (itemRow && itemRow[i]) ? itemRow[i].trim() : "";
+    
+    if (pName) {
+        let itemUrl;
+        if (itemName && itemName.toLowerCase() !== "none" && itemName !== "") {
+            const itemUrlName = itemName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+            itemUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png`;
+        } else {
+            itemUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png`;
+        }
 
-        <div class="stats-grid">
-            <div class="stat-group">
-                <span class="stat-label">W/L</span>
-                <b class="stat-value">${g.w}-${g.l}</b>
-            </div>
-            <div class="stat-group">
-                <span class="stat-label">SET</span>
-                <b class="stat-value">${g.setW}-${g.setL}</b>
+        const abi = (abiRow && abiRow[i]) ? abiRow[i].trim() : "N/D";
+        const evs = (evRow && evRow[i]) ? evRow[i].trim() : "N/D";
+        const mosse = [
+            g.database[teamIdx + 3][i], g.database[teamIdx + 4][i],
+            g.database[teamIdx + 5][i], g.database[teamIdx + 6][i]
+        ].map(m => m ? m.trim() : "-");
+
+        const positionClass = (i <= 2) ? "top-row" : "";
+
+pokemonHtml += `
+    <div class="pkm-slot tooltip-${rankClass}">
+        <img src="${getGifUrl(pName)}" class="pkm-gif">
+        <img src="${itemUrl}" class="hold-item-icon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+        
+        <div class="home-pkm-tooltip">
+            <div class="tooltip-header">${pName.toUpperCase()}</div>
+            <div class="tooltip-info">✨ ${abi}</div>
+            <div class="tooltip-info">📊 ${evs}</div>
+            <div class="tooltip-moves-grid">
+                ${mosse.map(m => `<span class="mini-move">${m}</span>`).join('')}
             </div>
         </div>
     </div>`;
 
+    } else {
+        pokemonHtml += `<div class="pkm-slot empty"></div>`;
+    }
+}
+            }
+            pokemonHtml += '</div>';
+
+            return `
+            <div class="leaderboard-row ${rankClass}">
+                ${pokemonHtml}
+                <div class="player-card ${themeClass}">
+                    <div class="card-inner">
+                        <div class="left-section">
+                            <div class="player-avatar">
+                                <img src="${g.isLu ? 'immagini/lance.png' : 'immagini/sage.png'}">
+                            </div>
+                            <div class="player-info">
+                                <h2>${g.nome}</h2>
+                                <div class="punti-main">${g.punti}</div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="${g.isLu ? 'page-lu.html' : 'page-didi.html'}" class="btn-action stats">STATISTICS</a>
+                            <a href="${g.isLu ? 'box-lu.html' : 'box-didi.html'}" class="btn-action box">POKÉ BOX</a>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-group"><span class="stat-label">W/L</span><b class="stat-value">${g.w}-${g.l}</b></div>
+                        <div class="stat-group"><span class="stat-label">SET</span><b class="stat-value">${g.setW}-${g.setL}</b></div>
+                    </div>
+                </div>
+            </div>`;
         }).join('');
 
-        // 3. GESTIONE TICKER (Riga 4 del foglio = indice 3)
-        const rMatch = righeTutte[3];
         if (rMatch && rMatch[0]) {
             const tickerWrap = document.getElementById('lastMatchTicker');
             const testoNews = ` BREAKING NEWS -- ${rMatch[0]} -- Last match -- ${rMatch[1]} -- LU [${rMatch[4]}] vs DIDI [${rMatch[5]}] -- Teams: ${rMatch[2]} (LU) vs ${rMatch[3]} (DIDI) -- Points scored: LU ${rMatch[6]} - DIDI ${rMatch[7]} -- `;
             tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
         }
-
-    } catch (e) {
-        console.error("Errore fatale caricamento:", e);
-    }
+    } catch (e) { console.error("Errore caricamento home:", e); }
 }
 
-    caricaHome();
+function mostraTooltipHome(id) {
+    const tt = document.getElementById(`tooltip-${id}`);
+    if (tt) tt.style.display = 'block';
+}
+
+function nascondiTooltipHome(id) {
+    const tt = document.getElementById(`tooltip-${id}`);
+    if (tt) tt.style.display = 'none';
+}
+
+caricaHome();
 </script>
 </body>
 </html>

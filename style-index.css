@@ -101,6 +101,7 @@ h1 {
 #leaderboardContainer {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 40px;
     width: 100%;
     max-width: 500px; /* Card strette e altezza bilanciata */
@@ -239,4 +240,193 @@ h1 {
 
 .stat-item b {
     color: var(--text-main);
+}
+
+/* --- LEADERBOARD ROW --- */
+.leaderboard-row {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centra la card orizzontalmente */
+    width: 100%;
+    max-width: 500px;        /* Stessa larghezza della card per centratura perfetta */
+    margin: 0 auto;
+    position: relative;      /* Necessario per ancorare la griglia absolute */
+}
+
+.leaderboard-row:hover {
+    z-index: 999 !important;
+}
+
+.leaderboard-row, .player-card {
+    overflow: visible !important;
+}
+
+.pkm-slot img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    z-index: 1;
+}
+
+/* --- PLAYER CARD (ESTETICA INVARIATA) --- */
+.player-card {
+    width: 100%;       /* Occupa tutto lo spazio del contenitore centrato */
+    flex-shrink: 0;    /* Impedisce alla card di rimpicciolirsi */
+    margin: 0 !important;
+    position: relative;
+    z-index: 2;        /* Sopra la griglia se necessario */
+}
+
+/* Rank 1 scale (lo applichiamo alla riga così scalano entrambi) */
+.rank-1 { 
+    transform: scale(1.05); 
+    z-index: 10; 
+    margin-top: 50px; 
+}
+.rank-2 { 
+    transform: scale(0.95); 
+    z-index: 5; 
+}   
+
+/* LA MAGIA: Quando passi sopra allo slot, mostra il tooltip che sta dentro */
+.pkm-slot:hover .home-pkm-tooltip {
+    display: block !important;
+}
+
+.tooltip-info {
+    color: #eee;
+    font-size: 0.6rem;
+    margin-bottom: 2px;
+}
+
+/* --- GRIGLIA ESTERNA (CORRETTA) --- */
+.external-pokemon-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 45px);
+    grid-template-rows: repeat(3, 45px);
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    position: absolute;
+    right: 105%;
+    top: 50%;
+    transform: translateY(-50%);
+    /* Aggiunto per i tooltip */
+    overflow: visible !important;
+    z-index: 1000;
+}
+
+/* --- PKM SLOT & TOOLTIP LOGIC --- */
+.pkm-slot {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    position: relative !important; /* Fondamentale */
+    overflow: visible !important; /* Fondamentale per far uscire il tooltip */
+    cursor: help;
+}
+
+.pkm-gif {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    z-index: 1;
+}
+
+.hold-item-icon {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 18px !important;
+    height: 18px !important;
+    object-fit: contain;
+    z-index: 5;
+    background: rgba(22, 22, 22, 0.8);
+    border-radius: 50%;
+    padding: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* --- STYLE TOOLTIP --- */
+.home-pkm-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 125%; /* Sopra lo slot */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    background: rgba(229, 27, 27, 0.98) !important;
+    border: 1px solid rgb(0, 0, 0);
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 9999 !important;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+    pointer-events: none;
+}
+
+.pkm-slot:hover .home-pkm-tooltip {
+    display: block !important;
+}
+
+.pkm-slot.top-row .home-pkm-tooltip {
+    bottom: auto; /* Annulla il bottom */
+    top: 125%;    /* Posiziona sotto lo slot */
+}
+
+/* MOSTRA AL PASSAGGIO DEL MOUSE */
+.pkm-slot:hover .home-pkm-tooltip {
+    display: block !important;
+}
+
+.tooltip-header {
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+}
+
+.tooltip-info {
+    color: #eee;
+    font-size: 0.65rem;
+    margin-bottom: 3px;
+    line-height: 1.2;
+}
+
+.tooltip-moves-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.mini-move {
+    background: rgba(0, 0, 0, 0.1);
+    color: #fff;
+    font-size: 0.55rem;
+    padding: 3px;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- DIREZIONE PER IL PRIMO IN CLASSIFICA (RANK-1) -> VERSO IL BASSO --- */
+.pkm-slot.tooltip-rank-1 .home-pkm-tooltip {
+    top: 120%;
+    bottom: auto;
+}
+
+/* --- DIREZIONE PER IL SECONDO IN CLASSIFICA (RANK-2) -> VERSO L'ALTO --- */
+.pkm-slot.tooltip-rank-2 .home-pkm-tooltip {
+    bottom: 120%;
+    top: auto;
 }
