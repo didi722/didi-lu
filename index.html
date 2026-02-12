@@ -12,18 +12,18 @@
 
     <div class="news-ticker">
         <div class="ticker-wrap" id="lastMatchTicker">
-            <div class="ticker-item">Caricamento ultimi risultati in corso...</div>
+            <div class="ticker-item">           Loading last match info...</div>
         </div>
     </div>
 
     <div class="main-wrapper">
     
-    <div id="leaderboardContainer" class="cards-stack">
+    <div id="leaderboardContainer" class="cards-stack"></div>
+
+        <a href="matches.html" class="btn-global-archive">MATCH ARCHIVE</a>
+
         </div>
 
-    <div class="bottom-nav">
-        <a href="matches.html" class="btn-archive">MATCH ARCHIVE</a>
-    </div>
 </div>
 
 
@@ -159,7 +159,7 @@ pokemonHtml += `
             const testoNews = ` BREAKING NEWS -- ${rMatch[0]} -- Last match -- ${rMatch[1]} -- LU [${rMatch[4]}] vs DIDI [${rMatch[5]}] -- Teams: ${rMatch[2]} (LU) vs ${rMatch[3]} (DIDI) -- Points scored: LU ${rMatch[6]} - DIDI ${rMatch[7]} -- `;
             tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
         }
-    } catch (e) { console.error("Errore caricamento home:", e); }
+    } catch (e) { console.error("Home loading error", e); }
 }
 
 function mostraTooltipHome(id) {

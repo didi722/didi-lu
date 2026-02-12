@@ -241,7 +241,8 @@ h1 {
 }
 
 .stats-sidebar:hover {
-    transform: translateY(-5px);
+    transform: translate(-3px, -3px);
+    box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
 }
 
 .team-panel {
@@ -383,7 +384,8 @@ h1 {
 }
 
 .horizontal-box:hover {
-    transform: translateY(-5px) !important;
+   transform: translate(-3px, -3px);
+   box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
 }
 
 /* Risolviamo il problema del testo troppo attaccato */

@@ -190,7 +190,8 @@ h1 {
 }
 
 .btn-replay-icon:hover {
-    transform: scale(1.04);
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px var(--borders);
 }
 
 /* MODALE */
@@ -279,7 +280,8 @@ h1 {
     box-shadow: 5px 5px 0px var(--didi-borders);
 }
 .btn-set.vincitore-D:hover {
-    transform: scale(1.03);
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--didi-borders);
 }
 .btn-set.vincitore-D.active {
     background: var(--accent-didi);
@@ -293,8 +295,10 @@ h1 {
     box-shadow: 5px 5px 0px #6c026c;
 }
 .btn-set.vincitore-L:hover {
-    transform: scale(1.03);
+    transform: translate(-2px, -2px);  
+    box-shadow: 7px 7px 0 #6c026c;
 }
+
 .btn-set.vincitore-L.active {
     background: var(--accent-lu);
     color: #fff;
@@ -378,11 +382,19 @@ h1 {
 
 .team-badge {
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s ease;
 }
 
 .team-badge:hover {
-    transform: scale(1.03);
+    transform: translate(-2px, -2px);
+}
+
+.team-didi-badge:hover {
+    box-shadow: 5.75px 5.75px 0px var(--didi-borders);
+}
+
+.team-lu-badge:hover {
+    box-shadow: 5.75px 5.75px 0px#6c026c;
 }
 
 #teamModal.replay-modal {

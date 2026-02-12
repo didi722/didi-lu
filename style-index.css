@@ -14,6 +14,8 @@
     --ticker-text: #f1c40f;
     --bg-body-index: #dfdfdf;   
     --bg-gradient-end-index: #11008d;
+    --card-bg-matches: #cc3d3d;
+    --borders-matches: #970e0e;
 }
 
 body {
@@ -306,7 +308,6 @@ h1 {
     grid-template-rows: repeat(3, 45px);
     gap: 8px;
     padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     position: absolute;
     right: 105%;
@@ -329,6 +330,7 @@ h1 {
     position: relative !important; /* Fondamentale */
     overflow: visible !important; /* Fondamentale per far uscire il tooltip */
     cursor: help;
+    transition: transform 0.4sease;
 }
 
 .pkm-gif {
@@ -336,6 +338,12 @@ h1 {
     height: 38px;
     object-fit: contain;
     z-index: 1;
+    cursor: help;
+    transition: transform 0.4s ease;
+}
+
+.pkm-slot:hover .pkm-gif {
+    transform: scale(1.2);
 }
 
 .hold-item-icon {
@@ -429,4 +437,30 @@ h1 {
 .pkm-slot.tooltip-rank-2 .home-pkm-tooltip {
     bottom: 120%;
     top: auto;
+}
+
+/* --- POSIZIONAMENTO TASTO UNICO A SINISTRA --- */
+.btn-global-archive {
+    position: fixed; /* Rimane fisso mentre scorri o ancorato al wrapper */
+    left: 70px;      /* Distanza dal bordo sinistro dello schermo */
+    top: 50%;
+    color: white;
+    text-decoration: none;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 15px 25px;
+    border-radius: 10px;
+    z-index: 2000;
+    transition: all 0.2s ease;
+    letter-spacing: 2px;
+    background: var(--card-bg-matches);
+    border: 2px solid var(--borders-matches);
+    box-shadow: 5px 5px 0px var(--borders-matches);
+}
+
+
+.btn-global-archive:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px var(--borders-matches);
 }

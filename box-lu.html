@@ -44,7 +44,7 @@
 </div>
 
     <div class="grid" id="teamsGrid">
-        <div class="loading">Caricamento dati dal Pokédex...</div>
+        <div class="loading">Loading data from Pokédex...</div>
     </div>
 
     <div id="teamModal" class="modal" onclick="chiudiModale()">
@@ -133,8 +133,8 @@ async function scaricaDati() {
 
 
         } catch (error) {
-            console.error("Errore:", error);
-            document.getElementById('teamsGrid').innerHTML = "Errore nel caricamento.";
+            console.error("Error:", error);
+            document.getElementById('teamsGrid').innerHTML = "Error loading teams.";
         }
     }
 
@@ -166,7 +166,7 @@ async function coloraBordoDinamico(pkmName, elementId) {
             box.style.borderImage = `linear-gradient(to bottom, ${tipi[0]} 50%, ${tipi[1]} 50%) 1 100%`;
         }
     } catch (e) {
-        console.error("Errore tipi bordo:", e);
+        console.error("Error setting border colors:", e);
     }
 }
 
@@ -336,18 +336,18 @@ async function apriDettagli(id) {
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
                             <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
-                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <div class="info-container" style="position: relative;">
                             <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
-                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <div class="info-container" style="position: relative;">
                             <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
                                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
                                 <span>${p.strumento}</span>
                             </div>
-                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Caricamento...</div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
                         <div class="modal-moves">
@@ -356,7 +356,7 @@ async function apriDettagli(id) {
                                 return `
                                 <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
                                     ${m}
-                                    <div id="${mId}" class="move-tooltip">Caricamento...</div>
+                                    <div id="${mId}" class="move-tooltip">Loading...</div>
                                 </span>`;
                             }).join('')}
                         </div>
@@ -477,7 +477,7 @@ async function caricaTipi(pkmName, elementId, direzione) {
         </div>`
     ).join('');
 
-    } catch (e) { console.error("Errore:", e); }
+    } catch (e) { console.error("Error:", e); }
 }    
 
 function chiudiModale() {
@@ -556,7 +556,7 @@ function applicaFiltri() {
         document.head.appendChild(stileDinamico);
 
     } catch (e) {
-        console.error("Errore colore:", e);
+        console.error("Error:", e);
     }
 }
 
@@ -575,7 +575,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 
             <div class="area-weakness pkm-panel">
                 <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
-                <div id="static-weaknesses" class="weakness-content">Caricamento...</div>
+                <div id="static-weaknesses" class="weakness-content">Loading...</div>
             </div>
 
             <div class="area-info-strips">
@@ -744,7 +744,7 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
         }
 
     } catch (e) { 
-        console.error("Errore caricamento mossa:", nomeMossa, e); 
+        console.error("Error loading move:", nomeMossa, e); 
     }
 }
 

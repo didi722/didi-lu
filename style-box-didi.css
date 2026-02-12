@@ -1615,11 +1615,11 @@ margin-top: 0;
 
 .card {
     background: var(--card-bg);
-    transition: transform 0.2s;
 }
 
 .card:hover {
-    transform: translateY(-5px) !important;
+    transform: translate(-3px, -3px);
+    box-shadow: 7px 7px 0 var(--didi-borders);
 }
 
 /* Colore per i titoli (es. Prankster) */
