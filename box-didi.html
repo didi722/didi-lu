@@ -38,13 +38,13 @@
     <option value="">Tutte le categorie</option>
 </select>
     <select id="sortFilter" onchange="applicaFiltri()">
-        <option value="default">Ordina per...</option>
-        <option value="alpha">Alfabetico (A-Z)</option>
-        <option value="win">Vittorie (Max)</option>
-        <option value="loss">Sconfitte (Max)</option>
-        <option value="setV">Set Vinti (Max)</option>
-        <option value="setP">Set Persi (Max)</option>
-        <option value="played">Partite Giocate (Max)</option>
+        <option value="default">Order for...</option>
+        <option value="alpha">A-Z</option>
+        <option value="win">Max Wins</option>
+        <option value="loss">Max Losses</option>
+        <option value="setV">Max Set Wins</option>
+        <option value="setP">Max Set Losses</option>
+        <option value="played">Max Games Played</option>
     </select>
 </div>
 
@@ -713,7 +713,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     if (!select) return;
 
     // Reset del menu (tiene solo la prima opzione)
-    select.innerHTML = '<option value="">Tutte le categorie</option>';
+    select.innerHTML = '<option value="">Category</option>';
     
     // Ordina le categorie alfabeticamente
     const categorieOrdinate = Array.from(setInsieme).sort();
