@@ -1324,7 +1324,7 @@ function ascoltaBio() {
     const icon = document.getElementById('music-icon');
     const btn = document.getElementById('music-control');
 
-    db.ref('allenatore/lu').on('value', (snapshot) => {
+    db.ref('allenatore_lu').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             // 1. Aggiorna Bio
@@ -1393,7 +1393,7 @@ function salvaModificheBio() {
     const btn = document.querySelector('.save-btn');
     if(btn) btn.disabled = true;
 
-    db.ref('allenatore/lu').update({
+    db.ref('allenatore_lu').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto,
         musicaPreferita: musicaScelta
@@ -1414,7 +1414,7 @@ function salvaModificheProfilo() {
     const teamScelto = document.getElementById('team-selector-fav').value;
 
     // Aggiorniamo Firebase
-    db.ref('allenatore/lu').update({
+    db.ref('allenatore_lu').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto
     })
@@ -1524,7 +1524,7 @@ window.addEventListener('click', (e) => {
 });
 
 function ascoltaCambiamentiFirebase() {
-    db.ref('allenatore/lu').on('value', (snapshot) => {
+    db.ref('allenatore_lu').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
