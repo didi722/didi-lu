@@ -11,6 +11,10 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
+        <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
 
     <nav class="hamburger-menu">
         <input type="checkbox" id="menu-toggle" />
@@ -182,6 +186,36 @@
 </div>
 
     <script>
+
+async function inizializzaPagina() {
+    try {
+        // Avviamo tutti i caricamenti in parallelo e aspettiamo che finiscano
+        await Promise.all([
+            caricaDatiLu(),         // Carica stats e team
+            caricaTrendRecente(),   // Carica i pallini win/loss
+            elaboraBadge()          // Calcola e mostra i badge
+        ]);
+        
+        console.log("Tutti i dati caricati con successo.");
+
+    } catch (e) {
+        console.error("Errore durante il caricamento della pagina:", e);
+    } finally {
+        // Nascondi la schermata di caricamento
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            loader.style.opacity = '0';
+            // Aspettiamo la fine dell'animazione CSS (0.5s) prima di rimuovere il display
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Unico punto di ingresso: avvia tutto quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', inizializzaPagina);
+
     const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
     const URL_STATS = "    https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
     const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv";

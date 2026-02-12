@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="style-box-lu.css">
 </head>
 <body>
+    <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
 
     <nav class="hamburger-menu">
     <input type="checkbox" id="menu-toggle" />
@@ -26,12 +30,12 @@
         </ul>
 </nav>  
 
-    <h1>Archivio Storico Match</h1>
+    <h1>Championship History</h1>
 
     <div class="controls">
-    <input type="text" id="searchInput" placeholder="Cerca Team" oninput="applicaFiltri()">
+    <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
     <select id="categoryFilter" onchange="applicaFiltri()">
-    <option value="">Tutte le categorie</option>
+    <option value="">Category</option>
 </select>
     
     </select>
@@ -61,6 +65,38 @@
     </div>
 
     <script>
+
+        // Funzione coordinata per gestire il caricamento e la Pokéball
+async function inizializzaPaginaArchivio() {
+    const loader = document.getElementById('loading-screen');
+    
+    try {
+        // Mostra il loader all'inizio
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
+
+        // ASPETTA il caricamento di database, team e lista match
+        await caricaArchivio();
+        
+        console.log("Archivio match e database caricati.");
+    } catch (e) {
+        console.error("Errore durante l'inizializzazione dell'archivio:", e);
+    } finally {
+        // Nascondi la Pokéball solo quando tutto è renderizzato
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Unico punto di ingresso: avvia quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', inizializzaPaginaArchivio);
+
         let databaseDidi = [];
         let databaseLu = [];
         let tuttiITeamDidi = [];
@@ -171,7 +207,7 @@ function popolaFiltroCategorie() {
     });
 
     // Reset della select (manteniamo solo l'opzione "Tutte")
-    select.innerHTML = '<option value="tutte">Tutte le Categorie</option>';
+    select.innerHTML = '<option value="tutte">Category</option>';
 
     // Aggiungiamo le categorie trovate
     categorie.forEach(cat => {

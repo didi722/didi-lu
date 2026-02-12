@@ -12,6 +12,11 @@
     </head>
     <body>
 
+        <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
     <nav class="hamburger-menu">
         <input type="checkbox" id="menu-toggle" />
         <label for="menu-toggle" class="menu-button-container">
@@ -182,6 +187,37 @@
 </div>
 
     <script>
+
+async function inizializzaPaginaDidi() {
+    try {
+        // Avviamo i caricamenti in parallelo e aspettiamo che finiscano tutti
+        await Promise.all([
+            caricaDatiDidi(),       // Carica stats e team attuale
+            caricaTrendRecente(),   // Carica i pallini delle ultime partite
+            elaboraBadge()          // Calcola le serie e mostra le medaglie
+        ]);
+        
+        console.log("Dati di Didi caricati con successo.");
+
+    } catch (e) {
+        console.error("Errore durante il caricamento della pagina Didi:", e);
+    } finally {
+        // Nascondi la schermata di caricamento
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            // Effetto dissolvenza
+            loader.style.opacity = '0';
+            // Rimuove l'elemento dal flusso dopo la transizione CSS (0.5s)
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Avvia tutto quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
+
     const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
     const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1697837543&single=true&output=csv";
     const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv";

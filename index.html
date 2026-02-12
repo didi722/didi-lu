@@ -11,6 +11,11 @@
 </head>
 <body>
 
+    <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
     <div class="news-ticker">
         <div class="ticker-wrap" id="lastMatchTicker">
             <div class="ticker-item">           Loading last match info...</div>
@@ -32,6 +37,37 @@
 
 
 <script>
+
+    async function inizializzaPagina() {
+    try {
+        // Avviamo i caricamenti della Home e aspettiamo che finiscano
+        // Usiamo Promise.all per caricarli in contemporanea (più veloce)
+        await Promise.all([
+            caricaHome(),
+            creaGraficoAndamento()
+        ]);
+        
+        // Se hai elaboraBadge() anche qui, scommentalo:
+        // await elaboraBadge(); 
+
+    } catch (e) {
+        console.error("Errore nel caricamento dati della Home:", e);
+    } finally {
+        // Nascondi la schermata di caricamento solo quando tutto è pronto
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            loader.style.opacity = '0';
+            // Aspettiamo che la transizione CSS finisca prima di mettere display: none
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Avvia tutto al caricamento della pagina
+window.onload = inizializzaPagina;
+
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1283277155&single=true&output=csv';
     const csvDidiTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
     const csvLuTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv';

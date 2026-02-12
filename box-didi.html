@@ -10,6 +10,11 @@
 </head>
 <body> 
 
+    <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
     <nav class="hamburger-menu">
     <input type="checkbox" id="menu-toggle" />
     <label for="menu-toggle" class="menu-button-container">
@@ -28,7 +33,7 @@
     <h1>Box Didi</h1>
 
     <div class="controls">
-    <input type="text" id="searchInput" placeholder="Cerca Team o Pokémon" oninput="applicaFiltri()">
+    <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
     <select id="categoryFilter" onchange="applicaFiltri()">
     <option value="">Tutte le categorie</option>
 </select>
@@ -63,6 +68,34 @@
 </div>
 
     <script>
+
+        async function inizializzaPaginaBox() {
+    const loader = document.getElementById('loading-screen');
+    
+    try {
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
+
+        // Chiamiamo scaricaDati (che è il nome corretto della tua funzione)
+        await scaricaDati();
+        
+        console.log("Dati scaricati e renderizzati.");
+    } catch (e) {
+        console.error("Errore generale:", e);
+    } finally {
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500); 
+        }
+    }
+}
+
+// Rimuovi eventuali doppioni e usa solo questo:
+document.addEventListener('DOMContentLoaded', inizializzaPaginaBox);
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
     let tuttiITeam = [];
 
