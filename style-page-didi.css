@@ -442,6 +442,10 @@ h1 {
     visibility: hidden;
 }
 
+.close {
+    visibility: hidden;
+}
+
 .stat-panel-divider {
 border: 0;
 border-top: 1.5px solid var(--bg-dark);

@@ -44,21 +44,24 @@
     <div id="loadingArchivio">Loading fixtures...</div>
     <div id="matchList"></div>
 
-    <div id="replayModal" class="replay-modal" onclick="chiudiSeFuori(event)">
-        <div class="gba-container">
-            <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
-            <div class="gba-screen-area">
-                 <div class="replay-content">
-                    <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
-                </div>
+    <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
+    
+    <div class="gba-container">
+        <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
+        <div class="gba-screen-area" onclick="event.stopPropagation()">
+             <div class="replay-content">
+                <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
             </div>
         </div>
-        <div class="set-selector" id="setSelector"></div>
-        <span class="close-replay" onclick="chiudiReplay()">&times;</span>
     </div>
 
-    <div id="teamModal" class="replay-modal" onclick="chiudiTeamSeFuori(event)">
-        <div class="modal-content team-detail-card" onclick="event.stopPropagation()">
+    <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
+    
+    <span class="close-replay" onclick="chiudiReplay()">&times;</span>
+</div>
+
+    <div id="teamModal" class="replay-modal" onclick="chiudiTeamModal()">
+        <div class="modal-content team-detail-card">
             <span class="close-replay" onclick="chiudiTeamModal()">&times;</span>
             <div id="teamDetailContent"></div>
         </div>
@@ -233,13 +236,6 @@ function applicaFiltri() {
 
         card.style.display = (matchNome && matchCategoria) ? "grid" : "none";
     });
-}
-
-function chiudiSeFuori(event) {
-    // Se il click è avvenuto proprio sul replayModal (lo sfondo) e non sui suoi figli
-    if (event.target.id === 'replayModal') {
-        chiudiReplay();
-    }
 }
 
 async function apriDettaglioTeam(nomeTeam, proprietario) {
@@ -473,9 +469,15 @@ function caricaVideoDirect(matchID, setNum, vincitore, btnElement) {
         }
 
         function chiudiReplay() {
-            document.getElementById('replayModal').style.display = 'none';
-            document.getElementById('replayFrame').src = '';
-        }
+    const modal = document.getElementById('replayModal');
+    const iframe = document.getElementById('replayFrame');
+    
+    if (modal) {
+        modal.style.display = "none";
+        // Importante: svuotiamo l'iframe così il replay si ferma e non continua a suonare l'audio
+        if (iframe) iframe.src = ""; 
+    }
+}
 
         caricaArchivio();
 
@@ -664,6 +666,8 @@ function generaHtmlGifs(nomeTeam, database) {
     }
     return htmlGifs + '</div>';
 }
+
+
 
     </script>
 </body>

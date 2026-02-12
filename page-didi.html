@@ -171,12 +171,12 @@
     </div>
 </div>
 
-    <div id="teamModal" class="modal">
-        <div class="modal-content"> <span class="close-modal" id="closeModal">&times;</span>
-            <div id="modalBody">
-                </div>
-        </div>
+    <div id="teamModal" class="modal" onclick="chiudiTeamModal()">
+    <div class="modal-content"> 
+        <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
+        <div id="modalBody"></div>
     </div>
+</div>
 
     <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
     <div class="modal-content pkm-single-card" onclick="event.stopPropagation()">
@@ -1231,6 +1231,24 @@ function mostraBadge(vittorie, clean, primo) {
         h1.appendChild(container);
     }
 }
+
+function chiudiTeamModal() {
+    const modal = document.getElementById('teamModal');
+    if (modal) {
+        modal.style.display = "none";
+        // Opzionale: svuota il corpo del modal per evitare che al prossimo avvio 
+        // si veda per un istante il vecchio team caricato
+        const body = document.getElementById('modalBody');
+        if (body) body.innerHTML = "";
+    }
+}
+
+// Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
+document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") {
+        chiudiTeamModal();
+    }
+});
 
 document.addEventListener('DOMContentLoaded', elaboraBadge);
 document.addEventListener('DOMContentLoaded', mostraBadge);

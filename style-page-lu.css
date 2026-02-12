@@ -481,6 +481,10 @@ margin: 0 0;
     visibility: hidden;
 }
 
+.close {
+    visibility: hidden;
+}
+
 /* Griglia interna identica al Box Didi */
 .modal-grid {
     display: grid;

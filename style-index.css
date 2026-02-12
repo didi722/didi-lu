@@ -558,3 +558,7 @@ h1 {
     font-weight: bold;
     color: #ffffff;
 }
+
+.close {
+    visibility: hidden;
+}
