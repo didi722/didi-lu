@@ -1373,35 +1373,27 @@ function chiudiAdminModal() {
 }
 
 function salvaModificheBio() {
-    const btn = document.querySelector('.save-btn'); // Il tuo tasto Salva
     const nuovaBio = document.getElementById('bio-input').value;
     const teamScelto = document.getElementById('team-selector-fav').value;
     const musicaScelta = document.getElementById('music-selector').value;
 
-    // Feedback visivo immediato
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = "Salvataggio... ⏳";
-    }
+    // Disabilita il tasto per evitare click multipli durante il salvataggio
+    const btn = document.querySelector('.save-btn');
+    if(btn) btn.disabled = true;
 
-    // Aggiornamento su Firebase
-    db.ref('allenatore_lu').update({
+    db.ref('allenatore_didi').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto,
         musicaPreferita: musicaScelta
     })
     .then(() => {
-        // Questo comando ricarica la pagina forzatamente e "pulisce" lo stato del browser
-        // evitando il popup di avviso modifiche.
-        window.location.href = window.location.pathname + window.location.search;
+        // Invece dell'alert, ricarichiamo direttamente la pagina
+        window.location.reload();
     })
     .catch(e => {
-        console.error("Errore:", e);
-        alert("Errore nel salvataggio!");
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "Salva Modifiche";
-        }
+        console.error("Errore nel salvataggio:", e);
+        alert("Errore critico: " + e.message); // Teniamo l'alert solo in caso di errore vero
+        if(btn) btn.disabled = false;
     });
 }
 
