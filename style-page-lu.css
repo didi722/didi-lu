@@ -11,13 +11,16 @@ body {
     font-family: 'Montserrat', sans-serif; 
     background: linear-gradient(135deg, var(--bg-body) -50%, var(--bg-gradient-end) 100%) !important;
     color: var(--text-main); 
-    padding: 20px; 
     margin: 0;
+    padding: 0; /* Rimuoviamo il padding globale che sballa i calcoli */
     line-height: 1.4;
-    min-height: 100vh;
+    height: 100vh; /* Altezza fissa allo schermo */
+    width: 100vw;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden; /* IMPORTANTE: Impedisce la comparsa della barra di scorrimento */
+    box-sizing: border-box;
 }
 
 h1 { 
@@ -53,6 +56,8 @@ h1 {
     display: flex;
     justify-content: center; /* Centra l'allenatore orizzontalmente */
     align-items: center;     /* Centra l'allenatore verticalmente */
+    margin-top:-45px;
+
 }
 
 /* Allenatore centrale */
@@ -813,4 +818,256 @@ body.modal-open {
     font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
     font-weight: bold;
     color: #ffffff !important;
+}
+
+/* Bio allenatore e login */
+
+
+.admin-panel {
+    background: #333;
+    padding: 20px;
+    border: 1px dashed var(--lu-main);
+    border-radius: 15px;
+    margin-top: 20px;
+}
+
+.trainer-section {
+    margin-top: -85px;
+    text-align: center;
+    width: 30%;
+}
+
+.bio-text {
+    font-style: italic;
+    color: var(--lu-main);
+    font-size: 0.8rem !important;
+    margin-bottom: 10px;
+}
+
+.admin-small-btn {
+    background: transparent;
+    border: 1px solid var(--lu-main);
+    color: var(--lu-main);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    margin-bottom: 0;
+}
+
+.admin-panel {
+    background: rgba(0,0,0,0.5);
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 15px;
+    border: 1px solid var(--lu-main);
+}
+
+#bio-input {
+    width: 100%;
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.save-btn {
+    background: var(--lu-main);
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+/* Contenitore della Bio */
+.trainer-bio-container {
+    width: 100%;
+    max-width: 200px !important;
+    margin-top: -100px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+#trainer-bio-display {
+    font-family: 'Josefin Sans', sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    color: #1a1a1a;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block; /* Avvolge il testo */
+}
+
+/* Pulsantino Modifica discreto */
+.admin-small-btn {
+    display: inline-block;
+    vertical-align: middle;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 10px;
+    transition: color 0.3s;
+}
+
+.admin-small-btn:hover {
+    color: var(--lu-main);
+}
+
+/* Pannello Admin quando si apre */
+.admin-panel {
+    background: rgba(26, 26, 26, 0.95);
+    border: 2px solid var(--lu-main);
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#bio-input {
+    width: 90%;
+    height: 60px;
+    background: #111;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Il Lucchetto in alto a sinistra */
+.admin-lock-container {
+    position: fixed;
+    top: 20px;
+    right: 70px;
+    z-index: 1000;
+}
+
+.lock-btn {
+    background: none !important;
+    border: none !important;
+    color: white;
+    font-size: 1.2rem;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+
+.lock-btn:hover {
+    background: var(--lu-main);
+    transform: scale(1.1);
+}
+
+/* Overlay del Modale (Sfondo scuro) */
+.modal-admin-overlay {
+    display: none; /* Nascosto di base */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Contenuto del Modale */
+.modal-admin-content {
+    padding: 40px;
+    border-radius: 20px;
+    border: 2px solid var(--lu-main);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    backdrop-filter: blur(2px);
+}
+
+.close-admin {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 1.5rem;
+    color: #888;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#bio-input {
+    width: 100%;
+    height: 100px;
+    margin: 20px 0;
+    background: #000;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 10px;
+    resize: none;
+}
+
+#team-selector-fav {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 5px;
+    font-family: 'Montserrat', sans-serif;
+    color: #eeeeee; /* Colore del testo (Giallo Pokémon) */
+}
+
+/* Opzioni all'interno del menu */
+#team-selector-fav option {
+    background-color: #2a2a2a;
+    color: #ffffff; /* Colore delle scritte nell'elenco */
+}
+
+#music-selector {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 5px;
+    font-family: 'Montserrat', sans-serif;
+    color: #eeeeee;
+}
+
+#music-selector option {
+    background: #1a1a1a;
+    color: white;
+}
+
+.music-btn {
+    position: fixed;
+    right: 120px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+#music-icon {
+    font-size: 20px;
 }

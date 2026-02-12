@@ -9,8 +9,17 @@
         <link rel="stylesheet" href="style-page-lu.css">
         <link rel="stylesheet" href="style-box-lu.css">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     </head>
     <body>
+
+        <audio id="bg-music" loop></audio>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <span id="music-icon">🔇</span>
+</div>
+
         <div id="loading-screen">
     <div class="pokeball-loader"></div>
     <p>Please wait</p>
@@ -31,6 +40,32 @@
            <li><a href="rules.html">Rules</a></li>
         </ul>
     </nav>  
+
+    <div class="admin-lock-container">
+    <button id="login-btn" onclick="gestisciLogin()" class="lock-btn">🔒</button>
+</div>
+
+<div id="admin-modal" class="modal-admin-overlay">
+    <div class="modal-admin-content">
+        <span class="close-admin" onclick="chiudiAdminModal()">&times;</span>
+        <h3>Preferences</h3>
+        
+        <label>Bio:</label>
+        <textarea id="bio-input"></textarea>
+        
+        <label>Best team:</label>
+        <select id="team-selector-fav">
+            </select>
+
+        <label style="margin-top: 15px; display: block;">Soundtrack:</label>
+        <select id="music-selector">
+            <option value="">-- Loading playlist... --</option>
+        </select>
+        <button onclick="salvaModificheBio()" class="save-btn" style="margin-top:20px;">Save Changes</button>
+    </div>
+</div>
+
+<audio id="bg-music" loop></audio>
 
     <div class="profile-container">
         <h1 id="trainer-name">Lu</h1>
@@ -135,6 +170,12 @@
         </div>
     </div>
 
+    <div class="trainer-section">
+    <div class="bio-wrapper">
+        <div id="trainer-bio-display" class="bio-text">Caricamento presentazione...</div>
+    </div>
+</div>
+
 <div id="categoryModal" class="modal-page">
     <div class="modal-content-page">
         <div id="modal-floater-left" class="modal-floater">
@@ -185,6 +226,23 @@
 </div>
 
     <script>
+
+        // Configurazione del tuo progetto
+const firebaseConfig = {
+  apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+  authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+  databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pokemonsuite-didi-lu",
+  storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+  messagingSenderId: "707115539525",
+  appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+// Inizializzazione
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
 
 async function inizializzaPagina() {
     try {
@@ -459,18 +517,23 @@ function creaMappaDati(header, riga) {
         apriDettagli(999);
     };
             // --- ORBITA POKEMON ---
-            if (bestTeamNome) {
-                for (let i = 0; i < csvBox.length; i += 8) {
-                    if (csvBox[i][0] && csvBox[i][0].toLowerCase() === bestTeamNome.toLowerCase()) {
-                        let pkmTeam = [];
-                        for (let col = 1; col <= 6; col++) { if (csvBox[i][col]) pkmTeam.push(csvBox[i][col]); }
-                        popolaCerchio(pkmTeam);
-                        break;
+            let teamDaMostrare = window.idTeamPreferito || bestTeamNome;
+        if (teamDaMostrare) {
+            for (let i = 0; i < csvBox.length; i += 8) {
+                if (csvBox[i][0] && csvBox[i][0].trim().toLowerCase() === teamDaMostrare.trim().toLowerCase()) {
+                    let pkmTeam = [];
+                    for (let col = 1; col <= 6; col++) { if (csvBox[i][col]) pkmTeam.push(csvBox[i][col]); }
+                    popolaCerchio(pkmTeam);
+                    if (document.getElementById('best-team-name-new')) {
+                        document.getElementById('best-team-name-new').innerText = csvBox[i][0];
                     }
+                    break;
                 }
             }
-        } catch (e) { console.error(e); }
-    }
+        }
+
+    } catch (e) { console.error("Errore in caricaDatiLu:", e); }
+}
 
     // Chiusura Modale
     document.getElementById("closeModal").onclick = () => document.getElementById("categoryModal").style.display = "none";
@@ -1253,6 +1316,237 @@ function chiudiTeamModal() {
         if (body) body.innerHTML = "";
     }
 }
+
+// 1. Funzione per leggere la Bio in tempo reale
+function ascoltaBio() {
+    const bioDisplay = document.getElementById('trainer-bio-display');
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    db.ref('allenatore_lu').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            // 1. Aggiorna Bio
+            window.musicaCorrente = data.musicaPreferita || "";
+            if (data.bio && bioDisplay) bioDisplay.innerText = data.bio;
+            
+            // 2. Aggiorna Team Preferito
+            window.idTeamPreferito = data.teamPreferitoID || null;
+
+            // 3. Gestione Musica (La tua preferenza salvata)
+            if (data.musicaPreferita) {
+                // Se la canzone è diversa da quella che c'è già, la carichiamo
+                if (player.src !== data.musicaPreferita) {
+                    player.src = data.musicaPreferita;
+                    player.load(); // Forza il caricamento del nuovo file
+                    player.volume = 0.3;
+                    
+                    // Proviamo a farla partire in automatico
+                    player.play()
+                        .then(() => {
+                            icon.innerText = "🔊";
+                            btn.style.borderColor = "lime";
+                        })
+                        .catch(() => {
+                            // Se il browser blocca, l'icona resta muta finché l'utente non preme Play
+                            icon.innerText = "🔇";
+                            btn.style.borderColor = "cyan";
+                            console.log("Autoplay bloccato dal browser.");
+                        });
+                }
+            } else {
+                player.pause();
+                player.src = "";
+                icon.innerText = "🔇";
+            }
+
+            // Ricarica il cerchio se il CSV è pronto
+            if (window.csvBox) caricaDatiLu();
+        }
+    });
+}
+
+// 2. Funzione Login
+function gestisciLogin() {
+    const pass = prompt("Inserisci password:");
+    if (pass === "poke2024") {
+        // Carica i dati attuali nei selettori
+        popolaSelettoreTeam();
+        popolaSelettoreMusica(); // <-- Carica la tua lista dal CSV musica
+        
+        document.getElementById('bio-input').value = document.getElementById('trainer-bio-display').innerText;
+        document.getElementById('admin-modal').style.display = "flex";
+    }
+}
+
+function chiudiAdminModal() {
+    document.getElementById('admin-modal').style.display = "none";
+}
+
+function salvaModificheBio() {
+    const nuovaBio = document.getElementById('bio-input').value;
+    const teamScelto = document.getElementById('team-selector-fav').value;
+    const musicaScelta = document.getElementById('music-selector').value; // URL della canzone
+
+    db.ref('allenatore_lu').update({
+        bio: nuovaBio,
+        teamPreferitoID: teamScelto,
+        musicaPreferita: musicaScelta
+    })
+    .then(() => {
+        alert("Profilo aggiornato!");
+        chiudiAdminModal();
+    })
+    .catch(e => alert("Errore nel salvataggio: " + e.message));
+}
+
+function salvaModificheProfilo() {
+    const nuovaBio = document.getElementById('bio-input').value;
+    const teamScelto = document.getElementById('team-selector-fav').value;
+
+    // Aggiorniamo Firebase
+    db.ref('allenatore_lu').update({
+        bio: nuovaBio,
+        teamPreferitoID: teamScelto
+    })
+    .then(() => {
+        alert("Profilo aggiornato! La pagina verrà ricaricata.");
+        location.reload(); // Ricarichiamo per applicare subito i nuovi Pokémon nell'orbita
+    })
+    .catch(error => {
+        console.error("Errore nel salvataggio:", error);
+        alert("Errore durante il salvataggio.");
+    });
+}
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    if (!select || !window.csvBox) return;
+
+    // Reset: opzione automatica + pulizia
+    select.innerHTML = '<option value="">-- Miglior Team (Automatico) --</option>';
+
+    // Scorriamo il csvBox: i nomi dei team sono ogni 8 righe nella colonna 0
+    for (let i = 0; i < window.csvBox.length; i += 8) {
+        let nomeTeam = window.csvBox[i][0];
+        // Saltiamo le righe vuote o l'intestazione
+        if (nomeTeam && nomeTeam !== "Team" && nomeTeam !== "") {
+            let opt = document.createElement('option');
+            opt.value = nomeTeam;
+            opt.innerText = nomeTeam;
+            
+            // Se questo è il team già salvato su Firebase, lo pre-selezioniamo
+            if (window.idTeamPreferito === nomeTeam) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        }
+    }
+} 
+
+// 1. Inserisci qui l'URL del foglio "Playlist" pubblicato come CSV
+const URL_PLAYLIST = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv";
+
+// 2. Funzione per leggere il CSV della musica e popolare il menu
+async function popolaSelettoreMusica() {
+    const select = document.getElementById('music-selector');
+    if (!select) return;
+
+    try {
+        const response = await fetch(URL_PLAYLIST + '&t=' + Date.now());
+        const csvText = await response.text();
+        const righe = csvText.split(/\r?\n/).map(r => r.split(','));
+
+        select.innerHTML = '<option value="">-- None --</option>';
+
+        righe.forEach((colonne, index) => {
+            // Saltiamo l'intestazione (riga 0)
+            if (index === 0) return; 
+
+            if (colonne[0] && colonne[1]) {
+                const opt = document.createElement('option');
+                opt.value = colonne[1].trim(); // URL MP3
+                opt.innerText = colonne[0].trim(); // Nome Canzone
+                
+                // Se è quella già salvata su Firebase, la selezioniamo
+                if (window.musicaCorrente === colonne[1].trim()) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            }
+        });
+    } catch (e) {
+        console.error("Errore playlist:", e);
+        select.innerHTML = '<option value="">Errore nel caricamento</option>';
+    }
+}
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    if (!player.src || player.src === "" || player.src.includes('undefined')) {
+        alert("Nessuna canzone impostata nel profilo!");
+        return;
+    }
+
+    if (player.paused) {
+        player.play()
+            .then(() => {
+                icon.innerText = "🔊";
+                btn.style.borderColor = "lime";
+            })
+            .catch(e => {
+                console.error("Errore riproduzione:", e);
+                alert("Il browser ha bloccato l'audio. Clicca un punto qualsiasi della pagina e riprova.");
+            });
+    } else {
+        player.pause();
+        icon.innerText = "🔇";
+        btn.style.borderColor = "cyan";
+    }
+}
+
+// Chiudi modale se clicchi fuori dal rettangolo centrale
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('admin-modal');
+    if (e.target === modal) chiudiAdminModal();
+});
+
+function ascoltaCambiamentiFirebase() {
+    db.ref('allenatore_lu').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            const player = document.getElementById('bg-music');
+            const icon = document.getElementById('music-icon');
+
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                
+                // Proviamo a farla partire, se fallisce (blocco browser) l'icona resta muta
+                player.play()
+                    .then(() => { icon.innerText = "🔊"; })
+                    .catch(() => { icon.innerText = "🔇"; });
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
+// Avvia l'ascolto al caricamento
+document.addEventListener('DOMContentLoaded', ascoltaBio);
+
+// Sblocca l'audio al primo click dell'utente sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    // Se il player ha una sorgente ma è in pausa, fallo partire
+    if (player && player.paused && player.src) {
+        player.play().catch(e => console.log("Audio in attesa di link valido..."));
+    }
+}, { once: true }); // 'once: true' serve a farlo eseguire solo la prima volta
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {
