@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rules - Pokémon Formats</title>
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-rules.css">
+    <link rel="stylesheet" href="style-box-didi.css">
+
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="pokeball-loader"></div>
+        <p>Loading</p>
+    </div>
+
+    <nav class="hamburger-menu">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-button-container">
+            <div class="menu-button"></div>
+        </label>
+        <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+            <li><a href="rules.html">Rules</a></li>
+        </ul>
+    </nav>  
+
+    
+        <h1 class="page-title">Formats and rules</h1>
+
+<div class="controls">
+    <input type="text" id="searchInput" placeholder="Browse rules..." oninput="applicaFiltri()">
+    
+</div>
+        <div id="regolamentoGrid" class="regolamento-grid">
+            </div>
+
+            
+    </div>
+
+    <div id="regolaModal" class="modal" onclick="chiudiRegolaModal()">
+    <div class="modal-content rule-modal-container"> <span class="close-btn" onclick="chiudiRegolaModal()">&times;</span>
+        <div id="regolaModalBody"></div>
+    </div>
+</div>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=626123238&single=true&output=csv";
+
+        async function caricaRegolamento() {
+            const loader = document.getElementById('loading-screen');
+            const grid = document.getElementById('regolamentoGrid');
+            try {
+                if (loader) loader.style.display = 'flex';
+                const response = await fetch(CSV_URL);
+                const csvText = await response.text();
+                const righe = parseCSV(csvText);
+                grid.innerHTML = "";
+
+                righe.forEach((r, index) => {
+                    const categoria = r[0];
+                    if(!categoria || categoria.toLowerCase() === "categoria" || index === 0) return;
+
+                    const card = document.createElement('div');
+                    card.className = 'regola-card';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3>${categoria}</h3>
+                        </div>
+                        <div class="card-body">
+                            <span>${r[11]}</span>
+                        </div>
+                        <div class="card-footer">Dettagli Completi</div>
+                    `;
+                    card.onclick = () => apriRegolaModal(r);
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Errore:", error);
+                grid.innerHTML = "<p>Errore nel caricamento delle regole.</p>";
+            } finally {
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 500);
+                }
+            }
+        }
+
+        function apriRegolaModal(r) {
+            const modal = document.getElementById('regolaModal');
+            const body = document.getElementById('regolaModalBody');
+            body.innerHTML = `
+                <h2 class="modal-title">${r[0]}</h2>
+                <div class="regole-grid-detail">
+                    <div class="info-item"><strong>💤 Sleep Clause</strong><span>${r[1] || '-'}</span></div>
+                    <div class="info-item"><strong>🍎 Strumenti</strong><span>${r[2] || '-'}</span></div>
+                    <div class="info-item"><strong>👥 Duplicati</strong><span>${r[3] || '-'}</span></div>
+                    <div class="info-item"><strong>📅 Gen</strong><span>${r[4] || '-'}</span></div>
+                    <div class="info-item"><strong>🚫 Restricted</strong><span>${r[5] || '-'}</span></div>
+                    <div class="info-item"><strong>🏆 Tier</strong><span>${r[6] || '-'}</span></div>
+                    <div class="info-item"><strong>📊 BST</strong><span>${r[7] || '-'}</span></div>
+                    <div class="info-item"><strong>🧬 Tipi</strong><span>${r[8] || '-'}</span></div>
+                </div>
+                <div class="special-rules-box">
+                    <strong>⚠️ Regole Speciali:</strong>
+                    <p>${r[9] || 'Nessuna'}</p>
+                </div>
+                ${r[10] ? `<a href="${r[10]}" target="_blank" class="link-btn" onclick="event.stopPropagation()">Approfondimento Online</a>` : ''}            `;
+            modal.style.display = "flex";
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            return lines.map(line => {
+                const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+                return line.split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+            });
+        }
+
+        function chiudiRegolaModal() {
+            document.getElementById('regolaModal').style.display = "none";
+        }
+
+        document.addEventListener('DOMContentLoaded', caricaRegolamento);
+    </script>
+</body>
+</html>

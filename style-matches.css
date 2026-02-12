@@ -8,13 +8,13 @@
     --accent-didi: #31c489;
     --accent-lu: #8e44ad;
     --bg-body-matches: #dfdfdf;          /* Il tuo viola forte */
-    --bg-gradient-end-matches: #4ace64;  /* Un viola più chiaro per il gradiente */
+    --bg-gradient-end-matches: #cbc218;  /* Un viola più chiaro per il gradiente */
     --didi-borders: #025534;
 }
 
 body {
     font-family: 'Montserrat', sans-serif;
-    background: linear-gradient(135deg, var(--bg-body-matches) -50%, var(--bg-gradient-end-matches) 100%) !important;
+    background: linear-gradient(135deg, var(--bg-body-matches) -70%, var(--bg-gradient-end-matches) 100%) !important;
     color: var(--text-main-matches) !important;
     margin: 0;
     padding: 20px;
