@@ -13,7 +13,7 @@
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     </head>
     <body>
-
+        
         <audio id="bg-music" loop></audio>
 
 <div id="music-control" class="music-btn" onclick="toggleMusic()">
@@ -37,7 +37,7 @@
             <li><a href="page-lu.html">Lu</a></li>
             <li><a href="box-lu.html">Box Lu</a></li>
             <li><a href="matches.html">Fixtures</a></li>
-           <li><a href="rules.html">Rules</a></li>
+            <li><a href="rules.html">Rules</a></li>
         </ul>
     </nav>  
 
@@ -227,7 +227,7 @@
 
     <script>
 
-        // Configurazione del tuo progetto
+                // Configurazione del tuo progetto
 const firebaseConfig = {
   apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
   authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
@@ -244,25 +244,26 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-async function inizializzaPagina() {
+async function inizializzaPaginaDidi() {
     try {
-        // Avviamo tutti i caricamenti in parallelo e aspettiamo che finiscano
+        // Avviamo i caricamenti in parallelo e aspettiamo che finiscano tutti
         await Promise.all([
-            caricaDatiLu(),         // Carica stats e team
-            caricaTrendRecente(),   // Carica i pallini win/loss
-            elaboraBadge()          // Calcola e mostra i badge
+            caricaDatiDidi(),       // Carica stats e team attuale
+            caricaTrendRecente(),   // Carica i pallini delle ultime partite
+            elaboraBadge()          // Calcola le serie e mostra le medaglie
         ]);
         
-        console.log("Tutti i dati caricati con successo.");
+        console.log("Dati di Didi caricati con successo.");
 
     } catch (e) {
-        console.error("Errore durante il caricamento della pagina:", e);
+        console.error("Errore durante il caricamento della pagina Didi:", e);
     } finally {
         // Nascondi la schermata di caricamento
         const loader = document.getElementById('loading-screen');
         if (loader) {
+            // Effetto dissolvenza
             loader.style.opacity = '0';
-            // Aspettiamo la fine dell'animazione CSS (0.5s) prima di rimuovere il display
+            // Rimuove l'elemento dal flusso dopo la transizione CSS (0.5s)
             setTimeout(() => {
                 loader.style.display = 'none';
             }, 500);
@@ -270,11 +271,11 @@ async function inizializzaPagina() {
     }
 }
 
-// Unico punto di ingresso: avvia tutto quando il DOM è pronto
-document.addEventListener('DOMContentLoaded', inizializzaPagina);
+// Avvia tutto quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
 
     const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
-    const URL_STATS = "    https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
+    const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
     const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv";
 
     const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
@@ -362,7 +363,7 @@ function creaMappaDati(header, riga) {
     return mappa;
 }
 
-    async function caricaDatiLu() {
+    async function caricaDatiDidi() {
     try {
         const [resStats, resBox] = await Promise.all([
             fetch(URL_STATS + '&t=' + Date.now()).then(r => r.text()),
@@ -1114,22 +1115,8 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     });
 }
 
-// Chiude il modal solo se clicchi sullo sfondo (l'overlay)
-function chiudiPkmSeFuori(event) {
-    const modal = document.getElementById('pkmDetailModal');
-    // Se il target del click è il div del modal stesso (lo sfondo) e non i suoi figli
-    if (event.target === modal) {
-        chiudiPkmModal();
-    }
-}
-
 function chiudiPkmModal() {
-    const modal = document.getElementById('pkmDetailModal');
-    if (modal) {
-        modal.style.display = "none";
-        // Opzionale: puliamo il contenuto per resettare le API alla prossima apertura
-        document.getElementById('pkmModalBody').innerHTML = "";
-    }
+    document.getElementById('pkmDetailModal').style.display = "none";
 }
 
 function recuperaDatiPokemonDalTeam(nomeCercato) {
@@ -1179,7 +1166,6 @@ async function caricaTrendRecente() {
                 } else {
                     dot.classList.add('loss');
                 }
-                
                 // USIAMO PREPEND: 
                 // Il match più recente (il primo trovato nel ciclo) viene messo per primo.
                 // Quelli successivi (più vecchi) vengono "spinti" a sinistra.
@@ -1240,8 +1226,8 @@ async function elaboraBadge() {
             } else { currStreakVinte = 0; }
 
             let isClean = false;
-            if(chiSono === "Lu") isClean = (row[idxSetsL] === "5");
-            else isClean = (row[idxSetsL] === "0" && row[idxVincitore].toLowerCase() === "didi");
+            if(chiSono === "Lu") isClean = (row[idxSetsD] === "5");
+            else isClean = (row[idxSetsD] === "0" && row[idxVincitore].toLowerCase() === "lu");
 
             if(isClean) {
                 currStreakClean++;
@@ -1257,7 +1243,7 @@ async function elaboraBadge() {
         dateOrdinate.forEach(d => {
             const day = giornateData[d];
             // Confrontiamo i totali accumulati fino a quel giorno
-            let inTestaSolo = (chiSono === "Lu") ? (day.L > day.D) : (day.D > day.L);
+            let inTestaSolo = (chiSono === "Lu") ? (day.D > day.L) : (day.L > day.D);
             
             if(inTestaSolo) {
                 streakPrimo++;
@@ -1280,9 +1266,9 @@ function mostraBadge(vittorie, clean, primo) {
     container.className = 'badges-wrapper';
     
     // Le tue costanti con i percorsi corretti
-    const bVinte = [ {n: 15, e: "immagini/sinnoh-gold.png", t:"Leggenda: 15+ vittorie di fila"}, {n: 10, e: "immagini/sinnoh-silver.png", t:"Veterano: 10 vittorie di fila"}, {n: 5, e: "immagini/sinnoh-bronze.png", t:"Promessa: 5 vittorie di fila"} ];
-    const bPrimo = [ {n: 15, e: "immagini/hoenn-gold.png", t:"Sovrano: 15+ giornate consecutive in testa"}, {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 giornate consecutive in testa"}, {n: 5, e: "immagini/hoenn-bronze.png", t:"In Vetta: 5 giornate consecutive in testa"} ];
-    const bClean = [ {n: 10, e: "immagini/champion-gold.png", t:"Intoccabile: 10+ clean sheet di fila"}, {n: 6, e: "immagini/champion-silver.png", t:"Muro: 6 clean sheet di fila"}, {n: 3, e: "immagini/champion-bronze.png", t:"Pulito: 3 clean sheet di fila"} ];
+    const bVinte = [ {n: 15, e: "immagini/sinnoh-gold.png", t:"Leggenda: 15+ vittorie di fila"}, {n: 10, e: "immagini/sinnoh-silver.png", t:"Veterano: 10 vittorie"}, {n: 5, e: "immagini/sinnoh-bronze.png", t:"Promessa: 5 vittorie"} ];
+    const bPrimo = [ {n: 15, e: "immagini/hoenn-gold.png", t:"Sovrano: 15 giornate in testa"}, {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 giornate in testa"}, {n: 5, e: "immagini/hoenn-bronze.png", t:"In Vetta: 5 giornate in testa"} ];
+    const bClean = [ {n: 10, e: "immagini/champion-gold.png", t:"Intoccabile: 10 clean sheet"}, {n: 6, e: "immagini/champion-silver.png", t:"Muro: 6 clean sheet"}, {n: 3, e: "immagini/champion-bronze.png", t:"Pulito: 3 clean sheet"} ];
 
     const check = (val, lista) => {
     const b = lista.find(x => val >= x.n);
@@ -1306,6 +1292,7 @@ function mostraBadge(vittorie, clean, primo) {
         h1.appendChild(container);
     }
 }
+
 function chiudiTeamModal() {
     const modal = document.getElementById('teamModal');
     if (modal) {
@@ -1316,6 +1303,7 @@ function chiudiTeamModal() {
         if (body) body.innerHTML = "";
     }
 }
+
 
 // 1. Funzione per leggere la Bio in tempo reale
 function ascoltaBio() {
@@ -1556,6 +1544,7 @@ document.addEventListener('click', () => {
     }
 }, { once: true }); // 'once: true' serve a farlo eseguire solo la prima volta
 
+
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
@@ -1569,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', mostraBadge);
 // Chiama la funzione quando la pagina è pronta
 document.addEventListener('DOMContentLoaded', caricaTrendRecente);
 
-    window.addEventListener('DOMContentLoaded', caricaDatiLu);
+    window.addEventListener('DOMContentLoaded', caricaDatiDidi);
     </script>
     </body>
     </html>
