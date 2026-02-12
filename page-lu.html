@@ -29,6 +29,8 @@
 
     <div class="profile-container">
         <h1 id="trainer-name">Lu</h1>
+        <div id="badge-container" class="player-badges"></div>
+        </div>
 
 <div id="recent-trend" class="trend-container">
     <span class="trend-label">LAST 5:</span>
@@ -180,6 +182,7 @@
 </div>
 
     <script>
+    const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
     const URL_STATS = "    https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
     const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv";
 
@@ -242,41 +245,76 @@
     });
 }
 
-    async function caricaDatiDidi() {
-        try {
-            const [resStats, resBox] = await Promise.all([
-                fetch(URL_STATS + '&t=' + Date.now()).then(r => r.text()),
-                fetch(URL_BOX + '&t=' + Date.now()).then(r => r.text())
-            ]);
+function creaMappaDati(header, riga) {
+    let mappa = {};
+    header.forEach((nome, indice) => {
+        if (nome) {
+            // Puliamo il nome della colonna (trim e tutto maiuscolo per sicurezza)
+            const nomePulito = nome.trim().toUpperCase();
+            // Puliamo il valore (rimuoviamo spazi bianchi)
+            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
+        }
+    });
+    return mappa;
+}
 
-            const csvStats = resStats.split(/\r?\n/).map(r => r.split(',').map(clean));
-            const csvBox = resBox.split(/\r?\n/).map(r => r.split(',').map(clean));
-            window.csvBox = csvBox;
-            const riga = csvStats[1];
+function creaMappaDati(header, riga) {
+    let mappa = {};
+    header.forEach((nome, indice) => {
+        if (nome) {
+            // Rimuove spazi, ritorni a capo e rende maiuscolo
+            const nomePulito = nome.trim().replace(/\n/g, " ").toUpperCase();
+            // Associa il valore pulito, se la riga è più corta mette stringa vuota
+            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
+        }
+    });
+    return mappa;
+}
+
+    async function caricaDatiLu() {
+    try {
+        const [resStats, resBox] = await Promise.all([
+            fetch(URL_STATS + '&t=' + Date.now()).then(r => r.text()),
+            fetch(URL_BOX + '&t=' + Date.now()).then(r => r.text())
+        ]);
+
+        const csvStats = resStats.split(/\r?\n/).map(r => {
+    // Questa Regex divide per virgola ma ignora quelle dentro le virgolette
+    return r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(clean);
+});
+        const csvBox = resBox.split(/\r?\n/).map(r => r.split(',').map(clean));
+        
+        // --- QUI CREIAMO LA MAPPA ---
+        const header = csvStats[0]; // Prende la prima riga (nomi colonne)
+        const rigaValori = csvStats[1]; // Prende la riga dei dati di Lu
+        const dati = creaMappaDati(header, rigaValori);
+        // ----------------------------
+
+        window.csvBox = csvBox;
 
             // Popolamento Trainer Stats
-            document.getElementById('global-win').innerText = riga[1] || "0";
-            document.getElementById('global-loss').innerText = riga[2] || "0";
-            document.getElementById('global-setv').innerText = riga[3] || "0";
-            document.getElementById('global-setp').innerText = riga[4] || "0";
-            document.getElementById('global-punti').innerText = riga[5] || "0";
-            document.getElementById('global-pct-win').innerText = formatPct(riga[8]);
-            document.getElementById('global-pct-set').innerText = formatPct(riga[10]);
+            document.getElementById('global-win').innerText = dati["GEN-W"] || "0";
+            document.getElementById('global-loss').innerText = dati["GEN-L"] || "0";
+            document.getElementById('global-setv').innerText = dati["GEN-SETS-W"] || "0";
+            document.getElementById('global-setp').innerText = dati["GEN-SETS-L"] || "0";
+            document.getElementById('global-punti').innerText = dati["GEN-POINTS"] || "0";
+            document.getElementById('global-pct-win').innerText = formatPct(dati["GEN-%W"]);
+            document.getElementById('global-pct-set').innerText = formatPct(dati["GEN-SETS-%W"]);
             
-            const nomeCategoria = riga[68] || "Nessuna Categoria";
+            const nomeCategoria = dati["BEST-CATEGORY"] || "Nessuna Categoria";
             document.getElementById('best-category-name').innerText = nomeCategoria;
 
             // Popolamento Team Stats
-            document.getElementById('team-win').innerText = riga[52] || "0"; 
-            document.getElementById('team-loss').innerText = riga[53] || "0";
-            document.getElementById('team-setv').innerText = riga[54] || "0";
-            document.getElementById('team-setp').innerText = riga[55] || "0";
-            document.getElementById('team-punti').innerText = riga[56] || "0";
-            document.getElementById('team-pct-win').innerText = formatPct(riga[58]); 
-            document.getElementById('team-pct-set').innerText = formatPct(riga[61]);
+            document.getElementById('team-win').innerText = dati["TEAM-W"] || "0"; 
+            document.getElementById('team-loss').innerText = dati["TEAM-L"] || "0";
+            document.getElementById('team-setv').innerText = dati["TEAM-SETS-W"] || "0";
+            document.getElementById('team-setp').innerText = dati["TEAM-SETS-L"] || "0";
+            document.getElementById('team-punti').innerText = dati["TEAM-POINTS"] || "0";
+            document.getElementById('team-pct-win').innerText = formatPct(dati["TEAM-WIN%"]); 
+            document.getElementById('team-pct-set').innerText = formatPct(dati["TEAM-SETS-W%"]);
 
-            const bestTeamNome = riga[50];
-            document.getElementById('best-team-name-new').innerText = bestTeamNome || "Nessun Team";
+            const bestTeamNome = dati["TEAM-BEST"];
+            document.getElementById('best-team-name-new').innerText = bestTeamNome || "Loading error";
 
             // --- DEFINIZIONE CLICK (SPOSTATI QUI DENTRO) ---
             const segnaposto = `<div style="padding:20px; text-align:center;">[ inserisci qui i tuoi dati ]</div>`;
@@ -284,57 +322,57 @@
             // 1. Trainer Stats
             document.querySelector(".trainer-panel").onclick = () => {
             const htmlCat = `
-                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[1]} / ${riga[2]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[3]} / ${riga[4]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[5]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[8])}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[10])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${dati["GEN-W"]} / ${dati["GEN-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${dati["GEN-SETS-W"]} / ${dati["GEN-SETS-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${dati["GEN-POINTS"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(dati["GEN-%W"])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(dati["GEN-SETS-%W"])}</span></div>
                     <hr class="stat-panel-divider">
-                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[11]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[12]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[13]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[14]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[15]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[16]}</span></div>`;
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${dati["GEN-W-50"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${dati["GEN-W-41"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${dati["GEN-W-32"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${dati["GEN-L-23"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${dati["GEN-L-14"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${dati["GEN-L-05"]}</span></div>`;
                     apriModale("Trainer stats", htmlCat);
-                    gestisciGraficiLaterali(riga[1], riga[2], riga[5], [riga[11], riga[12], riga[13], riga[14], riga[15], riga[16]]);
+                    gestisciGraficiLaterali(dati["GEN-W"], dati["GEN-L"], dati["GEN-POINTS"], [dati["GEN-W-50"], dati["GEN-W-41"], dati["GEN-W-32"], dati["GEN-L-23"], dati["GEN-L-14"], dati["GEN-L-05"]]);
 };
 
             // 2. Best Category (Qui usiamo i tuoi dati reali già pronti)
             document.querySelector(".trainer-extra").onclick = () => {
                 const htmlCat = `
-                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[69]} / ${riga[70]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[71]} / ${riga[72]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[73]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[76])}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[78])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${dati["CAT-W"]} / ${dati["CAT-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${dati["CAT-SETS-W"]} / ${dati["CAT-SETS-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${dati["CAT-POINTS"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(dati["CAT-W%"])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(dati["CAT-SETS-W%"])}</span></div>
                     <hr class="stat-panel-divider">
-                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[79]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[80]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[81]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[82]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[83]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[84]}</span></div>`;            apriModale(nomeCategoria, htmlCat);
-            gestisciGraficiLaterali(riga[69], riga[70], riga[73], [riga[79], riga[80], riga[81], riga[82], riga[83], riga[84]]);
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${dati["CAT-W-50"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${dati["CAT-W-41"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${dati["CAT-W-32"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${dati["CAT-L-23"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${dati["CAT-L-14"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${dati["CAT-L-05"]}</span></div>`;            apriModale(nomeCategoria, htmlCat);
+            gestisciGraficiLaterali(dati["CAT-W"], dati["CAT-L"], dati["CAT-POINTS"], [dati["CAT-W-50"], dati["CAT-W-41"], dati["CAT-W-32"], dati["CAT-L-23"], dati["CAT-L-14"], dati["CAT-L-05"]]);
 };
 
             // 3. Best Team Stats
             document.querySelector(".team-panel").onclick = () => {
                 const htmlCat = `
-                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${riga[52]} / ${riga[53]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${riga[54]} / ${riga[55]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${riga[56]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(riga[58])}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(riga[61])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W/L</span><span class="stat-value">${dati["TEAM-W"]} / ${dati["TEAM-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Sets W/L</span><span class="stat-value">${dati["TEAM-SETS-W"]} / ${dati["TEAM-SETS-L"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">Points</span><span class="stat-value">${dati["TEAM-POINTS"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${formatPct(dati["TEAM-WIN%"])}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${formatPct(dati["TEAM-SETS-W%"])}</span></div>
                     <hr class="stat-panel-divider">
-                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${riga[62]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${riga[63]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${riga[64]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${riga[65]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${riga[66]}</span></div>
-                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${riga[67]}</span></div>`;
+                    <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${dati["TEAM-W-50"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${dati["TEAM-W-41"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${dati["TEAM-W-32"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${dati["TEAM-L-23"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${dati["TEAM-L-14"]}</span></div>
+                    <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${dati["TEAM-L-05"]}</span></div>`;
             apriModale("Team performance", htmlCat);
-   gestisciGraficiLaterali(riga[52], riga[53], riga[56], [riga[62], riga[63], riga[64], riga[65], riga[66], riga[67]]);
+   gestisciGraficiLaterali(dati["TEAM-W"], dati["TEAM-L"], dati["TEAM-POINTS"], [dati["TEAM-W-50"], dati["TEAM-W-41"], dati["TEAM-W-32"], dati["TEAM-L-23"], dati["TEAM-L-14"], dati["TEAM-L-05"]]);
 };
             // 4. Box Nome Team (Destra Sotto)
     // 4. Box Nome Team (Destra Sotto)
@@ -372,11 +410,11 @@
         const teamSimulato = {
             id: 999,
             nome: bestTeamNome,
-            vittorie: riga[52],
-            sconfitte: riga[53],
-            setVinti: riga[54],
-            setPersi: riga[55],
-            puntiFatti: riga[56],
+            vittorie: dati["TEAM-W"],
+            sconfitte: dati["TEAM-L"],
+            setVinti: dati["TEAM-SETS-W"],
+            setPersi: dati["TEAM-SETS-L"],
+            puntiFatti: dati["TEAM-POINTS"],
             pokemon: pkmTeamDati
         };
 
@@ -681,6 +719,7 @@ window.onclick = (event) => {
 
     } catch (e) { console.error("Error:", e); }
 }  
+
 async function caricaDebolezzeStatiche(pkmName, elementId) {
     const container = document.getElementById(elementId);
     if (!container) return;
@@ -1044,10 +1083,127 @@ async function caricaTrendRecente() {
     }
 }
 
+async function elaboraBadge() {
+    try {
+        const res = await fetch(urlMatches + '&t=' + Date.now());
+        const dataText = await res.text();
+        const rows = dataText.split(/\r?\n/).map(r => r.split(',').map(c => c.trim()));
+        const header = rows[0];
+        const matchRows = rows.slice(1);
+
+        // Trova indici colonne
+        const idxData = header.indexOf("Data");
+        const idxVincitore = header.indexOf("Vincitore");
+        const idxPuntiD = header.indexOf("Punti-D");
+        const idxPuntiL = header.indexOf("Punti-L");
+        const idxSetsL = header.indexOf("Sets-L");
+
+        const chiSono = document.title.toLowerCase().includes("lu") ? "Lu" : "Didi";
+
+        // Variabili per i record
+        let maxStreakVinte = 0; let currStreakVinte = 0;
+        let maxStreakClean = 0; let currStreakClean = 0;
+        
+        // --- NUOVE VARIABILI PER CLASSIFICA STORICA ---
+        let puntiTotL = 0;
+        let puntiTotD = 0;
+        let giornateData = {}; // Qui salveremo i totali storici a fine giornata
+
+        matchRows.forEach(row => {
+            if(!row[idxData]) return;
+
+            // 1. AGGIORNIAMO IL TOTALE STORICO (Somma cumulativa)
+            puntiTotL += parseInt(row[idxPuntiL]) || 0;
+            puntiTotD += parseInt(row[idxPuntiD]) || 0;
+
+            // 2. REGISTRIAMO IL TOTALE RAGGIUNTO IN QUESTA DATA
+            // Sovrascrivendo, l'ultima partita del giorno salverà il totale finale di quel giorno
+            const d = row[idxData];
+            giornateData[d] = { L: puntiTotL, D: puntiTotD };
+
+            // --- TUA LOGICA ORIGINALE (Vittorie e Clean Sheet) ---
+            const vinceCorrente = row[idxVincitore].toLowerCase() === chiSono.toLowerCase();
+            
+            if(vinceCorrente) {
+                currStreakVinte++;
+                if(currStreakVinte > maxStreakVinte) maxStreakVinte = currStreakVinte;
+            } else { currStreakVinte = 0; }
+
+            let isClean = false;
+            if(chiSono === "Lu") isClean = (row[idxSetsL] === "5");
+            else isClean = (row[idxSetsL] === "0" && row[idxVincitore].toLowerCase() === "didi");
+
+            if(isClean) {
+                currStreakClean++;
+                if(currStreakClean > maxStreakClean) maxStreakClean = currStreakClean;
+            } else { currStreakClean = 0; }
+        });
+
+        // --- CALCOLO STREAK PRIMO IN CLASSIFICA (Basato sui totali storici) ---
+        let streakPrimo = 0;
+        let maxStreakPrimo = 0;
+        const dateOrdinate = Object.keys(giornateData);
+
+        dateOrdinate.forEach(d => {
+            const day = giornateData[d];
+            // Confrontiamo i totali accumulati fino a quel giorno
+            let inTestaSolo = (chiSono === "Lu") ? (day.L > day.D) : (day.D > day.L);
+            
+            if(inTestaSolo) {
+                streakPrimo++;
+                if(streakPrimo > maxStreakPrimo) maxStreakPrimo = streakPrimo;
+            } else { 
+                streakPrimo = 0; 
+            }
+        });
+
+        mostraBadge(maxStreakVinte, maxStreakClean, maxStreakPrimo);
+
+    } catch (e) { console.error("Errore calcolo badge:", e); }
+}
+
+function mostraBadge(vittorie, clean, primo) {
+    const vecchioWrapper = document.querySelector('.badges-wrapper');
+    if (vecchioWrapper) vecchioWrapper.remove();
+
+    const container = document.createElement('div');
+    container.className = 'badges-wrapper';
+    
+    // Le tue costanti con i percorsi corretti
+    const bVinte = [ {n: 15, e: "immagini/sinnoh-gold.png", t:"Leggenda: 15+ vittorie di fila"}, {n: 10, e: "immagini/sinnoh-silver.png", t:"Veterano: 10 vittorie di fila"}, {n: 5, e: "immagini/sinnoh-bronze.png", t:"Promessa: 5 vittorie di fila"} ];
+    const bPrimo = [ {n: 15, e: "immagini/hoenn-gold.png", t:"Sovrano: 15+ giornate consecutive in testa"}, {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 giornate consecutive in testa"}, {n: 5, e: "immagini/hoenn-bronze.png", t:"In Vetta: 5 giornate consecutive in testa"} ];
+    const bClean = [ {n: 10, e: "immagini/champion-gold.png", t:"Intoccabile: 10+ clean sheet di fila"}, {n: 6, e: "immagini/champion-silver.png", t:"Muro: 6 clean sheet di fila"}, {n: 3, e: "immagini/champion-bronze.png", t:"Pulito: 3 clean sheet di fila"} ];
+
+    const check = (val, lista) => {
+    const b = lista.find(x => val >= x.n);
+    if (!b) return "";
+    
+    // Avvolgiamo l'immagine in uno span .badge-item per recuperare il tooltip
+    return `
+        <span class="badge-item" data-tooltip="${b.t}">
+            <img src="${b.e}" class="badge-icon" alt="${b.t}">
+        </span>`;
+};
+
+    const htmlContent = check(vittorie, bVinte) + check(primo, bPrimo) + check(clean, bClean);
+    
+    if (htmlContent === "") return;
+
+    container.innerHTML = htmlContent;
+    
+    const h1 = document.querySelector('h1');
+    if (h1) {
+        h1.appendChild(container);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', elaboraBadge);
+document.addEventListener('DOMContentLoaded', mostraBadge);
+
 // Chiama la funzione quando la pagina è pronta
 document.addEventListener('DOMContentLoaded', caricaTrendRecente);
 
-    window.addEventListener('DOMContentLoaded', caricaDatiDidi);
+    window.addEventListener('DOMContentLoaded', caricaDatiLu);
     </script>
     </body>
     </html>

@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-index.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -21,6 +22,9 @@
     <div id="leaderboardContainer" class="cards-stack"></div>
 
         <a href="matches.html" class="btn-global-archive">MATCH ARCHIVE</a>
+        <div class="chart-container-right">
+        <canvas id="progressionChart"></canvas>
+    </div>
 
         </div>
 
@@ -171,6 +175,146 @@ function nascondiTooltipHome(id) {
     const tt = document.getElementById(`tooltip-${id}`);
     if (tt) tt.style.display = 'none';
 }
+
+async function creaGraficoAndamento() {
+    const csvMatchesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv';
+    
+    try {
+        const response = await fetch(csvMatchesUrl + '&t=' + new Date().getTime());
+        const data = await response.text();
+        const rows = data.split(/\r?\n/).slice(1).map(r => r.split(','));
+
+        let datePunti = {}; 
+        rows.forEach(row => {
+            const dataMatch = row[1]; // Colonna B: Data
+            const puntiLu = parseInt(row[9]) || 0; 
+            const puntiDidi = parseInt(row[8]) || 0; 
+            
+            if (dataMatch && dataMatch.trim() !== "") {
+                if (!datePunti[dataMatch]) {
+                    datePunti[dataMatch] = { lu: 0, didi: 0 };
+                }
+                datePunti[dataMatch].lu += puntiLu;
+                datePunti[dataMatch].didi += puntiDidi;
+            }
+        });
+
+        const tutteLeDate = Object.keys(datePunti);
+        const ultimeDate = tutteLeDate.slice(-5);
+
+        const dateLabels = ultimeDate.map(d => {
+            const parti = d.split('/');
+            return parti.length >= 2 ? `${parti[0]}/${parti[1]}` : d;
+        });
+
+        let cumulativoLu = 0, cumulativoDidi = 0;
+        let datiLu = [], datiDidi = [];
+
+        tutteLeDate.forEach(d => {
+            cumulativoLu += datePunti[d].lu;
+            cumulativoDidi += datePunti[d].didi;
+            if (ultimeDate.includes(d)) {
+                datiLu.push(cumulativoLu);
+                datiDidi.push(cumulativoDidi);
+            }
+        });
+
+        const ctx = document.getElementById('progressionChart').getContext('2d');
+        if (window.myChart) { window.myChart.destroy(); }
+
+        window.myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dateLabels,
+                datasets: [
+                    { 
+                        label: 'LU', 
+                        data: datiLu, 
+                        borderColor: '#8e44ad', 
+                        backgroundColor: '#8e44ad', 
+                        tension: 0.4, 
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6 // Il pallino si ingrandisce leggermente al passaggio
+                    },
+                    { 
+                        label: 'DIDI', 
+                        data: datiDidi, 
+                        borderColor: '#31c489', 
+                        backgroundColor: '#31c489', 
+                        tension: 0.4, 
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(20, 20, 20, 0.9)', // Sfondo scuro
+                        padding: 10,
+                        displayColors: true, // Mostra il quadratino/pallino colorato
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        boxPadding: 5,
+                        usePointStyle: true, // Trasforma il quadratino del tooltip in un pallino
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1,
+                        bodyFont: {
+                            family: 'Josefin Sans',
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        callbacks: {
+                            // Rimuove la data (titolo) dal tooltip
+                            title: () => null,
+                            // Rimuove il nome (LU/DIDI) e mostra solo il numero
+                            label: function(context) {
+                                return context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { 
+                            color: '#fff',
+                            stepSize: 10,
+                            font: {
+                                family: 'Josefin Sans',
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        }, 
+                        grid: { color: 'rgba(255,255,255,0.1)' } 
+                    },
+                    x: { 
+                        ticks: { 
+                            color: '#fff',
+                            font: {
+                                family: 'Josefin Sans',
+                                size: 10
+                            }
+                        }, 
+                        grid: { display: false } 
+                    }
+                },
+                layout: {
+                    padding: { top: 15, bottom: 5, left: 5, right: 10 }
+                }
+            }
+        });
+    } catch (e) { console.error("Errore grafico:", e); }
+}
+
+// Avvia la creazione del grafico
+creaGraficoAndamento();
 
 caricaHome();
 </script>

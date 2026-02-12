@@ -181,6 +181,8 @@ h1 {
     border: 2px solid rgba(0,0,0,0.8);
     box-shadow: 3px 3px 0px rgba(0,0,0,0.8);
     color: white;
+    max-width: 70px;
+    margin-left: 30px;
 }
 
 /* Colori pulsanti basati sul tema card (opzionale: bianco/nero per contrasto) */
@@ -325,7 +327,6 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     position: relative !important; /* Fondamentale */
     overflow: visible !important; /* Fondamentale per far uscire il tooltip */
@@ -350,8 +351,8 @@ h1 {
     position: absolute;
     bottom: -4px;
     right: -4px;
-    width: 18px !important;
-    height: 18px !important;
+    width: 15px !important;
+    height: 15px !important;
     object-fit: contain;
     z-index: 5;
     background: rgba(22, 22, 22, 0.8);
@@ -368,8 +369,8 @@ h1 {
     left: 50%;
     transform: translateX(-50%);
     width: 150px;
-    background: rgba(229, 27, 27, 0.98) !important;
-    border: 1px solid rgb(0, 0, 0);
+    background: var(--card-bg-matches);
+    border: 1px solid var(--borders-matches);
     border-radius: 8px;
     padding: 10px;
     z-index: 9999 !important;
@@ -464,3 +465,31 @@ h1 {
     transform: translate(-2px, -2px);
     box-shadow: 7px 7px 0px var(--borders-matches);
 }
+
+.chart-container-right {
+    position: absolute;
+    right: 50px;
+    top: 55%;
+    transform: translateY(-50%);
+    width: 300px;
+    height: 200px;
+    background: rgba(20, 20, 20, 0.7);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+}
+
+/* Fix per mobile: nascondi il grafico se lo schermo è troppo piccolo */
+@media (max-width: 1100px) {
+    .chart-container-right {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        margin-top: 20px;
+        width: 90%;
+    }
+}
+

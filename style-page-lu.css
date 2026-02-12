@@ -1,5 +1,5 @@
 :root {
-    --lu-main: #db9cf9;
+    --lu-main: #c979ed;
     --lu-accent: #8e44ad;
     --bg-dark: #1a1a1a;
     --bg-body: #dfdfdf;
@@ -126,7 +126,6 @@ h1 {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 100000;
 }
 
 #menu-toggle {
@@ -624,4 +623,124 @@ body.modal-open {
     max-width: 1200px;
     margin: 0 auto;
     /* ... il resto delle tue regole ... */
+}
+
+.header-container {
+    position: relative;
+    display: inline-block; /* Avvolge strettamente il nome */
+    width: 100%;
+    text-align: center;
+}
+
+.header-container {
+    position: relative;
+    text-align: center;
+    width: 100%;
+}
+
+/* Contenitore badge sotto il nome */
+.badges-wrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 80px; /* Regola questa altezza per stare sotto il nome */
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.badge-item {
+    font-size: 1.6rem;
+    cursor: help;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.badge-item:hover {
+    transform: scale(1.2);
+    transition:all 0.3s ease;
+}
+
+/* Tooltip dei badge */
+.badge-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: 0.3s ease;
+    pointer-events: none;
+}
+.badge-item:hover::after {
+    visibility: visible;
+    opacity: 1;
+    transition: 0.3s ease;
+}
+
+.badges-wrapper {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.badge-icon {
+    width: 40px;  /* Regola la grandezza delle medaglie */
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* Rende le medaglie più "profonde" */
+    cursor: help;
+}
+
+/* Modifica questa parte per gestire il contenitore dell'immagine */
+.badge-item {
+    position: relative; /* Fondamentale per posizionare il tooltip ::after */
+    display: inline-block;
+    cursor: help;
+    transition: all 0.3s ease;
+}
+
+.badge-item:hover {
+    transform: scale(1.1);
+}
+
+/* Tooltip: assicurati che z-index sia alto per non finire sotto altri elementi */
+.badge-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -100%; /* Lo alza sopra la medaglia */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.badge-item:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Mantieni le impostazioni della tua icona */
+.badge-icon {
+    width: 45px; /* Leggermente più grande per le medaglie Pokémon */
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
 }
