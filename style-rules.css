@@ -135,10 +135,17 @@ h1 {
 }
 
 .special-rules-box p {
-    color: #eee;
+    color: #1a1a1a;
     line-height: 1.6;
     margin-top: 10px;
     white-space: pre-line;
+}
+
+.special-rules-box h1 {
+    color: #1a1a1a;
+    font-size: 1rem;
+    margin: 2px;
+    text-align: left;
 }
 
 .link-btn {
@@ -155,7 +162,7 @@ h1 {
 }
 
 .link-btn:hover {
-    background: #198224;
+    background: var(--borders);
     color: #fff;
 }
 
