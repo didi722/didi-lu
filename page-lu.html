@@ -1387,7 +1387,11 @@ function chiudiAdminModal() {
 function salvaModificheBio() {
     const nuovaBio = document.getElementById('bio-input').value;
     const teamScelto = document.getElementById('team-selector-fav').value;
-    const musicaScelta = document.getElementById('music-selector').value; // URL della canzone
+    const musicaScelta = document.getElementById('music-selector').value;
+
+    // Disabilita il tasto per evitare click multipli durante il salvataggio
+    const btn = document.querySelector('.save-btn');
+    if(btn) btn.disabled = true;
 
     db.ref('allenatore_lu').update({
         bio: nuovaBio,
@@ -1395,10 +1399,14 @@ function salvaModificheBio() {
         musicaPreferita: musicaScelta
     })
     .then(() => {
-        alert("Profilo aggiornato!");
-        chiudiAdminModal();
+        // Invece dell'alert, ricarichiamo direttamente la pagina
+        window.location.reload();
     })
-    .catch(e => alert("Errore nel salvataggio: " + e.message));
+    .catch(e => {
+        console.error("Errore nel salvataggio:", e);
+        alert("Errore critico: " + e.message); // Teniamo l'alert solo in caso di errore vero
+        if(btn) btn.disabled = false;
+    });
 }
 
 function salvaModificheProfilo() {
