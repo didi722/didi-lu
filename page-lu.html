@@ -1385,27 +1385,35 @@ function chiudiAdminModal() {
 }
 
 function salvaModificheBio() {
+    const btn = document.querySelector('.save-btn'); // Il tuo tasto Salva
     const nuovaBio = document.getElementById('bio-input').value;
     const teamScelto = document.getElementById('team-selector-fav').value;
     const musicaScelta = document.getElementById('music-selector').value;
 
-    // Disabilita il tasto per evitare click multipli durante il salvataggio
-    const btn = document.querySelector('.save-btn');
-    if(btn) btn.disabled = true;
+    // Feedback visivo immediato
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "Salvataggio... ⏳";
+    }
 
+    // Aggiornamento su Firebase
     db.ref('allenatore_lu').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto,
         musicaPreferita: musicaScelta
     })
     .then(() => {
-        // Invece dell'alert, ricarichiamo direttamente la pagina
-        window.location.reload();
+        // Questo comando ricarica la pagina forzatamente e "pulisce" lo stato del browser
+        // evitando il popup di avviso modifiche.
+        window.location.href = window.location.pathname + window.location.search;
     })
     .catch(e => {
-        console.error("Errore nel salvataggio:", e);
-        alert("Errore critico: " + e.message); // Teniamo l'alert solo in caso di errore vero
-        if(btn) btn.disabled = false;
+        console.error("Errore:", e);
+        alert("Errore nel salvataggio!");
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "Salva Modifiche";
+        }
     });
 }
 
@@ -1573,4 +1581,3 @@ document.addEventListener('DOMContentLoaded', caricaTrendRecente);
     </script>
     </body>
     </html>
-
