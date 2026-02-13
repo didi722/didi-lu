@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function ascoltaCambiamentiFirebase() {
-    db.ref('allenatore_didi').on('value', (snapshot) => {
+    db.ref('allenatore_lukiani').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
