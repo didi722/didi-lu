@@ -748,10 +748,10 @@ body.modal-open {
 
 /* Mantieni le impostazioni della tua icona */
 .badge-icon {
-    width: 45px; /* Leggermente più grande per le medaglie Pokémon */
+    width: 35px; /* Leggermente più grande per le medaglie Pokémon */
     height: auto;
     display: block;
-    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
 }
 
 /* Schermata di caricamento */
