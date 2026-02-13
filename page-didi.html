@@ -57,11 +57,23 @@
         <select id="team-selector-fav">
             </select>
 
-        <label style="margin-top: 15px; display: block;">Soundtrack:</label>
-        <select id="music-selector">
-            <option value="">-- Loading playlist... --</option>
-        </select>
-        <button onclick="salvaModificheBio()" class="save-btn" style="margin-top:20px;">Save Changes</button>
+        <label style="margin-top: 25px; margin-bottom: 15px; display: block;">Soundtrack:</label>
+<div class="custom-dropdown">
+    <div id="dropdown-header" class="dropdown-header" onclick="toggleDropdown()">
+        <span id="selected-song-name">Choose your soundtrack...</span>
+        <span class="arrow">▲</span>
+    </div>
+
+    <div id="dropdown-content" class="dropdown-content">
+        <input type="text" id="music-search" placeholder="Cerca..." onkeyup="filtraMusica()" onclick="event.stopPropagation()">
+        <ul id="music-list-admin" class="custom-music-list">
+            </ul>
+    </div>
+    
+    <input type="hidden" id="selected-music-url">
+</div>
+
+<button onclick="salvaModificheBio()" class="save-btn" style="margin-top:20px;">Save Changes</button>
     </div>
 </div>
 
@@ -518,20 +530,29 @@ function creaMappaDati(header, riga) {
         apriDettagli(999);
     };
             // --- ORBITA POKEMON ---
-            let teamDaMostrare = window.idTeamPreferito || bestTeamNome;
-        if (teamDaMostrare) {
-            for (let i = 0; i < csvBox.length; i += 8) {
-                if (csvBox[i][0] && csvBox[i][0].trim().toLowerCase() === teamDaMostrare.trim().toLowerCase()) {
-                    let pkmTeam = [];
-                    for (let col = 1; col <= 6; col++) { if (csvBox[i][col]) pkmTeam.push(csvBox[i][col]); }
-                    popolaCerchio(pkmTeam);
-                    if (document.getElementById('best-team-name-new')) {
-                        document.getElementById('best-team-name-new').innerText = csvBox[i][0];
-                    }
-                    break;
-                }
+// 1. Determiniamo quale team mostrare nel cerchio (scelta allenatore o miglior team)
+let teamPerCerchio = window.idTeamPreferito || bestTeamNome;
+
+if (teamPerCerchio) {
+    for (let i = 0; i < csvBox.length; i += 8) {
+        if (csvBox[i][0] && csvBox[i][0].trim().toLowerCase() === teamPerCerchio.trim().toLowerCase()) {
+            let pkmTeam = [];
+            for (let col = 1; col <= 6; col++) { 
+                if (csvBox[i][col]) pkmTeam.push(csvBox[i][col]); 
             }
+            popolaCerchio(pkmTeam);
+            
+            // RIMOSSO: il blocco che sovrascriveva il testo del badge
+            break;
         }
+    }
+}
+
+// 2. FORZIAMO il nome del miglior team in basso a destra (indipendentemente dal cerchio)
+// Usiamo bestTeamNome che arriva direttamente dalla colonna "TEAM-BEST" del tuo CSV Stats
+if (document.getElementById('best-team-name-new')) {
+    document.getElementById('best-team-name-new').innerText = bestTeamNome || "No Best Team";
+}
 
     } catch (e) { console.error("Errore in caricaDatiLu:", e); }
 }
@@ -1381,26 +1402,31 @@ function chiudiAdminModal() {
 }
 
 function salvaModificheBio() {
+    // Leggiamo la bio e il team (che sono rimasti uguali)
     const nuovaBio = document.getElementById('bio-input').value;
     const teamScelto = document.getElementById('team-selector-fav').value;
-    const musicaScelta = document.getElementById('music-selector').value;
+    
+    // CORREZIONE: Leggiamo l'URL dal campo HIDDEN che abbiamo creato nel dropdown
+    const musicaScelta = document.getElementById('selected-music-url').value;
 
-    // Disabilita il tasto per evitare click multipli durante il salvataggio
+    // Disabilita il tasto per evitare click multipli
     const btn = document.querySelector('.save-btn');
     if(btn) btn.disabled = true;
 
-    db.ref('allenatore_didi').update({
+    console.log("Salvataggio dati:", { nuovaBio, teamScelto, musicaScelta });
+
+    db.ref('allenatore_lu').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto,
-        musicaPreferita: musicaScelta
+        musicaPreferita: musicaScelta // Salva l'URL dell'MP3 scelto
     })
     .then(() => {
-        // Invece dell'alert, ricarichiamo direttamente la pagina
+        // Ricarichiamo la pagina per applicare i cambiamenti
         window.location.reload();
     })
     .catch(e => {
         console.error("Errore nel salvataggio:", e);
-        alert("Errore critico: " + e.message); // Teniamo l'alert solo in caso di errore vero
+        alert("Errore critico: " + e.message);
         if(btn) btn.disabled = false;
     });
 }
@@ -1410,7 +1436,7 @@ function salvaModificheProfilo() {
     const teamScelto = document.getElementById('team-selector-fav').value;
 
     // Aggiorniamo Firebase
-    db.ref('allenatore_didi').update({
+    db.ref('allenatore_lu').update({
         bio: nuovaBio,
         teamPreferitoID: teamScelto
     })
@@ -1449,40 +1475,152 @@ function popolaSelettoreTeam() {
     }
 } 
 
+let anteprimaAudio = null;
+
+// Funzione che popola la nuova lista (chiamala dove prima popolavi la select)
+function popolaListaMusica(canzoni) {
+    const listaUI = document.getElementById('music-list-admin');
+    listaUI.innerHTML = ""; // Svuota
+
+    canzoni.forEach(canzone => {
+        const li = document.createElement('li');
+        li.className = "music-item";
+        li.dataset.url = canzone.url;
+        li.dataset.nome = canzone.nome.toLowerCase();
+
+        li.innerHTML = `
+            <span class="music-name" onclick="selezionaCanzone(this, '${canzone.url}')">${canzone.nome}</span>
+            <button class="preview-btn" onclick="riproduciAnteprima(event, '${canzone.url}')">▶</button>
+        `;
+        listaUI.appendChild(li);
+    });
+}
+
+// Funzione per cercare le canzoni scrivendo
+function filtraMusica() {
+    const query = document.getElementById('music-search').value.toLowerCase();
+    const items = document.querySelectorAll('.music-item');
+
+    items.forEach(item => {
+        const nome = item.dataset.nome;
+        item.style.display = nome.includes(query) ? "flex" : "none";
+    });
+}
+
+// Funzione per gestire l'anteprima
+function riproduciAnteprima(event, url) {
+    event.stopPropagation(); // Evita di selezionare la canzone se clicchi solo il tasto play
+
+    if (anteprimaAudio) {
+        anteprimaAudio.pause();
+        if (anteprimaAudio.src === url) {
+            anteprimaAudio = null;
+            return;
+        }
+    }
+
+    anteprimaAudio = new Audio(url);
+    anteprimaAudio.volume = 0.4;
+    anteprimaAudio.play();
+}
+
+function toggleDropdown() {
+    const content = document.getElementById('dropdown-content');
+    const isOpening = !content.classList.contains('show');
+    
+    content.classList.toggle('show');
+
+    // Se stiamo aprendo, resettiamo il filtro per mostrare tutte le canzoni
+    if (isOpening) {
+        document.getElementById('music-search').value = "";
+        filtraMusica(); 
+    }
+}
+
+// Quando scegli una canzone: aggiorna il nome, chiude il menu e ferma l'anteprima
+function selezionaCanzone(elementoSpan, url) {
+    // 1. Ferma l'anteprima immediatamente (se esiste)
+    if (typeof anteprimaAudio !== 'undefined' && anteprimaAudio) {
+        anteprimaAudio.pause();
+        anteprimaAudio.currentTime = 0; // Resetta la traccia
+        anteprimaAudio = null;
+    }
+
+    // 2. Recupera il nome in modo sicuro
+    const nomeCanzone = elementoSpan.innerText.trim();
+    
+    // 3. Aggiorna l'interfaccia (Header e Input Nascosto)
+    const labelHeader = document.getElementById('selected-song-name');
+    const inputNascosto = document.getElementById('selected-music-url');
+    
+    if (labelHeader) labelHeader.innerText = nomeCanzone;
+    if (inputNascosto) inputNascosto.value = url;
+
+    // 4. Gestione classi visive (rimuovi 'selected' da tutti e mettilo al nuovo)
+    document.querySelectorAll('.music-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // Usiamo closest per essere sicuri di colpire il contenitore <li>
+    const rigaSelezionata = elementoSpan.closest('.music-item');
+    if (rigaSelezionata) {
+        rigaSelezionata.classList.add('selected');
+    }
+
+    // 5. Chiudi il menu (Rimuoviamo la classe 'show' invece di fare il toggle)
+    const content = document.getElementById('dropdown-content');
+    if (content) {
+        content.classList.remove('show');
+    }
+
+    // 6. Log di verifica in console
+    console.log("Canzone selezionata con successo:", nomeCanzone);
+}
 // 1. Inserisci qui l'URL del foglio "Playlist" pubblicato come CSV
 const URL_PLAYLIST = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv";
 
 // 2. Funzione per leggere il CSV della musica e popolare il menu
 async function popolaSelettoreMusica() {
-    const select = document.getElementById('music-selector');
-    if (!select) return;
+    const listaUI = document.getElementById('music-list-admin');
+    if (!listaUI) return;
 
     try {
         const response = await fetch(URL_PLAYLIST + '&t=' + Date.now());
         const csvText = await response.text();
         const righe = csvText.split(/\r?\n/).map(r => r.split(','));
 
-        select.innerHTML = '<option value="">-- None --</option>';
+        listaUI.innerHTML = ""; // Puliamo la lista
 
         righe.forEach((colonne, index) => {
-            // Saltiamo l'intestazione (riga 0)
+            // Saltiamo l'intestazione
             if (index === 0) return; 
 
             if (colonne[0] && colonne[1]) {
-                const opt = document.createElement('option');
-                opt.value = colonne[1].trim(); // URL MP3
-                opt.innerText = colonne[0].trim(); // Nome Canzone
+                const nomeCanzone = colonne[0].trim();
+                const urlCanzone = colonne[1].trim();
                 
-                // Se è quella già salvata su Firebase, la selezioniamo
-                if (window.musicaCorrente === colonne[1].trim()) {
-                    opt.selected = true;
+                const li = document.createElement('li');
+                li.className = "music-item";
+                // Se è quella già salvata, aggiungiamo la classe selected
+                if (window.musicaCorrente === urlCanzone) {
+                    li.classList.add('selected');
+                    // Inizializziamo il campo nascosto con la musica attuale
+                    document.getElementById('selected-music-url').value = urlCanzone;
                 }
-                select.appendChild(opt);
+
+                li.dataset.url = urlCanzone;
+                li.dataset.nome = nomeCanzone.toLowerCase();
+
+                li.innerHTML = `
+                    <span class="music-name" onclick="selezionaCanzone(this, '${urlCanzone}')">${nomeCanzone}</span>
+                    <button class="preview-btn" onclick="riproduciAnteprima(event, '${urlCanzone}')">▶</button>
+                `;
+                listaUI.appendChild(li);
             }
         });
     } catch (e) {
         console.error("Errore playlist:", e);
-        select.innerHTML = '<option value="">Errore nel caricamento</option>';
+        listaUI.innerHTML = '<li style="padding:10px; color:red;">Errore nel caricamento</li>';
     }
 }
 
