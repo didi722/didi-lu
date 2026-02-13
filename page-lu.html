@@ -287,8 +287,8 @@ async function inizializzaPaginaDidi() {
 document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
 
     const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
-    const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1697837543&single=true&output=csv";
-    const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv";
+    const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
+    const URL_BOX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv";
 
     const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
 
@@ -1247,8 +1247,8 @@ async function elaboraBadge() {
             } else { currStreakVinte = 0; }
 
             let isClean = false;
-            if(chiSono === "Lu") isClean = (row[idxSetsD] === "5");
-            else isClean = (row[idxSetsD] === "0" && row[idxVincitore].toLowerCase() === "didi");
+            if(chiSono === "Lu") isClean = (row[idxSetsL] === "5");
+            else isClean = (row[idxSetsL] === "0" && row[idxVincitore].toLowerCase() === "didi");
 
             if(isClean) {
                 currStreakClean++;
