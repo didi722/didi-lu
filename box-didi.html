@@ -147,17 +147,37 @@ document.addEventListener('DOMContentLoaded', () => {
     ascoltaMusicaFirebase();
 });
 
-// Sblocca audio al primo click sulla pagina (Fondamentale!)
+function ascoltaCambiamentiFirebase() {
+    db.ref('allenatore_didi').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            const player = document.getElementById('bg-music');
+            const icon = document.getElementById('music-icon');
+
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                
+                // Proviamo a farla partire, se fallisce (blocco browser) l'icona resta muta
+                player.play()
+                    .then(() => { icon.innerText = "🔊"; })
+                    .catch(() => { icon.innerText = "🔇"; });
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
+// Avvia l'ascolto al caricamento
+
+// Sblocca l'audio al primo click dell'utente sulla pagina
 document.addEventListener('click', () => {
     const player = document.getElementById('bg-music');
     const icon = document.getElementById('music-icon');
-    const btn = document.getElementById('music-control');
-    
     if (player && player.paused && player.src) {
         player.play().then(() => {
             if(icon) icon.innerText = "🔊";
-            if(btn) btn.style.borderColor = "lime";
-        }).catch(e => console.log("Audio non ancora pronto"));
+        });
     }
 }, { once: true });
 
