@@ -265,10 +265,10 @@ async function inizializzaPaginaDidi() {
             elaboraBadge()          // Calcola le serie e mostra le medaglie
         ]);
         
-        console.log("Dati di Didi caricati con successo.");
+        console.log("Dati di Lu caricati con successo.");
 
     } catch (e) {
-        console.error("Errore durante il caricamento della pagina Didi:", e);
+        console.error("Errore durante il caricamento della pagina Lu:", e);
     } finally {
         // Nascondi la schermata di caricamento
         const loader = document.getElementById('loading-screen');
@@ -554,7 +554,7 @@ if (document.getElementById('best-team-name-new')) {
     document.getElementById('best-team-name-new').innerText = bestTeamNome || "No Best Team";
 }
 
-    } catch (e) { console.error("Errore in caricaDatiLu:", e); }
+    } catch (e) { console.error("Errore in caricaDatiDidi:", e); }
 }
 
     // Chiusura Modale

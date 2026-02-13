@@ -256,19 +256,19 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-async function inizializzaPaginaDidi() {
+async function inizializzaPaginaLu() {
     try {
         // Avviamo i caricamenti in parallelo e aspettiamo che finiscano tutti
         await Promise.all([
-            caricaDatiDidi(),       // Carica stats e team attuale
+            caricaDatiLu(),       // Carica stats e team attuale
             caricaTrendRecente(),   // Carica i pallini delle ultime partite
             elaboraBadge()          // Calcola le serie e mostra le medaglie
         ]);
         
-        console.log("Dati di Didi caricati con successo.");
+        console.log("Dati di Lu caricati con successo.");
 
     } catch (e) {
-        console.error("Errore durante il caricamento della pagina Didi:", e);
+        console.error("Errore durante il caricamento della pagina Lu:", e);
     } finally {
         // Nascondi la schermata di caricamento
         const loader = document.getElementById('loading-screen');
@@ -284,7 +284,7 @@ async function inizializzaPaginaDidi() {
 }
 
 // Avvia tutto quando il DOM è pronto
-document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
+document.addEventListener('DOMContentLoaded', inizializzaPaginaLu);
 
     const urlMatches = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv";
     const URL_STATS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=231374393&single=true&output=csv";
@@ -375,7 +375,7 @@ function creaMappaDati(header, riga) {
     return mappa;
 }
 
-    async function caricaDatiDidi() {
+    async function caricaDatiLu() {
     try {
         const [resStats, resBox] = await Promise.all([
             fetch(URL_STATS + '&t=' + Date.now()).then(r => r.text()),
@@ -556,6 +556,7 @@ if (document.getElementById('best-team-name-new')) {
 
     } catch (e) { console.error("Errore in caricaDatiLu:", e); }
 }
+
     // Chiusura Modale
     document.getElementById("closeModal").onclick = () => document.getElementById("categoryModal").style.display = "none";
     window.onclick = (event) => {
@@ -1246,8 +1247,8 @@ async function elaboraBadge() {
             } else { currStreakVinte = 0; }
 
             let isClean = false;
-            if(chiSono === "Lu") isClean = (row[idxSetsD] === "5");
-            else isClean = (row[idxSetsD] === "0" && row[idxVincitore].toLowerCase() === "didi");
+            if(chiSono === "Lu") isClean = (row[idxSetsL] === "5");
+            else isClean = (row[idxSetsL] === "0" && row[idxVincitore].toLowerCase() === "didi");
 
             if(isClean) {
                 currStreakClean++;
@@ -1263,7 +1264,7 @@ async function elaboraBadge() {
         dateOrdinate.forEach(d => {
             const day = giornateData[d];
             // Confrontiamo i totali accumulati fino a quel giorno
-            let inTestaSolo = (chiSono === "Lu") ? (day.D > day.L) : (day.L > day.D);
+            let inTestaSolo = (chiSono === "Lu") ? (day.L > day.D) : (day.D > day.L);
             
             if(inTestaSolo) {
                 streakPrimo++;
@@ -1378,7 +1379,7 @@ function ascoltaBio() {
             }
 
             // Ricarica il cerchio se il CSV è pronto
-            if (window.csvBox) caricaDatiDidi();
+            if (window.csvBox) caricaDatiLu();
         }
     });
 }
@@ -1657,39 +1658,59 @@ window.addEventListener('click', (e) => {
 });
 
 function ascoltaCambiamentiFirebase() {
-    db.ref('allenatore_luca').on('value', (snapshot) => {
+    console.log("Firebase: Inizio ascolto per Luca...");
+    db.ref('allenatore_lu').on('value', (snapshot) => {
         const data = snapshot.val();
+        console.log("Dati ricevuti per Luca:", data); // Controlla se vedi questo in console!
+
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
             const icon = document.getElementById('music-icon');
+            
+            // Forziamo la pulizia dell'URL per evitare errori di spazi
+            const nuovaMusica = data.musicaPreferita.trim();
 
-            if (player.src !== data.musicaPreferita) {
-                player.src = data.musicaPreferita;
+            if (player.src !== nuovaMusica) {
+                console.log("Cambio musica in corso...");
+                player.src = nuovaMusica;
+                player.load(); // Questo è fondamentale per "dire" al browser di prepararsi
+                
                 player.volume = 0.3;
                 
-                // Proviamo a farla partire, se fallisce (blocco browser) l'icona resta muta
+                // Tentativo immediato
                 player.play()
-                    .then(() => { icon.innerText = "🔊"; })
-                    .catch(() => { icon.innerText = "🔇"; });
+                    .then(() => { 
+                        icon.innerText = "🔊"; 
+                        console.log("Musica partita!");
+                    })
+                    .catch((e) => { 
+                        console.warn("Autoplay bloccato, serve il click.");
+                        icon.innerText = "🔇"; 
+                    });
             }
         }
     });
 }
 
-document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
-// Avvia l'ascolto al caricamento
-document.addEventListener('DOMContentLoaded', ascoltaBio);
-
-// Sblocca l'audio al primo click dell'utente sulla pagina
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM pronto, inizializzo...");
+    ascoltaCambiamentiFirebase();
+    ascoltaBio();
+});
+// Sblocca l'audio al primo click dell'utente su QUALSIASI punto della pagina
 document.addEventListener('click', () => {
     const player = document.getElementById('bg-music');
     const icon = document.getElementById('music-icon');
-    if (player && player.paused && player.src) {
+    
+    if (player && player.paused) {
         player.play().then(() => {
             if(icon) icon.innerText = "🔊";
+            console.log("Audio sbloccato con successo!");
+        }).catch(err => {
+            console.log("Ancora bloccato, serve un'interazione più decisa.");
         });
     }
-}, { once: true });
+}, { once: true }); // Si attiva solo una volta
 
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
@@ -1705,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', mostraBadge);
 // Chiama la funzione quando la pagina è pronta
 document.addEventListener('DOMContentLoaded', caricaTrendRecente);
 
-    window.addEventListener('DOMContentLoaded', caricaDatiDidi);
+    window.addEventListener('DOMContentLoaded', caricaDatiLu);
     </script>
     </body>
     </html>
