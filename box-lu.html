@@ -103,7 +103,7 @@ function ascoltaMusicaFirebase() {
     const btn = document.getElementById('music-control');
 
     // Ascolta il database (allenatore_lu)
-    db.ref('allenatore_lu').on('value', (snapshot) => {
+    db.ref('allenatore_lukiani').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             // Se la musica nel DB è diversa da quella caricata nel player
