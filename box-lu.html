@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-box-lu.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
 <body> 
 
@@ -14,6 +16,9 @@
     <div class="pokeball-loader"></div>
     <p>Please wait</p>
 </div>
+
+
+
 
     <nav class="hamburger-menu">
     <input type="checkbox" id="menu-toggle" />
@@ -30,6 +35,12 @@
             <li><a href="rules.html">Rules</a></li>
         </ul>
 </nav>
+
+<audio id="bg-music" loop></audio>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <span id="music-icon">🔇</span>
+</div>
 
     <h1>Box Lu</h1>
 
@@ -68,7 +79,92 @@
 
     <script>
 
-        // ... (mantiene tutta la tua logica interna della funzione caricaBoxLu) ...
+        // 1. Configurazione Firebase (Assicurati che sia corretta)
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+    messagingSenderId: "707115539525",
+    appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+// 2. Inizializzazione
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// 3. Funzione per la Musica (Copiata dalla tua pagina personale e adattata)
+function ascoltaMusicaFirebase() {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    // Ascolta il database (allenatore_lu)
+    db.ref('allenatore_lu').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            // Se la musica nel DB è diversa da quella caricata nel player
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                player.load(); // Forza il caricamento del nuovo file
+
+                // Prova a farla partire
+                player.play()
+                    .then(() => { 
+                        if(icon) icon.innerText = "🔊"; 
+                        if(btn) btn.style.borderColor = "lime";
+                    })
+                    .catch(() => { 
+                        if(icon) icon.innerText = "🔇"; 
+                        if(btn) btn.style.borderColor = "cyan";
+                        console.log("Autoplay bloccato. In attesa di un click.");
+                    });
+            }
+        }
+    });
+}
+
+// 4. Gestione tasto Play/Pause manuale
+function toggleMusic() {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    if (player.paused) {
+        player.play().then(() => {
+            icon.innerText = "🔊";
+            btn.style.borderColor = "lime";
+        });
+    } else {
+        player.pause();
+        icon.innerText = "🔇";
+        btn.style.borderColor = "cyan";
+    }
+}
+
+// 5. Attivazione Eventi
+document.addEventListener('DOMContentLoaded', () => {
+    ascoltaMusicaFirebase();
+});
+
+// Sblocca audio al primo click sulla pagina (Fondamentale!)
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+    
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            if(icon) icon.innerText = "🔊";
+            if(btn) btn.style.borderColor = "lime";
+        }).catch(e => console.log("Audio non ancora pronto"));
+    }
+}, { once: true });
+
 
 async function inizializzaPaginaBox() {
     const loader = document.getElementById('loading-screen');

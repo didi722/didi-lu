@@ -122,7 +122,7 @@ h1 {
 }
 
 .info-item span {
-    color: #1a1a1a;
+    color: #eeeeee;
     font-weight: 600;
 }
 
@@ -135,14 +135,14 @@ h1 {
 }
 
 .special-rules-box p {
-    color: #1a1a1a;
+    color: #eeeeee;
     line-height: 1.6;
     margin-top: 10px;
     white-space: pre-line;
 }
 
 .special-rules-box h1 {
-    color: #1a1a1a;
+    color: #eeeeee !important;
     font-size: 1rem;
     margin: 2px;
     text-align: left;
@@ -152,8 +152,8 @@ h1 {
     display: block;
     text-align: center;
     margin-top: 25px;
-    background: #eeeeee;
-    color: #000;
+    background: var(--borders);
+    color: #eeeeee;
     padding: 12px;
     border-radius: 10px;
     text-decoration: none;
@@ -162,8 +162,8 @@ h1 {
 }
 
 .link-btn:hover {
-    background: var(--borders);
-    color: #fff;
+    background: #eee;
+    color: #1a1a1a;
 }
 
 .close-btn {
@@ -182,7 +182,7 @@ h1 {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 100000;
+    z-index: 2;
 }
 
 #menu-toggle {

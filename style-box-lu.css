@@ -103,6 +103,7 @@ input:focus {
     border: 1px solid rgba(255, 255, 255, 0.5);
     border: 2px solid #6c026c !important;
     box-shadow: 5px 5px 0px #6c026c !important;
+    z-index: 1;
 }
 
 .card-header { 
@@ -1649,7 +1650,7 @@ margin-top: 0;
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 100000;
+    z-index: 2;
 }
 
 #menu-toggle {
@@ -1839,4 +1840,28 @@ margin-top: 0;
         opacity: 1;
         transform: translateY(0) scale(1); 
     }
+}
+
+.music-btn {
+    position: fixed;
+    right: 70px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+#music-icon {
+    font-size: 20px;
 }

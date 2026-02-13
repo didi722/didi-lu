@@ -1259,37 +1259,45 @@ async function elaboraBadge() {
 }
 
 function mostraBadge(vittorie, clean, primo) {
+    console.log("Dati ricevuti per i Badge:", {vittorie, clean, primo});
+
     const vecchioWrapper = document.querySelector('.badges-wrapper');
     if (vecchioWrapper) vecchioWrapper.remove();
 
     const container = document.createElement('div');
     container.className = 'badges-wrapper';
     
-    // Le tue costanti con i percorsi corretti
-    const bVinte = [ {n: 15, e: "immagini/sinnoh-gold.png", t:"Leggenda: 15+ vittorie di fila"}, {n: 10, e: "immagini/sinnoh-silver.png", t:"Veterano: 10 vittorie"}, {n: 5, e: "immagini/sinnoh-bronze.png", t:"Promessa: 5 vittorie"} ];
-    const bPrimo = [ {n: 15, e: "immagini/hoenn-gold.png", t:"Sovrano: 15 giornate in testa"}, {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 giornate in testa"}, {n: 5, e: "immagini/hoenn-bronze.png", t:"In Vetta: 5 giornate in testa"} ];
-    const bClean = [ {n: 10, e: "immagini/champion-gold.png", t:"Intoccabile: 10 clean sheet"}, {n: 6, e: "immagini/champion-silver.png", t:"Muro: 6 clean sheet"}, {n: 3, e: "immagini/champion-bronze.png", t:"Pulito: 3 clean sheet"} ];
+    // Definizioni Badge
+    const bVinte = [ {n: 15, e: "immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"}, {n: 10, e: "immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"}, {n: 5, e: "immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}, {n: 0, e: "immagini/sinnoh-ghost.png", t:"Win 5 matches in a row to unlock this badge"} ];
+    const bPrimo = [ {n: 15, e: "immagini/hoenn-gold.png", t:"King: 15+ rounds leader"}, {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 rounds leader"}, {n: 5, e: "immagini/hoenn-bronze.png", t:"On Top: 5 rounds leader"}, {n: 0, e: "immagini/hoenn-ghost.png", t:"Lead 5 rounds in a row to unlock this badge"} ];
+    const bClean = [ {n: 10, e: "immagini/champion-gold.png", t:"Untouchable: 10+ clean sheet"}, {n: 6, e: "immagini/champion-silver.png", t:"Wall: 6 clean sheet"}, {n: 3, e: "immagini/champion-bronze.png", t:"Shield: 3 clean sheet"}, {n: 0, e: "immagini/champion-ghost.png", t:"Clean 5 matches in a row to unlock this badge"} ];
 
     const check = (val, lista) => {
-    const b = lista.find(x => val >= x.n);
-    if (!b) return "";
-    
-    // Avvolgiamo l'immagine in uno span .badge-item per recuperare il tooltip
-    return `
-        <span class="badge-item" data-tooltip="${b.t}">
-            <img src="${b.e}" class="badge-icon" alt="${b.t}">
-        </span>`;
-};
+        // Forza a 0 se il valore è nullo, indefinito o NaN
+        const valoreSicuro = (Number.isInteger(val) || val > 0) ? val : 0;
+        const b = lista.find(x => valoreSicuro >= x.n);
+        
+        if (!b) return ""; 
 
-    const htmlContent = check(vittorie, bVinte) + check(primo, bPrimo) + check(clean, bClean);
-    
-    if (htmlContent === "") return;
+        const isGhost = valoreSicuro === 0 ? "ghost-badge" : "";
 
+        return `
+            <span class="badge-item ${isGhost}" data-tooltip="${b.t}">
+                <img src="${b.e}" class="badge-icon" alt="${b.t}">
+            </span>`;
+    };
+
+    // ATTENZIONE: L'ordine deve corrispondere a bVinte, bClean, bPrimo
+    const htmlContent = check(vittorie, bVinte) + check(clean, bClean) + check(primo, bPrimo);
+    
     container.innerHTML = htmlContent;
     
     const h1 = document.querySelector('h1');
     if (h1) {
-        h1.appendChild(container);
+        h1.insertAdjacentElement('afterend', container); 
+    } else {
+        // Se non trova l'H1 lo mette all'inizio del body per sicurezza
+        document.body.prepend(container);
     }
 }
 
@@ -1350,7 +1358,7 @@ function ascoltaBio() {
             }
 
             // Ricarica il cerchio se il CSV è pronto
-            if (window.csvBox) caricaDatiLu();
+            if (window.csvBox) caricaDatiDidi();
         }
     });
 }
@@ -1538,11 +1546,13 @@ document.addEventListener('DOMContentLoaded', ascoltaBio);
 // Sblocca l'audio al primo click dell'utente sulla pagina
 document.addEventListener('click', () => {
     const player = document.getElementById('bg-music');
-    // Se il player ha una sorgente ma è in pausa, fallo partire
+    const icon = document.getElementById('music-icon');
     if (player && player.paused && player.src) {
-        player.play().catch(e => console.log("Audio in attesa di link valido..."));
+        player.play().then(() => {
+            if(icon) icon.innerText = "🔊";
+        });
     }
-}, { once: true }); // 'once: true' serve a farlo eseguire solo la prima volta
+}, { once: true });
 
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)

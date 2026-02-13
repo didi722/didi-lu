@@ -131,6 +131,7 @@ h1 {
     position: fixed;
     top: 20px;
     right: 20px;
+    z-index: 2;
 }
 
 #menu-toggle {
@@ -1050,7 +1051,7 @@ body.modal-open {
 
 .music-btn {
     position: fixed;
-    right: 120px;
+    right: 120px !important;
     width: 45px;
     height: 45px;
     background: none !important;
