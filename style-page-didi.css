@@ -1235,3 +1235,17 @@ body.modal-open {
     border-left: 3px solid var(--didi-accent, #00ffff);
     background: #1a1a1a;
 }
+
+.song-title {
+    position:fixed;
+    top: 30px; 
+    right: 200px; 
+    color: #1a1a1a; 
+    padding: 5px 12px; 
+    border-radius: 20px; 
+    font-size: 13px; 
+    font-family: 'Josefin Sans', sans-serif;
+    display: none; 
+    pointer-events: none;
+    z-index: 9999;
+}

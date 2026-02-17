@@ -20,6 +20,10 @@
     <span id="music-icon">🔇</span>
 </div>
 
+<div id="song-title" class="song-title">
+    Loading...
+</div>
+
         <div id="loading-screen">
     <div class="pokeball-loader"></div>
     <p>Please wait</p>
@@ -1663,12 +1667,27 @@ function ascoltaCambiamentiFirebase() {
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
             const icon = document.getElementById('music-icon');
+            const titleDisplay = document.getElementById('song-title'); // Il nuovo elemento per il testo
 
             if (player.src !== data.musicaPreferita) {
                 player.src = data.musicaPreferita;
                 player.volume = 0.3;
                 
-                // Proviamo a farla partire, se fallisce (blocco browser) l'icona resta muta
+                // --- LOGICA PER IL NOME DELLA CANZONE ---
+                // 1. Prende l'ultima parte del link (dopo lo slash)
+                let nomeFile = data.musicaPreferita.split('/').pop(); 
+                // 2. Toglie l'estensione .mp3 e pulisce i simboli strani come %20
+                let nomePulito = decodeURIComponent(nomeFile).replace('.mp3', '');
+                // 3. Toglie eventuali numeri iniziali (es: "13 - ")
+                nomePulito = nomePulito.replace(/^\d+\s*-\s*/, '');
+
+                // Se abbiamo l'elemento HTML, scriviamo il nome e lo mostriamo
+                if (titleDisplay) {
+                    titleDisplay.innerText = "🎵 " + nomePulito;
+                    titleDisplay.style.display = "block";
+                }
+                // ----------------------------------------
+
                 player.play()
                     .then(() => { icon.innerText = "🔊"; })
                     .catch(() => { icon.innerText = "🔇"; });
@@ -1676,6 +1695,20 @@ function ascoltaCambiamentiFirebase() {
         }
     });
 }
+
+function formattaTitolo(url) {
+    if (!url) return "";
+    // Prendi l'ultima parte dell'URL dopo lo slash /
+    let nome = url.substring(url.lastIndexOf('/') + 1);
+    // Togli l'estensione .mp3
+    nome = nome.replace('.mp3', '');
+    // Sostituisci i codici del browser (%20) con gli spazi
+    nome = decodeURIComponent(nome);
+    // Opzionale: togli i numeri iniziali se presenti (es: "13 - ")
+    nome = nome.replace(/^\d+\s*-\s*/, '');
+    return nome;
+}
+
 
 document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
 // Avvia l'ascolto al caricamento

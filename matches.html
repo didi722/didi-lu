@@ -10,6 +10,13 @@
     <link rel="stylesheet" href="style-box-lu.css">
 </head>
 <body>
+    
+        <audio id="bg-music-home" loop preload="auto"></audio>
+
+<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
+    🔊
+</div>
+
     <div id="loading-screen">
     <div class="pokeball-loader"></div>
     <p>Please wait</p>
@@ -668,6 +675,48 @@ function generaHtmlGifs(nomeTeam, database) {
     return htmlGifs + '</div>';
 }
 
+
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+
+function avviaMusicaHome() {
+    const player = document.getElementById('bg-music-home');
+    
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.3;
+        
+        // PRIMO COLPO: Tenta l'autoplay immediato
+        player.play()
+            .then(() => { console.log("Musica Home partita al volo!"); })
+            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+}
+
+// Avvia la logica appena la pagina è caricata
+document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+
+// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music-home');
+    if (player && player.paused) {
+        player.play();
+        console.log("Musica Home sbloccata dal click!");
+    }
+}, { once: true });
+
+const musicBtn = document.getElementById('music-toggle');
+const audio = document.getElementById('bg-music-home');
+
+musicBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Evita che il clic attivi anche lo sbloccatore sopra
+    if (audio.paused) {
+        audio.play();
+        musicBtn.innerText = "🔊";
+    } else {
+        audio.pause();
+        musicBtn.innerText = "🔇";
+    }
+});
 
 
     </script>
