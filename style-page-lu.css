@@ -882,6 +882,7 @@ body.modal-open {
     cursor: pointer;
     font-weight: bold;
     margin-top: 20px;
+    font-family: Josefin Sans, sans-serif;
 }
 
 /* Contenitore della Bio */

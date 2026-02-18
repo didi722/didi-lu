@@ -44,7 +44,7 @@
     <div class="controls">
     <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
     <select id="categoryFilter" onchange="applicaFiltri()">
-    <option value="">Tutte le categorie</option>
+    <option value="">Format...</option>
 </select>
     <select id="sortFilter" onchange="applicaFiltri()">
         <option value="default">Order for...</option>
@@ -73,6 +73,23 @@
         <div id="pkmModalBody"></div>
     </div>
 </div>
+
+<div id="admin-panel" class="admin-panel">
+    <h3 class="admin-panel.h3">Showdown Importer</h3>
+    <input type="text" id="admin-team-name" class="admin-team-name" placeholder="Team Name">
+    
+    <select id="admin-team-cat" class="admin-team-cat">
+        <option value="">Loading categories...</option>
+    </select>
+
+    <textarea id="showdown-input" rows="8" class="showdown-input" placeholder="Paste Showdown team here..."></textarea>
+    <button onclick="salvaTeamSuFirebase()" class="showdown-save">Upload</button>
+    <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
+</div>
+
+<button onclick="document.getElementById('admin-panel').style.display='block'" class="btn-floating-admin" title="Add Format">
+    <span class="plus-icon">+</span>
+
     <script>
 
 // 1. Configurazione Firebase (Assicurati che sia corretta)
@@ -181,59 +198,146 @@ document.addEventListener('click', () => {
     }
 }, { once: true });
 
-        async function inizializzaPaginaBox() {
+async function inizializzaPaginaBox() {
     const loader = document.getElementById('loading-screen');
-    
-    try {
-        if (loader) {
-            loader.style.display = 'flex';
-            loader.style.opacity = '1';
-        }
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    }
 
-        // Chiamiamo scaricaDati (che è il nome corretto della tua funzione)
+    try {
+        // 1. Carichiamo le categorie
+        sincronizzaCategorie();
+
+        // 2. Scarichiamo i dati dei team
         await scaricaDati();
         
-        console.log("Dati scaricati e renderizzati.");
+        // --- NUOVO: Imposta ordinamento predefinito per vittorie ---
+        const sortFilter = document.getElementById('sortFilter');
+        if (sortFilter) {
+            sortFilter.value = 'win'; // Seleziona "Vittorie" nel menu a tendina
+        }
+        
+        // Applichiamo i filtri (che ora userà 'win') per ordinare i team scaricati
+        applicaFiltri(); 
+        // -----------------------------------------------------------
+
+        console.log("Inizializzazione completata con ordinamento per vittorie.");
     } catch (e) {
         console.error("Errore generale:", e);
     } finally {
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500); 
-        }
+        setTimeout(() => {
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }, 1000);
     }
 }
 
 // Rimuovi eventuali doppioni e usa solo questo:
 document.addEventListener('DOMContentLoaded', inizializzaPaginaBox);
-    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
     let tuttiITeam = [];
 
 async function scaricaDati() {
     try {
+        // Puntiamo al nodo di Didi
+        db.ref('allenatore_didi/teams').on('value', async (snapshot) => {
+            const dataTeams = snapshot.val();
+            
+            if (dataTeams) {
+                // 1. Creiamo l'array temporaneo resettando le statistiche
+                let tempTeams = Object.keys(dataTeams).map(key => {
+                    const team = dataTeams[key];
+                    let nomiPokemon = "";
+                    if (team.pokemon && Array.isArray(team.pokemon)) {
+                        nomiPokemon = team.pokemon.map(p => p ? p.nome : "").join(" ");
+                    } else if (team.pokemon && typeof team.pokemon === 'object') {
+                        nomiPokemon = Object.values(team.pokemon).map(p => p ? p.nome : "").join(" ");
+                    }
+
+                    return {
+                        ...team,
+                        id: key,
+                        vittorie: 0,
+                        sconfitte: 0,
+                        puntiFatti: 0,
+                        setVinti: 0,
+                        setPersi: 0,
+                        tuttoIlTesto: ((team.nome || "") + " " + (team.categoria || "") + " " + nomiPokemon).toLowerCase()
+                    };
+                });
+
+                // 2. Recupero Match per ricalcolo
+                const snapMatches = await db.ref('matches').once('value');
+                const dataMatches = snapMatches.val();
+
+                if (dataMatches) {
+                    Object.values(dataMatches).forEach(m => {
+                        const score = m.score ? m.score.split('-').map(Number) : [0, 0];
+                        const s1 = score[0]; // Score Didi
+                        const s2 = score[1]; // Score Lu
+
+                        // Cerchiamo il team di Didi (m.team1Id o m.team1)
+                        const teamDidi = tempTeams.find(t => t.id === m.team1Id || t.nome === m.team1);
+
+                        if (teamDidi) {
+                            teamDidi.setVinti += s1;
+                            teamDidi.setPersi += s2;
+
+                            let pDidi = 0;
+                            if (s1 > s2) { // Vittoria Didi
+                                teamDidi.vittorie += 1;
+                                // Logica: 5-0 -> 3pt | 4-1 -> 2pt | 3-2 -> 2pt
+                                if (s1 === 5 && s2 === 0) pDidi = 3;
+                                else if (s1 === 4 && s2 === 1) pDidi = 2;
+                                else if (s1 === 3 && s2 === 2) pDidi = 2;
+                            } else if (s2 > s1) { // Sconfitta Didi
+                                teamDidi.sconfitte += 1;
+                                // Logica: se perdi 2-3 prendi comunque 1pt
+                                if (s2 === 3 && s1 === 2) pDidi = 1;
+                            }
+                            teamDidi.puntiFatti += pDidi;
+                        }
+                    });
+                }
+
+                // 3. Aggiorniamo la variabile globale
+                tuttiITeam = tempTeams;
+                applicaFiltri(); 
+                
+                if (document.getElementById('loading-screen')) 
+                    document.getElementById('loading-screen').style.display = 'none';
+            } else {
+                tuttiITeam = [];
+                renderizza([]);
+            }
+        });
+    } catch (error) {
+        console.error("Errore scaricamento team Didi:", error);
+    }
+}
+
+// Funzione di supporto per il vecchio CSV (quella che avevi prima)
+async function caricaDalVecchioCSV() {
+    try {
         const response = await fetch(url + '&t=' + new Date().getTime());
+        if (!response.ok) throw new Error("File CSV non trovato");
+        
         const data = await response.text();
         const righe = data.split(/\r?\n/).map(r => r.split(','));
 
         tuttiITeam = [];
         let categorieUniche = new Set(); 
 
-        // Cicliamo su tutto lo spreadsheet saltando di 8 in 8
         for (let i = 0; i < righe.length; i += 8) {
             let nomeTeam = righe[i][0]?.trim();
-            
-            // Prendiamo la categoria (si trova sempre nella riga successiva al nome, colonna A)
             let cat = righe[i+1] && righe[i+1][0] ? righe[i+1][0].trim() : "";
 
-            // Se la categoria esiste e non è l'intestazione, la aggiungiamo al filtro
-            // Lo facciamo PRIMA dei controlli sul nomeTeam così le prende tutte
             if (cat && cat.toLowerCase() !== "categoria" && cat !== "N/A") {
                 categorieUniche.add(cat);
             }
 
-            // Controlli per visualizzare il team nella Home
             const isPlaceholder = /^D\d+$/i.test(nomeTeam);
             if (!nomeTeam || nomeTeam === "" || nomeTeam.toLowerCase() === "nome team" || isPlaceholder) {
                 continue; 
@@ -268,20 +372,20 @@ async function scaricaDati() {
                     });
                 }
             }
-            
             team.tuttoIlTesto = (team.nome + " " + team.categoria + " " + team.pokemon.map(p => p.nome).join(" ")).toLowerCase();
             tuttiITeam.push(team);
         }
 
         popolaFiltroCategorie(categorieUniche);
         renderizza(tuttiITeam);
-
-
-        } catch (error) {
-            console.error("Error:", error);
-            document.getElementById('teamsGrid').innerHTML = "Error loading teams.";
-        }
+        
+        const loading = document.getElementById('loading-screen');
+        if (loading) loading.style.display = 'none';
+    } catch (error) {
+        console.error("Errore CSV:", error);
+        document.getElementById('teamsGrid').innerHTML = "Nessun team trovato su Firebase o CSV.";
     }
+}
 
 async function coloraBordoDinamico(pkmName, elementId) {
     try {
@@ -317,11 +421,14 @@ async function coloraBordoDinamico(pkmName, elementId) {
 
 function renderizza(lista) {
     const grid = document.getElementById('teamsGrid');
-    grid.innerHTML = lista.map(team => `
-        <div class="card" onclick="apriDettagli(${team.id})">
+    if (!grid) return;
+
+    grid.innerHTML = lista.map(team => {
+        return `
+        <div class="card" onclick="apriDettagli('${team.id}')">
             <div class="card-header">
-                <span class="category">${team.category || team.categoria}</span>
-                <span class="stats">W: ${team.vittorie} / L: ${team.sconfitte}</span>
+                <span class="category">${team.category || team.categoria || 'VGC'}</span>
+                <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome}</h3>
             <div class="pkm-grid">
@@ -331,13 +438,16 @@ function renderizza(lista) {
                     const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
                     const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
-                    const pkmBoxId = `box-${team.id}-${index}`;
+                    const pkmBoxId = `box-${team.id.toString().replace(/-/g, '')}-${index}`;
                     
-                    setTimeout(() => applicaColoreBordo(p.nome, pkmBoxId), 50);
+                    setTimeout(() => {
+                        if (typeof applicaColoreBordo === 'function') applicaColoreBordo(p.nome, pkmBoxId);
+                    }, 50);
 
-                    // AGGIUNTO ONCLICK QUI SOTTO:
+                    // CHIAMATA SICURA: Passiamo l'ID del team e la posizione del pokemon (0, 1, 2...)
                     return `
-                        <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation(); apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}')">
+                        <div class="pkm-box" id="${pkmBoxId}" 
+                             onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
                                 <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             </div>
@@ -362,7 +472,8 @@ function renderizza(lista) {
                 }).join('')}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function caricaInfoAbilita(nomeAbilita, elementoId) {
@@ -435,21 +546,25 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
 async function apriDettagli(id) {
     const team = tuttiITeam.find(t => t.id === id);
-    const modal = document.getElementById('teamModal');
-    const content = document.getElementById('modalBody'); // <--- MANCAVA QUESTA RIGA!
+    if (!team) {
+        console.error("Team non trovato per l'ID:", id);
+        return;
+    }
 
-    // Convertiamo in numeri per sicurezza (usando Number per gestire meglio i vuoti)
+    const modal = document.getElementById('teamModal');
+    const content = document.getElementById('modalBody'); 
+
     const sV = Number(team.setVinti) || 0;
     const sP = Number(team.setPersi) || 0;
     const w = team.vittorie || 0;
     const l = team.sconfitte || 0;
     const pts = team.puntiFatti || 0;
 
-    // Calcolo Partite Giocate: (Vinti + Persi) / 5
     const totSet = sV + sP;
     const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+
     content.innerHTML = `
-        <div class="modal-header-container">
+        <div class="modal-header-container" style="position: relative;">
             <h2>${team.nome}</h2>
             <div class="team-score-banner">
                 <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
@@ -457,7 +572,12 @@ async function apriDettagli(id) {
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
+            <div class="admin-modal-actions">
+                <button onclick="event.stopPropagation(); event.preventDefault(); caricaTeamPerModifica('${team.id}')" class="btn-admin-edit">📝</button>
+                <button onclick="event.stopPropagation(); event.preventDefault(); cancellaTeamDaFirebase('${team.id}')" class="btn-admin-del">🗑️</button>
+            </div>
         </div>
+
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
                 const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
@@ -512,6 +632,7 @@ async function apriDettagli(id) {
     `;
     modal.style.display = "flex";
 }
+
 // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
 document.addEventListener('keydown', (e) => {
     const modal = document.getElementById('teamModal');
@@ -629,38 +750,39 @@ function chiudiModale() {
         document.getElementById('teamModal').style.display = "none";
     }
 
+    
 function applicaFiltri() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const cat = document.getElementById('categoryFilter').value;
-    const sort = document.getElementById('sortFilter').value;
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    
+    if (!searchInput || !categoryFilter) return;
 
-    // 1. Filtriamo per ricerca e categoria (i "D+numero" sono già esclusi a monte)
+    const search = searchInput.value.toLowerCase().trim();
+    const cat = categoryFilter.value;
+    const sort = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'default';
+
+    console.log("Ricerca attiva per:", search); // Debug: guarda la console F12
+
     let filtrati = tuttiITeam.filter(team => {
-        const matchesSearch = team.tuttoIlTesto.includes(search);
+        // Se la ricerca è vuota, passa sempre. Se non è vuota, cerca nel testo.
+        const matchesSearch = search === "" || team.tuttoIlTesto.includes(search);
         const matchesCat = cat === "" || team.categoria === cat;
         return matchesSearch && matchesCat;
     });
 
-    // 2. Applichiamo l'ordinamento scelto
+    // Ordinamento
     filtrati.sort((a, b) => {
         switch (sort) {
-            case 'alpha':
-                return a.nome.localeCompare(b.nome);
-            case 'win':
-                return Number(b.vittorie) - Number(a.vittorie);
-            case 'loss':
-                return Number(b.sconfitte) - Number(a.sconfitte);
-            case 'setV':
-                return Number(b.setVinti) - Number(a.setVinti);
-            case 'setP':
-                return Number(b.setPersi) - Number(a.setPersi);
+            case 'alpha': return (a.nome || "").localeCompare(b.nome || "");
+            case 'win': return Number(b.vittorie || 0) - Number(a.vittorie || 0);
+            case 'loss': return Number(b.sconfitte || 0) - Number(a.sconfitte || 0);
+            case 'setV': return Number(b.setVinti || 0) - Number(a.setVinti || 0);
+            case 'setP': return Number(b.setPersi || 0) - Number(a.setPersi || 0);
             case 'played':
-                const playedA = Number(a.setVinti) + Number(a.setPersi);
-                const playedB = Number(b.setVinti) + Number(b.setPersi);
+                const playedA = Number(a.setVinti || 0) + Number(a.setPersi || 0);
+                const playedB = Number(b.setVinti || 0) + Number(b.setPersi || 0);
                 return playedB - playedA;
-            default:
-                // Ordine originale dello spreadsheet
-                return 0;
+            default: return 0;
         }
     });
 
@@ -709,7 +831,8 @@ function applicaFiltri() {
 function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const modal = document.getElementById('pkmDetailModal');
     const content = document.getElementById('pkmModalBody');
-    
+    if (!modal || !content) return;
+
     content.innerHTML = `
         <div class="pkm-modal-grid">
             <div class="area-header">
@@ -717,12 +840,10 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                 <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
                 <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
             </div>
-
             <div class="area-weakness pkm-panel">
                 <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
                 <div id="static-weaknesses" class="weakness-content">Loading...</div>
             </div>
-
             <div class="area-info-strips">
                 <div class="pkm-panel info-box-compact">
                     <div class="info-content-clean">
@@ -740,12 +861,10 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                     </div>
                 </div>
             </div>
-
             <div class="area-stats pkm-panel">
                 <div id="single-stats"></div>
                 <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs}</div>
             </div>
-
             <div class="area-moves pkm-panel">
                 <h4 class="panel-title">MOVESET</h4>
                 <div class="moves-list-compact">
@@ -771,31 +890,26 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 
     modal.style.display = "flex";
 
-    // RECUPERO ID PER GIF HD
     fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
         .then(res => res.json())
         .then(data => {
-            // Qui carichiamo la versione HOME ad alta risoluzione tramite ID
             document.getElementById('pkm-hero-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
-            
-            // Carichiamo il resto dei dati
             caricaStats(pkmNameUrl, 'single-stats');
             caricaTipi(pkmNameUrl, 'single-types', '');
         });
 
-    // GESTIONE MOSSE: Lingua Inglese + Colore
     pokemonData.mosse.forEach((m, i) => {
         if(m && m !== "-") {
             const mName = m.toLowerCase().replace(/ /g, '-');
             fetch(`https://pokeapi.co/api/v2/move/${mName}`)
                 .then(res => res.json())
                 .then(moveData => {
-                    // FILTRO LINGUA INGLESE
                     const entry = moveData.flavor_text_entries.find(e => e.language.name === 'en');
                     if (entry) {
-                        document.getElementById(`sm-${i}`).innerText = entry.flavor_text.replace(/[\n\f]/g, ' ').trim();
+                        const el = document.getElementById(`sm-${i}`);
+                        if(el) el.innerText = entry.flavor_text.replace(/[\n\f]/g, ' ').trim();
                     }
-                });
+                }).catch(() => {});
             aggiornaColoreMossa(m, `move-card-${i}`, i);
         }
     });
@@ -804,7 +918,20 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     caricaInfoAbilita(pokemonData.abilita, 'single-abi');
     caricaInfoStrumento(pokemonData.strumento, 'single-item');
 }
-    modal.style.display = "flex";
+
+function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
+    // Cerchiamo il team nell'array globale usando l'ID di Firebase
+    const team = tuttiITeam.find(t => t.id === teamId);
+    
+    if (team && team.pokemon[pkmIndex]) {
+        // Se lo troviamo, chiamiamo la tua funzione originale con i dati corretti
+        apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
+    } else {
+        console.error("Errore: Impossibile trovare il Pokémon per il team", teamId);
+    }
+}
+
+modal.style.display = "flex";
 
     // Esegui i caricamenti
     caricaTipi(pkmNameUrl, 'single-types', '');
@@ -962,12 +1089,243 @@ function chiudiTeamModal() {
     const modal = document.getElementById('teamModal');
     if (modal) {
         modal.style.display = "none";
-        // Opzionale: svuota il corpo del modal per evitare che al prossimo avvio 
-        // si veda per un istante il vecchio team caricato
-        const body = document.getElementById('modalBody');
-        if (body) body.innerHTML = "";
+        
+        // Pulizia corretta: usiamo setTimeout per non far vedere il "vuoto" 
+        // mentre il modale sta ancora scomparendo visivamente
+        setTimeout(() => {
+            const body = document.getElementById('modalBody');
+            if (body && modal.style.display === "none") body.innerHTML = "";
+        }, 200);
     }
 }
+
+// Gestione intelligente della chiusura cliccando fuori
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('teamModal');
+    
+    // Se il click è avvenuto ESATTAMENTE sul contenitore scuro (l'overlay)
+    // e non su uno dei bottoni o sulle card dei pokemon...
+    if (event.target === modal) {
+        chiudiTeamModal();
+    }
+});
+
+function parseShowdown(text) {
+    const teams = [];
+    const blocks = text.split(/\n\s*\n/); // Divide il testo per ogni pokemon (doppio invio)
+
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim());
+        if (lines.length < 2) return;
+
+        let pokemon = {};
+        
+        // Riga 1: Nome @ Strumento
+        if (lines[0].includes('@')) {
+            const parts = lines[0].split('@');
+            pokemon.nome = parts[0].trim();
+            pokemon.strumento = parts[1].trim();
+        } else {
+            pokemon.nome = lines[0].trim();
+            pokemon.strumento = "None";
+        }
+
+        pokemon.mosse = [];
+        lines.forEach(line => {
+            if (line.startsWith('Ability:')) pokemon.abilita = line.replace('Ability:', '').trim();
+            if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
+            if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
+            if (line.startsWith('-')) pokemon.mosse.push(line.replace('-', '').trim());
+        });
+
+        // Completiamo con mosse vuote se sono meno di 4
+        while (pokemon.mosse.length < 4) pokemon.mosse.push("");
+        
+        teams.push(pokemon);
+    });
+
+    return teams;
+}
+
+// Funzione per salvare su Firebase
+function salvaTeamSuFirebase() {
+    const adminPanel = document.getElementById('admin-panel');
+    const text = document.getElementById('showdown-input').value;
+    const nome = document.getElementById('admin-team-name').value || "Team senza nome";
+    const cat = document.getElementById('admin-team-cat').value || "VGC";
+    
+    // Controlliamo se stiamo modificando (ID esistente) o creando (ID nullo)
+    const editingId = adminPanel.dataset.editingId;
+
+    if (!text.trim()) {
+        alert("Incolla il testo di Showdown!");
+        return;
+    }
+
+    try {
+        // Usiamo la versione di parseShowdown che restituisce l'oggetto { pokemon: [...] }
+        const parsedData = parseShowdown(text);
+        
+        const teamData = {
+            nome: nome,
+            categoria: cat,
+            pokemon: parsedData.pokemon,
+            dataUltimaModifica: Date.now()
+        };
+
+        if (editingId) {
+            // --- MODALITÀ MODIFICA ---
+            // Puntiamo esattamente all'ID del team esistente
+            db.ref(`allenatore_didi/teams/${editingId}`).set(teamData)
+                .then(() => {
+                    alert("✅ Team aggiornato con successo!");
+                    resetAdminPanel(); // Puliamo tutto
+                })
+                .catch(err => alert("Errore durante l'aggiornamento: " + err));
+        } else {
+            // --- MODALITÀ NUOVO ---
+            // Creiamo una nuova voce con un ID generato da Firebase
+            db.ref('allenatore_didi/teams').push(teamData)
+                .then(() => {
+                    alert("✅ Nuovo team aggiunto all'archivio!");
+                    resetAdminPanel();
+                })
+                .catch(err => alert("Errore durante il salvataggio: " + err));
+        }
+    } catch (e) {
+        alert("Errore nel formato: " + e.message);
+    }
+}
+
+// Funzione utilitaria per pulire il pannello ed evitare bug al prossimo inserimento
+function resetAdminPanel() {
+    const adminPanel = document.getElementById('admin-panel');
+    document.getElementById('showdown-input').value = "";
+    document.getElementById('admin-team-name').value = "";
+    
+    // RIMUOVIAMO l'ID di editing per non sovrascrivere il prossimo team per sbaglio
+    delete adminPanel.dataset.editingId;
+    
+    adminPanel.style.display = 'none';
+    
+    // Se hai una funzione che scarica i dati da Firebase, chiamala qui
+    if (typeof scaricaDati === "function") scaricaDati();
+}
+
+function parseShowdown(text) {
+    const blocks = text.trim().split(/\n\s*\n/);
+    let team = { pokemon: [] };
+
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim());
+        if (lines.length < 1) return;
+
+        let p = { mosse: [] };
+        
+        // Nome e Strumento
+        if (lines[0].includes('@')) {
+            const parts = lines[0].split('@');
+            p.nome = parts[0].trim();
+            p.strumento = parts[1].trim();
+        } else {
+            p.nome = lines[0].trim();
+            p.strumento = "Nessuno";
+        }
+
+        lines.forEach(line => {
+            if (line.startsWith('Ability:')) p.abilita = line.replace('Ability:', '').trim();
+            if (line.startsWith('EVs:')) p.evs = line.replace('EVs:', '').trim();
+            if (line.startsWith('-')) p.mosse.push(line.replace('-', '').trim());
+        });
+
+        while (p.mosse.length < 4) p.mosse.push("-");
+        if (!p.abilita) p.abilita = "N/D";
+        if (!p.evs) p.evs = "N/D";
+        
+        team.pokemon.push(p);
+    });
+    return team;
+}
+
+// Funzione per ELIMINARE
+// CANCELLA uno specifico team
+function cancellaTeamDaFirebase(teamId) {
+    if (!teamId) return alert("ID team non trovato");
+    
+    if (confirm("Vuoi eliminare definitivamente questo team dall'archivio?")) {
+        db.ref(`allenatore_didi/teams/${teamId}`).remove()
+            .then(() => {
+                alert("Team eliminato!");
+                chiudiTeamModal();
+            });
+    }
+}
+
+// MODIFICA uno specifico team
+function caricaTeamPerModifica(teamId) {
+    const team = tuttiITeam.find(t => t.id === teamId);
+    if (!team) return;
+
+    document.getElementById('admin-team-name').value = team.nome;
+    document.getElementById('admin-team-cat').value = team.categoria;
+    
+    let testoShowdown = "";
+    team.pokemon.forEach(p => {
+        testoShowdown += `${p.nome} @ ${p.strumento}\n`;
+        testoShowdown += `Ability: ${p.abilita}\n`;
+        testoShowdown += `EVs: ${p.evs}\n`;
+        p.mosse.forEach(m => { if (m && m !== "-") testoShowdown += `- ${m}\n`; });
+        testoShowdown += `\n`;
+    });
+
+    document.getElementById('showdown-input').value = testoShowdown.trim();
+    
+    // IMPORTANTE: Salviamo l'ID nel pannello per sapere che stiamo MODIFICANDO e non creando uno nuovo
+    document.getElementById('admin-panel').dataset.editingId = teamId;
+    
+    document.getElementById('admin-panel').style.display = 'block';
+}
+
+// Forza la funzione a riconoscere il database
+function sincronizzaCategorie() {
+    const selectCat = document.getElementById('admin-team-cat'); 
+    const selectFilter = document.getElementById('categoryFilter'); 
+    
+    console.log("Sincronizzazione categorie in corso...");
+
+    db.ref('regolamenti').on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        // Prepariamo le opzioni per il filtro (con "Tutte")
+        let filterHtml = '<option value="">Category...</option>';
+        // Prepariamo le opzioni per l'admin (senza "Tutte")
+        let adminHtml = '<option value="">-- Choose Category --</option>';
+
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const nomeCat = data[key].categoria;
+                const opt = `<option value="${nomeCat}">${nomeCat}</option>`;
+                filterHtml += opt;
+                adminHtml += opt;
+            });
+        }
+
+        if (selectFilter) {
+            const currentFilterVal = selectFilter.value;
+            selectFilter.innerHTML = filterHtml;
+            selectFilter.value = currentFilterVal; // Mantieni la selezione se l'utente stava filtrando
+        }
+
+        if (selectCat) {
+            selectCat.innerHTML = adminHtml;
+        }
+        
+        console.log("Categorie sincronizzate da Firebase.");
+    });
+}
+
+// Avviala al caricamento della pagina
+document.addEventListener('DOMContentLoaded', sincronizzaCategorie);
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {

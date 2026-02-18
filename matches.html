@@ -8,13 +8,16 @@
     <link rel="stylesheet" href="style-matches.css">
     <link rel="stylesheet" href="style-box-didi.css">
     <link rel="stylesheet" href="style-box-lu.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
 </head>
 <body>
     
         <audio id="bg-music-home" loop preload="auto"></audio>
 
-<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
-    🔊
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <span id="music-icon">🔊</span>
 </div>
 
     <div id="loading-screen">
@@ -36,20 +39,149 @@
             <li><a href="matches.html">Fixtures</a></li>
             <li><a href="rules.html">Rules</a></li>
         </ul>
-</nav>  
+</nav> 
+
+<div id="admin-edit-match-panel" class="admin-panel-modern wide">
+    <input type="hidden" id="edit-match-id">
+    <h3 class="panel-title-edit">Edit Match</h3>
+    
+    <div class="admin-three-columns">
+        
+        <div class="admin-col">
+            <h4 class="col-title">Match Info</h4>
+            <div class="form-group">
+                <label>Data:</label>
+                <input type="date" id="edit-match-date">
+            </div>
+            <div class="form-group">
+                <label>Format:</label>
+                <select id="edit-match-cat"></select>
+            </div>
+            <div class="form-group">
+                <label>Score (X-X):</label>
+                <input type="text" id="edit-match-score">
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h4 class="col-title">Teams</h4>
+            <div class="form-group">
+                <label>Player Didi:</label>
+                <select id="edit-match-team1" class="select-team"></select>
+            </div>
+            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
+            <div class="form-group">
+                <label>Player Lu:</label>
+                <select id="edit-match-team2" class="select-team"></select>
+            </div>
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">Replays & Set Winners</h4>
+            <div id="replays-edit-list">
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                            <div class="set-row-compact">
+                                <span class="set-num">S${i}</span>
+                                <input type="text" id="edit-replay-s${i}" placeholder="file.html">
+                                <div class="winner-selector">
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="confermaModificaMatch()" class="btn-save">Edit match</button>
+        <button onclick="document.getElementById('admin-edit-match-panel').style.display='none'" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+<div id="admin-matches-panel" class="admin-panel-modern wide">
+    <input type="hidden" id="match-id-nascosto">
+    <h3>Add a new match</h3>
+    
+    <div class="admin-three-columns">
+        
+        <div class="admin-col">
+            <h4 class="col-title">Match info</h4>
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" id="match-date">
+            </div>
+            <div class="form-group">
+                <label>Format:</label>
+                <select id="match-cat"></select>
+            </div>
+            <div class="form-group">
+                <label>Score:</label>
+                <input type="text" id="match-score" placeholder="Es: 3-2">
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h4 class="col-title">Teams</h4>
+            <div class="form-group">
+                <label>Player Didi:</label>
+                <select id="match-team1" class="select-team"></select>
+            </div>
+            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
+            <div class="form-group">
+                <label>Player Lu:</label>
+                <select id="match-team2" class="select-team"></select>
+            </div>
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">Replays & Set winners</h4>
+            <div id="replays-inputs-list">
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                            <div class="set-row-compact">
+                                <span class="set-num">S${i}</span>
+                                <input type="text" id="replay-s${i}" placeholder="file.html">
+                                <div class="winner-selector">
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D')" id="win-${i}-D">D</button>
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L')" id="win-${i}-L">L</button>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="salvaMatchFirebase()" class="btn-save">Add Match</button>
+        <button onclick="document.getElementById('admin-matches-panel').style.display='none'" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+<button class="btn-floating-admin" onclick="apriAdminMatches()" title="Aggiungi Match">
+    <span class="plus-icon">+</span>
+</button>
 
     <h1>Championship History</h1>
 
     <div class="controls">
     <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
     <select id="categoryFilter" onchange="applicaFiltri()">
-    <option value="">Category</option>
+    <option value="">Format</option>
 </select>
     
     </select>
 </div>
 
-    <div id="loadingArchivio">Loading fixtures...</div>
     <div id="matchList"></div>
 
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
@@ -75,134 +207,199 @@
         </div>
     </div>
 
-    <script>
+<script>      
 
-        // Funzione coordinata per gestire il caricamento e la Pokéball
+// --- 1. CONFIGURAZIONE FIREBASE ---
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.appspot.com",
+    messagingSenderId: "333119159516",
+    appId: "1:333119159516:web:689a9f5d3791093f66878b"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+let databaseDidi = [];
+let databaseLu = [];
+
+// --- 2. GESTIONE CARICAMENTO PAGINA ---
 async function inizializzaPaginaArchivio() {
     const loader = document.getElementById('loading-screen');
-    
     try {
-        // Mostra il loader all'inizio
         if (loader) {
             loader.style.display = 'flex';
             loader.style.opacity = '1';
         }
 
-        // ASPETTA il caricamento di database, team e lista match
-        await caricaArchivio();
-        
-        console.log("Archivio match e database caricati.");
+        // 1. Recupero dati da Firebase
+        const [snapDidi, snapLu, snapMatches] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('matches').once('value')
+        ]);
+
+        // Manteniamo le chiavi originali di Firebase (gli ID)
+        let teamsDidi = snapDidi.val() || {};
+        let teamsLu = snapLu.val() || {};
+        const dataMatches = snapMatches.val() || {};
+
+        // 2. RESET STATISTICHE
+        const resetStats = (dbObj) => {
+            Object.values(dbObj).forEach(t => {
+                t.vittorie = 0; t.sconfitte = 0;
+                t.setVinti = 0; t.setPersi = 0;
+                t.puntiFatti = 0;
+            });
+        };
+        resetStats(teamsDidi);
+        resetStats(teamsLu);
+
+        // 3. CALCOLO LOGICA PUNTI CON COLLEGAMENTO ID
+        Object.values(dataMatches).forEach(m => {
+            const score = m.score ? m.score.split('-').map(Number) : [0, 0];
+            const s1 = score[0]; // Set Didi
+            const s2 = score[1]; // Set Lu
+
+            // CERCA PER ID: m.team1Id e m.team2Id sono i nuovi campi salvati nel match
+            // Se il match è vecchio e ha solo il nome, usiamo il fallback .find()
+            const tDidi = teamsDidi[m.team1Id] || Object.values(teamsDidi).find(t => t.nome === m.team1);
+            const tLu = teamsLu[m.team2Id] || Object.values(teamsLu).find(t => t.nome === m.team2);
+
+            // Calcolo punti (Logica 5-0, 4-1, 3-2)
+            let p1 = 0; let p2 = 0;
+            if (s1 > s2) {
+                if (s1 === 5 && s2 === 0) p1 = 3;
+                else if (s1 === 4 && s2 === 1) p1 = 2;
+                else if (s1 === 3 && s2 === 2) { p1 = 2; p2 = 1; }
+            } else if (s2 > s1) {
+                if (s2 === 5 && s1 === 0) p2 = 3;
+                else if (s2 === 4 && s1 === 1) p2 = 2;
+                else if (s2 === 3 && s1 === 2) { p2 = 2; p1 = 1; }
+            }
+
+            if (tDidi) {
+                tDidi.setVinti += s1;
+                tDidi.setPersi += s2;
+                tDidi.puntiFatti += p1;
+                if (s1 > s2) tDidi.vittorie += 1;
+                else if (s2 > s1) tDidi.sconfitte += 1;
+                
+                // RIFLESSO DINAMICO: Aggiorniamo il nome nel match 
+                // con quello attualmente registrato nel team
+                m.team1 = tDidi.nome; 
+            }
+
+            if (tLu) {
+                tLu.setVinti += s2;
+                tLu.setPersi += s1;
+                tLu.puntiFatti += p2;
+                if (s2 > s1) tLu.vittorie += 1;
+                else if (s1 > s2) tLu.sconfitte += 1;
+                
+                m.team2 = tLu.nome;
+            }
+        });
+
+        databaseDidi = teamsDidi;
+        databaseLu = teamsLu;
+
+        // 4. RENDERIZZAZIONE LISTA MATCH
+// 1. Creiamo l'array con gli ID di Firebase
+let righeMatches = Object.keys(dataMatches).map(key => ({ 
+    id: key, 
+    ...dataMatches[key] 
+}));
+
+// 2. Ordinamento Ultra-Sicuro
+righeMatches.sort((a, b) => {
+    // Gestione dati mancanti per evitare crash
+    const dataA = a.data || "";
+    const dataB = b.data || "";
+
+    // LIVELLO 1: Data (Decrescente - Più recenti in alto)
+    if (dataB > dataA) return 1;
+    if (dataB < dataA) return -1;
+
+    // LIVELLO 2: Se la data è uguale, ordiniamo per ID (Inserimento)
+    // Se vuoi i PRIMI inseriti in BASSO, l'ID più "grande" (ultimo inserito) deve stare SOPRA.
+    const idA = a.id || "";
+    const idB = b.id || "";
+
+    if (idB > idA) return 1;
+    if (idB < idA) return -1;
+
+    return 0;
+});
+
+        const container = document.getElementById('matchList');
+        if (container) {
+            container.innerHTML = "";
+            righeMatches.forEach(m => {
+                const scoreArr = m.score ? m.score.split('-') : ["0", "0"];
+                
+                // Recuperiamo l'ID del team per passarlo alla funzione di apertura dettaglio
+                // così il modal caricherà sempre i dati aggiornati
+                const t1Id = m.team1Id || ""; 
+                const t2Id = m.team2Id || "";
+
+                const card = document.createElement('div');
+                card.className = 'match-card';
+                card.innerHTML = `
+                    <div class="match-meta">
+                        <span class="match-category">${m.categoria || ""}</span>
+                        <span class="match-date">${formattaDataItaliana(m.data) || ""}</span>
+                    </div>
+                    <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('Didi', '${m.team1}')">
+                        <span class="team-title">${m.team1}</span>
+                        ${generaHtmlGifs(m.team1, databaseDidi)}
+                    </div>
+                    <div class="score-container">
+                        <span class="score-digit">${scoreArr[0]}</span>
+                        <span class="score-divider">:</span>
+                        <span class="score-digit">${scoreArr[1]}</span>
+                    </div>
+                    <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('Lu', '${m.team2}')">
+                        <span class="team-title">${m.team2}</span>
+                        ${generaHtmlGifs(m.team2, databaseLu)}
+                    </div>
+                    <div><div class="admin-match-controls">
+            <span class="admin-icon" onclick="preparaModificaMatch('${m.id}')" style="cursor:pointer; color:#3498db;">📝</span>
+            <span class="admin-icon" onclick="eliminaMatch('${m.id}')" style="cursor:pointer; color:#e74c3c; margin-left:10px;">🗑️</span>
+        </div>
+                    <button class="btn-replay-icon" onclick="apriMatch('${m.id}', '${m.team1}', '${m.team2}', '${scoreArr[0]}', '${scoreArr[1]}')">REPLAY</button></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        popolaFiltroCategorie();
     } catch (e) {
-        console.error("Errore durante l'inizializzazione dell'archivio:", e);
+        console.error("Errore Firebase:", e);
     } finally {
-        // Nascondi la Pokéball solo quando tutto è renderizzato
         if (loader) {
             loader.style.opacity = '0';
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
     }
 }
 
-// Unico punto di ingresso: avvia quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', inizializzaPaginaArchivio);
 
-        let databaseDidi = [];
-        let databaseLu = [];
-        let tuttiITeamDidi = [];
-        let tuttiITeamLu = [];
+// --- 3. FUNZIONE CORE CARICA ARCHIVIO (FIREBASE VERSION) ---
 
-        const csvArchivioUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1971788122&single=true&output=csv';
-        const csvDidiTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=1913835106&single=true&output=csv';
-        const csvLuTeams = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=589704271&single=true&output=csv';
-
-        async function caricaArchivio() {
-    try {
-        const [resDidi, resLu] = await Promise.all([
-            fetch(csvDidiTeams).then(r => r.text()),
-            fetch(csvLuTeams).then(r => r.text())
-        ]);
-        
-        // SALVA NELLE VARIABILI GLOBALI (molto importante!)
-        databaseDidi = resDidi.split('\n').map(r => r.split(','));
-        databaseLu = resLu.split('\n').map(r => r.split(','));
-
-        const righeDidi = databaseDidi; // manteniamo compatibilità col resto del codice
-        const righeLu = databaseLu;
-        // 2. Carichiamo l'archivio match
-        const response = await fetch(csvArchivioUrl);
-        const text = await response.text();
-        let righe = text.split('\n')
-            .map(r => r.replace('\r', '').split(','))
-            .filter((r, index) => index !== 0 && r[1] && r[1].trim() !== "");
-
-        righe.reverse();
-
-        const container = document.getElementById('matchList');
-        container.innerHTML = ""; 
-        
-        righe.forEach(r => {
-            const matchID   = r[0].trim(); 
-            const data      = r[1].trim();
-            const categoria = r[2].trim();
-            const teamDidi  = r[3].trim();
-            const teamLu    = r[5].trim();
-            const setDidi   = r[4].trim();
-            const setLu     = r[6].trim();
-
-            // FUNZIONE INTERNA: Recupera le GIF per un team
-            const getGifs = (nomeTeam, database) => {
-                let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
-                if (idx === -1) return "";
-                let pkmRow = database[idx];
-                let htmlGifs = '<div class="mini-pkm-list">';
-                for (let col = 1; col <= 6; col++) {
-                    let pName = pkmRow[col]?.trim();
-                    if (pName) {
-                        const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                        htmlGifs += `<img src="https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif" class="mini-gif" title="${pName}">`;
-                    }
-                }
-                return htmlGifs + '</div>';
-            };
-
-            const gifsDidi = generaHtmlGifs(teamDidi, databaseDidi);
-            const gifsLu = generaHtmlGifs(teamLu, databaseLu);
-
-            const card = document.createElement('div');
-            card.className = 'match-card';
-            card.innerHTML = `
-                <div class="match-meta">
-                    <span class="match-category">${categoria}</span>
-                    <span class="match-date">${data}</span>
-                </div>
-                
-                <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('${teamDidi}', 'Didi')">
-                    <span class="team-title">${teamDidi}</span>
-                    ${gifsDidi}
-                </div>
-                
-                <div class="score-container">
-                    <span class="score-digit">${setDidi}</span>
-                    <span class="score-divider">:</span>
-                    <span class="score-digit">${setLu}</span>
-                </div>
-                
-                <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('${teamLu}', 'Lu')">
-                    <span class="team-title">${teamLu}</span>
-                    ${gifsLu}
-                </div>
-                
-                <button class="btn-replay-icon" onclick="apriMatch('${matchID}', '${teamDidi}', '${teamLu}', '${setDidi}', '${setLu}')">REPLAY</button>
-            `;
-            container.appendChild(card);
-        });
-        
-        document.getElementById('loadingArchivio').style.display = 'none';
-        popolaFiltroCategorie();
-
-    } catch (e) { console.error(e); }
+function formattaDataItaliana(dataStr) {
+    if (!dataStr) return "";
+    // Se la data è nel formato AAAA-MM-GG
+    const parti = dataStr.split('-');
+    if (parti.length === 3) {
+        return `${parti[2]}/${parti[1]}/${parti[0]}`;
+    }
+    return dataStr; // Fallback se è già formattata
 }
 
 function popolaFiltroCategorie() {
@@ -246,71 +443,69 @@ function applicaFiltri() {
     });
 }
 
-async function apriDettaglioTeam(nomeTeam, proprietario) {
+async function apriDettaglioTeam(proprietario, nomeTeam) {
     const modal = document.getElementById('teamModal');
     const content = document.getElementById('teamDetailContent');
+    
     modal.classList.remove('proprietario-Didi', 'proprietario-Lu');
     modal.classList.add('proprietario-' + proprietario);
     content.innerHTML = '<div style="color:white; text-align:center;">Loading team...</div>';
     modal.style.display = 'flex';
 
-    const urlSorgente = (proprietario === 'Didi') ? csvDidiTeams : csvLuTeams;
-
     try {
-        const response = await fetch(urlSorgente + '&t=' + new Date().getTime());
-        const data = await response.text();
-        const righe = data.split(/\r?\n/).map(r => r.split(','));
+        // Seleziona il database corretto (deve essere l'oggetto scaricato da Firebase)
+        const dbSorgente = (proprietario === 'Didi') ? databaseDidi : databaseLu;
 
-        // Cerchiamo l'indice della riga dove si trova il team (Colonna A)
-        let i = righe.findIndex(r => r[0] && r[0].trim().toLowerCase() === nomeTeam.trim().toLowerCase());
+        // Trova il team cercando per la proprietà "nome" dentro ogni oggetto del database
+        const teamData = Object.values(dbSorgente).find(t => 
+            t.nome && t.nome.trim().toLowerCase() === nomeTeam.trim().toLowerCase()
+        );
 
-        if (i !== -1) {
-            // Ricostruiamo l'oggetto team identico a box-didi
+        if (teamData) {
+            // Prepariamo l'oggetto team per la funzione di rendering
             let team = {
-                nome: righe[i][0].trim(),
-                vittorie: righe[i+3] ? righe[i+3][0].trim() : "0",
-                sconfitte: righe[i+4] ? righe[i+4][0].trim() : "0",
-                setVinti: righe[i+5] ? righe[i+5][0].trim() : "0",
-                setPersi: righe[i+6] ? righe[i+6][0].trim() : "0",
-                puntiFatti: righe[i+7] ? righe[i+7][0].trim() : "0",
-                pokemon: []
+                nome: teamData.nome,
+                vittorie: teamData.vittorie || "0",
+                sconfitte: teamData.sconfitte || "0",
+                setVinti: teamData.setVinti || "0",
+                setPersi: teamData.setPersi || "0",
+                puntiFatti: teamData.puntiFatti || "0",
+                pokemon: [] // Qui mapperemo i dati dal database
             };
 
-            for (let col = 1; col <= 6; col++) {
-                let pName = righe[i][col]?.trim();
-                if (pName) {
-                    team.pokemon.push({
-                        nome: pName,
-                        abilita: righe[i+1] ? righe[i+1][col]?.trim() : "N/D",
-                        strumento: righe[i+2] ? righe[i+2][col]?.trim() : "Nessuno",
-                        mosse: [
-                            righe[i+3] ? righe[i+3][col]?.trim() : "-",
-                            righe[i+4] ? righe[i+4][col]?.trim() : "-",
-                            righe[i+5] ? righe[i+5][col]?.trim() : "-",
-                            righe[i+6] ? righe[i+6][col]?.trim() : "-"
-                        ],
-                        evs: righe[i+7] ? righe[i+7][col]?.trim() : "N/D"
-                    });
-                }
+            // Mappiamo l'array 'pokemon' dal database alla nostra struttura
+            if (teamData.pokemon && Array.isArray(teamData.pokemon)) {
+                team.pokemon = teamData.pokemon.map(p => {
+                    return {
+                        nome: p.nome || "???",
+                        abilita: p.abilita || "N/D",
+                        strumento: p.strumento || "Nessuno",
+                        // Mappiamo l'array delle mosse (0, 1, 2, 3)
+                        mosse: (p.mosse && Array.isArray(p.mosse)) ? p.mosse : ["-", "-", "-", "-"],
+                        evs: p.evs || "N/D"
+                    };
+                });
             }
 
-            // Inseriamo l'HTML usando la struttura di box-didi
-            // Passiamo 'proprietario' per gestire eventuali differenze di stile
+            // Inseriamo l'HTML finale
             content.innerHTML = generaHtmlDettaglioTeam(team, proprietario);
         } else {
-            content.innerHTML = `<div style="color:white; text-align:center;">Dati non trovati.</div>`;
+            content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato.</div>`;
         }
     } catch (e) {
-        console.error(e);
-        content.innerHTML = "Loading error.";
+        console.error("Errore nel caricamento dettaglio:", e);
+        content.innerHTML = `<div style="color:white; text-align:center;">Errore durante il caricamento.</div>`;
     }
 }
 
 function generaHtmlDettaglioTeam(team, proprietario) {
+    // team.vittorie, team.setVinti, etc. sono ora i valori calcolati 
+    // nella funzione inizializzaPaginaArchivio basandosi sui match reali
     const sV = Number(team.setVinti) || 0;
     const sP = Number(team.setPersi) || 0;
-    const totSet = sV + sP;
-    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+    
+    // Il numero di partite giocate è la somma dei match vinti e persi
+    const partiteGiocate = (Number(team.vittorie) || 0) + (Number(team.sconfitte) || 0);
 
     return `
         <div class="modal-header-container">
@@ -324,48 +519,67 @@ function generaHtmlDettaglioTeam(team, proprietario) {
         </div>
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
-                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                // Pulizia nome per l'URL (es: "Tapu Koko" -> "tapukoko")
+                const pkmNameUrl = p.nome.toLowerCase()
+                                    .replace(/\s+/g, '')
+                                    .replace(/[.'é’%]/g, '');
+                
                 const mIdPrefix = `types-${pIndex}`;
                 const statsId = `stats-${pIndex}`;
                 const abiId = `abi-${pIndex}`;
                 const itemId = `item-${pIndex}`;
+                
+                // Gestione posizione tooltip (se è l'ultimo della riga lo sposta a sinistra)
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
                 // Avviamo il caricamento dei tipi (PokeAPI)
                 caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
                 
+                // Generazione URL Strumento (PokeAPI usa i trattini invece degli spazi)
+                const itemUrlName = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
+                
                 return `
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                    
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                             class="modal-sprite clickable-pkm" 
+                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png'">
                     </div>
+
                     <div class="modal-pkm-info">
                         <div class="info-container">
                             <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
-                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading stats...</div>
                         </div>
+
                         <div class="info-container">
                             <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
-                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading ability...</div>
                         </div>
+
                         <div class="info-container">
                             <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
-                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png" 
+                                     onerror="this.style.display='none'">
                                 <span>${p.strumento}</span>
                             </div>
-                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading item...</div>
                         </div>
+
                         <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        
                         <div class="modal-moves">
                             ${p.mosse.map((m, mIndex) => {
+                                if (!m || m === "-") return ""; // Non mostra mosse vuote
                                 const mId = `mossa-${pIndex}-${mIndex}`;
                                 return `
                                 <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
                                     ${m}
-                                    <div id="${mId}" class="move-tooltip">Loading...</div>
+                                    <div id="${mId}" class="move-tooltip">Loading info...</div>
                                 </span>`;
                             }).join('')}
                         </div>
@@ -380,15 +594,93 @@ function generaHtmlDettaglioTeam(team, proprietario) {
 function chiudiTeamModal() { document.getElementById('teamModal').style.display = 'none'; }
 function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiTeamModal(); }
 
+// --- FUNZIONI GLOBALI (Fuori da tutto) ---
+
+// Funzione principale per caricare il video nell'iframe
+window.caricaVideoDirect = function(urlFile, btnElement) {
+    console.log("File da caricare ricevuto dal DB:", urlFile);
+
+    // 1. Gestione estetica dei bottoni
+    document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    
+    // 2. Costruzione del percorso RELATIVO
+    // Assicuriamoci che il file finisca con .html se non lo ha già
+    let nomeFile = urlFile.trim();
+    if (!nomeFile.toLowerCase().endsWith('.html')) {
+        nomeFile += '.html';
+    }
+
+    // Se il database ha solo il nome (es: "M0001_1_D"), aggiungiamo "video/"
+    // Se ha già "video/M0001_1_D.html", lo lasciamo stare
+    const pathFinale = nomeFile.startsWith('video/') ? nomeFile : `video/${nomeFile}`;
+    
+    console.log("Percorso finale generato:", pathFinale);
+
+    // 3. Puntamento Iframe
+    const iframe = document.getElementById('replayFrame');
+    if (iframe) {
+        // Importante: usiamo window.location.origin per assicurarci che parta dalla radice del sito
+        const urlAssoluto = window.location.origin + "/" + pathFinale;
+        iframe.src = pathFinale; 
+        
+        // Debug per te: copia questo link nella console e vedi se si apre
+        console.log("Prova ad aprire questo link manualmente:", urlAssoluto);
+    }
+};
+
+window.chiudiReplay = function() {
+    const modal = document.getElementById('replayModal');
+    const iframe = document.getElementById('replayFrame');
+    const player = document.getElementById('bg-music-home');
+
+    // 1. Chiudiamo il modal visivamente
+    if (modal) {
+        modal.style.display = "none";
+    }
+
+    // 2. IMPORTANTISSIMO: Resettiamo l'iframe
+    // Questo serve a "uccidere" il processo del video replay, 
+    // altrimenti continueresti a sentire l'audio del set anche a modal chiuso.
+    if (iframe) {
+        iframe.src = ""; 
+    }
+
+    // 3. FARE RIPARTIRE LA MUSICA DELLA HOME
+    if (player) {
+        player.muted = false; // Togliamo il muto forzato
+        
+        // Facciamo ripartire l'MP3
+        player.play()
+            .then(() => { 
+                console.log("Musica Home ripresa con successo."); 
+            })
+            .catch(e => { 
+                // Il browser potrebbe bloccarlo se non c'è stata interazione,
+                // ma solitamente dopo un click su "Chiudi" funziona sempre.
+                console.log("Riproduzione automatica Home bloccata: ", e); 
+            });
+    }
+};
+// --- FUNZIONE APRI MATCH ---
+
 async function apriMatch(matchID, teamDidi, teamLu, scoreDidi, scoreLu) {
+    // --- STOP MUSICA HOME (Versione Rinforzata) ---
+    const player = document.getElementById('bg-music-home');
+    if (player) {
+        player.pause();
+        player.muted = true; // Forziamo il muto per sicurezza
+        console.log("Musica messa in pausa e mutata");
+    } else {
+        console.error("ERRORE: Elemento 'bg-music-home' non trovato!");
+    }
     const modal = document.getElementById('replayModal');
     const selector = document.getElementById('setSelector');
     
-    // Rimuovi header vecchio se esiste
+    // 1. Pulizia e Creazione Header
     const vecchiaHeader = document.querySelector('.replay-mini-header');
     if (vecchiaHeader) vecchiaHeader.remove();
 
-    // Creiamo l'header con i contenitori vuoti per le GIF
     const miniHeader = document.createElement('div');
     miniHeader.className = 'replay-mini-header';
     miniHeader.innerHTML = `
@@ -402,92 +694,77 @@ async function apriMatch(matchID, teamDidi, teamLu, scoreDidi, scoreLu) {
             <div id="header-gifs-lu" class="mini-gifs-row"></div>
         </div>
     `;
-    
     modal.appendChild(miniHeader);
 
-    // Funzione interna per caricare le GIF in modo intelligente
-    const caricaGifsInHeader = (nomeTeam, containerId, database) => {
+    // Funzione interna per le GIF
+    const caricaGifsInHeader = (nomeTeam, containerId, databaseObj) => {
         const container = document.getElementById(containerId);
-        let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
-        if (idx === -1) return;
-
-        let pkmRow = database[idx];
-        for (let col = 1; col <= 6; col++) {
-            let pName = pkmRow[col]?.trim();
-            if (pName) {
-                const img = document.createElement('img');
-                img.src = getGifUrl(pName); // Usa la funzione globale
-                img.className = 'header-gif'; 
-                container.appendChild(img);
-            }
+        if (!container || !databaseObj) return;
+        const teamData = Object.values(databaseObj).find(t => t.nome === nomeTeam);
+        if (teamData && teamData.pokemon) {
+            const listaPkm = Array.isArray(teamData.pokemon) ? teamData.pokemon : Object.values(teamData.pokemon);
+            listaPkm.forEach(p => {
+                if (p && p.nome) {
+                    const img = document.createElement('img');
+                    img.src = getGifUrl(p.nome); 
+                    img.className = 'header-gif'; 
+                    container.appendChild(img);
+                }
+            });
         }
     };
 
-    // Popoliamo le GIF
     caricaGifsInHeader(teamDidi, 'header-gifs-didi', databaseDidi);
     caricaGifsInHeader(teamLu, 'header-gifs-lu', databaseLu);
 
-    // Logica dei Set
-    selector.innerHTML = '<span style="color: white;">Verifica set disponibili...</span>';
+    // 2. Caricamento Dati da Firebase
+    selector.innerHTML = '<span style="color: white;">Caricamento set...</span>';
     modal.style.display = 'flex';
     
-    let buttonsHtml = '';
-    for (let setNum = 1; setNum <= 5; setNum++) {
-        const vincitore = await verificaVincitoreSet(matchID, setNum);
-        if (vincitore) {
-            buttonsHtml += `
-                <button class="btn-set vincitore-${vincitore}" onclick="caricaVideoDirect('${matchID}', ${setNum}, '${vincitore}', this)">
-                ${setNum}
-                </button>`;
+    try {
+        const snap = await db.ref(`matches/${matchID}`).once('value');
+        const matchData = snap.val();
+
+        if (matchData && matchData.replays) {
+            let buttonsHtml = '';
+            
+            // Ordiniamo i set (set1, set2...)
+            const setKeys = Object.keys(matchData.replays).sort((a, b) => {
+                return parseInt(a.replace('set', '')) - parseInt(b.replace('set', ''));
+            });
+
+            setKeys.forEach(key => {
+                const infoSet = matchData.replays[key];
+                const setNum = key.replace('set', ''); 
+                const urlFile = infoSet.url;           
+                const vincitore = infoSet.vincitore;   
+
+                if (urlFile) {
+                    // Usiamo window.caricaVideoDirect per sicurezza totale
+                    buttonsHtml += `
+                        <button class="btn-set vincitore-${vincitore}" 
+                                onclick="window.caricaVideoDirect('${urlFile}', this)">
+                            ${setNum}
+                        </button>`;
+                }
+            });
+
+            selector.innerHTML = buttonsHtml || '<span style="color: white;">Nessun replay salvato.</span>';
+            
+            // 3. Auto-selezione del primo set con un piccolo delay per garantire il rendering
+            setTimeout(() => {
+                const primoTasto = selector.querySelector('.btn-set');
+                if (primoTasto) primoTasto.click();
+            }, 100);
+
+        } else {
+            selector.innerHTML = '<span style="color: white;">Nessun video trovato.</span>';
         }
-    }
-    selector.innerHTML = buttonsHtml || '<span style="color: white;">Nessun video trovato.</span>';
-    const primoTasto = selector.querySelector('.btn-set');
-    if (primoTasto) primoTasto.click();
-}
-
-// Funzione magica che "indovina" chi ha vinto guardando se il file esiste
-async function verificaVincitoreSet(matchID, setNum) {
-    const giocatori = ['L', 'D'];
-    for (let g of giocatori) {
-        const path = `video/${matchID}_${setNum}_${g}.html`;
-        try {
-            const res = await fetch(path, { method: 'HEAD' }); // Chiede solo l'intestazione, è velocissimo
-            if (res.ok) return g; // Se il server dice "OK", il file esiste e il vincitore è g
-        } catch (e) {}
-    }
-    return null; // Se nessuno dei due file esiste
-}
-
-function caricaVideoDirect(matchID, setNum, vincitore, btnElement) {
-    document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
-    btnElement.classList.add('active');
-    
-    const videoPath = `video/${matchID}_${setNum}_${vincitore}.html`;
-    document.getElementById('replayFrame').src = videoPath;
-}
-        function caricaVideo(matchID, setNum, vincitore, btnElement) {
-            // Rimuovi classe active da tutti i tasti
-            document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
-
-            // Costruisce il nome file: video/M0008_1_L.html
-            const videoPath = `video/${matchID}_${setNum}_${vincitore}.html`;
-            document.getElementById('replayFrame').src = videoPath;
-        }
-
-        function chiudiReplay() {
-    const modal = document.getElementById('replayModal');
-    const iframe = document.getElementById('replayFrame');
-    
-    if (modal) {
-        modal.style.display = "none";
-        // Importante: svuotiamo l'iframe così il replay si ferma e non continua a suonare l'audio
-        if (iframe) iframe.src = ""; 
+    } catch (error) {
+        console.error("Errore Firebase Replay:", error);
+        selector.innerHTML = '<span style="color: white;">Errore caricamento.</span>';
     }
 }
-
-        caricaArchivio();
 
         async function caricaInfoAbilita(nomeAbilita, elementoId) {
     const tooltip = document.getElementById(elementoId);
@@ -656,25 +933,37 @@ async function caricaTipi(pkmName, elementId, direzione) {
 // Funzione globale per generare l'URL della GIF
 function getGifUrl(pName) {
     if (!pName) return "";
-    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    // Showdown usa nomi puliti senza spazi e punteggiatura
+    const urlName = pName.toLowerCase()
+                         .replace(/\s+/g, '') // Rimuove gli spazi
+                         .replace(/[.'é’]/g, ''); // Rimuove punteggiatura
     return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
 }
 
 // Funzione globale per generare l'HTML delle 6 mini-gif (usata nella lista match)
 function generaHtmlGifs(nomeTeam, database) {
-    let idx = database.findIndex(row => row[0] && row[0].trim().toLowerCase() === nomeTeam.toLowerCase());
-    if (idx === -1) return "";
-    let pkmRow = database[idx];
+    // Troviamo l'oggetto team che ha il nome corrispondente
+    // Nota: 'database' ora è un array di oggetti provenienti da Firebase
+    const teamData = Object.values(database).find(t => 
+        t.nome && t.nome.trim().toLowerCase() === nomeTeam.toLowerCase()
+    );
+
+    if (!teamData || !teamData.pokemon) return "";
+
     let htmlGifs = '<div class="mini-pkm-list">';
-    for (let col = 1; col <= 6; col++) {
-        let pName = pkmRow[col]?.trim();
+    
+    // Iteriamo sull'array pokemon salvato su Firebase
+    teamData.pokemon.forEach(p => {
+        // Supponendo che 'p' sia il nome o un oggetto con una proprietà 'nome'
+        const pName = (typeof p === 'string') ? p : p.nome;
+        
         if (pName) {
             htmlGifs += `<img src="${getGifUrl(pName)}" class="mini-gif" title="${pName}">`;
         }
-    }
+    });
+    
     return htmlGifs + '</div>';
 }
-
 
 const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
 
@@ -707,16 +996,392 @@ document.addEventListener('click', () => {
 const musicBtn = document.getElementById('music-toggle');
 const audio = document.getElementById('bg-music-home');
 
-musicBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Evita che il clic attivi anche lo sbloccatore sopra
-    if (audio.paused) {
-        audio.play();
-        musicBtn.innerText = "🔊";
+function toggleMusic() {
+    const player = document.getElementById('bg-music-home');
+    const btnIcon = document.getElementById('music-icon'); // L'elemento dell'icona (opzionale)
+
+    if (player.paused) {
+        player.play();
+        if (btnIcon) btnIcon.innerText = "🔊"; // Icona volume acceso
     } else {
-        audio.pause();
-        musicBtn.innerText = "🔇";
+        player.pause();
+        if (btnIcon) btnIcon.innerText = "🔇"; // Icona volume muto
     }
-});
+}
+
+
+async function apriAdminMatches() {
+    // 1. Reset ID e Campi testo
+    document.getElementById('match-id-nascosto').value = "";
+    document.getElementById('match-date').value = "";
+    document.getElementById('match-score').value = "";
+    
+    // 2. Reset Variabile Vincitori e Tasti (S1-S5)
+    vincitoriSelezionati = {}; // Svuota l'oggetto globale
+    for (let i = 1; i <= 5; i++) {
+        const inp = document.getElementById(`replay-s${i}`);
+        if (inp) inp.value = "";
+        
+        const btnD = document.getElementById(`win-${i}-D`);
+        const btnL = document.getElementById(`win-${i}-L`);
+        if (btnD) btnD.classList.remove('active-D');
+        if (btnL) btnL.classList.remove('active-L');
+    }
+
+    // 3. Popola le select e ASPETTA
+    await popolaSelectTeam();
+
+    // 4. Mostra il pannello
+    document.getElementById('admin-matches-panel').style.display = 'block';
+}
+
+async function popolaSelectTeam(idDidi = null, idLu = null, catSelezionata = null) {
+    // 1. Riferimenti agli elementi
+    const s1 = document.getElementById('match-team1');
+    const s2 = document.getElementById('match-team2');
+    const sCat = document.getElementById('match-cat');
+
+    if (!s1 || !s2 || !sCat) return;
+
+    try {
+        // 2. Caricamento dati parallelo
+        const [snapDidi, snapLu, snapReg] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('regolamenti').once('value')
+        ]);
+
+        // 3. Popola Team Didi
+        let htmlDidi = '<option value="">Select Team Didi</option>';
+        snapDidi.forEach(child => {
+            const isSel = child.key === idDidi ? 'selected' : '';
+            htmlDidi += `<option value="${child.key}" ${isSel}>${child.val().nome}</option>`;
+        });
+        s1.innerHTML = htmlDidi;
+
+        // 4. Popola Team Lu
+        let htmlLu = '<option value="">Select Team Lu</option>';
+        snapLu.forEach(child => {
+            const isSel = child.key === idLu ? 'selected' : '';
+            htmlLu += `<option value="${child.key}" ${isSel}>${child.val().nome}</option>`;
+        });
+        s2.innerHTML = htmlLu;
+
+        // 5. Popola Categorie (Corretta per la tua struttura)
+        let htmlCat = '<option value="">Select Format</option>';
+        const regs = snapReg.val();
+        if (regs) {
+            // Cicliamo le chiavi (M01, VGC25, ecc.)
+            Object.keys(regs).forEach(key => {
+                const nomeCat = regs[key].categoria;
+                if (nomeCat) {
+                    const isSel = nomeCat === catSelezionata ? 'selected' : '';
+                    htmlCat += `<option value="${nomeCat}" ${isSel}>${nomeCat}</option>`;
+                }
+            });
+        }
+        sCat.innerHTML = htmlCat;
+
+        // Forza valore se necessario (per la modifica)
+        if (catSelezionata) sCat.value = catSelezionata;
+
+    } catch (error) {
+        console.error("Errore popolamento:", error);
+    }
+}
+
+function salvaMatchFirebase() {
+    const team1Select = document.getElementById('match-team1');
+    const team2Select = document.getElementById('match-team2');
+    
+    const team1Id = team1Select.value;
+    const team1Nome = team1Select.options[team1Select.selectedIndex].text;
+    
+    const team2Id = team2Select.value;
+    const team2Nome = team2Select.options[team2Select.selectedIndex].text;
+    
+    const score = document.getElementById('match-score').value;
+    const data = document.getElementById('match-date').value;
+    const categoria = document.getElementById('match-cat').value;
+
+    if (!team1Id || !team2Id || !score || !data) {
+        alert("Per favore compila tutti i campi!");
+        return;
+    }
+
+    // --- LOGICA REPLAY ---
+    const replays = {};
+    for (let i = 1; i <= 5; i++) {
+        const urlValue = document.getElementById(`replay-s${i}`).value.trim();
+        const vincitoreVal = vincitoriSelezionati[`set${i}`] || "";
+
+        // Salviamo il set solo se c'è almeno un replay o un vincitore selezionato
+        if (urlValue || vincitoreVal) {
+            replays[`set${i}`] = {
+                url: urlValue,       // Es: "match1_set1.html"
+                vincitore: vincitoreVal // Es: "D" o "L"
+            };
+        }
+    }
+
+    const nuovoMatch = {
+        team1Id: team1Id,
+        team1: team1Nome,
+        team2Id: team2Id,
+        team2: team2Nome,
+        score: score,
+        data: data,
+        categoria: categoria,
+        replays: replays // <--- AGGIUNTO QUI
+    };
+
+    db.ref('matches').push(nuovoMatch)
+        .then(() => {
+            alert("Match salvato con successo!");
+            document.getElementById('admin-matches-panel').style.display = 'none';
+            inizializzaPaginaArchivio();
+        })
+        .catch(err => console.error("Errore salvataggio:", err));
+}
+
+// 1. APRE L'EDITOR CARICANDO I DATI CORRENTI
+async function preparaModificaMatch(matchId) {
+    try {
+        const snap = await db.ref(`matches/${matchId}`).once('value');
+        const m = snap.val();
+        if (!m) return;
+
+        // 1. Popoliamo i campi base
+        document.getElementById('edit-match-id').value = matchId;
+        document.getElementById('edit-match-date').value = m.data || "";
+        document.getElementById('edit-match-score').value = m.score || "";
+
+        // 2. Popoliamo le SELECT (Team e Categorie)
+        // Passiamo anche la categoria salvata per selezionarla automaticamente
+        await popolaSelectModificaMatch(m.team1Id, m.team2Id, m.categoria);
+
+        // 3. Reset e Caricamento Replay/Vincitori
+        vincitoriSelezionati = {}; // Reset oggetto globale
+        
+        for (let i = 1; i <= 5; i++) {
+            const inputReplay = document.getElementById(`edit-replay-s${i}`);
+            const btnD = document.getElementById(`edit-win-${i}-D`);
+            const btnL = document.getElementById(`edit-win-${i}-L`);
+            
+            // Pulizia preventiva
+            if(inputReplay) inputReplay.value = "";
+            if(btnD) btnD.classList.remove('active-D');
+            if(btnL) btnL.classList.remove('active-L');
+
+            // Caricamento dati salvati
+            if (m.replays && m.replays[`set${i}`]) {
+                const infoSet = m.replays[`set${i}`];
+                if(inputReplay) inputReplay.value = infoSet.url || "";
+                
+                if (infoSet.vincitore) {
+                    // Usiamo 'true' per indicare che siamo nel pannello MODIFICA
+                    selectWinner(i, infoSet.vincitore, true); 
+                }
+            }
+        }
+
+        // 4. Mostra il pannello
+        document.getElementById('admin-edit-match-panel').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        console.error("Errore caricamento match:", e);
+    }
+}
+
+// 2. FUNZIONE DI SUPPORTO PER LE SELECT NELL'EDITOR
+async function popolaSelectModificaMatch(id1, id2, catSelezionata) {
+    const s1 = document.getElementById('edit-match-team1');
+    const s2 = document.getElementById('edit-match-team2');
+    const sCat = document.getElementById('edit-match-cat');
+
+    try {
+        const [snapDidi, snapLu, snapReg] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('regolamenti').once('value')
+        ]);
+
+        // Popola Team Didi
+        let h1 = '<option value="">Select Team Didi</option>';
+        snapDidi.forEach(child => {
+            h1 += `<option value="${child.key}" ${child.key === id1 ? 'selected' : ''}>${child.val().nome}</option>`;
+        });
+        s1.innerHTML = h1;
+
+        // Popola Team Lu
+        let h2 = '<option value="">Select Team Lu</option>';
+        snapLu.forEach(child => {
+            h2 += `<option value="${child.key}" ${child.key === id2 ? 'selected' : ''}>${child.val().nome}</option>`;
+        });
+        s2.innerHTML = h2;
+
+        // Popola Categorie
+        let hCat = '<option value="">Select Format</option>';
+        snapReg.forEach(child => {
+            const nomeCat = child.val().categoria;
+            if (nomeCat) {
+                const isSelected = nomeCat === catSelezionata ? 'selected' : '';
+                hCat += `<option value="${nomeCat}" ${isSelected}>${nomeCat}</option>`;
+            }
+        });
+        sCat.innerHTML = hCat;
+
+    } catch (e) {
+        console.error("Errore popolamento select modifica:", e);
+    }
+}
+
+// 3. SALVA LE MODIFICHE
+async function confermaModificaMatch() {
+    const id = document.getElementById('edit-match-id').value;
+    const team1Sel = document.getElementById('edit-match-team1');
+    const team2Sel = document.getElementById('edit-match-team2');
+
+    // 1. Raccogliamo i dati dei replay dai campi con prefisso "edit-"
+    let replays = {};
+    for (let i = 1; i <= 5; i++) {
+        // Peschiamo l'input corretto del pannello modifica
+        const inputField = document.getElementById(`edit-replay-s${i}`);
+        const fileValue = inputField ? inputField.value.trim() : "";
+        
+        // Peschiamo il vincitore usando la chiave specifica della modifica
+        const vincitoreAssegnato = vincitoriSelezionati[`edit-set${i}`] || "";
+
+        // Salviamo il set solo se c'è un file o un vincitore
+        if (fileValue || vincitoreAssegnato) {
+            replays[`set${i}`] = {
+                url: fileValue,
+                vincitore: vincitoreAssegnato
+            };
+        }
+    }
+
+    // 2. Prepariamo l'oggetto per Firebase
+    const updateData = {
+        data: document.getElementById('edit-match-date').value,
+        score: document.getElementById('edit-match-score').value,
+        categoria: document.getElementById('edit-match-cat') ? document.getElementById('edit-match-cat').value : "",
+        team1Id: team1Sel.value,
+        team1: team1Sel.options[team1Sel.selectedIndex].text,
+        team2Id: team2Sel.value,
+        team2: team2Sel.options[team2Sel.selectedIndex].text,
+        replays: replays 
+    };
+
+    try {
+        await db.ref(`matches/${id}`).update(updateData);
+        alert("Match aggiornato con successo!");
+        
+        document.getElementById('admin-edit-match-panel').style.display = 'none';
+        
+        // Se hai la funzione di refresh usala, altrimenti tieni reload
+        if (typeof inizializzaPaginaArchivio === "function") {
+            inizializzaPaginaArchivio();
+        } else {
+            location.reload();
+        }
+    } catch (e) {
+        console.error("Errore durante l'aggiornamento:", e);
+        alert("Errore nell'aggiornamento");
+    }
+}
+
+// 4. ELIMINA IL MATCH
+async function eliminaMatch(matchId) {
+    if (confirm("Vuoi eliminare definitivamente questo match? Le statistiche dei team verranno ricalcolate.")) {
+        await db.ref(`matches/${matchId}`).remove();
+        location.reload();
+    }
+}
+
+let vincitoriSelezionati = {};
+
+function selectWinner(setNum, winner, isEdit = false) {
+    const prefix = isEdit ? "edit-" : "";
+    const key = isEdit ? `edit-set${setNum}` : `set${setNum}`;
+    
+    // Identifichiamo i bottoni
+    const btnD = document.getElementById(`${prefix}win-${setNum}-D`);
+    const btnL = document.getElementById(`${prefix}win-${setNum}-L`);
+    if (!btnD || !btnL) return;
+
+    // --- LOGICA DI DESELEZIONE (TOGGLE) ---
+    // Se il vincitore cliccato è già quello salvato, lo deselezioniamo
+    if (vincitoriSelezionati[key] === winner) {
+        delete vincitoriSelezionati[key]; // Rimuoviamo il dato
+        btnD.classList.remove('active-D');
+        btnL.classList.remove('active-L');
+        return; // Usciamo dalla funzione
+    }
+
+    // --- LOGICA DI SELEZIONE NORMALE ---
+    // Salviamo il nuovo vincitore
+    vincitoriSelezionati[key] = winner;
+
+    // Resettiamo entrambi i colori prima di applicare quello nuovo
+    btnD.classList.remove('active-D');
+    btnL.classList.remove('active-L');
+
+    // Applichiamo la classe al pulsante giusto
+    if (winner === 'D') {
+        btnD.classList.add('active-D');
+    } else if (winner === 'L') {
+        btnL.classList.add('active-L');
+    }
+}
+
+async function gestisciSalvataggioMatch() {
+    const matchId = document.getElementById('match-id-nascosto').value;
+    
+    // Raccogliamo i dati dei replay
+    let replays = {};
+    for (let i = 1; i <= 5; i++) {
+        const file = document.getElementById(`replay-s${i}`).value;
+        if (file) {
+            replays[`set${i}`] = {
+                url: file,
+                vincitore: vincitoriSelezionati[i] || "" // 'D' o 'L'
+            };
+        }
+    }
+
+    const dataMatch = {
+        data: document.getElementById('match-date').value,
+        score: document.getElementById('match-score').value,
+        categoria: document.getElementById('match-cat').value,
+        team1: document.getElementById('match-team1').value, // Nome o ID
+        team2: document.getElementById('match-team2').value,
+        replays: replays // Aggiungiamo l'oggetto replays
+    };
+
+    try {
+        if (matchId) {
+            await db.ref(`matches/${matchId}`).update(dataMatch);
+        } else {
+            await db.ref('matches').push(dataMatch);
+        }
+        alert("Match salvato con successo!");
+        chiudiPannelloMatch();
+    } catch (e) { console.error(e); }
+}
+
+async function caricaVideoDirect(matchID, setNum, vincitore, btn) {
+    // 1. Leggi il match da Firebase
+    const snap = await db.ref(`matches/${matchID}`).once('value');
+    const m = snap.val();
+    
+    if (m && m.replays && m.replays[`set${setNum}`]) {
+        const nomeFile = m.replays[`set${setNum}`].url;
+        // 2. Carica il file dalla tua cartella replays
+        document.getElementById('videoFrame').src = `replays/${nomeFile}`;
+    }
+}
 
 
     </script>

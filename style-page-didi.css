@@ -866,6 +866,7 @@ body.modal-open {
     cursor: pointer;
     font-weight: bold;
     margin-top: 20px;
+    font-family: Josefin Sans, sans-serif;
 }
 
 /* Contenitore della Bio */
@@ -1248,4 +1249,9 @@ body.modal-open {
     display: none; 
     pointer-events: none;
     z-index: 9999;
+}
+
+/* Sostituisci .modal-content h2 con il selettore che usi per il titolo */
+.modal-content h2 {
+    color: #000000 !important;
 }

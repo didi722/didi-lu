@@ -1542,7 +1542,7 @@ margin-top: 0;
 }
 
 #single-stats .stat-bar-fill {
-    background: #22da41;
+    background: #9722da;
 }
 
 #single-stats .stat-label {
@@ -1838,4 +1838,144 @@ margin-top: 0;
 
 #music-icon {
     font-size: 20px;
+}
+
+.admin-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.btn-admin-edit, 
+.btn-admin-del {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    background: none;
+    border: none;
+}
+
+.btn-admin-edit:hover, 
+.btn-admin-del:hover {
+    transform: scale(1.1);
+}
+
+.admin-panel {
+position:fixed;
+top: 20px;
+left: 20px;
+background: rgba(0,0,0,0.95);
+padding: 20px;
+border-radius: 15px;
+border: 2px solid var(--accent-dark);
+z-index: 10000;
+display: none;
+width: 320px;
+color: white
+}
+
+.admin-panel h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--accent-dark);
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.admin-team-cat {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #7d7d7d;
+}
+
+.admin-team-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #eeeeee;
+}
+
+.showdown-input {
+    width: 94%;
+    background: #222;
+    color: #afa;
+    border: 1px solid #444;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.showdown-save {
+    background:var(--accent-dark);
+    font-family: 'Josefin Sans', sans-serif;
+    color: black;
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.showdown-cancel {
+    background: #555;
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.btn-floating-admin {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    
+    /* Sfondo semitrasparente per leggerezza */
+    background: rgba(0, 0, 0, 0.5); 
+    
+    /* Solo bordo giallo Pokémon */
+    border: 2px solid var(--card-bg-matches); 
+    border-radius: 50%;
+    
+    color: var(--card-bg-matches);
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: var(--accent-main);         /* Il + diventa nero */
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    box-shadow: 0 0 15px rgba(22, 199, 25, 0.4);
+    border: #000;
 }

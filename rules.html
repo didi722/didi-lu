@@ -13,7 +13,7 @@
 <body>
 
     <audio id="bg-music-home" loop preload="auto"></audio>
-<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
+<div id="music-toggle" class="music-btn">
     🔊
 </div>
 
@@ -44,8 +44,40 @@
 
 <div class="controls">
     <input type="text" id="searchInput" placeholder="Browse rules..." oninput="applicaFiltri()">
-    
 </div>
+
+<button class="btn-floating-admin" onclick="toggleAdminPanel()" title="Add Format">
+    <span class="plus-icon">+</span>
+</button>
+
+
+<div id="admin-rules-panel" class="pkm-panel" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 20px auto; z-index: 100000; max-width: 800px; padding: 20px; border-radius: 12px; border: 2px solid #092377 !important;
+    box-shadow: 5px 5px 0px #092377;
+    background: #2e53cd !important;
+    font-family: Josefin Sans, sans-serif;">
+    <h2 style="color: #eeeeee; margin-bottom: 15px;">Add/Edit Format</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <input style="color: #1a1a1a;" type="text" id="rule-cat" placeholder="Category Name (es: VGC 2025)">
+        <input style="color: #1a1a1a;" type="text" id="rule-desc" placeholder="Short Description (for the card)">
+        <input style="color: #1a1a1a;" type="text" id="rule-sleep" placeholder="Sleep Clause">
+        <input style="color: #1a1a1a;" type="text" id="rule-items" placeholder="Items Rule">
+        <input style="color: #1a1a1a;" type="text" id="rule-dupes" placeholder="Duplicates Rule">
+        <input style="color: #1a1a1a;" type="text" id="rule-gen" placeholder="Generation">
+        <input style="color: #1a1a1a;" type="text" id="rule-restr" placeholder="Restricted/Leggies">
+        <input style="color: #1a1a1a;" type="text" id="rule-tier" placeholder="Tier">
+        <input style="color: #1a1a1a;" type="text" id="rule-bst" placeholder="BST Limit">
+        <input style="color: #1a1a1a;" type="text" id="rule-types" placeholder="Allowed Types">
+        <input type="text" id="rule-link" placeholder="External Link URL" style="grid-column: span 2;">
+        <textarea id="rule-special" placeholder="Special Rules (Long text)" style="grid-column: span 2; height: 100px;"></textarea>
+    </div>
+    <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button onclick="salvaRegolaFirebase()" class="save-btn">Save Rules</button>
+        <button onclick="toggleAdminPanel()" class="cancel-btn">Cancel</button>
+    </div>
+</div>
+
+<div id="regolamentoGrid" class="regolamento-grid"></div>
+
         <div id="regolamentoGrid" class="regolamento-grid">
             </div>
 
@@ -58,78 +90,188 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script>
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=626123238&single=true&output=csv";
 
-        async function caricaRegolamento() {
-            const loader = document.getElementById('loading-screen');
-            const grid = document.getElementById('regolamentoGrid');
-            try {
-                if (loader) loader.style.display = 'flex';
-                const response = await fetch(CSV_URL);
-                const csvText = await response.text();
-                const righe = parseCSV(csvText);
-                grid.innerHTML = "";
+        const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+    messagingSenderId: "707115539525",
+    appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
 
-                righe.forEach((r, index) => {
-                    const categoria = r[0];
-                    if(!categoria || categoria.toLowerCase() === "categoria" || index === 0) return;
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+// ----------------------------
 
-                    const card = document.createElement('div');
-                    card.className = 'regola-card';
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <h3>${categoria}</h3>
-                        </div>
-                        <div class="card-body">
-                            <span>${r[11]}</span>
-                        </div>
-                        <div class="card-footer">Dettagli Completi</div>
-                    `;
-                    card.onclick = () => apriRegolaModal(r);
-                    grid.appendChild(card);
-                });
-            } catch (error) {
-                console.error("Errore:", error);
-                grid.innerHTML = "<p>Errore nel caricamento delle regole.</p>";
-            } finally {
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.style.display = 'none', 500);
-                }
+let tuttiRegolamenti = [];
+
+// 1. Caricamento dati da Firebase
+async function caricaRegolamento() {
+    const loader = document.getElementById('loading-screen');
+    const grid = document.getElementById('regolamentoGrid');
+    
+    if (loader) loader.style.display = 'flex';
+    
+    // Usiamo db.ref
+    db.ref('regolamenti').on('value', (snapshot) => {
+        grid.innerHTML = "";
+        tuttiRegolamenti = [];
+        const data = snapshot.val();
+
+        // Se non ci sono dati, dobbiamo comunque nascondere il loader!
+        if (!data) {
+            grid.innerHTML = "<p style='color:white; text-align:center;'>Nessun regolamento trovato. Clicca ⚙️ per aggiungerne uno.</p>";
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
             }
+            return;
         }
 
-        function apriRegolaModal(r) {
-            const modal = document.getElementById('regolaModal');
-            const body = document.getElementById('regolaModalBody');
-            body.innerHTML = `
-                <h2 class="modal-title">${r[0]}</h2>
-                <div class="regole-grid-detail">
-                    <div class="info-item"><strong>💤 Sleep Clause</strong><span>${r[1] || '-'}</span></div>
-                    <div class="info-item"><strong>🍎 Strumenti</strong><span>${r[2] || '-'}</span></div>
-                    <div class="info-item"><strong>👥 Duplicati</strong><span>${r[3] || '-'}</span></div>
-                    <div class="info-item"><strong>📅 Gen</strong><span>${r[4] || '-'}</span></div>
-                    <div class="info-item"><strong>🚫 Restricted</strong><span>${r[5] || '-'}</span></div>
-                    <div class="info-item"><strong>🏆 Tier</strong><span>${r[6] || '-'}</span></div>
-                    <div class="info-item"><strong>📊 BST</strong><span>${r[7] || '-'}</span></div>
-                    <div class="info-item"><strong>🧬 Tipi</strong><span>${r[8] || '-'}</span></div>
+        Object.keys(data).forEach(key => {
+            const r = { id: key, ...data[key] };
+            tuttiRegolamenti.push(r);
+            
+            const card = document.createElement('div');
+            card.className = 'regola-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${r.categoria}</h3>
                 </div>
-                <div class="special-rules-box">
-                    <h1><strong>⚠️ Special Rules:</strong></h1>
-                    <p>${r[9] || 'Nessuna'}</p>
+                <div class="card-body">
+                    <span>${r.descrizioneBreve || ''}</span>
                 </div>
-                ${r[10] ? `<a href="${r[10]}" target="_blank" class="link-btn" onclick="event.stopPropagation()">Approfondimento Online</a>` : ''}            `;
-            modal.style.display = "flex";
+                <div class="card-footer">Dettagli Completi</div>
+            `;
+            card.onclick = () => apriRegolaModal(r);
+            grid.appendChild(card);
+        });
+        
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
         }
+    }, (error) => {
+        console.error("Errore Firebase:", error);
+        if (loader) loader.style.display = 'none';
+        grid.innerHTML = "<p>Errore di connessione al database.</p>";
+    });
+}
 
-        function parseCSV(text) {
-            const lines = text.split('\n');
-            return lines.map(line => {
-                const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-                return line.split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+// 2. Salvataggio su Firebase
+function salvaRegolaFirebase() {
+    const panel = document.getElementById('admin-rules-panel');
+    const editingId = panel.dataset.editingId;
+
+    const regola = {
+        categoria: document.getElementById('rule-cat').value,
+        descrizioneBreve: document.getElementById('rule-desc').value,
+        sleepClause: document.getElementById('rule-sleep').value,
+        strumenti: document.getElementById('rule-items').value,
+        duplicati: document.getElementById('rule-dupes').value,
+        gen: document.getElementById('rule-gen').value,
+        restricted: document.getElementById('rule-restr').value,
+        tier: document.getElementById('rule-tier').value,
+        bst: document.getElementById('rule-bst').value,
+        tipi: document.getElementById('rule-types').value,
+        link: document.getElementById('rule-link').value,
+        specialRules: document.getElementById('rule-special').value
+    };
+
+    if (!regola.categoria) return alert("Inserisci almeno il nome della categoria!");
+
+    const ref = editingId ? db.ref(`regolamenti/${editingId}`) : db.ref('regolamenti').push();
+
+    ref.set(regola)
+        .then(() => {
+            alert(editingId ? "Regolamento aggiornato!" : "Regolamento aggiunto!");
+            // Reset pannello
+            panel.dataset.editingId = "";
+            document.querySelectorAll('#admin-rules-panel input, #admin-rules-panel textarea').forEach(el => el.value = "");
+            toggleAdminPanel();
+        })
+        .catch(err => alert("Errore: " + err));
+}
+
+// 3. Modal aggiornato per leggere i nuovi nomi dei campi
+function apriRegolaModal(r) {
+    const modal = document.getElementById('regolaModal');
+    const body = document.getElementById('regolaModalBody');
+    body.innerHTML = `
+        <div class="admin-modal-actions" style="float: right;">
+            <button onclick="event.stopPropagation(); caricaRegolaPerModifica('${r.id}')" class="btn-admin-edit">📝</button>
+            <button onclick="event.stopPropagation(); cancellaRegolaDaFirebase('${r.id}')" class="btn-admin-del">🗑️</button>
+        </div>
+        <h2 class="modal-title">${r.categoria}</h2>
+        <div class="regole-grid-detail">
+            <div class="info-item"><strong>💤 Sleep Clause</strong><span>${r.sleepClause || '-'}</span></div>
+            <div class="info-item"><strong>🍎 Double Items</strong><span>${r.strumenti || '-'}</span></div>
+            <div class="info-item"><strong>👥 Double Pokémons</strong><span>${r.duplicati || '-'}</span></div>
+            <div class="info-item"><strong>📅 Gen</strong><span>${r.gen || '-'}</span></div>
+            <div class="info-item"><strong>🚫 Restricted</strong><span>${r.restricted || '-'}</span></div>
+            <div class="info-item"><strong>🏆 Max. Tier</strong><span>${r.tier || '-'}</span></div>
+            <div class="info-item"><strong>📊 BST</strong><span>${r.bst || '-'}</span></div>
+            <div class="info-item"><strong>🧬 Types</strong><span>${r.tipi || '-'}</span></div>
+        </div>
+        <div class="special-rules-box">
+            <h1><strong>⚠️ Special Rules:</strong></h1>
+            <p>${r.specialRules || 'Nessuna'}</p>
+        </div>
+        ${r.link ? `<a href="${r.link}" target="_blank" class="link-btn" onclick="event.stopPropagation()">Approfondimento Online</a>` : ''}
+    `;
+    modal.style.display = "flex";
+}
+
+// Prepara il pannello con i dati esistenti
+function caricaRegolaPerModifica(id) {
+    const r = tuttiRegolamenti.find(reg => reg.id === id);
+    if (!r) return;
+
+    document.getElementById('rule-cat').value = r.categoria;
+    document.getElementById('rule-desc').value = r.descrizioneBreve || "";
+    document.getElementById('rule-sleep').value = r.sleepClause || "";
+    document.getElementById('rule-items').value = r.strumenti || "";
+    document.getElementById('rule-dupes').value = r.duplicati || "";
+    document.getElementById('rule-gen').value = r.gen || "";
+    document.getElementById('rule-restr').value = r.restricted || "";
+    document.getElementById('rule-tier').value = r.tier || "";
+    document.getElementById('rule-bst').value = r.bst || "";
+    document.getElementById('rule-types').value = r.tipi || "";
+    document.getElementById('rule-link').value = r.link || "";
+    document.getElementById('rule-special').value = r.specialRules || "";
+
+    // Salva l'ID nel pannello
+    document.getElementById('admin-rules-panel').dataset.editingId = id;
+    
+    chiudiRegolaModal();
+    toggleAdminPanel();
+}
+
+// Elimina da Firebase
+function cancellaRegolaDaFirebase(id) {
+    if (confirm("Sei sicuro di voler eliminare questo regolamento?")) {
+        db.ref(`regolamenti/${id}`).remove()
+            .then(() => {
+                alert("Regolamento eliminato!");
+                chiudiRegolaModal();
             });
-        }
+    }
+}
+
+function toggleAdminPanel() {
+    const p = document.getElementById('admin-rules-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+       
 
         function chiudiRegolaModal() {
             document.getElementById('regolaModal').style.display = "none";

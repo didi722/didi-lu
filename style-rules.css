@@ -378,3 +378,85 @@ h1 {
     padding: 15px;
 }
 
+.save-btn {
+    background: #16a445;
+    color: #000;
+    border: none;
+    font-family: Josefin Sans, sans-serif;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    background: #b51e1e;
+    color: #000;
+    border: none;
+    font-family: Josefin Sans, sans-serif;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.music-btn {
+    position: fixed;
+    right: 70px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+.btn-floating-admin {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    
+    /* Sfondo semitrasparente per leggerezza */
+    background: rgba(0, 0, 0, 0.5); 
+    
+    /* Solo bordo giallo Pokémon */
+    border: none !important;
+    border-radius: 50%;
+    
+    color: #eeeeee !important;
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: #d62f2f !important;         /* Il + diventa nero */
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    box-shadow: 0 0 15px rgba(227, 73, 70, 0.4) !important;
+    border: #000 !important;
+}
