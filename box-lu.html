@@ -87,10 +87,24 @@
     <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
 </div>
 
-<button onclick="document.getElementById('admin-panel').style.display='block'" class="btn-floating-admin" title="Add Format">
+<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Format">
     <span class="plus-icon">+</span>
+</button>
 
     <script>
+
+        function apriAdminProtetto() {
+    const passwordSegreta = "luca2026"; // <-- Scegli la tua password qui
+    const inputUtente = prompt("Inserisci la password amministratore per accedere all'Importer:");
+
+    if (inputUtente === passwordSegreta) {
+        document.getElementById('admin-panel').style.display = 'block';
+    } else if (inputUtente === null) {
+        // L'utente ha cliccato "Annulla", non facciamo nulla
+    } else {
+        alert("Password errata. Accesso negato.");
+    }
+}
 
 
 // 1. Configurazione Firebase (Assicurati che sia corretta)
@@ -1251,18 +1265,57 @@ function parseShowdown(text) {
 // CANCELLA uno specifico team
 function cancellaTeamDaFirebase(teamId) {
     if (!teamId) return alert("ID team non trovato");
-    
-    if (confirm("Vuoi eliminare definitivamente questo team dall'archivio?")) {
+
+    // 1. Controllo Password
+    const passwordSegreta = "luca2026"; // Sostituisci con la tua
+    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team di LU.\nInserisci la password per confermare l'operazione:");
+
+    if (inputUtente === null) return; // L'utente ha premuto annulla
+
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Eliminazione annullata.");
+        return;
+    }
+
+    // 2. Conferma definitiva
+    if (confirm("Sei assolutamente sicuro? Il team verrà rimosso permanentemente dal database di Lukiani.")) {
         db.ref(`allenatore_lukiani/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato!");
+                alert("Team eliminato con successo!");
                 chiudiTeamModal();
+                // Ricarica la griglia dei team (se la funzione si chiama caricaBox)
+                if (typeof caricaBox === "function") caricaBox();
+            })
+            .catch(e => {
+                console.error("Errore eliminazione team Lu:", e);
+                alert("Errore tecnico durante l'eliminazione.");
             });
     }
 }
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
+    // 1. Controllo Password (con supporto alla variabile di sessione)
+    const passwordSegreta = "luca2026"; 
+
+    if (typeof isAdminAutenticato !== 'undefined' && !isAdminAutenticato) {
+        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
+        if (inputUtente === passwordSegreta) {
+            isAdminAutenticato = true;
+        } else {
+            if (inputUtente !== null) alert("Password errata!");
+            return;
+        }
+    } else if (typeof isAdminAutenticato === 'undefined') {
+        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
+        if (inputUtente !== passwordSegreta) {
+            if (inputUtente !== null) alert("Password errata!");
+            return;
+        }
+    }
+
+    // --- Se autorizzato, procedi con il caricamento ---
+    // Assicurati che 'tuttiITeam' contenga i team del giocatore corrente
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
@@ -1280,7 +1333,7 @@ function caricaTeamPerModifica(teamId) {
 
     document.getElementById('showdown-input').value = testoShowdown.trim();
     
-    // IMPORTANTE: Salviamo l'ID nel pannello per sapere che stiamo MODIFICANDO e non creando uno nuovo
+    // IMPORTANTE: Impostiamo l'editingId per evitare duplicati su Firebase
     document.getElementById('admin-panel').dataset.editingId = teamId;
     
     document.getElementById('admin-panel').style.display = 'block';

@@ -1011,13 +1011,24 @@ function toggleMusic() {
 
 
 async function apriAdminMatches() {
-    // 1. Reset ID e Campi testo
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
+    const inputUtente = prompt("Accesso protetto. Inserisci la password per gestire i match:");
+
+    if (inputUtente !== passwordSegreta) {
+        if (inputUtente !== null) alert("Password errata!");
+        return; // Esce dalla funzione e non apre nulla
+    }
+
+    // --- Se la password è corretta, procedi con il resto ---
+
+    // 2. Reset ID e Campi testo
     document.getElementById('match-id-nascosto').value = "";
     document.getElementById('match-date').value = "";
     document.getElementById('match-score').value = "";
     
-    // 2. Reset Variabile Vincitori e Tasti (S1-S5)
-    vincitoriSelezionati = {}; // Svuota l'oggetto globale
+    // 3. Reset Variabile Vincitori e Tasti (S1-S5)
+    vincitoriSelezionati = {}; 
     for (let i = 1; i <= 5; i++) {
         const inp = document.getElementById(`replay-s${i}`);
         if (inp) inp.value = "";
@@ -1028,10 +1039,10 @@ async function apriAdminMatches() {
         if (btnL) btnL.classList.remove('active-L');
     }
 
-    // 3. Popola le select e ASPETTA
+    // 4. Popola le select e ASPETTA
     await popolaSelectTeam();
 
-    // 4. Mostra il pannello
+    // 5. Mostra il pannello
     document.getElementById('admin-matches-panel').style.display = 'block';
 }
 
@@ -1146,6 +1157,16 @@ function salvaMatchFirebase() {
 
 // 1. APRE L'EDITOR CARICANDO I DATI CORRENTI
 async function preparaModificaMatch(matchId) {
+    // 1. Controllo Password immediato
+    const passwordSegreta = "slavojzizek"; // La tua password
+    const inputUtente = prompt("Autorizzazione richiesta per modificare i dati del match:");
+
+    if (inputUtente !== passwordSegreta) {
+        if (inputUtente !== null) alert("Password errata! Modifica non consentita.");
+        return; 
+    }
+
+    // --- Se la password è corretta, procedi con il caricamento ---
     try {
         const snap = await db.ref(`matches/${matchId}`).once('value');
         const m = snap.val();
@@ -1157,29 +1178,25 @@ async function preparaModificaMatch(matchId) {
         document.getElementById('edit-match-score').value = m.score || "";
 
         // 2. Popoliamo le SELECT (Team e Categorie)
-        // Passiamo anche la categoria salvata per selezionarla automaticamente
         await popolaSelectModificaMatch(m.team1Id, m.team2Id, m.categoria);
 
         // 3. Reset e Caricamento Replay/Vincitori
-        vincitoriSelezionati = {}; // Reset oggetto globale
+        vincitoriSelezionati = {}; 
         
         for (let i = 1; i <= 5; i++) {
             const inputReplay = document.getElementById(`edit-replay-s${i}`);
             const btnD = document.getElementById(`edit-win-${i}-D`);
             const btnL = document.getElementById(`edit-win-${i}-L`);
             
-            // Pulizia preventiva
             if(inputReplay) inputReplay.value = "";
             if(btnD) btnD.classList.remove('active-D');
             if(btnL) btnL.classList.remove('active-L');
 
-            // Caricamento dati salvati
             if (m.replays && m.replays[`set${i}`]) {
                 const infoSet = m.replays[`set${i}`];
                 if(inputReplay) inputReplay.value = infoSet.url || "";
                 
                 if (infoSet.vincitore) {
-                    // Usiamo 'true' per indicare che siamo nel pannello MODIFICA
                     selectWinner(i, infoSet.vincitore, true); 
                 }
             }
@@ -1294,9 +1311,27 @@ async function confermaModificaMatch() {
 
 // 4. ELIMINA IL MATCH
 async function eliminaMatch(matchId) {
-    if (confirm("Vuoi eliminare definitivamente questo match? Le statistiche dei team verranno ricalcolate.")) {
-        await db.ref(`matches/${matchId}`).remove();
-        location.reload();
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // La tua password
+    const inputUtente = prompt("AZIONE IRREVERSIBILE. Inserisci la password per eliminare il match:");
+
+    // Se l'utente annulla o sbaglia password, interrompiamo tutto
+    if (inputUtente === null) return; 
+    
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Eliminazione annullata.");
+        return;
+    }
+
+    // 2. Conferma finale (opzionale, ma consigliata per sicurezza)
+    if (confirm("Sei assolutamente sicuro? Le statistiche verranno ricalcolate al prossimo caricamento.")) {
+        try {
+            await db.ref(`matches/${matchId}`).remove();
+            location.reload();
+        } catch (e) {
+            console.error("Errore durante l'eliminazione:", e);
+            alert("Errore durante l'eliminazione dal database.");
+        }
     }
 }
 

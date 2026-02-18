@@ -87,10 +87,24 @@
     <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
 </div>
 
-<button onclick="document.getElementById('admin-panel').style.display='block'" class="btn-floating-admin" title="Add Format">
+<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Format">
     <span class="plus-icon">+</span>
+</button>
 
     <script>
+
+        function apriAdminProtetto() {
+    const passwordSegreta = "7224353-Rr"; // <-- Scegli la tua password qui
+    const inputUtente = prompt("Inserisci la password amministratore per accedere all'Importer:");
+
+    if (inputUtente === passwordSegreta) {
+        document.getElementById('admin-panel').style.display = 'block';
+    } else if (inputUtente === null) {
+        // L'utente ha cliccato "Annulla", non facciamo nulla
+    } else {
+        alert("Password errata. Accesso negato.");
+    }
+}
 
 // 1. Configurazione Firebase (Assicurati che sia corretta)
 const firebaseConfig = {
@@ -1251,18 +1265,60 @@ function parseShowdown(text) {
 // CANCELLA uno specifico team
 function cancellaTeamDaFirebase(teamId) {
     if (!teamId) return alert("ID team non trovato");
-    
-    if (confirm("Vuoi eliminare definitivamente questo team dall'archivio?")) {
+
+    // 1. Controllo Password
+    const passwordSegreta = "7224353-Rr"; // Sostituisci con la tua
+    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team dall'archivio.\nInserisci la password per confermare:");
+
+    if (inputUtente === null) return; // L'utente ha premuto annulla
+
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Eliminazione annullata.");
+        return;
+    }
+
+    // 2. Conferma finale
+    if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
+        // Nota: Assicurati che il percorso (allenatore_didi o allenatore_lukiani) 
+        // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
         db.ref(`allenatore_didi/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato!");
+                alert("Team eliminato correttamente!");
                 chiudiTeamModal();
+                // Ricarichiamo i dati per aggiornare la griglia dei team
+                if (typeof caricaBox === "function") caricaBox();
+            })
+            .catch(e => {
+                console.error("Errore durante l'eliminazione del team:", e);
+                alert("Errore tecnico durante l'eliminazione.");
             });
     }
 }
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
+    // 1. Controllo Password (o variabile di sessione)
+    const passwordSegreta = "7224353-Rr"; 
+    
+    // Se vuoi usare la variabile globale isAdminAutenticato definita in precedenza:
+    if (typeof isAdminAutenticato !== 'undefined' && !isAdminAutenticato) {
+        const inputUtente = prompt("Inserisci la password per modificare il Team:");
+        if (inputUtente === passwordSegreta) {
+            isAdminAutenticato = true;
+        } else {
+            if (inputUtente !== null) alert("Password errata!");
+            return;
+        }
+    } else if (typeof isAdminAutenticato === 'undefined') {
+        // Fallback se non usi la variabile globale
+        const inputUtente = prompt("Inserisci la password per modificare il Team:");
+        if (inputUtente !== passwordSegreta) {
+            if (inputUtente !== null) alert("Password errata!");
+            return;
+        }
+    }
+
+    // --- Se autorizzato, procedi con il caricamento dei dati nel pannello ---
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
@@ -1280,7 +1336,7 @@ function caricaTeamPerModifica(teamId) {
 
     document.getElementById('showdown-input').value = testoShowdown.trim();
     
-    // IMPORTANTE: Salviamo l'ID nel pannello per sapere che stiamo MODIFICANDO e non creando uno nuovo
+    // Salviamo l'ID per la modifica
     document.getElementById('admin-panel').dataset.editingId = teamId;
     
     document.getElementById('admin-panel').style.display = 'block';

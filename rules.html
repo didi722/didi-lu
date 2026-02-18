@@ -60,8 +60,8 @@
         <input style="color: #1a1a1a;" type="text" id="rule-cat" placeholder="Category Name (es: VGC 2025)">
         <input style="color: #1a1a1a;" type="text" id="rule-desc" placeholder="Short Description (for the card)">
         <input style="color: #1a1a1a;" type="text" id="rule-sleep" placeholder="Sleep Clause">
-        <input style="color: #1a1a1a;" type="text" id="rule-items" placeholder="Items Rule">
-        <input style="color: #1a1a1a;" type="text" id="rule-dupes" placeholder="Duplicates Rule">
+        <input style="color: #1a1a1a;" type="text" id="rule-items" placeholder="Double Items">
+        <input style="color: #1a1a1a;" type="text" id="rule-dupes" placeholder="Double Pokémons">
         <input style="color: #1a1a1a;" type="text" id="rule-gen" placeholder="Generation">
         <input style="color: #1a1a1a;" type="text" id="rule-restr" placeholder="Restricted/Leggies">
         <input style="color: #1a1a1a;" type="text" id="rule-tier" placeholder="Tier">
@@ -257,20 +257,55 @@ function caricaRegolaPerModifica(id) {
 
 // Elimina da Firebase
 function cancellaRegolaDaFirebase(id) {
-    if (confirm("Sei sicuro di voler eliminare questo regolamento?")) {
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
+    const inputUtente = prompt("Autorizzazione richiesta. Inserisci la password per eliminare questo regolamento:");
+
+    if (inputUtente === null) return; // L'utente ha cliccato annulla
+
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Operazione annullata.");
+        return;
+    }
+
+    // 2. Conferma finale
+    if (confirm("Sei sicuro di voler eliminare definitivamente questo regolamento?")) {
         db.ref(`regolamenti/${id}`).remove()
             .then(() => {
                 alert("Regolamento eliminato!");
                 chiudiRegolaModal();
+                // Opzionale: ricarica la lista o la pagina per aggiornare la vista
+                if (typeof caricaRegolamenti === "function") caricaRegolamenti();
+            })
+            .catch(e => {
+                console.error("Errore eliminazione regola:", e);
+                alert("Errore durante l'eliminazione.");
             });
     }
 }
 
 function toggleAdminPanel() {
     const p = document.getElementById('admin-rules-panel');
-    p.style.display = p.style.display === 'none' ? 'block' : 'none';
-}
+    
+    // 1. Controlliamo se il pannello è attualmente chiuso
+    // Se è già aperto, lo chiudiamo senza chiedere nulla
+    if (p.style.display === 'block') {
+        p.style.display = 'none';
+        return;
+    }
 
+    // 2. Se il pannello è chiuso, chiediamo la password
+    const passwordSegreta = "slavojzizek"; // <-- Sostituisci con la tua
+    const inputUtente = prompt("Inserisci la password amministratore:");
+
+    if (inputUtente === passwordSegreta) {
+        p.style.display = 'block';
+    } else if (inputUtente === null) {
+        // L'utente ha premuto annulla, non facciamo nulla
+    } else {
+        alert("Password errata!");
+    }
+}
        
 
         function chiudiRegolaModal() {
