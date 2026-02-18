@@ -1479,25 +1479,26 @@ function mostraBadge(vinteObj, cleanObj, primoObj) {
     ];
 
     const check = (statObj, lista) => {
-        // Estraiamo il valore max e la data dall'oggetto ricevuto
         const valoreSicuro = (statObj && statObj.max > 0) ? statObj.max : 0;
         const dataSblocco = (statObj && statObj.data) ? statObj.data : "";
         
-        // Trova il badge corrispondente alla soglia raggiunta
+        // Trova il badge corrispondente
         const b = lista.find(x => valoreSicuro >= x.n);
         
         if (!b) return ""; 
 
-        const isGhost = valoreSicuro === 0 ? "ghost-badge" : "";
+        const isGhost = b.n === 0; // È un ghost se la soglia del badge trovato è 0
+        const ghostClass = isGhost ? "ghost-badge" : "";
         
-        // Costruiamo il testo del tooltip: se sbloccato aggiungiamo la data
         let testoTooltip = b.t;
-        if (valoreSicuro > 0 && dataSblocco) {
+
+        // MODIFICA QUI: Aggiungiamo la data SOLO se NON è un ghost e se la data esiste
+        if (!isGhost && dataSblocco) {
             testoTooltip += ` (${dataSblocco})`;
         }
 
         return `
-            <span class="badge-item ${isGhost}" data-tooltip="${testoTooltip}">
+            <span class="badge-item ${ghostClass}" data-tooltip="${testoTooltip}">
                 <img src="${b.e}" class="badge-icon" alt="Badge">
             </span>`;
     };
