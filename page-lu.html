@@ -78,7 +78,7 @@
     <input type="hidden" id="selected-music-url">
 </div>
 
-<button onclick="salvaModificheBio()" class="save-btn" style="margin-top:20px;">Save Changes</button>
+<button onclick="salvaModificheProfilo()" class="save-btn" style="margin-top:20px;">Save Changes</button>
     </div>
 </div>
 
@@ -493,6 +493,8 @@ window.listaRegolamenti.forEach(r => {
             }
         });
 
+
+
         // 3. ORA DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
         // 3. DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
         for (const nomeCat in vittorieTeamPerFormato) {
@@ -528,14 +530,45 @@ window.listaRegolamenti.forEach(r => {
         }
 
         // 1. CALCOLO BEST (TEAM E FORMAT)
-        let bestFormatObj = null; let maxFW = -1;
-        for (const f in statsFormat) {
-            if (statsFormat[f].win > maxFW) { maxFW = statsFormat[f].win; bestFormatObj = statsFormat[f]; dati["BEST-CATEGORY"] = f; }
-        }
-        let maxW = -1; let bestT = null;
-        for (const id in statsTeam) {
-            if (statsTeam[id].win > maxW) { maxW = statsTeam[id].win; bestT = statsTeam[id]; }
-        }
+        // 1. TROVA IL MIGLIOR FORMATO (Questo va bene così)
+let bestFormatObj = null; 
+let maxFW = -1;
+for (const f in statsFormat) {
+    if (statsFormat[f].win > maxFW) { 
+        maxFW = statsFormat[f].win; 
+        bestFormatObj = statsFormat[f]; 
+        dati["BEST-CATEGORY"] = f; 
+    }
+}
+
+// 2. TROVA IL MIGLIOR TEAM (Modificato per Luca)
+let maxW = -1; 
+let migliorStatTeam = null; // Memorizziamo qui l'oggetto con le stats (win/loss)
+
+for (const id in statsTeam) {
+    // Usiamo i punti (pts) invece delle semplici vittorie per maggior precisione
+    if (statsTeam[id].pts > maxW) { 
+        maxW = statsTeam[id].pts; 
+        migliorStatTeam = statsTeam[id]; 
+    }
+}
+
+// 3. ASSEGNAZIONE A bestT (Il team reale con i Pokémon)
+let bestT = null;
+if (migliorStatTeam) {
+    // Cerchiamo nella lista dei team reali di Luca quello che ha l'ID del migliore nelle stats
+    bestT = teams.find(t => t.id === migliorStatTeam.id);
+    
+    // IMPORTANTE: Aggiungiamo le stats calcolate all'oggetto team 
+    // così i box dei numeri sotto il cerchio si aggiornano correttamente
+    if (bestT) {
+        bestT.win = migliorStatTeam.win;
+        bestT.loss = migliorStatTeam.loss;
+        bestT.sW = migliorStatTeam.sW;
+        bestT.sL = migliorStatTeam.sL;
+        bestT.pts = migliorStatTeam.pts;
+    }
+}
 
         // 2. LOGICA CERCHIO
         let teamDaMostrareNelCerchio = null;
@@ -2043,54 +2076,56 @@ function chiudiAdminModal() {
     document.getElementById('admin-modal').style.display = "none";
 }
 
-function salvaModificheBio() {
+function salvaModificheProfilo() {
+    // Recuperiamo i 3 valori: Bio, Team e Musica
     const nuovaBio = document.getElementById('bio-input').value;
     const teamScelto = document.getElementById('team-selector-fav').value;
-    const musicaScelta = document.getElementById('selected-music-url').value;
+    
+    // Attenzione: assicurati che questo ID esista nel tuo HTML per la musica
+    const musicInput = document.getElementById('selected-music-url');
+    const musicaScelta = musicInput ? musicInput.value : null;
 
     const btn = document.querySelector('.save-btn');
-    if(btn) btn.disabled = true;
+    if(btn) {
+        btn.disabled = true;
+        btn.innerText = "Salvataggio...";
+    }
 
-    // Usiamo lo stesso percorso che caricaDatiDidi legge
-    db.ref('allenatore_lukiani').update({
+    // Costruiamo l'oggetto da inviare
+    const datiDaSalvare = {
         bio: nuovaBio,
-        idTeamPreferito: teamScelto, // Uniformato a caricaDatiDidi
-        musicaPreferita: musicaScelta
-    })
+        idTeamPreferito: teamScelto
+    };
+
+    // Aggiungiamo la musica solo se abbiamo un valore, per evitare di cancellare quella esistente
+    if (musicaScelta) {
+        datiDaSalvare.musicaPreferita = musicaScelta;
+    }
+
+    // PUNTO CRITICO: Salviamo su LUKIANI, non su didi
+    db.ref('allenatore_lukiani').update(datiDaSalvare)
     .then(() => {
+        alert("Profilo aggiornato!");
+        // Usiamo il reload per rinfrescare tutto
         window.location.reload();
     })
     .catch(e => {
         console.error("Errore nel salvataggio:", e);
         alert("Errore critico: " + e.message);
-        if(btn) btn.disabled = false;
+        if(btn) {
+            btn.disabled = false;
+            btn.innerText = "Salva Modifiche";
+        }
     });
 }
 
-function salvaModificheProfilo() {
-    const nuovaBio = document.getElementById('bio-input').value;
-    const teamScelto = document.getElementById('team-selector-fav').value;
-
-    db.ref('allenatore_lukiani').update({
-        bio: nuovaBio,
-        idTeamPreferito: teamScelto // Uniformato
-    })
-    .then(() => {
-        alert("Profilo aggiornato!");
-        location.reload();
-    })
-    .catch(error => {
-        console.error("Errore:", error);
-        alert("Errore durante il salvataggio.");
-    });
-}
 function popolaSelettoreTeam() {
     const select = document.getElementById('team-selector-fav');
     // Verifichiamo che esista il selettore e che i team siano stati caricati
     if (!select || !window.tuttiITeam) return;
 
     // 1. Reset: Mantieni l'opzione "Miglior Team (Automatico)" come default
-    select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
+    select.innerHTML = '<option value="auto">-- Best Team (Auto) --</option>';
 
     // 2. Scorriamo window.tuttiITeam (popolata da Firebase in caricaDatiDidi)
     window.tuttiITeam.forEach(team => {
