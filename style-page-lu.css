@@ -1265,3 +1265,340 @@ body.modal-open {
     pointer-events: none;
     z-index: 9999;
 }
+
+.streak-container {
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.streak-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.mini-badge {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-bg {
+    flex-grow: 1;
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
+}
+
+.progress-text {
+    font-size: 0.8em;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: right;
+}
+
+.stat-value small {
+    font-size: 0.7em;
+    color: #1a1a1a;
+}
+
+/* Container principale delle streak nel modale */
+.streak-mini-card {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    gap: 12px;
+}
+
+/* Badge miniaturizzato */
+.badge-mini-img {
+    width: 35px; /* Molto più piccolo */
+    height: 35px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+}
+
+.streak-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.streak-label-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.streak-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.streak-current-val {
+    font-size: 0.75rem;
+    color: #1a1a1a;
+}
+
+/* Barra di progresso sottile e pulita */
+.progress-container-mini {
+    position: relative;
+    height: 14px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    border-radius: 10px;
+    transition: width 0.8s ease-out;
+}
+
+.progress-target-text {
+    position: absolute;
+    right: 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #1a1a1a;
+    text-shadow: 0 0 2px white; /* Per leggibilità sopra la barra */
+}
+
+/* Container principale delle due card */
+.pkmn-stats-grid {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.pkmn-card-vertical {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 150px; /* Leggermente più stretta e pulita */
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.pkmn-card-header {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: #1a1a1a; 
+    font-weight: bold;
+    font-family: 'Josefin Sans', sans-serif;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.gif-container-modale-new {
+    height: 85px; /* Spazio aumentato per la GIF */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0px;
+}
+
+.pkmn-gif-render {
+    max-width: 75px;
+    max-height: 75px;
+}
+
+.pkmn-card-footer {
+    width: 100%;
+    padding-top: 10px;
+}
+
+.pkmn-matches-count {
+    font-size: 0.7rem;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+/* Monobarra Win/Loss */
+.win-loss-bar-container {
+    height: 6px;
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.win-part { background: #2ecc71; height: 100%; }
+.loss-part { background: #e74c3c; height: 100%; }
+
+.pkmn-stats-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.label-w { color: #2ecc71; }
+.label-l { color: #e74c3c; }
+.label-pct { color: #fff; opacity: 0.9; }
+
+.team-dropdown-mini{
+color: #1a1a1a;
+    font-weight: bold;
+
+}
+
+/* Container principale del Best Team nel modale */
+.best-team-format-container {
+    margin-top: 20px;
+    border-top: 1px solid #444;
+    padding-top: 15px;
+}
+
+.best-team-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 203, 5, 0.3);
+    text-align: center;
+}
+
+.best-team-title-label {
+    color: #aaa;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+}
+
+.best-team-name-val {
+    color: #ffcb05;
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Griglia 3x2 per i Pokemon */
+.best-team-grid-showcase {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.grid-pkmn-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+}
+
+.grid-pkmn-slot img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+}
+
+/* Container della griglia nel modale */
+.format-extra-info div[style*="grid"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 15px !important;
+    justify-items: center;
+    align-items: center;
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05); /* Leggera evidenza */
+    border-radius: 12px;
+}
+
+/* Cerchi bianchi dietro le GIF (opzionale, molto bello) */
+.pkmn-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+}
+
+.pkmn-icon-wrapper:hover {
+    transform: scale(1.1);
+}
+
+.pkmn-icon-wrapper img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+/* Container principale: lo posizioniamo in alto a destra del modale */
+.current-team-preview {
+    position: absolute;
+    top: 15px;      /* Distanza dall'alto */
+    right: 15px;    /* Distanza da destra */
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.1); /* Molto leggero */
+    border-radius: 10px;
+    z-index: 10;    /* Sopra a tutto il resto */
+    width: auto;
+}
+
+
+.mini-team-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 2fr) !important; 
+    gap: 4px;
+}
+
+/* Slot minuscoli */
+.pkmn-mini-slot {
+    width: 35px;
+    height: 35px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pkmn-mini-slot img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}

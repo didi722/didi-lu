@@ -11,6 +11,7 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
     <body>
         
@@ -214,7 +215,7 @@
 
         <div class="modal-header-cat">
             <span class="close-modal">&times;</span>
-            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: 0; color: #1a1a1a;">Trainer stats</h2>
+            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: -25px; color: #1a1a1a;">Trainer stats</h2>
         </div>
         
         <div id="modal-body-stats"></div>
@@ -377,18 +378,39 @@ function creaMappaDati(header, riga) {
 
 async function caricaDatiLu() {
     try {
-        const [snapMatches, snapTeams, snapSettings] = await Promise.all([
+        // AGGIUNTO: snapRegolamenti per scaricare il nodo dei regolamenti
+        const [snapMatches, snapTeams, snapSettings, snapRegolamenti] = await Promise.all([
             db.ref('matches').once('value'),
             db.ref('allenatore_lukiani/teams').once('value'),
-            db.ref('allenatore_lukiani').once('value') 
+            db.ref('allenatore_lukiani').once('value'),
+            db.ref('regolamenti').once('value') // Assicurati che il percorso nel DB sia corretto
         ]);
 
         const matchesRaw = snapMatches.val() || {};
         const teamsRaw = snapTeams.val() || {};
         const settings = snapSettings.val() || {};
+        const regolamentiRaw = snapRegolamenti.val() || {}; // Recupero dati regolamenti
+
         const matches = Object.values(matchesRaw);
         const teams = Object.keys(teamsRaw).map(key => ({ id: key, ...teamsRaw[key] }));
         
+        // --- LOGICA SINCRONIZZAZIONE REGOLAMENTI ---
+        window.listaRegolamenti = Object.keys(regolamentiRaw).map(id => {
+    const datiReg = regolamentiRaw[id];
+    return {
+        id: id,
+        // Se esiste la proprietà categoria usa quella, altrimenti usa l'ID
+        nome: datiReg.categoria || id, 
+        ...datiReg
+    };
+});
+// Mappa utile per trovare i dati partendo dal nome scelto nel selettore
+window.mappaRegolamentiPerNome = {};
+window.listaRegolamenti.forEach(r => {
+    window.mappaRegolamentiPerNome[r.nome] = r;
+});
+        // --------------------------------------------
+
         window.tuttiITeam = teams;
         window.idTeamPreferito = settings.idTeamPreferito || "auto";
 
@@ -400,107 +422,147 @@ async function caricaDatiLu() {
 
         const statsTeam = {};
         const statsFormat = {};
+        // Oggetto temporaneo per contare le vittorie di ogni team in ogni categoria
+        const vittorieTeamPerFormato = {}; 
 
+        // 1. Inizializziamo statsFormat con tutti i regolamenti
+        window.listaRegolamenti.forEach(r => {
+            statsFormat[r.nome] = { 
+                nome: r.nome, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, 
+                distrib: [0,0,0,0,0,0],
+                bestTeamName: "N/A" // Lo calcoleremo sotto
+            };
+            vittorieTeamPerFormato[r.nome] = {}; // Prepariamo il contenitore per i conteggi
+        });
+
+        // 2. Cicliamo i match per accumulare statistiche e contare le vittorie dei team
         matches.forEach(m => {
             const scoreParti = (m.score || "0-0").split('-').map(Number);
-            
-            // --- LOGICA SPECCHIATA PER LU ---
-            // Nel DB lo score è Didi-Lu (es: 1-4)
-            // Per Lu: x (Vinti) = scoreParti[1], y (Persi) = scoreParti[0]
-            const x = scoreParti[1] || 0; // Set vinti da Lu
-            const y = scoreParti[0] || 0; // Set persi da Lu (vinti da Didi)
-            
-            const tId = m.team2Id; // USA TEAM2ID perché Lu è il player 2
+            const x = scoreParti[0] || 0; 
+            const y = scoreParti[1] || 0;
+            const tId = m.team2Id;
+            const nomeTeamLu = m.team2 || "Unknown";
             const cat = m.categoria || "Standard";
-            const puntiOttenuti = calcolaPuntiDalloScore(x, y);
+            const puntiOttenuti = calcolaPuntiDalloScore(y, x);
 
-            dati["GEN-SETS-W"] += x; 
-            dati["GEN-SETS-L"] += y; 
-            dati["GEN-POINTS"] += puntiOttenuti;
-
-            if (x > y) {
+            // Statistiche Generali (Globali)
+            dati["GEN-SETS-W"] += y; dati["GEN-SETS-L"] += x; dati["GEN-POINTS"] += puntiOttenuti;
+            if (y > x) {
                 dati["GEN-W"]++;
-                if (x === 5) dati["GEN-W-50"]++; else if (x === 4) dati["GEN-W-41"]++; else dati["GEN-W-32"]++;
+                if (y === 5) dati["GEN-W-50"]++; else if (y === 4) dati["GEN-W-41"]++; else dati["GEN-W-32"]++;
             } else {
                 dati["GEN-L"]++;
-                if (x === 2) dati["GEN-L-23"]++; else if (x === 1) dati["GEN-L-14"]++; else dati["GEN-L-05"]++;
+                if (y === 2) dati["GEN-L-23"]++; else if (y === 1) dati["GEN-L-14"]++; else dati["GEN-L-05"]++;
             }
 
-            // Statistiche per Formato
+            // Statistiche per Categoria (Format)
             if (!statsFormat[cat]) {
-                statsFormat[cat] = { nome: cat, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
+                statsFormat[cat] = { nome: cat, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0], bestTeamName: "N/A" };
+                vittorieTeamPerFormato[cat] = {};
             }
+            
             const sf = statsFormat[cat];
-            sf.sW += x; sf.sL += y; sf.pts += puntiOttenuti;
-            if (x > y) {
+            sf.sW += y; sf.sL += x; sf.pts += puntiOttenuti;
+            
+            if (y > x) {
                 sf.win++;
-                if (x === 5) sf.distrib[0]++; else if (x === 4) sf.distrib[1]++; else sf.distrib[2]++;
+                // CONTEGGIO VITTORIE PER IL BEST TEAM:
+                // Incrementiamo il contatore di questo specifico team dentro questa categoria
+                vittorieTeamPerFormato[cat][nomeTeamLu] = (vittorieTeamPerFormato[cat][nomeTeamLu] || 0) + 1;
+                
+                if (y === 5) sf.distrib[0]++; else if (y === 4) sf.distrib[1]++; else sf.distrib[2]++;
             } else {
                 sf.loss++;
-                if (x === 2) sf.distrib[3]++; else if (x === 1) sf.distrib[4]++; else sf.distrib[5]++;
+                if (y === 2) sf.distrib[3]++; else if (y === 1) sf.distrib[4]++; else sf.distrib[5]++;
             }
 
-            // Statistiche per Team (Usando tId che ora è team2Id)
+            // Statistiche per Singolo Team (per ID)
             if (tId) {
                 if (!statsTeam[tId]) {
-                    statsTeam[tId] = { id: tId, nome: m.team2 || "Unknown", win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
+                    statsTeam[tId] = { id: tId, nome: nomeTeamLu, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
                 }
                 const st = statsTeam[tId];
-                st.sW += x; st.sL += y; st.pts += puntiOttenuti;
-                if (x > y) {
+                st.sW += y; st.sL += x; st.pts += puntiOttenuti;
+                if (y > x) {
                     st.win++;
-                    if (x === 5) st.distrib[0]++; else if (x === 4) st.distrib[1]++; else st.distrib[2]++;
+                    if (y === 5) st.distrib[0]++; else if (y === 4) st.distrib[1]++; else st.distrib[2]++;
                 } else {
                     st.loss++;
-                    if (x === 2) st.distrib[3]++; else if (x === 1) st.distrib[4]++; else st.distrib[5]++;
+                    if (y === 2) st.distrib[3]++; else if (y === 1) st.distrib[4]++; else st.distrib[5]++;
                 }
             }
         });
+
+        // 3. ORA DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
+        // 3. DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
+        for (const nomeCat in vittorieTeamPerFormato) {
+            let maxVittorie = 0;
+            let nomeMigliorTeam = "N/A";
+            
+            const teamInQuestaCat = vittorieTeamPerFormato[nomeCat];
+            for (const nomeT in teamInQuestaCat) {
+                if (teamInQuestaCat[nomeT] > maxVittorie) {
+                    maxVittorie = teamInQuestaCat[nomeT];
+                    nomeMigliorTeam = nomeT;
+                }
+            }
+            
+            if (statsFormat[nomeCat]) {
+                const teamOriginale = teams.find(t => (t.nome || t.id) === nomeMigliorTeam);
+                
+                const sT = (teamOriginale && statsTeam[teamOriginale.id]) 
+                            ? statsTeam[teamOriginale.id] 
+                            : { win: 0, loss: 0 };
+
+                // --- AGGIUNGI QUESTA RIGA QUI SOTTO ---
+                statsFormat[nomeCat].bestTeamName = nomeMigliorTeam; 
+                // --------------------------------------
+
+                statsFormat[nomeCat].bestTeamData = {
+                    nome: nomeMigliorTeam,
+                    pokemon: (teamOriginale && teamOriginale.pokemon) ? Object.values(teamOriginale.pokemon) : [],
+                    win: sT.win || 0,
+                    loss: sT.loss || 0
+                };
+            }
+        }
 
         // 1. CALCOLO BEST (TEAM E FORMAT)
         let bestFormatObj = null; let maxFW = -1;
         for (const f in statsFormat) {
             if (statsFormat[f].win > maxFW) { maxFW = statsFormat[f].win; bestFormatObj = statsFormat[f]; dati["BEST-CATEGORY"] = f; }
         }
-        // ... dentro caricaDatiLu dopo il loop dei matches ...
+        let maxW = -1; let bestT = null;
+        for (const id in statsTeam) {
+            if (statsTeam[id].win > maxW) { maxW = statsTeam[id].win; bestT = statsTeam[id]; }
+        }
 
-let maxW = -1; 
-let bestT = null;
+        // 2. LOGICA CERCHIO
+        let teamDaMostrareNelCerchio = null;
+        if (window.idTeamPreferito === "auto") {
+            teamDaMostrareNelCerchio = bestT;
+        } else {
+            teamDaMostrareNelCerchio = teams.find(t => t.id === window.idTeamPreferito);
+        }
 
-for (const id in statsTeam) {
-    if (statsTeam[id].win > maxW) { 
-        maxW = statsTeam[id].win; 
-        bestT = statsTeam[id]; 
-    }
-}
+        if (teamDaMostrareNelCerchio && teamDaMostrareNelCerchio.pokemon) {
+            popolaCerchio(teamDaMostrareNelCerchio); 
+        }
 
-// ORA LA CORREZIONE PER IL CERCHIO:
-let teamDaMostrareNelCerchio = null;
+        window.dati = dati;
+        window.bestT = bestT;
+        window.bestFormatObj = bestFormatObj;
+        window.statsTeam = statsTeam; 
+        window.statsFormat = statsFormat; // AGGIUNTO: Fondamentale per il modale formati
+        window.listaTuttiTeam = teams;
+        window.databaseMatches = matches; 
+        window.mappaTeamLu = teamsRaw;
 
-if (window.idTeamPreferito === "auto") {
-    // Se è auto, cerchiamo l'oggetto completo del team tra quelli caricati da allenatore_lukiani
-    if (bestT) {
-        teamDaMostrareNelCerchio = window.tuttiITeam.find(t => t.id === bestT.id);
-    }
-} else {
-    // Se è manuale, cerchiamo l'ID specifico
-    teamDaMostrareNelCerchio = window.tuttiITeam.find(t => t.id === window.idTeamPreferito);
-}
-
-// FALLBACK: Se ancora non abbiamo nulla (nessun match giocato o ID non trovato)
-// prendiamo il primo team della lista per non lasciare il cerchio vuoto
-if (!teamDaMostrareNelCerchio && window.tuttiITeam && window.tuttiITeam.length > 0) {
-    teamDaMostrareNelCerchio = window.tuttiITeam[0];
-}
-
-// Infine inviamo al cerchio
-if (teamDaMostrareNelCerchio) {
-    popolaCerchio(teamDaMostrareNelCerchio); 
-}
+        initModals();        
 
         // 3. AGGIORNAMENTO UI BOX
         if (bestT) {
-            document.getElementById('best-team-name-new').innerText = bestT.nome;
+            document.getElementById('best-team-name-new').innerText = bestT.nome; // Come richiesto prima
             document.getElementById('team-win').innerText = bestT.win;
             document.getElementById('team-loss').innerText = bestT.loss;
             document.getElementById('team-setv').innerText = bestT.sW;
@@ -522,102 +584,471 @@ if (teamDaMostrareNelCerchio) {
 
         popolaSelettoreTeam();
 
-        // --- CLICK HANDLERS (Modali) ---
-        const trainerPanel = document.querySelector(".trainer-panel");
-        if (trainerPanel) {
-            trainerPanel.onclick = () => {
-                apriModale("Trainer Stats", generaHtmlInterno(dati, "GEN"));
-                const distrib = [dati["GEN-W-50"], dati["GEN-W-41"], dati["GEN-W-32"], dati["GEN-L-23"], dati["GEN-L-14"], dati["GEN-L-05"]];
-                gestisciGraficiLaterali(dati["GEN-W"], dati["GEN-L"], dati["GEN-POINTS"], distrib);
-            };
-        }
-
-        const teamPanel = document.querySelector(".team-panel");
-        if (teamPanel) {
-            teamPanel.onclick = () => {
-                if (!bestT) return;
-                apriModale("Team Performance", generaHtmlInterno(bestT, "TEAM"));
-                gestisciGraficiLaterali(bestT.win, bestT.loss, bestT.pts, bestT.distrib);
-            };
-        }
-
-        const formatPanel = document.querySelector(".trainer-extra");
-        if (formatPanel) {
-            formatPanel.onclick = () => {
-                if (!bestFormatObj) return;
-                apriModale(`${bestFormatObj.nome}`, generaHtmlInterno(bestFormatObj, "TEAM"));
-                gestisciGraficiLaterali(bestFormatObj.win, bestFormatObj.loss, bestFormatObj.pts, bestFormatObj.distrib);
-            };
-        }
-
-        const teamExtra = document.querySelector(".team-extra");
-        if (teamExtra) {
-            teamExtra.onclick = () => {
-                if (bestT) {
-                    window.currentTeamId = bestT.id;
-                    apriDettagli(bestT.id, statsTeam[bestT.id]);
-                }
-            };
-        }
-
-    } catch (e) { console.error("Errore:", e); }
+    } catch (e) { console.error("Errore nel caricamento dati:", e); }
 }
 
+function initModals() {
+    console.log("Inizializzazione click modali...");
+
+    // Selettore helper per evitare ripetizioni
+    const aggiungiClick = (className, callback) => {
+        const el = document.querySelector(className);
+        if (el) el.onclick = callback;
+    };
+
+    // --- TRAINER PANEL ---
+    aggiungiClick(".trainer-panel", () => {
+        console.log("Click su Trainer Panel");
+        const d = window.dati || (typeof dati !== 'undefined' ? dati : null);
+        
+        if (!d) return console.error("Dati trainer non trovati in window.dati");
+
+        apriModale("Trainer Stats", generaHtmlInterno(d, "GEN", "GENERALE"));
+        
+        const distrib = [d["GEN-W-50"], d["GEN-W-41"], d["GEN-W-32"], d["GEN-L-23"], d["GEN-L-14"], d["GEN-L-05"]];
+        if (typeof gestisciGraficiLaterali === "function") {
+            gestisciGraficiLaterali(d["GEN-W"], d["GEN-L"], d["GEN-POINTS"], distrib);
+        }
+    });
+
+    // --- TEAM PANEL ---
+    aggiungiClick(".team-panel", () => {
+        console.log("Click su Team Panel");
+        const t = window.bestT || (typeof bestT !== 'undefined' ? bestT : null);
+        
+        if (t && t.nome) {
+            apriModaleTeamDinamico(t.nome);
+        } else {
+            console.error("Variabile bestT non trovata. Controlla il caricamento dati.");
+        }
+    });
+
+    // --- Altri click (Format e Extra) ---
+    aggiungiClick(".trainer-extra", () => {
+        console.log("Click su Format Panel");
+        // Prendiamo il nome del formato migliore attuale
+        const fNome = window.dati["BEST-CATEGORY"] || "Standard";
+        
+        // Usiamo la nuova funzione dinamica
+        apriModaleFormatoDinamico(fNome);
+    });
+
+    aggiungiClick(".team-extra", () => {
+        const t = window.bestT || (typeof bestT !== 'undefined' ? bestT : null);
+        if (t && typeof apriDettagli === "function") {
+            window.currentTeamId = t.id;
+            apriDettagli(t.id, (window.statsTeam ? window.statsTeam[t.id] : {}));
+        }
+    });
+}
+
+// Esegui inizializzazione
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initModals);
+} else {
+    initModals();
+}
 // --- FUNZIONI DI SUPPORTO AGGIORNATE ---
+
+function apriModaleTeamDinamico(nomeTeam) {
+    const lista = window.listaTuttiTeam || [];
+    // 1. Trova l'oggetto base (per avere l'ID)
+    const teamBase = lista.find(t => t.nome === nomeTeam);
+    
+    if (!teamBase) {
+        console.error("Team non trovato:", nomeTeam);
+        return;
+    }
+
+    // 2. Recupera le statistiche calcolate (Win/Loss/Pts) usando l'ID
+    const statsCalcolate = (window.statsTeam && window.statsTeam[teamBase.id]) 
+        ? window.statsTeam[teamBase.id] 
+        : { nome: teamBase.nome, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
+
+    // 3. Genera l'HTML (generaHtmlInterno ora include la mini-griglia dei 6 pokemon)
+    const htmlContenuto = generaHtmlInterno(statsCalcolate, "TEAM", "TEAM");
+    
+    // 4. Apri il modale (Ho messo un titolo più pulito, cambialo pure se vuoi)
+    apriModale("Team Analysis", htmlContenuto);
+    
+    // 5. Aggiorna i grafici laterali
+    if (typeof gestisciGraficiLaterali === "function") {
+        gestisciGraficiLaterali(statsCalcolate.win, statsCalcolate.loss, statsCalcolate.pts, statsCalcolate.distrib);
+    }
+
+    // 6. Listener per il cambio team nel dropdown
+    setTimeout(() => {
+        const sel = document.getElementById("team-selector-modale");
+        if (sel) {
+            sel.onchange = (e) => {
+                // Richiamando se stessa con il nuovo nome, ricaricherà tutto l'HTML
+                // compresa la nuova mini-griglia del team selezionato
+                apriModaleTeamDinamico(e.target.value);
+            };
+        }
+    }, 100);
+}
+
+function apriModaleFormatoDinamico(nomeFormato) {
+    // 1. Recupera le statistiche calcolate dalla mappa globale
+    // Se non esistono match per questo formato, creiamo un oggetto vuoto coerente
+    const statsCalcolate = (window.statsFormat && window.statsFormat[nomeFormato]) 
+        ? window.statsFormat[nomeFormato] 
+        : { nome: nomeFormato, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0], bestTeamName: "N/A" };
+
+    // 2. Genera l'HTML (passiamo "REG" e "BASE" come prefissi)
+    const htmlContenuto = generaHtmlInterno(statsCalcolate, "REG", "BASE");
+    
+    // 3. Apri il modale
+    apriModale("Format stats", htmlContenuto);
+    
+    // 4. Aggiorna i grafici laterali con i dati del formato
+    if (typeof gestisciGraficiLaterali === "function") {
+        gestisciGraficiLaterali(statsCalcolate.win, statsCalcolate.loss, statsCalcolate.pts, statsCalcolate.distrib);
+    }
+
+    // 5. Attacca il listener al dropdown (fondamentale per farlo cambiare!)
+    setTimeout(() => {
+        const sel = document.getElementById("format-selector-modale");
+        if (sel) {
+            sel.onchange = (e) => apriModaleFormatoDinamico(e.target.value);
+        }
+    }, 100);
+}
 
 function getPct(v, l) {
     const tot = Number(v) + Number(l);
     return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
 }
 
-function generaHtmlInterno(obj, pref) {
-    let win, loss, sw, sl, pts, d;
-    if (pref === "GEN") {
-        win=obj["GEN-W"]; loss=obj["GEN-L"]; sw=obj["GEN-SETS-W"]; sl=obj["GEN-SETS-L"]; pts=obj["GEN-POINTS"];
-        d=[obj["GEN-W-50"], obj["GEN-W-41"], obj["GEN-W-32"], obj["GEN-L-23"], obj["GEN-L-14"], obj["GEN-L-05"]];
-    } else {
-        win=obj.win; loss=obj.loss; sw=obj.sW; sl=obj.sL; pts=obj.pts; d=obj.distrib;
+function generaHtmlInterno(obj, pref, tipoModale = "BASE") {
+    let win, loss, sw, sl, pts, nomeAttuale;
+
+    // Recupero dati statistici (Compatibilità con window.statsFormat)
+    if (tipoModale === "BASE") {
+        nomeAttuale = obj.nome || obj.regolamento;
+        const statsGlobali = (window.statsFormat && window.statsFormat[nomeAttuale]) 
+                             ? window.statsFormat[nomeAttuale] 
+                             : obj;
+        
+        win = statsGlobali.win || 0;
+        loss = statsGlobali.loss || 0;
+        sw = statsGlobali.sW || 0;
+        sl = statsGlobali.sL || 0;
+        pts = statsGlobali.pts || 0;
+    } 
+    else if (pref === "GEN") {
+        win = obj["GEN-W"] || 0; 
+        loss = obj["GEN-L"] || 0; 
+        sw = obj["GEN-SETS-W"] || 0; 
+        sl = obj["GEN-SETS-L"] || 0; 
+        pts = obj["GEN-POINTS"] || 0;
+        nomeAttuale = "Generale";
+    } 
+    else {
+        win = obj.win || 0; 
+        loss = obj.loss || 0; 
+        sw = obj.sW || 0; 
+        sl = obj.sL || 0; 
+        pts = obj.pts || 0; 
+        nomeAttuale = obj.nome;
     }
 
-    return `
-        <div class="stat-row-new"><span class="stat-label">Match W/L</span><span class="stat-value">${win} / ${loss}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Set W/L</span><span class="stat-value">${sw} / ${sl}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Punti Totali</span><span class="stat-value">${pts}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Win</span><span class="stat-value">${getPct(win, loss)}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Set Win</span><span class="stat-value">${getPct(sw, sl)}</span></div>
+    let html = "";
+
+    // --- SELETTORI ---
+    if (tipoModale === "TEAM") {
+        const lista = window.listaTuttiTeam || [];
+        html += `
+            <div class="team-selector-container">
+                <select id="team-selector-modale" class="team-dropdown-mini">
+                    ${lista.map(t => `<option value="${t.nome}" ${t.nome === nomeAttuale ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                </select>
+            </div>`;
+    } else if (tipoModale === "BASE") {
+        const listaReg = window.listaRegolamenti || [];
+        html += `
+            <div class="team-selector-container">
+                <select id="format-selector-modale" class="team-dropdown-mini">
+                    ${listaReg.length > 0 
+                        ? listaReg.map(r => `<option value="${r.nome}" ${r.nome === nomeAttuale ? 'selected' : ''}>${r.nome}</option>`).join('')
+                        : `<option disabled>Nessun formato disponibile</option>`
+                    }
+                </select>
+            </div>`;
+    }
+
+    // Calcolo percentuali (Uso logica interna per sicurezza)
+    const winPct = (win + loss) > 0 ? Math.round((win / (win + loss)) * 100) + "%" : "0%";
+    const setsPct = (sw + sl) > 0 ? Math.round((sw / (sw + sl)) * 100) + "%" : "0%";
+
+    html += `
+        <div class="stat-panel-new">
+            <div class="stat-row-new"><span class="stat-label">Match W/L</span><span class="stat-value">${win} / ${loss}</span></div>
+            <div class="stat-row-new"><span class="stat-label">Set W/L</span><span class="stat-value">${sw} / ${sl}</span></div>
+            <div class="stat-row-new"><span class="stat-label">Global Points</span><span class="stat-value">${pts}</span></div>
+            <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${winPct}</span></div>
+            <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${setsPct}</span></div>
+        </div>
         <hr class="stat-panel-divider">
-        <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${d[0]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${d[1]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${d[2]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${d[3]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${d[4]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${d[5]}</span></div>
     `;
+
+    // --- LOGICA GENERALE (BADGE) ---
+    if (tipoModale === "GENERALE" && window.lastStatsRecord) {
+        const s = window.lastStatsRecord;
+        const soglie = {
+            vinte: [{n:15, e:"immagini/sinnoh-gold.png"}, {n:10, e:"immagini/sinnoh-silver.png"}, {n:5, e:"immagini/sinnoh-bronze.png"}, {n:0, e:"immagini/sinnoh-ghost.png"}],
+            primo: [{n:15, e:"immagini/hoenn-gold.png"}, {n:10, e:"immagini/hoenn-silver.png"}, {n:5, e:"immagini/hoenn-bronze.png"}, {n:0, e:"immagini/hoenn-ghost.png"}],
+            clean: [{n:10, e:"immagini/champion-gold.png"}, {n:6, e:"immagini/champion-silver.png"}, {n:3, e:"immagini/champion-bronze.png"}, {n:0, e:"immagini/champion-ghost.png"}],
+            master: [{n:15, e:"immagini/galar-gold.png"}, {n:10, e:"immagini/galar-silver.png"}, {n:5, e:"immagini/galar-bronze.png"}, {n:0, e:"immagini/galar-ghost.png"}]
+        };
+
+        const renderProgressRow = (label, current, max, listaBadge) => {
+            const badgeAttuale = listaBadge.find(b => max >= b.n) || listaBadge[listaBadge.length - 1];
+            const target = ([...listaBadge].sort((a,b) => a.n - b.n).find(b => b.n > current) || {n: current + 5}).n;
+            const percentuale = Math.min((current / target) * 100, 100);
+
+            return `
+        <div class="streak-mini-card">
+            <img src="${badgeAttuale.e}" class="badge-mini-img" title="Record: ${max}">
+            <div class="streak-info">
+                <div class="streak-label-container">
+                    <span class="streak-name">${label}</span>
+                    <span class="streak-current-val">Max: <b>${max}</b></span>
+                </div>
+                <div class="progress-container-mini">
+                    <div class="progress-bar-fill" style="width: ${percentuale}%"></div>
+                    <span class="progress-target-text">${current}/${target}</span>
+                </div>
+            </div>
+        </div>`;
+        };
+        html += renderProgressRow("Win streak", s.vinte.current, s.vinte.max, soglie.vinte);
+        html += renderProgressRow("Formats mastered", s.master.max, s.master.max, soglie.master);
+        html += renderProgressRow("5-0 streak", s.clean.current, s.clean.max, soglie.clean);
+        html += renderProgressRow("Leader streak", s.primo.current, s.primo.max, soglie.primo);
+
+    } 
+    // --- LOGICA TEAM (MVP) ---
+else if (tipoModale === "TEAM") {
+        const pkmnData = typeof calcolaTopPokemon === 'function' ? calcolaTopPokemon() : { mostUsed: null, mvp: null };
+        
+        const renderPkmnCard = (title, p) => {
+            if (!p) return "";
+            const cleanName = p.name.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+            const winWidth = (p.w + p.l) > 0 ? (p.w / (p.w + p.l)) * 100 : 0;
+            return `
+                <div class="pkmn-card-vertical">
+                    <div class="pkmn-card-header">${title}</div>
+                    <div class="pkmn-card-body">
+                        <div class="gif-container-modale-new">
+                            <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif" onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanName}.png';" class="pkmn-gif-render">
+                        </div>
+                    </div>
+                    <div class="pkmn-card-footer">
+                        <div class="pkmn-matches-count">Matches: <b>${p.w + p.l}</b></div>
+                        <div class="win-loss-bar-container">
+                            <div class="win-part" style="width: ${winWidth}%"></div>
+                            <div class="loss-part" style="width: ${100 - winWidth}%"></div>
+                        </div>
+                        <div class="pkmn-stats-labels"><span class="label-w">${p.w}W</span><span class="label-l">${p.l}L</span></div>
+                    </div>
+                </div>`;
+        };
+
+        // 1. Renderizziamo le card MVP/Most Used
+        html += `<div class="pkmn-stats-grid">${renderPkmnCard("MOST USED", pkmnData.mostUsed)}${renderPkmnCard("MVP", pkmnData.mvp)}</div>`;
+
+        // 2. Recuperiamo i pokemon del team selezionato per la mini-anteprima
+        const nomeTeamSelezionato = nomeAttuale; // nomeAttuale è già definito all'inizio di generaHtmlInterno
+        const teamCorrente = (window.listaTuttiTeam || []).find(t => t.nome === nomeTeamSelezionato);
+        
+        let miniGridHtml = "";
+        if (teamCorrente && teamCorrente.pokemon) {
+            const pkmList = Array.isArray(teamCorrente.pokemon) ? teamCorrente.pokemon : Object.values(teamCorrente.pokemon);
+            
+            miniGridHtml = pkmList.slice(0, 6).map(p => {
+                const pNome = (p && typeof p === 'object') ? (p.nome || p.name || "") : p;
+                if (!pNome) return '';
+                const cleanN = pNome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                return `
+                    <div class="pkmn-mini-slot">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanN}.gif" 
+                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png';" 
+                             title="${pNome}">
+                    </div>`;
+            }).join('');
+        }
+
+        // 3. Aggiungiamo la sezione "Current Team" sotto le card
+        html += `
+            <div class="current-team-preview"">
+                <div style="display: grid; grid-template-columns: repeat(3, 2fr); gap: 6px; justify-items: center;">
+                    ${miniGridHtml || '<span style="grid-column: span 6; color: #bbb; font-size: 0.7rem;">Data not available</span>'}
+                </div>
+            </div>`;
+    }
+        // --- LOGICA BASE (BEST TEAM) ---
+else if (tipoModale === "BASE") {
+        const datiFormato = (window.statsFormat && window.statsFormat[nomeAttuale]) ? window.statsFormat[nomeAttuale] : obj;
+        const bTeam = datiFormato.bestTeamName || (datiFormato.bestTeamData ? datiFormato.bestTeamData.nome : null) || obj.bestTeamName;
+
+        if (!bTeam || bTeam === "N/A") {
+            html += `<div style="text-align:center; color:rgba(0,0,0,0.5); margin-top:20px;">No best team yet</div>`;
+        } else {
+            const teamObj = (window.listaTuttiTeam || []).find(t => t.nome === bTeam);
+            const teamStats = (teamObj && window.statsTeam && window.statsTeam[teamObj.id]) 
+                                ? window.statsTeam[teamObj.id] 
+                                : (datiFormato.bestTeamData || { win: 0, loss: 0 });
+            
+            const winBarWidth = (teamStats.win + teamStats.loss) > 0 ? (teamStats.win / (teamStats.win + teamStats.loss)) * 100 : 50;
+            
+            // --- RECUPERO POKEMON CON LOG DI DEBUG ---
+            let pkmList = [];
+            if (teamObj && teamObj.pokemon) {
+                pkmList = Array.isArray(teamObj.pokemon) ? teamObj.pokemon : Object.values(teamObj.pokemon);
+            } else if (datiFormato.bestTeamData && datiFormato.bestTeamData.pokemon) {
+                pkmList = datiFormato.bestTeamData.pokemon;
+            }
+            
+            // Pulizia da valori nulli
+            pkmList = pkmList.filter(p => p != null);
+            console.log("Debug Modale - Team:", bTeam, "Pokemon trovati:", pkmList);
+
+            html += `
+                <div class="format-extra-info" style="text-align: center; margin-top: 15px; width: 100%;">
+                    
+                    <span style="color: #1a1a1a; font-size: 1.2rem; font-family: 'Josefin Sans', sans-serif; font-weight: bold;">${bTeam}</span>
+                    <div style="display:flex; justify-content: space-between; font-weight: bold; font-size: 0.7rem;">
+                        <span style="color: #1e8449;">${teamStats.win}W</span>
+                        <span style="color: #943126;">${teamStats.loss}L</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; margin: 0px 0 5px 0; border-radius: 6px; overflow: hidden; display: flex; background: #eee;">
+                        <div style="width: ${winBarWidth}%; background: #2ecc71;"></div>
+                        <div style="width: ${100 - winBarWidth}%; background: #e74c3c;"></div>
+                    </div>
+                    
+
+                    <div style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 8px; justify-items: center; margin-top: -5px; padding: 10px; border-radius: 10px;">
+                        ${pkmList.length > 0 ? pkmList.slice(0,6).map(p => {
+                            let name = "";
+                            if (typeof p === 'string') name = p;
+                            else if (p.nome) name = p.nome;
+                            else if (p.species) name = p.species; // Alcuni export usano species
+
+                            if (!name) return '';
+
+                            const cleanN = name.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                            return `
+                                <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanN}.gif" 
+                                         onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png';" 
+                                         style="width: 45px; height: 45px; object-fit: contain;">
+                                </div>`;
+                        }).join('') : '<span style="grid-column: span 3; color: #999; font-size: 0.8rem;">Dati Pokémon non trovati</span>'}
+                    </div>
+                </div>`;
+        }
+    }
+
+    return html;
+}
+
+function aggiornaMiniGrid(nomeTeam) {
+    const grid = document.getElementById('team-mini-grid');
+    if (!grid) return;
+
+    const teamObj = (window.listaTuttiTeam || []).find(t => t.nome === nomeTeam);
+    if (!teamObj || !teamObj.pokemon) {
+        grid.innerHTML = '<span style="grid-column: span 6; font-size: 0.7rem; color: #bbb;">No data</span>';
+        return;
+    }
+
+    const pkmList = Array.isArray(teamObj.pokemon) ? teamObj.pokemon : Object.values(teamObj.pokemon);
+    
+    grid.innerHTML = pkmList.slice(0, 6).map(p => {
+        const pNome = (p && typeof p === 'object') ? (p.nome || p.name || "") : p;
+        if (!pNome) return '';
+        const cleanN = pNome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+        return `
+            <div style="width: 40px; height: 40px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <img src="https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png" 
+                     style="width: 32px; height: 32px; object-fit: contain;" 
+                     title="${pNome}">
+            </div>`;
+    }).join('');
+}
+
+// Funzione di supporto per estrarre le statistiche dei pokemon dai match
+function calcolaTopPokemon() {
+    const pStats = {};
+    const matches = window.databaseMatches || []; 
+    const teamsLu = window.mappaTeamLu || {}; // Usiamo la mappa di Luca
+
+    if (matches.length === 0) return { mostUsed: null, mvp: null };
+
+    matches.forEach(m => {
+        const tId = m.team2Id; // Corretto: Luca è il team 2
+        const score = (m.score || "0-0").split('-').map(Number);
+        
+        // --- MODIFICA QUI ---
+        // Luca vince se il SECONDO numero è più grande del PRIMO
+        const isWin = score[1] > score[0]; 
+
+        const teamInfo = teamsLu[tId];
+        if (teamInfo && teamInfo.pokemon) {
+            const pokemonUniciInQuestoMatch = new Set();
+            
+            // Gestione flessibile array o oggetto
+            const pkmList = Array.isArray(teamInfo.pokemon) ? teamInfo.pokemon : Object.values(teamInfo.pokemon);
+
+            pkmList.forEach(p => {
+                const nome = (typeof p === 'string') ? p : (p.nome || p.name);
+                if (nome) pokemonUniciInQuestoMatch.add(nome);
+            });
+
+            pokemonUniciInQuestoMatch.forEach(nome => {
+                if (!pStats[nome]) pStats[nome] = { w: 0, l: 0 };
+                if (isWin) pStats[nome].w++;
+                else pStats[nome].l++;
+            });
+        }
+    });
+
+    const arrayPkmn = Object.keys(pStats).map(name => {
+        const total = pStats[name].w + pStats[name].l;
+        return {
+            name: name,
+            w: pStats[name].w,
+            l: pStats[name].l,
+            total: total,
+            pct: total > 0 ? (pStats[name].w / total) : 0 // Usiamo decimale per il sort
+        };
+    });
+
+    if (arrayPkmn.length === 0) return { mostUsed: null, mvp: null };
+
+    // Sort Most Used
+    const mostUsed = [...arrayPkmn].sort((a, b) => b.total - a.total)[0];
+    
+    // Sort MVP: Miglior % di vittoria, con almeno 2 match giocati
+    const mvp = [...arrayPkmn]
+        .filter(p => p.total >= 2)
+        .sort((a, b) => b.pct - a.pct || b.total - a.total)[0] || mostUsed;
+
+    return { mostUsed, mvp };
 }
 
 function popolaSelettoreTeam() {
     const select = document.getElementById('team-selector-fav');
-    // window.tuttiITeam ora contiene i team di Lu (allenatore_lukiani/teams)
     if (!select || !window.tuttiITeam) return;
-
     select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
-    
     window.tuttiITeam.forEach(t => {
         let opt = document.createElement('option');
-        opt.value = t.id; 
-        opt.innerText = t.nome;
-        
-        // Se l'ID del team nel database coincide con quello preferito, selezionalo
-        if (window.idTeamPreferito === t.id) {
-            opt.selected = true;
-        }
+        opt.value = t.id; opt.innerText = t.nome;
+        if (window.idTeamPreferito === t.id) opt.selected = true;
         select.appendChild(opt);
     });
-
-    // Se è impostato su auto, seleziona la prima opzione
-    if (window.idTeamPreferito === "auto") {
-        select.value = "auto";
-    }
 }
 
 // --- FUNZIONI DI SUPPORTO AGGIORNATE ---
@@ -627,30 +1058,6 @@ function getPct(v, l) {
     return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
 }
 
-function generaHtmlInterno(obj, pref) {
-    let win, loss, sw, sl, pts, d;
-    if (pref === "GEN") {
-        win=obj["GEN-W"]; loss=obj["GEN-L"]; sw=obj["GEN-SETS-W"]; sl=obj["GEN-SETS-L"]; pts=obj["GEN-POINTS"];
-        d=[obj["GEN-W-50"], obj["GEN-W-41"], obj["GEN-W-32"], obj["GEN-L-23"], obj["GEN-L-14"], obj["GEN-L-05"]];
-    } else {
-        win=obj.win; loss=obj.loss; sw=obj.sW; sl=obj.sL; pts=obj.pts; d=obj.distrib;
-    }
-
-    return `
-        <div class="stat-row-new"><span class="stat-label">Match W/L</span><span class="stat-value">${win} / ${loss}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Set W/L</span><span class="stat-value">${sw} / ${sl}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Punti Totali</span><span class="stat-value">${pts}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Win</span><span class="stat-value">${getPct(win, loss)}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Set Win</span><span class="stat-value">${getPct(sw, sl)}</span></div>
-        <hr class="stat-panel-divider">
-        <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${d[0]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${d[1]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${d[2]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${d[3]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${d[4]}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${d[5]}</span></div>
-    `;
-}
 
 function popolaSelettoreTeam() {
     const select = document.getElementById('team-selector-fav');
@@ -678,44 +1085,6 @@ function calcolaPuntiDalloScore(x, y) {
     if (x === 3 && y === 2) return 2; // 3-2: 2 punti (vincitore)
     if (x === 2 && y === 3) return 1; // 3-2: 1 punto (sconfitto)
     return 0; // 0-5, 1-4 o altri casi: 0 punti
-}
-
-function generaHtmlInterno(obj, pref) {
-    let win, loss, sw, sl, pts, d;
-
-    if (pref === "GEN") {
-        win  = obj["GEN-W"] || 0;
-        loss = obj["GEN-L"] || 0;
-        sw   = obj["GEN-SETS-W"] || 0;
-        sl   = obj["GEN-SETS-L"] || 0;
-        pts  = obj["GEN-POINTS"] || 0;
-        d    = [obj["GEN-W-50"], obj["GEN-W-41"], obj["GEN-W-32"], obj["GEN-L-23"], obj["GEN-L-14"], obj["GEN-L-05"]];
-    } else {
-        win  = obj.win || 0;
-        loss = obj.loss || 0;
-        sw   = obj.sW || 0;
-        sl   = obj.sL || 0;
-        pts  = obj.pts || 0;
-        d    = obj.distrib || [0, 0, 0, 0, 0, 0];
-    }
-
-    // Calcoliamo la percentuale dei set usando la funzione getPct già esistente
-    const pctSetWin = getPct(sw, sl);
-
-    return `
-        <div class="stat-row-new"><span class="stat-label">Match W/L</span><span class="stat-value">${win} / ${loss}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Set W/L</span><span class="stat-value">${sw} / ${sl}</span></div>
-        <div class="stat-row-new"><span class="stat-label">Punti Totali</span><span class="stat-value">${pts}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Win</span><span class="stat-value">${getPct(win, loss)}</span></div>
-        <div class="stat-row-new"><span class="stat-label">% Set Win</span><span class="stat-value">${pctSetWin}</span></div>
-        <hr class="stat-panel-divider">
-        <div class="stat-row-new"><span class="stat-label">W 5-0</span><span class="stat-value">${d[0] || 0}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 4-1</span><span class="stat-value">${d[1] || 0}</span></div>
-        <div class="stat-row-new"><span class="stat-label">W 3-2</span><span class="stat-value">${d[2] || 0}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 2-3</span><span class="stat-value">${d[3] || 0}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 1-4</span><span class="stat-value">${d[4] || 0}</span></div>
-        <div class="stat-row-new"><span class="stat-label">L 0-5</span><span class="stat-value">${d[5] || 0}</span></div>
-    `;
 }
 
     // Chiusura Modale
@@ -1220,7 +1589,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const content = document.getElementById('pkmModalBody');
     if(!modal || !content) return;
 
-    // Struttura a griglia identica al Box Didi
+    // Struttura a griglia identica al Box Lu
     content.innerHTML = `
         <div class="pkm-modal-grid">
             <div class="area-header">
@@ -1322,7 +1691,8 @@ async function caricaTrendRecente() {
         const snapMatches = await db.ref('matches').limitToLast(5).once('value');
         const matchesRaw = snapMatches.val() || {};
         
-        // Trasformiamo l'oggetto in array
+        // Firebase restituisce un oggetto, lo trasformiamo in array.
+        // Gli ID di Firebase (push keys) sono già ordinati cronologicamente.
         const matches = Object.values(matchesRaw);
 
         const trendDots = document.getElementById('trend-dots');
@@ -1330,32 +1700,30 @@ async function caricaTrendRecente() {
         
         trendDots.innerHTML = ""; 
 
+        // Iteriamo i match. Poiché limitToLast ci dà gli ultimi 5 in ordine cronologico,
+        // li cicliamo normalmente.
         matches.forEach(m => {
             const scoreStr = m.score || "0-0";
             const parti = scoreStr.split('-').map(Number);
-            
-            // --- LOGICA PER LU ---
-            // Nel database lo score è "PuntiDidi - PuntiLu"
             const puntiDidi = parti[0] || 0;
-            const puntiLu = parti[1] || 0; // Lu è il secondo numero
+            const puntiLu = parti[1] || 0;
 
             const dot = document.createElement('div');
             dot.classList.add('dot');
 
-            // La vittoria per Lu avviene se i suoi punti (secondo numero) 
-            // sono maggiori di quelli dell'avversario (primo numero)
+            // Se il primo numero (Didi) è maggiore del secondo, è Lose
             if (puntiLu > puntiDidi) {
                 dot.classList.add('win');
             } else {
                 dot.classList.add('loss');
             }
 
-            // Aggiungiamo il pallino (l'ultimo inserito apparirà a DESTRA)
+            // In questo modo l'ultimo match inserito apparirà a DESTRA.
             trendDots.appendChild(dot);
         });
 
     } catch (error) {
-        console.error("Errore nel caricamento del trend di Lu:", error);
+        console.error("Errore nel caricamento del trend:", error);
     }
 }
 
@@ -1375,6 +1743,10 @@ async function elaboraBadge() {
         let recordVinte = { max: 0, data: "" };
         let recordClean = { max: 0, data: "" };
         
+        // Oggetto per tracciare le vittorie totali per ogni formato
+        let vittoriePerFormato = {}; 
+        let ultimaDataVittoria = "";
+
         let currVinte = 0; 
         let currClean = 0;
         
@@ -1386,8 +1758,10 @@ async function elaboraBadge() {
             const scoreParti = (m.score || "0-0").split('-').map(Number);
             const sDidi = scoreParti[0] || 0;
             const sLu = scoreParti[1] || 0;
-            const dataMatch = m.data; // Assicurati che il campo nel DB sia 'data'
+            const dataMatch = m.data;
+            const categoria = m.categoria || "Standard";
 
+            // Calcolo punti per la classifica storica (Round Leader)
             puntiTotDidi += calcolaPuntiDalloScore(sDidi, sLu);
             puntiTotLu += calcolaPuntiDalloScore(sLu, sDidi);
 
@@ -1395,21 +1769,27 @@ async function elaboraBadge() {
                 giornateData[dataMatch] = { D: puntiTotDidi, L: puntiTotLu };
             }
 
-            // 1. Streak Vittorie
-            const vinceCorrente = (chiSono === "Lu") ? (sDidi < sLu) : (sLu < sDidi);
+            const vinceCorrente = (chiSono === "Lu") ? (sLu > sDidi) : (sDidi > sLu);
+
+            // --- 1. Streak Vittorie ---
             if (vinceCorrente) {
                 currVinte++;
-                // Aggiorniamo il record e salviamo la data di quel match
                 if (currVinte > recordVinte.max) {
                     recordVinte.max = currVinte;
                     recordVinte.data = dataMatch;
                 }
+
+                // --- LOGICA MASTER OF FORMATS ---
+                // Se vince, incrementiamo il contatore per quella categoria
+                if (!vittoriePerFormato[categoria]) vittoriePerFormato[categoria] = 0;
+                vittoriePerFormato[categoria]++;
+                ultimaDataVittoria = dataMatch; // Teniamo traccia dell'ultima vittoria per la data del badge
             } else {
                 currVinte = 0;
             }
 
-            // 2. Clean Sheet (5-0)
-            let isClean = (chiSono === "Lu") ? (sDidi === 0) : (sLu === 0);
+            // --- 2. Clean Sheet (5-0) ---
+            let isClean = (chiSono === "Lu") ? (sLu === 5) : (sDidi === 5);
             if (isClean) {
                 currClean++;
                 if (currClean > recordClean.max) {
@@ -1421,7 +1801,7 @@ async function elaboraBadge() {
             }
         });
 
-        // 3. Streak Rounds Leader
+        // --- 3. Streak Rounds Leader ---
         let recordPrimo = { max: 0, data: "" };
         let currPrimo = 0;
         const dateOrdinate = Object.keys(giornateData).sort();
@@ -1434,65 +1814,104 @@ async function elaboraBadge() {
                 currPrimo++;
                 if (currPrimo > recordPrimo.max) {
                     recordPrimo.max = currPrimo;
-                    recordPrimo.data = d; // Salva la data dell'ultimo giorno di streak record
+                    recordPrimo.data = d;
                 }
             } else {
                 currPrimo = 0;
             }
         });
 
-        // Passiamo gli oggetti alla funzione mostraBadge
-        mostraBadge(recordVinte, recordClean, recordPrimo);
+        // --- 4. Calcolo Master of Formats ---
+        // Contiamo quante chiavi nell'oggetto hanno almeno 3 vittorie
+        const categorieConquistate = Object.values(vittoriePerFormato).filter(v => v >= 3).length;
+        let recordMaster = { 
+            max: categorieConquistate, 
+            data: ultimaDataVittoria 
+        };
+
+        // Passiamo i 4 oggetti alla funzione mostraBadge
+        mostraBadge(recordVinte, recordClean, recordPrimo, recordMaster);
+
+        window.lastStatsRecord = {
+    vinte: { max: recordVinte.max, data: recordVinte.data, current: currVinte },
+    clean: { max: recordClean.max, data: recordClean.data, current: currClean },
+    primo: { max: recordPrimo.max, data: recordPrimo.data, current: currPrimo },
+    master: { max: recordMaster.max }
+};
+console.log("Record salvati in window:", window.lastStatsRecord);
 
     } catch (e) {
         console.error("Errore nel calcolo dei badge:", e);
     }
 }
 
-function mostraBadge(vinteObj, cleanObj, primoObj) {
-    console.log("Dati ricevuti per i Badge:", { vinteObj, cleanObj, primoObj });
+function mostraBadge(vinteObj, cleanObj, primoObj, masterObj) {
+    console.log("Dati ricevuti per i Badge:", { vinteObj, cleanObj, primoObj, masterObj });
 
     const vecchioWrapper = document.querySelector('.badges-wrapper');
     if (vecchioWrapper) vecchioWrapper.remove();
 
     const container = document.createElement('div');
     container.className = 'badges-wrapper';
+
+        const fondatori = ["Lu", "Didi"]; // Aggiungi qui i nomi dei veterani
+    const chiSono = document.title.toLowerCase().includes("lu") ? "Lu" : "Didi";
     
-    // Definizioni Badge (n: soglia, e: immagine, t: titolo)
+    let htmlFondatore = "";
+    if (fondatori.includes(chiSono)) {
+        htmlFondatore = `
+            <span class="badge-item badge-fondatore" data-tooltip="League Founder">
+                <img src="immagini/paldea.png" class="badge-icon" alt="Founder Badge">
+            </span>`;
+    }
+    
+    
+    // 1. Definizioni Badge (n: soglia, e: immagine, t: titolo)
     const bVinte = [ 
         {n: 15, e: "immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"}, 
         {n: 10, e: "immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"}, 
         {n: 5, e: "immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}, 
         {n: 0, e: "immagini/sinnoh-ghost.png", t:"Win 5 matches in a row to unlock this badge"} 
     ];
+
+    const bMaster = [
+        {n: 15, e: "immagini/galar-gold.png", t:"Chameleon: 3 wins 15+ formats"},
+        {n: 10, e: "immagini/galar-silver.png", t:"Multitasking: 3 wins in 10 formats"},
+        {n: 5, e: "immagini/galar-bronze.png", t:"Eclectic: 3 wins in 5 formats"},
+        {n: 0, e: "immagini/galar-ghost.png", t:"Win 3 matches in 5 different formats to unlock"}
+    ];
+
     const bPrimo = [ 
         {n: 15, e: "immagini/hoenn-gold.png", t:"King: 15+ rounds leader"}, 
         {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 rounds leader"}, 
         {n: 5, e: "immagini/hoenn-bronze.png", t:"On Top: 5 rounds leader"}, 
         {n: 0, e: "immagini/hoenn-ghost.png", t:"Lead 5 rounds in a row to unlock this badge"} 
     ];
+
     const bClean = [ 
         {n: 10, e: "immagini/champion-gold.png", t:"Untouchable: 10+ clean sheet"}, 
         {n: 6, e: "immagini/champion-silver.png", t:"Wall: 6 clean sheet"}, 
         {n: 3, e: "immagini/champion-bronze.png", t:"Shield: 3 clean sheet"}, 
         {n: 0, e: "immagini/champion-ghost.png", t:"Clean 3 matches in a row to unlock this badge"} 
     ];
+  
 
+    // 2. Funzione di controllo interna
     const check = (statObj, lista) => {
         const valoreSicuro = (statObj && statObj.max > 0) ? statObj.max : 0;
         const dataSblocco = (statObj && statObj.data) ? statObj.data : "";
         
-        // Trova il badge corrispondente
+        // Trova il badge corrispondente alla soglia raggiunta
         const b = lista.find(x => valoreSicuro >= x.n);
         
         if (!b) return ""; 
 
-        const isGhost = b.n === 0; // È un ghost se la soglia del badge trovato è 0
+        const isGhost = b.n === 0; // È ghost se la soglia del badge trovato è 0
         const ghostClass = isGhost ? "ghost-badge" : "";
         
         let testoTooltip = b.t;
-
-        // MODIFICA QUI: Aggiungiamo la data SOLO se NON è un ghost e se la data esiste
+        
+        // Aggiungiamo la data solo se NON è un ghost e se la data esiste
         if (!isGhost && dataSblocco) {
             testoTooltip += ` (${dataSblocco})`;
         }
@@ -1503,17 +1922,42 @@ function mostraBadge(vinteObj, cleanObj, primoObj) {
             </span>`;
     };
 
-    // Generiamo l'HTML usando gli oggetti passati
-    const htmlContent = check(vinteObj, bVinte) + check(cleanObj, bClean) + check(primoObj, bPrimo);
+    // 3. Generiamo l'HTML includendo il nuovo badge Master
+    const htmlContent = 
+        check(vinteObj, bVinte) + 
+        check(masterObj, bMaster) +
+        htmlFondatore +
+        check(cleanObj, bClean) + 
+        check(primoObj, bPrimo);
+        
     
     container.innerHTML = htmlContent;
     
+    // 4. Posizionamento nella pagina
     const h1 = document.querySelector('h1');
     if (h1) {
         h1.insertAdjacentElement('afterend', container); 
     } else {
         document.body.prepend(container);
     }
+}
+
+function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
+    const soglie = [...listaBadge].sort((a, b) => a.n - b.n);
+    
+    const badgeAttuale = [...listaBadge].find(b => maxRecord >= b.n) || listaBadge[listaBadge.length - 1];
+    
+    const prossimoBadge = soglie.find(b => b.n > maxRecord);
+    const obiettivo = prossimoBadge ? prossimoBadge.n : soglie[soglie.length - 1].n;
+    
+    let percentuale = (currentVal / obiettivo) * 100;
+    if (percentuale > 100) percentuale = 100;
+
+    return {
+        img: badgeAttuale.e,
+        obiettivo: obiettivo,
+        percentuale: percentuale
+    };
 }
 
 function chiudiTeamModal() {
@@ -1581,7 +2025,7 @@ function ascoltaBio() {
 // 2. Funzione Login
 function gestisciLogin() {
     const pass = prompt("Inserisci password:");
-    if (pass ===  "luca2026") {
+    if (pass === "luca2026") {
         // Carica i dati attuali nei selettori
         popolaSelettoreTeam();
         popolaSelettoreMusica(); // <-- Carica la tua lista dal CSV musica
@@ -1603,10 +2047,10 @@ function salvaModificheBio() {
     const btn = document.querySelector('.save-btn');
     if(btn) btn.disabled = true;
 
-    // Usiamo lo stesso percorso che caricaDatiLu legge
+    // Usiamo lo stesso percorso che caricaDatiDidi legge
     db.ref('allenatore_lukiani').update({
         bio: nuovaBio,
-        idTeamPreferito: teamScelto, // Uniformato a caricaDatiLu
+        idTeamPreferito: teamScelto, // Uniformato a caricaDatiDidi
         musicaPreferita: musicaScelta
     })
     .then(() => {
@@ -1644,7 +2088,7 @@ function popolaSelettoreTeam() {
     // 1. Reset: Mantieni l'opzione "Miglior Team (Automatico)" come default
     select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
 
-    // 2. Scorriamo window.tuttiITeam (popolata da Firebase in caricaDatiLu)
+    // 2. Scorriamo window.tuttiITeam (popolata da Firebase in caricaDatiDidi)
     window.tuttiITeam.forEach(team => {
         let opt = document.createElement('option');
         
@@ -1878,6 +2322,8 @@ function ascoltaCambiamentiFirebase() {
         }
     });
 }
+
+
 
 function formattaTitolo(url) {
     if (!url) return "";
