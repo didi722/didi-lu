@@ -1209,30 +1209,34 @@ async function apriDettagli(id, stats = null) {
                 const statsId = `stats-${pIndex}`;
                 const abiId = `abi-${pIndex}`;
                 const itemId = `item-${pIndex}`;
+                const direzioneTipi = pIndex < 3 ? 'v-down' : '';
+                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
-                caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
+                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
                 
                 return `
-                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;">
+                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                     onmouseenter="this.style.zIndex='999'"
+                     onmouseleave="this.style.zIndex='${10 - pIndex}'">
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
                     </div>
                     <div class="modal-pkm-info">
-                        <div class="info-container">
+                        <div class="info-container" style="position: relative; display: inline-block;">
                             <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
-                            <div id="${statsId}" class="generic-tooltip">Loading...</div>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
-                        <div class="info-container">
+                        <div class="info-container" style="position: relative;">
                             <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
-                            <div id="${abiId}" class="generic-tooltip">Loading...</div>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
-                        <div class="info-container">
-                            <div class="modal-item" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
+                        <div class="info-container" style="position: relative;">
+                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
                                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
                                 <span>${p.strumento}</span>
                             </div>
-                            <div id="${itemId}" class="generic-tooltip">Loading...</div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
                         <div class="modal-moves">

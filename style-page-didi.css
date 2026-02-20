@@ -1592,3 +1592,8 @@ color: #1a1a1a;
     height: 28px;
     object-fit: contain;
 }
+
+.generic-tooltip.tooltip-left {
+    left: auto;
+    right: 110%;
+}
