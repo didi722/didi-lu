@@ -592,7 +592,7 @@ h1 {
 }
 
 .ads-sidebar {
-    width: 200px;
+    width: 220px;
     /* Usiamo una variabile per l'altezza utile, così i calcoli sono precisi */
     --altezza-utile: calc(100vh - 50px); 
     height: var(--altezza-utile) !important;
@@ -638,4 +638,8 @@ h1 {
     /* Il reset avviene qui: l'occhio vede il clone della prima immagine 
        mentre l'animazione torna istantaneamente allo 0% */
     100%         { transform: translateY(calc(var(--altezza-utile) / -2 * 13)); }
+}
+
+.cards-stack {
+   margin-left: -8%;
 }
