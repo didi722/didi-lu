@@ -13,7 +13,7 @@
     --ticker-bg: #161616;
     --ticker-text: #f1c40f;
     --bg-body-index: #dfdfdf;   
-    --bg-gradient-end-index: #11008d;
+    --bg-gradient-end-index: #e25300;
     --card-bg-matches: #cc3d3d;
     --borders-matches: #970e0e;
 }
@@ -441,30 +441,7 @@ h1 {
 }
 
 /* --- POSIZIONAMENTO TASTO UNICO A SINISTRA --- */
-.btn-global-archive {
-    position: fixed; /* Rimane fisso mentre scorri o ancorato al wrapper */
-    left: 70px;      /* Distanza dal bordo sinistro dello schermo */
-    top: 50%;
-    color: white;
-    text-decoration: none;
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 0.8rem;
-    font-weight: bold;
-    padding: 15px 25px;
-    border-radius: 10px;
-    z-index: 2000;
-    transition: all 0.2s ease;
-    letter-spacing: 2px;
-    background: var(--card-bg-matches);
-    border: 2px solid var(--borders-matches);
-    box-shadow: 5px 5px 0px var(--borders-matches);
-}
 
-
-.btn-global-archive:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px var(--borders-matches);
-}
 
 .chart-container-right {
     position: absolute;
@@ -479,6 +456,7 @@ h1 {
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(5px);
     z-index: 1000;
+    font-family:'Josefin Sans', sans-serif;
 }
 
 /* Fix per mobile: nascondi il grafico se lo schermo è troppo piccolo */
@@ -561,4 +539,103 @@ h1 {
 
 .close {
     visibility: hidden;
+}
+
+.btn-global-rules {
+    position: fixed; /* Rimane fisso mentre scorri o ancorato al wrapper */
+    right: 50px;      /* Distanza dal bordo sinistro dello schermo */
+    top: 26%;
+    color: white;
+    text-decoration: none;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 15px 25px;
+    border-radius: 10px;
+    z-index: 2000;
+    transition: all 0.2s ease;
+    letter-spacing: 2px;
+    background: var(--card-bg-matches);
+    border: 2px solid var(--borders-matches);
+    box-shadow: 5px 5px 0px var(--borders-matches);
+}
+
+
+.btn-global-rules:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px var(--borders-matches);
+}
+
+.btn-global-archive {
+    position: fixed; /* Rimane fisso mentre scorri o ancorato al wrapper */
+    right: 50px;      /* Distanza dal bordo sinistro dello schermo */
+    top: 15%;
+    color: white;
+    text-decoration: none;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 15px 25px;
+    border-radius: 10px;
+    z-index: 2000;
+    transition: all 0.2s ease;
+    letter-spacing: 2px;
+    background: var(--card-bg-matches);
+    border: 2px solid var(--borders-matches);
+    box-shadow: 5px 5px 0px var(--borders-matches);
+}
+
+
+.btn-global-archive:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px var(--borders-matches);
+}
+
+.ads-sidebar {
+    width: 200px;
+    /* Usiamo una variabile per l'altezza utile, così i calcoli sono precisi */
+    --altezza-utile: calc(100vh - 50px); 
+    height: var(--altezza-utile) !important;
+    overflow: hidden;
+    position: fixed;
+    left: 0;
+    top: 50px; /* Altezza della tua News Ticker */
+    z-index: 999;
+    background: #000;
+    border-right: 4px solid #222;
+}
+
+.ad-banner {
+    width: 100%;
+    height: calc(var(--altezza-utile) / 2) !important;
+    object-fit: cover;
+    display: block;
+}
+
+.ads-track {
+    display: flex;
+    flex-direction: column;
+    animation: scrollInfinito 39s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+}
+
+@keyframes scrollInfinito {
+    /* Formula: 100% / 13 scatti = ~7.69% per ogni intervallo */
+    
+    0%, 6%       { transform: translateY(0); }
+    7.69%, 13%   { transform: translateY(calc(var(--altezza-utile) / -2 * 1)); }
+    15.38%, 21%  { transform: translateY(calc(var(--altezza-utile) / -2 * 2)); }
+    23.07%, 29%  { transform: translateY(calc(var(--altezza-utile) / -2 * 3)); }
+    30.76%, 36%  { transform: translateY(calc(var(--altezza-utile) / -2 * 4)); }
+    38.45%, 44%  { transform: translateY(calc(var(--altezza-utile) / -2 * 5)); }
+    46.14%, 52%  { transform: translateY(calc(var(--altezza-utile) / -2 * 6)); }
+    53.83%, 59%  { transform: translateY(calc(var(--altezza-utile) / -2 * 7)); }
+    61.52%, 67%  { transform: translateY(calc(var(--altezza-utile) / -2 * 8)); }
+    69.21%, 75%  { transform: translateY(calc(var(--altezza-utile) / -2 * 9)); }
+    76.90%, 82%  { transform: translateY(calc(var(--altezza-utile) / -2 * 10)); }
+    84.59%, 90%  { transform: translateY(calc(var(--altezza-utile) / -2 * 11)); }
+    92.28%, 98%  { transform: translateY(calc(var(--altezza-utile) / -2 * 12)); }
+    
+    /* Il reset avviene qui: l'occhio vede il clone della prima immagine 
+       mentre l'animazione torna istantaneamente allo 0% */
+    100%         { transform: translateY(calc(var(--altezza-utile) / -2 * 13)); }
 }
