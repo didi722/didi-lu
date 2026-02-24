@@ -1,0 +1,462 @@
+:root {
+    --didi-color: #7fe9bf; 
+    --accent-main-matches: #e1e1e1;
+    --card-bg-matches: #cc3d3d;
+    --borders: #970e0e;
+    --text-main-matches: #1a1a1a;
+    --lu-color: #c979ed;
+    --accent-didi: #31c489;
+    --accent-lu: #8e44ad;
+    --bg-body-matches: #dfdfdf;          /* Il tuo viola forte */
+    --bg-gradient-end-matches: #cbc218;  /* Un viola più chiaro per il gradiente */
+    --didi-borders: #025534;
+}
+
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, var(--bg-body-matches) -70%, var(--bg-gradient-end-matches) 100%) !important;
+    color: var(--text-main-matches) !important;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    font-family: 'Josefin Sans', sans-serif;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--text-main-matches) !important;
+}
+
+
+/* Layout Generale */
+.rules-main-wrapper {
+    padding: 100px 20px 50px;
+    max-width: 1300px;
+    margin: 0 auto;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Griglia Card */
+.regolamento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+/* Stile Card */
+.regola-card {
+    background: var(--card-bg-matches);
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    border-radius: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.regola-card:hover {
+    transform: translate(-5px, -5px);
+    box-shadow: 9px 9px 0px var(--borders);
+
+}
+
+.regola-card h3 {
+    color: #eeeeee;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.5rem;
+    margin: 0 0 15px 0;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.card-body {
+    color: #eeeeee;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.card-footer {
+    visibility: hidden;
+}
+
+
+.modal-title {
+    color: #1a1a1a;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 4rem;
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 15px;
+}
+
+/* Griglia interna al modale */
+.regole-grid-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.info-item {
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item strong {
+    font-size: 0.75rem;
+    color: #eeeeee;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.info-item span {
+    color: #eeeeee;
+    font-weight: 600;
+}
+
+.special-rules-box {
+    margin-top: 25px;
+    background: rgba(255, 0, 0, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px dashed #1a1a1a;
+}
+
+.special-rules-box p {
+    color: #eeeeee;
+    line-height: 1.6;
+    margin-top: 10px;
+    white-space: pre-line;
+}
+
+.special-rules-box h1 {
+    color: #eeeeee !important;
+    font-size: 1rem;
+    margin: 2px;
+    text-align: left;
+}
+
+.link-btn {
+    display: block;
+    text-align: center;
+    margin-top: 25px;
+    background: var(--borders);
+    color: #eeeeee;
+    padding: 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.link-btn:hover {
+    background: #eee;
+    color: #1a1a1a;
+}
+
+.close-btn {
+    visibility: hidden;
+}
+
+/* Responsive mobile */
+@media (max-width: 600px) {
+    .regole-grid-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Struttura base del Menù */
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+    
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}
+
+
+/* Schermata di caricamento */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--card-bg-matches) !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Sopra a tutto */
+    transition: opacity 0.5s ease;
+}
+
+/* La Pokéball che gira */
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    margin-top: 15px;
+    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Modale compatto per evitare lo sforo */
+.rule-modal-container {
+    backdrop-filter: blur (10px);
+    width: 95%;
+    max-width: 900px; /* Allargato per ospitare 4 colonne */
+    padding: 25px;
+    border-radius: 20px;
+    position: relative;
+    max-height: 85vh; /* Ridotto leggermente per sicurezza */
+    overflow-y: auto; /* Permette lo scroll se il testo speciale è lunghissimo */
+}
+
+/* Griglia 4 colonne x 2 righe */
+.regole-grid-detail {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Forza 4 colonne */
+    gap: 12px;
+}
+
+/* Responsive: su tablet 2x4, su mobile 1 colonna */
+@media (max-width: 850px) {
+    .regole-grid-detail {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .regole-grid-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+.info-item {
+    background: var(--card-bg-matches);
+    box-shadow: 5px 5px 0px var(--borders);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.85rem; /* Testo leggermente più piccolo per stare in 4 col */
+}
+
+.special-rules-box {
+    margin-top: 25px; /* Spazio ridotto */
+    padding: 15px;
+}
+
+.save-btn {
+    background: #16a445;
+    color: #000;
+    border: none;
+    font-family: Josefin Sans, sans-serif;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    background: #b51e1e;
+    color: #000;
+    border: none;
+    font-family: Josefin Sans, sans-serif;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.music-btn {
+    position: fixed;
+    right: 70px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+.btn-floating-admin {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    
+    /* Sfondo semitrasparente per leggerezza */
+    background: rgba(0, 0, 0, 0.5); 
+    
+    /* Solo bordo giallo Pokémon */
+    border: none !important;
+    border-radius: 50%;
+    
+    color: #eeeeee !important;
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: #d62f2f !important;         /* Il + diventa nero */
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    box-shadow: 0 0 15px rgba(227, 73, 70, 0.4) !important;
+    border: #000 !important;
+}

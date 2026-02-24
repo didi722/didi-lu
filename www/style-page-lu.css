@@ -1,0 +1,1609 @@
+:root {
+    --lu-main: #c979ed;
+    --lu-accent: #8e44ad;
+    --bg-dark: #1a1a1a;
+    --bg-body: #dfdfdf;
+    --bg-gradient-end: #590297;
+    --lu-borders: #6c026c;
+}
+
+body { 
+    font-family: 'Montserrat', sans-serif; 
+    background: linear-gradient(135deg, var(--bg-body) -50%, var(--bg-gradient-end) 100%) !important;
+    color: var(--text-main); 
+    margin: 0;
+    padding: 0; /* Rimuoviamo il padding globale che sballa i calcoli */
+    line-height: 1.4;
+    height: 100vh; /* Altezza fissa allo schermo */
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* IMPORTANTE: Impedisce la comparsa della barra di scorrimento */
+    box-sizing: border-box;
+}
+
+h1 { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 2.5rem;
+    text-align: center; 
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--title-main);
+    margin: 20px 0 0px 0;
+    font-weight: 700;
+}
+
+.profile-container {
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
+}
+
+.profile-header {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Contenitore dell'orbita */
+.hof-container {
+    position: relative;
+    width: 350px;
+    height: 350px;
+    margin: 10px auto;
+    display: flex;
+    justify-content: center; /* Centra l'allenatore orizzontalmente */
+    align-items: center;     /* Centra l'allenatore verticalmente */
+    margin-top:-45px;
+
+}
+
+/* Allenatore centrale */
+.trainer-node {
+    position: relative; /* Lo tiene nel flusso del flex */
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    z-index: 10;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.trainer-node img {
+    width: 90%;
+    height: 90%;
+    object-fit: cover;
+}
+
+/* Slot dei Pokémon */
+.pkm-slot {
+    position: absolute;
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+    transition: all 0.3s ease;
+    
+    /* Questo assicura che il centro dello slot sia sul cerchio */
+    left: 50%;
+    top: 50%;
+    margin-left: -37.5px; /* Metà della larghezza */
+    margin-top: -37.5px;  /* Metà dell'altezza */
+}
+
+.pkm-slot img {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    transition: all 0.5s ease;
+}
+
+.pkm-slot img:hover {
+    transform: scale(1.3);
+}
+
+/* Posizionamento dei 6 slot in cerchio (Raggio 120px) */
+.slot-0 { transform: rotate(0deg)   translate(135px) rotate(0deg); }
+.slot-1 { transform: rotate(60deg)  translate(135px) rotate(-60deg); }
+.slot-2 { transform: rotate(120deg) translate(135px) rotate(-120deg); }
+.slot-3 { transform: rotate(180deg) translate(135px) rotate(-180deg); }
+.slot-4 { transform: rotate(240deg) translate(135px) rotate(-240deg); }
+.slot-5 { transform: rotate(300deg) translate(135px) rotate(-300deg); }
+
+
+.stats-simple {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+    
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: row;    /* Forza l'affiancamento orizzontale */
+    align-items: center;
+    justify-content: space-around;
+    gap: 40px; /* Spazio tra cerchio e box stats */
+    flex-wrap: wrap; /* Per dispositivi mobili va a capo */
+}
+
+.highlight-name {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--lu-accent);
+    margin-bottom: 10px;
+}
+
+.stats-sidebar {
+    background: var(--lu-accent) !important;
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid var(--lu-borders);
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    min-width: 220px;
+    flex: 1; /* Permette ai box di adattarsi */
+    max-width: 280px;
+    text-align: left;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.stats-sidebar:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
+}
+
+.team-panel {
+    background: var(--lu-accent) !important;
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid var(--lu-borders);
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    min-width: 220px;
+    flex: 1; /* Permette ai box di adattarsi */
+    max-width: 280px;
+    text-align: right;
+}
+
+.badge-accent {
+    background: var(--lu-main);
+    color: var(--bg-dark);
+    padding: 5px 15px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.stat-row-new {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.stat-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 550;
+    color: var(--bg-dark);
+}
+
+.stat-value {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.1rem;
+    color: var(--bg-dark);
+    font-weight: 600;
+}
+
+.stat-value-highlight {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--lu-borders);
+}
+
+.panel-divider {
+    border: 0;
+    border-top: 2px solid var(--lu-borders);
+    margin: 10px 0;
+}
+
+.panel-header {
+    margin-bottom: 30px; /* Aumenta questo valore per più distacco dalle stats */
+    display: block;      /* Assicura che occupi tutta la riga spingendo giù il resto */
+}
+
+.team-panel {
+    background: var(--lu-accent) !important;
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid var(--lu-borders);
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    min-width: 220px;
+    flex: 1;
+    max-width: 280px;
+    text-align: right; /* Speculare: allinea a destra */
+}
+
+/* Forza l'allineamento dei testi nelle righe per il pannello team */
+.team-panel .stat-row-new {
+    flex-direction: row-reverse; /* Inverte l'ordine Label - Valore */
+}
+
+.team-panel .stat-value {
+    text-align: left; /* Il valore sta a sinistra della label nel box destro */
+}
+
+.team-panel .stat-label {
+    text-align: right;
+}
+
+.team-panel .panel-header {
+    text-align: right;
+}
+
+/* Gestione della colonna laterale */
+.side-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Allinea tutto in alto */
+    gap: 25px;                   /* Crea lo stacco preciso tra box sopra e box sotto */
+    width: 280px;
+    position: relative;
+}
+
+/* La colonna che tiene i due box (sopra e sotto) */
+.side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 60px; /* Spazio netto per staccare i due box */
+    width: 320px;
+}
+
+/* Stile universale per i box orizzontali inferiori */
+.horizontal-box {
+    background-color: var(--lu-accent); 
+    border: 2px solid var(--lu-borders); 
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 5px 5px 0px var(--lu-borders); 
+    display: flex;
+    flex-direction: column;
+    min-height: 80px;
+    justify-content: center;
+}
+
+/* Allineamento speculare del testo */
+.trainer-extra { text-align: left; align-items: flex-start; }
+.team-extra { text-align: right; align-items: flex-end; }
+
+/* Stile del testo dentro i box piccoli */
+.extra-value {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--bg-dark);
+    margin-top: 5px;
+}
+
+.horizontal-box {
+    cursor: pointer; /* Fa capire che è un pulsante */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.horizontal-box:hover {
+   transform: translate(-3px, -3px);
+   box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
+}
+
+/* Risolviamo il problema del testo troppo attaccato */
+.extra-value {
+    margin-top: 15px; /* Crea lo spazio vitale tra il badge e il nome */
+    font-size: 1.4rem;
+    display: block;
+}
+
+/* Stili per il Modale */
+.modal-page {
+    display: none; /* Nascosto di default */
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content-page {
+    background-color: var(--lu-main);
+    padding: 30px;
+    border: 3px solid var(--lu-borders);
+    border-radius: 20px;
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    font-family: 'Montserrat', sans-serif;
+
+    /* CENTRATURA FISSA AL CENTRO DELLO SCHERMO */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    /* DIMENSIONI E SCROLL */
+    width: 90%;
+    max-width: 450px;
+    max-height: 85vh; /* Non supera mai l'85% dell'altezza schermo */
+    overflow-y: auto; /* Attiva lo scroll se il contenuto è troppo lungo */
+    
+    /* PREDISPOSIZIONE PER CONTENUTO FLUIDO */
+    box-sizing: border-box;
+}
+
+/* Opzionale: rende la barra di scorrimento più sottile e meno invasiva */
+.modal-content-page::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-content-page::-webkit-scrollbar-thumb {
+    background-color: var(--lu-borders);
+    border-radius: 10px;
+}
+.close-modal {
+    visibility: hidden;
+}
+
+.stat-panel-divider {
+border: 0;
+border-top: 1.5px solid var(--bg-dark);
+margin: 0 0;
+}
+
+/* Classe speciale da aggiungere al modale solo quando mostra il team */
+.modal-team-wide {
+    max-width: 90vw !important; /* Diventa largo quasi quanto lo schermo */
+    width: 1000px !important;
+}
+
+/* Griglia per le card dei Pokémon (usa la stessa logica del box-didi) */
+.team-grid-modal {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colonne come nel tuo screen */
+    gap: 20px;
+    padding: 20px 0;
+}
+
+/* Allarga il modale quando mostra il team */
+#teamModal .modal-content-page {
+    width: 95%;
+    max-width: 1100px; /* Larghezza necessaria per le 3 colonne di card */
+    max-height: 90vh;
+    background: none;
+    border: none;
+    overflow-y: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    box-shadow: none;
+
+}
+.close-modal {
+    visibility: hidden;
+}
+
+.close {
+    visibility: hidden;
+}
+
+/* Griglia interna identica al Box Didi */
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+
+#categoryModal .modal-content-page {
+    background-color: var(--lu-main);
+    padding: 8 8 8 8; /* Portiamo a 0 per far toccare il testo ai bordi se serve */
+    border: 3px solid var(--lu-borders);
+    width: 90%;
+    max-width: 450px;
+    border-radius: 20px;
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    font-family: 'Montserrat', sans-serif;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 100vh !important; /* Impedisce al modale di diventare più alto dello schermo */
+    overflow-y: auto; /* Aggiunge la scrollbar INTERNA se il testo è troppo lungo */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 25px; /* Spazio di sicurezza in fondo */
+}
+
+
+/* Assicuriamoci che il corpo delle statistiche non rompa il layout */
+#modal-body-stats {
+    width: 100%;
+}
+
+.modal-page {
+    display: none;
+    position: fixed; /* Fondamentale: lo toglie dal flusso della pagina */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    background-color: rgba(0,0,0,0.7);
+    /* Centratura contenuto */
+    align-items: center;
+    justify-content: center;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Contenitori flottanti */
+.modal-floater {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--lu-main);
+    border: 3px solid var(--lu-borders);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 5px 5px 0px var(--lu-borders);
+    width: 160px;
+    text-align: center;
+}
+
+#modal-floater-left { left: -275px; } /* A sinistra del modale */
+#modal-floater-right { right: -275px; } /* A destra del modale */
+
+/* Media Punti e Winrate */
+.stat-mini-box { margin-bottom: 20px; }
+.label { display: block; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; color: var(--lu-borders); }
+#avg-points { font-size: 1.8rem; color: #1a1a1a; }
+
+.winrate-bar-container {
+    display: flex;
+    height: 12px;
+    background: #ccc;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.bar-fill.win { background: #4CAF50; transition: width 0.5s; }
+.bar-fill.loss { background: #f44336; transition: width 0.5s; }
+.bar-labels { display: flex; color: #1a1a1a; justify-content: space-between; font-size: 0.65rem; margin-top: 3px; font-weight: bold; }
+
+/* Assicura che i floater si aggancino al nuovo nome della classe */
+.modal-content-page {
+    position: relative !important; /* Questo permette ai floater left/right di posizionarsi */
+    overflow: visible !important;  /* Impedisce il taglio dei grafici */
+}
+
+/* Posizionamento assoluto in alto a sinistra */
+.trend-container {
+    position: absolute;
+    top: 25px;   /* Distanza dal bordo superiore */
+    left: 60px;  /* Distanza dal bordo sinistro */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Allinea a sinistra */
+    z-index: 10; /* Sopra lo sfondo, sotto i modali */
+}
+
+.trend-label {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: var(--lu-borders);
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+}
+
+.trend-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.dot.win {
+    background-color: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
+}
+
+.dot.loss {
+    background-color: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.6);
+}
+
+.profile-container {
+    position: relative; /* Fondamentale per bloccare i pallini in alto a sx */
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    /* ... il resto delle tue regole ... */
+}
+
+.header-container {
+    position: relative;
+    display: inline-block; /* Avvolge strettamente il nome */
+    width: 100%;
+    text-align: center;
+}
+
+.header-container {
+    position: relative;
+    text-align: center;
+    width: 100%;
+}
+
+/* Contenitore badge sotto il nome */
+.badges-wrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 80px; /* Regola questa altezza per stare sotto il nome */
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.badge-item {
+    font-size: 1.6rem;
+    cursor: help;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.badge-item:hover {
+    transform: scale(1.2);
+    transition:all 0.3s ease;
+}
+
+/* Tooltip dei badge */
+.badge-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: 0.3s ease;
+    pointer-events: none;
+}
+.badge-item:hover::after {
+    visibility: visible;
+    opacity: 1;
+    transition: 0.3s ease;
+}
+
+.badges-wrapper {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.badge-icon {
+    width: 35px; /* Leggermente più grande per le medaglie Pokémon */
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+/* Modifica questa parte per gestire il contenitore dell'immagine */
+.badge-item {
+    position: relative; /* Fondamentale per posizionare il tooltip ::after */
+    display: inline-block;
+    cursor: help;
+    transition: all 0.3s ease;
+}
+
+.badge-item:hover {
+    transform: scale(1.1);
+}
+
+/* Tooltip: assicurati che z-index sia alto per non finire sotto altri elementi */
+.badge-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -100%; /* Lo alza sopra la medaglia */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.badge-item:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Mantieni le impostazioni della tua icona */
+.badge-icon {
+    width: 35px; /* Leggermente più grande per le medaglie Pokémon */
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+/* Schermata di caricamento */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--lu-accent) !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Sopra a tutto */
+    transition: opacity 0.5s ease;
+}
+
+/* La Pokéball che gira */
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    margin-top: 15px;
+    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
+    font-weight: bold;
+    color: #ffffff !important;
+}
+
+/* Bio allenatore e login */
+
+
+.admin-panel {
+    background: #333;
+    padding: 20px;
+    border: 1px dashed var(--lu-main);
+    border-radius: 15px;
+    margin-top: 20px;
+}
+
+.trainer-section {
+    margin-top: -85px;
+    text-align: center;
+    width: 30%;
+}
+
+.bio-text {
+    font-style: italic;
+    color: var(--lu-main);
+    font-size: 0.8rem !important;
+    margin-bottom: 10px;
+}
+
+.admin-small-btn {
+    background: transparent;
+    border: 1px solid var(--lu-main);
+    color: var(--lu-main);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    margin-bottom: 0;
+}
+
+.admin-panel {
+    background: rgba(0,0,0,0.5);
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 15px;
+    border: 1px solid var(--lu-main);
+}
+
+#bio-input {
+    width: 100%;
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.save-btn {
+    background: var(--lu-main);
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 20px;
+    font-family: Josefin Sans, sans-serif;
+}
+
+/* Contenitore della Bio */
+.trainer-bio-container {
+    width: 100%;
+    max-width: 200px !important;
+    margin-top: -100px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+#trainer-bio-display {
+    font-family: 'Josefin Sans', sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    color: #1a1a1a;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block; /* Avvolge il testo */
+    margin-top: 10px;
+}
+
+/* Pulsantino Modifica discreto */
+.admin-small-btn {
+    display: inline-block;
+    vertical-align: middle;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    font-size: 1rem;
+    margin-left: 10px;
+    transition: color 0.3s;
+}
+
+.admin-small-btn:hover {
+    color: var(--lu-main);
+}
+
+/* Pannello Admin quando si apre */
+.admin-panel {
+    background: rgba(26, 26, 26, 0.95);
+    border: 2px solid var(--lu-main);
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#bio-input {
+    width: 90%;
+    height: 60px;
+    background: #111;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Il Lucchetto in alto a sinistra */
+.admin-lock-container {
+    position: fixed;
+    top: 20px;
+    right: 70px;
+    z-index: 1000;
+}
+
+.lock-btn {
+    background: none !important;
+    border: none !important;
+    color: white;
+    font-size: 1.2rem;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+
+.lock-btn:hover {
+    background: var(--lu-main);
+    transform: scale(1.1);
+}
+
+/* Overlay del Modale (Sfondo scuro) */
+.modal-admin-overlay {
+    display: none; /* Nascosto di base */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Contenuto del Modale */
+.modal-admin-content {
+    padding: 40px;
+    border-radius: 20px;
+    border: 2px solid var(--lu-main);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    backdrop-filter: blur(2px);
+}
+
+.close-admin {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 1.5rem;
+    color: #888;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#bio-input {
+    width: 100%;
+    height: 100px;
+    margin: 20px 0;
+    background: #000;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 10px;
+    resize: none;
+}
+
+#team-selector-fav {
+    width: 100%;
+    padding: 10px;
+    border-radius: 15px;
+    margin-top: 20px;
+    font-family: 'Montserrat', sans-serif;
+    color: #eeeeee; /* Colore del testo (Giallo Pokémon) */
+    border: 1px solid #eeeeee;
+    background-color: #000;;
+}
+
+/* Opzioni all'interno del menu */
+#team-selector-fav option {
+    background-color: #2a2a2a;
+    color: #ffffff; /* Colore delle scritte nell'elenco */
+}
+
+#music-selector {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 5px;
+    font-family: 'Montserrat', sans-serif;
+    color: #eeeeee;
+}
+
+#music-selector option {
+    background: #1a1a1a;
+    color: white;
+}
+
+.music-btn {
+    position: fixed;
+    right: 120px !important;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+#music-icon {
+    font-size: 20px;
+}
+
+/* Stile per la barra di ricerca */
+#music-search {
+    width: 100%;
+    padding: 10px;
+    background: #000;;
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    border: 1px solid #eeeeee;
+}
+
+/* Lista scrollabile */
+.custom-music-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    background: #111;
+    border-radius: 5px;
+}
+
+/* Singolo elemento della lista */
+.music-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.music-item:hover {
+    background: #222;
+}
+
+.music-item.selected {
+    border-left: 3px solid var(--accent-main, #00ffff);
+    background: #1a1a1a;
+}
+
+/* Pulsante anteprima */
+.preview-btn {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.preview-btn:hover {
+    background: var(--accent-main, #00ffff);
+    color: black;
+}
+
+.dropdown-header {
+    background: #000 !important;
+    border: 1px solid #eeeeee !important;
+    padding: 10px;
+    border-radius: 15px !important;
+    cursor: pointer;
+    justify-content: space-between;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.dropdown-content {
+    display: none; /* Nascosto di default */
+    position: absolute;
+    bottom: 105%; /* APRE VERSO L'ALTO */
+    left: 0;
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--accent-main);
+    border-radius: 5px;
+    z-index: 1000;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+    font-size: 0.8rem;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+
+.custom-music-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    border-top: 15px !important;
+}
+
+.dropdown-header {
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
+
+.dropdown-content {
+    display: none; /* Nascosto di default */
+    position: absolute;
+    bottom: 105%; /* Appare sopra il pulsante con un piccolo margine */
+    left: 0;
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--accent-main, #00ffff);
+    border-radius: 5px;
+    z-index: 9999;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+}
+
+.dropdown-content.show {
+    display: block; /* Classe per attivarlo */
+}
+
+
+#music-search {
+    width: 70%;
+    padding: 10px;
+    background: #000 !important;
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    border: 1px solid #eeeeee;
+}
+
+/* Lista scrollabile */
+.custom-music-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    background: #111;
+    border-radius: 5px;
+}
+
+/* Singolo elemento della lista */
+.music-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.music-item:hover {
+    background: #222;
+}
+
+.music-item.selected {
+    border-left: 3px solid var(--accent-main, #00ffff);
+    background: #1a1a1a;
+}
+
+.song-title {
+    position:fixed;
+    top: 30px; 
+    right: 200px; 
+    color: #1a1a1a; 
+    padding: 5px 12px; 
+    border-radius: 20px; 
+    font-size: 13px; 
+    font-family: 'Josefin Sans', sans-serif;
+    display: none; 
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.streak-container {
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.streak-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.mini-badge {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-bg {
+    flex-grow: 1;
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
+}
+
+.progress-text {
+    font-size: 0.8em;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: right;
+}
+
+.stat-value small {
+    font-size: 0.7em;
+    color: #1a1a1a;
+}
+
+/* Container principale delle streak nel modale */
+.streak-mini-card {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    gap: 12px;
+}
+
+/* Badge miniaturizzato */
+.badge-mini-img {
+    width: 35px; /* Molto più piccolo */
+    height: 35px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+}
+
+.streak-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.streak-label-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.streak-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.streak-current-val {
+    font-size: 0.75rem;
+    color: #1a1a1a;
+}
+
+/* Barra di progresso sottile e pulita */
+.progress-container-mini {
+    position: relative;
+    height: 14px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    border-radius: 10px;
+    transition: width 0.8s ease-out;
+}
+
+.progress-target-text {
+    position: absolute;
+    right: 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #1a1a1a;
+    text-shadow: 0 0 2px white; /* Per leggibilità sopra la barra */
+}
+
+/* Container principale delle due card */
+.pkmn-stats-grid {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.pkmn-card-vertical {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 150px; /* Leggermente più stretta e pulita */
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.pkmn-card-header {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: #1a1a1a; 
+    font-weight: bold;
+    font-family: 'Josefin Sans', sans-serif;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.gif-container-modale-new {
+    height: 85px; /* Spazio aumentato per la GIF */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0px;
+}
+
+.pkmn-gif-render {
+    max-width: 75px;
+    max-height: 75px;
+}
+
+.pkmn-card-footer {
+    width: 100%;
+    padding-top: 10px;
+}
+
+.pkmn-matches-count {
+    font-size: 0.7rem;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+/* Monobarra Win/Loss */
+.win-loss-bar-container {
+    height: 6px;
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.win-part { background: #2ecc71; height: 100%; }
+.loss-part { background: #e74c3c; height: 100%; }
+
+.pkmn-stats-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.label-w { color: #2ecc71; }
+.label-l { color: #e74c3c; }
+.label-pct { color: #fff; opacity: 0.9; }
+
+.team-dropdown-mini{
+color: #1a1a1a;
+    font-weight: bold;
+
+}
+
+/* Container principale del Best Team nel modale */
+.best-team-format-container {
+    margin-top: 20px;
+    border-top: 1px solid #444;
+    padding-top: 15px;
+}
+
+.best-team-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 203, 5, 0.3);
+    text-align: center;
+}
+
+.best-team-title-label {
+    color: #aaa;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+}
+
+.best-team-name-val {
+    color: #ffcb05;
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Griglia 3x2 per i Pokemon */
+.best-team-grid-showcase {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.grid-pkmn-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+}
+
+.grid-pkmn-slot img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+}
+
+/* Container della griglia nel modale */
+.format-extra-info div[style*="grid"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 15px !important;
+    justify-items: center;
+    align-items: center;
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05); /* Leggera evidenza */
+    border-radius: 12px;
+}
+
+/* Cerchi bianchi dietro le GIF (opzionale, molto bello) */
+.pkmn-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+}
+
+.pkmn-icon-wrapper:hover {
+    transform: scale(1.1);
+}
+
+.pkmn-icon-wrapper img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+/* Container principale: lo posizioniamo in alto a destra del modale */
+.current-team-preview {
+    position: absolute;
+    top: 15px;      /* Distanza dall'alto */
+    right: 15px;    /* Distanza da destra */
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.1); /* Molto leggero */
+    border-radius: 10px;
+    z-index: 10;    /* Sopra a tutto il resto */
+    width: auto;
+}
+
+
+.mini-team-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 2fr) !important; 
+    gap: 4px;
+}
+
+/* Slot minuscoli */
+.pkmn-mini-slot {
+    width: 35px;
+    height: 35px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pkmn-mini-slot img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.generic-tooltip.tooltip-left {
+    left: auto;
+    right: 110%;
+}

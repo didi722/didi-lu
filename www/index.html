@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Poké-Tournament Didi Luca</title>
+    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-index.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <audio id="bg-music-home" loop preload="auto"></audio>
+
+<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
+    🔊
+</div>
+
+    <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
+    <div class="news-ticker">
+        <div class="ticker-wrap" id="lastMatchTicker">
+            <div class="ticker-item">           Loading last match info...</div>
+        </div>
+    </div>
+
+<div class="ads-sidebar">
+        <div class="ads-track">
+            <img src="../immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+            <img src="../immagini/3.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/4.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/5.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/6.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/7.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/8.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/9.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/10.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/11.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/12.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/13.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="../immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="../immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+
+    <div id="leaderboardContainer" class="cards-stack"></div>
+
+        <a href="matches.html" class="btn-global-archive">MATCH ARCHIVE</a>
+        <a href="rules.html" class="btn-global-rules">FORMATS</a>
+        <div class="chart-container-right">
+        <canvas id="progressionChart"></canvas>
+    </div>
+
+        </div>
+
+</div>
+
+
+<script>
+
+    const firebaseConfig = {
+  apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+  authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+  databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pokemonsuite-didi-lu",
+  storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+  messagingSenderId: "707115539525",
+  appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+// Inizializzazione
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+    async function inizializzaPagina() {
+    try {
+        // Avviamo i caricamenti della Home e aspettiamo che finiscano
+        // Usiamo Promise.all per caricarli in contemporanea (più veloce)
+        await Promise.all([
+            caricaHome(),
+            creaGraficoAndamento()
+        ]);
+        
+        // Se hai elaboraBadge() anche qui, scommentalo:
+        // await elaboraBadge(); 
+
+    } catch (e) {
+        console.error("Errore nel caricamento dati della Home:", e);
+    } finally {
+        // Nascondi la schermata di caricamento solo quando tutto è pronto
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            loader.style.opacity = '0';
+            // Aspettiamo che la transizione CSS finisca prima di mettere display: none
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Avvia tutto al caricamento della pagina
+window.onload = inizializzaPagina;
+
+function getGifUrl(pName) {
+    if (!pName) return "";
+    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
+function getGifUrl(pName) {
+    if (!pName) return "";
+    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
+async function caricaHome() {
+    try {
+        // 1. Fetch dei dati da Firebase
+        const [snapMatches, snapLu, snapDidi] = await Promise.all([
+            db.ref('matches').once('value'),
+            db.ref('allenatore_lukiani').once('value'),
+            db.ref('allenatore_didi').once('value')
+        ]);
+
+        const matchesRaw = snapMatches.val() || {};
+        const matchesArray = Object.values(matchesRaw);
+        const infoLu = snapLu.val() || {};
+        const infoDidi = snapDidi.val() || {};
+
+        // 2. Calcolo Statistiche (Punti, W/L, Set)
+        let statsLu = { punti: 0, w: 0, l: 0, sW: 0, sL: 0 };
+        let statsDidi = { punti: 0, w: 0, l: 0, sW: 0, sL: 0 };
+
+        matchesArray.forEach(m => {
+            const parti = (m.score || "0-0").split('-').map(Number);
+            const sDidi = parti[0] || 0;
+            const sLu = parti[1] || 0;
+
+            statsDidi.sW += sDidi; statsDidi.sL += sLu;
+            statsLu.sW += sLu; statsLu.sL += sDidi;
+
+            if (sDidi > sLu) { statsDidi.w++; statsLu.l++; } 
+            else { statsLu.w++; statsDidi.l++; }
+
+            const pts = calcolaPuntiAssegnati(parti);
+            statsDidi.punti += pts.didi;
+            statsLu.punti += pts.lu;
+        });
+
+        const ultimoMatch = matchesArray[matchesArray.length - 1];
+
+        // 3. Preparazione dati giocatori per il rendering
+        const giocatori = [
+            { 
+                nome: "LU", 
+                punti: statsLu.punti, w: statsLu.w, l: statsLu.l, 
+                setW: statsLu.sW, setL: statsLu.sL, 
+                teamData: ultimoMatch ? (infoLu.teams ? infoLu.teams[ultimoMatch.team2Id] : null) : null,
+                isLu: true 
+            },
+            { 
+                nome: "DIDI", 
+                punti: statsDidi.punti, w: statsDidi.w, l: statsDidi.l, 
+                setW: statsDidi.sW, setL: statsDidi.sL, 
+                teamData: ultimoMatch ? (infoDidi.teams ? infoDidi.teams[ultimoMatch.team1Id] : null) : null,
+                isLu: false 
+            }
+        ];
+
+        giocatori.sort((a, b) => b.punti - a.punti);
+
+        // 4. RENDERING LEADERBOARD (Con Tooltip Completi)
+        const leaderboardDiv = document.getElementById('leaderboardContainer');
+        leaderboardDiv.innerHTML = giocatori.map((g, index) => {
+            const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
+            const rankClass = index === 0 ? 'rank-1' : 'rank-2';
+            
+            let pokemonHtml = '<div class="external-pokemon-grid">';
+            
+            // Cicliamo 6 slot per mantenere la struttura grafica
+            for (let i = 0; i < 6; i++) {
+                const p = (g.teamData && g.teamData.pokemon) ? g.teamData.pokemon[i] : null;
+
+                if (p && p.nome) {
+                    const cleanName = p.nome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                    const itemName = p.strumento || "";
+                    let itemUrl = (itemName && itemName.toLowerCase() !== "none") 
+                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png`
+                        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png`;
+
+                    pokemonHtml += `
+                        <div class="pkm-slot tooltip-${rankClass}">
+                            <img src="${getGifUrl(p.nome)}" class="pkm-gif">
+                            <img src="${itemUrl}" class="hold-item-icon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                            
+                            <div class="home-pkm-tooltip">
+                                <div class="tooltip-header">${p.nome.toUpperCase()}</div>
+                                <div class="tooltip-info">✨ ${p.abilita || 'N/D'}</div>
+                                <div class="tooltip-info">📊 ${p.evs || 'N/D'}</div>
+                                <div class="tooltip-moves-grid">
+                                    ${(p.mosse || []).map(m => `<span class="mini-move">${m || '-'}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    pokemonHtml += `<div class="pkm-slot empty"></div>`;
+                }
+            }
+            pokemonHtml += '</div>';
+
+            return `
+                <div class="leaderboard-row ${rankClass}">
+                    ${pokemonHtml}
+                    <div class="player-card ${themeClass}">
+                        <div class="card-inner">
+                            <div class="left-section">
+                                <div class="player-avatar">
+                                    <img src="${g.isLu ? '../immagini/lance.png' : '../immagini/sage.png'}">
+                                </div>
+                                <div class="player-info">
+                                    <h2>${g.nome}</h2>
+                                    <div class="punti-main">${g.punti}</div>
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <a href="${g.isLu ? 'page-lu.html' : 'page-didi.html'}" class="btn-action stats">STATS</a>
+                                <a href="${g.isLu ? 'box-lu.html' : 'box-didi.html'}" class="btn-action box">BOX</a>
+                            </div>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-group"><span class="stat-label">W/L</span><b class="stat-value">${g.w}-${g.l}</b></div>
+                            <div class="stat-group"><span class="stat-label">SET</span><b class="stat-value">${g.setW}-${g.setL}</b></div>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        // 5. AGGIORNAMENTO TICKER
+        if (ultimoMatch) {
+            const tickerWrap = document.getElementById('lastMatchTicker');
+            const scoreParti = ultimoMatch.score.split('-').map(Number);
+            
+            // --- LOGICA FORMATTAZIONE DATA GG-MM-AA ---
+            let dataFormattata = ultimoMatch.data; // fallback
+            if (ultimoMatch.data && ultimoMatch.data.includes('-')) {
+                const partiData = ultimoMatch.data.split('-');
+                // Se la data è AAAA-MM-GG
+                if (partiData[0].length === 4) {
+                    const annoShort = partiData[0].slice(-2);
+                    dataFormattata = `${partiData[2]}-${partiData[1]}-${annoShort}`;
+                } 
+                // Se è già GG-MM-AAAA, accorciamo solo l'anno
+                else if (partiData[2].length === 4) {
+                    const annoShort = partiData[2].slice(-2);
+                    dataFormattata = `${partiData[0]}-${partiData[1]}-${annoShort}`;
+                }
+            }
+
+            const puntiMatch = calcolaPuntiAssegnati(scoreParti);
+
+            const testoNews = ` BREAKING NEWS -- ${dataFormattata} -- Last match -- ${ultimoMatch.categoria || 'Standard'} -- LU [${scoreParti[1]}] vs DIDI [${scoreParti[0]}] -- Teams: ${ultimoMatch.team2 || 'N/A'} (LU) vs ${ultimoMatch.team1 || 'N/A'} (DIDI) -- Points: LU ${puntiMatch.lu} - DIDI ${puntiMatch.didi} -- `;
+            
+            tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
+        }
+
+    } catch (e) {
+        console.error("Home loading error:", e);
+    }
+}
+
+function calcolaPuntiAssegnati(parti) {
+    const sDidi = parti[0];
+    const sLu = parti[1];
+    let res = { didi: 0, lu: 0 };
+
+    if (sDidi > sLu) {
+        // CASO DIDI VINCE
+        if (sDidi === 5 && sLu === 0) { 
+            res.didi = 3; res.lu = 0; // 5-0
+        } else if (sDidi === 4 && sLu === 1) { 
+            res.didi = 2; res.lu = 0; // 4-1
+        } else if (sDidi === 3 && sLu === 2) { 
+            res.didi = 2; res.lu = 1; // 3-2
+        }
+    } else if (sLu > sDidi) {
+        // CASO LU VINCE
+        if (sLu === 5 && sDidi === 0) { 
+            res.lu = 3; res.didi = 0; // 5-0
+        } else if (sLu === 4 && sDidi === 1) { 
+            res.lu = 2; res.didi = 0; // 4-1
+        } else if (sLu === 3 && sDidi === 2) { 
+            res.lu = 2; res.didi = 1; // 3-2
+        }
+    }
+    return res;
+}
+
+function renderizzaLeaderboard(giocatori) {
+    const leaderboardDiv = document.getElementById('leaderboardContainer');
+    leaderboardDiv.innerHTML = giocatori.map((g, index) => {
+        const rankClass = index === 0 ? 'rank-1' : 'rank-2';
+        const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
+        
+        let pokemonHtml = '<div class="external-pokemon-grid">';
+        
+        // Se abbiamo i dati del team, cicliamo i suoi pokemon
+        if (g.teamData && g.teamData.pokemon) {
+            g.teamData.pokemon.forEach(p => {
+                const cleanName = p.nome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                pokemonHtml += `
+                    <div class="pkm-slot tooltip-${rankClass}">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif" class="pkm-gif">
+                        <div class="home-pkm-tooltip">
+                            <div class="tooltip-header">${p.nome.toUpperCase()}</div>
+                            <div class="tooltip-info">✨ ${p.abilita || 'N/D'}</div>
+                            <div class="tooltip-moves-grid">
+                                ${(p.mosse || []).map(m => `<span class="mini-move">${m}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+        pokemonHtml += '</div>';
+
+        return `
+            <div class="leaderboard-row ${rankClass}">
+                ${pokemonHtml}
+                <div class="player-card ${themeClass}">
+                    <div class="punti-main">${g.punti}</div>
+                    <div class="stat-value">${g.w}-${g.l}</div>
+                    <div class="stat-value">${g.setW}-${g.setL}</div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+
+
+function mostraTooltipHome(id) {
+    const tt = document.getElementById(`tooltip-${id}`);
+    if (tt) tt.style.display = 'block';
+}
+
+function nascondiTooltipHome(id) {
+    const tt = document.getElementById(`tooltip-${id}`);
+    if (tt) tt.style.display = 'none';
+}
+
+async function creaGraficoAndamento() {
+    try {
+        const snapMatches = await db.ref('matches').once('value');
+        const matchesRaw = snapMatches.val() || {};
+        
+        const matchesArray = Object.values(matchesRaw).sort((a, b) => {
+            return new Date(a.data) - new Date(b.data);
+        });
+
+        let datePunti = {}; 
+        matchesArray.forEach(m => {
+            const dataMatch = m.data;
+            const scoreParti = (m.score || "0-0").split('-').map(Number);
+            const pts = calcolaPuntiAssegnati(scoreParti);
+            
+            if (dataMatch && dataMatch.trim() !== "") {
+                if (!datePunti[dataMatch]) {
+                    datePunti[dataMatch] = { lu: 0, didi: 0 };
+                }
+                datePunti[dataMatch].lu += pts.lu;
+                datePunti[dataMatch].didi += pts.didi;
+            }
+        });
+
+        const tutteLeDate = Object.keys(datePunti);
+        const ultimeDate = tutteLeDate.slice(-5);
+
+        const dateLabels = ultimeDate.map(d => {
+            const parti = d.split('-'); 
+            if (parti.length >= 3) {
+                return (parti[0].length === 4) ? `${parti[2]}/${parti[1]}` : `${parti[0]}/${parti[1]}`;
+            }
+            return d;
+        });
+
+        let cumulativoLu = 0, cumulativoDidi = 0;
+        let datiLu = [], datiDidi = [];
+
+        tutteLeDate.forEach(d => {
+            cumulativoLu += datePunti[d].lu;
+            cumulativoDidi += datePunti[d].didi;
+            if (ultimeDate.includes(d)) {
+                datiLu.push(cumulativoLu);
+                datiDidi.push(cumulativoDidi);
+            }
+        });
+
+        const ctx = document.getElementById('progressionChart').getContext('2d');
+        if (window.myChart) { window.myChart.destroy(); }
+
+        window.myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dateLabels,
+                datasets: [
+                    { 
+                        label: 'LU', 
+                        data: datiLu, 
+                        borderColor: '#8e44ad', 
+                        backgroundColor: '#8e44ad', 
+                        tension: 0.4, 
+                        borderWidth: 3,
+                        pointRadius: 4
+                    },
+                    { 
+                        label: 'DIDI', 
+                        data: datiDidi, 
+                        borderColor: '#31c489', 
+                        backgroundColor: '#31c489', 
+                        tension: 0.4, 
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(20, 20, 20, 0.9)',
+                        usePointStyle: true,
+                        callbacks: {
+                            title: () => null,
+                            label: (context) => context.parsed.y
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        ticks: { 
+                            color: '#fff',
+                            // --- MODIFICA QUI ---
+                            stepSize: 10, // Forza una linea ogni 10 punti
+                            // --------------------
+                            font: { family: 'Josefin Sans', size: 11, weight: 'bold' }
+                        }, 
+                        grid: { color: 'rgba(255,255,255,0.1)' } 
+                    },
+                    x: { 
+                        ticks: { color: '#fff', font: { family: 'Josefin Sans', size: 10 } }, 
+                        grid: { display: false } 
+                    }
+                }
+            }
+        });
+    } catch (e) { console.error("Errore grafico:", e); }
+}
+
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+
+function avviaMusicaHome() {
+    const player = document.getElementById('bg-music-home');
+    
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.3;
+        
+        // PRIMO COLPO: Tenta l'autoplay immediato
+        player.play()
+            .then(() => { console.log("Musica Home partita al volo!"); })
+            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+}
+
+// Avvia la logica appena la pagina è caricata
+document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+
+// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music-home');
+    if (player && player.paused) {
+        player.play();
+        console.log("Musica Home sbloccata dal click!");
+    }
+}, { once: true });
+
+const musicBtn = document.getElementById('music-toggle');
+const audio = document.getElementById('bg-music-home');
+
+musicBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Evita che il clic attivi anche lo sbloccatore sopra
+    if (audio.paused) {
+        audio.play();
+        musicBtn.innerText = "🔊";
+    } else {
+        audio.pause();
+        musicBtn.innerText = "🔇";
+    }
+});
+
+// Avvia la creazione del grafico
+creaGraficoAndamento();
+
+caricaHome();
+</script>
+</body>
+</html>

@@ -1,0 +1,1278 @@
+:root {
+    --didi-color: #7fe9bf; 
+    --accent-main-matches: #e1e1e1;
+    --card-bg-matches: #cc3d3d;
+    --borders: #970e0e;
+    --text-main-matches: #1a1a1a;
+    --lu-color: #c979ed;
+    --accent-didi: #31c489;
+    --accent-lu: #8e44ad;
+    --bg-body-matches: #dfdfdf;          /* Il tuo viola forte */
+    --bg-gradient-end-matches: #cbc218;  /* Un viola più chiaro per il gradiente */
+    --didi-borders: #025534;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, var(--bg-body-matches) -70%, var(--bg-gradient-end-matches) 100%) !important;
+    color: var(--text-main-matches) !important;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    font-family: 'Josefin Sans', sans-serif;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--text-main-matches) !important;
+}
+
+#matchList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 15px;
+}
+
+/* CARD MATCH */
+.match-card {
+    background: var(--card-bg-matches);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 160px 1fr 140px 1fr 110px; 
+    align-items: center; /* Centra tutto sulla linea mediana orizzontale */
+    padding: 15px 25px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    min-height: 90px; /* Aumentiamo leggermente per dare respiro alla data */
+    gap: 10px;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+}
+/* INFO MATCH SINISTRA */
+
+.match-meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centra il contenuto verticalmente */
+    align-items: flex-start; /* Allinea a sinistra */
+    position: relative;      /* Serve per gestire la data sotto */
+    padding-right: 20px;
+    height: 60px;            /* Altezza fissa simile al badge per stabilità */
+    margin-bottom: 0;
+}
+
+/* --- BADGE CATEGORIA --- */
+.match-category {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 12px;
+    background: transparent;
+    color: #fff;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    /* Dimensioni fisse */
+    width: 100px;
+    min-height: 42px; 
+    padding: 5px;
+    
+    white-space: normal;
+    line-height: 1.1;
+}
+
+/* --- DATA ALLINEATA A SINISTRA SOTTO IL BADGE --- */
+.match-date {
+    font-size: 0.65rem;
+    color: #eeeeee;
+    font-weight: 500;
+    text-transform: uppercase;
+    position: absolute;
+    bottom: -25px; /* Lo sposta sotto il badge senza spingerlo su */
+    left: 2px;
+}
+
+.team-badge {
+    /* --- CENTRATURA TESTO --- */
+    display: flex;
+    align-items: center;      /* Centra verticalmente */
+    justify-content: center;   /* Centra orizzontalmente */
+    
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    
+    /* Altezza fissa per matchare la categoria e dare stabilità */
+    min-height: 50px; 
+    
+    white-space: normal; 
+    line-height: 1.2;
+}
+
+.team-didi-badge {
+    background: var(--accent-didi);
+    color: #1a1a1a;
+    border: 2px solid var(--didi-borders);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+    margin-left: 10px; /* Distanza dalla categoria */
+}
+
+.team-lu-badge {
+    color: #1a1a1a;
+    border: 2px solid #6c026c;
+    background: var(--accent-lu);
+    box-shadow: 5px 5px 0px #6c026c;
+    margin-right: 10px; /* Distanza dal tasto replay */
+}
+
+/* NOMI TEAM */
+.team-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.team-left { text-align: right; padding-right: 20px; color: var(--didi-color) !important; }
+.team-right { text-align: left; padding-left: 20px; color: var(--lu-color) !important; }
+
+/* SCOREBOARD CENTRALE */
+.score-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    background: #000;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    margin: 0 20px;
+}
+.score-digit {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.score-divider {
+    color: #444;
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+/* BOTTONE REPLAY */
+.btn-replay-icon {
+    background: transparent;
+    color: #fff;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-family: 'Josefin Sans';
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-replay-icon:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px var(--borders);
+}
+
+/* MODALE */
+.replay-modal {
+    display: none; 
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.replay-content {
+    width: 314px;  /* Larghezza esatta della zona video */
+    height: 300px; /* Altezza esatta della zona video */
+    background: #000;
+    position: relative;
+    overflow: hidden; /* Fondamentale: taglia tutto ciò che esce */
+    box-shadow: 0 0 30px rgba(0,0,0,1);
+    margin: 0 auto;
+    z-index: 9999;
+}
+
+#replayFrame {
+    position: absolute;
+    top: -22px;  /* Sposta l'iframe in su per nascondere l'header */
+    left: -73px;  /* Sposta l'iframe a sinistra per nascondere i menu laterali */
+    width: 400px; /* Deve essere più grande del contenitore */
+    height: 300px; /* Deve essere più grande del contenitore */
+    border: none;
+    pointer-events: auto; /* Permette comunque di cliccare sui controlli video */
+    z-index: 9999;
+    width: 460px;
+    overflow: hidden;
+}
+
+.close-replay {
+    visibility: hidden;
+}
+
+.close-modal {
+    visibility: hidden;
+}
+
+.set-selector {
+    position: absolute;   /* Lo stacca dal calcolo dello spazio centrale */
+    right: 30px;          /* Lo ancora a destra dello schermo */
+    top: 50%;             /* Lo mette a metà altezza */
+    transform: translateY(-50%); /* Centratura verticale perfetta */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10001;
+    padding: 10px;
+    border-radius: 15px;
+}
+
+
+.btn-set {
+    width: 80%;               /* Prendono tutta la larghezza del selettore */
+    padding: 12px 15px;
+    text-align: center !important;
+    justify-content: center !important;
+    line-height: 1;
+    display: inline-flex;
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Colore se ha vinto Didi */
+.btn-set.vincitore-D {
+    border-color: var(--accent-didi);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+    color: var(--didi-color);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+}
+.btn-set.vincitore-D:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--didi-borders);
+}
+.btn-set.vincitore-D.active {
+    background: var(--accent-didi);
+    color: #000;
+}
+
+/* Colore se ha vinto Lu */
+.btn-set.vincitore-L {
+    border-color: var(--accent-lu);
+    color: var(--lu-color);
+    box-shadow: 5px 5px 0px #6c026c;
+}
+.btn-set.vincitore-L:hover {
+    transform: translate(-2px, -2px);  
+    box-shadow: 7px 7px 0 #6c026c;
+}
+
+.btn-set.vincitore-L.active {
+    background: var(--accent-lu);
+    color: #fff;
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.gba-container {
+    position: relative;
+    width: 1150px; /* Mantieni la dimensione che preferisci */
+    flex-shrink: 0;
+    z-index: 5;
+    margin-top: 45px;
+}
+
+.gba-shell {
+    width: 100%;
+    height: auto;
+    display: block;
+    pointer-events: none; /* L'immagine non deve bloccare i click sul video */
+    margin: 0;
+}
+
+.gba-screen-area {
+    position: absolute;
+    top: 50.5%;                /* Centratura verticale sullo schermo viola */
+    left: 49.8%;               /* Centratura orizzontale */
+    transform: translate(-50%, -50%);
+    width: 34%;              /* Proporzioni calibrate sulla tua immagine */
+    height: 40%;
+    background: #000;
+    border-radius: 4px;
+    z-index: 5;
+    overflow: hidden !important;
+}
+
+.remote-controls {
+    width: 600px;
+    height: 100px; /* Altezza dei tasti di Showdown */
+    background: #222;
+    border: 3px solid #444;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.controls-clipper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Questo iframe deve essere identico al primo */
+#controlsFrame {
+    width: 1000px;
+    height: 1200px;
+    position: absolute;
+    /* Qui sta il trucco: lo spostiamo in SU per mostrare solo il fondo */
+    top: -550px; 
+    left: -50px;
+    transform: scale(0.8); /* Lo teniamo più grande per cliccare meglio */
+    transform-origin: top left;
+}
+
+#teamModal .modal-inner {
+    background: #1a1a1a; /* Colore scuro dei tuoi box */
+    max-width: 800px;
+    width: 90%;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+
+.team-badge {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.team-badge:hover {
+    transform: translate(-2px, -2px);
+}
+
+.team-didi-badge:hover {
+    box-shadow: 5.75px 5.75px 0px var(--didi-borders);
+}
+
+.team-lu-badge:hover {
+    box-shadow: 5.75px 5.75px 0px#6c026c;
+}
+
+#teamModal.replay-modal {
+    display: none; /* Inizialmente nascosto */
+    overflow-y: auto; /* Permette di scrollare se il team è lungo */
+    padding: 20px;
+}
+
+.close-modal {
+    visibility: hidden;
+}
+
+/* Fix per il contenuto del team */
+#teamModal .modal-inner {
+    background: #111; /* Nero come il box didi */
+    border: 2px solid #333;
+    max-width: 900px; /* Un po' più largo per le 2 colonne di pokemon */
+    margin: auto; /* Centra nel display flex */
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* Evita che il titolo del team finisca sotto la X */
+.modal-header-container {
+    padding-top: 10px;
+    padding-right: 50px; 
+}
+
+/* Dimensioni specifiche per i Tooltip del Modale Dettaglio */
+#teamModal .generic-tooltip {
+    width: 220px;          /* Larghezza fissa per non farla ballare */
+    padding: 12px;
+    font-size: 0.75rem;    /* Leggermente più piccolo per far stare tutto */
+    line-height: 1.3;
+    border-radius: 8px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Dimensioni specifiche per i Tooltip delle Mosse nel Modale */
+#teamModal .move-tooltip {
+    width: 180px;
+    padding: 10px;
+    font-size: 0.7rem;
+}
+
+/* Fix per le barre delle statistiche nel modale */
+#teamModal .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+#teamModal .stat-bar-bg {
+    flex-grow: 1;
+    height: 6px; /* Più sottile rispetto alla home per eleganza */
+    background: #333;
+    border-radius: 3px;
+}
+
+/* Quando il modale ha la classe Didi, usa i colori di Didi */
+#teamModal.proprietario-Didi {
+    --accent-dark: var(--accent-didi);
+    --accent-main: var(--accent-didi);
+    --bg-color: var(--didi-color);
+}
+
+/* Quando il modale ha la classe Lu, usa i colori di Lu */
+#teamModal.proprietario-Lu {
+    --accent-dark: var(--accent-lu);
+    --accent-main: var(--accent-lu);
+    --bg-color: var(--lu-color);
+}
+
+/* Quando il modale è di Lu, forziamo i bordi che puntano a Didi verso Lu */
+#teamModal.proprietario-Lu .modal-pkm-card {
+    border-color: var(--lu-color) !important;
+    background: var(--lu-color);
+    border: 2px solid #8e44ad !important;
+    box-shadow: 5px 5px 0px #8e44ad !important;
+}
+
+/* Se ci sono titoli o altri elementi che rimangono "pesca" nel modale di Lu */
+#teamModal.proprietario-Lu .team-score-banner {
+    border-color: var(--accent-lu) !important;
+    background: rgba(142, 68, 173, 0.1) !important;
+}
+
+/* Viceversa, assicuriamoci che Didi sia corretto (anche se probabilmente è il default) */
+#teamModal.proprietario-Didi .modal-pkm-card {
+    border-color: var(--didi-color) !important;
+    background: var(--didi-color);
+    border: 2px solid var(--accent-didi) !important;
+    box-shadow: 5px 5px 0px var(--accent-didi) !important;
+}
+#teamModal.proprietario-Didi .move-span {
+    border: 1px solid var(--didi-borders);
+    box-shadow: 2.5px 2.5px 0px var(--didi-borders);
+    background: var(--accent-didi);
+    color: #1a1a1a !important; 
+}
+
+#teamModal.proprietario-Didi .move-span:hover {
+    background: var(--didi-borders) !important;
+}
+
+.generic-tooltip {
+    display: none;
+    position: absolute;
+    left: 105%; 
+    top: 0;
+    width: 200px;
+    background: #33261c !important;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    font-size: 0.7rem;
+    line-height: 1.3;
+    pointer-events: none;
+    border: 1px solid #ddd;
+    color: #ddd
+}
+
+/* Modifica dei badge esistenti */
+.team-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    padding: 10px !important;
+    height: auto !important; /* Permette al badge di allungarsi */
+    gap: 8px;
+}
+
+.team-title {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Contenitore delle GIF */
+.mini-pkm-list {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    flex-wrap: wrap; /* Se non ci stanno, vanno a capo */
+}
+
+.mini-gif {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));
+}
+
+/* Opzionale: allarga la card del match se vedi che è tutto troppo stretto */
+.match-card {
+    min-height: 100px;
+    padding: 15px;
+    align-items: center;
+}
+
+.mini-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.side-lu { justify-content: flex-end; }
+
+.mini-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.75rem;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.mini-gifs-row {
+    display: flex;
+    gap: 2px;
+}
+
+.mini-gifs-row img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}   
+
+.replay-mini-header {
+    position: absolute; /* Rispetto al modale */
+    top: 20px;         /* Distanza dal bordo superiore dello schermo */
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    min-width: 400px;  /* Gli diamo un po' di respiro */
+    background: var(--card-bg-matches) !important;
+    border: 2px solid var(--borders);
+    box-shadow: 5px 5px 0px var(--borders);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 25px;
+    z-index: 10001; /* Sopra tutto */
+}
+
+/* Rendi le scritte più leggibili essendo sullo sfondo scuro */
+.mini-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    color: #eeeeee !important;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.mini-score-box {
+    background: white;
+    color: black;
+    padding: 4px 15px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 1rem;
+    margin: 0 20px;
+}
+
+.mini-gifs-row img {
+    width: 35px; /* Ora che c'è spazio, facciamole un po' più grandi */
+    height: 35px;
+}
+
+.mini-team-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+.side-lu { justify-content: flex-end; }
+.mini-name { font-size: 0.7rem; color: #fff; font-weight: bold; text-transform: uppercase; }
+.mini-gifs-row { display: flex; gap: 2px; }
+
+.replay-mini-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 78%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.mini-team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-gif {
+    width: 35px;
+    height: 35px;
+    object-fit: contain;
+}
+
+.mini-gifs-row {
+    display: flex;
+    gap: 4px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.side-lu {
+    flex-direction: row; /* Nome a sinistra, GIF a destra */
+}
+
+.side-didi {
+    flex-direction: row; /* GIF a sinistra, nome a destra */
+}
+
+/* Struttura base del Menù */
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+    
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}
+
+/* Schermata di caricamento */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--card-bg-matches) !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Sopra a tutto */
+    transition: opacity 0.5s ease;
+}
+
+/* La Pokéball che gira */
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    margin-top: 15px;
+    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.admin-panel {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    padding:20px;
+    border-radius:10px;
+    z-index:10001;
+    width:90%;
+    max-width:400px;
+    color: #1a1a1a !important;
+    border: 2px solid var(--borders) !important;
+    box-shadow: 5px 5px 0px var(--borders);
+    background: var(--card-bg-matches) !important;
+    font-family: Josefin Sans, sans-serif;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Stile comune per input e select */
+.form-group input, 
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #444;
+    background: #eeeeee;
+    color: #1a1a1a;
+    font-family: inherit;
+    box-sizing: border-box; /* Importante per non far uscire l'input dai bordi */
+}
+
+.form-group input:focus, 
+.form-group select:focus {
+    outline: none;
+    border-color: #ffcb05;
+}
+
+/* Contenitore bottoni */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Bottone Salva */
+.btn-save {
+    flex: 1;
+    background: #16a445;
+    color: #000;
+    border: none;
+    padding: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background 0.3s;
+    font-family: Josefin Sans, sans-serif;
+
+}
+
+.btn-save:hover {
+    background: #056425;
+}
+
+/* Bottone Cancella */
+.btn-cancel {
+    flex: 1;
+    background: #b51e1e;
+    color: #000;
+    border: none;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+    font-family: Josefin Sans, sans-serif;
+    font-weight: bold;
+}
+
+.btn-cancel:hover {
+    background: #6d0b0b;
+}
+
+.team-controls {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    justify-content: center;
+}
+
+.btn-edit-small {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+
+.btn-delete-small {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+
+.btn-edit-small:hover { background: #357abd; }
+.btn-delete-small:hover { background: #c0392b; }
+
+.admin-match-controls{
+    display: flex;
+    justify-content: center;
+    margin-top: -35px;
+    margin-right: -50px;
+    padding-bottom: 15px;
+}
+
+.admin-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+}
+
+.admin-icon:hover {
+    transform: scale(1.1) !important;
+}
+
+.btn-floating-admin {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    
+    /* Sfondo semitrasparente per leggerezza */
+    background: rgba(0, 0, 0, 0.5); 
+    
+   border: none !important;
+    border-radius: 50%;
+    
+    color: #eeeeee !important;
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: #d62f2f !important;         /* Il + diventa nero */
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    box-shadow: 0 0 15px rgba(227, 73, 70, 0.4) !important;
+    border: #000 !important;
+}
+
+.music-btn {
+    position: fixed;
+    right: 70px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+.set-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.winner-selector button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background: #333;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+}
+/* Classi attive */
+.winner-selector button.active-D { background: #ffcb05; color: black; border-color: #ffcb05; }
+.winner-selector button.active-L { background: #3498db; color: white; border-color: #3498db; }
+
+.panel-title-edit {
+    color: #eeeeee !important;
+
+}
+
+/* Contenitore Principale */
+.admin-panel-modern {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    padding:20px;
+    border-radius:10px;
+    z-index:10001;
+    width:90%;
+    max-width:400px;
+    color: #1a1a1a !important;
+    border: 2px solid #092377 !important;
+    box-shadow: 5px 5px 0px #092377;
+    background: #2e53cd !important;
+    font-family: Josefin Sans, sans-serif;
+}
+
+.admin-panel-modern h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #eeeeee;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Layout a righe e colonne */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.flex-1 { flex: 1; }
+.flex-half { flex: 0.5; }
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #1a1a1a;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus { border-color: #3498db; }
+
+/* Sezione Replays compatta */
+.replays-admin-section h4 {
+    margin: 25px 0 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eee;
+    font-size: 1rem;
+}
+
+.set-row-modern {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    gap: 10px;
+}
+
+.set-label {
+    font-weight: bold;
+    color: #1a1a1a !important;
+    min-width: 30px;
+}
+
+.set-row-modern input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Winner Selector */
+.winner-selector {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-win {
+    width: 35px;
+    height: 35px;
+    border: 2px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-win.active-D { background: #31c489 !important; border-color: #025534 !important; color: black; }
+.btn-win.active-L { background: #8e44ad !important; border-color: #6c026c !important; color: white; }
+
+/* Bottoni Azione */
+.button-group-modern {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-save {
+    flex: 2;
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-cancel {
+    flex: 1;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Modale più largo per le 3 colonne */
+.admin-panel-modern.wide {
+    max-width: 950px; /* Aumentato per 3 colonne */
+    background: #fdfdfd;
+}
+
+.admin-three-columns {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.admin-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Colonna Replays leggermente più larga per comodità */
+.col-replays {
+    flex: 1.5; 
+    border-left: 1px solid #eee;
+    padding-left: 20px;
+}
+
+.col-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #eeeeee;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+/* Row dei set più compatta */
+.set-row-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    background: #f1f3f5;
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.set-num {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #444;
+}
+
+.set-row-compact input {
+    flex: 1;
+    padding: 5px;
+    font-size: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Winner Selector */
+.winner-selector {
+    display: flex;
+    gap: 3px;
+}
+
+.btn-win {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background: white;
+    font-weight: bold;
+}
+
+/* Responsive: se lo schermo è piccolo torna a 1 colonna */
+@media (max-width: 800px) {
+    .admin-three-columns {
+        flex-direction: column;
+    }
+    .col-replays {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+    }
+}

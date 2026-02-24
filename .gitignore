@@ -1,0 +1,13 @@
+# Dipendenze
+node_modules/
+
+# Android Studio e file generati (PESANTISSIMI)
+android/
+*.iml
+.gradle/
+local.properties
+.idea/
+
+# File di sistema
+.DS_Store
+Thumbs.db

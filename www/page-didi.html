@@ -1,0 +1,2404 @@
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Didi Personal</title>
+        <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+        <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style-page-didi.css">
+        <link rel="stylesheet" href="style-box-didi.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+    <body>
+        
+        <audio id="bg-music" loop></audio>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <span id="music-icon">🔇</span>
+</div>
+
+<div id="song-title" class="song-title">
+    Loading...
+</div>
+
+        <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
+    <nav class="hamburger-menu">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-button-container">
+            <div class="menu-button"></div>
+        </label>
+        <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+            <li><a href="rules.html">Rules</a></li>
+        </ul>
+    </nav>  
+
+    <div class="admin-lock-container">
+    <button id="login-btn" onclick="gestisciLogin()" class="lock-btn">🔒</button>
+</div>
+
+<div id="admin-modal" class="modal-admin-overlay">
+    <div class="modal-admin-content">
+        <span class="close-admin" onclick="chiudiAdminModal()">&times;</span>
+        <h3>Preferences</h3>
+        
+        <label>Bio:</label>
+        <textarea id="bio-input"></textarea>
+        
+        <label>Best team:</label>
+        <select id="team-selector-fav">
+            </select>
+
+        <label style="margin-top: 25px; margin-bottom: 15px; display: block;">Soundtrack:</label>
+<div class="custom-dropdown">
+    <div id="dropdown-header" class="dropdown-header" onclick="toggleDropdown()">
+        <span id="selected-song-name">Choose your soundtrack...</span>
+        <span class="arrow">▲</span>
+    </div>
+
+    <div id="dropdown-content" class="dropdown-content">
+        <input type="text" id="music-search" placeholder="Cerca..." onkeyup="filtraMusica()" onclick="event.stopPropagation()">
+        <ul id="music-list-admin" class="custom-music-list">
+            </ul>
+    </div>
+    
+    <input type="hidden" id="selected-music-url">
+</div>
+
+<button onclick="salvaModificheProfilo()" class="save-btn" style="margin-top:20px;">Save Changes</button>
+    </div>
+</div>
+
+<audio id="bg-music" loop></audio>
+
+    <div class="profile-container">
+        <h1 id="trainer-name">Didi</h1>
+        <div id="badge-container" class="player-badges"></div>
+        </div>
+
+<div id="recent-trend" class="trend-container">
+    <span class="trend-label">LAST 5:</span>
+    <div id="trend-dots" class="trend-dots"></div>
+</div>
+
+        <div class="main-layout">
+            
+            <div class="side-column">
+                <aside class="stats-sidebar trainer-panel">
+                    <div class="panel-header">
+                        <span class="badge-accent">TRAINER STATS</span>
+                    </div>
+                    <div class="stats-grid-trainer">
+                        <div class="stat-row-new">
+                            <span class="stat-label">W / L</span>
+                            <span class="stat-value"><b id="global-win">--</b> / <b id="global-loss">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Sets W / L</span>
+                            <span class="stat-value"><b id="global-setv">--</b> / <b id="global-setp">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Global Points</span>
+                            <span id="global-punti" class="stat-value">--</span>
+                        </div>
+                        <hr class="panel-divider">
+                        <div class="stat-row-new">
+                            <span class="stat-label">% W</span>
+                            <span id="global-pct-win" class="stat-value">--</span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">% Sets W</span>
+                            <span id="global-pct-set" class="stat-value">--</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="horizontal-box trainer-extra">
+                    <span class="badge-accent">BEST FORMAT</span>
+                    <div id="best-category-name" class="extra-value">--</div>
+                </div>
+            </div>
+
+            <header class="profile-header">
+                <div class="hof-container">
+                    <div class="trainer-node">
+                        <img src="../immagini/sage.png" alt="Didi">
+                    </div>
+                    <div id="pokemon-orbit" class="orbit">
+                        <div class="pkm-slot slot-0"></div>
+                        <div class="pkm-slot slot-1"></div>
+                        <div class="pkm-slot slot-2"></div>
+                        <div class="pkm-slot slot-3"></div>
+                        <div class="pkm-slot slot-4"></div>
+                        <div class="pkm-slot slot-5"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="side-column">
+                <aside class="stats-sidebar team-panel">
+                    <div class="panel-header">
+                        <span class="badge-accent">BEST TEAM STATS</span>
+                    </div>
+                    <div class="stats-grid-trainer">
+                        <div class="stat-row-new">
+                            <span class="stat-label">W / L</span>
+                            <span class="stat-value"><b id="team-win">--</b> / <b id="team-loss">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Sets W / L</span>
+                            <span class="stat-value"><b id="team-setv">--</b> / <b id="team-setp">--</b></span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">Team Points</span>
+                            <span id="team-punti" class="stat-value">--</span>
+                        </div>
+                        <hr class="panel-divider">
+                        <div class="stat-row-new">
+                            <span class="stat-label">% W</span>
+                            <span id="team-pct-win" class="stat-value">--</span>
+                        </div>
+                        <div class="stat-row-new">
+                            <span class="stat-label">% Sets W</span>
+                            <span id="team-pct-set" class="stat-value">--</span>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="horizontal-box team-extra">
+                    <span class="badge-accent" id="team-category-badge">BEST TEAM</span>
+                    <div id="best-team-name-new" class="extra-value">Loading...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="trainer-section">
+    <div class="bio-wrapper">
+        <div id="trainer-bio-display" class="bio-text">Caricamento presentazione...</div>
+    </div>
+</div>
+
+<div id="categoryModal" class="modal-page">
+    <div class="modal-content-page">
+        <div id="modal-floater-left" class="modal-floater">
+            <div class="stat-mini-box">
+                <span class="label">Points/Match</span>
+                <strong id="avg-points">0.0</strong>
+            </div>
+            <div class="stat-mini-box">
+                <span class="label">Win rate</span>
+                <div class="winrate-bar-container">
+                    <div id="win-bar" class="bar-fill win"></div>
+                    <div id="loss-bar" class="bar-fill loss"></div>
+                </div>
+                <div class="bar-labels">
+                    <span id="win-perc">0%</span>
+                    <span id="loss-perc">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-header-cat">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: -25px; color: #1a1a1a;">Trainer stats</h2>
+        </div>
+        
+        <div id="modal-body-stats"></div>
+
+        <div id="modal-floater-right" class="modal-floater">
+            <span class="label">Score distribution</span>
+            <div style="width: 140px; height: 140px; margin: 0 auto;">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="teamModal" class="modal" onclick="chiudiTeamModal()">
+    <div class="modal-content"> 
+        <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+    <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
+        <div id="pkmModalBody"></div>
+    </div>
+</div>
+
+    <script>
+
+                // Configurazione del tuo progetto
+const firebaseConfig = {
+  apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+  authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+  databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pokemonsuite-didi-lu",
+  storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+  messagingSenderId: "707115539525",
+  appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+// Inizializzazione
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+async function inizializzaPaginaDidi() {
+    try {
+        // Avviamo i caricamenti in parallelo e aspettiamo che finiscano tutti
+        await Promise.all([
+            caricaDatiDidi(),       // Carica stats e team attuale
+            caricaTrendRecente(),   // Carica i pallini delle ultime partite
+            elaboraBadge()          // Calcola le serie e mostra le medaglie
+        ]);
+        
+        console.log("Dati di Lu caricati con successo.");
+
+    } catch (e) {
+        console.error("Errore durante il caricamento della pagina Lu:", e);
+    } finally {
+        // Nascondi la schermata di caricamento
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            // Effetto dissolvenza
+            loader.style.opacity = '0';
+            // Rimuove l'elemento dal flusso dopo la transizione CSS (0.5s)
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
+}
+
+// Avvia tutto quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
+
+    const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
+
+    const formatPct = (val) => {
+        if (!val || val === "" || val.toLowerCase().includes("nan")) return "0%";
+        let cleanVal = val.replace(/[^\d.,]/g, '').trim().replace(',', '.');
+        let num = parseFloat(cleanVal);
+        if (isNaN(num)) return "0%";
+        if (num > 0 && num <= 1) num = num * 100;
+        return Math.round(num) + "%";
+    };
+
+    // Funzione universale per aprire il modale
+    function apriModale(titolo, contenutoHtml) {
+        const modal = document.getElementById("categoryModal");
+        document.getElementById("modal-cat-name").innerText = titolo;
+        document.getElementById("modal-body-stats").innerHTML = contenutoHtml;
+        modal.style.display = "block";
+    }
+
+    function gestisciGraficiLaterali(v, s, pts, datiScore) {
+    const leftFloater = document.getElementById('modal-floater-left');
+    const rightFloater = document.getElementById('modal-floater-right');
+    
+    // Mostriamo i flottanti
+    leftFloater.style.display = "block";
+    rightFloater.style.display = "block";
+
+    // 1. Calcolo Media Punti
+    const vNum = parseInt(v) || 0;
+    const sNum = parseInt(s) || 0;
+    const ptsNum = parseInt(pts) || 0;
+    const totale = vNum + sNum;
+    const media = totale > 0 ? (ptsNum / totale).toFixed(1) : "0.0";
+    document.getElementById('avg-points').innerText = media;
+
+    // 2. Calcolo Winrate Bar
+    const winPerc = totale > 0 ? Math.round((vNum / totale) * 100) : 0;
+    document.getElementById('win-bar').style.width = winPerc + "%";
+    document.getElementById('loss-bar').style.width = (100 - winPerc) + "%";
+    document.getElementById('win-perc').innerText = winPerc + "%";
+    document.getElementById('loss-perc').innerText = (100 - winPerc) + "%";
+
+    // 3. Grafico a Torta (Richiede Chart.js nell'head)
+    const ctx = document.getElementById('scoreChart').getContext('2d');
+    if (window.myChart) window.myChart.destroy();
+    window.myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['5-0', '4-1', '3-2', '2-3', '1-4', '0-5'],
+            datasets: [{
+                data: datiScore,
+                backgroundColor: ['#2e7d32', '#66bb6a', '#a5d6a7', '#ef9a9a', '#e57373', '#c62828'],
+                borderWidth: 1
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, responsive: true }
+    });
+}
+
+function creaMappaDati(header, riga) {
+    let mappa = {};
+    header.forEach((nome, indice) => {
+        if (nome) {
+            // Puliamo il nome della colonna (trim e tutto maiuscolo per sicurezza)
+            const nomePulito = nome.trim().toUpperCase();
+            // Puliamo il valore (rimuoviamo spazi bianchi)
+            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
+        }
+    });
+    return mappa;
+}
+
+function creaMappaDati(header, riga) {
+    let mappa = {};
+    header.forEach((nome, indice) => {
+        if (nome) {
+            // Rimuove spazi, ritorni a capo e rende maiuscolo
+            const nomePulito = nome.trim().replace(/\n/g, " ").toUpperCase();
+            // Associa il valore pulito, se la riga è più corta mette stringa vuota
+            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
+        }
+    });
+    return mappa;
+}
+
+async function caricaDatiDidi() {
+    try {
+        // AGGIUNTO: snapRegolamenti per scaricare il nodo dei regolamenti
+        const [snapMatches, snapTeams, snapSettings, snapRegolamenti] = await Promise.all([
+            db.ref('matches').once('value'),
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_didi').once('value'),
+            db.ref('regolamenti').once('value') // Assicurati che il percorso nel DB sia corretto
+        ]);
+
+        const matchesRaw = snapMatches.val() || {};
+        const teamsRaw = snapTeams.val() || {};
+        const settings = snapSettings.val() || {};
+        const regolamentiRaw = snapRegolamenti.val() || {}; // Recupero dati regolamenti
+
+        const matches = Object.values(matchesRaw);
+        const teams = Object.keys(teamsRaw).map(key => ({ id: key, ...teamsRaw[key] }));
+        
+        // --- LOGICA SINCRONIZZAZIONE REGOLAMENTI ---
+        window.listaRegolamenti = Object.keys(regolamentiRaw).map(id => {
+    const datiReg = regolamentiRaw[id];
+    return {
+        id: id,
+        // Se esiste la proprietà categoria usa quella, altrimenti usa l'ID
+        nome: datiReg.categoria || id, 
+        ...datiReg
+    };
+});
+// Mappa utile per trovare i dati partendo dal nome scelto nel selettore
+window.mappaRegolamentiPerNome = {};
+window.listaRegolamenti.forEach(r => {
+    window.mappaRegolamentiPerNome[r.nome] = r;
+});
+        // --------------------------------------------
+
+        window.tuttiITeam = teams;
+        window.idTeamPreferito = settings.idTeamPreferito || "auto";
+
+        let dati = {
+            "GEN-W": 0, "GEN-L": 0, "GEN-SETS-W": 0, "GEN-SETS-L": 0, "GEN-POINTS": 0,
+            "GEN-W-50": 0, "GEN-W-41": 0, "GEN-W-32": 0, "GEN-L-23": 0, "GEN-L-14": 0, "GEN-L-05": 0,
+            "BEST-CATEGORY": "N/A"
+        };
+
+        const statsTeam = {};
+        const statsFormat = {};
+        // Oggetto temporaneo per contare le vittorie di ogni team in ogni categoria
+        const vittorieTeamPerFormato = {}; 
+
+        // 1. Inizializziamo statsFormat con tutti i regolamenti
+        window.listaRegolamenti.forEach(r => {
+            statsFormat[r.nome] = { 
+                nome: r.nome, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, 
+                distrib: [0,0,0,0,0,0],
+                bestTeamName: "N/A" // Lo calcoleremo sotto
+            };
+            vittorieTeamPerFormato[r.nome] = {}; // Prepariamo il contenitore per i conteggi
+        });
+
+        // 2. Cicliamo i match per accumulare statistiche e contare le vittorie dei team
+        matches.forEach(m => {
+            const scoreParti = (m.score || "0-0").split('-').map(Number);
+            const x = scoreParti[0] || 0; 
+            const y = scoreParti[1] || 0;
+            const tId = m.team1Id;
+            const nomeTeamDidi = m.team1 || "Unknown";
+            const cat = m.categoria || "Standard";
+            const puntiOttenuti = calcolaPuntiDalloScore(x, y);
+
+            // Statistiche Generali (Globali)
+            dati["GEN-SETS-W"] += x; dati["GEN-SETS-L"] += y; dati["GEN-POINTS"] += puntiOttenuti;
+            if (x > y) {
+                dati["GEN-W"]++;
+                if (x === 5) dati["GEN-W-50"]++; else if (x === 4) dati["GEN-W-41"]++; else dati["GEN-W-32"]++;
+            } else {
+                dati["GEN-L"]++;
+                if (x === 2) dati["GEN-L-23"]++; else if (x === 1) dati["GEN-L-14"]++; else dati["GEN-L-05"]++;
+            }
+
+            // Statistiche per Categoria (Format)
+            if (!statsFormat[cat]) {
+                statsFormat[cat] = { nome: cat, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0], bestTeamName: "N/A" };
+                vittorieTeamPerFormato[cat] = {};
+            }
+            
+            const sf = statsFormat[cat];
+            sf.sW += x; sf.sL += y; sf.pts += puntiOttenuti;
+            
+            if (x > y) {
+                sf.win++;
+                // CONTEGGIO VITTORIE PER IL BEST TEAM:
+                // Incrementiamo il contatore di questo specifico team dentro questa categoria
+                vittorieTeamPerFormato[cat][nomeTeamDidi] = (vittorieTeamPerFormato[cat][nomeTeamDidi] || 0) + 1;
+                
+                if (x === 5) sf.distrib[0]++; else if (x === 4) sf.distrib[1]++; else sf.distrib[2]++;
+            } else {
+                sf.loss++;
+                if (x === 2) sf.distrib[3]++; else if (x === 1) sf.distrib[4]++; else sf.distrib[5]++;
+            }
+
+            // Statistiche per Singolo Team (per ID)
+            if (tId) {
+                if (!statsTeam[tId]) {
+                    statsTeam[tId] = { id: tId, nome: nomeTeamDidi, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
+                }
+                const st = statsTeam[tId];
+                st.sW += x; st.sL += y; st.pts += puntiOttenuti;
+                if (x > y) {
+                    st.win++;
+                    if (x === 5) st.distrib[0]++; else if (x === 4) st.distrib[1]++; else st.distrib[2]++;
+                } else {
+                    st.loss++;
+                    if (x === 2) st.distrib[3]++; else if (x === 1) st.distrib[4]++; else st.distrib[5]++;
+                }
+            }
+        });
+
+        // 3. ORA DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
+        // 3. DETERMINIAMO IL BEST TEAM PER OGNI CATEGORIA
+        for (const nomeCat in vittorieTeamPerFormato) {
+            let maxVittorie = 0;
+            let nomeMigliorTeam = "N/A";
+            
+            const teamInQuestaCat = vittorieTeamPerFormato[nomeCat];
+            for (const nomeT in teamInQuestaCat) {
+                if (teamInQuestaCat[nomeT] > maxVittorie) {
+                    maxVittorie = teamInQuestaCat[nomeT];
+                    nomeMigliorTeam = nomeT;
+                }
+            }
+            
+            if (statsFormat[nomeCat]) {
+                const teamOriginale = teams.find(t => (t.nome || t.id) === nomeMigliorTeam);
+                
+                const sT = (teamOriginale && statsTeam[teamOriginale.id]) 
+                            ? statsTeam[teamOriginale.id] 
+                            : { win: 0, loss: 0 };
+
+                // --- AGGIUNGI QUESTA RIGA QUI SOTTO ---
+                statsFormat[nomeCat].bestTeamName = nomeMigliorTeam; 
+                // --------------------------------------
+
+                statsFormat[nomeCat].bestTeamData = {
+                    nome: nomeMigliorTeam,
+                    pokemon: (teamOriginale && teamOriginale.pokemon) ? Object.values(teamOriginale.pokemon) : [],
+                    win: sT.win || 0,
+                    loss: sT.loss || 0
+                };
+            }
+        }
+
+        // 1. CALCOLO BEST (TEAM E FORMAT)
+        // 1. TROVA IL MIGLIOR FORMATO (Questo va bene così)
+let bestFormatObj = null; 
+let maxFW = -1;
+for (const f in statsFormat) {
+    if (statsFormat[f].win > maxFW) { 
+        maxFW = statsFormat[f].win; 
+        bestFormatObj = statsFormat[f]; 
+        dati["BEST-CATEGORY"] = f; 
+    }
+}
+
+// 2. TROVA IL MIGLIOR TEAM (Modificato per Luca)
+let maxW = -1; 
+let migliorStatTeam = null; // Memorizziamo qui l'oggetto con le stats (win/loss)
+
+for (const id in statsTeam) {
+    // Usiamo i punti (pts) invece delle semplici vittorie per maggior precisione
+    if (statsTeam[id].pts > maxW) { 
+        maxW = statsTeam[id].pts; 
+        migliorStatTeam = statsTeam[id]; 
+    }
+}
+
+// 3. ASSEGNAZIONE A bestT (Il team reale con i Pokémon)
+let bestT = null;
+if (migliorStatTeam) {
+    // Cerchiamo nella lista dei team reali di Luca quello che ha l'ID del migliore nelle stats
+    bestT = teams.find(t => t.id === migliorStatTeam.id);
+    
+    // IMPORTANTE: Aggiungiamo le stats calcolate all'oggetto team 
+    // così i box dei numeri sotto il cerchio si aggiornano correttamente
+    if (bestT) {
+        bestT.win = migliorStatTeam.win;
+        bestT.loss = migliorStatTeam.loss;
+        bestT.sW = migliorStatTeam.sW;
+        bestT.sL = migliorStatTeam.sL;
+        bestT.pts = migliorStatTeam.pts;
+    }
+}
+
+        // 2. LOGICA CERCHIO
+        let teamDaMostrareNelCerchio = null;
+        if (window.idTeamPreferito === "auto") {
+            teamDaMostrareNelCerchio = bestT;
+        } else {
+            teamDaMostrareNelCerchio = teams.find(t => t.id === window.idTeamPreferito);
+        }
+
+        if (teamDaMostrareNelCerchio && teamDaMostrareNelCerchio.pokemon) {
+            popolaCerchio(teamDaMostrareNelCerchio); 
+        }
+
+        window.dati = dati;
+        window.bestT = bestT;
+        window.bestFormatObj = bestFormatObj;
+        window.statsTeam = statsTeam; 
+        window.statsFormat = statsFormat; // AGGIUNTO: Fondamentale per il modale formati
+        window.listaTuttiTeam = teams;
+        window.databaseMatches = matches; 
+        window.mappaTeamDidi = teamsRaw;
+
+        initModals();        
+
+        // 3. AGGIORNAMENTO UI BOX
+        if (bestT) {
+            document.getElementById('best-team-name-new').innerText = bestT.nome; // Come richiesto prima
+            document.getElementById('team-win').innerText = bestT.win;
+            document.getElementById('team-loss').innerText = bestT.loss;
+            document.getElementById('team-setv').innerText = bestT.sW;
+            document.getElementById('team-setp').innerText = bestT.sL;
+            document.getElementById('team-punti').innerText = bestT.pts;
+            document.getElementById('team-pct-win').innerText = getPct(bestT.win, bestT.loss);
+            document.getElementById('team-pct-set').innerText = getPct(bestT.sW, bestT.sL);
+        }
+
+        // 4. ALTRI AGGIORNAMENTI UI
+        document.getElementById('global-win').innerText = dati["GEN-W"];
+        document.getElementById('global-loss').innerText = dati["GEN-L"];
+        document.getElementById('global-setv').innerText = dati["GEN-SETS-W"];
+        document.getElementById('global-setp').innerText = dati["GEN-SETS-L"];
+        document.getElementById('global-punti').innerText = dati["GEN-POINTS"];
+        document.getElementById('global-pct-win').innerText = getPct(dati["GEN-W"], dati["GEN-L"]);
+        document.getElementById('global-pct-set').innerText = getPct(dati["GEN-SETS-W"], dati["GEN-SETS-L"]);
+        document.getElementById('best-category-name').innerText = dati["BEST-CATEGORY"];
+
+        popolaSelettoreTeam();
+
+    } catch (e) { console.error("Errore nel caricamento dati:", e); }
+}
+
+function initModals() {
+    console.log("Inizializzazione click modali...");
+
+    // Selettore helper per evitare ripetizioni
+    const aggiungiClick = (className, callback) => {
+        const el = document.querySelector(className);
+        if (el) el.onclick = callback;
+    };
+
+    // --- TRAINER PANEL ---
+    aggiungiClick(".trainer-panel", () => {
+        console.log("Click su Trainer Panel");
+        const d = window.dati || (typeof dati !== 'undefined' ? dati : null);
+        
+        if (!d) return console.error("Dati trainer non trovati in window.dati");
+
+        apriModale("Trainer Stats", generaHtmlInterno(d, "GEN", "GENERALE"));
+        
+        const distrib = [d["GEN-W-50"], d["GEN-W-41"], d["GEN-W-32"], d["GEN-L-23"], d["GEN-L-14"], d["GEN-L-05"]];
+        if (typeof gestisciGraficiLaterali === "function") {
+            gestisciGraficiLaterali(d["GEN-W"], d["GEN-L"], d["GEN-POINTS"], distrib);
+        }
+    });
+
+    // --- TEAM PANEL ---
+    aggiungiClick(".team-panel", () => {
+        console.log("Click su Team Panel");
+        const t = window.bestT || (typeof bestT !== 'undefined' ? bestT : null);
+        
+        if (t && t.nome) {
+            apriModaleTeamDinamico(t.nome);
+        } else {
+            console.error("Variabile bestT non trovata. Controlla il caricamento dati.");
+        }
+    });
+
+    // --- Altri click (Format e Extra) ---
+    aggiungiClick(".trainer-extra", () => {
+        console.log("Click su Format Panel");
+        // Prendiamo il nome del formato migliore attuale
+        const fNome = window.dati["BEST-CATEGORY"] || "Standard";
+        
+        // Usiamo la nuova funzione dinamica
+        apriModaleFormatoDinamico(fNome);
+    });
+
+    aggiungiClick(".team-extra", () => {
+        const t = window.bestT || (typeof bestT !== 'undefined' ? bestT : null);
+        if (t && typeof apriDettagli === "function") {
+            window.currentTeamId = t.id;
+            apriDettagli(t.id, (window.statsTeam ? window.statsTeam[t.id] : {}));
+        }
+    });
+}
+
+// Esegui inizializzazione
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initModals);
+} else {
+    initModals();
+}
+// --- FUNZIONI DI SUPPORTO AGGIORNATE ---
+
+function apriModaleTeamDinamico(nomeTeam) {
+    const lista = window.listaTuttiTeam || [];
+    // 1. Trova l'oggetto base (per avere l'ID)
+    const teamBase = lista.find(t => t.nome === nomeTeam);
+    
+    if (!teamBase) {
+        console.error("Team non trovato:", nomeTeam);
+        return;
+    }
+
+    // 2. Recupera le statistiche calcolate (Win/Loss/Pts) usando l'ID
+    const statsCalcolate = (window.statsTeam && window.statsTeam[teamBase.id]) 
+        ? window.statsTeam[teamBase.id] 
+        : { nome: teamBase.nome, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0] };
+
+    // 3. Genera l'HTML (generaHtmlInterno ora include la mini-griglia dei 6 pokemon)
+    const htmlContenuto = generaHtmlInterno(statsCalcolate, "TEAM", "TEAM");
+    
+    // 4. Apri il modale (Ho messo un titolo più pulito, cambialo pure se vuoi)
+    apriModale("Team Analysis", htmlContenuto);
+    
+    // 5. Aggiorna i grafici laterali
+    if (typeof gestisciGraficiLaterali === "function") {
+        gestisciGraficiLaterali(statsCalcolate.win, statsCalcolate.loss, statsCalcolate.pts, statsCalcolate.distrib);
+    }
+
+    // 6. Listener per il cambio team nel dropdown
+    setTimeout(() => {
+        const sel = document.getElementById("team-selector-modale");
+        if (sel) {
+            sel.onchange = (e) => {
+                // Richiamando se stessa con il nuovo nome, ricaricherà tutto l'HTML
+                // compresa la nuova mini-griglia del team selezionato
+                apriModaleTeamDinamico(e.target.value);
+            };
+        }
+    }, 100);
+}
+
+function apriModaleFormatoDinamico(nomeFormato) {
+    // 1. Recupera le statistiche calcolate dalla mappa globale
+    // Se non esistono match per questo formato, creiamo un oggetto vuoto coerente
+    const statsCalcolate = (window.statsFormat && window.statsFormat[nomeFormato]) 
+        ? window.statsFormat[nomeFormato] 
+        : { nome: nomeFormato, win: 0, loss: 0, sW: 0, sL: 0, pts: 0, distrib: [0,0,0,0,0,0], bestTeamName: "N/A" };
+
+    // 2. Genera l'HTML (passiamo "REG" e "BASE" come prefissi)
+    const htmlContenuto = generaHtmlInterno(statsCalcolate, "REG", "BASE");
+    
+    // 3. Apri il modale
+    apriModale("Format stats", htmlContenuto);
+    
+    // 4. Aggiorna i grafici laterali con i dati del formato
+    if (typeof gestisciGraficiLaterali === "function") {
+        gestisciGraficiLaterali(statsCalcolate.win, statsCalcolate.loss, statsCalcolate.pts, statsCalcolate.distrib);
+    }
+
+    // 5. Attacca il listener al dropdown (fondamentale per farlo cambiare!)
+    setTimeout(() => {
+        const sel = document.getElementById("format-selector-modale");
+        if (sel) {
+            sel.onchange = (e) => apriModaleFormatoDinamico(e.target.value);
+        }
+    }, 100);
+}
+
+function getPct(v, l) {
+    const tot = Number(v) + Number(l);
+    return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
+}
+
+function generaHtmlInterno(obj, pref, tipoModale = "BASE") {
+    let win, loss, sw, sl, pts, nomeAttuale;
+
+    // Recupero dati statistici (Compatibilità con window.statsFormat)
+    if (tipoModale === "BASE") {
+        nomeAttuale = obj.nome || obj.regolamento;
+        const statsGlobali = (window.statsFormat && window.statsFormat[nomeAttuale]) 
+                             ? window.statsFormat[nomeAttuale] 
+                             : obj;
+        
+        win = statsGlobali.win || 0;
+        loss = statsGlobali.loss || 0;
+        sw = statsGlobali.sW || 0;
+        sl = statsGlobali.sL || 0;
+        pts = statsGlobali.pts || 0;
+    } 
+    else if (pref === "GEN") {
+        win = obj["GEN-W"] || 0; 
+        loss = obj["GEN-L"] || 0; 
+        sw = obj["GEN-SETS-W"] || 0; 
+        sl = obj["GEN-SETS-L"] || 0; 
+        pts = obj["GEN-POINTS"] || 0;
+        nomeAttuale = "Generale";
+    } 
+    else {
+        win = obj.win || 0; 
+        loss = obj.loss || 0; 
+        sw = obj.sW || 0; 
+        sl = obj.sL || 0; 
+        pts = obj.pts || 0; 
+        nomeAttuale = obj.nome;
+    }
+
+    let html = "";
+
+    // --- SELETTORI ---
+    if (tipoModale === "TEAM") {
+        const lista = window.listaTuttiTeam || [];
+        html += `
+            <div class="team-selector-container">
+                <select id="team-selector-modale" class="team-dropdown-mini">
+                    ${lista.map(t => `<option value="${t.nome}" ${t.nome === nomeAttuale ? 'selected' : ''}>${t.nome}</option>`).join('')}
+                </select>
+            </div>`;
+    } else if (tipoModale === "BASE") {
+        const listaReg = window.listaRegolamenti || [];
+        html += `
+            <div class="team-selector-container">
+                <select id="format-selector-modale" class="team-dropdown-mini">
+                    ${listaReg.length > 0 
+                        ? listaReg.map(r => `<option value="${r.nome}" ${r.nome === nomeAttuale ? 'selected' : ''}>${r.nome}</option>`).join('')
+                        : `<option disabled>Nessun formato disponibile</option>`
+                    }
+                </select>
+            </div>`;
+    }
+
+    // Calcolo percentuali (Uso logica interna per sicurezza)
+    const winPct = (win + loss) > 0 ? Math.round((win / (win + loss)) * 100) + "%" : "0%";
+    const setsPct = (sw + sl) > 0 ? Math.round((sw / (sw + sl)) * 100) + "%" : "0%";
+
+    html += `
+        <div class="stat-panel-new">
+            <div class="stat-row-new"><span class="stat-label">Match W/L</span><span class="stat-value">${win} / ${loss}</span></div>
+            <div class="stat-row-new"><span class="stat-label">Set W/L</span><span class="stat-value">${sw} / ${sl}</span></div>
+            <div class="stat-row-new"><span class="stat-label">Global Points</span><span class="stat-value">${pts}</span></div>
+            <div class="stat-row-new"><span class="stat-label">% W</span><span class="stat-value">${winPct}</span></div>
+            <div class="stat-row-new"><span class="stat-label">% Sets W</span><span class="stat-value">${setsPct}</span></div>
+        </div>
+        <hr class="stat-panel-divider">
+    `;
+
+    // --- LOGICA GENERALE (BADGE) ---
+    if (tipoModale === "GENERALE" && window.lastStatsRecord) {
+        const s = window.lastStatsRecord;
+        const soglie = {
+            vinte: [{n:15, e:"../immagini/sinnoh-gold.png"}, {n:10, e:"../immagini/sinnoh-silver.png"}, {n:5, e:"../immagini/sinnoh-bronze.png"}, {n:0, e:"../immagini/sinnoh-ghost.png"}],
+            primo: [{n:15, e:"../immagini/hoenn-gold.png"}, {n:10, e:"../immagini/hoenn-silver.png"}, {n:5, e:"../immagini/hoenn-bronze.png"}, {n:0, e:"../immagini/hoenn-ghost.png"}],
+            clean: [{n:10, e:"../immagini/champion-gold.png"}, {n:6, e:"../immagini/champion-silver.png"}, {n:3, e:"../immagini/champion-bronze.png"}, {n:0, e:"../immagini/champion-ghost.png"}],
+            master: [{n:15, e:"../immagini/galar-gold.png"}, {n:10, e:"../immagini/galar-silver.png"}, {n:5, e:"../immagini/galar-bronze.png"}, {n:0, e:"../immagini/galar-ghost.png"}]
+        };
+
+        const renderProgressRow = (label, current, max, listaBadge) => {
+            const badgeAttuale = listaBadge.find(b => max >= b.n) || listaBadge[listaBadge.length - 1];
+            const target = ([...listaBadge].sort((a,b) => a.n - b.n).find(b => b.n > current) || {n: current + 5}).n;
+            const percentuale = Math.min((current / target) * 100, 100);
+
+            return `
+        <div class="streak-mini-card">
+            <img src="${badgeAttuale.e}" class="badge-mini-img" title="Record: ${max}">
+            <div class="streak-info">
+                <div class="streak-label-container">
+                    <span class="streak-name">${label}</span>
+                    <span class="streak-current-val">Max: <b>${max}</b></span>
+                </div>
+                <div class="progress-container-mini">
+                    <div class="progress-bar-fill" style="width: ${percentuale}%"></div>
+                    <span class="progress-target-text">${current}/${target}</span>
+                </div>
+            </div>
+        </div>`;
+        };
+        html += renderProgressRow("Win streak", s.vinte.current, s.vinte.max, soglie.vinte);
+        html += renderProgressRow("Formats mastered", s.master.max, s.master.max, soglie.master);
+        html += renderProgressRow("5-0 streak", s.clean.current, s.clean.max, soglie.clean);
+        html += renderProgressRow("Leader streak", s.primo.current, s.primo.max, soglie.primo);
+
+    } 
+    // --- LOGICA TEAM (MVP) ---
+else if (tipoModale === "TEAM") {
+        const pkmnData = typeof calcolaTopPokemon === 'function' ? calcolaTopPokemon() : { mostUsed: null, mvp: null };
+        
+        const renderPkmnCard = (title, p) => {
+            if (!p) return "";
+            const cleanName = p.name.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+            const winWidth = (p.w + p.l) > 0 ? (p.w / (p.w + p.l)) * 100 : 0;
+            return `
+                <div class="pkmn-card-vertical">
+                    <div class="pkmn-card-header">${title}</div>
+                    <div class="pkmn-card-body">
+                        <div class="gif-container-modale-new">
+                            <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif" onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanName}.png';" class="pkmn-gif-render">
+                        </div>
+                    </div>
+                    <div class="pkmn-card-footer">
+                        <div class="pkmn-matches-count">Matches: <b>${p.w + p.l}</b></div>
+                        <div class="win-loss-bar-container">
+                            <div class="win-part" style="width: ${winWidth}%"></div>
+                            <div class="loss-part" style="width: ${100 - winWidth}%"></div>
+                        </div>
+                        <div class="pkmn-stats-labels"><span class="label-w">${p.w}W</span><span class="label-l">${p.l}L</span></div>
+                    </div>
+                </div>`;
+        };
+
+        // 1. Renderizziamo le card MVP/Most Used
+        html += `<div class="pkmn-stats-grid">${renderPkmnCard("MOST USED", pkmnData.mostUsed)}${renderPkmnCard("MVP", pkmnData.mvp)}</div>`;
+
+        // 2. Recuperiamo i pokemon del team selezionato per la mini-anteprima
+        const nomeTeamSelezionato = nomeAttuale; // nomeAttuale è già definito all'inizio di generaHtmlInterno
+        const teamCorrente = (window.listaTuttiTeam || []).find(t => t.nome === nomeTeamSelezionato);
+        
+        let miniGridHtml = "";
+        if (teamCorrente && teamCorrente.pokemon) {
+            const pkmList = Array.isArray(teamCorrente.pokemon) ? teamCorrente.pokemon : Object.values(teamCorrente.pokemon);
+            
+            miniGridHtml = pkmList.slice(0, 6).map(p => {
+                const pNome = (p && typeof p === 'object') ? (p.nome || p.name || "") : p;
+                if (!pNome) return '';
+                const cleanN = pNome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                return `
+                    <div class="pkmn-mini-slot">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanN}.gif" 
+                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png';" 
+                             title="${pNome}">
+                    </div>`;
+            }).join('');
+        }
+
+        // 3. Aggiungiamo la sezione "Current Team" sotto le card
+        html += `
+            <div class="current-team-preview"">
+                <div style="display: grid; grid-template-columns: repeat(3, 2fr); gap: 6px; justify-items: center;">
+                    ${miniGridHtml || '<span style="grid-column: span 6; color: #bbb; font-size: 0.7rem;">Data not available</span>'}
+                </div>
+            </div>`;
+    }
+        // --- LOGICA BASE (BEST TEAM) ---
+else if (tipoModale === "BASE") {
+        const datiFormato = (window.statsFormat && window.statsFormat[nomeAttuale]) ? window.statsFormat[nomeAttuale] : obj;
+        const bTeam = datiFormato.bestTeamName || (datiFormato.bestTeamData ? datiFormato.bestTeamData.nome : null) || obj.bestTeamName;
+
+        if (!bTeam || bTeam === "N/A") {
+            html += `<div style="text-align:center; color:rgba(0,0,0,0.5); margin-top:20px;">No best team yet</div>`;
+        } else {
+            const teamObj = (window.listaTuttiTeam || []).find(t => t.nome === bTeam);
+            const teamStats = (teamObj && window.statsTeam && window.statsTeam[teamObj.id]) 
+                                ? window.statsTeam[teamObj.id] 
+                                : (datiFormato.bestTeamData || { win: 0, loss: 0 });
+            
+            const winBarWidth = (teamStats.win + teamStats.loss) > 0 ? (teamStats.win / (teamStats.win + teamStats.loss)) * 100 : 50;
+            
+            // --- RECUPERO POKEMON CON LOG DI DEBUG ---
+            let pkmList = [];
+            if (teamObj && teamObj.pokemon) {
+                pkmList = Array.isArray(teamObj.pokemon) ? teamObj.pokemon : Object.values(teamObj.pokemon);
+            } else if (datiFormato.bestTeamData && datiFormato.bestTeamData.pokemon) {
+                pkmList = datiFormato.bestTeamData.pokemon;
+            }
+            
+            // Pulizia da valori nulli
+            pkmList = pkmList.filter(p => p != null);
+            console.log("Debug Modale - Team:", bTeam, "Pokemon trovati:", pkmList);
+
+            html += `
+                <div class="format-extra-info" style="text-align: center; margin-top: 15px; width: 100%;">
+                    
+                    <span style="color: #1a1a1a; font-size: 1.2rem; font-family: 'Josefin Sans', sans-serif; font-weight: bold;">${bTeam}</span>
+                    <div style="display:flex; justify-content: space-between; font-weight: bold; font-size: 0.7rem;">
+                        <span style="color: #1e8449;">${teamStats.win}W</span>
+                        <span style="color: #943126;">${teamStats.loss}L</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; margin: 0px 0 5px 0; border-radius: 6px; overflow: hidden; display: flex; background: #eee;">
+                        <div style="width: ${winBarWidth}%; background: #2ecc71;"></div>
+                        <div style="width: ${100 - winBarWidth}%; background: #e74c3c;"></div>
+                    </div>
+                    
+
+                    <div style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 8px; justify-items: center; margin-top: -5px; padding: 10px; border-radius: 10px;">
+                        ${pkmList.length > 0 ? pkmList.slice(0,6).map(p => {
+                            let name = "";
+                            if (typeof p === 'string') name = p;
+                            else if (p.nome) name = p.nome;
+                            else if (p.species) name = p.species; // Alcuni export usano species
+
+                            if (!name) return '';
+
+                            const cleanN = name.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+                            return `
+                                <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanN}.gif" 
+                                         onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png';" 
+                                         style="width: 45px; height: 45px; object-fit: contain;">
+                                </div>`;
+                        }).join('') : '<span style="grid-column: span 3; color: #999; font-size: 0.8rem;">Dati Pokémon non trovati</span>'}
+                    </div>
+                </div>`;
+        }
+    }
+
+    return html;
+}
+
+function aggiornaMiniGrid(nomeTeam) {
+    const grid = document.getElementById('team-mini-grid');
+    if (!grid) return;
+
+    const teamObj = (window.listaTuttiTeam || []).find(t => t.nome === nomeTeam);
+    if (!teamObj || !teamObj.pokemon) {
+        grid.innerHTML = '<span style="grid-column: span 6; font-size: 0.7rem; color: #bbb;">No data</span>';
+        return;
+    }
+
+    const pkmList = Array.isArray(teamObj.pokemon) ? teamObj.pokemon : Object.values(teamObj.pokemon);
+    
+    grid.innerHTML = pkmList.slice(0, 6).map(p => {
+        const pNome = (p && typeof p === 'object') ? (p.nome || p.name || "") : p;
+        if (!pNome) return '';
+        const cleanN = pNome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+        return `
+            <div style="width: 40px; height: 40px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <img src="https://play.pokemonshowdown.com/sprites/dex/${cleanN}.png" 
+                     style="width: 32px; height: 32px; object-fit: contain;" 
+                     title="${pNome}">
+            </div>`;
+    }).join('');
+}
+
+// Funzione di supporto per estrarre le statistiche dei pokemon dai match
+function calcolaTopPokemon() {
+    const pStats = {};
+    const matches = window.databaseMatches || [];
+    const teamsDidi = window.mappaTeamDidi || {};
+
+    if (matches.length === 0) return { mostUsed: null, mvp: null };
+
+    matches.forEach(m => {
+        const tId = m.team1Id;
+        const score = (m.score || "0-0").split('-').map(Number);
+        const isWin = score[0] > score[1];
+
+        const teamInfo = teamsDidi[tId];
+        if (teamInfo && teamInfo.pokemon) {
+            // --- LOGICA DI DE-DUPLICAZIONE ---
+            // Creiamo un Set dei nomi unici per questo specifico match
+            const pokemonUniciInQuestoMatch = new Set();
+            
+            teamInfo.pokemon.forEach(p => {
+                const nome = (typeof p === 'string') ? p : (p.nome || p.name);
+                if (nome) pokemonUniciInQuestoMatch.add(nome);
+            });
+
+            // Ora cicliamo solo sui nomi UNICI trovati
+            pokemonUniciInQuestoMatch.forEach(nome => {
+                if (!pStats[nome]) pStats[nome] = { w: 0, l: 0 };
+                if (isWin) pStats[nome].w++;
+                else pStats[nome].l++;
+            });
+            // ---------------------------------
+        }
+    });
+
+    const arrayPkmn = Object.keys(pStats).map(name => {
+        const total = pStats[name].w + pStats[name].l;
+        return {
+            name: name,
+            w: pStats[name].w,
+            l: pStats[name].l,
+            total: total,
+            pct: total > 0 ? Math.round((pStats[name].w / total) * 100) : 0
+        };
+    });
+
+    if (arrayPkmn.length === 0) return { mostUsed: null, mvp: null };
+
+    const mostUsed = [...arrayPkmn].sort((a, b) => b.total - a.total)[0];
+    const mvp = [...arrayPkmn].filter(p => p.total >= 2).sort((a, b) => b.pct - a.pct)[0] || mostUsed;
+
+    return { mostUsed, mvp };
+}
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    if (!select || !window.tuttiITeam) return;
+    select.innerHTML = '<option value="auto">-- Best Team (Auto) --</option>';
+    window.tuttiITeam.forEach(t => {
+        let opt = document.createElement('option');
+        opt.value = t.id; opt.innerText = t.nome;
+        if (window.idTeamPreferito === t.id) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+// --- FUNZIONI DI SUPPORTO AGGIORNATE ---
+
+function getPct(v, l) {
+    const tot = Number(v) + Number(l);
+    return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
+}
+
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    if (!select || !window.tuttiITeam) return;
+    select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
+    window.tuttiITeam.forEach(t => {
+        let opt = document.createElement('option');
+        opt.value = t.id; opt.innerText = t.nome;
+        if (window.idTeamPreferito === t.id) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+// --- FUNZIONI DI SUPPORTO GLOBALI (Fuori da caricaDatiDidi) ---
+
+function getPct(v, l) {
+    const tot = Number(v) + Number(l);
+    // Usiamo Math.round per arrotondare all'intero più vicino
+    return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
+}
+
+function calcolaPuntiDalloScore(x, y) {
+    if (x === 5 && y === 0) return 3; // 5-0: 3 punti
+    if (x === 4 && y === 1) return 2; // 4-1: 2 punti
+    if (x === 3 && y === 2) return 2; // 3-2: 2 punti (vincitore)
+    if (x === 2 && y === 3) return 1; // 3-2: 1 punto (sconfitto)
+    return 0; // 0-5, 1-4 o altri casi: 0 punti
+}
+
+    // Chiusura Modale
+    document.getElementById("closeModal").onclick = () => document.getElementById("categoryModal").style.display = "none";
+    window.onclick = (event) => {
+        const modal = document.getElementById("categoryModal");
+        if (event.target == modal) modal.style.display = "none";
+    };
+
+function popolaCerchio(teamCorrente) {
+    // teamCorrente è l'oggetto che contiene { id, nome, pokemon: [...] }
+    const listaPokemon = teamCorrente.pokemon;
+
+    // Pulisci slot precedenti
+    for(let i=0; i<6; i++) {
+        const s = document.querySelector(`.slot-${i}`);
+        if(s) s.innerHTML = "";
+    }
+
+    listaPokemon.forEach((pkm, index) => {
+        const slot = document.querySelector(`.slot-${index}`);
+        if (slot && pkm.nome) {
+            const nomePkm = pkm.nome;
+            const cleanName = nomePkm.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
+            
+            const img = document.createElement('img');
+            img.src = `https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif`;
+            img.style.cursor = "pointer"; 
+            
+            img.onerror = function() { this.src = `https://play.pokemonshowdown.com/sprites/dex/${cleanName}.png`; };
+
+            // CLICK: Usiamo direttamente i dati 'pkm' che abbiamo già nel loop!
+            img.onclick = () => {
+                apriPkmDettaglio(pkm, cleanName);
+            };
+
+            slot.appendChild(img);
+        }
+    });
+}
+
+    function renderizza(lista) {
+        const grid = document.getElementById('teamsGrid');
+        grid.innerHTML = lista.map(team => `
+            <div class="card" onclick="apriDettagli(${team.id})">
+                <div class="card-header">
+                    <span class="category">${team.category || team.categoria}</span>
+                    <span class="stats">W: ${team.vittorie} / L: ${team.sconfitte}</span>
+                </div>
+                <h3>${team.nome}</h3>
+                <div class="pkm-grid">
+                    ${team.pokemon.map((p, index) => {
+                        const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        const itemNameUrl = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
+                        const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
+                        const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
+                        const pkmBoxId = `box-${team.id}-${index}`;
+                        
+                        setTimeout(() => applicaColoreBordo(p.nome, pkmBoxId), 50);
+
+                        // AGGIUNTO ONCLICK QUI SOTTO:
+                        return `
+                            <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation(); apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}')">
+                                <div class="pkm-sprite-container">
+                                    <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                                </div>
+                                <div class="pkm-info">
+                                    <span class="pkm-name">${p.nome}</span>
+                                    <div class="item-container">
+                                        <img src="${itemSprite}" class="item-icon" title="${p.strumento}" onerror="this.style.display='none'">
+                                        <span class="pkm-item">${p.strumento}</span>
+                                    </div>
+                                </div>
+
+                                <div class="pkm-hover-card ${sideClass}">
+                                    <strong>${p.nome}</strong>
+                                    <p>✨ ${p.abilita}</p>
+                                    <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs}</p>
+                                    <div class="hover-moves">
+                                        ${p.mosse.map(m => `<span>${m}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+async function apriDettagli(id, stats = null) {
+    const team = tuttiITeam.find(t => t.id === id);
+    if (!team) return;
+
+    const modal = document.getElementById('teamModal');
+    const content = document.getElementById('modalBody');
+
+    // USIAMO LE STATS CALCOLATE SE DISPONIBILI, ALTRIMENTI QUELLE DEL DB
+    const w = stats ? stats.win : (team.vittorie || 0);
+    const l = stats ? stats.loss : (team.sconfitte || 0);
+    const sV = stats ? stats.sW : (Number(team.setVinti) || 0);
+    const sP = stats ? stats.sL : (Number(team.setPersi) || 0);
+    const pts = stats ? stats.pts : (team.puntiFatti || 0);
+
+    // Calcolo Partite Giocate: Somma dei Match W + Match L
+    const partiteGiocate = w + l;
+
+    content.innerHTML = `
+        <div class="modal-header-container">
+            <h2 style="color: black !important;">${team.nome}</h2> <div class="team-score-banner">
+                <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
+                <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
+                <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
+                <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
+            </div>
+        </div>
+        <div class="modal-grid">
+            ${team.pokemon.map((p, pIndex) => {
+                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                const mIdPrefix = `types-${pIndex}`;
+                const statsId = `stats-${pIndex}`;
+                const abiId = `abi-${pIndex}`;
+                const itemId = `item-${pIndex}`;
+                const direzioneTipi = pIndex < 3 ? 'v-down' : '';
+                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
+                
+                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                
+                return `
+                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                     onmouseenter="this.style.zIndex='999'"
+                     onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                    <div class="modal-left-column">
+                        <div id="${mIdPrefix}" class="modal-types"></div>
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
+                    </div>
+                    <div class="modal-pkm-info">
+                        <div class="info-container" style="position: relative; display: inline-block;">
+                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                        </div>
+                        <div class="info-container" style="position: relative;">
+                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                        </div>
+                        <div class="info-container" style="position: relative;">
+                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
+                                <span>${p.strumento}</span>
+                            </div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
+                        </div>
+                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        <div class="modal-moves">
+                            ${p.mosse.map((m, mIndex) => {
+                                const mId = `mossa-${pIndex}-${mIndex}`;
+                                return `
+                                <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
+                                    ${m}
+                                    <div id="${mId}" class="move-tooltip">Loading...</div>
+                                </span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+    modal.style.display = "flex";
+}
+
+// Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('teamModal');
+        if (modal.style.display === "flex") {
+            const currentIndex = tuttiITeam.findIndex(t => t.id === window.currentTeamId);
+            if (e.key === "ArrowLeft" && currentIndex > 0) {
+                apriDettagli(tuttiITeam[currentIndex - 1].id);
+            } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
+                apriDettagli(tuttiITeam[currentIndex + 1].id);
+            } else if (e.key === "Escape") {
+                modal.style.display = "none";
+            }
+        }
+    });
+
+
+
+    // Funzione universale per chiudere tutto
+    function chiudiTuttiIModali() {
+    document.getElementById("categoryModal").style.display = "none";
+    document.getElementById("teamModal").style.display = "none";
+    document.getElementById("pkmDetailModal").style.display = "none";
+}
+
+// Applica la chiusura a tutte le X
+document.querySelectorAll(".close-modal").forEach(btn => {
+    btn.onclick = chiudiTuttiIModali;
+});
+
+// Chiudi se clicchi fuori (sullo sfondo scuro)
+window.onclick = (event) => {
+    if (event.target.classList.contains('modal')) {
+        chiudiTuttiIModali();
+    }
+};
+
+    // Collega la funzione ai vari elementi di chiusura
+    document.querySelectorAll(".close-modal").forEach(btn => {
+        btn.onclick = chiudiTuttiIModali;
+    });
+
+    // Chiudi se si clicca fuori dal modale (sullo sfondo scuro)
+    window.onclick = (event) => {
+        const modCat = document.getElementById("categoryModal");
+        const modTeam = document.getElementById("teamModal");
+        if (event.target == modCat || event.target == modTeam) {
+            chiudiTuttiIModali();
+        }
+    };
+
+    // Chiudi con il tasto ESC (molto comodo per il modale team)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "Escape") {
+            chiudiTuttiIModali();
+        }
+    });
+
+    async function caricaTipi(pkmName, elementId, direzione) {
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+        let effectiveness = {};
+        d_types.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        const creaBadge = (lista) => {
+            return `<div class="eff-badge-container">
+                ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+            </div>`;
+        };
+
+        let tooltipHTML = "";
+        if (result.x4.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-4">4x</span>${creaBadge(result.x4)}</div>`;
+        if (result.x2.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-2">2x</span>${creaBadge(result.x2)}</div>`;
+        if (result.x05.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${creaBadge(result.x05)}</div>`;
+        if (result.x025.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${creaBadge(result.x025)}</div>`;
+        if (result.x0.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-0">0x</span>${creaBadge(result.x0)}</div>`;
+
+        // --- APPLICAZIONE CLASSE DIREZIONE ---
+        container.innerHTML = data.types.map(t => 
+        `<div class="type-container">
+            <span class="type-badge ${t.type.name}">${t.type.name.toUpperCase()}</span>
+            <div class="type-effectiveness-tooltip ${direzione}">${tooltipHTML}</div>
+        </div>`
+    ).join('');
+
+    } catch (e) { console.error("Error:", e); }
+}  
+
+async function caricaDebolezzeStatiche(pkmName, elementId) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        // Lista completa dei tipi per il calcolo
+        const tuttiITipi = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
+        
+        let effectiveness = {};
+        tuttiITipi.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        // Raggruppiamo i risultati
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        // Funzione interna per creare i micro-badge colorati
+        const creaBadge = (lista) => `
+    <div class="types-wrapper">
+        ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+    </div>`;
+
+container.innerHTML = `
+    <div class="weakness-container">
+        ${result.x4.length > 0 ? `<div class="w-row"><b class="mult x4">4x</b> ${creaBadge(result.x4)}</div>` : ''}
+        ${result.x2.length > 0 ? `<div class="w-row"><b class="mult x2">2x</b> ${creaBadge(result.x2)}</div>` : ''}
+        ${result.x05.length > 0 ? `<div class="w-row"><b class="mult x05">0.5x</b> ${creaBadge(result.x05)}</div>` : ''}
+        ${result.x025.length > 0 ? `<div class="w-row"><b class="mult x025">0.25x</b> ${creaBadge(result.x025)}</div>` : ''}
+        ${result.x0.length > 0 ? `<div class="w-row"><b class="mult x0">0x</b> ${creaBadge(result.x0)}</div>` : ''}
+    </div>
+`;
+    } catch (e) { 
+        console.error(e);
+        container.innerHTML = "<span style='color:red'>Error.</span>"; 
+    }
+}
+
+async function caricaStats(pkmName, elementId) {
+    const tooltip = document.getElementById(elementId);
+    if (tooltip.dataset.loaded === "true") return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        const statsMap = {
+            'hp': 'HP',
+            'attack': 'ATK',
+            'defense': 'DEF',
+            'special-attack': 'SPA',
+            'special-defense': 'SPD',
+            'speed': 'SPE'
+        };
+
+        let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">BASE STATS</div>`;
+        
+        data.stats.forEach(s => {
+            const val = s.base_stat;
+            // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
+            const width = Math.min((val / 150) * 100, 100); 
+            statsHTML += `
+                <div class="stat-row">
+                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="width: 25px; text-align:right;">${val}</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${width}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        tooltip.innerHTML = statsHTML;
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Error.";
+    }
+}
+
+async function caricaInfoAbilita(nomeAbilita, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeAbilita || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeAbilita.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/ability/${cleanName}`);                 
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoStrumento(nomeStrumento, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeStrumento || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeStrumento.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/item/${cleanName}`);
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoMossa(nomeMossa, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    
+    // Se la mossa è vuota o già caricata, non fare nulla
+    if (!nomeMossa || nomeMossa.trim() === "-" || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // --- APPLICHIAMO IL COLORE AL TOOLTIP ---
+        const tipo = data.type.name; 
+        tooltip.className = `move-tooltip ${tipo}`; // Aggiunge la classe del tipo (es. "fire") al fumetto
+        // ----------------------------------------
+
+        const power = data.power || '--';
+        const accuracy = data.accuracy ? data.accuracy + '%' : '--';
+        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+
+        tooltip.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">
+                ${nomeMossa.toUpperCase()}
+            </div>
+            <b>POW:</b> ${power} &nbsp;&nbsp; <b>ACC:</b> ${accuracy}<br>
+            <div style="margin-top:6px; font-style:italic; font-size:0.7rem; line-height:1.2;">${effect}</div>
+        `;
+        
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Dati mossa non trovati.";
+        tooltip.style.background = "#33261c"; // Colore di fallback in caso di errore
+    }
+}
+
+async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
+    if (!nomeMossa || nomeMossa === "-") return;
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const data = await res.json();
+        const index = cardId.split('-').pop();
+        
+        const coloriTipi = {
+            fire: '#ff4422', water: '#3399ff', grass: '#77cc55', electric: '#ffcc33', ice: '#66ccff', 
+            fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', 
+            bug: '#aabb22', rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', 
+            steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
+        };
+
+        const tipo = data.type.name;
+        const colorePieno = coloriTipi[tipo] || '#ccc';
+        const card = document.getElementById(cardId);
+
+        card.style.backgroundColor = colorePieno;
+        card.style.borderLeft = "none";
+        card.classList.add('move-full-color');
+
+        document.getElementById(`m-pow-${index}`).innerText = data.power || '--';
+        document.getElementById(`m-acc-${index}`).innerText = data.accuracy ? data.accuracy : '--';
+
+        // --- 3. INSERIMENTO IMMAGINI PERSONALIZZATE ---
+        const catImgMap = { 
+            physical: '../immagini/move-physical.png', 
+            special: '../immagini/move-special.png', 
+            status: '../immagini/move-status.png' 
+        };
+        
+        const catContainer = document.getElementById(`m-cat-${index}`);
+        if (catContainer) {
+            const categoria = data.damage_class.name;
+            const percorsoImmagine = catImgMap[categoria];
+            // Creiamo il tag img invece di mettere l'emoji
+            catContainer.innerHTML = `<img src="${percorsoImmagine}" class="cat-icon-render" alt="${categoria}">`;
+        }
+
+        // --- 4. DESCRIZIONE INGLESE ---
+        const descElement = document.getElementById(`sm-${index}`);
+        if (descElement) {
+            let desc = data.flavor_text_entries.find(e => e.language.name === 'en');
+            if (desc) {
+                descElement.innerText = desc.flavor_text.replace(/[\n\f]/g, ' ');
+            }
+        }
+
+    } catch (e) { 
+        console.error("Error loading move:", nomeMossa, e); 
+    }
+}
+
+function apriPkmDettaglio(pokemonData, pkmNameUrl) {
+    const modal = document.getElementById('pkmDetailModal');
+    const content = document.getElementById('pkmModalBody');
+    if(!modal || !content) return;
+
+    // Struttura a griglia identica al Box Didi
+    content.innerHTML = `
+        <div class="pkm-modal-grid">
+            <div class="area-header">
+                <div id="single-types" class="types-centered"></div>
+                <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
+                <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
+            </div>
+
+            <div class="area-weakness pkm-panel">
+                <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
+                <div id="static-weaknesses" class="weakness-content">Loading...</div>
+            </div>
+
+            <div class="area-info-strips">
+                <div class="pkm-panel info-box-compact">
+                    <div class="info-content-clean">
+                        <strong class="info-name">${pokemonData.abilita}</strong>
+                        <div id="single-abi" class="info-desc-tiny"></div>
+                    </div>
+                </div>
+                <div class="pkm-panel info-box-compact">
+                    <div class="info-content-clean">
+                        <div class="item-title-row-new">
+                            <strong class="info-name">${pokemonData.strumento}</strong>
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${pokemonData.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" class="item-icon-right" onerror="this.style.display='none'">
+                        </div>
+                        <div id="single-item" class="info-desc-tiny"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="area-stats pkm-panel">
+                <div id="single-stats"></div>
+                <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs}</div>
+            </div>
+
+            <div class="area-moves pkm-panel">
+                <h4 class="panel-title">MOVESET</h4>
+                <div class="moves-list-compact">
+                    ${pokemonData.mosse.map((m, i) => {
+                        if(!m || m === "-") return '';
+                        return `
+                        <div class="move-row-mini" id="move-card-${i}">
+                            <div class="move-left-part">
+                                <span id="m-cat-${i}" class="move-cat-icon"></span>
+                                <span class="move-name-mini">${m}</span>
+                            </div>
+                            <div id="sm-${i}" class="move-desc-inline"></div>
+                            <div class="move-right-part">
+                                <span class="m-val">P: <b id="m-pow-${i}">--</b></span>
+                                <span class="m-val">A: <b id="m-acc-${i}">--</b></span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = "flex";
+
+    // Caricamento dati dalle API
+    caricaTipi(pkmNameUrl, 'single-types', '');
+    caricaDebolezzeStatiche(pkmNameUrl, 'static-weaknesses');
+    caricaStats(pkmNameUrl, 'single-stats');
+    caricaInfoAbilita(pokemonData.abilita, 'single-abi');
+    caricaInfoStrumento(pokemonData.strumento, 'single-item');
+
+    pokemonData.mosse.forEach((m, i) => {
+        if(m && m !== "-") aggiornaColoreMossa(m, `move-card-${i}`, i);
+    });
+}
+
+function chiudiPkmModal() {
+    document.getElementById('pkmDetailModal').style.display = "none";
+}
+
+function recuperaDatiPokemonDalTeam(nomeCercato) {
+    if (!window.csvBox) return null;
+    for (let i = 0; i < window.csvBox.length; i += 8) {
+        for (let col = 1; col <= 6; col++) {
+            if (window.csvBox[i][col] && window.csvBox[i][col].toLowerCase() === nomeCercato.toLowerCase()) {
+                return {
+                    nome: window.csvBox[i][col],
+                    abilita: window.csvBox[i + 1][col] || "---",
+                    strumento: window.csvBox[i + 2][col] || "---",
+                    mosse: [window.csvBox[i+3][col], window.csvBox[i+4][col], window.csvBox[i+5][col], window.csvBox[i+6][col]],
+                    evs: window.csvBox[i + 7][col] || ""
+                };
+            }
+        }
+    }
+    return null;
+}
+
+async function caricaTrendRecente() {
+    try {
+        // Prendiamo gli ultimi 5 match inseriti nel database
+        const snapMatches = await db.ref('matches').limitToLast(5).once('value');
+        const matchesRaw = snapMatches.val() || {};
+        
+        // Firebase restituisce un oggetto, lo trasformiamo in array.
+        // Gli ID di Firebase (push keys) sono già ordinati cronologicamente.
+        const matches = Object.values(matchesRaw);
+
+        const trendDots = document.getElementById('trend-dots');
+        if (!trendDots) return;
+        
+        trendDots.innerHTML = ""; 
+
+        // Iteriamo i match. Poiché limitToLast ci dà gli ultimi 5 in ordine cronologico,
+        // li cicliamo normalmente.
+        matches.forEach(m => {
+            const scoreStr = m.score || "0-0";
+            const parti = scoreStr.split('-').map(Number);
+            const puntiDidi = parti[0] || 0;
+            const puntiAvv = parti[1] || 0;
+
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+
+            // Se il primo numero (Didi) è maggiore del secondo, è Win
+            if (puntiDidi > puntiAvv) {
+                dot.classList.add('win');
+            } else {
+                dot.classList.add('loss');
+            }
+
+            // Aggiungiamo il pallino. 
+            // In questo modo l'ultimo match inserito apparirà a DESTRA.
+            trendDots.appendChild(dot);
+        });
+
+    } catch (error) {
+        console.error("Errore nel caricamento del trend:", error);
+    }
+}
+
+async function elaboraBadge() {
+    try {
+        const snapMatches = await db.ref('matches').once('value');
+        const matchesRaw = snapMatches.val() || {};
+        
+        // Ordiniamo cronologicamente
+        const matches = Object.values(matchesRaw).sort((a, b) => {
+            return (a.timestamp || 0) - (b.timestamp || 0);
+        });
+
+        const chiSono = document.title.toLowerCase().includes("didi") ? "Didi" : "Lu";
+
+        // Record strutturati come oggetti per salvare la data di sblocco
+        let recordVinte = { max: 0, data: "" };
+        let recordClean = { max: 0, data: "" };
+        
+        // Oggetto per tracciare le vittorie totali per ogni formato
+        let vittoriePerFormato = {}; 
+        let ultimaDataVittoria = "";
+
+        let currVinte = 0; 
+        let currClean = 0;
+        
+        let puntiTotDidi = 0;
+        let puntiTotLu = 0;
+        let giornateData = {}; 
+
+        matches.forEach(m => {
+            const scoreParti = (m.score || "0-0").split('-').map(Number);
+            const sDidi = scoreParti[0] || 0;
+            const sLu = scoreParti[1] || 0;
+            const dataMatch = m.data;
+            const categoria = m.categoria || "Standard";
+
+            // Calcolo punti per la classifica storica (Round Leader)
+            puntiTotDidi += calcolaPuntiDalloScore(sDidi, sLu);
+            puntiTotLu += calcolaPuntiDalloScore(sLu, sDidi);
+
+            if (dataMatch) {
+                giornateData[dataMatch] = { D: puntiTotDidi, L: puntiTotLu };
+            }
+
+            const vinceCorrente = (chiSono === "Didi") ? (sDidi > sLu) : (sLu > sDidi);
+
+            // --- 1. Streak Vittorie ---
+            if (vinceCorrente) {
+                currVinte++;
+                if (currVinte > recordVinte.max) {
+                    recordVinte.max = currVinte;
+                    recordVinte.data = dataMatch;
+                }
+
+                // --- LOGICA MASTER OF FORMATS ---
+                // Se vince, incrementiamo il contatore per quella categoria
+                if (!vittoriePerFormato[categoria]) vittoriePerFormato[categoria] = 0;
+                vittoriePerFormato[categoria]++;
+                ultimaDataVittoria = dataMatch; // Teniamo traccia dell'ultima vittoria per la data del badge
+            } else {
+                currVinte = 0;
+            }
+
+            // --- 2. Clean Sheet (5-0) ---
+            let isClean = (chiSono === "Didi") ? (sDidi === 5) : (sLu === 5);
+            if (isClean) {
+                currClean++;
+                if (currClean > recordClean.max) {
+                    recordClean.max = currClean;
+                    recordClean.data = dataMatch;
+                }
+            } else {
+                currClean = 0;
+            }
+        });
+
+        // --- 3. Streak Rounds Leader ---
+        let recordPrimo = { max: 0, data: "" };
+        let currPrimo = 0;
+        const dateOrdinate = Object.keys(giornateData).sort();
+
+        dateOrdinate.forEach(d => {
+            const statsGiorno = giornateData[d];
+            let inTestaSolo = (chiSono === "Didi") ? (statsGiorno.D > statsGiorno.L) : (statsGiorno.L > statsGiorno.D);
+            
+            if (inTestaSolo) {
+                currPrimo++;
+                if (currPrimo > recordPrimo.max) {
+                    recordPrimo.max = currPrimo;
+                    recordPrimo.data = d;
+                }
+            } else {
+                currPrimo = 0;
+            }
+        });
+
+        // --- 4. Calcolo Master of Formats ---
+        // Contiamo quante chiavi nell'oggetto hanno almeno 3 vittorie
+        const categorieConquistate = Object.values(vittoriePerFormato).filter(v => v >= 3).length;
+        let recordMaster = { 
+            max: categorieConquistate, 
+            data: ultimaDataVittoria 
+        };
+
+        // Passiamo i 4 oggetti alla funzione mostraBadge
+        mostraBadge(recordVinte, recordClean, recordPrimo, recordMaster);
+
+        window.lastStatsRecord = {
+    vinte: { max: recordVinte.max, data: recordVinte.data, current: currVinte },
+    clean: { max: recordClean.max, data: recordClean.data, current: currClean },
+    primo: { max: recordPrimo.max, data: recordPrimo.data, current: currPrimo },
+    master: { max: recordMaster.max }
+};
+console.log("Record salvati in window:", window.lastStatsRecord);
+
+    } catch (e) {
+        console.error("Errore nel calcolo dei badge:", e);
+    }
+}
+
+function mostraBadge(vinteObj, cleanObj, primoObj, masterObj) {
+    console.log("Dati ricevuti per i Badge:", { vinteObj, cleanObj, primoObj, masterObj });
+
+    const vecchioWrapper = document.querySelector('.badges-wrapper');
+    if (vecchioWrapper) vecchioWrapper.remove();
+
+    const container = document.createElement('div');
+    container.className = 'badges-wrapper';
+
+        const fondatori = ["Lu", "Didi"]; // Aggiungi qui i nomi dei veterani
+    const chiSono = document.title.toLowerCase().includes("lu") ? "Lu" : "Didi";
+    
+    let htmlFondatore = "";
+    if (fondatori.includes(chiSono)) {
+        htmlFondatore = `
+            <span class="badge-item badge-fondatore" data-tooltip="League Founder">
+                <img src="../immagini/paldea.png" class="badge-icon" alt="Founder Badge">
+            </span>`;
+    }
+    
+    
+    // 1. Definizioni Badge (n: soglia, e: immagine, t: titolo)
+    const bVinte = [ 
+        {n: 15, e: "../immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"}, 
+        {n: 10, e: "../immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"}, 
+        {n: 5, e: "../immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}, 
+        {n: 0, e: "../immagini/sinnoh-ghost.png", t:"Win 5 matches in a row to unlock this badge"} 
+    ];
+
+    const bMaster = [
+        {n: 15, e: "../immagini/galar-gold.png", t:"Chameleon: 3 wins 15+ formats"},
+        {n: 10, e: "../immagini/galar-silver.png", t:"Multitasking: 3 wins in 10 formats"},
+        {n: 5, e: "../immagini/galar-bronze.png", t:"Eclectic: 3 wins in 5 formats"},
+        {n: 0, e: "../immagini/galar-ghost.png", t:"Win 3 matches in 5 different formats to unlock"}
+    ];
+
+    const bPrimo = [ 
+        {n: 15, e: "../immagini/hoenn-gold.png", t:"King: 15+ rounds leader"}, 
+        {n: 10, e: "../immagini/hoenn-silver.png", t:"Leader: 10 rounds leader"}, 
+        {n: 5, e: "../immagini/hoenn-bronze.png", t:"On Top: 5 rounds leader"}, 
+        {n: 0, e: "../immagini/hoenn-ghost.png", t:"Lead 5 rounds in a row to unlock this badge"} 
+    ];
+
+    const bClean = [ 
+        {n: 10, e: "../immagini/champion-gold.png", t:"Untouchable: 10+ clean sheet"}, 
+        {n: 6, e: "../immagini/champion-silver.png", t:"Wall: 6 clean sheet"}, 
+        {n: 3, e: "../immagini/champion-bronze.png", t:"Shield: 3 clean sheet"}, 
+        {n: 0, e: "../immagini/champion-ghost.png", t:"Clean 3 matches in a row to unlock this badge"} 
+    ];
+  
+
+    // 2. Funzione di controllo interna
+    const check = (statObj, lista) => {
+        const valoreSicuro = (statObj && statObj.max > 0) ? statObj.max : 0;
+        const dataSblocco = (statObj && statObj.data) ? statObj.data : "";
+        
+        // Trova il badge corrispondente alla soglia raggiunta
+        const b = lista.find(x => valoreSicuro >= x.n);
+        
+        if (!b) return ""; 
+
+        const isGhost = b.n === 0; // È ghost se la soglia del badge trovato è 0
+        const ghostClass = isGhost ? "ghost-badge" : "";
+        
+        let testoTooltip = b.t;
+        
+        // Aggiungiamo la data solo se NON è un ghost e se la data esiste
+        if (!isGhost && dataSblocco) {
+            testoTooltip += ` (${dataSblocco})`;
+        }
+
+        return `
+            <span class="badge-item ${ghostClass}" data-tooltip="${testoTooltip}">
+                <img src="${b.e}" class="badge-icon" alt="Badge">
+            </span>`;
+    };
+
+    // 3. Generiamo l'HTML includendo il nuovo badge Master
+    const htmlContent = 
+        check(vinteObj, bVinte) + 
+        check(masterObj, bMaster) +
+        htmlFondatore +
+        check(cleanObj, bClean) + 
+        check(primoObj, bPrimo);
+        
+    
+    container.innerHTML = htmlContent;
+    
+    // 4. Posizionamento nella pagina
+    const h1 = document.querySelector('h1');
+    if (h1) {
+        h1.insertAdjacentElement('afterend', container); 
+    } else {
+        document.body.prepend(container);
+    }
+}
+
+function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
+    const soglie = [...listaBadge].sort((a, b) => a.n - b.n);
+    
+    const badgeAttuale = [...listaBadge].find(b => maxRecord >= b.n) || listaBadge[listaBadge.length - 1];
+    
+    const prossimoBadge = soglie.find(b => b.n > maxRecord);
+    const obiettivo = prossimoBadge ? prossimoBadge.n : soglie[soglie.length - 1].n;
+    
+    let percentuale = (currentVal / obiettivo) * 100;
+    if (percentuale > 100) percentuale = 100;
+
+    return {
+        img: badgeAttuale.e,
+        obiettivo: obiettivo,
+        percentuale: percentuale
+    };
+}
+
+function chiudiTeamModal() {
+    const modal = document.getElementById('teamModal');
+    if (modal) {
+        modal.style.display = "none";
+        // Opzionale: svuota il corpo del modal per evitare che al prossimo avvio 
+        // si veda per un istante il vecchio team caricato
+        const body = document.getElementById('modalBody');
+        if (body) body.innerHTML = "";
+    }
+}
+
+
+// 1. Funzione per leggere la Bio in tempo reale
+function ascoltaBio() {
+    const bioDisplay = document.getElementById('trainer-bio-display');
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    db.ref('allenatore_didi').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            // 1. Aggiorna Bio
+            window.musicaCorrente = data.musicaPreferita || "";
+            if (data.bio && bioDisplay) bioDisplay.innerText = data.bio;
+            
+            // 2. Aggiorna Team Preferito
+            window.idTeamPreferito = data.teamPreferitoID || null;
+
+            // 3. Gestione Musica (La tua preferenza salvata)
+            if (data.musicaPreferita) {
+                // Se la canzone è diversa da quella che c'è già, la carichiamo
+                if (player.src !== data.musicaPreferita) {
+                    player.src = data.musicaPreferita;
+                    player.load(); // Forza il caricamento del nuovo file
+                    player.volume = 0.3;
+                    
+                    // Proviamo a farla partire in automatico
+                    player.play()
+                        .then(() => {
+                            icon.innerText = "🔊";
+                            btn.style.borderColor = "lime";
+                        })
+                        .catch(() => {
+                            // Se il browser blocca, l'icona resta muta finché l'utente non preme Play
+                            icon.innerText = "🔇";
+                            btn.style.borderColor = "cyan";
+                            console.log("Autoplay bloccato dal browser.");
+                        });
+                }
+            } else {
+                player.pause();
+                player.src = "";
+                icon.innerText = "🔇";
+            }
+
+            // Ricarica il cerchio se il CSV è pronto
+            if (window.csvBox) caricaDatiDidi();
+        }
+    });
+}
+
+// 2. Funzione Login
+function gestisciLogin() {
+    const pass = prompt("Inserisci password:");
+    if (pass === "7224353-Rr") {
+        // Carica i dati attuali nei selettori
+        popolaSelettoreTeam();
+        popolaSelettoreMusica(); // <-- Carica la tua lista dal CSV musica
+        
+        document.getElementById('bio-input').value = document.getElementById('trainer-bio-display').innerText;
+        document.getElementById('admin-modal').style.display = "flex";
+    }
+}
+
+function chiudiAdminModal() {
+    document.getElementById('admin-modal').style.display = "none";
+}
+
+function salvaModificheProfilo() {
+    // Recuperiamo i 3 valori: Bio, Team e Musica
+    const nuovaBio = document.getElementById('bio-input').value;
+    const teamScelto = document.getElementById('team-selector-fav').value;
+    
+    // Attenzione: assicurati che questo ID esista nel tuo HTML per la musica
+    const musicInput = document.getElementById('selected-music-url');
+    const musicaScelta = musicInput ? musicInput.value : null;
+
+    const btn = document.querySelector('.save-btn');
+    if(btn) {
+        btn.disabled = true;
+        btn.innerText = "Salvataggio...";
+    }
+
+    // Costruiamo l'oggetto da inviare
+    const datiDaSalvare = {
+        bio: nuovaBio,
+        idTeamPreferito: teamScelto
+    };
+
+    // Aggiungiamo la musica solo se abbiamo un valore, per evitare di cancellare quella esistente
+    if (musicaScelta) {
+        datiDaSalvare.musicaPreferita = musicaScelta;
+    }
+
+    // PUNTO CRITICO: Salviamo su LUKIANI, non su didi
+    db.ref('allenatore_didi').update(datiDaSalvare)
+    .then(() => {
+        alert("Profilo aggiornato!");
+        // Usiamo il reload per rinfrescare tutto
+        window.location.reload();
+    })
+    .catch(e => {
+        console.error("Errore nel salvataggio:", e);
+        alert("Errore critico: " + e.message);
+        if(btn) {
+            btn.disabled = false;
+            btn.innerText = "Salva Modifiche";
+        }
+    });
+}
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    // Verifichiamo che esista il selettore e che i team siano stati caricati
+    if (!select || !window.tuttiITeam) return;
+
+    // 1. Reset: Mantieni l'opzione "Miglior Team (Automatico)" come default
+    select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
+
+    // 2. Scorriamo window.tuttiITeam (popolata da Firebase in caricaDatiDidi)
+    window.tuttiITeam.forEach(team => {
+        let opt = document.createElement('option');
+        
+        // Usiamo l'ID come valore per precisione, ma il nome per il testo
+        opt.value = team.id; 
+        opt.innerText = team.nome;
+
+        // 3. Pre-selezione
+        // Se window.idTeamPreferito corrisponde all'ID di questo team, lo selezioniamo
+        if (window.idTeamPreferito === team.id) {
+            opt.selected = true;
+        }
+        
+        select.appendChild(opt);
+    });
+}
+
+let anteprimaAudio = null;
+
+// Funzione che popola la nuova lista (chiamala dove prima popolavi la select)
+function popolaListaMusica(canzoni) {
+    const listaUI = document.getElementById('music-list-admin');
+    listaUI.innerHTML = ""; // Svuota
+
+    canzoni.forEach(canzone => {
+        const li = document.createElement('li');
+        li.className = "music-item";
+        li.dataset.url = canzone.url;
+        li.dataset.nome = canzone.nome.toLowerCase();
+
+        li.innerHTML = `
+            <span class="music-name" onclick="selezionaCanzone(this, '${canzone.url}')">${canzone.nome}</span>
+            <button class="preview-btn" onclick="riproduciAnteprima(event, '${canzone.url}')">▶</button>
+        `;
+        listaUI.appendChild(li);
+    });
+}
+
+// Funzione per cercare le canzoni scrivendo
+function filtraMusica() {
+    const query = document.getElementById('music-search').value.toLowerCase();
+    const items = document.querySelectorAll('.music-item');
+
+    items.forEach(item => {
+        const nome = item.dataset.nome;
+        item.style.display = nome.includes(query) ? "flex" : "none";
+    });
+}
+
+// Funzione per gestire l'anteprima
+function riproduciAnteprima(event, url) {
+    event.stopPropagation(); // Evita di selezionare la canzone se clicchi solo il tasto play
+
+    if (anteprimaAudio) {
+        anteprimaAudio.pause();
+        if (anteprimaAudio.src === url) {
+            anteprimaAudio = null;
+            return;
+        }
+    }
+
+    anteprimaAudio = new Audio(url);
+    anteprimaAudio.volume = 0.4;
+    anteprimaAudio.play();
+}
+
+function toggleDropdown() {
+    const content = document.getElementById('dropdown-content');
+    const isOpening = !content.classList.contains('show');
+    
+    content.classList.toggle('show');
+
+    // Se stiamo aprendo, resettiamo il filtro per mostrare tutte le canzoni
+    if (isOpening) {
+        document.getElementById('music-search').value = "";
+        filtraMusica(); 
+    }
+}
+
+// Quando scegli una canzone: aggiorna il nome, chiude il menu e ferma l'anteprima
+function selezionaCanzone(elementoSpan, url) {
+    // 1. Ferma l'anteprima immediatamente (se esiste)
+    if (typeof anteprimaAudio !== 'undefined' && anteprimaAudio) {
+        anteprimaAudio.pause();
+        anteprimaAudio.currentTime = 0; // Resetta la traccia
+        anteprimaAudio = null;
+    }
+
+    // 2. Recupera il nome in modo sicuro
+    const nomeCanzone = elementoSpan.innerText.trim();
+    
+    // 3. Aggiorna l'interfaccia (Header e Input Nascosto)
+    const labelHeader = document.getElementById('selected-song-name');
+    const inputNascosto = document.getElementById('selected-music-url');
+    
+    if (labelHeader) labelHeader.innerText = nomeCanzone;
+    if (inputNascosto) inputNascosto.value = url;
+
+    // 4. Gestione classi visive (rimuovi 'selected' da tutti e mettilo al nuovo)
+    document.querySelectorAll('.music-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // Usiamo closest per essere sicuri di colpire il contenitore <li>
+    const rigaSelezionata = elementoSpan.closest('.music-item');
+    if (rigaSelezionata) {
+        rigaSelezionata.classList.add('selected');
+    }
+
+    // 5. Chiudi il menu (Rimuoviamo la classe 'show' invece di fare il toggle)
+    const content = document.getElementById('dropdown-content');
+    if (content) {
+        content.classList.remove('show');
+    }
+
+    // 6. Log di verifica in console
+    console.log("Canzone selezionata con successo:", nomeCanzone);
+}
+// 1. Inserisci qui l'URL del foglio "Playlist" pubblicato come CSV
+const URL_PLAYLIST = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv";
+
+// 2. Funzione per leggere il CSV della musica e popolare il menu
+async function popolaSelettoreMusica() {
+    const listaUI = document.getElementById('music-list-admin');
+    if (!listaUI) return;
+
+    try {
+        const response = await fetch(URL_PLAYLIST + '&t=' + Date.now());
+        const csvText = await response.text();
+        const righe = csvText.split(/\r?\n/).map(r => r.split(','));
+
+        listaUI.innerHTML = ""; // Puliamo la lista
+
+        righe.forEach((colonne, index) => {
+            // Saltiamo l'intestazione
+            if (index === 0) return; 
+
+            if (colonne[0] && colonne[1]) {
+                const nomeCanzone = colonne[0].trim();
+                const urlCanzone = colonne[1].trim();
+                
+                const li = document.createElement('li');
+                li.className = "music-item";
+                // Se è quella già salvata, aggiungiamo la classe selected
+                if (window.musicaCorrente === urlCanzone) {
+                    li.classList.add('selected');
+                    // Inizializziamo il campo nascosto con la musica attuale
+                    document.getElementById('selected-music-url').value = urlCanzone;
+                }
+
+                li.dataset.url = urlCanzone;
+                li.dataset.nome = nomeCanzone.toLowerCase();
+
+                li.innerHTML = `
+                    <span class="music-name" onclick="selezionaCanzone(this, '${urlCanzone}')">${nomeCanzone}</span>
+                    <button class="preview-btn" onclick="riproduciAnteprima(event, '${urlCanzone}')">▶</button>
+                `;
+                listaUI.appendChild(li);
+            }
+        });
+    } catch (e) {
+        console.error("Errore playlist:", e);
+        listaUI.innerHTML = '<li style="padding:10px; color:red;">Errore nel caricamento</li>';
+    }
+}
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const btn = document.getElementById('music-control');
+
+    if (!player.src || player.src === "" || player.src.includes('undefined')) {
+        alert("Nessuna canzone impostata nel profilo!");
+        return;
+    }
+
+    if (player.paused) {
+        player.play()
+            .then(() => {
+                icon.innerText = "🔊";
+                btn.style.borderColor = "lime";
+            })
+            .catch(e => {
+                console.error("Errore riproduzione:", e);
+                alert("Il browser ha bloccato l'audio. Clicca un punto qualsiasi della pagina e riprova.");
+            });
+    } else {
+        player.pause();
+        icon.innerText = "🔇";
+        btn.style.borderColor = "cyan";
+    }
+}
+
+// Chiudi modale se clicchi fuori dal rettangolo centrale
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('admin-modal');
+    if (e.target === modal) chiudiAdminModal();
+});
+
+function ascoltaCambiamentiFirebase() {
+    db.ref('allenatore_didi').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            const player = document.getElementById('bg-music');
+            const icon = document.getElementById('music-icon');
+            const titleDisplay = document.getElementById('song-title'); // Il nuovo elemento per il testo
+
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                
+                // --- LOGICA PER IL NOME DELLA CANZONE ---
+                // 1. Prende l'ultima parte del link (dopo lo slash)
+                let nomeFile = data.musicaPreferita.split('/').pop(); 
+                // 2. Toglie l'estensione .mp3 e pulisce i simboli strani come %20
+                let nomePulito = decodeURIComponent(nomeFile).replace('.mp3', '');
+                // 3. Toglie eventuali numeri iniziali (es: "13 - ")
+                nomePulito = nomePulito.replace(/^\d+\s*-\s*/, '');
+
+                // Se abbiamo l'elemento HTML, scriviamo il nome e lo mostriamo
+                if (titleDisplay) {
+                    titleDisplay.innerText = "🎵 " + nomePulito;
+                    titleDisplay.style.display = "block";
+                }
+                // ----------------------------------------
+
+                player.play()
+                    .then(() => { icon.innerText = "🔊"; })
+                    .catch(() => { icon.innerText = "🔇"; });
+            }
+        }
+    });
+}
+
+
+
+function formattaTitolo(url) {
+    if (!url) return "";
+    // Prendi l'ultima parte dell'URL dopo lo slash /
+    let nome = url.substring(url.lastIndexOf('/') + 1);
+    // Togli l'estensione .mp3
+    nome = nome.replace('.mp3', '');
+    // Sostituisci i codici del browser (%20) con gli spazi
+    nome = decodeURIComponent(nome);
+    // Opzionale: togli i numeri iniziali se presenti (es: "13 - ")
+    nome = nome.replace(/^\d+\s*-\s*/, '');
+    return nome;
+}
+
+document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
+// Avvia l'ascolto al caricamento
+document.addEventListener('DOMContentLoaded', ascoltaBio);
+
+// Sblocca l'audio al primo click dell'utente sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            if(icon) icon.innerText = "🔊";
+        });
+    }
+}, { once: true });
+
+
+// Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
+document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") {
+        chiudiTeamModal();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', elaboraBadge);
+document.addEventListener('DOMContentLoaded', mostraBadge);
+
+// Chiama la funzione quando la pagina è pronta
+document.addEventListener('DOMContentLoaded', caricaTrendRecente);
+
+    window.addEventListener('DOMContentLoaded', caricaDatiDidi);
+    </script>
+    </body>
+    </html>

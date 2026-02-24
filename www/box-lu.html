@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Box Didi</title>
-    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <title>Box Lu</title>
+    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-box-didi.css">
+    <link rel="stylesheet" href="style-box-lu.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
@@ -39,7 +39,7 @@
         </ul>
 </nav>
 
-    <h1>Box Didi</h1>
+    <h1>Box Lu</h1>
 
     <div class="controls">
     <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
@@ -94,7 +94,7 @@
     <script>
 
         function apriAdminProtetto() {
-    const passwordSegreta = "7224353-Rr"; // <-- Scegli la tua password qui
+    const passwordSegreta = "luca2026"; // <-- Scegli la tua password qui
     const inputUtente = prompt("Inserisci la password amministratore per accedere all'Importer:");
 
     if (inputUtente === passwordSegreta) {
@@ -105,6 +105,7 @@
         alert("Password errata. Accesso negato.");
     }
 }
+
 
 // 1. Configurazione Firebase (Assicurati che sia corretta)
 const firebaseConfig = {
@@ -129,8 +130,8 @@ function ascoltaMusicaFirebase() {
     const icon = document.getElementById('music-icon');
     const btn = document.getElementById('music-control');
 
-    // Ascolta il database (allenatore_didi)
-    db.ref('allenatore_didi').on('value', (snapshot) => {
+    // Ascolta il database (allenatore_lukiani)
+    db.ref('allenatore_lukiani').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             // Se la musica nel DB è diversa da quella caricata nel player
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function ascoltaCambiamentiFirebase() {
-    db.ref('allenatore_didi').on('value', (snapshot) => {
+    db.ref('allenatore_lukiani').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
@@ -255,12 +256,12 @@ document.addEventListener('DOMContentLoaded', inizializzaPaginaBox);
 
 async function scaricaDati() {
     try {
-        // Puntiamo al nodo di Didi
-        db.ref('allenatore_didi/teams').on('value', async (snapshot) => {
+        // Usiamo .on per i team per avere aggiornamenti in tempo reale
+        db.ref('allenatore_lukiani/teams').on('value', async (snapshot) => {
             const dataTeams = snapshot.val();
             
             if (dataTeams) {
-                // 1. Creiamo l'array temporaneo resettando le statistiche
+                // 1. CREIAMO l'array da zero ogni volta (evita accumuli)
                 let tempTeams = Object.keys(dataTeams).map(key => {
                     const team = dataTeams[key];
                     let nomiPokemon = "";
@@ -273,6 +274,7 @@ async function scaricaDati() {
                     return {
                         ...team,
                         id: key,
+                        // Reset forzato a zero
                         vittorie: 0,
                         sconfitte: 0,
                         puntiFatti: 0,
@@ -282,41 +284,39 @@ async function scaricaDati() {
                     };
                 });
 
-                // 2. Recupero Match per ricalcolo
+                // 2. RECUPERO MATCH (usiamo .once per evitare loop infiniti qui dentro)
                 const snapMatches = await db.ref('matches').once('value');
                 const dataMatches = snapMatches.val();
 
                 if (dataMatches) {
                     Object.values(dataMatches).forEach(m => {
                         const score = m.score ? m.score.split('-').map(Number) : [0, 0];
-                        const s1 = score[0]; // Score Didi
-                        const s2 = score[1]; // Score Lu
+                        const s1 = score[0]; // Didi
+                        const s2 = score[1]; // Lu
 
-                        // Cerchiamo il team di Didi (m.team1Id o m.team1)
-                        const teamDidi = tempTeams.find(t => t.id === m.team1Id || t.nome === m.team1);
+                        // Cerchiamo il team di Lu nell'array temporaneo appena creato
+                        const teamLu = tempTeams.find(t => t.id === m.team2Id || t.nome === m.team2);
 
-                        if (teamDidi) {
-                            teamDidi.setVinti += s1;
-                            teamDidi.setPersi += s2;
+                        if (teamLu) {
+                            teamLu.setVinti += s2;
+                            teamLu.setPersi += s1;
 
-                            let pDidi = 0;
-                            if (s1 > s2) { // Vittoria Didi
-                                teamDidi.vittorie += 1;
-                                // Logica: 5-0 -> 3pt | 4-1 -> 2pt | 3-2 -> 2pt
-                                if (s1 === 5 && s2 === 0) pDidi = 3;
-                                else if (s1 === 4 && s2 === 1) pDidi = 2;
-                                else if (s1 === 3 && s2 === 2) pDidi = 2;
-                            } else if (s2 > s1) { // Sconfitta Didi
-                                teamDidi.sconfitte += 1;
-                                // Logica: se perdi 2-3 prendi comunque 1pt
-                                if (s2 === 3 && s1 === 2) pDidi = 1;
+                            let pLu = 0;
+                            if (s2 > s1) { // Vittoria Lu
+                                teamLu.vittorie += 1;
+                                if (s2 === 5 && s1 === 0) pLu = 3;
+                                else if (s2 === 4 && s1 === 1) pLu = 2;
+                                else if (s2 === 3 && s1 === 2) pLu = 2;
+                            } else if (s1 > s2) { // Sconfitta Lu
+                                teamLu.sconfitte += 1;
+                                if (s1 === 3 && s2 === 2) pLu = 1;
                             }
-                            teamDidi.puntiFatti += pDidi;
+                            teamLu.puntiFatti += pLu;
                         }
                     });
                 }
 
-                // 3. Aggiorniamo la variabile globale
+                // 3. SOLO ORA aggiorniamo la variabile globale e i filtri
                 tuttiITeam = tempTeams;
                 applicaFiltri(); 
                 
@@ -328,7 +328,7 @@ async function scaricaDati() {
             }
         });
     } catch (error) {
-        console.error("Errore scaricamento team Didi:", error);
+        console.error("Errore scaricamento team:", error);
     }
 }
 
@@ -1007,9 +1007,9 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
 
         // --- 3. INSERIMENTO IMMAGINI PERSONALIZZATE ---
         const catImgMap = { 
-            physical: 'immagini/move-physical.png', 
-            special: 'immagini/move-special.png', 
-            status: 'immagini/move-status.png' 
+            physical: '../immagini/move-physical.png', 
+            special: '../immagini/move-special.png', 
+            status: '../immagini/move-status.png' 
         };
         
         const catContainer = document.getElementById(`m-cat-${index}`);
@@ -1190,7 +1190,7 @@ function salvaTeamSuFirebase() {
         if (editingId) {
             // --- MODALITÀ MODIFICA ---
             // Puntiamo esattamente all'ID del team esistente
-            db.ref(`allenatore_didi/teams/${editingId}`).set(teamData)
+            db.ref(`allenatore_lukiani/teams/${editingId}`).set(teamData)
                 .then(() => {
                     alert("✅ Team aggiornato con successo!");
                     resetAdminPanel(); // Puliamo tutto
@@ -1199,7 +1199,7 @@ function salvaTeamSuFirebase() {
         } else {
             // --- MODALITÀ NUOVO ---
             // Creiamo una nuova voce con un ID generato da Firebase
-            db.ref('allenatore_didi/teams').push(teamData)
+            db.ref('allenatore_lukiani/teams').push(teamData)
                 .then(() => {
                     alert("✅ Nuovo team aggiunto all'archivio!");
                     resetAdminPanel();
@@ -1267,8 +1267,8 @@ function cancellaTeamDaFirebase(teamId) {
     if (!teamId) return alert("ID team non trovato");
 
     // 1. Controllo Password
-    const passwordSegreta = "7224353-Rr"; // Sostituisci con la tua
-    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team dall'archivio.\nInserisci la password per confermare:");
+    const passwordSegreta = "luca2026"; // Sostituisci con la tua
+    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team di LU.\nInserisci la password per confermare l'operazione:");
 
     if (inputUtente === null) return; // L'utente ha premuto annulla
 
@@ -1277,19 +1277,17 @@ function cancellaTeamDaFirebase(teamId) {
         return;
     }
 
-    // 2. Conferma finale
-    if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
-        // Nota: Assicurati che il percorso (allenatore_didi o allenatore_lukiani) 
-        // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
-        db.ref(`allenatore_didi/teams/${teamId}`).remove()
+    // 2. Conferma definitiva
+    if (confirm("Sei assolutamente sicuro? Il team verrà rimosso permanentemente dal database di Lukiani.")) {
+        db.ref(`allenatore_lukiani/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato correttamente!");
+                alert("Team eliminato con successo!");
                 chiudiTeamModal();
-                // Ricarichiamo i dati per aggiornare la griglia dei team
+                // Ricarica la griglia dei team (se la funzione si chiama caricaBox)
                 if (typeof caricaBox === "function") caricaBox();
             })
             .catch(e => {
-                console.error("Errore durante l'eliminazione del team:", e);
+                console.error("Errore eliminazione team Lu:", e);
                 alert("Errore tecnico durante l'eliminazione.");
             });
     }
@@ -1297,12 +1295,11 @@ function cancellaTeamDaFirebase(teamId) {
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
-    // 1. Controllo Password (o variabile di sessione)
-    const passwordSegreta = "7224353-Rr"; 
-    
-    // Se vuoi usare la variabile globale isAdminAutenticato definita in precedenza:
+    // 1. Controllo Password (con supporto alla variabile di sessione)
+    const passwordSegreta = "luca2026"; 
+
     if (typeof isAdminAutenticato !== 'undefined' && !isAdminAutenticato) {
-        const inputUtente = prompt("Inserisci la password per modificare il Team:");
+        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
         if (inputUtente === passwordSegreta) {
             isAdminAutenticato = true;
         } else {
@@ -1310,15 +1307,15 @@ function caricaTeamPerModifica(teamId) {
             return;
         }
     } else if (typeof isAdminAutenticato === 'undefined') {
-        // Fallback se non usi la variabile globale
-        const inputUtente = prompt("Inserisci la password per modificare il Team:");
+        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
         if (inputUtente !== passwordSegreta) {
             if (inputUtente !== null) alert("Password errata!");
             return;
         }
     }
 
-    // --- Se autorizzato, procedi con il caricamento dei dati nel pannello ---
+    // --- Se autorizzato, procedi con il caricamento ---
+    // Assicurati che 'tuttiITeam' contenga i team del giocatore corrente
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
@@ -1336,7 +1333,7 @@ function caricaTeamPerModifica(teamId) {
 
     document.getElementById('showdown-input').value = testoShowdown.trim();
     
-    // Salviamo l'ID per la modifica
+    // IMPORTANTE: Impostiamo l'editingId per evitare duplicati su Firebase
     document.getElementById('admin-panel').dataset.editingId = teamId;
     
     document.getElementById('admin-panel').style.display = 'block';

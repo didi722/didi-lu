@@ -1,0 +1,1981 @@
+:root {
+    --didi-color: #7fe9bf; 
+    --bg-color: var(--didi-color); 
+    --accent-main: #31c489;
+    --card-bg: #31c489;
+    --text-main: #eeeeee; 
+    --text-dim: #1a1a1a;
+    --title-main: #1a1a1a;
+    --accent-dark: #219667; 
+    --shadow: rgba(74, 55, 40, 0.12);
+    --bg-body: #dfdfdf;         
+    --bg-gradient-end: #097e4f; 
+    --didi-borders: #025534;
+}
+
+body { 
+    font-family: 'Montserrat', sans-serif; 
+    background: linear-gradient(135deg, var(--bg-body) -50%, var(--bg-gradient-end) 100%);
+    color: var(--text-main); 
+    padding: 20px; 
+    margin: 0;
+    line-height: 1.4;
+    min-height: 100vh;
+}
+
+h1 { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 2.5rem;
+    text-align: center; 
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--title-main);
+    margin: 20px 0 40px 0;
+    font-weight: 700;
+}
+
+/* Barra di ricerca con effetto vetro */
+.controls { 
+    display: flex; 
+    gap: 12px; 
+    justify-content: center; 
+    flex-wrap: wrap;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+.controls-lu { 
+    display: flex; 
+    gap: 12px; 
+    justify-content: center; 
+    flex-wrap: wrap;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+
+input, select { 
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    padding: 10px 15px; 
+    border-radius: 10px; 
+    border: 1px solid #1a1a1a;
+    background: none; 
+    color: #676767;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+input:focus { 
+    border-color: var(--accent-dark);
+    transform: scale(1.02);
+}
+
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+    gap: 20px; 
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+/* Card in stile pulito e moderno */
+.card { 
+    background: var(--card-bg);
+    border: 2px solid var(--didi-borders);
+    box-shadow: 5px 5px 0px var(--didi-borders);
+    padding: 20px; 
+    border-radius: 20px; 
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    color: #1a1a1a; 
+    z-index: 1;
+}
+
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 10px;
+    color: #1a1a1a; 
+
+}
+
+.category { 
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.65rem; 
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: var(--didi-color); 
+    color: #1a1a1a;
+    padding: 4px 12px; 
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.stats { 
+    font-size: 0.8rem; 
+    color: #1a1a1a;
+    font-weight: 800; 
+}
+
+.card h3 { 
+    font-family: 'Josefin Sans', sans-serif;
+    color: #1a1a1a;
+    margin: 10px 0 15px 0; 
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: left;
+    border-bottom: 2px solid var(--didi-color);
+    padding-bottom: 8px;
+}
+
+.pkm-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
+    margin-top: 15px;
+}
+
+.pkm-box {
+    background: var(--didi-color);
+    padding: 8px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 60px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    position: relative;
+    border: none;
+    flex: 1;          /* Occupa tutto lo spazio rimasto dopo lo sprite */
+    min-width: 0;     /* FONDAMENTALE: permette al contenitore di restringersi */
+    color: #1a1a1a !important;
+}
+
+.pkm-box::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;         /* Spessore del bordo */
+    height: 100%;
+    background: var(--accent-dark); /* Colore di base */
+    border-radius: 12px 0 0 12px;
+    color: #1a1a1a;
+}
+
+.pkm-box {
+    position: relative;
+    cursor: help; /* Cambia cursore per far capire che c'è un info */
+    color: #1a1a1a;
+}
+
+/* Card in hover */
+.pkm-hover-card {
+    display: none;
+    position: absolute;
+    bottom: 110%; 
+    width: 260px; 
+    background: var(--bg-gradient-end);
+    border: 2px solid var(--didi-color);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(74, 55, 40, 0.25);
+    z-index: 999;
+    pointer-events: none;
+}
+
+.pkm-hover-card.left-side {
+    left: 0;
+    right: auto;
+    transform: translateX(0);
+}
+
+.pkm-hover-card.right-side {
+    right: 0;
+    left: auto;
+    transform: translateX(0); 
+}
+
+.pkm-hover-card strong {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--didi-color);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.pkm-hover-card p {
+    font-size: 0.6rem !important; /* Testo piccolissimo */
+    margin: 0 !important;
+    line-height: 1.2;
+    color: #eeeeee !important;
+}
+
+.pkm-box:hover .pkm-hover-card {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Stile per le mosse dentro l'hover */
+.hover-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px; /* Spazio netto dalle info sopra */
+}
+
+.hover-moves span {
+    background: var(--didi-color);
+    color: #1a1a1a;
+    font-size: 0.65rem; /* Testo leggibile ma piccolo */
+    padding: 8px 4px;   /* Rettangolo più alto e "cicciotto" */
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;   /* Forza la grandezza del rettangolo */
+    white-space: normal; 
+    line-height: 1;
+}
+/* Animazione comparsa */
+@keyframes popIn {
+    from { opacity: 0; margin-bottom: -10px; }
+    to { opacity: 1; margin-bottom: 0; }
+}
+
+/* Assicuriamoci che la card principale non tagli il tooltip */
+.card {
+    overflow: visible !important;
+}
+
+.pkm-box:hover {
+    transform: translateY(-5px);
+}
+
+.pkm-sprite-container {
+    width: 45px;  /* Contenitore più piccolo e fisso */
+    height: 45px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+}
+
+.pkm-sprite {
+    max-width: 45px;
+    max-height: 45px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.pkm-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    min-width: 0; /* Necessario per il troncamento del testo */
+}
+
+.pkm-name { 
+    color: #1a1a1a;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem; /* Font leggermente ridotto per stare su una riga */
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block !important;             /* Necessario per applicare l'overflow */
+    white-space: nowrap !important;        /* Impedisce al testo di andare a capo */
+    overflow: hidden !important;           /* Nasconde la parte di testo in eccesso */
+    text-overflow: ellipsis !important;    /* Aggiunge i tre puntini (...) alla fine */
+    max-width: 100 !important;            /* Assicura che non superi la larghezza del box genitore */
+}
+
+.item-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.pkm-item { 
+    color: var(--text-dim);
+    font-size: 0.65rem; 
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loading { 
+    text-align: center; 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.5rem; 
+    margin-top: 100px; 
+    color: #1a1a1a; 
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(25px);
+    background-color: rgba(68,170,34,0.2);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    padding: 20px 30px;
+    border-radius: 25px;
+    width: 85%;
+    height: 75%;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Blocca lo scroll del modale */
+    position: relative;
+    overflow-y: auto; /* Permette lo scroll del modale */
+    overflow-x: visible; /* IMPORTANTE: permette ai tooltip di uscire lateralmente se serve */
+    color: #eeeeee;
+}
+
+.modal-content h2 {
+    font-size: 1.5rem;
+    margin: 15px 0 35px 0;
+    text-align: center;
+}
+.close {
+    visibility: hidden;
+}
+
+.close-modal {
+    visibility: hidden;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px; /* Gap ridotto per non "soffocare" */
+    flex: 1;
+    min-height: 0; /* Fondamentale per far stare tutto dentro l'altezza fissa */
+    margin: 15px 0;
+    overflow: visible !important;
+
+}
+.modal-pkm-card {
+    background: var(--didi-color);
+    border: 2px solid var(--card-bg);
+    box-shadow: 5px 5px 0px var(--card-bg);
+    border-radius: 15px;
+    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: visible !important;
+    position: relative !important;
+    color: #1a1a1a;
+}
+
+.modal-sprite {
+    width: 65px; 
+    height: 65px;
+    object-fit: contain;
+    flex-shrink: 0;
+    margin-left: -5px; /* Leggero tocco per incollarlo al bordo */
+    margin-top: 35px;
+    margin-bottom: -10px;
+}
+
+.modal-pkm-info {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-pkm-info p {
+    font-size: 0.65rem !important; /* Abilità ed EV piccole */
+    color: var(--text-dim);
+    margin: 0 !important;
+}
+
+.modal-pkm-info strong {
+    font-size: 0.95rem; /* Nome Pokémon compatto */
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+.modal-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    font-size: 0.65rem;
+}
+
+.modal-item img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.modal-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px; /* Spazio tra i rettangoli */
+    margin-top: 8px;
+    width:100%;
+    position: relative;
+    overflow: visible !important;
+}
+
+.card { cursor: pointer; } /* Indica che la card è cliccabile */
+
+/* ============================================================
+   FIX DEFINITIVO TOOLTIP MOSSE (SOSTITUISCI TUTTO IL PRECEDENTE)
+   ============================================================ */
+
+/* 1. Assicuriamoci che nessun contenitore tagli fuori il fumetto */
+#teamModal, 
+.modal-content, 
+.modal-grid, 
+.modal-pkm-card, 
+.modal-pkm-info, 
+.modal-moves {
+    overflow: visible !important;
+}
+
+/* 2. Lo span della mossa deve essere il 'padre' del tooltip */
+.move-span {
+    position: relative; /* FONDAMENTALE */
+    cursor: help;
+    background: var(--card-bg); /* Arancione di base mentre carica */
+    color: #1a1a1a !important;
+    border: 1px solid var(--didi-borders);
+    box-shadow: 2.5px 2.5px 0px var(--didi-borders);
+    font-size: 0.7rem;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-align: center;
+    display: block; 
+    margin: 2px 0;
+    isolation: isolate;
+    transition: all 0.2s ease;
+    white-space: nowrap;       /* Impedisce al testo di andare a capo */
+    overflow-y: visible;        /* Nasconde lo scroll verticale inutile */
+    scrollbar-width: none;     /* Nasconde la barra su Firefox */
+}
+
+.fire { background-color: #ff4422 !important; }
+.water { background-color: #3399ff !important; }
+.grass { background-color: #77cc55 !important; }
+.electric { background-color: #ffcc33 !important; }
+.ice { background-color: #66ccff !important; }
+.fighting { background-color: #bb5544 !important; }
+.poison { background-color: #aa5599 !important; }
+.ground { background-color: #ddbb55 !important; }
+.flying { background-color: #8899ff !important; }
+.psychic { background-color: #ff5599 !important; }
+.bug { background-color: #aabb22 !important; }
+.rock { background-color: #bbaa66 !important; }
+.ghost { background-color: #6666bb !important; }
+.dragon { background-color: #7766ee !important; }
+.dark { background-color: #775544 !important; }
+.steel { background-color: #aaaabb !important; }
+.fairy { background-color: #ee99ee !important; }
+.normal { background-color: #aaaa99 !important; }
+
+/* 3. Il fumetto (Tooltip) */
+.move-tooltip {
+    display: none; /* Nascosto di default */
+    position: absolute;
+    bottom: 125%; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px; 
+    background: #33261c; 
+    color: #ffffff !important;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    z-index: 9999 !important; /* Altissimo per stare sopra tutto */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+    font-weight: 400;
+    opacity: 0;
+    z-index: 9999 !important;
+}
+
+.move-tooltip.fire { background-color: #ff4422 !important; }
+.move-tooltip.water { background-color: #3399ff !important; }
+.move-tooltip.grass { background-color: #77cc55 !important; }
+.move-tooltip.electric { background-color: #ffcc33 !important; }
+.move-tooltip.ice { background-color: #66ccff !important; }
+.move-tooltip.fighting { background-color: #bb5544 !important; }
+.move-tooltip.poison { background-color: #aa5599 !important; }
+.move-tooltip.ground { background-color: #ddbb55 !important; }
+.move-tooltip.flying { background-color: #8899ff !important; }
+.move-tooltip.psychic { background-color: #ff5599 !important; }
+.move-tooltip.bug { background-color: #aabb22 !important; }
+.move-tooltip.rock { background-color: #bbaa66 !important; }
+.move-tooltip.ghost { background-color: #6666bb !important; }
+.move-tooltip.dragon { background-color: #7766ee !important; }
+.move-tooltip.dark { background-color: #775544 !important; }
+.move-tooltip.steel { background-color: #aaaabb !important; }
+.move-tooltip.fairy { background-color: #ee99ee !important; }
+.move-tooltip.normal { background-color: #aaaa99 !important; }
+
+/* 5. AZIONE HOVER: Mostra il fumetto */
+.move-span:hover {
+    background: var(--didi-borders);
+    color: white !important;
+    z-index: 10000; /* Porta la mossa in primo piano rispetto alle altre */
+}
+
+.move-span:hover .move-tooltip {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
+/* Se il Pokémon è nella prima riga, mostra il fumetto SOTTO invece che SOPRA */
+.modal-pkm-card:nth-child(-n+3) .move-tooltip {
+    bottom: auto;
+    top: 125%;
+}
+
+.modal-pkm-card:hover {
+    z-index: 1001; /* Un valore più alto di quello dei tooltip */
+    position: relative;
+}
+
+/* Layout colonna sinistra modale */
+.modal-left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Attacca tutto in alto */
+    padding-top: 5px;            /* Allinea col nome del pokemon */
+    width: 70px;
+    flex-shrink: 0;
+}
+
+.modal-types {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: -15px; /* Spazio tra tipi e sprite */
+}
+
+/* Badge dei tipi */
+.type-badge {
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+    width: 50px;
+    cursor: help;
+}
+
+/* Colori per tipo (PokeAPI standard) */
+.fire { background: #ff4422; }
+.water { background: #3399ff; }
+.grass { background: #77cc55; }
+.electric { background: #ffcc33; }
+.ice { background: #66ccff; }
+.fighting { background: #bb5544; }
+.poison { background: #aa5599; }
+.ground { background: #ddbb55; }
+.flying { background: #8899ff; }
+.psychic { background: #ff5599; }
+.bug { background: #aabb22; }
+.rock { background: #bbaa66; }
+.ghost { background: #6666bb; }
+.dragon { background: #7766ee; }
+.dark { background: #775544; }
+.steel { background: #aaaabb; }
+.fairy { background: #ee99ee; }
+.normal { background: #aaaa99; }
+
+/* Container per il badge del tipo e il suo tooltip */
+.type-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Tooltip debolezze/resistenze */
+.type-effectiveness-tooltip {
+    visibility: hidden;
+    width: 160px;
+    background-color: #33261c;
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%; /* Default: sopra */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.7rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    pointer-events: none;
+}
+
+.type-effectiveness-tooltip.v-down {
+    bottom: auto;
+    top: 125%;
+}
+
+.type-container:hover .type-effectiveness-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Freccetta del tooltip */
+
+
+.effectiveness-section { margin-bottom: 4px; }
+.eff-title { font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; font-size: 0.6rem; }
+.eff-val-2 { color: #ff4422; } /* Debolezze */
+.eff-val-05 { color: #77cc55; } /* Resistenze */
+.eff-val-0 { color: #aaaabb; } /* Immunità */
+
+/* Container dei badge nel tooltip */
+.eff-badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Badge piccolo per il tooltip */
+.mini-type-badge {
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+}
+
+.eff-section {
+    margin-bottom: 10px;
+}
+
+.eff-section:last-child {
+    margin-bottom: 0;
+}
+
+.eff-title {
+    font-weight: bold;
+    display: block;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 4px;
+    font-size: 0.65rem;
+}
+
+/* Tooltip per le Statistiche */
+/* Tooltip base (appare a destra) */
+.stats-tooltip {
+    display: none;
+    position: absolute;
+    left: 105%;
+    top: 0;
+    width: 200px;
+    background: #33261c;
+    color: white !important;
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 10000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    pointer-events: none;
+    border-left: 3px solid #e89e5e; /* Linea verticale decorativa */
+}
+
+.stats-tooltip h3 {
+    margin: 0 0 8px 0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* RIGHA BIANCA SOTTILE */
+    padding-bottom: 6px;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.stats-tooltip p, 
+.stats-tooltip .stat-row {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #fce5cd;
+}
+
+/* Classe per i Pokémon a destra (sposta il tooltip a sinistra) */
+.stats-tooltip.stats-left {
+    left: auto;
+    right: 105%;
+}
+
+/* Mostra il tooltip quando si va in hover sul contenitore del nome */
+.stats-container:hover .stats-tooltip {
+    display: block;
+}
+
+.modal-pkm-info strong:hover + .stats-tooltip {
+    display: block;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.stat-bar-bg {
+    flex-grow: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    margin-left: 10px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    background: #ce4343;
+}
+
+/* Tooltip generico per Stats, Abilità e Strumenti */
+.generic-tooltip {
+    display: none;
+    position: absolute;
+    left: 80%; 
+    top: 0;
+    width: 200px;
+    background: #33261c;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    font-size: 0.7rem;
+    line-height: 1.3;
+    pointer-events: none;
+    border: 1px solid #ddd;
+    color: #ddd
+}
+
+.generic-tooltip h3 {
+    margin: 0;
+    font-size: 0.68rem;
+    color: #ddd; /* Giallo Pokédex */
+    padding-top: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* RIGHA BIANCA SOTTILE */
+}
+
+.generic-tooltip p {
+    padding-top: 0px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #ddd;
+    font-style: italic;
+}
+
+/* Inversione per l'ultima colonna */
+.generic-tooltip.tooltip-left {
+    left: auto;
+    right: 110%;
+}
+
+/* Mostra il tooltip quando il contenitore è in hover */
+.info-container:hover .generic-tooltip {
+    display: inline-block; /* O flex, purché crei un contesto di posizionamento */
+    width: 100%;
+}
+
+.nav-arrow:hover {
+    background: #ffcc00;
+    color: #33261c;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.prev-arrow { left: -50px; }
+.next-arrow { right: -50px; }
+
+/* Container per il contenuto che scorre */
+.slide-wrapper {
+    position: relative;
+    width: 100%;
+    /* Impedisce scroll orizzontali fastidiosi durante l'animazione */
+    overflow: hidden; 
+}
+
+/* Animazione Slide Avanti (da destra) */
+.slide-next {
+    animation: slideNext 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Animazione Slide Indietro (da sinistra) */
+.slide-prev {
+    animation: slidePrev 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes slideNext {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slidePrev {
+    from { opacity: 0; transform: translateX(-50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Frecce: Assicuriamoci che siano fuori dal wrapper animato */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background: rgba(51, 38, 28, 0.9);
+    color: #ffcc00;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10010; /* Sempre sopra tutto */
+    transition: background 0.2s, transform 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-arrow:hover {
+    background: #ffcc00;
+    color: #33261c;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Container principale del modale */
+.pkm-modal-grid {
+    display: grid;
+    grid-template-areas: 
+        "weakness header info-strips"
+        "moves moves stats"; /* Invertiti: Moves a sinistra (occupa più spazio), Stats a destra */
+    grid-template-columns: 280px 1fr 320px;
+    grid-template-rows: auto auto;
+    gap: 0px 15px; /* Aggiunto un po' di spazio tra i blocchi */
+    color: #924810;
+}
+
+/* Header Centrale */
+.area-header { 
+    grid-area: header; 
+    text-align: center; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+}
+.types-centered { display: flex; justify-content: center; gap: 10px;}
+.pkm-name-banner { font-size: 1.2rem !important; margin: 0; color: #eeeeee; text-transform: uppercase; font-family: Josefin Sans}
+
+/* Box Generico (Panel) */
+.pkm-panel {
+    background: var;
+    border-radius: 15px;  
+    padding: 15px;
+    border: 2px solid #c5c5c5 !important; 
+    color: #eeeeee;
+    border-color: var(--didi-borders) !important;
+}
+
+.panel-title {
+    font-size: 0.8rem;
+    color: #eeeeee;
+    text-transform: uppercase;
+    border-color: #eeeeee !important;
+    border-bottom:1px solid;
+    padding-top: 0;
+    margin-top: 0;
+    font-weight: bold;
+    margin-bottom:15px;
+}
+
+/* Sezioni Specifiche */
+.area-weakness { grid-area: weakness; align-self: start; }
+.area-info-strips { grid-area: info-strips; display: flex; flex-direction: column; gap: 10px; }
+.area-moves { grid-area: moves; }
+.area-stats { grid-area: stats; }
+
+
+.area-weakness h4 {
+color:#eeeeee;
+margin-top: 0;
+}
+
+/* Griglia Mosse */
+.moves-grid-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.move-slot-card {
+    background: #fdfaf7;
+    padding: 10px;
+    border-radius: 10px;
+    border-left: 4px solid #ccc;
+}
+
+.move-slot-name { font-weight: bold; font-size: 0.85rem; }
+.move-slot-desc { font-size: 0.75rem; color: #666; margin-top: 5px; line-height: 1.2; }
+
+.item-icon-small { width: 24px; height: 24px; margin-right: 8px; }
+.item-title-row { display: flex; align-items: center; }
+
+.weakness-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 5px;
+}
+
+.w-row {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.75rem;
+}
+
+.types-wrapper {
+    display: flex;
+    flex-wrap: wrap;         /* Permette ai tipi di andare a capo */
+    gap: 4px;                /* Spazio tra i singoli badge */
+    flex: 1;                 /* Occupa tutto lo spazio restante */
+}
+
+.mult {
+    width: 35px;             /* Larghezza fissa invece di min-width */
+    flex-shrink: 0;          /* Impedisce al moltiplicatore di rimpicciolirsi */
+    font-weight: bold;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Colori per i moltiplicatori */
+.x4 { color: #ff0000; background: rgba(255,0,0,0.1); }
+.x2 { color: #ff6600; background: rgba(255,102,0,0.1); }
+.x05 { color: #77cc55; background: rgba(119,204,85,0.1); }
+.x025 { color: #44aa22; background: rgba(68,170,34,0.1); }
+.x0 { color: #888; background: rgba(136,136,136,0.1); }
+
+/* Badge dei tipi mini */
+.mini-type-badge {
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    color: white;
+    font-weight: bold;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Box compatti per dimezzare l'altezza */
+/* Box Info Ultra-Compatti */
+.info-box-compact {
+    padding: 15px 10px !important;
+    margin-bottom: 4px;
+    min-height: 50px; /* Dimezzato rispetto a prima */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Nasconde i titoli duplicati generati dalle funzioni se sono dentro info-content-clean */
+.info-content-clean strong, 
+.info-content-clean b {
+    display: inline;
+    font-size: 0.85rem;
+    color: #33261c;
+}
+
+/* Rimpicciolisce la descrizione per farla stare in meno righe */
+.info-content-clean {
+    font-size: 0.75rem;
+    line-height: 1.1;
+    color: #666;
+}
+
+.item-inline-layout {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.panel-title-mini {
+    font-size: 0.6rem !important;
+    margin-bottom: 2px !important;
+    opacity: 0.7;
+}
+
+.item-icon-tiny {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.item-title-row-new {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Spazio tra nome e icona */
+}
+
+/* Nasconde il titolo ripetuto (es. "Unnerve:") dentro le descrizioni */
+#single-abi strong, 
+#single-abi b, 
+#single-item strong, 
+#single-item b {
+    display: none !important; 
+}
+
+/* Regola la descrizione affinché sia pulita */
+.info-desc-tiny {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: #666;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Mantieni questo per il titolo principale (quello che vogliamo vedere) */
+.info-name {
+    font-size: 0.95rem;
+    color: #33261c;
+    font-weight: 800;
+    display: inline-block;
+}
+
+.stat-row {
+    margin-bottom: 4px; /* Riduce lo spazio tra HP, Atk, ecc. */
+    font-size: 0.75rem;
+}
+
+.stat-bar-bg {
+    height: 8px; /* Barre più sottili */
+}
+
+.move-slot-card {
+    padding: 6px 8px; /* Era 10px */
+    border-radius: 8px;
+}
+
+.move-slot-name {
+    font-size: 0.75rem; /* Più piccolo */
+}
+
+.move-slot-desc {
+    font-size: 0.65rem; /* Descrizione molto compatta */
+    line-height: 1.1;
+}
+
+/* Container generale delle Stats */
+.area-stats {
+    padding: 12px !important; /* Riduce l'ingombro interno */
+    margin-top: -12px;
+}
+
+/* Uniforma le righe delle statistiche (HP, ATK, ecc.) */
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px; /* Spazio tra le barre */
+    font-size: 0.75rem;  /* Font piccolo e pulito */
+    line-height: 1;
+}
+
+/* Rimpicciolisce le barre */
+.stat-bar-bg {
+    flex-grow: 1;
+    height: 6px; /* Ancora più sottili per eleganza */
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+/* SISTEMA L'ULTIMA RIGA (EVs) */
+.evs-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #eee;
+    font-size: 0.7rem !important; /* Forza il font piccolo */
+    color: #eeeeee; /* Colore meno pesante del nero */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pkm-modal-grid {
+    align-items: start; /* Impedisce ai box di allungarsi inutilmente */
+}
+
+.area-stats.pkm-panel {
+    height: fit-content; /* Il box si chiude subito dopo l'ultima riga */
+    max-height: 100%;    /* Non supera mai il genitore */
+}
+
+/* Lista mosse a colonna singola per non tagliare i nomi */
+.moves-list-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.move-row-card {
+    background: #fdfaf7;
+    border-radius: 8px;
+    padding: 8px 12px;
+    border-left: 5px solid #ccc; /* Colore di fallback */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.move-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.move-name-text {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #33261c;
+}
+
+.move-type-label {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: 8px;
+}
+
+.move-stats-row {
+    display: flex;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: #666;
+    align-items: center;
+}
+
+.move-desc-text {
+    font-size: 0.65rem;
+    color: #8d7563;
+    font-style: italic;
+    line-height: 1.2;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding-top: 4px;
+}
+
+/* Classi dinamiche per i bordi basati sul tipo */
+.move-border-fire { border-left-color: #ff4422; }
+.move-border-water { border-left-color: #3399ff; }
+.move-border-grass { border-left-color: #77cc55; }
+.move-border-electric { border-left-color: #ffcc33; }
+.move-border-ice { border-left-color: #66ccff; }
+.move-border-fighting { border-left-color: #bb5544; }
+.move-border-poison { border-left-color: #aa5599; }
+.move-border-ground { border-left-color: #ddbb55; }
+.move-border-flying { border-left-color: #8899ff; }
+.move-border-psychic { border-left-color: #ff5599; }
+.move-border-bug { border-left-color: #aabb22; }
+.move-border-rock { border-left-color: #bbaa66; }
+.move-border-ghost { border-left-color: #6666bb; }
+.move-border-dragon { border-left-color: #7766ee; }
+.move-border-dark { border-left-color: #775544; }
+.move-border-steel { border-left-color: #aaaabb; }
+.move-border-fairy { border-left-color: #ee99ee; }
+.move-border-normal { border-left-color: #aaaa99; }
+
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* Spazio ridottissimo tra le mosse */
+}
+
+.move-row-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    height: 28px; /* Altezza fissa e bassa */
+    transition: transform 0.1s;
+}
+
+.move-left-part, .move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100px;
+}
+
+.move-name-mini {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #33261c;
+    white-space: nowrap;
+}
+
+.move-cat-icon {
+    font-size: 0.8rem;
+    width: 16px;
+}
+
+.m-val {
+    font-size: 0.65rem;
+    color: #555;
+    min-width: 35px;
+}
+
+.m-val b {
+    color: #eeeeee;
+}
+
+/* Evita che il box delle mosse spinga tutto giù */
+.area-moves {
+    padding: 20px !important;
+    margin-top: -25px;
+    height: 175px;
+}
+
+/* 1. Riduciamo il gap della griglia principale */
+.pkm-modal-grid {
+    gap: 8px 12px !important; /* Spazio verticale ridotto al minimo */
+    align-items: start;
+}
+
+/* 2. Pannelli più sottili */
+.pkm-panel {
+    padding: 8px 10px !important; /* Meno spazio interno */
+    border-radius: 10px;
+}
+
+/* 3. Titoli dei pannelli minuscoli */
+.panel-title {
+    font-size: 0.65rem !important;
+    margin-bottom: 6px !important;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+/* 4. Mosse "Striscia" (Layout orizzontale estremo) */
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; 
+}
+
+.move-row-mini {
+    height: 27.9px !important; /* Altezza ridottissima */
+    padding: 2px 6px !important;
+    font-size: 0.7rem;
+}
+
+.move-full-color .move-name-mini,
+.move-full-color .m-val,
+.move-full-color .m-val b {
+    color: #eeeeee !important;
+    font-size: 0.7rem;
+}
+
+.move-left-part, .move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* --- TUE CLASSI ESISTENTI (Invariate o con minimi aggiustamenti per il layout) --- */
+
+.move-row-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 27.9px !important;
+    padding: 2px 6px !important;
+    font-size: 0.7rem;
+    gap: 8px; /* Aggiunto un piccolo gap tra le sezioni */
+    border-radius: 4px; /* Per estetica con il colore pieno */
+    margin-bottom: 2px;
+}
+
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Impedisce al nome di schiacciarsi */
+    min-width: 85px; /* Riserva spazio fisso per il nome */
+}
+
+.move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Impedisce ai valori di schiacciarsi */
+    justify-content: flex-end;
+}
+
+/* --- NUOVA CLASSE PER LA DESCRIZIONE --- */
+
+.move-desc-inline {
+    flex: 1; /* Prende tutto lo spazio centrale */
+    font-size: 0.58rem !important; /* Font molto piccolo per stare nell'altezza */
+    line-height: 1;
+    color: #1a1a1a;
+    opacity: 0.9;
+    font-style: italic;
+    text-align: left;
+    padding-left: 40px;
+    /* Gestione testo su due righe nel poco spazio */
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal; /* Permette il ritorno a capo */
+}
+
+/* --- RESTO DEL TUO CSS --- */
+
+.move-name-mini {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #33261c;
+    white-space: nowrap;
+}
+
+.move-cat-icon {
+    font-size: 0.8rem;
+    width: 16px;
+}
+
+.m-val {
+    font-size: 0.65rem;
+    color: #555;
+    min-width: 35px;
+}
+
+.m-val b {
+    color: #000;
+}
+
+.pkm-modal-grid {
+    gap: 8px 12px !important;
+    align-items: start;
+}
+
+.pkm-panel {
+    padding: 8px 10px !important;
+    border-radius: 10px;
+}
+
+.panel-title {
+    font-size: 0.8rem !important;
+    margin-bottom: 6px !important;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; 
+}
+
+.move-full-color .move-name-mini,
+.move-full-color .m-val,
+.move-full-color .m-val b {
+    color: rgb(0, 0, 0) !important;
+    font-size: 0.7rem;
+}   
+
+/* Allineamento descrizioni: blocchiamo la larghezza del nome */
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 130px; /* Tutte le descrizioni inizieranno dopo 130px */
+    flex-shrink: 0;
+}
+
+.move-desc-inline {
+    flex: 1;
+    font-size: 0.58rem !important;
+    line-height: 1.1;
+    color: #1a1a1a;
+    text-align: left; /* Allineato a sinistra */
+    padding-right: 10px;
+    font-style: italic;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-left: 10px;
+}
+
+/* Sposta il box mosse in alto */
+.area-moves {
+    grid-area: moves;
+    margin-top: -20px; /* Valore negativo per alzare il blocco */
+}
+
+.pkm-sprite-hero {
+    object-fit: contain;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    width: 150px !important;
+    height: 150px !important;
+    object-fit: contain;
+    display: block;
+    image-rendering: -webkit-optimize-contrast; /* Per Chrome/Safari */
+    image-rendering: crisp-edges;               /* Per Firefox */
+    image-rendering: pixelated;                 /* Per Edge/Chrome moderni */
+    filter: contrast(1.1) drop-shadow(0 5px 12px rgba(0,0,0,0.15));
+}
+
+/* Blindatura per lo Zoom */
+.pkm-modal-grid {
+    max-height: 80vh; 
+    overflow-y: auto; /* Crea scrollbar interna se zummi troppo */
+    padding-bottom: 20px;
+}
+
+/* Container dell'icona (lo span m-cat-i) */
+.move-cat-icon {
+    width: 15px; /* Spazio fisso per l'iconcina */
+    height: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* L'immagine vera e propria */
+.cat-icon-render {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Se le icone sembrano sgranate essendo piccole, aggiungi: */
+    image-rendering: pixelated; 
+}
+
+/* --- ALLINEAMENTO PERFETTO --- */
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 135px; /* Blocca la larghezza: NOME e ICONA occuperanno sempre 135px */
+    flex-shrink: 0;
+}
+
+.stats-tooltip {
+    color: white !important;
+}
+
+.stats-tooltip h3 {
+    color:rgb(255, 255, 255) !important;
+}
+
+.single-stats {
+    color:#eeeeee !important;
+}
+
+#single-stats .stat-bar-fill {
+    background: #9722da;
+}
+
+#single-stats .stat-label {
+    color: #4a3728; /* Il tuo marrone scuro var(--text-main) */
+    font-weight: bold;
+}
+
+/* Cambia il colore dei numeri dei valori (es. 100, 80) */
+#single-stats .stat-number {
+    color: #e89e5e; /* Il tuo colore accent-dark o qualsiasi altro HEX */
+    font-weight: bold;
+}
+
+/* Se vuoi cambiare il titolo "BASE STATS" o scritte generali nel pannello */
+.area-stats.pkm-panel {
+    color: #eeeeee !important;
+}
+
+.pkm-panel div[style*="font-weight:bold"] {
+    border-bottom: 1px;
+    border-color: #eeeeee !important; /* Colore marrone Didi tenue */
+}
+
+/* Layout per Titolo + Statistiche nel Modale */
+.modal-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--accent-dark);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.modal-header-container h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--text-main);
+}
+
+.team-score-banner {
+    display: flex;
+    gap: 35px;
+    background: rgba(232, 158, 94, 0.1); /* Sfondo leggero color pesca */
+    padding: 8px 15px;
+    border-radius: 10px;
+    border: 1px solid var(--accent-dark);
+}
+
+.score-item {
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.2;
+}
+
+.score-item span {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #eeeeee;
+}
+
+.score-item strong {
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+/* Responsive: se lo schermo è piccolo, mette le stats sotto il titolo */
+@media (max-width: 600px) {
+    .modal-header-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.card {
+    background: var(--card-bg);
+}
+
+.card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 7px 7px 0 var(--didi-borders);
+}
+
+/* Colore per i titoli (es. Prankster) */
+.info-name {
+    color: #eeeeee !important; /* L'important assicura che sovrascriva altri stili */
+}
+
+/* Colore per le descrizioni sotto */
+.info-desc-tiny {
+    color: #eeeeee !important;
+}
+
+/* Struttura base del Menù */
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}
+
+/* Schermata di caricamento */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Sopra a tutto */
+    transition: opacity 0.5s ease;
+}
+
+/* La Pokéball che gira */
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    margin-top: 15px;
+    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.pkm-single-card {
+    border-radius: 15px;
+    position: relative;
+    /* Animazione specifica per la card per evitare il salto */
+    animation: slideUp 0.4s ease-out;
+}
+
+/* Definizione delle animazioni */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95); 
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1); 
+    }
+}
+
+.music-btn {
+    position: fixed;
+    right: 70px;
+    width: 45px;
+    height: 45px;
+    background: none !important;
+    border: none !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+#music-icon {
+    font-size: 20px;
+}
+
+.admin-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.btn-admin-edit, 
+.btn-admin-del {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    background: none;
+    border: none;
+}
+
+.btn-admin-edit:hover, 
+.btn-admin-del:hover {
+    transform: scale(1.1);
+}
+
+.admin-panel {
+position:fixed;
+top: 20px;
+left: 20px;
+background: rgba(0,0,0,0.95);
+padding: 20px;
+border-radius: 15px;
+border: 2px solid var(--accent-dark);
+z-index: 10000;
+display: none;
+width: 320px;
+color: white
+}
+
+.admin-panel h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--accent-dark);
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.admin-team-cat {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #7d7d7d;
+}
+
+.admin-team-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #eeeeee;
+}
+
+.showdown-input {
+    width: 94%;
+    background: #222;
+    color: #afa;
+    border: 1px solid #444;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.showdown-save {
+    background:var(--accent-dark);
+    font-family: 'Josefin Sans', sans-serif;
+    color: black;
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.showdown-cancel {
+    background: #555;
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.btn-floating-admin {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    
+    /* Sfondo semitrasparente per leggerezza */
+    background: rgba(0, 0, 0, 0.5); 
+    
+    /* Solo bordo giallo Pokémon */
+    border: 2px solid var(--card-bg-matches); 
+    border-radius: 50%;
+    
+    color: var(--card-bg-matches);
+    cursor: pointer;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: var(--accent-main);         /* Il + diventa nero */
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    box-shadow: 0 0 15px rgba(22, 199, 25, 0.4);
+    border: #000;
+}

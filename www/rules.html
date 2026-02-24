@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rules - Pokémon Formats</title>
+    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-rules.css">
+    <link rel="stylesheet" href="style-box-didi.css">
+
+</head>
+<body>
+
+    <audio id="bg-music-home" loop preload="auto"></audio>
+<div id="music-toggle" class="music-btn">
+    🔊
+</div>
+
+
+    <div id="loading-screen">
+        <div class="pokeball-loader"></div>
+        <p>Please wait</p>
+    </div>
+
+    <nav class="hamburger-menu">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-button-container">
+            <div class="menu-button"></div>
+        </label>
+        <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+            <li><a href="rules.html">Rules</a></li>
+        </ul>
+    </nav>  
+
+    
+        <h1 class="page-title">Formats and rules</h1>
+
+<div class="controls">
+    <input type="text" id="searchInput" placeholder="Browse rules..." oninput="applicaFiltri()">
+</div>
+
+<button class="btn-floating-admin" onclick="toggleAdminPanel()" title="Add Format">
+    <span class="plus-icon">+</span>
+</button>
+
+
+<div id="admin-rules-panel" class="pkm-panel" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 20px auto; z-index: 100000; max-width: 800px; padding: 20px; border-radius: 12px; border: 2px solid #092377 !important;
+    box-shadow: 5px 5px 0px #092377;
+    background: #2e53cd !important;
+    font-family: Josefin Sans, sans-serif;">
+    <h2 style="color: #eeeeee; margin-bottom: 15px;">Add/Edit Format</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <input style="color: #1a1a1a;" type="text" id="rule-cat" placeholder="Category Name (es: VGC 2025)">
+        <input style="color: #1a1a1a;" type="text" id="rule-desc" placeholder="Short Description (for the card)">
+        <input style="color: #1a1a1a;" type="text" id="rule-sleep" placeholder="Sleep Clause">
+        <input style="color: #1a1a1a;" type="text" id="rule-items" placeholder="Double Items">
+        <input style="color: #1a1a1a;" type="text" id="rule-dupes" placeholder="Double Pokémons">
+        <input style="color: #1a1a1a;" type="text" id="rule-gen" placeholder="Generation">
+        <input style="color: #1a1a1a;" type="text" id="rule-restr" placeholder="Restricted/Leggies">
+        <input style="color: #1a1a1a;" type="text" id="rule-tier" placeholder="Tier">
+        <input style="color: #1a1a1a;" type="text" id="rule-bst" placeholder="BST Limit">
+        <input style="color: #1a1a1a;" type="text" id="rule-types" placeholder="Allowed Types">
+        <input type="text" id="rule-link" placeholder="External Link URL" style="grid-column: span 2;">
+        <textarea id="rule-special" placeholder="Special Rules (Long text)" style="grid-column: span 2; height: 100px;"></textarea>
+    </div>
+    <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button onclick="salvaRegolaFirebase()" class="save-btn">Save Rules</button>
+        <button onclick="toggleAdminPanel()" class="cancel-btn">Cancel</button>
+    </div>
+</div>
+
+<div id="regolamentoGrid" class="regolamento-grid"></div>
+
+        <div id="regolamentoGrid" class="regolamento-grid">
+            </div>
+
+            
+    </div>
+
+    <div id="regolaModal" class="modal" onclick="chiudiRegolaModal()">
+    <div class="modal-content rule-modal-container"> <span class="close-btn" onclick="chiudiRegolaModal()">&times;</span>
+        <div id="regolaModalBody"></div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+
+        const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+    messagingSenderId: "707115539525",
+    appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+// ----------------------------
+
+let tuttiRegolamenti = [];
+
+// 1. Caricamento dati da Firebase
+async function caricaRegolamento() {
+    const loader = document.getElementById('loading-screen');
+    const grid = document.getElementById('regolamentoGrid');
+    
+    if (loader) loader.style.display = 'flex';
+    
+    // Usiamo db.ref
+    db.ref('regolamenti').on('value', (snapshot) => {
+        grid.innerHTML = "";
+        tuttiRegolamenti = [];
+        const data = snapshot.val();
+
+        // Se non ci sono dati, dobbiamo comunque nascondere il loader!
+        if (!data) {
+            grid.innerHTML = "<p style='color:white; text-align:center;'>Nessun regolamento trovato. Clicca ⚙️ per aggiungerne uno.</p>";
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+            return;
+        }
+
+        Object.keys(data).forEach(key => {
+            const r = { id: key, ...data[key] };
+            tuttiRegolamenti.push(r);
+            
+            const card = document.createElement('div');
+            card.className = 'regola-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${r.categoria}</h3>
+                </div>
+                <div class="card-body">
+                    <span>${r.descrizioneBreve || ''}</span>
+                </div>
+                <div class="card-footer">Dettagli Completi</div>
+            `;
+            card.onclick = () => apriRegolaModal(r);
+            grid.appendChild(card);
+        });
+        
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
+    }, (error) => {
+        console.error("Errore Firebase:", error);
+        if (loader) loader.style.display = 'none';
+        grid.innerHTML = "<p>Errore di connessione al database.</p>";
+    });
+}
+
+// 2. Salvataggio su Firebase
+function salvaRegolaFirebase() {
+    const panel = document.getElementById('admin-rules-panel');
+    const editingId = panel.dataset.editingId;
+
+    const regola = {
+        categoria: document.getElementById('rule-cat').value,
+        descrizioneBreve: document.getElementById('rule-desc').value,
+        sleepClause: document.getElementById('rule-sleep').value,
+        strumenti: document.getElementById('rule-items').value,
+        duplicati: document.getElementById('rule-dupes').value,
+        gen: document.getElementById('rule-gen').value,
+        restricted: document.getElementById('rule-restr').value,
+        tier: document.getElementById('rule-tier').value,
+        bst: document.getElementById('rule-bst').value,
+        tipi: document.getElementById('rule-types').value,
+        link: document.getElementById('rule-link').value,
+        specialRules: document.getElementById('rule-special').value
+    };
+
+    if (!regola.categoria) return alert("Inserisci almeno il nome della categoria!");
+
+    const ref = editingId ? db.ref(`regolamenti/${editingId}`) : db.ref('regolamenti').push();
+
+    ref.set(regola)
+        .then(() => {
+            alert(editingId ? "Regolamento aggiornato!" : "Regolamento aggiunto!");
+            // Reset pannello
+            panel.dataset.editingId = "";
+            document.querySelectorAll('#admin-rules-panel input, #admin-rules-panel textarea').forEach(el => el.value = "");
+            toggleAdminPanel();
+        })
+        .catch(err => alert("Errore: " + err));
+}
+
+// 3. Modal aggiornato per leggere i nuovi nomi dei campi
+function apriRegolaModal(r) {
+    const modal = document.getElementById('regolaModal');
+    const body = document.getElementById('regolaModalBody');
+    body.innerHTML = `
+        <div class="admin-modal-actions" style="float: right;">
+            <button onclick="event.stopPropagation(); caricaRegolaPerModifica('${r.id}')" class="btn-admin-edit">📝</button>
+            <button onclick="event.stopPropagation(); cancellaRegolaDaFirebase('${r.id}')" class="btn-admin-del">🗑️</button>
+        </div>
+        <h2 class="modal-title">${r.categoria}</h2>
+        <div class="regole-grid-detail">
+            <div class="info-item"><strong>💤 Sleep Clause</strong><span>${r.sleepClause || '-'}</span></div>
+            <div class="info-item"><strong>🍎 Double Items</strong><span>${r.strumenti || '-'}</span></div>
+            <div class="info-item"><strong>👥 Double Pokémons</strong><span>${r.duplicati || '-'}</span></div>
+            <div class="info-item"><strong>📅 Gen</strong><span>${r.gen || '-'}</span></div>
+            <div class="info-item"><strong>🚫 Restricted</strong><span>${r.restricted || '-'}</span></div>
+            <div class="info-item"><strong>🏆 Max. Tier</strong><span>${r.tier || '-'}</span></div>
+            <div class="info-item"><strong>📊 BST</strong><span>${r.bst || '-'}</span></div>
+            <div class="info-item"><strong>🧬 Types</strong><span>${r.tipi || '-'}</span></div>
+        </div>
+        <div class="special-rules-box">
+            <h1><strong>⚠️ Special Rules:</strong></h1>
+            <p>${r.specialRules || 'Nessuna'}</p>
+        </div>
+        ${r.link ? `<a href="${r.link}" target="_blank" class="link-btn" onclick="event.stopPropagation()">Approfondimento Online</a>` : ''}
+    `;
+    modal.style.display = "flex";
+}
+
+// Prepara il pannello con i dati esistenti
+function caricaRegolaPerModifica(id) {
+    const r = tuttiRegolamenti.find(reg => reg.id === id);
+    if (!r) return;
+
+    document.getElementById('rule-cat').value = r.categoria;
+    document.getElementById('rule-desc').value = r.descrizioneBreve || "";
+    document.getElementById('rule-sleep').value = r.sleepClause || "";
+    document.getElementById('rule-items').value = r.strumenti || "";
+    document.getElementById('rule-dupes').value = r.duplicati || "";
+    document.getElementById('rule-gen').value = r.gen || "";
+    document.getElementById('rule-restr').value = r.restricted || "";
+    document.getElementById('rule-tier').value = r.tier || "";
+    document.getElementById('rule-bst').value = r.bst || "";
+    document.getElementById('rule-types').value = r.tipi || "";
+    document.getElementById('rule-link').value = r.link || "";
+    document.getElementById('rule-special').value = r.specialRules || "";
+
+    // Salva l'ID nel pannello
+    document.getElementById('admin-rules-panel').dataset.editingId = id;
+    
+    chiudiRegolaModal();
+    toggleAdminPanel();
+}
+
+// Elimina da Firebase
+function cancellaRegolaDaFirebase(id) {
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
+    const inputUtente = prompt("Autorizzazione richiesta. Inserisci la password per eliminare questo regolamento:");
+
+    if (inputUtente === null) return; // L'utente ha cliccato annulla
+
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Operazione annullata.");
+        return;
+    }
+
+    // 2. Conferma finale
+    if (confirm("Sei sicuro di voler eliminare definitivamente questo regolamento?")) {
+        db.ref(`regolamenti/${id}`).remove()
+            .then(() => {
+                alert("Regolamento eliminato!");
+                chiudiRegolaModal();
+                // Opzionale: ricarica la lista o la pagina per aggiornare la vista
+                if (typeof caricaRegolamenti === "function") caricaRegolamenti();
+            })
+            .catch(e => {
+                console.error("Errore eliminazione regola:", e);
+                alert("Errore durante l'eliminazione.");
+            });
+    }
+}
+
+function toggleAdminPanel() {
+    const p = document.getElementById('admin-rules-panel');
+    
+    // 1. Controlliamo se il pannello è attualmente chiuso
+    // Se è già aperto, lo chiudiamo senza chiedere nulla
+    if (p.style.display === 'block') {
+        p.style.display = 'none';
+        return;
+    }
+
+    // 2. Se il pannello è chiuso, chiediamo la password
+    const passwordSegreta = "slavojzizek"; // <-- Sostituisci con la tua
+    const inputUtente = prompt("Inserisci la password amministratore:");
+
+    if (inputUtente === passwordSegreta) {
+        p.style.display = 'block';
+    } else if (inputUtente === null) {
+        // L'utente ha premuto annulla, non facciamo nulla
+    } else {
+        alert("Password errata!");
+    }
+}
+       
+
+        function chiudiRegolaModal() {
+            document.getElementById('regolaModal').style.display = "none";
+        }
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+
+function avviaMusicaHome() {
+    const player = document.getElementById('bg-music-home');
+    
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.3;
+        
+        // PRIMO COLPO: Tenta l'autoplay immediato
+        player.play()
+            .then(() => { console.log("Musica Home partita al volo!"); })
+            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+}
+
+// Avvia la logica appena la pagina è caricata
+document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+
+// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music-home');
+    if (player && player.paused) {
+        player.play();
+        console.log("Musica Home sbloccata dal click!");
+    }
+}, { once: true });
+
+const musicBtn = document.getElementById('music-toggle');
+const audio = document.getElementById('bg-music-home');
+
+musicBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Evita che il clic attivi anche lo sbloccatore sopra
+    if (audio.paused) {
+        audio.play();
+        musicBtn.innerText = "🔊";
+    } else {
+        audio.pause();
+        musicBtn.innerText = "🔇";
+    }
+});
+
+
+        document.addEventListener('DOMContentLoaded', caricaRegolamento);
+    </script>
+</body>
+</html>

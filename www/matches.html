@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixtures Archive</title>
+    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-matches.css">
+    <link rel="stylesheet" href="style-box-didi.css">
+    <link rel="stylesheet" href="style-box-lu.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+</head>
+<body>
+    
+        <audio id="bg-music-home" loop preload="auto"></audio>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <span id="music-icon">🔊</span>
+</div>
+
+    <div id="loading-screen">
+    <div class="pokeball-loader"></div>
+    <p>Please wait</p>
+</div>
+
+    <nav class="hamburger-menu">
+    <input type="checkbox" id="menu-toggle" />
+    <label for="menu-toggle" class="menu-button-container">
+        <div class="menu-button"></div>
+    </label>
+    <ul class="menu-items">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="page-didi.html">Didi</a></li>
+            <li><a href="box-didi.html">Box Didi</a></li>
+            <li><a href="page-lu.html">Lu</a></li>
+            <li><a href="box-lu.html">Box Lu</a></li>
+            <li><a href="matches.html">Fixtures</a></li>
+            <li><a href="rules.html">Rules</a></li>
+        </ul>
+</nav> 
+
+<div id="admin-edit-match-panel" class="admin-panel-modern wide">
+    <input type="hidden" id="edit-match-id">
+    <h3 class="panel-title-edit">Edit Match</h3>
+    
+    <div class="admin-three-columns">
+        
+        <div class="admin-col">
+            <h4 class="col-title">Match Info</h4>
+            <div class="form-group">
+                <label>Data:</label>
+                <input type="date" id="edit-match-date">
+            </div>
+            <div class="form-group">
+                <label>Format:</label>
+                <select id="edit-match-cat"></select>
+            </div>
+            <div class="form-group">
+                <label>Score (X-X):</label>
+                <input type="text" id="edit-match-score">
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h4 class="col-title">Teams</h4>
+            <div class="form-group">
+                <label>Player Didi:</label>
+                <select id="edit-match-team1" class="select-team"></select>
+            </div>
+            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
+            <div class="form-group">
+                <label>Player Lu:</label>
+                <select id="edit-match-team2" class="select-team"></select>
+            </div>
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">Replays & Set Winners</h4>
+            <div id="replays-edit-list">
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                            <div class="set-row-compact">
+                                <span class="set-num">S${i}</span>
+                                <input type="text" id="edit-replay-s${i}" placeholder="file.html">
+                                <div class="winner-selector">
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="confermaModificaMatch()" class="btn-save">Edit match</button>
+        <button onclick="document.getElementById('admin-edit-match-panel').style.display='none'" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+<div id="admin-matches-panel" class="admin-panel-modern wide">
+    <input type="hidden" id="match-id-nascosto">
+    <h3>Add a new match</h3>
+    
+    <div class="admin-three-columns">
+        
+        <div class="admin-col">
+            <h4 class="col-title">Match info</h4>
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" id="match-date">
+            </div>
+            <div class="form-group">
+                <label>Format:</label>
+                <select id="match-cat"></select>
+            </div>
+            <div class="form-group">
+                <label>Score:</label>
+                <input type="text" id="match-score" placeholder="Es: 3-2">
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h4 class="col-title">Teams</h4>
+            <div class="form-group">
+                <label>Player Didi:</label>
+                <select id="match-team1" class="select-team"></select>
+            </div>
+            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
+            <div class="form-group">
+                <label>Player Lu:</label>
+                <select id="match-team2" class="select-team"></select>
+            </div>
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">Replays & Set winners</h4>
+            <div id="replays-inputs-list">
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                            <div class="set-row-compact">
+                                <span class="set-num">S${i}</span>
+                                <input type="text" id="replay-s${i}" placeholder="file.html">
+                                <div class="winner-selector">
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D')" id="win-${i}-D">D</button>
+                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L')" id="win-${i}-L">L</button>
+                                </div>
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="salvaMatchFirebase()" class="btn-save">Add Match</button>
+        <button onclick="document.getElementById('admin-matches-panel').style.display='none'" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+<button class="btn-floating-admin" onclick="apriAdminMatches()" title="Aggiungi Match">
+    <span class="plus-icon">+</span>
+</button>
+
+    <h1>Championship History</h1>
+
+    <div class="controls">
+    <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
+    <select id="categoryFilter" onchange="applicaFiltri()">
+    <option value="">Format</option>
+</select>
+    
+    </select>
+</div>
+
+    <div id="matchList"></div>
+
+    <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
+    
+    <div class="gba-container">
+        <img src="../immagini/advance.png" class="gba-shell" alt="GBA Shell">
+        <div class="gba-screen-area" onclick="event.stopPropagation()">
+             <div class="replay-content">
+                <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
+    
+    <span class="close-replay" onclick="chiudiReplay()">&times;</span>
+</div>
+
+    <div id="teamModal" class="replay-modal" onclick="chiudiTeamModal()">
+        <div class="modal-content team-detail-card">
+            <span class="close-replay" onclick="chiudiTeamModal()">&times;</span>
+            <div id="teamDetailContent"></div>
+        </div>
+    </div>
+
+<script>      
+
+// --- 1. CONFIGURAZIONE FIREBASE ---
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.appspot.com",
+    messagingSenderId: "333119159516",
+    appId: "1:333119159516:web:689a9f5d3791093f66878b"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+let databaseDidi = [];
+let databaseLu = [];
+
+// --- 2. GESTIONE CARICAMENTO PAGINA ---
+async function inizializzaPaginaArchivio() {
+    const loader = document.getElementById('loading-screen');
+    try {
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
+
+        // 1. Recupero dati da Firebase
+        const [snapDidi, snapLu, snapMatches] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('matches').once('value')
+        ]);
+
+        // Manteniamo le chiavi originali di Firebase (gli ID)
+        let teamsDidi = snapDidi.val() || {};
+        let teamsLu = snapLu.val() || {};
+        const dataMatches = snapMatches.val() || {};
+
+        // 2. RESET STATISTICHE
+        const resetStats = (dbObj) => {
+            Object.values(dbObj).forEach(t => {
+                t.vittorie = 0; t.sconfitte = 0;
+                t.setVinti = 0; t.setPersi = 0;
+                t.puntiFatti = 0;
+            });
+        };
+        resetStats(teamsDidi);
+        resetStats(teamsLu);
+
+        // 3. CALCOLO LOGICA PUNTI CON COLLEGAMENTO ID
+        Object.values(dataMatches).forEach(m => {
+            const score = m.score ? m.score.split('-').map(Number) : [0, 0];
+            const s1 = score[0]; // Set Didi
+            const s2 = score[1]; // Set Lu
+
+            // CERCA PER ID: m.team1Id e m.team2Id sono i nuovi campi salvati nel match
+            // Se il match è vecchio e ha solo il nome, usiamo il fallback .find()
+            const tDidi = teamsDidi[m.team1Id] || Object.values(teamsDidi).find(t => t.nome === m.team1);
+            const tLu = teamsLu[m.team2Id] || Object.values(teamsLu).find(t => t.nome === m.team2);
+
+            // Calcolo punti (Logica 5-0, 4-1, 3-2)
+            let p1 = 0; let p2 = 0;
+            if (s1 > s2) {
+                if (s1 === 5 && s2 === 0) p1 = 3;
+                else if (s1 === 4 && s2 === 1) p1 = 2;
+                else if (s1 === 3 && s2 === 2) { p1 = 2; p2 = 1; }
+            } else if (s2 > s1) {
+                if (s2 === 5 && s1 === 0) p2 = 3;
+                else if (s2 === 4 && s1 === 1) p2 = 2;
+                else if (s2 === 3 && s1 === 2) { p2 = 2; p1 = 1; }
+            }
+
+            if (tDidi) {
+                tDidi.setVinti += s1;
+                tDidi.setPersi += s2;
+                tDidi.puntiFatti += p1;
+                if (s1 > s2) tDidi.vittorie += 1;
+                else if (s2 > s1) tDidi.sconfitte += 1;
+                
+                // RIFLESSO DINAMICO: Aggiorniamo il nome nel match 
+                // con quello attualmente registrato nel team
+                m.team1 = tDidi.nome; 
+            }
+
+            if (tLu) {
+                tLu.setVinti += s2;
+                tLu.setPersi += s1;
+                tLu.puntiFatti += p2;
+                if (s2 > s1) tLu.vittorie += 1;
+                else if (s1 > s2) tLu.sconfitte += 1;
+                
+                m.team2 = tLu.nome;
+            }
+        });
+
+        databaseDidi = teamsDidi;
+        databaseLu = teamsLu;
+
+        // 4. RENDERIZZAZIONE LISTA MATCH
+// 1. Creiamo l'array con gli ID di Firebase
+let righeMatches = Object.keys(dataMatches).map(key => ({ 
+    id: key, 
+    ...dataMatches[key] 
+}));
+
+// 2. Ordinamento Ultra-Sicuro
+righeMatches.sort((a, b) => {
+    // Gestione dati mancanti per evitare crash
+    const dataA = a.data || "";
+    const dataB = b.data || "";
+
+    // LIVELLO 1: Data (Decrescente - Più recenti in alto)
+    if (dataB > dataA) return 1;
+    if (dataB < dataA) return -1;
+
+    // LIVELLO 2: Se la data è uguale, ordiniamo per ID (Inserimento)
+    // Se vuoi i PRIMI inseriti in BASSO, l'ID più "grande" (ultimo inserito) deve stare SOPRA.
+    const idA = a.id || "";
+    const idB = b.id || "";
+
+    if (idB > idA) return 1;
+    if (idB < idA) return -1;
+
+    return 0;
+});
+
+        const container = document.getElementById('matchList');
+        if (container) {
+            container.innerHTML = "";
+            righeMatches.forEach(m => {
+                const scoreArr = m.score ? m.score.split('-') : ["0", "0"];
+                
+                // Recuperiamo l'ID del team per passarlo alla funzione di apertura dettaglio
+                // così il modal caricherà sempre i dati aggiornati
+                const t1Id = m.team1Id || ""; 
+                const t2Id = m.team2Id || "";
+
+                const card = document.createElement('div');
+                card.className = 'match-card';
+                card.innerHTML = `
+                    <div class="match-meta">
+                        <span class="match-category">${m.categoria || ""}</span>
+                        <span class="match-date">${formattaDataItaliana(m.data) || ""}</span>
+                    </div>
+                    <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('Didi', '${m.team1}')">
+                        <span class="team-title">${m.team1}</span>
+                        ${generaHtmlGifs(m.team1, databaseDidi)}
+                    </div>
+                    <div class="score-container">
+                        <span class="score-digit">${scoreArr[0]}</span>
+                        <span class="score-divider">:</span>
+                        <span class="score-digit">${scoreArr[1]}</span>
+                    </div>
+                    <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('Lu', '${m.team2}')">
+                        <span class="team-title">${m.team2}</span>
+                        ${generaHtmlGifs(m.team2, databaseLu)}
+                    </div>
+                    <div><div class="admin-match-controls">
+            <span class="admin-icon" onclick="preparaModificaMatch('${m.id}')" style="cursor:pointer; color:#3498db;">📝</span>
+            <span class="admin-icon" onclick="eliminaMatch('${m.id}')" style="cursor:pointer; color:#e74c3c; margin-left:10px;">🗑️</span>
+        </div>
+                    <button class="btn-replay-icon" onclick="apriMatch('${m.id}', '${m.team1}', '${m.team2}', '${scoreArr[0]}', '${scoreArr[1]}')">REPLAY</button></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        popolaFiltroCategorie();
+    } catch (e) {
+        console.error("Errore Firebase:", e);
+    } finally {
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', inizializzaPaginaArchivio);
+
+// --- 3. FUNZIONE CORE CARICA ARCHIVIO (FIREBASE VERSION) ---
+
+function formattaDataItaliana(dataStr) {
+    if (!dataStr) return "";
+    // Se la data è nel formato AAAA-MM-GG
+    const parti = dataStr.split('-');
+    if (parti.length === 3) {
+        return `${parti[2]}/${parti[1]}/${parti[0]}`;
+    }
+    return dataStr; // Fallback se è già formattata
+}
+
+function popolaFiltroCategorie() {
+    const select = document.getElementById('categoryFilter');
+    const matches = document.querySelectorAll('.match-category');
+    
+    // Usiamo un Set per avere solo valori univoci (niente duplicati)
+    const categorie = new Set();
+    
+    matches.forEach(cat => {
+        const testo = cat.textContent.trim();
+        if (testo) categorie.add(testo);
+    });
+
+    // Reset della select (manteniamo solo l'opzione "Tutte")
+    select.innerHTML = '<option value="tutte">Category</option>';
+
+    // Aggiungiamo le categorie trovate
+    categorie.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    });
+}
+
+function applicaFiltri() {
+    const nomeCercato = document.getElementById('searchInput').value.toLowerCase();
+    const categoriaScelta = document.getElementById('categoryFilter').value;
+    const matches = document.querySelectorAll('.match-card');
+
+    matches.forEach(card => {
+        const nomeDidi = card.querySelector('.team-didi-badge')?.textContent.toLowerCase() || "";
+        const nomeLu = card.querySelector('.team-lu-badge')?.textContent.toLowerCase() || "";
+        const categoriaCard = card.querySelector('.match-category')?.textContent.trim() || "";
+
+        const matchNome = nomeDidi.includes(nomeCercato) || nomeLu.includes(nomeCercato);
+        const matchCategoria = (categoriaScelta === "tutte" || categoriaCard === categoriaScelta);
+
+        card.style.display = (matchNome && matchCategoria) ? "grid" : "none";
+    });
+}
+
+async function apriDettaglioTeam(proprietario, nomeTeam) {
+    const modal = document.getElementById('teamModal');
+    const content = document.getElementById('teamDetailContent');
+    
+    modal.classList.remove('proprietario-Didi', 'proprietario-Lu');
+    modal.classList.add('proprietario-' + proprietario);
+    content.innerHTML = '<div style="color:white; text-align:center;">Loading team...</div>';
+    modal.style.display = 'flex';
+
+    try {
+        // Seleziona il database corretto (deve essere l'oggetto scaricato da Firebase)
+        const dbSorgente = (proprietario === 'Didi') ? databaseDidi : databaseLu;
+
+        // Trova il team cercando per la proprietà "nome" dentro ogni oggetto del database
+        const teamData = Object.values(dbSorgente).find(t => 
+            t.nome && t.nome.trim().toLowerCase() === nomeTeam.trim().toLowerCase()
+        );
+
+        if (teamData) {
+            // Prepariamo l'oggetto team per la funzione di rendering
+            let team = {
+                nome: teamData.nome,
+                vittorie: teamData.vittorie || "0",
+                sconfitte: teamData.sconfitte || "0",
+                setVinti: teamData.setVinti || "0",
+                setPersi: teamData.setPersi || "0",
+                puntiFatti: teamData.puntiFatti || "0",
+                pokemon: [] // Qui mapperemo i dati dal database
+            };
+
+            // Mappiamo l'array 'pokemon' dal database alla nostra struttura
+            if (teamData.pokemon && Array.isArray(teamData.pokemon)) {
+                team.pokemon = teamData.pokemon.map(p => {
+                    return {
+                        nome: p.nome || "???",
+                        abilita: p.abilita || "N/D",
+                        strumento: p.strumento || "Nessuno",
+                        // Mappiamo l'array delle mosse (0, 1, 2, 3)
+                        mosse: (p.mosse && Array.isArray(p.mosse)) ? p.mosse : ["-", "-", "-", "-"],
+                        evs: p.evs || "N/D"
+                    };
+                });
+            }
+
+            // Inseriamo l'HTML finale
+            content.innerHTML = generaHtmlDettaglioTeam(team, proprietario);
+        } else {
+            content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato.</div>`;
+        }
+    } catch (e) {
+        console.error("Errore nel caricamento dettaglio:", e);
+        content.innerHTML = `<div style="color:white; text-align:center;">Errore durante il caricamento.</div>`;
+    }
+}
+
+function generaHtmlDettaglioTeam(team, proprietario) {
+    // team.vittorie, team.setVinti, etc. sono ora i valori calcolati 
+    // nella funzione inizializzaPaginaArchivio basandosi sui match reali
+    const sV = Number(team.setVinti) || 0;
+    const sP = Number(team.setPersi) || 0;
+    
+    // Il numero di partite giocate è la somma dei match vinti e persi
+    const partiteGiocate = (Number(team.vittorie) || 0) + (Number(team.sconfitte) || 0);
+
+    return `
+        <div class="modal-header-container">
+            <h2>${team.nome}</h2>
+            <div class="team-score-banner">
+                <div class="score-item"><span>W/L</span><strong>${team.vittorie} - ${team.sconfitte}</strong></div>
+                <div class="score-item"><span>Sets</span><strong>${sV} - ${sP}</strong></div>
+                <div class="score-item"><span>Points</span><strong>${team.puntiFatti}</strong></div>
+                <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
+            </div>
+        </div>
+        <div class="modal-grid">
+            ${team.pokemon.map((p, pIndex) => {
+                // Pulizia nome per l'URL (es: "Tapu Koko" -> "tapukoko")
+                const pkmNameUrl = p.nome.toLowerCase()
+                                    .replace(/\s+/g, '')
+                                    .replace(/[.'é’%]/g, '');
+                
+                const mIdPrefix = `types-${pIndex}`;
+                const statsId = `stats-${pIndex}`;
+                const abiId = `abi-${pIndex}`;
+                const itemId = `item-${pIndex}`;
+                
+                // Gestione posizione tooltip (se è l'ultimo della riga lo sposta a sinistra)
+                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
+                
+                // Avviamo il caricamento dei tipi (PokeAPI)
+                caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
+                
+                // Generazione URL Strumento (PokeAPI usa i trattini invece degli spazi)
+                const itemUrlName = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
+                
+                return `
+                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                     onmouseenter="this.style.zIndex='999'"
+                     onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                    
+                    <div class="modal-left-column">
+                        <div id="${mIdPrefix}" class="modal-types"></div>
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                             class="modal-sprite clickable-pkm" 
+                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png'">
+                    </div>
+
+                    <div class="modal-pkm-info">
+                        <div class="info-container">
+                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading stats...</div>
+                        </div>
+
+                        <div class="info-container">
+                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading ability...</div>
+                        </div>
+
+                        <div class="info-container">
+                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png" 
+                                     onerror="this.style.display='none'">
+                                <span>${p.strumento}</span>
+                            </div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading item...</div>
+                        </div>
+
+                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        
+                        <div class="modal-moves">
+                            ${p.mosse.map((m, mIndex) => {
+                                if (!m || m === "-") return ""; // Non mostra mosse vuote
+                                const mId = `mossa-${pIndex}-${mIndex}`;
+                                return `
+                                <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
+                                    ${m}
+                                    <div id="${mId}" class="move-tooltip">Loading info...</div>
+                                </span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+
+// Funzioni di chiusura
+function chiudiTeamModal() { document.getElementById('teamModal').style.display = 'none'; }
+function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiTeamModal(); }
+
+// --- FUNZIONI GLOBALI (Fuori da tutto) ---
+
+// Funzione principale per caricare il video nell'iframe
+window.caricaVideoDirect = function(urlFile, btnElement) {
+    console.log("File da caricare ricevuto dal DB:", urlFile);
+
+    // 1. Gestione estetica dei bottoni
+    document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    
+    // 2. Costruzione del percorso RELATIVO
+    // Assicuriamoci che il file finisca con .html se non lo ha già
+    let nomeFile = urlFile.trim();
+    if (!nomeFile.toLowerCase().endsWith('.html')) {
+        nomeFile += '.html';
+    }
+
+    // Se il database ha solo il nome (es: "M0001_1_D"), aggiungiamo "video/"
+    // Se ha già "video/M0001_1_D.html", lo lasciamo stare
+    const pathFinale = nomeFile.startsWith('../video/') ? nomeFile : `../video/${nomeFile}`;
+    
+    console.log("Percorso finale generato:", pathFinale);
+
+    // 3. Puntamento Iframe
+    const iframe = document.getElementById('replayFrame');
+    if (iframe) {
+        // Importante: usiamo window.location.origin per assicurarci che parta dalla radice del sito
+        const urlAssoluto = window.location.origin + "/" + pathFinale;
+        iframe.src = pathFinale; 
+        
+        // Debug per te: copia questo link nella console e vedi se si apre
+        console.log("Prova ad aprire questo link manualmente:", urlAssoluto);
+    }
+};
+
+window.chiudiReplay = function() {
+    const modal = document.getElementById('replayModal');
+    const iframe = document.getElementById('replayFrame');
+    const player = document.getElementById('bg-music-home');
+
+    // 1. Chiudiamo il modal visivamente
+    if (modal) {
+        modal.style.display = "none";
+    }
+
+    // 2. IMPORTANTISSIMO: Resettiamo l'iframe
+    // Questo serve a "uccidere" il processo del video replay, 
+    // altrimenti continueresti a sentire l'audio del set anche a modal chiuso.
+    if (iframe) {
+        iframe.src = ""; 
+    }
+
+    // 3. FARE RIPARTIRE LA MUSICA DELLA HOME
+    if (player) {
+        player.muted = false; // Togliamo il muto forzato
+        
+        // Facciamo ripartire l'MP3
+        player.play()
+            .then(() => { 
+                console.log("Musica Home ripresa con successo."); 
+            })
+            .catch(e => { 
+                // Il browser potrebbe bloccarlo se non c'è stata interazione,
+                // ma solitamente dopo un click su "Chiudi" funziona sempre.
+                console.log("Riproduzione automatica Home bloccata: ", e); 
+            });
+    }
+};
+// --- FUNZIONE APRI MATCH ---
+
+async function apriMatch(matchID, teamDidi, teamLu, scoreDidi, scoreLu) {
+    // --- STOP MUSICA HOME (Versione Rinforzata) ---
+    const player = document.getElementById('bg-music-home');
+    if (player) {
+        player.pause();
+        player.muted = true; // Forziamo il muto per sicurezza
+        console.log("Musica messa in pausa e mutata");
+    } else {
+        console.error("ERRORE: Elemento 'bg-music-home' non trovato!");
+    }
+    const modal = document.getElementById('replayModal');
+    const selector = document.getElementById('setSelector');
+    
+    // 1. Pulizia e Creazione Header
+    const vecchiaHeader = document.querySelector('.replay-mini-header');
+    if (vecchiaHeader) vecchiaHeader.remove();
+
+    const miniHeader = document.createElement('div');
+    miniHeader.className = 'replay-mini-header';
+    miniHeader.innerHTML = `
+        <div class="mini-team-info side-didi">
+            <div id="header-gifs-didi" class="mini-gifs-row"></div>
+            <span class="mini-name">${teamDidi}</span>
+        </div>
+        <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
+        <div class="mini-team-info side-lu">
+            <span class="mini-name">${teamLu}</span>
+            <div id="header-gifs-lu" class="mini-gifs-row"></div>
+        </div>
+    `;
+    modal.appendChild(miniHeader);
+
+    // Funzione interna per le GIF
+    const caricaGifsInHeader = (nomeTeam, containerId, databaseObj) => {
+        const container = document.getElementById(containerId);
+        if (!container || !databaseObj) return;
+        const teamData = Object.values(databaseObj).find(t => t.nome === nomeTeam);
+        if (teamData && teamData.pokemon) {
+            const listaPkm = Array.isArray(teamData.pokemon) ? teamData.pokemon : Object.values(teamData.pokemon);
+            listaPkm.forEach(p => {
+                if (p && p.nome) {
+                    const img = document.createElement('img');
+                    img.src = getGifUrl(p.nome); 
+                    img.className = 'header-gif'; 
+                    container.appendChild(img);
+                }
+            });
+        }
+    };
+
+    caricaGifsInHeader(teamDidi, 'header-gifs-didi', databaseDidi);
+    caricaGifsInHeader(teamLu, 'header-gifs-lu', databaseLu);
+
+    // 2. Caricamento Dati da Firebase
+    selector.innerHTML = '<span style="color: white;">Caricamento set...</span>';
+    modal.style.display = 'flex';
+    
+    try {
+        const snap = await db.ref(`matches/${matchID}`).once('value');
+        const matchData = snap.val();
+
+        if (matchData && matchData.replays) {
+            let buttonsHtml = '';
+            
+            // Ordiniamo i set (set1, set2...)
+            const setKeys = Object.keys(matchData.replays).sort((a, b) => {
+                return parseInt(a.replace('set', '')) - parseInt(b.replace('set', ''));
+            });
+
+            setKeys.forEach(key => {
+                const infoSet = matchData.replays[key];
+                const setNum = key.replace('set', ''); 
+                const urlFile = infoSet.url;           
+                const vincitore = infoSet.vincitore;   
+
+                if (urlFile) {
+                    // Usiamo window.caricaVideoDirect per sicurezza totale
+                    buttonsHtml += `
+                        <button class="btn-set vincitore-${vincitore}" 
+                                onclick="window.caricaVideoDirect('${urlFile}', this)">
+                            ${setNum}
+                        </button>`;
+                }
+            });
+
+            selector.innerHTML = buttonsHtml || '<span style="color: white;">Nessun replay salvato.</span>';
+            
+            // 3. Auto-selezione del primo set con un piccolo delay per garantire il rendering
+            setTimeout(() => {
+                const primoTasto = selector.querySelector('.btn-set');
+                if (primoTasto) primoTasto.click();
+            }, 100);
+
+        } else {
+            selector.innerHTML = '<span style="color: white;">Nessun video trovato.</span>';
+        }
+    } catch (error) {
+        console.error("Errore Firebase Replay:", error);
+        selector.innerHTML = '<span style="color: white;">Errore caricamento.</span>';
+    }
+}
+
+        async function caricaInfoAbilita(nomeAbilita, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeAbilita || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeAbilita.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/ability/${cleanName}`);                 
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoStrumento(nomeStrumento, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    if (!nomeStrumento || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeStrumento.toLowerCase().trim().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/item/${cleanName}`);
+        const data = await res.json();
+        const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        
+        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.dataset.loaded = "true";
+    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+}
+
+async function caricaInfoMossa(nomeMossa, elementoId) {
+    const tooltip = document.getElementById(elementoId);
+    
+    // Se la mossa è vuota o già caricata, non fare nulla
+    if (!nomeMossa || nomeMossa.trim() === "-" || tooltip.dataset.loaded === "true") return;
+
+    try {
+        const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
+        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // --- APPLICHIAMO IL COLORE AL TOOLTIP ---
+        const tipo = data.type.name; 
+        tooltip.className = `move-tooltip ${tipo}`; // Aggiunge la classe del tipo (es. "fire") al fumetto
+        // ----------------------------------------
+
+        const power = data.power || '--';
+        const accuracy = data.accuracy ? data.accuracy + '%' : '--';
+        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
+        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+
+        tooltip.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">
+                ${nomeMossa.toUpperCase()}
+            </div>
+            <b>POW:</b> ${power} &nbsp;&nbsp; <b>ACC:</b> ${accuracy}<br>
+            <div style="margin-top:6px; font-style:italic; font-size:0.7rem; line-height:1.2;">${effect}</div>
+        `;
+        
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Dati mossa non trovati.";
+        tooltip.style.background = "#33261c"; // Colore di fallback in caso di errore
+    }
+}
+async function caricaStats(pkmName, elementId) {
+    const tooltip = document.getElementById(elementId);
+    if (tooltip.dataset.loaded === "true") return;
+
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        
+        const statsMap = {
+            'hp': 'HP',
+            'attack': 'ATK',
+            'defense': 'DEF',
+            'special-attack': 'SPA',
+            'special-defense': 'SPD',
+            'speed': 'SPE'
+        };
+
+        let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">BASE STATS</div>`;
+        
+        data.stats.forEach(s => {
+            const val = s.base_stat;
+            // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
+            const width = Math.min((val / 150) * 100, 100); 
+            statsHTML += `
+                <div class="stat-row">
+                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="width: 25px; text-align:right;">${val}</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${width}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        tooltip.innerHTML = statsHTML;
+        tooltip.dataset.loaded = "true";
+    } catch (e) {
+        tooltip.innerText = "Not able to load stats.";
+    }
+}
+
+// Nuova funzione per scaricare i tipi
+// Aggiunto "direzione" ai parametri
+async function caricaTipi(pkmName, elementId, direzione) {
+    try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const data = await res.json();
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+        let effectiveness = {};
+        d_types.forEach(type => effectiveness[type] = 1);
+
+        await Promise.all(data.types.map(async (t) => {
+            const typeRes = await fetch(t.type.url);
+            const typeData = await typeRes.json();
+            const rel = typeData.damage_relations;
+
+            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
+            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
+            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
+        }));
+
+        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
+        for (let type in effectiveness) {
+            const mult = effectiveness[type];
+            if (mult === 4) result.x4.push(type);
+            else if (mult === 2) result.x2.push(type);
+            else if (mult === 0.5) result.x05.push(type);
+            else if (mult === 0.25) result.x025.push(type);
+            else if (mult === 0) result.x0.push(type);
+        }
+
+        const creaBadge = (lista) => {
+            return `<div class="eff-badge-container">
+                ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
+            </div>`;
+        };
+
+        let tooltipHTML = "";
+        if (result.x4.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-4">4x</span>${creaBadge(result.x4)}</div>`;
+        if (result.x2.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-2">2x</span>${creaBadge(result.x2)}</div>`;
+        if (result.x05.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${creaBadge(result.x05)}</div>`;
+        if (result.x025.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${creaBadge(result.x025)}</div>`;
+        if (result.x0.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-0">0x</span>${creaBadge(result.x0)}</div>`;
+
+        // --- APPLICAZIONE CLASSE DIREZIONE ---
+        container.innerHTML = data.types.map(t => 
+        `<div class="type-container">
+            <span class="type-badge ${t.type.name}">${t.type.name.toUpperCase()}</span>
+            <div class="type-effectiveness-tooltip ${direzione}">${tooltipHTML}</div>
+        </div>`
+    ).join('');
+
+    } catch (e) { console.error("Error:", e); }
+}    
+
+// Funzione globale per generare l'URL della GIF
+function getGifUrl(pName) {
+    if (!pName) return "";
+    // Showdown usa nomi puliti senza spazi e punteggiatura
+    const urlName = pName.toLowerCase()
+                         .replace(/\s+/g, '') // Rimuove gli spazi
+                         .replace(/[.'é’]/g, ''); // Rimuove punteggiatura
+    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+}
+
+// Funzione globale per generare l'HTML delle 6 mini-gif (usata nella lista match)
+function generaHtmlGifs(nomeTeam, database) {
+    // Troviamo l'oggetto team che ha il nome corrispondente
+    // Nota: 'database' ora è un array di oggetti provenienti da Firebase
+    const teamData = Object.values(database).find(t => 
+        t.nome && t.nome.trim().toLowerCase() === nomeTeam.toLowerCase()
+    );
+
+    if (!teamData || !teamData.pokemon) return "";
+
+    let htmlGifs = '<div class="mini-pkm-list">';
+    
+    // Iteriamo sull'array pokemon salvato su Firebase
+    teamData.pokemon.forEach(p => {
+        // Supponendo che 'p' sia il nome o un oggetto con una proprietà 'nome'
+        const pName = (typeof p === 'string') ? p : p.nome;
+        
+        if (pName) {
+            htmlGifs += `<img src="${getGifUrl(pName)}" class="mini-gif" title="${pName}">`;
+        }
+    });
+    
+    return htmlGifs + '</div>';
+}
+
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+
+function avviaMusicaHome() {
+    const player = document.getElementById('bg-music-home');
+    
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.3;
+        
+        // PRIMO COLPO: Tenta l'autoplay immediato
+        player.play()
+            .then(() => { console.log("Musica Home partita al volo!"); })
+            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+}
+
+// Avvia la logica appena la pagina è caricata
+document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+
+// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music-home');
+    if (player && player.paused) {
+        player.play();
+        console.log("Musica Home sbloccata dal click!");
+    }
+}, { once: true });
+
+const musicBtn = document.getElementById('music-toggle');
+const audio = document.getElementById('bg-music-home');
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music-home');
+    const btnIcon = document.getElementById('music-icon'); // L'elemento dell'icona (opzionale)
+
+    if (player.paused) {
+        player.play();
+        if (btnIcon) btnIcon.innerText = "🔊"; // Icona volume acceso
+    } else {
+        player.pause();
+        if (btnIcon) btnIcon.innerText = "🔇"; // Icona volume muto
+    }
+}
+
+
+async function apriAdminMatches() {
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
+    const inputUtente = prompt("Accesso protetto. Inserisci la password per gestire i match:");
+
+    if (inputUtente !== passwordSegreta) {
+        if (inputUtente !== null) alert("Password errata!");
+        return; // Esce dalla funzione e non apre nulla
+    }
+
+    // --- Se la password è corretta, procedi con il resto ---
+
+    // 2. Reset ID e Campi testo
+    document.getElementById('match-id-nascosto').value = "";
+    document.getElementById('match-date').value = "";
+    document.getElementById('match-score').value = "";
+    
+    // 3. Reset Variabile Vincitori e Tasti (S1-S5)
+    vincitoriSelezionati = {}; 
+    for (let i = 1; i <= 5; i++) {
+        const inp = document.getElementById(`replay-s${i}`);
+        if (inp) inp.value = "";
+        
+        const btnD = document.getElementById(`win-${i}-D`);
+        const btnL = document.getElementById(`win-${i}-L`);
+        if (btnD) btnD.classList.remove('active-D');
+        if (btnL) btnL.classList.remove('active-L');
+    }
+
+    // 4. Popola le select e ASPETTA
+    await popolaSelectTeam();
+
+    // 5. Mostra il pannello
+    document.getElementById('admin-matches-panel').style.display = 'block';
+}
+
+async function popolaSelectTeam(idDidi = null, idLu = null, catSelezionata = null) {
+    // 1. Riferimenti agli elementi
+    const s1 = document.getElementById('match-team1');
+    const s2 = document.getElementById('match-team2');
+    const sCat = document.getElementById('match-cat');
+
+    if (!s1 || !s2 || !sCat) return;
+
+    try {
+        // 2. Caricamento dati parallelo
+        const [snapDidi, snapLu, snapReg] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('regolamenti').once('value')
+        ]);
+
+        // 3. Popola Team Didi
+        let htmlDidi = '<option value="">Select Team Didi</option>';
+        snapDidi.forEach(child => {
+            const isSel = child.key === idDidi ? 'selected' : '';
+            htmlDidi += `<option value="${child.key}" ${isSel}>${child.val().nome}</option>`;
+        });
+        s1.innerHTML = htmlDidi;
+
+        // 4. Popola Team Lu
+        let htmlLu = '<option value="">Select Team Lu</option>';
+        snapLu.forEach(child => {
+            const isSel = child.key === idLu ? 'selected' : '';
+            htmlLu += `<option value="${child.key}" ${isSel}>${child.val().nome}</option>`;
+        });
+        s2.innerHTML = htmlLu;
+
+        // 5. Popola Categorie (Corretta per la tua struttura)
+        let htmlCat = '<option value="">Select Format</option>';
+        const regs = snapReg.val();
+        if (regs) {
+            // Cicliamo le chiavi (M01, VGC25, ecc.)
+            Object.keys(regs).forEach(key => {
+                const nomeCat = regs[key].categoria;
+                if (nomeCat) {
+                    const isSel = nomeCat === catSelezionata ? 'selected' : '';
+                    htmlCat += `<option value="${nomeCat}" ${isSel}>${nomeCat}</option>`;
+                }
+            });
+        }
+        sCat.innerHTML = htmlCat;
+
+        // Forza valore se necessario (per la modifica)
+        if (catSelezionata) sCat.value = catSelezionata;
+
+    } catch (error) {
+        console.error("Errore popolamento:", error);
+    }
+}
+
+function salvaMatchFirebase() {
+    const team1Select = document.getElementById('match-team1');
+    const team2Select = document.getElementById('match-team2');
+    
+    const team1Id = team1Select.value;
+    const team1Nome = team1Select.options[team1Select.selectedIndex].text;
+    
+    const team2Id = team2Select.value;
+    const team2Nome = team2Select.options[team2Select.selectedIndex].text;
+    
+    const score = document.getElementById('match-score').value;
+    const data = document.getElementById('match-date').value;
+    const categoria = document.getElementById('match-cat').value;
+
+    if (!team1Id || !team2Id || !score || !data) {
+        alert("Per favore compila tutti i campi!");
+        return;
+    }
+
+    // --- LOGICA REPLAY ---
+    const replays = {};
+    for (let i = 1; i <= 5; i++) {
+        const urlValue = document.getElementById(`replay-s${i}`).value.trim();
+        const vincitoreVal = vincitoriSelezionati[`set${i}`] || "";
+
+        // Salviamo il set solo se c'è almeno un replay o un vincitore selezionato
+        if (urlValue || vincitoreVal) {
+            replays[`set${i}`] = {
+                url: urlValue,       // Es: "match1_set1.html"
+                vincitore: vincitoreVal // Es: "D" o "L"
+            };
+        }
+    }
+
+    const nuovoMatch = {
+        team1Id: team1Id,
+        team1: team1Nome,
+        team2Id: team2Id,
+        team2: team2Nome,
+        score: score,
+        data: data,
+        categoria: categoria,
+        replays: replays // <--- AGGIUNTO QUI
+    };
+
+    db.ref('matches').push(nuovoMatch)
+        .then(() => {
+            alert("Match salvato con successo!");
+            document.getElementById('admin-matches-panel').style.display = 'none';
+            inizializzaPaginaArchivio();
+        })
+        .catch(err => console.error("Errore salvataggio:", err));
+}
+
+// 1. APRE L'EDITOR CARICANDO I DATI CORRENTI
+async function preparaModificaMatch(matchId) {
+    // 1. Controllo Password immediato
+    const passwordSegreta = "slavojzizek"; // La tua password
+    const inputUtente = prompt("Autorizzazione richiesta per modificare i dati del match:");
+
+    if (inputUtente !== passwordSegreta) {
+        if (inputUtente !== null) alert("Password errata! Modifica non consentita.");
+        return; 
+    }
+
+    // --- Se la password è corretta, procedi con il caricamento ---
+    try {
+        const snap = await db.ref(`matches/${matchId}`).once('value');
+        const m = snap.val();
+        if (!m) return;
+
+        // 1. Popoliamo i campi base
+        document.getElementById('edit-match-id').value = matchId;
+        document.getElementById('edit-match-date').value = m.data || "";
+        document.getElementById('edit-match-score').value = m.score || "";
+
+        // 2. Popoliamo le SELECT (Team e Categorie)
+        await popolaSelectModificaMatch(m.team1Id, m.team2Id, m.categoria);
+
+        // 3. Reset e Caricamento Replay/Vincitori
+        vincitoriSelezionati = {}; 
+        
+        for (let i = 1; i <= 5; i++) {
+            const inputReplay = document.getElementById(`edit-replay-s${i}`);
+            const btnD = document.getElementById(`edit-win-${i}-D`);
+            const btnL = document.getElementById(`edit-win-${i}-L`);
+            
+            if(inputReplay) inputReplay.value = "";
+            if(btnD) btnD.classList.remove('active-D');
+            if(btnL) btnL.classList.remove('active-L');
+
+            if (m.replays && m.replays[`set${i}`]) {
+                const infoSet = m.replays[`set${i}`];
+                if(inputReplay) inputReplay.value = infoSet.url || "";
+                
+                if (infoSet.vincitore) {
+                    selectWinner(i, infoSet.vincitore, true); 
+                }
+            }
+        }
+
+        // 4. Mostra il pannello
+        document.getElementById('admin-edit-match-panel').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        console.error("Errore caricamento match:", e);
+    }
+}
+
+// 2. FUNZIONE DI SUPPORTO PER LE SELECT NELL'EDITOR
+async function popolaSelectModificaMatch(id1, id2, catSelezionata) {
+    const s1 = document.getElementById('edit-match-team1');
+    const s2 = document.getElementById('edit-match-team2');
+    const sCat = document.getElementById('edit-match-cat');
+
+    try {
+        const [snapDidi, snapLu, snapReg] = await Promise.all([
+            db.ref('allenatore_didi/teams').once('value'),
+            db.ref('allenatore_lukiani/teams').once('value'),
+            db.ref('regolamenti').once('value')
+        ]);
+
+        // Popola Team Didi
+        let h1 = '<option value="">Select Team Didi</option>';
+        snapDidi.forEach(child => {
+            h1 += `<option value="${child.key}" ${child.key === id1 ? 'selected' : ''}>${child.val().nome}</option>`;
+        });
+        s1.innerHTML = h1;
+
+        // Popola Team Lu
+        let h2 = '<option value="">Select Team Lu</option>';
+        snapLu.forEach(child => {
+            h2 += `<option value="${child.key}" ${child.key === id2 ? 'selected' : ''}>${child.val().nome}</option>`;
+        });
+        s2.innerHTML = h2;
+
+        // Popola Categorie
+        let hCat = '<option value="">Select Format</option>';
+        snapReg.forEach(child => {
+            const nomeCat = child.val().categoria;
+            if (nomeCat) {
+                const isSelected = nomeCat === catSelezionata ? 'selected' : '';
+                hCat += `<option value="${nomeCat}" ${isSelected}>${nomeCat}</option>`;
+            }
+        });
+        sCat.innerHTML = hCat;
+
+    } catch (e) {
+        console.error("Errore popolamento select modifica:", e);
+    }
+}
+
+// 3. SALVA LE MODIFICHE
+async function confermaModificaMatch() {
+    const id = document.getElementById('edit-match-id').value;
+    const team1Sel = document.getElementById('edit-match-team1');
+    const team2Sel = document.getElementById('edit-match-team2');
+
+    // 1. Raccogliamo i dati dei replay dai campi con prefisso "edit-"
+    let replays = {};
+    for (let i = 1; i <= 5; i++) {
+        // Peschiamo l'input corretto del pannello modifica
+        const inputField = document.getElementById(`edit-replay-s${i}`);
+        const fileValue = inputField ? inputField.value.trim() : "";
+        
+        // Peschiamo il vincitore usando la chiave specifica della modifica
+        const vincitoreAssegnato = vincitoriSelezionati[`edit-set${i}`] || "";
+
+        // Salviamo il set solo se c'è un file o un vincitore
+        if (fileValue || vincitoreAssegnato) {
+            replays[`set${i}`] = {
+                url: fileValue,
+                vincitore: vincitoreAssegnato
+            };
+        }
+    }
+
+    // 2. Prepariamo l'oggetto per Firebase
+    const updateData = {
+        data: document.getElementById('edit-match-date').value,
+        score: document.getElementById('edit-match-score').value,
+        categoria: document.getElementById('edit-match-cat') ? document.getElementById('edit-match-cat').value : "",
+        team1Id: team1Sel.value,
+        team1: team1Sel.options[team1Sel.selectedIndex].text,
+        team2Id: team2Sel.value,
+        team2: team2Sel.options[team2Sel.selectedIndex].text,
+        replays: replays 
+    };
+
+    try {
+        await db.ref(`matches/${id}`).update(updateData);
+        alert("Match aggiornato con successo!");
+        
+        document.getElementById('admin-edit-match-panel').style.display = 'none';
+        
+        // Se hai la funzione di refresh usala, altrimenti tieni reload
+        if (typeof inizializzaPaginaArchivio === "function") {
+            inizializzaPaginaArchivio();
+        } else {
+            location.reload();
+        }
+    } catch (e) {
+        console.error("Errore durante l'aggiornamento:", e);
+        alert("Errore nell'aggiornamento");
+    }
+}
+
+// 4. ELIMINA IL MATCH
+async function eliminaMatch(matchId) {
+    // 1. Controllo Password
+    const passwordSegreta = "slavojzizek"; // La tua password
+    const inputUtente = prompt("AZIONE IRREVERSIBILE. Inserisci la password per eliminare il match:");
+
+    // Se l'utente annulla o sbaglia password, interrompiamo tutto
+    if (inputUtente === null) return; 
+    
+    if (inputUtente !== passwordSegreta) {
+        alert("Password errata! Eliminazione annullata.");
+        return;
+    }
+
+    // 2. Conferma finale (opzionale, ma consigliata per sicurezza)
+    if (confirm("Sei assolutamente sicuro? Le statistiche verranno ricalcolate al prossimo caricamento.")) {
+        try {
+            await db.ref(`matches/${matchId}`).remove();
+            location.reload();
+        } catch (e) {
+            console.error("Errore durante l'eliminazione:", e);
+            alert("Errore durante l'eliminazione dal database.");
+        }
+    }
+}
+
+let vincitoriSelezionati = {};
+
+function selectWinner(setNum, winner, isEdit = false) {
+    const prefix = isEdit ? "edit-" : "";
+    const key = isEdit ? `edit-set${setNum}` : `set${setNum}`;
+    
+    // Identifichiamo i bottoni
+    const btnD = document.getElementById(`${prefix}win-${setNum}-D`);
+    const btnL = document.getElementById(`${prefix}win-${setNum}-L`);
+    if (!btnD || !btnL) return;
+
+    // --- LOGICA DI DESELEZIONE (TOGGLE) ---
+    // Se il vincitore cliccato è già quello salvato, lo deselezioniamo
+    if (vincitoriSelezionati[key] === winner) {
+        delete vincitoriSelezionati[key]; // Rimuoviamo il dato
+        btnD.classList.remove('active-D');
+        btnL.classList.remove('active-L');
+        return; // Usciamo dalla funzione
+    }
+
+    // --- LOGICA DI SELEZIONE NORMALE ---
+    // Salviamo il nuovo vincitore
+    vincitoriSelezionati[key] = winner;
+
+    // Resettiamo entrambi i colori prima di applicare quello nuovo
+    btnD.classList.remove('active-D');
+    btnL.classList.remove('active-L');
+
+    // Applichiamo la classe al pulsante giusto
+    if (winner === 'D') {
+        btnD.classList.add('active-D');
+    } else if (winner === 'L') {
+        btnL.classList.add('active-L');
+    }
+}
+
+async function gestisciSalvataggioMatch() {
+    const matchId = document.getElementById('match-id-nascosto').value;
+    
+    // Raccogliamo i dati dei replay
+    let replays = {};
+    for (let i = 1; i <= 5; i++) {
+        const file = document.getElementById(`replay-s${i}`).value;
+        if (file) {
+            replays[`set${i}`] = {
+                url: file,
+                vincitore: vincitoriSelezionati[i] || "" // 'D' o 'L'
+            };
+        }
+    }
+
+    const dataMatch = {
+        data: document.getElementById('match-date').value,
+        score: document.getElementById('match-score').value,
+        categoria: document.getElementById('match-cat').value,
+        team1: document.getElementById('match-team1').value, // Nome o ID
+        team2: document.getElementById('match-team2').value,
+        replays: replays // Aggiungiamo l'oggetto replays
+    };
+
+    try {
+        if (matchId) {
+            await db.ref(`matches/${matchId}`).update(dataMatch);
+        } else {
+            await db.ref('matches').push(dataMatch);
+        }
+        alert("Match salvato con successo!");
+        chiudiPannelloMatch();
+    } catch (e) { console.error(e); }
+}
+
+async function caricaVideoDirect(matchID, setNum, vincitore, btn) {
+    // 1. Leggi il match da Firebase
+    const snap = await db.ref(`matches/${matchID}`).once('value');
+    const m = snap.val();
+    
+    if (m && m.replays && m.replays[`set${setNum}`]) {
+        const nomeFile = m.replays[`set${setNum}`].url;
+        // 2. Carica il file dalla tua cartella replays
+        document.getElementById('videoFrame').src = `replays/${nomeFile}`;
+    }
+}
+
+
+    </script>
+</body>
+</html>
