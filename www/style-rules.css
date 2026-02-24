@@ -460,3 +460,37 @@ h1 {
     box-shadow: 0 0 15px rgba(227, 73, 70, 0.4) !important;
     border: #000 !important;
 }
+
+
+/* --- VARIABILI AGGIORNATE --- */
+:root {
+    --didi-color: #31c489;
+    --didi-borders: #025534;
+    --didi-light: #7fe9bf;
+    --lu-color: #8e44ad;
+    --lu-borders: #6c026c;
+    --lu-light: #db9cf9;  
+    --bg-body: #161616;
+    --card-bg: #ffffff;
+    --text-main: #000000;
+    --text-dim: #1a1a1a;
+    --ticker-bg: #161616;
+    --ticker-text: #f1c40f;
+    --bg-body-index: #dfdfdf;   
+    --bg-gradient-end-index: #b2b2b2;
+    --card-bg-matches: #cc3d3d;
+    --borders-matches: #970e0e;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, var(--bg-body-index) -50%, var(--bg-gradient-end-index) 100%) !important;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+

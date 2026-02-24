@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width">
     <title>Poké-Tournament Didi Luca</title>
-    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,7 +21,6 @@
 
     <div id="loading-screen">
     <div class="pokeball-loader"></div>
-    <p>Please wait</p>
 </div>
 
     <div class="news-ticker">
@@ -30,40 +29,12 @@
         </div>
     </div>
 
-<div class="ads-sidebar">
-        <div class="ads-track">
-            <img src="../immagini/1.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/2.jpeg" alt="Ad 2" class="ad-banner">
-            <img src="../immagini/3.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/4.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/5.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/6.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/7.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/8.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/9.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/10.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/11.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/12.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/13.jpeg" alt="Ad 3" class="ad-banner">
-            <img src="../immagini/1.jpeg" alt="Ad 1" class="ad-banner">
-            <img src="../immagini/2.jpeg" alt="Ad 2" class="ad-banner">
-        </div>
-    </div>
-
     <div class="main-wrapper">
 
     <div id="leaderboardContainer" class="cards-stack"></div>
-
         <a href="matches.html" class="btn-global-archive">MATCH ARCHIVE</a>
         <a href="rules.html" class="btn-global-rules">FORMATS</a>
-        <div class="chart-container-right">
-        <canvas id="progressionChart"></canvas>
     </div>
-
-        </div>
-
-</div>
-
 
 <script>
 
@@ -203,7 +174,6 @@ async function caricaHome() {
                     pokemonHtml += `
                         <div class="pkm-slot tooltip-${rankClass}">
                             <img src="${getGifUrl(p.nome)}" class="pkm-gif">
-                            <img src="${itemUrl}" class="hold-item-icon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             
                             <div class="home-pkm-tooltip">
                                 <div class="tooltip-header">${p.nome.toUpperCase()}</div>
@@ -227,7 +197,7 @@ async function caricaHome() {
                         <div class="card-inner">
                             <div class="left-section">
                                 <div class="player-avatar">
-                                    <img src="${g.isLu ? '../immagini/lance.png' : '../immagini/sage.png'}">
+                                    <img src="${g.isLu ? 'immagini/lance.png' : 'immagini/sage.png'}">
                                 </div>
                                 <div class="player-info">
                                     <h2>${g.nome}</h2>

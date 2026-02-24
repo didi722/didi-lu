@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Lu Personal</title>
-        <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+        <link rel="icon" type="image/png" href="immagini/magikarp.png">
         <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style-page-lu.css">
         <link rel="stylesheet" href="style-box-lu.css">
@@ -135,7 +135,7 @@
             <header class="profile-header">
                 <div class="hof-container">
                     <div class="trainer-node">
-                        <img src="../immagini/lance.png" alt="Lu">
+                        <img src="immagini/lance.png" alt="Lu">
                     </div>
                     <div id="pokemon-orbit" class="orbit">
                         <div class="pkm-slot slot-0"></div>
@@ -830,10 +830,10 @@ function generaHtmlInterno(obj, pref, tipoModale = "BASE") {
     if (tipoModale === "GENERALE" && window.lastStatsRecord) {
         const s = window.lastStatsRecord;
         const soglie = {
-            vinte: [{n:15, e:"../immagini/sinnoh-gold.png"}, {n:10, e:"../immagini/sinnoh-silver.png"}, {n:5, e:"../immagini/sinnoh-bronze.png"}, {n:0, e:"../immagini/sinnoh-ghost.png"}],
-            primo: [{n:15, e:"../immagini/hoenn-gold.png"}, {n:10, e:"../immagini/hoenn-silver.png"}, {n:5, e:"../immagini/hoenn-bronze.png"}, {n:0, e:"../immagini/hoenn-ghost.png"}],
-            clean: [{n:10, e:"../immagini/champion-gold.png"}, {n:6, e:"../immagini/champion-silver.png"}, {n:3, e:"../immagini/champion-bronze.png"}, {n:0, e:"../immagini/champion-ghost.png"}],
-            master: [{n:15, e:"../immagini/galar-gold.png"}, {n:10, e:"../immagini/galar-silver.png"}, {n:5, e:"../immagini/galar-bronze.png"}, {n:0, e:"../immagini/galar-ghost.png"}]
+            vinte: [{n:15, e:"immagini/sinnoh-gold.png"}, {n:10, e:"immagini/sinnoh-silver.png"}, {n:5, e:"immagini/sinnoh-bronze.png"}, {n:0, e:"immagini/sinnoh-ghost.png"}],
+            primo: [{n:15, e:"immagini/hoenn-gold.png"}, {n:10, e:"immagini/hoenn-silver.png"}, {n:5, e:"immagini/hoenn-bronze.png"}, {n:0, e:"immagini/hoenn-ghost.png"}],
+            clean: [{n:10, e:"immagini/champion-gold.png"}, {n:6, e:"immagini/champion-silver.png"}, {n:3, e:"immagini/champion-bronze.png"}, {n:0, e:"immagini/champion-ghost.png"}],
+            master: [{n:15, e:"immagini/galar-gold.png"}, {n:10, e:"immagini/galar-silver.png"}, {n:5, e:"immagini/galar-bronze.png"}, {n:0, e:"immagini/galar-ghost.png"}]
         };
 
         const renderProgressRow = (label, current, max, listaBadge) => {
@@ -1594,9 +1594,9 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
 
         // --- 3. INSERIMENTO IMMAGINI PERSONALIZZATE ---
         const catImgMap = { 
-            physical: '../immagini/move-physical.png', 
-            special: '../immagini/move-special.png', 
-            status: '../immagini/move-status.png' 
+            physical: 'immagini/move-physical.png', 
+            special: 'immagini/move-special.png', 
+            status: 'immagini/move-status.png' 
         };
         
         const catContainer = document.getElementById(`m-cat-${index}`);
@@ -1898,38 +1898,38 @@ function mostraBadge(vinteObj, cleanObj, primoObj, masterObj) {
     if (fondatori.includes(chiSono)) {
         htmlFondatore = `
             <span class="badge-item badge-fondatore" data-tooltip="League Founder">
-                <img src="../immagini/paldea.png" class="badge-icon" alt="Founder Badge">
+                <img src="immagini/paldea.png" class="badge-icon" alt="Founder Badge">
             </span>`;
     }
     
     
     // 1. Definizioni Badge (n: soglia, e: immagine, t: titolo)
     const bVinte = [ 
-        {n: 15, e: "../immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"}, 
-        {n: 10, e: "../immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"}, 
-        {n: 5, e: "../immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}, 
-        {n: 0, e: "../immagini/sinnoh-ghost.png", t:"Win 5 matches in a row to unlock this badge"} 
+        {n: 15, e: "immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"}, 
+        {n: 10, e: "immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"}, 
+        {n: 5, e: "immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}, 
+        {n: 0, e: "immagini/sinnoh-ghost.png", t:"Win 5 matches in a row to unlock this badge"} 
     ];
 
     const bMaster = [
-        {n: 15, e: "../immagini/galar-gold.png", t:"Chameleon: 3 wins 15+ formats"},
-        {n: 10, e: "../immagini/galar-silver.png", t:"Multitasking: 3 wins in 10 formats"},
-        {n: 5, e: "../immagini/galar-bronze.png", t:"Eclectic: 3 wins in 5 formats"},
-        {n: 0, e: "../immagini/galar-ghost.png", t:"Win 3 matches in 5 different formats to unlock"}
+        {n: 15, e: "immagini/galar-gold.png", t:"Chameleon: 3 wins 15+ formats"},
+        {n: 10, e: "immagini/galar-silver.png", t:"Multitasking: 3 wins in 10 formats"},
+        {n: 5, e: "immagini/galar-bronze.png", t:"Eclectic: 3 wins in 5 formats"},
+        {n: 0, e: "immagini/galar-ghost.png", t:"Win 3 matches in 5 different formats to unlock"}
     ];
 
     const bPrimo = [ 
-        {n: 15, e: "../immagini/hoenn-gold.png", t:"King: 15+ rounds leader"}, 
-        {n: 10, e: "../immagini/hoenn-silver.png", t:"Leader: 10 rounds leader"}, 
-        {n: 5, e: "../immagini/hoenn-bronze.png", t:"On Top: 5 rounds leader"}, 
-        {n: 0, e: "../immagini/hoenn-ghost.png", t:"Lead 5 rounds in a row to unlock this badge"} 
+        {n: 15, e: "immagini/hoenn-gold.png", t:"King: 15+ rounds leader"}, 
+        {n: 10, e: "immagini/hoenn-silver.png", t:"Leader: 10 rounds leader"}, 
+        {n: 5, e: "immagini/hoenn-bronze.png", t:"On Top: 5 rounds leader"}, 
+        {n: 0, e: "immagini/hoenn-ghost.png", t:"Lead 5 rounds in a row to unlock this badge"} 
     ];
 
     const bClean = [ 
-        {n: 10, e: "../immagini/champion-gold.png", t:"Untouchable: 10+ clean sheet"}, 
-        {n: 6, e: "../immagini/champion-silver.png", t:"Wall: 6 clean sheet"}, 
-        {n: 3, e: "../immagini/champion-bronze.png", t:"Shield: 3 clean sheet"}, 
-        {n: 0, e: "../immagini/champion-ghost.png", t:"Clean 3 matches in a row to unlock this badge"} 
+        {n: 10, e: "immagini/champion-gold.png", t:"Untouchable: 10+ clean sheet"}, 
+        {n: 6, e: "immagini/champion-silver.png", t:"Wall: 6 clean sheet"}, 
+        {n: 3, e: "immagini/champion-bronze.png", t:"Shield: 3 clean sheet"}, 
+        {n: 0, e: "immagini/champion-ghost.png", t:"Clean 3 matches in a row to unlock this badge"} 
     ];
   
 

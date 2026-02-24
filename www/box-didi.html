@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Box Didi</title>
-    <link rel="icon" type="image/png" href="../immagini/magikarp.png">
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-box-didi.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -14,7 +14,6 @@
 
     <div id="loading-screen">
     <div class="pokeball-loader"></div>
-    <p>Please wait</p>
 </div>
 
 <audio id="bg-music" loop></audio>
@@ -61,9 +60,8 @@
         <div class="loading">Loading data from Pokédex...</div>
     </div>
 
-    <div id="teamModal" class="modal" onclick="chiudiTeamModal()">
+    <div id="teamModal" class="modal">
     <div class="modal-content"> 
-        <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
         <div id="modalBody"></div>
     </div>
 </div>
@@ -87,24 +85,11 @@
     <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
 </div>
 
-<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Format">
+<button onclick="document.getElementById('admin-panel').style.display = 'block'" class="btn-floating-admin" title="Add Format">
     <span class="plus-icon">+</span>
 </button>
 
     <script>
-
-        function apriAdminProtetto() {
-    const passwordSegreta = "7224353-Rr"; // <-- Scegli la tua password qui
-    const inputUtente = prompt("Inserisci la password amministratore per accedere all'Importer:");
-
-    if (inputUtente === passwordSegreta) {
-        document.getElementById('admin-panel').style.display = 'block';
-    } else if (inputUtente === null) {
-        // L'utente ha cliccato "Annulla", non facciamo nulla
-    } else {
-        alert("Password errata. Accesso negato.");
-    }
-}
 
 // 1. Configurazione Firebase (Assicurati che sia corretta)
 const firebaseConfig = {
@@ -129,7 +114,7 @@ function ascoltaMusicaFirebase() {
     const icon = document.getElementById('music-icon');
     const btn = document.getElementById('music-control');
 
-    // Ascolta il database (allenatore_didi)
+    // Ascolta il database (allenatore_lukiani)
     db.ref('allenatore_didi').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
@@ -255,12 +240,12 @@ document.addEventListener('DOMContentLoaded', inizializzaPaginaBox);
 
 async function scaricaDati() {
     try {
-        // Puntiamo al nodo di Didi
+        // Usiamo .on per i team per avere aggiornamenti in tempo reale
         db.ref('allenatore_didi/teams').on('value', async (snapshot) => {
             const dataTeams = snapshot.val();
             
             if (dataTeams) {
-                // 1. Creiamo l'array temporaneo resettando le statistiche
+                // 1. CREIAMO l'array da zero ogni volta (evita accumuli)
                 let tempTeams = Object.keys(dataTeams).map(key => {
                     const team = dataTeams[key];
                     let nomiPokemon = "";
@@ -273,6 +258,7 @@ async function scaricaDati() {
                     return {
                         ...team,
                         id: key,
+                        // Reset forzato a zero
                         vittorie: 0,
                         sconfitte: 0,
                         puntiFatti: 0,
@@ -282,17 +268,17 @@ async function scaricaDati() {
                     };
                 });
 
-                // 2. Recupero Match per ricalcolo
+                // 2. RECUPERO MATCH (usiamo .once per evitare loop infiniti qui dentro)
                 const snapMatches = await db.ref('matches').once('value');
                 const dataMatches = snapMatches.val();
 
                 if (dataMatches) {
                     Object.values(dataMatches).forEach(m => {
                         const score = m.score ? m.score.split('-').map(Number) : [0, 0];
-                        const s1 = score[0]; // Score Didi
-                        const s2 = score[1]; // Score Lu
+                        const s1 = score[0]; // Didi
+                        const s2 = score[1]; // Lu
 
-                        // Cerchiamo il team di Didi (m.team1Id o m.team1)
+                        // Cerchiamo il team di Lu nell'array temporaneo appena creato
                         const teamDidi = tempTeams.find(t => t.id === m.team1Id || t.nome === m.team1);
 
                         if (teamDidi) {
@@ -302,13 +288,11 @@ async function scaricaDati() {
                             let pDidi = 0;
                             if (s1 > s2) { // Vittoria Didi
                                 teamDidi.vittorie += 1;
-                                // Logica: 5-0 -> 3pt | 4-1 -> 2pt | 3-2 -> 2pt
                                 if (s1 === 5 && s2 === 0) pDidi = 3;
                                 else if (s1 === 4 && s2 === 1) pDidi = 2;
                                 else if (s1 === 3 && s2 === 2) pDidi = 2;
                             } else if (s2 > s1) { // Sconfitta Didi
                                 teamDidi.sconfitte += 1;
-                                // Logica: se perdi 2-3 prendi comunque 1pt
                                 if (s2 === 3 && s1 === 2) pDidi = 1;
                             }
                             teamDidi.puntiFatti += pDidi;
@@ -316,7 +300,7 @@ async function scaricaDati() {
                     });
                 }
 
-                // 3. Aggiorniamo la variabile globale
+                // 3. SOLO ORA aggiorniamo la variabile globale e i filtri
                 tuttiITeam = tempTeams;
                 applicaFiltri(); 
                 
@@ -328,7 +312,7 @@ async function scaricaDati() {
             }
         });
     } catch (error) {
-        console.error("Errore scaricamento team Didi:", error);
+        console.error("Errore scaricamento team:", error);
     }
 }
 
@@ -459,30 +443,21 @@ function renderizza(lista) {
                     }, 50);
 
                     // CHIAMATA SICURA: Passiamo l'ID del team e la posizione del pokemon (0, 1, 2...)
-                    return `
-                        <div class="pkm-box" id="${pkmBoxId}" 
-                             onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
-                            <div class="pkm-sprite-container">
-                                <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
-                            </div>
-                            <div class="pkm-info">
-                                <span class="pkm-name">${p.nome}</span>
-                                <div class="item-container">
-                                    <img src="${itemSprite}" class="item-icon" title="${p.strumento}" onerror="this.style.display='none'">
-                                    <span class="pkm-item">${p.strumento}</span>
-                                </div>
-                            </div>
-
-                            <div class="pkm-hover-card ${sideClass}">
-                                <strong>${p.nome}</strong>
-                                <p>✨ ${p.abilita}</p>
-                                <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs}</p>
-                                <div class="hover-moves">
-                                    ${p.mosse.map(m => `<span>${m}</span>`).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    // Nella tua funzione renderizza, sostituisci il return del pkm-box con questo più pulito:
+return `
+    <div class="pkm-box" id="${pkmBoxId}" 
+         onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
+        <div class="pkm-sprite-container">
+            <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+        </div>
+        <div class="pkm-info">
+            <span class="pkm-name">${p.nome}</span>
+            <div class="item-container">
+                <img src="${itemSprite}" class="item-icon" title="${p.strumento}" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </div>
+`;
                 }).join('')}
             </div>
         </div>
@@ -560,104 +535,79 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
 async function apriDettagli(id) {
     const team = tuttiITeam.find(t => t.id === id);
-    if (!team) {
-        console.error("Team non trovato per l'ID:", id);
-        return;
-    }
+    if (!team) return;
 
     const modal = document.getElementById('teamModal');
     const content = document.getElementById('modalBody'); 
 
-    const sV = Number(team.setVinti) || 0;
-    const sP = Number(team.setPersi) || 0;
-    const w = team.vittorie || 0;
-    const l = team.sconfitte || 0;
-    const pts = team.puntiFatti || 0;
-
-    const totSet = sV + sP;
-    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
-
     content.innerHTML = `
-        <div class="modal-header-container" style="position: relative;">
+        <div class="modal-nav">
+            <button class="back-arrow" onclick="chiudiModale()">←</button>
             <h2>${team.nome}</h2>
-            <div class="team-score-banner">
-                <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
-                <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
-                <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
-                <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
-            </div>
-            <div class="admin-modal-actions">
-                <button onclick="event.stopPropagation(); event.preventDefault(); caricaTeamPerModifica('${team.id}')" class="btn-admin-edit">📝</button>
-                <button onclick="event.stopPropagation(); event.preventDefault(); cancellaTeamDaFirebase('${team.id}')" class="btn-admin-del">🗑️</button>
-            </div>
         </div>
 
-        <div class="modal-grid">
+        <div class="admin-modal-actions" style="margin-bottom: 20px;">
+            <button onclick="caricaTeamPerModifica('${team.id}')" class="btn-admin-edit">📝 Edit</button>
+            <button onclick="cancellaTeamDaFirebase('${team.id}')" class="btn-admin-del">🗑️ Delete</button>
+        </div>
+
+        <div class="modal-grid-vertical">
             ${team.pokemon.map((p, pIndex) => {
                 const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                 const mIdPrefix = `types-${pIndex}`;
-                const statsId = `stats-${pIndex}`;
-                const abiId = `abi-${pIndex}`;
-                const itemId = `item-${pIndex}`;
-                const direzioneTipi = pIndex < 3 ? 'v-down' : '';
-                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
-                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                caricaTipi(pkmNameUrl, mIdPrefix); 
                 
                 return `
-                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
-                     onmouseenter="this.style.zIndex='999'"
-                     onmouseleave="this.style.zIndex='${10 - pIndex}'">
-                    <div class="modal-left-column">
-                        <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
-                    </div>
-                    <div class="modal-pkm-info">
-                        <div class="info-container" style="position: relative; display: inline-block;">
-                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
-                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
-                        </div>
-                        <div class="info-container" style="position: relative;">
-                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
-                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
-                        </div>
-                        <div class="info-container" style="position: relative;">
-                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
-                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
-                                <span>${p.strumento}</span>
-                            </div>
-                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
-                        </div>
-                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
-                        <div class="modal-moves">
-                            ${p.mosse.map((m, mIndex) => {
-                                const mId = `mossa-${pIndex}-${mIndex}`;
-                                return `
-                                <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
-                                    ${m}
-                                    <div id="${mId}" class="move-tooltip">Loading...</div>
-                                </span>`;
-                            }).join('')}
-                        </div>
-                    </div>
+                <div class="modal-pkm-row">
+    <div class="pkm-left">
+        <div id="${mIdPrefix}" class="modal-types-mini"></div>
+        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite-clean">
+    </div>
+    
+    <div class="pkm-right">
+        <div class="pkm-title-row">
+            <strong>${p.nome}</strong>
+        </div>
+        
+        <div class="modal-item-stacked">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" onerror="this.style.display='none'">
+            <span>${p.strumento}</span>
+        </div>
+        
+        <p class="pkm-ability-clean">✨ ${p.abilita}</p>
+        
+        <div class="modal-moves-clean">
+            ${p.mosse.map(m => `<span class="move-tag">${m}</span>`).join('')}
+        </div>
+    </div>
                 </div>`;
             }).join('')}
         </div>
     `;
-    modal.style.display = "flex";
+    modal.style.display = "block"; // Cambiato da flex a block per lo scroll
+    document.body.style.overflow = "hidden"; // Blocca lo scroll della pagina sotto
+}
+
+function chiudiModale() {
+    document.getElementById('teamModal').style.display = "none";
+    document.body.style.overflow = "auto"; // Riattiva lo scroll della pagina
 }
 
 // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
 document.addEventListener('keydown', (e) => {
     const modal = document.getElementById('teamModal');
-    if (modal.style.display === "flex") {
+    // Usiamo getComputedStyle così legge correttamente lo stato anche se impostato da CSS
+    if (window.getComputedStyle(modal).display !== "none") {
+        
         const currentIndex = tuttiITeam.findIndex(t => t.id === window.currentTeamId);
+
         if (e.key === "ArrowLeft" && currentIndex > 0) {
             apriDettagli(tuttiITeam[currentIndex - 1].id);
         } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
             apriDettagli(tuttiITeam[currentIndex + 1].id);
         } else if (e.key === "Escape") {
-            modal.style.display = "none";
+            chiudiModale(); // Usa sempre la funzione centralizzata!
         }
     }
 });
@@ -705,64 +655,23 @@ async function caricaStats(pkmName, elementId) {
 
 // Nuova funzione per scaricare i tipi
 // Aggiunto "direzione" ai parametri
-async function caricaTipi(pkmName, elementId, direzione) {
+async function caricaTipi(pkmName, elementId) {
     try {
+        // Facciamo solo la chiamata base per i tipi
         const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
         const data = await res.json();
         const container = document.getElementById(elementId);
         if (!container) return;
 
-        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
-        let effectiveness = {};
-        d_types.forEach(type => effectiveness[type] = 1);
-
-        await Promise.all(data.types.map(async (t) => {
-            const typeRes = await fetch(t.type.url);
-            const typeData = await typeRes.json();
-            const rel = typeData.damage_relations;
-
-            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
-            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
-            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
-        }));
-
-        let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
-        for (let type in effectiveness) {
-            const mult = effectiveness[type];
-            if (mult === 4) result.x4.push(type);
-            else if (mult === 2) result.x2.push(type);
-            else if (mult === 0.5) result.x05.push(type);
-            else if (mult === 0.25) result.x025.push(type);
-            else if (mult === 0) result.x0.push(type);
-        }
-
-        const creaBadge = (lista) => {
-            return `<div class="eff-badge-container">
-                ${lista.map(t => `<span class="mini-type-badge ${t}">${t}</span>`).join('')}
-            </div>`;
-        };
-
-        let tooltipHTML = "";
-        if (result.x4.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-4">4x</span>${creaBadge(result.x4)}</div>`;
-        if (result.x2.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-2">2x</span>${creaBadge(result.x2)}</div>`;
-        if (result.x05.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${creaBadge(result.x05)}</div>`;
-        if (result.x025.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${creaBadge(result.x025)}</div>`;
-        if (result.x0.length > 0) tooltipHTML += `<div class="eff-section"><span class="eff-title v-0">0x</span>${creaBadge(result.x0)}</div>`;
-
-        // --- APPLICAZIONE CLASSE DIREZIONE ---
+        // Renderizziamo SOLO i badge dei tipi, senza tooltip o calcoli complessi
         container.innerHTML = data.types.map(t => 
-        `<div class="type-container">
-            <span class="type-badge ${t.type.name}">${t.type.name.toUpperCase()}</span>
-            <div class="type-effectiveness-tooltip ${direzione}">${tooltipHTML}</div>
-        </div>`
-    ).join('');
+            `<span class="type-badge-mini ${t.type.name}">${t.type.name.toUpperCase()}</span>`
+        ).join('');
 
-    } catch (e) { console.error("Error:", e); }
-}    
-
-function chiudiModale() {
-        document.getElementById('teamModal').style.display = "none";
+    } catch (e) { 
+        console.error("Errore nel caricamento tipi:", e); 
     }
+}
 
     
 function applicaFiltri() {
@@ -842,108 +751,7 @@ function applicaFiltri() {
 }
 
 
-function apriPkmDettaglio(pokemonData, pkmNameUrl) {
-    const modal = document.getElementById('pkmDetailModal');
-    const content = document.getElementById('pkmModalBody');
-    if (!modal || !content) return;
 
-    content.innerHTML = `
-        <div class="pkm-modal-grid">
-            <div class="area-header">
-                <div id="single-types" class="types-centered"></div>
-                <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
-                <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
-            </div>
-            <div class="area-weakness pkm-panel">
-                <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
-                <div id="static-weaknesses" class="weakness-content">Loading...</div>
-            </div>
-            <div class="area-info-strips">
-                <div class="pkm-panel info-box-compact">
-                    <div class="info-content-clean">
-                        <strong class="info-name">${pokemonData.abilita}</strong>
-                        <div id="single-abi" class="info-desc-tiny"></div>
-                    </div>
-                </div>
-                <div class="pkm-panel info-box-compact">
-                    <div class="info-content-clean">
-                        <div class="item-title-row-new">
-                            <strong class="info-name">${pokemonData.strumento}</strong>
-                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${pokemonData.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" class="item-icon-right" onerror="this.style.display='none'">
-                        </div>
-                        <div id="single-item" class="info-desc-tiny"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="area-stats pkm-panel">
-                <div id="single-stats"></div>
-                <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs}</div>
-            </div>
-            <div class="area-moves pkm-panel">
-                <h4 class="panel-title">MOVESET</h4>
-                <div class="moves-list-compact">
-                    ${pokemonData.mosse.map((m, i) => {
-                        if(!m || m === "-") return '';
-                        return `
-                        <div class="move-row-mini" id="move-card-${i}">
-                            <div class="move-left-part">
-                                <span id="m-cat-${i}" class="move-cat-icon"></span>
-                                <span class="move-name-mini">${m}</span>
-                            </div>
-                            <div id="sm-${i}" class="move-desc-inline"></div>
-                            <div class="move-right-part">
-                                <span class="m-val">P: <b id="m-pow-${i}">--</b></span>
-                                <span class="m-val">A: <b id="m-acc-${i}">--</b></span>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = "flex";
-
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('pkm-hero-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
-            caricaStats(pkmNameUrl, 'single-stats');
-            caricaTipi(pkmNameUrl, 'single-types', '');
-        });
-
-    pokemonData.mosse.forEach((m, i) => {
-        if(m && m !== "-") {
-            const mName = m.toLowerCase().replace(/ /g, '-');
-            fetch(`https://pokeapi.co/api/v2/move/${mName}`)
-                .then(res => res.json())
-                .then(moveData => {
-                    const entry = moveData.flavor_text_entries.find(e => e.language.name === 'en');
-                    if (entry) {
-                        const el = document.getElementById(`sm-${i}`);
-                        if(el) el.innerText = entry.flavor_text.replace(/[\n\f]/g, ' ').trim();
-                    }
-                }).catch(() => {});
-            aggiornaColoreMossa(m, `move-card-${i}`, i);
-        }
-    });
-
-    caricaDebolezzeStatiche(pkmNameUrl, 'static-weaknesses');
-    caricaInfoAbilita(pokemonData.abilita, 'single-abi');
-    caricaInfoStrumento(pokemonData.strumento, 'single-item');
-}
-
-function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
-    // Cerchiamo il team nell'array globale usando l'ID di Firebase
-    const team = tuttiITeam.find(t => t.id === teamId);
-    
-    if (team && team.pokemon[pkmIndex]) {
-        // Se lo troviamo, chiamiamo la tua funzione originale con i dati corretti
-        apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
-    } else {
-        console.error("Errore: Impossibile trovare il Pokémon per il team", teamId);
-    }
-}
 
 modal.style.display = "flex";
 
@@ -1007,9 +815,9 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
 
         // --- 3. INSERIMENTO IMMAGINI PERSONALIZZATE ---
         const catImgMap = { 
-            physical: '../immagini/move-physical.png', 
-            special: '../immagini/move-special.png', 
-            status: '../immagini/move-status.png' 
+            physical: 'immagini/move-physical.png', 
+            special: 'immagini/move-special.png', 
+            status: 'immagini/move-status.png' 
         };
         
         const catContainer = document.getElementById(`m-cat-${index}`);
@@ -1264,32 +1072,18 @@ function parseShowdown(text) {
 // Funzione per ELIMINARE
 // CANCELLA uno specifico team
 function cancellaTeamDaFirebase(teamId) {
-    if (!teamId) return alert("ID team non trovato");
 
-    // 1. Controllo Password
-    const passwordSegreta = "7224353-Rr"; // Sostituisci con la tua
-    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team dall'archivio.\nInserisci la password per confermare:");
-
-    if (inputUtente === null) return; // L'utente ha premuto annulla
-
-    if (inputUtente !== passwordSegreta) {
-        alert("Password errata! Eliminazione annullata.");
-        return;
-    }
-
-    // 2. Conferma finale
-    if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
-        // Nota: Assicurati che il percorso (allenatore_didi o allenatore_lukiani) 
-        // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
+    // 2. Conferma definitiva
+    if (confirm("Sei assolutamente sicuro? Il team verrà rimosso permanentemente dal database di Didi.")) {
         db.ref(`allenatore_didi/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato correttamente!");
+                alert("Team eliminato con successo!");
                 chiudiTeamModal();
-                // Ricarichiamo i dati per aggiornare la griglia dei team
+                // Ricarica la griglia dei team (se la funzione si chiama caricaBox)
                 if (typeof caricaBox === "function") caricaBox();
             })
             .catch(e => {
-                console.error("Errore durante l'eliminazione del team:", e);
+                console.error("Errore eliminazione team Didi:", e);
                 alert("Errore tecnico durante l'eliminazione.");
             });
     }
@@ -1297,28 +1091,8 @@ function cancellaTeamDaFirebase(teamId) {
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
-    // 1. Controllo Password (o variabile di sessione)
-    const passwordSegreta = "7224353-Rr"; 
-    
-    // Se vuoi usare la variabile globale isAdminAutenticato definita in precedenza:
-    if (typeof isAdminAutenticato !== 'undefined' && !isAdminAutenticato) {
-        const inputUtente = prompt("Inserisci la password per modificare il Team:");
-        if (inputUtente === passwordSegreta) {
-            isAdminAutenticato = true;
-        } else {
-            if (inputUtente !== null) alert("Password errata!");
-            return;
-        }
-    } else if (typeof isAdminAutenticato === 'undefined') {
-        // Fallback se non usi la variabile globale
-        const inputUtente = prompt("Inserisci la password per modificare il Team:");
-        if (inputUtente !== passwordSegreta) {
-            if (inputUtente !== null) alert("Password errata!");
-            return;
-        }
-    }
-
-    // --- Se autorizzato, procedi con il caricamento dei dati nel pannello ---
+        // --- Se autorizzato, procedi con il caricamento ---
+    // Assicurati che 'tuttiITeam' contenga i team del giocatore corrente
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
@@ -1336,7 +1110,7 @@ function caricaTeamPerModifica(teamId) {
 
     document.getElementById('showdown-input').value = testoShowdown.trim();
     
-    // Salviamo l'ID per la modifica
+    // IMPORTANTE: Impostiamo l'editingId per evitare duplicati su Firebase
     document.getElementById('admin-panel').dataset.editingId = teamId;
     
     document.getElementById('admin-panel').style.display = 'block';
@@ -1353,7 +1127,7 @@ function sincronizzaCategorie() {
         const data = snapshot.val();
         
         // Prepariamo le opzioni per il filtro (con "Tutte")
-        let filterHtml = '<option value="">Category...</option>';
+        let filterHtml = '<option value="">Format...</option>';
         // Prepariamo le opzioni per l'admin (senza "Tutte")
         let adminHtml = '<option value="">-- Choose Category --</option>';
 
