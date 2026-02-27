@@ -1,13 +1,23 @@
 :root {
-    --didi-main: #7fe9bf;
-    --didi-accent: #31c489;
-    --bg-dark: #1a1a1a;
-    --bg-body: #dfdfdf;          /* Il tuo viola forte */
-    --bg-gradient-end: #003de3;
+
+    --bg-app: #0f0f0f;
+    --text-primary: #ffffff;
+    --text-dim: #b3b3b3;
+    --didi-color: #7fe9bf; 
+    --bg-color: var(--didi-color); 
+    --accent-main: #84cfb1;
+    --card-bg: #56b891;
+    --text-main: #eeeeee; 
+    --text-dim: #1a1a1a;
+    --title-main: #1a1a1a;
+    --accent-dark: #219667; 
+    --shadow: rgba(74, 55, 40, 0.12);
+    --bg-body: #dfdfdf;         
+    --bg-gradient-end: #097e4f; 
     --didi-borders: #025534;
 }
 
-body { 
+html, body { 
     font-family: 'Montserrat', sans-serif; 
     background: linear-gradient(135deg, var(--bg-body) -50%, var(--bg-gradient-end) 100%) !important;
     color: var(--text-main); 
@@ -23,15 +33,14 @@ body {
     box-sizing: border-box;
 }
 
-h1 { 
+h1 {
+    text-align: center;
     font-family: 'Josefin Sans', sans-serif;
-    font-size: 2.5rem;
-    text-align: center; 
+    font-size: 2rem;
+    margin: 60px 0 20px 0;
+    color: var(--bg-app);
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: var(--title-main);
-    margin: 20px 0 0px 0;
-    font-weight: 700;
 }
 
 .profile-container {
@@ -39,12 +48,19 @@ h1 {
     max-width: 1200px;
     text-align: center;
 }
-
-.profile-header {
-    margin: 0;
+.main-layout {
+    height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    margin: 0;
+    overflow: hidden; /* Blocca lo scroll */
+}
+.profile-header {
+    flex-grow: 1; /* Prende tutto lo spazio disponibile tra header e dashboard */
+    display: flex;
+    justify-content: center; /* Centra orizzontalmente */
+    align-items: center;     /* Centra verticalmente */
+    width: 100%;
 }
 
 /* Contenitore dell'orbita */
@@ -104,9 +120,6 @@ h1 {
     transition: all 0.5s ease;
 }
 
-.pkm-slot img:hover {
-    transform: scale(1.3);
-}
 
 /* Posizionamento dei 6 slot in cerchio (Raggio 120px) */
 .slot-0 { transform: rotate(0deg)   translate(135px) rotate(0deg); }
@@ -129,32 +142,32 @@ h1 {
 .hamburger-menu {
     position: fixed;
     top: 20px;
-    right: 20px;
-    z-index: 2;
+    left: 20px;
+    z-index: 5000;
 }
 
 #menu-toggle {
     display: none; /* Nascondiamo la checkbox */
 }
 
-/* Icona Hamburger */
+/* Il tasto con le tre linee */
 .menu-button-container {
     display: flex;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 45px;
-    height: 45px;
-    cursor: pointer;
-    border-radius: 8px;
 }
 
 .menu-button,
 .menu-button::before,
 .menu-button::after {
     display: block;
-    background-color: #1a1a1a;
+    background-color: #fff;
     position: absolute;
-    height: 4px;
+    height: 3px;
     width: 25px;
     transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
     border-radius: 2px;
@@ -163,55 +176,55 @@ h1 {
 .menu-button::before { content: ''; margin-top: -8px; }
 .menu-button::after { content: ''; margin-top: 8px; }
 
-/* Animazione quando cliccato (X) */
+/* Trasformazione in "X" quando cliccato */
 #menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
-#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
-#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0; transform: rotate(-45deg); }
 
-/* Lista del Menù */
+/* --- LISTA LINK: FULL SCREEN OVERLAY --- */
 .menu-items {
-    position: absolute;
-    top: 55px;
-    right: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(15, 15, 15, 0.95); /* Sfondo scuro quasi coprente */
+    backdrop-filter: blur(10px); /* Effetto vetro sfocato */
     display: flex;
     flex-direction: column;
-    background-color: #2e53cd;
-    list-style-type: none;
+    justify-content: center;
+    align-items: center;
+    list-style: none;
     margin: 0;
-    padding: 10px;
-    border-radius: 10px;
-    border: 2px solid #092377;
-    box-shadow: 5px 5px 0px #092377;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    width: 200px;
-    
+    padding: 0;
+    transform: translateX(-100%); /* Nascosto a sinistra */
+    transition: transform 0.5s cubic-bezier(0.77, 0.2, 0.05, 1.0);
+    z-index: 4999;
 }
 
 #menu-toggle:checked ~ .menu-items {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    transform: translateX(0); /* Appare scorrendo */
 }
 
 .menu-items li {
-    padding: 10px 20px;
+    padding: 20px 0;
+    width: 100%;
+    text-align: center;
 }
 
 .menu-items a {
     text-decoration: none;
     color: white;
     font-family: 'Josefin Sans', sans-serif;
-    font-weight: bold;
-    font-size: 1.1rem;
-    display: block;
-    transition: color 0.2s;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    transition: color 0.3s;
 }
 
-.menu-items a:hover {
-    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+.menu-items a:active {
+    color: var(--lu-main); /* Feedback al tocco col tuo viola */
 }
 
 .main-layout {
@@ -259,6 +272,7 @@ h1 {
     flex: 1; /* Permette ai box di adattarsi */
     max-width: 280px;
     text-align: right;
+    display: none;
 }
 
 .badge-accent {
@@ -319,28 +333,33 @@ h1 {
     flex: 1;
     max-width: 280px;
     text-align: right; /* Speculare: allinea a destra */
+    display: none;
 }
 
 /* Forza l'allineamento dei testi nelle righe per il pannello team */
 .team-panel .stat-row-new {
     flex-direction: row-reverse; /* Inverte l'ordine Label - Valore */
+    display: none;
 }
 
 .team-panel .stat-value {
     text-align: left; /* Il valore sta a sinistra della label nel box destro */
+    display: none;
 }
 
 .team-panel .stat-label {
     text-align: right;
+    display: none;
 }
 
 .team-panel .panel-header {
     text-align: right;
+    display: none;
 }
 
 /* Gestione della colonna laterale */
 .side-column {
-    display: flex;
+    display: hidden;
     flex-direction: column;
     justify-content: flex-start; /* Allinea tutto in alto */
     gap: 25px;                   /* Crea lo stacco preciso tra box sopra e box sotto */
@@ -350,7 +369,7 @@ h1 {
 
 /* La colonna che tiene i due box (sopra e sotto) */
 .side-column {
-    display: flex;
+    display: hidden;
     flex-direction: column;
     gap: 60px; /* Spazio netto per staccare i due box */
     width: 320px;
@@ -363,7 +382,7 @@ h1 {
     border-radius: 15px;
     padding: 15px;
     box-shadow: 5px 5px 0px var(--didi-borders); 
-    display: flex;
+    display: none;
     flex-direction: column;
     min-height: 80px;
     justify-content: center;
@@ -586,7 +605,7 @@ body.modal-open {
     position: absolute;
     top: 25px;   /* Distanza dal bordo superiore */
     left: 60px;  /* Distanza dal bordo sinistro */
-    display: flex;
+    display: hidden;
     flex-direction: column;
     align-items: flex-start; /* Allinea a sinistra */
     z-index: 10; /* Sopra lo sfondo, sotto i modali */
@@ -681,7 +700,7 @@ body.modal-open {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin-top: 10px;
+    margin-top: 30px;
 }
 
 .badge-icon {
@@ -754,58 +773,6 @@ body.modal-open {
 }
 
 /* La Pokéball che gira */
-.pokeball-loader {
-    width: 60px;
-    height: 60px;
-    background: #fff;
-    border: 3px solid #333;
-    border-radius: 50%;
-    position: relative;
-    overflow: hidden;
-    animation: spin 1.2s linear infinite;
-}
-
-/* Metà superiore rossa */
-.pokeball-loader::before {
-    content: "";
-    position: absolute;
-    background: #ee1515;
-    width: 100%;
-    height: 50%;
-    top: 0;
-    border-bottom: 3px solid #333;
-}
-
-/* Pulsante centrale */
-.pokeball-loader::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    background: #fff;
-    border: 3px solid #333;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-#loading-screen p {
-    margin-top: 15px;
-    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
-    font-weight: bold;
-    color: #ffffff !important;
-}
-
-
-/* Bio allenatore e login */
-
 
 .admin-panel {
     background: #333;
@@ -1596,4 +1563,158 @@ color: #1a1a1a;
 .generic-tooltip.tooltip-left {
     left: auto;
     right: 110%;
+}
+
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+    /* 1. Rimuove il contorno di focus su tutto (inclusi i link e il toggle music) */
+    *:focus, 
+    *:active, 
+    *:focus-visible {
+        outline: none !important;
+        box-shadow: none !important; /* Alcuni browser usano box-shadow invece di outline */
+    }
+
+    /* 2. Rimuove l'evidenziazione blu al tocco specifica di Chrome/Android/Safari */
+    * {
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-user-select: none; /* Impedisce la selezione del testo involontaria mentre giochi */
+    }
+
+    /* 3. Per il toggle music specifico, se è un div o un bottone */
+    #music-toggle {
+        user-select: none;
+        outline: none;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+
+    /* Opzionale: se vuoi che i pulsanti abbiano comunque un feedback 
+    ma senza quel contorno brutto, usa lo stato active che abbiamo già creato */
+    button:active, a:active {
+        transform: translateY(2px);
+    }
+
+    /* --- APP BOTTOM DASHBOARD (Trainer Stats + Best Format) --- */
+
+/* Nascondiamo o resettiamo la colonna laterale per liberare il layout */
+.side-column {
+    display: contents; /* Annulla il contenitore padre per gestire i figli singolarmente */
+}
+
+.stats-sidebar.trainer-panel {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    /* Altezza fissa per occupare il terzo inferiore circa */
+    height: 10vh;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+    z-index: 9999;
+    padding: 10px 15px env(safe-area-inset-bottom);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Header della barra: Centrato e compatto */
+.panel-header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.badge-accent {
+    font-size: 0.6rem;
+    padding: 2px 8px;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+/* Griglia trasformata in riga orizzontale */
+.stats-grid-trainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    overflow-x: auto; /* Permette lo scroll se i dati sono troppi */
+    gap: 15px;
+    padding-bottom: 5px;
+}
+
+/* Ogni singolo dato della barra */
+.stat-row-new {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 55px;
+}
+
+.stat-label {
+    font-size: 0.55rem;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+
+.stat-value {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    white-space: nowrap;
+}
+
+/* Il divisore <hr> diventa una linea verticale */
+.panel-divider {
+    width: 1px;
+    height: 20px;
+    background: #e0e0e0;
+    border: none;
+    margin: 0;
 }

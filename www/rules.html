@@ -20,7 +20,6 @@
 
     <div id="loading-screen">
         <div class="pokeball-loader"></div>
-        <p>Please wait</p>
     </div>
 
     <nav class="hamburger-menu">
@@ -40,10 +39,10 @@
     </nav>  
 
     
-        <h1 class="page-title">Formats and rules</h1>
+        <h1 class="page-title">Formats</h1>
 
 <div class="controls">
-    <input type="text" id="searchInput" placeholder="Browse rules..." oninput="applicaFiltri()">
+    <input type="text" id="searchInput" placeholder="Browse formats..." oninput="applicaFiltri()">
 </div>
 
 <button class="btn-floating-admin" onclick="toggleAdminPanel()" title="Add Format">
@@ -51,7 +50,7 @@
 </button>
 
 
-<div id="admin-rules-panel" class="pkm-panel" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 20px auto; z-index: 100000; max-width: 800px; padding: 20px; border-radius: 12px; border: 2px solid #092377 !important;
+<div id="admin-rules-panel" class="pkm-panel" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100000; max-width: 800px; padding: 20px; border-radius: 12px; border: 2px solid #092377 !important;
     box-shadow: 5px 5px 0px #092377;
     background: #2e53cd !important;
     font-family: Josefin Sans, sans-serif;">
@@ -149,7 +148,7 @@ async function caricaRegolamento() {
                 <div class="card-body">
                     <span>${r.descrizioneBreve || ''}</span>
                 </div>
-                <div class="card-footer">Dettagli Completi</div>
+               
             `;
             card.onclick = () => apriRegolaModal(r);
             grid.appendChild(card);
@@ -258,16 +257,6 @@ function caricaRegolaPerModifica(id) {
 // Elimina da Firebase
 function cancellaRegolaDaFirebase(id) {
     // 1. Controllo Password
-    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
-    const inputUtente = prompt("Autorizzazione richiesta. Inserisci la password per eliminare questo regolamento:");
-
-    if (inputUtente === null) return; // L'utente ha cliccato annulla
-
-    if (inputUtente !== passwordSegreta) {
-        alert("Password errata! Operazione annullata.");
-        return;
-    }
-
     // 2. Conferma finale
     if (confirm("Sei sicuro di voler eliminare definitivamente questo regolamento?")) {
         db.ref(`regolamenti/${id}`).remove()
@@ -287,23 +276,14 @@ function cancellaRegolaDaFirebase(id) {
 function toggleAdminPanel() {
     const p = document.getElementById('admin-rules-panel');
     
-    // 1. Controlliamo se il pannello è attualmente chiuso
-    // Se è già aperto, lo chiudiamo senza chiedere nulla
-    if (p.style.display === 'block') {
-        p.style.display = 'none';
-        return;
-    }
-
-    // 2. Se il pannello è chiuso, chiediamo la password
-    const passwordSegreta = "slavojzizek"; // <-- Sostituisci con la tua
-    const inputUtente = prompt("Inserisci la password amministratore:");
-
-    if (inputUtente === passwordSegreta) {
+    if (p.style.display === 'none' || p.style.display === '') {
+        // Se è chiuso, lo apriamo e blocchiamo lo scroll della pagina sotto
         p.style.display = 'block';
-    } else if (inputUtente === null) {
-        // L'utente ha premuto annulla, non facciamo nulla
+        document.body.style.overflow = 'hidden'; 
     } else {
-        alert("Password errata!");
+        // Se è aperto, lo chiudiamo e riattiviamo lo scroll
+        p.style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 }
        

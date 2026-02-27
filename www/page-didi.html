@@ -7,7 +7,6 @@
         <link rel="icon" type="image/png" href="immagini/magikarp.png">
         <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style-page-didi.css">
-        <link rel="stylesheet" href="style-box-didi.css">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -21,13 +20,9 @@
     <span id="music-icon">🔇</span>
 </div>
 
-<div id="song-title" class="song-title">
-    Loading...
-</div>
 
         <div id="loading-screen">
     <div class="pokeball-loader"></div>
-    <p>Please wait</p>
 </div>
 
     <nav class="hamburger-menu">
@@ -89,13 +84,26 @@
         <div id="badge-container" class="player-badges"></div>
         </div>
 
-<div id="recent-trend" class="trend-container">
-    <span class="trend-label">LAST 5:</span>
-    <div id="trend-dots" class="trend-dots"></div>
-</div>
-
         <div class="main-layout">
             
+
+            <header class="profile-header">
+                <div class="hof-container">
+                    <div class="trainer-node">
+                        <img src="immagini/sage.png" alt="Didi">
+                    </div>
+                    <div id="pokemon-orbit" class="orbit">
+                        <div class="pkm-slot slot-0"></div>
+                        <div class="pkm-slot slot-1"></div>
+                        <div class="pkm-slot slot-2"></div>
+                        <div class="pkm-slot slot-3"></div>
+                        <div class="pkm-slot slot-4"></div>
+                        <div class="pkm-slot slot-5"></div>
+                    </div>
+                </div>
+            </header>
+
+
             <div class="side-column">
                 <aside class="stats-sidebar trainer-panel">
                     <div class="panel-header">
@@ -126,27 +134,15 @@
                     </div>
                 </aside>
 
+                
+
                 <div class="horizontal-box trainer-extra">
                     <span class="badge-accent">BEST FORMAT</span>
                     <div id="best-category-name" class="extra-value">--</div>
                 </div>
             </div>
 
-            <header class="profile-header">
-                <div class="hof-container">
-                    <div class="trainer-node">
-                        <img src="immagini/sage.png" alt="Didi">
-                    </div>
-                    <div id="pokemon-orbit" class="orbit">
-                        <div class="pkm-slot slot-0"></div>
-                        <div class="pkm-slot slot-1"></div>
-                        <div class="pkm-slot slot-2"></div>
-                        <div class="pkm-slot slot-3"></div>
-                        <div class="pkm-slot slot-4"></div>
-                        <div class="pkm-slot slot-5"></div>
-                    </div>
-                </div>
-            </header>
+            
 
             <div class="side-column">
                 <aside class="stats-sidebar team-panel">
@@ -186,13 +182,6 @@
 
         </div>
     </div>
-
-    <div class="trainer-section">
-    <div class="bio-wrapper">
-        <div id="trainer-bio-display" class="bio-text">Caricamento presentazione...</div>
-    </div>
-</div>
-
 <div id="categoryModal" class="modal-page">
     <div class="modal-content-page">
         <div id="modal-floater-left" class="modal-floater">
@@ -2342,7 +2331,7 @@ function ascoltaCambiamentiFirebase() {
                 // Se abbiamo l'elemento HTML, scriviamo il nome e lo mostriamo
                 if (titleDisplay) {
                     titleDisplay.innerText = "🎵 " + nomePulito;
-                    titleDisplay.style.display = "block";
+                    titleDisplay.style.display = "hidden";
                 }
                 // ----------------------------------------
 

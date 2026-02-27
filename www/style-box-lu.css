@@ -6,7 +6,7 @@
     --text-primary: #ffffff;
     --text-dim: #b3b3b3;
     --lu-color: #c979ed; 
-    --accent-main: #8e44ad;      /* Viola vivido */
+    --accent-main: #d3a2e8;      /* Viola vivido */
     --accent-dark: #a868c1;      /* Viola profondo */
     --accent-light: #1a1a1a;     /* Lilla chiarissimo per contrasti */
     --text-main: #eeeeee;
@@ -14,7 +14,7 @@
     --title-main: #eeeeee;
     --bg-body: #dfdfdf;          /* Il tuo viola forte */
     --bg-gradient-end: #590297;  /* Un viola più chiaro per il gradiente */
-    --card-bg: #8e44ad;
+    --card-bg: #a15dbe;
 }
 
 * {
@@ -369,7 +369,7 @@ h1 {
     border: 1px solid rgba(170, 6, 207, 0.05);
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
-    background: transparent;
+    background: var(--card-bg);
     border: 2px solid #6c026c !important;
     box-shadow: 5px 5px 0px #6c026c !important;
 }

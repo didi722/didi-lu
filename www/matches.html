@@ -13,24 +13,22 @@
 
 </head>
 <body>
-    
-        <audio id="bg-music-home" loop preload="auto"></audio>
 
-<div id="music-control" class="music-btn" onclick="toggleMusic()">
-    <span id="music-icon">🔊</span>
-</div>
+    <audio id="bg-music-home" loop preload="auto"></audio>
+    <div id="music-control" class="music-btn" onclick="toggleMusic()">
+        <span id="music-icon">🔊</span>
+    </div>
 
     <div id="loading-screen">
-    <div class="pokeball-loader"></div>
-    <p>Please wait</p>
-</div>
+        <div class="pokeball-loader"></div>
+    </div>
 
     <nav class="hamburger-menu">
-    <input type="checkbox" id="menu-toggle" />
-    <label for="menu-toggle" class="menu-button-container">
-        <div class="menu-button"></div>
-    </label>
-    <ul class="menu-items">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-button-container">
+            <div class="menu-button"></div>
+        </label>
+        <ul class="menu-items">
             <li><a href="index.html">Home</a></li>
             <li><a href="page-didi.html">Didi</a></li>
             <li><a href="box-didi.html">Box Didi</a></li>
@@ -39,171 +37,169 @@
             <li><a href="matches.html">Fixtures</a></li>
             <li><a href="rules.html">Rules</a></li>
         </ul>
-</nav> 
+    </nav> 
 
-<div id="admin-edit-match-panel" class="admin-panel-modern wide">
-    <input type="hidden" id="edit-match-id">
-    <h3 class="panel-title-edit">Edit Match</h3>
-    
-    <div class="admin-three-columns">
-        
-        <div class="admin-col">
-            <h4 class="col-title">Match Info</h4>
-            <div class="form-group">
-                <label>Data:</label>
-                <input type="date" id="edit-match-date">
-            </div>
-            <div class="form-group">
-                <label>Format:</label>
-                <select id="edit-match-cat"></select>
-            </div>
-            <div class="form-group">
-                <label>Score (X-X):</label>
-                <input type="text" id="edit-match-score">
-            </div>
+    <div class="main-container">
+        <h1>Fixtures</h1>
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
+            <select id="categoryFilter" onchange="applicaFiltri()">
+                <option value="">Format</option>
+            </select>
         </div>
-
-        <div class="admin-col">
-            <h4 class="col-title">Teams</h4>
-            <div class="form-group">
-                <label>Player Didi:</label>
-                <select id="edit-match-team1" class="select-team"></select>
-            </div>
-            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
-            <div class="form-group">
-                <label>Player Lu:</label>
-                <select id="edit-match-team2" class="select-team"></select>
-            </div>
-        </div>
-
-        <div class="admin-col col-replays">
-            <h4 class="col-title">Replays & Set Winners</h4>
-            <div id="replays-edit-list">
-                <script>
-                    for(let i=1; i<=5; i++) {
-                        document.write(`
-                            <div class="set-row-compact">
-                                <span class="set-num">S${i}</span>
-                                <input type="text" id="edit-replay-s${i}" placeholder="file.html">
-                                <div class="winner-selector">
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
-                                </div>
-                            </div>
-                        `);
-                    }
-                </script>
-            </div>
-        </div>
-
+        <div id="matchList"></div>
     </div>
-
-    <div class="button-group-modern">
-        <button onclick="confermaModificaMatch()" class="btn-save">Edit match</button>
-        <button onclick="document.getElementById('admin-edit-match-panel').style.display='none'" class="btn-cancel">Cancel</button>
-    </div>
-</div>
-
-<div id="admin-matches-panel" class="admin-panel-modern wide">
-    <input type="hidden" id="match-id-nascosto">
-    <h3>Add a new match</h3>
-    
-    <div class="admin-three-columns">
-        
-        <div class="admin-col">
-            <h4 class="col-title">Match info</h4>
-            <div class="form-group">
-                <label>Date:</label>
-                <input type="date" id="match-date">
-            </div>
-            <div class="form-group">
-                <label>Format:</label>
-                <select id="match-cat"></select>
-            </div>
-            <div class="form-group">
-                <label>Score:</label>
-                <input type="text" id="match-score" placeholder="Es: 3-2">
-            </div>
-        </div>
-
-        <div class="admin-col">
-            <h4 class="col-title">Teams</h4>
-            <div class="form-group">
-                <label>Player Didi:</label>
-                <select id="match-team1" class="select-team"></select>
-            </div>
-            <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
-            <div class="form-group">
-                <label>Player Lu:</label>
-                <select id="match-team2" class="select-team"></select>
-            </div>
-        </div>
-
-        <div class="admin-col col-replays">
-            <h4 class="col-title">Replays & Set winners</h4>
-            <div id="replays-inputs-list">
-                <script>
-                    for(let i=1; i<=5; i++) {
-                        document.write(`
-                            <div class="set-row-compact">
-                                <span class="set-num">S${i}</span>
-                                <input type="text" id="replay-s${i}" placeholder="file.html">
-                                <div class="winner-selector">
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D')" id="win-${i}-D">D</button>
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L')" id="win-${i}-L">L</button>
-                                </div>
-                            </div>
-                        `);
-                    }
-                </script>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="button-group-modern">
-        <button onclick="salvaMatchFirebase()" class="btn-save">Add Match</button>
-        <button onclick="document.getElementById('admin-matches-panel').style.display='none'" class="btn-cancel">Cancel</button>
-    </div>
-</div>
-
-<button class="btn-floating-admin" onclick="apriAdminMatches()" title="Aggiungi Match">
-    <span class="plus-icon">+</span>
-</button>
-
-    <h1>Championship History</h1>
-
-    <div class="controls">
-    <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
-    <select id="categoryFilter" onchange="applicaFiltri()">
-    <option value="">Format</option>
-</select>
-    
-    </select>
-</div>
-
-    <div id="matchList"></div>
 
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
-    
-    <div class="gba-container">
-        <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
-        <div class="gba-screen-area" onclick="event.stopPropagation()">
-             <div class="replay-content">
-                <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
+        <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
+        <div class="gba-container">
+            <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
+            <div class="gba-screen-area" onclick="event.stopPropagation()">
+                 <div class="replay-content">
+                    <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
+                </div>
             </div>
+        </div>    
+        <span class="close-replay" onclick="chiudiReplay()">&times;</span>
+    </div>
+
+    <button class="btn-floating-admin" onclick="apriAdminMatches()" title="Aggiungi Match">
+        <span class="plus-icon">+</span>
+    </button>
+
+    <div id="admin-edit-match-panel" class="admin-panel-modern">
+        <input type="hidden" id="edit-match-id">
+        
+        <div class="admin-modal-header">
+            <button class="btn-back" onclick="chiudiTuttiPannelli()">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
+            <h3 class="panel-title-main">Match Manager</h3>
+        </div>
+
+        <h2 class="panel-title-edit">Edit Match</h2>
+        
+        <div class="admin-three-columns">
+            <div class="admin-col">
+                <h4 class="col-title">Match Info</h4>
+                <div class="form-group">
+                    <label>Data:</label>
+                    <input type="date" id="edit-match-date">
+                </div>
+                <div class="form-group">
+                    <label>Format:</label>
+                    <select id="edit-match-cat"></select>
+                </div>
+                <div class="form-group">
+                    <label>Score (X-X):</label>
+                    <input type="text" id="edit-match-score">
+                </div>
+            </div>
+
+            <div class="admin-col">
+                <h4 class="col-title">Teams</h4>
+                <div class="form-group">
+                    <label>Player Didi:</label>
+                    <select id="edit-match-team1"></select>
+                </div>
+                <div style="text-align: center; margin: 10px 0; font-weight: bold;">VS</div>
+                <div class="form-group">
+                    <label>Player Lu:</label>
+                    <select id="edit-match-team2"></select>
+                </div>
+            </div>
+
+            <div class="admin-col col-replays">
+                <h4 class="col-title">Replays & Set Winners</h4>
+                <div id="replays-edit-list">
+                    <script>
+                        for(let i=1; i<=5; i++) {
+                            document.write(`
+                                <div class="set-row-compact">
+                                    <span class="set-num">S${i}</span>
+                                    <input type="text" id="edit-replay-s${i}" placeholder="file.html">
+                                    <div class="winner-selector">
+                                        <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
+                                        <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group-modern">
+            <button onclick="confermaModificaMatch()" class="btn-save">Save Changes</button>
         </div>
     </div>
 
-    <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
-    
-    <span class="close-replay" onclick="chiudiReplay()">&times;</span>
-</div>
+    <div id="admin-matches-panel" class="admin-panel-modern">
+        <input type="hidden" id="match-id-nascosto">
 
-    <div id="teamModal" class="replay-modal" onclick="chiudiTeamModal()">
-        <div class="modal-content team-detail-card">
-            <span class="close-replay" onclick="chiudiTeamModal()">&times;</span>
-            <div id="teamDetailContent"></div>
+        <div class="admin-modal-header">
+            <button class="btn-back" onclick="chiudiTuttiPannelli()">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
+            <h3 class="panel-title-main">Match Manager</h3>
+        </div>
+
+        <h2>Add a new match</h2>
+        
+        <div class="admin-three-columns">
+            <div class="admin-col">
+                <h4 class="col-title">Match info</h4>
+                <div class="form-group">
+                    <label>Date:</label>
+                    <input type="date" id="match-date">
+                </div>
+                <div class="form-group">
+                    <label>Format:</label>
+                    <select id="match-cat"></select>
+                </div>
+                <div class="form-group">
+                    <label>Score:</label>
+                    <input type="text" id="match-score" placeholder="Es: 3-2">
+                </div>
+            </div>
+
+            <div class="admin-col">
+                <h4 class="col-title">Teams</h4>
+                <div class="form-group">
+                    <label>Player Didi:</label>
+                    <select id="match-team1"></select>
+                </div>
+                <div style="text-align: center; margin: 10px 0; font-weight: bold;">VS</div>
+                <div class="form-group">
+                    <label>Player Lu:</label>
+                    <select id="match-team2"></select>
+                </div>
+            </div>
+            
+            <div class="admin-col">
+                 <h4 class="col-title">Sets & Replays</h4>
+                 <div id="replays-add-list">
+                    <script>
+                        for(let i=1; i<=5; i++) {
+                            document.write(`
+                                <div class="set-row-compact">
+                                    <span class="set-num">S${i}</span>
+                                    <input type="text" id="replay-s${i}" placeholder="file.html">
+                                    <div class="winner-selector">
+                                        <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', false)" id="win-${i}-D">D</button>
+                                        <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', false)" id="win-${i}-L">L</button>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    </script>
+                 </div>
+            </div>
+        </div>
+
+        <div class="button-group-modern">
+            <button onclick="salvaMatchFirebase()" class="btn-save">Add Match</button>
         </div>
     </div>
 
@@ -350,30 +346,42 @@ righeMatches.sort((a, b) => {
 
                 const card = document.createElement('div');
                 card.className = 'match-card';
-                card.innerHTML = `
-                    <div class="match-meta">
-                        <span class="match-category">${m.categoria || ""}</span>
-                        <span class="match-date">${formattaDataItaliana(m.data) || ""}</span>
-                    </div>
-                    <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('Didi', '${m.team1}')">
-                        <span class="team-title">${m.team1}</span>
-                        ${generaHtmlGifs(m.team1, databaseDidi)}
-                    </div>
-                    <div class="score-container">
-                        <span class="score-digit">${scoreArr[0]}</span>
-                        <span class="score-divider">:</span>
-                        <span class="score-digit">${scoreArr[1]}</span>
-                    </div>
-                    <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('Lu', '${m.team2}')">
-                        <span class="team-title">${m.team2}</span>
-                        ${generaHtmlGifs(m.team2, databaseLu)}
-                    </div>
-                    <div><div class="admin-match-controls">
-            <span class="admin-icon" onclick="preparaModificaMatch('${m.id}')" style="cursor:pointer; color:#3498db;">📝</span>
-            <span class="admin-icon" onclick="eliminaMatch('${m.id}')" style="cursor:pointer; color:#e74c3c; margin-left:10px;">🗑️</span>
+               card.innerHTML = `
+    <div class="match-meta">
+        <span class="match-category">${m.categoria || "FORMAT"}</span>
+        <span class="match-date">${formattaDataItaliana(m.data)}</span>
+    </div>
+
+    <div class="team-badge team-didi-badge" onclick="apriDettaglioTeam('Didi', '${m.team1}')">
+        <span class="team-title">${m.team1}</span>
+        <div class="mini-pkm-list">
+            ${generaHtmlGifs(m.team1, databaseDidi)}
         </div>
-                    <button class="btn-replay-icon" onclick="apriMatch('${m.id}', '${m.team1}', '${m.team2}', '${scoreArr[0]}', '${scoreArr[1]}')">REPLAY</button></div>
-                `;
+    </div>
+
+    <div class="score-container">
+        <span class="score-digit">${scoreArr[0]}</span>
+        <span style="margin: 0 15px; font-weight: bold; opacity: 0.5; color: #1a1a1a;">VS</span>
+        <span class="score-digit">${scoreArr[1]}</span>
+    </div>
+
+    <div class="team-badge team-lu-badge" onclick="apriDettaglioTeam('Lu', '${m.team2}')">
+        <span class="team-title">${m.team2}</span>
+        <div class="mini-pkm-list">
+            ${generaHtmlGifs(m.team2, databaseLu)}
+        </div>
+    </div>
+
+    <div class="match-footer">
+        <div class="admin-match-controls">
+            <span onclick="preparaModificaMatch('${m.id}')">📝</span>
+            <span onclick="eliminaMatch('${m.id}')">🗑️</span>
+        </div>
+        <button class="btn-replay-icon" onclick="apriMatch('${m.id}')">
+            WATCH REPLAY
+        </button>
+    </div>
+`;
                 container.appendChild(card);
             });
         }
@@ -613,7 +621,7 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
 
     // Se il database ha solo il nome (es: "M0001_1_D"), aggiungiamo "video/"
     // Se ha già "video/M0001_1_D.html", lo lasciamo stare
-    const pathFinale = nomeFile.startsWith('../video/') ? nomeFile : `../video/${nomeFile}`;
+    const pathFinale = nomeFile.startsWith('video/') ? nomeFile : `video/${nomeFile}`;
     
     console.log("Percorso finale generato:", pathFinale);
 
@@ -677,24 +685,6 @@ async function apriMatch(matchID, teamDidi, teamLu, scoreDidi, scoreLu) {
     const modal = document.getElementById('replayModal');
     const selector = document.getElementById('setSelector');
     
-    // 1. Pulizia e Creazione Header
-    const vecchiaHeader = document.querySelector('.replay-mini-header');
-    if (vecchiaHeader) vecchiaHeader.remove();
-
-    const miniHeader = document.createElement('div');
-    miniHeader.className = 'replay-mini-header';
-    miniHeader.innerHTML = `
-        <div class="mini-team-info side-didi">
-            <div id="header-gifs-didi" class="mini-gifs-row"></div>
-            <span class="mini-name">${teamDidi}</span>
-        </div>
-        <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
-        <div class="mini-team-info side-lu">
-            <span class="mini-name">${teamLu}</span>
-            <div id="header-gifs-lu" class="mini-gifs-row"></div>
-        </div>
-    `;
-    modal.appendChild(miniHeader);
 
     // Funzione interna per le GIF
     const caricaGifsInHeader = (nomeTeam, containerId, databaseObj) => {
@@ -942,27 +932,24 @@ function getGifUrl(pName) {
 
 // Funzione globale per generare l'HTML delle 6 mini-gif (usata nella lista match)
 function generaHtmlGifs(nomeTeam, database) {
-    // Troviamo l'oggetto team che ha il nome corrispondente
-    // Nota: 'database' ora è un array di oggetti provenienti da Firebase
-    const teamData = Object.values(database).find(t => 
-        t.nome && t.nome.trim().toLowerCase() === nomeTeam.toLowerCase()
-    );
-
-    if (!teamData || !teamData.pokemon) return "";
-
-    let htmlGifs = '<div class="mini-pkm-list">';
+    const team = Object.values(database).find(t => t.nome === nomeTeam);
+    if (!team || !team.pokemon) return '<div class="mini-pkm-list"></div>';
     
-    // Iteriamo sull'array pokemon salvato su Firebase
-    teamData.pokemon.forEach(p => {
-        // Supponendo che 'p' sia il nome o un oggetto con una proprietà 'nome'
-        const pName = (typeof p === 'string') ? p : p.nome;
-        
-        if (pName) {
-            htmlGifs += `<img src="${getGifUrl(pName)}" class="mini-gif" title="${pName}">`;
-        }
-    });
-    
-    return htmlGifs + '</div>';
+    // Prendiamo i 6 pokemon e generiamo i tag img
+    const gifsHtml = team.pokemon.map(p => {
+        // Pulizia nome per URL Showdown
+        const pkmName = p.nome.toLowerCase()
+                             .replace(/ /g, '-')
+                             .replace(/[.'é]/g, '')
+                             .replace('form-','') 
+                             .replace('-f',''); // Pulizia generica per varianti
+                             
+        return `<img src="https://play.pokemonshowdown.com/sprites/ani/${pkmName}.gif" 
+                     class="mini-pkm-gif" 
+                     onerror="this.src='immagini/placeholder.png'">`;
+    }).join('');
+
+    return `<div class="mini-pkm-list">${gifsHtml}</div>`;
 }
 
 const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
@@ -1011,16 +998,7 @@ function toggleMusic() {
 
 
 async function apriAdminMatches() {
-    // 1. Controllo Password
-    const passwordSegreta = "slavojzizek"; // Sostituisci con la tua
-    const inputUtente = prompt("Accesso protetto. Inserisci la password per gestire i match:");
-
-    if (inputUtente !== passwordSegreta) {
-        if (inputUtente !== null) alert("Password errata!");
-        return; // Esce dalla funzione e non apre nulla
-    }
-
-    // --- Se la password è corretta, procedi con il resto ---
+    
 
     // 2. Reset ID e Campi testo
     document.getElementById('match-id-nascosto').value = "";
@@ -1041,9 +1019,13 @@ async function apriAdminMatches() {
 
     // 4. Popola le select e ASPETTA
     await popolaSelectTeam();
-
-    // 5. Mostra il pannello
+    
     document.getElementById('admin-matches-panel').style.display = 'block';
+    
+    // Blocca lo scroll sotto
+    document.body.style.overflow = 'hidden';
+    // Torna in cima al modale
+    document.getElementById('admin-matches-panel').scrollTop = 0;
 }
 
 async function popolaSelectTeam(idDidi = null, idLu = null, catSelezionata = null) {
@@ -1155,18 +1137,16 @@ function salvaMatchFirebase() {
         .catch(err => console.error("Errore salvataggio:", err));
 }
 
+function chiudiTuttiPannelli() {
+    document.getElementById('admin-edit-match-panel').style.display = 'none';
+    document.getElementById('admin-matches-panel').style.display = 'none';
+    
+    // Ripristina lo scroll della pagina principale
+    document.body.style.overflow = 'auto';
+}
+
 // 1. APRE L'EDITOR CARICANDO I DATI CORRENTI
 async function preparaModificaMatch(matchId) {
-    // 1. Controllo Password immediato
-    const passwordSegreta = "slavojzizek"; // La tua password
-    const inputUtente = prompt("Autorizzazione richiesta per modificare i dati del match:");
-
-    if (inputUtente !== passwordSegreta) {
-        if (inputUtente !== null) alert("Password errata! Modifica non consentita.");
-        return; 
-    }
-
-    // --- Se la password è corretta, procedi con il caricamento ---
     try {
         const snap = await db.ref(`matches/${matchId}`).once('value');
         const m = snap.val();
@@ -1204,7 +1184,10 @@ async function preparaModificaMatch(matchId) {
 
         // 4. Mostra il pannello
         document.getElementById('admin-edit-match-panel').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Blocca lo scroll sotto
+        document.body.style.overflow = 'hidden';
+        document.getElementById('admin-edit-match-panel').scrollTop = 0;
 
     } catch (e) {
         console.error("Errore caricamento match:", e);
@@ -1311,17 +1294,6 @@ async function confermaModificaMatch() {
 
 // 4. ELIMINA IL MATCH
 async function eliminaMatch(matchId) {
-    // 1. Controllo Password
-    const passwordSegreta = "slavojzizek"; // La tua password
-    const inputUtente = prompt("AZIONE IRREVERSIBILE. Inserisci la password per eliminare il match:");
-
-    // Se l'utente annulla o sbaglia password, interrompiamo tutto
-    if (inputUtente === null) return; 
-    
-    if (inputUtente !== passwordSegreta) {
-        alert("Password errata! Eliminazione annullata.");
-        return;
-    }
 
     // 2. Conferma finale (opzionale, ma consigliata per sicurezza)
     if (confirm("Sei assolutamente sicuro? Le statistiche verranno ricalcolate al prossimo caricamento.")) {
@@ -1414,7 +1386,7 @@ async function caricaVideoDirect(matchID, setNum, vincitore, btn) {
     if (m && m.replays && m.replays[`set${setNum}`]) {
         const nomeFile = m.replays[`set${setNum}`].url;
         // 2. Carica il file dalla tua cartella replays
-        document.getElementById('videoFrame').src = `replays/${nomeFile}`;
+        document.getElementById('replayFrame').src = `replays/${nomeFile}`;
     }
 }
 
