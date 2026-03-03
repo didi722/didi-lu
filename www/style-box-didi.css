@@ -106,8 +106,7 @@ h1 {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(10, 10, 10, 0.5); /* Sfondo scuro semi-trasparente */
-    backdrop-filter: blur(20px) saturate(180%); /* Effetto vetro iOS/Android */
+    backdrop-filter: blur(20px) saturate(150%); /* Effetto vetro iOS/Android */
     z-index: 9999;
     overflow-y: auto;
 }
@@ -168,6 +167,9 @@ h1 {
     display: flex;
     gap: 20px;
     transition: transform 0.2s;
+    background: var(--card-bg);
+    border: 2px solid var(--didi-borders) !important;
+    box-shadow: 5px 5px 0px var(--didi-borders) !important;
 }
 
 /* --- BOTTONE ADMIN FLOATING --- */
@@ -327,6 +329,25 @@ h1 {
     width: 100%;
     appearance: none; /* Rimuove lo stile di default del sistema */
     transition: border-color 0.3s;
+}
+
+.close-btn {
+    visibility: visible !important;
+    position: absolute;
+    top: 20px;
+    left: 20px; /* Spostata a sinistra */
+    font-size: 35px; /* Leggermente più piccola della X per sembrare una freccia */
+    color: white;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.1); /* Cerchio leggero di feedback */
+    border-radius: 50%;
 }
 
 /* Quando l'utente clicca o il tuo script cambia il valore */

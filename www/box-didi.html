@@ -66,12 +66,14 @@
     </div>
 </div>
 
-    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
-    <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
+
+<div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+    <div class="modal-content pkm-single-card"> <span class="close-btn" onclick="chiudiPkmModal()">&times;</span>
         <div id="pkmModalBody"></div>
     </div>
 </div>
 
+   
 <div id="admin-panel" class="admin-panel">
     <h3 class="admin-panel.h3">Showdown Importer</h3>
     <input type="text" id="admin-team-name" class="admin-team-name" placeholder="Team Name">
@@ -542,7 +544,7 @@ async function apriDettagli(id) {
 
     content.innerHTML = `
         <div class="modal-nav">
-            <button class="back-arrow" onclick="chiudiModale()">←</button>
+            <button class="back-arrow" onclick="chiudiModale()">&times;</span></button>
             <h2>${team.nome}</h2>
         </div>
 

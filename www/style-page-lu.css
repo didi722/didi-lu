@@ -1,4 +1,11 @@
 :root {
+    --bg-app: #0f0f0f;
+    --text-primary: #ffffff;
+    --text-dim: #b3b3b3;
+    --text-main: #eeeeee; 
+    --text-dim: #1a1a1a;
+    --title-main: #1a1a1a;
+    --shadow: rgba(74, 55, 40, 0.12);
     --lu-main: #c979ed;
     --lu-accent: #8e44ad;
     --bg-dark: #1a1a1a;
@@ -7,7 +14,7 @@
     --lu-borders: #6c026c;
 }
 
-body { 
+html, body { 
     font-family: 'Montserrat', sans-serif; 
     background: linear-gradient(135deg, var(--bg-body) -50%, var(--bg-gradient-end) 100%) !important;
     color: var(--text-main); 
@@ -23,15 +30,14 @@ body {
     box-sizing: border-box;
 }
 
-h1 { 
+h1 {
+    text-align: center;
     font-family: 'Josefin Sans', sans-serif;
-    font-size: 2.5rem;
-    text-align: center; 
+    font-size: 2rem;
+    margin: 60px 0 20px 0;
+    color: var(--bg-app);
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: var(--title-main);
-    margin: 20px 0 0px 0;
-    font-weight: 700;
 }
 
 .profile-container {
@@ -39,12 +45,19 @@ h1 {
     max-width: 1200px;
     text-align: center;
 }
-
-.profile-header {
-    margin: 0;
+.main-layout {
+    height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    margin: 0;
+    overflow: hidden; /* Blocca lo scroll */
+}
+.profile-header {
+    flex-grow: 1; /* Prende tutto lo spazio disponibile tra header e dashboard */
+    display: flex;
+    justify-content: center; /* Centra orizzontalmente */
+    align-items: center;     /* Centra verticalmente */
+    width: 100%;
 }
 
 /* Contenitore dell'orbita */
@@ -57,7 +70,6 @@ h1 {
     justify-content: center; /* Centra l'allenatore orizzontalmente */
     align-items: center;     /* Centra l'allenatore verticalmente */
     margin-top:-45px;
-
 }
 
 /* Allenatore centrale */
@@ -105,9 +117,6 @@ h1 {
     transition: all 0.5s ease;
 }
 
-.pkm-slot img:hover {
-    transform: scale(1.3);
-}
 
 /* Posizionamento dei 6 slot in cerchio (Raggio 120px) */
 .slot-0 { transform: rotate(0deg)   translate(135px) rotate(0deg); }
@@ -130,32 +139,32 @@ h1 {
 .hamburger-menu {
     position: fixed;
     top: 20px;
-    right: 20px;
-    z-index: 2;
+    left: 20px;
+    z-index: 5000;
 }
 
 #menu-toggle {
     display: none; /* Nascondiamo la checkbox */
 }
 
-/* Icona Hamburger */
+/* Il tasto con le tre linee */
 .menu-button-container {
     display: flex;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 45px;
-    height: 45px;
-    cursor: pointer;
-    border-radius: 8px;
 }
 
 .menu-button,
 .menu-button::before,
 .menu-button::after {
     display: block;
-    background-color: #1a1a1a;
+    background-color: #fff;
     position: absolute;
-    height: 4px;
+    height: 3px;
     width: 25px;
     transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
     border-radius: 2px;
@@ -164,55 +173,55 @@ h1 {
 .menu-button::before { content: ''; margin-top: -8px; }
 .menu-button::after { content: ''; margin-top: 8px; }
 
-/* Animazione quando cliccato (X) */
+/* Trasformazione in "X" quando cliccato */
 #menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
-#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
-#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0; transform: rotate(-45deg); }
 
-/* Lista del Menù */
+/* --- LISTA LINK: FULL SCREEN OVERLAY --- */
 .menu-items {
-    position: absolute;
-    top: 55px;
-    right: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(15, 15, 15, 0.95); /* Sfondo scuro quasi coprente */
+    backdrop-filter: blur(10px); /* Effetto vetro sfocato */
     display: flex;
     flex-direction: column;
-    background-color: #2e53cd;
-    list-style-type: none;
+    justify-content: center;
+    align-items: center;
+    list-style: none;
     margin: 0;
-    padding: 10px;
-    border-radius: 10px;
-    border: 2px solid #092377;
-    box-shadow: 5px 5px 0px #092377;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    width: 200px;
-    
+    padding: 0;
+    transform: translateX(-100%); /* Nascosto a sinistra */
+    transition: transform 0.5s cubic-bezier(0.77, 0.2, 0.05, 1.0);
+    z-index: 4999;
 }
 
 #menu-toggle:checked ~ .menu-items {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    transform: translateX(0); /* Appare scorrendo */
 }
 
 .menu-items li {
-    padding: 10px 20px;
+    padding: 20px 0;
+    width: 100%;
+    text-align: center;
 }
 
 .menu-items a {
     text-decoration: none;
     color: white;
     font-family: 'Josefin Sans', sans-serif;
-    font-weight: bold;
-    font-size: 1.1rem;
-    display: block;
-    transition: color 0.2s;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    transition: color 0.3s;
 }
 
-.menu-items a:hover {
-    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+.menu-items a:active {
+    color: var(--lu-main); /* Feedback al tocco col tuo viola */
 }
 
 .main-layout {
@@ -260,6 +269,7 @@ h1 {
     flex: 1; /* Permette ai box di adattarsi */
     max-width: 280px;
     text-align: right;
+    display: none;
 }
 
 .badge-accent {
@@ -320,28 +330,33 @@ h1 {
     flex: 1;
     max-width: 280px;
     text-align: right; /* Speculare: allinea a destra */
+    display: none;
 }
 
 /* Forza l'allineamento dei testi nelle righe per il pannello team */
 .team-panel .stat-row-new {
     flex-direction: row-reverse; /* Inverte l'ordine Label - Valore */
+    display: none;
 }
 
 .team-panel .stat-value {
     text-align: left; /* Il valore sta a sinistra della label nel box destro */
+    display: none;
 }
 
 .team-panel .stat-label {
     text-align: right;
+    display: none;
 }
 
 .team-panel .panel-header {
     text-align: right;
+    display: none;
 }
 
 /* Gestione della colonna laterale */
 .side-column {
-    display: flex;
+    display: hidden;
     flex-direction: column;
     justify-content: flex-start; /* Allinea tutto in alto */
     gap: 25px;                   /* Crea lo stacco preciso tra box sopra e box sotto */
@@ -351,7 +366,7 @@ h1 {
 
 /* La colonna che tiene i due box (sopra e sotto) */
 .side-column {
-    display: flex;
+    display: hidden;
     flex-direction: column;
     gap: 60px; /* Spazio netto per staccare i due box */
     width: 320px;
@@ -364,7 +379,7 @@ h1 {
     border-radius: 15px;
     padding: 15px;
     box-shadow: 5px 5px 0px var(--lu-borders); 
-    display: flex;
+    display: none;
     flex-direction: column;
     min-height: 80px;
     justify-content: center;
@@ -389,8 +404,8 @@ h1 {
 }
 
 .horizontal-box:hover {
-   transform: translate(-3px, -3px);
-   box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
+    transform: translate(-3px, -3px);
+    box-shadow: 7.5px 7.5px 0px var(--lu-borders) !important;
 }
 
 /* Risolviamo il problema del testo troppo attaccato */
@@ -407,8 +422,7 @@ h1 {
     z-index: 1000;
     left: 0; top: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.7);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(20px) saturate(150%);
 }
 
 .modal-content-page {
@@ -444,6 +458,10 @@ h1 {
     border-radius: 10px;
 }
 .close-modal {
+    visibility: hidden;
+}
+
+.close {
     visibility: hidden;
 }
 
@@ -483,13 +501,6 @@ margin: 0 0;
     box-shadow: none;
 
 }
-.close-modal {
-    visibility: hidden;
-}
-
-.close {
-    visibility: hidden;
-}
 
 /* Griglia interna identica al Box Didi */
 .modal-grid {
@@ -501,7 +512,7 @@ margin: 0 0;
 
 
 #categoryModal .modal-content-page {
-    background-color: var(--lu-main);
+    background: none;
     padding: 8 8 8 8; /* Portiamo a 0 per far toccare il testo ai bordi se serve */
     border: 3px solid var(--lu-borders);
     width: 90%;
@@ -534,9 +545,7 @@ margin: 0 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1000;
-    background-color: rgba(0,0,0,0.7);
-    /* Centratura contenuto */
+    z-index: 10000;
     align-items: center;
     justify-content: center;
 }
@@ -590,7 +599,7 @@ body.modal-open {
     position: absolute;
     top: 25px;   /* Distanza dal bordo superiore */
     left: 60px;  /* Distanza dal bordo sinistro */
-    display: flex;
+    display: hidden;
     flex-direction: column;
     align-items: flex-start; /* Allinea a sinistra */
     z-index: 10; /* Sopra lo sfondo, sotto i modali */
@@ -633,19 +642,6 @@ body.modal-open {
     max-width: 1200px;
     margin: 0 auto;
     /* ... il resto delle tue regole ... */
-}
-
-.header-container {
-    position: relative;
-    display: inline-block; /* Avvolge strettamente il nome */
-    width: 100%;
-    text-align: center;
-}
-
-.header-container {
-    position: relative;
-    text-align: center;
-    width: 100%;
 }
 
 /* Contenitore badge sotto il nome */
@@ -698,7 +694,7 @@ body.modal-open {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin-top: 10px;
+    margin-top: 30px;
 }
 
 .badge-icon {
@@ -721,26 +717,55 @@ body.modal-open {
 }
 
 /* Tooltip: assicurati che z-index sia alto per non finire sotto altri elementi */
+.badge-item {
+    position: relative; /* Indispensabile per il posizionamento dei figli */
+}
+
 .badge-item::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: -100%; /* Lo alza sopra la medaglia */
+    /* Cambiato da bottom a top per farlo apparire sopra ed evitare conflitti con i pollici */
+    bottom: 110%; 
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
     font-size: 0.75rem;
-    white-space: nowrap;
+    
+    /* FIX PER MOBILE */
+    white-space: normal;      /* Permette al testo di andare a capo */
+    width: 140px;             /* Larghezza fissa per contenere il testo */
+    text-align: center;       /* Centra il testo multiriga */
+    line-height: 1.3;
+    
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease;
     pointer-events: none;
-    z-index: 1000;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 100000 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
+/* Mostra il tooltip al tocco prolungato o hover */
+.badge-item:hover::after,
+.badge-item:active::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Gestione dei bordi: evita che il primo e l'ultimo escano dallo schermo */
+.badge-item:first-child::after {
+    left: 0;
+    transform: translateX(0);
+}
+
+.badge-item:last-child::after {
+    left: auto;
+    right: 0;
+    transform: translateX(0);
+}
 .badge-item:hover::after {
     visibility: visible;
     opacity: 1;
@@ -761,7 +786,7 @@ body.modal-open {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--lu-accent) !important;
+    background-color:var(--lu-accent) !important;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -771,57 +796,6 @@ body.modal-open {
 }
 
 /* La Pokéball che gira */
-.pokeball-loader {
-    width: 60px;
-    height: 60px;
-    background: #fff;
-    border: 3px solid #333;
-    border-radius: 50%;
-    position: relative;
-    overflow: hidden;
-    animation: spin 1.2s linear infinite;
-}
-
-/* Metà superiore rossa */
-.pokeball-loader::before {
-    content: "";
-    position: absolute;
-    background: #ee1515;
-    width: 100%;
-    height: 50%;
-    top: 0;
-    border-bottom: 3px solid #333;
-}
-
-/* Pulsante centrale */
-.pokeball-loader::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    background: #fff;
-    border: 3px solid #333;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-#loading-screen p {
-    margin-top: 15px;
-    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
-    font-weight: bold;
-    color: #ffffff !important;
-}
-
-/* Bio allenatore e login */
-
 
 .admin-panel {
     background: #333;
@@ -904,6 +878,7 @@ body.modal-open {
     border-radius: 30px;
     display: inline-block; /* Avvolge il testo */
     margin-top: 10px;
+
 }
 
 /* Pulsantino Modifica discreto */
@@ -1054,23 +1029,19 @@ body.modal-open {
 
 .music-btn {
     position: fixed;
-    right: 120px !important;
+    top: 15px;
+    right: 15px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 50%;
     width: 45px;
     height: 45px;
-    background: none !important;
-    border: none !important;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    z-index: 9999;
-    transition: all 0.3s ease;
+    z-index: 1100;
 }
 
-.music-btn:hover {
-    transform: scale(1.1);
-}
 
 #music-icon {
     font-size: 20px;
@@ -1115,7 +1086,7 @@ body.modal-open {
 }
 
 .music-item.selected {
-    border-left: 3px solid var(--accent-main, #00ffff);
+    border-left: 3px solid var(--lu-accent, #00ffff);
     background: #1a1a1a;
 }
 
@@ -1135,7 +1106,7 @@ body.modal-open {
 }
 
 .preview-btn:hover {
-    background: var(--accent-main, #00ffff);
+    background: var(--lu-accent, #00ffff);
     color: black;
 }
 
@@ -1157,7 +1128,7 @@ body.modal-open {
     left: 0;
     width: 100%;
     background: #111;
-    border: 1px solid var(--accent-main);
+    border: 1px solid var(--lu-accent);
     border-radius: 5px;
     z-index: 1000;
     box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
@@ -1199,7 +1170,7 @@ body.modal-open {
     left: 0;
     width: 100%;
     background: #111;
-    border: 1px solid var(--accent-main, #00ffff);
+    border: 1px solid var(--lu-accent, #00ffff);
     border-radius: 5px;
     z-index: 9999;
     box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
@@ -1248,7 +1219,7 @@ body.modal-open {
 }
 
 .music-item.selected {
-    border-left: 3px solid var(--accent-main, #00ffff);
+    border-left: 3px solid var(--lu-accent, #00ffff);
     background: #1a1a1a;
 }
 
@@ -1264,6 +1235,11 @@ body.modal-open {
     display: none; 
     pointer-events: none;
     z-index: 9999;
+}
+
+/* Sostituisci .modal-content h2 con il selettore che usi per il titolo */
+.modal-content h2 {
+    color: #000000 !important;
 }
 
 .streak-container {
@@ -1354,12 +1330,12 @@ body.modal-open {
 .streak-name {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #eeeeee;
 }
 
 .streak-current-val {
     font-size: 0.75rem;
-    color: #1a1a1a;
+    color: #eeeeee;
 }
 
 /* Barra di progresso sottile e pulita */
@@ -1607,3 +1583,178 @@ color: #1a1a1a;
     left: auto;
     right: 110%;
 }
+
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+    /* 1. Rimuove il contorno di focus su tutto (inclusi i link e il toggle music) */
+    *:focus, 
+    *:active, 
+    *:focus-visible {
+        outline: none !important;
+        box-shadow: none !important; /* Alcuni browser usano box-shadow invece di outline */
+    }
+
+    /* 2. Rimuove l'evidenziazione blu al tocco specifica di Chrome/Android/Safari */
+    * {
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-user-select: none; /* Impedisce la selezione del testo involontaria mentre giochi */
+    }
+
+    /* 3. Per il toggle music specifico, se è un div o un bottone */
+    #music-toggle {
+        user-select: none;
+        outline: none;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+
+    /* Opzionale: se vuoi che i pulsanti abbiano comunque un feedback 
+    ma senza quel contorno brutto, usa lo stato active che abbiamo già creato */
+    button:active, a:active {
+        transform: translateY(2px);
+    }
+
+    /* --- APP BOTTOM DASHBOARD (Trainer Stats + Best Format) --- */
+
+/* Nascondiamo o resettiamo la colonna laterale per liberare il layout */
+.side-column {
+    display: contents; /* Annulla il contenitore padre per gestire i figli singolarmente */
+}
+
+.stats-sidebar.trainer-panel {
+    flex: 1;
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    height: 10vh;
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding: 10px 15px env(safe-area-inset-bottom);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    background: var(--card-bg);
+    border: 2px solid var(--lu-borders) !important;
+    box-shadow: 5px 5px 0px var(--lu-borders) !important;
+}
+
+/* Header della barra: Centrato e compatto */
+.panel-header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.badge-accent {
+    font-size: 0.6rem;
+    padding: 2px 8px;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+/* Griglia trasformata in riga orizzontale */
+.stats-grid-trainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    overflow-x: auto; /* Permette lo scroll se i dati sono troppi */
+    gap: 15px;
+    padding-bottom: 5px;
+}
+
+/* Ogni singolo dato della barra */
+.stat-row-new {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 55px;
+}
+
+.stat-label {
+    font-size: 0.55rem;
+    color: #eeeeee;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+
+.stat-value {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    white-space: nowrap;
+}
+
+/* Il divisore <hr> diventa una linea verticale */
+.panel-divider {
+    width: 1px;
+    height: 20px;
+    background: #e0e0e0;
+    border: none;
+    margin: 0;
+}
+
+
+.close-btn {
+    visibility: visible !important;
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Spostata a sinistra */
+    font-size: 35px; /* Leggermente più piccola della X per sembrare una freccia */
+    color: white;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.1); /* Cerchio leggero di feedback */
+    border-radius: 50%;
+}
+

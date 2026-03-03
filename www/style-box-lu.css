@@ -105,8 +105,7 @@ h1 {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(10, 10, 10, 0.5); /* Sfondo scuro semi-trasparente */
-    backdrop-filter: blur(20px) saturate(180%); /* Effetto vetro iOS/Android */
+    backdrop-filter: blur(20px) saturate(150%); /* Effetto vetro iOS/Android */
     z-index: 9999;
     overflow-y: auto;
 }
@@ -136,7 +135,7 @@ h1 {
 
 .back-arrow {
     font-size: 1.5rem;
-    color: var(--lu-main);
+    color: #eeeeee;
     background: rgba(255,255,255,0.05);
     border: none;
     width: 40px;
@@ -159,7 +158,6 @@ h1 {
 
 /* Row dei Pokémon: Card più spaziosa */
 .modal-pkm-row {
-    background: rgba(255, 255, 255, 0.03);
     border-radius: 28px;
     padding: 20px;
     margin-bottom: 20px;
@@ -167,6 +165,9 @@ h1 {
     display: flex;
     gap: 20px;
     transition: transform 0.2s;
+    background: var(--card-bg);
+    border: 2px solid #6c026c !important;
+    box-shadow: 5px 5px 0px #6c026c !important;
 }
 
 /* --- BOTTONE ADMIN FLOATING --- */

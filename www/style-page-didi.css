@@ -3,18 +3,18 @@
     --bg-app: #0f0f0f;
     --text-primary: #ffffff;
     --text-dim: #b3b3b3;
-    --didi-color: #7fe9bf; 
-    --bg-color: var(--didi-color); 
-    --accent-main: #84cfb1;
-    --card-bg: #56b891;
     --text-main: #eeeeee; 
     --text-dim: #1a1a1a;
     --title-main: #1a1a1a;
-    --accent-dark: #219667; 
     --shadow: rgba(74, 55, 40, 0.12);
-    --bg-body: #dfdfdf;         
+    --bg-body: #dfdfdf;
+    --accent-dark: #219667; 
+    --bg-color: var(--didi-color); 
+    --accent-main: #84cfb1;
+    --card-bg: #56b891;         
     --bg-gradient-end: #097e4f; 
     --didi-borders: #025534;
+    --didi-color: #7fe9bf; 
 }
 
 html, body { 
@@ -425,8 +425,7 @@ h1 {
     z-index: 1000;
     left: 0; top: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.7);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(20px) saturate(150%);
 }
 
 .modal-content-page {
@@ -549,9 +548,7 @@ margin: 0 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1000;
-    background-color: rgba(0,0,0,0.7);
-    /* Centratura contenuto */
+    z-index: 10000;
     align-items: center;
     justify-content: center;
 }
@@ -723,26 +720,55 @@ body.modal-open {
 }
 
 /* Tooltip: assicurati che z-index sia alto per non finire sotto altri elementi */
+.badge-item {
+    position: relative; /* Indispensabile per il posizionamento dei figli */
+}
+
 .badge-item::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: -100%; /* Lo alza sopra la medaglia */
+    /* Cambiato da bottom a top per farlo apparire sopra ed evitare conflitti con i pollici */
+    bottom: 110%; 
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
     font-size: 0.75rem;
-    white-space: nowrap;
+    
+    /* FIX PER MOBILE */
+    white-space: normal;      /* Permette al testo di andare a capo */
+    width: 140px;             /* Larghezza fissa per contenere il testo */
+    text-align: center;       /* Centra il testo multiriga */
+    line-height: 1.3;
+    
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease;
     pointer-events: none;
-    z-index: 1000;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 100000 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
+/* Mostra il tooltip al tocco prolungato o hover */
+.badge-item:hover::after,
+.badge-item:active::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Gestione dei bordi: evita che il primo e l'ultimo escano dallo schermo */
+.badge-item:first-child::after {
+    left: 0;
+    transform: translateX(0);
+}
+
+.badge-item:last-child::after {
+    left: auto;
+    right: 0;
+    transform: translateX(0);
+}
 .badge-item:hover::after {
     visibility: visible;
     opacity: 1;
@@ -1006,23 +1032,19 @@ body.modal-open {
 
 .music-btn {
     position: fixed;
-    right: 120px !important;
+    top: 15px;
+    right: 15px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 50%;
     width: 45px;
     height: 45px;
-    background: none !important;
-    border: none !important;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    z-index: 9999;
-    transition: all 0.3s ease;
+    z-index: 1100;
 }
 
-.music-btn:hover {
-    transform: scale(1.1);
-}
 
 #music-icon {
     font-size: 20px;
@@ -1311,12 +1333,12 @@ body.modal-open {
 .streak-name {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #eeeeee;
 }
 
 .streak-current-val {
     font-size: 0.75rem;
-    color: #1a1a1a;
+    color: #eeeeee;
 }
 
 /* Barra di progresso sottile e pulita */
@@ -1568,6 +1590,33 @@ color: #1a1a1a;
 .pokeball-loader {
     width: 60px;
     height: 60px;
+    border: 5px solid #fff;
+    border-radius: 50%;
+    border-top-color: var(--lu-main); /* Usa il viola di Lu */
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+    z-index:100000
+}
+
+#loading-screen p {
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    animation: pulse 1.5s infinite;
+    z-index:100000;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 
+    0%, 100% { opacity: 1; } 
+    50% { opacity: 0.4; } 
+}
+
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
     background: #fff;
     border: 3px solid #333;
     border-radius: 50%;
@@ -1607,7 +1656,6 @@ color: #1a1a1a;
     to { transform: rotate(360deg); }
 }
 
-
     /* 1. Rimuove il contorno di focus su tutto (inclusi i link e il toggle music) */
     *:focus, 
     *:active, 
@@ -1646,17 +1694,16 @@ color: #1a1a1a;
     position: fixed;
     bottom: 10px;
     width: 100%;
-    /* Altezza fissa per occupare il terzo inferiore circa */
     height: 10vh;
-    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
-    z-index: 9999;
     padding: 10px 15px env(safe-area-inset-bottom);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    background: var(--card-bg);
+    border: 2px solid var(--didi-borders) !important;
+    box-shadow: 5px 5px 0px var(--didi-borders) !important;
 }
 
 /* Header della barra: Centrato e compatto */
@@ -1696,7 +1743,7 @@ color: #1a1a1a;
 
 .stat-label {
     font-size: 0.55rem;
-    color: #888;
+    color: #eeeeee;
     text-transform: uppercase;
     font-weight: 700;
     margin-bottom: 2px;
@@ -1718,3 +1765,24 @@ color: #1a1a1a;
     border: none;
     margin: 0;
 }
+
+
+.close-btn {
+    visibility: visible !important;
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Spostata a sinistra */
+    font-size: 35px; /* Leggermente più piccola della X per sembrare una freccia */
+    color: white;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.1); /* Cerchio leggero di feedback */
+    border-radius: 50%;
+}
+

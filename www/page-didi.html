@@ -20,11 +20,9 @@
     <span id="music-icon">🔇</span>
 </div>
 
-
-        <div id="loading-screen">
+    <div id="loading-screen">
     <div class="pokeball-loader"></div>
 </div>
-
     <nav class="hamburger-menu">
         <input type="checkbox" id="menu-toggle" />
         <label for="menu-toggle" class="menu-button-container">
@@ -41,9 +39,6 @@
         </ul>
     </nav>  
 
-    <div class="admin-lock-container">
-    <button id="login-btn" onclick="gestisciLogin()" class="lock-btn">🔒</button>
-</div>
 
 <div id="admin-modal" class="modal-admin-overlay">
     <div class="modal-admin-content">
@@ -119,18 +114,10 @@
                             <span class="stat-value"><b id="global-setv">--</b> / <b id="global-setp">--</b></span>
                         </div>
                         <div class="stat-row-new">
-                            <span class="stat-label">Global Points</span>
+                            <span class="stat-label">Points</span>
                             <span id="global-punti" class="stat-value">--</span>
                         </div>
-                        <hr class="panel-divider">
-                        <div class="stat-row-new">
-                            <span class="stat-label">% W</span>
-                            <span id="global-pct-win" class="stat-value">--</span>
-                        </div>
-                        <div class="stat-row-new">
-                            <span class="stat-label">% Sets W</span>
-                            <span id="global-pct-set" class="stat-value">--</span>
-                        </div>
+                    
                     </div>
                 </aside>
 
@@ -184,6 +171,7 @@
     </div>
 <div id="categoryModal" class="modal-page">
     <div class="modal-content-page">
+        <span class="close-btn" onclick="document.getElementById('categoryModal').style.display='none'">&times;</span>
         <div id="modal-floater-left" class="modal-floater">
             <div class="stat-mini-box">
                 <span class="label">Points/Match</span>
@@ -204,7 +192,7 @@
 
         <div class="modal-header-cat">
             <span class="close-modal">&times;</span>
-            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: -25px; color: #1a1a1a;">Trainer stats</h2>
+            <h2 id="modal-cat-name" style="margin-bottom:25px; margin-top: -25px; color: #eeeeee;">Trainer stats</h2>
         </div>
         
         <div id="modal-body-stats"></div>
@@ -1128,11 +1116,6 @@ function popolaCerchio(teamCorrente) {
             img.style.cursor = "pointer"; 
             
             img.onerror = function() { this.src = `https://play.pokemonshowdown.com/sprites/dex/${cleanName}.png`; };
-
-            // CLICK: Usiamo direttamente i dati 'pkm' che abbiamo già nel loop!
-            img.onclick = () => {
-                apriPkmDettaglio(pkm, cleanName);
-            };
 
             slot.appendChild(img);
         }
