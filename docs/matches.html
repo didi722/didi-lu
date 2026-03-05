@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="style-box-lu.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
 </head>
 <body>
@@ -77,24 +80,34 @@
         </div>
 
         <div class="admin-col col-replays">
-            <h4 class="col-title">Replays & Set Winners</h4>
-            <div id="replays-edit-list">
-                <script>
-                    for(let i=1; i<=5; i++) {
-                        document.write(`
-                            <div class="set-row-compact">
-                                <span class="set-num">S${i}</span>
-                                <input type="text" id="edit-replay-s${i}" placeholder="file.html">
-                                <div class="winner-selector">
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
-                                </div>
-                            </div>
-                        `);
-                    }
-                </script>
-            </div>
-        </div>
+    <h4 class="col-title">Replays & Set Winners</h4>
+    <div id="replays-edit-list">
+        <script>
+            for(let i=1; i<=5; i++) {
+                document.write(`
+                    <div class="set-row-compact">
+                        <span class="set-num">S${i}</span>
+                        
+                        <div class="input-upload-group" style="display: flex; align-items: center; gap: 5px; flex-grow: 1;">
+                            <input type="text" id="edit-replay-s${i}" placeholder="file.html" style="flex-grow: 1;">
+                            
+                            <input type="file" id="file-s${i}" accept=".html" style="display:none" onchange="uploadReplay(${i})">
+                            
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-s${i}').click()" title="Carica video">
+                                📁
+                            </button>
+                        </div>
+
+                        <div class="winner-selector">
+                            <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D', true)" id="edit-win-${i}-D">D</button>
+                            <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L', true)" id="edit-win-${i}-L">L</button>
+                        </div>
+                    </div>
+                `);
+            }
+        </script>
+    </div>
+</div>
 
     </div>
 
@@ -144,17 +157,22 @@
             <div id="replays-inputs-list">
                 <script>
                     for(let i=1; i<=5; i++) {
-                        document.write(`
-                            <div class="set-row-compact">
-                                <span class="set-num">S${i}</span>
-                                <input type="text" id="replay-s${i}" placeholder="file.html">
-                                <div class="winner-selector">
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D')" id="win-${i}-D">D</button>
-                                    <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L')" id="win-${i}-L">L</button>
-                                </div>
-                            </div>
-                        `);
-                    }
+    document.write(`
+        <div class="set-row-compact">
+            <span class="set-num">S${i}</span>
+            <input type="text" id="replay-s${i}" placeholder="URL Replay..." readonly>
+            
+            <input type="file" id="file-new-s${i}" style="display:none" accept=".html" onchange="uploadNuovoReplay(${i})">
+            
+            <button type="button" class="btn-browse" onclick="document.getElementById('file-new-s${i}').click()">📁</button>
+            
+            <div class="winner-selector">
+                <button type="button" class="btn-win" onclick="selectWinner(${i}, 'D')" id="win-${i}-D">D</button>
+                <button type="button" class="btn-win" onclick="selectWinner(${i}, 'L')" id="win-${i}-L">L</button>
+            </div>
+        </div>
+    `);
+}
                 </script>
             </div>
         </div>
@@ -598,34 +616,32 @@ function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiT
 
 // Funzione principale per caricare il video nell'iframe
 window.caricaVideoDirect = function(urlFile, btnElement) {
-    console.log("File da caricare ricevuto dal DB:", urlFile);
+    console.log("Link ricevuto dal DB:", urlFile);
 
     // 1. Gestione estetica dei bottoni
     document.querySelectorAll('.btn-set').forEach(b => b.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
-    
-    // 2. Costruzione del percorso RELATIVO
-    // Assicuriamoci che il file finisca con .html se non lo ha già
-    let nomeFile = urlFile.trim();
-    if (!nomeFile.toLowerCase().endsWith('.html')) {
-        nomeFile += '.html';
-    }
 
-    // Se il database ha solo il nome (es: "M0001_1_D"), aggiungiamo "video/"
-    // Se ha già "video/M0001_1_D.html", lo lasciamo stare
-    const pathFinale = nomeFile.startsWith('video/') ? nomeFile : `video/${nomeFile}`;
+    // 2. Controllo dell'URL
+    const iframe = document.getElementById('replayFrame'); // Assicurati che l'ID sia corretto (o 'videoFrame')
     
-    console.log("Percorso finale generato:", pathFinale);
-
-    // 3. Puntamento Iframe
-    const iframe = document.getElementById('replayFrame');
     if (iframe) {
-        // Importante: usiamo window.location.origin per assicurarci che parta dalla radice del sito
-        const urlAssoluto = window.location.origin + "/" + pathFinale;
-        iframe.src = pathFinale; 
-        
-        // Debug per te: copia questo link nella console e vedi se si apre
-        console.log("Prova ad aprire questo link manualmente:", urlAssoluto);
+        if (urlFile && urlFile.startsWith('http')) {
+            // Se è un link Firebase (inizia con http), caricalo direttamente
+            console.log("Caricamento da Cloud Storage...");
+            iframe.src = urlFile;
+        } else if (urlFile) {
+            // Se è ancora un vecchio nome file senza URL, gestiamolo per retrocompatibilità
+            let nomeFile = urlFile.trim();
+            if (!nomeFile.toLowerCase().endsWith('.html')) nomeFile += '.html';
+            const pathLocale = nomeFile.startsWith('video/') ? nomeFile : `video/${nomeFile}`;
+            
+            console.log("Caricamento legacy locale:", pathLocale);
+            iframe.src = pathLocale;
+        } else {
+            console.warn("Nessun URL fornito per questo video.");
+            iframe.src = "about:blank";
+        }
     }
 };
 
@@ -1371,6 +1387,48 @@ function selectWinner(setNum, winner, isEdit = false) {
     }
 }
 
+async function uploadReplay(setNum) {
+    const matchID = document.getElementById('edit-match-id').value;
+    const fileInput = document.getElementById(`file-s${setNum}`);
+    const textInput = document.getElementById(`edit-replay-s${setNum}`);
+    const file = fileInput.files[0];
+
+    if (!file || !matchID) {
+        alert("ID Match o File mancante!");
+        return;
+    }
+
+    textInput.value = "Uploading...";
+
+    try {
+        // Specifichiamo manualmente il bucket se quello automatico fallisce
+        // SOSTITUISCI 'pokemonsuite-didi-lu.firebasestorage.app' con quello che vedi nella console
+        const storageBucketName = 'pokemonsuite-didi-lu.firebasestorage.app'; 
+        const storageRef = firebase.app().storage(storageBucketName).ref();
+        const fileRef = storageRef.child(`replays/${matchID}/set${setNum}.html`);
+
+        const metadata = { contentType: 'text/html' };
+        
+        // Eseguiamo l'upload
+        const snapshot = await fileRef.put(file, metadata);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        // Scrittura nel Database
+        await firebase.database().ref(`matches/${matchID}/replays/set${setNum}`).update({
+            link: downloadURL
+        });
+
+        textInput.value = downloadURL;
+        
+
+    } catch (error) {
+        console.error("Errore dettagliato:", error);
+        // Se l'errore è 'storage/unauthorized', controlla le Regole di Storage!
+        alert("Errore nell'upload. Controlla la console (F12).");
+        textInput.value = "";
+    }
+}
+
 async function gestisciSalvataggioMatch() {
     const matchId = document.getElementById('match-id-nascosto').value;
     
@@ -1404,6 +1462,41 @@ async function gestisciSalvataggioMatch() {
         alert("Match salvato con successo!");
         chiudiPannelloMatch();
     } catch (e) { console.error(e); }
+}
+
+async function uploadNuovoReplay(setNum) {
+    // Se non abbiamo ancora un ID per il nuovo match, lo generiamo ora
+    let matchID = document.getElementById('match-id-nascosto').value;
+    if (!matchID) {
+        matchID = firebase.database().ref().child('matches').push().key;
+        document.getElementById('match-id-nascosto').value = matchID;
+    }
+
+    const fileInput = document.getElementById(`file-new-s${setNum}`);
+    const textInput = document.getElementById(`replay-s${setNum}`);
+    const file = fileInput.files[0];
+
+    if (!file) return;
+
+    textInput.value = "Uploading...";
+
+    try {
+        // Usa lo stesso bucket e percorso della modifica
+        const storageBucketName = 'pokemonsuite-didi-lu.firebasestorage.app'; 
+        const storageRef = firebase.app().storage(storageBucketName).ref();
+        const fileRef = storageRef.child(`replays/${matchID}/set${setNum}.html`);
+
+        const snapshot = await fileRef.put(file, { contentType: 'text/html' });
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        // Scriviamo l'URL nell'input così la funzione salvaMatchFirebase() lo leggerà
+        textInput.value = downloadURL;
+      
+    } catch (error) {
+        console.error(error);
+        alert("Errore upload: " + error.message);
+        textInput.value = "";
+    }
 }
 
 async function caricaVideoDirect(matchID, setNum, vincitore, btn) {
