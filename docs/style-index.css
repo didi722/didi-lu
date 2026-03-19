@@ -906,7 +906,7 @@ input, select {
     width: 100%;
     box-sizing: border-box;
     margin-left:10%;
-    margin-top:15%;
+    margin-top:12%;
 }
 
 /* 3. Titoli rimpiccioliti */
@@ -1034,7 +1034,7 @@ input, select {
 .input-group { margin-bottom: 15px; }
 .input-group input { 
     width: 100%; padding: 10px; 
-    background: rgba(0,0,0,0.3); border: 1px solid #444; color: white; 
+    background: rgba(0,0,0,0.3); border: 1px solid #444; color: black; 
 }
 
 .btn-login { width: 100%; padding: 12px; background: #2ecc71; border: none; color: white; cursor: pointer; font-family: 'Josefin Sans', sans-serif;}
