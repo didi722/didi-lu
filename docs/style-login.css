@@ -1,0 +1,148 @@
+:root {
+    --yellow: #ffbd44;
+    --bg-body-index: #dfdfdf;   
+    --bg-gradient-end-index: #b2b2b2;
+    --cards: #31c489;
+    --borders: #025534;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, var(--bg-body-index) -50%, var(--bg-gradient-end-index) 100%) !important;
+    margin: 0;
+    min-height: 100vh; 
+    display: block;    
+    overflow-y: auto; 
+}
+/* --- MODALE LOGIN NEUBRUTALIST --- */
+
+/* Sfondo oscurato del modale */
+#login-modal.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    
+    /* Questo è il motore della centratura */
+    display: flex;
+    justify-content: center; /* Centra orizzontalmente */
+    align-items: center;     /* Centra verticalmente */
+    
+    background-color: rgba(0, 0, 0, 0.1); /* Leggero scurimento se vuoi */
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+}
+
+/* Il contenitore principale (La card) */
+#login-modal .modal-content {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 12px 12px 0px #000;
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    border-radius: 0;
+    
+    /* RIMOSSO position: fixed, top: 0, left: 0 */
+    /* Ora la card si lascia posizionare dal Flexbox del padre */
+    position: relative; 
+}
+
+/* Titolo Login */
+#login-modal h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    border-bottom: 4px solid #000;
+    display: inline-block;
+    padding-bottom: 5px;
+    color: black !important;
+}
+
+/* Gruppo Input */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: black !important;
+}
+
+/* Campi Input */
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 3px solid #000;
+    font-family: inherit;
+    font-weight: 600;
+    background: #f0f0f0;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-group input:focus {
+    background: #fff;
+    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    transform: translate(-2px, -2px);
+}
+
+/* Pulsante Login */
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    background: #31c489; /* Il verde che usi altrove */
+    color: #000;
+    border: 3px solid #000;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 6px 6px 0px #000;
+    transition: all 0.1s;
+    margin-top: 10px;
+    transform: rotate(-2deg);
+}
+
+.btn-login:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0px #000;
+}
+
+.btn-login:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* Tasto Chiudi (X) */
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #ff4545; /* Rosso errore al passaggio */
+}
+
+/* Messaggio Errore */
+.error-msg {
+    color: #ff4545;
+    font-weight: 700;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    text-align: center;
+    text-transform: uppercase;
+}

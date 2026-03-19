@@ -1,0 +1,787 @@
+/* --- CONFIGURAZIONE NEUBRUTALIST --- */
+:root {
+    --bg-page: #f0f0f0;         /* Grigio chiarissimo quasi bianco */
+    --accent: #ff5350;          /* Rosso Pokéball saturo */
+    --black: #000000;
+    --white: #ffffff;
+    --shadow: 8px 8px 0px #000000; /* L'anima del neubrutalism: ombra netta e dura */
+    --shadow-small: 4px 4px 0px #000000;
+    --yellow: #ffbd44;
+    --bg-body-index: #dfdfdf;   
+    --bg-gradient-end-index: #b2b2b2;
+    --blue: #2e53cd;
+    --blue-border: #092377;
+    --save: #16a445;
+    --save-border:#056425;
+    --cancel:#b51e1e;
+    --cancel-border:#6d0b0b;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--black);
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+}
+
+.hub-hero {
+    padding: 40px 10px 40px 10px; /* Ridotto drasticamente */
+    border-bottom: 5px solid var(--black);
+    text-align: center;
+}
+
+.hub-title-display {
+    font-family: 'Josefin Sans', sans-serif !important;
+    font-size: 2.2rem; /* Più piccolo per non rubare spazio */
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--white);
+    -webkit-text-stroke: 1.2px var(--black);
+    margin: 0;
+}
+
+.hub-hero {
+    border-bottom: 5px solid var(--black);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hub-title-display {
+    font-family: 'Josefin Sans', sans-serif !important;
+    font-size: 2.5rem; /* Un po' più grande per dare impatto */
+    font-weight: 900;
+    text-transform: uppercase;
+    background: var(--black);
+    color: var(--white);
+    display: inline-block;
+    padding: 10px 25px;
+    border: 4px solid var(--black); /* Bordo invisibile ma serve per spessore */
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.3); /* Ombra semi-trasparente per non appesantire troppo la hero */
+    transform: rotate(-2deg); 
+    -webkit-text-stroke: 0px; 
+    margin: 0;
+}
+
+
+/* --- GRID LAYOUT --- */
+.hub-main-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px; /* Gap ridotto */
+    max-width: 1000px; /* Container più stretto per densità maggiore */
+    margin: -30px auto 0; /* Sale sopra la hero */
+    padding: 0 15px;
+}
+
+/* --- CARD COMPATTE --- */
+.hub-column {
+    background: var(--white);
+    border: 3px solid var(--black); /* Bordo leggermente più sottile */
+    box-shadow: 5px 5px 0px var(--black);
+    padding: 18px; /* Padding interno ridotto */
+}
+
+.section-title {
+    background: var(--black);
+    color: var(--white);
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 1rem; /* Titoli sezioni più piccoli */
+    font-weight: 700;
+    margin-bottom: 15px;
+    transform: rotate(-1deg);
+}
+
+/* --- SETTINGS PIÙ DENSI --- */
+.setting-item {
+    margin-bottom: 12px; /* Spazio tra i campi ridotto */
+    cursor: pointer;
+}
+
+.setting-item label {
+    font-size: 0.8rem; /* Etichette piccole ma bold */
+    font-weight: 800;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.setting-item select, 
+.dropdown-header {
+    padding: 8px 12px; /* Padding input ridotto */
+    font-size: 0.9rem;
+    border: 2px solid var(--black);
+    box-shadow: 3px 3px 0px var(--black);
+    cursor: pointer;
+}
+
+.setting-item textarea {
+    padding: 8px 12px; /* Padding input ridotto */
+    font-size: 0.9rem;
+    border: 2px solid var(--black);
+    box-shadow: 3px 3px 0px var(--black);
+}
+
+.setting-item textarea {
+    height: 60px; /* Bio più bassa */
+}
+
+
+.bio-wrapper {
+    padding: 12px;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+    border: 2px solid var(--black);
+    box-shadow: 3px 3px 0px var(--black);
+}
+
+#bio-input {
+    width: 100%;             /* Occupa tutta la larghezza del contenitore */
+    min-height: 150px;       /* Altezza minima più generosa */
+    padding: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+    border: 3px solid #000;  /* Bordo spesso stile hub */
+    box-shadow: 4px 4px 0px #000; /* Ombra netta */
+    background-color: #fff;
+    resize: vertical;        /* Permette all'utente di allungarla solo verticalmente */
+    outline: none;
+    transition: transform 0.1s ease;
+}
+
+#bio-input:focus {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #000;
+}
+
+/* Container opzionale per distanziare meglio */
+.setting-item textarea {
+    display: block;
+    margin-top: 10px;
+}
+
+#trainer-bio-display {
+    font-weight: 600;
+    color: var(--black);
+    font-size: 1.1rem;
+}
+
+/* --- SETTINGS SECTION (DESTRA) --- */
+
+.setting-item textarea, 
+.setting-item select, 
+.dropdown-header {
+    width: 100%;
+    background: var(--white);
+    border: 3px solid var(--black);
+    padding: 15px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: var(--shadow-small);
+    box-sizing: border-box;
+}
+
+.setting-item textarea:focus {
+    outline: none;
+    background: #fffbeb; /* Giallino al focus */
+}
+
+/* --- BOTTONE SALVA --- */
+.save-btn-hub {
+    width: 100%;
+    background: #4ade80; /* Un verde neon brutale */
+    border: 4px solid var(--black);
+    padding: 25px;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.1s;
+    margin-top: 50px;
+    display: block;
+    transform: rotate(1.5deg);
+    font-family: 'Josefin Sans', sans-serif;
+    letter-spacing: 4px;
+}
+
+.save-btn-hub:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 12px 12px 0px var(--black);
+}
+
+.save-btn-hub:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+
+/* --- BADGES --- */
+.player-badges {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.badge-item {
+    background: var(--white);
+    border: 3px solid var(--black);
+    padding: 10px;
+    box-shadow: var(--shadow-small);
+}
+
+.badge-item img {
+    width: 50px;
+    height: 50px;
+    display: block;
+}
+
+/* --- DROPDOWN MUSICA --- */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.custom-music-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenuto inizialmente nascosto */
+.dropdown-content {
+    display: none; 
+    position: absolute;
+    /* Cambia da top: 100% a bottom: calc(100% + 5px) */
+    bottom: calc(100% + 5px); 
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 3px solid black;
+    box-shadow: 8px -8px 0px black; /* Ombra invertita verso l'alto */
+    z-index: 9999;
+    max-height: 250px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Assicurati che la classe show mantenga il display block */
+.dropdown-content.show {
+    display: block !important;
+}
+.music-search {
+    border: none;
+    border-bottom: 3px solid var(--black);
+    padding: 10px;
+    width: 100%;
+}
+
+.music-item {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.music-item:hover {
+    background-color: black;
+    color: white;
+}
+
+#music-search {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid black;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.dropdown-search-wrapper {
+    padding: 10px;
+    border-bottom: 2px solid black;
+    background: #f0f0f0;
+    position: sticky;
+    top: 0;
+}
+
+/* --- TOOLTIP SYSTEM --- */
+.custom-tooltip-wrapper {
+    position: relative;
+    display: flex;        /* Cambiato da inline-block a flex */
+    justify-content: center; /* Centra il contenuto orizzontalmente */
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+
+.custom-tooltip-content {
+    display: none;
+    position: absolute;
+    top: 110%; /* Apre verso l'alto */
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 4px solid #000;
+    box-shadow: 10px 10px 0px #000;
+    z-index: 9999 !important;
+    padding: 15px;
+    width: 350px;
+    pointer-events: auto;
+}
+.custom-tooltip-content.show { display: block; }
+
+.tooltip-header {
+    font-weight: 900;
+    text-transform: uppercase;
+    border-bottom: 2px solid #000;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    font-size: 0.8rem;
+}
+
+/* --- AVATAR GRID --- */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 icone per fila */
+    gap: 8px;
+}
+.avatar-item {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #000;
+    cursor: pointer;
+    background: #f0f0f0;
+}
+.avatar-item:hover { background: #ffff00; transform: scale(1.1); }
+
+/* Contenitore principale */
+/* Contenitore Palette */
+.modern-color-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr); /* 10 colori per riga */
+    gap: 4px;
+    padding: 10px;
+    background: #fff;
+}
+
+.color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px; /* Leggermente arrotondati */
+    cursor: pointer;
+    border: 2px solid rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.color-dot:hover {
+    transform: scale(1.15);
+    border-color: #000;
+    z-index: 2;
+}
+
+/* Scala di grigi separata */
+.gray-bar {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px;
+    border-top: 2px solid #000;
+    background: #f9f9f9;
+}
+
+/* Allineamento orizzontale */
+.appearance-flex-row {
+    display: flex;
+    gap: 30px;
+    justify-content: center; /* Centra orizzontalmente i due blocchi */
+    align-items: flex-start;
+    width: 100%;
+}
+/* Il quadratino colorato che sostituisce il testo */
+.color-preview-rect {
+    width: 60px;
+    height: 60px;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0px #000; /* Stile Neubrutalist */
+    background-color: #31C489; /* Colore iniziale */
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.color-preview-rect:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* Assicurati che il contenitore preview sia relativo per l'edit-badge */
+.color-current-preview {
+    position: relative;
+    display: inline-block;
+}
+
+/* Griglia di selezione nel modale/impostazioni */
+.badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.badge-item {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+/* La colonna che contiene i selettori (Avatar e Colore) */
+.appearance-section {
+    position: relative;
+    z-index: 10; /* Deve essere maggiore della sezione badge */
+}
+
+/* La colonna che contiene la Bio e i Badge */
+.settings-section, .showcase-section {
+    position: relative;
+    z-index: 1; /* Più basso della sezione appearance */
+}
+
+/* Tick Verde sopra il badge selezionato */
+.badge-item.selected::after {
+    content: '✅';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 16px;
+    background: white;
+    border-radius: 50%;
+    border: 1px solid #000;
+}
+
+/* Badge dentro il Trophy Showcase (il rettangolo tratteggiato) */
+.showcase-badge-img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    margin: 5px;
+    filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.2));
+}
+
+.badges-placeholder {
+    color: #888;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* Griglia di selezione badge */
+.badge-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    min-height: 50px;
+    justify-content: center;
+}
+
+/* Singolo badge nella griglia di scelta */
+.badge-item-selector {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.badge-item-selector img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Il Tick Verde */
+.badge-item-selector.selected::after {
+    /* Usiamo un carattere speciale o un'icona pulita */
+    content: '✓'; 
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    
+    /* Dimensioni e Forma */
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Stile Visivo: Verde "Emerald" con bordo netto */
+    background: #2ecc71; 
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px; /* Leggermente arrotondato ma non cerchio */
+    border: 1.5px solid #000; /* Bordo nero deciso per matchare lo stile */
+    
+    /* Ombra per profondità */
+    box-shadow: 2px 2px 0px rgba(0,0,0,1); 
+    z-index: 2;
+}
+
+/* Opzionale: scurisce leggermente il badge selezionato per farlo risaltare */
+.badge-item-selector.selected img {
+    filter: brightness(0.9) saturate(1.2);
+}
+
+.badge-item-selector:hover {
+    transform: scale(1.1);
+}
+
+/* Badge dentro lo showcase box */
+.showcase-badge-img {
+    width: 50px;
+    height: 50px;
+    margin: 5px;
+    filter: drop-shadow(2px 2px 0px #000);
+}   
+
+.top-auth-bar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 3000;
+}
+
+.auth-interaction {
+    /* Rimuovi trasparenze e blur */
+    background: white; /* Colore giallo vivace tipico del neubrutalism */
+    
+    /* Bordi neri spessi e netti */
+    border: 3px solid #000;
+    
+    
+    /* Colore testo nero per contrasto massimo */
+    color: #000;
+    
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    /* Ombra netta (senza sfocatura) */
+    box-shadow: 5px 5px 0px #000;
+    
+    /* Transizione rapida per l'effetto pressione */
+    transition: all 0.1s;
+}
+
+.auth-interaction:hover {
+    /* Effetto "spostamento" quando ci passi sopra */
+    background: white; /* Mantieni il colore o cambialo leggermente */
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px #000;
+}
+
+.auth-interaction:active {
+    /* Effetto "bottone premuto" */
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+#auth-icon {
+    font-size: 20px;
+    color: #000;
+}
+
+#auth-text {
+    font-weight: 900; /* Extra bold per stile fumetto/brutalista */
+    font-size: 14px;
+    text-transform: uppercase; /* Spesso usato nel neubrutalism */
+    letter-spacing: 1px;
+}
+/* Dropdown semplice per il logout */
+.user-dropdown {
+    display: none; 
+    position: absolute;
+    right: 100px;
+    top: 110%; /* Un po' più staccato dalla barra */
+    background: transparent; 
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    min-width: 180px;
+    flex-direction: column;
+    gap: 30px !important; /* Spazio tra le etichette */
+    z-index: 100;
+}
+
+/* Stile base per ogni singola voce (Card Neubrutalist) */
+.user-dropdown .menu-item, 
+.user-dropdown .logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: black !important;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: var(--yellow);
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px black;
+    transition: 0.2s;
+    cursor: pointer;
+    width: 100%;
+    margin-top:20px;
+}
+
+/* Rotazioni individuali per le etichette del menu */
+.user-dropdown .menu-item:nth-child(1) { transform: rotate(-2deg); }
+.user-dropdown .menu-item:nth-child(2) { transform: rotate(1.5deg); }
+.user-dropdown .logout-btn { transform: rotate(-1deg); margin-top: 5px; }
+
+/* Effetto Hover (si raddrizzano leggermente e si sollevano) */
+.user-dropdown .menu-item:hover, 
+.user-dropdown .logout-btn:hover {
+    background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
+    transform: translate(-3px, -3px) rotate(0deg);
+    box-shadow: 7px 7px 0px black;
+}
+
+/* Rimuoviamo il divisore classico, non serve più con questo stile */
+.menu-divider {
+    display: none;
+}
+
+/* Colore specifico per il Logout */
+.logout-btn {
+    background-color: #ff4444 !important; /* Rosso acceso */
+    color: white !important;
+    margin-top:20px !important;
+}
+
+/* Sfondo oscurato del modale */
+#login-modal.modal {
+    backdrop-filter: blur(4px); /* Leggero blur per focus */
+    z-index: 10000;
+    display: none !important;
+}
+
+/* Il contenitore principale (La card) */
+#login-modal .modal-content {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+    border-radius: 0; /* Via le arrotondature per vero stile Brutalist */
+}
+
+/* Titolo Login */
+#login-modal h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    border-bottom: 4px solid #000;
+    display: inline-block;
+    padding-bottom: 5px;
+    color: black !important;
+}
+
+/* Gruppo Input */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: black !important;
+}
+
+/* Campi Input */
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 3px solid #000;
+    font-family: inherit;
+    font-weight: 600;
+    background: #f0f0f0;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-group input:focus {
+    background: #fff;
+    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    transform: translate(-2px, -2px);
+}
+
+/* Pulsante Login */
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    background: #31c489; /* Il verde che usi altrove */
+    color: #000;
+    border: 3px solid #000;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 6px 6px 0px #000;
+    transition: all 0.1s;
+    margin-top: 10px;
+    transform: rotate(-2deg);
+}
+
+.btn-login:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0px #000;
+}
+
+.btn-login:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* Tasto Chiudi (X) */
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #ff4545; /* Rosso errore al passaggio */
+}
+
+/* Messaggio Errore */
+.error-msg {
+    color: #ff4545;
+    font-weight: 700;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    text-align: center;
+    text-transform: uppercase;
+}

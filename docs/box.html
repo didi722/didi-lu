@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Box Lu</title>
+    <title>Box</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-box-lu.css">
+    <link rel="stylesheet" href="style-box.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
 <body> 
@@ -20,42 +22,73 @@
 <audio id="bg-music" loop></audio>
 
 <div id="music-control" class="music-btn" onclick="toggleMusic()">
-    <span id="music-icon">🔇</span>
+    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
 </div>
 
-    <nav class="hamburger-menu">
-    <input type="checkbox" id="menu-toggle" />
-    <label for="menu-toggle" class="menu-button-container">
-        <div class="menu-button"></div>
-    </label>
-    <ul class="menu-items">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="page-didi.html">Didi</a></li>
-            <li><a href="box-didi.html">Box Didi</a></li>
-            <li><a href="page-lu.html">Lu</a></li>
-            <li><a href="box-lu.html">Box Lu</a></li>
-            <li><a href="matches.html">Fixtures</a></li>
-            <li><a href="rules.html">Rules</a></li>
-        </ul>
-</nav>
+    <main>
+    <div class="top-bar">
+        <div class="top-bar-inner">
+            
+            <section class="hub-hero">
+                <h1 class="hub-title-display">
+                    <span id="player-name-placeholder">...</span>'S BOX
+                </h1>
+            </section>
 
-    <h1>Box Lu</h1>
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Browse teams..." oninput="applicaFiltri()">
+                
+                <div class="select-group">
+                    <select id="categoryFilter" onchange="applicaFiltri()">
+                        <option value="">Format...</option>
+                    </select>
+                    <select id="sortFilter" onchange="applicaFiltri()">
+                        <option value="win">Max Wins</option>
+                        <option value="alpha">A-Z</option>
+                        </select>
+                </div>
+            </div>
 
-    <div class="controls">
-    <input type="text" id="searchInput" placeholder="Browse teams" oninput="applicaFiltri()">
-    <select id="categoryFilter" onchange="applicaFiltri()">
-    <option value="">Format...</option>
-</select>
-    <select id="sortFilter" onchange="applicaFiltri()">
-        <option value="default">Order for...</option>
-        <option value="alpha">A-Z</option>
-        <option value="win">Max Wins</option>
-        <option value="loss">Max Losses</option>
-        <option value="setV">Max Set Wins</option>
-        <option value="setP">Max Set Losses</option>
-        <option value="played">Max Games Played</option>
-    </select>
+        </div>
+    </div>
+</main>
+
+<div id="login-modal" class="modal">
+    <div class="modal-content glass-card">
+        <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="Your email">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-login">Login</button>
+            <div id="login-error" class="error-msg"></div>
+        </form>
+    </div>
 </div>
+
+
+<div class="top-auth-bar">
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+        <i id="auth-icon" class="fas fa-lock"></i>
+        <span id="auth-text"></span>
+    </div>
+    <div id="user-menu" class="user-dropdown">
+        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
+        
+        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+    </div>
+</div>
+
 
     <div class="grid" id="teamsGrid">
         <div class="loading">Loading data from Pokédex...</div>
@@ -87,27 +120,12 @@
     <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
 </div>
 
-<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Format">
+<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Team">
     <span class="plus-icon">+</span>
 </button>
 
-    <script>
-
-        function apriAdminProtetto() {
-    const passwordSegreta = "luca2026"; // <-- Scegli la tua password qui
-    const inputUtente = prompt("Inserisci la password amministratore per accedere all'Importer:");
-
-    if (inputUtente === passwordSegreta) {
-        document.getElementById('admin-panel').style.display = 'block';
-    } else if (inputUtente === null) {
-        // L'utente ha cliccato "Annulla", non facciamo nulla
-    } else {
-        alert("Password errata. Accesso negato.");
-    }
-}
-
-
-// 1. Configurazione Firebase (Assicurati che sia corretta)
+<script>
+// 1. Configurazione Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
     authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
@@ -118,69 +136,368 @@ const firebaseConfig = {
     appId: "1:707115539525:web:70b70aa34c27013d21972c"
 };
 
-// 2. Inizializzazione
+// 2. Inizializzazione Unica (Evita errori di caricamento multiplo)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.database();
 
-// 3. Funzione per la Musica (Copiata dalla tua pagina personale e adattata)
+const db = firebase.database();
+const auth = firebase.auth();
+let playerID = ""; // Verrà popolata dopo il login
+let tuttiITeam = [];
+let playerColors = {};
+
+// 3. Listener di Autenticazione: Il punto di ingresso reale
+auth.onAuthStateChanged(async (user) => {
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-text');
+    
+    // Se non trova gli elementi dell'header, esce per evitare errori, 
+    // ma noi vogliamo comunque che la pagina si inizializzi se l'utente c'è
+    if (user) {
+        try {
+            const snapshot = await db.ref(`users/${user.uid}/name`).once('value');
+            const userName = snapshot.val();
+
+            if (userName) {
+                // 1. Impostiamo il playerID globale (necessario per filtrare i dati nel box)
+                playerID = userName.toLowerCase().trim();
+                console.log("Accesso confermato per:", playerID);
+
+                // 2. Aggiorniamo l'interfaccia dell'header
+                if (authIcon) authIcon.className = "fas fa-user-circle"; 
+                if (authText) authText.innerText = userName;
+
+                // 3. AVVIAMO LA PAGINA (Questa è la parte che mancava!)
+                inizializzaPaginaBox();
+
+            } else {
+                console.error("Nome utente non trovato nel database per l'UID:", user.uid);
+                if (authText) authText.innerText = "Profile Error";
+            }
+        } catch (error) {
+            console.error("Errore durante il recupero dei dati utente:", error);
+            if (authText) authText.innerText = "Logged In";
+            // Proviamo comunque a inizializzare se playerID è gestito altrove
+            // inizializzaPaginaBox(); 
+        }
+    } else {
+        // Gestione utente non loggato
+        if (authIcon) authIcon.className = "fas fa-lock";
+        if (authText) authText.innerText = "";
+        
+        // Se non è loggato e non è già nella pagina di login, lo reindirizziamo
+        if (!window.location.pathname.includes("login.html")) {
+            window.location.href = "login.html";
+        }
+    }
+});
+
+
+
+function handleAuthClick() {
+    const user = auth.currentUser;
+    if (!user) {
+        toggleLoginModal();
+    } else {
+        const menu = document.getElementById('user-menu');
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+function toggleLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
+
+
+function logout() {
+    auth.signOut().then(() => { location.reload(); });
+}
+
+async function caricaColoriPlayers() {
+    try {
+        const snapshot = await db.ref('players').once('value');
+        const playersData = snapshot.val();
+        
+        if (!playersData) return;
+
+        for (let nomeKey in playersData) {
+            const nomeMinuscolo = nomeKey.toLowerCase();
+            
+            const coloreRecuperato = playersData[nomeKey].info?.color;
+            
+            if (coloreRecuperato) {
+                playerColors[nomeMinuscolo] = coloreRecuperato;
+            }
+        }
+        console.log("Colori mappati:", playerColors);
+    } catch (error) {
+        console.error("Errore caricamento:", error);
+    }
+}
+
+// Funzione per scurire o schiarire un colore HEX
+function pSBC(p, c0, c1, l) {
+    let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
+    if (typeof (p) != "number" || p < -1 || p > 1 || typeof (c0) != "string" || (c0[0] != 'r' && c0[0] != '#') || (c1 && !a)) return null;
+    if (!this.pSBCr) this.pSBCr = (d) => {
+        let n = d.length, x = {};
+        if (n > 9) {
+            [r, g, b, a] = d = d.split(","), n = d.length;
+            if (n < 3 || n > 4) return null;
+            x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4)), x.g = i(g), x.b = i(b), x.a = a ? parseFloat(a) : -1
+        } else {
+            if (n == 8 || n == 6 || n < 4) return null;
+            if (n < 6) d = "#" + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : "");
+            d = i(d.slice(1), 16);
+            if (n == 9 || n == 5) x.r = d >> 24 & 255, x.g = d >> 16 & 255, x.b = d >> 8 & 255, x.a = m((d & 255) / 0.255) / 1000;
+            else x.r = d >> 16, x.g = d >> 8 & 255, x.b = d & 255, x.a = -1
+        } return x
+    };
+    h = c0.length > 9, f = this.pSBCr(c0);
+    if (!f) return null;
+    if (p < 0) p *= -1, t = { r: 0, g: 0, b: 0, a: f.a };
+    else t = { r: 255, g: 255, b: 255, a: f.a };
+    r = m((t.r - f.r) * p) + f.r, g = m((t.g - f.g) * p) + f.g, b = m((t.b - f.b) * p) + f.b;
+    return "#" + (0x1000000 + (f.a != -1 ? m(f.a * 255) : 0) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+async function getPlayerPalette(playerName) {
+    const snap = await db.ref(`players/${playerName}/info/color`).once('value');
+    const baseColor = snap.val() || "#31c489"; // Colore scelto dall'utente
+
+    return {
+        base: baseColor,
+        border: pSBC(-0.8, baseColor), // 40% più scuro per i bordi
+        light: pSBC(0.8, baseColor) + "22", // 80% più chiaro + trasparenza per sfondi
+        text: pSBC(-0.6, baseColor) // Molto scuro per il testo leggibile
+    };
+}
+
+async function getPlayersColors(p1, p2) {
+    const name1 = p1.toLowerCase().trim(); // Aggiunto trim() per evitare spazi nascosti
+
+    console.log("Tentativo query su path:", `players/${name1}/info/color`);
+
+    // Usiamo una nuova reference pulita
+    const ref1 = db.ref(`players/${name1}/info/color`);
+
+    const snap1 = await ref1.once('value');
+
+    console.log(`VALORE REALE DB per ${name1}:`, snap1.val());
+
+    return {
+        c1: snap1.val() || '#31c489',
+    };
+}
+
+function applicaPaletteUtente(baseColor) {
+    // Generiamo le sfumature usando la tua funzione pSBC già esistente
+    const palette = {
+        base: baseColor,
+        dark: pSBC(-0.4, baseColor),       // 40% più scuro
+        darker: pSBC(-0.88, baseColor),     // 80% più scuro (per i bordi delle card)
+        light: pSBC(0.6, baseColor),       // 60% più chiaro
+        bgGradient: pSBC(0.9, baseColor),  // 90% più chiaro (per lo sfondo del body)
+        text: pSBC(-0.7, baseColor),        // Molto scuro (per il testo leggibile)
+        tags: pSBC(-0.5, baseColor),
+        bright: pSBC(0.3, baseColor)
+    };
+
+    const root = document.documentElement;
+
+    // Iniettiamo i colori nelle variabili CSS
+    root.style.setProperty('--bg-body', palette.bgGradient);
+    root.style.setProperty('--light-color', palette.light);
+    root.style.setProperty('--text-main', palette.text);
+    root.style.setProperty('--accent-color', palette.base);
+    root.style.setProperty('--border-color', palette.darker);
+    root.style.setProperty('--tag-color', palette.tags);
+    root.style.setProperty('--bright-color',palette.bright);
+    root.style.setProperty('--dark-color', palette.dark);
+
+    
+    // Ombra delle card dinamica (colore base con 20% di opacità)
+    root.style.setProperty('--card-shadow', `${palette.base}33`); 
+
+    console.log("🎨 Palette CSS aggiornata correttamente.");
+}
+
+// 4. Funzione di Inizializzazione della Pagina
+async function inizializzaPaginaBox() {
+    const loader = document.getElementById('loading-screen');
+    
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    }
+
+    try {
+        if (!playerID) return;
+
+        const nomeFormattato = playerID.charAt(0).toUpperCase() + playerID.slice(1);
+        document.title = `Box - ${nomeFormattato}`;
+
+        // 1. Recupero dati utente
+        const snapInfo = await db.ref(`players/${playerID}/info`).once('value');
+        const info = snapInfo.val() || {};
+        const userColor = info.color || "#31c489"; 
+
+        // 2. Applicazione stile alla fascia intera (Top Bar)
+        const topBar = document.querySelector('.top-bar');
+        const titoloDisplay = document.querySelector('.hub-title-display');
+
+        if (topBar) {
+            topBar.style.backgroundColor = userColor;
+        }
+
+        if (titoloDisplay) {
+            // Sticker Nero, Scritta Bianca
+            titoloDisplay.style.backgroundColor = "#000"; 
+            titoloDisplay.style.color = "#fff"; 
+            titoloDisplay.innerHTML = `<span id="player-name-placeholder">${nomeFormattato.toUpperCase()}</span>'S BOX`;
+        }
+
+        // 3. Applicazione variabili colore globali
+        applicaPaletteUtente(userColor);
+
+        // 4. Caricamento dati e musica
+        sincronizzaCategorie(); 
+        await scaricaDati(); 
+        ascoltaMusicaFirebase();
+
+        // 5. Ordinamento e filtri iniziali
+        const sortFilter = document.getElementById('sortFilter');
+        if (sortFilter) {
+            sortFilter.value = 'win';
+            if (typeof applicaFiltri === "function") applicaFiltri();
+        }
+
+        console.log(`✅ Box caricato: Stile Side-by-Side con colore ${userColor}`);
+
+    } catch (e) {
+        console.error("❌ Errore:", e);
+    } finally {
+        setTimeout(() => {
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }, 1000);
+    }
+}
+
+// 5. Funzione Musica Dinamica
 function ascoltaMusicaFirebase() {
     const player = document.getElementById('bg-music');
-    const icon = document.getElementById('music-icon');
-    const btn = document.getElementById('music-control');
+    const musicBtn = document.getElementById('music-control');
 
-    // Ascolta il database (allenatore_lukiani)
-    db.ref('allenatore_lukiani').on('value', (snapshot) => {
+    if (!player || !playerID) return;
+
+    // 1. Controlliamo subito la preferenza salvata nel browser
+    const musicaMutaInMemoria = localStorage.getItem('userMusicPref') === 'off';
+
+    db.ref(`players/${playerID}/info`).on('value', (snapshot) => {
         const data = snapshot.val();
+        
         if (data && data.musicaPreferita) {
-            // Se la musica nel DB è diversa da quella caricata nel player
+            // Se l'URL nel DB è diverso da quello caricato, aggiorniamo il player
             if (player.src !== data.musicaPreferita) {
                 player.src = data.musicaPreferita;
                 player.volume = 0.3;
-                player.load(); // Forza il caricamento del nuovo file
+                player.load();
 
-                // Prova a farla partire
-                player.play()
-                    .then(() => { 
-                        if(icon) icon.innerText = "🔊"; 
-                        if(btn) btn.style.borderColor = "lime";
-                    })
-                    .catch(() => { 
-                        if(icon) icon.innerText = "🔇"; 
-                        if(btn) btn.style.borderColor = "cyan";
-                        console.log("Autoplay bloccato. In attesa di un click.");
-                    });
+                // 2. Logica di riproduzione basata sulla preferenza
+                if (musicaMutaInMemoria) {
+                    // L'utente aveva spento la musica: non avviamo il play e mettiamo la sbarra
+                    player.pause();
+                    if (musicBtn) musicBtn.classList.add('muted');
+                    console.log("🔇 Navigazione muta: musica caricata ma in pausa.");
+                } else {
+                    // L'utente vuole la musica (o è la prima volta): tentiamo il play
+                    player.play()
+                        .then(() => { 
+                            if(musicBtn) musicBtn.classList.remove('muted');
+                        })
+                        .catch((err) => { 
+                            // Autoplay bloccato dal browser (serve un click)
+                            if(musicBtn) musicBtn.classList.add('muted');
+                        });
+                }
             }
         }
     });
 }
 
-// 4. Gestione tasto Play/Pause manuale
-function toggleMusic() {
-    const player = document.getElementById('bg-music');
-    const icon = document.getElementById('music-icon');
-    const btn = document.getElementById('music-control');
-
-    if (player.paused) {
-        player.play().then(() => {
-            icon.innerText = "🔊";
-            btn.style.borderColor = "lime";
-        });
+// 6. Funzione Admin
+function apriAdminProtetto() {
+    const adminPanel = document.getElementById('admin-panel');
+    
+    if (adminPanel) {
+        // Mostra il pannello
+        adminPanel.style.display = 'block';
+        
+        // Opzionale: scrolla automaticamente fino al pannello se è in fondo alla pagina
+        adminPanel.scrollIntoView({ behavior: 'smooth' });
     } else {
-        player.pause();
-        icon.innerText = "🔇";
-        btn.style.borderColor = "cyan";
+        console.error("Errore: Elemento 'admin-panel' non trovato nel DOM.");
     }
 }
+
+// 7. Gestione Play/Pause Manuale
+function toggleMusic() {
+    const player = document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player) return;
+
+    if (player.paused) {
+        player.play();
+        musicBtn.classList.remove('muted');
+        // Salviamo la preferenza: musica ON
+        localStorage.setItem('userMusicPref', 'on');
+    } else {
+        player.pause();
+        musicBtn.classList.add('muted');
+        // Salviamo la preferenza: musica OFF
+        localStorage.setItem('userMusicPref', 'off');
+    }
+}
+
+// Sblocco audio globale
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            const icon = document.getElementById('music-icon');
+            if(icon) icon.innerText = "🔊";
+        });
+    }
+}, { once: true });
 
 // 5. Attivazione Eventi
 document.addEventListener('DOMContentLoaded', () => {
     ascoltaMusicaFirebase();
 });
 
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (display flex o block)
+    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
+        
+        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            menu.style.display = 'none';
+            console.log("Stato: Menu chiuso (click esterno)");
+        }
+    }
+});
+
 function ascoltaCambiamentiFirebase() {
-    db.ref('allenatore_lukiani').on('value', (snapshot) => {
+    db.ref('players/didi/teams').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
@@ -213,57 +530,27 @@ document.addEventListener('click', () => {
     }
 }, { once: true });
 
-async function inizializzaPaginaBox() {
-    const loader = document.getElementById('loading-screen');
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-    }
-
-    try {
-        // 1. Carichiamo le categorie
-        sincronizzaCategorie();
-
-        // 2. Scarichiamo i dati dei team
-        await scaricaDati();
-        
-        // --- NUOVO: Imposta ordinamento predefinito per vittorie ---
-        const sortFilter = document.getElementById('sortFilter');
-        if (sortFilter) {
-            sortFilter.value = 'win'; // Seleziona "Vittorie" nel menu a tendina
-        }
-        
-        // Applichiamo i filtri (che ora userà 'win') per ordinare i team scaricati
-        applicaFiltri(); 
-        // -----------------------------------------------------------
-
-        console.log("Inizializzazione completata con ordinamento per vittorie.");
-    } catch (e) {
-        console.error("Errore generale:", e);
-    } finally {
-        setTimeout(() => {
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
-        }, 1000);
-    }
-}
-
-// Rimuovi eventuali doppioni e usa solo questo:
-document.addEventListener('DOMContentLoaded', inizializzaPaginaBox);
-    let tuttiITeam = [];
 
 async function scaricaDati() {
     try {
-        // Usiamo .on per i team per avere aggiornamenti in tempo reale
-        db.ref('allenatore_lukiani/teams').on('value', async (snapshot) => {
+        // Verifichiamo che il playerID sia disponibile
+        if (!playerID) {
+            console.warn("playerID non ancora disponibile...");
+            return;
+        }
+
+        // 1. Puntiamo al nodo dei team dell'utente loggato
+        db.ref(`players/${playerID}/teams`).on('value', (snapshot) => {
             const dataTeams = snapshot.val();
             
             if (dataTeams) {
-                // 1. CREIAMO l'array da zero ogni volta (evita accumuli)
+                // 2. Trasformiamo l'oggetto in array recuperando le statistiche dal sotto-nodo /stats
                 let tempTeams = Object.keys(dataTeams).map(key => {
                     const team = dataTeams[key];
+                    // Recuperiamo l'oggetto stats (se manca, inizializziamo a 0 per sicurezza)
+                    const s = team.stats || {};
+                    
+                    // Recupero nomi pokemon per la ricerca testuale
                     let nomiPokemon = "";
                     if (team.pokemon && Array.isArray(team.pokemon)) {
                         nomiPokemon = team.pokemon.map(p => p ? p.nome : "").join(" ");
@@ -274,130 +561,35 @@ async function scaricaDati() {
                     return {
                         ...team,
                         id: key,
-                        // Reset forzato a zero
-                        vittorie: 0,
-                        sconfitte: 0,
-                        puntiFatti: 0,
-                        setVinti: 0,
-                        setPersi: 0,
+                        // PESCAGGIO DAL NUOVO PERCORSO: players/ID/teams/ID_TEAM/stats/
+                        vittorie: s.won || 0,
+                        sconfitte: s.lost || 0,
+                        giocate: s.played || 0,
+                        setVinti: s.setW || 0,
+                        setPersi: s.setL || 0,
+                        // I punti fatti (se non presenti nel DB) rimangono calcolabili o inizializzati
+                        puntiFatti: s.punti || 0, 
                         tuttoIlTesto: ((team.nome || "") + " " + (team.categoria || "") + " " + nomiPokemon).toLowerCase()
                     };
                 });
 
-                // 2. RECUPERO MATCH (usiamo .once per evitare loop infiniti qui dentro)
-                const snapMatches = await db.ref('matches').once('value');
-                const dataMatches = snapMatches.val();
-
-                if (dataMatches) {
-                    Object.values(dataMatches).forEach(m => {
-                        const score = m.score ? m.score.split('-').map(Number) : [0, 0];
-                        const s1 = score[0]; // Didi
-                        const s2 = score[1]; // Lu
-
-                        // Cerchiamo il team di Lu nell'array temporaneo appena creato
-                        const teamLu = tempTeams.find(t => t.id === m.team2Id || t.nome === m.team2);
-
-                        if (teamLu) {
-                            teamLu.setVinti += s2;
-                            teamLu.setPersi += s1;
-
-                            let pLu = 0;
-                            if (s2 > s1) { // Vittoria Lu
-                                teamLu.vittorie += 1;
-                                if (s2 === 5 && s1 === 0) pLu = 3;
-                                else if (s2 === 4 && s1 === 1) pLu = 2;
-                                else if (s2 === 3 && s1 === 2) pLu = 2;
-                            } else if (s1 > s2) { // Sconfitta Lu
-                                teamLu.sconfitte += 1;
-                                if (s1 === 3 && s2 === 2) pLu = 1;
-                            }
-                            teamLu.puntiFatti += pLu;
-                        }
-                    });
-                }
-
-                // 3. SOLO ORA aggiorniamo la variabile globale e i filtri
+                // 3. Salvataggio e aggiornamento UI
                 tuttiITeam = tempTeams;
                 applicaFiltri(); 
                 
-                if (document.getElementById('loading-screen')) 
-                    document.getElementById('loading-screen').style.display = 'none';
+                // Gestione Loader
+                const loader = document.getElementById('loading-screen');
+                if (loader) loader.style.display = 'none';
+
             } else {
                 tuttiITeam = [];
                 renderizza([]);
+                const loader = document.getElementById('loading-screen');
+                if (loader) loader.style.display = 'none';
             }
         });
     } catch (error) {
-        console.error("Errore scaricamento team:", error);
-    }
-}
-
-// Funzione di supporto per il vecchio CSV (quella che avevi prima)
-async function caricaDalVecchioCSV() {
-    try {
-        const response = await fetch(url + '&t=' + new Date().getTime());
-        if (!response.ok) throw new Error("File CSV non trovato");
-        
-        const data = await response.text();
-        const righe = data.split(/\r?\n/).map(r => r.split(','));
-
-        tuttiITeam = [];
-        let categorieUniche = new Set(); 
-
-        for (let i = 0; i < righe.length; i += 8) {
-            let nomeTeam = righe[i][0]?.trim();
-            let cat = righe[i+1] && righe[i+1][0] ? righe[i+1][0].trim() : "";
-
-            if (cat && cat.toLowerCase() !== "categoria" && cat !== "N/A") {
-                categorieUniche.add(cat);
-            }
-
-            const isPlaceholder = /^D\d+$/i.test(nomeTeam);
-            if (!nomeTeam || nomeTeam === "" || nomeTeam.toLowerCase() === "nome team" || isPlaceholder) {
-                continue; 
-            }
-
-            let team = {
-                id: i,
-                nome: nomeTeam,
-                categoria: cat || "N/A",
-                vittorie: righe[i+3] ? righe[i+3][0].trim() : "0",
-                sconfitte: righe[i+4] ? righe[i+4][0].trim() : "0",
-                setVinti: righe[i+5] ? righe[i+5][0].trim() : "0",
-                setPersi: righe[i+6] ? righe[i+6][0].trim() : "0",
-                puntiFatti: righe[i+7] ? righe[i+7][0].trim() : "0",
-                pokemon: []
-            };
-
-            for (let col = 1; col <= 6; col++) {
-                let pName = righe[i][col]?.trim();
-                if (pName) {
-                    team.pokemon.push({
-                        nome: pName,
-                        abilita: righe[i+1] ? righe[i+1][col]?.trim() : "N/D",
-                        strumento: righe[i+2] ? righe[i+2][col]?.trim() : "Nessuno",
-                        mosse: [
-                            righe[i+3] ? righe[i+3][col]?.trim() : "-",
-                            righe[i+4] ? righe[i+4][col]?.trim() : "-",
-                            righe[i+5] ? righe[i+5][col]?.trim() : "-",
-                            righe[i+6] ? righe[i+6][col]?.trim() : "-"
-                        ],
-                        evs: righe[i+7] ? righe[i+7][col]?.trim() : "N/D"
-                    });
-                }
-            }
-            team.tuttoIlTesto = (team.nome + " " + team.categoria + " " + team.pokemon.map(p => p.nome).join(" ")).toLowerCase();
-            tuttiITeam.push(team);
-        }
-
-        popolaFiltroCategorie(categorieUniche);
-        renderizza(tuttiITeam);
-        
-        const loading = document.getElementById('loading-screen');
-        if (loading) loading.style.display = 'none';
-    } catch (error) {
-        console.error("Errore CSV:", error);
-        document.getElementById('teamsGrid').innerHTML = "Nessun team trovato su Firebase o CSV.";
+        console.error("Errore critico nello scaricamento dati:", error);
     }
 }
 
@@ -423,7 +615,6 @@ async function coloraBordoDinamico(pkmName, elementId) {
             // Singolo tipo: bordo normale
             box.style.borderLeftColor = tipi[0];
         } else {
-            // Doppio tipo: usiamo un gradiente lineare sul bordo
             // Per farlo funzionare su border-left dobbiamo usare border-image
             box.style.borderLeft = "6px solid"; // Aumentiamo un po' lo spessore per il doppio tipo
             box.style.borderImage = `linear-gradient(to bottom, ${tipi[0]} 50%, ${tipi[1]} 50%) 1 100%`;
@@ -558,6 +749,45 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
     }
 }
 
+function inizializzaRotazioneTooltipMosse() {
+    // Seleziona tutte le mosse nel modale
+    const mosse = document.querySelectorAll('.move-span');
+
+    mosse.forEach(mossa => {
+        // Trova il tooltip figlio di questa mossa
+        const tooltip = mossa.querySelector('.move-tooltip');
+        
+        if (!tooltip) return; // Sicurezza se il tooltip non esiste
+
+        // Evento: Il mouse entra nella mossa
+        mossa.addEventListener('mouseover', () => {
+            // GENERA ROTAZIONE CASUALE
+            // Esempio: tra -4deg e +4deg. Modifica i numeri per più/meno caos.
+            const gradiCasuali = (Math.random() * 8 - 4).toFixed(2); 
+            
+            // APPLICA LA TRASFORMAZIONE
+            // Dobbiamo mantenere translateX(-50%) per centrarlo rispetto alla mossa,
+            // e aggiungere la rotazione casuale.
+            tooltip.style.transform = `translateX(-50%) rotate(${gradiCasuali}deg)`;
+            
+            // Mostra il tooltip aggiungendo la classe CSS
+            tooltip.classList.add('is-active');
+        });
+
+        // Evento: Il mouse esce dalla mossa
+        mossa.addEventListener('mouseout', () => {
+            // Nascondi il tooltip rimuovendo la classe
+            tooltip.classList.remove('is-active');
+            
+            // Opzionale: resetta la trasformazione dopo un po' 
+            // per evitare glitch visivi alla prossima apertura
+            setTimeout(() => {
+                tooltip.style.transform = 'translateX(-50%) rotate(0deg)';
+            }, 150);
+        });
+    });
+}  
+
 async function apriDettagli(id) {
     const team = tuttiITeam.find(t => t.id === id);
     if (!team) {
@@ -680,7 +910,7 @@ async function caricaStats(pkmName, elementId) {
             'speed': 'SPE'
         };
 
-        let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">BASE STATS</div>`;
+        let statsHTML = `<h4 class="panel-title">BASE STATS</h4>`;
         
         data.stats.forEach(s => {
             const val = s.base_stat;
@@ -802,7 +1032,6 @@ function applicaFiltri() {
 
     renderizza(filtrati);
 }
-    scaricaDati();
 
     async function applicaColoreBordo(pkmName, elementId) {
     const box = document.getElementById(elementId);
@@ -855,7 +1084,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                 <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
             </div>
             <div class="area-weakness pkm-panel">
-                <div style="font-weight:bold; color: #eeeeee; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem">DEFENSE</div>
+                <h4 class="panel-title">DEFENSE</h4>
                 <div id="static-weaknesses" class="weakness-content">Loading...</div>
             </div>
             <div class="area-info-strips">
@@ -1190,7 +1419,7 @@ function salvaTeamSuFirebase() {
         if (editingId) {
             // --- MODALITÀ MODIFICA ---
             // Puntiamo esattamente all'ID del team esistente
-            db.ref(`allenatore_lukiani/teams/${editingId}`).set(teamData)
+            db.ref(`players/didi/teams/${editingId}`).set(teamData)
                 .then(() => {
                     alert("✅ Team aggiornato con successo!");
                     resetAdminPanel(); // Puliamo tutto
@@ -1199,7 +1428,7 @@ function salvaTeamSuFirebase() {
         } else {
             // --- MODALITÀ NUOVO ---
             // Creiamo una nuova voce con un ID generato da Firebase
-            db.ref('allenatore_lukiani/teams').push(teamData)
+            db.ref('players/didi/teams').push(teamData)
                 .then(() => {
                     alert("✅ Nuovo team aggiunto all'archivio!");
                     resetAdminPanel();
@@ -1266,28 +1495,20 @@ function parseShowdown(text) {
 function cancellaTeamDaFirebase(teamId) {
     if (!teamId) return alert("ID team non trovato");
 
-    // 1. Controllo Password
-    const passwordSegreta = "luca2026"; // Sostituisci con la tua
-    const inputUtente = prompt("ATTENZIONE: Stai eliminando un team di LU.\nInserisci la password per confermare l'operazione:");
 
-    if (inputUtente === null) return; // L'utente ha premuto annulla
 
-    if (inputUtente !== passwordSegreta) {
-        alert("Password errata! Eliminazione annullata.");
-        return;
-    }
-
-    // 2. Conferma definitiva
-    if (confirm("Sei assolutamente sicuro? Il team verrà rimosso permanentemente dal database di Lukiani.")) {
-        db.ref(`allenatore_lukiani/teams/${teamId}`).remove()
+    // 2. Conferma finale
+    if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
+        // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
+        db.ref(`players/didi/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato con successo!");
+                alert("Team eliminato correttamente!");
                 chiudiTeamModal();
-                // Ricarica la griglia dei team (se la funzione si chiama caricaBox)
+                // Ricarichiamo i dati per aggiornare la griglia dei team
                 if (typeof caricaBox === "function") caricaBox();
             })
             .catch(e => {
-                console.error("Errore eliminazione team Lu:", e);
+                console.error("Errore durante l'eliminazione del team:", e);
                 alert("Errore tecnico durante l'eliminazione.");
             });
     }
@@ -1295,27 +1516,9 @@ function cancellaTeamDaFirebase(teamId) {
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
-    // 1. Controllo Password (con supporto alla variabile di sessione)
-    const passwordSegreta = "luca2026"; 
+    
 
-    if (typeof isAdminAutenticato !== 'undefined' && !isAdminAutenticato) {
-        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
-        if (inputUtente === passwordSegreta) {
-            isAdminAutenticato = true;
-        } else {
-            if (inputUtente !== null) alert("Password errata!");
-            return;
-        }
-    } else if (typeof isAdminAutenticato === 'undefined') {
-        const inputUtente = prompt("Accesso Admin Lu: Inserisci la password per modificare il Team:");
-        if (inputUtente !== passwordSegreta) {
-            if (inputUtente !== null) alert("Password errata!");
-            return;
-        }
-    }
-
-    // --- Se autorizzato, procedi con il caricamento ---
-    // Assicurati che 'tuttiITeam' contenga i team del giocatore corrente
+    // --- Se autorizzato, procedi con il caricamento dei dati nel pannello ---
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
@@ -1333,7 +1536,7 @@ function caricaTeamPerModifica(teamId) {
 
     document.getElementById('showdown-input').value = testoShowdown.trim();
     
-    // IMPORTANTE: Impostiamo l'editingId per evitare duplicati su Firebase
+    // Salviamo l'ID per la modifica
     document.getElementById('admin-panel').dataset.editingId = teamId;
     
     document.getElementById('admin-panel').style.display = 'block';

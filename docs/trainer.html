@@ -10,7 +10,8 @@
         <link rel="stylesheet" href="style-box-didi.css">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
     <body>
@@ -244,9 +245,9 @@
 
     <script>
 
-                // Configurazione del tuo progetto
+                // Configurazione Firebase (invariata)
 const firebaseConfig = {
-  apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
   authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
   databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "pokemonsuite-didi-lu",
@@ -255,32 +256,40 @@ const firebaseConfig = {
   appId: "1:707115539525:web:70b70aa34c27013d21972c"
 };
 
-// Inizializzazione
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
 
-async function inizializzaPaginaDidi() {
+// --- STEP 1: LOGICA DINAMICA URL ---
+const urlParams = new URLSearchParams(window.location.search);
+// Cercherà ?trainer=Didi nell'URL. Se manca, usa "Didi" come default
+const trainerID = urlParams.get('trainer') || "Didi"; 
+const dbPath = `allenatore_${trainerID.toLowerCase()}`;
+
+async function inizializzaPaginaDinamica() {
     try {
-        // Avviamo i caricamenti in parallelo e aspettiamo che finiscano tutti
+        // Aggiorniamo eventuali testi fissi nell'HTML (es: il titolo della pagina)
+        const nameDisplay = document.getElementById('trainer-name-display');
+        if(nameDisplay) nameDisplay.innerText = trainerID.toUpperCase();
+        
+        console.log(`Caricamento profilo per: ${trainerID} (Path: ${dbPath})`);
+
+        // Avviamo i caricamenti passando il trainerID come riferimento
         await Promise.all([
-            caricaDatiDidi(),       // Carica stats e team attuale
-            caricaTrendRecente(),   // Carica i pallini delle ultime partite
-            elaboraBadge()          // Calcola le serie e mostra le medaglie
+            caricaDatiAllenatore(trainerID), // Ex caricaDatiDidi
+            caricaTrendRecente(trainerID),   
+            elaboraBadge(trainerID)          
         ]);
         
-        console.log("Dati di Lu caricati con successo.");
+        console.log(`Dati di ${trainerID} caricati con successo.`);
 
     } catch (e) {
-        console.error("Errore durante il caricamento della pagina Lu:", e);
+        console.error(`Errore durante il caricamento della pagina di ${trainerID}:`, e);
     } finally {
-        // Nascondi la schermata di caricamento
         const loader = document.getElementById('loading-screen');
         if (loader) {
-            // Effetto dissolvenza
             loader.style.opacity = '0';
-            // Rimuove l'elemento dal flusso dopo la transizione CSS (0.5s)
             setTimeout(() => {
                 loader.style.display = 'none';
             }, 500);
@@ -288,8 +297,8 @@ async function inizializzaPaginaDidi() {
     }
 }
 
-// Avvia tutto quando il DOM è pronto
-document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
+// Sostituisci il vecchio listener con questo
+document.addEventListener('DOMContentLoaded', inizializzaPaginaDinamica);
 
     const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
 
@@ -348,32 +357,6 @@ document.addEventListener('DOMContentLoaded', inizializzaPaginaDidi);
         },
         options: { plugins: { legend: { display: false } }, responsive: true }
     });
-}
-
-function creaMappaDati(header, riga) {
-    let mappa = {};
-    header.forEach((nome, indice) => {
-        if (nome) {
-            // Puliamo il nome della colonna (trim e tutto maiuscolo per sicurezza)
-            const nomePulito = nome.trim().toUpperCase();
-            // Puliamo il valore (rimuoviamo spazi bianchi)
-            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
-        }
-    });
-    return mappa;
-}
-
-function creaMappaDati(header, riga) {
-    let mappa = {};
-    header.forEach((nome, indice) => {
-        if (nome) {
-            // Rimuove spazi, ritorni a capo e rende maiuscolo
-            const nomePulito = nome.trim().replace(/\n/g, " ").toUpperCase();
-            // Associa il valore pulito, se la riga è più corta mette stringa vuota
-            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
-        }
-    });
-    return mappa;
 }
 
 async function caricaDatiDidi() {

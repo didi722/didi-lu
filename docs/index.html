@@ -2,33 +2,62 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poké-Tournament Didi Luca</title>
-    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">  
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <link rel="stylesheet" href="style-index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 </head>
 <body>
 
     <audio id="bg-music-home" loop preload="auto"></audio>
 
-<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
-    🔊
-</div>
-
-    <div id="loading-screen">
-    <div class="pokeball-loader"></div>
-    <p>Please wait</p>
-</div>
-
-    <div class="news-ticker">
-        <div class="ticker-wrap" id="lastMatchTicker">
-            <div class="ticker-item">           Loading last match info...</div>
+<header class="top-bar">
+        <div class="top-bar-inner">
+            <section class="hub-hero">
+                <h1 class="hub-title-display">SEASON HUB</h1>
+            </section>
         </div>
+    </header>
+    
+    <div class="top-auth-bar">
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+        <i id="auth-icon" class="fas fa-lock"></i>
+        <span id="auth-text"></span>
     </div>
+    <div id="user-menu" class="user-dropdown">
+        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
+        
+        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+    </div>
+</div>
+
+
+<div id="login-modal" class="modal">
+    <div class="modal-content glass-card">
+        <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="Your email">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-login">Login</button>
+            <div id="login-error" class="error-msg"></div>
+        </form>
+    </div>
+</div>
 
 <div class="ads-sidebar">
         <div class="ads-track">
@@ -52,425 +81,791 @@
 
     <div class="main-wrapper">
 
-    <div id="leaderboardContainer" class="cards-stack"></div>
+    <div class="home-seasons-container">
 
-        <a href="matches.html" class="btn-global-archive">MATCH ARCHIVE</a>
-        <a href="rules.html" class="btn-global-rules">FORMATS</a>
-        <div class="chart-container-right">
-        <canvas id="progressionChart"></canvas>
+        <div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
+</div>
+    
+    
+    <a href="#" id="link-last" class="card-link-wrapper">
+        <div id="card-last" class="season-card glass-red">
+            <h3 id="last-name">---</h3>
+            <div id="last-rules" class="rules-preview"></div> 
+        </div>
+    </a>
+
+    <a href="#" id="link-current" class="card-link-wrapper">
+        <div id="card-current" class="season-card glass-green active-card">
+            <h3 id="current-name">---</h3>
+            <div id="current-rules" class="rules-preview"></div>
+            <div class="card-footer">---</div>
+        </div>
+    </a>
+
+    <a href="#" id="link-next" class="card-link-wrapper">
+        <div id="card-next" class="season-card glass-blue">
+            <h3 id="next-name">---</h3>
+            <div id="next-rules" class="rules-preview"></div>
+        </div>
+    </a>
+
+</div>
+
+</div>
+        
     </div>
 
+</div>
+
+<div id="modalCreazione" class="admin-panel-modern wide" onclick="event.stopPropagation()">
+    <h3>ADD A NEW SEASON</h3>
+    
+    <div class="admin-three-columns">
+        <div class="admin-col">
+            <h4 class="col-title">SEASON INFO</h4>
+            <div class="form-group">
+                <label>Season Name:</label>
+                <input type="text" id="new-season-name" placeholder="Es: Spring Cup 2026">
+            </div>
+            <div class="form-group">
+    <label>Deadline:</label>
+    <input type="datetime-local" 
+           id="deadline-iscrizioni" 
+           step="1800" 
+           onchange="validaMezzora(this)">
+</div>  
+            <div class="form-group">
+                <label>Participants:</label>
+                <input type="number" id="num-partecipanti" value="4" oninput="aggiornaCalcoloDinamico()">
+            </div>
         </div>
 
+        <div class="admin-col">
+            <h4 class="col-title">MATCH STRUCTURE</h4>
+            <div class="form-group">
+                <label>Teams per format:</label>
+                <input type="number" id="teams-per-formato" value="3">
+            </div>
+            <div class="form-group">
+                <label>Showdowns per Format:</label>
+                <input type="number" id="num-showdowns-per-format" value="2" oninput="aggiornaCalcoloDinamico()">
+            </div>
+            <div class="form-group">
+                <label>Selection Method:</label>
+                <select id="metodo-selezione-tendina" onchange="toggleMetodoFormati()">
+                    <option value="manuale">Manual Selection</option>
+                    <option value="casuale">Random Shuffle 🎲</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">FORMAT CONFIG</h4>
+            <div class="form-group" style="position: relative;">
+                <label>Number of Formats:</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="number" id="num-formati-target" value="3" min="1" 
+                           oninput="aggiornaCalcoloDinamico()" 
+                           style="padding-right: 150px;"> <span id="calcolo-operazione" 
+                          style="position: absolute; right: 12px; color: #31c489; font-weight: 800; font-size: 0.75rem; pointer-events: none; white-space: nowrap;">
+                        18 Showdown
+                    </span>
+                </div>
+            </div>
+            
+            <div id="sezione-manuale">
+                <div class="form-group">
+                    <label>Select Format:</label>
+                    <select id="select-regolamenti" onchange="aggiungiFormatoTag()">
+                        <option value="">Choose...</option>
+                    </select>
+                </div>
+                <div id="container-tags-formati" class="tags-container-admin"></div>
+            </div>
+
+            <div id="sezione-casuale" style="display: none; margin-top:10px;">
+                <p style="color: #eee; font-size: 0.8rem; font-style: italic;">
+                    Formats will be randomly picked on launch.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="creaNuovaStagione()" class="btn-save">Add Season</button>
+        <button onclick="chiudiModaleCreazione()" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+    </div>
+
+</div>
+
+<div id="modal-overlay" onclick="toggleIscrizioneModal()"></div>
+
+<div id="modal-iscrizione">
+    <h3 id="modal-season-name">---</h3>
+    
+    <div id="modal-season-rules">
+        </div>
+
+    <div class="button-group-modern">
+        <button id="btn-conferma-iscrizione" class="btn-save">Confirm & Join</button>
+        <button onclick="toggleIscrizioneModal()" class="btn-cancel">Not now</button>
+    </div>
 </div>
 
 
 <script>
-
-    const firebaseConfig = {
-  apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
-  authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
-  databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "pokemonsuite-didi-lu",
-  storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
-  messagingSenderId: "707115539525",
-  appId: "1:707115539525:web:70b70aa34c27013d21972c"
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.appspot.com",
+    messagingSenderId: "333119159516",
+    appId: "1:333119159516:web:689a9f5d3791093f66878b"
+    
 };
 
-// Inizializzazione
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
+const auth = firebase.auth(); // Fondamentale!
 
-    async function inizializzaPagina() {
-    try {
-        // Avviamo i caricamenti della Home e aspettiamo che finiscano
-        // Usiamo Promise.all per caricarli in contemporanea (più veloce)
-        await Promise.all([
-            caricaHome(),
-            creaGraficoAndamento()
-        ]);
-        
-        // Se hai elaboraBadge() anche qui, scommentalo:
-        // await elaboraBadge(); 
+// Funzione per aprire/chiudere il modale
+function toggleLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
 
-    } catch (e) {
-        console.error("Errore nel caricamento dati della Home:", e);
-    } finally {
-        // Nascondi la schermata di caricamento solo quando tutto è pronto
-        const loader = document.getElementById('loading-screen');
-        if (loader) {
-            loader.style.opacity = '0';
-            // Aspettiamo che la transizione CSS finisca prima di mettere display: none
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
-        }
+function handleAuthClick() {
+    const user = auth.currentUser;
+    if (!user) {
+        toggleLoginModal();
+    } else {
+        const menu = document.getElementById('user-menu');
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
     }
 }
 
-// Avvia tutto al caricamento della pagina
-window.onload = inizializzaPagina;
+// UNICO listener per lo stato autenticazione
+auth.onAuthStateChanged(async (user) => {
+    console.log("Stato Auth cambiato. Utente:", user ? user.uid : "Nessuno");
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-text');
+    const topBar = document.querySelector('.top-bar');
 
-function getGifUrl(pName) {
-    if (!pName) return "";
-    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+    if (user) {
+        try {
+            const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
+            const userName = nameSnap.val();
+            console.log("Nome recuperato da users/uid/name:", userName);
+
+            if (userName) {
+                if (authText) authText.innerText = userName;
+                if (authIcon) authIcon.className = "fas fa-user-circle";
+
+                // PROVA: usa il nome esattamente come registrato (senza toLowerCase)
+                const playerPath = `players/${userName.toLowerCase().trim()}/info/color`;
+                console.log("Cerco il colore al percorso:", playerPath);
+                
+                const colorSnap = await db.ref(playerPath).once('value');
+                if (colorSnap.exists()) {
+                    const userColor = colorSnap.val();
+                    console.log("✅ Colore trovato:", userColor);
+                    topBar.style.setProperty('background-color', userColor, 'important');
+                } else {
+                    console.warn("⚠️ Percorso colore non trovato nel DB");
+                }
+            }
+        } catch (e) { console.error("Errore debug:", e); }
+    } else {
+        console.log("Utente non loggato.");
+        if (authText) authText.innerText = "Login";
+        if (topBar) topBar.style.backgroundColor = "#FFA500";
+    }
+});
+
+
+// Gestione Form Login
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+
+    // Impostiamo la persistenza locale esplicitamente per sicurezza
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+            return auth.signInWithEmailAndPassword(email, password);
+        })
+        .then((userCredential) => {
+            console.log("Login effettuato con successo!");
+            toggleLoginModal();
+            // NON usare location.reload(). 
+            // L'ascoltatore auth.onAuthStateChanged qui sotto aggiornerà tutto da solo.
+        })
+        .catch((error) => {
+            console.error("Errore login:", error);
+            errorEl.innerText = "Email o Password errati.";
+        });
+});
+
+// Funzione Logout
+function logout() {
+    auth.signOut().then(() => {
+        location.reload();
+    });
 }
 
-function getGifUrl(pName) {
-    if (!pName) return "";
-    const urlName = pName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
-}
+function caricaStagioniHome() {
+    console.log("⏳ Avvio caricamento stagioni...");
+    const seasonsRef = db.ref('seasons');
+    
+    seasonsRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+            console.warn("⚠️ Nessun dato trovato nel nodo 'seasons'");
+            return;
+        }
 
-async function caricaHome() {
-    try {
-        // 1. Fetch dei dati da Firebase
-        const [snapMatches, snapLu, snapDidi] = await Promise.all([
-            db.ref('matches').once('value'),
-            db.ref('allenatore_lukiani').once('value'),
-            db.ref('allenatore_didi').once('value')
-        ]);
+        console.log("✅ Dati stagioni ricevuti");
 
-        const matchesRaw = snapMatches.val() || {};
-        const matchesArray = Object.values(matchesRaw);
-        const infoLu = snapLu.val() || {};
-        const infoDidi = snapDidi.val() || {};
-
-        // 2. Calcolo Statistiche (Punti, W/L, Set)
-        let statsLu = { punti: 0, w: 0, l: 0, sW: 0, sL: 0 };
-        let statsDidi = { punti: 0, w: 0, l: 0, sW: 0, sL: 0 };
-
-        matchesArray.forEach(m => {
-            const parti = (m.score || "0-0").split('-').map(Number);
-            const sDidi = parti[0] || 0;
-            const sLu = parti[1] || 0;
-
-            statsDidi.sW += sDidi; statsDidi.sL += sLu;
-            statsLu.sW += sLu; statsLu.sL += sDidi;
-
-            if (sDidi > sLu) { statsDidi.w++; statsLu.l++; } 
-            else { statsLu.w++; statsDidi.l++; }
-
-            const pts = calcolaPuntiAssegnati(parti);
-            statsDidi.punti += pts.didi;
-            statsLu.punti += pts.lu;
+        // 1. Ordinamento cronologico
+        const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
+        allKeys.sort((a, b) => {
+            if (a === 'sbeta') return -1;
+            if (b === 'sbeta') return 1;
+            return parseInt(a.substring(1)) - parseInt(b.substring(1));
         });
 
-        const ultimoMatch = matchesArray[matchesArray.length - 1];
+        // 2. Suddivisione per stato
+        const playing = [], open = [], closed = [];
+        allKeys.forEach(key => {
+            const info = data[key].info || data[key];
+            const status = (info.status || "").toLowerCase();
+            if (status === 'playing') playing.push(key);
+            else if (status === 'open') open.push(key);
+            else if (status === 'closed' || status === 'terminata') closed.push(key);
+        });
 
-        // 3. Preparazione dati giocatori per il rendering
-        const giocatori = [
-            { 
-                nome: "LU", 
-                punti: statsLu.punti, w: statsLu.w, l: statsLu.l, 
-                setW: statsLu.sW, setL: statsLu.sL, 
-                teamData: ultimoMatch ? (infoLu.teams ? infoLu.teams[ultimoMatch.team2Id] : null) : null,
-                isLu: true 
-            },
-            { 
-                nome: "DIDI", 
-                punti: statsDidi.punti, w: statsDidi.w, l: statsDidi.l, 
-                setW: statsDidi.sW, setL: statsDidi.sL, 
-                teamData: ultimoMatch ? (infoDidi.teams ? infoDidi.teams[ultimoMatch.team1Id] : null) : null,
-                isLu: false 
-            }
+        // 3. Logica di posizionamento [Last, Current, Next]
+        let finalDisplay = [null, null, null];
+        if (playing.length === 1) {
+            finalDisplay[1] = playing[0];
+            finalDisplay[0] = closed.length > 0 ? closed[closed.length - 1] : null;
+            finalDisplay[2] = open.length > 0 ? open[0] : null;
+        } else if (playing.length >= 2) {
+            finalDisplay[0] = playing[playing.length - 2];
+            finalDisplay[1] = playing[playing.length - 1];
+            finalDisplay[2] = open[0] || null;
+        } else {
+            const lastThree = allKeys.slice(-3);
+            finalDisplay = [lastThree[0] || null, lastThree[1] || null, lastThree[2] || null];
+        }
+
+        const mapping = [
+            { key: finalDisplay[0], label: 'last' },
+            { key: finalDisplay[1], label: 'current' },
+            { key: finalDisplay[2], label: 'next' }
         ];
 
-        giocatori.sort((a, b) => b.punti - a.punti);
-
-        // 4. RENDERING LEADERBOARD (Con Tooltip Completi)
-        const leaderboardDiv = document.getElementById('leaderboardContainer');
-        leaderboardDiv.innerHTML = giocatori.map((g, index) => {
-            const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
-            const rankClass = index === 0 ? 'rank-1' : 'rank-2';
+        // 4. Rendering delle Card
+        mapping.forEach(item => {
+            const seasonData = item.key ? data[item.key] : null;
+            const info = seasonData ? (seasonData.info || seasonData) : null;
             
-            let pokemonHtml = '<div class="external-pokemon-grid">';
-            
-            // Cicliamo 6 slot per mantenere la struttura grafica
-            for (let i = 0; i < 6; i++) {
-                const p = (g.teamData && g.teamData.pokemon) ? g.teamData.pokemon[i] : null;
+            const card = document.getElementById(`card-${item.label}`);
+            const nameEl = document.getElementById(`${item.label}-name`);
+            const rulesContainer = document.getElementById(`${item.label}-rules`);
+            const footerEl = card ? card.querySelector('.card-footer') : null;
+            const anchor = document.getElementById(`link-${item.label}`);
 
-                if (p && p.nome) {
-                    const cleanName = p.nome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
-                    const itemName = p.strumento || "";
-                    let itemUrl = (itemName && itemName.toLowerCase() !== "none") 
-                        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png`
-                        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png`;
+            if (item.key && info) {
+                const status = (info.status || "open").toLowerCase();
+                const seasonName = info.name || "Season " + item.key;
+                
+                if (nameEl) nameEl.innerText = seasonName;
 
-                    pokemonHtml += `
-                        <div class="pkm-slot tooltip-${rankClass}">
-                            <img src="${getGifUrl(p.nome)}" class="pkm-gif">
-                            <img src="${itemUrl}" class="hold-item-icon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
-                            
-                            <div class="home-pkm-tooltip">
-                                <div class="tooltip-header">${p.nome.toUpperCase()}</div>
-                                <div class="tooltip-info">✨ ${p.abilita || 'N/D'}</div>
-                                <div class="tooltip-info">📊 ${p.evs || 'N/D'}</div>
-                                <div class="tooltip-moves-grid">
-                                    ${(p.mosse || []).map(m => `<span class="mini-move">${m || '-'}</span>`).join('')}
-                                </div>
-                            </div>
-                        </div>`;
-                } else {
-                    pokemonHtml += `<div class="pkm-slot empty"></div>`;
+                if (anchor) {
+                    anchor.onclick = (e) => {
+                        e.preventDefault();
+                        if(typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, seasonName);
+                    };
+                }
+
+                let bodyHtml = "";
+                let footerHtml = "";
+
+                if (status === 'closed' || status === 'terminata') {
+                    const vincitore = info.winner || "---";
+                    bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitore}</p>`;
+                    footerHtml = `<span class="badge-closed">CLOSED</span>`;
+                
+                } else if (status === 'playing') {
+                    // --- CALCOLO LEADER ---
+                    let leader = "---";
+                    if (seasonData.leaderboard) {
+                        let max = -1;
+                        Object.keys(seasonData.leaderboard).forEach(playerName => {
+                            const p = seasonData.leaderboard[playerName];
+                            const pts = Number(p.points || 0);
+                            if (pts > max) { max = pts; leader = playerName; }
+                        });
+                    }
+
+                    // Aggiungiamo un ID specifico al div leader-name per colorarlo via JS
+                    bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
+                    footerHtml = `<span class="live-dot">●</span>PLAYING`;
+
+                    // --- RECUPERO COLORE DAL PLAYER (lowercase) ---
+                    if (leader !== "---") {
+                        const playerKey = leader.toLowerCase().trim();
+                        db.ref(`players/${playerKey}/info/color`).once('value', (cSnap) => {
+                            const userColor = cSnap.val();
+                            const leaderEl = document.getElementById(`leader-display-${item.label}`);
+                            if (leaderEl && userColor) {
+                                leaderEl.style.backgroundColor = userColor;
+                                // Opzionale: aggiungi bordo nero per stile neubrutalism se manca
+                                leaderEl.style.border = "3px solid #000";
+                            }
+                        });
+                    }
+                
+                } else if (status === 'open') {
+                    bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
+                    footerHtml = `<span class="badge-open">OPEN</span>`;
+                    if (info.deadline) setTimeout(() => {
+                        if(typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`);
+                    }, 100);
+                }
+
+                if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
+                if (footerEl) footerEl.innerHTML = footerHtml;
+                if (card) {
+                    card.style.opacity = "1";
+                    card.style.display = "flex";
+                    card.className = `season-card status-${status.replace(/\s+/g, '-')}`;
+                }
+            } else {
+                // SLOT VUOTO
+                if (nameEl) nameEl.innerText = "TBD";
+                if (rulesContainer) rulesContainer.innerHTML = "<p>Coming Soon</p>";
+                if (footerEl) footerEl.innerHTML = "---";
+                if (card) {
+                    card.style.opacity = "0.5";
+                    card.className = `season-card status-empty`;
                 }
             }
-            pokemonHtml += '</div>';
+        });
+    }, (error) => {
+        console.error("❌ Errore Firebase Database:", error);
+    });
+}
 
-            return `
-                <div class="leaderboard-row ${rankClass}">
-                    ${pokemonHtml}
-                    <div class="player-card ${themeClass}">
-                        <div class="card-inner">
-                            <div class="left-section">
-                                <div class="player-avatar">
-                                    <img src="${g.isLu ? 'immagini/lance.png' : 'immagini/sage.png'}">
-                                </div>
-                                <div class="player-info">
-                                    <h2>${g.nome}</h2>
-                                    <div class="punti-main">${g.punti}</div>
-                                </div>
-                            </div>
-                            <div class="action-buttons">
-                                <a href="${g.isLu ? 'page-lu.html' : 'page-didi.html'}" class="btn-action stats">STATS</a>
-                                <a href="${g.isLu ? 'box-lu.html' : 'box-didi.html'}" class="btn-action box">BOX</a>
-                            </div>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-group"><span class="stat-label">W/L</span><b class="stat-value">${g.w}-${g.l}</b></div>
-                            <div class="stat-group"><span class="stat-label">SET</span><b class="stat-value">${g.setW}-${g.setL}</b></div>
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
+// Lancio iniziale
+caricaStagioniHome();
 
-        // 5. AGGIORNAMENTO TICKER
-        if (ultimoMatch) {
-            const tickerWrap = document.getElementById('lastMatchTicker');
-            const scoreParti = ultimoMatch.score.split('-').map(Number);
-            
-            // --- LOGICA FORMATTAZIONE DATA GG-MM-AA ---
-            let dataFormattata = ultimoMatch.data; // fallback
-            if (ultimoMatch.data && ultimoMatch.data.includes('-')) {
-                const partiData = ultimoMatch.data.split('-');
-                // Se la data è AAAA-MM-GG
-                if (partiData[0].length === 4) {
-                    const annoShort = partiData[0].slice(-2);
-                    dataFormattata = `${partiData[2]}-${partiData[1]}-${annoShort}`;
-                } 
-                // Se è già GG-MM-AAAA, accorciamo solo l'anno
-                else if (partiData[2].length === 4) {
-                    const annoShort = partiData[2].slice(-2);
-                    dataFormattata = `${partiData[0]}-${partiData[1]}-${annoShort}`;
-                }
-            }
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
 
-            const puntiMatch = calcolaPuntiAssegnati(scoreParti);
-
-            const testoNews = ` BREAKING NEWS -- ${dataFormattata} -- Last match -- ${ultimoMatch.categoria || 'Standard'} -- LU [${scoreParti[1]}] vs DIDI [${scoreParti[0]}] -- Teams: ${ultimoMatch.team2 || 'N/A'} (LU) vs ${ultimoMatch.team1 || 'N/A'} (DIDI) -- Points: LU ${puntiMatch.lu} - DIDI ${puntiMatch.didi} -- `;
-            
-            tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
+    // Se il menu è visibile (display flex o block)
+    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
+        
+        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            menu.style.display = 'none';
+            console.log("Stato: Menu chiuso (click esterno)");
         }
+    }
+});
 
-    } catch (e) {
-        console.error("Home loading error:", e);
+
+let playerColors = {};
+
+async function caricaColoriPlayers() {
+    try {
+        const snapshot = await db.ref('players').once('value');
+        const playersData = snapshot.val();
+        
+        if (!playersData) return;
+
+        for (let nomeKey in playersData) {
+            const nomeMinuscolo = nomeKey.toLowerCase();
+            
+            const coloreRecuperato = playersData[nomeKey].info?.color;
+            
+            if (coloreRecuperato) {
+                playerColors[nomeMinuscolo] = coloreRecuperato;
+            }
+        }
+        console.log("Colori mappati:", playerColors);
+    } catch (error) {
+        console.error("Errore caricamento:", error);
     }
 }
 
-function calcolaPuntiAssegnati(parti) {
-    const sDidi = parti[0];
-    const sLu = parti[1];
-    let res = { didi: 0, lu: 0 };
-
-    if (sDidi > sLu) {
-        // CASO DIDI VINCE
-        if (sDidi === 5 && sLu === 0) { 
-            res.didi = 3; res.lu = 0; // 5-0
-        } else if (sDidi === 4 && sLu === 1) { 
-            res.didi = 2; res.lu = 0; // 4-1
-        } else if (sDidi === 3 && sLu === 2) { 
-            res.didi = 2; res.lu = 1; // 3-2
-        }
-    } else if (sLu > sDidi) {
-        // CASO LU VINCE
-        if (sLu === 5 && sDidi === 0) { 
-            res.lu = 3; res.didi = 0; // 5-0
-        } else if (sLu === 4 && sDidi === 1) { 
-            res.lu = 2; res.didi = 0; // 4-1
-        } else if (sLu === 3 && sDidi === 2) { 
-            res.lu = 2; res.didi = 1; // 3-2
-        }
-    }
-    return res;
+// Funzione per scurire o schiarire un colore HEX
+function pSBC(p, c0, c1, l) {
+    let r, g, b, P, f, t, h, i = parseInt, m = Math.round, a = typeof (c1) == "string";
+    if (typeof (p) != "number" || p < -1 || p > 1 || typeof (c0) != "string" || (c0[0] != 'r' && c0[0] != '#') || (c1 && !a)) return null;
+    if (!this.pSBCr) this.pSBCr = (d) => {
+        let n = d.length, x = {};
+        if (n > 9) {
+            [r, g, b, a] = d = d.split(","), n = d.length;
+            if (n < 3 || n > 4) return null;
+            x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4)), x.g = i(g), x.b = i(b), x.a = a ? parseFloat(a) : -1
+        } else {
+            if (n == 8 || n == 6 || n < 4) return null;
+            if (n < 6) d = "#" + d[1] + d[1] + d[2] + d[2] + d[3] + d[3] + (n > 4 ? d[4] + d[4] : "");
+            d = i(d.slice(1), 16);
+            if (n == 9 || n == 5) x.r = d >> 24 & 255, x.g = d >> 16 & 255, x.b = d >> 8 & 255, x.a = m((d & 255) / 0.255) / 1000;
+            else x.r = d >> 16, x.g = d >> 8 & 255, x.b = d & 255, x.a = -1
+        } return x
+    };
+    h = c0.length > 9, f = this.pSBCr(c0);
+    if (!f) return null;
+    if (p < 0) p *= -1, t = { r: 0, g: 0, b: 0, a: f.a };
+    else t = { r: 255, g: 255, b: 255, a: f.a };
+    r = m((t.r - f.r) * p) + f.r, g = m((t.g - f.g) * p) + f.g, b = m((t.b - f.b) * p) + f.b;
+    return "#" + (0x1000000 + (f.a != -1 ? m(f.a * 255) : 0) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-function renderizzaLeaderboard(giocatori) {
-    const leaderboardDiv = document.getElementById('leaderboardContainer');
-    leaderboardDiv.innerHTML = giocatori.map((g, index) => {
-        const rankClass = index === 0 ? 'rank-1' : 'rank-2';
-        const themeClass = g.isLu ? 'lu-theme' : 'didi-theme';
+function getPlayerPalette(baseColor) {
+    if (!baseColor) baseColor = "#31c489";
+    
+    return {
+        base: baseColor,
+        dark: pSBC(-0.4, baseColor),
+        darker: pSBC(-0.7, baseColor),
+        light: pSBC(0.6, baseColor),
+        tag: pSBC(-0.5, baseColor),
+        bright: pSBC(0.3, baseColor)
+    };
+}
+
+function generaVariabiliCSS(palette) {
+    return `
+        --accent-color: ${palette.base};
+        --border-color: ${palette.darker};
+        --dark-color: ${palette.dark};
+        --light-color: ${palette.light};
+        --tag-color: ${palette.tag};
+        --bright-color: ${palette.bright};
+    `;
+}
+
+async function getPlayersColors(p1, p2) {
+    const name1 = p1.toLowerCase().trim(); // Aggiunto trim() per evitare spazi nascosti
+    const name2 = p2.toLowerCase().trim();
+
+    console.log("Tentativo query su path:", `players/${name1}/info/color`);
+
+    // Usiamo una nuova reference pulita
+    const ref1 = db.ref(`players/${name1}/info/color`);
+    const ref2 = db.ref(`players/${name2}/info/color`);
+
+    const snap1 = await ref1.once('value');
+    const snap2 = await ref2.once('value');
+
+    console.log(`VALORE REALE DB per ${name1}:`, snap1.val());
+    console.log(`VALORE REALE DB per ${name2}:`, snap2.val());
+
+    return {
+        c1: snap1.val() || '#31c489',
+        c2: snap2.val() || '#8e44ad'
+    };
+}
+
+function toggleMusic() {
+    // 1. Identifica il player (usa l'ID presente in questa pagina, es. bg-music-home)
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player || !musicBtn) {
+        console.error("Elementi audio o tasto non trovati in questa pagina.");
+        return;
+    }
+
+    if (player.paused) {
+        player.play().then(() => {
+            // Se parte, rimuoviamo la sbarra e salviamo la preferenza 'on'
+            musicBtn.classList.remove('muted');
+            localStorage.setItem('userMusicPref', 'on');
+        }).catch(error => {
+            console.warn("Autoplay bloccato o errore riproduzione:", error);
+        });
         
-        let pokemonHtml = '<div class="external-pokemon-grid">';
-        
-        // Se abbiamo i dati del team, cicliamo i suoi pokemon
-        if (g.teamData && g.teamData.pokemon) {
-            g.teamData.pokemon.forEach(p => {
-                const cleanName = p.nome.toLowerCase().replace(/\s+/g, '-').replace(/[.'é%]/g, '');
-                pokemonHtml += `
-                    <div class="pkm-slot tooltip-${rankClass}">
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${cleanName}.gif" class="pkm-gif">
-                        <div class="home-pkm-tooltip">
-                            <div class="tooltip-header">${p.nome.toUpperCase()}</div>
-                            <div class="tooltip-info">✨ ${p.abilita || 'N/D'}</div>
-                            <div class="tooltip-moves-grid">
-                                ${(p.mosse || []).map(m => `<span class="mini-move">${m}</span>`).join('')}
-                            </div>
-                        </div>
-                    </div>`;
+    } else {
+        player.pause();
+        // Aggiungiamo la sbarra e salviamo la preferenza 'off'
+        musicBtn.classList.add('muted');
+        localStorage.setItem('userMusicPref', 'off');
+    }
+}
+
+/** * AGGIUNTA FONDAMENTALE: 
+ * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
+ * silenziato la musica in un'altra parte del sito.
+ */
+window.addEventListener('DOMContentLoaded', () => {
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+    const savedPref = localStorage.getItem('userMusicPref');
+
+    if (player && musicBtn) {
+        if (savedPref === 'off') {
+            // Se l'utente ha scelto 'off' altrove, non far partire nulla
+            player.pause();
+            musicBtn.classList.add('muted');
+        } else {
+            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
+            player.play().catch(() => {
+                musicBtn.classList.add('muted');
             });
         }
-        pokemonHtml += '</div>';
-
-        return `
-            <div class="leaderboard-row ${rankClass}">
-                ${pokemonHtml}
-                <div class="player-card ${themeClass}">
-                    <div class="punti-main">${g.punti}</div>
-                    <div class="stat-value">${g.w}-${g.l}</div>
-                    <div class="stat-value">${g.setW}-${g.setL}</div>
-                </div>
-            </div>`;
-    }).join('');
-}
+    }
+});
 
 
+// Seleziona l'elemento del modale
+const loginModal = document.getElementById('login-modal');
 
-function mostraTooltipHome(id) {
-    const tt = document.getElementById(`tooltip-${id}`);
-    if (tt) tt.style.display = 'block';
-}
+// Aggiungi l'evento click
+loginModal.addEventListener('click', (event) => {
+    // Se il clic è avvenuto esattamente sul background (id="login-modal")
+    // e NON sulla card contenuta al suo interno
+    if (event.target === loginModal) {
+        toggleLoginModal(); // Chiama la tua funzione per chiudere
+    }
+});
 
-function nascondiTooltipHome(id) {
-    const tt = document.getElementById(`tooltip-${id}`);
-    if (tt) tt.style.display = 'none';
-}
+// Funzione per applicare il colore alla TopBar (centralizzata)
+async function applicaColoreUtente(user) {
+    const topBar = document.querySelector('.top-bar');
+    if (!user || !topBar) return;
 
-async function creaGraficoAndamento() {
     try {
-        const snapMatches = await db.ref('matches').once('value');
-        const matchesRaw = snapMatches.val() || {};
-        
-        const matchesArray = Object.values(matchesRaw).sort((a, b) => {
-            return new Date(a.data) - new Date(b.data);
-        });
+        const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
+        const userName = nameSnap.val();
 
-        let datePunti = {}; 
-        matchesArray.forEach(m => {
-            const dataMatch = m.data;
-            const scoreParti = (m.score || "0-0").split('-').map(Number);
-            const pts = calcolaPuntiAssegnati(scoreParti);
-            
-            if (dataMatch && dataMatch.trim() !== "") {
-                if (!datePunti[dataMatch]) {
-                    datePunti[dataMatch] = { lu: 0, didi: 0 };
-                }
-                datePunti[dataMatch].lu += pts.lu;
-                datePunti[dataMatch].didi += pts.didi;
+        if (userName) {
+            console.log("👤 Utente riconosciuto:", userName);
+            const colorSnap = await db.ref(`players/${userName.toLowerCase().trim()}/info/color`).once('value');
+            if (colorSnap.exists()) {
+                const userColor = colorSnap.val();
+                topBar.style.setProperty('background-color', userColor, 'important');
+                console.log("🎨 Colore applicato:", userColor);
             }
-        });
-
-        const tutteLeDate = Object.keys(datePunti);
-        const ultimeDate = tutteLeDate.slice(-5);
-
-        const dateLabels = ultimeDate.map(d => {
-            const parti = d.split('-'); 
-            if (parti.length >= 3) {
-                return (parti[0].length === 4) ? `${parti[2]}/${parti[1]}` : `${parti[0]}/${parti[1]}`;
-            }
-            return d;
-        });
-
-        let cumulativoLu = 0, cumulativoDidi = 0;
-        let datiLu = [], datiDidi = [];
-
-        tutteLeDate.forEach(d => {
-            cumulativoLu += datePunti[d].lu;
-            cumulativoDidi += datePunti[d].didi;
-            if (ultimeDate.includes(d)) {
-                datiLu.push(cumulativoLu);
-                datiDidi.push(cumulativoDidi);
-            }
-        });
-
-        const ctx = document.getElementById('progressionChart').getContext('2d');
-        if (window.myChart) { window.myChart.destroy(); }
-
-        window.myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dateLabels,
-                datasets: [
-                    { 
-                        label: 'LU', 
-                        data: datiLu, 
-                        borderColor: '#8e44ad', 
-                        backgroundColor: '#8e44ad', 
-                        tension: 0.4, 
-                        borderWidth: 3,
-                        pointRadius: 4
-                    },
-                    { 
-                        label: 'DIDI', 
-                        data: datiDidi, 
-                        borderColor: '#31c489', 
-                        backgroundColor: '#31c489', 
-                        tension: 0.4, 
-                        borderWidth: 3,
-                        pointRadius: 4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: 'rgba(20, 20, 20, 0.9)',
-                        usePointStyle: true,
-                        callbacks: {
-                            title: () => null,
-                            label: (context) => context.parsed.y
-                        }
-                    }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        ticks: { 
-                            color: '#fff',
-                            // --- MODIFICA QUI ---
-                            stepSize: 10, // Forza una linea ogni 10 punti
-                            // --------------------
-                            font: { family: 'Josefin Sans', size: 11, weight: 'bold' }
-                        }, 
-                        grid: { color: 'rgba(255,255,255,0.1)' } 
-                    },
-                    x: { 
-                        ticks: { color: '#fff', font: { family: 'Josefin Sans', size: 10 } }, 
-                        grid: { display: false } 
-                    }
-                }
-            }
-        });
-    } catch (e) { console.error("Errore grafico:", e); }
+        }
+    } catch (e) {
+        console.error("❌ Errore recupero colore:", e);
+    }
 }
 
-const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+function toggleIscrizioneModal() {
+    const modal = document.getElementById('modal-iscrizione');
+    const overlay = document.getElementById('modal-overlay');
+    const isVisible = modal.style.display === 'block';
+    
+    modal.style.display = isVisible ? 'none' : 'block';
+    overlay.style.display = isVisible ? 'none' : 'block';
+}
+
+async function gestisciAccessoHub(seasonId, status, seasonName) {
+    const user = firebase.auth().currentUser;
+    const s = status ? status.toLowerCase() : "";
+
+    // --- LOGICA REDIRECT DIRETTO (NON "OPEN") ---
+    if (s === 'playing') {
+        window.location.href = `matches.html?id=${seasonId}`;
+        return;
+    } 
+    
+    if (s === 'closed' || s === 'terminata') {
+        // Puoi decidere se mandarli ai match per vedere lo storico o lasciarli nell'hub
+        window.location.href = `matches.html?id=${seasonId}`;
+        return;
+    }
+
+    // --- LOGICA ISCRIZIONE (STATUS "OPEN") ---
+    if (s === 'open') {
+        if (!user) {
+            alert("Per iscriverti devi prima effettuare il login!");
+            if (typeof toggleLoginModal === 'function') toggleLoginModal();
+            return;
+        }
+
+        try {
+            // Recupero dati utente e stagione in parallelo per velocità
+            const [userSnap, seasonSnap] = await Promise.all([
+                db.ref(`users/${user.uid}`).once('value'),
+                db.ref(`seasons/${seasonId}`).once('value')
+            ]);
+
+            const nomePlayer = userSnap.val()?.name;
+            const seasonData = seasonSnap.val() || {};
+            const info = seasonData.info || seasonData;
+
+            if (!nomePlayer) {
+                alert("Completa il tuo profilo con un nome utente prima di iscriverti!");
+                return;
+            }
+
+            // 1. Controllo se già iscritto -> Vai all'Hub per gestire il team
+            if (seasonData.iscritti && seasonData.iscritti[nomePlayer]) {
+                window.location.href = `hub.html?id=${seasonId}`;
+                return;
+            }
+
+            // 2. Controllo Limite Partecipanti
+            const countIscritti = seasonData.iscritti ? Object.keys(seasonData.iscritti).length : 0;
+            const limit = info.participants_limit || 0;
+
+            if (limit > 0 && countIscritti >= limit) {
+                alert("Spiacente, questa stagione ha raggiunto il limite massimo di partecipanti.");
+                return;
+            }
+
+            // 3. Preparazione Formati HTML
+            let formatiHtml = "";
+            if (info.selected_formats) {
+                Object.values(info.selected_formats).forEach(fmt => {
+                    formatiHtml += `<li>${fmt}</li>`;
+                });
+            } else {
+                formatiHtml = "<li>No formats selected</li>";
+            }
+
+            // 4. Popolamento Modale con Layout Neubrutalist
+            document.getElementById('modal-season-name').innerText = `Register to: ${seasonName}`;
+            document.getElementById('modal-season-rules').innerHTML = `
+                <div class="modal-grid-layout" style="display: flex; gap: 20px; text-align: left;">
+                    <div style="flex: 1;">
+                        <span class="modal-column-title" style="display: block; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; border-bottom: 2px solid #000;">Formats</span>
+                        <ul class="modal-format-list" style="list-style: none; padding: 0; font-weight: 700;">
+                            ${formatiHtml}
+                        </ul>
+                    </div>
+                    
+                    <div style="flex: 1;" class="modal-structure-list">
+                        <span class="modal-column-title" style="display: block; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; border-bottom: 2px solid #000;">Structure</span>
+                        <div class="modal-info-box" style="margin-bottom: 5px;">Players: <strong>${countIscritti} / ${limit}</strong></div>
+                        <div class="modal-info-box" style="margin-bottom: 5px;">Showdowns: <strong>${info.showdowns_per_format || 0}</strong></div>
+                        <div class="modal-info-box" style="margin-bottom: 5px;">Days: <strong>${info.total_days || 0}</strong></div>
+                    </div>
+                </div>
+                <p style="margin-top: 25px; text-align: center; font-size: 0.85rem; opacity: 0.7; font-style: italic;">
+                    Clicking CONFIRM will register your profile to this competition.
+                </p>
+            `;
+
+            // 5. Gestione Click Conferma
+            document.getElementById('btn-conferma-iscrizione').onclick = async () => {
+                try {
+                    await db.ref(`seasons/${seasonId}/iscritti/${nomePlayer}`).set({
+                        uid: user.uid,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    if (typeof toggleIscrizioneModal === 'function') toggleIscrizioneModal();
+                    window.location.href = `hub.html?id=${seasonId}`;
+                } catch (err) {
+                    console.error("Errore durante l'iscrizione:", err);
+                    alert("Si è verificato un errore durante l'invio dell'iscrizione.");
+                }
+            };
+
+            // Mostra il modale
+            if (typeof toggleIscrizioneModal === 'function') toggleIscrizioneModal();
+
+        } catch (error) {
+            console.error("Errore caricamento dati stagione:", error);
+            alert("Error loading season data.");
+        }
+    } else {
+        // Fallback generico
+        window.location.href = `hub.html?id=${seasonId}`;
+    }
+}
+
+async function calcolaVincitoreStagione(seasonId) {
+    try {
+        const seasonRef = db.ref(`seasons/${seasonId}`);
+        const snapshot = await seasonRef.once('value');
+        const seasonData = snapshot.val();
+
+        if (!seasonData || !seasonData.matches) {
+            console.error("Nessun match trovato.");
+            return;
+        }
+
+        const matches = seasonData.matches;
+        const stats = {}; 
+
+        // Ciclo su ogni singolo match
+        Object.keys(matches).forEach(matchId => {
+            const m = matches[matchId];
+
+            const id1 = m.player1Id; 
+            const id2 = m.player2Id; 
+            
+            const p1Points = parseFloat(m.p1_points) || 0;
+            const p2Points = parseFloat(m.p2_points) || 0;
+
+            if (id1) {
+                if (!stats[id1]) stats[id1] = { points: 0, played: 0 };
+                stats[id1].points += p1Points;
+                stats[id1].played += 1;
+            }
+
+            if (id2) {
+                if (!stats[id2]) stats[id2] = { points: 0, played: 0 };
+                stats[id2].points += p2Points;
+                stats[id2].played += 1;
+            }
+        });
+
+        console.log("RIEPILOGO TOTALI CALCOLATI:", stats);
+
+        let winnerName = "";
+        let maxPoints = -1;
+
+        Object.keys(stats).forEach(playerId => {
+            if (stats[playerId].points > maxPoints) {
+                maxPoints = stats[playerId].points;
+                winnerName = playerId;
+            }
+        });
+
+        const updates = {};
+        updates[`seasons/${seasonId}/leaderboard`] = stats;
+        updates[`seasons/${seasonId}/info/winner`] = winnerName;
+
+        await db.ref().update(updates);
+        console.log("Firebase aggiornato! Vincitore:", winnerName, "con punti:", maxPoints);
+
+    } catch (e) {
+        console.error("Errore:", e);
+    }
+}
+
+
+
+function getTop(collection, criterion) {
+    const keys = Object.keys(collection);
+    if (keys.length === 0) return { name: "N/A", played: 0, win: 0, loss: 0, setW: 0, setL: 0, format: "N/A" };
+    const topKey = keys.reduce((a, b) => (collection[a][criterion] >= collection[b][criterion] ? a : b));
+    return collection[topKey];
+}
+
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; 
 
 function avviaMusicaHome() {
     const player = document.getElementById('bg-music-home');
@@ -479,17 +874,14 @@ function avviaMusicaHome() {
         player.src = LINK_MP3_HOME;
         player.volume = 0.3;
         
-        // PRIMO COLPO: Tenta l'autoplay immediato
         player.play()
             .then(() => { console.log("Musica Home partita al volo!"); })
             .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
     }
 }
 
-// Avvia la logica appena la pagina è caricata
 document.addEventListener('DOMContentLoaded', avviaMusicaHome);
 
-// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
 document.addEventListener('click', () => {
     const player = document.getElementById('bg-music-home');
     if (player && player.paused) {
@@ -502,7 +894,7 @@ const musicBtn = document.getElementById('music-toggle');
 const audio = document.getElementById('bg-music-home');
 
 musicBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Evita che il clic attivi anche lo sbloccatore sopra
+    e.stopPropagation(); 
     if (audio.paused) {
         audio.play();
         musicBtn.innerText = "🔊";
@@ -512,10 +904,42 @@ musicBtn.addEventListener('click', (e) => {
     }
 });
 
-// Avvia la creazione del grafico
-creaGraficoAndamento();
 
-caricaHome();
+
+let countdownInterval;
+
+function startCountdown(deadlineStr, elementId) {
+    const timerDisplay = document.getElementById(elementId);
+    if (!timerDisplay) return;
+    
+    // Usiamo un oggetto globale per gestire i vari intervalli senza sovrascriverli
+    if (!window.activeIntervals) window.activeIntervals = {};
+    if (window.activeIntervals[elementId]) clearInterval(window.activeIntervals[elementId]);
+    
+    const targetDate = new Date(deadlineStr).getTime();
+
+    const updateTimer = () => {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+
+        if (distance < 0) {
+            clearInterval(window.activeIntervals[elementId]);
+            timerDisplay.innerText = "Registrations closed";
+            return;
+        }
+
+        const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+        timerDisplay.innerText = `${d}d ${h}h ${m}m ${s}s`;
+    };
+
+    updateTimer(); // Esegui subito il primo calcolo
+    window.activeIntervals[elementId] = setInterval(updateTimer, 1000);
+}
+
 </script>
 </body>
 </html>

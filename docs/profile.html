@@ -1,0 +1,1228 @@
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Profile</title>
+        <link rel="icon" type="image/png" href="immagini/magikarp.png">
+        <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style-profile.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+    <body>
+
+   <section class="hub-hero">
+        <div class="hub-hero-content">
+            <h1 class="hub-title-display">
+                <span id="player-name-placeholder"></span>YOUR PROFILE
+            </h1>
+            <div id="badge-container" class="player-badges"></div>
+        </div>
+    </section>
+
+    <main class="hub-main-container">
+    
+    <div class="hub-column appearance-section">
+        <h2 class="section-title">Edit Appearance</h2>
+        
+        <div class="appearance-grid-container">
+    <div class="appearance-flex-row">
+        
+        <div class="setting-item">
+            <label>Trainer Avatar</label>
+            <div class="custom-tooltip-wrapper">
+                <div class="avatar-current-preview" onclick="toggleTooltip('avatar-tooltip')">
+                    <img id="current-avatar-preview" src="immagini/profile/default.png" alt="Avatar">
+                    <div class="edit-badge"></div>
+                </div>
+                <div id="avatar-tooltip" class="custom-tooltip-content">
+                    <div class="tooltip-header">Select Icon</div>
+                    <div class="avatar-selector-grid" id="avatar-grid-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <label>Signature Color</label>
+            <div class="custom-tooltip-wrapper">
+                <div class="color-current-preview" onclick="toggleTooltip('color-tooltip')">
+                    <div id="current-color-bg" class="color-preview-rect"></div>
+                    <div class="edit-badge"></div>
+                </div>
+
+                <div id="color-tooltip" class="custom-tooltip-content honeycomb-modal">
+                    <div class="tooltip-header">Color Palette</div>
+                    <div class="honeycomb-main" id="honeycomb-picker"></div>
+                    <div class="honeycomb-gray-scale" id="honeycomb-grays"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+        <div class="setting-item showcase-section">
+   
+    <label style="margin-top: 15px; font-size: 0.8em; opacity: 0.8; color: black;">Select your badges:</label>
+    <div id="badge-selection-grid" class="badge-grid">
+        </div>
+        <button onclick="salvaModificheProfilo()" class="save-btn-hub">
+            SAVE ALL CHANGES
+        </button>
+</div>
+        <div id="pokemon-circle-container" class="trainer-section mini-preview">
+            </div>
+    </div>
+
+    <div class="hub-column settings-section">
+        <h2 class="section-title">Edit Profile</h2>
+
+        <div class="setting-item">
+            <label for="bio-input">Personal Bio</label>
+            <textarea id="bio-input" maxlength="150" placeholder="Write your trainer bio here..."></textarea>
+        </div>
+
+        <div class="setting-item">
+            <label for="team-selector-fav">Featured Team (Circle)</label>
+            <select id="team-selector-fav">
+                <option value="auto">-- Best Team (Auto) --</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <label>Profile Soundtrack</label>
+            <div class="custom-dropdown" id="music-dropdown-container">
+                <div id="dropdown-header" class="dropdown-header" onclick="toggleDropdown()">
+                    <span id="selected-song-name">Choose your soundtrack...</span>
+                    <span class="arrow">▲</span>
+                </div>
+                <div id="dropdown-content" class="dropdown-content">
+                    <div class="dropdown-search-wrapper">
+                        <input type="text" id="music-search" placeholder="Search track..." onkeyup="filtraMusica()" onclick="event.stopPropagation()">
+                    </div>
+                    <ul id="music-list-admin" class="custom-music-list"></ul>
+                </div>
+                <input type="hidden" id="selected-music-url">
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="login-modal" class="modal">
+    <div class="modal-content glass-card">
+        <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="Your email">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-login">Login</button>
+            <div id="login-error" class="error-msg"></div>
+        </form>
+    </div>
+</div>
+
+
+
+<div class="top-auth-bar">
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+        <i id="auth-icon" class="fas fa-lock"></i>
+        <span id="auth-text"></span>
+    </div>
+    <div id="user-menu" class="user-dropdown">
+        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i>PROFILE</a>
+        
+        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+    </div>
+</div>
+
+
+</body>
+
+    <script>
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.firebasestorage.app",
+    messagingSenderId: "707115539525",
+    appId: "1:707115539525:web:70b70aa34c27013d21972c"
+};
+
+// 2. Inizializzazione Unica (Evita errori di caricamento multiplo)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+const auth = firebase.auth();
+let playerID = ""; 
+let tuttiITeam = [];
+
+// --- 1. LISTENER DI AUTENTICAZIONE ---
+// Listener unico per lo stato autenticazione in profile.html
+auth.onAuthStateChanged(async (user) => {
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-text');
+    
+    if (user) {
+        try {
+            // 1. Recupero il nome dell'utente dal DB
+            const snapshot = await db.ref(`users/${user.uid}/name`).once('value');
+            const userName = snapshot.val();
+
+            if (userName) {
+                // 2. Impostiamo il playerID globale (necessario per caricare i dati del profilo)
+                playerID = userName.toLowerCase().trim();
+                console.log("Accesso confermato per:", playerID);
+
+                // 3. Aggiorniamo l'interfaccia dell'header (Icona e Nome)
+                if (authIcon) authIcon.className = "fas fa-user-circle"; 
+                if (authText) authText.innerText = userName;
+
+                // 4. AVVIAMO IL CARICAMENTO DEI DATI DEL PROFILO
+                // In profile.html questa è la funzione principale che avvia tutto
+                caricaDatiProfilo(playerID);
+                
+                // Se hai funzioni per l'aspetto (colori personalizzati del profilo), mettile qui
+                // inizializzaAppearance(); 
+
+            } else {
+                console.error("Nome utente non trovato nel database.");
+                if (authText) authText.innerText = "Profile Error";
+            }
+        } catch (error) {
+            console.error("Errore durante il recupero dei dati utente:", error);
+            if (authText) authText.innerText = "Logged In";
+        }
+    } else {
+        // Gestione utente non loggato: reindirizzamento
+        if (authIcon) authIcon.className = "fas fa-lock";
+        if (authText) authText.innerText = "";
+        
+        if (!window.location.pathname.includes("login.html")) {
+            window.location.href = "login.html";
+        }
+    }
+});
+
+function handleAuthClick() {
+    const user = auth.currentUser;
+    if (!user) {
+        toggleLoginModal();
+    } else {
+        const menu = document.getElementById('user-menu');
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+function toggleLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
+
+function logout() {
+    auth.signOut().then(() => {
+        location.reload();
+    });
+}
+
+// Gestione Login
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+
+    // Firebase Auth Login
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("Login effettuato:", userCredential.user);
+            toggleLoginModal();
+            // Il refresh non è obbligatorio ma aiuta a resettare lo stato della UI
+            location.reload(); 
+        })
+        .catch((error) => {
+            errorEl.innerText = "Email o Password errati.";
+            console.error(error);
+        });
+});
+
+
+let badgeSelezionati = []; // Array globale che contiene gli ID dei badge scelti
+
+function toggleBadge(badgeId, element) {
+    const index = badgeSelezionati.indexOf(badgeId);
+
+    if (index > -1) {
+        // Se è già selezionato, lo rimuoviamo (togliamo il tick)
+        badgeSelezionati.splice(index, 1);
+        element.classList.remove('selected');
+    } else {
+        // Se non è selezionato, lo aggiungiamo (limite massimo 3 per estetica)
+        if (badgeSelezionati.length >= 3) {
+            alert("Puoi mostrare al massimo 3 badge!");
+            return;
+        }
+        badgeSelezionati.push(badgeId);
+        element.classList.add('selected');
+    }
+
+    // AGGIORNAMENTO ISTANTANEO DELLO SHOWCASE
+    aggiornaTrophyShowcase();
+}
+
+function aggiornaTrophyShowcase() {
+    const container = document.getElementById('showcase-container');
+    if (!container) return;
+
+    // Se non ci sono badge, rimettiamo il placeholder
+    if (badgeSelezionati.length === 0) {
+        container.innerHTML = '<div class="badges-placeholder">Selected badges will appear here</div>';
+        return;
+    }
+
+    // Se ci sono badge, svuotiamo e iniettiamo le immagini
+    container.innerHTML = ""; 
+    badgeSelezionati.forEach(id => {
+        const img = document.createElement('img');
+        img.src = `immagini/badges/${id}.png`; // Assicurati che il percorso sia corretto
+        img.className = "showcase-badge-img";
+        img.title = id;
+        container.appendChild(img);
+    });
+}
+
+// FIX: Funzione selezionaCanzone
+function selezionaCanzone(elementoSpan, url) {
+    const nomeCanzone = elementoSpan.innerText;
+    document.getElementById('selected-song-name').innerText = nomeCanzone;
+    document.getElementById('selected-music-url').value = url;
+    
+    // Chiudi il dropdown dopo la selezione
+    document.getElementById('dropdown-content').classList.remove('show');
+    
+    console.log("Canzone selezionata:", nomeCanzone);
+}
+
+// Configurazione icone (Aggiungi qui i nomi dei file che hai in cartella)
+
+const LISTA_AVATAR = ["lance.png", "sage.png", "blue.png", "leaf.png", "ethan.png", "lyra.png", "brendan.png", "may.png", "lucas.png", "dawn.png"];
+
+const HONEYCOMB_COLORS = [
+    "#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#FFFF00", "#FFEE00", "#D4FF00", "#B2FF00", "#8CFF00",
+    "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF",
+    "#0066FF", "#0033FF", "#0000FF", "#3300FF", "#6600FF", "#9900FF", "#CC00FF", "#FF00FF", "#FF00CC", "#FF0099",
+    "#FF0066", "#FF0033", "#E60000", "#B30000", "#800000", "#004D00", "#003366", "#000080", "#4B0082", "#2E0854"
+];
+
+const GRAY_SCALE = ["#969696", "#737373", "#525252", "#252525", "#000000"];
+
+function inizializzaAppearance() {
+    console.log("🎨 Inizializzazione Appearance (Avatar + Colori)...");
+
+    // 1. POPOLAMENTO AVATAR (Griglia immagini)
+    const avatarGrid = document.getElementById('avatar-grid-list');
+    if (avatarGrid && typeof LISTA_AVATAR !== 'undefined') {
+        avatarGrid.innerHTML = ""; // Pulisce rimasugli
+        LISTA_AVATAR.forEach(imgName => {
+            const img = document.createElement('img');
+            img.src = `immagini/profile/${imgName}`;
+            img.className = "avatar-selection-item";
+            // Al click chiama la funzione selezionaAvatar
+            img.onclick = function() { selezionaAvatar(this.src); };
+            avatarGrid.appendChild(img);
+        });
+    }
+
+    // 2. POPOLAMENTO COLORI (Griglia principale)
+    const picker = document.getElementById('honeycomb-picker');
+    if (picker && typeof HONEYCOMB_COLORS !== 'undefined') {
+        picker.className = "modern-color-grid"; 
+        picker.innerHTML = "";
+        HONEYCOMB_COLORS.forEach(color => {
+            const dot = document.createElement('div');
+            dot.className = "color-dot";
+            dot.style.backgroundColor = color;
+            dot.onclick = function() { selezionaColore(color); };
+            picker.appendChild(dot);
+        });
+    }
+
+    // 3. POPOLAMENTO GRIGI (Barra inferiore)
+    const grays = document.getElementById('honeycomb-grays');
+    if (grays && typeof GRAY_SCALE !== 'undefined') {
+        grays.className = "gray-bar"; 
+        grays.innerHTML = "";
+        GRAY_SCALE.forEach(color => {
+            const dot = document.createElement('div');
+            dot.className = "color-dot";
+            dot.style.backgroundColor = color;
+            dot.onclick = function() { selezionaColore(color); };
+            grays.appendChild(dot);
+        });
+    }
+}
+
+// --- LOGICA SELEZIONE ---
+
+function selezionaAvatar(url) {
+    // 1. Aggiorna l'anteprima circolare a sinistra
+    const preview = document.getElementById('current-avatar-preview');
+    if (preview) {
+        preview.src = url;
+    }
+    
+    // 2. Chiude il tooltip degli avatar
+    const tooltip = document.getElementById('avatar-tooltip');
+    if (tooltip) {
+        tooltip.classList.remove('show');
+    }
+    
+    console.log("📸 Avatar selezionato:", url);
+}
+
+function selezionaColore(color) {
+    const colorBg = document.getElementById('current-color-bg');
+    const hexText = document.getElementById('color-hex-display');
+    
+    // Aggiorna solo l'anteprima del colore e il testo HEX
+    if (colorBg) colorBg.style.backgroundColor = color;
+    if (hexText) hexText.innerText = color.toUpperCase();
+    
+    // Chiude il tooltip
+    document.getElementById('color-tooltip').classList.remove('show');
+}
+
+
+function toggleTooltip(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const isVisible = target.classList.contains('show');
+    document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
+    if (!isVisible) target.classList.add('show');
+}
+
+// --- 4. CARICAMENTO DATI DA FIREBASE ---
+async function caricaDatiProfilo() {
+    try {
+        if (!playerID) return;
+
+        // Inizializza i componenti grafici (palette colori, selettore avatar base)
+        inizializzaAppearance();
+
+        const [snapMatches, snapPlayer] = await Promise.all([
+            db.ref('matches').once('value'),
+            db.ref(`players/${playerID}`).once('value')
+        ]);
+
+        const playerData = snapPlayer.val() || {};
+        const teamsRaw = playerData.teams || {};
+        const info = playerData.info || {}; 
+
+        // A. SINCRONIZZAZIONE APPEARANCE & STYLE NEUBRUTALIST
+        if (info.avatar) {
+            const avatarPreview = document.getElementById('current-avatar-preview');
+            if (avatarPreview) avatarPreview.src = info.avatar;
+        }
+
+        if (info.color) {
+            const colorePlayer = info.color;
+
+            // 1. Aggiorna lo sfondo della fascia Hero col colore del giocatore
+            const heroSection = document.querySelector('.hub-hero');
+            if (heroSection) {
+                heroSection.style.backgroundColor = colorePlayer;
+            }
+
+            // 2. TITOLO: Box sempre NERO, Testo sempre BIANCO
+            const titoloDisplay = document.querySelector('.hub-title-display');
+            if (titoloDisplay) {
+                titoloDisplay.style.backgroundColor = "#000"; 
+                titoloDisplay.style.color = "#fff"; // <--- BIANCO FISSO
+                titoloDisplay.style.borderColor = "#000";
+            }
+
+            // 3. Aggiorna anche il quadratino nelle impostazioni (per feedback)
+            const colorBg = document.getElementById('current-color-bg');
+            if (colorBg) colorBg.style.backgroundColor = colorePlayer;
+        }
+
+        // B. BADGE E TROPHY SHOWCASE
+        // Ripristiniamo l'array globale dei badge selezionati dal database
+        if (info.badgeShowcase) {
+            window.badgeSelezionati = info.badgeShowcase;
+            // Disegna immediatamente i badge nel box tratteggiato superiore
+            if (typeof aggiornaTrophyShowcase === "function") {
+                aggiornaTrophyShowcase();
+            }
+        } else {
+            window.badgeSelezionati = [];
+        }
+
+        // C. SINCRONIZZAZIONE BIO
+        if (document.getElementById('bio-input')) {
+            document.getElementById('bio-input').value = info.bio || "";
+        }
+        
+        // D. MUSICA
+        const audio = document.getElementById('bg-music');
+        const songNameDisplay = document.getElementById('selected-song-name');
+        const songUrlInput = document.getElementById('selected-music-url');
+        
+        if (info.musicaPreferita) {
+            if (audio && audio.src !== info.musicaPreferita) audio.src = info.musicaPreferita;
+            if (songUrlInput) songUrlInput.value = info.musicaPreferita;
+            if (songNameDisplay) songNameDisplay.innerText = info.musicName || "Musica Salvata";
+        }
+
+        // E. ELABORAZIONE TEAM
+        const teams = Object.keys(teamsRaw).map(key => {
+            const t = teamsRaw[key];
+            const s = t.stats || {};
+            return {
+                id: key, ...t,
+                win: s.won || 0, loss: s.lost || 0,
+                sW: s.setW || 0, sL: s.setL || 0,
+                pts: s.punti || 0
+            };
+        });
+
+        window.tuttiITeam = teams;
+        window.idTeamPreferito = info.idTeamPreferito || "auto";
+        
+        popolaSelettoreTeam();
+        const teamSelect = document.getElementById('team-selector-fav');
+        if (teamSelect) teamSelect.value = window.idTeamPreferito;
+
+        // F. AGGIORNAMENTO UI STATS & BADGE DISPONIBILI
+        // Fondamentale: elaboraBadge() userà window.badgeSelezionati per mettere i TICK VERDI
+        if (typeof elaboraBadge === "function") {
+            await elaboraBadge(); 
+        }
+
+        if (typeof aggiornaUIProfilo === "function") {
+            let genStats = { win: 0, loss: 0, sW: 0, sL: 0, pts: 0 };
+            teams.forEach(t => {
+                genStats.win += t.win; genStats.loss += t.loss;
+                genStats.sW += t.sW; genStats.sL += t.sL;
+                genStats.pts += t.pts;
+            });
+            const categoryCounts = {};
+            teams.forEach(t => { if(t.categoria) categoryCounts[t.categoria] = (categoryCounts[t.categoria] || 0) + t.win; });
+            const bestCat = Object.keys(categoryCounts).sort((a,b) => categoryCounts[b] - categoryCounts[a])[0] || "N/A";
+            
+            aggiornaUIProfilo(genStats, teams.sort((a, b) => b.pts - a.pts)[0], bestCat);
+        }
+
+        console.log("✅ Profilo Neubrutalist ricaricato correttamente.");
+
+    } catch (e) {
+        console.error("❌ Errore nel caricamento profilo:", e);
+    }
+}
+
+// --- 5. GESTIONE CLICK ESTERNI ---
+window.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-tooltip-wrapper')) {
+        document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
+    }
+});
+
+// --- 6. AGGIORNAMENTO UI PROFILO ---
+function aggiornaUIProfilo(gen, best, bestCat) {
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+
+    setTxt('global-win', gen.win);
+    setTxt('global-loss', gen.loss);
+    setTxt('global-setv', gen.sW);
+    setTxt('global-setp', gen.sL);
+    setTxt('global-punti', gen.pts);
+    setTxt('global-pct-win', getPct(gen.win, gen.loss));
+    setTxt('global-pct-set', getPct(gen.sW, gen.sL));
+    setTxt('best-category-name', bestCat);
+
+    if (best) {
+        setTxt('best-team-name-new', best.nome || "Senza Nome");
+        setTxt('team-win', best.win);
+        setTxt('team-loss', best.loss);
+        setTxt('team-setv', best.sW);
+        setTxt('team-setp', best.sL);
+        setTxt('team-punti', best.pts);
+        setTxt('team-pct-win', getPct(best.win, best.loss));
+    }
+}
+
+
+async function inizializzaPaginaDinamica() {
+    try {
+        console.log("🚀 Avvio Dashboard...");
+        
+        // 1. Popoliamo l'interfaccia statica (Colori e Avatar)
+        inizializzaAppearance(); 
+
+        const namePlaceholder = document.getElementById('player-name-placeholder');
+        if (namePlaceholder && playerID) namePlaceholder.innerText = playerID.toUpperCase();
+
+        // 2. Carichiamo i dati dinamici
+        await Promise.all([
+            caricaDatiProfilo(),
+            popolaSelettoreMusica(),
+            elaboraBadge()
+        ]);
+
+        // 3. INTEGRAZIONE CONTEGGIO BIO
+        attivaContatoreBio();
+
+    } catch (e) {
+        console.error("❌ Errore:", e);
+    } finally {
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
+    }
+}
+
+// Funzione di supporto per il conteggio caratteri
+function attivaContatoreBio() {
+    const bioInput = document.getElementById('bio-input');
+    // Creiamo il contatore se non esiste già nell'HTML
+    let bioCounter = document.getElementById('bio-counter');
+    
+    if (bioInput) {
+        // Se il contatore non c'è nell'HTML, lo aggiungiamo dinamicamente sotto la textarea
+        if (!bioCounter) {
+            bioCounter = document.createElement('div');
+            bioCounter.id = 'bio-counter';
+            bioCounter.style = "font-size: 0.75em; text-align: right; opacity: 0.7; margin-top: 5px; font-weight: 800;";
+            bioInput.parentNode.appendChild(bioCounter);
+        }
+
+        // Funzione per aggiornare il numero
+        const updateCount = () => {
+            const length = bioInput.value.length;
+            bioCounter.textContent = `${length} / 150`;
+            bioCounter.style.color = length >= 150 ? "#f05252" : "inherit";
+        };
+
+        // Ascolta la digitazione
+        bioInput.addEventListener('input', updateCount);
+        
+        // Eseguiamo un primo aggiornamento (nel caso ci sia già testo caricato dal DB)
+        updateCount();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', inizializzaPaginaDinamica);
+
+    const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
+
+    const formatPct = (val) => {
+        if (!val || val === "" || val.toLowerCase().includes("nan")) return "0%";
+        let cleanVal = val.replace(/[^\d.,]/g, '').trim().replace(',', '.');
+        let num = parseFloat(cleanVal);
+        if (isNaN(num)) return "0%";
+        if (num > 0 && num <= 1) num = num * 100;
+        return Math.round(num) + "%";
+    };
+
+    // Funzione universale per aprire il modale
+
+function creaMappaDati(header, riga) {
+    let mappa = {};
+    header.forEach((nome, indice) => {
+        if (nome) {
+            // Rimuove spazi, ritorni a capo e rende maiuscolo
+            const nomePulito = nome.trim().replace(/\n/g, " ").toUpperCase();
+            // Associa il valore pulito, se la riga è più corta mette stringa vuota
+            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
+        }
+    });
+    return mappa;
+}
+
+
+function ascoltaDatiProfilo() {
+    if (!playerID) return;
+
+    // ID corretti come da tuo HTML (controllali!)
+    const bioDisplay = document.getElementById('trainer-bio-display'); 
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    const avatarImg = document.getElementById('profile-pic');
+
+    db.ref(`players/${playerID}/info`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        console.log("Dati real-time ricevuti:", data);
+
+        // 1. Aggiorna Bio (usa l'ID trainer-bio-display)
+        if (bioDisplay) {
+            bioDisplay.innerText = data.bio || "Nessuna biografia impostata.";
+        }
+
+        // 2. Aggiorna Avatar
+        if (avatarImg && data.avatar) {
+            avatarImg.src = data.avatar;
+        }
+
+        // 3. Team Preferito
+        window.idTeamPreferito = data.idTeamPreferito || "auto";
+
+        // 4. Gestione Musica (Campo esatto: musicaPreferita)
+        if (data.musicaPreferita) {
+            if (player && player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.load();
+                player.volume = 0.3;
+                player.play().catch(() => console.log("Play bloccato: clicca sulla pagina"));
+            }
+        }
+    });
+}
+
+function aggiornaUIProfilo(gen, best, bestCat) {
+    // Funzione interna per scrivere in sicurezza
+    const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+    };
+
+    // Stats Globali
+    setTxt('global-win', gen.win);
+    setTxt('global-loss', gen.loss);
+    setTxt('global-setv', gen.sW);
+    setTxt('global-setp', gen.sL);
+    setTxt('global-punti', gen.pts);
+    setTxt('global-pct-win', getPct(gen.win, gen.loss));
+    setTxt('global-pct-set', getPct(gen.sW, gen.sL));
+    
+    // Best Category
+    setTxt('best-category-name', bestCat);
+
+    // Box Best Team
+    if (best) {
+        setTxt('best-team-name-new', best.nome || "Senza Nome");
+        setTxt('team-win', best.win);
+        setTxt('team-loss', best.loss);
+        setTxt('team-setv', best.sW);
+        setTxt('team-setp', best.sL);
+        setTxt('team-punti', best.pts);
+        setTxt('team-pct-win', getPct(best.win, best.loss));
+        setTxt('team-pct-set', getPct(best.sW, best.sL));
+    }
+}
+
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    if (!select || !window.tuttiITeam) return;
+    select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
+    window.tuttiITeam.forEach(t => {
+        let opt = document.createElement('option');
+        opt.value = t.id; opt.innerText = t.nome;
+        if (window.idTeamPreferito === t.id) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+
+function getPct(v, l) {
+    const tot = Number(v) + Number(l);
+    // Usiamo Math.round per arrotondare all'intero più vicino
+    return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
+}
+
+async function elaboraBadge() {
+    try {
+        if (!playerID) return;
+
+        // Recupero diretto dal nodo stats/badges
+        const snapStats = await db.ref(`players/${playerID}/stats/badges`).once('value');
+        const badgeData = snapStats.val() || {};
+
+        // Prepariamo i dati (se mancano, il default è 0)
+        const recordVinte = { 
+            max: badgeData.maxwonstrike || 0, 
+            data: badgeData.maxwonstrikedate || "" 
+        };
+        const recordClean = { 
+            max: badgeData.maxcleanstrike || 0, 
+            data: badgeData.maxcleanstrikedate || "" 
+        };
+
+        // Mostriamo solo se hanno almeno un record > 0
+        mostraBadge(recordVinte, recordClean);
+
+    } catch (e) {
+        console.error("❌ Errore nel recupero badge:", e);
+    }
+}
+
+function mostraBadge(vinteObj, cleanObj) {
+    // 1. Reset e setup iniziale
+    // badgeGuadagnati deve essere globale o dichiarata fuori per essere usata da aggiornaTrophyShowcase
+    badgeGuadagnati = []; 
+    const grid = document.getElementById('badge-selection-grid');
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    // 2. Identificazione Badge Fondatore (Paldea)
+    const chiSono = document.title.toLowerCase();
+    const isFondatore = chiSono.includes("didi") || chiSono.includes("lu");
+    
+    if (isFondatore) {
+        badgeGuadagnati.push({ 
+            id: 'paldea', 
+            src: 'immagini/paldea.png', 
+            title: 'League Founder' 
+        });
+    }
+
+    // 3. Definizione Soglie per Record Strike e Clean Strike
+    const categorie = [
+        {
+            valore: vinteObj.max,
+            soglie: [
+                {n: 15, e: "immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"},
+                {n: 10, e: "immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"},
+                {n: 5, e: "immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}
+            ]
+        },
+        {
+            valore: cleanObj.max,
+            soglie: [
+                {n: 10, e: "immagini/champion-gold.png", t:"Untouchable: 10+ clean strike"},
+                {n: 6, e: "immagini/champion-silver.png", t:"Wall: 6 clean strike"},
+                {n: 3, e: "immagini/champion-bronze.png", t:"Shield: 3 clean strike"}
+            ]
+        }
+    ];
+
+    // 4. Raccolta badge sbloccati (solo il più alto per categoria)
+    categorie.forEach(cat => {
+        const raggiunto = cat.soglie.find(s => cat.valore >= s.n);
+        if (raggiunto) {
+            const idBadge = raggiunto.e.split('/').pop().replace('.png', '');
+            badgeGuadagnati.push({ id: idBadge, src: raggiunto.e, title: raggiunto.t });
+        }
+    });
+
+    // 5. Generazione Dinamica della Griglia di Selezione
+    badgeGuadagnati.forEach(badge => {
+        const div = document.createElement('div');
+        div.className = "badge-item-selector";
+        
+        // CONTROLLO ATTIVO: Se l'ID è presente tra quelli salvati (badgeSelezionati), 
+        // aggiungiamo subito la classe 'selected' per mostrare il tick verde.
+        if (window.badgeSelezionati && window.badgeSelezionati.includes(badge.id)) {
+            div.classList.add('selected');
+        }
+
+        div.innerHTML = `<img src="${badge.src}" title="${badge.title}" alt="${badge.id}">`;
+        
+        // Al click gestiamo la selezione/deselezione
+        div.onclick = function() {
+            toggleBadge(badge.id, div);
+        };
+        
+        grid.appendChild(div);
+    });
+
+    // 6. Sincronizzazione finale con il Trophy Showcase superiore
+    // (Così i badge scelti appaiono subito nel riquadro tratteggiato)
+    aggiornaTrophyShowcase();
+}
+
+function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
+    const soglie = [...listaBadge].sort((a, b) => a.n - b.n);
+    
+    const badgeAttuale = [...listaBadge].find(b => maxRecord >= b.n) || listaBadge[listaBadge.length - 1];
+    
+    const prossimoBadge = soglie.find(b => b.n > maxRecord);
+    const obiettivo = prossimoBadge ? prossimoBadge.n : soglie[soglie.length - 1].n;
+    
+    let percentuale = (currentVal / obiettivo) * 100;
+    if (percentuale > 100) percentuale = 100;
+
+    return {
+        img: badgeAttuale.e,
+        obiettivo: obiettivo,
+        percentuale: percentuale
+    };
+}
+
+
+async function salvaModificheProfilo() {
+    if (!playerID) return alert("Errore: Utente non identificato.");
+
+    const btn = document.querySelector('.save-btn-hub');
+    
+    // 1. Recupero dati dai campi Input
+    const nuovaBio = document.getElementById('bio-input').value;
+    const teamScelto = document.getElementById('team-selector-fav').value;
+    
+    // 2. Recupero Avatar e Colore (elementi UI Appearance)
+    const avatarImg = document.getElementById('current-avatar-preview');
+    const colorRect = document.getElementById('current-color-bg');
+    
+    // 3. Recupero Musica
+    const musicInput = document.getElementById('selected-music-url');
+    const musicNameSpan = document.getElementById('selected-song-name');
+
+    // Feedback visivo iniziale (Stile Neubrutalist)
+    const originalText = btn ? btn.innerHTML : "SAVE ALL CHANGES";
+    if(btn) {
+        btn.disabled = true;
+        btn.innerText = "SAVING...";
+        btn.style.transform = "translate(2px, 2px)"; // Effetto pressione
+        btn.style.boxShadow = "none";
+    }
+
+    // 4. Costruzione dell'oggetto dati da inviare a Firebase
+    const datiDaSalvare = {
+        bio: nuovaBio,
+        idTeamPreferito: teamScelto,
+        // Converte il colore del quadratino in HEX per il DB
+        color: colorRect ? rgbToHex(colorRect.style.backgroundColor) : "#31C489",
+        // Salva l'URL dell'avatar
+        avatar: avatarImg ? avatarImg.src : "", 
+        // Salva il nome della musica visualizzato
+        musicName: musicNameSpan ? musicNameSpan.innerText : "",
+        // SALVATAGGIO BADGE: Memorizza l'array dei badge selezionati (col tick)
+        badgeShowcase: typeof badgeSelezionati !== 'undefined' ? badgeSelezionati : []
+    };
+
+    // Aggiunta URL musica se presente
+    if (musicInput && musicInput.value.trim() !== "") {
+        datiDaSalvare.musicaPreferita = musicInput.value;
+    }
+
+    // 5. Update su Firebase nel percorso players/ID/info
+    db.ref(`players/${playerID}/info`).update(datiDaSalvare)
+    .then(() => {
+        // Feedback di successo
+        if(btn) {
+            btn.innerText = "UPDATED!";
+            btn.style.backgroundColor = "#4ade80"; // Verde successo
+        }
+        
+        console.log("Profilo salvato correttamente:", datiDaSalvare);
+
+        // Ripristino del tasto dopo 2 secondi
+        setTimeout(() => {
+            if(btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.style.backgroundColor = ""; 
+                btn.style.transform = ""; 
+                btn.style.boxShadow = ""; 
+            }
+        }, 2000);
+    })
+    .catch(e => {
+        console.error("Errore durante il salvataggio:", e);
+        alert("Errore: " + e.message);
+        if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+}
+
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (display flex o block)
+    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
+        
+        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            menu.style.display = 'none';
+            console.log("Stato: Menu chiuso (click esterno)");
+        }
+    }
+});
+
+// Funzione indispensabile per trasformare il colore del quadratino in stringa HEX per il DB
+function rgbToHex(rgb) {
+    if (!rgb) return "#31C489";
+    if (rgb.startsWith('#')) return rgb;
+    const rgbValues = rgb.match(/\d+/g);
+    if (!rgbValues || rgbValues.length < 3) return "#31C489";
+    const r = parseInt(rgbValues[0]);
+    const g = parseInt(rgbValues[1]);
+    const b = parseInt(rgbValues[2]);
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+function popolaSelettoreTeam() {
+    const select = document.getElementById('team-selector-fav');
+    // Verifichiamo che esista il selettore e che i team siano stati caricati
+    if (!select || !window.tuttiITeam) return;
+
+    // 1. Reset: Mantieni l'opzione "Miglior Team (Automatico)" come default
+    select.innerHTML = '<option value="auto">-- Best Team (Auto) --</option>';
+
+    window.tuttiITeam.forEach(team => {
+        let opt = document.createElement('option');
+        
+        // Usiamo l'ID come valore per precisione, ma il nome per il testo
+        opt.value = team.id; 
+        opt.innerText = team.nome;
+
+        // 3. Pre-selezione
+        // Se window.idTeamPreferito corrisponde all'ID di questo team, lo selezioniamo
+        if (window.idTeamPreferito === team.id) {
+            opt.selected = true;
+        }
+        
+        select.appendChild(opt);
+    });
+}
+
+let anteprimaAudio = null;
+
+// Funzione che popola la nuova lista (chiamala dove prima popolavi la select)
+function popolaListaMusica(canzoni) {
+    const listaUI = document.getElementById('music-list-admin');
+    listaUI.innerHTML = ""; // Svuota
+
+    canzoni.forEach(canzone => {
+        const li = document.createElement('li');
+        li.className = "music-item";
+        li.dataset.url = canzone.url;
+        li.dataset.nome = canzone.nome.toLowerCase();
+
+        li.innerHTML = `
+            <span class="music-name" onclick="selezionaCanzone(this, '${canzone.url}')">${canzone.nome}</span>
+            <button class="preview-btn" onclick="riproduciAnteprima(event, '${canzone.url}')">▶</button>
+        `;
+        listaUI.appendChild(li);
+    });
+}
+
+// Funzione per cercare le canzoni scrivendo
+function filtraMusica() {
+    const query = document.getElementById('music-search').value.toLowerCase();
+    const items = document.querySelectorAll('.music-item');
+
+    items.forEach(item => {
+        const nome = item.dataset.nome;
+        item.style.display = nome.includes(query) ? "flex" : "none";
+    });
+}
+
+// Funzione per gestire l'anteprima
+function riproduciAnteprima(event, url) {
+    event.stopPropagation(); // Evita di selezionare la canzone se clicchi solo il tasto play
+
+    if (anteprimaAudio) {
+        anteprimaAudio.pause();
+        if (anteprimaAudio.src === url) {
+            anteprimaAudio = null;
+            return;
+        }
+    }
+
+    anteprimaAudio = new Audio(url);
+    anteprimaAudio.volume = 0.4;
+    anteprimaAudio.play();
+}
+
+function toggleDropdown() {
+    const content = document.getElementById('dropdown-content');
+    const isOpening = !content.classList.contains('show');
+    
+    content.classList.toggle('show');
+
+    // Se stiamo aprendo, resettiamo il filtro per mostrare tutte le canzoni
+    if (isOpening) {
+        document.getElementById('music-search').value = "";
+        filtraMusica(); 
+    }
+}
+
+// Quando scegli una canzone: aggiorna il nome, chiude il menu e ferma l'anteprima
+function selezionaCanzone(elementoSpan, url) {
+    // 1. Ferma l'anteprima immediatamente (se esiste)
+    if (typeof anteprimaAudio !== 'undefined' && anteprimaAudio) {
+        anteprimaAudio.pause();
+        anteprimaAudio.currentTime = 0; // Resetta la traccia
+        anteprimaAudio = null;
+    }
+
+    // 2. Recupera il nome in modo sicuro
+    const nomeCanzone = elementoSpan.innerText.trim();
+    
+    // 3. Aggiorna l'interfaccia (Header e Input Nascosto)
+    const labelHeader = document.getElementById('selected-song-name');
+    const inputNascosto = document.getElementById('selected-music-url');
+    
+    if (labelHeader) labelHeader.innerText = nomeCanzone;
+    if (inputNascosto) inputNascosto.value = url;
+
+    // 4. Gestione classi visive (rimuovi 'selected' da tutti e mettilo al nuovo)
+    document.querySelectorAll('.music-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // Usiamo closest per essere sicuri di colpire il contenitore <li>
+    const rigaSelezionata = elementoSpan.closest('.music-item');
+    if (rigaSelezionata) {
+        rigaSelezionata.classList.add('selected');
+    }
+
+    // 5. Chiudi il menu (Rimuoviamo la classe 'show' invece di fare il toggle)
+    const content = document.getElementById('dropdown-content');
+    if (content) {
+        content.classList.remove('show');
+    }
+
+    // 6. Log di verifica in console
+    console.log("Canzone selezionata con successo:", nomeCanzone);
+}
+// 1. Inserisci qui l'URL del foglio "Playlist" pubblicato come CSV
+const URL_PLAYLIST = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv";
+
+// 2. Funzione per leggere il CSV della musica e popolare il menu
+async function popolaSelettoreMusica() {
+    const listaUI = document.getElementById('music-list-admin');
+    if (!listaUI) return;
+
+    try {
+        const response = await fetch(URL_PLAYLIST + '&t=' + Date.now());
+        const csvText = await response.text();
+        const righe = csvText.split(/\r?\n/).map(r => r.split(','));
+
+        listaUI.innerHTML = ""; // Puliamo la lista
+
+        righe.forEach((colonne, index) => {
+            // Saltiamo l'intestazione
+            if (index === 0) return; 
+
+            if (colonne[0] && colonne[1]) {
+                const nomeCanzone = colonne[0].trim();
+                const urlCanzone = colonne[1].trim();
+                
+                const li = document.createElement('li');
+                li.className = "music-item";
+                // Se è quella già salvata, aggiungiamo la classe selected
+                if (window.musicaCorrente === urlCanzone) {
+                    li.classList.add('selected');
+                    // Inizializziamo il campo nascosto con la musica attuale
+                    document.getElementById('selected-music-url').value = urlCanzone;
+                }
+
+                li.dataset.url = urlCanzone;
+                li.dataset.nome = nomeCanzone.toLowerCase();
+
+                li.innerHTML = `
+                    <span class="music-name" onclick="selezionaCanzone(this, '${urlCanzone}')">${nomeCanzone}</span>
+                    <button class="preview-btn" onclick="riproduciAnteprima(event, '${urlCanzone}')">▶</button>
+                `;
+                listaUI.appendChild(li);
+            }
+        });
+    } catch (e) {
+        console.error("Errore playlist:", e);
+        listaUI.innerHTML = '<li style="padding:10px; color:red;">Errore nel caricamento</li>';
+    }
+}
+
+// Chiudi modale se clicchi fuori dal rettangolo centrale
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('admin-modal');
+    if (e.target === modal) chiudiAdminModal();
+});
+
+function ascoltaCambiamentiFirebase() {
+    db.ref('allenatore_lukiani').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            const player = document.getElementById('bg-music');
+            const icon = document.getElementById('music-icon');
+            const titleDisplay = document.getElementById('song-title'); // Il nuovo elemento per il testo
+
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                
+                // --- LOGICA PER IL NOME DELLA CANZONE ---
+                // 1. Prende l'ultima parte del link (dopo lo slash)
+                let nomeFile = data.musicaPreferita.split('/').pop(); 
+                // 2. Toglie l'estensione .mp3 e pulisce i simboli strani come %20
+                let nomePulito = decodeURIComponent(nomeFile).replace('.mp3', '');
+                // 3. Toglie eventuali numeri iniziali (es: "13 - ")
+                nomePulito = nomePulito.replace(/^\d+\s*-\s*/, '');
+
+                // Se abbiamo l'elemento HTML, scriviamo il nome e lo mostriamo
+                if (titleDisplay) {
+                    titleDisplay.innerText = "🎵 " + nomePulito;
+                    titleDisplay.style.display = "block";
+                }
+                // ----------------------------------------
+
+                player.play()
+                    .then(() => { icon.innerText = "🔊"; })
+                    .catch(() => { icon.innerText = "🔇"; });
+            }
+        }
+    });
+}
+
+function formattaTitolo(url) {
+    if (!url) return "";
+    let nome = url.substring(url.lastIndexOf('/') + 1);
+    nome = nome.replace('.mp3', '');
+    nome = decodeURIComponent(nome);
+    nome = nome.replace(/^\d+\s*-\s*/, '');
+    return nome;
+}
+
+
+
+// Sblocca l'audio al primo click (necessario per i browser)
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            if(icon) icon.innerText = "🔊";
+        }).catch(e => console.log("Audio in attesa di interazione..."));
+    }
+}, { once: true });
+
+// Gestione tasto ESC per chiudere i modali
+document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") {
+        if (typeof chiudiTeamModal === "function") chiudiTeamModal();
+        const adminModal = document.getElementById('admin-modal');
+        if (adminModal) adminModal.style.display = "none";
+    }
+});
+
+// Questo è l'UNICO che può restare perché probabilmente gestisce 
+// elementi grafici non dipendenti dal login
+document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
+
+    </script>
+    </body>
+    </html>

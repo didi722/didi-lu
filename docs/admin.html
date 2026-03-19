@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Pokemon Suite</title>
+    <link rel="stylesheet" href="style-admin.css"> <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-admin.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+</head>
+<body class="admin-page">
+
+    <header class="hub-header">
+        <div class="header-content">
+            <h1>⚙️ Admin Panel</h1>
+            <div class="header-buttons">
+                <button class="btn-add-season" onclick="apriModaleCreazione()">+ New Season</button>
+                <button class="btn-cancel" onclick="window.location.href='index-copy.html'">Home</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="admin-main-container">
+        <section class="glass-card admin-table-section">
+            <h3>All Seasons</h3>
+            <table class="admin-custom-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Creation Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-stagioni-admin">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <section class="admin-main-container" style="margin-top: 40px;">
+    <div class="glass-card admin-table-section">
+        <h3>Player Management</h3>
+        <div class="admin-add-player-form" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end;">
+            <div class="form-group" style="flex: 1;">
+                <label>Player Name (ID):</label>
+                <input type="text" id="new-player-name" placeholder="Es: didi">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Email:</label>
+                <input type="email" id="new-player-email" placeholder="email@esempio.com">
+            </div>
+            <button class="btn-save" onclick="creaNuovoPlayerAdmin()" style="height: 45px;">Add Player</button>
+        </div>
+
+        <table class="admin-custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="lista-players-admin">
+                </tbody>
+        </table>
+    </div>
+</section>
+
+<div id="modalCreazione" class="admin-panel-modern wide" onclick="event.stopPropagation()">
+    <h3>ADD A NEW SEASON</h3>
+    
+    <div class="admin-three-columns">
+        <div class="admin-col">
+            <h4 class="col-title">SEASON INFO</h4>
+            <div class="form-group">
+                <label>Season Name:</label>
+                <input type="text" id="new-season-name" placeholder="Es: Spring Cup 2026">
+            </div>
+            <div class="form-group">
+    <label>Deadline:</label>
+    <input type="datetime-local" 
+           id="deadline-iscrizioni" 
+           step="1800" 
+           onchange="validaMezzora(this)">
+</div>  
+            <div class="form-group">
+                <label>Participants:</label>
+                <input type="number" id="num-partecipanti" value="4" oninput="aggiornaCalcoloDinamico()">
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h4 class="col-title">MATCH STRUCTURE</h4>
+            <div class="form-group">
+    <label>Teams per format:</label>
+    <div style="position: relative; display: flex; align-items: center;">
+        <input type="number" 
+               id="teams-per-formato" 
+               value="3" 
+               min="0" 
+               oninput="checkNoLimit(this)"
+               style="width: 100%;">
+        <span id="badge-no-limit" 
+              style="position: absolute; right: 10px; background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: none;">
+              NO LIMIT
+        </span>
+    </div>
+</div>
+            <div class="form-group">
+                <label>Showdowns per Format:</label>
+                <input type="number" id="num-showdowns-per-format" value="2" oninput="aggiornaCalcoloDinamico()">
+            </div>
+            <div class="form-group">
+                <label>Best of:</label>
+                <select id="best-of-format">
+                    <option value="3">Best of 3</option>
+                    <option value="5">Best of 5</option>
+                </select>
+            </div>
+            
+        </div>
+
+        <div class="admin-col col-replays">
+            <h4 class="col-title">FORMAT CONFIG</h4>
+            <div class="form-group" style="position: relative;">
+                <label>Number of Formats:</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="number" id="num-formati-target" value="3" min="1" 
+                           oninput="aggiornaCalcoloDinamico()" 
+                           style="padding-right: 150px;"> <span id="calcolo-operazione" 
+                          style="position: absolute; right: 12px; color: #31c489; font-weight: 800; font-size: 0.75rem; pointer-events: none; white-space: nowrap;">
+                        18 Showdown
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Selection Method:</label>
+                <select id="metodo-selezione-tendina" onchange="toggleMetodoFormati()">
+                    <option value="manuale">Manual Selection</option>
+                    <option value="casuale">Random Shuffle 🎲</option>
+                </select>
+            </div>
+            
+            <div id="sezione-manuale">
+                <div class="form-group">
+                    <label>Select Format:</label>
+                    <select id="select-regolamenti" onchange="aggiungiFormatoTag()">
+                        <option value="">Choose...</option>
+                    </select>
+                </div>
+                <div id="container-tags-formati" class="tags-container-admin"></div>
+            </div>
+
+            <div id="sezione-casuale" style="display: none; margin-top:10px;">
+                <p style="color: #eee; font-size: 0.8rem; font-style: italic;">
+                    Formats will be randomly picked on launch.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-group-modern">
+        <button onclick="creaNuovaStagione()" class="btn-save">Add Season</button>
+        <button onclick="chiudiModaleCreazione()" class="btn-cancel">Cancel</button>
+    </div>
+</div>
+
+    <script>
+        // --- 1. CONFIG E INIT ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+            authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+            databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "pokemonsuite-didi-lu",
+            storageBucket: "pokemonsuite-didi-lu.appspot.com",
+            messagingSenderId: "333119159516",
+            appId: "1:333119159516:web:689a9f5d3791093f66878b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let formatiSelezionati = [];
+let editingSeasonId = null;
+
+// Esegui al caricamento della pagina
+window.onload = () => {
+    caricaStagioni();
+};
+
+// --- NOVITÀ: CARICAMENTO TABELLA ---
+async function caricaStagioni() {
+    const tbody = document.getElementById('lista-stagioni-admin');
+    
+    try {
+        const snap = await db.ref('seasons').once('value');
+        const seasonsData = snap.val();
+
+        if (!seasonsData) {
+            tbody.innerHTML = '<tr><td colspan="5">Nessuna stagione trovata.</td></tr>';
+            return;
+        }
+
+        // 1. Convertiamo l'oggetto in array
+        const seasonsArray = Object.keys(seasonsData).map(id => {
+            return {
+                id: id,
+                info: seasonsData[id].info || seasonsData[id]
+            };
+        });
+
+        // 2. Ordinamento basato sull'ID (Numerico decrescente)
+        seasonsArray.sort((a, b) => {
+            // Gestione sbeta: gli diamo un valore molto basso (-1)
+            const getNum = (id) => {
+                if (id === 'sbeta') return -1;
+                const n = parseInt(id.replace('s', ''));
+                return isNaN(n) ? -2 : n;
+            };
+
+            return getNum(b.id) - getNum(a.id); // Numero più alto in cima
+        });
+
+        // 3. Icone Status
+        const statusIcons = {
+            'open': '🟢',
+            'playing': '⚔️',
+            'closed': '🔴',
+            'coming soon': '⏳'
+        };
+
+        // 4. Renderizziamo
+        let htmlAccumulator = "";
+        seasonsArray.forEach(item => {
+            const id = item.id;
+            const info = item.info;
+            const statusAttuale = info.status || 'open';
+            const statusClass = statusAttuale.replace(/\s+/g, '-');
+
+            htmlAccumulator += `
+                <tr>
+                    <td>${id}</td>
+                    <td>${info.name || 'Senza nome'}</td>
+                    <td><span class="status-badge ${statusClass}">${statusAttuale}</span></td>
+                    <td>${info.created_at ? new Date(info.created_at).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <button class="btn-small btn-status-toggle" title="Cambia Stato" onclick="ciclaStatoStagione('${id}', '${statusAttuale}')">
+                            ${statusIcons[statusAttuale] || '🔄'}
+                        </button>
+                        <button class="btn-small" onclick="apriModaleEdit('${id}')">✏️</button>
+                        <button class="btn-small" onclick="eliminaStagioneCorrente('${id}')">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = htmlAccumulator;
+
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="5">Errore nel caricamento.</td></tr>';
+    }
+}
+
+async function ciclaStatoStagione(idStagione, statoCorrente) {
+    const stati = ['open', 'playing', 'closed', 'coming soon'];
+    let indiceAttuale = stati.indexOf(statoCorrente);
+    let prossimoIndice = (indiceAttuale + 1) % stati.length;
+    const nuovoStato = stati[prossimoIndice];
+
+    try {
+        // 1. Aggiorna lo stato nel database
+        await db.ref(`seasons/${idStagione}/info/status`).set(nuovoStato);
+        console.log(`Stagione ${idStagione} passata a: ${nuovoStato}`);
+
+        // 2. SE IL NUOVO STATO È "CLOSED", CALCOLA E SALVA IL VINCITORE
+        if (nuovoStato === 'closed') {
+            console.log(`Rilevato stato CLOSED per ${idStagione}. Calcolo vincitore...`);
+            const vincitore = await salvaVincitoreStagione(idStagione);
+            alert(`Stagione Chiusa! Vincitore salvato: ${vincitore}`);
+        }
+        
+        caricaStagioni(); 
+    } catch (e) {
+        console.error("Errore nel cambio stato:", e);
+        alert("Impossibile aggiornare lo stato.");
+    }
+}
+
+// 1. Carica i formati nel menù a tendina
+async function popolaFormatiDaRegolamenti() {
+    const select = document.getElementById('select-regolamenti');
+    try {
+        const snap = await db.ref('regolamenti').once('value');
+        const regs = snap.val();
+        if (regs) {
+            select.innerHTML = '<option value="">Choose formats...</option>';
+            Object.keys(regs).forEach(idReg => {
+                const nomeCat = regs[idReg].categoria;
+                if (nomeCat) {
+                    select.innerHTML += `<option value="${nomeCat}">${nomeCat}</option>`;
+                }
+            });
+        }
+    } catch (e) { console.error("Errore select:", e); }
+}
+
+function checkNoLimit(input) {
+    const badge = document.getElementById('badge-no-limit');
+    if (parseInt(input.value) === 0) {
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// 2. Aggiunge un tag quando selezioni dal menù
+function aggiungiFormatoTag() {
+    const select = document.getElementById('select-regolamenti');
+    const nomeFormato = select.value;
+    const target = parseInt(document.getElementById('num-formati-target').value);
+
+    if (!nomeFormato) return;
+    
+    // Controlli: non duplicati e non oltre il limite
+    if (formatiSelezionati.includes(nomeFormato)) {
+        alert("Formato già aggiunto!");
+        select.value = "";
+        return;
+    }
+    
+    if (formatiSelezionati.length >= target) {
+        alert(`Hai già selezionato i ${target} formati richiesti!`);
+        select.value = "";
+        return;
+    }
+
+    formatiSelezionati.push(nomeFormato);
+    renderTags();
+    select.value = ""; // Reset tendina
+    aggiornaStatoConferma();
+}
+
+// 3. Disegna i tag con la "X"
+function renderTags() {
+    const container = document.getElementById('container-tags-formati');
+    container.innerHTML = "";
+    
+    formatiSelezionati.forEach((formato, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'format-tag';
+        tag.innerHTML = `
+            ${formato}
+            <span class="remove-tag" onclick="rimuoviTag(${index})">&times;</span>
+        `;
+        container.appendChild(tag);
+    });
+}
+
+function rimuoviTag(index) {
+    formatiSelezionati.splice(index, 1);
+    renderTags();
+    aggiornaStatoConferma();
+}
+
+
+function toggleMetodoFormati() {
+    const metodo = document.getElementById('metodo-selezione-tendina').value;
+    const sezManuale = document.getElementById('sezione-manuale');
+    const sezCasuale = document.getElementById('sezione-casuale');
+
+    if (metodo === 'casuale') {
+        sezManuale.style.display = 'none';
+        sezCasuale.style.display = 'block';
+    } else {
+        sezManuale.style.display = 'block';
+        sezCasuale.style.display = 'none';
+    }
+}
+
+function recuperaNomiFormatiSelezionati() {
+    const container = document.getElementById('container-tags-formati');
+    // Selezioniamo solo i div dei tag
+    const tags = container.querySelectorAll('.tag-formato, .format-tag');
+    
+    return Array.from(tags).map(tag => {
+        // Cloniamo il tag per non modificare quello visibile
+        const tempTag = tag.cloneNode(true);
+        // Rimuoviamo lo span della "X" dal clone
+        const xButton = tempTag.querySelector('.remove-tag');
+        if (xButton) xButton.remove();
+        // Restituiamo il testo pulito (es: "Monotype")
+        return tempTag.innerText.trim();
+    });
+}
+
+
+
+async function apriModaleEdit(idStagione) {
+    try {
+        const snapshot = await db.ref(`seasons/${idStagione}`).once('value');
+        const data = snapshot.val();
+        if (!data) return alert("Stagione non trovata!");
+
+        const season = data.info ? data.info : data;
+        editingSeasonId = idStagione;
+
+        // 1. COMPILAZIONE CAMPI BASE
+        document.getElementById('new-season-name').value = season.name || "";
+        document.getElementById('num-partecipanti').value = season.participants_limit || 4;
+        document.getElementById('num-showdowns-per-format').value = season.showdowns_per_format || 2;
+        document.getElementById('num-formati-target').value = season.num_formats || 3;
+        
+        // Carica il valore di Best Of (se non presente default a 3)
+        const bestOfInput = document.getElementById('best-of-format');
+        if (bestOfInput) bestOfInput.value = season.best_of || 3;
+
+        // 2. FIX DEADLINE (datetime-local richiede formato YYYY-MM-DDTHH:MM)
+        const deadlineInput = document.getElementById('deadline-iscrizioni');
+        if (season.deadline) {
+            try {
+                // Convertiamo la stringa del DB in un oggetto Date
+                const d = new Date(season.deadline);
+                // Formattiamo per l'input (YYYY-MM-DDTHH:mm)
+                const formattedDate = d.toISOString().slice(0, 16);
+                deadlineInput.value = formattedDate;
+            } catch (err) {
+                console.error("Errore formattazione data:", err);
+                deadlineInput.value = "";
+            }
+        } else {
+            deadlineInput.value = "";
+        }
+
+        // 3. FIX TEAMS PER FORMAT (Gestione "No Limit" -> 0)
+        const teamsInput = document.getElementById('teams-per-formato');
+        const badgeNoLimit = document.getElementById('badge-no-limit');
+        
+        if (season.teams_per_format === "No Limit" || season.teams_per_format === 0) {
+            teamsInput.value = 0;
+            if (badgeNoLimit) badgeNoLimit.style.display = 'block';
+        } else {
+            teamsInput.value = season.teams_per_format || 3;
+            if (badgeNoLimit) badgeNoLimit.style.display = 'none';
+        }
+
+        // 4. GESTIONE FORMATI (TAG)
+        formatiSelezionati = season.selected_formats ? [...season.selected_formats] : [];
+        renderTags(); 
+        await popolaFormatiDaRegolamenti();
+
+        // 5. TRASFORMAZIONE UI
+        const titoloModale = document.querySelector('#modalCreazione h3');
+        if (titoloModale) {
+            titoloModale.innerText = "EDIT SEASON: " + (season.name || idStagione);
+        }
+        
+        const btnSave = document.querySelector('#modalCreazione .btn-save');
+        if (btnSave) {
+            btnSave.innerText = "Edit Season"; 
+            btnSave.onclick = function() { salvaModificheStagione(); };
+        }
+
+        // 6. MOSTRA MODALE E AGGIORNA CALCOLI
+        document.getElementById('modalCreazione').style.display = 'flex'; 
+        aggiornaCalcoloDinamico();
+
+    } catch (e) {
+        console.error("Errore apertura edit:", e);
+    }
+}
+
+async function salvaModificheStagione() {
+    if (!editingSeasonId) {
+        alert("Errore: ID stagione mancante. Impossibile sovrascrivere.");
+        return;
+    }
+
+    try {
+        const nomeStagione = document.getElementById('new-season-name').value;
+        const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
+        const n = parseInt(document.getElementById('num-formati-target').value) || 0;
+        const p = parseInt(document.getElementById('num-partecipanti').value) || 0;
+        const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
+        
+        // --- GESTIONE NO LIMIT ---
+        const tInput = parseInt(document.getElementById('teams-per-formato').value);
+        const t = (tInput === 0 || isNaN(tInput)) ? "No Limit" : tInput;
+
+        const bo = parseInt(document.getElementById('best-of-format').value) || 3;
+
+        let formatiFinali = [];
+        const tags = document.querySelectorAll('#container-tags-formati .format-tag');
+        tags.forEach(tag => {
+            let nome = tag.innerText.replace('×', '').trim();
+            if (nome) formatiFinali.push(nome);
+        });
+
+        const updatedData = {
+            name: nomeStagione,
+            deadline: deadlineVal,
+            participants_limit: p,
+            teams_per_format: t, // Salva numero o "No Limit"
+            showdowns_per_format: s,
+            best_of: bo,
+            num_formats: n,
+            selected_formats: formatiFinali,
+            total_days: s * n * (p > 0 ? p - 1 : 0),
+            updated_at: new Date().toISOString()
+        };
+
+        await db.ref(`seasons/${editingSeasonId}/info`).update(updatedData);
+
+        alert(`Stagione ${editingSeasonId} sovrascritta con successo!`);
+        
+        editingSeasonId = null;
+        location.reload();
+
+    } catch (e) {
+        console.error("Errore nel salvataggio modifiche:", e);
+        alert("Errore durante l'aggiornamento dei dati.");
+    }
+}
+
+async function eliminaStagioneCorrente(idDaEliminare) {
+    if (!idDaEliminare) return;
+
+    // Piccola chicca: cerchiamo di recuperare il nome della stagione per la conferma
+    // Assumendo che nella tua tabella la riga abbia un riferimento o il testo
+    const rigaStagione = document.querySelector(`tr[data-id="${idDaEliminare}"]`);
+    const nomeStagione = rigaStagione ? rigaStagione.querySelector('.nome-cella').innerText : idDaEliminare;
+
+    if (confirm(`Sei sicuro di voler eliminare definitivamente la stagione "${nomeStagione}"? questa azione non è reversibile.`)) {
+        try {
+            // Riferimento preciso al nodo da cancellare
+            await db.ref(`seasons/${idDaEliminare}`).remove();
+            
+            alert("Stagione eliminata con successo!");
+            location.reload();
+        } catch (e) {
+            console.error("Errore eliminazione:", e);
+            alert("Errore tecnico: Impossibile eliminare la stagione.");
+        }
+    }
+}
+
+async function salvaVincitoreStagione(seasonId) {
+    const seasonRef = db.ref(`seasons/${seasonId}`);
+    const snapshot = await seasonRef.once('value');
+    const seasonData = snapshot.val();
+
+    // Se non c'è la leaderboard, usciamo
+    if (!seasonData || !seasonData.leaderboard) {
+        console.warn("Leaderboard non trovata per:", seasonId);
+        return "---";
+    }
+
+    const lb = seasonData.leaderboard;
+    let maxPoints = -1;
+    let winnerName = "Nessun Partecipante";
+
+    // lb è un oggetto dove 'key' è il nome del giocatore e 'value' ha i punti
+    // Esempio: { "Ash": { points: 10 }, "Gary": { points: 5 } }
+    Object.keys(lb).forEach(playerName => {
+        const playerDetails = lb[playerName];
+        
+        // Estraiamo i punti (gestendo sia se è un oggetto {points: X} sia se fosse un valore diretto)
+        const punti = (playerDetails && typeof playerDetails.points !== 'undefined') 
+                      ? Number(playerDetails.points) 
+                      : Number(playerDetails); 
+
+        if (punti > maxPoints) {
+            maxPoints = punti;
+            winnerName = playerName; // La chiave stessa è il nome del giocatore
+        }
+    });
+
+    // Salvataggio nel nodo info/winner
+    await seasonRef.child('info').update({
+        winner: winnerName
+    });
+
+    console.log(`🏆 Vincitore Decretato: ${winnerName} con ${maxPoints} punti.`);
+    return winnerName;
+}
+
+function validaMezzora(input) {
+    const dataSelezionata = new Date(input.value);
+    const minuti = dataSelezionata.getMinutes();
+
+    // Se i minuti non sono 0 o 30, arrotondiamo alla mezzora più vicina
+    if (minuti !== 0 && minuti !== 30) {
+        if (minuti < 15) {
+            dataSelezionata.setMinutes(0);
+        } else if (minuti < 45) {
+            dataSelezionata.setMinutes(30);
+        } else {
+            dataSelezionata.setMinutes(0);
+            dataSelezionata.setHours(dataSelezionata.getHours() + 1);
+        }
+        
+        // Formattazione per riportare il valore corretto nell'input datetime-local
+        const year = dataSelezionata.getFullYear();
+        const month = String(dataSelezionata.getMonth() + 1).padStart(2, '0');
+        const day = String(dataSelezionata.getDate()).padStart(2, '0');
+        const hours = String(dataSelezionata.getHours()).padStart(2, '0');
+        const mins = String(dataSelezionata.getMinutes()).padStart(2, '0');
+        
+        input.value = `${year}-${month}-${day}T${hours}:${mins}`;
+    }
+}
+
+/** 1. Funzione Calcolo Dinamico con Formula Round Robin **/
+function aggiornaCalcoloDinamico() {
+    const showdowns = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
+    const formats = parseInt(document.getElementById('num-formati-target').value) || 0;
+    const players = parseInt(document.getElementById('num-partecipanti').value) || 0;
+    
+    // Formula: Showdowns * Formati * (Partecipanti - 1)
+    const roundRobinFactor = players > 0 ? players - 1 : 0;
+    const totale = showdowns * formats * roundRobinFactor;
+    
+    // Mostra il calcolo esplicito: "4 x 1 x (4-1) = 12"
+    document.getElementById('calcolo-operazione').innerText = 
+        `${totale} Showdown`;
+}
+
+/** 2. Salvataggio su Firebase con ID Automatico **/
+async function creaNuovaStagione() {
+    try {
+        const nomeStagione = document.getElementById('new-season-name').value;
+        if (!nomeStagione) return alert("Inserisci un nome per la stagione!");
+
+        const metodo = document.getElementById('metodo-selezione-tendina').value;
+        const numFormatiTarget = parseInt(document.getElementById('num-formati-target').value) || 1;
+        
+        let formatiFinali = [];
+
+        if (metodo === 'manuale') {
+            const tags = document.querySelectorAll('#container-tags-formati .format-tag');
+            tags.forEach(tag => {
+                let nome = tag.innerText.replace('×', '').trim();
+                if (nome) formatiFinali.push(nome);
+            });
+            
+            if (formatiFinali.length < numFormatiTarget) {
+                return alert(`Seleziona almeno ${numFormatiTarget} formati!`);
+            }
+        } else {
+            const regSnapshot = await db.ref('regolamenti').once('value');
+            const dataReg = regSnapshot.val();
+            const tuttiIFormati = [];
+            if (dataReg) {
+                Object.keys(dataReg).forEach(key => {
+                    tuttiIFormati.push(dataReg[key].categoria || key);
+                });
+            }
+            if (tuttiIFormati.length < numFormatiTarget) {
+                return alert("Formati insufficienti nel database!");
+            }
+            for (let i = tuttiIFormati.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tuttiIFormati[i], tuttiIFormati[j]] = [tuttiIFormati[j], tuttiIFormati[i]];
+            }
+            formatiFinali = tuttiIFormati.slice(0, numFormatiTarget);
+        }
+
+        const snapSeasons = await db.ref('seasons').once('value');
+        const seasons = snapSeasons.val() || {};
+        
+        let maxIdx = -1;
+        Object.keys(seasons).forEach(id => {
+            if (id.startsWith('s') && id !== 'sbeta') {
+                const num = parseInt(id.substring(1));
+                if (!isNaN(num) && num > maxIdx) maxIdx = num;
+            }
+        });
+        const nuovoID = `s${maxIdx + 1}`;
+
+        const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
+        const p = parseInt(document.getElementById('num-partecipanti').value) || 0;
+        const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
+        const bo = parseInt(document.getElementById('best-of-format').value) || 3;
+
+        // --- GESTIONE NO LIMIT ---
+        const tInput = parseInt(document.getElementById('teams-per-formato').value);
+        const t = (tInput === 0 || isNaN(tInput)) ? "No Limit" : tInput;
+
+        const seasonInfo = {
+            id: nuovoID,
+            name: nomeStagione,
+            deadline: deadlineVal,
+            participants_limit: p,
+            teams_per_format: t, // Salva numero o "No Limit"
+            showdowns_per_format: s,
+            best_of: bo,
+            num_formats: numFormatiTarget,
+            selected_formats: formatiFinali,
+            total_days: s * numFormatiTarget * (p > 0 ? p - 1 : 0),
+            status: "open",
+            created_at: new Date().toISOString()
+        };
+
+        await db.ref(`seasons/${nuovoID}/info`).set(seasonInfo);
+
+        alert(`Stagione ${nuovoID} creata!`);
+        location.reload();
+
+    } catch (e) {
+        console.error("Errore:", e);
+        alert("Errore durante la creazione.");
+    }
+}
+
+function aggiornaStatoConferma() {
+    const target = parseInt(document.getElementById('num-formati-target').value);
+    const metodo = document.querySelector('input[name="metodo-formati"]:checked').value;
+    const btn = document.querySelector('.btn-confirm');
+    
+    if (metodo === 'casuale') {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+    } else {
+        const mancanti = target - formatiSelezionati.length;
+        btn.disabled = mancanti !== 0;
+        btn.style.opacity = mancanti === 0 ? "1" : "0.5";
+    }
+}
+
+// Funzione per controllare le scadenze e aggiornare lo status in PLAYING
+async function controllaScadenzeIscrizioni() {
+    try {
+        const snap = await db.ref('seasons').once('value');
+        const seasons = snap.val();
+        if (!seasons) return;
+
+        const oraAttuale = new Date();
+        let aggiornamentiEffettuati = false;
+
+        for (const id in seasons) {
+            const info = seasons[id].info || seasons[id];
+            
+            // Controlliamo solo se è OPEN e se ha una deadline
+            if (info.status === "open" && info.deadline) {
+                const scadenza = new Date(info.deadline);
+
+                // Se l'ora attuale è maggiore o uguale alla scadenza
+                if (oraAttuale >= scadenza) {
+                    console.log(`Scadenza raggiunta per ${id}. Passaggio a PLAYING...`);
+                    await db.ref(`seasons/${id}/info/status`).set("playing");
+                    aggiornamentiEffettuati = true;
+                }
+            }
+        }
+
+        // Se abbiamo cambiato qualcosa, ricarichiamo la tabella
+        if (aggiornamentiEffettuati) {
+            caricaStagioni();
+        }
+    } catch (e) {
+        console.error("Errore nel controllo scadenze:", e);
+    }
+}
+
+// Eseguiamo il controllo ogni volta che si carica la pagina
+window.onload = () => {
+    caricaStagioni();
+    controllaScadenzeIscrizioni(); // <--- Aggiungi questa chiamata
+};
+
+// --- 4. UTILITY ---
+
+        function apriModaleCreazione() {
+    // 1. Reset dell'ID di editing (fondamentale per non sovrascrivere vecchie stagioni)
+    editingSeasonId = null;
+
+    // 2. Reset dei campi di input
+    document.getElementById('new-season-name').value = "";
+    document.getElementById('deadline-iscrizioni').value = "";
+    document.getElementById('num-partecipanti').value = "4";
+    document.getElementById('teams-per-formato').value = "3";
+    document.getElementById('num-showdowns-per-format').value = "2";
+    document.getElementById('num-formati-target').value = "3";
+    
+    // Reset dei tag formati selezionati
+    formatiSelezionati = [];
+    const containerTags = document.getElementById('container-tags-formati');
+    if (containerTags) containerTags.innerHTML = "";
+
+    // 3. RIPRISTINO UI ORIGINALE (Titolo e Pulsante)
+    const titoloModale = document.querySelector('#modalCreazione h3');
+    if (titoloModale) titoloModale.innerText = "ADD A NEW SEASON";
+
+    const btnSave = document.querySelector('#modalCreazione .btn-save');
+    if (btnSave) {
+        btnSave.innerText = "Add Season"; // Torna al testo originale
+        // Riagganciamo la funzione di creazione
+        btnSave.onclick = function() { creaNuovaStagione(); };
+    }
+
+    // 4. Apertura modale e caricamento dati necessari
+    document.getElementById('modalCreazione').style.display = 'flex';
+    popolaFormatiDaRegolamenti();
+    
+    // Aggiorna il calcolo dinamico (es: "6 Showdowns")
+    aggiornaCalcoloDinamico();
+}
+
+        function chiudiModaleCreazione() {
+            document.getElementById('modalCreazione').style.display = 'none';
+        }
+
+        function entraInStagione(id) {
+            window.location.href = `hub-stagione.html?id=${id}`;
+        }
+
+        // Chiusura cliccando fuori dal modale
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalCreazione');
+            if (event.target == modal) chiudiModaleCreazione();
+        }
+
+        // Funzione da usare quando crei un nuovo utente nel sistema
+
+// 1. FUNZIONE PER CREARE IL PLAYER
+// --- CARICAMENTO TABELLA PLAYERS ---
+function caricaListaPlayers() {
+    // Usiamo .on('value') così la tabella si aggiorna da sola se aggiungiamo/eliminiamo
+    db.ref('users').on('value', snap => {
+        const tbody = document.getElementById('lista-players-admin');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        
+        snap.forEach(child => {
+            const user = child.val();
+            const userId = child.key; // Es: "didi"
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${user.name ? user.name.toUpperCase() : userId.toUpperCase()}</strong></td>
+                    <td>${user.email || 'N/A'}</td>
+                    <td><span class="status-tag">${user.role || 'player'}</span></td>
+                    <td>
+                        <button class="btn-delete" onclick="eliminaPlayer('${user.name}')" style="cursor:pointer; background:none; border:none; font-size:1.2rem;">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+
+// --- CREAZIONE PLAYER (METODO SEMPLICE) ---
+async function creaNuovoPlayerAdmin() {
+    const nome = document.getElementById('new-player-name').value.trim().toLowerCase();
+    const email = document.getElementById('new-player-email').value.trim();
+    const password = "password123"; 
+
+    if (!nome || !email) {
+        alert("Inserisci nome ed email!");
+        return;
+    }
+
+    const config = firebase.app().options;
+
+    try {
+        // 1. Creazione account in Authentication tramite App temporanea
+        const tempAppName = "TempApp_" + Date.now();
+        const tempApp = firebase.initializeApp(config, tempAppName);
+        const userCredential = await tempApp.auth().createUserWithEmailAndPassword(email, password);
+        const uid = userCredential.user.uid;
+        
+        await tempApp.auth().signOut();
+        await tempApp.delete();
+
+        // 2. Creazione nodo users/UID (per il sistema di login)
+        await db.ref(`users/${uid}`).set({
+            uid: uid,
+            name: nome,
+            email: email,
+            role: "player"
+        });
+
+        // 3. Creazione STRUTTURA COMPLETA in players/NOME_UTENTE
+        // Creiamo il riferimento principale al player
+        const playerRef = db.ref(`players/${nome}`);
+        
+        // Prepariamo l'oggetto info richiesto
+        const infoData = {
+            avatar: "https://via.placeholder.com/150",
+            bio: "Nuovo allenatore di Pokemon Suite!",
+            color: "#31c489",
+            fav_team: "Non impostato",
+            idTeamPreferito: "",
+            musicaPreferita: "",
+            name: nome.charAt(0).toUpperCase() + nome.slice(1)
+        };
+
+        // Eseguiamo i set separati per assicurarci che ogni nodo esista
+        await playerRef.child('info').set(infoData);
+        
+        // Creiamo stats e teams come nodi esistenti ma "vuoti" (usando un segnaposto se necessario 
+        // o inizializzandoli come oggetti pronti)
+        await playerRef.child('stats').set({ 
+            // Lasciamo qui solo l'UID di riferimento per "ancorare" il nodo stats
+            uid_riferimento: uid 
+        });
+        
+        await playerRef.child('teams').set({
+            descrizione: "Lista team ancora vuota" 
+        });
+
+        alert(`Giocatore ${nome} creato con successo! Struttura info, teams e stats pronta.`);
+        
+        document.getElementById('new-player-name').value = "";
+        document.getElementById('new-player-email').value = "";
+
+    } catch (error) {
+        console.error("Errore durante la creazione:", error);
+        alert("Errore: " + error.message);
+    }
+}
+
+async function eliminaPlayer(nomePlayer) {
+    // 1. Pulizia del nome per sicurezza (minuscolo come nel database)
+    const nomeID = nomePlayer.toLowerCase().trim();
+    
+    const conferma = confirm(`ELIMINAZIONE TOTALE: Vuoi cancellare definitivamente ${nomeID.toUpperCase()}?`);
+    
+    if (conferma) {
+        try {
+            // 2. Leggiamo il nodo players per recuperare l'UID prima di cancellare
+            const snap = await db.ref(`players/${nomeID}`).once('value');
+            const data = snap.val();
+
+            // 3. CANCELLAZIONE NODO USERS (Auth reference)
+            if (data && data.stats && data.stats.uid_riferimento) {
+                const uid = data.stats.uid_riferimento;
+                await db.ref(`users/${uid}`).remove();
+                console.log(`Rimosso nodo users/${uid}`);
+            } else {
+                // Fallback: prova a rimuovere usando il nome (per vecchi record)
+                await db.ref(`users/${nomeID}`).remove();
+            }
+
+            // 4. CANCELLAZIONE NODO PLAYERS (Profilo completo)
+            // Usiamo .set(null) che è il modo più radicale di Firebase per dire "distruggi questo percorso e tutto ciò che contiene"
+            await db.ref(`players/${nomeID}`).set(null);
+            console.log(`Rimosso intero nodo players/${nomeID}`);
+
+            alert(`Giocatore ${nomeID.toUpperCase()} rimosso con successo da ogni archivio.`);
+            
+            // 5. Refresh tabella
+            if (typeof caricaListaPlayers === "function") caricaListaPlayers();
+
+        } catch (e) {
+            console.error("Errore critico durante l'eliminazione:", e);
+            alert("Errore tecnico: il database non ha risposto correttamente.");
+        }
+    }
+}
+
+// Avvia il caricamento quando la pagina è pronta
+document.addEventListener('DOMContentLoaded', caricaListaPlayers);
+
+</script>
+    <style>
+        /* Applica Josefin Sans a tutto il documento */
+body.admin-page, 
+body.admin-page * {
+    font-family: 'Josefin Sans', sans-serif !important;
+}
+
+/* Affiniamo lo stile per titoli e pulsanti per sfruttare il font */
+.admin-page h1, 
+.admin-page h3, 
+.admin-page h4 {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.btn-add-season, 
+.btn-cancel, 
+.btn-small, 
+.btn-save {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase; /* Rende i pulsanti più eleganti con questo font */
+    letter-spacing: 1px;
+}
+
+/* Assicuriamoci che anche i campi di input lo usino */
+input, select, textarea {
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+    /* Aggiunte veloci CSS per l'area Admin */
+    .admin-main-container { padding: 20px; max-width: 1200px; margin: auto; }
+    .admin-custom-table { width: 100%; border-collapse: collapse; margin-top: 20px; color: white; table-layout: fixed; }
+    .admin-custom-table th, .admin-custom-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
+    
+    /* Gestione larghezza colonne per stabilità */
+    .admin-custom-table th:nth-child(1) { width: 80px; }  /* ID */
+    .admin-custom-table th:nth-child(3) { width: 120px; } /* Status */
+    .admin-custom-table th:nth-child(5) { width: 150px; } /* Azioni */
+
+    /* Badge Stati */
+    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; text-transform: uppercase; font-weight: bold; display: inline-block; min-width: 80px; text-align: center; }
+    .status-badge.open { background: #9b59b6; color: white; }
+    .status-badge.playing { background: #2ecc71; color: white; }
+    .status-badge.closed { background: #e74c3c; color: white; }
+    .status-badge.coming-soon { background: #f1c40f; color: black; }
+
+    /* Bottoni e Fissaggio Layout */
+    .btn-small { 
+        cursor: pointer; 
+        border: none; 
+        background: rgba(255,255,255,0.1); 
+        padding: 5px 10px; 
+        border-radius: 4px; 
+        margin-right: 5px; 
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+    }
+
+    /* Il segreto per non far saltare il tasto status: larghezza e altezza fissa */
+    .btn-status-toggle {
+        width: 35px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+
+    .header-buttons {
+    display: flex;
+    gap: 15px; /* Questo crea lo spazio esatto tra i due pulsanti */
+    align-items: center; /* Li mantiene allineati sulla stessa linea */
+}
+
+/* Stile per il pulsante verde Nuova Stagione */
+.btn-add-season {
+    background-color: #2ecc71; /* Verde smeraldo */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-season:hover {
+    transform: scale(1.02);
+}
+
+.btn-add-season:active {
+    transform: translateY(0);
+}
+
+    .btn-small:hover { background: rgba(255,255,255,0.3); }
+    .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:1000; }
+</style>
+
+</body>
+</html>

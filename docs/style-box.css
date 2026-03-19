@@ -1,0 +1,2601 @@
+:root{
+    --yellow: #ffbd44;
+    --bg-body-index: #dfdfdf;   
+    --bg-gradient-end-index: #b2b2b2;
+    --blue: #2e53cd;
+    --blue-border: #092377;
+    --save: #16a445;
+    --save-border:#056425;
+    --cancel:#b51e1e;
+    --cancel-border:#6d0b0b;
+}
+  
+body { 
+    font-family: 'Montserrat', sans-serif; 
+    background: linear-gradient(135deg, var(--bg-body-index) -50%, var(--bg-gradient-end-index) 100%);
+    color: var(--text-main); 
+    margin: 0;
+    line-height: 1.4;
+    min-height: 100vh;
+}
+
+
+
+
+/* Barra di ricerca con effetto vetro */
+.controls { 
+    display: flex; 
+    gap: 12px; 
+    justify-content: center; 
+    flex-wrap: wrap;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    padding: 15px;
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+
+input, select { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 600;
+    padding: 10px 15px; 
+    border: 2px solid black;
+    box-shadow: 4px 4px 0 black; 
+    background: white; 
+    color: black;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+input:focus { 
+    border-color: var(--accent-dark);
+    transform: scale(1.02);
+}
+
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+    gap: 20px; 
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.card { 
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    box-shadow: 5px 5px 0px var(--border-color);
+    padding: 20px; 
+    position: relative;
+    overflow: hidden;
+    color: #1a1a1a; 
+    z-index: 1;
+    cursor: pointer;
+    overflow: visible !important;
+    
+}
+
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 10px;
+    color: #1a1a1a; 
+
+}
+
+.category, .stats { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.65rem; 
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: var(--yellow);
+    color: black;
+    border: 1.5px solid black;
+    box-shadow: 2px 2px 0 black;
+    padding: 4px 12px; 
+    text-transform: uppercase;
+}
+
+
+
+.pkm-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
+    margin-top: 15px;
+}
+
+.pkm-box {
+    background: white;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 60px;
+    box-sizing: border-box;
+    position: relative;
+    border: none;
+    flex: 1;          /* Occupa tutto lo spazio rimasto dopo lo sprite */
+    min-width: 0;     /* FONDAMENTALE: permette al contenitore di restringersi */
+    color: #1a1a1a !important;
+    position: relative;
+    cursor: help; /* Cambia cursore per far capire che c'è un info */
+    color: #1a1a1a;
+    font-family: 'Josefin Sans', sans-serif;
+    border: 1.5px solid black;
+    box-shadow: 3px 3px 0 black;
+}
+
+.pkm-box::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;         /* Spessore del bordo */
+    height: 100%;
+    background: var(--accent-dark); /* Colore di base */
+    color: #1a1a1a;
+}
+
+
+
+/* Card in hover */
+.pkm-hover-card {
+    display: none;
+    position: absolute;
+    bottom: 110%; 
+    width: 260px; 
+    background: black;
+    border: 2px solid white;
+    box-shadow: 4px 4px 0px white;
+    color: white;
+    padding: 12px;
+    z-index: 999;
+    pointer-events: none;
+}
+
+.pkm-hover-card.left-side {
+    left: 0;
+    right: auto;
+    transform: translateX(0);
+}
+
+.pkm-hover-card.right-side {
+    right: 0;
+    left: auto;
+    transform: translateX(0); 
+}
+
+.pkm-hover-card strong {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--didi-color);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.pkm-hover-card p {
+    font-size: 0.6rem !important; /* Testo piccolissimo */
+    margin: 0 !important;
+    line-height: 1.2;
+    color: white !important;
+}
+
+.pkm-box:hover .pkm-hover-card {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Stile per le mosse dentro l'hover */
+.hover-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px; /* Spazio netto dalle info sopra */
+}
+
+.hover-moves span {
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    box-shadow: 3px 3px 0px var(--border-color);
+    color: #1a1a1a;
+    font-size: 0.65rem; /* Testo leggibile ma piccolo */
+    padding: 7px 2px;   /* Rettangolo più alto e "cicciotto" */
+    text-align: center;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;   /* Forza la grandezza del rettangolo */
+    white-space: normal; 
+    line-height: 1;
+}
+/* Animazione comparsa */
+@keyframes popIn {
+    from { opacity: 0; margin-bottom: -10px; }
+    to { opacity: 1; margin-bottom: 0; }
+}
+
+.pkm-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 3px 7px 0 black;
+}
+
+.pkm-sprite-container {
+    width: 45px;  /* Contenitore più piccolo e fisso */
+    height: 45px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+}
+
+.pkm-sprite {
+    max-width: 45px;
+    max-height: 45px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.pkm-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    min-width: 0; /* Necessario per il troncamento del testo */
+}
+
+.pkm-name { 
+    color: #1a1a1a;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem; /* Font leggermente ridotto per stare su una riga */
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block !important;             /* Necessario per applicare l'overflow */
+    white-space: nowrap !important;        /* Impedisce al testo di andare a capo */
+    overflow: hidden !important;           /* Nasconde la parte di testo in eccesso */
+    text-overflow: ellipsis !important;    /* Aggiunge i tre puntini (...) alla fine */
+    max-width: 100 !important;            /* Assicura che non superi la larghezza del box genitore */
+}
+
+.item-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.pkm-item { 
+    color: var(--text-dim);
+    font-size: 0.65rem; 
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loading { 
+    text-align: center; 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.5rem; 
+    margin-top: 100px; 
+    color: #1a1a1a; 
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10001;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    backdrop-filter: blur(25px);
+    background-color: rgba(68,170,34,0.2);
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.modal-content {
+    padding: 20px 30px;
+    border-radius: 25px;
+    width: 90%;
+    height: 90%;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Blocca lo scroll del modale */
+    position: relative;
+    overflow-y: hidden; /* Permette lo scroll del modale */
+    overflow-x: hidden; /* IMPORTANTE: permette ai tooltip di uscire lateralmente se serve */
+    color: #eeeeee;
+}
+
+.modal-content h2 {
+    font-size: 1.5rem;
+    margin: 15px 0 35px 0;
+    text-align: center;
+}
+.close {
+    visibility: hidden;
+}
+
+.close-modal {
+    visibility: hidden;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px; /* Gap ridotto per non "soffocare" */
+    flex: 1;
+    min-height: 0; /* Fondamentale per far stare tutto dentro l'altezza fissa */
+    margin: 15px 0;
+    overflow: visible !important;
+
+}
+.modal-pkm-card {
+    /* Manteniamo var(--accent-color) per lo sfondo dinamico del team */
+    background: var(--accent-color); 
+    border: 2px solid var(--border-color); 
+    box-shadow: 5px 5px 0px var(--border-color); 
+    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: visible !important;
+    position: relative !important;
+    color: #1a1a1a;
+}
+
+.modal-sprite {
+    width: 65px; 
+    height: 65px;
+    object-fit: contain;
+    flex-shrink: 0;
+    margin-left: -5px; /* Leggero tocco per incollarlo al bordo */
+    margin-top: 35px;
+    margin-bottom: -10px;
+}
+
+.modal-pkm-info {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Testi informativi: manteniamo 0.65rem ma passiamo al nero pieno */
+.modal-pkm-info p {
+    font-size: 0.65rem !important; 
+    color: #000 !important; /* Nero al posto del grigio dim */
+    margin: 0 !important;
+    font-weight: 600;
+}
+
+/* Nome Pokémon: l'elemento Sticker */
+.modal-pkm-info strong {
+    font-size: 0.95rem; 
+    color: #fff !important; /* Testo bianco su sfondo nero */
+    background: #000;
+    text-transform: uppercase;
+    display: table; /* Si stringe attorno al testo senza occupare tutto il rigo */
+    padding: 1px 6px; /* Padding minimo per mantenere l'altezza originale */
+    transform: rotate(-1.5deg); /* Rotazione sticker */
+    margin-bottom: 2px;
+}
+/* --- STRUMENTO (Item) --- */
+.modal-item {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Tua misura */
+    margin-top: 2px;
+    font-size: 0.65rem; /* Tua misura */
+    font-weight: 700;
+    color: #000;
+}
+
+.modal-item img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    /* Un leggero filtro per far risaltare l'icona sul neubrutalism */
+    filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.1));
+}
+
+/* --- GRIGLIA MOSSE --- */
+.modal-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px; /* Tua misura */
+    margin-top: 8px;
+    width: 100%;
+    position: relative;
+    overflow: visible !important;
+}
+
+/* --- SINGOLA MOSSA (Il "Tasto") --- */
+.move-span {
+    background-color: white;
+    position: relative;
+    cursor: help;
+    color: #000 !important; 
+    border: 1.5px solid black !important;
+    box-shadow: 3px 3px 0px black !important; 
+    font-size: 0.7rem;
+    padding: 6px 8px;
+    font-weight: 800; /* Più spessore al testo per il neubrutalism */
+    text-align: center;
+    display: block; 
+    margin: 2px 0;
+    isolation: isolate;
+    white-space: nowrap;
+    overflow-y: visible;
+    scrollbar-width: none;
+    font-family: 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+}
+
+/* --- COLORI TIPI (Mantengo i tuoi HEX ma forzo il contrasto) --- */
+.fire { background-color: #ff4422 !important; }
+.water { background-color: #3399ff !important; }
+.grass { background-color: #77cc55 !important; }
+.electric { background-color: #ffcc33 !important; }
+.ice { background-color: #66ccff !important; }
+.fighting { background-color: #bb5544 !important; }
+.poison { background-color: #aa5599 !important; }
+.ground { background-color: #ddbb55 !important; }
+.flying { background-color: #8899ff !important; }
+.psychic { background-color: #ff5599 !important; }
+.bug { background-color: #aabb22 !important; }
+.rock { background-color: #bbaa66 !important; }
+.ghost { background-color: #6666bb !important; }
+.dragon { background-color: #7766ee !important; }
+.dark { background-color: #775544 !important; }
+.steel { background-color: #aaaabb !important; }
+.fairy { background-color: #ee99ee !important; }
+.normal { background-color: #aaaa99 !important; }
+
+/* 3. Il fumetto (Tooltip) */
+.move-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 125%; 
+    left: -95%;
+    transform: translateX(-50%);
+    width: 240px; /* Tua misura originale */
+    
+    /* STILE NEUBRUTALIST */
+    background: #fff !important; /* Fondo bianco sempre */
+    color: #000 !important;      /* Testo nero sempre */
+    padding: 12px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    z-index: 9999 !important;
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+    font-weight: 600; /* Leggermente più spesso per leggibilità */
+    opacity: 0;
+    font-family: 'Josefin Sans', sans-serif;
+    transform-origin: bottom center;
+    transform: rotate(-1deg);
+}
+
+/* Rimuovi o commenta le classi .move-tooltip.fire, .move-tooltip.water ecc. 
+   che davano lo sfondo colorato, altrimenti sovrascriveranno il bianco. 
+   Il bordo nero e il fondo bianco renderanno tutto molto più "pro". */
+   
+.move-tooltip.fire { background-color: #de3a1d !important; border: 2px solid #751200; box-shadow: 4px 4px 0 #751200;}
+.move-tooltip.water { background-color: #3399ff !important; border: 2px solid #004d9b; box-shadow: 4px 4px 0 #004d9b;}
+.move-tooltip.grass { background-color: #77cc55 !important; border: 2px solid #247f00; box-shadow: 4px 4px 0 #247f00;}
+.move-tooltip.electric { background-color: #ffcc33 !important; border: 2px solid #9c7500; box-shadow: 4px 4px 0 #9c7500; }
+.move-tooltip.ice { background-color: #66ccff !important; border: 2px solid #006497; box-shadow: 4px 4px 0 #006497; }
+.move-tooltip.fighting { background-color: #bb5544 !important; border: 2px solid #981b05; box-shadow: 4px 4px 0 #981b05;}
+.move-tooltip.poison { background-color: #aa5599 !important; border: 2px solid #650051; box-shadow: 4px 4px 0 #650051;}
+.move-tooltip.ground { background-color: #ddbb55 !important; border: 2px solid #7d5e00; box-shadow: 4px 4px 0 #7d5e00; }
+.move-tooltip.flying { background-color: #8899ff !important; border: 2px solid #0f25a2; box-shadow: 4px 4px 0 #0f25a2;}
+.move-tooltip.psychic { background-color: #ff5599 !important; border: 2px solid #9f0040; box-shadow: 4px 4px 0 #9f0040;}
+.move-tooltip.bug { background-color: #aabb22 !important; border: 2px solid #606d00; box-shadow: 4px 4px 0 #606d00;}
+.move-tooltip.rock { background-color: #bbaa66 !important; border: 2px solid #896f06; box-shadow: 4px 4px 0 #896f06;}
+.move-tooltip.ghost { background-color: #6666bb !important; border: 2px solid #121269; box-shadow: 4px 4px 0 #121269;}
+.move-tooltip.dragon { background-color: #7766ee !important; border: 2px solid #1a0d70; box-shadow: 4px 4px 0 #1a0d70;}
+.move-tooltip.dark { background-color: #775544 !important; border: 2px solid #351606; box-shadow: 4px 4px 0 #351606;}
+.move-tooltip.steel { background-color: #aaaabb !important; border: 2px solid #505053; box-shadow: 4px 4px 0 #505053;}
+.move-tooltip.fairy { background-color: #ee99ee !important; border: 2px solid #812181; box-shadow: 4px 4px 0 #812181; }
+.move-tooltip.normal { background-color: #aaaa99 !important; border: 2px solid #383834; box-shadow: 4px 4px 0 #383834;}
+
+/* 5. AZIONE HOVER: Mostra il fumetto */
+.move-span:hover {
+    z-index: 10000; /* Porta la mossa in primo piano rispetto alle altre */
+    transform: translate(-2px, -2px);
+}
+
+.move-span:hover .move-tooltip {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
+/* Se il Pokémon è nella prima riga, mostra il fumetto SOTTO invece che SOPRA */
+/* --- BADGE DEI TIPI (Effetto Etichetta Adesiva) --- */
+.type-badge {
+    font-size: 0.55rem;
+    padding: 2px 0;
+    width: 50px; /* Mantengo la tua larghezza */
+    
+    /* STILE STICKER */
+    border: 1.5px solid #000; /* Bordo nero che "contiene" l'adesivo */
+    border-radius: 0;         /* Taglio netto, niente curve */
+    color: white;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
+    
+    /* Ombra dura e vicina per l'effetto spessore carta */
+    box-shadow: 2px 2px 0px #000;
+    
+    cursor: help;
+    font-family: 'Josefin Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Transizione per un feedback al passaggio del mouse */
+    transition: transform 0.1s ease-in-out;
+    
+}
+
+.modal-types {
+    display: flex;
+    flex-direction: column; /* Li mette uno sotto l'altro */
+    align-items: center;    /* Li centra orizzontalmente */
+    gap: 8px;
+}
+
+/* --- INCLINAZIONE CASUALE (L'effetto "appiccicato male") --- */
+/* Incliniamo il primo tipo a sinistra e il secondo a destra */
+.modal-types .type-badge:nth-child(1) {
+    transform: rotate(-3deg) translateX(-2px);
+}
+
+.modal-types .type-badge:nth-child(2) {
+    transform: rotate(2deg) translateX(2px);
+    margin-top: 2px; /* Sovrapposizione leggera o distacco */
+}
+
+/* Effetto quando ci passi sopra: lo sticker si "stacca" leggermente */
+.type-badge:hover {
+    transform: scale(1.1) rotate(0deg) !important;
+    z-index: 10;
+    box-shadow: 4px 4px 0px #000;
+}
+
+
+/* Ri-applichiamo i tuoi colori base */
+.fire { background: #ff4422; }
+.water { background: #3399ff; }
+.grass { background: #77cc55; }
+.electric { background: #ffcc33; }
+.ice { background: #66ccff; }
+.fighting { background: #bb5544; }
+.poison { background: #aa5599; }
+.ground { background: #ddbb55; }
+.flying { background: #8899ff; }
+.psychic { background: #ff5599; }
+.bug { background: #aabb22; }
+.rock { background: #bbaa66; }
+.ghost { background: #6666bb; }
+.dragon { background: #7766ee; }
+.dark { background: #775544; }
+.steel { background: #aaaabb; }
+.fairy { background: #ee99ee; }
+.normal { background: #aaaa99; }
+
+/* Container per il badge del tipo e il suo tooltip */
+.type-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Tooltip debolezze/resistenze */
+.type-effectiveness-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    z-index: 1000;
+    bottom: 250%; /* Rimane sopra come da tua impostazione */
+    left: 100%;
+    transform: translateX(-50%);
+    width: 160px; /* Tua misura originale */
+    padding: 10px;
+    transition: opacity 0.3s;
+    pointer-events: none;
+
+    /* STILE NEUBRUTALIST: Via il nero/grigio, passiamo al "fumetto" */
+    background: #fff !important;
+    border: 3px solid #000 !important;
+    box-shadow: 5px 5px 0px #000 !important;
+    color: #000 !important;
+    
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.7rem;
+        transform-origin: bottom center;
+    transform: rotate(1deg);
+
+}
+
+/* Gestione inversione (se prevista dal tuo JS) */
+.type-effectiveness-tooltip.v-down {
+    bottom: auto;
+    top: 125%;
+}
+
+/* Quando il contenitore genitore è in hover */
+.type-container:hover .type-effectiveness-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+.type-effectiveness-tooltip.v-down {
+    bottom: auto;
+    top: 125%;
+}
+
+.type-container:hover .type-effectiveness-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Freccetta del tooltip */
+
+
+.effectiveness-section { margin-bottom: 4px; }
+.eff-title { font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; font-size: 0.6rem; }
+.eff-val-2 { color: #ff4422; } /* Debolezze */
+.eff-val-05 { color: #77cc55; } /* Resistenze */
+.eff-val-0 { color: #aaaabb; } /* Immunità */
+
+/* Container dei badge nel tooltip */
+.eff-badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Badge piccolo per il tooltip */
+.mini-type-badge {
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+    border: 1.5px solid black;
+    box-shadow: 2px 2px 0 black;
+    
+}
+
+.eff-section {
+    margin-bottom: 10px;
+}
+
+.eff-section:last-child {
+    margin-bottom: 0;
+}
+
+.eff-title {
+    font-weight: bold;
+    display: block;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 4px;
+    font-size: 0.65rem;
+}
+
+
+/* Classe per i Pokémon a destra (sposta il tooltip a sinistra) */
+.stats-tooltip.stats-left {
+    left: auto;
+    right: 105%;
+    
+}
+
+/* Mostra il tooltip quando si va in hover sul contenitore del nome */
+/* --- STATS ROW (Testo e Allineamento) --- */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px; /* Tua misura originale */
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 800; /* Testo più cattivo */
+    color: #000;
+}
+
+/* --- SFONDO BARRA (Il "binario") --- */
+.stat-bar-bg {
+    flex-grow: 1;
+    height: 8px; /* Leggermente più alta per far vedere il bordo */
+    background: #fff; /* Sfondo bianco per contrasto massimo */
+    margin-left: 10px;
+    
+    /* STILE NEUBRUTALIST */
+    border: 2px solid #000; /* Bordo nero netto */
+    border-radius: 0 !important; /* VIA LE CURVE (anche se avevi 3px) */
+    overflow: hidden;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1); /* Ombra interna minima */
+}
+
+/* --- RIEMPIMENTO BARRA --- */
+.stat-bar-fill {
+    height: 100%;
+    /* Usa il colore del tipo/accento ma SENZA trasparenze */
+    background-color: var(--accent-color); 
+    
+    /* Separatore netto alla fine del riempimento */
+    border-right: 2px solid #000;
+}
+
+/* --- TOOLTIP DELLE STATISTICHE (Quello che spunta al passaggio) --- */
+.stats-tooltip {
+    /* ... mantieni le tue posizioni left/top ... */
+    background: #fff !important;
+    border: 3px solid #000 !important;
+    box-shadow: 6px 6px 0px #000 !important;
+    color: #000 !important;
+    padding: 12px;
+    z-index: 10000;
+    
+}
+
+/* Forza la visualizzazione al hover */
+.stats-container:hover .stats-tooltip,
+.modal-pkm-info strong:hover + .stats-tooltip {
+    display: block;
+}
+/* Tooltip generico per Stats, Abilità e Strumenti */
+.generic-tooltip {
+    display: none;
+    position: absolute;
+    left: 80%; 
+    top: 0;
+    width: 200px;
+    padding: 10px;
+    z-index: 10000;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    pointer-events: none;
+    background: black;
+    border: 2px solid #dadada;
+    box-shadow: 4px 4px 0px #dadada;
+    color: #dadada;
+    font-family: 'Josefin Sans', sans-serif;
+        transform-origin: bottom center;
+    transform: rotate(1deg);
+
+}
+
+.generic-tooltip h3 {
+    margin: 0;
+    font-size: 0.68rem;
+    color: black; /* Giallo Pokédex */
+    padding-top: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid black; /* RIGHA BIANCA SOTTILE */
+}
+
+.generic-tooltip p {
+    padding-top: 0px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: black;
+    font-style: italic;
+}
+
+/* Inversione per l'ultima colonna */
+.generic-tooltip.tooltip-left {
+    left: auto;
+    right: 110%;
+}
+
+/* Mostra il tooltip quando il contenitore è in hover */
+/* --- INFO CONTAINER --- */
+.info-container {
+    position: relative; /* Necessario per posizionare il tooltip rispetto a questo */
+    display: inline-block; /* Mantiene l'occupazione di spazio originale */
+    width: auto; /* Non forziamo larghezze che potrebbero sballare il layout */
+}
+
+/* --- GENERIC TOOLTIP (Stats, Abilità, Strumenti) --- */
+.generic-tooltip {
+    display: none;
+    position: absolute;
+    left: 80%; 
+    top: 0;
+    width: 200px; /* Tua misura originale */
+    padding: 10px;
+    z-index: 10000;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    pointer-events: none;
+    
+    /* CAMBIO STILE: Sfondo bianco e bordo nero netto */
+    background: #fff; 
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0px #000;
+    color: #000 !important;
+    
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+/* Titolo dentro il tooltip */
+.generic-tooltip h3 {
+    margin: 0;
+    font-size: 0.75rem; /* Leggermente più leggibile */
+    color: #000 !important;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #000; /* Linea di separazione nera */
+    padding-bottom: 4px !important;
+    margin-bottom: 6px;
+}
+
+/* Testo descrizione nel tooltip */
+.generic-tooltip p {
+    padding-top: 0px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #000 !important;
+    font-style: normal; /* Rimosso l'italic per lo stile brutale */
+    font-weight: 600;
+}
+
+/* --- AZIONI HOVER --- */
+.info-container:hover .generic-tooltip {
+    display: block; /* Semplice block è più sicuro per il posizionamento absolute */
+}
+
+/* --- TIPOGRAFIA GENERALE --- */
+.info-container strong, 
+.info-container p, 
+.info-container span {
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+
+
+/* Header Centrale */
+.area-header { 
+    grid-area: header; 
+    text-align: center; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+}
+.types-centered { display: flex; justify-content: center; gap: 10px; font-family: 'Josefin Sans', sans-serif;}
+.pkm-name-banner { font-size: 1.2rem !important; margin: 0; color: #eeeeee; font-family: 'Josefin Sans', sans-serif;}
+
+/* Box Generico (Panel) */
+.pkm-panel {
+    background: var(--accent-color);
+    border: 2px solid var(--border-color) !important;
+    box-shadow: 4px 4px 0 var(--border-color);
+    color: #eeeeee;
+    padding: 8px 10px !important; /* Meno spazio interno */
+}
+
+
+
+/* Sezioni Specifiche */
+.area-weakness { grid-area: weakness; font-family: 'Josefin Sans', sans-serif;}
+.area-info-strips { grid-area: info-strips; display: flex; flex-direction: column; gap: 10px; }
+.area-moves { grid-area: moves; }
+.area-stats { grid-area: stats; }
+
+
+.area-weakness h4 {
+color:#eeeeee;
+}
+
+/* Griglia Mosse */
+.moves-grid-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.move-slot-card {
+    background: #fdfaf7;
+    padding: 10px;
+    border-radius: 10px;
+    border-left: 4px solid #ccc;
+}
+
+.move-slot-name { font-weight: bold; font-size: 0.85rem; }
+.move-slot-desc { font-size: 0.75rem; color: #666; margin-top: 5px; line-height: 1.2; }
+
+.item-icon-small { width: 24px; height: 24px; margin-right: 8px; }
+.item-title-row { display: flex; align-items: center; }
+
+.weakness-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 5px;
+}
+
+.w-row {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.75rem;
+}
+
+.types-wrapper {
+    display: flex;
+    flex-wrap: wrap;         /* Permette ai tipi di andare a capo */
+    gap: 4px;                /* Spazio tra i singoli badge */
+    flex: 1;                 /* Occupa tutto lo spazio restante */
+}
+
+.mult {
+    width: 35px;             /* Larghezza fissa invece di min-width */
+    flex-shrink: 0;          /* Impedisce al moltiplicatore di rimpicciolirsi */
+    font-weight: bold;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Colori per i moltiplicatori */
+.x4 { color: #ff0000; background: rgba(255,0,0,0.1); }
+.x2 { color: #ff6600; background: rgba(255,102,0,0.1); }
+.x05 { color: #77cc55; background: rgba(119,204,85,0.1); }
+.x025 { color: #44aa22; background: rgba(68,170,34,0.1); }
+.x0 { color: #888; background: rgba(136,136,136,0.1); }
+
+/* Badge dei tipi mini */
+.mini-type-badge {
+    padding: 1px 6px;
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    color: white;
+    font-weight: bold;
+    transform-origin: bottom center;
+    transform: rotate(1deg);
+}
+
+/* Box compatti per dimezzare l'altezza */
+/* Box Info Ultra-Compatti */
+.info-box-compact {
+    padding: 15px 10px !important;
+    margin-bottom: 4px;
+    min-height: 50px; /* Dimezzato rispetto a prima */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+/* Nasconde i titoli duplicati generati dalle funzioni se sono dentro info-content-clean */
+.info-content-clean strong, 
+.info-content-clean b {
+    display: inline;
+    font-size: 0.85rem;
+    color: black !important;
+}
+
+/* Rimpicciolisce la descrizione per farla stare in meno righe */
+.info-content-clean {
+    font-size: 0.75rem;
+    line-height: 1.1;
+    color: black !important;
+}
+
+.item-inline-layout {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.panel-title-mini {
+    font-size: 0.6rem !important;
+    margin-bottom: 2px !important;
+    opacity: 0.7;
+}
+
+.item-icon-tiny {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.item-title-row-new {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Spazio tra nome e icona */
+}
+
+/* Nasconde il titolo ripetuto (es. "Unnerve:") dentro le descrizioni */
+#single-abi strong, 
+#single-abi b, 
+#single-item strong, 
+#single-item b {
+    display: none !important; 
+    color: black;
+}
+
+/* Regola la descrizione affinché sia pulita */
+.info-desc-tiny {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: black;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Mantieni questo per il titolo principale (quello che vogliamo vedere) */
+.info-name {
+    font-size: 0.95rem;
+    color: #33261c;
+    font-weight: 800;
+    display: inline-block;
+}
+
+.stat-row {
+    margin-bottom: 4px; /* Riduce lo spazio tra HP, Atk, ecc. */
+    font-size: 0.75rem;
+}
+
+.stat-bar-bg {
+    height: 8px; /* Barre più sottili */
+}
+
+.move-slot-card {
+    padding: 6px 8px; /* Era 10px */
+    border-radius: 8px;
+}
+
+.move-slot-name {
+    font-size: 0.75rem; /* Più piccolo */
+}
+
+.move-slot-desc {
+    font-size: 0.65rem; /* Descrizione molto compatta */
+    line-height: 1.1;
+}
+
+/* Container generale delle Stats */
+.area-stats {
+    padding: 12px !important; /* Riduce l'ingombro interno */
+    margin-top: -12px;
+}
+
+/* Uniforma le righe delle statistiche (HP, ATK, ecc.) */
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px; /* Spazio tra le barre */
+    font-size: 0.75rem;  /* Font piccolo e pulito */
+    line-height: 1;
+}
+
+/* Rimpicciolisce le barre */
+.stat-bar-bg {
+    flex-grow: 1;
+    height: 6px; /* Ancora più sottili per eleganza */
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+/* SISTEMA L'ULTIMA RIGA (EVs) */
+.evs-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #eee;
+    font-size: 0.7rem !important; /* Forza il font piccolo */
+    color: #eeeeee; /* Colore meno pesante del nero */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.pkm-modal-grid {
+    align-items: start; /* Impedisce ai box di allungarsi inutilmente */
+}
+
+.area-stats.pkm-panel {
+    height: fit-content; /* Il box si chiude subito dopo l'ultima riga */
+    max-height: 100%;    /* Non supera mai il genitore */
+}
+
+/* Lista mosse a colonna singola per non tagliare i nomi */
+.moves-list-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.move-row-card {
+    background: #fdfaf7;
+    border-radius: 8px;
+    padding: 8px 12px;
+    border-left: 5px solid #ccc; /* Colore di fallback */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.move-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.move-name-text {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #33261c;
+}
+
+.move-type-label {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: 8px;
+}
+
+.move-stats-row {
+    display: flex;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: #666;
+    align-items: center;
+}
+
+.move-desc-text {
+    font-size: 0.65rem;
+    color: #8d7563;
+    font-style: italic;
+    line-height: 1.2;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding-top: 4px;
+}
+
+/* Classi dinamiche per i bordi basati sul tipo */
+.move-border-fire { border-left-color: #ff4422; }
+.move-border-water { border-left-color: #3399ff; }
+.move-border-grass { border-left-color: #77cc55; }
+.move-border-electric { border-left-color: #ffcc33; }
+.move-border-ice { border-left-color: #66ccff; }
+.move-border-fighting { border-left-color: #bb5544; }
+.move-border-poison { border-left-color: #aa5599; }
+.move-border-ground { border-left-color: #ddbb55; }
+.move-border-flying { border-left-color: #8899ff; }
+.move-border-psychic { border-left-color: #ff5599; }
+.move-border-bug { border-left-color: #aabb22; }
+.move-border-rock { border-left-color: #bbaa66; }
+.move-border-ghost { border-left-color: #6666bb; }
+.move-border-dragon { border-left-color: #7766ee; }
+.move-border-dark { border-left-color: #775544; }
+.move-border-steel { border-left-color: #aaaabb; }
+.move-border-fairy { border-left-color: #ee99ee; }
+.move-border-normal { border-left-color: #aaaa99; }
+
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* Spazio ridottissimo tra le mosse */
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.move-row-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    height: 28px; /* Altezza fissa e bassa */
+    transition: transform 0.1s;
+}
+
+.move-left-part, .move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100px;
+}
+
+.move-name-mini {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #33261c;
+    white-space: nowrap;
+}
+
+.move-cat-icon {
+    font-size: 0.8rem;
+    width: 16px;
+}
+
+.m-val {
+    font-size: 0.65rem;
+    color: #555;
+    min-width: 35px;
+}
+
+.m-val b {
+    color: #eeeeee;
+}
+
+/* Evita che il box delle mosse spinga tutto giù */
+.area-moves {
+    padding: 20px !important;
+    margin-top: -25px;
+    height: 175px;
+}
+
+/* 1. Riduciamo il gap della griglia principale */
+.pkm-modal-grid {
+    gap: 8px 12px !important; /* Spazio verticale ridotto al minimo */
+    align-items: start;
+}
+
+/* 4. Mosse "Striscia" (Layout orizzontale estremo) */
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; 
+}
+
+.move-row-mini {
+    height: 27.9px !important; /* Altezza ridottissima */
+    padding: 2px 6px !important;
+    font-size: 0.7rem;
+}
+
+.move-full-color .move-name-mini,
+.move-full-color .m-val,
+.move-full-color .m-val b {
+    color: #eeeeee !important;
+    font-size: 0.7rem;
+}
+
+.move-left-part, .move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* --- TUE CLASSI ESISTENTI (Invariate o con minimi aggiustamenti per il layout) --- */
+
+.move-row-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 27.9px !important;
+    padding: 2px 6px !important;
+    font-size: 0.7rem;
+    gap: 8px; /* Aggiunto un piccolo gap tra le sezioni */
+    border-radius: 4px; /* Per estetica con il colore pieno */
+    margin-bottom: 2px;
+}
+
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Impedisce al nome di schiacciarsi */
+    min-width: 85px; /* Riserva spazio fisso per il nome */
+}
+
+.move-right-part {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Impedisce ai valori di schiacciarsi */
+    justify-content: flex-end;
+}
+
+/* --- NUOVA CLASSE PER LA DESCRIZIONE --- */
+
+.move-desc-inline {
+    flex: 1; /* Prende tutto lo spazio centrale */
+    font-size: 0.58rem !important; /* Font molto piccolo per stare nell'altezza */
+    line-height: 1;
+    color: #1a1a1a;
+    opacity: 0.9;
+    font-style: italic;
+    text-align: left;
+    padding-left: 40px;
+    /* Gestione testo su due righe nel poco spazio */
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal; /* Permette il ritorno a capo */
+}
+
+/* --- RESTO DEL TUO CSS --- */
+
+.move-name-mini {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #33261c;
+    white-space: nowrap;
+}
+
+.move-cat-icon {
+    font-size: 0.8rem;
+    width: 16px;
+}
+
+.m-val {
+    font-size: 0.65rem;
+    color: #555;
+    min-width: 35px;
+}
+
+.m-val b {
+    color: #000;
+}
+
+.pkm-modal-grid {
+    gap: 8px 12px !important;
+    align-items: start;
+}
+
+
+.moves-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; 
+    transform-origin: bottom center;
+    transform: rotate(-0.2deg);
+}
+
+.move-full-color .move-name-mini,
+.move-full-color .m-val,
+.move-full-color .m-val b {
+    color: rgb(0, 0, 0) !important;
+    font-size: 0.7rem;
+}   
+
+/* Allineamento descrizioni: blocchiamo la larghezza del nome */
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 130px; /* Tutte le descrizioni inizieranno dopo 130px */
+    flex-shrink: 0;
+}
+
+.move-desc-inline {
+    flex: 1;
+    font-size: 0.58rem !important;
+    line-height: 1.1;
+    color: #1a1a1a;
+    text-align: left; /* Allineato a sinistra */
+    padding-right: 10px;
+    font-style: italic;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-left: 10px;
+}
+
+/* Sposta il box mosse in alto */
+.area-moves {
+    grid-area: moves;
+    margin-top: -20px; /* Valore negativo per alzare il blocco */
+}
+
+.pkm-sprite-hero {
+    object-fit: contain;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    width: 150px !important;
+    height: 150px !important;
+    object-fit: contain;
+    display: block;
+    image-rendering: -webkit-optimize-contrast; /* Per Chrome/Safari */
+    image-rendering: crisp-edges;               /* Per Firefox */
+    image-rendering: pixelated;                 /* Per Edge/Chrome moderni */
+    filter: contrast(1.1) drop-shadow(0 5px 12px rgba(0,0,0,0.15));
+}
+
+/* Blindatura per lo Zoom */
+.pkm-modal-grid {
+    height: 90vh;
+    width: 90%; 
+    overflow-y: auto; /* Crea scrollbar interna se zummi troppo */
+    padding-bottom: 20px;
+}
+
+/* Container dell'icona (lo span m-cat-i) */
+.move-cat-icon {
+    width: 15px; /* Spazio fisso per l'iconcina */
+    height: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* L'immagine vera e propria */
+.cat-icon-render {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Se le icone sembrano sgranate essendo piccole, aggiungi: */
+    image-rendering: pixelated; 
+}
+
+/* --- ALLINEAMENTO PERFETTO --- */
+.move-left-part {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 135px; /* Blocca la larghezza: NOME e ICONA occuperanno sempre 135px */
+    flex-shrink: 0;
+}
+
+.stats-tooltip {
+    color: black !important;
+        transform-origin: bottom center;
+    transform: rotate(-1deg);
+
+}
+
+.stats-tooltip h3 {
+    color: black !important;
+}
+
+.single-stats {
+    color:#eeeeee !important;
+    font-family: 'Josefin Sans', sans-serif important;
+}
+
+#single-stats .stat-bar-fill {
+    background: black;
+    height: 100%;
+    /* Usa il colore del tipo/accento ma SENZA trasparenze */
+    background-color: var(--accent-color); 
+    
+    /* Separatore netto alla fine del riempimento */
+    border-right: 2px solid #000;
+}
+
+#single-stats .stat-label {
+    color: #4a3728; /* Il tuo marrone scuro var(--text-main) */
+    font-weight: bold;
+    font-family: 'Josefin Sans', sans-serif important;
+}
+
+/* Cambia il colore dei numeri dei valori (es. 100, 80) */
+#single-stats .stat-number {
+    color: #e89e5e; /* Il tuo colore accent-dark o qualsiasi altro HEX */
+    font-weight: bold;
+    font-family: 'Josefin Sans', sans-serif !important;
+}
+
+/* Se vuoi cambiare il titolo "BASE STATS" o scritte generali nel pannello */
+.area-stats.pkm-panel {
+    color: #eeeeee !important;
+}
+
+.pkm-panel div[style*="font-weight:bold"] {
+    border-bottom: 2cap;
+    border-color: white !important; /* Colore marrone Didi tenue */
+}
+
+/* Layout per Titolo + Statistiche nel Modale */
+/* --- HEADER MODALE --- */
+.modal-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Bordo sotto nero netto e spesso */
+    border-bottom: 4px solid #000; 
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+/* --- TITOLO TEAM (Lo "Sticker") --- */
+.modal-header-container h2 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    
+    /* Colori: Testo Bianco su Sfondo Nero */
+    color: #fff;
+    background: #000;
+    
+    /* Bordo e Ombra Neubrutalist */
+    border: 4px solid #000; 
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
+    
+    /* Rimosso border-radius (niente curve!) */
+    border-radius: 0; 
+    
+    padding: 10px 35px;
+    /* Inclinazione stile ritaglio */
+    transform: rotate(-1.5deg);
+}
+
+/* --- BANNER SCORE (Giallo/Contrasto) --- */
+.team-score-banner {
+    display: flex;
+    gap: 30px;
+    padding: 12px 25px;
+    background-color: #fff; /* O var(--yellow) se vuoi che spicchi */
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0px #000;
+    transform: rotate(1deg); /* Contro-rotazione per dinamismo */
+}
+
+/* --- ELEMENTI DELLO SCORE --- */
+.score-item {
+    font-family: 'Josefin Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+}
+
+.score-item span {
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000;
+    letter-spacing: 1px;
+}
+
+.score-item strong {
+    color: #000;
+    font-size: 1.2rem; /* Numeri belli grandi e visibili */
+    font-weight: 900;
+}
+.card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 7px 7px 0 var(--border-color);
+}
+
+.card:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0; 
+}
+
+/* Colore per i titoli (es. Prankster) */
+.info-name {
+    color: black !important; /* L'important assicura che sovrascriva altri stili */
+}
+
+/* Colore per le descrizioni sotto */
+.info-desc-tiny {
+    color: black !important;
+}
+
+/* Struttura base del Menù */
+.hamburger-menu {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+}
+
+#menu-toggle {
+    display: none; /* Nascondiamo la checkbox */
+}
+
+/* Icona Hamburger */
+.menu-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-button,
+.menu-button::before,
+.menu-button::after {
+    display: block;
+    background-color: #1a1a1a;
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 2px;
+}
+
+.menu-button::before { content: ''; margin-top: -8px; }
+.menu-button::after { content: ''; margin-top: 8px; }
+
+/* Animazione quando cliccato (X) */
+#menu-toggle:checked + .menu-button-container .menu-button { background: rgba(255, 255, 255, 0); }
+#menu-toggle:checked + .menu-button-container .menu-button::before { margin-top: 0px; transform: rotate(45deg); }
+#menu-toggle:checked + .menu-button-container .menu-button::after { margin-top: 0px; transform: rotate(-45deg); }
+
+/* Lista del Menù */
+.menu-items {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #2e53cd;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #092377;
+    box-shadow: 5px 5px 0px #092377;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    width: 200px;
+}
+
+#menu-toggle:checked ~ .menu-items {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.menu-items li {
+    padding: 10px 20px;
+}
+
+.menu-items a {
+    text-decoration: none;
+    color: white;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    transition: color 0.2s;
+}
+
+.menu-items a:hover {
+    color: #4ace64; /* Colore verde Poke-Tracker al passaggio */
+}
+
+/* Schermata di caricamento */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Sopra a tutto */
+    transition: opacity 0.5s ease;
+}
+
+/* La Pokéball che gira */
+.pokeball-loader {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    animation: spin 1.2s linear infinite;
+}
+
+/* Metà superiore rossa */
+.pokeball-loader::before {
+    content: "";
+    position: absolute;
+    background: #ee1515;
+    width: 100%;
+    height: 50%;
+    top: 0;
+    border-bottom: 3px solid #333;
+}
+
+/* Pulsante centrale */
+.pokeball-loader::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    margin-top: 15px;
+    font-family: 'Courier New', Courier, monospace; /* O il tuo font Pokémon */
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.pkm-single-card {
+    border-radius: 15px;
+    position: relative;
+    animation: slideUp 0.4s ease-out;
+}
+
+/* Definizione delle animazioni */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95); 
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1); 
+    }
+}
+
+.music-btn {
+    position: fixed;
+    top: 100px;
+    right: 120px;
+    width: 45px;
+    height: 45px;
+    background: white; 
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    cursor: pointer;
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.music-btn:hover {
+    color: white;
+    background-color: black;
+    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    border: #000;
+    box-shadow: 0 0 0;
+}
+
+.music-btn:active {
+    color: black;
+    background-color: white;
+    transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    box-shadow: 0 0 0;
+}
+
+.music-btn.muted svg {
+    opacity: 0.1;
+}
+
+
+.admin-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    background-color: var(--yellow);
+    padding: 5px;
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0px #000;
+
+}
+
+.btn-admin-edit, 
+.btn-admin-del {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    background: none;
+    border: none;
+    padding: 5px;
+}
+
+
+.btn-admin-edit:hover { background: #ff4d4d; color: white; transform: scale(1.1);}
+.btn-admin-del:hover { background: #3498db; color: white; transform: scale(1.1);}
+
+.admin-panel {
+    position:fixed;
+    top: 20px;
+    left: 20px;
+    padding: 20px;
+    border: 2px solid var(--accent-dark);
+    z-index: 10000;
+    display: none;
+    width: 320px;
+    color: white;
+    background-color: var(--blue);
+    border: 2px solid var(--blue-border);
+    box-shadow: 4px 4px 0 var(--blue-border);
+}
+
+.admin-panel h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: white;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.admin-team-cat {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: black;
+}
+
+.admin-team-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: black;
+}
+
+.showdown-input {
+    width: 94%;
+    background: #222;
+    color: #afa;
+    border: 1px solid #444;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.showdown-save {
+    background: var(--save);
+    border: 2 px solid var(--save-border);
+    box-shadow: 4px 4px 0 var(--save-border);
+    transition: background 0.3s;
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.showdown-save:hover {
+    transform: translate(-2px, -2px);
+}
+
+.showdown-cancel {
+    background: var(--cancel);
+    border: 2 px solid var(--cancel-border);
+    box-shadow: 4px 4px 0 var(--cancel-border);
+    transition: background 0.3s;
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.showdown-cancel:hover {
+    transform: translate(-2px, -2px);
+}
+
+.btn-floating-admin {
+    position: fixed;
+    top: 100px;
+    right: 40px;
+    width: 50px;
+    height: 50px;
+    background: white; 
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+}
+
+/* Effetto al passaggio del mouse */
+.btn-floating-admin:hover {
+    color: white;
+    background-color: black;
+    transform: scale(1.2) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    border: #000;
+    box-shadow: 0 0 0;
+}
+
+.btn-floating-admin:active {
+    color: black;
+    background-color: white;
+    transform: scale(1); /* Ruota leggermente per un tocco dinamico */
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    box-shadow: 0 0 0;
+}
+
+
+/* Layout Generale */
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+    gap: 30px; /* Più respiro tra le card */
+    max-width: 1300px;
+    margin: 25px auto;
+}
+
+/* La Card Neubrutalist */
+.card { 
+    background: var(--accent-color); /* Colore dinamico del team */
+    border: 4px solid #000; /* Bordo nero spesso */
+    box-shadow: 10px 10px 0px #000; /* Ombra dura */
+    padding: 20px; 
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.card:hover {
+    /* Effetto "sollevamento" */
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0px #000;
+}
+
+.card:active {
+    /* Effetto "pressione" */
+    transform: translate(4px, 4px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+/* Header della Card */
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px;
+}
+
+.category, .stats { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.75rem; 
+    font-weight: 900;
+    text-transform: uppercase;
+    background: #fff; /* Sfondo bianco per staccare */
+    color: #000;
+    border: 3px solid #000;
+    padding: 4px 10px;
+    box-shadow: 3px 3px 0px #000;
+}
+
+.card h3 { 
+    font-family: 'Josefin Sans', sans-serif;
+    background: #000;
+    color: #fff;
+    margin: 10px 0; 
+    font-size: 1.6rem; /* Leggermente ridotto per nomi lunghi */
+    font-weight: 900;
+    padding: 5px 12px;
+    display: inline-block; 
+    transform: rotate(-1deg);
+    
+    /* CORREZIONE PER NOMI LUNGHI */
+    white-space: normal;      /* Permette di andare a capo */
+    max-width: 90%;           /* Impedisce di toccare i bordi della card */
+    line-height: 1.3;         /* Gestisce lo spazio tra le righe se va a capo */
+    box-decoration-break: clone; /* Opzionale: mantiene il padding su ogni riga */
+    -webkit-box-decoration-break: clone;
+}
+
+
+/* --- TOP BAR (La fascia colorata) --- */
+.top-bar {
+    width: 100%;
+    /* Ridotto drasticamente il padding per renderla più corta */
+    padding: 20px 0; 
+    border-bottom: 5px solid #000;
+    display: flex;
+    justify-content: center; /* Centra il contenuto interno */
+    align-items: center;
+}
+
+.top-bar-inner {
+    /* Occupa tutta la larghezza disponibile con un po' di margine ai lati */
+    width: 100%;
+    max-width: 1400px; 
+    display: flex;
+    justify-content: space-between; /* Titolo a sx, Filtri a dx */
+    align-items: center;
+    padding: 0 30px;
+}
+
+/* --- TITOLO (Sticker Nero) --- */
+.hub-hero {
+    background: transparent !important;
+    padding: 0;
+}
+
+.hub-title-display {
+    background: #000;
+    color: #fff;
+    /* Padding ridotto per rendere l'etichetta meno ingombrante */
+    padding: 10px 25px; 
+    display: inline-block;
+    transform: rotate(-2deg); 
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
+    font-size: 2.2rem; /* Dimensione bilanciata */
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* --- FILTRI E CONTROLLI --- */
+.controls {
+    display: flex;
+    flex-direction: column; /* Impila Search sopra i Select */
+    gap: 8px;
+    min-width: 350px;
+}
+
+.select-group {
+    display: flex;
+    gap: 8px;
+}
+
+.controls input, 
+.controls select {
+    background: #fff;
+    border: 3px solid #000;
+    padding: 8px 12px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 4px 4px 0px #000;
+    width: 100%;
+    outline: none;
+}
+
+/* --- GRID LAYOUT (Parte sotto) --- */
+.hub-main-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 1400px; /* Allineato alla top bar */
+    margin: 25px auto; /* Spazio uniforme dalla fascia */
+    padding: 0 20px;
+}
+
+/* --- HOVER CARD (TOOLTIP) --- */
+.pkm-hover-card {
+    display: none;
+    position: absolute;
+    bottom: 115%; /* Leggermente più alto per non coprire il bordo */
+    width: 240px; 
+    background: #fff; /* Sfondo bianco per contrasto neubrutalist */
+    border: 3px solid #000; /* Bordo nero spesso */
+    box-shadow: 8px 8px 0px #000; /* Ombra netta */
+    color: #000;
+    padding: 15px;
+    z-index: 999;
+    pointer-events: none;
+    transform-origin: bottom center;
+}
+
+/* Titolo dentro l'hover (Nome Pokémon) */
+.pkm-hover-card strong {
+    display: table; /* Adattamento al testo */
+    background: #000;
+    color: #fff;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    margin-bottom: 10px;
+    transform: rotate(-2deg); /* Effetto sticker */
+    border: 2px solid #000;
+}
+
+/* Info Testuali (Abilità, Item, etc) */
+.pkm-hover-card p {
+    font-size: 0.75rem !important; /* Leggermente più grande per leggibilità */
+    font-weight: 700;
+    margin: 4px 0 !important;
+    line-height: 1.3;
+    color: #000 !important;
+    text-transform: uppercase;
+}
+
+/* --- LE MOSSE (I 4 Rettangoli) --- */
+.hover-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    border-top: 2px solid #000; /* Separatore netto */
+    padding-top: 10px;
+}
+
+.hover-moves span {
+    background: #fff; /* Sfondo neutro */
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0px #000;
+    color: #000;
+    font-size: 0.65rem;
+    padding: 6px 4px;
+    text-align: center;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 35px;
+    text-transform: uppercase;
+    transition: none; /* Stile brutale, niente sfumature */
+}
+
+/* Varianti di posizione */
+.pkm-hover-card.left-side {
+    left: 0;
+    transform: rotate(1deg); /* Leggera inclinazione opposta al titolo */
+}
+
+.pkm-hover-card.right-side {
+    right: 0;
+    transform: rotate(-1deg);
+}
+
+/* Animazione */
+.pkm-box:hover .pkm-hover-card {
+    display: block;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* --- GRIGLIA PRINCIPALE MODALE --- */
+.pkm-modal-grid {
+    display: grid;
+    grid-template-areas: 
+        "weakness header info-strips"
+        "moves moves stats"; 
+    grid-template-columns: 280px 1fr 320px;
+    grid-template-rows: auto auto;
+    gap: 15px; /* Spazio netto tra i "blocchi" */
+    
+    /* STILE NEUBRUTALIST */
+    color: #000 !important; /* Tutto il testo base diventa nero */
+    background: transparent;
+    padding: 10px;
+}
+
+/* --- IL PANNELLO (Il contenitore base di ogni sezione) --- */
+.pkm-panel {
+    background: #fff !important; /* Sfondo bianco puro per contrasto */
+    border: 3px solid #000 !important; /* Bordo nero spesso */
+    box-shadow: 6px 6px 0px #000 !important; /* Ombra netta e dura */
+    color: #000 !important;
+    padding: 12px !important;
+    position: relative;
+}
+
+/* Titolo della sezione (es. "MOVES", "STATS") */
+.panel-title {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #fff !important;
+    background: #000; /* Titolo "sticker" nero */
+    display: inline-block;
+    padding: 2px 10px;
+    margin: -25px 0 15px 0; /* Lo fa "uscire" leggermente dal bordo */
+    border: 2px solid #000;
+    transform: rotate(-1deg);
+}
+
+/* --- SEZIONE DEBOLEZZE (Weakness) --- */
+.w-row {
+    background: #f0f0f0;
+    border: 2px solid #000;
+    padding: 4px;
+    margin-bottom: 5px;
+}
+
+.mult {
+    background: #000 !important;
+    color: #fff !important;
+    border-radius: 0; /* Via le curve */
+    font-weight: 900;
+}
+
+/* --- SEZIONE MOSSE (Le Strisce) --- */
+.move-row-mini {
+    height: 20px !important; /* Leggermente più alta per far respirare il bordo */
+    border-radius: 0 !important;
+    margin-bottom: 6px !important;
+    background: #fff; /* Verrà sovrascritto dal colore del tipo, ma deve essere solido */
+    transition: transform 0.1s;
+    box-shadow: 3px 3px 0 black;
+    border: 1.5px solid black;
+}
+
+.move-row-mini:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px #000;
+}
+
+.move-name-mini {
+    color: #000 !important;
+    font-weight: 900 !important;
+    text-transform: uppercase;
+}
+
+.move-desc-inline {
+    color: #000 !important;
+    font-weight: 600;
+    font-style: normal; /* Neubrutalism non ama l'italic, preferisce il testo dritto */
+    opacity: 1;
+}
+
+/* --- INFO STRIPS (Abilità e Strumento) --- */
+.info-box-compact {
+    background: #fff !important;
+    border: 3px solid #000 !important;
+    box-shadow: 4px 4px 0px #000 !important;
+    margin-bottom: 10px;
+    color: black !important;
+}
+
+.info-name {
+    color: #000 !important;
+    font-weight: 900;
+    text-decoration: underline; /* Effetto "evidenziatore" */
+}
+
+/* --- STATISTICHE --- */
+.stat-bar-bg {
+    background: #fff !important;
+    border: 2px solid #000 !important;
+    border-radius: 0 !important;
+}
+
+.stat-bar-fill {
+    border-right: 2px solid #000;
+}
+
+.evs-footer {
+    border-top: 2px solid #000 !important;
+    color: #000 !important;
+    font-weight: 900;
+    margin-top: 15px;
+}
+
+/* --- HEADER CENTRALE (Nome Pokémon) --- */
+.pkm-name-banner {
+    background: #000;
+    color: #fff !important;
+    padding: 10px 30px;
+    font-size: 1.5rem !important;
+    font-weight: 900;
+    transform: rotate(1deg);
+    border: 3px solid #000;
+    box-shadow: 8px 8px 0px var(--accent-color); /* Ombra colorata col tipo del pkm */
+}
+
+.top-auth-bar {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 3000;
+}
+
+.auth-interaction {
+    /* Rimuovi trasparenze e blur */
+    background: white; /* Colore giallo vivace tipico del neubrutalism */
+    
+    /* Bordi neri spessi e netti */
+    border: 3px solid #000;
+    
+    
+    /* Colore testo nero per contrasto massimo */
+    color: #000;
+    
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    /* Ombra netta (senza sfocatura) */
+    box-shadow: 5px 5px 0px #000;
+    
+    /* Transizione rapida per l'effetto pressione */
+    transition: all 0.1s;
+}
+
+.auth-interaction:hover {
+    /* Effetto "spostamento" quando ci passi sopra */
+    background: white; /* Mantieni il colore o cambialo leggermente */
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px #000;
+}
+
+.auth-interaction:active {
+    /* Effetto "bottone premuto" */
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+#auth-icon {
+    font-size: 20px;
+    color: #000;
+}
+
+#auth-text {
+    font-weight: 900; /* Extra bold per stile fumetto/brutalista */
+    font-size: 14px;
+    text-transform: uppercase; /* Spesso usato nel neubrutalism */
+    letter-spacing: 1px;
+}
+/* Dropdown semplice per il logout */
+.user-dropdown {
+    display: none; 
+    position: absolute;
+    right: 100px;
+    top: 110%; /* Un po' più staccato dalla barra */
+    background: transparent; 
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    min-width: 180px;
+    flex-direction: column;
+    gap: 30px !important; /* Spazio tra le etichette */
+    z-index: 100;
+}
+
+/* Stile base per ogni singola voce (Card Neubrutalist) */
+.user-dropdown .menu-item, 
+.user-dropdown .logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: black !important;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: var(--yellow);
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px black;
+    transition: 0.2s;
+    cursor: pointer;
+    width: 100%;
+    margin-top:20px;
+}
+
+/* Rotazioni individuali per le etichette del menu */
+.user-dropdown .menu-item:nth-child(1) { transform: rotate(-2deg); }
+.user-dropdown .menu-item:nth-child(2) { transform: rotate(1.5deg); }
+.user-dropdown .logout-btn { transform: rotate(-1deg); margin-top: 5px; }
+
+/* Effetto Hover (si raddrizzano leggermente e si sollevano) */
+.user-dropdown .menu-item:hover, 
+.user-dropdown .logout-btn:hover {
+    background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
+    transform: translate(-3px, -3px) rotate(0deg);
+    box-shadow: 7px 7px 0px black;
+}
+
+/* Rimuoviamo il divisore classico, non serve più con questo stile */
+.menu-divider {
+    display: none;
+}
+
+/* Colore specifico per il Logout */
+.logout-btn {
+    background-color: #ff4444 !important; /* Rosso acceso */
+    color: white !important;
+    margin-top:20px !important;
+}
+
+.close-modal {
+    position: absolute;
+    right: 15px; top: 10px;
+    cursor: pointer; font-size: 24px;
+}
+
+.input-group { margin-bottom: 15px; }
+.input-group input { 
+    width: 100%; padding: 10px; 
+    background: rgba(0,0,0,0.3); border: 1px solid #444; color: white; 
+}
+
+.btn-login { width: 100%; padding: 12px; background: #2ecc71; border: none; color: white; cursor: pointer; font-family: 'Josefin Sans', sans-serif;}
+.error-msg { color: #ff4d4d; margin-top: 10px; font-size: 14px; }
+
+#login-modal.modal {
+    backdrop-filter: blur(4px); /* Leggero blur per focus */
+    z-index: 10000;
+}
+
+/* Il contenitore principale (La card) */
+#login-modal .modal-content {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+    border-radius: 0; /* Via le arrotondature per vero stile Brutalist */
+}
+
+/* Titolo Login */
+#login-modal h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    border-bottom: 4px solid #000;
+    display: inline-block;
+    padding-bottom: 5px;
+    color: black !important;
+}
+
+/* Gruppo Input */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: black !important;
+}
+
+/* Campi Input */
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 3px solid #000;
+    font-family: inherit;
+    font-weight: 600;
+    background: #f0f0f0;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-group input:focus {
+    background: #fff;
+    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    transform: translate(-2px, -2px);
+}
+
+/* Pulsante Login */
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    background: #31c489; /* Il verde che usi altrove */
+    color: #000;
+    border: 3px solid #000;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 6px 6px 0px #000;
+    transition: all 0.1s;
+    margin-top: 10px;
+    transform: rotate(-2deg);
+}
+
+.btn-login:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0px #000;
+}
+
+.btn-login:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* Tasto Chiudi (X) */
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #ff4545; /* Rosso errore al passaggio */
+}
+
+/* Messaggio Errore */
+.error-msg {
+    color: #ff4545;
+    font-weight: 700;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    text-align: center;
+    text-transform: uppercase;
+}
