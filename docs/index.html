@@ -882,28 +882,43 @@ function avviaMusicaHome() {
 
 document.addEventListener('DOMContentLoaded', avviaMusicaHome);
 
+// --- 1. LOGICA DI SBLOCCO (RISPETTA IL MUTE) ---
 document.addEventListener('click', () => {
     const player = document.getElementById('bg-music-home');
-    if (player && player.paused) {
-        player.play();
-        console.log("Musica Home sbloccata dal click!");
+    // Recupera la preferenza: se non esiste, di base è 'on'
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+
+    // Fai partire solo se l'utente vuole la musica (on)
+    if (player && player.paused && musicPref === 'on') {
+        player.play().catch(e => console.log("Riproduzione bloccata dal browser"));
+        console.log("🔊 Musica Home sbloccata (Preferenza: ON)");
+    } else {
+        console.log("🔇 Musica Home rimane spenta (Preferenza: OFF)");
     }
 }, { once: true });
 
+// --- 2. LOGICA DEL TASTO TOGGLE ---
 const musicBtn = document.getElementById('music-toggle');
 const audio = document.getElementById('bg-music-home');
+
+// Inizializza l'icona del tasto all'avvio in base alla scelta salvata
+if (localStorage.getItem('userMusicPref') === 'off') {
+    musicBtn.innerText = "🔇";
+    if (audio) audio.pause();
+}
 
 musicBtn.addEventListener('click', (e) => {
     e.stopPropagation(); 
     if (audio.paused) {
         audio.play();
         musicBtn.innerText = "🔊";
+        localStorage.setItem('userMusicPref', 'on'); // Salva preferenza ON
     } else {
         audio.pause();
         musicBtn.innerText = "🔇";
+        localStorage.setItem('userMusicPref', 'off'); // Salva preferenza OFF
     }
 });
-
 
 
 let countdownInterval;

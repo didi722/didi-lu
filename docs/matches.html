@@ -2224,51 +2224,62 @@ function avviaMusicaHome() {
 document.addEventListener('DOMContentLoaded', avviaMusicaHome);
 
 // SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+// --- 1. SBLOCCO INIZIALE (RISPETTA IL LOCALSTORAGE) ---
 document.addEventListener('click', () => {
-    const player = document.getElementById('bg-music-home');
-    if (player && player.paused) {
-        player.play();
-        console.log("Musica Home sbloccata dal click!");
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    // Controlliamo la preferenza PRIMA di fare play
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+
+    if (player && player.paused && musicPref === 'on') {
+        player.play()
+            .then(() => console.log("🔊 Musica sbloccata dal click (Preferenza: ON)"))
+            .catch(err => console.warn("Autoplay bloccato dal browser:", err));
+    } else {
+        console.log("🔇 Musica rimane spenta al click (Preferenza: OFF)");
     }
 }, { once: true });
 
-const musicBtn = document.getElementById('music-toggle');
-const audio = document.getElementById('bg-music-home');
-
+// --- 2. FUNZIONE TOGGLE AGGIORNATA ---
 function toggleMusic() {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
-    const musicBtn = document.getElementById('music-control');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
 
     if (!player || !musicBtn) return;
 
-    // Se è in pausa OPPURE se è mutato, vogliamo farlo ripartire "pulito"
     if (player.paused || player.muted) {
-        
-        // 1. Reset degli stati audio
+        // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 0.3; // Assicuriamoci che il volume sia udibile
+        player.volume = 0.3; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on');
+            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
             console.log("🔊 Musica ripresa");
         }).catch(error => {
             console.warn("Autoplay bloccato:", error);
-            // Se il browser blocca, rimettiamo la sbarra
             musicBtn.classList.add('muted');
         });
         
     } else {
-        // 2. Spegnimento totale
+        // SPEGNIMENTO TOTALE
         player.pause();
-        player.muted = true; // Sicurezza extra
+        player.muted = true; 
         
         musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off');
+        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
         console.log("🔇 Musica fermata");
     }
 }
 
+// --- 3. SINCRONIZZAZIONE ALL'AVVIO ---
+// Questo serve per far sì che il bottone mostri la sbarra corretta appena carichi la pagina
+window.addEventListener('DOMContentLoaded', () => {
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
+    if (musicPref === 'off' && musicBtn) {
+        musicBtn.classList.add('muted');
+    }
+});
 /** * AGGIUNTA FONDAMENTALE: 
  * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
  * silenziato la musica in un'altra parte del sito.
