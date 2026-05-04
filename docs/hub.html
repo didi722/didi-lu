@@ -8,9 +8,29 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </header>
 
-<div id="music-toggle" style="position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 24px;">
-    🔊
+
+<header class="top-bar">
+        <div class="top-bar-inner">
+            <section class="hub-hero">
+                <h1 class="hub-title-display">SEASON HUB</h1>
+            </section>
+        </div>
+    </header>
+    
+    <div class="top-auth-bar">
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+        <i id="auth-icon" class="fas fa-lock"></i>
+        <span id="auth-text"></span>
+    </div>
+    <div id="user-menu" class="user-dropdown">
+        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
+        
+        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+    </div>
 </div>
+
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
@@ -31,26 +51,42 @@
     </div>
 </div>
 
-<div class="top-auth-bar">
-    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
-        <i id="auth-icon" class="fas fa-lock"></i>
-        <span id="auth-text"></span>
+<div class="ads-sidebar">
+        <div class="ads-track">
+            <img src="immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+            <img src="immagini/3.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/4.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/5.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/6.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/7.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/8.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/9.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/10.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/11.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/12.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/13.jpeg" alt="Ad 3" class="ad-banner">
+            <img src="immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+            <img src="immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+        </div>
     </div>
-    <div id="user-menu" class="user-dropdown">
-        <button onclick="logout()">Logout</button>
-    </div>
+
+    <audio id="bg-music-home" loop preload="auto"></audio>
+
+
+        <div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
 </div>
+
 
 <div id="loading-screen">
     <div class="pokeball-loader"></div>
     <p>Please wait</p>
 </div>
 
-    <div class="news-ticker">
-        <div class="ticker-wrap" id="lastMatchTicker">
-            <div class="ticker-item">           Loading last match info...</div>
-        </div>
-    </div>
+
 
 <div class="ads-sidebar">
         <div class="ads-track">
@@ -73,37 +109,35 @@
     </div>
 
 <main class="hub-container">
-    <section class="hub-hero">
-        <h1 id="hub-title-display">Loading...</h1>
-    </section>
-
-    <div class="hub-main-layout">
+    <div class="hub-new-layout">
         
-        <div class="hub-left-column">
-            <div class="neubrutal-card info-summary-card">
-                <div id="season-summary-content" class="summary-grid"></div>
+        <div class="registration-column" id="registration-buttons-container">
             </div>
 
-            <div class="registration-area">
-                <div id="registration-buttons-container" class="big-buttons-grid">
+        <div class="hub-center-zone">
+            <div id="season-summary-content">
+                </div>
+        </div>
+
+        <div class="hub-column-right">
+            <div id="participants-section">
+                <h3 id="players-count-title">PLAYERS:</h3> 
+                <div id="participants-list" class="simple-player-list">
                     </div>
             </div>
         </div>
 
-        <aside class="hub-right-column">
-            <div class="neubrutal-card participants-card">
-                <h3>PLAYERS:</h3> 
-                <div id="participants-list" class="simple-player-list"></div>
-            </div>
-        </aside>
-
     </div>
 </main>
 
-<div id="modal-select-team" class="modal-neubrutal">
+<div id="modal-select-team" class="modal-neubrutal" style="display: none;">
     <h3 id="modal-format-title">Select your Team</h3>
-    <div id="user-teams-list"></div>
-    <button onclick="closeTeamModal()" class="btn-cancel">Close</button>
+    
+    <div id="user-teams-list" class="teams-list"></div>
+    
+    <div class="modal-footer-controls">
+        <button onclick="closeTeamModal()" class="btn-cancel">Close</button>
+    </div>
 </div>
 
 <div id="teamModal" class="replay-modal" onclick="chiudiTeamModal()">
@@ -202,16 +236,28 @@ function pSBC(p, c0, c1, l) {
     return "#" + (0x1000000 + (f.a != -1 ? m(f.a * 255) : 0) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-async function getPlayerPalette(playerName) {
-    const snap = await db.ref(`players/${playerName}/info/color`).once('value');
-    const baseColor = snap.val() || "#31c489"; // Colore scelto dall'utente
-
+function getPlayerPalette(baseColor) {
+    if (!baseColor) baseColor = "#31c489";
+    
     return {
         base: baseColor,
-        border: pSBC(-0.8, baseColor), // 40% più scuro per i bordi
-        light: pSBC(0.8, baseColor) + "22", // 80% più chiaro + trasparenza per sfondi
-        text: pSBC(-0.6, baseColor) // Molto scuro per il testo leggibile
+        dark: pSBC(-0.4, baseColor),
+        darker: pSBC(-0.7, baseColor),
+        light: pSBC(0.6, baseColor),
+        tag: pSBC(-0.5, baseColor),
+        bright: pSBC(0.3, baseColor)
     };
+}
+
+function generaVariabiliCSS(palette) {
+    return `
+        --accent-color: ${palette.base};
+        --border-color: ${palette.darker};
+        --dark-color: ${palette.dark};
+        --light-color: ${palette.light};
+        --tag-color: ${palette.tag};
+        --bright-color: ${palette.bright};
+    `;
 }
 
 async function getPlayersColors(p1, p2) {
@@ -235,7 +281,6 @@ async function getPlayersColors(p1, p2) {
         c2: snap2.val() || '#8e44ad'
     };
 }
-
 
 // 3. Funzione di Avvio Unica
 // Variable di controllo globale per gestire i rendering asincroni
@@ -268,12 +313,15 @@ async function initHub() {
             const data = snap.val();
             if (!data) return;
 
+            // --- CORREZIONE FONDAMENTALE PER DETTAGLIO TEAM ---
+            window.teamsIscrittiStagione = data.teams_iscritti || {};
+            // --------------------------------------------------
+
             // Incrementiamo l'ID per invalidare eventuali renderHub asincroni precedenti
             currentRenderID++;
             const myRenderID = currentRenderID;
 
             // --- AGGIORNAMENTO TICKER (LIVE) ---
-            // Passiamo i dati appena ricevuti così il ticker si aggiorna se qualcuno si iscrive
             if (typeof caricaTickerIscrizione === 'function') {
                 caricaTickerIscrizione(data, seasonId);
             }
@@ -303,6 +351,7 @@ async function initHub() {
             } else {
                 // Rendering asincrono della griglia/team
                 if (typeof renderHub === 'function') {
+                    // Passiamo i dati e attendiamo il render
                     await renderHub(data, nomeUtenteClean, myRenderID);
                 }
 
@@ -323,6 +372,7 @@ async function initHub() {
         console.error("Errore critico durante l'inizializzazione dell'Hub:", error);
     }
 }
+
 
 function renderClosedHub(data) {
     const leaderboard = data.leaderboard || {};
@@ -433,68 +483,13 @@ function checkOverlimitWarning(data, nomeUtenteClean) {
     }
 }
 
-/**
- * Aggiorna il ticker della pagina Iscrizione/Hub
- * @param {Object} data - L'oggetto snap.val() della stagione
- * @param {string} sId - L'ID della stagione (es. season_4)
- */
-function caricaTickerIscrizione(data, sId) {
-    try {
-        if (!data) return;
 
-        const tickerWrap = document.getElementById('lastMatchTicker');
-        if (!tickerWrap) return;
-
-        const info = data.info || {};
-        const nomeStagione = info.name || sId || "Unknown Season";
-
-        // 1. Gestione Deadline (ISO 2026-03-31T17:30 -> 31-03-26 @ 17:30)
-        let scadenzaRaw = info.deadline || "";
-        let scadenzaFormattata = "TBD";
-        if (scadenzaRaw && scadenzaRaw.includes('T')) {
-            const [dataPart, oraPart] = scadenzaRaw.split('T');
-            const [anno, mese, giorno] = dataPart.split('-');
-            scadenzaFormattata = `${giorno}-${mese}-${anno.slice(-2)} @ ${oraPart}`;
-        }
-
-        // 2. Conteggio Partecipanti dal nodo "iscritti"
-        const iscritti = data.iscritti ? Object.keys(data.iscritti).length : 0;
-        
-        // 3. Limite Massimo da info/participants_limit
-        const maxPartecipanti = info.participants_limit || 16; 
-        
-        let partDisplay = `${iscritti}/${maxPartecipanti}`;
-        if (iscritti >= maxPartecipanti && maxPartecipanti !== 0) {
-            partDisplay = "SOLD OUT! ⚠";
-        }
-
-        // 4. Numero Showdowns da info/total_days
-        const numShowdowns = info.total_days || 0;
-
-        // --- COMPOSIZIONE FINALE ---
-        const testoNews = ` ▪ NEXT SEASON: ${nomeStagione.toUpperCase()} ► DEADLINE: ${scadenzaFormattata} ► PLAYERS: ${partDisplay} ► SHOWDOWNS: ${numShowdowns} ▪ NEXT SEASON: ${nomeStagione.toUpperCase()} ► DEADLINE: ${scadenzaFormattata} ► PLAYERS: ${partDisplay} ► SHOWDOWNS: ${numShowdowns}`;
-
-        // Inserimento HTML (duplicato per scroll infinito)
-        tickerWrap.innerHTML = `<div class="ticker-item">${testoNews}</div><div class="ticker-item">${testoNews}</div>`;
-
-        // --- LOGICA VELOCITÀ COSTANTE (NOVITÀ) ---
-        const pixelAlSecondo = 60; // Più alto = più veloce. Imposta lo stesso valore in ogni pagina.
-        const larghezzaTesto = tickerWrap.scrollWidth / 2; 
-        const durataCalcolata = larghezzaTesto / pixelAlSecondo;
-
-        // Applica la durata direttamente all'elemento
-        tickerWrap.style.animationDuration = `${durataCalcolata}s`;
-
-    } catch (e) {
-        console.error("Errore aggiornamento ticker iscrizione:", e);
-    }
-}
 // 4. Rendering dell'Hub
 async function renderHub(data, nomeUtenteClean, myRenderID) {
     const info = data.info || {};
     const teamsIscritti = data.teams_iscritti || {};
     
-    // --- 1. LOGICA NO LIMIT E INFO (Sincrona) ---
+    // --- 1. LOGICA LIMITI E INFO ---
     const isNoLimit = info.teams_per_format === "No Limit";
     const maxTeamsPerFormat = isNoLimit ? Infinity : (parseInt(info.teams_per_format) || 1);
     const limitLabel = isNoLimit ? "No Limit" : `${maxTeamsPerFormat} TEAMS PER FORMAT`;
@@ -502,25 +497,60 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
     const countIscritti = data.iscritti ? Object.keys(data.iscritti).length : 0;
     const limitIscritti = info.participants_limit || "0";
 
-    const summaryBox = document.getElementById('season-summary-content');
+    // --- 2. AGGIORNAMENTO SUMMARY BOX (Neubrutalist) ---
+const summaryBox = document.getElementById('season-summary-content');
     if (summaryBox) {
-        let deadlineDisplay = "NOT SET";
-        if (info.deadline) {
-            const d = new Date(info.deadline);
-            deadlineDisplay = d.toLocaleDateString('it-IT') + " " + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-        }
         summaryBox.innerHTML = `
-            <div class="hub-info-list" style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="info-row"><strong>STATUS:</strong> ${info.status?.toUpperCase() || 'OPEN'}</div>
-                <div class="info-row"><strong>LIMIT:</strong> ${limitLabel}</div>
-                <div class="info-row"><strong>DEADLINE:</strong> ${deadlineDisplay}</div>
-                <div class="info-row"><strong>TOTAL SHOWDOWNS:</strong> ${info.total_days || 0}</div>
+            <div class="hub-new-layout">
+                <div id="registration-column" class="registration-column">
+                    </div>
+
+                <div class="hub-center-zone">
+                    <div class="countdown-main-container">
+                        <div class="countdown-label">REGISTRATIONS <br> CLOSE IN</div>
+                        <div id="hub-countdown-timer" class="countdown-digits">00D 00H 00M 00S</div>
+                    </div>
+                    
+                    <div class="info-box-mini showdowns-footer">
+                        <span class="mini-label">TOTAL SHOWDOWNS</span>
+                        <span class="mini-value">${info.total_days || 0}</span>
+                    </div>
+                </div>
+
             </div>
         `;
-    }
 
-    // --- 2. BOTTONI REGISTRAZIONE ---
-    const btnContainer = document.getElementById('registration-buttons-container');
+    // Avvia il timer se c'è una deadline
+    if (info.deadline) {
+        if (window.hubInterval) clearInterval(window.hubInterval); // Pulisci timer vecchi
+        
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const distance = new Date(info.deadline).getTime() - now;
+            const timerEl = document.getElementById('hub-countdown-timer');
+            
+            if (!timerEl) return;
+
+            if (distance < 0) {
+                timerEl.innerText = "CLOSED";
+                timerEl.style.color = "#ff4b4b";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timerEl.innerText = `${days}D ${hours}H ${minutes}M ${seconds}S`;
+        };
+
+        updateTimer();
+        window.hubInterval = setInterval(updateTimer, 1000);
+    }
+}
+    // --- 3. BOTTONI REGISTRAZIONE ---
+    const btnContainer = document.getElementById('registration-column');
     btnContainer.innerHTML = '';
 
     if (info.selected_formats) {
@@ -532,71 +562,57 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
             const isFull = isNoLimit ? (count > 0) : (count >= maxTeamsPerFormat);
 
             const btn = document.createElement('button');
+            // Classi CSS per lo stato del bottone
             btn.className = `btn-team ${isOverLimit ? 'overlimit' : (isFull ? 'registered' : '')}`;
-            let counterHTML = isNoLimit ? (count > 0 ? `${count}` : "No Limit") : `${count}/${maxTeamsPerFormat}`;
+            
+            let counterHTML = isNoLimit ? (count > 0 ? `${count}` : "∞") : `${count}/${maxTeamsPerFormat}`;
 
             btn.innerHTML = `
-                <div style="text-align: left;">
-                    <div style="font-family: 'Josefin Sans'; font-size: 1.2rem; font-weight: 700;">${format.toUpperCase()}</div>
-                </div>
-                <div style="font-size: 2.5rem; font-weight: 900; align-self: flex-end; line-height: 1;">${counterHTML}</div>
+                <div class="btn-team-label">${format.toUpperCase()}</div>
+                <div class="btn-team-counter">${counterHTML}</div>
             `;
             btn.onclick = () => openTeamPicker(format, nomeUtenteClean);
             btnContainer.appendChild(btn);
         });
     }
 
-    // --- 3. SIDEBAR PARTECIPANTI (CORRETTA CON DOPPIO CONTROLLO) ---
-    const partCardTitle = document.querySelector('.participants-card h3');
-    if (partCardTitle) {
-        partCardTitle.innerText = `PLAYERS: ${countIscritti}/${limitIscritti}`;
-    }
-
+    // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
+   const partCardTitle = document.getElementById('players-count-title');
+if (partCardTitle) {
+    partCardTitle.innerText = `PLAYERS: ${countIscritti}/${limitIscritti}`;
+}
     const partList = document.getElementById('participants-list');
     if (!partList) return;
-    
-    partList.innerHTML = ''; // Svuota la lista
+    partList.innerHTML = ''; 
 
     if (data.iscritti) {
         const playerNames = Object.keys(data.iscritti);
         
         for (const player of playerNames) {
-            // PRIMO CONTROLLO: Prima di andare a chiedere i colori
+            // Controllo anti-sovrapposizione pre-asincronia
             if (myRenderID !== currentRenderID) return;
 
             const colors = await getPlayersColors(player, player);
 
-            // SECONDO CONTROLLO (CRITICO): Dopo l'asincronia.
-            // Mentre aspettavamo i colori, il database potrebbe essere cambiato.
+            // Controllo anti-sovrapposizione post-asincronia
             if (myRenderID !== currentRenderID) return;
 
             const baseCol = colors.c1 || "#eeeeee";
-            const borderCol = (typeof pSBC !== 'undefined') ? pSBC(-0.6, baseCol) : "#000";
+            const borderCol = (typeof pSBC !== 'undefined') ? pSBC(-0.8, baseCol) : "#000000";
 
             const tag = document.createElement('div');
             tag.className = "player-tag";
-            tag.style.cssText = `
-                font-size: 0.8rem;
-                color: #555;
-                font-weight: 600;
-                margin-bottom: 8px; 
-                padding: 8px 12px; 
-                font-family: 'Montserrat'; 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center;
-                background-color: ${baseCol}15;
-                border: 3px solid ${borderCol};
-                box-shadow: 4px 4px 0px ${borderCol};
-                font-weight: 800;
-                color: #1a1a1a;
-            `;
             
+            // Applichiamo i colori dinamici ma manteniamo la struttura Neubrutalist
+            tag.style.backgroundColor = baseCol;
+            tag.style.borderColor = borderCol;
+            tag.style.boxShadow = `4px 4px 0px ${borderCol}`;
+
             tag.innerHTML = `<strong>${player.toUpperCase()}</strong>`;
             partList.appendChild(tag);
         }
     } else {
-        partList.innerHTML = '<p style="font-size: 0.8rem; color: #666; font-style: italic; padding: 10px;">No players joined yet</p>';
+        partList.innerHTML = '<p class="empty-list-text">No players joined yet</p>';
     }
 }
 
@@ -605,7 +621,6 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const seasonSnap = await db.ref(`seasons/${seasonId}/info`).once('value');
     const seasonInfo = seasonSnap.val() || {};
     
-    // Gestione No Limit vs Numero
     const rawLimit = seasonInfo.teams_per_format;
     const isNoLimit = (rawLimit === "No Limit" || rawLimit === 0 || rawLimit === "0");
     const maxAllowed = isNoLimit ? Number.MAX_SAFE_INTEGER : (parseInt(rawLimit) || 1);
@@ -618,40 +633,52 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const teamsSnap = await db.ref(`players/${nomeUtenteClean}/teams`).once('value');
     const allTeams = teamsSnap.val() || {};
     
+    const modal = document.getElementById('modal-select-team');
     const container = document.getElementById('user-teams-list');
-    container.innerHTML = '';
-    
     const title = document.getElementById('modal-format-title');
     
+    container.innerHTML = '';
+    
+    // --- GESTIONE FOOTER E PULSANTI FISSI ---
+    // Creiamo o recuperiamo il contenitore dei bottoni
+    let footer = modal.querySelector('.modal-footer-controls');
+    if (!footer) {
+        footer = document.createElement('div');
+        footer.className = 'modal-footer-controls';
+        modal.appendChild(footer);
+    }
+
+    // Gestione pulsante Confirm (Save)
     let confirmBtn = document.getElementById('btn-confirm-selection');
     if (!confirmBtn) {
         confirmBtn = document.createElement('button');
         confirmBtn.id = 'btn-confirm-selection';
         confirmBtn.className = 'btn-confirm';
-        container.after(confirmBtn);
+        footer.appendChild(confirmBtn);
     }
+
+    // Spostiamo il pulsante Close (Cancel) dentro il footer per l'ordine corretto
+    const closeBtn = modal.querySelector('.btn-cancel');
+    if (closeBtn) footer.appendChild(closeBtn);
 
     const updateTitleAndUI = () => {
         const isOverLimit = !isNoLimit && selectedTeamIds.length > maxAllowed;
         const counterText = isNoLimit ? `${selectedTeamIds.length}` : `${selectedTeamIds.length}/${maxAllowed}`;
-        const titleColor = isOverLimit ? "#ff4b4b" : "#eeeeee";
-        title.innerHTML = `<span style="color:${titleColor}; font-family: 'Josefin Sans', sans-serif;">Select ${format} Teams (${counterText})</span>`;
+        
+        title.innerHTML = `<span class="neubrutal-badge">Select ${format} (${counterText})</span>`;
         
         if (isOverLimit) {
             confirmBtn.innerText = "Too many teams!";
             confirmBtn.disabled = true;
-            confirmBtn.style.opacity = "0.5";
-            confirmBtn.style.cursor = "not-allowed";
         } else {
             confirmBtn.innerText = "Save selection";
             confirmBtn.disabled = false;
-            confirmBtn.style.opacity = "1";
-            confirmBtn.style.cursor = "pointer";
         }
     };
 
     updateTitleAndUI();
 
+    // 4. Generazione Lista Team
     Object.entries(allTeams).forEach(([id, data]) => {
         if (data.categoria === format) {
             const div = document.createElement('div');
@@ -672,26 +699,18 @@ async function openTeamPicker(format, nomeUtenteClean) {
                     <strong>${data.nome}</strong>
                     <div class="info-preview-container">
                         <div class="info-icon">i</div>
-                        <div class="team-preview-tooltip">
-                            ${pokemonImages || '<span style="color:white;font-size:12px">No Pokémon Data</span>'}
-                        </div>
+                        <div class="team-preview-tooltip">${pokemonImages}</div>
                     </div>
                 </div>
             `;
             
-            // --- GESTIONE CLICK ICONA INFO ---
-            const icon = div.querySelector('.info-icon');
-            icon.onclick = (e) => {
-                e.stopPropagation(); // Fondamentale per non selezionare il team al click sulla 'i'
-                // Chiamata alla funzione di dettaglio esistente
+            div.querySelector('.info-icon').onclick = (e) => {
+                e.stopPropagation();
                 apriDettaglioTeam(nomeUtenteClean, data.nome, format);
             };
 
-            // --- GESTIONE SELEZIONE TEAM ---
             div.onclick = (e) => {
-                // Se clicchi l'icona non fare nulla (già gestito sopra)
                 if (e.target.classList.contains('info-icon')) return;
-
                 const index = selectedTeamIds.indexOf(id);
                 if (index > -1) {
                     selectedTeamIds.splice(index, 1);
@@ -700,7 +719,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
                     selectedTeamIds.push(id);
                     div.classList.add('selected');
                 } else {
-                    alert(`Max ${maxAllowed} teams allowed for this format!`);
+                    alert(`Max ${maxAllowed} teams allowed!`);
                 }
                 updateTitleAndUI();
             };
@@ -709,112 +728,122 @@ async function openTeamPicker(format, nomeUtenteClean) {
     });
     
     confirmBtn.onclick = () => inviaSelezioneTeam(format, nomeUtenteClean, allTeams);
-    document.getElementById('modal-select-team').style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     const modal = document.getElementById('teamModal');
     const content = document.getElementById('teamDetailContent');
     
-    modal.classList.remove('proprietario-Didi', 'proprietario-Lu');
-    if(idPlayerPuro.toLowerCase().includes('didi')) modal.classList.add('proprietario-Didi');
-    else if(idPlayerPuro.toLowerCase().includes('lu')) modal.classList.add('proprietario-Lu');
-
-    content.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Loading team data...</div>';
+    // 1. Setup iniziale UI
+    content.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Caricamento dati dal database...</div>';
     modal.style.display = 'flex';
 
     try {
+        // --- RECUPERO PALETTE ---
+        const colorSnap = await db.ref(`players/${idPlayerPuro.toLowerCase()}/info/color`).once('value');
+        const baseColor = colorSnap.val() || "#31c489";
+        const palette = getPlayerPalette(baseColor); 
+
+        // --- RICERCA TEAM DIRETTAMENTE SU FIREBASE ---
+        // Puntiamo a players/NOME_PLAYER/teams
+        const teamsRef = db.ref(`players/${idPlayerPuro.toLowerCase()}/teams`);
+        const teamsSnap = await teamsRef.once('value');
+        const allTeams = teamsSnap.val();
+
+        if (!allTeams) {
+            content.innerHTML = `<div style="color:white; text-align:center;">Nessun team trovato per questo giocatore.</div>`;
+            return;
+        }
+
+        // Cerchiamo il team all'interno dell'oggetto 'teams' confrontando il nome
         let teamData = null;
-        let proprietarioEffettivo = idPlayerPuro;
-
-        // --- 1. TENTATIVO: Archivio Stagionale (window.teamsIscrittiStagione) ---
-        const fData = window.teamsIscrittiStagione ? window.teamsIscrittiStagione[formato] : null;
-        if (fData) {
-            for (const playerKey in fData) {
-                const playerNode = fData[playerKey];
-                if (playerNode && playerNode.datiTeams) {
-                    const trovato = playerNode.datiTeams.find(t => {
-                        const n = (typeof t.nome === 'object') ? t.nome.valore : t.nome;
-                        return n === nomeTeam;
-                    });
-                    if (trovato) {
-                        teamData = trovato;
-                        proprietarioEffettivo = playerKey;
-                        break;
-                    }
-                }
+        Object.values(allTeams).forEach(t => {
+            const n = (typeof t.nome === 'object') ? t.nome.valore : t.nome;
+            // Confronto sicuro: minuscolo e senza spazi extra
+            if (n && n.toString().trim().toLowerCase() === nomeTeam.toString().trim().toLowerCase()) {
+                teamData = t;
             }
-        }
-
-        // --- 2. TENTATIVO: Fallback sul Box Player (per il Team Picker) ---
-        if (!teamData) {
-            const playerBoxSnap = await db.ref(`players/${idPlayerPuro}/teams`).once('value');
-            const playerTeams = playerBoxSnap.val() || {};
-            // Cerchiamo il team per nome tra quelli del player loggato
-            teamData = Object.values(playerTeams).find(t => t.nome === nomeTeam);
-        }
+        });
 
         if (teamData) {
-            // Statistiche: se siamo nel picker saranno probabilmente 0, 
-            // ma proviamo a recuperarle se presenti nel database globale
-            const statsCalcolate = (window.databaseDidi && window.databaseDidi[nomeTeam]) || {};
+            // --- RECUPERO STATISTICHE (Facoltativo, da window o DB) ---
+            const stats = (window.databaseDidi && window.databaseDidi[nomeTeam]) || 
+                          (window.databaseLu && window.databaseLu[nomeTeam]) || {};
 
-            let team = {
+            // --- COSTRUZIONE OGGETTO PER IL RENDER ---
+            let teamFinalizzato = {
                 nome: (typeof teamData.nome === 'object') ? teamData.nome.valore : teamData.nome,
-                vittorie: teamData.vittorie || statsCalcolate.vittorie || 0,
-                sconfitte: teamData.sconfitte || statsCalcolate.sconfitte || 0,
-                setVinti: teamData.setW || statsCalcolate.setVinti || 0, // Notare setW vs setVinti
-                setPersi: teamData.setL || statsCalcolate.setPersi || 0,
-                puntiFatti: teamData.punti || statsCalcolate.puntiFatti || 0,
+                vittorie: stats.vittorie || 0,
+                sconfitte: stats.sconfitte || 0,
+                setVinti: stats.setVinti || 0,
+                setPersi: stats.setPersi || 0,
+                puntiFatti: stats.puntiFatti || 0,
                 pokemon: []
             };
 
-            const listaSorgente = teamData.pokemon || [];
-            
-            team.pokemon = Object.values(listaSorgente).map(p => ({
-                nome: p.nome || "???",
-                abilita: p.abilita || "N/D",
-                strumento: p.strumento || "Nessuno",
-                mosse: (p.mosse) ? Object.values(p.mosse) : ["-", "-", "-", "-"],
-                evs: p.evs || "N/D"
-            }));
+            // Convertiamo l'oggetto pokemon di Firebase in Array per il .map()
+            if (teamData.pokemon) {
+                teamFinalizzato.pokemon = Array.isArray(teamData.pokemon) 
+                    ? teamData.pokemon 
+                    : Object.values(teamData.pokemon);
+            }
 
-            content.innerHTML = generaHtmlDettaglioTeam(team, proprietarioEffettivo);
+            // --- GENERAZIONE HTML ---
+            content.innerHTML = generaHtmlDettaglioTeam(teamFinalizzato, idPlayerPuro, palette);
+            
         } else {
-            content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato.</div>`;
+            content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato tra i team di ${idPlayerPuro}.</div>`;
         }
+
     } catch (e) {
-        console.error("Errore dettaglio:", e);
-        content.innerHTML = `<div style="color:white; text-align:center;">Errore di caricamento.</div>`;
+        console.error("Errore Firebase Dettaglio:", e);
+        content.innerHTML = `<div style="color:white; text-align:center;">Errore di connessione al database.</div>`;
     }
 }
 
-function generaHtmlDettaglioTeam(team, proprietario) {
+function generaHtmlDettaglioTeam(team, proprietario, palette) {
     const sV = Number(team.setVinti) || 0;
     const sP = Number(team.setPersi) || 0;
-    const partiteGiocate = (Number(team.vittorie) || 0) + (Number(team.sconfitte) || 0);
+    const w = Number(team.vittorie) || 0;
+    const l = Number(team.sconfitte) || 0;
+    const pts = Number(team.puntiFatti) || 0;
+
+    // Logica calcolo partite basata sui set (come nella tua funzione Admin)
+    const totSet = sV + sP;
+    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+
+    // Generiamo la stringa delle variabili CSS
+    const variabiliCSS = generaVariabiliCSS(palette);
 
     return `
-        <div class="modal-header-container">
+    <div class="palette-container" style="${variabiliCSS}">
+        <div class="modal-header-container" style="position: relative;">
             <h2>${team.nome}</h2>
             <div class="team-score-banner">
-                <div class="score-item"><span>W/L</span><strong>${team.vittorie} - ${team.sconfitte}</strong></div>
-                <div class="score-item"><span>Sets</span><strong>${sV} - ${sP}</strong></div>
-                <div class="score-item"><span>Points</span><strong>${team.puntiFatti}</strong></div>
+                <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
+                <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
+                <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
+
         </div>
+
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
-                const pkmNameUrl = p.nome.toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, '');
+                // Pulizia nome per URL (Showdown Style)
+                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
                 const mIdPrefix = `types-${pIndex}`;
                 const statsId = `stats-${pIndex}`;
                 const abiId = `abi-${pIndex}`;
                 const itemId = `item-${pIndex}`;
-                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
-                // Chiamate asincrone per i dati extra (PokeAPI)
-                caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
+                // Tooltip a sinistra per l'ultima colonna (indice 2 e 5 nella griglia da 3)
+                const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
+                const direzioneTipi = pIndex < 3 ? 'v-down' : '';
+                
+                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                
                 const itemUrlName = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
                 
                 return `
@@ -830,23 +859,23 @@ function generaHtmlDettaglioTeam(team, proprietario) {
                     </div>
 
                     <div class="modal-pkm-info">
-                        <div class="info-container">
+                        <div class="info-container" style="position: relative; display: inline-block;">
                             <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
-                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading stats...</div>
+                            <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
-                        <div class="info-container">
+                        <div class="info-container" style="position: relative;">
                             <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
-                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading info...</div>
+                            <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
-                        <div class="info-container">
+                        <div class="info-container" style="position: relative;">
                             <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
                                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png" 
                                      onerror="this.style.display='none'">
                                 <span>${p.strumento}</span>
                             </div>
-                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading info...</div>
+                            <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
                         <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
@@ -858,14 +887,15 @@ function generaHtmlDettaglioTeam(team, proprietario) {
                                 return `
                                 <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
                                     ${m}
-                                    <div id="${mId}" class="move-tooltip">Loading info...</div>
+                                    <div id="${mId}" class="move-tooltip">Loading...</div>
                                 </span>`;
                             }).join('')}
                         </div>
                     </div>
                 </div>`;
             }).join('')}
-        </div>`;
+        </div>
+    </div>`;
 }
 
 async function caricaInfoAbilita(nomeAbilita, elementoId) {
@@ -1183,26 +1213,6 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
 });
 
 // Controllo Stato Autenticazione (Eseguito automaticamente al caricamento di ogni pagina)
-auth.onAuthStateChanged((user) => {
-    const btnOpen = document.getElementById('btn-open-login');
-    const btnLogout = document.getElementById('btn-logout');
-    const userDisplay = document.getElementById('user-display-name');
-
-    if (user) {
-        // Utente Loggato
-        if(btnOpen) btnOpen.style.display = 'none';
-        if(btnLogout) btnLogout.style.display = 'block';
-        if(userDisplay) {
-            userDisplay.style.display = 'inline';
-            userDisplay.innerText = user.email; // Mostra l'email dell'utente
-        }
-    } else {
-        // Utente non loggato
-        if(btnOpen) btnOpen.style.display = 'block';
-        if(btnLogout) btnLogout.style.display = 'none';
-        if(userDisplay) userDisplay.style.display = 'none';
-    }
-});
 
 function handleAuthClick() {
     const user = auth.currentUser;
@@ -1214,26 +1224,23 @@ function handleAuthClick() {
     }
 }
 
-// UNICO listener per lo stato autenticazione
-auth.onAuthStateChanged(async (user) => {
-    const authIcon = document.getElementById('auth-icon');
-    const authText = document.getElementById('auth-text');
-    if (!authIcon || !authText) return;
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
 
-    if (user) {
-        try {
-            const snapshot = await db.ref(`users/${user.uid}/name`).once('value');
-            const userName = snapshot.val() || "User";
-            authIcon.className = "fas fa-user-circle"; 
-            authText.innerText = userName;
-        } catch (error) {
-            authText.innerText = "Logged In";
+    // Se il menu è visibile (display flex o block)
+    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
+        
+        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            menu.style.display = 'none';
+            console.log("Stato: Menu chiuso (click esterno)");
         }
-    } else {
-        authIcon.className = "fas fa-lock";
-        authText.innerText = "";
     }
 });
+
+
+// UNICO listener per lo stato autenticazione
 
 // Gestione Form Login
 document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -1252,34 +1259,6 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         });
 });
 
-function logout() {
-    auth.signOut().then(() => { location.reload(); });
-}
-
-auth.onAuthStateChanged(async (user) => {
-    const authIcon = document.getElementById('auth-icon');
-    const authText = document.getElementById('auth-text');
-
-    if (user) {
-        // 1. Recupera il nome dal Database
-        try {
-            const snapshot = await db.ref(`users/${user.uid}/name`).once('value');
-            const userName = snapshot.val() || "Utente";
-
-            // 2. Trasforma l'interfaccia: Nome al posto del lucchetto
-            authIcon.className = "fas fa-user-circle"; // Icona utente invece del lucchetto
-            authText.innerText = userName;
-        } catch (error) {
-            console.error("Errore recupero nome:", error);
-            authText.innerText = "Logged In";
-        }
-    } else {
-        // Ritorna allo stato lucchetto
-        authIcon.className = "fas fa-lock";
-        authText.innerText = "";
-    }
-});
-
 // Funzione Logout
 function logout() {
     auth.signOut().then(() => {
@@ -1287,6 +1266,190 @@ function logout() {
     });
 }
 
+
+
+auth.onAuthStateChanged(async (user) => {
+    console.log("Stato Auth cambiato. Utente:", user ? user.uid : "Nessuno");
+    
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-text');
+    const topBar = document.querySelector('.top-bar');
+
+    if (user) {
+        try {
+            // 1. Recupero Nome
+            const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
+            const userName = nameSnap.val();
+
+            if (userName) {
+                if (authText) authText.innerText = userName;
+                if (authIcon) authIcon.className = "fas fa-user-circle";
+
+                // 2. Recupero Colore (con gestione errori locale per non bloccare il resto)
+                try {
+                    const playerPath = `players/${userName.toLowerCase().trim()}/info/color`;
+                    const colorSnap = await db.ref(playerPath).once('value');
+                    
+                    if (colorSnap.exists()) {
+                        const userColor = colorSnap.val();
+                        console.log("✅ Colore trovato:", userColor);
+                        if (topBar) topBar.style.setProperty('background-color', userColor, 'important');
+                    } else {
+                        if (topBar) topBar.style.setProperty('background-color', '#FFA500', 'important');
+                    }
+                } catch (colorError) {
+                    console.warn("Errore recupero colore:", colorError);
+                }
+            }
+
+            // --- 3. LANCIO FUNZIONI DI PAGINA ---
+            // Ora che l'utente è loggato, facciamo partire l'Hub
+            if (typeof initHub === 'function') {
+                console.log("🚀 Inizializzo Hub...");
+                initHub(); 
+            }
+
+            // Se hai anche la musica, lanciala qui
+            if (typeof ascoltaMusicaFirebase === 'function') {
+                ascoltaMusicaFirebase();
+            }
+
+        } catch (e) { 
+            console.error("Errore nel processo Auth:", e); 
+        }
+    } else {
+        // Utente non loggato
+        console.log("Modalità Guest.");
+        if (authText) authText.innerText = "Login";
+        if (topBar) topBar.style.setProperty('background-color', '#FFA500', 'important');
+    
+    }
+});
+
+
+// Gestione Form Login
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+
+    // Impostiamo la persistenza locale esplicitamente per sicurezza
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+            return auth.signInWithEmailAndPassword(email, password);
+        })
+        .then((userCredential) => {
+            console.log("Login effettuato con successo!");
+            toggleLoginModal();
+            // NON usare location.reload(). 
+            // L'ascoltatore auth.onAuthStateChanged qui sotto aggiornerà tutto da solo.
+        })
+        .catch((error) => {
+            console.error("Errore login:", error);
+            errorEl.innerText = "Email o Password errati.";
+        });
+});
+
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; // Metti qui il tuo link
+
+
+function avviaMusicaHome() {
+    const player = document.getElementById('bg-music-home');
+    
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.3;
+        
+        // PRIMO COLPO: Tenta l'autoplay immediato
+        player.play()
+            .then(() => { console.log("Musica Home partita al volo!"); })
+            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+}
+
+// Avvia la logica appena la pagina è caricata
+document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+
+// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
+// --- 1. SBLOCCO INIZIALE (RISPETTA IL LOCALSTORAGE) ---
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    // Controlliamo la preferenza PRIMA di fare play
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+
+    if (player && player.paused && musicPref === 'on') {
+        player.play()
+            .then(() => console.log("🔊 Musica sbloccata dal click (Preferenza: ON)"))
+            .catch(err => console.warn("Autoplay bloccato dal browser:", err));
+    } else {
+        console.log("🔇 Musica rimane spenta al click (Preferenza: OFF)");
+    }
+}, { once: true });
+
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
+
+    if (!player || !musicBtn) return;
+
+    if (player.paused || player.muted) {
+        // RESET E ACCENSIONE
+        player.muted = false; 
+        player.volume = 0.3; 
+
+        player.play().then(() => {
+            musicBtn.classList.remove('muted');
+            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
+            console.log("🔊 Musica ripresa");
+        }).catch(error => {
+            console.warn("Autoplay bloccato:", error);
+            musicBtn.classList.add('muted');
+        });
+        
+    } else {
+        // SPEGNIMENTO TOTALE
+        player.pause();
+        player.muted = true; 
+        
+        musicBtn.classList.add('muted');
+        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
+        console.log("🔇 Musica fermata");
+    }
+}
+
+// --- 3. SINCRONIZZAZIONE ALL'AVVIO ---
+// Questo serve per far sì che il bottone mostri la sbarra corretta appena carichi la pagina
+window.addEventListener('DOMContentLoaded', () => {
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
+    if (musicPref === 'off' && musicBtn) {
+        musicBtn.classList.add('muted');
+    }
+});
+/** * AGGIUNTA FONDAMENTALE: 
+ * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
+ * silenziato la musica in un'altra parte del sito.
+ */
+window.addEventListener('DOMContentLoaded', () => {
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+    const savedPref = localStorage.getItem('userMusicPref');
+
+    if (player && musicBtn) {
+        if (savedPref === 'off') {
+            // Se l'utente ha scelto 'off' altrove, non far partire nulla
+            player.pause();
+            musicBtn.classList.add('muted');
+        } else {
+            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
+            player.play().catch(() => {
+                musicBtn.classList.add('muted');
+            });
+        }
+    }
+});
 
 
 // 6. Utility
@@ -1304,8 +1467,4 @@ window.onclick = (event) => {
     if (event.target == document.getElementById('modal-select-team')) closeTeamModal();
 }
 
-auth.onAuthStateChanged((user) => {
-    if (user) initHub();
-    else window.location.href = "index.html";
-});
 </script>

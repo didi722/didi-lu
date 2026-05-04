@@ -89,28 +89,27 @@
     </svg>
 </div>
     
-    
     <a href="#" id="link-last" class="card-link-wrapper">
-        <div id="card-last" class="season-card glass-red">
-            <h3 id="last-name">---</h3>
-            <div id="last-rules" class="rules-preview"></div> 
-        </div>
-    </a>
+    <div id="card-last" class="season-card">
+        <h3 id="last-name">---</h3>
+        <div id="last-rules" class="rules-preview"></div> 
+        <div class="card-footer">---</div> </div>
+</a>
 
-    <a href="#" id="link-current" class="card-link-wrapper">
-        <div id="card-current" class="season-card glass-green active-card">
-            <h3 id="current-name">---</h3>
-            <div id="current-rules" class="rules-preview"></div>
-            <div class="card-footer">---</div>
-        </div>
-    </a>
+<a href="#" id="link-current" class="card-link-wrapper">
+    <div id="card-current" class="season-card">
+        <h3 id="current-name">---</h3>
+        <div id="current-rules" class="rules-preview"></div>
+        <div class="card-footer">---</div>
+    </div>
+</a>
 
-    <a href="#" id="link-next" class="card-link-wrapper">
-        <div id="card-next" class="season-card glass-blue">
-            <h3 id="next-name">---</h3>
-            <div id="next-rules" class="rules-preview"></div>
-        </div>
-    </a>
+<a href="#" id="link-next" class="card-link-wrapper">
+    <div id="card-next" class="season-card">
+        <h3 id="next-name">---</h3>
+        <div id="next-rules" class="rules-preview"></div>
+        <div class="card-footer">---</div> </div>
+</a>
 
 </div>
 
@@ -334,9 +333,6 @@ function caricaStagioniHome() {
             return;
         }
 
-        console.log("✅ Dati stagioni ricevuti");
-
-        // 1. Ordinamento cronologico
         const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
         allKeys.sort((a, b) => {
             if (a === 'sbeta') return -1;
@@ -344,38 +340,13 @@ function caricaStagioniHome() {
             return parseInt(a.substring(1)) - parseInt(b.substring(1));
         });
 
-        // 2. Suddivisione per stato
-        const playing = [], open = [], closed = [];
-        allKeys.forEach(key => {
-            const info = data[key].info || data[key];
-            const status = (info.status || "").toLowerCase();
-            if (status === 'playing') playing.push(key);
-            else if (status === 'open') open.push(key);
-            else if (status === 'closed' || status === 'terminata') closed.push(key);
-        });
-
-        // 3. Logica di posizionamento [Last, Current, Next]
-        let finalDisplay = [null, null, null];
-        if (playing.length === 1) {
-            finalDisplay[1] = playing[0];
-            finalDisplay[0] = closed.length > 0 ? closed[closed.length - 1] : null;
-            finalDisplay[2] = open.length > 0 ? open[0] : null;
-        } else if (playing.length >= 2) {
-            finalDisplay[0] = playing[playing.length - 2];
-            finalDisplay[1] = playing[playing.length - 1];
-            finalDisplay[2] = open[0] || null;
-        } else {
-            const lastThree = allKeys.slice(-3);
-            finalDisplay = [lastThree[0] || null, lastThree[1] || null, lastThree[2] || null];
-        }
-
+        const lastThreeKeys = allKeys.slice(-3);
         const mapping = [
-            { key: finalDisplay[0], label: 'last' },
-            { key: finalDisplay[1], label: 'current' },
-            { key: finalDisplay[2], label: 'next' }
+            { key: lastThreeKeys[0] || null, label: 'last' },
+            { key: lastThreeKeys[1] || null, label: 'current' },
+            { key: lastThreeKeys[2] || null, label: 'next' }
         ];
 
-        // 4. Rendering delle Card
         mapping.forEach(item => {
             const seasonData = item.key ? data[item.key] : null;
             const info = seasonData ? (seasonData.info || seasonData) : null;
@@ -386,81 +357,86 @@ function caricaStagioniHome() {
             const footerEl = card ? card.querySelector('.card-footer') : null;
             const anchor = document.getElementById(`link-${item.label}`);
 
-            if (item.key && info) {
-                const status = (info.status || "open").toLowerCase();
-                const seasonName = info.name || "Season " + item.key;
-                
-                if (nameEl) nameEl.innerText = seasonName;
-
-                if (anchor) {
-                    anchor.onclick = (e) => {
-                        e.preventDefault();
-                        if(typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, seasonName);
-                    };
-                }
-
-                let bodyHtml = "";
-                let footerHtml = "";
-
-                if (status === 'closed' || status === 'terminata') {
-                    const vincitore = info.winner || "---";
-                    bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitore}</p>`;
-                    footerHtml = `<span class="badge-closed">CLOSED</span>`;
-                
-                } else if (status === 'playing') {
-                    // --- CALCOLO LEADER ---
-                    let leader = "---";
-                    if (seasonData.leaderboard) {
-                        let max = -1;
-                        Object.keys(seasonData.leaderboard).forEach(playerName => {
-                            const p = seasonData.leaderboard[playerName];
-                            const pts = Number(p.points || 0);
-                            if (pts > max) { max = pts; leader = playerName; }
-                        });
-                    }
-
-                    // Aggiungiamo un ID specifico al div leader-name per colorarlo via JS
-                    bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
-                    footerHtml = `<span class="live-dot">●</span>PLAYING`;
-
-                    // --- RECUPERO COLORE DAL PLAYER (lowercase) ---
-                    if (leader !== "---") {
-                        const playerKey = leader.toLowerCase().trim();
-                        db.ref(`players/${playerKey}/info/color`).once('value', (cSnap) => {
-                            const userColor = cSnap.val();
-                            const leaderEl = document.getElementById(`leader-display-${item.label}`);
-                            if (leaderEl && userColor) {
-                                leaderEl.style.backgroundColor = userColor;
-                                // Opzionale: aggiungi bordo nero per stile neubrutalism se manca
-                                leaderEl.style.border = "3px solid #000";
-                            }
-                        });
-                    }
-                
-                } else if (status === 'open') {
-                    bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
-                    footerHtml = `<span class="badge-open">OPEN</span>`;
-                    if (info.deadline) setTimeout(() => {
-                        if(typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`);
-                    }, 100);
-                }
-
-                if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
-                if (footerEl) footerEl.innerHTML = footerHtml;
-                if (card) {
-                    card.style.opacity = "1";
-                    card.style.display = "flex";
-                    card.className = `season-card status-${status.replace(/\s+/g, '-')}`;
-                }
-            } else {
-                // SLOT VUOTO
+            if (!item.key || !info) {
                 if (nameEl) nameEl.innerText = "TBD";
                 if (rulesContainer) rulesContainer.innerHTML = "<p>Coming Soon</p>";
-                if (footerEl) footerEl.innerHTML = "---";
+                if (footerEl) footerEl.innerHTML = ""; // Vuoto per slot TBD
                 if (card) {
                     card.style.opacity = "0.5";
                     card.className = `season-card status-empty`;
                 }
+                return;
+            }
+
+            const status = (info.status || "open").toLowerCase();
+            const seasonName = info.name || "Season " + item.key;
+            
+            if (nameEl) nameEl.innerText = seasonName;
+
+            if (anchor) {
+                anchor.onclick = (e) => {
+                    e.preventDefault();
+                    if(typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, seasonName);
+                };
+            }
+
+            let bodyHtml = "";
+            let footerHtml = ""; // Default vuoto
+
+            if (status === 'playing') {
+                let leader = "---";
+                if (seasonData.leaderboard) {
+                    let max = -1;
+                    Object.keys(seasonData.leaderboard).forEach(playerName => {
+                        const p = seasonData.leaderboard[playerName];
+                        const pts = Number(p.points || 0);
+                        if (pts > max) { max = pts; leader = playerName; }
+                    });
+                }
+
+                bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
+                
+                // MOSTRA IL FOOTER SOLO QUI
+                footerHtml = `<span class="live-dot">●</span>PLAYING`;
+
+                if (leader !== "---") {
+                    const playerKey = leader.toLowerCase().trim();
+                    db.ref(`players/${playerKey}/info/color`).once('value', (cSnap) => {
+                        const userColor = cSnap.val();
+                        const leaderEl = document.getElementById(`leader-display-${item.label}`);
+                        if (leaderEl && userColor) {
+                            leaderEl.style.backgroundColor = userColor;
+                            leaderEl.style.border = "3px solid #000";
+                        }
+                    });
+                }
+            
+            } else if (status === 'open') {
+                bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
+                footerHtml = ""; // Niente nel footer per OPEN
+
+                if (info.deadline) setTimeout(() => {
+                    if(typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`);
+                }, 100);
+
+            } else if (status === 'closed' || status === 'terminata') {
+                const vincitore = info.winner || "---";
+                bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitore}</p>`;
+                footerHtml = ""; // Niente nel footer per CLOSED
+            }
+
+            // APPLICAZIONE
+            if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
+            if (footerEl) {
+                footerEl.innerHTML = footerHtml;
+                // Nascondi visivamente il div se è vuoto (opzionale, per pulizia layout)
+                footerEl.style.display = footerHtml === "" ? "none" : "block";
+            }
+            
+            if (card) {
+                card.style.opacity = "1";
+                card.style.display = "flex";
+                card.className = `season-card status-${status.replace(/\s+/g, '-')}`;
             }
         });
     }, (error) => {
@@ -939,7 +915,7 @@ function startCountdown(deadlineStr, elementId) {
 
         if (distance < 0) {
             clearInterval(window.activeIntervals[elementId]);
-            timerDisplay.innerText = "Registrations closed";
+            timerDisplay.innerText = "Closed";
             return;
         }
 

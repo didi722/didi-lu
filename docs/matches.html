@@ -170,31 +170,25 @@
     </div>
 
     <div class="showdown-matches-list">
-        <div class="match-slot" id="slot-1">
+        <div class="match-slot" id="slot-1" onclick="apriModaleMatch(1)">
             <div class="match-status-indicator empty" id="status-1">Match 1</div>
             <div id="details-1" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
-                <button class="btn-edit-match" onclick="apriModaleMatch(1)">✏️</button>
             </div>
-            <button id="btn-add-1" class="btn-add-match-circle" onclick="apriModaleMatch(1)">+</button>
         </div>
 
-        <div class="match-slot" id="slot-2">
+        <div class="match-slot" id="slot-2" onclick="apriModaleMatch(2)">
             <div class="match-status-indicator empty" id="status-2">Match 2</div>
             <div id="details-2" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
-                <button class="btn-edit-match" onclick="apriModaleMatch(2)">✏️</button>
             </div>
-            <button id="btn-add-2" class="btn-add-match-circle" onclick="apriModaleMatch(2)">+</button>
         </div>
 
-        <div class="match-slot" id="slot-3">
+        <div class="match-slot" id="slot-3" onclick="apriModaleMatch(3)">
             <div class="match-status-indicator empty" id="status-3">Match 3</div>
             <div id="details-3" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
-                <button class="btn-edit-match" onclick="apriModaleMatch(3)">✏️</button>
             </div>
-            <button id="btn-add-3" class="btn-add-match-circle" onclick="apriModaleMatch(3)">+</button>
         </div>
     </div>
 
@@ -207,7 +201,7 @@
     <input type="hidden" id="match-id-nascosto"> <input type="hidden" id="match-global-key">  <h3 id="match-panel-title">Add a new match</h3>
     
     <div class="admin-three-columns">
-        <div class="admin-col">
+        <div class="admin-col col-info">
             <h4 class="col-title">Match info</h4>
             <div class="form-group">
                 <label>Date:</label>
@@ -219,19 +213,19 @@
             </div>
             <div class="form-group">
                 <label>Score:</label>
-                <select id="match-score" style="width: 100%; padding: 8px; border-radius: 4px; border: none;"></select>
+                <select id="match-score" style="max-width: 80%; padding: 8px;"></select>
             </div>
         </div>
 
-        <div class="admin-col">
+        <div class="admin-col col-teams">
             <h4 class="col-title">Teams</h4>
-            <div class="form-group">
+            <div class="form-group-player">
                 <label>Player 1:</label>
                 <select id="match-player1" class="select-team" style="margin-bottom: 8px;"></select>
                 <select id="match-team1" class="select-team"></select>
             </div>
             <div style="text-align: center; margin: 15px 0; font-weight: bold; color: #eeeeee;">VS</div>
-            <div class="form-group">
+            <div class="form-group-player">
                 <label>Player 2:</label>
                 <select id="match-player2" class="select-team" style="margin-bottom: 8px;"></select>
                 <select id="match-team2" class="select-team"></select>
@@ -514,9 +508,14 @@ async function inizializzaPaginaArchivio() {
     const loader = document.getElementById('loading-screen');
     const container = document.getElementById('matchList');
     const topBar = document.querySelector('.top-bar');
-    const adminPlusBtn = document.querySelector('.btn-floating-admin'); // Selettore per il tasto +
+    const adminPlusBtn = document.querySelector('.btn-floating-admin');
     
-    // 1. Mostra loader
+    // --- 1. RESET INIZIALE (Risolve l'apertura automatica) ---
+    // Chiudiamo eventuali modali o pannelli rimasti aperti in cache
+    if (typeof chiudiPannelli === 'function') chiudiPannelli();
+    const adminPanel = document.getElementById('admin-create-showdown-panel');
+    if (adminPanel) adminPanel.style.display = 'none';
+
     if (loader) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
@@ -524,7 +523,6 @@ async function inizializzaPaginaArchivio() {
 
     try {
         // --- 2. GESTIONE AUTENTICAZIONE E COLORE ---
-        // Attendiamo che Firebase inizializzi l'utente
         const user = await new Promise((resolve) => {
             const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
                 unsubscribe();
@@ -532,17 +530,18 @@ async function inizializzaPaginaArchivio() {
             });
         });
 
-        let userColor = "#FFA500"; // Default (Arancione)
+        let userColor = "#FFA500"; 
         let isAdmin = false;
 
         if (user) {
-            isAdmin = true; // Se c'è un utente, abilitiamo i permessi admin visivi
+            // Verifichiamo se l'utente è realmente un admin (o se è loggato)
+            isAdmin = true; 
             
-            // Recuperiamo il nome per ottenere il colore personalizzato
             const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
             const playerName = nameSnap.val();
 
             if (playerName) {
+                // Usiamo il percorso corretto e normalizzato
                 const colorSnap = await db.ref(`players/${playerName.toLowerCase().trim()}/info/color`).once('value');
                 if (colorSnap.exists()) {
                     userColor = colorSnap.val();
@@ -551,12 +550,10 @@ async function inizializzaPaginaArchivio() {
         }
 
         // --- 3. APPLICAZIONE VISIBILITÀ ADMIN ---
-        // Mostra/Nascondi il tasto floating principale
         if (adminPlusBtn) {
             adminPlusBtn.style.display = isAdmin ? 'flex' : 'none';
         }
 
-        // Colore della Top Bar
         if (topBar) {
             topBar.style.setProperty('background-color', userColor, 'important');
         }
@@ -566,7 +563,6 @@ async function inizializzaPaginaArchivio() {
             await recuperaStagioneCorrente();
         }
 
-        // Recupero dati in parallelo
         const [snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
             db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value'),
             db.ref(`seasons/${stagioneAttiva}/showdowns`).once('value'),
@@ -592,7 +588,7 @@ async function inizializzaPaginaArchivio() {
         });
 
         if (sortedSdKeys.length === 0) {
-            container.innerHTML = "<p style='color:white; text-align:center; padding:20px;'>Nessuno showdown trovato per questa stagione.</p>";
+            container.innerHTML = "<p style='color:white; text-align:center; padding:20px;'>Nessuno showdown trovato.</p>";
         }
 
         sortedSdKeys.forEach(sdId => {
@@ -602,25 +598,28 @@ async function inizializzaPaginaArchivio() {
             
             let vintiP1 = 0, vintiP2 = 0;
             Object.values(matches).forEach(m => {
-                if (m.p1score > m.p2score) vintiP1++;
-                else if (m.p2score > m.p1score) vintiP2++;
+                if (parseInt(m.p1score) > parseInt(m.p2score)) vintiP1++;
+                else if (parseInt(m.p2score) > parseInt(m.p1score)) vintiP2++;
             });
 
+            // Recupero colore vincitore corretto
             const nomeVincitore = info.vincitoreShowdown; 
             let winnerColor = "#000"; 
-            if (nomeVincitore && dataPlayers[nomeVincitore]) {
-                winnerColor = dataPlayers[nomeVincitore].info?.color || "#000";
+            if (nomeVincitore) {
+                const winKey = nomeVincitore.toLowerCase().trim();
+                winnerColor = dataPlayers[winKey]?.info?.color || "#000";
             }
 
             const sdCard = document.createElement('div');
             sdCard.className = 'showdown-summary-card';
             sdCard.style.setProperty('--winner-color', winnerColor);
             
-            sdCard.onclick = () => {
+            // Fix click sulla card: apriamo la modale solo se non clicchiamo tasti admin
+            sdCard.onclick = (e) => {
+                if (e.target.closest('.sd-admin-overlay')) return; 
                 if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
             };
 
-            // Il blocco 'sd-admin-overlay' viene mostrato solo se isAdmin è true
             sdCard.innerHTML = `
                 <div class="sd-card-header">
                     <span class="sd-badge-label">SHOWDOWN</span>
@@ -638,11 +637,11 @@ async function inizializzaPaginaArchivio() {
                     </div>
                 </div>
                 <div class="sd-card-footer">
-                    <span class="sd-date-text">${info.data ? info.data : 'No date'}</span>
+                    <span class="sd-date-text">${info.data || 'No date'}</span>
                     
                     <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
-                        <button class="btn-sd-icon edit" onclick="event.stopPropagation(); if(window.apriCreazioneShowdown) apriCreazioneShowdown('${sdId}')">✏️</button>
-                        <button class="btn-sd-icon delete" onclick="event.stopPropagation(); if(window.eliminaShowdown) eliminaShowdown('${sdId}')">🗑️</button>
+                        <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
+                        <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
                     </div>
                     
                     <span class="sd-view-action">➜</span>
@@ -1067,21 +1066,28 @@ function creaHiddenField() {
     return input;
 }
 
-function chiudiPannelli() {
+async function chiudiPannelli() {
     const panels = [
         'admin-create-showdown-panel', 
         'admin-showdown-dashboard', 
-        'admin-matches-panel' // Ora questo gestisce sia ADD che EDIT
+        'admin-matches-panel'
     ];
     
+    let wasOpen = false;
+
     panels.forEach(id => {
         const p = document.getElementById(id);
-        if (p) {
+        if (p && p.style.display !== 'none') {
             p.style.display = 'none';
+            wasOpen = true;
         }
     });
 
-    // Opzionale: Se hai un overlay/backdrop scuro dietro i pannelli, chiudi anche quello qui
+    // Se abbiamo chiuso un pannello admin, rieseguiamo il fetch dei dati
+    if (wasOpen && typeof inizializzaPaginaArchivio === 'function') {
+        console.log("🔄 Pannelli chiusi, riaggiornamento dati in corso...");
+        await inizializzaPaginaArchivio();
+    }
 }
 
 // --- 3. ELIMINAZIONE SHOWDOWN ---
@@ -2371,63 +2377,70 @@ async function aggiornaGraficaShowdown() {
     if (!sdId) return;
 
     try {
-        const snap = await db.ref(`seasons/${stagione}/showdowns/${sdId}`).once('value');
-        const sd = snap.val();
-        
-        
-        // Se non c'è lo showdown o non ci sono match, resettiamo tutti gli slot a "empty"
-        const matches = (sd && sd.matches) ? sd.matches : {};
+        const [snapSd, snapPlayers] = await Promise.all([
+            db.ref(`seasons/${stagione}/showdowns/${sdId}`).once('value'),
+            db.ref(`players`).once('value')
+        ]);
 
-        // Cicliamo sui 3 match (BO3 standard degli Showdown)
+        const sd = snapSd.val();
+        const dataPlayers = snapPlayers.val() || {};
+        if (!sd) return;
+
+        const matches = sd.matches || {};
+        
+        // --- IL PUNTO CRITICO ---
+        // Recuperiamo i nomi dal nodo .info (dove sono salvati negli showdown)
+        // Se non sono lì, proviamo la radice del nodo
+        const p1Raw = sd.info?.player1 || sd.p1 || sd.player1 || "";
+        const p2Raw = sd.info?.player2 || sd.p2 || sd.player2 || "";
+
+        // Trasformiamo in tutto minuscolo per beccare la chiave in dataPlayers
+        const p1Key = p1Raw.toLowerCase().trim();
+        const p2Key = p2Raw.toLowerCase().trim();
+
+        // Recupero colore dal percorso esatto: players/nome/info/color
+        const colorP1 = dataPlayers[p1Key]?.info?.color || null;
+        const colorP2 = dataPlayers[p2Key]?.info?.color || null;
+
+        console.log(`🔍 Player 1: ${p1Raw} (chiave: ${p1Key}) -> Colore:`, colorP1);
+        console.log(`🔍 Player 2: ${p2Raw} (chiave: ${p2Key}) -> Colore:`, colorP2);
+
         [1, 2, 3].forEach(num => {
             const mKey = `match${num}`;
             const matchData = matches[mKey];
-            
-            const statusIndicator = document.getElementById(`status-${num}`);
-            const btnAdd = document.getElementById(`btn-add-${num}`);
             const detailsDiv = document.getElementById(`details-${num}`);
 
-            if (matchData) {
-                // --- IL MATCH ESISTE: Stato Completato ---
-                statusIndicator.classList.remove('empty');
-                statusIndicator.classList.add('completed');
-                statusIndicator.innerText = `Match ${num} OK`;
+            if (matchData && detailsDiv) {
+                const s1 = parseInt(matchData.p1score) || 0;
+                const s2 = parseInt(matchData.p2score) || 0;
 
-                if (btnAdd) btnAdd.style.display = 'none';
+                // Identifichiamo il colore del vincitore
+                let winnerColor = "black"; 
+                if (s1 > s2) {
+                    winnerColor = colorP1 || "#31c489"; 
+                } else if (s2 > s1) {
+                    winnerColor = colorP2 || "#31c489";
+                }
+
+                detailsDiv.style.display = 'flex';
+                detailsDiv.innerHTML = `
+                    <span class="match-score-summary" style="background-color: ${winnerColor} !important; color: white; border: 3px solid black; box-shadow: 4px 4px 0px black;">
+                        ${s1} - ${s2}
+                    </span>
+                `;
                 
-                if (detailsDiv) {
-                    detailsDiv.style.display = 'flex';
-                    detailsDiv.innerHTML = `
-                        <div class="preview-info">
-                            <span class="p-score" style="font-weight: bold;">
-                                ${matchData.p1score} - ${matchData.p2score}
-                            </span>
-                            <span class="p-replay">${matchData.replays ? '📹' : ''}</span>
-                        </div>
-                        <button class="btn-edit-mini" onclick="apriModaleMatch(${num})" title="Modifica Match">
-                            ✏️
-                        </button>
-                    `;
+                // Aggiorniamo lo stato dello slot
+                const slot = document.getElementById(`slot-${num}`);
+                if (slot) {
+                    slot.classList.remove('empty');
+                    slot.classList.add('completed');
                 }
-            } else {
-                // --- IL MATCH NON ESISTE: Stato Vuoto ---
-                statusIndicator.classList.add('empty');
-                statusIndicator.classList.remove('completed');
-                statusIndicator.innerText = `Match ${num}`;
-                
-                if (btnAdd) {
-                    btnAdd.style.display = 'block';
-                    // Assicuriamoci che anche il tasto + apra la modale corretta
-                    btnAdd.onclick = () => apriModaleMatch(num);
-                }
-                if (detailsDiv) {
-                    detailsDiv.style.display = 'none';
-                    detailsDiv.innerHTML = '';
-                }
+                if (document.getElementById(`plus-icon-${num}`)) document.getElementById(`plus-icon-${num}`).style.display = 'none';
+                if (document.getElementById(`status-${num}`)) document.getElementById(`status-${num}`).style.display = 'none';
             }
         });
     } catch (e) {
-        console.error("Errore aggiornamento grafica showdown:", e);
+        console.error("❌ Errore aggiornamento:", e);
     }
 }
 
@@ -2435,6 +2448,15 @@ async function aggiornaGraficaShowdown() {
 let vincitoriSelezionati = {};
 
 // --- 1. SALVATAGGIO NUOVO MATCH ---
+// Funzione di supporto matematica per il calcolo Elo
+function calcolaVariazioneElo(ratingA, ratingB, vittoriaA) {
+    const K = 32; // Fattore di impatto (standard)
+    // Calcolo probabilità di vittoria per il Player A
+    const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+    // Calcolo variazione basata sul risultato (1 = vittoria, 0 = sconfitta)
+    return Math.round(K * ((vittoriaA ? 1 : 0) - expectedA));
+}
+
 async function salvaMatchFirebase() {
     const panel = document.getElementById('admin-matches-panel');
     if (!panel) return;
@@ -2535,21 +2557,36 @@ async function salvaMatchFirebase() {
         const pathMatch = `seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`;
         await db.ref(pathMatch).set(datiMatch);
 
-        // --- NUOVA LOGICA: CALCOLO DINAMICO VINCITORE SHOWDOWN ---
-        // Recuperiamo tutti i match (incluso quello appena salvato)
+        // --- NUOVA LOGICA: AGGIORNAMENTO ELO (RANKING) ---
+        try {
+            const snapP1 = await db.ref(`players/${p1Id}/stats/individual-stats/ranking`).once('value');
+            const snapP2 = await db.ref(`players/${p2Id}/stats/individual-stats/ranking`).once('value');
+
+            let eloP1 = snapP1.val() || 1000;
+            let eloP2 = snapP2.val() || 1000;
+
+            const isP1Winner = (winnerId === p1Id);
+            const variazione = calcolaVariazioneElo(eloP1, eloP2, isP1Winner);
+
+            await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1 + variazione });
+            await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2 - variazione });
+            
+            console.log(`Elo aggiornato: ${p1Id} (${eloP1 + variazione}), ${p2Id} (${eloP2 - variazione})`);
+        } catch (eloErr) {
+            console.error("Errore aggiornamento Elo:", eloErr);
+        }
+
+        // --- LOGICA VINCITORE SHOWDOWN ---
         const sdSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
         const allMatches = sdSnap.val() || {};
         const matchesArray = Object.values(allMatches);
 
-        // Contatori vittorie match
         let winsRecord = {}; 
-
         matchesArray.forEach(m => {
             if (!m.winnerId) return;
             winsRecord[m.winnerId] = (winsRecord[m.winnerId] || 0) + 1;
         });
 
-        // Determiniamo chi ha più vittorie nella serie
         let seriesWinnerId = null;
         let maxWins = 0;
         let isTie = false;
@@ -2564,9 +2601,6 @@ async function salvaMatchFirebase() {
             }
         });
 
-        // Aggiorniamo il nodo /info. 
-        // Se c'è un pareggio (es. 1-1) o nessun match, il vincitoreShowdown viene rimosso/resettato
-        // per evitare che un vecchio vincitore rimanga salvato dopo una modifica.
         const infoUpdate = {
             punteggioSerie: Object.entries(winsRecord).map(([id, w]) => `${id}: ${w}`).join(' vs '),
             ultimoAggiornamento: new Date().toISOString()
@@ -2575,7 +2609,6 @@ async function salvaMatchFirebase() {
         if (seriesWinnerId && !isTie && matchesArray.length >= 2) {
             infoUpdate.vincitoreShowdown = seriesWinnerId;
         } else {
-            // Se modifichi e ora sono in pareggio, rimuoviamo il vincitore
             await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info/vincitoreShowdown`).remove();
         }
 
@@ -2591,7 +2624,7 @@ async function salvaMatchFirebase() {
             await ricalcolaStatisticheGlobali(p2Id);
         }
         
-        alert(`Match #${matchNum} salvato e vincitore serie ricalcolato!`);
+        alert(`Match #${matchNum} salvato e Ranking aggiornato!`);
 
         // 9. CHIUSURA E PULIZIA
         panel.style.display = 'none';
@@ -2619,20 +2652,33 @@ async function ricalcolaStatisticheGlobali(pId) {
     try {
         const seasonsSnap = await db.ref(`seasons`).once('value');
         const seasons = seasonsSnap.val() || {};
+        
+        const playerSnap = await db.ref(`players/${pId}`).once('value');
+        const playerData = playerSnap.val() || {};
+        
+        // Mappatura Team -> Pokémon (usata per ricostruire chi ha giocato cosa nei match storici)
+        const teamCompositionMap = {};
+        if (playerData.teams) {
+            Object.values(playerData.teams).forEach(t => {
+                teamCompositionMap[t.nome] = (t.pokemon || []).map(p => p.nome);
+            });
+        }
 
         let globale = {
             played: 0, won: 0, lost: 0, setW: 0, setL: 0,
             allMatches: [],
+            showdownHistory: [], // Array di {date, won: bool, team: string, pokemon: string[]}
             teamsMap: {}, 
-            mvpMap: {}
+            formatsMap: {},
+            pokemonMap: {} 
         };
 
-        // 1. Aggregazione dati da tutte le stagioni
+        // --- 1. AGGREGAZIONE DATI (Stagioni -> Showdowns -> Matches) ---
         Object.keys(seasons).forEach(sId => {
             const stagioneObj = seasons[sId];
             const lb = stagioneObj.leaderboard;
 
-            // --- Parte A: Stats aggregate dalla Leaderboard ---
+            // Stats storiche generali
             if (lb && lb[pId]) {
                 const s = lb[pId];
                 globale.won += (s.won || 0);
@@ -2640,139 +2686,169 @@ async function ricalcolaStatisticheGlobali(pId) {
                 globale.setW += (s.setW || 0);
                 globale.setL += (s.setL || 0);
                 globale.played += ((s.won || 0) + (s.lost || 0));
-
-                if (s.teams) {
-                    Object.entries(s.teams).forEach(([tName, tData]) => {
-                        if (!globale.teamsMap[tName]) {
-                            globale.teamsMap[tName] = { 
-                                name: tName, won: 0, lost: 0, setW: 0, setL: 0, played: 0, matchHistory: [] 
-                            };
-                        }
-                        const t = globale.teamsMap[tName];
-                        t.won += (tData.won || 0);
-                        t.lost += (tData.lost || 0);
-                        t.setW += (tData.setW || 0);
-                        t.setL += (tData.setL || 0);
-                        t.played += (tData.played || 0);
-                    });
-                }
             }
 
-            // --- Parte B: Recupero Match dagli Showdowns per i Badges (Strike) ---
             const showdowns = stagioneObj.showdowns || {};
-            Object.values(showdowns).forEach(sd => {
+            Object.entries(showdowns).forEach(([sdId, sd]) => {
                 const matches = sd.matches || {};
+                const vincitoreSD = sd.info?.vincitoreShowdown;
+                const dataSD = sd.info?.data || sd.info?.lastEdit || "2000-01-01";
+                const categoria = sd.info?.categoria || "Standard";
+                
+                let playerPartecipated = false;
+                let teamUsatoInSD = null;
+
                 Object.values(matches).forEach(m => {
-                    // Verifichiamo se il player ha partecipato a questo match
                     if (m.player1Id === pId || m.player2Id === pId) {
-                        // Aggiungiamo un timestamp di fallback se manca
-                        const matchData = { ...m, sortDate: m.data || m.lastEdit };
+                        playerPartecipated = true;
+                        const isWinner = (m.winnerId === pId);
+                        const matchData = { ...m, sortDate: m.data || m.lastEdit, sdId: sdId };
                         globale.allMatches.push(matchData);
                         
-                        const teamUsato = (m.player1Id === pId) ? m.team1 : m.team2;
-                        if (globale.teamsMap[teamUsato]) {
-                            globale.teamsMap[teamUsato].matchHistory.push(matchData);
+                        teamUsatoInSD = (m.player1Id === pId) ? m.team1 : m.team2;
+
+                        // Aggregazione statistiche Team
+                        if (!globale.teamsMap[teamUsatoInSD]) {
+                            globale.teamsMap[teamUsatoInSD] = { 
+                                name: teamUsatoInSD, won: 0, lost: 0, setW: 0, setL: 0, played: 0, matchHistory: [] 
+                            };
                         }
+                        const t = globale.teamsMap[teamUsatoInSD];
+                        t.played++;
+                        if (isWinner) t.won++; else t.lost++;
+                        t.matchHistory.push(matchData);
+
+                        // Aggregazione statistiche Formato
+                        if (!globale.formatsMap[categoria]) {
+                            globale.formatsMap[categoria] = { name: categoria, played: 0, won: 0, lose: 0, setW: 0, setL: 0 };
+                        }
+                        const f = globale.formatsMap[categoria];
+                        f.played++;
+                        if (isWinner) f.won++; else f.lose++;
+
+                        // Associazione Pokémon (usiamo Set per contare la specie una sola volta per match)
+                        const specieUniche = [...new Set(teamCompositionMap[teamUsatoInSD] || [])];
+                        specieUniche.forEach(pkmNome => {
+                            if (!globale.pokemonMap[pkmNome]) globale.pokemonMap[pkmNome] = [];
+                            globale.pokemonMap[pkmNome].push(matchData);
+                        });
                     }
                 });
+
+                // Se il player ha lottato in questo showdown, lo aggiungiamo alla cronologia eventi
+                if (playerPartecipated) {
+                    globale.showdownHistory.push({
+                        date: dataSD,
+                        won: (vincitoreSD === pId),
+                        team: teamUsatoInSD,
+                        pokemon: [...new Set(teamCompositionMap[teamUsatoInSD] || [])]
+                    });
+                }
             });
         });
 
-        // 2. Helper per calcolare Badges (Strike e Record)
-        const calcolaBadges = (matches, playerId) => {
-            // Ordiniamo i match cronologicamente
+        // --- 2. HELPER BADGES (Calcola Match Streak e Showdown Streak) ---
+        const calcolaBadgesCompleti = (matches, showdowns, playerId, filterEntity = null, isPkm = false) => {
+            // Ordiniamo cronologicamente
             matches.sort((a, b) => new Date(a.sortDate) - new Date(b.sortDate));
-            
+            showdowns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
             let cWS = 0, mWS = 0, mWSDate = "-";
             let cCS = 0, mCS = 0, mCSDate = "-";
+            let cSS = 0, mSS = 0, mSSDate = "-"; 
 
+            // Streak Match (Vittorie e Clean Sheets)
             matches.forEach(m => {
                 const isWinner = (m.winnerId === playerId);
-                const pScore = (m.player1Id === playerId) ? m.p1score : m.p2score;
-                const oppScore = (m.player1Id === playerId) ? m.p2score : m.p1score;
-                const mDate = m.data || "Data N.D.";
-
+                const oppScore = (m.player1Id === playerId) ? (m.p2score || 0) : (m.p1score || 0);
                 if (isWinner) {
-                    // Win Strike
-                    cWS++;
-                    if (cWS >= mWS) { mWS = cWS; mWSDate = mDate; }
-                    
-                    // Clean Strike (Vittoria senza perdere set, es: 2-0 o 3-0)
-                    if (oppScore === 0) {
-                        cCS++;
-                        if (cCS >= mCS) { mCS = cCS; mCSDate = mDate; }
-                    } else {
-                        cCS = 0;
-                    }
-                } else {
-                    // Reset delle strisce alla prima sconfitta
-                    cWS = 0;
-                    cCS = 0;
+                    cWS++; if (cWS >= mWS) { mWS = cWS; mWSDate = m.sortDate; }
+                    if (oppScore === 0) { cCS++; if (cCS >= mCS) { mCS = cCS; mCSDate = m.sortDate; } } else { cCS = 0; }
+                } else { cWS = 0; cCS = 0; }
+            });
+
+            // Streak Showdown (Vittorie Tornei)
+            showdowns.forEach(sd => {
+                // Filtro: lo showdown conta solo se l'entità (Team o Pokémon) era presente
+                const isRelevant = !filterEntity || 
+                                   (isPkm ? sd.pokemon.includes(filterEntity) : sd.team === filterEntity);
+                if (isRelevant) {
+                    if (sd.won) {
+                        cSS++; if (cSS >= mSS) { mSS = cSS; mSSDate = sd.date; }
+                    } else { cSS = 0; }
                 }
             });
 
             return {
-                wonstrike: cWS, 
-                maxwonstrike: mWS, 
-                maxwonstrikedate: mWSDate,
-                cleanstrike: cCS, 
-                maxcleanstrike: mCS, 
-                maxcleanstrikedate: mCSDate
+                wonstrike: cWS, maxwonstrike: mWS, maxwonstrikedate: mWSDate,
+                cleanstrike: cCS, maxcleanstrike: mCS, maxcleanstrikedate: mCSDate,
+                showdownstrike: cSS, maxshowdownstrike: mSS, maxshowdownstrikedate: mSSDate,
+                played: matches.length
             };
         };
 
-        // 3. Scrittura Stats Team nei nodi Player
-        const playerRegistrySnap = await db.ref(`players/${pId}/teams`).once('value');
-        const registeredTeams = playerRegistrySnap.val() || {};
+        // --- 3. RICALCOLO ELO STORICO ---
+        const uniqueMatches = Array.from(new Map(globale.allMatches.map(m => [m.id || `${m.data}-${m.player1Id}-${m.player2Id}`, m])).values());
+        uniqueMatches.sort((a, b) => new Date(a.sortDate) - new Date(b.sortDate));
+        
+        let nuovoRanking = 1000; 
+        const K = 32;
+        for (const m of uniqueMatches) {
+            const isWinner = (m.winnerId === pId);
+            const oppId = (m.player1Id === pId) ? m.player2Id : m.player1Id;
+            const oppSnap = await db.ref(`players/${oppId}/stats/individual-stats/ranking`).once('value');
+            const oppRanking = oppSnap.val() || 1000;
+            const expectedScore = 1 / (1 + Math.pow(10, (oppRanking - nuovoRanking) / 400));
+            nuovoRanking = Math.round(nuovoRanking + K * ((isWinner ? 1 : 0) - expectedScore));
+        }
 
+        // --- 4. SALVATAGGIO POKÉMON BADGES ---
+        const pokemonBadgesFinali = {};
+        Object.entries(globale.pokemonMap).forEach(([pkmNome, mList]) => {
+            const b = calcolaBadgesCompleti(mList, globale.showdownHistory, pId, pkmNome, true);
+            pokemonBadgesFinali[pkmNome] = {
+                ...b,
+                presenze: b.played,
+                loyaltyBadge: b.played >= 30 // Fiocco Fedeltà: true se presenze >= 30
+            };
+        });
+        await db.ref(`players/${pId}/pokemon-badges`).set(pokemonBadgesFinali);
+
+        // --- 5. SALVATAGGIO TEAM BADGES ---
+        const registeredTeams = playerData.teams || {};
         for (const [tId, tObj] of Object.entries(registeredTeams)) {
             const statsTeam = globale.teamsMap[tObj.nome];
-            const path = `players/${pId}/teams/${tId}`;
-            
             if (statsTeam) {
-                await db.ref(`${path}/stats`).set({
-                    played: statsTeam.played,
-                    won: statsTeam.won,
-                    lost: statsTeam.lost,
-                    setW: statsTeam.setW,
-                    setL: statsTeam.setL
+                const bTeam = calcolaBadgesCompleti(statsTeam.matchHistory, globale.showdownHistory, pId, tObj.nome, false);
+                await db.ref(`players/${pId}/teams/${tId}/stats`).set({
+                    played: statsTeam.played, won: statsTeam.won, lost: statsTeam.lost
                 });
-                const badgesTeam = calcolaBadges(statsTeam.matchHistory, pId);
-                await db.ref(`${path}/badges`).set(badgesTeam);
+                await db.ref(`players/${pId}/teams/${tId}/badges`).set(bTeam);
             }
         }
 
-        // 4. Calcolo MVP/Best e Scrittura Finali
-        let bestTeam = { name: "-", won: 0, played: 0 };
-        let mostUsedTeam = { name: "-", played: 0 };
+        // --- 6. SALVATAGGIO TRAINER BADGES & STATS ---
+        const bTrainer = calcolaBadgesCompleti(uniqueMatches, globale.showdownHistory, pId);
         
-        Object.values(globale.teamsMap).forEach(t => {
-            if (t.played > mostUsedTeam.played) mostUsedTeam = t;
-            // Best team basato su numero vittorie (con tie-break su meno partite giocate)
-            if (t.won > bestTeam.won || (t.won === bestTeam.won && t.played < (bestTeam.played || Infinity))) {
-                bestTeam = t;
-            }
+        // Calcolo Best Performance
+        let bestFormat = { name: "-", won: 0 };
+        Object.values(globale.formatsMap).forEach(f => {
+            if (f.won > bestFormat.won) bestFormat = f;
         });
 
-        const playerBadges = calcolaBadges(globale.allMatches, pId);
-        
-        // Salvataggio atomico sotto players/pId/stats
-        const statsRef = db.ref(`players/${pId}/stats`);
-        await statsRef.update({
+        await db.ref(`players/${pId}/stats`).update({
             'individual-stats': {
-                played: globale.played, won: globale.won, lost: globale.lost, setW: globale.setW, setL: globale.setL
+                played: globale.played, won: globale.won, lost: globale.lost, 
+                setW: globale.setW, setL: globale.setL, ranking: nuovoRanking,
+                format: { 'format-name': bestFormat.name || "-" }
             },
-            'badges': playerBadges,
-            'team-stats': {
-                bestteam: { name: bestTeam.name, won: bestTeam.won, played: bestTeam.played },
-                mostusedteam: { name: mostUsedTeam.name, played: mostUsedTeam.played }
-            }
+            'badges': bTrainer
         });
 
-        console.log(`✅ Ricalcolo Globale completato per ${pId}`);
+        console.log(`✅ Ricalcolo integrale completato per ${pId}`);
 
     } catch (e) {
-        console.error("❌ Errore critico ricalcolo globale:", e);
+        console.error("❌ Errore critico ricalcolo:", e);
     }
 }
 
@@ -2969,47 +3045,84 @@ async function verificaEDecretaVincitoreShowdown(stagione, showdownId) {
 
 // --- 5. ELIMINAZIONE MATCH ---
 async function eliminaMatch(showdownId, matchNum) {
-    // 1. Definizione stagione
     const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
 
-    // 2. Conferma dell'utente
-    if (confirm(`Eliminare definitivamente il Match #${matchNum} dello Showdown ${showdownId} dalla stagione ${stagione}?`)) {
+    if (confirm(`Eliminare definitivamente il Match #${matchNum} dello Showdown ${showdownId}? Le statistiche verranno ricalcolate.`)) {
         try {
-            // 3. Percorso specifico nel nuovo schema
             const pathMatch = `seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`;
             
-            // 4. Recupero dati per conoscere i player coinvolti (necessario per le stat globali)
+            // 1. Recupero dati prima dell'eliminazione
             const matchSnap = await db.ref(pathMatch).once('value');
             const m = matchSnap.val();
 
             if (!m) {
-                alert("Match non trovato o già eliminato.");
+                alert("Match non trovato.");
                 return;
             }
 
             const p1Id = m.player1Id;
             const p2Id = m.player2Id;
 
-            // 5. Eliminazione fisica dal database (solo dal nodo showdown)
+            // 2. Eliminazione fisica del match
             await db.ref(pathMatch).remove();
 
-            console.log(`Match ${matchNum} rimosso da showdown ${showdownId}. Avvio ricalcolo...`);
+            // --- 3. NUOVA LOGICA: RICALCOLO VINCITORE SHOWDOWN ---
+            // Recuperiamo i match rimanenti per aggiornare le info della serie
+            const matchesSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
+            const remainingMatches = matchesSnap.val() || {};
+            const matchesArray = Object.values(remainingMatches);
 
-            // 6. Ricalcolo Leaderboard stagionale 
-            // (La nuova versione di aggiornaLeaderboard leggerà i restanti match dagli showdown)
+            let winsRecord = {};
+            matchesArray.forEach(match => {
+                if (!match.winnerId) return;
+                winsRecord[match.winnerId] = (winsRecord[match.winnerId] || 0) + 1;
+            });
+
+            let seriesWinnerId = null;
+            let maxWins = 0;
+            let isTie = false;
+
+            Object.entries(winsRecord).forEach(([pId, count]) => {
+                if (count > maxWins) {
+                    maxWins = count;
+                    seriesWinnerId = pId;
+                    isTie = false;
+                } else if (count === maxWins) {
+                    isTie = true;
+                }
+            });
+
+            const infoUpdate = {
+                punteggioSerie: Object.entries(winsRecord).map(([id, w]) => `${id}: ${w}`).join(' vs ') || "0 vs 0",
+                ultimoAggiornamento: new Date().toISOString()
+            };
+
+            // Se dopo l'eliminazione non c'è più un vincitore chiaro o mancano i match minimi
+            if (seriesWinnerId && !isTie && matchesArray.length >= 2) {
+                infoUpdate.vincitoreShowdown = seriesWinnerId;
+            } else {
+                // Rimuoviamo il vincitore se la serie è tornata in pareggio o incompleta
+                await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info/vincitoreShowdown`).remove();
+            }
+            
+            await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
+
+            // --- 4. SINCRONIZZAZIONE STATISTICHE ---
+            
+            // Aggiorna la classifica stagionale
             if (typeof aggiornaLeaderboard === "function") {
                 await aggiornaLeaderboard(stagione);
             }
 
-            // 7. Ricalcolo Statistiche Globali (Player + Team)
+            // Aggiorna i profili globali (i badges e i totali)
             if (typeof ricalcolaStatisticheGlobali === "function") {
                 if (p1Id) await ricalcolaStatisticheGlobali(p1Id);
                 if (p2Id) await ricalcolaStatisticheGlobali(p2Id);
             }
 
-            alert("Match eliminato e statistiche ricalcolate con successo.");
+            alert("Match eliminato e statistiche ricalcolate correttamente.");
             
-            // 8. Refresh UI
+            // 5. Refresh UI
             if (typeof aggiornaGraficaShowdown === "function") {
                 aggiornaGraficaShowdown();
             }
@@ -3020,7 +3133,7 @@ async function eliminaMatch(showdownId, matchNum) {
 
         } catch (e) {
             console.error("Errore durante l'eliminazione:", e);
-            alert("Errore tecnico durante l'eliminazione: " + e.message);
+            alert("Errore tecnico: " + e.message);
         }
     }
 }

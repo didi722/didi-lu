@@ -557,38 +557,92 @@ async function salvaVincitoreStagione(seasonId) {
     const snapshot = await seasonRef.once('value');
     const seasonData = snapshot.val();
 
-    // Se non c'è la leaderboard, usciamo
     if (!seasonData || !seasonData.leaderboard) {
-        console.warn("Leaderboard non trovata per:", seasonId);
+        console.error("Leaderboard non trovata per la stagione:", seasonId);
         return "---";
     }
 
+    const info = seasonData.info || {};
     const lb = seasonData.leaderboard;
-    let maxPoints = -1;
-    let winnerName = "Nessun Partecipante";
+    const showdowns = seasonData.showdowns || {};
 
-    // lb è un oggetto dove 'key' è il nome del giocatore e 'value' ha i punti
-    // Esempio: { "Ash": { points: 10 }, "Gary": { points: 5 } }
-    Object.keys(lb).forEach(playerName => {
-        const playerDetails = lb[playerName];
-        
-        // Estraiamo i punti (gestendo sia se è un oggetto {points: X} sia se fosse un valore diretto)
-        const punti = (playerDetails && typeof playerDetails.points !== 'undefined') 
-                      ? Number(playerDetails.points) 
-                      : Number(playerDetails); 
+    // --- A. CALCOLO DATE (START & END basati sugli Showdown) ---
+    let startDate = "N/A";
+    let endDate = "N/A"; 
 
-        if (punti > maxPoints) {
-            maxPoints = punti;
-            winnerName = playerName; // La chiave stessa è il nome del giocatore
+    const dateShowdown = [];
+    Object.keys(showdowns).forEach(sdId => {
+        if (showdowns[sdId].info && showdowns[sdId].info.data) {
+            dateShowdown.push(showdowns[sdId].info.data);
         }
     });
 
-    // Salvataggio nel nodo info/winner
-    await seasonRef.child('info').update({
-        winner: winnerName
+    if (dateShowdown.length > 0) {
+        // Ordiniamo le date: dalla più vecchia alla più recente
+        dateShowdown.sort((a, b) => {
+            const dateA = new Date(a.split('/').reverse().join('-'));
+            const dateB = new Date(b.split('/').reverse().join('-'));
+            return dateA - dateB;
+        });
+
+        startDate = dateShowdown[0]; // Il primo showdown giocato
+        endDate = dateShowdown[dateShowdown.length - 1]; // L'ultimo showdown giocato
+    }
+
+    // --- B. ORDINAMENTO PARTECIPANTI ---
+    const nomiPartecipanti = Object.keys(lb);
+    const classifica = nomiPartecipanti.map(name => {
+        const d = lb[name];
+        return {
+            name: name,
+            dbPath: name.toLowerCase(),
+            points: Number(d.points || 0),
+            sdWon: Number(d.sdWon || 0),
+            won: Number(d.won || 0)
+        };
     });
 
-    console.log(`🏆 Vincitore Decretato: ${winnerName} con ${maxPoints} punti.`);
+    classifica.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.sdWon !== a.sdWon) return b.sdWon - a.sdWon;
+        return b.won - a.won;
+    });
+
+    // --- C. AGGIORNAMENTO DI TUTTI I PROFILI ---
+    for (let i = 0; i < classifica.length; i++) {
+        const p = classifica[i];
+        const rank = i + 1;
+        const isWinner = (rank === 1 && p.points > 0);
+
+        const playerStatsRef = db.ref(`players/${p.dbPath}/stats/seasons`);
+
+        try {
+            const historySnap = await playerStatsRef.child(`history/${seasonId}`).once('value');
+            const wasAlreadyWinner = historySnap.exists() && historySnap.val().rank === 1;
+
+            // Aggiornamento History con seasonId come chiave
+            await playerStatsRef.child(`history/${seasonId}`).set({
+                name: info.name || seasonId,
+                startdate: startDate,
+                enddate: endDate, // Ora è la data dell'ultimo showdown
+                rank: rank
+            });
+
+            if (isWinner && !wasAlreadyWinner) {
+                await playerStatsRef.child('won').transaction((current) => (current || 0) + 1);
+            } else if (!isWinner && wasAlreadyWinner) {
+                await playerStatsRef.child('won').transaction((current) => Math.max(0, (current || 1) - 1));
+            }
+            
+            console.log(`Profilo aggiornato per: ${p.dbPath} (Rank: ${rank})`);
+        } catch (err) {
+            console.error(`Errore nel salvataggio per ${p.dbPath}:`, err);
+        }
+    }
+
+    const winnerName = classifica[0] && classifica[0].points > 0 ? classifica[0].name : "Nessun Vincitore";
+    await seasonRef.child('info').update({ winner: winnerName });
+
     return winnerName;
 }
 

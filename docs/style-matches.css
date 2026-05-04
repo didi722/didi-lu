@@ -216,7 +216,6 @@ body {
     gap: 15px;
     z-index: 10001;
     padding: 10px;
-    border-radius: 15px;
     transform: rotate(-1deg);
 }
 
@@ -278,7 +277,6 @@ body {
     height: 100px; /* Altezza dei tasti di Showdown */
     background: #222;
     border: 3px solid #444;
-    border-radius: 10px;
     overflow: hidden;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -306,7 +304,6 @@ body {
     background: #1a1a1a; /* Colore scuro dei tuoi box */
     max-width: 800px;
     width: 90%;
-    border-radius: 20px;
     padding: 30px;
     position: relative;
     border: 1px solid rgba(255,255,255,0.1);
@@ -392,7 +389,6 @@ button.btn-set.is-selected:hover {
     flex-grow: 1;
     height: 6px; /* Più sottile rispetto alla home per eleganza */
     background: #333;
-    border-radius: 3px;
 }
 
 
@@ -559,7 +555,6 @@ button.btn-set.is-selected:hover {
     width: 45px;
     height: 45px;
     cursor: pointer;
-    border-radius: 8px;
 }
 
 .menu-button,
@@ -571,7 +566,6 @@ button.btn-set.is-selected:hover {
     height: 4px;
     width: 25px;
     transition: transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
-    border-radius: 2px;
 }
 
 .menu-button::before { content: ''; margin-top: -8px; }
@@ -593,7 +587,6 @@ button.btn-set.is-selected:hover {
     list-style-type: none;
     margin: 0;
     padding: 10px;
-    border-radius: 10px;
     border: 2px solid #092377;
     box-shadow: 5px 5px 0px #092377;
     opacity: 0;
@@ -701,7 +694,6 @@ button.btn-set.is-selected:hover {
     left:50%;
     transform:translate(-50%, -50%);
     padding:20px;
-    border-radius:10px;
     z-index:10001;
     width:90%;
     max-width:400px;
@@ -714,6 +706,9 @@ button.btn-set.is-selected:hover {
 
 .form-group {
     margin-bottom: 15px;
+    flex-direction: column; /* Mette la label sopra l'input */
+    align-items: center;    /* Centra orizzontalmente sia label che input */
+    text-align: center;
 }
 
 .form-group label {
@@ -726,66 +721,78 @@ button.btn-set.is-selected:hover {
 /* Stile comune per input e select */
 .form-group input, 
 .form-group select {
-    width: 100%;
+    width: 100%; 
+    max-width: 500px;
     padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #444;
-    background: #eeeeee;
+    background: var(--yellow);
+    border: 2px solid black;
+    box-shadow: 4px 4px 0 black;
     color: #1a1a1a;
     font-family: inherit;
     box-sizing: border-box; /* Importante per non far uscire l'input dai bordi */
+    margin-top:5px;
 }
 
 .form-group input:focus, 
 .form-group select:focus {
     outline: none;
-    border-color: #ffcb05;
 }
 
-/* Contenitore bottoni */
-.button-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
 
 /* Bottone Salva */
 .btn-save {
     flex: 1;
-    background: #16a445;
+    background: #09ca49;
     color: #000;
-    border: none;
     padding: 12px;
     cursor: pointer;
     font-weight: bold;
-    border-radius: 5px;
-    transition: background 0.3s;
     font-family: Josefin Sans, sans-serif;
-
+    text-transform: uppercase;
+    border: 2px solid black;
+    box-shadow: 5px 5px 0 black;
+    transition: all 0.2s ease;
+    transform: rotate(-0.5deg);
+    font-size: 1.5rem;
 }
 
 .btn-save:hover {
     background: #056425;
+    transform: translate(-2px, -2px) rotate(-1deg);
+}
+
+.btn-save:active{
+    box-shadow: 0 0 0;
+    transform: translate(2px, 2px);
 }
 
 /* Bottone Cancella */
 .btn-cancel {
     flex: 1;
-    background: #b51e1e;
-    color: #000;
+    background: #ea1818;
+    color: #000 !important;
     border: none;
     padding: 12px;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background 0.3s;
     font-family: Josefin Sans, sans-serif;
     font-weight: bold;
+    text-transform: uppercase;
+    border: 2px solid black;
+    box-shadow: 5px 5px 0 black;
+    transition: all 0.2s ease;
+    transform: rotate(1deg);
+    font-size: 1.5rem;
 }
 
 .btn-cancel:hover {
-    background: #6d0b0b;
+    background: #780707;
+    transform: translate(-2px, -2px) rotate(-1deg);
 }
 
+.btn-cancel:active{
+    box-shadow: 0 0 0;
+    transform: translate(2px, 2px) rotate(1deg);
+}
 .team-controls {
     display: flex;
     gap: 5px;
@@ -798,7 +805,6 @@ button.btn-set.is-selected:hover {
     color: white;
     border: none;
     padding: 5px 10px;
-    border-radius: 4px;
     cursor: pointer;
     font-size: 0.7rem;
 }
@@ -808,7 +814,6 @@ button.btn-set.is-selected:hover {
     color: white;
     border: none;
     padding: 5px 10px;
-    border-radius: 4px;
     cursor: pointer;
     font-size: 0.7rem;
 }
@@ -844,11 +849,19 @@ button.btn-set.is-selected:hover {
     box-shadow: 4px 4px 0 black;
     cursor: pointer;
     z-index: 999;
+    display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     outline: none;
-    display:none;
+}
+
+/* Il simbolo + */
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-floating-admin:hover {
@@ -872,14 +885,6 @@ button.btn-set.is-selected:hover {
     display: flex !important; /* o block, a seconda del tasto */
 }
 
-/* Il simbolo + */
-.plus-icon {
-    font-size: 30px;
-    font-weight: 300; /* Lo rende sottile e moderno */
-    align-items: center;
-    justify-content: center;
-}
-
 /* Effetto al passaggio del mouse */
 
 
@@ -901,11 +906,22 @@ button.btn-set.is-selected:hover {
 }
 
 .music-btn:hover {
-    color: white;
     background-color: black;
-    transform: scale(1.1) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
+}
+
+#music-control svg path {
+    transition: stroke 0.3s ease; /* Transizione fluida */
+}
+
+#music-control:hover svg {
+    stroke: white; /* Usa il tuo --yellow o un altro colore */
+}
+
+#music-control {
+    cursor: pointer;
 }
 
 .music-btn:active {
@@ -930,39 +946,49 @@ button.btn-set.is-selected:hover {
 }
 .winner-selector button {
     padding: 5px 10px;
-    border: 1px solid #ccc;
-    background: #333;
+    border: 1px solid black;
+    background: white;
     color: white;
     cursor: pointer;
-    border-radius: 4px;
 }
-/* Classi attive */
-.winner-selector button.active-D { background: #ffcb05; color: black; border-color: #ffcb05; }
-.winner-selector button.active-L { background: #3498db; color: white; border-color: #3498db; }
 
 .panel-title-edit {
     color: #eeeeee !important;
 
 }
 
+.admin-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5); /* Scurisce lo sfondo */
+    backdrop-filter: blur(10px);    /* IL BLUR VA SOLO QUI */
+    z-index: 10000;
+    display: none;                  /* Gestito da JS (flex) */
+    align-items: center;            /* Centra la scheda verticalmente */
+    justify-content: center;        /* Centra la scheda orizzontalmente */
+}
+
 /* Contenitore Principale */
 .admin-panel-modern {
     display:none;
     position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%, -50%);
     padding:20px;
-    border-radius:10px;
-    z-index:10001;
-    width:90%;
-    max-width:400px;
     color: #1a1a1a !important;
-    border: 2px solid #092377 !important;
-    box-shadow: 5px 5px 0px #092377;
-    background: #2e53cd !important;
     font-family: Josefin Sans, sans-serif;
+    backdrop-filter: blur(8px) !important;
+    display: none; 
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
 }
+
+
 
 .admin-panel-modern h3 {
     text-align: center;
@@ -982,26 +1008,268 @@ button.btn-set.is-selected:hover {
 .flex-1 { flex: 1; }
 .flex-half { flex: 0.5; }
 
-.form-group label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin-bottom: 5px;
-    color: #1a1a1a;
+/* --- CONTENITORE GENERALE --- */
+#admin-create-showdown-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra tutto il blocco */
+    text-align: center;
 }
 
-.form-group input, .form-group select {
+/* --- TITOLO (Già ridimensionato) --- */
+#sd-panel-title {
+    display: inline-block;
+    background: black;
+    color: white;
+    font-size: 1.1rem;
+    padding: 6px 15px;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px var(--yellow);
+    transform: rotate(-1.5deg);
+    margin-bottom: 35px;
+}
+
+/* --- CONTENITORE GENERALE --- */
+#admin-create-showdown-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra la colonna dei blocchi nel pannello */
+    padding: 20px;
+}
+
+/* --- TITOLO --- */
+#sd-panel-title {
+    background: black;
+    color: white;
+    font-size: 1.1rem;
+    padding: 6px 15px;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px var(--yellow);
+    transform: rotate(-1.5deg);
+    margin-bottom: 40px;
+}
+
+/* --- CONTENITORE GENERALE --- */
+#admin-create-showdown-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra l'asse della scaletta */
+    padding: 30px;
     width: 100%;
-    padding: 10px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.3s;
+    box-sizing: border-box;
 }
 
-.form-group input:focus { border-color: #3498db; }
+/* --- TITOLO --- */
+#sd-panel-title {
+    background: black;
+    color: white;
+    font-size: 1.1rem;
+    padding: 6px 15px;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px var(--yellow);
+    transform: rotate(-1.5deg);
+    margin-bottom: 40px;
+    text-align: center;
+}
 
+/* --- GRUPPO FORM (Riga Orizzontale) --- */
+.form-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center; /* Centra il contenuto della riga */
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-group-player{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Centra il contenuto della riga */
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-group-player {
+    margin-bottom: 15px;
+    flex-direction: column; /* Mette la label sopra l'input */
+    align-items: center;    /* Centra orizzontalmente sia label che input */
+    text-align: center;
+}
+
+.form-group-player label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Stile comune per input e select */
+.form-group-player input, 
+.form-group-player select {
+    width: 100%; 
+    max-width: 500px;
+    padding: 10px;
+    background: var(--yellow);
+    border: 2px solid black;
+    box-shadow: 4px 4px 0 black;
+    color: #1a1a1a;
+    font-family: inherit;
+    box-sizing: border-box; /* Importante per non far uscire l'input dai bordi */
+    margin-top:5px;
+}
+
+.form-group-player input:focus, 
+.form-group-player select:focus {
+    outline: none;
+}
+
+.form-group-player:nth-child(2) { transform: translateX(-45px); } /* Date */
+.form-group-player:nth-child(3) { transform: translateX(-15px); } /* Format */
+.form-group-player:nth-child(4) { transform: translateX(15px); }  /* Player 1 */
+.form-group-player:nth-child(5) { transform: translateX(45px); }  /* Player 2 */
+
+/* --- LE LABEL (A sinistra della barra) --- */
+.form-group-player label {
+    display: inline-block;
+    text-align: right;  /* Scritta verso la barra */
+    margin-right: 45px; 
+    
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #1a1a1a;
+    background: var(--yellow);
+    padding: 4px 8px;
+    text-transform: uppercase;
+    border: 2px solid black;
+    box-shadow: 3px 3px 0 black;
+    transform: rotate(-2deg);
+}
+
+/* --- LE BARRE / INPUT --- */
+.form-group-player input, 
+.form-group-player select {
+    width: 220px;
+    padding: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: white !important;
+    color: black;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0px black;
+    outline: none;
+    font-family: inherit;
+    text-align: center; /* Testo centrato dentro la barra */
+    transition: all 0.2s ease;
+}
+
+.form-group-player select {
+    appearance: none;       /* Rimuove lo stile predefinito del browser (freccette standard) */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    text-align: center;
+    text-align-last: center; /* Fondamentale: centra il testo anche quando la tendina è chiusa */
+    
+    padding: 10px;           /* Assicurati che il padding sia uguale su tutti i lati */
+    padding-left: 0;         /* Forza la rimozione di eventuali padding sinistri residui */
+    padding-right: 0;
+
+    cursor: pointer;
+}
+
+.form-group-player input:focus, 
+.form-group-player select:focus {
+    box-shadow: 2px 2px 0px black;
+    transform: translate(3px, 3px);
+}
+
+
+
+/* --- EFFETTO SCALETTA BILANCIATO --- 
+   Spostiamo i blocchi a sinistra o destra rispetto al centro */
+.form-group:nth-child(2) { transform: translateX(-45px); } /* Date */
+.form-group:nth-child(3) { transform: translateX(-15px); } /* Format */
+.form-group:nth-child(4) { transform: translateX(15px); }  /* Player 1 */
+.form-group:nth-child(5) { transform: translateX(45px); }  /* Player 2 */
+
+/* --- LE LABEL (A sinistra della barra) --- */
+.form-group label {
+    display: inline-block;
+    text-align: right;  /* Scritta verso la barra */
+    margin-right: 45px; 
+    
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #1a1a1a;
+    background: var(--yellow);
+    padding: 4px 8px;
+    text-transform: uppercase;
+    border: 2px solid black;
+    box-shadow: 3px 3px 0 black;
+    transform: rotate(-2deg);
+}
+
+/* --- LE BARRE / INPUT --- */
+.form-group input, 
+.form-group select {
+    width: 220px;
+    padding: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: white !important;
+    color: black;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0px black;
+    outline: none;
+    font-family: inherit;
+    text-align: center; /* Testo centrato dentro la barra */
+    transition: all 0.2s ease;
+}
+
+.form-group select {
+    appearance: none;       /* Rimuove lo stile predefinito del browser (freccette standard) */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    text-align: center;
+    text-align-last: center; /* Fondamentale: centra il testo anche quando la tendina è chiusa */
+    
+    padding: 10px;           /* Assicurati che il padding sia uguale su tutti i lati */
+    padding-left: 0;         /* Forza la rimozione di eventuali padding sinistri residui */
+    padding-right: 0;
+
+    cursor: pointer;
+}
+
+.form-group input:focus, 
+.form-group select:focus {
+    box-shadow: 2px 2px 0px black;
+    transform: translate(3px, 3px);
+}
+
+/* --- BOTTONI FINALI --- */
+.button-group-modern {
+    display: flex;
+    gap: 70px;
+    margin-top: 50px;
+    justify-content: center;
+    width: 100%;
+}
+/* --- FIX PER IL VS (Se presente) --- */
+.vs-divider {
+    font-weight: 900;
+    font-size: 1.2rem;
+}
 /* Sezione Replays compatta */
 .replays-admin-section h4 {
     margin: 25px 0 15px;
@@ -1015,7 +1283,6 @@ button.btn-set.is-selected:hover {
     align-items: center;
     background: #fff;
     padding: 8px 12px;
-    border-radius: 10px;
     margin-bottom: 8px;
     border: 1px solid #eee;
     gap: 10px;
@@ -1031,75 +1298,39 @@ button.btn-set.is-selected:hover {
     flex: 1;
     padding: 6px;
     border: 1px solid #ccc;
-    border-radius: 5px;
 }
 
-/* Winner Selector */
-.winner-selector {
-    display: flex;
-    gap: 5px;
-}
 
 .btn-win {
-    width: 35px;
-    height: 35px;
-    border: 2px solid #ddd;
-    background: white;
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+    border: 1px solid black;
+    box-shadow: 2px 2px 0 black;
     cursor: pointer;
-    border-radius: 6px;
     font-weight: bold;
-    transition: all 0.2s;
 }
 
-.btn-win.active-D { background: #31c489 !important; border-color: #025534 !important; color: black; }
-.btn-win.active-L { background: #8e44ad !important; border-color: #6c026c !important; color: white; }
+.btn-win.active-D { background: #22ff22 !important; border-color: black !important; color: black; }
+.btn-win.active-L { background: hsl(313, 100%, 61%) !important; border-color: #6c026c !important; color: black; }
 
-/* Bottoni Azione */
-.button-group-modern {
-    display: flex;
-    gap: 15px;
-    margin-top: 25px;
+
+.panel-header{
+    text-align:center;
 }
 
-.btn-save {
-    flex: 2;
-    background: #27ae60;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 1rem;
+.panel-header #sd-panel-title{
+    display: inline-block;
+    background: black;
+    padding: 25px 35px;
+    box-shadow: 7px 7px rgba(0, 0, 0, 0.3);
+    transform: rotate(-2deg);
 }
 
-.btn-cancel {
-    flex: 1;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* Modale più largo per le 3 colonne */
-.admin-panel-modern.wide {
-    max-width: 950px; /* Aumentato per 3 colonne */
-    background: #fdfdfd;
-}
-
-.admin-three-columns {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 20px;
-}
-
-.admin-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+#sd-panel-title{
+    font-size: 3rem;
+    margin-bottom: 60px;
+    margin-top: 30px;
 }
 
 /* Colonna Replays leggermente più larga per comodità */
@@ -1109,13 +1340,9 @@ button.btn-set.is-selected:hover {
     padding-left: 20px;
 }
 
-.col-title {
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    color: #eeeeee;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
+.col-teams {
+    margin-top: -50px;
+    margin-bottom: 50px;
 }
 
 /* Row dei set più compatta */
@@ -1126,13 +1353,15 @@ button.btn-set.is-selected:hover {
     margin-bottom: 8px;
     background: #f1f3f5;
     padding: 5px 10px;
-    border-radius: 8px;
 }
 
 .set-num {
     font-weight: bold;
     font-size: 0.8rem;
-    color: #444;
+    color: black;
+    border: 2px solid black;
+    box-shadow: 3px 3px 0 black;
+    padding: 5px;
 }
 
 .set-row-compact input {
@@ -1140,37 +1369,30 @@ button.btn-set.is-selected:hover {
     padding: 5px;
     font-size: 0.8rem;
     border: 1px solid #ccc;
-    border-radius: 4px;
 }
 
 /* Winner Selector */
 .winner-selector {
     display: flex;
-    gap: 3px;
+    gap: 4px;
 }
 
-.btn-win {
-    width: 28px;
-    height: 28px;
-    font-size: 0.7rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    background: white;
-    font-weight: bold;
+.btn-browse{
+    border-radius: 0px;
+    padding: 5px;
+    box-shadow: 3px 3px 0 black;
+    background: blue;
+    cursor:pointer;
+    transition: all 0.2s ease;
 }
 
-/* Responsive: se lo schermo è piccolo torna a 1 colonna */
-@media (max-width: 800px) {
-    .admin-three-columns {
-        flex-direction: column;
-    }
-    .col-replays {
-        border-left: none;
-        padding-left: 0;
-        border-top: 1px solid #eee;
-        padding-top: 20px;
-    }
+.btn-browse:hover{
+    transform: translate(-2px, -2px);
+}
+
+.btn-browse:active{
+    box-shadow: 0px !important;
+    transform: translate(2px, 2px);
 }
 
 .showdown-card-container {
@@ -1181,7 +1403,6 @@ button.btn-set.is-selected:hover {
 
 .showdown-main-card {
     border: 2px solid #444;
-    border-radius: 15px;
     padding: 15px;
     cursor: pointer;
     transition: 0.3s;
@@ -1199,7 +1420,6 @@ button.btn-set.is-selected:hover {
 .sd-score-box {
     background: #000;
     padding: 10px 25px;
-    border-radius: 10px;
     border: 1px solid #555;
 }
 
@@ -1208,7 +1428,6 @@ button.btn-set.is-selected:hover {
 .showdown-details-area {
     background: rgba(0, 0, 0, 0.3);
     padding: 15px;
-    border-radius: 0 0 15px 15px;
     border: 1px solid #444;
     border-top: none;
 }
@@ -1295,11 +1514,6 @@ button.btn-set.is-selected:hover {
     align-items: center;
     gap: 5px; /* Spazio minimo tra badge e titolo */
     padding: 10px 0 !important;
-}
-
-/* 4. Evitiamo che la dashboard stessa abbia troppo padding superiore */
-.admin-panel-modern.wide {
-    padding-top: 5px !important;
 }
 
 /* 5. Se la "X" di chiusura è troppo grande o sposta il testo */
@@ -1602,7 +1816,6 @@ button.btn-set.is-selected:hover {
     width: 350px;
     height: 250px;
     margin: 15% auto;
-    border-radius: 15px;
     position: relative;
     font-family: 'Josefin Sans', sans-serif;
 }
@@ -1895,7 +2108,6 @@ button.btn-set.is-selected:hover {
 
 .modal-content {
     padding: 20px 30px;
-    border-radius: 25px;
     width: 85%;
     height: 75%;
     display: flex;
@@ -2143,7 +2355,6 @@ button.btn-set.is-selected:hover {
 .type-badge {
     font-size: 0.5rem;
     padding: 2px 6px;
-    border-radius: 2px;
     color: white;
     font-weight: 800;
     text-align: center;
@@ -2231,7 +2442,6 @@ button.btn-set.is-selected:hover {
 .mini-type-badge {
     font-size: 0.55rem;
     padding: 1px 4px;
-    border-radius: 2px;
     color: white;
     font-weight: bold;
     text-transform: uppercase;
@@ -2283,7 +2493,6 @@ button.btn-set.is-selected:hover {
     height: 6px;
     background: rgba(255,255,255,0.1);
     margin-left: 10px;
-    border-radius: 3px;
     overflow: hidden;
 }
 
@@ -2355,7 +2564,6 @@ button.btn-set.is-selected:hover {
     background: #fff;
     border: 2px solid #1a1a1a; 
     box-shadow: 8px 8px 0px #1a1a1a;
-    border-radius: 20px;
     padding: 15px;
     padding-right: 30px;
     padding-left: 30px;
@@ -2398,8 +2606,14 @@ button.btn-set.is-selected:hover {
 }
 
 .player-rank-row:hover {
-    transform: translate(-2px, -2px);
+    transform: translate(0px) !important;
     box-shadow: 6px 6px 0px var(--hover-color) !important;
+}
+
+.player-rank-row:active{
+    transform: translate(0px);
+    box-shadow: 0px;
+
 }
 
 .top-bar {
@@ -2768,7 +2982,6 @@ transform: translate(-4px, -4px);
 
 .modal-content {
     padding: 20px 30px;
-    border-radius: 25px;
     width: 90%;
     height: 90%;
     display: flex;
@@ -3543,3 +3756,194 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
 }
 
+.admin-three-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr !important; /* Proporzioni dinamiche */
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.admin-col {
+    background: #f0f0f0; /* Grigio chiarissimo per differenziare le zone */
+    border: 3px solid #000;
+    padding: 15px;
+    box-shadow: 7px 7px 0px #000;
+    margin-bottom: 0;
+}
+
+.col-title {
+    font-family: 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    font-weight: 900;
+    font-size: 1rem;
+    background: black;
+    border: 2px solid black;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+    padding: 5px 10px;
+    margin-top: -25px; /* Effetto "badge" che esce dal bordo */
+    margin-bottom: 4%;
+    display: inline-block;
+    color: white;
+    transform: rotate(-1deg);
+}
+
+#match-panel-title {
+    display: inline-block;
+    background: #000;
+    color: #fff;
+    padding: 10px 25px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 4px solid #000;
+    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.3);
+    transform: rotate(-1deg);
+    margin-bottom: 30px;
+}
+
+
+/* --- HEADER DELLA DASHBOARD --- */
+.dashboard-header {
+    margin-bottom: 40px;
+    position: relative;
+}
+
+/* Il badge in alto con Formato e Data */
+.sd-info-badge {
+    display: inline-block;
+    background: var(--yellow); /* Un tocco di giallo qui ci sta bene */
+    color: black;
+    padding: 5px 15px;
+    font-weight: 900;
+    border: 3px solid black;
+    box-shadow: 4px 4px 0px black;
+    transform: rotate(-1deg);
+    margin-bottom: 15px;
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.dashboard-header h3 {
+    font-size: 2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 10px 0;
+    letter-spacing: -1px;
+    background: black;
+    padding: 15px 25px;
+    box-shadow: 7px 7px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* --- LISTA DEI MATCH (GLI SLOT) --- */
+.showdown-matches-list {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* Spazio tra i 3 slot */
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+/* Singolo Slot del Match */
+.match-slot {
+    background: white;
+    border: 4px solid black;
+    width: 200px;
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 8px 8px 0px black;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Effetto sfasato per i 3 slot (Scaletta orizzontale) */
+#slot-1 { transform: rotate(-2deg) translateY(-10px); }
+#slot-2 { transform: rotate(1deg) translateY(5px); }
+#slot-3 { transform: rotate(-1.5deg) translateY(-5px); }
+
+.match-slot:hover {
+    transform: scale(1.05) rotate(0deg) !important;
+    z-index: 10;
+}
+
+/* Indicatore di stato (Testo Match 1, Match 2...) */
+.match-status-indicator {
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+.match-status-indicator.empty {
+    opacity: 0.3;
+}
+
+/* Bottone "+" Circolare */
+.btn-add-match-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid black;
+    font-size: 2rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px black;
+    transition: all 0.1s;
+}
+
+.btn-add-match-circle:hover {
+    background: var(--yellow);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px black;
+}
+
+/* Dettagli quando il match è pieno */
+.match-filled-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+
+/* Bottone Modifica (Matitina) */
+.btn-edit-match {
+    background: #3498db;
+    border: 3px solid black;
+    padding: 5px 10px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px black;
+    font-size: 1rem;
+}
+
+.btn-edit-match:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px black;
+}
+
+
+/* Potenziamento dello score summary */
+.match-score-summary {
+    padding: 10px 20px;
+    font-size: 1.8rem;
+    font-weight: 900;
+    box-shadow: 6px 6px 0px black;
+    transform: rotate(-2deg);
+    min-width: 100px;
+    text-align: center; 
+    color: black !important;
+}
+
+/* Rimuove il bordo default se la card è "completed" per far risaltare lo score */
+.match-slot.completed {
+    background-color: #f0f0f0;
+}
+
+.col-info, .col-replays{
+    max-height:270px;
+}

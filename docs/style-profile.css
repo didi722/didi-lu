@@ -256,12 +256,12 @@ body {
     display: none; 
     position: absolute;
     /* Cambia da top: 100% a bottom: calc(100% + 5px) */
-    bottom: calc(100% + 5px); 
+    bottom: calc(100% + 10px); 
     left: 0;
     width: 100%;
     background: white;
     border: 3px solid black;
-    box-shadow: 8px -8px 0px black; /* Ombra invertita verso l'alto */
+    box-shadow: 6px 6px 0px black; /* Ombra invertita verso l'alto */
     z-index: 9999;
     max-height: 250px;
     overflow-y: auto;
@@ -305,7 +305,7 @@ body {
 .dropdown-search-wrapper {
     padding: 10px;
     border-bottom: 2px solid black;
-    background: #f0f0f0;
+    background: var(--yellow);
     position: sticky;
     top: 0;
 }
@@ -784,4 +784,52 @@ body {
     font-size: 0.85rem;
     text-align: center;
     text-transform: uppercase;
+}
+
+
+/* 1. Applichiamo Flexbox a ogni riga (<li>) del dropdown */
+.custom-music-list li {
+    display: flex; /* Attiva Flexbox */
+    align-items: center; /* Allinea verticalmente gli elementi al centro della riga */
+    
+    /* Manteniamo lo stile neubrutalist */
+    padding: 10px;
+    border-bottom: 2px solid #000;
+    cursor: pointer;
+    background: var(--yellow);
+    transition: background 0.2s ease;
+}
+
+/* 2. Gestiamo l'hover per il feedback visivo neubrutalist */
+.custom-music-list li:hover {
+    background: #bcff00; /* Il verde fluo neubrutalist */
+}
+
+/* 3. Sistemiamo le icone dei Pokémon per essere coerenti */
+.custom-music-list li img {
+    /* Manteniamo una dimensione fissa per il contenitore dell'icona */
+    width: 32px; 
+    height: 32px;
+    
+    /* Spazio tra icona e testo */
+    margin-right: 12px; 
+    
+    /* Evitiamo che l'immagine si allarghi o si deformi */
+    object-fit: contain; 
+    
+    /* Manteniamo lo stile pixelato retro (molto neubrutalist) */
+    image-rendering: pixelated; 
+    
+    /* Aggiungiamo un micro-margine superiore se sembrano ancora un filo alte */
+    /* margin-top: 2px; */
+}
+
+/* 4. Sistemiamo il testo del nome */
+.custom-music-list li span, 
+.custom-music-list li {
+    font-family: 'Arial Black', sans-serif; /* Font neubrutalist spesso */
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: #000;
 }

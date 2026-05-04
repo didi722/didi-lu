@@ -84,15 +84,25 @@
 
         <div class="setting-item">
             <label for="bio-input">Personal Bio</label>
-            <textarea id="bio-input" maxlength="150" placeholder="Write your trainer bio here..."></textarea>
+            <textarea id="bio-input" maxlength="100" placeholder="Write your trainer bio here..."></textarea>
         </div>
 
         <div class="setting-item">
-            <label for="team-selector-fav">Featured Team (Circle)</label>
-            <select id="team-selector-fav">
-                <option value="auto">-- Best Team (Auto) --</option>
-            </select>
+    <label>Favorite Pokémon</label>
+    <div class="custom-dropdown" id="pkm-dropdown-container">
+        <div id="pkm-dropdown-header" class="dropdown-header" onclick="togglePkmDropdown()">
+            <span id="selected-pkm-name">Choose your Pokémon...</span>
+            <span class="arrow">▲</span>
         </div>
+        <div id="pkm-dropdown-content" class="dropdown-content">
+            <div class="dropdown-search-wrapper">
+                <input type="text" id="pkm-search" placeholder="Search Pokémon..." onkeyup="filtraPokemon()" onclick="event.stopPropagation()">
+            </div>
+            <ul id="pkm-list-admin" class="custom-music-list"></ul>
+        </div>
+        <input type="hidden" id="team-selector-fav">
+    </div>
+</div>
 
         <div class="setting-item">
             <label>Profile Soundtrack</label>
@@ -377,6 +387,60 @@ function inizializzaAppearance() {
     }
 }
 
+
+let listaCompletaPokemon = []; // Buffer per la ricerca
+
+async function inizializzaPkmSelector() {
+    const pkmListUl = document.getElementById('pkm-list-admin');
+    if (!pkmListUl) return;
+
+    try {
+        // Recuperiamo i primi 1025 Pokémon (fino a Scarlatto/Violetto)
+        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        const data = await response.json();
+        listaCompletaPokemon = data.results;
+
+        renderPkmList(listaCompletaPokemon);
+    } catch (e) {
+        console.error("Errore fetch Pokémon:", e);
+    }
+}
+
+function renderPkmList(lista) {
+    const pkmListUl = document.getElementById('pkm-list-admin');
+    pkmListUl.innerHTML = lista.map((pkm, index) => {
+        // Calcoliamo l'ID reale per la mini-icona (PokeAPI è 1-based)
+        const pkmId = pkm.url.split('/').filter(Boolean).pop();
+        return `
+            <li onclick="selezionaPkm('${pkm.name}')">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmId}.png" 
+                     style="width:30px; height:30px; image-rendering: pixelated; margin-right:10px;">
+                ${pkm.name.toUpperCase()}
+            </li>
+        `;
+    }).join('');
+}
+
+// Funzione di ricerca (gemella di filtraMusica)
+function filtraPokemon() {
+    const input = document.getElementById('pkm-search');
+    const filter = input.value.toLowerCase();
+    const filtrati = listaCompletaPokemon.filter(p => p.name.includes(filter));
+    renderPkmList(filtrati);
+}
+
+// Funzione apertura/chiusura dropdown
+function togglePkmDropdown() {
+    const content = document.getElementById('pkm-dropdown-content');
+    content.classList.toggle('show'); // Assicurati di avere la classe .show nel CSS
+}
+
+// Selezione effettiva
+function selezionaPkm(nome) {
+    document.getElementById('selected-pkm-name').innerText = nome.toUpperCase();
+    document.getElementById('team-selector-fav').value = nome;
+    document.getElementById('pkm-dropdown-content').classList.remove('show');
+}
 // --- LOGICA SELEZIONE ---
 
 function selezionaAvatar(url) {
@@ -430,7 +494,6 @@ async function caricaDatiProfilo() {
         ]);
 
         const playerData = snapPlayer.val() || {};
-        const teamsRaw = playerData.teams || {};
         const info = playerData.info || {}; 
 
         // A. SINCRONIZZAZIONE APPEARANCE & STYLE NEUBRUTALIST
@@ -441,31 +504,23 @@ async function caricaDatiProfilo() {
 
         if (info.color) {
             const colorePlayer = info.color;
-
-            // 1. Aggiorna lo sfondo della fascia Hero col colore del giocatore
             const heroSection = document.querySelector('.hub-hero');
-            if (heroSection) {
-                heroSection.style.backgroundColor = colorePlayer;
-            }
+            if (heroSection) heroSection.style.backgroundColor = colorePlayer;
 
-            // 2. TITOLO: Box sempre NERO, Testo sempre BIANCO
             const titoloDisplay = document.querySelector('.hub-title-display');
             if (titoloDisplay) {
                 titoloDisplay.style.backgroundColor = "#000"; 
-                titoloDisplay.style.color = "#fff"; // <--- BIANCO FISSO
+                titoloDisplay.style.color = "#fff"; 
                 titoloDisplay.style.borderColor = "#000";
             }
 
-            // 3. Aggiorna anche il quadratino nelle impostazioni (per feedback)
             const colorBg = document.getElementById('current-color-bg');
             if (colorBg) colorBg.style.backgroundColor = colorePlayer;
         }
 
         // B. BADGE E TROPHY SHOWCASE
-        // Ripristiniamo l'array globale dei badge selezionati dal database
         if (info.badgeShowcase) {
             window.badgeSelezionati = info.badgeShowcase;
-            // Disegna immediatamente i badge nel box tratteggiato superiore
             if (typeof aggiornaTrophyShowcase === "function") {
                 aggiornaTrophyShowcase();
             }
@@ -489,46 +544,31 @@ async function caricaDatiProfilo() {
             if (songNameDisplay) songNameDisplay.innerText = info.musicName || "Musica Salvata";
         }
 
-        // E. ELABORAZIONE TEAM
-        const teams = Object.keys(teamsRaw).map(key => {
-            const t = teamsRaw[key];
-            const s = t.stats || {};
-            return {
-                id: key, ...t,
-                win: s.won || 0, loss: s.lost || 0,
-                sW: s.setW || 0, sL: s.setL || 0,
-                pts: s.punti || 0
-            };
-        });
-
-        window.tuttiITeam = teams;
-        window.idTeamPreferito = info.idTeamPreferito || "auto";
+        // --- NUOVO E: SINCRONIZZAZIONE POKÉMON PREFERITO ---
+        // Sostituisce la vecchia logica dei team
+        if (info.pkmPreferito) {
+            const pkmNome = info.pkmPreferito.toLowerCase();
+            const pkmDisplay = document.getElementById('selected-pkm-name');
+            const pkmHidden = document.getElementById('team-selector-fav');
+            
+            if (pkmDisplay) pkmDisplay.innerText = pkmNome.toUpperCase();
+            if (pkmHidden) pkmHidden.value = pkmNome;
+        }
         
-        popolaSelettoreTeam();
-        const teamSelect = document.getElementById('team-selector-fav');
-        if (teamSelect) teamSelect.value = window.idTeamPreferito;
+        // Inizializza la lista dei Pokémon nel dropdown
+        if (typeof inizializzaPkmSelector === "function") {
+            inizializzaPkmSelector();
+        }
 
-        // F. AGGIORNAMENTO UI STATS & BADGE DISPONIBILI
-        // Fondamentale: elaboraBadge() userà window.badgeSelezionati per mettere i TICK VERDI
+        // F. ELABORAZIONE STATISTICHE (Dai match o dai dati player se necessario)
+        // Se non usi più i team per le stats, puoi lasciare questa parte vuota 
+        // o adattarla per leggere le vittorie globali.
+        
         if (typeof elaboraBadge === "function") {
             await elaboraBadge(); 
         }
 
-        if (typeof aggiornaUIProfilo === "function") {
-            let genStats = { win: 0, loss: 0, sW: 0, sL: 0, pts: 0 };
-            teams.forEach(t => {
-                genStats.win += t.win; genStats.loss += t.loss;
-                genStats.sW += t.sW; genStats.sL += t.sL;
-                genStats.pts += t.pts;
-            });
-            const categoryCounts = {};
-            teams.forEach(t => { if(t.categoria) categoryCounts[t.categoria] = (categoryCounts[t.categoria] || 0) + t.win; });
-            const bestCat = Object.keys(categoryCounts).sort((a,b) => categoryCounts[b] - categoryCounts[a])[0] || "N/A";
-            
-            aggiornaUIProfilo(genStats, teams.sort((a, b) => b.pts - a.pts)[0], bestCat);
-        }
-
-        console.log("✅ Profilo Neubrutalist ricaricato correttamente.");
+        console.log("✅ Profilo Neubrutalist ricaricato con Pokémon preferito.");
 
     } catch (e) {
         console.error("❌ Errore nel caricamento profilo:", e);
@@ -616,8 +656,8 @@ function attivaContatoreBio() {
         // Funzione per aggiornare il numero
         const updateCount = () => {
             const length = bioInput.value.length;
-            bioCounter.textContent = `${length} / 150`;
-            bioCounter.style.color = length >= 150 ? "#f05252" : "inherit";
+            bioCounter.textContent = `${length} / 100`;
+            bioCounter.style.color = length >= 100 ? "#f05252" : "inherit";
         };
 
         // Ascolta la digitazione
@@ -876,7 +916,9 @@ async function salvaModificheProfilo() {
     
     // 1. Recupero dati dai campi Input
     const nuovaBio = document.getElementById('bio-input').value;
-    const teamScelto = document.getElementById('team-selector-fav').value;
+    
+    // Recuperiamo il Pokémon dal campo hidden del nuovo selettore
+    const pkmScelto = document.getElementById('team-selector-fav').value; 
     
     // 2. Recupero Avatar e Colore (elementi UI Appearance)
     const avatarImg = document.getElementById('current-avatar-preview');
@@ -891,21 +933,22 @@ async function salvaModificheProfilo() {
     if(btn) {
         btn.disabled = true;
         btn.innerText = "SAVING...";
-        btn.style.transform = "translate(2px, 2px)"; // Effetto pressione
+        btn.style.transform = "translate(2px, 2px)"; // Effetto pressione neubrutalist
         btn.style.boxShadow = "none";
     }
 
     // 4. Costruzione dell'oggetto dati da inviare a Firebase
     const datiDaSalvare = {
         bio: nuovaBio,
-        idTeamPreferito: teamScelto,
+        // AGGIORNATO: salviamo il nome del pokemon invece dell'id team
+        pkmPreferito: pkmScelto || "", 
         // Converte il colore del quadratino in HEX per il DB
         color: colorRect ? rgbToHex(colorRect.style.backgroundColor) : "#31C489",
         // Salva l'URL dell'avatar
         avatar: avatarImg ? avatarImg.src : "", 
         // Salva il nome della musica visualizzato
         musicName: musicNameSpan ? musicNameSpan.innerText : "",
-        // SALVATAGGIO BADGE: Memorizza l'array dei badge selezionati (col tick)
+        // SALVATAGGIO BADGE: Memorizza l'array dei badge selezionati
         badgeShowcase: typeof badgeSelezionati !== 'undefined' ? badgeSelezionati : []
     };
 
@@ -920,10 +963,11 @@ async function salvaModificheProfilo() {
         // Feedback di successo
         if(btn) {
             btn.innerText = "UPDATED!";
-            btn.style.backgroundColor = "#4ade80"; // Verde successo
+            btn.style.backgroundColor = "#bcff00"; // Verde fluo neubrutalist
+            btn.style.color = "#000";
         }
         
-        console.log("Profilo salvato correttamente:", datiDaSalvare);
+        console.log("✅ Profilo aggiornato con successo:", datiDaSalvare);
 
         // Ripristino del tasto dopo 2 secondi
         setTimeout(() => {
@@ -931,14 +975,15 @@ async function salvaModificheProfilo() {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 btn.style.backgroundColor = ""; 
+                btn.style.color = "";
                 btn.style.transform = ""; 
                 btn.style.boxShadow = ""; 
             }
         }, 2000);
     })
     .catch(e => {
-        console.error("Errore durante il salvataggio:", e);
-        alert("Errore: " + e.message);
+        console.error("❌ Errore durante il salvataggio:", e);
+        alert("Errore nel salvataggio: " + e.message);
         if(btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
