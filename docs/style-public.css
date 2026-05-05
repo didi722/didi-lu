@@ -2880,7 +2880,7 @@ color:#eeeeee;
 .ribbon-emoji {
     font-size: 2.5rem; /* Leggermente più grandi per test */
     cursor: help;
-    filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.7));
+    filter: drop-shadow(5px 5px 0 black) !important;
     transition: transform 0.2s;
     line-height: 1;
 }
