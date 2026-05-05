@@ -310,6 +310,7 @@ input:focus {
 .modal-content {
     padding: 20px 30px;
     border-radius: 25px;
+    margin-top: 60px;
     width: 90%;
     height: 90%;
     display: flex;
@@ -1088,7 +1089,7 @@ color:#eeeeee;
 /* Container generale delle Stats */
 .area-stats {
     padding: 12px !important; /* Riduce l'ingombro interno */
-    margin-top: -12px;
+    margin-top: -70px;
 }
 
 /* Uniforma le righe delle statistiche (HP, ATK, ecc.) */
@@ -1256,7 +1257,7 @@ color:#eeeeee;
 /* Evita che il box delle mosse spinga tutto giù */
 .area-moves {
     padding: 20px !important;
-    margin-top: -25px;
+    margin-top: -60px !important;
     height: 175px;
 }
 

@@ -2117,6 +2117,7 @@ button.btn-set.is-selected:hover {
     overflow-y: auto; /* Permette lo scroll del modale */
     overflow-x: visible; /* IMPORTANTE: permette ai tooltip di uscire lateralmente se serve */
     color: #eeeeee;
+    margin-top: 60px;
 }
 
 .modal-content h2 {

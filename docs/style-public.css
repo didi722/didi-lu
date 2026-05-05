@@ -15,6 +15,16 @@ body {
     overflow-y: auto; 
 }
 
+/* Il Wrapper limita la larghezza del contenuto */
+.site-wrapper {
+    max-width: 1440px;      /* Larghezza ideale per desktop */
+    margin: 0 auto;         /* Centra il sito orizzontalmente */
+    width: 100%;            /* Importante per schermi piccoli */
+    padding: 0 20px;        /* Evita che il contenuto tocchi i bordi laterali */
+    box-sizing: border-box; /* Include il padding nella larghezza totale */
+    position: relative;     /* Utile se hai elementi position: absolute all'interno */
+}
+
 .hub-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -1347,6 +1357,7 @@ html, body {
     overflow-y: hidden; /* Permette lo scroll del modale */
     overflow-x: hidden; /* IMPORTANTE: permette ai tooltip di uscire lateralmente se serve */
     color: #eeeeee;
+    margin-top: 60px;
 }
 
 .modal-content h2 {
@@ -2119,7 +2130,7 @@ color:#eeeeee;
 /* Container generale delle Stats */
 .area-stats {
     padding: 12px !important; /* Riduce l'ingombro interno */
-    margin-top: -12px;
+    margin-top: -70px;
 }
 
 /* Uniforma le righe delle statistiche (HP, ATK, ecc.) */
@@ -2288,7 +2299,7 @@ color:#eeeeee;
 /* Evita che il box delle mosse spinga tutto giù */
 .area-moves {
     padding: 20px !important;
-    margin-top: -25px;
+    margin-top: -60px !important;
     height: 175px;
 }
 

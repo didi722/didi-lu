@@ -1591,100 +1591,89 @@ function formattaDataItaliana(dataStr) {
     return dataStr; // Fallback se è già formattata
 }
 
-
 async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     const modal = document.getElementById('teamModal');
     const content = document.getElementById('teamDetailContent');
     
-    // 1. Mostriamo il caricamento
-    content.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Caricamento dati team...</div>';
+    content.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Ricerca dati team nel database...</div>';
     modal.style.display = 'flex';
 
     try {
-        // --- LOGICA PALETTE DINAMICA ---
-        // Recuperiamo il colore del player dal database
-        const colorSnap = await db.ref(`players/${idPlayerPuro.toLowerCase()}/info/color`).once('value');
-        const baseColor = colorSnap.val() || "#31c489"; // Verde di default se manca
+        // TRUCCO: Convertiamo l'ID in minuscolo per il database
+        const idLower = idPlayerPuro.toLowerCase();
+
+        // 1. Recupero Colore
+        const colorSnap = await db.ref(`players/${idLower}/info/color`).once('value');
+        const baseColor = colorSnap.val() || "#31c489"; 
         const palette = getPlayerPalette(baseColor); 
-        // -------------------------------
 
-        const dataIscritti = window.teamsIscrittiStagione; 
-        if (!dataIscritti || !dataIscritti[formato]) {
-            content.innerHTML = `<div style="color:white; text-align:center;">Formato "${formato}" non trovato.</div>`;
-            return;
+        // 2. Cerchiamo nel nodo teams usando l'ID minuscolo
+        const teamsRef = db.ref(`players/${idLower}/teams`);
+        const teamsSnap = await teamsRef.once('value');
+        const allTeams = teamsSnap.val();
+
+        if (!allTeams) {
+            throw new Error(`Nessun team trovato per l'allenatore ${idLower}.`);
         }
 
-        const formatoData = dataIscritti[formato];
-        let teamData = null;
-        let proprietarioEffettivo = idPlayerPuro;
+        let teamDataFound = null;
+        let teamIdUnivoco = null;
 
-        // 2. RICERCA AGNOSTICA
-        for (const playerKey in formatoData) {
-            const playerNode = formatoData[playerKey];
-            if (playerNode && playerNode.datiTeams) {
-                const trovato = Object.values(playerNode.datiTeams).find(t => {
-                    const n = (typeof t.nome === 'object') ? t.nome.valore : t.nome;
-                    return n && n.trim().toLowerCase() === nomeTeam.trim().toLowerCase();
-                });
-
-                if (trovato) {
-                    teamData = trovato;
-                    proprietarioEffettivo = playerKey;
-                    break;
-                }
-            }
-        }
-
-        if (teamData) {
-            // Sincronizzazione statistiche
-            const statsCalcolate = (window.databaseDidi && window.databaseDidi[nomeTeam]) || 
-                                   (window.databaseLu && window.databaseLu[nomeTeam]) || {};
-
-            let team = {
-                nome: (typeof teamData.nome === 'object') ? teamData.nome.valore : teamData.nome,
-                vittorie: statsCalcolate.vittorie || 0,
-                sconfitte: statsCalcolate.sconfitte || 0,
-                setVinti: statsCalcolate.setVinti || 0,
-                setPersi: statsCalcolate.setPersi || 0,
-                puntiFatti: statsCalcolate.puntiFatti || 0,
-                pokemon: []
-            };
-
-            if (teamData.pokemon) {
-                const listaPkm = Array.isArray(teamData.pokemon) ? teamData.pokemon : Object.values(teamData.pokemon);
-                team.pokemon = listaPkm.map(p => ({
-                    nome: p.nome || "???",
-                    abilita: p.abilita || "N/D",
-                    strumento: p.strumento || "Nessuno",
-                    mosse: p.mosse ? (Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse)) : ["-", "-", "-", "-"],
-                    evs: p.evs || "N/D"
-                }));
-            }
-
-            // 3. GENERAZIONE HTML: Passiamo la palette calcolata
-            content.innerHTML = generaHtmlDettaglioTeam(team, proprietarioEffettivo, palette);
+        // 3. Ricerca per nome team
+        for (const [id, data] of Object.entries(allTeams)) {
+            const nomeNelDb = (typeof data.nome === 'object') ? data.nome.valore : data.nome;
             
-        } else {
-            content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato nel formato ${formato}.</div>`;
+            if (nomeNelDb && nomeNelDb.trim().toLowerCase() === nomeTeam.trim().toLowerCase()) {
+                teamIdUnivoco = id;
+                teamDataFound = data;
+                break;
+            }
         }
+
+        if (!teamIdUnivoco) {
+            throw new Error(`Il team "${nomeTeam}" non esiste nel database di ${idLower}.`);
+        }
+
+        // 4. Preparazione dati e stats
+        const s = teamDataFound.stats || {};
+        
+        let team = {
+            nome: (typeof teamDataFound.nome === 'object') ? teamDataFound.nome.valore : teamDataFound.nome,
+            vittorie: Number(s.won || 0),
+            sconfitte: Number(s.lost || 0),
+            setVinti: Number(s.setW || 0),
+            setPersi: Number(s.setL || 0),
+            puntiFatti: Number(s.points || 0),
+            played: Number(s.played || 0), 
+            pokemon: []
+        };
+
+        // Mapping Pokemon
+        if (teamDataFound.pokemon) {
+            const listaPkm = Array.isArray(teamDataFound.pokemon) ? teamDataFound.pokemon : Object.values(teamDataFound.pokemon);
+            team.pokemon = listaPkm.map(p => ({
+                nome: p.nome || "???",
+                abilita: p.abilita || "N/D",
+                strumento: p.strumento || "Nessuno",
+                mosse: p.mosse ? (Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse)) : ["-", "-", "-", "-"],
+                evs: p.evs || "N/D"
+            }));
+        }
+
+        // 5. Rendering
+        // Passiamo idLower per le icone o i link interni
+        content.innerHTML = generaHtmlDettaglioTeam(team, idLower, palette);
+
     } catch (e) {
-        console.error("Errore dettaglio team:", e);
-        content.innerHTML = `<div style="color:white; text-align:center;">Errore durante il caricamento.</div>`;
+        console.error("ERRORE:", e);
+        content.innerHTML = `
+            <div style="color:white; text-align:center; padding:20px;">
+                <p style="color: #ff4d4d; font-weight: bold;">Errore: ${e.message}</p>
+            </div>`;
     }
 }
 
 function generaHtmlDettaglioTeam(team, proprietario, palette) {
-    const sV = Number(team.setVinti) || 0;
-    const sP = Number(team.setPersi) || 0;
-    const w = Number(team.vittorie) || 0;
-    const l = Number(team.sconfitte) || 0;
-    const pts = Number(team.puntiFatti) || 0;
-
-    // Logica calcolo partite basata sui set (come nella tua funzione Admin)
-    const totSet = sV + sP;
-    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
-
-    // Generiamo la stringa delle variabili CSS
     const variabiliCSS = generaVariabiliCSS(palette);
 
     return `
@@ -1692,28 +1681,27 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
         <div class="modal-header-container" style="position: relative;">
             <h2>${team.nome}</h2>
             <div class="team-score-banner">
-                <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
-                <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
-                <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
-                <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
+                <div class="score-item"><span>W/L</span><strong>${team.vittorie} - ${team.sconfitte}</strong></div>
+                <div class="score-item"><span>Sets W/L</span><strong>${team.setVinti} - ${team.setPersi}</strong></div>
+                <div class="score-item"><span>Points</span><strong>${team.puntiFatti}</strong></div>
+                <div class="score-item"><span>Played</span><strong>${team.played}</strong></div>
             </div>
-
         </div>
 
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
-                // Pulizia nome per URL (Showdown Style)
                 const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
                 const mIdPrefix = `types-${pIndex}`;
                 const statsId = `stats-${pIndex}`;
                 const abiId = `abi-${pIndex}`;
                 const itemId = `item-${pIndex}`;
-                
-                // Tooltip a sinistra per l'ultima colonna (indice 2 e 5 nella griglia da 3)
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 const direzioneTipi = pIndex < 3 ? 'v-down' : '';
                 
-                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                // Caricamento asincrono tipi
+                setTimeout(() => {
+                    if (typeof caricaTipi === 'function') caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                }, 150);
                 
                 const itemUrlName = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
                 
@@ -2531,52 +2519,79 @@ async function salvaMatchFirebase() {
         }
     }
 
-    // 6. Creazione dell'oggetto Match
-    const datiMatch = {
-        player1: p1Select.value,
-        player1Id: p1Id,
-        player2: p2Select.value,
-        player2Id: p2Id,
-        winnerId: winnerId,
-        team1: team1Select.value,
-        team2: team2Select.value,
-        score: scoreVal,
-        p1score: s1,
-        p2score: s2,
-        p1points: p1points,
-        p2points: p2points,
-        data: dataMatch,
-        categoria: categoria,
-        replays: replays,
-        lastEdit: new Date().toISOString(),
-        showdownId: showdownId
-    };
-
     try {
+        // --- RECUPERO RANKING ATTUALI E MATCH ESISTENTE ---
+        const snapP1 = await db.ref(`players/${p1Id}/stats/individual-stats/ranking`).once('value');
+        const snapP2 = await db.ref(`players/${p2Id}/stats/individual-stats/ranking`).once('value');
+        const snapEsistente = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`).once('value');
+        
+        const eloP1_pre = snapP1.val() || 1000;
+        const eloP2_pre = snapP2.val() || 1000;
+        const matchEsistente = snapEsistente.val();
+
+        // --- LOGICA DELTA ELO INTEGRATA ---
+        let delta1, delta2;
+        const K = 32;
+
+        // Se il match esiste già ed è identico (stessi giocatori e stesso vincitore), teniamo i delta vecchi
+        if (matchEsistente && 
+            matchEsistente.player1Id === p1Id && 
+            matchEsistente.player2Id === p2Id && 
+            matchEsistente.winnerId === winnerId &&
+            matchEsistente.p1DeltaElo !== undefined) {
+            
+            delta1 = matchEsistente.p1DeltaElo;
+            delta2 = matchEsistente.p2DeltaElo;
+        } else {
+            // Calcolo nuovi Delta (Formula Elo professionale)
+            const exp1 = 1 / (1 + Math.pow(10, (eloP2_pre - eloP1_pre) / 400));
+            const exp2 = 1 / (1 + Math.pow(10, (eloP1_pre - eloP2_pre) / 400));
+            
+            const score1 = (winnerId === p1Id) ? 1 : 0;
+            const score2 = (winnerId === p2Id) ? 1 : 0;
+
+            delta1 = Math.round(K * (score1 - exp1));
+            delta2 = Math.round(K * (score2 - exp2));
+        }
+
+        // 6. Creazione dell'oggetto Match (con delta e ranking congelati)
+        const datiMatch = {
+            player1: p1Select.value,
+            player1Id: p1Id,
+            player2: p2Select.value,
+            player2Id: p2Id,
+            winnerId: winnerId,
+            team1: team1Select.value,
+            team2: team2Select.value,
+            score: scoreVal,
+            p1score: s1,
+            p2score: s2,
+            p1points: p1points,
+            p2points: p2points,
+            data: dataMatch,
+            categoria: categoria,
+            replays: replays,
+            lastEdit: new Date().toISOString(),
+            showdownId: showdownId,
+            p1EloAtMatch: eloP1_pre,
+            p2EloAtMatch: eloP2_pre,
+            p1DeltaElo: delta1,  // NUOVO: Delta congelato nel DB
+            p2DeltaElo: delta2   // NUOVO: Delta congelato nel DB
+        };
+
         // 7. SALVATAGGIO MATCH
         const pathMatch = `seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`;
         await db.ref(pathMatch).set(datiMatch);
 
-        // --- NUOVA LOGICA: AGGIORNAMENTO ELO (RANKING) ---
-        try {
-            const snapP1 = await db.ref(`players/${p1Id}/stats/individual-stats/ranking`).once('value');
-            const snapP2 = await db.ref(`players/${p2Id}/stats/individual-stats/ranking`).once('value');
+        // --- AGGIORNAMENTO ELO NEI PROFILI (Basato sui Delta appena calcolati/recuperati) ---
+        // Nota: Qui aggiorniamo il ranking del profilo per riflettere il nuovo stato,
+        // ma la funzione ricalcolaStatisticheGlobali userà i delta salvati sopra.
+        await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1_pre + delta1 });
+        await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2_pre + delta2 });
+        
+        console.log(`Elo aggiornato con Delta: ${p1Id} (${delta1}), ${p2Id} (${delta2})`);
 
-            let eloP1 = snapP1.val() || 1000;
-            let eloP2 = snapP2.val() || 1000;
-
-            const isP1Winner = (winnerId === p1Id);
-            const variazione = calcolaVariazioneElo(eloP1, eloP2, isP1Winner);
-
-            await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1 + variazione });
-            await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2 - variazione });
-            
-            console.log(`Elo aggiornato: ${p1Id} (${eloP1 + variazione}), ${p2Id} (${eloP2 - variazione})`);
-        } catch (eloErr) {
-            console.error("Errore aggiornamento Elo:", eloErr);
-        }
-
-        // --- LOGICA VINCITORE SHOWDOWN ---
+        // --- LOGICA VINCITORE SHOWDOWN (Invariata) ---
         const sdSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
         const allMatches = sdSnap.val() || {};
         const matchesArray = Object.values(allMatches);
@@ -2591,10 +2606,10 @@ async function salvaMatchFirebase() {
         let maxWins = 0;
         let isTie = false;
 
-        Object.entries(winsRecord).forEach(([pId, count]) => {
+        Object.entries(winsRecord).forEach(([id, count]) => {
             if (count > maxWins) {
                 maxWins = count;
-                seriesWinnerId = pId;
+                seriesWinnerId = id;
                 isTie = false;
             } else if (count === maxWins) {
                 isTie = true;
@@ -2624,7 +2639,7 @@ async function salvaMatchFirebase() {
             await ricalcolaStatisticheGlobali(p2Id);
         }
         
-        alert(`Match #${matchNum} salvato e Ranking aggiornato!`);
+        alert(`Match #${matchNum} salvato e Ranking aggiornato (Delta: ${delta1 > 0 ? '+'+delta1 : delta1})!`);
 
         // 9. CHIUSURA E PULIZIA
         panel.style.display = 'none';
@@ -2648,6 +2663,7 @@ async function salvaMatchFirebase() {
     }
 }
 
+
 async function ricalcolaStatisticheGlobali(pId) {
     try {
         const seasonsSnap = await db.ref(`seasons`).once('value');
@@ -2656,7 +2672,6 @@ async function ricalcolaStatisticheGlobali(pId) {
         const playerSnap = await db.ref(`players/${pId}`).once('value');
         const playerData = playerSnap.val() || {};
         
-        // Mappatura Team -> Pokémon (usata per ricostruire chi ha giocato cosa nei match storici)
         const teamCompositionMap = {};
         if (playerData.teams) {
             Object.values(playerData.teams).forEach(t => {
@@ -2664,193 +2679,241 @@ async function ricalcolaStatisticheGlobali(pId) {
             });
         }
 
-        let globale = {
-            played: 0, won: 0, lost: 0, setW: 0, setL: 0,
-            allMatches: [],
-            showdownHistory: [], // Array di {date, won: bool, team: string, pokemon: string[]}
-            teamsMap: {}, 
-            formatsMap: {},
-            pokemonMap: {} 
-        };
+        let cronologiaMatchPiatta = [];
+        let listaShowdownPartecipati = [];
+        let statsLeaderboard = { won: 0, lost: 0, setW: 0, setL: 0, formats: {} };
 
-        // --- 1. AGGREGAZIONE DATI (Stagioni -> Showdowns -> Matches) ---
-        Object.keys(seasons).forEach(sId => {
-            const stagioneObj = seasons[sId];
-            const lb = stagioneObj.leaderboard;
-
-            // Stats storiche generali
-            if (lb && lb[pId]) {
-                const s = lb[pId];
-                globale.won += (s.won || 0);
-                globale.lost += (s.lost || 0);
-                globale.setW += (s.setW || 0);
-                globale.setL += (s.setL || 0);
-                globale.played += ((s.won || 0) + (s.lost || 0));
+        // 1. ESTRAZIONE DATI
+        Object.entries(seasons).forEach(([sId, stagione]) => {
+            if (stagione.leaderboard && stagione.leaderboard[pId]) {
+                const s = stagione.leaderboard[pId];
+                statsLeaderboard.won += (s.won || 0);
+                statsLeaderboard.lost += (s.lost || 0);
+                statsLeaderboard.setW += (s.setW || 0);
+                statsLeaderboard.setL += (s.setL || 0);
             }
 
-            const showdowns = stagioneObj.showdowns || {};
+            const showdowns = stagione.showdowns || {};
             Object.entries(showdowns).forEach(([sdId, sd]) => {
-                const matches = sd.matches || {};
-                const vincitoreSD = sd.info?.vincitoreShowdown;
-                const dataSD = sd.info?.data || sd.info?.lastEdit || "2000-01-01";
-                const categoria = sd.info?.categoria || "Standard";
-                
-                let playerPartecipated = false;
-                let teamUsatoInSD = null;
+                const infoSD = sd.info || {};
+                const dataSD = infoSD.data || infoSD.lastEdit || "2000-01-01";
+                const categoria = infoSD.categoria || "Standard";
+                let haGiocatoInQuestoSD = false;
+                let lastTeamInSD = null;
 
-                Object.values(matches).forEach(m => {
-                    if (m.player1Id === pId || m.player2Id === pId) {
-                        playerPartecipated = true;
-                        const isWinner = (m.winnerId === pId);
-                        const matchData = { ...m, sortDate: m.data || m.lastEdit, sdId: sdId };
-                        globale.allMatches.push(matchData);
-                        
-                        teamUsatoInSD = (m.player1Id === pId) ? m.team1 : m.team2;
+                const matchesNodo = sd.matches || {};
+                Object.entries(matchesNodo).forEach(([mKey, mData]) => {
+                    const isP1 = mData.player1Id === pId;
+                    const isP2 = mData.player2Id === pId;
 
-                        // Aggregazione statistiche Team
-                        if (!globale.teamsMap[teamUsatoInSD]) {
-                            globale.teamsMap[teamUsatoInSD] = { 
-                                name: teamUsatoInSD, won: 0, lost: 0, setW: 0, setL: 0, played: 0, matchHistory: [] 
-                            };
-                        }
-                        const t = globale.teamsMap[teamUsatoInSD];
-                        t.played++;
-                        if (isWinner) t.won++; else t.lost++;
-                        t.matchHistory.push(matchData);
+                    if (isP1 || isP2) {
+                        haGiocatoInQuestoSD = true;
+                        const vinceMatch = (mData.winnerId === pId);
+                        const scoreAvversario = isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0);
+                        const teamUsato = isP1 ? mData.team1 : mData.team2;
+                        lastTeamInSD = teamUsato;
 
-                        // Aggregazione statistiche Formato
-                        if (!globale.formatsMap[categoria]) {
-                            globale.formatsMap[categoria] = { name: categoria, played: 0, won: 0, lose: 0, setW: 0, setL: 0 };
-                        }
-                        const f = globale.formatsMap[categoria];
-                        f.played++;
-                        if (isWinner) f.won++; else f.lose++;
+                        const matchNumber = parseInt(mKey.replace(/\D/g, '')) || 0;
 
-                        // Associazione Pokémon (usiamo Set per contare la specie una sola volta per match)
-                        const specieUniche = [...new Set(teamCompositionMap[teamUsatoInSD] || [])];
-                        specieUniche.forEach(pkmNome => {
-                            if (!globale.pokemonMap[pkmNome]) globale.pokemonMap[pkmNome] = [];
-                            globale.pokemonMap[pkmNome].push(matchData);
+                        cronologiaMatchPiatta.push({
+                            data: dataSD,
+                            ordineInterno: matchNumber,
+                            vittoria: vinceMatch,
+                            punteggioAvversario: scoreAvversario,
+                            team: teamUsato,
+                            categoria: categoria,
+                            deltaElo: isP1 ? Number(mData.p1DeltaElo || 0) : Number(mData.p2DeltaElo || 0),
+                            // Punti specifici del match (se diversi dal deltaElo)
+                            points: isP1 ? Number(mData.p1points || 0) : Number(mData.p2points || 0),
+                            setW: isP1 ? Number(mData.p1score || 0) : Number(mData.p2score || 0),
+                            setL: isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0)
                         });
+
+                        if (!statsLeaderboard.formats[categoria]) {
+                            statsLeaderboard.formats[categoria] = { won: 0, lost: 0 };
+                        }
+                        if (vinceMatch) {
+                            statsLeaderboard.formats[categoria].won++;
+                        } else {
+                            statsLeaderboard.formats[categoria].lost++;
+                        }
                     }
                 });
 
-                // Se il player ha lottato in questo showdown, lo aggiungiamo alla cronologia eventi
-                if (playerPartecipated) {
-                    globale.showdownHistory.push({
-                        date: dataSD,
-                        won: (vincitoreSD === pId),
-                        team: teamUsatoInSD,
-                        pokemon: [...new Set(teamCompositionMap[teamUsatoInSD] || [])]
+                if (haGiocatoInQuestoSD && lastTeamInSD) {
+                    listaShowdownPartecipati.push({
+                        data: dataSD,
+                        vintoTorneo: (infoSD.vincitoreShowdown === pId),
+                        team: lastTeamInSD,
+                        pokemon: [...new Set(teamCompositionMap[lastTeamInSD] || [])]
                     });
                 }
             });
         });
 
-        // --- 2. HELPER BADGES (Calcola Match Streak e Showdown Streak) ---
-        const calcolaBadgesCompleti = (matches, showdowns, playerId, filterEntity = null, isPkm = false) => {
-            // Ordiniamo cronologicamente
-            matches.sort((a, b) => new Date(a.sortDate) - new Date(b.sortDate));
-            showdowns.sort((a, b) => new Date(a.date) - new Date(b.date));
+        // 2. ORDINAMENTO
+        cronologiaMatchPiatta.sort((a, b) => {
+            const d1 = new Date(a.data);
+            const d2 = new Date(b.data);
+            if (d1.getTime() !== d2.getTime()) return d1 - d2;
+            return a.ordineInterno - b.ordineInterno;
+        });
 
-            let cWS = 0, mWS = 0, mWSDate = "-";
-            let cCS = 0, mCS = 0, mCSDate = "-";
-            let cSS = 0, mSS = 0, mSSDate = "-"; 
+        listaShowdownPartecipati.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-            // Streak Match (Vittorie e Clean Sheets)
+        // 3. FUNZIONE CALCOLO BADGE
+        const calcolaParametriBadge = (matchList, showdownList, filtro = null, tipoFiltro = 'global') => {
+            let matches = matchList;
+            if (tipoFiltro === 'team') matches = matchList.filter(m => m.team === filtro);
+            if (tipoFiltro === 'pokemon') matches = matchList.filter(m => teamCompositionMap[m.team]?.includes(filtro));
+            
+            let curWS = 0, maxWS = 0, maxWSD = "-";
+            let curCS = 0, maxCS = 0, maxCSD = "-";
+
             matches.forEach(m => {
-                const isWinner = (m.winnerId === playerId);
-                const oppScore = (m.player1Id === playerId) ? (m.p2score || 0) : (m.p1score || 0);
-                if (isWinner) {
-                    cWS++; if (cWS >= mWS) { mWS = cWS; mWSDate = m.sortDate; }
-                    if (oppScore === 0) { cCS++; if (cCS >= mCS) { mCS = cCS; mCSDate = m.sortDate; } } else { cCS = 0; }
-                } else { cWS = 0; cCS = 0; }
+                if (m.vittoria) {
+                    curWS++;
+                    if (curWS > maxWS) { maxWS = curWS; maxWSD = m.data; }
+                    if (m.punteggioAvversario === 0) {
+                        curCS++;
+                        if (curCS > maxCS) { maxCS = curCS; maxCSD = m.data; }
+                    } else { curCS = 0; }
+                } else { curWS = 0; curCS = 0; }
             });
 
-            // Streak Showdown (Vittorie Tornei)
-            showdowns.forEach(sd => {
-                // Filtro: lo showdown conta solo se l'entità (Team o Pokémon) era presente
-                const isRelevant = !filterEntity || 
-                                   (isPkm ? sd.pokemon.includes(filterEntity) : sd.team === filterEntity);
-                if (isRelevant) {
-                    if (sd.won) {
-                        cSS++; if (cSS >= mSS) { mSS = cSS; mSSDate = sd.date; }
-                    } else { cSS = 0; }
-                }
+            let sds = showdownList;
+            if (tipoFiltro === 'team') sds = showdownList.filter(s => s.team === filtro);
+            if (tipoFiltro === 'pokemon') sds = showdownList.filter(s => s.pokemon.includes(filtro));
+            
+            let curSS = 0, maxSS = 0, maxSSD = "-";
+            sds.forEach(s => {
+                if (s.vintoTorneo) {
+                    curSS++;
+                    if (curSS > maxSS) { maxSS = curSS; maxSSD = s.data; }
+                } else { curSS = 0; }
             });
 
             return {
-                wonstrike: cWS, maxwonstrike: mWS, maxwonstrikedate: mWSDate,
-                cleanstrike: cCS, maxcleanstrike: mCS, maxcleanstrikedate: mCSDate,
-                showdownstrike: cSS, maxshowdownstrike: mSS, maxshowdownstrikedate: mSSDate,
+                wonstrike: curWS, maxwonstrike: maxWS, maxwonstrikedate: maxWSD,
+                cleanstrike: curCS, maxcleanstrike: maxCS, maxcleanstrikedate: maxCSD,
+                showdownstrike: curSS, maxshowdownstrike: maxSS, maxshowdownstrikedate: maxSSD,
                 played: matches.length
             };
         };
 
-        // --- 3. RICALCOLO ELO STORICO ---
-        const uniqueMatches = Array.from(new Map(globale.allMatches.map(m => [m.id || `${m.data}-${m.player1Id}-${m.player2Id}`, m])).values());
-        uniqueMatches.sort((a, b) => new Date(a.sortDate) - new Date(b.sortDate));
-        
-        let nuovoRanking = 1000; 
-        const K = 32;
-        for (const m of uniqueMatches) {
-            const isWinner = (m.winnerId === pId);
-            const oppId = (m.player1Id === pId) ? m.player2Id : m.player1Id;
-            const oppSnap = await db.ref(`players/${oppId}/stats/individual-stats/ranking`).once('value');
-            const oppRanking = oppSnap.val() || 1000;
-            const expectedScore = 1 / (1 + Math.pow(10, (oppRanking - nuovoRanking) / 400));
-            nuovoRanking = Math.round(nuovoRanking + K * ((isWinner ? 1 : 0) - expectedScore));
-        }
-
-        // --- 4. SALVATAGGIO POKÉMON BADGES ---
-        const pokemonBadgesFinali = {};
-        Object.entries(globale.pokemonMap).forEach(([pkmNome, mList]) => {
-            const b = calcolaBadgesCompleti(mList, globale.showdownHistory, pId, pkmNome, true);
-            pokemonBadgesFinali[pkmNome] = {
-                ...b,
-                presenze: b.played,
-                loyaltyBadge: b.played >= 30 // Fiocco Fedeltà: true se presenze >= 30
-            };
+        // 4. CALCOLO RANKING (Elo Globale)
+        let ranking = 1000;
+        cronologiaMatchPiatta.forEach(m => {
+            ranking += m.deltaElo;
         });
-        await db.ref(`players/${pId}/pokemon-badges`).set(pokemonBadgesFinali);
 
-        // --- 5. SALVATAGGIO TEAM BADGES ---
-        const registeredTeams = playerData.teams || {};
-        for (const [tId, tObj] of Object.entries(registeredTeams)) {
-            const statsTeam = globale.teamsMap[tObj.nome];
-            if (statsTeam) {
-                const bTeam = calcolaBadgesCompleti(statsTeam.matchHistory, globale.showdownHistory, pId, tObj.nome, false);
-                await db.ref(`players/${pId}/teams/${tId}/stats`).set({
-                    played: statsTeam.played, won: statsTeam.won, lost: statsTeam.lost
+        // 5. SALVATAGGIO E ANALISI TEAM
+        const badgeGlobali = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati);
+
+        let bestTeamData = { name: "-", played: 0, won: 0, lose: 0, setW: 0, setL: 0, points: 0 };
+        let mostUsedData = { name: "-", played: 0 };
+        let maxWinsRecord = -1;
+        let maxPlayedRecord = -1;
+
+        if (playerData.teams) {
+            for (const [tId, tObj] of Object.entries(playerData.teams)) {
+                const bTeam = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, tObj.nome, 'team');
+                
+                const matchDelTeam = cronologiaMatchPiatta.filter(m => m.team === tObj.nome);
+                const winT = matchDelTeam.filter(m => m.vittoria).length;
+                const lostT = bTeam.played - winT;
+                
+                // Calcolo aggregato Set e Punti per il singolo team
+                const sW = matchDelTeam.reduce((acc, curr) => acc + Number(curr.setW || 0), 0);
+                const sL = matchDelTeam.reduce((acc, curr) => acc + Number(curr.setL || 0), 0);
+                const ptsT = matchDelTeam.reduce((acc, curr) => acc + Number(curr.points || 0), 0);
+
+                // Aggiornamento statistiche nel nodo del team (Inclusi Set e Points)
+                await db.ref(`players/${pId}/teams/${tId}/stats`).update({ 
+                    played: bTeam.played, 
+                    won: winT, 
+                    lost: lostT,
+                    setW: sW,
+                    setL: sL,
+                    points: ptsT
                 });
+                
                 await db.ref(`players/${pId}/teams/${tId}/badges`).set(bTeam);
+
+                // Logica Best Team (Basata su vittorie assolute)
+                if (winT > maxWinsRecord) {
+                    maxWinsRecord = winT;
+                    bestTeamData = { 
+                        name: tObj.nome, 
+                        played: bTeam.played, 
+                        won: winT, 
+                        lose: lostT, 
+                        setW: sW, 
+                        setL: sL, 
+                        points: ptsT 
+                    };
+                }
+
+                // Logica Most Used (Basata su partite giocate)
+                if (bTeam.played > maxPlayedRecord) {
+                    maxPlayedRecord = bTeam.played;
+                    mostUsedData = { name: tObj.nome, played: bTeam.played };
+                }
             }
         }
 
-        // --- 6. SALVATAGGIO TRAINER BADGES & STATS ---
-        const bTrainer = calcolaBadgesCompleti(uniqueMatches, globale.showdownHistory, pId);
-        
-        // Calcolo Best Performance
-        let bestFormat = { name: "-", won: 0 };
-        Object.values(globale.formatsMap).forEach(f => {
-            if (f.won > bestFormat.won) bestFormat = f;
+        // Calcolo Pokemon Badges
+        const allPokemon = [...new Set(Object.values(teamCompositionMap).flat())];
+        const pkmBadges = {};
+        allPokemon.forEach(pkm => {
+            pkmBadges[pkm] = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, pkm, 'pokemon');
+        });
+        await db.ref(`players/${pId}/pokemon-badges`).set(pkmBadges);
+
+        // Calcolo Best Format
+        let bestFormatName = "-";
+        let bestFormatWon = 0;
+        let bestFormatLose = 0;
+        let maxWinsF = -1;
+
+        Object.entries(statsLeaderboard.formats).forEach(([fName, fStats]) => { 
+            if (fStats.won > maxWinsF) { 
+                maxWinsF = fStats.won; 
+                bestFormatName = fName;
+                bestFormatWon = fStats.won;
+                bestFormatLose = fStats.lost;
+            } 
         });
 
+        // 6. SALVATAGGIO FINALE STATS GLOBALI
         await db.ref(`players/${pId}/stats`).update({
             'individual-stats': {
-                played: globale.played, won: globale.won, lost: globale.lost, 
-                setW: globale.setW, setL: globale.setL, ranking: nuovoRanking,
-                format: { 'format-name': bestFormat.name || "-" }
+                played: statsLeaderboard.won + statsLeaderboard.lost,
+                won: statsLeaderboard.won,
+                lost: statsLeaderboard.lost,
+                setW: statsLeaderboard.setW,
+                setL: statsLeaderboard.setL,
+                ranking: ranking,
+                format: { 
+                    'format-name': bestFormatName,
+                    'format-won': bestFormatWon,
+                    'format-lose': bestFormatLose
+                }
             },
-            'badges': bTrainer
+            'team-stats': {
+                bestteam: bestTeamData,
+                mostusedteam: mostUsedData
+            },
+            'badges': badgeGlobali
         });
 
-        console.log(`✅ Ricalcolo integrale completato per ${pId}`);
+        console.log(`✅ Ricalcolo completato per ${pId}.`);
 
-    } catch (e) {
-        console.error("❌ Errore critico ricalcolo:", e);
+    } catch (err) {
+        console.error("❌ Errore critico nel ricalcolo:", err);
     }
 }
+
 
 async function aggiornaLeaderboard(stagione) {
     try {

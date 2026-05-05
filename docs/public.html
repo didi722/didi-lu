@@ -1164,7 +1164,7 @@ async function renderPlayerStats(playerName) {
         ranking: allPlayers[id].stats?.['individual-stats']?.ranking || 1000
     }));
 
-    // Ordiniamo l'array dal ranking più alto al più basso (Z-A)
+    // Ordiniamo l'array dal ranking più alto al più basso
     playersArray.sort((a, b) => b.ranking - a.ranking);
 
     // Troviamo la posizione (index + 1)
@@ -1177,11 +1177,12 @@ async function renderPlayerStats(playerName) {
     const lost = stats.lost || 0;
     const currentElo = stats.ranking || 1000;
     
-    // Recupero dati del formato (Best Format)
+    // --- CORREZIONE ACCESSO CHIAVI ---
+    // Usiamo la notazione ['chiave'] perché i nomi nel DB hanno il trattino (es. format-won)
     const bestFormatData = stats.format || {};
     const formatName = bestFormatData['format-name'] || "-";
-    const formatWon = bestFormatData.won || 0;
-    const formatLost = bestFormatData.lose || 0; // <--- Recuperiamo anche le sconfitte
+    const formatWon = bestFormatData['format-won'] || 0;
+    const formatLost = bestFormatData['format-lose'] || 0; 
 
     const winRate = (won + lost) > 0 ? ((won / (won + lost)) * 100).toFixed(1) : 0;
     const setRate = ( (stats.setW || 0) + (stats.setL || 0) ) > 0 
@@ -1201,7 +1202,7 @@ async function renderPlayerStats(playerName) {
         { label: "% SET WON", value: `${setRate}%` },
         { 
             label: "BEST FORMAT", 
-            // Nuovo formato richiesto: Nome (Vinte/Perse)
+            // Mostra: Nome Formato (Vinte/Perse)
             value: formatName !== "-" ? `${formatName} (${formatWon}/${formatLost})` : "-" 
         }
     ];
@@ -1334,64 +1335,66 @@ async function caricaPokemonPreferito(pkmNome) {
 
 async function caricaBestTeamDallAlto(playerKey) {
     try {
-        // 1. Recuperiamo il riferimento al Best Team (solo nome)
+        // 1. Recuperiamo i dati aggregati del Best Team
+        // Ora il database contiene già: name, won, lose, played, setsW, setsL
         const bestTeamSnapshot = await db.ref(`players/${playerKey}/stats/team-stats/bestteam`).once('value');
-        const bestTeamData = bestTeamSnapshot.val();
+        const bestData = bestTeamSnapshot.val();
 
-        if (!bestTeamData || !bestTeamData.name) {
-            console.warn("Nessun Best Team impostato nel database.");
+        if (!bestData || !bestData.name || bestData.name === "-") {
+            console.warn("Nessun Best Team calcolato per questo giocatore.");
             return;
         }
 
-        const targetTeamName = bestTeamData.name;
-
-        // 2. Recuperiamo TUTTI i team del giocatore per trovare quello che corrisponde al nome
+        // 2. Recuperiamo il team completo per ottenere la lista dei Pokémon (necessaria per le immagini)
         const allTeamsSnapshot = await db.ref(`players/${playerKey}/teams`).once('value');
-        const allTeams = allTeamsSnapshot.val();
+        const allTeams = allTeamsSnapshot.val() || {};
 
-        if (!allTeams) return;
-
-        // Trova il team che ha lo stesso nome indicato in bestteam
-        const teamKey = Object.keys(allTeams).find(key => allTeams[key].nome === targetTeamName);
+        const teamKey = Object.keys(allTeams).find(key => allTeams[key].nome === bestData.name);
         const teamCompleto = allTeams[teamKey];
 
-        if (!teamCompleto) {
-            console.error("Il nome del Best Team non corrisponde a nessun team esistente.");
-            return;
-        }
-
-        // 3. RENDER NELLA SIDEBAR
-        document.getElementById('best-team-name').innerText = teamCompleto.nome.toUpperCase();
+        // 3. RENDER NELLA SIDEBAR (Usiamo i dati di bestData per le statistiche)
+        const nameEl = document.getElementById('best-team-name');
+        if (nameEl) nameEl.innerText = bestData.name.toUpperCase();
         
-        // Calcolo Stats (WinRate)
-        const v = teamCompleto.vittorie || 0;
-        const s = teamCompleto.sconfitte || 0;
-        const wr = (v + s) > 0 ? ((v / (v + s)) * 100).toFixed(1) : "0.0";
+        // Calcolo WinRate dai dati aggregati
+        const v = bestData.won || 0;
+        const p = bestData.played || 0;
+        const wr = p > 0 ? ((v / p) * 100).toFixed(1) : "0.0";
         
-        document.getElementById('best-team-winrate').innerText = `WR: ${wr}%`;
-        document.getElementById('best-team-score').innerText = `PTS: ${v * 10}`; // Esempio calcolo punti
-        document.getElementById('best-team-usage').innerText = `USAGE: ${v + s}`;
+        // Calcolo Punti (Vinte * 10 + Set Vinti) - Esempio di logica più complessa ora possibile
+        const setsW = bestData.setsW || 0;
+        const score = (v * 10) + setsW;
 
-        // 4. Ciclo sui Pokemon (Griglia)
-        if (teamCompleto.pokemon) {
-            teamCompleto.pokemon.forEach((p, index) => {
+        if (document.getElementById('best-team-winrate')) 
+            document.getElementById('best-team-winrate').innerText = `WR: ${wr}%`;
+        
+        if (document.getElementById('best-team-score')) 
+            document.getElementById('best-team-score').innerText = `PTS: ${score}`;
+            
+        if (document.getElementById('best-team-usage')) 
+            document.getElementById('best-team-usage').innerText = `PLAYED: ${p}`;
+
+        // 4. Ciclo sui Pokemon (Griglia) utilizzando teamCompleto
+        if (teamCompleto && teamCompleto.pokemon) {
+            teamCompleto.pokemon.forEach((pkm, index) => {
                 const i = index + 1;
-                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                const pkmNameUrl = pkm.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                 
                 const imgEl = document.getElementById(`team-pkm-${i}`);
-                const nameEl = document.getElementById(`team-pkm-${i}-name`);
+                const pkmNameEl = document.getElementById(`team-pkm-${i}-name`);
 
                 if (imgEl) {
                     imgEl.src = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
                     imgEl.onerror = () => { imgEl.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`; };
+                    
+                    // Applica bordo se la funzione esiste
+                    const slotBox = imgEl.closest('.pkm-slot');
+                    if (slotBox && typeof applicaColoreBordo === 'function') {
+                        applicaColoreBordo(pkm.nome, slotBox); 
+                    }
                 }
-                if (nameEl) nameEl.innerText = p.nome.toUpperCase();
                 
-                // Se hai il CSS per i bordi dinamici
-                const slotBox = imgEl.closest('.pkm-slot');
-                if (slotBox && typeof applicaColoreBordo === 'function') {
-                    applicaColoreBordo(p.nome, slotBox); 
-                }
+                if (pkmNameEl) pkmNameEl.innerText = pkm.nome.toUpperCase();
             });
         }
 
@@ -1477,7 +1480,7 @@ function caricaBadge(stats, playerKey) {
             max: parseInt(stats.maxwonstrike) || 0,
             current: parseInt(stats.wonstrike) || 0,
             date: formattaData(stats.maxwonstrikedate),
-            steps: [4, 7, 10]
+            steps: [5, 7, 10]
         },
         {
             id: 'sd',

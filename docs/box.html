@@ -799,6 +799,7 @@ function inizializzaRotazioneTooltipMosse() {
 }  
 
 async function apriDettagli(id) {
+    // Recupero il team dall'array globale
     const team = tuttiITeam.find(t => t.id === id);
     if (!team) {
         console.error("Team non trovato per l'ID:", id);
@@ -808,14 +809,16 @@ async function apriDettagli(id) {
     const modal = document.getElementById('teamModal');
     const content = document.getElementById('modalBody'); 
 
-    const sV = Number(team.setVinti) || 0;
-    const sP = Number(team.setPersi) || 0;
-    const w = team.vittorie || 0;
-    const l = team.sconfitte || 0;
-    const pts = team.puntiFatti || 0;
-
-    const totSet = sV + sP;
-    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+    // --- NUOVA LOGICA RECUPERO STATISTICHE ---
+    // Utilizziamo l'oggetto 'stats' creato dalla funzione ricalcolaStatisticheGlobali
+    const s = team.stats || {};
+    
+    const w = Number(s.won || 0);
+    const l = Number(s.lost || 0);
+    const sV = Number(s.setW || 0);
+    const sP = Number(s.setL || 0);
+    const pts = Number(s.points || 0);
+    const partiteGiocate = Number(s.played || 0);
 
     content.innerHTML = `
         <div class="modal-header-container" style="position: relative;">
@@ -842,7 +845,10 @@ async function apriDettagli(id) {
                 const direzioneTipi = pIndex < 3 ? 'v-down' : '';
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
-                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                // Caricamento asincrono dei tipi dopo il rendering
+                setTimeout(() => {
+                    if (typeof caricaTipi === 'function') caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                }, 0);
                 
                 return `
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
@@ -850,7 +856,7 @@ async function apriDettagli(id) {
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="modal-sprite clickable-pkm">
+                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm">
                     </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
