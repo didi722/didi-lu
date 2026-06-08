@@ -323,7 +323,7 @@ function logout() {
 }
 
 function caricaStagioniHome() {
-    console.log("⏳ Avvio caricamento stagioni...");
+    console.log("⏳ Avvio caricamento stagioni con controllo scadenze client-side...");
     const seasonsRef = db.ref('seasons');
     
     seasonsRef.on('value', (snapshot) => {
@@ -368,7 +368,20 @@ function caricaStagioniHome() {
                 return;
             }
 
-            const status = (info.status || "open").toLowerCase();
+            // --- GESTIONE STATO IN TEMPO REALE (CLIENT-SIDE OVERRIDE) ---
+            let status = (info.status || "open").toLowerCase();
+            
+            if (status === "open" && info.deadline) {
+                const oraAttuale = new Date();
+                const scadenza = new Date(info.deadline);
+                
+                // Se la deadline è passata, forza lo stato locale a 'playing'
+                if (oraAttuale >= scadenza) {
+                    status = "playing";
+                }
+            }
+            // -------------------------------------------------------------
+
             const seasonName = info.name || "Season " + item.key;
             
             if (nameEl) nameEl.innerText = seasonName;
@@ -376,7 +389,9 @@ function caricaStagioniHome() {
             if (anchor) {
                 anchor.onclick = (e) => {
                     e.preventDefault();
-                    if(typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, seasonName);
+                    if (typeof gestisciAccessoHub === 'function') {
+                        gestisciAccessoHub(item.key, status, seasonName);
+                    }
                 };
             }
 
@@ -396,7 +411,7 @@ function caricaStagioniHome() {
 
                 bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
                 
-                // MOSTRA IL FOOTER SOLO QUI
+                // MOSTRA IL FOOTER SOLO IN PLAYING
                 footerHtml = `<span class="live-dot">●</span>PLAYING`;
 
                 if (leader !== "---") {
@@ -415,9 +430,13 @@ function caricaStagioniHome() {
                 bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
                 footerHtml = ""; // Niente nel footer per OPEN
 
-                if (info.deadline) setTimeout(() => {
-                    if(typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`);
-                }, 100);
+                if (info.deadline) {
+                    setTimeout(() => {
+                        if (typeof startCountdown === 'function') {
+                            startCountdown(info.deadline, `timer-${item.label}`);
+                        }
+                    }, 100);
+                }
 
             } else if (status === 'closed' || status === 'terminata') {
                 const vincitore = info.winner || "---";
@@ -425,11 +444,10 @@ function caricaStagioniHome() {
                 footerHtml = ""; // Niente nel footer per CLOSED
             }
 
-            // APPLICAZIONE
+            // APPLICAZIONE DEI CONTENUTI DINAMICI
             if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
             if (footerEl) {
                 footerEl.innerHTML = footerHtml;
-                // Nascondi visivamente il div se è vuoto (opzionale, per pulizia layout)
                 footerEl.style.display = footerHtml === "" ? "none" : "block";
             }
             
