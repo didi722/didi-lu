@@ -302,6 +302,56 @@ body {
     font-family: 'Montserrat', sans-serif;
 }
 
+.music-btn {
+    position: fixed;
+    top: 100px;
+    right: 40px;
+    width: 45px;
+    height: 45px;
+    background: white; 
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.music-btn:hover {
+    background-color: black;
+    transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    border: #000;
+    box-shadow: 0 0 0;
+}
+
+#music-control svg path {
+    transition: stroke 0.3s ease; /* Transizione fluida */
+}
+
+#music-control:hover svg {
+    stroke: white; /* Usa il tuo --yellow o un altro colore */
+}
+
+#music-control {
+    cursor: pointer;
+}
+
+.music-btn:active {
+    color: black;
+    background-color: white;
+    transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    box-shadow: 0 0 0;
+}
+
+/* Opzionale: rendiamo l'icona sotto un po' più chiara quando è mutata */
+.music-btn.muted svg {
+    opacity: 0.1;
+}
+
+
 .dropdown-search-wrapper {
     padding: 10px;
     border-bottom: 2px solid black;

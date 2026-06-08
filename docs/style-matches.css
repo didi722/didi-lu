@@ -2607,14 +2607,8 @@ button.btn-set.is-selected:hover {
 }
 
 .player-rank-row:hover {
-    transform: translate(0px) !important;
+    transform: translate(-15px) !important;
     box-shadow: 6px 6px 0px var(--hover-color) !important;
-}
-
-.player-rank-row:active{
-    transform: translate(0px);
-    box-shadow: 0px;
-
 }
 
 .top-bar {

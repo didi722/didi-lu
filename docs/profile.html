@@ -16,6 +16,15 @@
     </head>
     <body>
 
+<audio id="bg-music" loop></audio>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
+</div>
+
+
    <section class="hub-hero">
         <div class="hub-hero-content">
             <h1 class="hub-title-display">
@@ -66,15 +75,24 @@
     </div>
 </div>
 
-        <div class="setting-item showcase-section">
-   
-    <label style="margin-top: 15px; font-size: 0.8em; opacity: 0.8; color: black;">Select your badges:</label>
-    <div id="badge-selection-grid" class="badge-grid">
+<div class="appearance-grid-container" style="margin-top: 15px;">
+    <div class="appearance-flex-row">
+        <div class="setting-item" style="width: 100%;">
+            <label for="select-titoli">Trainer Title</label>
+            <div class="select-titolo-wrapper">
+                <select id="select-titoli" class="custom-title-select">
+                    <option value="">Loading titles...</option>
+                </select>
+            </div>
         </div>
-        <button onclick="salvaModificheProfilo()" class="save-btn-hub">
-            SAVE ALL CHANGES
-        </button>
+    </div>
 </div>
+<div class="setting-item showcase-section">
+    <button onclick="salvaModificheProfilo()" class="save-btn-hub">
+        SAVE ALL CHANGES
+    </button>
+</div>
+
         <div id="pokemon-circle-container" class="trainer-section mini-preview">
             </div>
     </div>
@@ -182,6 +200,10 @@ const auth = firebase.auth();
 let playerID = ""; 
 let tuttiITeam = [];
 
+
+
+ascoltaMusicaFirebase();
+
 // --- 1. LISTENER DI AUTENTICAZIONE ---
 // Listener unico per lo stato autenticazione in profile.html
 auth.onAuthStateChanged(async (user) => {
@@ -271,6 +293,160 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         });
 });
 
+// Dizionario per personalizzare il livello base in inglese (Classi Allenatore storiche)
+const TITOLI_BASE_TIPI = {
+    bug: "Bug Catcher",
+    dark: "Punk Guy",
+    dragon: "Dragon Tamer",
+    electric: "Guitarist",
+    fairy: "Fairy Tale Girl",
+    fighting: "Black Belt",
+    fire: "Kindler",
+    flying: "Bird Keeper",
+    ghost: "Hex Maniac",
+    grass: "Aroma Lady",
+    ground: "Ruin Maniac",
+    ice: "Skier",
+    normal: "Rich Boy",
+    poison: "Ninja Boy",
+    psychic: "Psychic",
+    rock: "Hiker",
+    steel: "Working Man",
+    water: "Fisherman"
+};
+
+caricaEVerificaTitoliGiocatore();
+
+async function caricaEVerificaTitoliGiocatore(pId) {
+    const selectTitoli = document.getElementById('select-titoli');
+    if (!selectTitoli) return;
+
+    // Spostiamo il dizionario all'interno per assicurarci che sia sempre accessibile
+    const TITOLI_BASE_TIPI = {
+        bug: "Bug Catcher",
+        dark: "Punk Guy",
+        dragon: "Dragon Tamer",
+        electric: "Guitarist",
+        fairy: "Fairy Tale Girl",
+        fighting: "Black Belt",
+        fire: "Kindler",
+        flying: "Bird Keeper",
+        ghost: "Hex Maniac",
+        grass: "Aroma Lady",
+        ground: "Ruin Maniac",
+        ice: "Skier",
+        normal: "Rich Boy",
+        poison: "Ninja Boy",
+        psychic: "Psychic",
+        rock: "Hiker",
+        steel: "Working Man",
+        water: "Fisherman"
+    };
+
+    try {
+        console.log(`=== 📑 START LOADING TITLES FOR PLAYER: ${pId} ===`);
+
+        // 1. Recupera i dati di typeusage e il titolo attuale del giocatore
+        const statsSnap = await db.ref(`players/${pId}/stats/team-stats/typeusage`).once('value');
+        const typeUsage = statsSnap.val() || {};
+        console.log("📊 Raw typeusage data from Firebase:", typeUsage);
+
+        const profiloSnap = await db.ref(`players/${pId}/profilo`).once('value');
+        const profiloData = profiloSnap.val() || {};
+        const titoloEquipaggiato = profiloData.titoloAttuale || "";
+        console.log(`👑 Currently equipped title in database: "${titoloEquipaggiato}"`);
+
+        // Lista dei titoli sbloccati (In inglese)
+        let titoliSbloccati = [{ id: "none", testo: "No Title" }];
+
+        // Convertiamo l'oggetto in array per iterare in sicurezza
+        const entries = Object.entries(typeUsage);
+        
+        if (entries.length === 0) {
+            console.warn("⚠️ No type usage data found for this player in Firebase.");
+        }
+
+        // 2. Analizza ogni tipo registrato nel typeusage
+        entries.forEach(([tipoChiave, stat]) => {
+            if (!stat) return;
+
+            // FIX CASE SENSITIVITY: Trasforma la chiave in minuscolo (es. "Dragon" -> "dragon")
+            const tipoInglese = tipoChiave.toLowerCase().trim();
+
+            const played = stat.played || 0;
+            const won = stat.won || 0;
+            
+            // Rende maiuscola la prima lettera del tipo per comporre i titoli avanzati (es. "dragon" -> "Dragon")
+            const tipoFormattato = tipoInglese.charAt(0).toUpperCase() + tipoInglese.slice(1);
+            
+            // Recupera il nome della classe allenatore dal dizionario interno
+            const nomeBase = TITOLI_BASE_TIPI[tipoInglese] || `${tipoFormattato} Trainer`;
+
+            console.log(`Checking [${tipoFormattato}] -> Played: ${played}, Won: ${won}`);
+
+            // REQUISITO 1: 30 Partite Giocate -> Trainer Class Base
+            if (played >= 30) {
+                console.log(`   ✅ UNLOCKED Base Title: "${nomeBase}"`);
+                titoliSbloccati.push({
+                    id: `${tipoInglese}_base`,
+                    testo: nomeBase
+                });
+            } else {
+                console.log(`   ❌ Locked Base Title ("${nomeBase}") - Needs ${30 - played} more matches`);
+            }
+
+            // REQUISITO 2: 100 Partite E 10 Vittorie -> Gym Leader
+            if (played >= 100 && won >= 20) {
+                console.log(`   ✅ UNLOCKED Gym Leader: "${tipoFormattato} Gym Leader"`);
+                titoliSbloccati.push({
+                    id: `${tipoInglese}_capo`,
+                    testo: `${tipoFormattato} Gym Leader`
+                });
+            }
+
+            // REQUISITO 3: 150 Partite E 30 Vittorie -> Elite Four
+            if (played >= 150 && won >= 50) {
+                console.log(`   ✅ UNLOCKED Elite Four: "${tipoFormattato} Elite Four"`);
+                titoliSbloccati.push({
+                    id: `${tipoInglese}_s4`,
+                    testo: `${tipoFormattato} Elite Four`
+                });
+            }
+        });
+
+        console.log("📦 Total unlocked titles array:", titoliSbloccati);
+
+        // 3. Rigenera le opzioni all'interno del menù a tendina HTML
+        selectTitoli.innerHTML = "";
+
+        let matchingTitleFound = false;
+
+        titoliSbloccati.forEach(titolo => {
+            const option = document.createElement('option');
+            option.value = titolo.testo; 
+            option.textContent = titolo.testo;
+            
+            // Se è il titolo attualmente equipaggiato, lo imposta come selezionato
+            if (titolo.testo === titoloEquipaggiato) {
+                option.selected = true;
+                matchingTitleFound = true;
+                console.log(`🎯 Match found! Setting "${titolo.testo}" as selected in the dropdown.`);
+            }
+            
+            selectTitoli.appendChild(option);
+        });
+
+        if (!matchingTitleFound && titoloEquipaggiato !== "") {
+            console.warn(`⚠️ The equipped title "${titoloEquipaggiato}" is no longer unlocked or valid based on current stats.`);
+        }
+
+        console.log(`=== 🏁 TITLES LOADING COMPLETED FOR ${pId} ===`);
+
+    } catch (err) {
+        console.error("❌ Error loading trainer titles:", err);
+        selectTitoli.innerHTML = '<option value="">Error loading titles...</option>';
+    }
+}
 
 let badgeSelezionati = []; // Array globale che contiene gli ID dei badge scelti
 
@@ -545,7 +721,6 @@ async function caricaDatiProfilo() {
         }
 
         // --- NUOVO E: SINCRONIZZAZIONE POKÉMON PREFERITO ---
-        // Sostituisce la vecchia logica dei team
         if (info.pkmPreferito) {
             const pkmNome = info.pkmPreferito.toLowerCase();
             const pkmDisplay = document.getElementById('selected-pkm-name');
@@ -560,27 +735,116 @@ async function caricaDatiProfilo() {
             inizializzaPkmSelector();
         }
 
-        // F. ELABORAZIONE STATISTICHE (Dai match o dai dati player se necessario)
-        // Se non usi più i team per le stats, puoi lasciare questa parte vuota 
-        // o adattarla per leggere le vittorie globali.
-        
+        // F. ELABORAZIONE STATISTICHE
         if (typeof elaboraBadge === "function") {
             await elaboraBadge(); 
         }
 
-        console.log("✅ Profilo Neubrutalist ricaricato con Pokémon preferito.");
+        // =========================================================
+        // 🔥 INIEZIONE TITOLI TRAINER
+        // Analizza lo snapshot e imposta il titolo corretto come selezionato
+        // =========================================================
+        await integraTitoliNelloSnapshot(playerID, playerData);
+        // =========================================================
+
+        console.log("✅ Profilo Neubrutalist ricaricato con Pokémon preferito e Titoli.");
 
     } catch (e) {
         console.error("❌ Errore nel caricamento profilo:", e);
     }
 }
 
-// --- 5. GESTIONE CLICK ESTERNI ---
-window.addEventListener('click', (e) => {
-    if (!e.target.closest('.custom-tooltip-wrapper')) {
-        document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
+async function integraTitoliNelloSnapshot(pId, playerData) {
+    const selectTitoli = document.getElementById('select-titoli');
+    if (!selectTitoli) return;
+
+    const TITOLI_BASE_TIPI = {
+        bug: "Bug Catcher", dark: "Punk Guy", dragon: "Dragon Tamer", electric: "Guitarist",
+        fairy: "Fairy Tale Girl", fighting: "Black Belt", fire: "Kindler", flying: "Bird Keeper",
+        ghost: "Hex Maniac", grass: "Aroma Lady", ground: "Ruin Maniac", ice: "Skier",
+        normal: "Rich Boy", poison: "Ninja Boy", psychic: "Psychic", rock: "Hiker",
+        steel: "Working Man", water: "Fisherman"
+    };
+
+    try {
+        console.log(`=== 📑 START PROCESSING TITLES FOR: ${pId} ===`);
+
+        const stats = playerData.stats || {};
+        const teamStats = stats['team-stats'] || {};
+        const typeUsage = teamStats.typeusage || {};
+        
+        const info = playerData.info || {};
+        
+        // CORREZIONE CRITICA: Andiamo a leggere "title" anziché "titoloAttuale"
+        // Se nel DB è salvato come stringa vuota, associamo il testo di fallback "No Title"
+        const titoloEquipaggiato = info.title || "No Title";
+        
+        console.log("📊 Typeusage analizzato:", typeUsage);
+        console.log(`👑 Current active title tracked from DB: "${titoloEquipaggiato}"`);
+
+        let titoliSbloccati = [{ id: "none", testo: "No Title" }];
+        const entries = Object.entries(typeUsage);
+
+        entries.forEach(([tipoChiave, stat]) => {
+            if (!stat) return;
+
+            const tipoInglese = tipoChiave.toLowerCase().trim();
+            const played = stat.played || 0;
+            const won = stat.won || 0;
+            
+            const tipoFormattato = tipoInglese.charAt(0).toUpperCase() + tipoInglese.slice(1);
+            const nomeBase = TITOLI_BASE_TIPI[tipoInglese] || `${tipoFormattato} Trainer`;
+
+            // Calcolo dei requisiti di sblocco
+            if (played >= 50) {
+                titoliSbloccati.push({ id: `${tipoInglese}_base`, testo: nomeBase });
+            }
+            if (played >= 100 && won >= 15) {
+                titoliSbloccati.push({ id: `${tipoInglese}_capo`, testo: `${tipoFormattato} Gym Leader` });
+            }
+            if (played >= 150 && won >= 30) {
+                titoliSbloccati.push({ id: `${tipoInglese}_s4`, testo: `${tipoFormattato} Elite Four` });
+            }
+        });
+
+        // Rigenerazione controllata del menu a tendina HTML
+        selectTitoli.innerHTML = "";
+
+        let matchingTitleFound = false;
+
+        titoliSbloccati.forEach(titolo => {
+            const option = document.createElement('option');
+            option.value = titolo.testo; 
+            option.textContent = titolo.testo;
+            
+            // Verifica la corrispondenza esatta del testo del titolo salvato
+            if (titolo.testo === titoloEquipaggiato) {
+                option.selected = true;
+                matchingTitleFound = true;
+                console.log(`🎯 Match trovato! Impostato come selezionato all'avvio: "${titolo.testo}"`);
+            }
+            
+            selectTitoli.appendChild(option);
+        });
+
+        // Caso limite: se l'utente ha un titolo vecchio salvato che non soddisfa più le statistiche attuali
+        if (!matchingTitleFound && titoloEquipaggiato !== "No Title") {
+            console.warn(`⚠️ Il titolo salvato "${titoloEquipaggiato}" non risulta sbloccato con le attuali statistiche.`);
+        }
+
+        console.log("=== 🏁 TITLES REFRESH COMPLETED ===");
+
+    } catch (err) {
+        console.error("❌ Errore durante l'iniezione dei titoli nella select:", err);
     }
-});
+}
+
+    // --- 5. GESTIONE CLICK ESTERNI ---
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-tooltip-wrapper')) {
+            document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
+        }
+    });
 
 // --- 6. AGGIORNAMENTO UI PROFILO ---
 function aggiornaUIProfilo(gen, best, bestCat) {
@@ -815,81 +1079,6 @@ async function elaboraBadge() {
     }
 }
 
-function mostraBadge(vinteObj, cleanObj) {
-    // 1. Reset e setup iniziale
-    // badgeGuadagnati deve essere globale o dichiarata fuori per essere usata da aggiornaTrophyShowcase
-    badgeGuadagnati = []; 
-    const grid = document.getElementById('badge-selection-grid');
-    if (!grid) return;
-    grid.innerHTML = "";
-
-    // 2. Identificazione Badge Fondatore (Paldea)
-    const chiSono = document.title.toLowerCase();
-    const isFondatore = chiSono.includes("didi") || chiSono.includes("lu");
-    
-    if (isFondatore) {
-        badgeGuadagnati.push({ 
-            id: 'paldea', 
-            src: 'immagini/paldea.png', 
-            title: 'League Founder' 
-        });
-    }
-
-    // 3. Definizione Soglie per Record Strike e Clean Strike
-    const categorie = [
-        {
-            valore: vinteObj.max,
-            soglie: [
-                {n: 15, e: "immagini/sinnoh-gold.png", t:"Legend: 15+ wins strike"},
-                {n: 10, e: "immagini/sinnoh-silver.png", t:"Veteran: 10 wins strike"},
-                {n: 5, e: "immagini/sinnoh-bronze.png", t:"Talent: 5 wins strike"}
-            ]
-        },
-        {
-            valore: cleanObj.max,
-            soglie: [
-                {n: 10, e: "immagini/champion-gold.png", t:"Untouchable: 10+ clean strike"},
-                {n: 6, e: "immagini/champion-silver.png", t:"Wall: 6 clean strike"},
-                {n: 3, e: "immagini/champion-bronze.png", t:"Shield: 3 clean strike"}
-            ]
-        }
-    ];
-
-    // 4. Raccolta badge sbloccati (solo il più alto per categoria)
-    categorie.forEach(cat => {
-        const raggiunto = cat.soglie.find(s => cat.valore >= s.n);
-        if (raggiunto) {
-            const idBadge = raggiunto.e.split('/').pop().replace('.png', '');
-            badgeGuadagnati.push({ id: idBadge, src: raggiunto.e, title: raggiunto.t });
-        }
-    });
-
-    // 5. Generazione Dinamica della Griglia di Selezione
-    badgeGuadagnati.forEach(badge => {
-        const div = document.createElement('div');
-        div.className = "badge-item-selector";
-        
-        // CONTROLLO ATTIVO: Se l'ID è presente tra quelli salvati (badgeSelezionati), 
-        // aggiungiamo subito la classe 'selected' per mostrare il tick verde.
-        if (window.badgeSelezionati && window.badgeSelezionati.includes(badge.id)) {
-            div.classList.add('selected');
-        }
-
-        div.innerHTML = `<img src="${badge.src}" title="${badge.title}" alt="${badge.id}">`;
-        
-        // Al click gestiamo la selezione/deselezione
-        div.onclick = function() {
-            toggleBadge(badge.id, div);
-        };
-        
-        grid.appendChild(div);
-    });
-
-    // 6. Sincronizzazione finale con il Trophy Showcase superiore
-    // (Così i badge scelti appaiono subito nel riquadro tratteggiato)
-    aggiornaTrophyShowcase();
-}
-
 function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
     const soglie = [...listaBadge].sort((a, b) => a.n - b.n);
     
@@ -909,6 +1098,144 @@ function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
 }
 
 
+
+// Variabile globale d'appoggio per tracciare la Promise del play corrente
+function ascoltaMusicaFirebase() {
+    const player = document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player || !playerID) return;
+
+    db.ref(`players/${playerID}/info`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        // --- 1. CONTROLLO PREFERENZA AD OGNI AGGIORNAMENTO ---
+        // Leggiamo la memoria dentro il listener, non fuori!
+        const musicaMutaInMemoria = localStorage.getItem('userMusicPref') === 'off';
+
+        if (data && data.musicaPreferita) {
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                player.load();
+
+                // 2. Logica di riproduzione dinamica
+                if (musicaMutaInMemoria) {
+                    player.pause();
+                    player.muted = true; // Sicurezza extra
+                    if (musicBtn) musicBtn.classList.add('muted');
+                    console.log("🔇 Preferenza OFF rilevata: musica caricata ma silenziata.");
+                } else {
+                    // Tentiamo il play solo se la preferenza è ON
+                    player.muted = false;
+                    player.play()
+                        .then(() => { 
+                            if(musicBtn) musicBtn.classList.remove('muted');
+                        })
+                        .catch((err) => { 
+                            console.warn("Autoplay bloccato: serve interazione utente.");
+                            if(musicBtn) musicBtn.classList.add('muted');
+                        });
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    const musicPref = localStorage.getItem('userMusicPref') || 'on';
+
+    if (player && player.paused && musicPref === 'on') {
+        player.play().catch(e => {});
+    }
+}, { once: true });
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player) return;
+
+    if (player.paused) {
+        player.play();
+        musicBtn.classList.remove('muted');
+        // Salviamo la preferenza: musica ON
+        localStorage.setItem('userMusicPref', 'on');
+    } else {
+        player.pause();
+        musicBtn.classList.add('muted');
+        // Salviamo la preferenza: musica OFF
+        localStorage.setItem('userMusicPref', 'off');
+    }
+}
+
+// Sblocco audio globale
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            const icon = document.getElementById('music-icon');
+            if(icon) icon.innerText = "🔊";
+        });
+    }
+}, { once: true });
+
+// 5. Attivazione Eventi
+document.addEventListener('DOMContentLoaded', () => {
+    ascoltaMusicaFirebase();
+});
+
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (display flex o block)
+    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
+        
+        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            menu.style.display = 'none';
+            console.log("Stato: Menu chiuso (click esterno)");
+        }
+    }
+});
+
+function ascoltaCambiamentiFirebase() {
+    db.ref('players/didi/teams').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.musicaPreferita) {
+            const player = document.getElementById('bg-music');
+            const icon = document.getElementById('music-icon');
+
+            if (player.src !== data.musicaPreferita) {
+                player.src = data.musicaPreferita;
+                player.volume = 0.3;
+                
+                // Proviamo a farla partire, se fallisce (blocco browser) l'icona resta muta
+                player.play()
+                    .then(() => { icon.innerText = "🔊"; })
+                    .catch(() => { icon.innerText = "🔇"; });
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', ascoltaCambiamentiFirebase);
+// Avvia l'ascolto al caricamento
+
+// Sblocca l'audio al primo click dell'utente sulla pagina
+document.addEventListener('click', () => {
+    const player = document.getElementById('bg-music');
+    const icon = document.getElementById('music-icon');
+    if (player && player.paused && player.src) {
+        player.play().then(() => {
+            if(icon) icon.innerText = "🔊";
+        });
+    }
+}, { once: true });
+
+
 async function salvaModificheProfilo() {
     if (!playerID) return alert("Errore: Utente non identificato.");
 
@@ -919,6 +1246,14 @@ async function salvaModificheProfilo() {
     
     // Recuperiamo il Pokémon dal campo hidden del nuovo selettore
     const pkmScelto = document.getElementById('team-selector-fav').value; 
+    
+    // =========================================================
+    // 🔥 RECUPERO TITOLO SELEZIONATO
+    // Recuperiamo l'elemento select dei titoli e il suo valore attuale
+    // =========================================================
+    const selectTitoli = document.getElementById('select-titoli');
+    const titoloScelto = selectTitoli ? selectTitoli.value : "No Title";
+    // =========================================================
     
     // 2. Recupero Avatar e Colore (elementi UI Appearance)
     const avatarImg = document.getElementById('current-avatar-preview');
@@ -940,8 +1275,15 @@ async function salvaModificheProfilo() {
     // 4. Costruzione dell'oggetto dati da inviare a Firebase
     const datiDaSalvare = {
         bio: nuovaBio,
-        // AGGIORNATO: salviamo il nome del pokemon invece dell'id team
         pkmPreferito: pkmScelto || "", 
+        
+        // =========================================================
+        // 🔥 SALVATAGGIO TITOLO NEL NODO "title"
+        // Se l'utente seleziona "No Title", salviamo una stringa vuota o il testo stesso
+        // =========================================================
+        title: titoloScelto === "No Title" ? "" : titoloScelto,
+        // =========================================================
+
         // Converte il colore del quadratino in HEX per il DB
         color: colorRect ? rgbToHex(colorRect.style.backgroundColor) : "#31C489",
         // Salva l'URL dell'avatar
@@ -969,17 +1311,10 @@ async function salvaModificheProfilo() {
         
         console.log("✅ Profilo aggiornato con successo:", datiDaSalvare);
 
-        // Ripristino del tasto dopo 2 secondi
+        // Aspetta 1 secondo per mostrare il feedback visivo e poi ricarica la pagina
         setTimeout(() => {
-            if(btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                btn.style.backgroundColor = ""; 
-                btn.style.color = "";
-                btn.style.transform = ""; 
-                btn.style.boxShadow = ""; 
-            }
-        }, 2000);
+            window.location.reload();
+        }, 1000);
     })
     .catch(e => {
         console.error("❌ Errore durante il salvataggio:", e);
@@ -987,6 +1322,8 @@ async function salvaModificheProfilo() {
         if(btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
+            btn.style.transform = ""; 
+            btn.style.boxShadow = ""; 
         }
     });
 }

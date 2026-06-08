@@ -71,7 +71,9 @@
 <div id="info-display-area"></div>
 
 <div id="trophy-shelf-container">
-    <div id="trophy-list" class="trophy-grid"></div>
+    <div class="trophy-badge-wrapper">
+        <div id="trophy-list" class="trophy-grid"></div>
+    </div>
     
     <div id="stats-container"></div>
 </div>
@@ -243,11 +245,9 @@ async function initPublicProfile() {
     }
 
     try {
-        // 1. TENTATIVO DI LETTURA INFO
         let snapshot = await db.ref(`players/${playerKey}/info`).once('value');
         let info = snapshot.val();
 
-        // 2. BACKUP (Case Insensitive)
         if (!info) {
             playerKey = playerKey.toLowerCase();
             snapshot = await db.ref(`players/${playerKey}/info`).once('value');
@@ -255,17 +255,11 @@ async function initPublicProfile() {
         }
 
         if (info) {
-            console.log("Dati info recuperati per:", playerKey, info);
-
-            // --- CARICAMENTO BIO ---
             caricaBioAllenatore(info.bio);
-
-            // --- NOME HEADER ---
             const finalName = info.name || playerKey;
             const nameSpan = document.getElementById('player-name-display');
             if (nameSpan) nameSpan.innerText = finalName.toUpperCase();
             
-            // --- GESTIONE COLORI & PALETTE ---
             const baseColor = info.color || '#31c489';
             const palette = getPlayerPalette(baseColor); 
             
@@ -276,87 +270,58 @@ async function initPublicProfile() {
             document.documentElement.style.setProperty('--bright-color', palette.bright);
             document.documentElement.style.setProperty('--dark-color', palette.dark);
 
-            // --- AVATAR ---
             const av = document.getElementById('player-avatar');
             if (av && info.avatar) {
                 av.src = info.avatar;
                 av.style.display = 'block';
             }
 
-            // --- CARICAMENTO BADGE ---
             const badgeSnap = await db.ref(`players/${playerKey}/stats/badges`).once('value');
-            const badgeData = badgeSnap.val() || {};
-            caricaBadge(badgeData, info.name); 
+            caricaBadge(badgeSnap.val() || {}, info.name); 
 
-            // --- POKEMON PREFERITO ---
-            if (info.pkmPreferito) {
-                caricaPokemonPreferito(info.pkmPreferito, info.avatar);
-            }
+            if (info.pkmPreferito) caricaPokemonPreferito(info.pkmPreferito, info.avatar);
+            if (info.musicaPreferita && typeof avviaMusicaGiocatore === 'function') avviaMusicaGiocatore(info.musicaPreferita);
 
-            // --- MUSICA ---
-            if (info.musicaPreferita && typeof avviaMusicaGiocatore === 'function') {
-                avviaMusicaGiocatore(info.musicaPreferita);
-            }
+            // --- CARICAMENTO PALMARÈS CORRETTO ASINCRONO ---
+const statsSnap = await db.ref(`players/${playerKey}/stats/seasons`).once('value');
+const statsData = statsSnap.val() || {};
 
-            // --- CARICAMENTO PALMARÈS ---
-            const statsSnap = await db.ref(`players/${playerKey}/stats/seasons`).once('value');
-            const statsData = statsSnap.val() || {};
-            const numVittorie = statsData.won || 0;
-            
-            if (typeof renderPalmares === 'function') {
-                renderPalmares(numVittorie, palette);
-            }
+// RECUPERIAMO I DATI DI TYPEUSAGE DIRETTAMENTE DAL PERCORSO CORRETTO
+let typeUsageData = {};
+try {
+    const typeUsageSnap = await db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value');
+    typeUsageData = typeUsageSnap.val() || {};
+} catch(err) {
+    console.error("Errore nel recupero typeusage:", err);
+}
 
-            // --- CARICAMENTO STATISTICHE INDIVIDUALI ---
-            if (typeof renderPlayerStats === 'function') {
-                await renderPlayerStats(playerKey);
-            }
+if (typeof renderPalmares === 'function') {
+    // ADESSO PASSIAMO ANCHE IL QUARTO PARAMETRO!
+    renderPalmares(statsData.won || 0, palette, info.title || "", typeUsageData);
+}
 
-            // --- LOGICA BEST TEAM E SALVATAGGIO GLOBALE ---
+            // --- STATISTICHE E TEAM ---
+            if (typeof renderPlayerStats === 'function') await renderPlayerStats(playerKey);
+
             try {
                 const teamsSnap = await db.ref(`players/${playerKey}/teams`).once('value');
                 const allTeams = teamsSnap.val();
-
                 if (allTeams) {
-                    // Trasformiamo l'oggetto in array salvando l'ID di Firebase
                     let teamsArray = Object.keys(allTeams).map(key => ({
-                        ...allTeams[key],
-                        id: key, 
-                        // Mappatura dati corretta dal nodo 'stats'
-                        vittorie: Number(allTeams[key].stats?.won || 0),
-                        sconfitte: Number(allTeams[key].stats?.lost || 0),
-                        setVinti: Number(allTeams[key].stats?.setW || 0),
-                        setPersi: Number(allTeams[key].stats?.setL || 0),
-                        played: Number(allTeams[key].stats?.played || 0),
-                        puntiFatti: Number(allTeams[key].stats?.points || allTeams[key].puntiFatti || 0)
+                        ...allTeams[key], id: key, vittorie: Number(allTeams[key].stats?.won || 0)
                     }));
-
-                    // 1. SALVATAGGIO GLOBALE
                     window.tuttiITeam = teamsArray;
-
-                    // 2. Calcolo del Best Team (per vittorie)
                     teamsArray.sort((a, b) => b.vittorie - a.vittorie);
-                    const bestTeam = teamsArray[0];
-
-                    // 3. Rendering della card
-                    if (typeof renderizzaBestTeam === 'function') {
-                        renderizzaBestTeam(bestTeam);
-                    }
+                    if (typeof renderizzaBestTeam === 'function') renderizzaBestTeam(teamsArray[0]);
                 }
-            } catch (error) {
-                console.error("Errore nel caricamento dei Team:", error);
-            }
+            } catch (error) { console.error(error); }
 
-            // --- NUOVO: LOGICA CHIUSURA MODALE AL CLICK ESTERNO ---
             inizializzaChiusuraModali();
-
         } else {
             const nameSpan = document.getElementById('player-name-display');
             if (nameSpan) nameSpan.innerText = "PLAYER NOT FOUND";
         }
-    } catch (e) { 
-        console.error("Errore critico Firebase:", e); 
-    }
+    } catch (e) { console.error("Errore critico Firebase:", e); }
 }
 
 function closeTeamModal() {
@@ -446,6 +411,8 @@ function applicaPaletteUtente(baseColor) {
     console.log("🎨 Palette CSS aggiornata correttamente.");
 }
 
+
+
 async function renderizzaBestTeam(team) {
     const container = document.getElementById('best-team-container');
     if (!team || !container) return;
@@ -534,26 +501,74 @@ async function apriDettagli(id) {
     const content = document.getElementById('modalBody'); 
     if (!modal || !content) return;
 
-    // --- CORREZIONE MAPPATURA DATI DA DATABASE ---
-    // Accediamo al sotto-oggetto 'stats' del team
+    // --- CONFIGURAZIONE BADGE E SOGLIE ---
     const stats = team.stats || {};
+    const teamBadges = team.badges || {}; 
     
+    const badgeConfig = {
+        'maxwonstrike': {
+            path: 'immagini/team-wins.png',
+            label: 'Win Streak',
+            desc: '7+ matches won in a row.',
+            min: 7
+        },
+        'maxcleanstrike': {
+            path: 'immagini/team-clean.png',
+            label: 'Clean Streak',
+            desc: '4+ undefeated matches in a row.',
+            min: 4
+        },
+        'maxshowdownstrike': {
+            path: 'immagini/team-sd.png',
+            label: 'SD Streak',
+            desc: '3+ showdowns won in a row.',
+            min: 3
+        }
+    };
+
+    // Generazione HTML Badge per il Team con controllo soglia >=
+    const teamBadgesHtml = Object.keys(teamBadges)
+    .filter(bKey => {
+        const config = badgeConfig[bKey];
+        // Mostra solo se la chiave è in config E il valore è >= al minimo richiesto
+        return config && parseInt(teamBadges[bKey] || 0) >= config.min;
+    }) 
+    .map(bKey => {
+        const config = badgeConfig[bKey];
+        const dataBadge = teamBadges[`${bKey}date`] || "--/--/----";
+        return `
+            <div class="badge-wrapper" style="position: relative; display: inline-block; cursor: help;">
+                <img src="${config.path}" 
+                     style="width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(2px 2px 0px #000);">
+                
+                <div class="custom-badge-tooltip">
+                    <span class="badge-date" style="position: absolute; top: 8px; right: 10px; font-size: 0.6rem; color: #666; font-family: monospace;">${dataBadge}</span>
+                    <strong style="display: inline-block; margin-bottom: 8px; text-transform: uppercase; color: white; background: black; padding: 2px 8px; transform: rotate(-1.5deg); box-shadow: 3px 3px 0px rgba(0,0,0,0.3); max-width: 70%;">${config.label}</strong>
+                    <p style="margin: 0; line-height: 1.2;">${config.desc}</p>
+                </div>
+            </div>`;
+    }).join('');
+
     const w = Number(stats.won || 0);
     const l = Number(stats.lost || 0);
     const sV = Number(stats.setW || 0);
     const sP = Number(stats.setL || 0);
-    const played = Number(stats.played || 0);
-    // Se i punti non sono in stats, li cerchiamo nella root del team
     const pts = Number(stats.points || team.puntiFatti || 0);
+    const played = Number(stats.played || 0);
 
     content.innerHTML = `
         <div class="modal-header-container">
             <h2>${team.nome}</h2>
-            <div class="team-score-banner">
-                <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
-                <div class="score-item"><span>Sets</span><strong>${sV} - ${sP}</strong></div>
-                <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
-                <div class="score-item"><span>Played</span><strong>${played}</strong></div>
+            <div class="header-right-area" style="display: flex; align-items: center; gap: 15px;">
+                <div class="team-badges-container" style="display: flex; gap: 10px; align-items: center;">
+                    ${teamBadgesHtml}
+                </div>
+                <div class="team-score-banner">
+                    <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
+                    <div class="score-item"><span>Sets</span><strong>${sV} - ${sP}</strong></div>
+                    <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
+                    <div class="score-item"><span>Played</span><strong>${played}</strong></div>
+                </div>
             </div>
         </div>
 
@@ -566,12 +581,37 @@ async function apriDettagli(id) {
                 const itemId = `item-${pIndex}`;
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
+                // Badge Pokémon: filtrati anch'essi per le nuove soglie
+                const pkmBadgesHtml = Object.keys(p.badges || {})
+                    .filter(bKey => {
+                        const config = badgeConfig[bKey];
+                        return config && parseInt(p.badges[bKey] || 0) >= config.min;
+                    })
+                    .map(bKey => {
+                        const config = badgeConfig[bKey];
+                        const dataBadgePkm = p.badges[`${bKey}date`] || "--/--/----";
+                        return `
+                        <div class="info-container" style="position: relative;">
+                            <img src="${config.path}" class="pkm-badge-mini" 
+                                 style="width: 22px; height: 22px; object-fit: contain; cursor: help; filter: drop-shadow(1px 1px 0px #000);">
+                            <div class="mini-generic-tooltip ${classePosizione}" style="bottom: 125%; min-width: 200px; padding: 12px;">
+                                <span class="badge-date" style="position: absolute; top: 5px; right: 8px; font-size: 0.55rem; font-weight: bold; color: #666; font-family: monospace;">${dataBadgePkm}</span>
+                                <strong style="display: inline-block; background: black; color: white; padding: 2px 6px; transform: rotate(-1deg); margin-bottom: 5px;">${config.label}</strong>
+                                <br><span style="font-size: 0.75rem;">${config.desc}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+
                 setTimeout(() => {
                     if (typeof caricaTipi === 'function') caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
                 }, 100);
                 
                 return `
-                <div class="modal-pkm-card">
+                <div class="modal-pkm-card" style="position: relative;">
+                    <div class="pkm-badges-overlay" style="position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 5;">
+                        ${pkmBadgesHtml}
+                    </div>
+
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
@@ -595,15 +635,15 @@ async function apriDettagli(id) {
                             </div>
                             <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
-                        <p class="evs-text">📊 ${p.evs}</p>
+                        <p class="evs-text" style="color: #1a1a1a; font-size: 0.65rem; font-weight: bold; margin-top: 5px;">📊 ${p.evs}</p>
                         <div class="modal-moves">
                             ${p.mosse.map((m, mIndex) => {
                                 const mId = `mossa-${pIndex}-${mIndex}`;
-                                return `
+                                return m !== "-" ? `
                                 <span class="move-span" onmouseover="caricaInfoMossa('${m}', '${mId}')">
                                     ${m}
                                     <div id="${mId}" class="move-tooltip">Loading...</div>
-                                </span>`;
+                                </span>` : "";
                             }).join('')}
                         </div>
                     </div>
@@ -1019,46 +1059,60 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const pkmSnap = await db.ref(`players/${playerName}/pokemon-badges/${nomePkm}`).once('value');
     const badgesData = pkmSnap.val() || {};
 
-    // 3. Definizione logica Fiocchi con IMMAGINI
+    // 3. Definizione logica Fiocchi (Ribbons)
     const ribbons = [
         { 
             img: 'immagini/victory-ribbon.png', 
-            label: '6+ Vittorie di fila', 
-            active: (parseInt(badgesData.maxwonstrike || 0) >= 1) 
+            title: 'Win streak', 
+            desc: '8+ matches won in a row.', 
+            active: (parseInt(badgesData.maxwonstrike || 0) >= 8),
+            date: badgesData.maxwonstrikedate || "--/--/----"
         },
         { 
             img: 'immagini/strike-ribbon.png', 
-            label: '4+ Clean Sheets di fila', 
-            active: (parseInt(badgesData.maxcleanstrike || 0) >= 1) 
+            title: 'clean streak', 
+            desc: '5+ undefeated matches in a row.', 
+            active: (parseInt(badgesData.maxcleanstrike || 0) >= 5),
+            date: badgesData.maxcleanstrikedate || "--/--/----"
         },
         { 
             img: 'immagini/friend-ribbon.png', 
-            label: 'Fiocco Fedeltà (Presenze)', 
-            active: (badgesData.loyaltybadge === true || badgesData.loyaltyBadge === true) 
+            title: 'Friendship Ribbon', 
+            desc: 'Un legame indissolubile con il proprio allenatore.', 
+            active: (badgesData.loyaltybadge === true || badgesData.loyaltyBadge === true),
+            date: badgesData.loyaltybadgedate || "--/--/----"
         }
     ];
 
-    const activeRibbons = ribbons.filter(r => r.active);
+    const activeRibbonsHtml = ribbons
+        .filter(r => r.active)
+        .map(r => `
+            <div class="badge-wrapper" style="position: relative;">
+                <img src="${r.img}" 
+                     style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(3px 3px 0px #000); cursor: help;">
+                
+                <div class="custom-badge-tooltip" style="right: 110%; left: auto; transform: translateY(-50%) rotate(-1deg); top: 50%; bottom: auto;">
+                    <span class="badge-date">${r.date}</span>
+                    <strong class="tooltip-title">${r.title}</strong>
+                    <p class="tooltip-desc">${r.desc}</p>
+                </div>
+            </div>
+        `).join('');
 
-    // 4. Generazione HTML
+    // 4. Generazione HTML (Descrizioni riportate in linea)
     content.innerHTML = `
         <div class="pkm-modal-container" style="position: relative; width: 100%;">
             
-            <!-- Sidebar Fiocchi con immagini PNG -->
             <div class="ribbons-floating-sidebar" style="
-    position: absolute; 
-    right: 0px; 
-    top: 50px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 25px; 
-    z-index: 9999;">
-    ${activeRibbons.map(r => `
-        <img src="${r.img}" 
-             title="${r.label}" 
-             style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(3px 3px 0px #000); pointer-events: auto;">
-    `).join('')}
-</div>
+                position: absolute; 
+                right: 15px; 
+                top: 50px; 
+                display: flex; 
+                flex-direction: column; 
+                gap: 20px; 
+                z-index: 10005;">
+                ${activeRibbonsHtml}
+            </div>
 
             <div class="pkm-modal-grid">
                 <div class="area-header">
@@ -1076,7 +1130,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                     <div class="pkm-panel info-box-compact">
                         <div class="info-content-clean">
                             <strong class="info-name">${pokemonData.abilita}</strong>
-                            <div id="single-abi" class="info-desc-tiny"></div>
+                            <div id="single-abi" class="info-desc-tiny">Loading...</div>
                         </div>
                     </div>
                     <div class="pkm-panel info-box-compact">
@@ -1085,7 +1139,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                                 <strong class="info-name">${pokemonData.strumento}</strong>
                                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${pokemonData.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" class="item-icon-right" onerror="this.style.display='none'">
                             </div>
-                            <div id="single-item" class="info-desc-tiny"></div>
+                            <div id="single-item" class="info-desc-tiny">Loading...</div>
                         </div>
                     </div>
                 </div>
@@ -1121,7 +1175,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 
     modal.style.display = "flex";
 
-    // 5. Chiamate asincrone PokeAPI e Helper (Invariate)
+    // 5. Chiamate asincrone (Rimaste invariate)
     fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
         .then(res => res.json())
         .then(data => {
@@ -1403,34 +1457,131 @@ async function caricaBestTeamDallAlto(playerKey) {
     }
 }
 
-function renderPalmares(count, baseColor) {
+function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}) {
     const container = document.getElementById('trophy-list');
-    // Rimosso count <= 0 per permettere la visualizzazione dello 0
-    if (!container) return; 
-    
-    container.innerHTML = ""; 
+    if (!container) return;
+    container.innerHTML = "";
 
-    const palette = getPlayerPalette(baseColor);
-    const playerColor = palette.base;
-
-    // Definiamo i dati in base alla presenza di trofei
+    const playerColor = baseColor.base || baseColor;
     const hasTrophies = count > 0;
     const displayCount = hasTrophies ? count : 0;
     const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
     const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
 
+    const TITOLI_MAP = {
+        "Bug Catcher": "bug", "Punk Guy": "dark", "Dragon Tamer": "dragon",
+        "Guitarist": "electric", "Fairy Tale Girl": "fairy", "Black Belt": "fighting",
+        "Kindler": "fire", "Bird Keeper": "flying", "Hex Maniac": "ghost",
+        "Aroma Lady": "grass", "Ruin Maniac": "ground", "Skier": "ice",
+        "Rich Boy": "normal", "Ninja Boy": "poison", "Psychic": "psychic",
+        "Hiker": "rock", "Working Man": "steel", "Fisherman": "water"
+    };
+
+    if (titoloSalvato && titoloSalvato !== "" && titoloSalvato !== "No Title") {
+        const tipoAtteso = TITOLI_MAP[titoloSalvato] || titoloSalvato.split(" ")[0].toLowerCase();
+
+        // Navigazione sicura dell'oggetto dati
+        let targetData = typeUsageData;
+        if (targetData && typeof targetData.val === 'function') targetData = targetData.val();
+        if (targetData && targetData.stats) targetData = targetData.stats;
+        if (targetData && targetData['team-stats']) targetData = targetData['team-stats'];
+        if (targetData && targetData.typeusage) targetData = targetData.typeusage;
+
+        let stats = { played: 0, won: 0 };
+        if (targetData) {
+            const keys = Object.keys(targetData);
+            const match = keys.find(k => k.toLowerCase() === tipoAtteso.toLowerCase());
+            if (match) stats = targetData[match];
+        }
+
+        const played = Number(stats.played) || 0;
+        const won = Number(stats.won) || 0;
+
+        // --- LOGICA DI CALCOLO DEL RANKING SUCCESSIVO ---
+        let nextPlayedTarget = 50;
+        let nextWonTarget = 0;
+
+        if (played >= 150 && won >= 50) {
+            nextPlayedTarget = 150;
+            nextWonTarget = 50;
+        } else if (played >= 100 && won >= 20) {
+            nextPlayedTarget = 150;
+            nextWonTarget = 50;
+        } else if (played >= 50) {
+            nextPlayedTarget = 100;
+            nextWonTarget = 20;
+        } else {
+            nextPlayedTarget = 50;
+            nextWonTarget = 0;
+        }
+
+        // Calcolo percentuali sbarre di progressione
+        const progPlayed = nextPlayedTarget > 0 ? Math.min((played / nextPlayedTarget) * 100, 100) : 100;
+        const progWon = nextWonTarget > 0 ? Math.min((won / nextWonTarget) * 100, 100) : 100;
+
+        const titleBadge = document.createElement('div');
+        titleBadge.id = "player-active-title-badge";
+        titleBadge.className = `hub-title-badge tipo-${tipoAtteso}`;
+        
+        // FISSIAMO LO STACKING CONTEXT SUL BADGE PADRE
+        titleBadge.style.position = "relative";
+        titleBadge.style.zIndex = "999"; 
+        titleBadge.style.display = "inline-block";
+        titleBadge.innerText = titoloSalvato;
+
+        // Stili CSS strutturali in linea per le barre interne
+        const bgStyle = `style="background: #e0e0e0; border: 2px solid #000; height: 12px; border-radius: 4px; margin: 4px 0 8px 0; overflow: hidden; position: relative; width: 100%; text-align: left;"`;
+        const fillStyle = (percent) => `style="background: ${playerColor}; height: 100%; width: ${percent}%; border-right: ${percent > 0 ? '2px solid #000' : 'none'}; transition: width 0.3s ease;"`;
+
+        const tooltip = document.createElement('span');
+        tooltip.className = "neubrutal-tooltip";
+        
+        // AGGRESSIVE OVERRIDE DELLO STACKING CONTEXT SUL TOOLTIP
+        tooltip.style.position = "absolute";
+        tooltip.style.zIndex = "99999";
+        tooltip.style.minWidth = "210px";
+        tooltip.style.boxSizing = "border-box";
+        tooltip.style.transform = "rotate(3deg)";
+
+        const grayWonText = nextWonTarget > 0 ? `<span style="color: #888; font-size: 11px; white-space: nowrap;">${nextWonTarget}</span>` : '';
+
+        tooltip.innerHTML = `
+            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%;">
+                <span style="white-space: nowrap;">Played: ${played}</span>
+                <span style="color: #888; font-size: 11px; white-space: nowrap;">${nextPlayedTarget}</span>
+            </div>
+            <div class="progress-bar-bg" ${bgStyle}>
+                <div class="progress-bar-fill" ${fillStyle(progPlayed)}></div>
+            </div>
+            
+            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%; margin-top: 4px;">
+                <span style="white-space: nowrap;">Won: ${won}</span>
+                ${grayWonText}
+            </div>
+            <div class="progress-bar-bg" ${bgStyle}>
+                <div class="progress-bar-fill" ${fillStyle(progWon)}></div>
+            </div>
+        `;
+        
+        titleBadge.appendChild(tooltip);
+        container.appendChild(titleBadge);
+    }
+
     const trophyWrapper = document.createElement('div');
     trophyWrapper.className = 'compact-palmares';
+    trophyWrapper.style.setProperty('--player-color', playerColor);
+    
+    // Evitiamo che anche il wrapper dei trofei crei blocchi parassiti davanti al badge
+    trophyWrapper.style.position = "relative";
+    trophyWrapper.style.zIndex = "1";
 
-    // Struttura IDENTICA alla tua originale per non sfasare il CSS esistente
     trophyWrapper.innerHTML = `
         <span class="trophy-count">x${displayCount}</span>
-        <div class="trophy-recolor-wrapper" style="--player-color: ${playerColor}">
+        <div class="trophy-recolor-wrapper">
             <div class="trophy-color-base" style="-webkit-mask-image: ${colorMask}; mask-image: ${colorMask};"></div>
             <img src="${trophyImg}" class="trophy-icon-top">
         </div>
     `;
-
     container.appendChild(trophyWrapper);
 }
 
@@ -1466,7 +1617,7 @@ function caricaBadge(stats, playerKey) {
     const badgeConfig = [
         {
             id: 'clean',
-            label: 'Clean Strike',
+            label: 'Clean Streak',
             descTemplate: (n) => `${n} matches undefeated`,
             max: parseInt(stats.maxcleanstrike) || 0,
             current: parseInt(stats.cleanstrike) || 0,
@@ -1475,8 +1626,8 @@ function caricaBadge(stats, playerKey) {
         },
         {
             id: 'won',
-            label: 'Win Strike',
-            descTemplate: (n) => `${n} matches won`,
+            label: 'Win Streak',
+            descTemplate: (n) => `${n} matches in a row`,
             max: parseInt(stats.maxwonstrike) || 0,
             current: parseInt(stats.wonstrike) || 0,
             date: formattaData(stats.maxwonstrikedate),
@@ -1484,8 +1635,8 @@ function caricaBadge(stats, playerKey) {
         },
         {
             id: 'sd',
-            label: 'SD Strike',
-            descTemplate: (n) => `${n} showdowns won`,
+            label: 'SD Streak',
+            descTemplate: (n) => `${n} showdowns in a row`,
             max: parseInt(stats.maxsdstrike) || 0,
             current: parseInt(stats.sdstrike) || 0,
             date: formattaData(stats.sdwonstrikedate),
