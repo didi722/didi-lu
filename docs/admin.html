@@ -191,10 +191,22 @@ const db = firebase.database();
 let formatiSelezionati = [];
 let editingSeasonId = null;
 
-// Esegui al caricamento della pagina
-window.onload = () => {
-    caricaStagioni();
-};
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // L'utente è loggato! Firebase ha recuperato la sessione dall'altra pagina.
+        console.log("Utente Amministratore autenticato:", user.email);
+        
+        // Solo ora che siamo sicuri del login, carichiamo i dati
+        caricaStagioni();
+    } else {
+        // L'utente NON è loggato in questa sessione del browser
+        console.warn("Nessun utente loggato. Accesso negato.");
+        
+        // OPZIONALE: Se vuoi proteggere la pagina admin rimandando l'utente alla home o al login:
+        alert("Devi effettuare l'accesso per gestire il pannello di controllo.");
+        window.location.href = "index-copy.html"; 
+    }
+});
 
 // --- NOVITÀ: CARICAMENTO TABELLA ---
 async function caricaStagioni() {
