@@ -191,10 +191,22 @@ const db = firebase.database();
 let formatiSelezionati = [];
 let editingSeasonId = null;
 
-// Esegui al caricamento della pagina
-window.onload = () => {
-    caricaStagioni();
-};
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // L'utente è loggato! Firebase ha recuperato la sessione dall'altra pagina.
+        console.log("Utente Amministratore autenticato:", user.email);
+        
+        // Solo ora che siamo sicuri del login, carichiamo i dati
+        caricaStagioni();
+    } else {
+        // L'utente NON è loggato in questa sessione del browser
+        console.warn("Nessun utente loggato. Accesso negato.");
+        
+        // OPZIONALE: Se vuoi proteggere la pagina admin rimandando l'utente alla home o al login:
+        alert("Devi effettuare l'accesso per gestire il pannello di controllo.");
+        window.location.href = "index-copy.html"; 
+    }
+});
 
 // --- NOVITÀ: CARICAMENTO TABELLA ---
 async function caricaStagioni() {
@@ -887,23 +899,34 @@ window.onload = () => {
 // 1. FUNZIONE PER CREARE IL PLAYER
 // --- CARICAMENTO TABELLA PLAYERS ---
 function caricaListaPlayers() {
-    // Usiamo .on('value') così la tabella si aggiorna da sola se aggiungiamo/eliminiamo
+    // 1. Spegniamo eventuali ascoltatori precedenti sullo stesso nodo per evitare duplicati grafici
+    db.ref('users').off(); 
+
+    // 2. Attiviamo l'ascoltatore in tempo reale
     db.ref('users').on('value', snap => {
         const tbody = document.getElementById('lista-players-admin');
         if (!tbody) return;
+        
+        // Svuotiamo la tabella prima di ricostruirla
         tbody.innerHTML = "";
         
         snap.forEach(child => {
             const user = child.val();
-            const userId = child.key; // Es: "didi"
+            const uid = child.key; // Questo è l'UID alfanumerico del database (es: "Hjs82K...")
             
+            // Estraiamo il nome in minuscolo e pulito per passarlo alla funzione di eliminazione
+            const nomePlayer = user.name ? user.name.toLowerCase().trim() : "";
+            
+            // Scegliamo cosa mostrare a schermo (Il nome in maiuscolo, o l'UID se il nome non c'è)
+            const nomeDaMostrare = user.name ? user.name.toUpperCase() : uid.toUpperCase();
+
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${user.name ? user.name.toUpperCase() : userId.toUpperCase()}</strong></td>
+                    <td><strong>${nomeDaMostrare}</strong></td>
                     <td>${user.email || 'N/A'}</td>
                     <td><span class="status-tag">${user.role || 'player'}</span></td>
                     <td>
-                        <button class="btn-delete" onclick="eliminaPlayer('${user.name}')" style="cursor:pointer; background:none; border:none; font-size:1.2rem;">🗑️</button>
+                        <button class="btn-delete" onclick="eliminaPlayer('${nomePlayer}', '${uid}')" style="cursor:pointer; background:none; border:none; font-size:1.2rem;">🗑️</button>
                     </td>
                 </tr>
             `;

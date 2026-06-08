@@ -323,7 +323,7 @@ function logout() {
 }
 
 function caricaStagioniHome() {
-    console.log("⏳ Avvio caricamento stagioni...");
+    console.log("⏳ Avvio caricamento stagioni con controllo scadenze e showdown...");
     const seasonsRef = db.ref('seasons');
     
     seasonsRef.on('value', (snapshot) => {
@@ -360,7 +360,7 @@ function caricaStagioniHome() {
             if (!item.key || !info) {
                 if (nameEl) nameEl.innerText = "TBD";
                 if (rulesContainer) rulesContainer.innerHTML = "<p>Coming Soon</p>";
-                if (footerEl) footerEl.innerHTML = ""; // Vuoto per slot TBD
+                if (footerEl) footerEl.innerHTML = "";
                 if (card) {
                     card.style.opacity = "0.5";
                     card.className = `season-card status-empty`;
@@ -368,7 +368,30 @@ function caricaStagioniHome() {
                 return;
             }
 
-            const status = (info.status || "open").toLowerCase();
+            // --- GESTIONE STATO IN TEMPO REALE (CLIENT-SIDE OVERRIDE) ---
+            let status = (info.status || "open").toLowerCase();
+            
+            // 1. Controllo da OPEN a PLAYING (Scadenza tempo)
+            if (status === "open" && info.deadline) {
+                const oraAttuale = new Date();
+                const scadenza = new Date(info.deadline);
+                if (oraAttuale >= scadenza) {
+                    status = "playing";
+                }
+            }
+            
+            // 2. Controllo da PLAYING a CLOSED (Raggiungimento numero Showdown)
+            if (status === "playing") {
+                const totalDays = Number(info.total_days || 0);
+                // Contiamo quanti nodi ci sono dentro 'showdowns' per questa stagione
+                const showdownsMancantiOgiocati = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
+                
+                if (totalDays > 0 && showdownsMancantiOgiocati >= totalDays) {
+                    status = "closed";
+                }
+            }
+            // -------------------------------------------------------------
+
             const seasonName = info.name || "Season " + item.key;
             
             if (nameEl) nameEl.innerText = seasonName;
@@ -376,12 +399,14 @@ function caricaStagioniHome() {
             if (anchor) {
                 anchor.onclick = (e) => {
                     e.preventDefault();
-                    if(typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, seasonName);
+                    if (typeof gestisciAccessoHub === 'function') {
+                        gestisciAccessoHub(item.key, status, seasonName);
+                    }
                 };
             }
 
             let bodyHtml = "";
-            let footerHtml = ""; // Default vuoto
+            let footerHtml = ""; 
 
             if (status === 'playing') {
                 let leader = "---";
@@ -395,8 +420,6 @@ function caricaStagioniHome() {
                 }
 
                 bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
-                
-                // MOSTRA IL FOOTER SOLO QUI
                 footerHtml = `<span class="live-dot">●</span>PLAYING`;
 
                 if (leader !== "---") {
@@ -413,23 +436,36 @@ function caricaStagioniHome() {
             
             } else if (status === 'open') {
                 bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
-                footerHtml = ""; // Niente nel footer per OPEN
+                footerHtml = ""; 
 
-                if (info.deadline) setTimeout(() => {
-                    if(typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`);
-                }, 100);
+                if (info.deadline) {
+                    setTimeout(() => {
+                        if (typeof startCountdown === 'function') {
+                            startCountdown(info.deadline, `timer-${item.label}`);
+                        }
+                    }, 100);
+                }
 
             } else if (status === 'closed' || status === 'terminata') {
                 const vincitore = info.winner || "---";
-                bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitore}</p>`;
-                footerHtml = ""; // Niente nel footer per CLOSED
+                // Se nel database c'è un vincitore già scritto usa quello, altrimenti calcola il leader attuale come vincitore provvisorio
+                let vincitoreEffettivo = vincitore;
+                if (vincitoreEffettivo === "---" && seasonData.leaderboard) {
+                    let max = -1;
+                    Object.keys(seasonData.leaderboard).forEach(playerName => {
+                        const p = seasonData.leaderboard[playerName];
+                        const pts = Number(p.points || 0);
+                        if (pts > max) { max = pts; vincitoreEffettivo = playerName; }
+                    });
+                }
+                bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitoreEffettivo}</p>`;
+                footerHtml = ""; 
             }
 
-            // APPLICAZIONE
+            // APPLICAZIONE DEI CONTENUTI DINAMICI
             if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
             if (footerEl) {
                 footerEl.innerHTML = footerHtml;
-                // Nascondi visivamente il div se è vuoto (opzionale, per pulizia layout)
                 footerEl.style.display = footerHtml === "" ? "none" : "block";
             }
             
@@ -443,7 +479,6 @@ function caricaStagioniHome() {
         console.error("❌ Errore Firebase Database:", error);
     });
 }
-
 // Lancio iniziale
 caricaStagioniHome();
 
