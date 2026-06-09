@@ -6,6 +6,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 // 2. Inizializziamo l'applicazione Firebase con privilegi Admin
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  // Assicurati che questo URL sia esattamente quello presente nella console di Firebase
   databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app" 
 });
 
@@ -14,6 +15,7 @@ const db = admin.database();
 async function runChecker() {
   try {
     console.log("🚀 Script avviato da GitHub. Controllo scadenze e conteggio showdown...");
+    
     const ref = db.ref('seasons');
     const snap = await ref.once('value');
     const seasons = snap.val();
@@ -62,7 +64,12 @@ async function runChecker() {
     console.log(`✅ Controllo terminato con successo. Stati database modificati: ${modificheFatte}`);
     process.exit(0);
   } catch (error) {
-    console.error("❌ Errore critico durante l'esecuzione dello script:", error);
+    // === LOG AVANZATO IN CASO DI ERRORE ===
+    console.error("❌ ERRORE DETTAGLIATO:");
+    console.error("Messaggio:", error.message);
+    if (error.stack) {
+      console.error("Tracciato di stack:\n", error.stack);
+    }
     process.exit(1);
   }
 }
