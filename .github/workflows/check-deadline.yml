@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        # Aggiornato a v4 (supporta Node 24)
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        # Aggiornato a v4 (supporta Node 24)
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          # Forza l'uso di Node 24 come richiesto da GitHub
+          node-version: '24'
 
       - name: Install Dependencies
         run: npm install firebase-admin
