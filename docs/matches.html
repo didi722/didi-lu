@@ -588,7 +588,7 @@ async function inizializzaPaginaArchivio() {
         });
 
         if (sortedSdKeys.length === 0) {
-            container.innerHTML = "<p style='color:white; text-align:center; padding:20px;'>Nessuno showdown trovato.</p>";
+            container.innerHTML = "<p style='color:black; text-align:center; padding:20px;'>No showdowns yet. Start battling with your friends!</p>";
         }
 
         sortedSdKeys.forEach(sdId => {
@@ -709,15 +709,15 @@ async function renderRankings(leaderboardData) {
                     margin-bottom: 10px; 
                     padding: 10px; 
                     background: ${color}; 
-                    border: 3px solid ${dark};
-                    box-shadow: 4px 4px 0px ${dark};
-                    --hover-color: ${dark};
+                    border: 2px solid #000;
+                    box-shadow: 4px 4px 0px #000;
+                    --hover-color: #000;
                     transition: transform 0.1s ease, box-shadow 0.1s ease;
                     transform: rotate(-1deg);
                     cursor: pointer;
                 "
-                onmouseenter="this.style.transform='translate(-2px, -2px) rotate(-1deg)'; this.style.boxShadow='6px 6px 0px ${dark}';"
-                onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px ${dark}';"
+                onmouseenter="this.style.transform='translate(-2px, -2px) rotate(-1deg)'; this.style.boxShadow='6px 6px 0px #000';"
+                onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px #000';"
             >
                 <div style="font-weight: 900; font-size: 1.1rem; min-width: 25px;">#${index + 1}</div>
                 
@@ -853,13 +853,13 @@ async function renderClassificaDettagliata(stagione) {
             return {
                 id, ...s,
                 color: playersData[id]?.info?.color || "#ffbd44",
+                avatar: playersData[id]?.info?.avatar || "", // Recuperiamo l'avatar senza rompere nulla
                 sdTot: (s.sdWon || 0) + (s.sdLost || 0),
                 mTot: (s.won || 0) + (s.lost || 0),
                 sTot: (s.setW || 0) + (s.setL || 0)
             };
         }).sort((a, b) => b.points - a.points);
 
-        // Corretto anche un tag extra </div> di chiusura che si trovava nell'HTML dell'header originale
         let html = `
         <div class="rank-modal-title">LEAGUE TABLE</div>
             <div class="rank-grid-system rank-header-row">
@@ -875,8 +875,12 @@ async function renderClassificaDettagliata(stagione) {
         `;
 
         sorted.forEach((p, index) => {
-            // Puliamo e codifichiamo l'ID/Nome per l'URL del link pubblico
             const playerUrlParam = encodeURIComponent(p.id.trim());
+
+            // Prepariamo l'HTML dell'avatar (se non c'è, mette un rimpiazzo invisibile per mantenere i testi allineati)
+            const avatarHtml = p.avatar 
+                ? `<img src="${p.avatar}" class="stack-avatar-inline" alt="${p.id}">` 
+                : `<div class="stack-avatar-inline-empty"></div>`;
 
             html += `
                 <div class="rank-grid-system player-stack-card" 
@@ -885,13 +889,15 @@ async function renderClassificaDettagliata(stagione) {
                         --player-color: ${p.color}; 
                         margin-bottom: 10px;
                         cursor: pointer;
-                        transition: transform 0.1s ease, box-shadow 0.1s ease;
+                        transition: transform 0.2s ease, box-shadow 0.1s ease;
                     "
-                    onmouseenter="this.style.transform='translate(-2px, -2px)'; this.style.boxShadow='5px 5px 0px var(--borderColor, #000)';"
-                    onmouseleave="this.style.transform='none'; this.style.boxShadow='none';"
                 >
                     <div class="stack-pos">#${index + 1}</div>
-                    <div class="stack-name">${p.id}</div>
+                    
+                    <div class="stack-identity-wrapper">
+                        ${avatarHtml}
+                        <div class="stack-name">${p.id}</div>
+                    </div>
                     
                     <div class="stack-val val-tot">${p.sdTot}</div>
                     <div class="stack-val">${p.sdWon || 0}</div>
@@ -972,9 +978,11 @@ async function apriModaleShowdown(sdId, sdData) {
                             
                             <div class="team-badge clickable-team"
                                  onclick="apriDettaglioTeam('${info.player1}', '${team1Escaped}', '${categoriaEscaped}')"
-                                 style="cursor: pointer; background: ${p1.base}; border: 3px solid ${p1.border}; box-shadow: 8px 8px 0px ${p1.border}; transition: all 0.2s ease; --hover-color: ${p1.border};">
-                                 <span class="team-title" style="color: #1a1a1a; font-weight: 800;">${m.team1}</span>
-                                <div class="pokemon-lineup">${generaHtmlGifs(m.team1, info.categoria)}</div>
+                                 style="cursor: pointer; background: ${p1.base}; border: 3px solid #000; box-shadow: 8px 8px 0px #000; transition: all 0.2s ease; --hover-color: ${p1.border};">
+                                 
+                                 <span class="badge-label">${m.team1}</span>
+                                 
+                                 <div class="pokemon-lineup">${generaHtmlGifs(m.team1, info.categoria)}</div>
                             </div>
 
                             <div class="score-container">
@@ -985,9 +993,11 @@ async function apriModaleShowdown(sdId, sdData) {
 
                             <div class="team-badge clickable-team"
                                  onclick="apriDettaglioTeam('${info.player2}', '${team2Escaped}', '${categoriaEscaped}')"
-                                 style="cursor: pointer; background: ${p2.base}; border: 3px solid ${p2.border}; box-shadow: 8px 8px 0px ${p2.border}; transition: all 0.2s ease; --hover-color: ${p2.border};">
-                                <span class="team-title" style="color: #1a1a1a; font-weight: 800;">${m.team2}</span>
-                                <div class="pokemon-lineup">${generaHtmlGifs(m.team2, info.categoria)}</div>
+                                 style="cursor: pointer; background: ${p2.base}; border: 3px solid #000; box-shadow: 8px 8px 0px #000; transition: all 0.2s ease; --hover-color: ${p2.border};">
+                                 
+                                 <span class="badge-label">${m.team2}</span>
+                                 
+                                 <div class="pokemon-lineup">${generaHtmlGifs(m.team2, info.categoria)}</div>
                             </div>
 
                             <div class="match-actions">
@@ -1585,7 +1595,6 @@ function generaHtmlGifs(nomeTeam, categoria) {
     const nodiPlayer = window.teamsIscrittiStagione[categoria];
     let teamTrovato = null;
 
-    // Cerca il team tra tutti i giocatori della categoria
     for (const pKey in nodiPlayer) {
         const listaTeams = nodiPlayer[pKey].datiTeams;
         if (listaTeams) {
@@ -1602,10 +1611,30 @@ function generaHtmlGifs(nomeTeam, categoria) {
 
     return Object.values(teamTrovato.pokemon).map(p => {
         if (!p || !p.nome || p.nome === "None") return "";
-        const slug = p.nome.toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, '');
-        return `<img src="https://play.pokemonshowdown.com/sprites/ani/${slug}.gif" class="mini-gif" onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${slug}.png';">`;
+        
+        // 1. Pulizia standard dello slug per Showdown
+        let slug = p.nome.toLowerCase().trim()
+                         .replace(/\s+/g, '')
+                         .replace(/[.'é’%]/g, '');
+
+        // 2. Mappatura forme speciali per i server delle animazioni di Showdown
+        if (slug === 'mimikyu') slug = 'mimikyu-disguised';
+        if (slug === 'giratina') slug = 'giratina-altered';
+        if (slug === 'deoxys') slug = 'deoxys-normal';
+        if (slug === 'shaymin') slug = 'shaymin-land';
+        if (slug === 'aegislash') slug = 'aegislash-shield';
+
+        // 3. Puntiamo alla cartella /ani/ di Showdown (Contiene i modelli animati)
+        // Se un Pokémon specifico fallisce, l'onerror inserisce l'immagine dal dex statico
+        return `
+            <img src="https://play.pokemonshowdown.com/sprites/ani/${slug}.gif" 
+                 class="mini-gif" 
+                 alt="${slug}"
+                 onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/dex/${slug}.png';">
+        `;
     }).join('');
 }
+
 
 document.addEventListener('DOMContentLoaded', inizializzaPaginaArchivio);
 
@@ -1894,17 +1923,17 @@ window.chiudiReplay = function() {
 
 async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu) {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
-    
-    // Invece di farla ripartire o resettare tutto, 
-    // ci assicuriamo solo che sia ferma mentre guardi il replay.
-    if (player) {
-        player.pause();
-    }
+    if (player) player.pause();
 
     const modal = document.getElementById('replayModal');
     const selector = document.getElementById('setSelector');
+
+    selector.style.display = 'flex';
+selector.style.flexDirection = 'column';
+selector.style.justifyContent = 'center'; // Centratura verticale nel contenitore
+selector.style.alignItems = 'center';     // Centratura orizzontale
+selector.style.height = 'auto';
     
-    // Rimuoviamo il vecchio header subito
     const vecchiaHeader = document.querySelector('.replay-mini-header');
     if (vecchiaHeader) vecchiaHeader.remove();
 
@@ -1927,38 +1956,36 @@ async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scor
         const c1 = colors.c1 || "#555";
         const c2 = colors.c2 || "#555";
 
-        // Determiniamo il colore dell'header (ad esempio basato sul vincitore del match o neutro)
-        // Se scoreDidi > scoreLu usa c1, altrimenti c2
         const vincitoreMatch = parseInt(scoreDidi) >= parseInt(scoreLu) ? c1 : c2;
-        const bordoHeader = (typeof pSBC !== 'undefined') ? pSBC(-0.6, vincitoreMatch) : "#000";
 
-        // --- 2. CREAZIONE DINAMICA HEADER (Ora che abbiamo i colori) ---
+        // --- 2. CREAZIONE DINAMICA HEADER ---
         const miniHeader = document.createElement('div');
         miniHeader.className = "replay-mini-header";
         miniHeader.style.fontFamily = "'Josefin Sans', sans-serif";
         miniHeader.style.backgroundColor = vincitoreMatch;
-        miniHeader.style.border = `3px solid ${bordoHeader}`;
+        miniHeader.style.border = `3px solid black`;
         miniHeader.style.boxShadow = `8px 8px 0px black`;
-        miniHeader.style.display = "flex"; // Assicura l'allineamento
+        miniHeader.style.display = "flex"; 
         miniHeader.style.alignItems = "center";
         miniHeader.style.justifyContent = "space-between";
         miniHeader.style.padding = "10px 20px";
         miniHeader.style.marginBottom = "15px";
 
         miniHeader.innerHTML = `
-            <div class="mini-team-info side-didi">
-                <div id="header-gifs-didi" class="mini-gifs-row"></div>
-                <span class="mini-name" style="color: white; font-weight: 800;">${teamDidi}</span>
+            <div class="mini-team-info side-didi" style="display: flex; align-items: center; gap: 12px;">
+                <div id="header-gifs-didi" class="mini-gifs-row" style="display: flex; align-items: center;"></div>
+                <span class="badge-label" style="margin: 0; display: inline-block; vertical-align: middle;">${teamDidi}</span>
             </div>
-            <div class="mini-score-box" style="color: black; background: white; padding: 2px 8px; font-weight: bold;">
+            
+            <div class="mini-score-box" style="color: black; background: white; padding: 4px 12px; font-weight: bold; border: 2px solid #000; box-shadow: 2px 2px 0px #000; flex-shrink: 0;">
                 ${scoreDidi} - ${scoreLu}
             </div>
-            <div class="mini-team-info side-lu" style="text-align: right;">
-                <span class="mini-name" style="color: white; font-weight: 800;">${teamLu}</span>
-                <div id="header-gifs-lu" class="mini-gifs-row"></div>
+            
+            <div class="mini-team-info side-lu" style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
+                <span class="badge-label" style="margin: 0; display: inline-block; vertical-align: middle;">${teamLu}</span>
+                <div id="header-gifs-lu" class="mini-gifs-row" style="display: flex; align-items: center;"></div>
             </div>
         `;
-        // Inseriamo l'header all'inizio della modale
         modal.prepend(miniHeader);
 
         // --- 3. RESTO DELLA LOGICA (Bottoni Replay) ---
@@ -1978,7 +2005,7 @@ async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scor
         const matchObj = sdData.matches ? sdData.matches[matchKey] : null;
 
         if (matchObj && matchObj.replays) {
-            let buttonsHtml = '';
+            let buttonsHtml = '<div style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px;">';
             const setKeys = Object.keys(matchObj.replays).sort((a, b) => 
                 (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0)
             );
@@ -1988,19 +2015,30 @@ async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scor
                 const vincId = String(infoSet.vincitore); 
                 const winInitial = (vincId === "1") ? label1 : (vincId === "2" ? label2 : "?");
                 const colorSfondo = (vincId === "1") ? c1 : (vincId === "2" ? c2 : "#555");
-                const colorBordo = (typeof pSBC !== 'undefined') ? pSBC(-0.6, colorSfondo) : "#000";
+                const numSet = key.replace(/\D/g, '');
 
                 if (infoSet.url) {
                     buttonsHtml += `
-                        <button class="btn-set vincitore-${vincId}" 
-                                style="background-color: ${colorSfondo}; border: 3px solid ${colorBordo}; color: white; font-weight: bold; cursor: pointer; box-shadow: 5px 5px 0px ${colorBordo}; transition: all 0.2s ease; margin: 0 5px; transform: rotate(-1deg);"
-                                onclick="window.caricaVideoDirect('${infoSet.url}', this)">
-                            ${winInitial}
-                        </button>`;
+                        <div style="display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center;">
+                            <div style="background: white; color: black; padding: 5px 12px; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; font-family: 'Josefin Sans', sans-serif; font-size: 14px;">
+                                SET ${numSet}
+                            </div>
+                            <button class="btn-set vincitore-${vincId}" 
+                                    style="background-color: ${colorSfondo}; border: 3px solid #000; color: white; font-weight: bold; cursor: pointer; box-shadow: 5px 5px 0px #000; transition: all 0.2s ease; width: 50px; height: 50px; transform: rotate(-1deg); font-size: 18px;"
+                                    onclick="gestisciClickReplay(this, '${infoSet.url}')">
+                                ${winInitial}
+                            </button>
+                        </div>`;
                 }
             });
+            
+            buttonsHtml += '</div>';
             selector.innerHTML = buttonsHtml;
-            setTimeout(() => { const firstBtn = selector.querySelector('.btn-set'); if (firstBtn) firstBtn.click(); }, 200);
+            
+            setTimeout(() => { 
+                const firstBtn = selector.querySelector('.btn-set'); 
+                if (firstBtn) firstBtn.click(); 
+            }, 200);
         } else {
             selector.innerHTML = '<span style="color: white;">Replay non disponibili.</span>';
         }
@@ -2013,6 +2051,13 @@ async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scor
         selector.innerHTML = `<span style="color: #ff4444;">Errore: ${error.message}</span>`;
     }
 }
+
+// Funzione ausiliaria per gestire la selezione visiva
+window.gestisciClickReplay = function(btnElement, url) {
+    document.querySelectorAll('.btn-set').forEach(btn => btn.classList.remove('is-selected'));
+    btnElement.classList.add('is-selected');
+    window.caricaVideoDirect(url, btnElement);
+};
 
 function renderGifs(nomeTeam, containerId, categoria) {
     const container = document.getElementById(containerId);

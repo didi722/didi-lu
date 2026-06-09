@@ -577,10 +577,11 @@ const summaryBox = document.getElementById('season-summary-content');
     }
 
     // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
-   const partCardTitle = document.getElementById('players-count-title');
-if (partCardTitle) {
-    partCardTitle.innerText = `PLAYERS: ${countIscritti}/${limitIscritti}`;
-}
+   // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
+    const partCardTitle = document.getElementById('players-count-title');
+    if (partCardTitle) {
+        partCardTitle.innerText = `PLAYERS: ${countIscritti}/${limitIscritti}`;
+    }
     const partList = document.getElementById('participants-list');
     if (!partList) return;
     partList.innerHTML = ''; 
@@ -603,12 +604,19 @@ if (partCardTitle) {
             const tag = document.createElement('div');
             tag.className = "player-tag";
             
-            // Applichiamo i colori dinamici ma manteniamo la struttura Neubrutalist
+            // Applichiamo i colori dinamici e aggiungiamo il puntatore per la cliccabilità
             tag.style.backgroundColor = baseCol;
             tag.style.borderColor = borderCol;
             tag.style.boxShadow = `4px 4px 0px ${borderCol}`;
+            tag.style.cursor = "pointer"; // Mostra la manina al passaggio del mouse
 
-            tag.innerHTML = `<strong>${player.toUpperCase()}</strong>`;
+            tag.innerHTML = `<span class="player-label">${player.toUpperCase()}</span>`;
+            
+            // Reindirizzamento alla pagina pubblica del giocatore al click
+            tag.onclick = () => {
+                window.location.href = `public.html?player=${encodeURIComponent(player)}`;
+            };
+
             partList.appendChild(tag);
         }
     } else {

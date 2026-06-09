@@ -323,7 +323,7 @@ function logout() {
 }
 
 function caricaStagioniHome() {
-    console.log("⏳ Avvio caricamento stagioni con controllo scadenze e showdown...");
+    console.log("⏳ Avvio caricamento stagioni con layout unificato, quadrato e semplificato...");
     const seasonsRef = db.ref('seasons');
     
     seasonsRef.on('value', (snapshot) => {
@@ -347,6 +347,23 @@ function caricaStagioniHome() {
             { key: lastThreeKeys[2] || null, label: 'next' }
         ];
 
+        // Inseriamo lo stile per l'animazione del lampeggio se non è già presente nella pagina
+        if (!document.getElementById('trophy-blink-style')) {
+            const style = document.createElement('style');
+            style.id = 'trophy-blink-style';
+            style.innerHTML = `
+                @keyframes trophyBlink {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                    100% { opacity: 1; }
+                }
+                .blink-animation {
+                    animation: trophyBlink 1.5s infinite ease-in-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         mapping.forEach(item => {
             const seasonData = item.key ? data[item.key] : null;
             const info = seasonData ? (seasonData.info || seasonData) : null;
@@ -363,107 +380,104 @@ function caricaStagioniHome() {
                 if (footerEl) footerEl.innerHTML = "";
                 if (card) {
                     card.style.opacity = "0.5";
+                    card.style.display = "flex";
+                    card.style.flexDirection = "column";
+                    card.style.justifyContent = "center";
+                    card.style.alignItems = "center";
+                    card.style.aspectRatio = "1 / 1";
                     card.className = `season-card status-empty`;
+                    card.style.backgroundColor = "#fff";
                 }
                 return;
             }
 
-            // --- GESTIONE STATO IN TEMPO REALE (CLIENT-SIDE OVERRIDE) ---
             let status = (info.status || "open").toLowerCase();
-            
-            // 1. Controllo da OPEN a PLAYING (Scadenza tempo)
-            if (status === "open" && info.deadline) {
-                const oraAttuale = new Date();
-                const scadenza = new Date(info.deadline);
-                if (oraAttuale >= scadenza) {
-                    status = "playing";
-                }
-            }
-            
-            // 2. Controllo da PLAYING a CLOSED (Raggiungimento numero Showdown)
+            if (status === "open" && info.deadline && new Date() >= new Date(info.deadline)) status = "playing";
             if (status === "playing") {
                 const totalDays = Number(info.total_days || 0);
-                // Contiamo quanti nodi ci sono dentro 'showdowns' per questa stagione
-                const showdownsMancantiOgiocati = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
-                
-                if (totalDays > 0 && showdownsMancantiOgiocati >= totalDays) {
-                    status = "closed";
-                }
+                const count = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
+                if (totalDays > 0 && count >= totalDays) status = "closed";
             }
-            // -------------------------------------------------------------
 
-            const seasonName = info.name || "Season " + item.key;
-            
-            if (nameEl) nameEl.innerText = seasonName;
-
+            if (nameEl) nameEl.innerText = info.name || "Season " + item.key;
             if (anchor) {
                 anchor.onclick = (e) => {
                     e.preventDefault();
-                    if (typeof gestisciAccessoHub === 'function') {
-                        gestisciAccessoHub(item.key, status, seasonName);
-                    }
+                    if (typeof gestisciAccessoHub === 'function') gestisciAccessoHub(item.key, status, info.name || "Season " + item.key);
                 };
             }
 
             let bodyHtml = "";
-            let footerHtml = ""; 
+            let footerHtml = "";
+            if (card) card.style.backgroundColor = "#fff";
 
-            if (status === 'playing') {
-                let leader = "---";
+            if (status === 'playing' || status === 'closed' || status === 'terminata') {
+                const isPlaying = status === 'playing';
+                let targetName = isPlaying ? "---" : (info.winner || "---");
+                
                 if (seasonData.leaderboard) {
                     let max = -1;
                     Object.keys(seasonData.leaderboard).forEach(playerName => {
-                        const p = seasonData.leaderboard[playerName];
-                        const pts = Number(p.points || 0);
-                        if (pts > max) { max = pts; leader = playerName; }
+                        const pts = Number(seasonData.leaderboard[playerName].points || 0);
+                        if (pts > max) { max = pts; targetName = playerName; }
                     });
                 }
 
-                bodyHtml = `<div class="playing-box">Current Leader:</div><div id="leader-display-${item.label}" class="leader-name">${leader}</div>`;
-                footerHtml = `<span class="live-dot">●</span>PLAYING`;
+                // Generiamo il badge a destra: pallino fisso/lampeggiante o trofeo grande (42px) lampeggiante
+                let badgeHtml = "";
+                if (isPlaying) {
+                    badgeHtml = `<span class="live-dot" style="position: absolute; right: -32px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px;">●</span>`;
+                } else {
+                    badgeHtml = `<img src="immagini/season-winner-color.png" alt="Winner" style="position: absolute; right: -54px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; object-fit: contain;">`;
+                }
 
-                if (leader !== "---") {
-                    const playerKey = leader.toLowerCase().trim();
-                    db.ref(`players/${playerKey}/info/color`).once('value', (cSnap) => {
-                        const userColor = cSnap.val();
-                        const leaderEl = document.getElementById(`leader-display-${item.label}`);
-                        if (leaderEl && userColor) {
-                            leaderEl.style.backgroundColor = userColor;
-                            leaderEl.style.border = "3px solid #000";
+                // Struttura pulita con avatar a 85px senza bordi circolari ritagliati
+                bodyHtml = `
+                    <div class="winner-content-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 18px;">
+                        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                            <div id="display-icon-${item.label}" class="winner-avatar-home" style="display:flex; align-items:center; justify-content:center; font-size:45px; width: 85px; height: 85px;">?</div>
+                            <img id="display-avatar-${item.label}" class="winner-avatar-home" src="" alt="" style="display:none; width: 85px; height: 85px; object-fit: contain;">
+                            ${badgeHtml}
+                        </div>
+                        <div id="display-box-${item.label}" class="winner-display-box" style="margin: 0; min-width: 70px; text-align: center;">${targetName.toUpperCase()}</div>
+                    </div>
+                `;
+
+                if (targetName !== "---") {
+                    db.ref(`players/${targetName.toLowerCase().trim()}/info`).once('value', (pSnap) => {
+                        const pInfo = pSnap.val();
+                        if (pInfo) {
+                            if (card && pInfo.color) card.style.backgroundColor = pInfo.color;
+                            const iconEl = document.getElementById(`display-icon-${item.label}`);
+                            const avatarEl = document.getElementById(`display-avatar-${item.label}`);
+                            if (pInfo.avatar && avatarEl) {
+                                if (iconEl) iconEl.style.display = "none";
+                                avatarEl.src = pInfo.avatar;
+                                avatarEl.style.display = "block";
+                            }
                         }
                     });
                 }
-            
             } else if (status === 'open') {
-                bodyHtml = `<div class="countdown-box">Closes in:</div><div><div id="timer-${item.label}" class="timer-display">--d --h --m</div></div>`;
-                footerHtml = ""; 
-
+                bodyHtml = `
+                    <div class="winner-content-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 14px;">
+                        <div class="countdown-box" style="margin: 0; font-weight: bold;">Closes in:</div>
+                        <div id="timer-${item.label}" class="timer-display" style="margin: 0;">--d --h --m</div>
+                    </div>
+                `;
                 if (info.deadline) {
-                    setTimeout(() => {
-                        if (typeof startCountdown === 'function') {
-                            startCountdown(info.deadline, `timer-${item.label}`);
-                        }
-                    }, 100);
+                    setTimeout(() => { if (typeof startCountdown === 'function') startCountdown(info.deadline, `timer-${item.label}`); }, 100);
                 }
-
-            } else if (status === 'closed' || status === 'terminata') {
-                const vincitore = info.winner || "---";
-                // Se nel database c'è un vincitore già scritto usa quello, altrimenti calcola il leader attuale come vincitore provvisorio
-                let vincitoreEffettivo = vincitore;
-                if (vincitoreEffettivo === "---" && seasonData.leaderboard) {
-                    let max = -1;
-                    Object.keys(seasonData.leaderboard).forEach(playerName => {
-                        const p = seasonData.leaderboard[playerName];
-                        const pts = Number(p.points || 0);
-                        if (pts > max) { max = pts; vincitoreEffettivo = playerName; }
-                    });
-                }
-                bodyHtml = `<p class="winner-label">Winner:</p><p class="winner-display">${vincitoreEffettivo}</p>`;
-                footerHtml = ""; 
             }
 
-            // APPLICAZIONE DEI CONTENUTI DINAMICI
-            if (rulesContainer) rulesContainer.innerHTML = bodyHtml;
+            if (rulesContainer) {
+                rulesContainer.innerHTML = bodyHtml;
+                rulesContainer.style.width = "100%";
+                rulesContainer.style.display = "flex";
+                rulesContainer.style.justifyContent = "center";
+                rulesContainer.style.alignItems = "center";
+            }
+            
             if (footerEl) {
                 footerEl.innerHTML = footerHtml;
                 footerEl.style.display = footerHtml === "" ? "none" : "block";
@@ -472,12 +486,14 @@ function caricaStagioniHome() {
             if (card) {
                 card.style.opacity = "1";
                 card.style.display = "flex";
+                card.style.flexDirection = "column";
+                card.style.justifyContent = "center"; 
+                card.style.alignItems = "center";
+                card.style.aspectRatio = "1 / 1";     
                 card.className = `season-card status-${status.replace(/\s+/g, '-')}`;
             }
         });
-    }, (error) => {
-        console.error("❌ Errore Firebase Database:", error);
-    });
+    }, (error) => console.error("❌ Errore:", error));
 }
 // Lancio iniziale
 caricaStagioniHome();

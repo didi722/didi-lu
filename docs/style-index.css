@@ -19,6 +19,7 @@
     --borders: #025534;
 }
 
+@import url('https://fonts.cdnfonts.com/css/pokemon-gb');
 
 body {
     font-family: 'Montserrat', sans-serif;
@@ -1107,7 +1108,7 @@ input, select {
 .season-card .leader-name,
 .season-card .winner-display,
 .season-card small {
-    font-family: 'Josefin Sans', sans-serif !important;
+    font-family: 'Josefin Sans', sans-serif;
 }
 
 .playing-box {
@@ -1633,4 +1634,81 @@ input, select {
     background-color: #ff4444 !important; /* Rosso acceso */
     color: white !important;
     margin-top:20px !important;
+}
+
+/* Contenitore verticale per Avatar + Nome */
+.winner-container {
+    display: flex;
+    flex-direction: column;   /* Mette l'avatar sopra e il nome sotto */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;                /* Spazio compatto tra avatar e nome */
+    margin-top: -15px;
+    width: 100%;
+}
+
+/* Forza l'avatar a dimensioni fisse e contenute per non allungare la card */
+.winner-avatar-home {
+    width: 100px;             /* Dimensione controllata */
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(3px 3px 0px #000);
+    margin-bottom: 15px;
+    animation: pokemon-bounce 0.8s steps(1) infinite;
+    
+}
+
+@keyframes pokemon-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px); /* Si sposta in alto di 4 pixel di colpo */
+    }
+}
+
+
+/* Ripristina il perfetto stile rettangolo Neubrutalist per il nome del vincitore */
+.winner-display-box {
+    background-color: white; /* Il colore arancione/giallo originale dello screenshot */
+    color: #000000;            /* Testo nero come nello screenshot originale */
+    padding: 6px 20px;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px 0px #000000;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 1px;
+}
+
+/* Forza tutte le season-card a mantenere proporzioni costanti */
+.season-card {
+    min-height: 280px;        /* Regola questo valore in base all'altezza della tua card 'playing' */
+    aspect-ratio: 1 / 1;      /* Costringe la card a rimanere un quadrato perfetto */
+}
+
+.season-card {
+    /* Fornisce la forma quadrata */
+    aspect-ratio: 1 / 1; 
+    /* Imposta una larghezza fissa o variabile in base alla tua griglia */
+    width: 300px; 
+    
+    display: flex;
+    flex-direction: column;
+    /* Centra il contenuto all'interno */
+    justify-content: center; 
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* Mantiene le dimensioni costanti */
+    flex-shrink: 0; 
+}
+
+.winner-content-wrapper {
+    flex-grow: 1; /* Occupa tutto lo spazio disponibile */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
