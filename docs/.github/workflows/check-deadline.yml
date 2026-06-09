@@ -1,4 +1,4 @@
-name: Firebase Deadlines Checker
+name: Firebase Deadlines Checker!
 
 on:
   schedule:
