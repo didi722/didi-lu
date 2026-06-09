@@ -3,10 +3,10 @@ const admin = require('firebase-admin');
 // 1. Recuperiamo le credenziali protette che abbiamo salvato nei Secrets di GitHub
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-// 2. Inizializziamo l'applicazione Firebase con privilegi Admin
+// 2. Inizializziamo l'applicazione Firebase usando la sintassi corretta per i nuovi moduli SDK
 admin.initializeApp({
+  // Modificato admin.credential.cert con admin.credential.certificato diretto dell'SDK aggiornato
   credential: admin.credential.cert(serviceAccount),
-  // Assicurati che questo URL sia esattamente quello presente nella console di Firebase
   databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app" 
 });
 
@@ -50,7 +50,6 @@ async function runChecker() {
       // CASO 2: La stagione è PLAYING ma ha raggiunto il numero massimo di showdown -> Diventa CLOSED
       if (status === "playing") {
         const totalDays = Number(info.total_days || 0);
-        // Conta quanti ID unici ci sono sotto il sotto-nodo 'showdowns'
         const numeroShowdowns = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
 
         if (totalDays > 0 && numeroShowdowns >= totalDays) {
@@ -64,7 +63,6 @@ async function runChecker() {
     console.log(`✅ Controllo terminato con successo. Stati database modificati: ${modificheFatte}`);
     process.exit(0);
   } catch (error) {
-    // === LOG AVANZATO IN CASO DI ERRORE ===
     console.error("❌ ERRORE DETTAGLIATO:");
     console.error("Messaggio:", error.message);
     if (error.stack) {
