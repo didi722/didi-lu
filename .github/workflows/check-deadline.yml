@@ -2,22 +2,23 @@ name: Firebase Deadlines Checker
 
 on:
   schedule:
+    # Manteniamo il timer interno ogni 30 minuti come backup
     - cron: '*/30 * * * *'
   workflow_dispatch:
+  # Questo blocco permette a servizi esterni (come cron-job.org) di svegliare il bot all'istante
+  repository_dispatch:
+    types: [awaken-bot]
 
 jobs:
   check-db:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        # Aggiornato a v4 (supporta Node 24)
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        # Aggiornato a v4 (supporta Node 24)
         uses: actions/setup-node@v4
         with:
-          # Forza l'uso di Node 24 come richiesto da GitHub
           node-version: '24'
 
       - name: Install Dependencies
