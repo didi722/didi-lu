@@ -1,16 +1,19 @@
-const admin = require('firebase-admin');
+// Importiamo i moduli specifici richiesti dalle nuove specifiche Firebase Admin SDK
+const { initializeApp } = require('firebase-admin/app');
+const { getDatabase } = require('firebase-admin/database');
+const { cert } = require('firebase-admin/app');
 
-// 1. Recuperiamo le credenziali protette che abbiamo salvato nei Secrets di GitHub
+// 1. Recuperiamo le credenziali protette dai Secrets di GitHub
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-// 2. Inizializziamo l'applicazione Firebase usando la sintassi corretta per i nuovi moduli SDK
-admin.initializeApp({
-  // Modificato admin.credential.cert con admin.credential.certificato diretto dell'SDK aggiornato
-  credential: admin.credential.cert(serviceAccount),
+// 2. Inizializziamo l'applicazione in modo modulare e sicuro
+initializeApp({
+  credential: cert(serviceAccount),
   databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app" 
 });
 
-const db = admin.database();
+// Otteniamo l'istanza del Realtime Database
+const db = getDatabase();
 
 async function runChecker() {
   try {
