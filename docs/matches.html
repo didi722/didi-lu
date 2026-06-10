@@ -21,6 +21,10 @@
     </svg>
 </div>
 
+<div id="loading-overlay">
+    <div class="pokeball-spinner"></div>
+</div>
+
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
         <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
@@ -30,10 +34,17 @@
                 <label>Email</label>
                 <input type="email" id="login-email" required placeholder="Your email">
             </div>
-            <div class="input-group">
+            <div class="input-group" style="margin-bottom: 5px;">
                 <label>Password</label>
                 <input type="password" id="login-password" required placeholder="••••••••">
             </div>
+            
+            <div style="text-align: right; margin-bottom: 20px;">
+                <a href="javascript:void(0)" onclick="resetPasswordDalLogin()" class="forgot-pwd-link">
+                    Forgot password?
+                </a>
+            </div>
+
             <button type="submit" class="btn-login">Login</button>
             <div id="login-error" class="error-msg"></div>
         </form>
@@ -42,6 +53,10 @@
 
 
 <div class="top-auth-bar">
+    <button id="btn-registered-teams" onclick="apriModaleTeamsIscritti()" class="btn-topbar-custom">
+        Registered Teams
+    </button>
+
     <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
         <i id="auth-icon" class="fas fa-lock"></i>
         <span id="auth-text">LOGIN</span>
@@ -55,6 +70,22 @@
     </div>
 </div>
 
+<div id="modal-registered-teams" class="custom-modal-backdrop" style="display: none;">
+    <div class="custom-modal-content pokemon-theme-modal">
+        <div class="modal-custom-header">
+            <h2>REGISTERED TEAMS</h2>
+            <button class="close-modal-btn" onclick="chiudiModaleTeamsIscritti()">✖</button>
+        </div>
+        
+        <div class="players-tabs-container" id="modal-players-tabs"></div>
+
+        <hr class="modal-separator">
+
+        <div class="teams-list-display" id="modal-teams-list-display">
+            <p class="placeholder-text">Seleziona un giocatore per vedere i suoi team registrati.</p>
+        </div>
+    </div>
+</div>
 
 <header class="top-bar">
         <div class="top-bar-inner">
@@ -503,7 +534,6 @@ async function recuperaStagioneCorrente() {
     }
 }
 
-
 async function inizializzaPaginaArchivio() {
     const loader = document.getElementById('loading-screen');
     const container = document.getElementById('matchList');
@@ -531,7 +561,7 @@ async function inizializzaPaginaArchivio() {
         });
 
         let userColor = "#FFA500"; 
-        let isAdmin = false;
+        let isAdmin = false; // Rappresenta se l'utente è loggato nel tuo sistema
 
         if (user) {
             // Verifichiamo se l'utente è realmente un admin (o se è loggato)
@@ -549,11 +579,6 @@ async function inizializzaPaginaArchivio() {
             }
         }
 
-        // --- 3. APPLICAZIONE VISIBILITÀ ADMIN ---
-        if (adminPlusBtn) {
-            adminPlusBtn.style.display = isAdmin ? 'flex' : 'none';
-        }
-
         if (topBar) {
             topBar.style.setProperty('background-color', userColor, 'important');
         }
@@ -563,19 +588,39 @@ async function inizializzaPaginaArchivio() {
             await recuperaStagioneCorrente();
         }
 
-        const [snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
+        // Recuperiamo i nodi della stagione corrente
+        const [snapSeasonInfo, snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
+            db.ref(`seasons/${stagioneAttiva}/info`).once('value'),
             db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value'),
             db.ref(`seasons/${stagioneAttiva}/showdowns`).once('value'),
             db.ref(`seasons/${stagioneAttiva}/leaderboard`).once('value'),
             db.ref(`players`).once('value') 
         ]);
 
+        const dataSeasonInfo = snapSeasonInfo.val() || {};
         const dataIscritti = snapTeams.val() || {};
         const dataShowdowns = snapShowdowns.val() || {};
         const dataLeaderboard = snapLeaderboard.val() || {};
         const dataPlayers = snapPlayersAll.val() || {};
         
         window.teamsIscrittiStagione = dataIscritti;
+
+        // --- 3. APPLICAZIONE VISIBILITÀ ADMIN E CONTROLLO STATO STAGIONE ---
+        if (adminPlusBtn) {
+            // Estraiamo la stringa dello status convertendola in MAIUSCOLO per sicurezza
+            const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
+            
+            console.log("Stagione Attiva:", stagioneAttiva, "Status Rilevato:", stringStatus);
+
+            const stagioneChiusa = (stringStatus === 'CLOSED');
+            
+            // Il pulsante viene mostrato se l'utente è loggato (isAdmin) AND la stagione NON è chiusa
+            if (isAdmin && !stagioneChiusa) {
+                adminPlusBtn.style.display = 'flex';
+            } else {
+                adminPlusBtn.style.display = 'none';
+            }
+        }
 
         if (!container) return;
         container.innerHTML = "";
@@ -669,34 +714,49 @@ async function renderRankings(leaderboardData) {
     const listContainer = document.getElementById('participants-list');
     if (!listContainer) return;
 
-    // 1. Trasformiamo l'oggetto in array e ordiniamo (Punti > Vittorie Match > Set Vinti)
-    const sortedPlayers = Object.keys(leaderboardData).map(name => ({
-        name: name,
-        ...leaderboardData[name]
-    })).sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        if (b.won !== a.won) return b.won - a.won;
-        return (b.setW || 0) - (a.setW || 0);
-    });
+    let sortedPlayers = [];
+    const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
+
+    // Se ci sono dati in classifica, ordiniamo normalmente
+    if (leaderboardData && Object.keys(leaderboardData).length > 0) {
+        sortedPlayers = Object.keys(leaderboardData).map(name => ({
+            name: name,
+            ...leaderboardData[name]
+        })).sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            if (b.won !== a.won) return b.won - a.won;
+            return (b.setW || 0) - (a.setW || 0);
+        });
+    } else {
+        // FALLBACK: Recuperiamo solo gli ISCRITTI a questa specifica stagione in ordine alfabetico
+        try {
+            const snapIscritti = await db.ref(`seasons/${stagione}/iscritti`).once('value');
+            const iscritti = snapIscritti.val() || {};
+            
+            // Il nodo "iscritti" contiene chiavi/valori (es: luca: "luca" o luca: true)
+            sortedPlayers = Object.keys(iscritti).map(key => ({
+                name: key, // Nome del giocatore iscritto
+                points: 0, won: 0, lost: 0, setW: 0, setL: 0, sdWon: 0, sdLost: 0
+            })).sort((a, b) => a.name.localeCompare(b.name));
+        } catch (err) {
+            console.error("Errore nel recupero degli iscritti di fallback:", err);
+        }
+    }
 
     if (sortedPlayers.length === 0) {
-        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: #666; font-style: italic; padding: 10px;">No rankings available</p>';
+        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: #666; font-style: italic; padding: 10px;">No players registered in this season</p>';
         return;
     }
 
-    // 2. Generiamo l'HTML con i colori dinamici e i link funzionanti
+    // Generiamo l'HTML con i colori dinamici recuperati da players
     const htmlRows = await Promise.all(sortedPlayers.map(async (player, index) => {
         const nameClean = player.name.toLowerCase().trim();
         const snapColor = await db.ref(`players/${nameClean}/info/color`).once('value');
         const color = snapColor.val() || "#31c489";
-        const dark = pSBC(-0.5, color);
 
-        // --- CALCOLO VALORI ---
         const sdWon = player.sdWon || 0; 
         const sdLost = player.sdLost || 0; 
-        const totalShowdowns = (player.sdWon || 0) + (player.sdLost || 0);
-
-        // Codifichiamo in sicurezza il nome del giocatore per passarlo come parametro nell'URL
+        const totalShowdowns = sdWon + sdLost;
         const playerUrlParam = encodeURIComponent(player.name.trim());
 
         return `
@@ -726,12 +786,12 @@ async function renderRankings(leaderboardData) {
                         ${player.name}
                     </div>
                     <div style="font-size: 0.75rem; color: #333; font-weight: 700; letter-spacing: -0.2px;">
-                        P: ${totalShowdowns}, S: ${sdWon}/${sdLost}, W/L: ${player.won}/${player.lost}
+                        P: ${totalShowdowns}, S: ${sdWon}/${sdLost}, W/L: ${player.won || 0}/${player.lost || 0}
                     </div>
                 </div>
 
                 <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; transform: rotate(1deg);">
-                    ${player.points} <span style="font-size: 0.6rem; display: block; margin-top: -4px;"></span>
+                    ${player.points}
                 </div>
             </div>
         `;
@@ -745,38 +805,44 @@ async function popolaClassifica() {
     if (!listContainer) return;
 
     try {
-        // Recuperiamo i dati della classifica
         const snapLeaderboard = await db.ref(`seasons/${stagioneAttiva}/leaderboard`).once('value');
         const leaderboardData = snapLeaderboard.val() || {};
 
-        // Convertiamo l'oggetto in un array per poterlo ordinare
-        const playersArray = Object.keys(leaderboardData).map(name => ({
-            name: name,
-            ...leaderboardData[name]
-        }));
+        let playersArray = [];
 
-        // Ordinamento: 1. Punti, 2. Match Vinti (won), 3. Set Vinti (setW)
-        playersArray.sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            if (b.won !== a.won) return b.won - a.won;
-            return b.setW - a.setW;
-        });
+        if (Object.keys(leaderboardData).length > 0) {
+            playersArray = Object.keys(leaderboardData).map(name => ({
+                name: name,
+                ...leaderboardData[name]
+            }));
 
-        // Generiamo l'HTML
+            playersArray.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.won !== a.won) return b.won - a.won;
+                return (b.setW || 0) - (a.setW || 0);
+            });
+        } else {
+            // FALLBACK: Leggiamo solo i nodi iscritti alla stagione corrente
+            const snapIscritti = await db.ref(`seasons/${stagioneAttiva}/iscritti`).once('value');
+            const iscritti = snapIscritti.val() || {};
+
+            playersArray = Object.keys(iscritti).map(key => ({
+                name: key,
+                points: 0, won: 0, lost: 0, setW: 0, setL: 0
+            })).sort((a, b) => a.name.localeCompare(b.name));
+        }
+
         if (playersArray.length === 0) {
-            listContainer.innerHTML = "<p style='color:#666; font-style:italic;'>No rankings yet.</p>";
+            listContainer.innerHTML = "<p style='color:#666; font-style:italic;'>No players registered in this season.</p>";
             return;
         }
 
-        // Usiamo Promise.all per gestire il recupero dei colori di ogni player
         const htmlRows = await Promise.all(playersArray.map(async (player, index) => {
             const nameClean = player.name.toLowerCase().trim();
-            // Recuperiamo il colore (dal tuo sistema dei colori)
             const snapColor = await db.ref(`players/${nameClean}/info/color`).once('value');
             const baseColor = snapColor.val() || "#31c489";
-            const borderColor = pSBC(-0.4, baseColor); // Bordi molto scuri
+            const borderColor = pSBC(-0.4, baseColor);
 
-            // Codifichiamo il nome per passarlo in sicurezza nell'URL dell'attributo onclick
             const playerUrlParam = encodeURIComponent(player.name.trim());
 
             return `
@@ -809,7 +875,7 @@ async function popolaClassifica() {
                             ${player.name}
                         </div>
                         <div style="font-size: 0.75rem; color: #444; font-weight: 600;">
-                            W: ${player.won} | L: ${player.lost} | Sets: ${player.setW}-${player.setL}
+                            W: ${player.won} | L: ${player.lost} | Sets: ${player.setW || 0}-${player.setL || 0}
                         </div>
                     </div>
 
@@ -840,25 +906,43 @@ async function renderClassificaDettagliata(stagione) {
     if (!container) return;
 
     try {
-        const [snapLeaderboard, snapPlayers] = await Promise.all([
+        // Recuperiamo contemporaneamente la leaderboard, gli iscritti e l'anagrafica dei player per colori/avatar
+        const [snapLeaderboard, snapIscritti, snapPlayers] = await Promise.all([
             db.ref(`seasons/${stagione}/leaderboard`).once('value'),
+            db.ref(`seasons/${stagione}/iscritti`).once('value'),
             db.ref(`players`).once('value')
         ]);
 
         const leaderboardData = snapLeaderboard.val() || {};
+        const iscrittiData = snapIscritti.val() || {};
         const playersData = snapPlayers.val() || {};
 
-        const sorted = Object.keys(leaderboardData).map(id => {
-            const s = leaderboardData[id];
-            return {
-                id, ...s,
-                color: playersData[id]?.info?.color || "#ffbd44",
-                avatar: playersData[id]?.info?.avatar || "", // Recuperiamo l'avatar senza rompere nulla
-                sdTot: (s.sdWon || 0) + (s.sdLost || 0),
-                mTot: (s.won || 0) + (s.lost || 0),
-                sTot: (s.setW || 0) + (s.setL || 0)
-            };
-        }).sort((a, b) => b.points - a.points);
+        let sorted = [];
+
+        if (Object.keys(leaderboardData).length > 0) {
+            sorted = Object.keys(leaderboardData).map(id => {
+                const s = leaderboardData[id];
+                return {
+                    id, ...s,
+                    color: playersData[id]?.info?.color || "#ffbd44",
+                    avatar: playersData[id]?.info?.avatar || "", 
+                    sdTot: (s.sdWon || 0) + (s.sdLost || 0),
+                    mTot: (s.won || 0) + (s.lost || 0),
+                    sTot: (s.setW || 0) + (s.setL || 0)
+                };
+            }).sort((a, b) => b.points - a.points);
+        } else {
+            // FALLBACK: Popoliamo la tabella con gli iscritti a 0 in ordine alfabetico
+            sorted = Object.keys(iscrittiData).map(key => {
+                const pKeyLower = key.toLowerCase().trim();
+                return {
+                    id: key,
+                    points: 0, sdTot: 0, sdWon: 0, sdLost: 0, mTot: 0, won: 0, lost: 0, sTot: 0, setW: 0, setL: 0,
+                    color: playersData[pKeyLower]?.info?.color || "#ffbd44",
+                    avatar: playersData[pKeyLower]?.info?.avatar || ""
+                };
+            }).sort((a, b) => a.id.localeCompare(b.id));
+        }
 
         let html = `
         <div class="rank-modal-title">LEAGUE TABLE</div>
@@ -876,8 +960,6 @@ async function renderClassificaDettagliata(stagione) {
 
         sorted.forEach((p, index) => {
             const playerUrlParam = encodeURIComponent(p.id.trim());
-
-            // Prepariamo l'HTML dell'avatar (se non c'è, mette un rimpiazzo invisibile per mantenere i testi allineati)
             const avatarHtml = p.avatar 
                 ? `<img src="${p.avatar}" class="stack-avatar-inline" alt="${p.id}">` 
                 : `<div class="stack-avatar-inline-empty"></div>`;
@@ -918,6 +1000,131 @@ async function renderClassificaDettagliata(stagione) {
 
         container.innerHTML = html + `</div>`;
     } catch (e) { console.error(e); }
+}
+
+// Funzione principale per aprire il modale e caricare i giocatori
+async function apriModaleTeamsIscritti() {
+    const modal = document.getElementById('modal-registered-teams');
+    const tabsContainer = document.getElementById('modal-players-tabs');
+    const teamsDisplay = document.getElementById('modal-teams-list-display');
+
+    if (!modal || !tabsContainer || !teamsDisplay) return;
+
+    // Reset contenuti e mostra loader interno o testo iniziale
+    tabsContainer.innerHTML = "<p>Caricamento giocatori...</p>";
+    teamsDisplay.innerHTML = "<p class='placeholder-text'>Seleziona un giocatore per vedere i suoi team registrati.</p>";
+    modal.style.display = 'flex';
+
+    try {
+        if (typeof stagioneAttiva === 'undefined' || !stagioneAttiva) {
+            if (typeof recuperaStagioneCorrente === 'function') await recuperaStagioneCorrente();
+        }
+
+        // 1. Recuperiamo l'intero nodo dei team iscritti per la stagione attuale
+        const snapTeams = await db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value');
+        const dataTeamsIscritti = snapTeams.val() || {};
+
+        // 2. Riorganizziamo i dati per mappare ogni giocatore ai suoi team divisi per categoria
+        // Struttura finale desiderata: { "didi": { "Monotype": [team1, team2], "Anything Goose": [...] } }
+        const playerMap = {};
+
+        Object.keys(dataTeamsIscritti).forEach(categoria => {
+            const giocatoriInCategoria = dataTeamsIscritti[categoria] || {};
+            
+            Object.keys(giocatoriInCategoria).forEach(playerKey => {
+                // Rispettiamo il case-sensitive originale del nome visualizzato se presente
+                const playerDati = giocatoriInCategoria[playerKey] || {};
+                const datiTeams = playerDati.datiTeams || {};
+
+                if (!playerMap[playerKey]) {
+                    playerMap[playerKey] = {};
+                }
+
+                // Estraiamo l'array o la lista di team registrati sotto 'datiTeams'
+                playerMap[playerKey][categoria] = Object.values(datiTeams);
+            });
+        });
+
+        // Controlliamo se ci sono effettivamente dei giocatori con dei team
+        const playersFound = Object.keys(playerMap);
+        if (playersFound.length === 0) {
+            tabsContainer.innerHTML = "<p>Nessun team registrato in questa stagione.</p>";
+            return;
+        }
+
+        // 3. Renderizziamo i pulsanti/schede per ciascun giocatore trovato
+        tabsContainer.innerHTML = "";
+        playersFound.forEach(playerName => {
+            const btnTab = document.createElement('button');
+            btnTab.className = 'player-tab-btn';
+            // Visualizzazione con prima lettera maiuscola per estetica
+            btnTab.textContent = playerName.toUpperCase(); 
+            
+            btnTab.onclick = () => {
+                // Rimuove la classe active da tutti gli altri bottoni/schede
+                document.querySelectorAll('.player-tab-btn').forEach(b => b.classList.remove('active'));
+                btnTab.classList.add('active');
+                
+                // Mostra i team di quel giocatore specifico
+                mostraTeamGiocatoreSelezionato(playerName, playerMap[playerName]);
+            };
+            
+            tabsContainer.appendChild(btnTab);
+        });
+
+    } catch (error) {
+        console.error("❌ Errore nel caricamento dei team iscritti:", error);
+        tabsContainer.innerHTML = "<p>Errore nel caricamento dei dati.</p>";
+    }
+}
+
+// Funzione interna per renderizzare i team del giocatore cliccato
+// FUNZIONE CORRETTA SENZA I CANCELLETTI NEL TITOLO
+function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
+    const teamsDisplay = document.getElementById('modal-teams-list-display');
+    if (!teamsDisplay) return;
+
+    teamsDisplay.innerHTML = "";
+
+    // Scorriamo le categorie in cui il giocatore ha registrato qualcosa
+    Object.keys(categorieDati).forEach(categoria => {
+        const listaTeam = categorieDati[categoria] || [];
+        if (listaTeam.length === 0) return;
+
+        // CONTENITORE DELLA CATEGORIA (Es: "Monotype") - CORRETTO QUI!
+        const catSection = document.createElement('div');
+        catSection.className = 'modal-category-section';
+        catSection.innerHTML = `<h3 class="category-title-modal">${categoria}</h3>`;
+
+        const cardsWrapper = document.createElement('div');
+        cardsWrapper.className = 'modal-team-cards-wrapper';
+
+        // Creiamo una card per ogni team trovato
+        listaTeam.forEach((team, index) => {
+            const teamCard = document.createElement('div');
+            teamCard.className = 'modal-team-card';
+            
+            const nomeTeam = team.nome || team.teamName || `Team #${index + 1}`;
+            
+            teamCard.innerHTML = `
+                <div class="modal-team-card-header">${nomeTeam}</div>
+                <div class="modal-team-card-body">
+                    <p><strong>Formato:</strong> ${team.formato || categoria}</p>
+                    <small class="team-date-info">Registrato il: ${team.data || 'N/D'}</small>
+                </div>
+            `;
+            cardsWrapper.appendChild(teamCard);
+        });
+
+        catSection.appendChild(cardsWrapper);
+        teamsDisplay.appendChild(catSection);
+    });
+}
+
+// Chiusura del modale
+function chiudiModaleTeamsIscritti() {
+    const modal = document.getElementById('modal-registered-teams');
+    if (modal) modal.style.display = 'none';
 }
 
 async function apriModaleShowdown(sdId, sdData) {
@@ -1135,37 +1342,65 @@ async function chiudiPannelli() {
 async function eliminaShowdown(sdId) {
     if (!confirm(`Sei sicuro di voler eliminare l'intero Showdown ${sdId}? Questa azione è irreversibile.`)) return;
 
+    // ==========================================
+    // 🔥 ATTIVAZIONE LOADER: Parte la rimozione e il ricalcolo pesante
+    // ==========================================
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.classList.add('active');
+
     try {
         const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
         
         // 1. Recuperiamo i dati dello showdown PRIMA di eliminarlo
-        // Ci servono gli ID dei player per ricalcolare le loro statistiche globali dopo
         const snap = await db.ref(`seasons/${stagione}/showdowns/${sdId}`).once('value');
         const sd = snap.val();
 
         if (!sd) {
+            if (loader) loader.classList.remove('active'); // Nascondi prima del pop-up se non lo trova
             alert("Showdown non trovato.");
             return;
         }
 
         // 2. Eliminazione fisica dello Showdown
-        // Questo elimina in un colpo solo info, impostazioni e tutti i match (match1, match2, ecc.)
         await db.ref(`seasons/${stagione}/showdowns/${sdId}`).remove();
-
         console.log(`Showdown ${sdId} rimosso. Avvio ricalcolo statistiche...`);
 
+
+        // ==========================================
+        // 🔄 LOGICA: RIPRISTINO STATO PLAYING SU ELIMINAZIONE GIORNATA
+        // ==========================================
+        const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
+        const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
+        
+        const stagioneInfo = snapStagioneInfo.val() || {};
+        const tuttiShowdowns = snapTuttiShowdowns.val() || {};
+
+        // Se la stagione è attualmente 'closed'
+        if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
+            const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
+            const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
+
+            // Se i giorni effettivi sono inferiori ai total_days previsti, riapriamo la stagione.
+            if (numeroShowdownAttuali < totalDaysPrevisti) {
+                // Aggiorna lo stato su Firebase riportandolo su 'playing'
+                await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
+                console.log(`La stagione ${stagione} è stata riaperta e impostata su PLAYING.`);
+                
+                alert("⚠️ Info: Avendo eliminato uno Showdown completo, la stagione è stata riaperta!");
+            }
+        }
+        // ==========================================
+
+
         // 3. Ricalcolo Leaderboard e Statistiche Globali
-        // Usiamo i dati salvati in sd.info per identificare i player coinvolti
         if (sd.info) {
             const p1Id = sd.info.player1?.toLowerCase();
             const p2Id = sd.info.player2?.toLowerCase();
 
-            // Aggiorniamo la leaderboard stagionale (che ora ignorerà lo showdown rimosso)
             if (typeof aggiornaLeaderboard === "function") {
                 await aggiornaLeaderboard(stagione);
             }
 
-            // Aggiorniamo le statistiche globali dei due player
             if (typeof ricalcolaStatisticheGlobali === "function") {
                 if (p1Id) await ricalcolaStatisticheGlobali(p1Id);
                 if (p2Id) await ricalcolaStatisticheGlobali(p2Id);
@@ -1184,6 +1419,11 @@ async function eliminaShowdown(sdId) {
     } catch (e) {
         console.error("Errore durante l'eliminazione dello showdown:", e);
         alert("Errore tecnico: " + e.message);
+    } finally {
+        // ==========================================
+        // 🛑 DISATTIVAZIONE LOADER: Operazione conclusa o fallita
+        // ==========================================
+        if (loader) loader.classList.remove('active');
     }
 }
 
@@ -1355,17 +1595,25 @@ function resetSlotDashboard() {
 async function apriModaleMatch(num) {
     console.log("Apertura Modale Match #" + num);
 
+    // Mostra la Pokeball di caricamento immediatamente
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.classList.add('active');
+
     // 1. Recupero ID Showdown e Stagione
     const sdId = document.getElementById('current-showdown-id')?.value;
     const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
     
     if (!sdId) {
+        if (loader) loader.classList.remove('active'); // Nascondi se fallisce il controllo
         alert("Errore: ID Showdown mancante!");
         return console.error("ID Showdown mancante!");
     }
 
     const panel = document.getElementById('admin-matches-panel');
-    if (!panel) return console.error("Pannello admin-matches-panel non trovato nel DOM!");
+    if (!panel) {
+        if (loader) loader.classList.remove('active'); // Nascondi se fallisce il controllo
+        return console.error("Pannello admin-matches-panel non trovato nel DOM!");
+    }
 
     const modalTitle = document.getElementById('match-panel-title'); 
     const saveBtn = document.getElementById('btn-save-match-main');
@@ -1378,11 +1626,10 @@ async function apriModaleMatch(num) {
     if (typeof resetStatoModaleMatch === "function") {
         resetStatoModaleMatch();
     } else {
-        // Fallback manuale se resetStatoModaleMatch non fosse disponibile
         document.querySelectorAll('#replays-inputs-list input[type="text"]').forEach(i => i.value = "");
     }
     
-    // Reset della chiave globale (fondamentale per distinguere ADD da EDIT)
+    // Reset della chiave globale
     if (globalKeyInput) globalKeyInput.value = "";
 
     try {
@@ -1463,6 +1710,9 @@ async function apriModaleMatch(num) {
     } catch (error) {
         console.error("Errore nel caricamento del modale:", error);
         alert("Errore nel caricamento dati. Controlla la console.");
+    } finally {
+        // Nascondi la Pokeball in ogni caso, sia se va a buon fine sia se fallisce
+        if (loader) loader.classList.remove('active');
     }
 
     // Mostra il pannello e aggiorna le iniziali sui bottoni vincitore
@@ -2555,6 +2805,12 @@ async function salvaMatchFirebase() {
         return;
     }
 
+    // ==========================================
+    // 🔥 ATTIVAZIONE LOADER: Parte l'operazione di salvataggio
+    // ==========================================
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.classList.add('active');
+
     // 4. Logica Punti e Identità Player
     const p1Id = p1Select.value.toLowerCase().trim();
     const p2Id = p2Select.value.toLowerCase().trim();
@@ -2609,7 +2865,6 @@ async function salvaMatchFirebase() {
         let delta1, delta2;
         const K = 32;
 
-        // Se il match esiste già ed è identico (stessi giocatori e stesso vincitore), teniamo i delta vecchi
         if (matchEsistente && 
             matchEsistente.player1Id === p1Id && 
             matchEsistente.player2Id === p2Id && 
@@ -2619,7 +2874,6 @@ async function salvaMatchFirebase() {
             delta1 = matchEsistente.p1DeltaElo;
             delta2 = matchEsistente.p2DeltaElo;
         } else {
-            // Calcolo nuovi Delta (Formula Elo professionale)
             const exp1 = 1 / (1 + Math.pow(10, (eloP2_pre - eloP1_pre) / 400));
             const exp2 = 1 / (1 + Math.pow(10, (eloP1_pre - eloP2_pre) / 400));
             
@@ -2630,7 +2884,7 @@ async function salvaMatchFirebase() {
             delta2 = Math.round(K * (score2 - exp2));
         }
 
-        // 6. Creazione dell'oggetto Match (con delta e ranking congelati)
+        // 6. Creazione dell'oggetto Match
         const datiMatch = {
             player1: p1Select.value,
             player1Id: p1Id,
@@ -2651,23 +2905,21 @@ async function salvaMatchFirebase() {
             showdownId: showdownId,
             p1EloAtMatch: eloP1_pre,
             p2EloAtMatch: eloP2_pre,
-            p1DeltaElo: delta1,  // NUOVO: Delta congelato nel DB
-            p2DeltaElo: delta2   // NUOVO: Delta congelato nel DB
+            p1DeltaElo: delta1,
+            p2DeltaElo: delta2
         };
 
         // 7. SALVATAGGIO MATCH
         const pathMatch = `seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`;
         await db.ref(pathMatch).set(datiMatch);
 
-        // --- AGGIORNAMENTO ELO NEI PROFILI (Basato sui Delta appena calcolati/recuperati) ---
-        // Nota: Qui aggiorniamo il ranking del profilo per riflettere il nuovo stato,
-        // ma la funzione ricalcolaStatisticheGlobali userà i delta salvati sopra.
+        // --- AGGIORNAMENTO ELO NEI PROFILI ---
         await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1_pre + delta1 });
         await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2_pre + delta2 });
         
         console.log(`Elo aggiornato con Delta: ${p1Id} (${delta1}), ${p2Id} (${delta2})`);
 
-        // --- LOGICA VINCITORE SHOWDOWN (Invariata) ---
+        // --- LOGICA VINCITORE SHOWDOWN ---
         const sdSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
         const allMatches = sdSnap.val() || {};
         const matchesArray = Object.values(allMatches);
@@ -2705,6 +2957,46 @@ async function salvaMatchFirebase() {
 
         await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
 
+        // ==========================================
+        // 🔥 LOGICA: CONTROLLO CHIUSURA STAGIONE AUTOCLOSED
+        // ==========================================
+        const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
+        const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
+        
+        const stagioneInfo = snapStagioneInfo.val() || {};
+        const tuttiShowdowns = snapTuttiShowdowns.val() || {};
+
+        if (stagioneInfo.status === 'playing' && stagioneInfo.total_days) {
+            const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
+            const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
+            const matchInQuestoShowdown = allMatches ? Object.keys(allMatches).length : 0;
+
+            if (numeroShowdownAttuali >= totalDaysPrevisti && matchInQuestoShowdown >= 3) {
+                
+                await db.ref(`seasons/${stagione}/info`).update({ status: 'closed' });
+                console.log(`La stagione ${stagione} è stata impostata automaticamente su CLOSED.`);
+
+                const snapLeaderboard = await db.ref(`players`).once('value');
+                const tuttiIPlayers = snapLeaderboard.val() || {};
+                
+                let vincitoreStagioneId = "Nessuno";
+                let punteggioMassimo = -1;
+
+                Object.entries(tuttiIPlayers).forEach(([idPlayer, datiPlayer]) => {
+                    const rankingActual = datiPlayer.stats?.['individual-stats']?.ranking || 1000;
+                    if (rankingActual > punteggioMassimo) {
+                        punteggioMassimo = rankingActual;
+                        vincitoreStagioneId = idPlayer.toUpperCase();
+                    }
+                });
+
+                setTimeout(() => {
+                    alert(`🏆 LA STAGIONE È CONCLUSA! 🏆\n\nIl numero massimo di Showdown (${totalDaysPrevisti}/${totalDaysPrevisti}) è stato completato con successo.\nLo status della stagione è ora: CLOSED.\n\n👑 Congratulazioni a ${vincitoreStagioneId}, Vincitore Assoluto della Stagione! 👑`);
+                }, 600);
+            }
+        }
+        // ==========================================
+
         // 8. SINCRONIZZAZIONE STATISTICHE
         if (typeof aggiornaLeaderboard === "function") {
             await aggiornaLeaderboard(stagione);
@@ -2715,7 +3007,7 @@ async function salvaMatchFirebase() {
             await ricalcolaStatisticheGlobali(p2Id);
         }
         
-        alert(`Match #${matchNum} salvato e Ranking aggiornato (Delta: ${delta1 > 0 ? '+'+delta1 : delta1})!`);
+        alert(`Match #${matchNum} salvato!`);
 
         // 9. CHIUSURA E PULIZIA
         panel.style.display = 'none';
@@ -2736,9 +3028,13 @@ async function salvaMatchFirebase() {
     } catch (err) {
         console.error("Errore durante il salvataggio:", err);
         alert("Errore tecnico: " + err.message);
+    } finally {
+        // ==========================================
+        // 🛑 DISATTIVAZIONE LOADER: Operazione conclusa
+        // ==========================================
+        if (loader) loader.classList.remove('active');
     }
 }
-
 
 async function ricalcolaStatisticheGlobali(pId) {
     try {
@@ -3345,7 +3641,6 @@ async function eliminaMatch(showdownId, matchNum) {
             await db.ref(pathMatch).remove();
 
             // --- 3. NUOVA LOGICA: RICALCOLO VINCITORE SHOWDOWN ---
-            // Recuperiamo i match rimanenti per aggiornare le info della serie
             const matchesSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
             const remainingMatches = matchesSnap.val() || {};
             const matchesArray = Object.values(remainingMatches);
@@ -3375,24 +3670,67 @@ async function eliminaMatch(showdownId, matchNum) {
                 ultimoAggiornamento: new Date().toISOString()
             };
 
-            // Se dopo l'eliminazione non c'è più un vincitore chiaro o mancano i match minimi
             if (seriesWinnerId && !isTie && matchesArray.length >= 2) {
                 infoUpdate.vincitoreShowdown = seriesWinnerId;
             } else {
-                // Rimuoviamo il vincitore se la serie è tornata in pareggio o incompleta
                 await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info/vincitoreShowdown`).remove();
             }
             
             await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
 
-            // --- 4. SINCRONIZZAZIONE STATISTICHE ---
+
+            // ==========================================
+            // 🔥 NUOVA LOGICA: RIPRISTINO STATO PLAYING SE INCOMPLETO (CORRETTA)
+            // ==========================================
+            const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
+            const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
             
-            // Aggiorna la classifica stagionale
+            const stagioneInfo = snapStagioneInfo.val() || {};
+            const tuttiShowdowns = snapTuttiShowdowns.val() || {};
+
+            // Se la stagione è attualmente 'closed' e abbiamo impostato dei giorni totali
+            if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
+                const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
+                
+                // Ordiniamo le chiavi degli showdown inseriti (es: ["day1", "day2", "day3"])
+                const chiaviShowdowns = Object.keys(tuttiShowdowns).sort();
+                const numeroShowdownAttuali = chiaviShowdowns.length;
+                
+                let ultimoShowdownIncompleto = false;
+
+                if (numeroShowdownAttuali === totalDaysPrevisti) {
+                    // Identifichiamo l'ID dell'ultimo showdown inserito in ordine temporale/alfabetico
+                    const ultimoShowdownId = chiaviShowdowns[chiaviShowdowns.length - 1];
+                    
+                    // Contiamo quanti match REALI sono rimasti dentro l'ultimo giorno dopo la rimozione
+                    // Se stiamo cancellando proprio dall'ultimo giorno, usiamo la lunghezza aggiornata locale (matchesArray)
+                    const matchUltimoDay = (showdownId === ultimoShowdownId) 
+                        ? matchesArray.length 
+                        : (tuttiShowdowns[ultimoShowdownId]?.matches ? Object.keys(tuttiShowdowns[ultimoShowdownId].matches).length : 0);
+
+                    if (matchUltimoDay < 3) {
+                        ultimoShowdownIncompleto = true;
+                    }
+                }
+
+                // Se mancano showdown sul totale, OPPURE se siamo arrivati al totale ma l'ultimo è stato "azzoppato" (< 3 match)
+                if (numeroShowdownAttuali < totalDaysPrevisti || ultimoShowdownIncompleto) {
+                    
+                    // Riporta lo stato su playing in modo atomico
+                    await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
+                    console.log(`La stagione ${stagione} è tornata in stato PLAYING a causa dell'eliminazione del match.`);
+                    
+                    alert("⚠️ Attenzione: L'ultimo showdown non è più completo (richiede 3 match). Lo status della stagione è stato reimpostato su PLAYING!");
+                }
+            }
+            // ==========================================
+
+
+            // --- 4. SINCRONIZZAZIONE STATISTICHE ---
             if (typeof aggiornaLeaderboard === "function") {
                 await aggiornaLeaderboard(stagione);
             }
 
-            // Aggiorna i profili globali (i badges e i totali)
             if (typeof ricalcolaStatisticheGlobali === "function") {
                 if (p1Id) await ricalcolaStatisticheGlobali(p1Id);
                 if (p2Id) await ricalcolaStatisticheGlobali(p2Id);
@@ -3415,7 +3753,6 @@ async function eliminaMatch(showdownId, matchNum) {
         }
     }
 }
-
 
 function selectWinner(setNum, winner, isEdit = false) {
     const prefix = isEdit ? "edit-" : "";
@@ -3759,6 +4096,48 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
     }
 }
 
+async function resetPasswordDalLogin() {
+    const emailInput = document.getElementById('login-email');
+    const emailValue = emailInput ? emailInput.value.trim() : "";
+
+    // 1. Controlla se l'utente ha inserito l'email
+    if (!emailValue) {
+        alert("⚠️ Inserisci il tuo indirizzo email nel campo sopra per richiedere il reset della password.");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+
+    // 2. Chiedi conferma
+    if (!confirm(`Inviare il link per reimpostare la password a: ${emailValue}?`)) return;
+
+    // 3. Attiva l'overlay della Pokeball se presente nella pagina di login
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.classList.add('active');
+
+    try {
+        // 4. Chiamata a Firebase Auth tramite l'email passata dall'input
+        await firebase.auth().sendPasswordResetEmail(emailValue);
+        
+        alert(`📧 Email di ripristino inviata!\n\nControlla la casella di posta (e la cartella Spam) all'indirizzo: ${emailValue}`);
+        
+    } catch (error) {
+        console.error("Errore durante il reset della password dal login:", error);
+        
+        // Gestione degli errori tipici in fase di login
+        if (error.code === 'auth/user-not-found') {
+            alert("Errore: Questo indirizzo email non è registrato nel sistema.");
+        } else if (error.code === 'auth/invalid-email') {
+            alert("Errore: L'indirizzo email inserito non è valido.");
+        } else if (error.code === 'auth/too-many-requests') {
+            alert("Errore: Troppi tentativi di recente. Riprova tra qualche minuto.");
+        } else {
+            alert("Errore: " + error.message);
+        }
+    } finally {
+        // 5. Spegni il loader
+        if (loader) loader.classList.remove('active');
+    }
+}
 
     </script>
 </body>

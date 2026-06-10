@@ -1204,7 +1204,7 @@ html, body {
     max-width: 45px;
     max-height: 45px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    filter: drop-shadow(1.5px 1.5px 0 black);
 }
 
 .pkm-info {
@@ -1416,6 +1416,7 @@ html, body {
     margin-left: -5px; /* Leggero tocco per incollarlo al bordo */
     margin-top: 35px;
     margin-bottom: -10px;
+    filter: drop-shadow(2px 2px 0 black);
 }
 
 .modal-pkm-info {
@@ -2481,7 +2482,7 @@ color:#eeeeee;
     image-rendering: -webkit-optimize-contrast; /* Per Chrome/Safari */
     image-rendering: crisp-edges;               /* Per Firefox */
     image-rendering: pixelated;                 /* Per Edge/Chrome moderni */
-    filter: contrast(1.1) drop-shadow(0 5px 12px rgba(0,0,0,0.15));
+    filter: contrast(1.1) drop-shadow(3px 3px 0 black);
 }
 
 /* Blindatura per lo Zoom */

@@ -883,3 +883,80 @@ body {
     font-size: 0.9rem;
     color: #000;
 }
+
+.bar-reset-pw-btn {
+    background: white; /* Giallo acceso perfettamente coordinato */
+    color: #000000;
+    border: 2px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    font-family: 'Josefin Sans', 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    margin-right: 50px;
+}
+
+.bar-reset-pw-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px #000000;
+}
+
+.bar-reset-pw-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000000;
+}
+
+.bar-reset-pw-btn i {
+    margin-right: 4px;
+}
+
+.neubrutal-alert-banner {
+    background: #ff5c5c; /* Rosso/Arancione Neubrutalist acceso */
+    color: #000000;
+    border-bottom: 4px solid #000000;
+    padding: 12px 20px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 9999; /* Sempre in primissimo piano */
+}
+
+.alert-banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 15px;
+}
+
+.alert-banner-btn {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #000000;
+    box-shadow: 2px 2px 0px #000000;
+    font-family: inherit;
+    font-weight: 900;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.alert-banner-btn:hover {
+    background: #ffbd44; /* Diventa giallo al passaggio del mouse */
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px #000000;
+}
+
+/* Opzionale: Se il banner è attivo, diamo un po' di margine alla barra superiore */
+body.has-alert-banner .top-auth-bar {
+    top: 45px; /* Sposta la barra in giù se c'è il banner (adatta in base al tuo layout) */
+}

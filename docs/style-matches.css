@@ -862,7 +862,7 @@ button.btn-set.is-selected:hover {
 .btn-floating-admin {
     position: fixed;
     top: 100px;
-    right: 40px;
+    right: 120px;
     width: 50px;
     height: 50px;
     background: white; 
@@ -912,7 +912,7 @@ button.btn-set.is-selected:hover {
 .music-btn {
     position: fixed;
     top: 100px;
-    right: 120px;
+    right: 40px;
     width: 45px;
     height: 45px;
     background: white; 
@@ -2190,6 +2190,7 @@ button.btn-set.is-selected:hover {
     margin-left: -5px; /* Leggero tocco per incollarlo al bordo */
     margin-top: 35px;
     margin-bottom: -10px;
+    filter: drop-shadow(2px 2px 0 black);
 }
 
 .modal-pkm-info {
@@ -4002,3 +4003,212 @@ transform: translate(-4px, -4px);
 .col-info, .col-replays{
     max-height:270px;
 }
+
+/* Overlay di caricamento a tutto schermo */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Sfondo scuro semitrasparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; /* Sopra a qualsiasi modale o pannello */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Quando l'overlay ha la classe active, diventa visibile */
+#loading-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Il rendering CSS della Pokeball */
+.pokeball-spinner {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(to bottom, #eeeeee 44%, #222222 44%, #222222 56%, #ffffff 56%);
+    border: 4px solid #222222;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: spinPokeball 1s linear infinite;
+}
+
+/* Il bottone centrale della Pokeball */
+.pokeball-spinner::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background-color: #ffffff;
+    border: 4px solid #222222;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Animazione di rotazione continua */
+@keyframes spinPokeball {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Stile del bottone nella barra gialla */
+.btn-topbar-custom {
+    background: #00e676; /* Verde simile al tuo bottone Login */
+    border: 3px solid #000;
+    padding: 8px 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #000;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-right: 12px;
+}
+.btn-topbar-custom:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000;
+}
+
+/* Sfondo Modale */
+.custom-modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+}
+
+/* Finestra Interna Modale */
+.pokemon-theme-modal {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0px #000;
+    width: 90%; max-width: 650px;
+    max-height: 85vh;
+    padding: 24px;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+}
+
+.modal-custom-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 3px solid #000; padding-bottom: 12px;
+}
+.modal-custom-header h2 { margin: 0; font-weight: 900; letter-spacing: 1px; }
+
+.close-modal-btn {
+    background: none; border: none; font-size: 20px; cursor: pointer; font-weight: bold;
+}
+
+/* Contenitore Schede Giocatori */
+.players-tabs-container {
+    display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+}
+
+/* Bottoni/Schede dei Giocatori */
+.player-tab-btn {
+    background: #fff;
+    border: 2px solid #000;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #000;
+}
+.player-tab-btn.active {
+    background: #ffeb3b; /* Giallo Evidenziato quando selezionato */
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.modal-separator { border: 0; border-top: 2px dashed #000; margin: 20px 0; }
+
+/* Visualizzazione card dei team */
+.category-title-modal { text-transform: uppercase; font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; }
+.modal-team-cards-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.modal-team-card {
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0px #000;
+    background: #f9f9f9;
+    padding: 12px;
+}
+.modal-team-card-header { font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 6px; }
+.placeholder-text { text-align: center; color: #666; padding: 20px; font-style: italic; }
+
+/* Allinea il bottone e il login sulla stessa linea */
+.top-auth-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Spinge tutto a destra della barra gialla */
+    gap: 15px; /* Crea uno spazio perfetto tra il nuovo tasto e il Login */
+}
+
+/* Stile Neubrutalism coerente con la tua UI (Bordi spessi neri e ombra netta) */
+.btn-topbar-custom {
+    background: #00e676; /* Verde acceso simile al bottone di conferma del login */
+    border: 3px solid #000;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #000;
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-family: inherit;
+}
+
+.btn-topbar-custom:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+.btn-topbar-custom:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000;
+}
+
+/* Stili strutturali per il modale */
+.custom-modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+}
+.pokemon-theme-modal {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0px #000;
+    width: 90%; max-width: 650px;
+    max-height: 80vh;
+    padding: 20px;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    font-family: inherit;
+}
+.modal-custom-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 3px solid #000; padding-bottom: 8px;
+}
+.modal-custom-header h2 { margin:0; font-weight: 900; }
+.close-modal-btn { background: none; border: none; font-size: 22px; cursor: pointer; font-weight: bold; }
+.players-tabs-container { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+.player-tab-btn {
+    background: #fff; border: 3px solid #000; padding: 6px 12px;
+    font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0px #000;
+}
+.player-tab-btn.active { background: #ffbd44; transform: translate(1px, 1px); box-shadow: 1px 1px 0px #000; }
+.modal-separator { border: 0; border-top: 3px dashed #000; margin: 15px 0; }
+.category-title-modal { text-transform: uppercase; font-weight: 900; margin-bottom: 8px; font-size: 16px; color: #000; }
+.modal-team-cards-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+@media (max-width: 600px) { .modal-team-cards-wrapper { grid-template-columns: 1fr; } }
+.modal-team-card { border: 3px solid #000; box-shadow: 3px 3px 0px #000; background: #fff; padding: 10px; }
+.modal-team-card-header { font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px; }
+.placeholder-text { text-align: center; color: #555; font-style: italic; padding: 10px; }
