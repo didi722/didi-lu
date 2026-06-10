@@ -73,9 +73,9 @@
 <div id="modal-registered-teams" class="custom-modal-backdrop" style="display: none;">
     <div class="custom-modal-content pokemon-theme-modal">
         <div class="modal-custom-header">
-            <h2>REGISTERED TEAMS</h2>
-            <button class="close-modal-btn" onclick="chiudiModaleTeamsIscritti()">✖</button>
-        </div>
+    <h2 class="neubrutal-badge-title">REGISTERED TEAMS</h2>
+    <button class="close-modal-btn" onclick="chiudiModaleTeamsIscritti()">✖</button>
+</div>
         
         <div class="players-tabs-container" id="modal-players-tabs"></div>
 
@@ -1086,35 +1086,79 @@ function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
 
     teamsDisplay.innerHTML = "";
 
-    // Scorriamo le categorie in cui il giocatore ha registrato qualcosa
     Object.keys(categorieDati).forEach(categoria => {
         const listaTeam = categorieDati[categoria] || [];
         if (listaTeam.length === 0) return;
 
-        // CONTENITORE DELLA CATEGORIA (Es: "Monotype") - CORRETTO QUI!
         const catSection = document.createElement('div');
         catSection.className = 'modal-category-section';
         catSection.innerHTML = `<h3 class="category-title-modal">${categoria}</h3>`;
 
         const cardsWrapper = document.createElement('div');
-        cardsWrapper.className = 'modal-team-cards-wrapper';
+        cardsWrapper.className = 'modal-teams-compact-grid';
 
-        // Creiamo una card per ogni team trovato
-        listaTeam.forEach((team, index) => {
-            const teamCard = document.createElement('div');
-            teamCard.className = 'modal-team-card';
-            
-            const nomeTeam = team.nome || team.teamName || `Team #${index + 1}`;
-            
-            teamCard.innerHTML = `
-                <div class="modal-team-card-header">${nomeTeam}</div>
-                <div class="modal-team-card-body">
-                    <p><strong>Formato:</strong> ${team.formato || categoria}</p>
-                    <small class="team-date-info">Registrato il: ${team.data || 'N/D'}</small>
+        cardsWrapper.innerHTML = listaTeam.map(team => {
+            const pokemonList = team.pokemon || [];
+            const teamIdSicuro = team.id ? team.id.toString().replace(/-/g, '') : Math.random().toString(36).substr(2, 9);
+
+            return `
+            <div class="compact-team-card" onclick="if(typeof apriDettagli === 'function') apriDettagli('${team.id}')">
+                <div class="compact-card-body">
+                    <span class="compact-team-name">📁 ${team.nome}</span>
+                    <span class="compact-team-stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
                 </div>
+                <div class="compact-card-footer">
+                    <small>Registrato il: ${team.data || 'N/D'}</small>
+                </div>
+
+                <div class="modal-team-hover-tooltip card">
+                    <div class="card-header">
+                        <span class="category">${team.category || team.categoria || categoria}</span>
+                        <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
+                    </div>
+                    <h3>${team.nome}</h3>
+                    <div class="pkm-grid">
+                        ${pokemonList.map((p, index) => {
+                            const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                            const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                            const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
+                            const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
+                            const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
+                            const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${index}`;
+                            
+                            setTimeout(() => {
+                                if (typeof applicaColoreBordo === 'function') applicaColoreBordo(p.nome, pkmBoxId);
+                            }, 50);
+
+                            return `
+                                <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation();">
+                                    <div class="pkm-sprite-container">
+                                        <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
+                                    </div>
+                                    <div class="pkm-info">
+                                        <span class="pkm-name">${p.nome}</span>
+                                        <div class="item-container">
+                                            <img src="${itemSprite}" class="item-icon" title="${p.strumento || 'Nessuno'}" onerror="this.style.display='none'">
+                                            <span class="pkm-item">${p.strumento || 'No item'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="pkm-hover-card ${sideClass}">
+                                        <strong>${p.nome}</strong>
+                                        <p>✨ ${p.abilita || 'N/D'}</p>
+                                        <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs || 'N/D'}</p>
+                                        <div class="hover-moves">
+                                            ${(p.mosse || []).map(m => `<span>${m}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
             `;
-            cardsWrapper.appendChild(teamCard);
-        });
+        }).join('');
 
         catSection.appendChild(cardsWrapper);
         teamsDisplay.appendChild(catSection);

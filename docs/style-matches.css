@@ -4212,3 +4212,587 @@ transform: translate(-4px, -4px);
 .modal-team-card { border: 3px solid #000; box-shadow: 3px 3px 0px #000; background: #fff; padding: 10px; }
 .modal-team-card-header { font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px; }
 .placeholder-text { text-align: center; color: #555; font-style: italic; padding: 10px; }
+
+/* Griglia per le card compatte */
+.modal-teams-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+/* Stile della Card Compatta (Pulita) */
+.compact-team-card {
+    position: relative; /* Fondamentale per ancorare il tooltip fluttuante */
+    border: 3px solid #000;
+    background: #fff;
+    box-shadow: 3px 3px 0px #000;
+    padding: 10px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.compact-team-card:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px #000;
+    background: #fdfdfd;
+}
+
+.compact-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.compact-team-name {
+    font-weight: 900;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+.compact-team-stats {
+    font-size: 12px;
+    font-weight: 800;
+    background: #eee;
+    border: 2px solid #000;
+    padding: 1px 6px;
+}
+
+.compact-card-footer {
+    font-size: 11px;
+    color: #666;
+}
+
+/* IL TOOLTIP: La card del Box originale riadattata come pop-up */
+.compact-team-card .modal-team-hover-tooltip {
+    display: none; /* Nascosta di base */
+    position: absolute;
+    bottom: 105%; /* Compare sopra la card compatta */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px; /* Dimensione ideale per il layout della pkm-grid */
+    background: #fff;
+    z-index: 99999; /* Sopra a tutto il resto del modale */
+    pointer-events: auto; /* Permette di interagire con il box dei pokemon */
+    cursor: default;
+    
+    /* Manteniamo le proprietà stilistiche esatte delle tue card originali */
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0px #000;
+    padding: 15px;
+}
+
+/* Mostra il tooltip in Hover sulla card compatta */
+.compact-team-card:hover .modal-team-hover-tooltip {
+    display: block;
+}
+
+/* Previene problemi di collisione sui bordi dello schermo o della modale */
+.pokemon-theme-modal {
+    max-width: 900px !important;
+    overflow-y: auto !important;
+    overflow-x: visible !important; /* Permette ai tooltip laterali di sbordare leggermente se necessario */
+}
+
+.card { 
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    box-shadow: 5px 5px 0px var(--border-color);
+    padding: 20px; 
+    position: relative;
+    overflow: hidden;
+    color: #1a1a1a; 
+    z-index: 1;
+    cursor: pointer;
+    overflow: visible !important;
+    max-width: 350px;
+    
+}
+
+.card-header { 
+    display: none !important; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 10px;
+    color: #1a1a1a; 
+
+}
+
+.card { 
+    background: var(--accent-color); /* Colore dinamico del team */
+    border: 4px solid #000; /* Bordo nero spesso */
+    box-shadow: 10px 10px 0px #000; /* Ombra dura */
+    padding: 20px; 
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.card:hover {
+    /* Effetto "sollevamento" */
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0px #000;
+}
+
+.card:active {
+    /* Effetto "pressione" */
+    transform: translate(4px, 4px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+/* Header della Card */
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px;
+}
+
+.category, .stats { 
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.75rem; 
+    font-weight: 900;
+    text-transform: uppercase;
+    background: #fff; /* Sfondo bianco per staccare */
+    color: #000;
+    border: 3px solid #000;
+    padding: 4px 10px;
+    box-shadow: 3px 3px 0px #000;
+}
+
+.card h3 { 
+    font-family: 'Josefin Sans', sans-serif;
+    background: #000;
+    color: #fff;
+    margin: 10px 0; 
+    font-size: 1.6rem; /* Leggermente ridotto per nomi lunghi */
+    font-weight: 900;
+    padding: 5px 12px;
+    display: inline-block; 
+    transform: rotate(-1deg);
+    
+    /* CORREZIONE PER NOMI LUNGHI */
+    white-space: normal;      /* Permette di andare a capo */
+    max-width: 90%;           /* Impedisce di toccare i bordi della card */
+    line-height: 1.3;         /* Gestisce lo spazio tra le righe se va a capo */
+    box-decoration-break: clone; /* Opzionale: mantiene il padding su ogni riga */
+    -webkit-box-decoration-break: clone;
+    display: none !important;
+}
+
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+    gap: 20px; 
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.pkm-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
+    margin-top: 15px;
+}
+
+.pkm-box {
+    background: white;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 60px;
+    box-sizing: border-box;
+    position: relative;
+    border: none;
+    flex: 1;          /* Occupa tutto lo spazio rimasto dopo lo sprite */
+    min-width: 0;     /* FONDAMENTALE: permette al contenitore di restringersi */
+    color: #1a1a1a !important;
+    position: relative;
+    cursor: help; /* Cambia cursore per far capire che c'è un info */
+    color: #1a1a1a;
+    font-family: 'Josefin Sans', sans-serif;
+    border: 1.5px solid black;
+    box-shadow: 3px 3px 0 black;
+}
+
+.pkm-box::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;         /* Spessore del bordo */
+    height: 100%;
+    background: var(--accent-dark); /* Colore di base */
+    color: #1a1a1a;
+}
+
+
+
+/* Card in hover */
+.pkm-hover-card {
+    display: none;
+    position: absolute;
+    bottom: 110%; 
+    width: 260px; 
+    background: black;
+    border: 2px solid white;
+    box-shadow: 4px 4px 0px white;
+    color: white;
+    padding: 12px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.pkm-hover-card.left-side {
+    left: 0;
+    right: auto;
+    transform: translateX(0);
+}
+
+.pkm-hover-card.right-side {
+    right: 0;
+    left: auto;
+    transform: translateX(0); 
+}
+
+.pkm-hover-card strong {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--didi-color);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    z-index: 1000;
+}
+
+.pkm-hover-card p {
+    font-size: 0.6rem !important; /* Testo piccolissimo */
+    margin: 0 !important;
+    line-height: 1.2;
+    color: white !important;
+    z-index: 1000;
+}
+
+.pkm-box:hover .pkm-hover-card {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+    visibility: visible;
+    opacity: 1;
+    z-index: 1000;
+}
+
+/* Stile per le mosse dentro l'hover */
+.hover-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px; /* Spazio netto dalle info sopra */
+    z-index: 1000;
+}
+
+.hover-moves span {
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    box-shadow: 3px 3px 0px var(--border-color);
+    color: #1a1a1a;
+    font-size: 0.65rem; /* Testo leggibile ma piccolo */
+    padding: 7px 2px;   /* Rettangolo più alto e "cicciotto" */
+    text-align: center;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;   /* Forza la grandezza del rettangolo */
+    white-space: normal; 
+    line-height: 1;
+    z-index: 1000;
+}
+/* Animazione comparsa */
+@keyframes popIn {
+    from { opacity: 0; margin-bottom: -10px; }
+    to { opacity: 1; margin-bottom: 0; }
+}
+
+.pkm-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 3px 7px 0 black;
+}
+
+.pkm-sprite-container {
+    width: 45px;  /* Contenitore più piccolo e fisso */
+    height: 45px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+}
+
+.pkm-sprite {
+    max-width: 45px;
+    max-height: 45px;
+    object-fit: contain;
+    filter: drop-shadow(1.5px 1.5px 0 black);
+}
+
+.pkm-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    min-width: 0; /* Necessario per il troncamento del testo */
+}
+
+.pkm-name { 
+    color: #1a1a1a;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem; /* Font leggermente ridotto per stare su una riga */
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block !important;             /* Necessario per applicare l'overflow */
+    white-space: nowrap !important;        /* Impedisce al testo di andare a capo */
+    overflow: hidden !important;           /* Nasconde la parte di testo in eccesso */
+    text-overflow: ellipsis !important;    /* Aggiunge i tre puntini (...) alla fine */
+    max-width: 100 !important;            /* Assicura che non superi la larghezza del box genitore */
+}
+
+.item-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.pkm-item { 
+    color: var(--text-dim);
+    font-size: 0.65rem; 
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hover-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    border-top: 2px solid #000; /* Separatore netto */
+    padding-top: 10px;
+    z-index: 1000;
+}
+
+.hover-moves span {
+    background: #fff; /* Sfondo neutro */
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0px #000;
+    color: #000;
+    font-size: 0.65rem;
+    padding: 6px 4px;
+    text-align: center;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    min-height: 35px;
+    text-transform: uppercase;
+    transition: none; /* Stile brutale, niente sfumature */
+}
+
+.pkm-hover-card {
+    display: none;
+    position: absolute;
+    bottom: 115%; /* Leggermente più alto per non coprire il bordo */
+    width: 240px; 
+    background: #fff; /* Sfondo bianco per contrasto neubrutalist */
+    border: 3px solid #000; /* Bordo nero spesso */
+    box-shadow: 8px 8px 0px #000; /* Ombra netta */
+    color: #000;
+    padding: 15px;
+    z-index: 1000 !important;
+    pointer-events: none;
+    transform-origin: bottom center;
+}
+
+/* Titolo dentro l'hover (Nome Pokémon) */
+.pkm-hover-card strong {
+    display: table; /* Adattamento al testo */
+    background: #000;
+    color: #fff;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    margin-bottom: 10px;
+    transform: rotate(-2deg); /* Effetto sticker */
+    border: 2px solid #000;
+    z-index: 1000;
+}
+
+/* Info Testuali (Abilità, Item, etc) */
+.pkm-hover-card p {
+    font-size: 0.75rem !important; /* Leggermente più grande per leggibilità */
+    font-weight: 700;
+    margin: 4px 0 !important;
+    line-height: 1.3;
+    color: #000 !important;
+    text-transform: uppercase;
+    z-index: 1000;
+}
+
+.pkm-hover-card.left-side {
+    left: 0;
+    transform: rotate(1deg); /* Leggera inclinazione opposta al titolo */
+    z-index: 1000;
+}
+
+.pkm-hover-card.right-side {
+    right: 0;
+    transform: rotate(-1deg);
+    z-index: 1000;
+}
+
+/* Animazione */
+.pkm-box:hover .pkm-hover-card {
+    display: block;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 1. SFONDO GENERALE MODALE (Prende tutto lo schermo, scuro trasparente) */
+#modal-registered-teams.custom-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.1); /* Oscura lo sfondo del sito */
+    z-index: 99999; /* Sopra a qualsiasi altra cosa */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Permette lo scroll naturale se ci sono molti dati */
+    overflow-y: auto;
+    padding: 40px 20px;
+    backdrop-filter: blur(10px);
+}
+
+/* 2. CONTENITORE INTERNO (Rimosso lo sfondo bianco e i bordi neri) */
+#modal-registered-teams .pokemon-theme-modal {
+    background: transparent !important; /* VIA IL BIANCO */
+    border: none !important;             /* VIA I BORDI */
+    box-shadow: none !important;         /* VIA L'OMBRA OVERALL */
+    width: 100%;
+    max-width: 1100px; /* Più largo per dare respiro ai popup dei Pokémon */
+    padding: 0;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible !important; /* FONDAMENTALE: Impedisce ogni tipo di taglio visivo */
+    
+}
+
+
+/* Header personalizzato per risaltare sullo sfondo scuro */
+/* Gestisce la riga in alto: separa il titolo dal pulsante "X" di chiusura */
+.modal-custom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 20px;
+    margin-bottom: 25px;
+    background: transparent !important; /* Rimuove lo sfondo nero esteso a tutta la riga */
+    border: none !important;            /* Rimuove i bordi dall'intera riga */
+    box-shadow: none !important;        /* Rimuove l'ombra dall'intera riga */
+    transform: none !important;         /* Evita di stortare il pulsante di chiusura */
+}
+
+/* IL NUOVO ADESIVO COMPATTO: Applica l'effetto stile fumetto solo al testo */
+.neubrutal-badge-title {
+    background: #000 !important;
+    color: #fff !important;
+    padding: 10px 25px; 
+    display: inline-block;
+    transform: rotate(-2deg); 
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4) !important;
+    font-size: 2.2rem; 
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+    white-space: nowrap;
+    
+    /* Impedisce all'adesivo di allungarsi oltre la larghezza del testo */
+    width: max-content; 
+    max-width: 100%;
+}
+
+/* Stile pulito per il tasto di chiusura posizionato sulla destra */
+.close-modal-btn {
+    background: #ff5252;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0px #000;
+    font-size: 18px;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 6px 14px;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.close-modal-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000;
+}
+.modal-custom-header h2 {
+    color: #fff; /* Testo bianco */
+    font-weight: 900;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+    margin: 0;
+    text-shadow: 3px 3px 0px #000;
+}
+.close-modal-btn {
+    display:none;
+}
+
+/* Titoli delle categorie (es. GEN4<500BST) visibili sullo scuro */
+.category-title-modal {
+    text-transform: uppercase;
+    font-weight: 900;
+    margin-top: 25px;
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: #ffeb3b; /* Giallo acceso in stile Pokémon */
+    text-shadow: 2px 2px 0px #000;
+}
+
+/* Separatore dashed convertito per sfondo scuro */
+.modal-separator {
+    border: 0;
+    border-top: 4px dashed #fff;
+    margin: 25px 0;
+    opacity: 0.7;
+}
+
+/* Assicuriamoci che le scritte segnaposto si vedano */
+.placeholder-text {
+    text-align: center;
+    color: #bbb;
+    font-style: italic;
+    padding: 30px;
+    font-size: 16px;
+}
