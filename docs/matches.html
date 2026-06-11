@@ -82,7 +82,6 @@
         <hr class="modal-separator">
 
         <div class="teams-list-display" id="modal-teams-list-display">
-            <p class="placeholder-text">Seleziona un giocatore per vedere i suoi team registrati.</p>
         </div>
     </div>
 </div>
@@ -1002,7 +1001,6 @@ async function renderClassificaDettagliata(stagione) {
     } catch (e) { console.error(e); }
 }
 
-// Funzione principale per aprire il modale e caricare i giocatori
 async function apriModaleTeamsIscritti() {
     const modal = document.getElementById('modal-registered-teams');
     const tabsContainer = document.getElementById('modal-players-tabs');
@@ -1010,29 +1008,35 @@ async function apriModaleTeamsIscritti() {
 
     if (!modal || !tabsContainer || !teamsDisplay) return;
 
-    // Reset contenuti e mostra loader interno o testo iniziale
     tabsContainer.innerHTML = "<p>Caricamento giocatori...</p>";
-    teamsDisplay.innerHTML = "<p class='placeholder-text'>Seleziona un giocatore per vedere i suoi team registrati.</p>";
+    teamsDisplay.innerHTML = "<p class='placeholder-text'></p>";
     modal.style.display = 'flex';
+
+    modal.onclick = function(event) {
+        const cliccatoSuTab = event.target.closest('.player-tab-btn');
+        const cliccatoSuCard = event.target.closest('.compact-team-card');
+        if (!cliccatoSuTab && !cliccatoSuCard) {
+            modal.style.display = 'none';
+            modal.onclick = null; 
+        }
+    };
 
     try {
         if (typeof stagioneAttiva === 'undefined' || !stagioneAttiva) {
             if (typeof recuperaStagioneCorrente === 'function') await recuperaStagioneCorrente();
         }
 
-        // 1. Recuperiamo l'intero nodo dei team iscritti per la stagione attuale
+        // 1. Recuperiamo i team iscritti nella stagione attuale
         const snapTeams = await db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value');
         const dataTeamsIscritti = snapTeams.val() || {};
 
-        // 2. Riorganizziamo i dati per mappare ogni giocatore ai suoi team divisi per categoria
-        // Struttura finale desiderata: { "didi": { "Monotype": [team1, team2], "Anything Goose": [...] } }
+        // 2. Mappiamo i team per ciascun giocatore mantendo la struttura delle categorie
         const playerMap = {};
 
         Object.keys(dataTeamsIscritti).forEach(categoria => {
             const giocatoriInCategoria = dataTeamsIscritti[categoria] || {};
             
             Object.keys(giocatoriInCategoria).forEach(playerKey => {
-                // Rispettiamo il case-sensitive originale del nome visualizzato se presente
                 const playerDati = giocatoriInCategoria[playerKey] || {};
                 const datiTeams = playerDati.datiTeams || {};
 
@@ -1040,98 +1044,197 @@ async function apriModaleTeamsIscritti() {
                     playerMap[playerKey] = {};
                 }
 
-                // Estraiamo l'array o la lista di team registrati sotto 'datiTeams'
+                // Qui prendiamo semplicemente i valori dei team iscritti alla season
                 playerMap[playerKey][categoria] = Object.values(datiTeams);
             });
         });
 
-        // Controlliamo se ci sono effettivamente dei giocatori con dei team
         const playersFound = Object.keys(playerMap);
         if (playersFound.length === 0) {
             tabsContainer.innerHTML = "<p>Nessun team registrato in questa stagione.</p>";
             return;
         }
 
-        // 3. Renderizziamo i pulsanti/schede per ciascun giocatore trovato
+        // 3. Recuperiamo avatar e colori per i tab dei giocatori
+        const playerProfiles = await Promise.all(
+            playersFound.map(async (playerName) => {
+                const nomeMinuscolo = playerName.toLowerCase().trim();
+                let colore = "#31c489"; 
+                let avatarUrl = "";
+
+                try {
+                    const infoSnap = await db.ref(`players/${nomeMinuscolo}/info`).once('value');
+                    if (infoSnap.exists()) {
+                        const info = infoSnap.val();
+                        if (info.color) colore = info.color;
+                        if (info.avatar) avatarUrl = info.avatar;
+                    }
+                } catch (err) {
+                    console.error(`Errore info profilo per ${playerName}:`, err);
+                }
+
+                return {
+                    name: playerName,
+                    color: colore,
+                    avatar: avatarUrl
+                };
+            })
+        );
+
+        // 4. Generazione dei pulsanti Tab
         tabsContainer.innerHTML = "";
-        playersFound.forEach(playerName => {
+        playerProfiles.forEach(player => {
             const btnTab = document.createElement('button');
             btnTab.className = 'player-tab-btn';
-            // Visualizzazione con prima lettera maiuscola per estetica
-            btnTab.textContent = playerName.toUpperCase(); 
+            
+            btnTab.style.setProperty('background-color', player.color, 'important');
+            btnTab.style.setProperty('font-family', "'Josefin Sans', sans-serif", 'important');
+            btnTab.style.setProperty('font-weight', "700", 'important');
+            btnTab.style.setProperty('text-transform', "uppercase", 'important');
+            btnTab.style.setProperty('width', "130px", 'important');
+            btnTab.style.setProperty('height', "42px", 'important');
+            btnTab.style.setProperty('display', "inline-flex", 'important');
+            btnTab.style.setProperty('align-items', "center", 'important');
+            btnTab.style.setProperty('justify-content', "center", 'important');
+            btnTab.style.setProperty('gap', "6px", 'important');
+
+            let avatarHtml = "";
+            if (player.avatar) {
+                avatarHtml = `
+                    <img src="${player.avatar}" 
+                         alt="Avatar ${player.name}" 
+                         style="width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; animation: pokemon-bounce 0.8s steps(1) infinite;"
+                         onerror="this.style.display='none';">
+                `;
+            }
+
+            btnTab.innerHTML = `<span>${player.name}</span>${avatarHtml}`;
             
             btnTab.onclick = () => {
-                // Rimuove la classe active da tutti gli altri bottoni/schede
                 document.querySelectorAll('.player-tab-btn').forEach(b => b.classList.remove('active'));
                 btnTab.classList.add('active');
                 
-                // Mostra i team di quel giocatore specifico
-                mostraTeamGiocatoreSelezionato(playerName, playerMap[playerName]);
+                mostraTeamGiocatoreSelezionato(player.name, playerMap[player.name]);
             };
             
             tabsContainer.appendChild(btnTab);
         });
 
     } catch (error) {
-        console.error("❌ Errore nel caricamento dei team iscritti:", error);
+        console.error("❌ Errore nel caricamento iniziale dei team iscritti:", error);
         tabsContainer.innerHTML = "<p>Errore nel caricamento dei dati.</p>";
     }
 }
 
-// Funzione interna per renderizzare i team del giocatore cliccato
-// FUNZIONE CORRETTA SENZA I CANCELLETTI NEL TITOLO
-function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
+async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
     const teamsDisplay = document.getElementById('modal-teams-list-display');
     if (!teamsDisplay) return;
 
+    teamsDisplay.innerHTML = "<p style='font-family:\"Josefin Sans\", sans-serif; font-weight:bold; text-align:center;'>Aggiornamento statistiche team...</p>";
+
+    const nomeMinuscolo = nomeGiocatore.toLowerCase().trim();
+    let coloreDelPlayer = "#31c489"; 
+    let realTeamsList = [];
+
+    try {
+        const [colorSnap, realTeamsSnap] = await Promise.all([
+            db.ref(`players/${nomeMinuscolo}/info/color`).once('value'),
+            db.ref(`players/${nomeMinuscolo}/teams`).once('value')
+        ]);
+
+        if (colorSnap.exists()) coloreDelPlayer = colorSnap.val();
+        
+        if (realTeamsSnap.exists()) {
+            realTeamsList = Object.entries(realTeamsSnap.val()).map(([key, val]) => {
+                return {
+                    realFirebaseKey: key,
+                    ...val
+                };
+            });
+        }
+    } catch (err) {
+        console.error("Errore nel recupero dati real-time via nome per:", nomeGiocatore, err);
+    }
+
     teamsDisplay.innerHTML = "";
 
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'modal-formats-grid-container';
+
+    function ottieniRotazioneCasuale() {
+        const angoli = [-2, -1.5, -1, 1, 1.5, 2];
+        return angoli[Math.floor(Math.random() * angoli.length)];
+    }
+
     Object.keys(categorieDati).forEach(categoria => {
-        const listaTeam = categorieDati[categoria] || [];
-        if (listaTeam.length === 0) return;
+        const listaTeamIscritti = categorieDati[categoria] || [];
+        if (listaTeamIscritti.length === 0) return;
 
-        const catSection = document.createElement('div');
-        catSection.className = 'modal-category-section';
-        catSection.innerHTML = `<h3 class="category-title-modal">${categoria}</h3>`;
+        const colonnaFormato = document.createElement('div');
+        colonnaFormato.className = 'modal-format-column';
 
-        const cardsWrapper = document.createElement('div');
-        cardsWrapper.className = 'modal-teams-compact-grid';
+        const titoloFormato = document.createElement('h3');
+        titoloFormato.className = 'modal-format-title-brutal';
+        titoloFormato.textContent = categoria;
+        colonnaFormato.appendChild(titoloFormato);
 
-        cardsWrapper.innerHTML = listaTeam.map(team => {
-            const pokemonList = team.pokemon || [];
-            const teamIdSicuro = team.id ? team.id.toString().replace(/-/g, '') : Math.random().toString(36).substr(2, 9);
+        const listaTagWrapper = document.createElement('div');
+        listaTagWrapper.className = 'modal-tags-wrapper';
 
-            return `
-            <div class="compact-team-card" onclick="if(typeof apriDettagli === 'function') apriDettagli('${team.id}')">
-                <div class="compact-card-body">
-                    <span class="compact-team-name">📁 ${team.nome}</span>
-                    <span class="compact-team-stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
-                </div>
-                <div class="compact-card-footer">
-                    <small>Registrato il: ${team.data || 'N/D'}</small>
-                </div>
+        listaTeamIscritti.forEach((teamIscritto, index) => {
+            const pokemonList = (teamIscritto.pokemon || []).map(p => {
+                let nomeAdattato = p.nome;
+                if (nomeAdattato.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mrmime') nomeAdattato = 'Mr. Mime';
+                if (nomeAdattato.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mrime') nomeAdattato = 'Mr. Rime';
+                return { ...p, nome: nomeAdattato };
+            });
+            
+            const teamProfiloReale = realTeamsList.find(t => t.nome && t.nome.trim() === teamIscritto.nome.trim()) || {};
+            const statsReali = teamProfiloReale.stats || {};
 
-                <div class="modal-team-hover-tooltip card">
-                    <div class="card-header">
-                        <span class="category">${team.category || team.categoria || categoria}</span>
-                        <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
-                    </div>
-                    <h3>${team.nome}</h3>
+            const vinti = statsReali.won !== undefined ? Number(statsReali.won) : 0;
+            const persi = statsReali.lost !== undefined ? Number(statsReali.lost) : 0;
+
+            const idTeamDefinitivo = teamProfiloReale.realFirebaseKey || teamIscritto.id || 'id';
+            const teamIdSicuro = idTeamDefinitivo.toString().replace(/-/g, '');
+            const gradiRotazione = ottieniRotazioneCasuale();
+
+            const paramPlayer = nomeGiocatore.replace(/'/g, "\\'");
+            const paramTeam = teamIscritto.nome.replace(/'/g, "\\'");
+            const paramFormato = categoria.replace(/'/g, "\\'");
+
+            const tagDiv = document.createElement('div');
+            tagDiv.className = 'neu-compact-team-tag';
+
+            tagDiv.onclick = (e) => {
+                e.stopPropagation();
+                if (typeof apriDettaglioTeam === 'function') {
+                    apriDettaglioTeam(paramPlayer, paramTeam, paramFormato);
+                }
+            };
+
+            // Struttura HTML pulita: il tooltip usa bottom: 110% per fluttuare SOPRA senza alterare lo spazio del tag
+            tagDiv.innerHTML = `
+                <span class="neu-tag-team-name">${teamIscritto.nome}</span>
+                <span class="neu-tag-stats-badge">W:${vinti}/L:${persi}</span>
+
+                <div class="modal-team-hover-tooltip" style="background-color: ${coloreDelPlayer} !important; transform: translateX(-50%) rotate(${gradiRotazione}deg) !important;">
                     <div class="pkm-grid">
-                        ${pokemonList.map((p, index) => {
-                            const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                        ${pokemonList.map((p, pidx) => {
+                            let pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                            if (pkmNameUrl === 'mr-mime') pkmNameUrl = 'mrmime'; 
+                            
                             const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
+                            const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
                             const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
-                            const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
-                            const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${index}`;
+                            const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${pidx}`;
                             
                             setTimeout(() => {
                                 if (typeof applicaColoreBordo === 'function') applicaColoreBordo(p.nome, pkmBoxId);
                             }, 50);
 
                             return `
-                                <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation();">
+                                <div class="pkm-box" id="${pkmBoxId}" onclick="event.stopPropagation();" style="cursor: default;">
                                     <div class="pkm-sprite-container">
                                         <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                                     </div>
@@ -1142,28 +1245,23 @@ function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
                                             <span class="pkm-item">${p.strumento || 'No item'}</span>
                                         </div>
                                     </div>
-
-                                    <div class="pkm-hover-card ${sideClass}">
-                                        <strong>${p.nome}</strong>
-                                        <p>✨ ${p.abilita || 'N/D'}</p>
-                                        <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs || 'N/D'}</p>
-                                        <div class="hover-moves">
-                                            ${(p.mosse || []).map(m => `<span>${m}</span>`).join('')}
-                                        </div>
-                                    </div>
                                 </div>
                             `;
                         }).join('')}
                     </div>
                 </div>
-            </div>
             `;
-        }).join('');
 
-        catSection.appendChild(cardsWrapper);
-        teamsDisplay.appendChild(catSection);
+            listaTagWrapper.appendChild(tagDiv);
+        });
+
+        colonnaFormato.appendChild(listaTagWrapper);
+        gridContainer.appendChild(colonnaFormato);
     });
+
+    teamsDisplay.appendChild(gridContainer);
 }
+
 
 // Chiusura del modale
 function chiudiModaleTeamsIscritti() {
@@ -1951,6 +2049,7 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     
     content.innerHTML = '<div style="color:white; text-align:center; padding:20px;">Ricerca dati team nel database...</div>';
     modal.style.display = 'flex';
+    modal.style.zIndex = '100002';
 
     try {
         // TRUCCO: Convertiamo l'ID in minuscolo per il database
