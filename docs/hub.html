@@ -17,20 +17,24 @@
         </div>
     </header>
     
-    <div class="top-auth-bar">
+<div class="top-auth-bar" style="display: flex; align-items: center; gap: 15px;">
+    
+    <button id="btn-disiscriviti" class="btn-unregister-brutal" onclick="gestisciDisiscrizione()" style="display: none;">
+        <i class="fas fa-user-times"></i> UNSUSCRIBE
+    </button>
+
     <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
         <i id="auth-icon" class="fas fa-lock"></i>
         <span id="auth-text"></span>
     </div>
+    
     <div id="user-menu" class="user-dropdown">
         <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
         <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
         <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
-        
         <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
     </div>
 </div>
-
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
@@ -297,36 +301,49 @@ async function initHub() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // seasonId deve essere disponibile globalmente o estratto dall'URL prima di initHub
     if (typeof seasonId === 'undefined' || !seasonId) {
         alert("ID Stagione mancante nell'URL!");
         return;
     }
 
     try {
-        // 1. Recupero dati utente una tantum
         const userSnap = await db.ref(`users/${user.uid}`).once('value');
         const userData = userSnap.val();
         if (!userData || !userData.name) return;
 
         const nomeUtenteClean = userData.name.toLowerCase();
+        window.currentNomeUtenteClean = nomeUtenteClean;
         let lastAlertTime = 0;
 
-        // 2. Pulizia listener precedenti per evitare doppie esecuzioni
         db.ref(`seasons/${seasonId}`).off();
 
-        // 3. Avvio listener Real-time
         db.ref(`seasons/${seasonId}`).on('value', async (snap) => {
             const data = snap.val();
             if (!data) return;
 
-            // --- CORREZIONE FONDAMENTALE PER DETTAGLIO TEAM ---
             window.teamsIscrittiStagione = data.teams_iscritti || {};
-            // --------------------------------------------------
-
-            // Incrementiamo l'ID per invalidare eventuali renderHub asincroni precedenti
             currentRenderID++;
             const myRenderID = currentRenderID;
+
+            // --- CONTROLLO PULSANTE DISISCRIVITI CON DEBUG ---
+            const btnUnregister = document.getElementById('btn-disiscriviti');
+            if (btnUnregister) {
+                const iscritti = data.iscritti || {};
+                // Creiamo un array di nomi iscritti in minuscolo per confronto sicuro
+                const listaIscrittiLower = Object.keys(iscritti).map(n => n.toLowerCase());
+                const isIscritto = listaIscrittiLower.includes(nomeUtenteClean);
+
+                console.log("--- DEBUG DISISCRIZIONE ---");
+                console.log("Nome Utente Loggato (lower):", nomeUtenteClean);
+                console.log("Nomi Iscritti nel DB:", Object.keys(iscritti));
+                console.log("Esito controllo (isIscritto):", isIscritto);
+
+                if (isIscritto) {
+                    btnUnregister.style.display = 'inline-flex';
+                } else {
+                    btnUnregister.style.display = 'none';
+                }
+            }
 
             // --- AGGIORNAMENTO TICKER (LIVE) ---
             if (typeof caricaTickerIscrizione === 'function') {
@@ -335,7 +352,7 @@ async function initHub() {
 
             const status = (data.info?.status || 'OPEN').toUpperCase();
 
-            // --- Aggiornamento UI Immediata (Sincrona) ---
+            // --- Aggiornamento UI Immediata ---
             const titleDisp = document.getElementById('hub-title-display');
             if (titleDisp) titleDisp.innerText = data.info?.name || "Season Hub";
             
@@ -356,13 +373,10 @@ async function initHub() {
             if (status === 'CLOSED') {
                 if (typeof renderClosedHub === 'function') renderClosedHub(data); 
             } else {
-                // Rendering asincrono della griglia/team
                 if (typeof renderHub === 'function') {
-                    // Passiamo i dati e attendiamo il render
                     await renderHub(data, nomeUtenteClean, myRenderID);
                 }
 
-                // Logica Alert (solo se il render è ancora quello attuale)
                 if (myRenderID === currentRenderID) {
                     const now = Date.now();
                     if (now - lastAlertTime > 5000) {
@@ -380,6 +394,64 @@ async function initHub() {
     }
 }
 
+
+async function gestisciDisiscrizione() {
+    // 1. Recupera la lista iscritti per trovare la chiave corretta (es. "Didi")
+    const iscrittiSnap = await db.ref(`seasons/${seasonId}/iscritti`).once('value');
+    const iscritti = iscrittiSnap.val() || {};
+    
+    const nomeLoggatoLower = window.currentNomeUtenteClean.toLowerCase(); 
+    const chiaveEsatta = Object.keys(iscritti).find(k => k.toLowerCase() === nomeLoggatoLower);
+
+    if (!chiaveEsatta) {
+        alert("Errore: non risulti iscritto a questa stagione.");
+        return;
+    }
+
+    if (!confirm("Sei sicuro di volerti disiscrivere? Tutti i tuoi team associati verranno rimossi.")) {
+        return;
+    }
+    
+    try {
+        const loader = document.getElementById('loading-screen');
+        if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
+
+        // A. Rimuovi iscrizione principale
+        await db.ref(`seasons/${seasonId}/iscritti/${chiaveEsatta}`).remove();
+
+        // B. Rimuovi i team iscritti in ogni formato
+        const formatsSnap = await db.ref(`seasons/${seasonId}/teams_iscritti`).once('value');
+        const formatsData = formatsSnap.val();
+
+        if (formatsData) {
+            const removalPromises = [];
+            
+            for (const format in formatsData) {
+                // Cerchiamo la chiave specifica per questo formato (caso insensibile)
+                const teamEntries = formatsData[format];
+                const chiaveNelFormat = Object.keys(teamEntries).find(
+                    k => k.toLowerCase() === nomeLoggatoLower
+                );
+
+                if (chiaveNelFormat) {
+                    console.log(`Rimozione team in ${format} con chiave: ${chiaveNelFormat}`);
+                    removalPromises.push(
+                        db.ref(`seasons/${seasonId}/teams_iscritti/${format}/${chiaveNelFormat}`).remove()
+                    );
+                }
+            }
+            // Attendiamo che tutte le rimozioni dei team finiscano
+            await Promise.all(removalPromises);
+        }
+
+        window.location.href = "index.html";
+
+    } catch (error) {
+        console.error("Errore durante la disiscrizione:", error);
+        alert("Errore durante la disiscrizione. Riprova.");
+        location.reload();
+    }
+}
 
 function renderClosedHub(data) {
     const leaderboard = data.leaderboard || {};
@@ -632,7 +704,6 @@ const summaryBox = document.getElementById('season-summary-content');
 }
 
 async function openTeamPicker(format, nomeUtenteClean) {
-    // 1. Recupera il limite reale dalla stagione
     const seasonSnap = await db.ref(`seasons/${seasonId}/info`).once('value');
     const seasonInfo = seasonSnap.val() || {};
     
@@ -640,11 +711,9 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const isNoLimit = (rawLimit === "No Limit" || rawLimit === 0 || rawLimit === "0");
     const maxAllowed = isNoLimit ? Number.MAX_SAFE_INTEGER : (parseInt(rawLimit) || 1);
 
-    // 2. Carica selezione esistente
     const currentSnap = await db.ref(`seasons/${seasonId}/teams_iscritti/${format}/${nomeUtenteClean}`).once('value');
-    selectedTeamIds = currentSnap.val()?.teamIds || [];
+    let selectedTeamIds = currentSnap.val()?.teamIds || [];
 
-    // 3. Carica team del player
     const teamsSnap = await db.ref(`players/${nomeUtenteClean}/teams`).once('value');
     const allTeams = teamsSnap.val() || {};
     
@@ -653,9 +722,17 @@ async function openTeamPicker(format, nomeUtenteClean) {
     const title = document.getElementById('modal-format-title');
     
     container.innerHTML = '';
+
+    // --- TOOLTIP GLOBALE ESTERNO ---
+    let globalTooltip = document.getElementById('global-team-tooltip');
+    if (!globalTooltip) {
+        globalTooltip = document.createElement('div');
+        globalTooltip.id = 'global-team-tooltip';
+        globalTooltip.className = 'team-preview-tooltip'; // Usa la classe CSS definita sotto
+        document.body.appendChild(globalTooltip);
+    }
     
-    // --- GESTIONE FOOTER E PULSANTI FISSI ---
-    // Creiamo o recuperiamo il contenitore dei bottoni
+    // --- GESTIONE FOOTER ---
     let footer = modal.querySelector('.modal-footer-controls');
     if (!footer) {
         footer = document.createElement('div');
@@ -663,7 +740,6 @@ async function openTeamPicker(format, nomeUtenteClean) {
         modal.appendChild(footer);
     }
 
-    // Gestione pulsante Confirm (Save)
     let confirmBtn = document.getElementById('btn-confirm-selection');
     if (!confirmBtn) {
         confirmBtn = document.createElement('button');
@@ -672,23 +748,15 @@ async function openTeamPicker(format, nomeUtenteClean) {
         footer.appendChild(confirmBtn);
     }
 
-    // Spostiamo il pulsante Close (Cancel) dentro il footer per l'ordine corretto
     const closeBtn = modal.querySelector('.btn-cancel');
     if (closeBtn) footer.appendChild(closeBtn);
 
     const updateTitleAndUI = () => {
         const isOverLimit = !isNoLimit && selectedTeamIds.length > maxAllowed;
         const counterText = isNoLimit ? `${selectedTeamIds.length}` : `${selectedTeamIds.length}/${maxAllowed}`;
-        
         title.innerHTML = `<span class="neubrutal-badge">Select ${format} (${counterText})</span>`;
-        
-        if (isOverLimit) {
-            confirmBtn.innerText = "Too many teams!";
-            confirmBtn.disabled = true;
-        } else {
-            confirmBtn.innerText = "Save selection";
-            confirmBtn.disabled = false;
-        }
+        confirmBtn.innerText = isOverLimit ? "Too many teams!" : "Save selection";
+        confirmBtn.disabled = isOverLimit;
     };
 
     updateTitleAndUI();
@@ -705,8 +773,8 @@ async function openTeamPicker(format, nomeUtenteClean) {
                 if (!pkmnName || typeof pkmnName !== 'string') return '';
                 const spriteName = pkmnName.toLowerCase().trim().replace(/\s+/g, '-');
                 return `<img src="https://play.pokemonshowdown.com/sprites/ani/${spriteName}.gif" 
-                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${spriteName}.png'"
-                             class="preview-pkmn-img" title="${pkmnName}">`;
+                        onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${spriteName}.png'"
+                        class="preview-pkmn-img" title="${pkmnName}">`;
             }).join('');
 
             div.innerHTML = `
@@ -714,12 +782,32 @@ async function openTeamPicker(format, nomeUtenteClean) {
                     <strong>${data.nome}</strong>
                     <div class="info-preview-container">
                         <div class="info-icon">i</div>
-                        <div class="team-preview-tooltip">${pokemonImages}</div>
                     </div>
                 </div>
             `;
             
-            div.querySelector('.info-icon').onclick = (e) => {
+            const infoIcon = div.querySelector('.info-icon');
+            
+            // Eventi Tooltip (Ora usa l'elemento globale)
+            infoIcon.onmouseenter = (e) => {
+                globalTooltip.innerHTML = pokemonImages;
+                globalTooltip.style.display = 'flex';
+                globalTooltip.style.opacity = '1';
+                globalTooltip.style.visibility = 'visible';
+            };
+            
+            infoIcon.onmousemove = (e) => {
+                globalTooltip.style.left = (e.clientX + 15) + 'px';
+                globalTooltip.style.top = (e.clientY + 15) + 'px';
+            };
+            
+            infoIcon.onmouseleave = () => {
+                globalTooltip.style.display = 'none';
+                globalTooltip.style.opacity = '0';
+                globalTooltip.style.visibility = 'hidden';
+            };
+
+            infoIcon.onclick = (e) => {
                 e.stopPropagation();
                 apriDettaglioTeam(nomeUtenteClean, data.nome, format);
             };
@@ -742,7 +830,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
         }
     });
     
-    confirmBtn.onclick = () => inviaSelezioneTeam(format, nomeUtenteClean, allTeams);
+    confirmBtn.onclick = () => inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTeamIds);
     modal.style.display = 'flex';
 }
 
@@ -1091,7 +1179,8 @@ function getGifUrl(pName) {
 function chiudiTeamModal() { document.getElementById('teamModal').style.display = 'none'; }
 function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiTeamModal(); }
 
-async function inviaSelezioneTeam(format, nomeUtenteClean, allTeams) {
+// Aggiungi selectedTeamIds come parametro
+async function inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTeamIds) {
     if (selectedTeamIds.length === 0) {
         if(!confirm("No teams selected. Remove registration?")) return;
     }

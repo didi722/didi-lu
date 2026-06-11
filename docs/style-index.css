@@ -671,11 +671,13 @@ input, select {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
     font-size: 0.9rem;
     font-weight: bold;
     border: none;
     cursor: pointer;
+    text-transform: uppercase;
+    border: 2px solid black !important;
+    box-shadow: 6px 6px 0 black;
 }
 
 .btn-save {
@@ -686,7 +688,6 @@ input, select {
     padding: 12px;
     cursor: pointer;
     font-weight: bold;
-    border-radius: 5px;
     transition: background 0.3s;
     font-family: Josefin Sans, sans-serif;
 
@@ -704,7 +705,6 @@ input, select {
     border: none;
     padding: 12px;
     cursor: pointer;
-    border-radius: 5px;
     transition: background 0.3s;
     font-family: Josefin Sans, sans-serif;
     font-weight: bold;
@@ -720,7 +720,6 @@ input, select {
     color: white;
     border: none;
     padding: 12px;
-    border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
     font-size: 1rem;
@@ -732,7 +731,6 @@ input, select {
     color: white;
     border: none;
     padding: 12px;
-    border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
 }
@@ -1257,9 +1255,8 @@ input, select {
     max-width: 600px;
     padding: 35px;
     background: #2e53cd !important;
-    border: 2px solid #092377 !important;
-    box-shadow: 8px 8px 0px #092377;
-    border-radius: 12px;
+    border: 2px solid black !important;
+    box-shadow: 8px 8px 0px black;
     color: white;
 }
 
@@ -1278,13 +1275,17 @@ input, select {
 
 .modal-column-title {
     display: block;
+    width: fit-content; /* Si adatta alla larghezza del testo */
     font-weight: 700;
     text-transform: uppercase;
-    color: #eeeeee;
+    color: black;
     font-size: 1rem;
     letter-spacing: 1px;
-    border-bottom: 1px solid #eeeeee;
-    padding-bottom: 5px;
+    padding: 8px 16px;
+    background:white;
+    border: 2px solid black;
+    box-shadow: 5px 5px 0 black;
+    transform: rotate(-1deg);
 }
 
 
@@ -1317,18 +1318,6 @@ input, select {
     margin-top: 20px;
 }
 
-/* Titoli delle colonne */
-.modal-column-title {
-    display: block;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #eeeeee;
-    margin-bottom: 20px; /* Margine identico per entrambi */
-    font-size: 1rem;
-    letter-spacing: 1px;
-    border-bottom: 1px solid rgba(238, 238, 238, 0.3);
-    padding-bottom: 5px;
-}
 
 /* COLONNA SINISTRA: Formats */
 .modal-format-list {
@@ -1340,9 +1329,10 @@ input, select {
     background: rgba(0, 0, 0, 0.2);
     margin-bottom: 12px; /* Uguale al gap della colonna destra */
     padding: 12px 15px;
-    border-radius: 6px;
     font-size: 0.95rem;
     color: white;
+    text-transform: uppercase;
+    margin-top: 20px;
 }
 
 /* COLONNA DESTRA: Structure */
@@ -1356,9 +1346,9 @@ input, select {
 .modal-info-box {
     background: rgba(255, 255, 255, 0.05);
     padding: 12px 15px; /* Padding uguale a sinistra */
-    border-radius: 6px;
     font-size: 0.95rem;
     color: #eeeeee;
+    text-transform: uppercase;
 }
 
 /* Testo importante */
