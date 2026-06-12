@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="immagini/magikarp.png">  
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
-    <link rel="stylesheet" href="style-rules.css">
+    <link rel="stylesheet" href="style-formats.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -20,7 +20,7 @@
 <header class="top-bar">
         <div class="top-bar-inner">
             <section class="hub-hero">
-                <h1 class="hub-title-display">RULES</h1>
+                <h1 class="hub-title-display">FORMATS</h1>
             </section>
         </div>
     </header>
@@ -97,6 +97,9 @@
     </svg>
 </div>
 
+<div id="formats-grid-container" class="formats-neubrutalist-grid">
+  </div>
+  
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
@@ -418,5 +421,68 @@ async function applicaColoreUtente(user) {
     }
 }
 
+async function caricaEVisualizzaFormati() {
+  try {
+    // 1. Recupera i giocatori da Firebase
+    const playersSnap = await db.ref('players').once('value');
+    const players = playersSnap.val() || {};
+
+    const bestPlayersByFormat = {};
+
+    // 2. Determina chi ha più vittorie per ogni formato
+    Object.entries(players).forEach(([pId, pData]) => {
+      const formatsStats = pData.stats?.['formats-stats'] || {};
+      const info = pData.info || {};
+      
+      const playerAvatar = info.avatar || "https://via.placeholder.com/150"; 
+      // Recupera il colore esadecimale da Firebase (es: "#8CFF00")
+      const playerColor = info.color || "#ffffff"; 
+
+      Object.entries(formatsStats).forEach(([formatName, stats]) => {
+        const wins = Number(stats.won || 0);
+
+        if (!bestPlayersByFormat[formatName] || wins > bestPlayersByFormat[formatName].maxWins) {
+          bestPlayersByFormat[formatName] = {
+            formatName: formatName.toUpperCase(),
+            maxWins: wins,
+            avatar: playerAvatar,
+            color: playerColor // Salviamo il codice colore dinamico del giocatore
+          };
+        }
+      });
+    });
+
+    const gridContainer = document.getElementById('formats-grid-container');
+    if (!gridContainer) return;
+
+    gridContainer.innerHTML = '';
+
+    // 3. Stampa solo le informazioni richieste all'interno della griglia
+    Object.values(bestPlayersByFormat).forEach(format => {
+      const cardHtml = `
+        <div class="format-card-nb" style="background-color: ${format.color} !important;">
+          
+          <div class="format-nb-title-badge">${format.formatName}</div>
+          
+          <img 
+            src="${format.avatar}" 
+            alt="Avatar" 
+            class="format-nb-avatar-mini" 
+          />
+
+        </div>
+      `;
+      gridContainer.innerHTML += cardHtml;
+    });
+
+  } catch (error) {
+    console.error("Errore nel caricamento della griglia:", error);
+  }
+}
+
+  // Avvia la funzione non appena la pagina è pronta
+  document.addEventListener("DOMContentLoaded", () => {
+    caricaEVisualizzaFormati();
+  });
 
 </script>

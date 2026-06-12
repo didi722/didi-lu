@@ -665,3 +665,69 @@ body {
     transform: translate(-50%, -50%) !important;
     font-family: 'Josefin Sans', sans-serif;
 }
+
+/* LA GRIGLIA: Forziamo il posizionamento affiancato delle card su più colonne */
+.formats-neubrutalist-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; /* Card piccole */
+  gap: 40px !important;
+  width: 80% !important;
+  max-width: 1200px;
+  margin: 80px;
+  box-sizing: border-box;
+  margin-left: 20%;
+}
+
+/* LA CARD: Angoli perfettamente vivi, senza border-radius, ombra netta */
+.format-card-nb {
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important; /* RIMOSSO COMPLETAMENTE IL BORDER RADIUS */
+  padding: 15px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 15px !important;
+  box-shadow: 5px 5px 0px #000000 !important; /* Ombra netta stile match */
+  box-sizing: border-box;
+}
+
+/* IL TAG DEL FORMATO (Nero, testo bianco, inclinato) */
+.format-nb-title-badge {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  display: inline-block !important;
+  padding: 4px 10px !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  transform: rotate(-1.5deg) !important;
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 0.95rem !important;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+/* L'AVATAR PICCOLO CIRCOLARE CON BORDO */
+.format-nb-avatar-mini {
+  width: 48px !important;
+  height: 48px !important;
+  object-fit: cover !important;
+    animation: pokemon-bounce 0.8s steps(1) infinite;
+    
+}
+
+@keyframes pokemon-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px); /* Si sposta in alto di 4 pixel di colpo */
+    }
+}
+
+
+/* Breakpoint per forzare l'allineamento orizzontale */
+@media (min-width: 480px) { .formats-neubrutalist-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (min-width: 768px) { .formats-neubrutalist-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (min-width: 1024px) { .formats-neubrutalist-grid { grid-template-columns: repeat(4, 1fr) !important; } }

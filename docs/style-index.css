@@ -1604,6 +1604,7 @@ input, select {
 /* Rotazioni individuali per le etichette del menu */
 .user-dropdown .menu-item:nth-child(1) { transform: rotate(-2deg); }
 .user-dropdown .menu-item:nth-child(2) { transform: rotate(1.5deg); }
+.user-dropdown .menu-item:nth-child(4) { transform: rotate(-1.5deg); }
 .user-dropdown .logout-btn { transform: rotate(-1deg); margin-top: 5px; }
 
 /* Effetto Hover (si raddrizzano leggermente e si sollevano) */
