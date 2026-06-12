@@ -99,7 +99,7 @@
 
 <div id="formats-grid-container" class="formats-neubrutalist-grid">
   </div>
-  
+
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
@@ -429,24 +429,23 @@ async function caricaEVisualizzaFormati() {
 
     const bestPlayersByFormat = {};
 
-    // 2. Determina chi ha più vittorie per ogni formato
+    // 2. Determina chi ha più PUNTI FATTI per ogni formato
     Object.entries(players).forEach(([pId, pData]) => {
       const formatsStats = pData.stats?.['formats-stats'] || {};
       const info = pData.info || {};
       
       const playerAvatar = info.avatar || "https://via.placeholder.com/150"; 
-      // Recupera il colore esadecimale da Firebase (es: "#8CFF00")
       const playerColor = info.color || "#ffffff"; 
 
       Object.entries(formatsStats).forEach(([formatName, stats]) => {
-        const wins = Number(stats.won || 0);
+        const points = Number(stats.points || 0);
 
-        if (!bestPlayersByFormat[formatName] || wins > bestPlayersByFormat[formatName].maxWins) {
+        if (!bestPlayersByFormat[formatName] || points > bestPlayersByFormat[formatName].maxPoints) {
           bestPlayersByFormat[formatName] = {
-            formatName: formatName.toUpperCase(),
-            maxWins: wins,
+            formatName: formatName,
+            maxPoints: points,
             avatar: playerAvatar,
-            color: playerColor // Salviamo il codice colore dinamico del giocatore
+            color: playerColor
           };
         }
       });
@@ -457,10 +456,17 @@ async function caricaEVisualizzaFormati() {
 
     gridContainer.innerHTML = '';
 
-    // 3. Stampa solo le informazioni richieste all'interno della griglia
+    // 3. Stampa le informazioni e aggiunge il click event
+    // Serializziamo in sicurezza l'oggetto dei giocatori per passarlo alla modale
+    const playersEscaped = btoa(unescape(encodeURIComponent(JSON.stringify(players))));
+
     Object.values(bestPlayersByFormat).forEach(format => {
+      const formatEscaped = format.formatName.replace(/'/g, "\\'");
+      
       const cardHtml = `
-        <div class="format-card-nb" style="background-color: ${format.color} !important;">
+        <div class="format-card-nb" 
+             style="background-color: ${format.color} !important; cursor: pointer;" 
+             onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}')">
           
           <div class="format-nb-title-badge">${format.formatName}</div>
           
@@ -484,5 +490,148 @@ async function caricaEVisualizzaFormati() {
   document.addEventListener("DOMContentLoaded", () => {
     caricaEVisualizzaFormati();
   });
+
+async function apriModaleFormato(formatName, playersEncoded) {
+    const players = JSON.parse(decodeURIComponent(escape(atob(playersEncoded))));
+    
+    let modalOverlay = document.getElementById('format-modal-overlay');
+    if (!modalOverlay) {
+        modalOverlay = document.createElement('div');
+        modalOverlay.id = 'format-modal-overlay';
+        
+        modalOverlay.onclick = (e) => {
+            if (!e.target.closest('.format-modal-card-right') && 
+                !e.target.closest('.format-modal-card-left') && 
+                !e.target.closest('.format-modal-title-tag')) {
+                chiudiModaleFormato();
+            }
+        };
+        document.body.appendChild(modalOverlay);
+    }
+
+    modalOverlay.innerHTML = `
+        <div class="format-modal-wrapper">
+            
+            <div class="format-modal-title-tag" onclick="event.stopPropagation();">
+                <h2>${formatName}</h2>
+            </div>
+            
+            <div class="format-modal-container">
+                <div class="format-modal-card-left neubrutal-card" onclick="event.stopPropagation();">
+                    <div class="format-info-placeholder">
+                        <p style="font-style: italic; color: #666; margin: 0;">Info sul formato appena stabiliamo i parametri con Luca</p>
+                    </div>
+                </div>
+
+                <div class="format-modal-card-right" onclick="event.stopPropagation();">
+                    <div id="format-participants-list" class="simple-player-list">
+                        <p style="font-size: 0.8rem; color: #fff; padding: 10px; font-style: italic;">Calcolo classifica in corso...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    `;
+
+    modalOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    await renderRankingsDelFormato(formatName, players);
+}
+
+async function renderRankingsDelFormato(formatName, players) {
+    const listContainer = document.getElementById('format-participants-list');
+    if (!listContainer) return;
+
+    let sortedPlayers = [];
+
+    // Mappiamo i giocatori estraendo le statistiche relative al formato selezionato
+    Object.entries(players).forEach(([pId, pData]) => {
+        const formatsStats = pData.stats?.['formats-stats'] || {};
+        const specificStats = formatsStats[formatName];
+        
+        // Se il giocatore ha giocato almeno un match in questo formato, lo inseriamo in classifica
+        if (specificStats) {
+            sortedPlayers.push({
+                name: pData.info?.name || pId,
+                color: pData.info?.color || "#31c489",
+                points: Number(specificStats.points || 0),
+                won: Number(specificStats.won || 0),
+                lost: Number(specificStats.lost || 0),
+                setW: Number(specificStats.setW || 0),
+                setL: Number(specificStats.setL || 0),
+                // 🔥 CORREZIONE: Agganciati alle chiavi esatte create nel database da ricalcolaStatisticheGlobali
+                showdownsPlayed: Number(specificStats.showdownsPlayed || 0),
+                showdownsWon: Number(specificStats.showdownsWon || 0),
+                showdownsLost: Number(specificStats.showdownsLost || 0)
+            });
+        }
+    });
+
+    // Ordiniamo con i criteri della classifica globale: Punti -> Vittorie Single Match -> Set Vinti
+    sortedPlayers.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.won !== a.won) return b.won - a.won;
+        return (b.setW || 0) - (a.setW || 0);
+    });
+
+    if (sortedPlayers.length === 0) {
+        // Testo virato al bianco (#fff) poiché adesso si trova sullo sfondo scuro del modale
+        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: #fff; font-style: italic; padding: 10px;">Nessun match registrato in questo formato</p>';
+        return;
+    }
+
+    // Generiamo le righe HTML mantenendo lo stile grafico fluttuante neubrutalist
+    const htmlRows = sortedPlayers.map((player, index) => {
+        const playerUrlParam = encodeURIComponent(player.name.trim());
+
+        return `
+            <div class="player-rank-row" 
+                onclick="window.location.href='public.html?player=${playerUrlParam}'"
+                style="
+                    display: flex; 
+                    align-items: center; 
+                    gap: 8px; 
+                    margin-bottom: 12px; 
+                    padding: 10px; 
+                    background: ${player.color}; 
+                    border: 2px solid #000;
+                    box-shadow: 4px 4px 0px #000;
+                    transition: transform 0.1s ease, box-shadow 0.1s ease;
+                    transform: rotate(-1deg);
+                    cursor: pointer;
+                "
+                onmouseenter="this.style.transform='translate(-2px, -2px) rotate(-1deg)'; this.style.boxShadow='6px 6px 0px #000';"
+                onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px #000';"
+            >
+                <div style="font-weight: 900; font-size: 1.1rem; min-width: 25px;">#${index + 1}</div>
+                
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #1a1a1a; font-family: 'Josefin Sans';">
+                        ${player.name}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #333; font-weight: 700; letter-spacing: -0.2px;">
+                        P: ${player.showdownsPlayed}, S: ${player.showdownsWon}/${player.showdownsLost}, W/L: ${player.won}/${player.lost}
+                    </div>
+                </div>
+
+                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; transform: rotate(1deg);">
+                    ${player.points}
+                </div>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = htmlRows.join('');
+}
+
+function chiudiModaleFormato() {
+    const modalOverlay = document.getElementById('format-modal-overlay');
+    if (modalOverlay) {
+        modalOverlay.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+}
+
 
 </script>
