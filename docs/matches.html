@@ -52,11 +52,38 @@
 </div>
 
 
-<div class="top-auth-bar">
-    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+<div class="top-auth-bar" style="display: flex; align-items: center; gap: 15px;">
+    
+    <button 
+        onclick="apriModaleTeamsIscritti()" 
+        class="btn-registered-teams"
+        style="
+            background: #ffbd44; 
+            color: #000; 
+            padding: 6px 14px; 
+            border: 3px solid #000; 
+            box-shadow: 4px 4px 0px #000; 
+            font-family: 'Josefin Sans', sans-serif; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            white-space: nowrap; /* Impedisce al testo di andare a capo */
+            height: 38px; /* Allineato all'altezza media dei tuoi tasti */
+        "
+        onmouseenter="this.style.transform='translate(-2px, -2px)'; this.style.boxShadow='6px 6px 0px #000';"
+        onmouseleave="this.style.transform='none'; this.style.boxShadow='4px 4px 0px #000';"
+    >
+        REGISTERED TEAMS
+    </button>
+
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()" style="margin: 0;">
         <i id="auth-icon" class="fas fa-lock"></i>
-        <span id="auth-text"></span>
+        <span id="auth-text">DIDI</span>
     </div>
+
     <div id="user-menu" class="user-dropdown">
         <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
         <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
@@ -3205,7 +3232,7 @@ async function ricalcolaStatisticheGlobali(pId) {
                 return [];
             }
             let nomeClean = nomePokemon.toLowerCase().trim()
-                .replace(/\s+/g, '-')       
+                .replace(/\s+/g, '-')      
                 .replace(/[^a-z0-9-]/g, ''); 
 
             const dizionarioEccezioni = {
@@ -3269,6 +3296,11 @@ async function ricalcolaStatisticheGlobali(pId) {
         
         // Struttura di supporto temporanea per tracciare gli Showdown per ciascun formato
         const sdStatsPerFormato = {};
+        
+        // 🌟 CONTATORI GLOBALI PER GLI SHOWDOWN DELL'ALLENATORE
+        let globalShowdownsPlayed = 0;
+        let globalShowdownsWon = 0;
+        let globalShowdownsLost = 0;
 
         // 1. ESTRAZIONE DATI
         Object.entries(seasons).forEach(([sId, stagione]) => {
@@ -3337,7 +3369,15 @@ async function ricalcolaStatisticheGlobali(pId) {
                         pokemon: [...new Set(teamCompositionMap[lastTeamInSD] || [])]
                     });
 
-                    // 🔥 LOGICA CORREZIONE: Inizializza e traccia le statistiche dello Showdown divise per formato
+                    // Aggiornamento contatori Showdown globali dell'allenatore
+                    globalShowdownsPlayed += 1;
+                    if (haVintoSD) {
+                        globalShowdownsWon += 1;
+                    } else {
+                        globalShowdownsLost += 1;
+                    }
+
+                    // Inizializza e traccia le statistiche dello Showdown divise per formato
                     if (!sdStatsPerFormato[categoria]) {
                         sdStatsPerFormato[categoria] = { showdownsPlayed: 0, showdownsWon: 0, showdownsLost: 0 };
                     }
@@ -3484,14 +3524,13 @@ async function ricalcolaStatisticheGlobali(pId) {
             });
         });
 
-        // --- 🚀 LOGICA CORRETTA: AGGREGAZIONE PARAMETRI PER SINGOLO FORMATO ---
+        // --- AGGREGAZIONE PARAMETRI PER SINGOLO FORMATO ---
         const formatsStats = {};
 
         cronologiaMatchPiatta.forEach(m => {
             const cat = m.categoria || "Standard";
             
             if (!formatsStats[cat]) {
-                // Inizializziamo includendo i nuovi campi relativi agli Showdowns
                 formatsStats[cat] = { 
                     played: 0, won: 0, lost: 0, setW: 0, setL: 0, points: 0,
                     showdownsPlayed: 0, showdownsWon: 0, showdownsLost: 0 
@@ -3523,11 +3562,16 @@ async function ricalcolaStatisticheGlobali(pId) {
         });
         await db.ref(`players/${pId}/pokemon-badges`).set(pkmBadges);
 
-        // Calcolo Best Format
+        // Calcolo Best Format e caricamento dei relativi Showdown vinti/giocati/persi
         let bestFormatName = "-";
         let bestFormatWon = 0;
         let bestFormatLose = 0;
         let maxWinsF = -1;
+        
+        // Sostegni per memorizzare i dati degli Showdown del formato vincente
+        let bestFormatSDPlayed = 0;
+        let bestFormatSDWon = 0;
+        let bestFormatSDLost = 0;
 
         Object.entries(statsLeaderboard.formats).forEach(([fName, fStats]) => { 
             if (fStats.won > maxWinsF) { 
@@ -3535,10 +3579,16 @@ async function ricalcolaStatisticheGlobali(pId) {
                 bestFormatName = fName;
                 bestFormatWon = fStats.won;
                 bestFormatLose = fStats.lost;
+                
+                // 🚀 Recuperiamo i contatori specifici degli showdown di questo formato
+                const fSD = sdStatsPerFormato[fName] || {};
+                bestFormatSDPlayed = fSD.showdownsPlayed || 0;
+                bestFormatSDWon = fSD.showdownsWon || 0;
+                bestFormatSDLost = fSD.showdownsLost || 0;
             } 
         });
 
-        // 6. SALVATAGGIO FINALE STATS GLOBALI
+        // 6. SALVATAGGIO FINALE STATS GLOBALI (Inclusione chiavi Showdown mancanti)
         await db.ref(`players/${pId}/stats`).update({
             'formats-stats': formatsStats, 
             'individual-stats': {
@@ -3549,10 +3599,18 @@ async function ricalcolaStatisticheGlobali(pId) {
                 setL: statsLeaderboard.setL,
                 points: totalPointsCalculated, 
                 ranking: ranking,
+                // 🌟 Nuovi campi Showdown globali a livello di allenatore:
+                showdownsPlayed: globalShowdownsPlayed,
+                showdownsWon: globalShowdownsWon,
+                showdownsLost: globalShowdownsLost,
                 format: { 
                     'format-name': bestFormatName,
                     'format-won': bestFormatWon,
-                    'format-lose': bestFormatLose
+                    'format-lose': bestFormatLose,
+                    // 🌟 Nuovi campi Showdown inseriti esplicitamente dentro il sotto-oggetto format:
+                    'format-showdownsPlayed': bestFormatSDPlayed,
+                    'format-showdownsWon': bestFormatSDWon,
+                    'format-showdownsLost': bestFormatSDLost
                 }
             },
             'team-stats': {
@@ -3570,121 +3628,39 @@ async function ricalcolaStatisticheGlobali(pId) {
     }
 }
 
-async function forzatoRicalcoloStatisticheTuttiIPlayers() {
-    // 1. Attiva il loader visivo (se presente) per dare feedback all'admin
+async function forzamentoRicalcoloGlobale() {
+    // 1. Attivazione Loader visivo (se presente nella pagina)
     const loader = document.getElementById('loading-overlay');
     if (loader) loader.classList.add('active');
-    
-    console.log("🚀 Inizio ricalcolo forzato di massa di tutte le statistiche...");
+
+    console.log("🚀 Avvio ricalcolo globale a posteriori di tutti i giocatori...");
 
     try {
-        // 2. Recupera l'intero nodo dei giocatori per avere tutti gli ID
-        const snapPlayers = await db.ref('players').once('value');
-        const tuttiIPlayers = snapPlayers.val();
+        // 2. Recuperiamo la lista completa di tutti i player nel database
+        const snapPlayers = await db.ref(`players`).once('value');
+        const tuttiIPlayers = snapPlayers.val() || {};
+        
+        const playerIds = Object.keys(tuttiIPlayers);
+        console.log(`👥 Trovati ${playerIds.length} giocatori da aggiornare.`);
 
-        if (!tuttiIPlayers) {
-            alert("Nessun giocatore trovato nel database.");
-            return;
-        }
-
-        const listaIds = Object.keys(tuttiIPlayers);
-        console.log(`Anagrafiche trovate: ${listaIds.length} giocatori. Avvio elaborazione sequenziale...`);
-
-        // 3. Ciclo sui giocatori ed esecuzione del ricalcolo aggiornato
-        let contatore = 0;
-        for (const pId of listaIds) {
-            contatore++;
-            console.log(`[${contatore}/${listaIds.length}] Ricalcolo in corso per: ${pId}...`);
+        // 3. Eseguiamo il ricalcolo in sequenza per evitare di sovraccaricare le connessioni
+        for (let i = 0; i < playerIds.length; i++) {
+            const pId = playerIds[i];
+            console.log(`[${i + 1}/${playerIds.length}] Ricalcolo in corso per l'allenatore: ${pId}...`);
             
-            // Chiamiamo la funzione che abbiamo corretto prima
+            // Chiamata alla tua funzione nativa appena aggiornata
             await ricalcolaStatisticheGlobali(pId);
         }
 
-        console.log("✨ Fine ricalcolo di massa!");
-        alert(`🏆 Ricalcolo completato con successo per tutti i ${listaIds.length} giocatori!\nI dati storici degli Showdown per formato sono ora allineati.`);
-
-    } catch (error) {
-        console.error("❌ Errore critico durante il ricalcolo di massa:", error);
-        alert("Errore tecnico durante il ricalcolo: " + error.message);
-    } finally {
-        // 4. Disattiva il loader
-        if (loader) loader.classList.remove('active');
-    }
-}
-
-async function aggiornaTuttiIGiocatoriRetroattivamente() {
-    console.log("🚀 Inizio migrazione e ricalcolo di tutti i giocatori...");
-    
-    try {
-        // 1. Recupera lo snapshot di tutti i giocatori presenti nel database
-        const playersSnap = await db.ref('players').once('value');
-        const players = playersSnap.val();
-        
-        if (!players) {
-            console.error("❌ Nessun giocatore trovato nel database.");
-            return;
-        }
-        
-        const pIds = Object.keys(players);
-        console.log(`📊 Trovati ${pIds.length} giocatori da aggiornare.`);
-        
-        // 2. Esegui il ricalcolo per ogni giocatore, uno dopo l'altro
-        for (let i = 0; i < pIds.length; i++) {
-            const pId = pIds[i];
-            console.log(`🔄 [${i + 1}/${pIds.length}] Ricalcolo in corso per il giocatore ID: ${pId}...`);
-            
-            try {
-                // Chiamiamo la tua funzione che interrogherà PokéAPI e aggiornerà Firebase
-                await ricalcolaStatisticheGlobali(pId);
-            } catch (err) {
-                console.error(`❌ Errore durante il ricalcolo del giocatore ${pId}:`, err);
-            }
-        }
-        
-        console.log("🏁 COMPLETATO! Tutti i profili e i match storici sono stati aggiornati con i tipi dei Pokémon.");
-        
-    } catch (globalErr) {
-        console.error("❌ Errore critico durante la migrazione globale:", globalErr);
-    }
-}
-
-async function forzaRicalcoloTuttiIGiocatori() {
-    console.log("🚀 Inizio ricalcolo globale una tantum per tutti i giocatori...");
-    const startTime = Date.now();
-
-    try {
-        // 1. Recupera lo snapshot di tutti i giocatori
-        const playersSnap = await db.ref('players').once('value');
-        const players = playersSnap.val();
-
-        if (!players) {
-            console.warn("⚠️ Nessun giocatore trovato nel database.");
-            return;
-        }
-
-        const playerIds = Object.keys(players);
-        console.log(`📊 Trovati ${playerIds.length} giocatori da elaborare.`);
-
-        // 2. Cicla ed esegue il ricalcolo per ogni giocatore
-        // Usiamo un ciclo for...of sequenziale per non sovraccaricare le chiamate a PokéAPI/Firebase
-        let counter = 0;
-        for (const pId of playerIds) {
-            counter++;
-            console.log(`[${counter}/${playerIds.length}] Elaborazione giocatore: ${pId}...`);
-            
-            try {
-                // Chiama la funzione aggiornata prima
-                await ricalcolaStatisticheGlobali(pId);
-            } catch (pErr) {
-                console.error(`❌ Errore durante il ricalcolo del giocatore ${pId}:`, pErr);
-            }
-        }
-
-        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`\n✅ Ricalcolo completato con successo per tutti i giocatori in ${duration} secondi!`);
+        console.log("✅ FINISH: Tutti i profili e i formati sono stati ricalcolati e aggiornati con successo!");
+        alert("🏆 Ricalcolo a posteriori completato con successo per tutti i giocatori!");
 
     } catch (err) {
-        console.error("❌ Errore critico durante lo script di migrazione:", err);
+        console.error("❌ Errore critico durante il ricalcolo globale:", err);
+        alert("Errore durante il ricalcolo: " + err.message);
+    } finally {
+        // 4. Disattivazione Loader
+        if (loader) loader.classList.remove('active');
     }
 }
 

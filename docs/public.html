@@ -10,116 +10,138 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-public.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     
-        <audio id="bg-music-home" loop preload="auto"></audio>
+    <audio id="bg-music-home" loop preload="auto"></audio>
 
-<div id="music-control" class="music-btn" onclick="toggleMusic()">
-    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
-        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
-    </svg>
-</div>
+    <div id="music-control" class="music-btn" onclick="toggleMusic()">
+        <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+            <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+    </div>
 
-<div id="login-modal" class="modal">
-    <div class="modal-content glass-card">
-        <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
-        <h2>Login</h2>
-        <form id="login-form">
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" id="login-email" required placeholder="Your email">
+    <div id="login-modal" class="modal">
+        <div class="modal-content glass-card">
+            <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" required placeholder="Your email">
+                </div>
+                <div class="input-group" style="margin-bottom: 5px;">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                
+                <div style="text-align: right; margin-bottom: 20px;">
+                    <a href="javascript:void(0)" onclick="resetPasswordDalLogin()" class="forgot-pwd-link">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <button type="submit" class="btn-login">Login</button>
+                <div id="login-error" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="top-auth-bar">
+        <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+            <i id="auth-icon" class="fas fa-lock"></i>
+            <span id="auth-text"></span>
+        </div>
+        <div id="user-menu" class="user-dropdown">
+            <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+            <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+            <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
+            <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
+            <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> PLAYBOOK</a>
+            <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+        </div>
+    </div>
+
+    <header class="top-bar">
+        <div class="top-bar-inner">
+            <div id="badges-container" class="badges-top-left"></div>
+
+            <section class="hub-hero">
+                <h1 class="hub-title-display">
+                    <span id="player-name-display">DIDI</span>
+                </h1>
+            </section>
+        </div>
+    </header>
+
+    <div id="info-display-area"></div>
+
+    <div id="trophy-shelf-container">
+        <div class="trophy-badge-wrapper">
+            <div id="trophy-list" class="trophy-grid"></div>
+        </div>
+        
+        <div id="stats-container"></div>
+    </div>
+
+    <div class="profile-layout-container">
+        <main class="main-profile-content">
+            <div class="profile-display-wrapper">
+                <div class="trainer-column">
+                    <img id="player-avatar" src="URL_AVATAR" class="trainer-sprite" alt="Trainer">
+                </div>
+                <div id="pokemon-display-area" class="pokemon-column"></div>
             </div>
-            <div class="input-group" style="margin-bottom: 5px;">
-                <label>Password</label>
-                <input type="password" id="login-password" required placeholder="••••••••">
+        </main>
+
+        <div id="best-team-container" class="grid" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
             </div>
-            
-            <div style="text-align: right; margin-bottom: 20px;">
-                <a href="javascript:void(0)" onclick="resetPasswordDalLogin()" class="forgot-pwd-link">
-                    Forgot password?
-                </a>
-            </div>
-
-            <button type="submit" class="btn-login">Login</button>
-            <div id="login-error" class="error-msg"></div>
-        </form>
     </div>
-</div>
 
-
-<div class="top-auth-bar">
-    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
-        <i id="auth-icon" class="fas fa-lock"></i>
-        <span id="auth-text"></span>
-    </div>
-    <div id="user-menu" class="user-dropdown">
-        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
-        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
-        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
-        <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
-        <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> PLAYBOOK</a>
-        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
-    </div>
-</div>
-
-
-
-<header class="top-bar">
-    <div class="top-bar-inner">
-        <div id="badges-container" class="badges-top-left"></div>
-
-        <section class="hub-hero">
-            <h1 class="hub-title-display">
-                <span id="player-name-display">DIDI</span>
-            </h1>
-        </section>
-    </div>
-</header>
-
-<div id="info-display-area"></div>
-
-<div id="trophy-shelf-container">
-    <div class="trophy-badge-wrapper">
-        <div id="trophy-list" class="trophy-grid"></div>
-    </div>
-    
-    <div id="stats-container"></div>
-</div>
-
-<div class="profile-layout-container">
-    <main class="main-profile-content">
-        <div class="profile-display-wrapper">
-            <div class="trainer-column">
-                <img id="player-avatar" src="URL_AVATAR" class="trainer-sprite" alt="Trainer">
-            </div>
-            <div id="pokemon-display-area" class="pokemon-column">
+    <div id="teamModal" class="modal" onclick="closeTeamModal()">
+        <div class="modal-content">
+            <span class="close" onclick="closeTeamModal()">&times;</span>
+            <div id="modalBody">
                 </div>
         </div>
-    </main>
+    </div>
 
-    <div id="best-team-container" class="grid" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
-    <!-- Il JS inietterà qui la card -->
-</div>
+    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+        <div class="modal-content pkm-single-card"> 
+            <span class="close" onclick="chiudiPkmModal()">&times;</span>
+            <div id="pkmModalBody"></div>
+        </div>
+    </div>
 
-</div>
-
-<audio id="bg-music-home" loop preload="auto"></audio>
-
-<div id="teamModal" class="modal" onclick="closeTeamModal()">
-    <div class="modal-content">
-        <span class="close" onclick="closeTeamModal()">&times;</span>
-        <div id="modalBody">
-            <!-- Qui verranno caricati i Pokémon -->
+   <div id="elo-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.2); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div style="width: 90%; max-width: 600px; position: relative; padding: 20px 10px 10px 10px;">
+        
+        <span id="close-elo-modal" style="position: absolute; top: -10px; right: 0px; font-size: 24px; font-weight: bold; font-family: Josefin Sans, sans-serif; cursor: pointer; user-select: none; background: #fff; border: 3px solid #000; width: 35px; height: 35px; display: none; align-items: center; justify-content: center; box-shadow: 3px 3px 0px #000; z-index: 10;">&times;</span>
+        
+        <div id="elo-badge-title" style="display: inline-block; color: white; background: black; border: 3px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.7); padding: 12px 36px; font-family: 'Josefin Sans', sans-serif; font-size: 2rem; font-weight: bold; text-transform: uppercase; position: absolute; top: -40px; left: 25px; z-index: 5; transform: rotate(-1.5deg);">
+            <span id="elo-modal-title">Progressione ELO</span>
+        </div>
+        
+        <div style="width: 100%; height: 320px; position: relative; background-color: #fff; border: 4px solid #000; box-shadow: 8px 8px 0px #000; padding: 25px 15px 15px 15px; box-sizing: border-box;">
+            <canvas id="realEloChartInstance"></canvas>
         </div>
     </div>
 </div>
-
-<div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
-    <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
-        <div id="pkmModalBody"></div>
-    </div>
-
 
     <script>      
 
@@ -426,62 +448,53 @@ async function renderizzaBestTeam(team) {
     const container = document.getElementById('best-team-container');
     if (!team || !container) return;
 
-    container.innerHTML = `
-    <div class="card" onclick="apriDettagli('${team.id}')" style="cursor: pointer;">
-        <div class="card-header">
-            <span class="category">${team.category || team.categoria || 'VGC'}</span>
-            <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
-        </div>
-        <h3>${team.nome}</h3>
-        <div class="pkm-grid">
-            ${team.pokemon.map((p, index) => {
-                // Formattazione URL per PokeAPI e Sprite
-                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                const itemNameUrl = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                
-                const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
-                const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
-                
-                const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
-                const pkmBoxId = `best-pkm-${index}`;
-                
-                // Serializzazione dati per passare l'oggetto al modale tecnico
-                const pDataStr = JSON.stringify(p).replace(/"/g, '&quot;');
+    // 🎯 DIAGNOSI COMPLETATA: Sappiamo che i dati reali sono dentro team.stats
+    const s = team.stats || {};
 
-                // Applicazione colore bordo ritardata per attendere il rendering
+    const teamName = team.nome || team.name || "Senza Nome";
+    
+    // Peschiamo i punti e le partite dal sotto-oggetto stats usando le chiavi di Firebase
+    const teamPoints = typeof s.points !== 'undefined' ? s.points : 0;
+    const teamPlayed = typeof s.played !== 'undefined' ? s.played : 0;
+    const teamWon    = typeof s.won !== 'undefined' ? s.won : (team.vittorie || 0);
+    const teamLose   = typeof s.lose !== 'undefined' ? s.lose : 0;
+    
+    const category = team.categoria || team.category || 'VGC';
+
+    container.innerHTML = `
+    <div class="card" style="cursor: default;">
+        <div class="card-header">
+            <span class="category">${category}</span>
+            <span class="stats">
+                PTS: ${teamPoints} | P: ${teamPlayed} | W: ${teamWon} / L: ${teamLose}
+            </span>
+        </div>
+        <h3>${teamName}</h3>
+        <div class="pkm-grid">
+            ${(team.pokemon || []).map((p, index) => {
+                const pkmName = p.nome || p.name || "Unknown";
+                const pkmNameUrl = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                const pkmBoxId = `best-pkm-${index}`;
+
                 setTimeout(() => {
                     if (typeof applicaColoreBordo === 'function') {
-                        applicaColoreBordo(p.nome, pkmBoxId);
+                        applicaColoreBordo(pkmName, pkmBoxId);
                     }
                 }, 100);
 
                 return `
                     <div class="pkm-box" 
                          id="${pkmBoxId}" 
-                         onclick="event.stopPropagation(); apriPkmDettaglio(${pDataStr}, '${pkmNameUrl}')">
+                         style="cursor: default;">
                         
                         <div class="pkm-sprite-container">
                             <img src="${pkmSprite}" class="pkm-sprite" 
                                  onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                         </div>
 
-                        <div class="pkm-info">
-                            <span class="pkm-name">${p.nome}</span>
-                            <div class="item-container">
-                                <img src="${itemSprite}" class="item-icon" title="${p.strumento}" 
-                                     onerror="this.style.display='none'">
-                                <span class="pkm-item">${p.strumento}</span>
-                            </div>
-                        </div>
-
-                        <!-- Hover Card / Tooltip -->
-                        <div class="pkm-hover-card ${sideClass}">
-                            <strong>${p.nome}</strong>
-                            <p>✨ ${p.abilita}</p>
-                            <p style="color: #1a1a1a !important; margin-bottom: 8px !important;">📊 ${p.evs}</p>
-                            <div class="hover-moves">
-                                ${p.mosse.map(m => `<span>${m}</span>`).join('')}
-                            </div>
+                        <div class="pkm-info" style="text-align: center; width: 100%;">
+                            <span class="pkm-name" style="display: block; margin: 0 auto;">${pkmName}</span>
                         </div>
                     </div>
                 `;
@@ -489,8 +502,7 @@ async function renderizzaBestTeam(team) {
         </div>
     </div>
     `;
-}   
-
+}
 async function apriDettagli(id) {
     const listaTeam = (typeof tuttiITeam !== 'undefined') ? tuttiITeam : window.tuttiITeam;
     
@@ -1215,6 +1227,9 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     caricaInfoStrumento(pokemonData.strumento, 'single-item');
 }
 
+// Variabile globale per distruggere l'istanza precedente del grafico se si cambia giocatore
+let eloChartInstance = null;
+
 async function renderPlayerStats(playerName) {
     // 1. Recupero TUTTI i players per calcolare la posizione in classifica
     const playersRef = db.ref(`players`);
@@ -1240,33 +1255,55 @@ async function renderPlayerStats(playerName) {
     const lost = stats.lost || 0;
     const currentElo = stats.ranking || 1000;
     
-    // --- CORREZIONE ACCESSO CHIAVI ---
-    // Usiamo la notazione ['chiave'] perché i nomi nel DB hanno il trattino (es. format-won)
+    // Dati recuperati dal DB per i punti e gli Showdown globali
+    const globalPoints = stats.points || 0;
+    const sdWon = stats.showdownsWon || 0;
+    const sdPlayed = stats.showdownsPlayed || 0;
+    const sdLost = sdPlayed - sdWon;
+
+    // --- ACCESSO CHIAVI BEST FORMAT ---
     const bestFormatData = stats.format || {};
     const formatName = bestFormatData['format-name'] || "-";
-    const formatWon = bestFormatData['format-won'] || 0;
-    const formatLost = bestFormatData['format-lose'] || 0; 
+    const formatSdWon = bestFormatData['format-showdownsWon'] || 0;
+    const formatSdLost = bestFormatData['format-showdownsLost'] || 0; 
 
-    const winRate = (won + lost) > 0 ? ((won / (won + lost)) * 100).toFixed(1) : 0;
-    const setRate = ( (stats.setW || 0) + (stats.setL || 0) ) > 0 
-        ? ((stats.setW / (stats.setW + stats.setL)) * 100).toFixed(1) : 0;
+    // --- CALCOLO DELLE PERCENTUALI ---
+    const sdWinRate = sdPlayed > 0 ? ((sdWon / sdPlayed) * 100).toFixed(1) : 0;
+    const matchWinRate = (won + lost) > 0 ? ((won / (won + lost)) * 100).toFixed(1) : 0;
+    
+    const setW = stats.setW || 0;
+    const setL = stats.setL || 0;
+    const setRate = (setW + setL) > 0 ? ((setW / (setW + setL)) * 100).toFixed(1) : 0;
 
     const container = document.getElementById('stats-container');
     if (!container) return;
 
-    // 3. Definiamo le stats da mostrare
+    // 3. Definizione della lista di stats ottimizzata e accorpata
     const items = [
         { 
             label: "RANKING", 
-            value: `#${position} (${currentElo})` 
+            value: `#${position} (${currentElo})`,
+            clickable: true // Flag per identificare la card cliccabile
         },
-        { label: "GLOBAL WON", value: won },
-        { label: "% WIN", value: `${winRate}%` },
-        { label: "% SET WON", value: `${setRate}%` },
+        { 
+            label: "GLOBAL POINTS", 
+            value: globalPoints 
+        },
+        { 
+            label: "SD RATE", 
+            value: sdPlayed > 0 ? `${sdWon}/${sdLost} (${sdWinRate}%)` : "0/0 (0%)"
+        },
+        { 
+            label: "MATCH RATE", 
+            value: (won + lost) > 0 ? `${won}/${lost} (${matchWinRate}%)` : "0/0 (0%)"
+        },
+        { 
+            label: "SET RATE", 
+            value: (setW + setL) > 0 ? `${setW}/${setL} (${setRate}%)` : "0/0 (0%)"
+        },
         { 
             label: "BEST FORMAT", 
-            // Mostra: Nome Formato (Vinte/Perse)
-            value: formatName !== "-" ? `${formatName} (${formatWon}/${formatLost})` : "-" 
+            value: formatName !== "-" ? `${formatName} (${formatSdWon}/${formatSdLost})` : "-" 
         }
     ];
 
@@ -1277,14 +1314,153 @@ async function renderPlayerStats(playerName) {
         
         const bar = document.createElement('div');
         bar.className = 'stat-bar';
+        
+        // Configurazione delle proprietà grafiche se l'elemento è cliccabile
+        if (item.clickable) {
+            bar.classList.add('clickable-card');
+            bar.style.cursor = 'pointer';
+            bar.style.userSelect = 'none'; // Evita la selezione blu del testo al doppio click rapido
+        }
+        
         bar.style.setProperty('--rand-deg', `${randomDeg}deg`); 
         
+        // CORREZIONE FONDAMENTALE: Se l'elemento è cliccabile, aggiungiamo 'pointer-events: none;' agli span.
         bar.innerHTML = `
-            <span class="stat-label">${item.label}</span>
-            <span class="stat-value">${item.value}</span>
+            <span class="stat-label" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.label}</span>
+            <span class="stat-value" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.value}</span>
         `;
+
+        // Aggiungiamo l'evento click solo sulla card RANKING
+        if (item.clickable) {
+            bar.addEventListener('click', function(e) {
+                console.log("-> Click fisico registrato sulla card RANKING per il player:", playerName);
+                if (typeof mostraGraficoElo === "function") {
+                    mostraGraficoElo(playerName);
+                } else {
+                    console.error("Errore: La funzione 'mostraGraficoElo' non è definita!");
+                }
+            });
+        }
+
         container.appendChild(bar);
     });
+}
+
+async function mostraGraficoElo(playerName) {
+    if (!playerName) return;
+
+    const modal = document.getElementById('elo-modal');
+    const modalTitle = document.getElementById('elo-modal-title');
+    const closeBtn = document.getElementById('close-elo-modal');
+
+    if (!modal) return;
+    modal.style.setProperty('display', 'flex', 'important');
+    if (modalTitle) modalTitle.innerText = `RANKING HISTORY`;
+
+    closeBtn.onclick = () => modal.style.setProperty('display', 'none', 'important');
+    modal.onclick = (e) => { if (e.target === modal) modal.style.setProperty('display', 'none', 'important'); };
+
+    try {
+        const snapshot = await db.ref(`seasons/sbeta/showdowns`).once('value');
+        const showdowns = snapshot.val() || {};
+        const searchName = playerName.toLowerCase().trim();
+        let matchStorici = [];
+
+        console.log("--- INIZIO ANALISI DATI ELO ---");
+
+        Object.keys(showdowns).forEach(sdId => {
+            const sd = showdowns[sdId];
+            if (sd.matches) {
+                Object.entries(sd.matches).forEach(([matchKey, m]) => {
+                    // Controllo validità base
+                    if (!m.player1Id || !m.player2Id || !m.data) return;
+
+                    // --- CACCIA ALL'ERRORE (DEBUG) ---
+                    // Se la data contiene 03-16 (16 marzo), logga tutto in rosso
+                    if (m.data && m.data.includes("03-16")) {
+                        console.error(`!!! DATO SOSPETTO TROVATO !!! 
+                        Showdown: ${sdId}
+                        Match: ${matchKey}
+                        Data nel DB: ${m.data}
+                        Oggetto Completo:`, m);
+                    }
+                    // ---------------------------------
+
+                    const p1 = m.player1Id.toLowerCase().trim();
+                    const p2 = m.player2Id.toLowerCase().trim();
+
+                    if (p1 === searchName || p2 === searchName) {
+                        const base = p1 === searchName ? parseFloat(m.p1EloAtMatch) : parseFloat(m.p2EloAtMatch);
+                        const delta = p1 === searchName ? parseFloat(m.p1DeltaElo) : parseFloat(m.p2DeltaElo);
+                        
+                        if (!isNaN(base) && !isNaN(delta)) {
+                            matchStorici.push({
+                                dataRaw: m.data,
+                                elo: base + delta,
+                                timestamp: new Date(m.data).getTime()
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        // Ordine cronologico
+        matchStorici.sort((a, b) => a.timestamp - b.timestamp);
+        
+        const ultime10 = matchStorici.slice(-10);
+        console.log("Ultimi 10 match processati:", ultime10);
+        
+        // --- LOGICA DI AGGLOMERAZIONE ETICHETTE ---
+        const rawLabels = ultime10.map(m => m.dataRaw.split("-").slice(1).reverse().join("/"));
+        
+        const labels = rawLabels.map((label, index) => {
+            if (index > 0 && label === rawLabels[index - 1]) {
+                return ""; 
+            }
+            return label;
+        });
+        
+        const dataElo = ultime10.map(m => m.elo);
+
+        // Reset Grafico
+        if (window.eloChartInstance) window.eloChartInstance.destroy();
+        const container = document.getElementById('realEloChartInstance').parentElement;
+        container.innerHTML = '<canvas id="realEloChartInstance" style="display: block; width: 100% !important; height: 100% !important;"></canvas>';
+
+        // Render Chart.js
+        const canvas = document.getElementById('realEloChartInstance');
+        const ctx = canvas.getContext('2d');
+        window.eloChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataElo,
+                    borderColor: '#000000',
+                    borderWidth: 3.5,
+                    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+                    pointBackgroundColor: '#ffde4d',
+                    pointBorderColor: '#000000',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    tension: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { ticks: { color: '#000', font: { weight: 'bold', family: 'Josefin Sans, sans-serif' } }, grid: { display: false } },
+                    x: { ticks: { color: '#000', font: { weight: 'bold', family: 'Josefin Sans, sans-serif' } }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+    } catch (e) {
+        console.error("Errore critico:", e);
+    }
 }
 
 async function caricaPokemonPreferito(pkmNome) {

@@ -1001,18 +1001,6 @@ html, body {
     cursor: pointer;
 }
 
-.card:hover {
-    /* Effetto "sollevamento" */
-    transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px #000;
-}
-
-.card:active {
-    /* Effetto "pressione" */
-    transform: translate(4px, 4px);
-    box-shadow: 4px 4px 0px #000;
-}
-
 /* Header della Card */
 .card-header { 
     display: flex; 
@@ -1082,7 +1070,6 @@ html, body {
     min-width: 0;     /* FONDAMENTALE: permette al contenitore di restringersi */
     color: #1a1a1a !important;
     position: relative;
-    cursor: help; /* Cambia cursore per far capire che c'è un info */
     color: #1a1a1a;
     font-family: 'Josefin Sans', sans-serif;
     border: 1.5px solid black;
@@ -1100,7 +1087,10 @@ html, body {
     color: #1a1a1a;
 }
 
-
+.clickable-card {
+    position: relative !important;
+    z-index: 10 !important; /* Spinge la card sopra eventuali elementi trasparenti sovrapposti */
+}
 
 /* Card in hover */
 .pkm-hover-card {
@@ -1147,14 +1137,6 @@ html, body {
     z-index: 1000;
 }
 
-.pkm-box:hover .pkm-hover-card {
-    display: block;
-    animation: fadeIn 0.2s ease-out;
-    visibility: visible;
-    opacity: 1;
-    z-index: 1000;
-}
-
 /* Stile per le mosse dentro l'hover */
 .hover-moves {
     display: grid;
@@ -1187,10 +1169,6 @@ html, body {
     to { opacity: 1; margin-bottom: 0; }
 }
 
-.pkm-box:hover {
-    transform: translateY(-5px);
-    box-shadow: 3px 7px 0 black;
-}
 
 .pkm-sprite-container {
     width: 45px;  /* Contenitore più piccolo e fisso */
@@ -1331,12 +1309,6 @@ html, body {
     right: 0;
     transform: rotate(-1deg);
     z-index: 1000;
-}
-
-/* Animazione */
-.pkm-box:hover .pkm-hover-card {
-    display: block;
-    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .modal {
@@ -2641,15 +2613,7 @@ color:#eeeeee;
     font-size: 1.2rem; /* Numeri belli grandi e visibili */
     font-weight: 900;
 }
-.card:hover {
-    transform: translate(-3px, -3px);
-    box-shadow: 7px 7px 0 var(--border-color);
-}
 
-.card:active {
-    transform: translate(4px, 4px);
-    box-shadow: 0 0 0; 
-}
 
 /* Colore per i titoli (es. Prankster) */
 .info-name {
@@ -2737,11 +2701,6 @@ color:#eeeeee;
     transform: rotate(-1deg);
 }
 
-/* Animazione */
-.pkm-box:hover .pkm-hover-card {
-    display: block;
-    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
 
 @keyframes popIn {
     from { opacity: 0; transform: scale(0.9) translateY(10px); }
