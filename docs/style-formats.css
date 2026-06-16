@@ -859,3 +859,417 @@ body {
     transform: translate(0px) rotate(-1deg) !important;
     box-shadow: 0px 0px 0px var(--hover-color) !important;
 }
+
+.plus-icon {
+    font-size: 30px;
+    font-weight: 300; /* Lo rende sottile e moderno */
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-floating-admin:hover {
+    color: white;
+    background-color: black;
+    transform: scale(1.2) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
+    border: #000;
+    box-shadow: 0 0 0;
+}
+
+.btn-floating-admin:active {
+    color: black;
+    background-color: white;
+    transform: scale(1); /* Ruota leggermente per un tocco dinamico */
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    box-shadow: 0 0 0;
+}
+
+.is-admin {
+    display: flex !important; /* o block, a seconda del tasto */
+}
+
+.btn-floating-admin {
+    position: fixed;
+    top: 100px;
+    right: 120px;
+    width: 50px;
+    height: 50px;
+    background: white; 
+    border: 2px solid black; 
+    box-shadow: 4px 4px 0 black;
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* ==========================================================================
+   MODAL CREAZIONE FORMATO (NEUBRUTALIST COMPETE STYLE - JOSEFIN SANS)
+   ========================================================================== */
+
+/* Forza il font Josefin Sans su ogni elemento dell'interfaccia */
+.format-modal-backdrop,
+.format-modal-backdrop *,
+.format-modal-content input,
+.format-modal-content select,
+.format-modal-content textarea,
+.format-modal-content button {
+    font-family: 'Josefin Sans', sans-serif !important;
+}
+
+/* Sfondo oscurato con blur dinamico sul gioco */
+.format-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Finestra Canvas del Modal (Niente intestazioni fisse, i bordi sono liberi) */
+.format-modal-content {
+    background-color: #ffffff;
+    border: 4px solid #000000;
+    width: 100%;
+    max-width: 760px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 10px 10px 0px #000000;
+    /* CRITICO: deve essere visible altrimenti le etichette che volano fuori dai bordi vengono tagliate! */
+    overflow: visible; 
+    position: relative;
+    animation: entraModal 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes entraModal {
+    from { transform: scale(0.93) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Container Trasparente dell'Header per far fluttuare i titoli */
+.format-modal-header {
+    background: transparent !important;
+    border-bottom: none !important;
+    position: absolute;
+    top: -24px; /* Esce sopra il bordo superiore */
+    left: 15px;
+    right: 15px;
+    padding: 0 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none; /* Non blocca i click sotto */
+}
+
+/* Sticker Titolo Principale "ADD NEW FORMAT" (Nero, inclinato, fluttuante) */
+.format-modal-header h2 {
+    margin: 0;
+    font-weight: 900;
+    font-size: 1.35rem;
+    color: #ffffff;
+    background-color: #000000;
+    border: 4px solid #000000;
+    padding: 6px 16px;
+    text-transform: uppercase;
+    transform: rotate(-2.5deg);
+    box-shadow: 4px 4px 0px #000000;
+    letter-spacing: 0.5px;
+    pointer-events: auto;
+}
+
+/* Pulsante di Chiusura (X) identico a quello della schermata ELO */
+.format-close-btn {
+    font-size: 20px;
+    font-weight: 900;
+    cursor: pointer;
+    color: #000000;
+    background-color: #ffffff;
+    border: 4px solid #000000;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 4px 4px 0px #000000;
+    transform: rotate(3deg) translateY(-4px);
+    pointer-events: auto;
+    transition: transform 0.05s, box-shadow 0.05s, background-color 0.1s;
+}
+
+.format-close-btn:hover {
+    transform: rotate(3deg) translate(-1px, -5px);
+    box-shadow: 5px 5px 0px #000000;
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+.format-close-btn:active {
+    transform: rotate(3deg) translate(2px, -2px);
+    box-shadow: 2px 2px 0px #000000;
+}
+
+/* Corpo del Blocco */
+.format-modal-body {
+    padding: 35px 24px 24px 24px; /* Più spazio in alto per non collidere con il titolo principale */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background-color: #ffffff;
+}
+
+/* Layout righe */
+.format-input-row {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+}
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+
+/* Gruppi di Input e Campi di Testo */
+.format-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ETICHETTE CHE VOLANO (Stile DATE, FORMAT, SCORE nell'aggiunta match) */
+.format-input-group label {
+    font-weight: 900;
+    font-size: 0.8rem;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: #ffde4d; /* Il tuo giallo caratteristico */
+    border: 3px solid #000000;
+    padding: 2px 8px;
+    width: fit-content;
+    transform: rotate(-1.5deg) translateX(-2px);
+    box-shadow: 3px 3px 0px #000000;
+    margin-bottom: 4px;
+}
+
+/* Input, Selettori e Textarea */
+.format-input-group input[type="text"],
+.format-input-group textarea,
+.format-input-group select,
+.format-rule-row select,
+.format-rule-row input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 4px solid #000000;
+    background-color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    outline: none;
+    border-radius: 0px;
+    box-shadow: 4px 4px 0px #000000;
+    transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.format-input-group input[type="text"]:focus,
+.format-input-group textarea:focus,
+.format-input-group select:focus {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0px #000000;
+    background-color: #fafafa;
+}
+
+/* Sezioni condizionali ad attivazione dinamica */
+.format-conditional-section {
+    border-top: 4px dashed #000000;
+    padding-top: 25px;
+    margin-top: 5px;
+}
+
+/* Titoli delle Sotto-Sezioni (Stile MATCH INFO / TEAMS) */
+.format-conditional-section h3,
+.rules-header-badge-container h3 {
+    font-weight: 900;
+    font-size: 1.05rem;
+    color: #000000;
+    background-color: #ffffff;
+    border: 4px solid #000000;
+    display: inline-block;
+    padding: 4px 12px;
+    margin-top: 0;
+    margin-bottom: 18px;
+    transform: rotate(-1deg);
+    box-shadow: 4px 4px 0px #000000;
+    text-transform: uppercase;
+}
+
+/* Box Grigio dei Parametri Obbligatori (Stile sotto-pannelli di Match Info) */
+.format-mandatory-box {
+    background-color: #e5e7eb; 
+    border: 4px solid #000000;
+    padding: 24px 18px 18px 18px;
+    margin-bottom: 22px;
+    box-shadow: 5px 5px 0px #000000;
+    position: relative;
+}
+
+/* Intestazione interna del Box Grigio Obbligatorio */
+.mandatory-title {
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #ffffff;
+    background-color: #000000;
+    border: 3px solid #000000;
+    padding: 3px 10px;
+    transform: rotate(-1deg);
+    box-shadow: 3px 3px 0px #000000;
+    position: absolute;
+    top: -16px;
+    left: 14px;
+    text-transform: uppercase;
+}
+
+.format-optional-box {
+    border-top: 4px dashed #000000;
+    padding-top: 25px;
+    position: relative;
+}
+
+/* Contenitore delle righe personalizzate aggiunte */
+#dynamic-rules-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+/* Singola riga di restrizione inserita */
+.format-rule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #ffffff;
+    border: 4px solid #000000;
+    padding: 10px 14px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+/* Mappatura spaziatura elementi interni filtri */
+.format-rule-row .select-category { flex: 1.2; min-width: 120px; }
+.format-rule-row .inline-container { display: contents; } 
+.format-rule-row .select-field { flex: 2; min-width: 150px; }
+.format-rule-row .select-operator { flex: 1; min-width: 80px; }
+.format-rule-row .input-value { flex: 1.5; min-width: 120px; }
+
+/* Bottone Cestino / Elimina riga (Rosso solido) */
+.btn-remove-rule {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: 4px solid #000000;
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 3px 3px 0px #000000;
+    transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.btn-remove-rule:hover {
+    background-color: #dc2626;
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px #000000;
+}
+
+/* Bottone Giallo "+ ADD SPECIFIC RESTRICTION" */
+.btn-add-rule {
+    background-color: #ffde4d;
+    color: #000000;
+    border: 4px solid #000000;
+    padding: 11px 20px;
+    font-weight: 900;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #000000;
+    transition: transform 0.05s, background-color 0.1s, box-shadow 0.05s;
+}
+
+.btn-add-rule:hover {
+    background-color: #ffe675;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #000000;
+}
+
+/* Badge di controllo delle Clausole Attive */
+.rules-header-badge-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.rules-header-badge-container h3 { margin: 0; }
+
+.clause-badge {
+    font-weight: 900;
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    border: 4px solid #000000;
+    background-color: #4ade80; /* Il tuo verde fluo */
+    color: #000000;
+    text-transform: uppercase;
+    transform: rotate(1.5deg);
+    box-shadow: 3px 3px 0px #000000;
+}
+.clause-badge.disabled {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+/* Footer inferiore del Modal */
+.format-modal-footer {
+    border-top: 4px solid #000000;
+    padding: 16px 24px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Bottone Verde Salva "SAVE FORMAT" (Identico ad ADD MATCH dello screenshot) */
+.btn-save-format {
+    background-color: #4ade80; 
+    color: #000000;
+    border: 4px solid #000000;
+    padding: 12px 32px;
+    font-weight: 900;
+    font-size: 1rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 5px 5px 0px #000000;
+    transition: transform 0.05s, background-color 0.1s, box-shadow 0.05s;
+}
+
+.btn-save-format:hover {
+    background-color: #22c55e;
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px #000000;
+}
+
+.btn-save-format:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0px #000000;
+}

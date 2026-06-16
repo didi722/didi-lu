@@ -67,6 +67,140 @@
     </div>
 </div>
 
+<button id="admin-plus-btn" class="btn-floating-admin" onclick="apriCreazioneFormato()" title="Nuovo Showdown">
+    <span class="plus-icon">+</span>
+</button>
+
+<div id="format-modal" class="format-modal-backdrop" style="display: none;">
+    <div class="format-modal-content">
+        <div class="format-modal-header">
+            <h2 id="format-modal-title">ADD NEW FORMAT</h2>
+            <span id="close-format-modal" class="format-close-btn">&times;</span>
+        </div>
+        
+        <div class="format-modal-body">
+            <div class="format-input-row">
+                <div class="format-input-group flex-2">
+                    <label>FORMAT NAME</label>
+                    <input type="text" id="format-name" placeholder="Es: Chaos Monocolor, Gen 9 VGC, No-Protect Tournament...">
+                </div>
+                
+                <div class="format-input-group flex-1">
+                    <label>FORMAT TYPE</label>
+                    <select id="format-type" onchange="gestisciCambioTipoFormato(this.value)">
+                        <option value="">-- Select Type --</option>
+                        <option value="vgc">Official VGC</option>
+                        <option value="custom">Custom Format (Standard Clauses)</option>
+                        <option value="anything_goes">Anything Goes (No Clauses)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="format-input-group">
+                <label>DESCRIPTION / TOURNAMENT RULES</label>
+                <textarea id="format-desc" rows="2" placeholder="Explain the rules or the spirit of this format to players..."></textarea>
+            </div>
+
+            <div id="section-official-vgc" class="format-conditional-section" style="display: none;">
+                <h3>OFFICIAL METAGAME SELECTOR</h3>
+                <div class="format-input-row">
+                    <div class="format-input-group flex-1">
+                        <label>GENERATION</label>
+                        <select id="vgc-gen">
+                            <option value="gen9">Generation 9 (SV)</option>
+                            <option value="gen8">Generation 8 (SS)</option>
+                            <option value="gen7">Generation 7 (SM)</option>
+                            <option value="gen6">Generation 6 (XY)</option>
+                        </select>
+                    </div>
+                    <div class="format-input-group flex-2">
+                        <label>FORMAT / FORMAT DETAILS</label>
+                        <select id="vgc-format">
+                            <option value="vgc2026">VGC 2026 (Reg G / Current)</option>
+                            <option value="vgc2025">VGC 2025</option>
+                            <option value="vgc2024">VGC 2024</option>
+                            <option value="doubles_ou">Doubles OU</option>
+                            <option value="singles_ou">Singles OU</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-custom-rules" class="format-conditional-section" style="display: none;">
+                <div class="rules-header-badge-container">
+                    <h3>COMPETITIVE FORMAT SETTINGS</h3>
+                    <span id="clause-badge" class="clause-badge">Clauses Active</span>
+                </div>
+                
+                <div class="format-mandatory-box">
+                    <h4 class="mandatory-title">MANDATORY SETTINGS</h4>
+                    
+                    <div class="format-input-row">
+                        <div class="format-input-group flex-1">
+                            <label>BATTLE STYLE</label>
+                            <select id="mandatory-battle-style">
+                                <option value="singles">Singles</option>
+                                <option value="doubles">Doubles</option>
+                                <option value="triples">Triples</option>
+                                <option value="rotation">Rotation</option>
+                            </select>
+                        </div>
+                        
+                        <div class="format-input-group flex-2">
+                            <label>GENERATION LIMIT</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="mandatory-gen-type" style="flex: 1.2;">
+                                    <option value="up_to">Up to Gen (All Pokémons)</option>
+                                    <option value="within">Within Gen (VGC Legal Only)</option>
+                                </select>
+                                <select id="mandatory-gen-value" style="flex: 0.8;">
+                                    <option value="9">Gen 9 (SV)</option>
+                                    <option value="8">Gen 8 (SS)</option>
+                                    <option value="7">Gen 7 (SM)</option>
+                                    <option value="6">Gen 6 (XY)</option>
+                                    <option value="5">Gen 5 (BW)</option>
+                                    <option value="4">Gen 4 (DPP)</option>
+                                    <option value="3">Gen 3 (RSE)</option>
+                                    <option value="2">Gen 2 (GSC)</option>
+                                    <option value="1">Gen 1 (RBY)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="format-input-group flex-1">
+                            <label>BASE METAGAME TIER</label>
+                            <select id="mandatory-tier">
+                                <option value="ALL">All Tiers (No Limit)</option>
+                                <option value="Uber">Uber</option>
+                                <option value="OU">OU</option>
+                                <option value="UU">UU</option>
+                                <option value="RU">RU</option>
+                                <option value="NU">NU</option>
+                                <option value="PU">PU</option>
+                                <option value="LC">Little Cup (LC)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="format-optional-box">
+                    <h4 class="mandatory-title">CUSTOM CARD RESTRICTIONS (OPTIONAL)</h4>
+                    <div id="dynamic-rules-container">
+                        </div>
+                    
+                    <button type="button" class="btn-add-rule" onclick="aggiungiRigaRegola()">
+                        + ADD SPECIFIC RESTRICTION
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="format-modal-footer">
+            <button type="button" class="btn-save-format" onclick="salvaNuovoFormato()">SAVE FORMAT</button>
+        </div>
+    </div>
+</div>
+
 <div class="ads-sidebar">
         <div class="ads-track">
             <img src="immagini/1.jpeg" alt="Ad 1" class="ad-banner">
@@ -131,6 +265,266 @@ function handleAuthClick() {
     } else {
         const menu = document.getElementById('user-menu');
         menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+}
+
+const MAPPA_DEFINIZIONE_REGOLE = {
+    pokemon: {
+        label: "Pokémon",
+        fields: {
+            // Rimosse 'generation' e 'tier' perché ora sono campi obbligatori in alto
+            name_starts: { label: "Lettera Iniziale Nome", type: "text_length", operators: ["equals"] },
+            name_length: { label: "Lunghezza Nome (Caratteri)", type: "number", operators: ["lt", "gt", "equals"] },
+            height: { label: "Altezza (metri)", type: "number", operators: ["lt", "gt"] },
+            weight: { label: "Peso (kg)", type: "number", operators: ["lt", "gt"] },
+            color: { label: "Colore di base", type: "select", options: ["black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow"] },
+            egg_group: { label: "Gruppo Uova", type: "select", options: ["monster", "water1", "bug", "flying", "field", "fairy", "grass", "human-shape", "water3", "mineral", "amorphous", "water2", "ditto", "dragon", "no-eggs"] },
+            bst: { label: "Statistiche Base Totali (BST)", type: "number", operators: ["lt", "gt", "lte", "gte", "equals"] },
+            highest_stat: { label: "Statistica più alta", type: "select", options: ["hp", "attack", "defense", "special-attack", "special-defense", "speed"] },
+            base_friendship: { label: "Affetto Base", type: "number", operators: ["lt", "gt", "equals"] },
+            evolutions_count: { label: "Numero di Evoluzioni nella catena", type: "number", operators: ["lt", "gt", "equals"] },
+            evolution_stage: { label: "Posizione Catena Evolutiva", type: "select", options: ["first", "middle", "final", "only_stage"] },
+            habitat: { label: "Habitat", type: "select", options: ["cave", "forest", "grassland", "mountain", "rare", "rough-terrain", "sea", "urban", "waters-edge"] },
+            shape: { label: "Sagoma (Shape)", type: "select", options: ["ball", "squiggle", "fish", "arms", "wings", "quadruped", "bipedal_tail", "bipedal_no_tail", "multipedal", "tentacles", "heads", "bug_wings", "armor"] }
+        }
+    },
+        mosse: {
+        label: "Mosse / Movepool",
+        fields: {
+            power: { label: "Potenza Base (BP)", type: "number", operators: ["lt", "gt", "equals"] },
+            category: { label: "Categoria Mossa", type: "select", options: ["physical", "special", "status"] },
+            type: { label: "Tipo Mossa", type: "select", options: ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"] },
+            max_pp: { label: "PP Massimi", type: "number", operators: ["lt", "gt", "equals"] },
+            accuracy: { label: "Precisione base", type: "number", operators: ["lt", "gt", "equals"] },
+            priority: { label: "Priorità", type: "number", operators: ["lt", "gt", "equals"] },
+            movepool_size: { label: "Numero mosse totali imparabili", type: "number", operators: ["lt", "gt"] },
+            is_protect: { label: "È una mossa che protegge?", type: "boolean" },
+            is_contact: { label: "È una mossa da contatto?", type: "boolean" },
+            sound_based: { label: "È basata sul suono?", type: "boolean" },
+            projectile: { label: "È una mossa proiettile?", type: "boolean" },
+            punch: { label: "È una mossa pugno?", type: "boolean" },
+            claw: { label: "È una mossa artiglio?", type: "boolean" },
+            multi_hit: { label: "È una mossa multicolpo?", type: "boolean" },
+            healing: { label: "È una mossa che cura?", type: "boolean" },
+            multi_turn: { label: "È una mossa multiturno?", type: "boolean" },
+            has_secondary_effect: { label: "Ha effetti secondari?", type: "boolean" },
+            has_flinch: { label: "Ha chance di tentennamento (flinch)?", type: "boolean" },
+            target: { label: "Target della mossa", type: "select", options: ["single-target", "all-foes", "all-other-pokemon", "user"] }
+        }
+    },
+    strumenti: {
+        label: "Strumenti Tenuti",
+        fields: {
+            is_berry: { label: "È una bacca?", type: "boolean" },
+            is_consumable: { label: "È monouso / consumabile?", type: "boolean" },
+            is_healing: { label: "Fa recuperare PS?", type: "boolean" },
+            has_negative_effect: { label: "Ha effetti negativi sul portatore?", type: "boolean" }
+        }
+    },
+    team: {
+        label: "Regole Intero Team",
+        fields: {
+            unique_shapes: { label: "Tutti i Pokémon devono avere la STESSA SAGOMA", type: "boolean" },
+            unique_colors: { label: "Tutti i Pokémon devono avere lo STESSO COLORE", type: "boolean" },
+            monotype: { label: "Il Team dev'essere un Monotipo", type: "boolean" },
+            no_berries_allowed: { label: "Nessuna bacca consentita in tutto il team", type: "boolean" }
+        }
+    }
+};
+
+function apriCreazioneFormato() {
+    const modal = document.getElementById('format-modal');
+    const closeBtn = document.getElementById('close-format-modal');
+    const container = document.getElementById('dynamic-rules-container');
+
+    if (!modal) return;
+
+    // Reset sicuro dei campi di testo
+    const fName = document.getElementById('format-name');
+    const fDesc = document.getElementById('format-desc');
+    const fType = document.getElementById('format-type');
+    
+    if (fName) fName.value = "";
+    if (fDesc) fDesc.value = "";
+    if (fType) fType.value = "";
+    
+    // Reset sicuro sezione VGC Ufficiale
+    const vgcGen = document.getElementById('vgc-gen');
+    const vgcFormat = document.getElementById('vgc-format');
+    if (vgcGen) vgcGen.selectedIndex = 0;
+    if (vgcFormat) vgcFormat.selectedIndex = 0;
+
+    // Reset sicuro dei Campi Obbligatori (Impedisce i crash di esecuzione)
+    const mStyle = document.getElementById('mandatory-battle-style');
+    const mGenType = document.getElementById('mandatory-gen-type');
+    const mGenVal = document.getElementById('mandatory-gen-value');
+    const mTier = document.getElementById('mandatory-tier');
+    
+    if (mStyle) mStyle.selectedIndex = 0;
+    if (mGenType) mGenType.selectedIndex = 0;
+    if (mGenVal) mGenVal.selectedIndex = 0;
+    if (mTier) mTier.selectedIndex = 0;
+
+    // Nascondi le sezioni condizionali all'avvio
+    const secVgc = document.getElementById('section-official-vgc');
+    const secCustom = document.getElementById('section-custom-rules');
+    if (secVgc) secVgc.style.display = 'none';
+    if (secCustom) secCustom.style.display = 'none';
+
+    // Svuota le vecchie regole dinamiche accumulate
+    if (container) container.innerHTML = ""; 
+
+    // Mostra finalmente il modale con priorità alta
+    modal.style.setProperty('display', 'flex', 'important');
+
+    // Gestione chiusura ed eventi di click all'esterno
+    if (closeBtn) {
+        closeBtn.onclick = () => modal.style.setProperty('display', 'none', 'important');
+    }
+    modal.onclick = (e) => { 
+        if (e.target === modal) modal.style.setProperty('display', 'none', 'important'); 
+    };
+}
+
+// Questa funzione controlla cosa vede l'admin quando seleziona il tipo di formato
+function gestisciCambioTipoFormato(tipo) {
+    const sezioneVGC = document.getElementById('section-official-vgc');
+    const sezioneCustom = document.getElementById('section-custom-rules');
+    const badgeClausole = document.getElementById('clause-badge');
+    const containerRegole = document.getElementById('dynamic-rules-container');
+
+    // Reset visibilità
+    sezioneVGC.style.display = 'none';
+    sezioneCustom.style.display = 'none';
+
+    if (tipo === 'vgc') {
+        // Mostra solo la selezione VGC ufficiale
+        sezioneVGC.style.display = 'block';
+    } else if (tipo === 'custom') {
+        // Mostra il costruttore di regole + Badge Clausole Attive (Sleep, Species, Item Clause...)
+        sezioneCustom.style.display = 'block';
+        badgeClausole.innerText = "STANDARD CLAUSES ACTIVE";
+        badgeClausole.classList.remove('disabled');
+        
+        // Se non ci sono regole inserite, aggiungine una di default
+        if (containerRegole.children.length === 0) {
+            aggiungiRigaRegola();
+        }
+    } else if (tipo === 'anything_goes') {
+        // Mostra il costruttore di regole + Badge Clausole Disattivate (Liberi di duplicare pokemon/strumenti)
+        sezioneCustom.style.display = 'block';
+        badgeClausole.innerText = "ANYTHING GOES - NO CLAUSES";
+        badgeClausole.classList.add('disabled');
+        
+        if (containerRegole.children.length === 0) {
+            aggiungiRigaRegola();
+        }
+    }
+}
+
+let ruleCounter = 0;
+
+function aggiungiRigaRegola() {
+    ruleCounter++;
+    const container = document.getElementById('dynamic-rules-container');
+    
+    const row = document.createElement('div');
+    row.className = 'format-rule-row';
+    row.id = `rule-row-${ruleCounter}`;
+    
+    // 1. Select della Categoria principale
+    let categoryOptions = `<option value="">-- Scegli Categoria --</option>`;
+    Object.keys(MAPPA_DEFINIZIONE_REGOLE).forEach(cat => {
+        categoryOptions += `<option value="${cat}">${MAPPA_DEFINIZIONE_REGOLE[cat].label}</option>`;
+    });
+
+    row.innerHTML = `
+        <select class="select-category" onchange="aggiornaCampiRegola(${ruleCounter}, this.value)">
+            ${categoryOptions}
+        </select>
+        <div id="field-container-${ruleCounter}" class="inline-container"></div>
+        <div id="operator-container-${ruleCounter}" class="inline-container"></div>
+        <div id="value-container-${ruleCounter}" class="inline-container"></div>
+        <button type="button" class="btn-remove-rule" onclick="rimuoviRigaRegola(${ruleCounter})">&times;</button>
+    `;
+    
+    container.appendChild(row);
+}
+
+function rimuoviRigaRegola(id) {
+    const row = document.getElementById(`rule-row-${id}`);
+    if (row) row.remove();
+}
+
+// Viene eseguita quando l'admin sceglie o cambia la categoria (es. passa da Pokémon a Mosse)
+function aggiornaCampiRegola(id, categoria) {
+    const fieldContainer = document.getElementById(`field-container-${id}`);
+    const operatorContainer = document.getElementById(`operator-container-${id}`);
+    const valueContainer = document.getElementById(`value-container-${id}`);
+    
+    // Puliamo i container successivi
+    fieldContainer.innerHTML = "";
+    operatorContainer.innerHTML = "";
+    valueContainer.innerHTML = "";
+
+    if (!categoria || !MAPPA_DEFINIZIONE_REGOLE[categoria]) return;
+
+    const fields = MAPPA_DEFINIZIONE_REGOLE[categoria].fields;
+    let fieldOptions = `<option value="">-- Scegli Proprietà --</option>`;
+    Object.keys(fields).forEach(fKey => {
+        fieldOptions += `<option value="${fKey}">${fields[fKey].label}</option>`;
+    });
+
+    fieldContainer.innerHTML = `
+        <select class="select-field" onchange="aggiornaInputValore(${id}, '${categoria}', this.value)">
+            ${fieldOptions}
+        </select>
+    `;
+}
+
+// Viene eseguita quando l'admin sceglie la proprietà specifica (es: "Altezza" o "È una bacca?")
+function aggiornaInputValore(id, categoria, campo) {
+    const operatorContainer = document.getElementById(`operator-container-${id}`);
+    const valueContainer = document.getElementById(`value-container-${id}`);
+    
+    operatorContainer.innerHTML = "";
+    valueContainer.innerHTML = "";
+
+    if (!campo) return;
+
+    const infoCampo = MAPPA_DEFINIZIONE_REGOLE[categoria].fields[campo];
+    
+    // 1. Generazione dell'Operatore se necessario (maggiore, minore, uguale)
+    if (infoCampo.operators) {
+        let opOptions = "";
+        infoCampo.operators.forEach(op => {
+            let labelOp = op === "lt" ? "<" : op === "gt" ? ">" : op === "lte" ? "≤" : op === "gte" ? "≥" : "=";
+            opOptions += `<option value="${op}">${labelOp}</option>`;
+        });
+        operatorContainer.innerHTML = `<select class="select-operator">${opOptions}</select>`;
+    } else {
+        // Se non ci sono operatori (es. è un campo booleano SI/NO), inseriamo un operatore nascosto "equals" implicito
+        operatorContainer.innerHTML = `<input type="hidden" class="select-operator" value="equals">`;
+    }
+
+    // 2. Generazione dell'Input del Valore effettivo in base al tipo nel Dizionario
+    if (infoCampo.type === "number") {
+        valueContainer.innerHTML = `<input type="number" class="input-value" placeholder="Valore numerico">`;
+    } else if (infoCampo.type === "text_length") {
+        valueContainer.innerHTML = `<input type="text" class="input-value" maxlength="1" placeholder="Lettera">`;
+    } else if (infoCampo.type === "boolean") {
+        valueContainer.innerHTML = `
+            <select class="input-value">
+                <option value="true">SÌ</option>
+                <option value="false">NO</option>
+            </select>
+        `;
+    } else if (infoCampo.type === "select") {
+        let selectOptions = "";
+        infoCampo.options.forEach(opt => {
+            selectOptions += `<option value="${opt}">${opt.toUpperCase()}</option>`;
+        });
+        valueContainer.innerHTML = `<select class="input-value">${selectOptions}</select>`;
     }
 }
 
