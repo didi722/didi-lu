@@ -419,8 +419,8 @@ function aggiungiRigaRegola() {
             ${categoryOptions}
         </select>
         <div id="field-container-${ruleCounter}" class="inline-container"></div>
+        <div id="value-container-${ruleCounter}" class="inline-container"></div>        
         <div id="operator-container-${ruleCounter}" class="inline-container"></div>
-        <div id="value-container-${ruleCounter}" class="inline-container"></div>
         <button type="button" class="btn-remove-rule" onclick="rimuoviRigaRegola(${ruleCounter})">&times;</button>
     `;
     
@@ -464,29 +464,34 @@ function aggiornaInputValore(id, categoria, campo) {
     
     if (!operatorContainer || !valueContainer) return;
     
+    // 1. RIPRISTINA L'ORDINE STANDARD DI DEFAULT (Risolve il bug della foto!)
     operatorContainer.innerHTML = "";
     valueContainer.innerHTML = "";
+    operatorContainer.style.order = "";
+    valueContainer.style.order = "";
 
     if (!campo) return;
 
     const infoCampo = MAPPA_DEFINIZIONE_REGOLE[categoria].fields[campo];
     
-    // 1. GENERAZIONE DELL'OPERATORE (con ID per poterlo bloccare/sbloccare)
+    // 2. GENERAZIONE DELL'OPERATORE BASE
+    let opHtml = "";
     if (infoCampo.operators) {
         let opOptions = "";
         infoCampo.operators.forEach(op => {
             let labelOp = op === "lt" ? "<" : op === "gt" ? ">" : op === "lte" ? "≤" : op === "gte" ? "≥" : "=";
             opOptions += `<option value="${op}">${labelOp}</option>`;
         });
-        operatorContainer.innerHTML = `<select class="select-operator" id="operator-${id}">${opOptions}</select>`;
+        opHtml = `<select class="select-operator" id="operator-${id}">${opOptions}</select>`;
     } else {
-        operatorContainer.innerHTML = `<input type="hidden" class="select-operator" id="operator-${id}" value="equals">`;
+        opHtml = `<input type="hidden" class="select-operator" id="operator-${id}" value="equals">`;
     }
+    operatorContainer.innerHTML = opHtml;
 
-    // 2. GENERAZIONE DEL VALORE (Logica "STESSO VALORE" Universale per i Pokémon)
+    // 3. LOGICA DI GENERAZIONE DEI VALORI CON INVERSIONE SELETTIVA
     if (categoria === "pokemon") {
         if (infoCampo.type === "select") {
-            // Per i menu a tendina (Sagoma, Tipo, Habitat, Colore...)
+            // Menu a tendina nativi (Sagoma, Tipo...): mantengono ordine standard [Op] [Select]
             let selectOptions = `<option value="">-- Scegli Valore --</option>`;
             selectOptions += `<option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">👥 TUTTI CON LO STESSO VALORE</option>`;
             infoCampo.options.forEach(opt => {
@@ -497,26 +502,34 @@ function aggiornaInputValore(id, categoria, campo) {
                     ${selectOptions}
                 </select>
             `;
-        } else if (infoCampo.type === "number" || infoCampo.type === "text_length") {
-            // Per TUTTI i campi numerici (Peso, Altezza, BST...) e di testo (Lettera)
+        } 
+        else if (infoCampo.type === "number" || infoCampo.type === "text_length") {
+            // INVERSIONE DINAMICA SOLO PER I CAMPI IBRIDI (Peso, Altezza, BST, Lettera...)
+            valueContainer.style.order = "3";     // Sposta la modalità a sinistra dell'operatore
+            operatorContainer.style.order = "4";  // Sposta l'operatore a destra della modalità
+            
+            // Nel valueContainer inseriamo ESCLUSIVAMENTE il selettore di modalità
+            valueContainer.innerHTML = `
+                <select class="select-mode" style="width: 100%;" onchange="gestisciCambioModalitaInput(${id}, this.value)">
+                    <option value="SPECIFIC">Valore Specifico...</option>
+                    <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">👥 TUTTI CON LO STESSO VALORE</option>
+                </select>
+            `;
+
+            // Prepariamo la casella di inserimento (Numero o Lettera)
             let placeholderTesto = infoCampo.type === "number" ? "Numero" : "Lettera";
             let inputHtml = infoCampo.type === "number" 
-                ? `<input type="number" class="input-value" placeholder="${placeholderTesto}">`
-                : `<input type="text" class="input-value" maxlength="1" placeholder="${placeholderTesto}">`;
+                ? `<input type="number" class="input-value" placeholder="${placeholderTesto}" style="margin-left: 10px; max-width: 120px;">`
+                : `<input type="text" class="input-value" maxlength="1" placeholder="${placeholderTesto}" style="margin-left: 10px; max-width: 80px;">`;
 
-            valueContainer.innerHTML = `
-                <div class="hybrid-input-wrapper" style="display: flex; gap: 10px; width: 100%; align-items: center;">
-                    <select class="select-mode" style="flex: 1;" onchange="gestisciCambioModalitaInput(${id}, this.value)">
-                        <option value="SPECIFIC">Valore Specifico...</option>
-                        <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">👥 TUTTI CON LO STESSO VALORE</option>
-                    </select>
-                    <div id="custom-field-box-${id}" style="flex: 1; width: 100%;">
-                        ${inputHtml}
-                    </div>
-                </div>
-            `;
-        } else if (infoCampo.type === "boolean") {
-            // Caso speciale se ci fossero campi SI/NO futuri nei Pokémon
+            // La inseriamo all'interno di operatorContainer, subito DOPO il simbolo (<, >, =)
+            operatorContainer.insertAdjacentHTML('beforeend', `
+                <span id="custom-field-box-${id}" style="display: inline-block;">
+                    ${inputHtml}
+                </span>
+            `);
+        } 
+        else if (infoCampo.type === "boolean") {
             valueContainer.innerHTML = `
                 <select class="input-value">
                     <option value="true">SÌ</option>
@@ -525,15 +538,13 @@ function aggiornaInputValore(id, categoria, campo) {
             `;
         }
     } else {
-        // CATEGORIE STANDARD (Mosse, Strumenti) -> Nessun vincolo globale di team richiesto
+        // TUTTE LE ALTRE CATEGORIE (Mosse, Strumenti) -> Mantengono l'ordine classico impeccabile [Op] [Input]
         if (infoCampo.type === "number") {
             valueContainer.innerHTML = `<input type="number" class="input-value" placeholder="Valore numerico">`;
         } else if (infoCampo.type === "text_length") {
             valueContainer.innerHTML = `<input type="text" class="input-value" maxlength="1" placeholder="Lettera">`;
         } else if (infoCampo.type === "boolean") {
-            valueContainer.innerHTML = `
-                <select class="input-value"><option value="true">SÌ</option><option value="false">NO</option></select>
-            `;
+            valueContainer.innerHTML = `<select class="input-value"><option value="true">SÌ</option><option value="false">NO</option></select>`;
         } else if (infoCampo.type === "select") {
             let selectOptions = `<option value="">-- Scegli Valore --</option>`;
             infoCampo.options.forEach(opt => {
