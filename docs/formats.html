@@ -40,6 +40,7 @@
     </div>
 </div>
 
+<div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
@@ -264,61 +265,108 @@ function handleAuthClick() {
         toggleLoginModal();
     } else {
         const menu = document.getElementById('user-menu');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        const overlay = document.getElementById('menu-overlay');
+        
+        if (menu) {
+            if (menu.style.display === 'block') {
+                // Se è aperto, lo chiudiamo e togliamo il blur
+                menu.style.display = 'none';
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+                console.log("Stato: Menu chiuso al click su auth-content");
+            } else {
+                // Se è chiuso, lo apriamo e attiviamo il blur dello schermo
+                menu.style.display = 'block';
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    // Il piccolo timeout garantisce che la transizione CSS dell'opacity funzioni fluidamente
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+                console.log("Stato: Menu aperto e schermo sfocato");
+            }
+        }
     }
 }
+
+function chiudiMenuConOverlay() {
+    const menu = document.getElementById('user-menu');
+    const overlay = document.getElementById('menu-overlay');
+    
+    if (menu) menu.style.display = 'none';
+    
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+    console.log("Stato: Menu chiuso via overlay");
+}
+
+// Listener globale per i click esterni aggiornato
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (controllo basato su 'block')
+    if (menu && menu.style.display === 'block') {
+        // Se l'utente clicca fuori dal menu e fuori dal pulsante di login
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            chiudiMenuConOverlay();
+        }
+    }
+});
 
 const MAPPA_DEFINIZIONE_REGOLE = {
     pokemon: {
         label: "Pokémon",
         fields: {
-            name_starts: { label: "Lettera Iniziale Nome", type: "text_length", operators: ["equals"] },
-            name_length: { label: "Lunghezza Nome (Caratteri)", type: "number", operators: ["lt", "gt", "equals"] },
-            height: { label: "Altezza (metri)", type: "number", operators: ["lt", "gt"] },
-            weight: { label: "Peso (kg)", type: "number", operators: ["lt", "gt"] },
-            type: { label: "Tipo Pokémon", type: "select", options: ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"] },
-            color: { label: "Colore di base", type: "select", options: ["black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow"] },
-            egg_group: { label: "Gruppo Uova", type: "select", options: ["monster", "water1", "bug", "flying", "field", "fairy", "grass", "human-shape", "water3", "mineral", "amorphous", "water2", "ditto", "dragon", "no-eggs"] },
-            bst: { label: "Statistiche Base Totali (BST)", type: "number", operators: ["lt", "gt", "lte", "gte", "equals"] },
-            highest_stat: { label: "Statistica più alta", type: "select", options: ["hp", "attack", "defense", "special-attack", "special-defense", "speed"] },
+            name_starts: { label: "Letter", type: "text_length", operators: ["equals"] },
+            name_length: { label: "Name lenght", type: "number", operators: ["lt", "gt", "equals"] },
+            height: { label: "Height (m)", type: "number", operators: ["lt", "gt"] },
+            weight: { label: "Weight (kg)", type: "number", operators: ["lt", "gt"] },
+            type: { label: "Type", type: "select", options: ["Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"] },
+            color: { label: "Color", type: "select", options: ["Black", "Blue", "Brown", "Gray", "Green", "Pink", "Purple", "Red", "White", "Yellow"] },
+            egg_group: { label: "Egg group", type: "select", options: ["Monster", "Water1", "Bug", "Flying", "Field", "Fairy", "Grass", "Human-shape", "Water3", "Mineral", "Amorphous", "Water2", "Ditto", "Dragon", "No-eggs"] },
+            bst: { label: "BST", type: "number", operators: ["lt", "gt", "lte", "gte", "equals"] },
+            highest_stat: { label: "Best stat", type: "select", options: ["HP", "Attack", "Defense", "Sp. Attack", "Sp. defense", "Speed"] },
             base_friendship: { label: "Affetto Base", type: "number", operators: ["lt", "gt", "equals"] },
-            evolutions_count: { label: "Numero di Evoluzioni nella catena", type: "number", operators: ["lt", "gt", "equals"] },
-            evolution_stage: { label: "Posizione Catena Evolutiva", type: "select", options: ["first", "middle", "final", "only_stage"] },
-            habitat: { label: "Habitat", type: "select", options: ["cave", "forest", "grassland", "mountain", "rare", "rough-terrain", "sea", "urban", "waters-edge"] },
-            shape: { label: "Sagoma (Shape)", type: "select", options: ["ball", "squiggle", "fish", "arms", "wings", "quadruped", "bipedal_tail", "bipedal_no_tail", "multipedal", "tentacles", "heads", "bug_wings", "armor"] }
+            evolutions_count: { label: "Evolution number", type: "number", operators: ["lt", "gt", "equals"] },
+            evolution_stage: { label: "Evolution chain position", type: "select", options: ["First", "Middle", "Final", "Only_stage"] },
+            habitat: { label: "Habitat", type: "select", options: ["Cave", "Forest", "Grassland", "Mountain", "Rare", "Rough-terrain", "Sea", "Urban", "Waters-edge"] },
+            shape: { label: "Shape", type: "select", options: ["Ball", "Squiggle", "Fish", "Arms", "Wings", "Quadruped", "Bipedal_tail", "Bipedal_no_tail", "Multipedal", "Tentacles", "Heads", "Bug_wings", "Armor"] }
         }
     },
     mosse: {
-        label: "Mosse / Movepool",
+        label: "Moves",
         fields: {
-            power: { label: "Potenza Base (BP)", type: "number", operators: ["lt", "gt", "equals"] },
-            category: { label: "Categoria Mossa", type: "select", options: ["physical", "special", "status"] },
-            type: { label: "Tipo Mossa", type: "select", options: ["normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"] },
-            max_pp: { label: "PP Massimi", type: "number", operators: ["lt", "gt", "equals"] },
-            accuracy: { label: "Precisione base", type: "number", operators: ["lt", "gt", "equals"] },
-            priority: { label: "Priorità", type: "number", operators: ["lt", "gt", "equals"] },
-            movepool_size: { label: "Numero mosse totali imparabili", type: "number", operators: ["lt", "gt"] },
-            is_protect: { label: "È una mossa che protegge?", type: "boolean" },
-            is_contact: { label: "È una mossa da contatto?", type: "boolean" },
-            sound_based: { label: "È basata sul suono?", type: "boolean" },
-            projectile: { label: "È una mossa proiettile?", type: "boolean" },
-            punch: { label: "È una mossa pugno?", type: "boolean" },
-            claw: { label: "È una mossa artiglio?", type: "boolean" },
-            multi_hit: { label: "È una mossa multicolpo?", type: "boolean" },
-            healing: { label: "È una mossa che cura?", type: "boolean" },
-            multi_turn: { label: "È una mossa multiturno?", type: "boolean" },
-            has_secondary_effect: { label: "Ha effetti secondari?", type: "boolean" },
-            has_flinch: { label: "Ha chance di tentennamento (flinch)?", type: "boolean" },
-            target: { label: "Target della mossa", type: "select", options: ["single-target", "all-foes", "all-other-pokemon", "user"] }
+            power: { label: "Base power", type: "number", operators: ["lt", "gt", "equals"] },
+            category: { label: "Category", type: "select", options: ["Physical", "Special", "Status"] },
+            type: { label: "Type", type: "select", options: ["Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"] },
+            max_pp: { label: "Max PP", type: "number", operators: ["lt", "gt", "equals"] },
+            accuracy: { label: "Precision", type: "number", operators: ["lt", "gt", "equals"] },
+            priority: { label: "Priority", type: "number", operators: ["lt", "gt", "equals"] },
+            movepool_size: { label: "Max. moves", type: "number", operators: ["lt", "gt"] },
+            is_protect: { label: "Protect move", type: "boolean" },
+            is_contact: { label: "Contact move", type: "boolean" },
+            sound_based: { label: "Sound-based move", type: "boolean" },
+            punch: { label: "Punch move", type: "boolean" },
+            claw: { label: "Claw move", type: "boolean" },
+            multi_hit: { label: "Multi-hit move", type: "boolean" },
+            healing: { label: "Heal move", type: "boolean" },
+            multi_turn: { label: "Multi-turn move", type: "boolean" },
+            has_secondary_effect: { label: "Seconday effects", type: "boolean" },
+            has_flinch: { label: "Flinch", type: "boolean" },
+            target: { label: "Target", type: "select", options: ["Single-target", "All-foes", "All-other-pokemon", "User"] }
         }
     },
     strumenti: {
-        label: "Strumenti Tenuti",
+        label: "Items",
         fields: {
-            is_berry: { label: "È una bacca?", type: "boolean" },
-            is_consumable: { label: "È monouso / consumabile?", type: "boolean" },
-            is_healing: { label: "Fa recuperare PS?", type: "boolean" },
-            has_negative_effect: { label: "Ha effetti negativi sul portatore?", type: "boolean" }
+            is_berry: { label: "Berries", type: "boolean" },
+            is_consumable: { label: "Consumable", type: "boolean" },
+            is_healing: { label: "Healing", type: "boolean" },
+            has_negative_effect: { label: "Self-damaging", type: "boolean" }
         }
     }
 };
@@ -359,6 +407,10 @@ function apriCreazioneFormato() {
     if (secCustom) secCustom.style.display = 'none';
 
     if (container) container.innerHTML = ""; 
+
+    // NASCONDI IL RIEPILOGO DEGLI ERRORI AL RESET DEL FORM
+    const boxErrore = document.getElementById('rules-error-summary');
+    if (boxErrore) boxErrore.style.display = 'none';
 
     modal.style.setProperty('display', 'flex', 'important');
 
@@ -405,6 +457,13 @@ function aggiungiRigaRegola() {
     const container = document.getElementById('dynamic-rules-container');
     if (!container) return;
     
+    // Aggancia l'ascolto degli input globali sul container se non è ancora stato fatto
+    if (!container.dataset.listenerActive) {
+        container.addEventListener('input', eseguiControlloConflitti);
+        container.addEventListener('change', eseguiControlloConflitti);
+        container.dataset.listenerActive = "true";
+    }
+    
     const row = document.createElement('div');
     row.className = 'format-rule-row';
     row.id = `rule-row-${ruleCounter}`;
@@ -415,7 +474,7 @@ function aggiungiRigaRegola() {
     });
 
     row.innerHTML = `
-        <select class="select-category" onchange="aggiornaCampiRegola(${ruleCounter}, this.value)">
+        <select class="select-category" onchange="aggiornaCampiRegola(${ruleCounter}, this.value); eseguiControlloConflitti();">
             ${categoryOptions}
         </select>
         <div id="field-container-${ruleCounter}" class="inline-container"></div>
@@ -425,11 +484,15 @@ function aggiungiRigaRegola() {
     `;
     
     container.appendChild(row);
+    eseguiControlloConflitti(); // Esegui al volo
 }
 
 function rimuoviRigaRegola(id) {
     const row = document.getElementById(`rule-row-${id}`);
-    if (row) row.remove();
+    if (row) {
+        row.remove();
+        eseguiControlloConflitti(); // Ricalcola i conflitti non appena una riga scompare
+    }
 }
 
 function aggiornaCampiRegola(id, categoria) {
@@ -446,7 +509,7 @@ function aggiornaCampiRegola(id, categoria) {
     if (!categoria || !MAPPA_DEFINIZIONE_REGOLE[categoria]) return;
 
     const fields = MAPPA_DEFINIZIONE_REGOLE[categoria].fields;
-    let fieldOptions = `<option value="">-- Scegli Proprietà --</option>`;
+    let fieldOptions = `<option value="">-- Choose Restriction --</option>`;
     Object.keys(fields).forEach(fKey => {
         fieldOptions += `<option value="${fKey}">${fields[fKey].label}</option>`;
     });
@@ -458,101 +521,139 @@ function aggiornaCampiRegola(id, categoria) {
     `;
 }
 
+
+
+
 function aggiornaInputValore(id, categoria, campo) {
     const operatorContainer = document.getElementById(`operator-container-${id}`);
     const valueContainer = document.getElementById(`value-container-${id}`);
     
     if (!operatorContainer || !valueContainer) return;
     
-    // 1. RIPRISTINA L'ORDINE STANDARD DI DEFAULT (Risolve il bug della foto!)
+    // 1. RIPRISTINA L'ORDINE STANDARD DI DEFAULT SU OGNI CAMBIO
     operatorContainer.innerHTML = "";
     valueContainer.innerHTML = "";
     operatorContainer.style.order = "";
     valueContainer.style.order = "";
 
-    if (!campo) return;
+    if (!campo) {
+        // Se il campo viene svuotato, ricalcola comunque i conflitti per ripulire lo stato
+        eseguiControlloConflitti();
+        return;
+    }
 
     const infoCampo = MAPPA_DEFINIZIONE_REGOLE[categoria].fields[campo];
     
-    // 2. GENERAZIONE DELL'OPERATORE BASE
+    // 2. GENERAZIONE DELL'OPERATORE (Valido per tutti i campi numerici di qualsiasi categoria)
     let opHtml = "";
-    if (infoCampo.operators) {
+    if (infoCampo.operators || infoCampo.type === "number") {
+        let ops = infoCampo.operators ? [...infoCampo.operators] : ["equals"];
+        
+        // Forza l'inserimento dell'intervallo "between" per qualsiasi tipo numerico
+        if (infoCampo.type === "number" && !ops.includes("between")) {
+            ops.push("between");
+        }
+        
         let opOptions = "";
-        infoCampo.operators.forEach(op => {
-            let labelOp = op === "lt" ? "<" : op === "gt" ? ">" : op === "lte" ? "≤" : op === "gte" ? "≥" : "=";
+        ops.forEach(op => {
+            let labelOp = op === "lt" ? "<" : 
+                          op === "gt" ? ">" : 
+                          op === "lte" ? "≤" : 
+                          op === "gte" ? "≥" : 
+                          op === "between" ? "Between" : "=";
             opOptions += `<option value="${op}">${labelOp}</option>`;
         });
-        opHtml = `<select class="select-operator" id="operator-${id}">${opOptions}</select>`;
+        // Aggiunto trigger eseguiControlloConflitti al cambio dell'operatore matematico
+        opHtml = `<select class="select-operator" id="operator-${id}" onchange="renderizzaInputNumerici(${id}, '${categoria}', '${campo}'); eseguiControlloConflitti();">${opOptions}</select>`;
     } else {
         opHtml = `<input type="hidden" class="select-operator" id="operator-${id}" value="equals">`;
     }
     operatorContainer.innerHTML = opHtml;
 
-    // 3. LOGICA DI GENERAZIONE DEI VALORI CON INVERSIONE SELETTIVA
-    if (categoria === "pokemon") {
-        if (infoCampo.type === "select") {
-            // Menu a tendina nativi (Sagoma, Tipo...): mantengono ordine standard [Op] [Select]
-            let selectOptions = `<option value="">-- Scegli Valore --</option>`;
-            selectOptions += `<option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">👥 TUTTI CON LO STESSO VALORE</option>`;
-            infoCampo.options.forEach(opt => {
-                selectOptions += `<option value="${opt}">${opt.toUpperCase()}</option>`;
-            });
-            valueContainer.innerHTML = `
-                <select class="input-value" onchange="controllaOperatorePerTeam(${id}, this.value)">
-                    ${selectOptions}
-                </select>
-            `;
-        } 
-        else if (infoCampo.type === "number" || infoCampo.type === "text_length") {
-            // INVERSIONE DINAMICA SOLO PER I CAMPI IBRIDI (Peso, Altezza, BST, Lettera...)
-            valueContainer.style.order = "3";     // Sposta la modalità a sinistra dell'operatore
-            operatorContainer.style.order = "4";  // Sposta l'operatore a destra della modalità
-            
-            // Nel valueContainer inseriamo ESCLUSIVAMENTE il selettore di modalità
-            valueContainer.innerHTML = `
-                <select class="select-mode" style="width: 100%;" onchange="gestisciCambioModalitaInput(${id}, this.value)">
-                    <option value="SPECIFIC">Valore Specifico...</option>
-                    <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">👥 TUTTI CON LO STESSO VALORE</option>
-                </select>
-            `;
+    // 3. LOGICA DI RENDERING UNIFICATA PER TIPO DI DATO
+    
+    if (infoCampo.type === "select") {
+        // MENU A TENDINA (Tipi, Categorie Mosse, Sagome, Target...)
+        let selectOptions = `<option value="">-- Choose --</option>`;
+        selectOptions += `<option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>`;
+        infoCampo.options.forEach(opt => {
+            selectOptions += `<option value="${opt}">${opt}</option>`;
+        });
+        // Aggiunto trigger eseguiControlloConflitti al cambio della tendina stringa/team
+        valueContainer.innerHTML = `
+            <select class="input-value" onchange="controllaOperatorePerTeam(${id}, this.value); eseguiControlloConflitti();">
+                ${selectOptions}
+            </select>
+        `;
+    } 
+    else if (infoCampo.type === "number" || infoCampo.type === "text_length") {
+        // CAMPI NUMERICI O STRINGHE CORTE (BST, Altezza, Potenza mossa, PP, Lettera iniziale...)
+        // Applichiamo l'inversione flex per posizionare l'operatore PRIMA dei box di input
+        valueContainer.style.order = "3";     
+        operatorContainer.style.order = "4";  
+        
+        // Aggiunto trigger eseguiControlloConflitti al cambio di modalità Is.. / Same
+        valueContainer.innerHTML = `
+            <select class="select-mode" style="width: 100%;" onchange="gestisciCambioModalitaInput(${id}, this.value); eseguiControlloConflitti();">
+                <option value="SPECIFIC">Is...</option>
+                <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>
+            </select>
+        `;
 
-            // Prepariamo la casella di inserimento (Numero o Lettera)
-            let placeholderTesto = infoCampo.type === "number" ? "Numero" : "Lettera";
-            let inputHtml = infoCampo.type === "number" 
-                ? `<input type="number" class="input-value" placeholder="${placeholderTesto}" style="margin-left: 10px; max-width: 120px;">`
-                : `<input type="text" class="input-value" maxlength="1" placeholder="${placeholderTesto}" style="margin-left: 10px; max-width: 80px;">`;
+        // Prepariamo la scatola che conterrà dinamicamente gli input numerici (1 casella o 2 caselle per il Between)
+        operatorContainer.insertAdjacentHTML('beforeend', `
+            <span id="custom-field-box-${id}" style="display: inline-block;"></span>
+        `);
+        
+        // Renderizziamo i box numerici iniziali
+        renderizzaInputNumerici(id, categoria, campo);
+    } 
+    else if (infoCampo.type === "boolean") {
+        // CAMPI DI TIPO RESTRIZIONE SI/NO o ONLY/NO
+        // Se siamo negli strumenti usiamo ONLY/NO (es: "Berries: ONLY"), altrimenti lasciamo YES/NO per le mosse
+        const labelVero = (categoria === "strumenti") ? "ONLY" : "YES";
+        const labelFalso = "NO";
 
-            // La inseriamo all'interno di operatorContainer, subito DOPO il simbolo (<, >, =)
-            operatorContainer.insertAdjacentHTML('beforeend', `
-                <span id="custom-field-box-${id}" style="display: inline-block;">
-                    ${inputHtml}
-                </span>
-            `);
-        } 
-        else if (infoCampo.type === "boolean") {
-            valueContainer.innerHTML = `
-                <select class="input-value">
-                    <option value="true">SÌ</option>
-                    <option value="false">NO</option>
-                </select>
-            `;
-        }
+        // Aggiunto trigger eseguiControlloConflitti al cambio del valore Booleano/Restrizione
+        valueContainer.innerHTML = `
+            <select class="input-value" onchange="eseguiControlloConflitti();">
+                <option value="true" style="font-weight: bold; color: #22c55e;">${labelVero}</option>
+                <option value="false" style="font-weight: bold; color: #ef4444;">${labelFalso}</option>
+            </select>
+        `;
+    }
+
+    // Esegue istantaneamente un controllo non appena i campi di input vengono rigenerati
+    eseguiControlloConflitti();
+}
+
+function renderizzaInputNumerici(id, categoria, campo) {
+    const infoCampo = MAPPA_DEFINIZIONE_REGOLE[categoria].fields[campo];
+    const operatorSelect = document.getElementById(`operator-${id}`);
+    const operatore = operatorSelect ? operatorSelect.value : "equals";
+    
+    // Essendo il layout ora speculare e simmetrico per tutti, il target è sempre il custom-field-box
+    const targetContainer = document.getElementById(`custom-field-box-${id}`);
+    if (!targetContainer) return;
+    
+    let html = "";
+    if (operatore === "between") {
+        // DOPPIO INPUT PER IL RANGE (Allineamento Neubrutalist pulito)
+        html = `
+            <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+            <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
+            <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+        `;
     } else {
-        // TUTTE LE ALTRE CATEGORIE (Mosse, Strumenti) -> Mantengono l'ordine classico impeccabile [Op] [Input]
+        // CHIP DI INPUT SINGOLO CLASSICO
         if (infoCampo.type === "number") {
-            valueContainer.innerHTML = `<input type="number" class="input-value" placeholder="Valore numerico">`;
+            html = `<input type="number" class="input-value" placeholder="Value" style="margin-left: 10px; max-width: 120px;">`;
         } else if (infoCampo.type === "text_length") {
-            valueContainer.innerHTML = `<input type="text" class="input-value" maxlength="1" placeholder="Lettera">`;
-        } else if (infoCampo.type === "boolean") {
-            valueContainer.innerHTML = `<select class="input-value"><option value="true">SÌ</option><option value="false">NO</option></select>`;
-        } else if (infoCampo.type === "select") {
-            let selectOptions = `<option value="">-- Scegli Valore --</option>`;
-            infoCampo.options.forEach(opt => {
-                selectOptions += `<option value="${opt}">${opt.toUpperCase()}</option>`;
-            });
-            valueContainer.innerHTML = `<select class="input-value">${selectOptions}</select>`;
+            html = `<input type="text" class="input-value" maxlength="1" placeholder="Letter" style="margin-left: 10px; max-width: 80px;">`;
         }
     }
+    
+    targetContainer.innerHTML = html;
 }
 
 function gestisciCambioModalitaInput(id, modalita) {
@@ -562,17 +663,17 @@ function gestisciCambioModalitaInput(id, modalita) {
     if (!customFieldBox) return;
 
     if (modalita === "SAME_ACROSS_TEAM") {
-        customFieldBox.style.display = "none"; // Nasconde l'input numerico/testo
+        customFieldBox.style.display = "none"; 
         if (operatorSelect) {
             operatorSelect.value = "equals"; // Forza su "="
             operatorSelect.style.opacity = "0.5";
-            operatorSelect.style.pointerEvents = "none"; // Disattiva il selettore operatore
+            operatorSelect.style.pointerEvents = "none"; 
         }
     } else {
-        customFieldBox.style.display = "block"; // Mostra l'input numerico/testo
+        customFieldBox.style.display = "inline-block"; // Mantieni inline-block coerente
         if (operatorSelect) {
             operatorSelect.style.opacity = "1";
-            operatorSelect.style.pointerEvents = "auto"; // Riattiva l'operatore
+            operatorSelect.style.pointerEvents = "auto"; 
         }
     }
 }
@@ -588,6 +689,176 @@ function controllaOperatorePerTeam(id, valore) {
     } else {
         operatorSelect.style.opacity = "1";
         operatorSelect.style.pointerEvents = "auto";
+    }
+}
+
+// Funzione per raccogliere lo stato attuale di tutte le regole inserite nel DOM
+function raccogliDatiRegole() {
+    const rows = document.querySelectorAll('.format-rule-row');
+    const data = [];
+    
+    rows.forEach(row => {
+        const id = row.id.replace('rule-row-', '');
+        const catSelect = row.querySelector('.select-category');
+        const fieldSelect = row.querySelector('.select-field');
+        
+        if (!catSelect || !fieldSelect || !catSelect.value || !fieldSelect.value) return;
+
+        const category = catSelect.value;
+        const field = fieldSelect.value;
+        
+        const modeSelect = row.querySelector('.select-mode');
+        const mode = modeSelect ? modeSelect.value : "SPECIFIC";
+        
+        const opSelect = row.querySelector('.select-operator');
+        const operator = opSelect ? opSelect.value : "equals";
+        
+        let value = null;
+        let min = null;
+        let max = null;
+        
+        const valSelect = row.querySelector('.input-value:not(.range-min):not(.range-max)');
+        const minInput = row.querySelector('.range-min');
+        const maxInput = row.querySelector('.range-max');
+        
+        if (operator === "between") {
+            min = minInput && minInput.value !== "" ? parseFloat(minInput.value) : null;
+            max = maxInput && maxInput.value !== "" ? parseFloat(maxInput.value) : null;
+        } else if (valSelect) {
+            value = valSelect.value;
+            const info = MAPPA_DEFINIZIONE_REGOLE[category].fields[field];
+            if (info.type === "number") {
+                value = valSelect.value !== "" ? parseFloat(valSelect.value) : null;
+            }
+        }
+        
+        data.push({ id, rowElement: row, category, field, mode, operator, value, min, max });
+    });
+    return data;
+}
+
+// Funzione matematica per verificare se due vincoli numerici creano un intervallo impossibile
+function verificaConflittoNumerico(a, b) {
+    let minA = -Infinity, maxA = Infinity;
+    let incMinA = true, incMaxA = true;
+    
+    if (a.operator === "equals") { minA = a.value; maxA = a.value; }
+    else if (a.operator === "lt") { maxA = a.value; incMaxA = false; }
+    else if (a.operator === "lte") { maxA = a.value; incMaxA = true; }
+    else if (a.operator === "gt") { minA = a.value; incMinA = false; }
+    else if (a.operator === "gte") { minA = a.value; incMinA = true; }
+    else if (a.operator === "between") { minA = a.min !== null ? a.min : -Infinity; maxA = a.max !== null ? a.max : Infinity; }
+
+    let minB = -Infinity, maxB = Infinity;
+    let incMinB = true, incMaxB = true;
+    
+    if (b.operator === "equals") { minB = b.value; maxB = b.value; }
+    else if (b.operator === "lt") { maxB = b.value; incMaxB = false; }
+    else if (b.operator === "lte") { maxB = b.value; incMaxB = true; }
+    else if (b.operator === "gt") { minB = b.value; incMinB = false; }
+    else if (b.operator === "gte") { minB = b.value; incMinB = true; }
+    else if (b.operator === "between") { minB = b.min !== null ? b.min : -Infinity; maxB = b.max !== null ? b.max : Infinity; }
+
+    if (minA === -Infinity && maxA === Infinity || minB === -Infinity && maxB === Infinity) return false;
+
+    // Se i due intervalli non si intersecano, c'è un conflitto logico
+    if (minA > maxB || minB > maxA) return true;
+    if (minA === maxB && (!incMinA || !incMaxB)) return true;
+    if (minB === maxA && (!incMinB || !incMaxA)) return true;
+    
+    return false;
+}
+
+// Funzione principale di validazione ed evidenziazione errori
+function eseguiControlloConflitti() {
+    const regole = raccogliDatiRegole();
+    const IDConflitti = new Set();
+    const messaggiErrore = [];
+
+    // Ripristina lo stato grafico di default per tutte le righe prima del controllo
+    regole.forEach(r => {
+        r.rowElement.style.border = "";
+        r.rowElement.style.background = "";
+    });
+
+    // 1. Controllo di coerenza interna alla singola riga (es. Between Min > Max)
+    regole.forEach(r => {
+        if (r.operator === "between" && r.min !== null && r.max !== null && r.min > r.max) {
+            IDConflitti.add(r.id);
+            messaggiErrore.push(`Rule #${r.id}: Il valore Minimo non può essere maggiore del Massimo.`);
+        }
+    });
+
+    // 2. Controllo incrociato combinatorio tra coppie di righe
+    for (let i = 0; i < regole.length; i++) {
+        for (let j = i + 1; j < regole.length; j++) {
+            const rA = regole[i];
+            const rB = regole[j];
+
+            if (rA.category !== rB.category) continue;
+
+            const labelCategoria = MAPPA_DEFINIZIONE_REGOLE[rA.category].label;
+            const infoCampo = MAPPA_DEFINIZIONE_REGOLE[rA.category].fields[rA.field];
+
+            // CASO A: Conflitto sullo stesso campo (es. Altezza < 100 e Altezza > 120)
+            if (rA.field === rB.field) {
+                if (rA.mode === "SPECIFIC" && rB.mode === "SPECIFIC") {
+                    if (infoCampo.type === "number") {
+                        if (verificaConflittoNumerico(rA, rB)) {
+                            IDConflitti.add(rA.id);
+                            IDConflitti.add(rB.id);
+                            messaggiErrore.push(`Contradiction in ${labelCategoria} (${infoCampo.label}): Conflict in numerical restrictions.`);
+                        }
+                    } else if (infoCampo.type === "select" || infoCampo.type === "boolean") {
+                        if (rA.value !== null && rB.value !== null && rA.value !== rB.value) {
+                            IDConflitti.add(rA.id);
+                            IDConflitti.add(rB.id);
+                            messaggiErrore.push(`Contradiction in ${labelCategoria} (${infoCampo.label}): Conflictual restrictions.`);
+                        }
+                    }
+                }
+            }
+            
+            // CASO B: Conflitto logico incrociato su campi diversi della stessa categoria (Esclusione Strumenti)
+            if (rA.category === "strumenti") {
+                if (
+                    (rA.field === "is_berry" && rA.value === "true" && rB.field === "has_negative_effect" && rB.value === "true") ||
+                    (rB.field === "is_berry" && rB.value === "true" && rA.field === "has_negative_effect" && rA.value === "true")
+                ) {
+                    IDConflitti.add(rA.id);
+                    IDConflitti.add(rB.id);
+                    messaggiErrore.push("Conflitto negli Strumenti: Un oggetto non può essere contemporaneamente 'Solo Bacche' e 'Solo Oggetti con Danni'.");
+                }
+            }
+        }
+    }
+
+    // 3. Output grafico degli errori nel DOM
+    let boxErrore = document.getElementById('rules-error-summary');
+    if (!boxErrore) {
+        boxErrore = document.createElement('div');
+        boxErrore.id = 'rules-error-summary';
+        boxErrore.style.cssText = "margin: 15px 0; padding: 10px; border: 3px solid #000; background: #fca5a5; font-weight: bold; font-family: inherit; display: none; box-shadow: 4px 4px 0px #000;";
+        const container = document.getElementById('dynamic-rules-container');
+        if (container) container.parentNode.insertBefore(boxErrore, container);
+    }
+
+    if (IDConflitti.size > 0) {
+        // Applica lo stile di errore (Neubrutalist rosso/arancio) alle righe incriminate
+        IDConflitti.forEach(id => {
+            const rElement = document.getElementById(`rule-row-${id}`);
+            if (rElement) {
+                rElement.style.border = "3px solid #ef4444";
+                rElement.style.background = "#fee2e2";
+            }
+        });
+
+        // Mostra il riepilogo testuale degli errori riscontrati
+        boxErrore.innerHTML = `<span style="text-transform: uppercase; color: #b91c1c; display:block; margin-bottom: 5px;">⚠️ Invalid:</span>` + 
+                              [...new Set(messaggiErrore)].map(msg => `• ${msg}`).join('<br>');
+        boxErrore.style.display = "block";
+    } else {
+        boxErrore.style.display = "none";
     }
 }
 

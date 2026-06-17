@@ -19,7 +19,7 @@
     
 <div class="top-auth-bar" style="display: flex; align-items: center; gap: 15px;">
     
-    <button id="btn-disiscriviti" class="btn-unregister-brutal" onclick="gestisciDisiscrizione()" style="display: none;">
+    <button id="btn-disiscriviti" class="btn-unregister-brutal blur-target" onclick="gestisciDisiscrizione()" style="display: none;">
         <i class="fas fa-user-times"></i> WITHDRAW
     </button>
 
@@ -32,10 +32,13 @@
         <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
         <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
         <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
-        
+        <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
+        <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> PLAYBOOK</a>
         <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
     </div>
 </div>
+
+<div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
@@ -1325,9 +1328,59 @@ function handleAuthClick() {
         toggleLoginModal();
     } else {
         const menu = document.getElementById('user-menu');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        const overlay = document.getElementById('menu-overlay');
+        
+        if (menu) {
+            if (menu.style.display === 'block') {
+                // CHIUSURA MENU
+                menu.style.display = 'none';
+                document.body.classList.remove('body-menu-open'); // Rende di nuovo nitidi i pulsanti
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+                console.log("Stato: Menu chiuso al click su auth-content");
+            } else {
+                // APERTURA MENU
+                menu.style.display = 'block';
+                document.body.classList.add('body-menu-open'); // Sfuoca i pulsanti contrassegnati
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+                console.log("Stato: Menu aperto e schermo sfocato");
+            }
+        }
     }
 }
+
+function chiudiMenuConOverlay() {
+    const menu = document.getElementById('user-menu');
+    const overlay = document.getElementById('menu-overlay');
+    
+    if (menu) menu.style.display = 'none';
+    document.body.classList.remove('body-menu-open'); // Ripristina la nitidezza al click esterno
+    
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+    console.log("Stato: Menu chiuso via overlay");
+}
+
+// Listener globale per i click esterni aggiornato
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (controllo basato su 'block')
+    if (menu && menu.style.display === 'block') {
+        // Se l'utente clicca fuori dal menu e fuori dal pulsante di login
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            chiudiMenuConOverlay();
+        }
+    }
+});
 
 document.addEventListener('click', function(event) {
     const menu = document.getElementById('user-menu');

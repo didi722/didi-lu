@@ -2158,3 +2158,36 @@ body.status-live .hub-header {
     filter: brightness(1.1); /* Lo rende leggermente più brillante all'hover */
 }
 
+/* Overlay Neubrutalist/Moderno sfocato */
+/* Il backdrop rimane posizionato un livello sotto la barra */
+.menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0); 
+    backdrop-filter: blur(5px);           
+    -webkit-backdrop-filter: blur(5px);   
+    z-index: 2999; 
+    display: none;                        
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.menu-backdrop.active {
+    display: block;
+    opacity: 1;
+}
+
+/* ─── EFFETTO SELETTIVO PER I PULSANTI ─── */
+.blur-target {
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+/* Applica il blur e disattiva i click sui pulsanti mirati quando il menu è aperto */
+.body-menu-open .blur-target {
+    filter: blur(4px) !important;
+    opacity: 0.6;
+    pointer-events: none; /* Impedisce di cliccarci sopra per sbaglio */
+}

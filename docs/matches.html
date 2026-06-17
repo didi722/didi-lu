@@ -56,7 +56,7 @@
     
     <button 
         onclick="apriModaleTeamsIscritti()" 
-        class="btn-registered-teams"
+        class="btn-registered-teams blur-target"
         style="
             background: #ffbd44; 
             color: #000; 
@@ -93,6 +93,8 @@
         <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
     </div>
 </div>
+<div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
+
 
 <div id="modal-registered-teams" class="custom-modal-backdrop" style="display: none;">
     <div class="custom-modal-content pokemon-theme-modal">
@@ -4200,9 +4202,55 @@ function handleAuthClick() {
         toggleLoginModal();
     } else {
         const menu = document.getElementById('user-menu');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        const overlay = document.getElementById('menu-overlay');
+        
+        if (menu) {
+            if (menu.style.display === 'block') {
+                menu.style.display = 'none';
+                document.body.classList.remove('body-menu-open'); // Rimuove il blur dai tasti
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+            } else {
+                menu.style.display = 'block';
+                document.body.classList.add('body-menu-open'); // Attiva il blur sui tasti della barra
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+            }
+        }
     }
 }
+
+// Ricordati di ripulire la classe anche nella funzione che si attiva quando clicchi fuori (sull'overlay):
+function chiudiMenuConOverlay() {
+    const menu = document.getElementById('user-menu');
+    const overlay = document.getElementById('menu-overlay');
+    
+    if (menu) menu.style.display = 'none';
+    document.body.classList.remove('body-menu-open'); // Ripristina i pulsanti nitidi
+    
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+}
+
+// Listener globale per i click esterni aggiornato
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (controllo basato su 'block')
+    if (menu && menu.style.display === 'block') {
+        // Se l'utente clicca fuori dal menu e fuori dal pulsante di login
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            chiudiMenuConOverlay();
+        }
+    }
+});
 
 // UNICO listener per lo stato autenticazione
 auth.onAuthStateChanged(async (user) => {

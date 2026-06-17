@@ -76,6 +76,7 @@
             <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
         </div>
     </div>
+<div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
 
     <header class="top-bar">
         <div class="top-bar-inner">
@@ -1940,10 +1941,57 @@ function handleAuthClick() {
         toggleLoginModal();
     } else {
         const menu = document.getElementById('user-menu');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        const overlay = document.getElementById('menu-overlay');
+        
+        if (menu) {
+            if (menu.style.display === 'block') {
+                // Se è aperto, lo chiudiamo e togliamo il blur
+                menu.style.display = 'none';
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+                console.log("Stato: Menu chiuso al click su auth-content");
+            } else {
+                // Se è chiuso, lo apriamo e attiviamo il blur dello schermo
+                menu.style.display = 'block';
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    // Il piccolo timeout garantisce che la transizione CSS dell'opacity funzioni fluidamente
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+                console.log("Stato: Menu aperto e schermo sfocato");
+            }
+        }
     }
 }
 
+function chiudiMenuConOverlay() {
+    const menu = document.getElementById('user-menu');
+    const overlay = document.getElementById('menu-overlay');
+    
+    if (menu) menu.style.display = 'none';
+    
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+    console.log("Stato: Menu chiuso via overlay");
+}
+
+// Listener globale per i click esterni aggiornato
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    // Se il menu è visibile (controllo basato su 'block')
+    if (menu && menu.style.display === 'block') {
+        // Se l'utente clicca fuori dal menu e fuori dal pulsante di login
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            chiudiMenuConOverlay();
+        }
+    }
+});
 // UNICO listener per lo stato autenticazione
 auth.onAuthStateChanged(async (user) => {
     const authIcon = document.getElementById('auth-icon');

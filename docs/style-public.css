@@ -3066,3 +3066,24 @@ color:#eeeeee;
 .player-active-title-badge {
     z-index: 100;
 }
+
+.menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0); /* Scurisce leggermente lo sfondo */
+    backdrop-filter: blur(5px);           /* Effetto Sfocatura */
+    -webkit-backdrop-filter: blur(5px);   /* Supporto per Safari */
+    z-index: 1002;                         /* Sotto il menu, ma sopra il resto del sito */
+    display: none;                        /* Inizialmente nascosto */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Stato attivo quando l'overlay è visibile */
+.menu-backdrop.active {
+    display: block;
+    opacity: 1;
+}
