@@ -172,7 +172,8 @@
                         <div class="format-input-group flex-1">
                             <label>TIER</label>
                             <select id="mandatory-tier">
-                                <option value="ALL">No Limit</option>
+                                <option value="ALL">Standard</option>
+                                <option value="ALL">AG</option>
                                 <option value="Uber">Uber</option>
                                 <option value="OU">OU</option>
                                 <option value="UU">UU</option>
@@ -323,18 +324,34 @@ const MAPPA_DEFINIZIONE_REGOLE = {
         fields: {
             name_starts: { label: "Letter", type: "text_length", operators: ["equals"] },
             name_length: { label: "Name lenght", type: "number", operators: ["lt", "gt", "equals"] },
-            height: { label: "Height (m)", type: "number", operators: ["lt", "gt"] },
+            height: { label: "Height (cm)", type: "number", operators: ["lt", "gt"] },
             weight: { label: "Weight (kg)", type: "number", operators: ["lt", "gt"] },
             type: { label: "Type", type: "select", options: ["Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"] },
             color: { label: "Color", type: "select", options: ["Black", "Blue", "Brown", "Gray", "Green", "Pink", "Purple", "Red", "White", "Yellow"] },
             egg_group: { label: "Egg group", type: "select", options: ["Monster", "Water1", "Bug", "Flying", "Field", "Fairy", "Grass", "Human-shape", "Water3", "Mineral", "Amorphous", "Water2", "Ditto", "Dragon", "No-eggs"] },
             bst: { label: "BST", type: "number", operators: ["lt", "gt", "lte", "gte", "equals"] },
             highest_stat: { label: "Best stat", type: "select", options: ["HP", "Attack", "Defense", "Sp. Attack", "Sp. defense", "Speed"] },
-            base_friendship: { label: "Affetto Base", type: "number", operators: ["lt", "gt", "equals"] },
+            base_friendship: { label: "Base friendship", type: "number", operators: ["lt", "gt", "equals"] },
             evolutions_count: { label: "Evolution number", type: "number", operators: ["lt", "gt", "equals"] },
             evolution_stage: { label: "Evolution chain position", type: "select", options: ["First", "Middle", "Final", "Only_stage"] },
             habitat: { label: "Habitat", type: "select", options: ["Cave", "Forest", "Grassland", "Mountain", "Rare", "Rough-terrain", "Sea", "Urban", "Waters-edge"] },
-            shape: { label: "Shape", type: "select", options: ["Ball", "Squiggle", "Fish", "Arms", "Wings", "Quadruped", "Bipedal_tail", "Bipedal_no_tail", "Multipedal", "Tentacles", "Heads", "Bug_wings", "Armor"] }
+            shape: { label: "Shape", type: "select", options: ["Ball", "Squiggle", "Fish", "Arms", "Wings", "Quadruped", "Bipedal_tail", "Bipedal_no_tail", "Multipedal", "Tentacles", "Heads", "Bug_wings", "Armor"] },
+            tier: { label: "Tier Smogon", type: "tier", operators: ["lt", "gt", "lte", "gte", "equals", "between"], options: ["LC", "NFE", "ZU", "PU", "NU", "RU", "UU", "OU", "Ubers", "AG"] },
+            nature: { 
+                label: "Nature", 
+                type: "select", 
+                options: ["Adamant", "Bashful", "Bold", "Brave", "Calm", "Careful", "Docile", "Gentle", "Hardy", "Hasty", "Impish", "Jolly", "Lax", "Lonely", "Mild", "Modest", "Naive", "Naughty", "Quiet", "Quirky", "Rash", "Relaxed", "Sassy", "Serious", "Timid"] 
+            },
+            is_legendary: { 
+                label: "Legendary", 
+                type: "select", 
+                options: ["Only Legendary", "Allowed"] 
+            },
+            is_mythical: { 
+                label: "Mythical", 
+                type: "select", 
+                options: ["Only Mythical", "Allowed"] 
+            }
         }
     },
     mosse: {
@@ -431,19 +448,105 @@ function gestisciCambioTipoFormato(tipo) {
     sezioneVGC.style.display = 'none';
     sezioneCustom.style.display = 'none';
 
+    // 1. INIEZIONE DELLO STILE DEL TOOLTIP NEUBRUTALIST (Aggiornato: Sopra e leggermente a sinistra del centro)
+    if (!document.getElementById('nb-tooltip-core-styles')) {
+        const style = document.createElement('style');
+        style.id = 'nb-tooltip-core-styles';
+        style.innerHTML = `
+            #clause-badge {
+                position: relative;
+                overflow: visible !important;
+                display: inline-block;
+            }
+            .nb-badge-tooltip {
+                display: none;
+                position: absolute;
+                
+                /* POSIZIONAMENTO: SOPRA, CENTRATO E SPOSTATO LEGGERMENTE A SINISTRA */
+                bottom: 145%; /* Sopra il badge */
+                left: 50%;   /* Allinea al centro del badge */
+                
+                /* Centra orizzontalmente (-50%) e sposta ulteriormente a sinistra di un 5% extra */
+                transform: translateX(-80%); 
+                
+                background: #ffffff !important;
+                color: #000000 !important;
+                border: 3px solid #000000 !important;
+                box-shadow: 4px 4px 0px #000000 !important;
+                padding: 10px 14px;
+                min-width: 190px;
+                white-space: nowrap;
+                z-index: 9999;
+                font-family: inherit;
+                text-transform: none;
+            }
+            /* Freccetta Neubrutalist centrata sotto il tooltip, tiene conto dello shift a sinistra */
+            .nb-badge-tooltip::after {
+                content: '';
+                position: absolute;
+                top: 100%; /* Sotto il tooltip */
+                left: 55%; /* Compensa il translateX(-55%) per apparire al centro del badge */
+                transform: translateX(-50%);
+                border-width: 8px;
+                border-style: solid;
+                border-color: #000000 transparent transparent transparent;
+            }
+            #clause-badge:hover .nb-badge-tooltip {
+                display: block;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     if (tipo === 'vgc') {
         sezioneVGC.style.display = 'block';
     } else if (tipo === 'custom' || tipo === 'anything_goes') {
         sezioneCustom.style.display = 'block';
+        
         if (badgeClausole) {
-            if (tipo === 'custom') {
-                badgeClausole.innerText = "STANDARD CLAUSES ACTIVE";
-                badgeClausole.classList.remove('disabled');
-            } else {
-                badgeClausole.innerText = "NO CLAUSES";
-                badgeClausole.classList.add('disabled');
-            }
-        }
+    if (tipo === 'custom') {
+        badgeClausole.classList.remove('disabled');
+        
+        badgeClausole.innerHTML = `
+            STANDARD CLAUSES ACTIVE
+            <div class="nb-badge-tooltip">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">✔</span> Sleep Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">✔</span> Pokémon Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">✔</span> Item Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">✔</span> Max. 2 Uber (if Tier = Standard)
+                </div>
+            </div>
+        `;
+    } else {
+        badgeClausole.classList.add('disabled');
+        
+        badgeClausole.innerHTML = `
+            NO CLAUSES
+            <div class="nb-badge-tooltip">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">❌</span> Sleep Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">❌</span> Pokémon Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">❌</span> Item Clause
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <span style="color: black; font-weight: 900;">❌</span> Max. 2 Uber (if Tier = Standard)
+                </div>
+            </div>
+        `;
+    }
+}
+        
         if (containerRegole && containerRegole.children.length === 0) {
             aggiungiRigaRegola();
         }
@@ -537,20 +640,18 @@ function aggiornaInputValore(id, categoria, campo) {
     valueContainer.style.order = "";
 
     if (!campo) {
-        // Se il campo viene svuotato, ricalcola comunque i conflitti per ripulire lo stato
-        eseguiControlloConflitti();
+        if (typeof eseguiControlloConflitti === "function") eseguiControlloConflitti();
         return;
     }
 
     const infoCampo = MAPPA_DEFINIZIONE_REGOLE[categoria].fields[campo];
     
-    // 2. GENERAZIONE DELL'OPERATORE (Valido per tutti i campi numerici di qualsiasi categoria)
+    // 2. GENERAZIONE DELL'OPERATORE
     let opHtml = "";
-    if (infoCampo.operators || infoCampo.type === "number") {
+    if (infoCampo.operators || infoCampo.type === "number" || infoCampo.type === "tier") {
         let ops = infoCampo.operators ? [...infoCampo.operators] : ["equals"];
         
-        // Forza l'inserimento dell'intervallo "between" per qualsiasi tipo numerico
-        if (infoCampo.type === "number" && !ops.includes("between")) {
+        if ((infoCampo.type === "number" || infoCampo.type === "tier") && !ops.includes("between")) {
             ops.push("between");
         }
         
@@ -563,7 +664,6 @@ function aggiornaInputValore(id, categoria, campo) {
                           op === "between" ? "Between" : "=";
             opOptions += `<option value="${op}">${labelOp}</option>`;
         });
-        // Aggiunto trigger eseguiControlloConflitti al cambio dell'operatore matematico
         opHtml = `<select class="select-operator" id="operator-${id}" onchange="renderizzaInputNumerici(${id}, '${categoria}', '${campo}'); eseguiControlloConflitti();">${opOptions}</select>`;
     } else {
         opHtml = `<input type="hidden" class="select-operator" id="operator-${id}" value="equals">`;
@@ -571,28 +671,29 @@ function aggiornaInputValore(id, categoria, campo) {
     operatorContainer.innerHTML = opHtml;
 
     // 3. LOGICA DI RENDERING UNIFICATA PER TIPO DI DATO
-    
     if (infoCampo.type === "select") {
-        // MENU A TENDINA (Tipi, Categorie Mosse, Sagome, Target...)
+        // MENU A TENDINA (Tipi, Categorie Mosse, Sagome, Nature...)
         let selectOptions = `<option value="">-- Choose --</option>`;
-        selectOptions += `<option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>`;
+        
+        // CONTROLLO ESCLUSIONE "SAME": Non iniettiamo l'opzione se stiamo gestendo Leggendari o Misteriosi
+        if (campo !== "is_legendary" && campo !== "is_mythical") {
+            selectOptions += `<option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>`;
+        }
+        
         infoCampo.options.forEach(opt => {
             selectOptions += `<option value="${opt}">${opt}</option>`;
         });
-        // Aggiunto trigger eseguiControlloConflitti al cambio della tendina stringa/team
+        
         valueContainer.innerHTML = `
             <select class="input-value" onchange="controllaOperatorePerTeam(${id}, this.value); eseguiControlloConflitti();">
                 ${selectOptions}
             </select>
         `;
     } 
-    else if (infoCampo.type === "number" || infoCampo.type === "text_length") {
-        // CAMPI NUMERICI O STRINGHE CORTE (BST, Altezza, Potenza mossa, PP, Lettera iniziale...)
-        // Applichiamo l'inversione flex per posizionare l'operatore PRIMA dei box di input
+    else if (infoCampo.type === "number" || infoCampo.type === "text_length" || infoCampo.type === "tier") {
         valueContainer.style.order = "3";     
         operatorContainer.style.order = "4";  
         
-        // Aggiunto trigger eseguiControlloConflitti al cambio di modalità Is.. / Same
         valueContainer.innerHTML = `
             <select class="select-mode" style="width: 100%;" onchange="gestisciCambioModalitaInput(${id}, this.value); eseguiControlloConflitti();">
                 <option value="SPECIFIC">Is...</option>
@@ -600,21 +701,16 @@ function aggiornaInputValore(id, categoria, campo) {
             </select>
         `;
 
-        // Prepariamo la scatola che conterrà dinamicamente gli input numerici (1 casella o 2 caselle per il Between)
         operatorContainer.insertAdjacentHTML('beforeend', `
             <span id="custom-field-box-${id}" style="display: inline-block;"></span>
         `);
         
-        // Renderizziamo i box numerici iniziali
         renderizzaInputNumerici(id, categoria, campo);
     } 
     else if (infoCampo.type === "boolean") {
-        // CAMPI DI TIPO RESTRIZIONE SI/NO o ONLY/NO
-        // Se siamo negli strumenti usiamo ONLY/NO (es: "Berries: ONLY"), altrimenti lasciamo YES/NO per le mosse
         const labelVero = (categoria === "strumenti") ? "ONLY" : "YES";
         const labelFalso = "NO";
 
-        // Aggiunto trigger eseguiControlloConflitti al cambio del valore Booleano/Restrizione
         valueContainer.innerHTML = `
             <select class="input-value" onchange="eseguiControlloConflitti();">
                 <option value="true" style="font-weight: bold; color: #22c55e;">${labelVero}</option>
@@ -623,8 +719,7 @@ function aggiornaInputValore(id, categoria, campo) {
         `;
     }
 
-    // Esegue istantaneamente un controllo non appena i campi di input vengono rigenerati
-    eseguiControlloConflitti();
+    if (typeof eseguiControlloConflitti === "function") eseguiControlloConflitti();
 }
 
 function renderizzaInputNumerici(id, categoria, campo) {
@@ -632,24 +727,40 @@ function renderizzaInputNumerici(id, categoria, campo) {
     const operatorSelect = document.getElementById(`operator-${id}`);
     const operatore = operatorSelect ? operatorSelect.value : "equals";
     
-    // Essendo il layout ora speculare e simmetrico per tutti, il target è sempre il custom-field-box
     const targetContainer = document.getElementById(`custom-field-box-${id}`);
     if (!targetContainer) return;
     
     let html = "";
+    
+    // Genera le opzioni per la tier se necessario
+    const tierOptionsHtml = (infoCampo.type === "tier") 
+        ? infoCampo.options.map(t => `<option value="${t}">${t}</option>`).join('') 
+        : "";
+
     if (operatore === "between") {
-        // DOPPIO INPUT PER IL RANGE (Allineamento Neubrutalist pulito)
-        html = `
-            <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
-            <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
-            <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
-        `;
+        if (infoCampo.type === "tier") {
+            // Doppia tendina selettiva per il range di Tier (Es: da NU a OU)
+            html = `
+                <select class="input-value range-min" style="margin-left: 10px; max-width: 90px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+                <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
+                <select class="input-value range-max" style="max-width: 90px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+            `;
+        } else {
+            html = `
+                <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+                <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
+                <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+            `;
+        }
     } else {
-        // CHIP DI INPUT SINGOLO CLASSICO
         if (infoCampo.type === "number") {
             html = `<input type="number" class="input-value" placeholder="Value" style="margin-left: 10px; max-width: 120px;">`;
         } else if (infoCampo.type === "text_length") {
             html = `<input type="text" class="input-value" maxlength="1" placeholder="Letter" style="margin-left: 10px; max-width: 80px;">`;
+        } 
+        else if (infoCampo.type === "tier") {
+            // Singola tendina selettiva per operatori singoli (< OU, = UU)
+            html = `<select class="input-value" style="margin-left: 10px; max-width: 120px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>`;
         }
     }
     
@@ -707,6 +818,10 @@ function raccogliDatiRegole() {
         const category = catSelect.value;
         const field = fieldSelect.value;
         
+        // Recupera in sicurezza la definizione del campo dalla mappa delle regole
+        const info = MAPPA_DEFINIZIONE_REGOLE[category]?.fields?.[field];
+        if (!info) return;
+        
         const modeSelect = row.querySelector('.select-mode');
         const mode = modeSelect ? modeSelect.value : "SPECIFIC";
         
@@ -721,14 +836,27 @@ function raccogliDatiRegole() {
         const minInput = row.querySelector('.range-min');
         const maxInput = row.querySelector('.range-max');
         
+        // LOGICA DI ESTRAZIONE E CONVERSIONE VALORI COMPATIBILE CON I NUOVI TIPI DI DATO
         if (operator === "between") {
-            min = minInput && minInput.value !== "" ? parseFloat(minInput.value) : null;
-            max = maxInput && maxInput.value !== "" ? parseFloat(maxInput.value) : null;
+            if (info.type === "tier") {
+                // Converte le stringhe delle due tier nei rispettivi indici di peso numerico
+                const ottieniPesoTier = (valoreTier) => info.options.indexOf(valoreTier);
+                min = minInput && minInput.value !== "" ? ottieniPesoTier(minInput.value) : null;
+                max = maxInput && maxInput.value !== "" ? ottieniPesoTier(maxInput.value) : null;
+            } else {
+                // Fallback classico per i numeri reali/interi (es: altezze, pesi, BST)
+                min = minInput && minInput.value !== "" ? parseFloat(minInput.value) : null;
+                max = maxInput && maxInput.value !== "" ? parseFloat(maxInput.value) : null;
+            }
         } else if (valSelect) {
-            value = valSelect.value;
-            const info = MAPPA_DEFINIZIONE_REGOLE[category].fields[field];
             if (info.type === "number") {
                 value = valSelect.value !== "" ? parseFloat(valSelect.value) : null;
+            } else if (info.type === "tier") {
+                // Converte la singola tier selezionata nel suo indice di peso numerico
+                value = valSelect.value !== "" ? info.options.indexOf(valSelect.value) : null;
+            } else {
+                // Gestisce stringhe, valori booleani e le nuove select ("nature", "is_legendary", "is_mythical")
+                value = valSelect.value;
             }
         }
         
@@ -800,14 +928,16 @@ function eseguiControlloConflitti() {
             const labelCategoria = MAPPA_DEFINIZIONE_REGOLE[rA.category].label;
             const infoCampo = MAPPA_DEFINIZIONE_REGOLE[rA.category].fields[rA.field];
 
-            // CASO A: Conflitto sullo stesso campo (es. Altezza < 100 e Altezza > 120)
+            // CASO A: Conflitto sullo stesso campo (es. Altezza, Tier, ecc...)
             if (rA.field === rB.field) {
                 if (rA.mode === "SPECIFIC" && rB.mode === "SPECIFIC") {
-                    if (infoCampo.type === "number") {
+                    
+                    // CORREZIONE TIER: Esteso il controllo geometrico-numerico anche al tipo "tier"
+                    if (infoCampo.type === "number" || infoCampo.type === "tier") {
                         if (verificaConflittoNumerico(rA, rB)) {
                             IDConflitti.add(rA.id);
                             IDConflitti.add(rB.id);
-                            messaggiErrore.push(`Contradiction in ${labelCategoria} (${infoCampo.label}): Conflict in numerical restrictions.`);
+                            messaggiErrore.push(`Contradiction in ${labelCategoria} (${infoCampo.label}): Conflict in numerical/ordered restrictions.`);
                         }
                     } else if (infoCampo.type === "select" || infoCampo.type === "boolean") {
                         if (rA.value !== null && rB.value !== null && rA.value !== rB.value) {
@@ -819,7 +949,21 @@ function eseguiControlloConflitti() {
                 }
             }
             
-            // CASO B: Conflitto logico incrociato su campi diversi della stessa categoria (Esclusione Strumenti)
+            // CASO B: Conflitto logico incrociato su campi diversi della stessa categoria
+            
+            // CORREZIONE LEGENDARY / MYTHICAL
+            if (rA.category === "pokemon") {
+                if (
+                    (rA.field === "is_legendary" && rA.value === "Only Legendary" && rB.field === "is_mythical" && rB.value === "Only Mythical") ||
+                    (rB.field === "is_legendary" && rB.value === "Only Legendary" && rA.field === "is_mythical" && rA.value === "Only Mythical")
+                ) {
+                    IDConflitti.add(rA.id);
+                    IDConflitti.add(rB.id);
+                    messaggiErrore.push("Conflict in Pokémon selection restrictions.");
+                }
+            }
+
+            // Conflitto incrociato Strumenti (Invariato)
             if (rA.category === "strumenti") {
                 if (
                     (rA.field === "is_berry" && rA.value === "true" && rB.field === "has_negative_effect" && rB.value === "true") ||
@@ -827,7 +971,7 @@ function eseguiControlloConflitti() {
                 ) {
                     IDConflitti.add(rA.id);
                     IDConflitti.add(rB.id);
-                    messaggiErrore.push("Conflitto negli Strumenti: Un oggetto non può essere contemporaneamente 'Solo Bacche' e 'Solo Oggetti con Danni'.");
+                    messaggiErrore.push("Conflict in items selection restrictions.");
                 }
             }
         }
@@ -844,7 +988,7 @@ function eseguiControlloConflitti() {
     }
 
     if (IDConflitti.size > 0) {
-        // Applica lo stile di errore (Neubrutalist rosso/arancio) alle righe incriminate
+        // Applica lo stile di errore alle righe incriminate
         IDConflitti.forEach(id => {
             const rElement = document.getElementById(`rule-row-${id}`);
             if (rElement) {
@@ -859,6 +1003,139 @@ function eseguiControlloConflitti() {
         boxErrore.style.display = "block";
     } else {
         boxErrore.style.display = "none";
+    }
+}
+
+// FUNZIONE PRINCIPALE DI SALVATAGGIO
+async function salvaNuovoFormato() {
+    // 1. ESEGUI IL CONTROLLO CONFLITTI PRIMA DI SALVARE
+    eseguiControlloConflitti();
+    const boxErrore = document.getElementById('rules-error-summary');
+    if (boxErrore && boxErrore.style.display === 'block') {
+        alert("Impossibile salvare: ci sono dei conflitti o degli errori nelle regole inserite.");
+        return;
+    }
+
+    // 2. RECUPERA GLI ELEMENTI DI BASE DEL DOM
+    const fName = document.getElementById('format-name');
+    const fDesc = document.getElementById('format-desc');
+    const fType = document.getElementById('format-type');
+    
+    // VALIDAZIONE BASE ASSOLUTA
+    if (!fName || !fName.value.trim()) {
+        alert("Inserisci un nome per il formato.");
+        return;
+    }
+    if (!fDesc || !fDesc.value.trim()) {
+        alert("Inserisci una descrizione breve per il formato.");
+        return;
+    }
+    // FIX: Blocca il salvataggio se il tipo formato è vuoto o non selezionato
+    if (!fType || !fType.value || fType.value.trim() === "") {
+        alert("Seleziona una tipologia di formato (VGC, Custom o Anything Goes).");
+        return;
+    }
+
+    const tipoFormato = fType.value;
+
+    // 3. COSTRUZIONE DEL PAYLOAD BASE
+    const payload = {
+        categoria: fName.value.trim(), 
+        descrizioneBreve: fDesc.value.trim(),
+        strutturaSito: tipoFormato, 
+        createdAt: new Date().toISOString()
+    };
+
+    // 4. RACCOLTA DATI CONDIZIONALE + VALIDAZIONE RIGIDA DEI CAMPI OBBLIGATORI
+    if (tipoFormato === 'vgc') {
+        const vgcGen = document.getElementById('vgc-gen');
+        const vgcFormat = document.getElementById('vgc-format');
+        
+        // CONTROLLO OBBLIGATORI VGC
+        if (!vgcGen || !vgcGen.value) {
+            alert("Seleziona la Generazione VGC.");
+            return;
+        }
+        if (!vgcFormat || !vgcFormat.value) {
+            alert("Seleziona il Formato Regolamento VGC.");
+            return;
+        }
+
+        payload.vgcGen = vgcGen.value;
+        payload.vgcFormat = vgcFormat.value;
+
+    } else {
+        // Campi fissi/mandatori del pannello Custom
+        const mStyle = document.getElementById('mandatory-battle-style');
+        const mGenType = document.getElementById('mandatory-gen-type');
+        const mGenVal = document.getElementById('mandatory-gen-value');
+        const mTier = document.getElementById('mandatory-tier');
+
+        // CONTROLLO OBBLIGATORI CUSTOM
+        if (!mStyle || !mStyle.value) {
+            alert("Seleziona lo Stile di Lotta (Singolo/Doppio).");
+            return;
+        }
+        if (!mGenType || !mGenType.value) {
+            alert("Seleziona il Tipo di Regola per la Generazione.");
+            return;
+        }
+        if (!mGenVal || !mGenVal.value) {
+            alert("Seleziona il valore della Generazione.");
+            return;
+        }
+        if (!mTier || !mTier.value) {
+            alert("Seleziona la Tier di base (es. OU, Uber, UU).");
+            return;
+        }
+
+        payload.battleStyle = mStyle.value;
+        payload.genRuleType = mGenType.value;
+        payload.genRuleValue = mGenVal.value;
+        payload.baseTier = mTier.value;
+
+        // 5. RACCOLTA DELLE REGOLE DINAMICHE (FACOLTATIVE)
+        const regoleInserite = raccogliDatiRegole();
+        
+        if (regoleInserite.length > 0) {
+            payload.restrizioni = {};
+
+            regoleInserite.forEach(r => {
+                if (!payload.restrizioni[r.category]) {
+                    payload.restrizioni[r.category] = {};
+                }
+
+                const oggettoRegola = { mode: r.mode };
+
+                if (r.mode === "SPECIFIC") {
+                    oggettoRegola.operator = r.operator;
+                    if (r.operator === "between") {
+                        if (r.min !== null && r.min !== "") oggettoRegola.min = r.min;
+                        if (r.max !== null && r.max !== "") oggettoRegola.max = r.max;
+                    } else {
+                        if (r.value !== null && r.value !== "") oggettoRegola.value = r.value;
+                    }
+                }
+
+                payload.restrizioni[r.category][r.field] = oggettoRegola;
+            });
+        }
+    }
+
+    // 6. INVIO EFFETTIVO AL DATABASE (Sintassi Globale v8/Compat)
+    try {
+        const nuovoFormatoRef = firebase.database().ref('regolamenti').push();
+        await nuovoFormatoRef.set(payload);
+
+        console.log("Salvataggio completato con successo. ID generato:", nuovoFormatoRef.key, payload);
+        alert("Formato salvato con successo!");
+        
+        const modal = document.getElementById('format-modal');
+        if (modal) modal.style.setProperty('display', 'none', 'important');
+        
+    } catch (error) {
+        console.error("Errore riscontrato durante la scrittura nel DB:", error);
+        alert("Errore durante il salvataggio sul database: " + error.message);
     }
 }
 
@@ -1151,13 +1428,30 @@ async function applicaColoreUtente(user) {
 
 async function caricaEVisualizzaFormati() {
   try {
-    // 1. Recupera i giocatori da Firebase
+    // 1. RECUPERA SIA I REGOLAMENTI CHE I GIOCATORI DA FIREBASE
+    const formatsSnap = await db.ref('regolamenti').once('value');
+    const formatsData = formatsSnap.val() || {};
+
     const playersSnap = await db.ref('players').once('value');
     const players = playersSnap.val() || {};
 
-    const bestPlayersByFormat = {};
+    const allFormats = {};
 
-    // 2. Determina chi ha più PUNTI FATTI per ogni formato
+    // 2. INIZIALIZZA LA MAPPA CON TUTTI I FORMATI REALI PRESENTI NEL DB
+    Object.entries(formatsData).forEach(([fId, fData]) => {
+      const formatName = fData.categoria; // Il nome è salvato sotto 'categoria'
+      if (formatName) {
+        allFormats[formatName] = {
+          formatName: formatName,
+          maxPoints: -1, // Inizializzato a -1 per intercettare anche leader con 0 punti
+          avatar: "", 
+          color: "#e2e8f0", // Grigio neutro di default se non ci sono ancora leader
+          hasLeader: false
+        };
+      }
+    });
+
+    // 3. AGGIORNA I LEADER IN BASE AI PUNTI FATTI DAI GIOCATORI
     Object.entries(players).forEach(([pId, pData]) => {
       const formatsStats = pData.stats?.['formats-stats'] || {};
       const info = pData.info || {};
@@ -1168,13 +1462,22 @@ async function caricaEVisualizzaFormati() {
       Object.entries(formatsStats).forEach(([formatName, stats]) => {
         const points = Number(stats.points || 0);
 
-        if (!bestPlayersByFormat[formatName] || points > bestPlayersByFormat[formatName].maxPoints) {
-          bestPlayersByFormat[formatName] = {
+        // Se il formato non esiste nel DB dei regolamenti (es. vecchi formati), lo aggiungiamo comunque per retrocompatibilità
+        if (!allFormats[formatName]) {
+          allFormats[formatName] = {
             formatName: formatName,
             maxPoints: points,
             avatar: playerAvatar,
-            color: playerColor
+            color: playerColor,
+            hasLeader: true
           };
+        } 
+        // Se esiste ed è il punteggio più alto trovato finora, aggiorna il leader
+        else if (points > allFormats[formatName].maxPoints) {
+          allFormats[formatName].maxPoints = points;
+          allFormats[formatName].avatar = playerAvatar;
+          allFormats[formatName].color = playerColor;
+          allFormats[formatName].hasLeader = true;
         }
       });
     });
@@ -1184,25 +1487,59 @@ async function caricaEVisualizzaFormati() {
 
     gridContainer.innerHTML = '';
 
-    // 3. Stampa le informazioni e aggiunge il click event
-    // Serializziamo in sicurezza l'oggetto dei giocatori per passarlo alla modale
+    // Serializzazione sicura dei giocatori per la modale
     const playersEscaped = btoa(unescape(encodeURIComponent(JSON.stringify(players))));
 
-    Object.values(bestPlayersByFormat).forEach(format => {
+    // 4. STAMPA DELLE CARD NEUBRUTALIST
+    Object.values(allFormats).forEach(format => {
       const formatEscaped = format.formatName.replace(/'/g, "\\'");
       
+      // Gestione dinamica del Box Leader: se c'è mostra l'avatar, altrimenti una corona placeholder
+      const leaderContent = format.hasLeader 
+        ? `<img src="${format.avatar}" alt="Avatar Leader" style="width: 100%; height: 100%; object-fit: cover; transform: rotate(-6deg);" />`
+        : `<span style="font-size: 20px; transform: rotate(-6deg); filter: grayscale(1);">👑</span>`;
+
       const cardHtml = `
         <div class="format-card-nb" 
-             style="background-color: ${format.color} !important; cursor: pointer;" 
+             style="
+               background-color: #ffffff !important; 
+               cursor: pointer; 
+               position: relative; 
+               min-height: 180px; 
+               min-width: 150px !important;
+               padding: 30px !important;
+               display: flex;
+               flex-direction: column;
+               justify-content: flex-start;
+               align-items: flex-start;
+             " 
              onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}')">
           
-          <div class="format-nb-title-badge">${format.formatName}</div>
+          <div class="format-nb-title-badge" style="margin-bottom: auto;">
+            ${format.formatName}
+          </div>
           
-          <img 
-            src="${format.avatar}" 
-            alt="Avatar" 
-            class="format-nb-avatar-mini" 
-          />
+          <div class="format-nb-leader-box" 
+               style="
+                 position: absolute;
+                 bottom: 12px;
+                 right: 12px;
+                 width: 50px;
+                 height: 50px;
+                 background-color: ${format.color} !important;
+                 border: 3px solid #000;
+                 box-shadow: 4px 4px 0px #000;
+                 transform: rotate(6deg);
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 overflow: hidden;
+                 padding: ${format.hasLeader ? '10px !important' : '0 !important'};
+                 transition: transform 0.2s ease;
+               "
+               title="${format.hasLeader ? 'Leader attuale' : 'Nessun leader - Gioca per primo!'}">
+            ${leaderContent}
+          </div>
 
         </div>
       `;
@@ -1214,10 +1551,96 @@ async function caricaEVisualizzaFormati() {
   }
 }
 
-  // Avvia la funzione non appena la pagina è pronta
-  document.addEventListener("DOMContentLoaded", () => {
-    caricaEVisualizzaFormati();
-  });
+// Avvia la funzione non appena la pagina è pronta
+document.addEventListener("DOMContentLoaded", () => {
+  caricaEVisualizzaFormati();
+});
+
+async function conformaVecchiRegolamenti() {
+  // 1. Definiamo la struttura dati perfetta e pulita per i tuoi 4 formati
+  const mappaturaFormati = {
+    "monotype": {
+      categoria: "Monotype",
+      descrizioneBreve: "Social segregation. Just one type across the team.",
+      strutturaSito: "custom",
+      battleStyle: "doppio",
+      genRuleType: "up_to",
+      genRuleValue: "gen8",
+      baseTier: "OU",
+      noteRestrizioni: "Un type comune a tutto il team" // Campo info extra per ricordarti la regola
+    },
+    "gen4<500bst": {
+      categoria: "Gen4<500bst",
+      descrizioneBreve: "The best of classic Pokémons.",
+      strutturaSito: "custom",
+      battleStyle: "doppio",
+      genRuleType: "up_to",
+      genRuleValue: "gen4",
+      baseTier: "OU",
+      noteRestrizioni: "max bst < 500"
+    },
+    "racist league": {
+      categoria: "Racist League",
+      descrizioneBreve: "[Insert color] supremacy.",
+      strutturaSito: "custom",
+      battleStyle: "doppio",
+      genRuleType: "up_to",
+      genRuleValue: "gen8",
+      baseTier: "Uber",
+      noteRestrizioni: "Un colore comune a tutto il team"
+    },
+    "anything goose": {
+      categoria: "Anything Goose",
+      descrizioneBreve: "Quack! Quack!.",
+      strutturaSito: "custom", // Impostato su custom così legge i parametri di generazione/tier sottostanti
+      battleStyle: "doppio",
+      genRuleType: "up_to",
+      genRuleValue: "gen8",
+      baseTier: "AG",
+      noteRestrizioni: "Nessuna"
+    }
+  };
+
+  try {
+    // Rileva automaticamente se l'istanza globale si chiama 'db' o passa da 'firebase.database()'
+    const databaseRef = typeof db !== 'undefined' ? db.ref('regolamenti') : firebase.database().ref('regolamenti');
+    
+    console.log("🔄 Recupero dei formati attuali dal database...");
+    const snap = await databaseRef.once('value');
+    const regolamenti = snap.val() || {};
+
+    let contatoreAggiornati = 0;
+
+    // 2. Ciclo sui nodi del database per trovare i record esistenti
+    for (const [nodeId, data] of Object.entries(regolamenti)) {
+      // Estrae il nome cercando in qualunque vecchia proprietà usata (categoria, nome, name)
+      const nomeFormatoNelDB = (data.categoria || data.nome || data.name || "").trim().toLowerCase();
+
+      if (mappaturaFormati[nomeFormatoNelDB]) {
+        const datiTarget = mappaturaFormati[nomeFormatoNelDB];
+        
+        // Conserva la data di creazione originale se presente, altrimenti ne genera una coerente
+        const payloadConforme = {
+          ...datiTarget,
+          createdAt: data.createdAt || new Date().toISOString()
+        };
+
+        // 3. Aggiorna lo specifico nodo mantenendo intatto il suo ID originario
+        await databaseRef.child(nodeId).set(payloadConforme);
+        console.log(`✅ Formato "${datiTarget.categoria}" (ID nodo: ${nodeId}) normalizzato con successo.`);
+        contatoreAggiornati++;
+      }
+    }
+
+    console.log(`\n🎉 Operazione conclusa! Aggiornati e ripuliti ${contatoreAggiornati} formati su 4.`);
+    
+  } catch (error) {
+    console.error("❌ Errore durante la pulizia dei regolamenti:", error);
+  }
+}
+
+// Avvia la funzione immediatamente
+conformaVecchiRegolamenti();
 
 async function apriModaleFormato(formatName, playersEncoded) {
     const players = JSON.parse(decodeURIComponent(escape(atob(playersEncoded))));
