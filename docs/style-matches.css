@@ -2092,7 +2092,7 @@ button.btn-set.is-selected:hover {
     flex-shrink: 0;
     margin-left: 50px;
     position: sticky;
-    top: 100px; /* Distanza dal bordo alto mentre scorri */
+    top: 100px;
     z-index: 10;
     margin: 20px auto;
     padding:20px;
@@ -2646,6 +2646,9 @@ button.btn-set.is-selected:hover {
     display: flex;
     justify-content: center; /* Centra il contenuto interno */
     align-items: center;
+    position: sticky !important;
+    top: 0;
+    z-index: 100;
 }
 
 .top-bar-inner {
@@ -2657,6 +2660,7 @@ button.btn-set.is-selected:hover {
     padding: 0 30px;
     justify-content: center;
     align-items: center;
+    position: sticky;
 }
 
 /* --- TITOLO (Sticker Nero) --- */
