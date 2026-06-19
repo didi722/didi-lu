@@ -839,7 +839,7 @@ html, body {
 /* Layout Generale della Bacheca */
 #trophy-shelf-container {
     position: absolute;
-    top: 200px;
+    top: 190px;
     left: 50%;
     transform: translateX(-50%);
     width: auto;
@@ -932,7 +932,7 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 15px; /* Aumentato leggermente per non far sovrapporre le punte inclinate */
-    margin-top: 30px;
+    margin-top: 70px;
     margin-left: -100px;
     width: 350px;
     align-items: center; /* Centra le barre rispetto al trofeo sopra */
@@ -3086,4 +3086,40 @@ color:#eeeeee;
 .menu-backdrop.active {
     display: block;
     opacity: 1;
+}
+
+#trophy-list {
+    position: absolute !important;
+    
+    /* Lo posizioniamo a destra del nome DIDI */
+    top: -30%;
+    left: 100%;
+    transform: translateY(-50%); /* Lo centra perfettamente in verticale rispetto al nome */
+    
+    /* Spazio tra il nome e il trofeo */
+    margin-left: 40px !important; 
+    
+    /* Forziamo le dimensioni corrette e pulite senza rimpicciolire con funzioni distruttive */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    
+    width: max-content !important; /* Impedisce al blocco di andare a capo */
+    z-index: 999;
+}
+
+
+
+/* 4. Sistemiamo il testo "x1" accanto al trofeo */
+#trophy-list span, 
+#trophy-list text {
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    background-color: white;
+    padding: 4px 6px;
+    border: 2px solid black;
+    box-shadow: 3px 3px 0px black;
+    font-family: 'Josefin Sans', sans-serif;
+    transform: rotate(4deg) !important;
 }

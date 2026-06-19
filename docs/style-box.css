@@ -1788,7 +1788,7 @@ color:#eeeeee;
 }
 
 .music-btn {
-    position: fixed;
+    position: absolute;
     top: 100px;
     right: 40px;
     width: 45px;
@@ -1953,7 +1953,7 @@ color:#eeeeee;
 }
 
 .btn-floating-admin {
-    position: fixed;
+    position: absolute;
     top: 100px;
     right: 120px;
     width: 50px;
@@ -2368,7 +2368,7 @@ color:#eeeeee;
 }
 
 .top-auth-bar {
-    position: fixed;
+    position:absolute;
     top: 20px;
     right: 20px;
     z-index: 3000;

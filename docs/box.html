@@ -885,10 +885,6 @@ async function apriDettagli(id) {
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
-            <div class="admin-modal-actions">
-                <button onclick="event.stopPropagation(); event.preventDefault(); caricaTeamPerModifica('${team.id}')" class="btn-admin-edit">📝</button>
-                <button onclick="event.stopPropagation(); event.preventDefault(); cancellaTeamDaFirebase('${team.id}')" class="btn-admin-del">🗑️</button>
-            </div>
         </div>
 
         <div class="modal-grid">
