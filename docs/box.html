@@ -1421,6 +1421,7 @@ window.addEventListener('click', function(event) {
     }
 });
 
+
 function parseShowdown(text) {
     const teams = [];
     const blocks = text.split(/\n\s*\n/); // Divide il testo per ogni pokemon (doppio invio)
@@ -1432,14 +1433,18 @@ function parseShowdown(text) {
         let pokemon = {};
         
         // Riga 1: Nome @ Strumento
-        if (lines[0].includes('@')) {
-            const parts = lines[0].split('@');
-            pokemon.nome = parts[0].trim();
-            pokemon.strumento = parts[1].trim();
-        } else {
-            pokemon.nome = lines[0].trim();
-            pokemon.strumento = "None";
+        let rigaNome = lines[0];
+        let strumentoScelto = "None"; // Usiamo un nome univoco e chiaro
+
+        if (rigaNome.includes('@')) {
+            const parts = rigaNome.split('@');
+            rigaNome = parts[0].trim();
+            strumentoScelto = parts[1].trim();
         }
+
+        // Rimuove i marcatori di genere (M) o (F) dal nome per PokeAPI
+        pokemon.nome = rigaNome.replace(/\s*\([MF]\)\s*/gi, '').trim();
+        pokemon.strumento = strumentoScelto;
 
         pokemon.mosse = [];
         lines.forEach(line => {
@@ -1447,6 +1452,9 @@ function parseShowdown(text) {
             if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
             if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
             if (line.startsWith('-')) pokemon.mosse.push(line.replace('-', '').trim());
+            
+            // 🔥 NOTA: Controlla se qui dentro avevi scritto per sbaglio righe tipo "instrumento = ..." 
+            // Se sì, questa versione pulita rimuove ogni vecchio rigo errato.
         });
 
         // Completiamo con mosse vuote se sono meno di 4
@@ -1458,337 +1466,200 @@ function parseShowdown(text) {
     return teams;
 }
 
-// 1. ESTRATTORE POKEAPI (Corretto per parser in italiano e calcolo statistiche)
-async function preparaDatiTeamPerValidazione(pokemonList) {
-    const promesseTeam = pokemonList.map(async (pkmn) => {
-        const nomePkmn = pkmn.nome || pkmn.name;
+
+async function preparaDatiTeamPerValidazione(listaPokemon) {
+    const promesse = listaPokemon.map(async (pkmn) => {
+        const nomePkmn = pkmn.nome;
         if (!nomePkmn) return null;
 
-        const nomeIdPokeAPI = nomePkmn.toLowerCase().replace(/\s+/g, '-');
-        
+        // Formatta il nome per PokeAPI (es. "Tapu Koko" -> "tapu-koko")
+        const nomeIdPokeAPI = nomePkmn.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
         try {
+            // 1. Chiamata principale alla risorsa pokemon (accetta anche le forme alternative)
             const resPokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeIdPokeAPI}`);
             if (!resPokemon.ok) throw new Error(`Non trovato su PokeAPI`);
             const dataPkmn = await resPokemon.json();
 
-            const resSpecies = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeIdPokeAPI}`);
-            const dataSpecie = resSpecies.ok ? await resSpecies.json() : null;
-
-            // --- ESTRAZIONE GENERAZIONE ---
-            // L'URL è solitamente: "https://pokeapi.co/api/v2/generation/1/"
+            // 2. Usiamo l'URL della specie sicuro restituito da PokeAPI stessa
+            const resSpecies = await fetch(dataPkmn.species.url);
             let genId = 0;
-            if (dataSpecie && dataSpecie.generation) {
-                const parts = dataSpecie.generation.url.split('/').filter(Boolean);
-                genId = parseInt(parts[parts.length - 1]);
-            }
 
-            const stats = {};
-            let bst = 0;
-            let highestStatName = "HP";
-            let maxStatVal = -1;
-
-            dataPkmn.stats.forEach(s => {
-                const valore = s.base_stat;
-                const nomeStat = s.stat.name; 
-                bst += valore; 
-                
-                let nomeFormattato = nomeStat.toUpperCase();
-                if (nomeStat === 'special-attack') nomeFormattato = "Sp. Attack";
-                if (nomeStat === 'special-defense') nomeFormattato = "Sp. defense";
-                if (nomeStat === 'speed') nomeFormattato = "Speed";
-                if (nomeStat === 'attack') nomeFormattato = "Attack";
-                if (nomeStat === 'defense') nomeFormattato = "Defense";
-
-                stats[nomeFormattato] = valore;
-                if (valore > maxStatVal) {
-                    maxStatVal = valore;
-                    highestStatName = nomeFormattato;
+            if (resSpecies.ok) {
+                const dataSpecie = await resSpecies.json();
+                if (dataSpecie.generation && dataSpecie.generation.url) {
+                    const parts = dataSpecie.generation.url.split('/').filter(Boolean);
+                    genId = parseInt(parts[parts.length - 1]); // Estrae il numero della generazione
                 }
-            });
+            }
 
             return {
                 name: nomePkmn,
-                name_starts: nomePkmn.charAt(0).toUpperCase(),
-                name_length: nomePkmn.length,
-                generation: genId, // <--- CAMPO AGGIUNTO
-                height: dataPkmn.height * 10,
-                weight: dataPkmn.weight / 10,
-                type: dataPkmn.types.map(t => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)), 
-                color: dataSpecie ? dataSpecie.color.name.charAt(0).toUpperCase() + dataSpecie.color.name.slice(1) : null,
-                egg_group: dataSpecie && dataSpecie.egg_groups ? dataSpecie.egg_groups.map(g => g.name.charAt(0).toUpperCase() + g.name.slice(1)) : [],
-                bst: bst,
-                highest_stat: highestStatName,
-                base_friendship: dataSpecie ? dataSpecie.base_happiness : 0,
-                habitat: dataSpecie && dataSpecie.habitat ? dataSpecie.habitat.name : null,
-                shape: dataSpecie && dataSpecie.shape ? dataSpecie.shape.name : null,
-                is_legendary: dataSpecie && dataSpecie.is_legendary ? "Only Legendary" : "Allowed",
-                is_mythical: dataSpecie && dataSpecie.is_mythical ? "Only Mythical" : "Allowed",
-                movesSet: pkmn.mosse || [],
-                itemSet: pkmn.strumento || null
+                generation: genId,
+                erroreDati: false
             };
 
         } catch (err) {
-            console.error(`Errore nel fetching di ${nomePkmn}:`, err);
+            console.error(`Errore nel recupero della generazione per ${nomePkmn}:`, err);
             return { name: nomePkmn, erroreDati: true };
         }
     });
 
-    return (await Promise.all(promesseTeam)).filter(p => p !== null);
+    return (await Promise.all(promesse)).filter(p => p !== null);
 }
 
-function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
-    const errori = [];
+// Trasformata in 'async' per poter attendere il caricamento dei file JSON
+// --- 1. FUNZIONI DI VALIDAZIONE (Logica Core) ---
+
+// --- 1. FUNZIONI DI VALIDAZIONE (Logica Core) ---
+
+async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
+    let tuttiGliErrori = [];
     
-    // Se il formato è libero, non facciamo nulla
     if (regolamento.strutturaSito === 'anything_goes') {
         return { valido: true, errori: [] };
     }
 
-    // --- 1. CONTROLLO GENERAZIONI (Up-to / Within) ---
-    if (regolamento.genRuleType && regolamento.genRuleValue) {
-        const genLimite = parseInt(regolamento.genRuleValue);
-        
-        teamDatiPokeAPI.forEach(pkmn => {
-            if (pkmn.erroreDati) return;
+    let jsonDati = null;
+    const genLimite = parseInt(regolamento.genRuleValue);
+    
+    try {
+        let percorsoFile = "";
+        // Nota: se genRuleType è 'up_to', carichiamo natdex-tiers.json
+        if (regolamento.genRuleType === "within") {
+            percorsoFile = `pkm-gens/gen${genLimite}.json`;
+        } else if (regolamento.genRuleType === "up_to") {
+            percorsoFile = `pkm-gens/natdex-tiers.json`;
+        }
 
-            if (regolamento.genRuleType === "up_to") {
-                // "Up to Gen X": Il pokémon deve essere apparso dalla Gen 1 alla Gen X
-                if (pkmn.generation > genLimite) {
-                    errori.push(`[${pkmn.name}] non è legale: il formato permette solo Pokémon fino alla Gen ${genLimite}.`);
-                }
-            } 
-            else if (regolamento.genRuleType === "within") {
-                // "Within Gen X": Il pokémon deve essere apparso ESATTAMENTE nella Gen X
-                if (pkmn.generation !== genLimite) {
-                    errori.push(`[${pkmn.name}] non appartiene alla Gen ${genLimite} (natività errata).`);
-                }
-            }
-        });
+        if (percorsoFile) {
+            const risposta = await fetch(percorsoFile);
+            if (risposta.ok) jsonDati = await risposta.json();
+        }
+    } catch (err) {
+        console.error("Errore nel caricamento file validazione:", err);
     }
 
-    // --- 2. CONTROLLO RESTRIZIONI SPECIFICHE ---
-    const restrizioni = regolamento.restrizioni?.pokemon || {};
-
-    Object.keys(restrizioni).forEach(campo => {
-        const regola = restrizioni[campo];
-
-        if (regola.value === "SAME_ACROSS_TEAM") {
-            const primoValore = teamDatiPokeAPI[0][campo];
-            const isCoerente = teamDatiPokeAPI.every(pkmn => {
-                const valoreCorrente = pkmn[campo];
-                if (Array.isArray(primoValore) && Array.isArray(valoreCorrente)) {
-                    return JSON.stringify([...primoValore].sort()) === JSON.stringify([...valoreCorrente].sort());
-                }
-                return valoreCorrente === primoValore;
-            });
-            if (!isCoerente) {
-                errori.push(`Regola violata: Tutti i Pokémon devono avere lo stesso valore per "${campo}".`);
-            }
-        } 
-        else if (regola.mode === "SPECIFIC") {
-            teamDatiPokeAPI.forEach(pkmn => {
-                const valoreEffettivo = pkmn[campo];
-                if (!verificaOperatoreLogico(valoreEffettivo, regola)) {
-                    errori.push(`[${pkmn.name}] non rispetta la regola "${campo}" (${regola.operator} ${regola.value}).`);
-                }
-            });
-        }
-    });
+    const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
+    const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
+    
+    tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier);
 
     return {
-        valido: errori.length === 0,
-        errori: errori
+        valido: tuttiGliErrori.length === 0,
+        errori: tuttiGliErrori
     };
 }
 
-
-// 3. RISOLUTORE LOGICO (Potenziato per gestire Array come Tipo Doppio e Gruppi Uovo Multipli)
-function verificaOperatoreLogico(valoreEffettivo, regola) {
-    if (regola.mode !== "SPECIFIC") return true;
-
-    const op = regola.operator;
-    const valRegola = regola.value;
-
-    // 🔥 FIX 5: Se il valore è un array (es. il Pokémon ha due Tipi: ["Fire", "Flying"])
-    if (Array.isArray(valoreEffettivo)) {
-        if (op === "equals") {
-            // È valido se ALMENO UNO dei tipi del Pokémon corrisponde alla regola (case-insensitive)
-            return valoreEffettivo.some(v => String(v).toLowerCase() === String(valRegola).toLowerCase());
-        }
-        return true; 
-    }
-
-    if (typeof valoreEffettivo === 'string' && isNaN(valoreEffettivo)) {
-        if (op === "equals") {
-            return valoreEffettivo.toLowerCase() === String(valRegola).toLowerCase();
-        }
-        return true;
-    }
-
-    const numEffettivo = Number(valoreEffettivo);
+function validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati) {
+    const errori = [];
+    if (!regolamento.genRuleType || !regolamento.genRuleValue) return errori;
     
-    if (op === "between") {
-        const min = regola.min !== undefined && regola.min !== "" ? Number(regola.min) : -Infinity;
-        const max = regola.max !== undefined && regola.max !== "" ? Number(regola.max) : Infinity;
-        return numEffettivo >= min && numEffettivo <= max;
-    }
+    const genLimite = parseInt(regolamento.genRuleValue);
 
-    const numRegola = Number(valRegola);
-    switch (op) {
-        case "equals": return numEffettivo === numRegola;
-        case "lt":     return numEffettivo < numRegola;
-        case "gt":     return numEffettivo > numRegola;
-        case "lte":    return numEffettivo <= numRegola;
-        case "gte":    return numEffettivo >= numRegola;
-        default:       return true;
-    }
+    teamDatiPokeAPI.forEach(pkmn => {
+        if (pkmn.erroreDati) return;
+        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        if (regolamento.genRuleType === "up_to") {
+            if (pkmn.generation > genLimite) {
+                errori.push(`[${pkmn.name}] non è legale: il formato permette solo Gen ${genLimite} (Introdotto in Gen ${pkmn.generation}).`);
+            }
+        } else if (regolamento.genRuleType === "within") {
+            const dati = jsonDati ? jsonDati[nomeChiave] : null;
+            if (!dati || dati.tier === "Illegal" || dati.tier === "Past") {
+                errori.push(`[${pkmn.name}] non è legale: non fa parte del Pokédex per la Gen ${genLimite}.`);
+            }
+        }
+    });
+    return errori;
 }
 
-// Funzione per salvare su Firebase
+function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
+    const errori = [];
+    if (!regolamento.baseTier || regolamento.baseTier === "ALL" || !jsonDati) return errori;
+
+    // DEFINIZIONE GERARCHIA TUTTA IN MAIUSCOLO PER SICUREZZA
+    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
+    const tierMassima = regolamento.baseTier.toUpperCase();
+    const idxMax = gerarchia.indexOf(tierMassima);
+
+    teamDatiPokeAPI.forEach(pkmn => {
+        if (pkmn.erroreDati) return;
+        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        const valoreGrezzo = jsonDati[nomeChiave];
+        if (!valoreGrezzo) {
+            console.warn(`Tier non trovata nel JSON per: ${pkmn.name}`);
+            return;
+        }
+
+        const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
+
+        const idxPkmn = gerarchia.indexOf(tierPokemon);
+        
+        // Debug log (puoi rimuoverlo una volta che funziona)
+        console.log(`Validazione Tier: ${pkmn.name} | Tier: ${tierPokemon} (idx:${idxPkmn}) vs Max: ${tierMassima} (idx:${idxMax})`);
+
+        if (idxMax !== -1 && idxPkmn !== -1 && idxPkmn < idxMax) {
+            errori.push(`[${pkmn.name}] è bandito: è ${tierPokemon}, superiore al limite ${tierMassima}.`);
+        }
+    });
+    return errori;
+}
+
+// --- 2. FUNZIONE DI SALVATAGGIO ---
+
 async function salvaTeamSuFirebase() {
     const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
-
-    // --- 1. RECUPERO DEI DATI DAGLI INPUT DELLA PAGINA ---
     const inputNome = document.getElementById('admin-team-name'); 
     const selectFormato = document.getElementById('admin-team-cat'); 
     const textareaShowdown = document.getElementById('showdown-input'); 
 
-    // Controllo di sicurezza immediato
-    if (!inputNome || !selectFormato || !textareaShowdown) {
-        alert("Errore tecnico: Uno o più ID HTML (admin-team-name, admin-team-cat, showdown-input) non sono stati trovati nella pagina.");
-        return;
-    }
+    if (!inputNome || !selectFormato || !textareaShowdown) return;
 
     const nomeTeamScelto = inputNome.value.trim();
     const idRegolamentoScelto = selectFormato.value;
     const testoShowdown = textareaShowdown.value.trim();
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
-        alert("Per favore, compila tutti i campi: inserisci il nome, seleziona il formato e incolla lo Showdown.");
+        alert("Compila tutti i campi.");
         return;
     }
 
-    // --- 2. GENERAZIONE DEL TEAM TRAMITE IL TUO PARSER ---
-    const datiTeam = parseShowdown(testoShowdown);
-    datiTeam.nome = nomeTeamScelto; // Assegna il nome scelto dall'input
-
-    if (!datiTeam.pokemon || datiTeam.pokemon.length === 0) {
-        alert("Il testo Showdown inserito non è valido o è vuoto.");
-        return;
-    }
+    const listaPokemonEstratti = parseShowdown(testoShowdown); 
+    const datiTeamDaSalvare = { nome: nomeTeamScelto, pokemon: listaPokemonEstratti, categoria: null, dataUltimaModifica: Date.now() };
 
     let regolamento = null;
-
-    // --- 3. RECUPERO FLESSIBILE DEL REGOLAMENTO DAL DB (CASE-INSENSITIVE) ---
     try {
         const allRegolamentiSnap = await databaseRef.child('regolamenti').once('value');
-        
-        if (allRegolamentiSnap.exists()) {
-            allRegolamentiSnap.forEach(childSnapshot => {
-                const datiFormato = childSnapshot.val();
-                
-                // Confronto insensibile alle maiuscole (es. "MONOTYPE" combacerà con "Monotype")
-                if (datiFormato.categoria && idRegolamentoScelto && 
-                    datiFormato.categoria.toLowerCase() === idRegolamentoScelto.toLowerCase()) {
-                    regolamento = datiFormato; 
-                }
-            });
-        }
+        allRegolamentiSnap.forEach(childSnapshot => {
+            const datiFormato = childSnapshot.val();
+            if (datiFormato.categoria && idRegolamentoScelto && datiFormato.categoria.toLowerCase() === idRegolamentoScelto.toLowerCase()) {
+                regolamento = datiFormato; 
+            }
+        });
+        if (!regolamento) { alert("Regolamento non trovato."); return; }
+    } catch (error) { alert("Errore database: " + error.message); return; }
 
-        if (!regolamento) {
-            alert(`Regolamento non trovato: "${idRegolamentoScelto}" non esiste sul Database.`);
-            return;
-        }
+    const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
+    const esitoValidazione = await validaTeamDinamico(datiPokeAPI, regolamento);
 
-    } catch (error) {
-        console.error("Errore durante il recupero del regolamento:", error);
-        alert("Errore nel caricamento delle regole: " + error.message);
+    if (!esitoValidazione.valido) {
+        let outputErrori = `Il team non è legale:\n\n`;
+        esitoValidazione.errori.forEach(err => outputErrori += `- ${err}\n`);
+        alert(outputErrori);
         return;
     }
 
-    // --- 4. AVVISO DI CARICAMENTO E VALIDAZIONE CON POKEAPI ---
-    console.log("Interrogazione PokeAPI in corso...");
-    
-    // Passiamo l'array .pokemon generato dal tuo parseShowdown
-    const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeam.pokemon);
-    const esitoValidazione = validaTeamDinamico(datiPokeAPI, regolamento);
-
-    if (!esitoValidazione.valido) {
-        let outputErrori = `Il team non è legale per il formato "${regolamento.categoria}":\n\n`;
-        esitoValidazione.errori.forEach(err => outputErrori += `- ${err}\n`);
-        alert(outputErrori);
-        return; // Blocca il salvataggio se fallisce i controlli di legalità
-    }
-
-    // --- 5. SALVATAGGIO SU FIREBASE (Sotto players/didi/teams) ---
     try {
         const teamRef = databaseRef.child('players/didi/teams').push();
-        
-        // Configura le proprietà per rispettare la struttura del tuo DB
-        datiTeam.categoria = regolamento.categoria; // Salva la stringa corretta del DB (es. "Monotype")
-        datiTeam.dataUltimaModifica = Date.now();   // Timestamp numerico
-        
-        await teamRef.set(datiTeam);
-        alert(`Il nuovo team "${datiTeam.nome}" è stato validato e inserito con successo nel tuo Box!`);
-        
-        // Svuota i campi di testo dopo il salvataggio completato
+        datiTeamDaSalvare.categoria = regolamento.categoria; 
+        await teamRef.set(datiTeamDaSalvare);
+        alert("Team salvato con successo!");
         textareaShowdown.value = "";
         inputNome.value = "";
-        
-    } catch (error) {
-        console.error("Errore durante il salvataggio del team:", error);
-        alert("Errore nel salvataggio del team: " + error.message);
-    }
-}
-
-// Funzione utilitaria per pulire il pannello ed evitare bug al prossimo inserimento
-function resetAdminPanel() {
-    const adminPanel = document.getElementById('admin-panel');
-    document.getElementById('showdown-input').value = "";
-    document.getElementById('admin-team-name').value = "";
-    
-    // RIMUOVIAMO l'ID di editing per non sovrascrivere il prossimo team per sbaglio
-    delete adminPanel.dataset.editingId;
-    
-    adminPanel.style.display = 'none';
-    
-    // Se hai una funzione che scarica i dati da Firebase, chiamala qui
-    if (typeof scaricaDati === "function") scaricaDati();
-}
-
-function parseShowdown(text) {
-    const blocks = text.trim().split(/\n\s*\n/);
-    let team = { pokemon: [] };
-
-    blocks.forEach(block => {
-        const lines = block.split('\n').map(l => l.trim());
-        if (lines.length < 1) return;
-
-        let p = { mosse: [] };
-        
-        // Nome e Strumento
-        if (lines[0].includes('@')) {
-            const parts = lines[0].split('@');
-            p.nome = parts[0].trim();
-            p.strumento = parts[1].trim();
-        } else {
-            p.nome = lines[0].trim();
-            p.strumento = "Nessuno";
-        }
-
-        lines.forEach(line => {
-            if (line.startsWith('Ability:')) p.abilita = line.replace('Ability:', '').trim();
-            if (line.startsWith('EVs:')) p.evs = line.replace('EVs:', '').trim();
-            if (line.startsWith('-')) p.mosse.push(line.replace('-', '').trim());
-        });
-
-        while (p.mosse.length < 4) p.mosse.push("-");
-        if (!p.abilita) p.abilita = "N/D";
-        if (!p.evs) p.evs = "N/D";
-        
-        team.pokemon.push(p);
-    });
-    return team;
+    } catch (error) { alert("Errore salvataggio: " + error.message); }
 }
 
 // Funzione per ELIMINARE
