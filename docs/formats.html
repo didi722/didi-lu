@@ -141,8 +141,8 @@
                         <div class="format-input-group flex-1">
                             <label>BATTLE STYLE</label>
                             <select id="mandatory-battle-style">
-                                <option value="singles">Singles</option>
                                 <option value="doubles">Doubles</option>
+                                <option value="singles">Singles</option>
                                 <option value="triples">Triples</option>
                                 <option value="rotation">Rotation</option>
                             </select>
@@ -172,8 +172,8 @@
                         <div class="format-input-group flex-1">
                             <label>TIER</label>
                             <select id="mandatory-tier">
-                                <option value="ALL">Standard</option>
-                                <option value="ALL">AG</option>
+                                <option value="STANDARD">Standard</option>
+                                <option value="AG">AG</option>
                                 <option value="Uber">Uber</option>
                                 <option value="OU">OU</option>
                                 <option value="UU">UU</option>
@@ -452,7 +452,7 @@ function gestisciCambioTipoFormato(tipo) {
     sezioneVGC.style.display = 'none';
     sezioneCustom.style.display = 'none';
 
-    // 1. INIEZIONE DELLO STILE DEL TOOLTIP NEUBRUTALIST (Aggiornato: Sopra e leggermente a sinistra del centro)
+    // 1. INIEZIONE DELLO STILE DEL TOOLTIP NEUBRUTALIST
     if (!document.getElementById('nb-tooltip-core-styles')) {
         const style = document.createElement('style');
         style.id = 'nb-tooltip-core-styles';
@@ -465,14 +465,9 @@ function gestisciCambioTipoFormato(tipo) {
             .nb-badge-tooltip {
                 display: none;
                 position: absolute;
-                
-                /* POSIZIONAMENTO: SOPRA, CENTRATO E SPOSTATO LEGGERMENTE A SINISTRA */
-                bottom: 145%; /* Sopra il badge */
-                left: 50%;   /* Allinea al centro del badge */
-                
-                /* Centra orizzontalmente (-50%) e sposta ulteriormente a sinistra di un 5% extra */
+                bottom: 145%; 
+                left: 50%;   
                 transform: translateX(-80%); 
-                
                 background: #ffffff !important;
                 color: #000000 !important;
                 border: 3px solid #000000 !important;
@@ -484,12 +479,11 @@ function gestisciCambioTipoFormato(tipo) {
                 font-family: inherit;
                 text-transform: none;
             }
-            /* Freccetta Neubrutalist centrata sotto il tooltip, tiene conto dello shift a sinistra */
             .nb-badge-tooltip::after {
                 content: '';
                 position: absolute;
-                top: 100%; /* Sotto il tooltip */
-                left: 55%; /* Compensa il translateX(-55%) per apparire al centro del badge */
+                top: 100%; 
+                left: 55%; 
                 transform: translateX(-50%);
                 border-width: 8px;
                 border-style: solid;
@@ -508,48 +502,46 @@ function gestisciCambioTipoFormato(tipo) {
         sezioneCustom.style.display = 'block';
         
         if (badgeClausole) {
-    if (tipo === 'custom') {
-        badgeClausole.classList.remove('disabled');
-        
-        badgeClausole.innerHTML = `
-            STANDARD CLAUSES ACTIVE
-            <div class="nb-badge-tooltip">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">✔</span> Sleep Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">✔</span> Pokémon Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">✔</span> Item Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">✔</span> Max. 2 Uber (if Tier = Standard)
-                </div>
-            </div>
-        `;
-    } else {
-        badgeClausole.classList.add('disabled');
-        
-        badgeClausole.innerHTML = `
-            NO CLAUSES
-            <div class="nb-badge-tooltip">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">❌</span> Sleep Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">❌</span> Pokémon Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">❌</span> Item Clause
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                    <span style="color: black; font-weight: 900;">❌</span> Max. 2 Uber (if Tier = Standard)
-                </div>
-            </div>
-        `;
-    }
-}
+            if (tipo === 'custom') {
+                badgeClausole.classList.remove('disabled');
+                badgeClausole.innerHTML = `
+                    STANDARD CLAUSES ACTIVE
+                    <div class="nb-badge-tooltip">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">✔</span> Sleep Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">✔</span> Pokémon Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">✔</span> Item Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">✔</span> Max. 2 Uber (if Tier = Standard)
+                        </div>
+                    </div>
+                `;
+            } else {
+                badgeClausole.classList.add('disabled');
+                badgeClausole.innerHTML = `
+                    NO CLAUSES
+                    <div class="nb-badge-tooltip">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">❌</span> Sleep Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">❌</span> Pokémon Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">❌</span> Item Clause
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">❌</span> Max. 2 Uber (if Tier = Standard)
+                        </div>
+                    </div>
+                `;
+            }
+        }
         
         if (containerRegole && containerRegole.children.length === 0) {
             aggiungiRigaRegola();
@@ -1152,6 +1144,13 @@ async function salvaNuovoFormato() {
         payload.vgcGen = vgcGen.value;
         payload.vgcFormat = vgcFormat.value;
 
+        // 🔥 AUTOMAZIONE FORMATO VGC: Iniezione parametri impliciti nel Database
+        payload.baseTier = "OU";
+        payload.battleStyle = "doubles";
+        payload.genRuleType = "within";
+        // Estrae solo il valore numerico (es: "Gen 8 VGC" o "8" diventano coerentemente "8")
+        payload.genRuleValue = vgcGen.value.replace(/[^0-9]/g, '');
+
     } else {
         const mStyle = document.getElementById('mandatory-battle-style');
         const mGenType = document.getElementById('mandatory-gen-type');
@@ -1178,7 +1177,19 @@ async function salvaNuovoFormato() {
         payload.battleStyle = mStyle.value;
         payload.genRuleType = mGenType.value;
         payload.genRuleValue = mGenVal.value;
-        payload.baseTier = mTier.value;
+
+        // FIX ANTERIORE: Controllo pulito del valore testuale / option value per AG e STANDARD
+        const valoreTierSelezionato = mTier.value.trim();
+        const opzioneSelezionata = mTier.options[mTier.selectedIndex];
+        const testoTierSelezionato = opzioneSelezionata ? opzioneSelezionata.text.toUpperCase().trim() : "";
+
+        if (valoreTierSelezionato === "AG" || testoTierSelezionato === "AG" || testoTierSelezionato === "ANYTHING GOES") {
+            payload.baseTier = "AG";
+        } else if (valoreTierSelezionato === "STANDARD" || testoTierSelezionato === "STANDARD") {
+            payload.baseTier = "STANDARD";
+        } else {
+            payload.baseTier = valoreTierSelezionato;
+        }
 
         const regoleInserite = raccogliDatiRegole();
         
@@ -1209,31 +1220,23 @@ async function salvaNuovoFormato() {
 
     // 5. INVIO AL DB E AGGIORNAMENTO A CASCATA
     try {
-        // CORRETTO: Adesso punta al metodo .ref() dell'istanza 'db' invece di invocare 'dbRef' indefinito
         const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
         let formatoRef;
 
-        // Se siamo in MODIFICA, controlliamo se il nome è effettivamente cambiato
         if (typeof idFormatoInModifica !== 'undefined' && idFormatoInModifica) {
-            
-            // Recuperiamo il vecchio documento per vedere come si chiamava prima del click
             const vecchioSnap = await databaseRef.child(`regolamenti/${idFormatoInModifica}`).once('value');
             const vecchioFormato = vecchioSnap.val();
             const vecchioNome = vecchioFormato ? vecchioFormato.categoria : null;
 
-            // Se il nome è stato modificato, lanciamo la cascata globale
-            // Se il nome è stato modificato, lanciamo la purga globale atomica
-if (vecchioNome && vecchioNome !== nuovoNome) {
-    await eseguiMigrazioneGlobaleAssoluta(vecchioNome, nuovoNome); // <--- NUOVA GLOBALIZZATA
-}
+            if (vecchioNome && vecchioNome !== nuovoNome) {
+                await eseguiMigrazioneGlobaleAssoluta(vecchioNome, nuovoNome);
+            }
 
-            // Aggiorniamo il regolamento
             formatoRef = databaseRef.child(`regolamenti/${idFormatoInModifica}`);
             await formatoRef.set(payload);
             alert("Formato e relative dipendenze aggiornati con successo!");
 
         } else {
-            // Se è un NUOVO formato, facciamo solo il push standard
             formatoRef = databaseRef.child('regolamenti').push();
             await formatoRef.set(payload);
             alert("Nuovo formato creato con successo!");
@@ -1245,13 +1248,11 @@ if (vecchioNome && vecchioNome !== nuovoNome) {
         const modal = document.getElementById('format-modal');
         if (modal) modal.style.setProperty('display', 'none', 'important');
 
-        // Ripristina l'interfaccia originaria della modale per il prossimo utilizzo (Creazione)
         const modalTitle = document.querySelector('#format-modal h2');
         const btnInvia = document.getElementById('btn-salva-formato');
         if (modalTitle) modalTitle.innerText = "CREA NUOVO FORMATO REGOLE";
         if (btnInvia) btnInvia.innerText = "CREA FORMATO";
 
-        // Svuota i campi principali del form
         if (fName) fName.value = "";
         if (fDesc) fDesc.value = "";
 
@@ -1272,11 +1273,8 @@ async function eseguiMigrazioneGlobaleAssoluta(vecchioNome, nuovoNome) {
 
     try {
         console.log(`🚀 Avvio migrazione globale totale da "${vecchioNome}" a "${nuovoNome}"...`);
-        
-        // 1. Puntiamo alla radice assoluta del database
         const rootRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
         
-        // 2. Scarichiamo l'intero database
         const snapshot = await rootRef.once('value');
         const interoDatabase = snapshot.val();
 
@@ -1285,41 +1283,27 @@ async function eseguiMigrazioneGlobaleAssoluta(vecchioNome, nuovoNome) {
             return;
         }
 
-        // 3. Funzione ricorsiva che setaccia chiavi e valori senza conoscere la struttura
         function analizzaESostituisci(nodo) {
-            // Se incontriamo una stringa, verifichiamo se coincide con il vecchio nome
             if (typeof nodo === 'string') {
                 return nodo === vecchioNome ? nuovoNome : nodo;
             }
-
-            // Se incontriamo un array, processiamo tutti i suoi elementi
             if (Array.isArray(nodo)) {
                 return nodo.map(elemento => analizzaESostituisci(elemento));
             }
-
-            // Se incontriamo un oggetto JSON, processiamo sia le chiavi che i valori
             if (typeof nodo === 'object' && nodo !== null) {
                 const oggettoModificato = {};
                 for (const [chiave, valore] of Object.entries(nodo)) {
-                    // Se la chiave dell'oggetto è il vecchio nome (es. il nodo stats del formato), la rinominiamo
                     const nuovaChiave = chiave === vecchioNome ? nuovoNome : chiave;
-                    // Continuiamo la discesa ricorsiva sul valore
                     oggettoModificato[nuovaChiave] = analizzaESostituisci(valore);
                 }
                 return oggettoModificato;
             }
-
-            // Ritorna il dato così com'è se è un numero, booleano, null, ecc.
             return nodo;
         }
 
-        // 4. Generiamo il nuovo database modificato localmente
         const databaseAggiornato = analizzaESostituisci(interoDatabase);
-
-        // 5. Salva l'intero blocco modificato sovrascrivendo la radice
         await rootRef.set(databaseAggiornato);
-        
-        console.log(`✅ MIGRAZIONE GLOBALE COMPLETATA! Il nome "${vecchioNome}" è stato estirpato e sostituito con "${nuovoNome}".`);
+        console.log(`✅ MIGRAZIONE GLOBALE COMPLETATA! Il nome "${vecchioNome}" è stato sostituito con "${nuovoNome}".`);
 
     } catch (error) {
         console.error("❌ Errore critico durante la migrazione globale:", error);
