@@ -1422,6 +1422,8 @@ window.addEventListener('click', function(event) {
 });
 
 
+// --- 1. FUNZIONI DI PARSING E PREPARAZIONE DATI ---
+
 function parseShowdown(text) {
     const teams = [];
     const blocks = text.split(/\n\s*\n/); // Divide il testo per ogni pokemon (doppio invio)
@@ -1434,7 +1436,7 @@ function parseShowdown(text) {
         
         // Riga 1: Nome @ Strumento
         let rigaNome = lines[0];
-        let strumentoScelto = "None"; // Usiamo un nome univoco e chiaro
+        let strumentoScelto = "None";
 
         if (rigaNome.includes('@')) {
             const parts = rigaNome.split('@');
@@ -1452,9 +1454,6 @@ function parseShowdown(text) {
             if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
             if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
             if (line.startsWith('-')) pokemon.mosse.push(line.replace('-', '').trim());
-            
-            // 🔥 NOTA: Controlla se qui dentro avevi scritto per sbaglio righe tipo "instrumento = ..." 
-            // Se sì, questa versione pulita rimuove ogni vecchio rigo errato.
         });
 
         // Completiamo con mosse vuote se sono meno di 4
@@ -1466,7 +1465,6 @@ function parseShowdown(text) {
     return teams;
 }
 
-
 async function preparaDatiTeamPerValidazione(listaPokemon) {
     const promesse = listaPokemon.map(async (pkmn) => {
         const nomePkmn = pkmn.nome;
@@ -1476,12 +1474,10 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
         const nomeIdPokeAPI = nomePkmn.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
         try {
-            // 1. Chiamata principale alla risorsa pokemon (accetta anche le forme alternative)
             const resPokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeIdPokeAPI}`);
             if (!resPokemon.ok) throw new Error(`Non trovato su PokeAPI`);
             const dataPkmn = await resPokemon.json();
 
-            // 2. Usiamo l'URL della specie sicuro restituito da PokeAPI stessa
             const resSpecies = await fetch(dataPkmn.species.url);
             let genId = 0;
 
@@ -1489,35 +1485,39 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 const dataSpecie = await resSpecies.json();
                 if (dataSpecie.generation && dataSpecie.generation.url) {
                     const parts = dataSpecie.generation.url.split('/').filter(Boolean);
-                    genId = parseInt(parts[parts.length - 1]); // Estrae il numero della generazione
+                    genId = parseInt(parts[parts.length - 1]);
                 }
             }
 
             return {
                 name: nomePkmn,
                 generation: genId,
-                erroreDati: false
+                erroreDati: false,
+                strumento: pkmn.strumento || "None", // Manteniamo lo strumento per le clausole
+                mosse: pkmn.mosse || []               // Manteniamo le mosse per le clausole
             };
 
         } catch (err) {
             console.error(`Errore nel recupero della generazione per ${nomePkmn}:`, err);
-            return { name: nomePkmn, erroreDati: true };
+            return { 
+                name: nomePkmn, 
+                erroreDati: true,
+                strumento: pkmn.strumento || "None",
+                mosse: pkmn.mosse || []
+            };
         }
     });
 
     return (await Promise.all(promesse)).filter(p => p !== null);
 }
 
-// Trasformata in 'async' per poter attendere il caricamento dei file JSON
-// --- 1. FUNZIONI DI VALIDAZIONE (Logica Core) ---
-
-// --- 1. FUNZIONI DI VALIDAZIONE (Logica Core) ---
+// --- 2. FUNZIONI DI VALIDAZIONE (Logica Core) ---
 
 async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     let tuttiGliErrori = [];
     
     if (regolamento.strutturaSito === 'anything_goes') {
-        return { valido: true, errori: [] };
+        return { valido: true, errores: [] };
     }
 
     let jsonDati = null;
@@ -1525,7 +1525,6 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     
     try {
         let percorsoFile = "";
-        // Nota: se genRuleType è 'up_to', carichiamo natdex-tiers.json
         if (regolamento.genRuleType === "within") {
             percorsoFile = `pkm-gens/gen${genLimite}.json`;
         } else if (regolamento.genRuleType === "up_to") {
@@ -1542,8 +1541,9 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
 
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
+    const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
     
-    tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier);
+    tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
 
     return {
         valido: tuttiGliErrori.length === 0,
@@ -1579,7 +1579,6 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     const errori = [];
     if (!regolamento.baseTier || regolamento.baseTier === "ALL" || !jsonDati) return errori;
 
-    // DEFINIZIONE GERARCHIA TUTTA IN MAIUSCOLO PER SICUREZZA
     const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
     const tierMassima = regolamento.baseTier.toUpperCase();
     const idxMax = gerarchia.indexOf(tierMassima);
@@ -1595,12 +1594,8 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
         }
 
         const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
-
         const idxPkmn = gerarchia.indexOf(tierPokemon);
         
-        // Debug log (puoi rimuoverlo una volta che funziona)
-        console.log(`Validazione Tier: ${pkmn.name} | Tier: ${tierPokemon} (idx:${idxPkmn}) vs Max: ${tierMassima} (idx:${idxMax})`);
-
         if (idxMax !== -1 && idxPkmn !== -1 && idxPkmn < idxMax) {
             errori.push(`[${pkmn.name}] è bandito: è ${tierPokemon}, superiore al limite ${tierMassima}.`);
         }
@@ -1608,7 +1603,58 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     return errori;
 }
 
-// --- 2. FUNZIONE DI SALVATAGGIO ---
+function validaClauses(teamDatiPokeAPI, regolamento) {
+    const errori = [];
+    if (!regolamento.strutturaSito) return errori;
+
+    const struttura = regolamento.strutturaSito.toLowerCase();
+    
+    // Attivo solo per VGC (incluso l'eventuale typo vcg) e Custom
+    if (struttura !== 'vgc' && struttura !== 'vcg' && struttura !== 'custom') {
+        return errori;
+    }
+
+    const specieViste = new Set();
+    const strumentiVisti = new Set();
+
+    teamDatiPokeAPI.forEach(pkmn => {
+        if (pkmn.erroreDati) return;
+
+        // 1. Species Clause (No due Pokémon della stessa specie)
+        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (specieViste.has(nomeChiave)) {
+            errori.push(`[Species Clause] Non puoi avere più di un Pokémon della stessa specie: ${pkmn.name}.`);
+        } else {
+            specieViste.add(nomeChiave);
+        }
+
+        // 2. Item Clause (No due strumenti uguali, ignorando "None" o stringhe vuote)
+        if (pkmn.strumento) {
+            const strumentoChiave = pkmn.strumento.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+            if (strumentoChiave && strumentoChiave !== 'none') {
+                if (strumentiVisti.has(strumentoChiave)) {
+                    errori.push(`[Item Clause] Lo strumento "${pkmn.strumento}" è duplicato su più Pokémon.`);
+                } else {
+                    strumentiVisti.add(strumentoChiave);
+                }
+            }
+        }
+
+        // 3. Controllo mossa ad area / Sleep Clause (Dark Void / Vuototetro)
+        if (pkmn.mosse && Array.isArray(pkmn.mosse)) {
+            pkmn.mosse.forEach(mossa => {
+                const mossaChiave = mossa.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+                if (mossaChiave === 'darkvoid' || mossaChiave === 'vuototetro') {
+                    errori.push(`[Mossa Bandita] [${pkmn.name}] ha la mossa "${mossa}", vietata perché addormenta più Pokémon.`);
+                }
+            });
+        }
+    });
+
+    return errori;
+}
+
+// --- 3. FUNZIONE DI SALVATAGGIO (Firebase) ---
 
 async function salvaTeamSuFirebase() {
     const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
