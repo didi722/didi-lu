@@ -136,29 +136,28 @@
     <i class="fas fa-tools"></i>
 </button>
 
-<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;">
-    <div class="format-modal-wrapper">
+<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
         
         <div class="format-modal-header">
-            <h2>LEGALITY EXPLORER</h2>
-            <span class="format-close-btn" onclick="toggleTeambuilderHelper()" style="display: flex;">&times;</span>
+            <h2>TEAM BUILDER ASSISTANT</h2>
+            <span class="format-close-btn" style="display: flex;">&times;</span>
         </div>
         
         <div class="format-modal-container">
             
             <div class="format-modal-card-left">
                 <div class="format-input-group">
-                    <label>SELECT FORMAT</label>
+                    <label>FORMAT</label>
                     <select id="helper-format-select" onchange="gestisciCambioFormatoHelper()">
-                        <option value="">Scegli un formato...</option>
-                        </select>
+                        <option value="">Choose format...</option>
+                    </select>
                 </div>
                 
                 <div class="format-optional-box" style="margin-top: 30px;">
-                    <div class="mandatory-title">ACTIVE RULES</div>
+                    <div class="mandatory-title">RULES</div>
                     <div id="helper-dynamic-filters">
                         <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
-                            Seleziona un formato per analizzare le restrizioni attive sul team.
+                            Choose a format to see rules and available Pokémons.
                         </div>
                     </div>
                 </div>
@@ -166,12 +165,11 @@
             
             <div class="format-modal-card-right">
                 <div class="rules-header-badge-container">
-                    <h3>LEGAL ENTRIES</h3>
+                    <h3>POKÉMONS</h3>
                     <span id="helper-clause-badge" class="clause-badge">Found: <span id="helper-count">0</span></span>
                 </div>
                 
                 <div id="helper-pkm-grid" class="explorer-pkm-scroll-container">
-                    
                     <div class="helper-placeholder-row">
                         Select a format to display legal entries.
                     </div>
@@ -2264,23 +2262,190 @@ async function resetPasswordDalLogin() {
     }
 }
 
+// 1. FUNZIONE APERTURA / CHIUSURA MANUALE (Legata al bottone o alla X)
 function toggleTeambuilderHelper() {
     const modal = document.getElementById('helper-modal-overlay');
     if (!modal) return;
 
     if (modal.style.display === 'none' || modal.style.display === '') {
         modal.style.display = 'flex';
+        // --- AGGIUNTA ---
+        popolaSelettoreFormati(); 
     } else {
         modal.style.display = 'none';
     }
 }
 
-// Stub per evitare errori al cambio formato del selettore nell'helper
-function gestisciCambioFormatoHelper() {
-    const selectedFormat = document.getElementById('helper-format-select').value;
-    console.log("Analisi restrizioni per il formato:", selectedFormat);
+/**
+ * Legge i regolamenti da Firebase e popola la select dell'Helper
+ */
+async function popolaSelettoreFormati() {
+    const select = document.getElementById('helper-format-select');
+    if (!select) {
+        console.error("Elemento 'helper-format-select' non trovato nel DOM.");
+        return;
+    }
+
+    select.innerHTML = '<option value="">Seleziona Formato...</option>';
+
+    try {
+        const snapshot = await db.ref('regolamenti').once('value');
+        if (!snapshot.exists()) return;
+
+        snapshot.forEach((childSnapshot) => {
+            const id = childSnapshot.key;
+            const data = childSnapshot.val();
+            const nomeVisualizzato = data.categoria || id;
+
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = nomeVisualizzato;
+            select.appendChild(option);
+        });
+
+        // --- QUESTA È LA CHIAMATA ---
+        // Collega l'evento change alla tua funzione
+        select.removeEventListener('change', gestisciCambioFormatoHelper); // Opzionale: evita duplicati
+        select.addEventListener('change', gestisciCambioFormatoHelper);
+        
+        console.log("Formati caricati e listener aggiunto.");
+
+    } catch (error) {
+        console.error("Errore durante il caricamento dei formati:", error);
+    }
 }
 
+function ottieniListaBasePerGenerazione(listaCompleta, jsonDati, regolamento) {
+    if (!regolamento.genRuleType || !regolamento.genRuleValue) return [];
+    
+    const genLimite = parseInt(regolamento.genRuleValue);
+    const listaLegali = [];
+
+    // CASO: WITHIN (Usa jsonDati come filtro)
+    if (regolamento.genRuleType === "within") {
+        if (!jsonDati) return [];
+        
+        Object.keys(jsonDati).forEach(nomeChiave => {
+            const dati = jsonDati[nomeChiave];
+            
+            // Logica speculare esatta: 
+            // validaGenerazione scarta se (!dati || dati.tier === "Illegal" || dati.tier === "Past")
+            // Quindi noi teniamo se (dati && dati.tier !== "Illegal" && dati.tier !== "Past")
+            if (dati && dati.tier !== "Illegal" && dati.tier !== "Past") {
+                listaLegali.push({ name: dati.name || nomeChiave, ...dati });
+            }
+        });
+    } 
+    
+    // CASO: UP_TO (Usa la lista completa e la proprietà generation)
+    else if (regolamento.genRuleType === "up_to") {
+        if (!listaCompleta) return [];
+        
+        listaCompleta.forEach(pkmn => {
+            if (pkmn.erroreDati) return;
+
+            // Logica speculare esatta:
+            // validaGenerazione scarta se (pkmn.generation > genLimite)
+            // Quindi noi teniamo se (pkmn.generation <= genLimite)
+            if (pkmn.generation <= genLimite) {
+                listaLegali.push(pkmn);
+            }
+        });
+    }
+
+    return listaLegali;
+}
+
+async function gestisciCambioFormatoHelper() {
+    const select = document.getElementById('helper-format-select');
+    if (!select || !select.value) return;
+
+    const selectedFormatId = select.value;
+
+    try {
+        const snapshot = await db.ref(`regolamenti/${selectedFormatId}`).once('value');
+        const regolamento = snapshot.val();
+        if (!regolamento) return;
+
+        // Recupera il file JSON (il tuo database locale per quel formato)
+        const genLimite = parseInt(regolamento.genRuleValue);
+        let percorsoFile = regolamento.genRuleType === "within" 
+            ? `pkm-gens/gen${genLimite}.json` 
+            : `pkm-gens/natdex-tiers.json`;
+
+        const res = await fetch(percorsoFile);
+        const jsonDati = await res.json(); 
+
+        // CHIAMA LA FUNZIONE SENZA POKEDEXMASTER
+        const listaFiltrata = await generaListaPokémonPerFormato(regolamento, jsonDati);
+
+        console.log("Generazione completata. Pokémon ammessi:", listaFiltrata.length);
+        
+        // Ora listaFiltrata è pronta. 
+        // Puoi usarla per popolare la tua UI o per validare il team.
+
+    } catch (error) {
+        console.error("Errore nel flusso di generazione:", error);
+    }
+}
+
+function inizializzaChiusuraHelper(event) {
+    // 1. Se l'utente clicca sulla X di chiusura, lasciamo agire il suo onclick dedicato
+    if (event.target.closest('.format-close-btn')) {
+        return;
+    }
+    if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
+        const modal = document.getElementById('helper-modal-overlay');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+}
+
+async function generaListaPokémonPerFormato(regolamento, jsonDati) {
+    // Trasformiamo le chiavi del JSON in un array di oggetti, così abbiamo la nostra lista completa
+    let listaCandidati = Object.keys(jsonDati).map(key => ({
+        name: key, 
+        ...jsonDati[key]
+    }));
+
+    // 2. Filtro Generazione (Se è "up_to", dobbiamo filtrare la lista basandoci sulla proprietà generation)
+    if (regolamento.genRuleType === "up_to") {
+        const genLimite = parseInt(regolamento.genRuleValue);
+        // Assumendo che il JSON contenga la proprietà 'generation'
+        listaCandidati = listaCandidati.filter(pkmn => pkmn.generation <= genLimite);
+    } 
+    // Se è "within", la lista è già filtrata dal file genX.json che abbiamo caricato
+    
+    // 3. Filtro Tier
+    if (regolamento.baseTier && regolamento.baseTier !== "ALL") {
+        const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
+        const idxMax = gerarchia.indexOf(regolamento.baseTier.toUpperCase());
+
+        if (idxMax !== -1) {
+            listaCandidati = listaCandidati.filter(pkmn => {
+                const tierPokemon = (pkmn.tier || "OU").toUpperCase();
+                const idxPkmn = gerarchia.indexOf(tierPokemon);
+                return idxPkmn >= idxMax;
+            });
+        }
+    }
+
+    // 4. Filtro Restrizioni Avanzate
+    if (regolamento.restrizioni && regolamento.restrizioni.pokemon) {
+        Object.keys(regolamento.restrizioni.pokemon).forEach(field => {
+            const regola = regolamento.restrizioni.pokemon[field];
+            if (regola.mode === "SPECIFIC") {
+                listaCandidati = listaCandidati.filter(pkmn => {
+                    let valoreEffettivo = pkmn[field];
+                    return validaSingoloOperatore(valoreEffettivo, regola);
+                });
+            }
+        });
+    }
+
+    return listaCandidati;
+}
     </script>
 </body>
 </html>
