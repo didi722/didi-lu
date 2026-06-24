@@ -136,32 +136,48 @@
     <i class="fas fa-tools"></i>
 </button>
 
-<div id="helper-panel" class="helper-panel">
-    <div class="helper-header">
-        <h3><i class="fas fa-tools"></i> Legality Explorer</h3>
-        <span class="close-helper" onclick="toggleTeambuilderHelper()">&times;</span>
-    </div>
-    
-    <div class="helper-body">
-        <div class="helper-section">
-            <label class="helper-label">Seleziona Formato</label>
-            <select id="helper-format-select" class="helper-select" onchange="gestisciCambioFormatoHelper()">
-                <option value="">Scegli un formato...</option>
-                </select>
+<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;">
+    <div class="format-modal-wrapper">
+        
+        <div class="format-modal-header">
+            <h2>LEGALITY EXPLORER</h2>
+            <span class="format-close-btn" onclick="toggleTeambuilderHelper()" style="display: flex;">&times;</span>
         </div>
-
-        <div id="helper-dynamic-filters" class="helper-section dynamic-filters-container">
-            </div>
-
-        <div class="helper-section border-top-helper">
-            <div class="results-meta">
-                <span>Pokémon Utilizzabili:</span>
-                <strong id="helper-count">0</strong>
+        
+        <div class="format-modal-container">
+            
+            <div class="format-modal-card-left">
+                <div class="format-input-group">
+                    <label>SELECT FORMAT</label>
+                    <select id="helper-format-select" onchange="gestisciCambioFormatoHelper()">
+                        <option value="">Scegli un formato...</option>
+                        </select>
+                </div>
+                
+                <div class="format-optional-box" style="margin-top: 30px;">
+                    <div class="mandatory-title">ACTIVE RULES</div>
+                    <div id="helper-dynamic-filters">
+                        <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
+                            Seleziona un formato per analizzare le restrizioni attive sul team.
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div id="helper-pkm-grid" class="helper-grid">
-                <div class="helper-placeholder">Seleziona un formato per vedere i Pokémon legali.</div>
+            <div class="format-modal-card-right">
+                <div class="rules-header-badge-container">
+                    <h3>LEGAL ENTRIES</h3>
+                    <span id="helper-clause-badge" class="clause-badge">Found: <span id="helper-count">0</span></span>
+                </div>
+                
+                <div id="helper-pkm-grid" class="explorer-pkm-scroll-container">
+                    
+                    <div class="helper-placeholder-row">
+                        Select a format to display legal entries.
+                    </div>
+                </div>
             </div>
+            
         </div>
     </div>
 </div>
@@ -1455,20 +1471,54 @@ window.addEventListener('click', function(event) {
     }
 });
 
+function normalizzaNomePerPokeAPI(nomeShowdown) {
+    // Trasforma in minuscolo, sostituisce gli spazi con trattini e rimuove i caratteri speciali
+    let slug = nomeShowdown.toLowerCase().trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
 
-// --- 1. FUNZIONI DI PARSING E PREPARAZIONE DATI ---
+    // Dizionario delle eccezioni più comuni Showdown -> PokeAPI
+    const eccezioniForme = {
+        'mimikyu': 'mimikyu-disguised',
+        'toxtricity': 'toxtricity-amped',
+        'urshifu': 'urshifu-single-strike',
+        'urshifu-rapid-strike': 'urshifu-rapid-strike',
+        'aegislash': 'aegislash-shield',
+        'deoxys': 'deoxys-normal',
+        'keldeo': 'keldeo-ordinary',
+        'meloetta': 'meloetta-aria',
+        'shaymin': 'shaymin-land',
+        'darmanitan': 'darmanitan-standard',
+        'tornadus': 'tornadus-incarnate',
+        'thundurus': 'thundurus-incarnate',
+        'landorus': 'landorus-incarnate',
+        'enamorus': 'enamorus-incarnate',
+        'zygarde': 'zygarde-50',
+        'hoopa': 'hoopa-confined',
+        'lycanroc': 'lycanroc-midday',
+        'wishiwashi': 'wishiwashi-solo',
+        'morpeko': 'morpeko-full-belly',
+        'eiscue': 'eiscue-ice',
+        'indeedee': 'indeedee-male',       // Showdown usa 'Indeedee' per il maschio
+        'indeedee-f': 'indeedee-female',   // e 'Indeedee-F' per la femmina
+        'basculegion': 'basculegion-male',
+        'basculegion-f': 'basculegion-female',
+        'ogerpon': 'ogerpon-teal-mask',
+        'terapagos': 'terapagos-normal'
+    };
+
+    return eccezioniForme[slug] || slug;
+}
 
 function parseShowdown(text) {
     const teams = [];
-    const blocks = text.split(/\n\s*\n/); // Divide il testo per ogni pokemon (doppio invio)
+    const blocks = text.split(/\n\s*\n/);
 
     blocks.forEach(block => {
         const lines = block.split('\n').map(l => l.trim());
         if (lines.length < 2) return;
 
         let pokemon = {};
-        
-        // Riga 1: Nome @ Strumento
         let rigaNome = lines[0];
         let strumentoScelto = "None";
 
@@ -1478,21 +1528,25 @@ function parseShowdown(text) {
             strumentoScelto = parts[1].trim();
         }
 
-        // Rimuove i marcatori di genere (M) o (F) dal nome per PokeAPI
+        // Nome pulito per la UI (es. "Mimikyu")
         pokemon.nome = rigaNome.replace(/\s*\([MF]\)\s*/gi, '').trim();
+        
+        // 🔥 NUOVO: Generiamo l'ID PokeAPI una volta sola qui!
+        pokemon.idPokeAPI = normalizzaNomePerPokeAPI(pokemon.nome); 
+        
         pokemon.strumento = strumentoScelto;
-
         pokemon.mosse = [];
+        pokemon.natura = "Serious";
+
         lines.forEach(line => {
             if (line.startsWith('Ability:')) pokemon.abilita = line.replace('Ability:', '').trim();
             if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
             if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
+            if (line.endsWith('Nature')) pokemon.natura = line.replace('Nature', '').trim();
             if (line.startsWith('-')) pokemon.mosse.push(line.replace('-', '').trim());
         });
 
-        // Completiamo con mosse vuote se sono meno di 4
         while (pokemon.mosse.length < 4) pokemon.mosse.push("");
-        
         teams.push(pokemon);
     });
 
@@ -1504,40 +1558,138 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
         const nomePkmn = pkmn.nome;
         if (!nomePkmn) return null;
 
-        // Formatta il nome per PokeAPI (es. "Tapu Koko" -> "tapu-koko")
-        const nomeIdPokeAPI = nomePkmn.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        // 🔥 MODIFICATO: Usa l'ID pulito estratto dal parser, con fallback di sicurezza per vecchi dati DB
+        const nomeIdPokeAPI = pkmn.idPokeAPI || normalizzaNomePerPokeAPI(nomePkmn);
 
         try {
+            // 1. FETCH BASE POKÉMON
             const resPokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeIdPokeAPI}`);
             if (!resPokemon.ok) throw new Error(`Non trovato su PokeAPI`);
             const dataPkmn = await resPokemon.json();
 
+            // Calcolo BST e Statistica migliore
+            const nomiStat = { hp: "HP", attack: "Attack", defense: "Defense", "special-attack": "Sp. Attack", "special-defense": "Sp. defense", speed: "Speed" };
+            let bst = 0;
+            let miglioreStatNome = "HP";
+            let miglioreStatValore = -1;
+
+            dataPkmn.stats.forEach(s => {
+                bst += s.base_stat;
+                if (s.base_stat > miglioreStatValore) {
+                    miglioreStatValore = s.base_stat;
+                    miglioreStatNome = nomiStat[s.stat.name] || "HP";
+                }
+            });
+
+            // 2. FETCH SPECIE POKÉMON (Colore, Sagoma, Habitat, Legend/Mythical)
             const resSpecies = await fetch(dataPkmn.species.url);
-            let genId = 0;
+            let genId = 1, misterioso = false, leggendario = false, baseFriendship = 70;
+            let colore = "White", habitat = "Grassland", shape = "Ball", eggGroups = [];
 
             if (resSpecies.ok) {
                 const dataSpecie = await resSpecies.json();
-                if (dataSpecie.generation && dataSpecie.generation.url) {
-                    const parts = dataSpecie.generation.url.split('/').filter(Boolean);
-                    genId = parseInt(parts[parts.length - 1]);
-                }
+                misterioso = dataSpecie.is_mythical || false;
+                leggendario = dataSpecie.is_legendary || false;
+                baseFriendship = dataSpecie.base_happiness ?? 70;
+                colore = dataSpecie.color?.name ? dataSpecie.color.name.charAt(0).toUpperCase() + dataSpecie.color.name.slice(1) : "White";
+                habitat = dataSpecie.habitat?.name ? dataSpecie.habitat.name.charAt(0).toUpperCase() + dataSpecie.habitat.name.slice(1) : "Grassland";
+                
+                // Formatta la sagoma per allinearla alle opzioni delle tue regole
+                const shapeRaw = dataSpecie.shape?.name || "ball";
+                shape = shapeRaw.charAt(0).toUpperCase() + shapeRaw.slice(1).replace('-', '_');
+
+                eggGroups = dataSpecie.egg_groups?.map(g => {
+                    let n = g.name.charAt(0).toUpperCase() + g.name.slice(1);
+                    if (n === "Water-1") return "Water1";
+                    if (n === "Water-2") return "Water2";
+                    if (n === "Water-3") return "Water3";
+                    if (n === "No-eggs") return "No-eggs";
+                    return n;
+                }) || [];
             }
 
+            // 3. FETCH STRUMENTO IN PARALLELO
+            let infoStrumento = { is_berry: false, is_consumable: false, is_healing: false, has_negative_effect: false };
+            if (pkmn.strumento && pkmn.strumento.toLowerCase() !== 'none') {
+                try {
+                    const idStrumento = pkmn.strumento.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                    const resItem = await fetch(`https://pokeapi.co/api/v2/item/${idStrumento}`);
+                    if (resItem.ok) {
+                        const dataItem = await resItem.json();
+                        infoStrumento.is_berry = dataItem.attributes?.some(a => a.name === 'berry') || dataItem.category?.name === 'berries';
+                        infoStrumento.is_consumable = dataItem.attributes?.some(a => a.name === 'consumable') || false;
+                        infoStrumento.is_healing = dataItem.category?.name?.includes('healing') || false;
+                        infoStrumento.has_negative_effect = idStrumento.includes('choice') || idStrumento.includes('toxic-orb') || idStrumento.includes('flame-orb') || idStrumento.includes('life-orb');
+                    }
+                } catch(e) { console.warn("Errore fetch strumento", e); }
+            }
+
+            // 4. FETCH MOSSE IN PARALLELO
+            const promesseMosse = pkmn.mosse.map(async (nomeMossa) => {
+                if (!nomeMossa) return null;
+                try {
+                    const idMossa = nomeMossa.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                    const resMove = await fetch(`https://pokeapi.co/api/v2/move/${idMossa}`);
+                    if (!resMove.ok) return null;
+                    const dataMove = await resMove.json();
+
+                    return {
+                        name: nomeMossa,
+                        power: dataMove.power || 0,
+                        category: dataMove.damage_class?.name ? dataMove.damage_class.name.charAt(0).toUpperCase() + dataMove.damage_class.name.slice(1) : "Physical",
+                        type: dataMove.type?.name ? dataMove.type.name.charAt(0).toUpperCase() + dataMove.type.name.slice(1) : "Normal",
+                        max_pp: dataMove.pp || 0,
+                        accuracy: dataMove.accuracy || 100,
+                        priority: dataMove.priority || 0,
+                        is_protect: idMossa === 'protect' || idMossa === 'detect' || idMossa === 'spiky-shield' || idMossa === 'baneful-bunker' || idMossa === 'kings-shield' || idMossa === 'silk-trap',
+                        is_contact: dataMove.flags?.some(f => f.name === 'contact') || false,
+                        sound_based: dataMove.flags?.some(f => f.name === 'sound') || false,
+                        punch: idMossa.includes('punch') || dataMove.flags?.some(f => f.name === 'punch'),
+                        healing: dataMove.meta?.category?.name === 'heal' || idMossa === 'recover' || idMossa === 'roost' || idMossa === 'soft-boiled'
+                    };
+                } catch { return null; }
+            });
+            const infoMosse = (await Promise.all(promesseMosse)).filter(Boolean);
+
+            // 5. COMPILAZIONE PAYLOAD COMPLETO PER REGOLE DINAMICHE
             return {
                 name: nomePkmn,
+                idPokeAPI: nomeIdPokeAPI, // 🔥 Conserviamo l'ID associato anche per usi futuri sulla UI
                 generation: genId,
                 erroreDati: false,
-                strumento: pkmn.strumento || "None", // Manteniamo lo strumento per le clausole
-                mosse: pkmn.mosse || []               // Manteniamo le mosse per le clausole
+                strumento: pkmn.strumento || "None",
+                mosse: pkmn.mosse || [],
+                
+                // Variabili meccanismo Regole Avanzate (Categoria Pokémon)
+                name_starts: nomePkmn.trim().charAt(0).toUpperCase(),
+                name_length: nomePkmn.replace(/\s+/g, '').length,
+                height: dataPkmn.height * 10, // PokeAPI restituisce decimetri -> convertiamo in cm
+                weight: dataPkmn.weight / 10, // PokeAPI restituisce ettogrammi -> convertiamo in kg
+                type: dataPkmn.types.map(t => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)),
+                color: colore,
+                egg_group: eggGroups,
+                bst: bst,
+                highest_stat: miglioreStatNome,
+                base_friendship: baseFriendship,
+                habitat: habitat,
+                shape: shape,
+                nature: pkmn.natura || "Serious",
+                is_legendary: leggendario,
+                is_mythical: misterioso,
+
+                // Sotto-strutture per Strumenti e Mosse
+                itemData: infoStrumento,
+                movesData: infoMosse
             };
 
         } catch (err) {
-            console.error(`Errore nel recupero della generazione per ${nomePkmn}:`, err);
+            console.error(`Errore nel recupero dati per ${nomePkmn}:`, err);
             return { 
                 name: nomePkmn, 
-                erroreDati: true,
-                strumento: pkmn.strumento || "None",
-                mosse: pkmn.mosse || []
+                idPokeAPI: nomeIdPokeAPI, // 🔥 Passiamo l'ID anche nel catch per non rompere i grafici/sprite esterni
+                erroreDati: true, 
+                strumento: pkmn.strumento || "None", 
+                mosse: pkmn.mosse || [] 
             };
         }
     });
@@ -1547,11 +1699,14 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
 
 // --- 2. FUNZIONI DI VALIDAZIONE (Logica Core) ---
 
+// Array di supporto per mappare gli indici delle Tier Smogon salvate nel DB
+const ORDINE_TIER_REGOLE = ["LC", "NFE", "ZU", "PU", "NU", "RU", "UU", "OU", "Ubers", "AG"];
+
 async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     let tuttiGliErrori = [];
     
     if (regolamento.strutturaSito === 'anything_goes') {
-        return { valido: true, errores: [] };
+        return { valido: true, errori: [] }; // 🌟 Uniformato in 'errori'
     }
 
     let jsonDati = null;
@@ -1573,16 +1728,189 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
         console.error("Errore nel caricamento file validazione:", err);
     }
 
+    // Controlli Standard Preesistenti
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
     
     tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
 
+    // CONTROLLO DELLE RESTRIZIONI AVANZATE E DINAMICHE
+    if (regolamento.restrizioni) {
+        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati);
+        tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
+    }
+
     return {
         valido: tuttiGliErrori.length === 0,
         errori: tuttiGliErrori
     };
+}
+
+function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
+    const errori = [];
+
+    // --- 1. CONTROLLI CATEGORIA: POKÉMON ---
+    if (restrizioni.pokemon) {
+        Object.keys(restrizioni.pokemon).forEach(field => {
+            const regola = restrizioni.pokemon[field];
+
+            // Intercetta se il "mode" o il "value" dicono di controllare l'uniformità del team
+            if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
+                
+                // 🌟 ECCEZIONE SPECIALE: Formato Monotype (field === 'type')
+                if (field === 'type') {
+                    // Trasformiamo i tipi di ogni pokemon in array puliti (es. ['Water', 'Flying'])
+                    const listeTipiPerPokemon = team.map(p => {
+                        const val = p[field];
+                        if (!val) return [];
+                        return Array.isArray(val) ? val : [val];
+                    }).filter(arr => arr.length > 0);
+
+                    if (listeTipiPerPokemon.length > 0) {
+                        // Partiamo dai tipi del primo Pokémon e filtriamo tenendo solo quelli presenti in TUTTI gli altri
+                        let tipiComuni = listeTipiPerPokemon[0];
+                        
+                        for (let i = 1; i < listeTipiPerPokemon.length; i++) {
+                            tipiComuni = tipiComuni.filter(tipo => listeTipiPerPokemon[i].includes(tipo));
+                        }
+
+                        // Se non è rimasto nessun tipo comune a tutta la squadra, il team non è Monotype
+                        if (tipiComuni.length === 0) {
+                            const tuttiITipiMisti = [...new Set(listeTipiPerPokemon.flat())];
+                            errori.push(`[Restrizione Monotype] Il team non condivide alcun tipo comune. Per essere legale nel formato Monotype, tutti i membri devono avere almeno un tipo condiviso. Tipi trovati: ${tuttiITipiMisti.join(', ')}.`);
+                        }
+                    }
+                } 
+                // Logica standard per tutti gli altri campi (color, egg_group, ecc.)
+                else {
+                    const valoriTeam = team.map(p => p[field]).filter(v => v !== undefined);
+                    const valoriUnici = [...new Set(valoriTeam.flat())];
+
+                    if (valoriUnici.length > 1) {
+                        errori.push(`[Restrizione Team] I Pokémon violano la regola di uniformità per il campo "${field}". Trovati valori differenti: ${valoriUnici.join(', ')}.`);
+                    }
+                }
+            }
+            // Gestione dei valori fissi specifici (es. "color" equals "Red")
+            else if (regola.mode === "SPECIFIC") {
+                team.forEach(p => {
+                    if (p.erroreDati) return;
+                    let valoreEffettivo = p[field];
+
+                    if (field === 'tier' && jsonDati) {
+                        const nomeChiave = p.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const datoGrezzo = jsonDati[nomeChiave];
+                        const stringaTier = (typeof datoGrezzo === 'object' ? datoGrezzo.tier : datoGrezzo || "OU").toUpperCase();
+                        valoreEffettivo = ORDINE_TIER_REGOLE.indexOf(stringaTier);
+                    }
+
+                    if (field === 'is_legendary') {
+                        if (regola.value === "Only Legendary" && !p.is_legendary) {
+                            errori.push(`[${p.name}] Non valido: Il formato accetta esclusivamente Pokémon Leggendari.`);
+                        }
+                        return;
+                    }
+                    if (field === 'is_mythical') {
+                        if (regola.value === "Only Mythical" && !p.is_mythical) {
+                            errori.push(`[${p.name}] Non valido: Il formato accetta esclusivamente Pokémon Misteriosi.`);
+                        }
+                        return;
+                    }
+
+                    if (!validaSingoloOperatore(valoreEffettivo, regola)) {
+                        errori.push(`[${p.name}] Viola la restrizione "${field}": Valore registrato non conforme.`);
+                    }
+                });
+            }
+        });
+    }
+
+    // --- 2. CONTROLLI CATEGORIA: STRUMENTI ---
+    if (restrizioni.strumenti) {
+        Object.keys(restrizioni.strumenti).forEach(field => {
+            const regola = restrizioni.strumenti[field];
+            
+            if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
+                const valoriTeam = team.map(p => p.itemData?.[field]).filter(v => v !== undefined);
+                const valoriUnici = [...new Set(valoriTeam)];
+                if (valoriUnici.length > 1) {
+                    errori.push(`[Restrizione Strumenti] Gli strumenti violano la regola di uniformità per il campo "${field}".`);
+                }
+            }
+            else if (regola.mode === "SPECIFIC") {
+                team.forEach(p => {
+                    if (!p.itemData || p.strumento === "None") return;
+                    const valoreEffettivo = p.itemData[field];
+
+                    if (!validaSingoloOperatore(valoreEffettivo, regola)) {
+                        errori.push(`Lo strumento "${p.strumento}" equipaggiato su [${p.name}] viola la restrizione "${field}".`);
+                    }
+                });
+            }
+        });
+    }
+
+    // --- 3. CONTROLLI CATEGORIA: MOSSE ---
+    if (restrizioni.mosse) {
+        Object.keys(restrizioni.mosse).forEach(field => {
+            const regola = restrizioni.mosse[field];
+
+            if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
+                const tuttiIValoriMosse = team.flatMap(p => p.movesData ? p.movesData.map(m => m[field]) : []).filter(v => v !== undefined);
+                const valoriUnici = [...new Set(tuttiIValoriMosse)];
+                if (valoriUnici.length > 1) {
+                    errori.push(`[Restrizione Mosse] Le mosse del team violano la regola di uniformità per il campo "${field}".`);
+                }
+            }
+            else if (regola.mode === "SPECIFIC") {
+                team.forEach(p => {
+                    if (!p.movesData) return;
+                    p.movesData.forEach(mossa => {
+                        const valoreEffettivo = mossa[field];
+                        
+                        if (!validaSingoloOperatore(valoreEffettivo, regola)) {
+                            errori.push(`La mossa "${mossa.name}" scelta per [${p.name}] viola la restrizione "${field}".`);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    return errori;
+}
+
+function validaSingoloOperatore(valoreEffettivo, regola) {
+    let target = regola.value;
+    
+    // Normalizzazione booleani salvati come stringhe all'interno del DB Firebase
+    if (target === "true") target = true;
+    if (target === "false") target = false;
+    if (valoreEffettivo === "true") valoreEffettivo = true;
+    if (valoreEffettivo === "false") valoreEffettivo = false;
+
+    // Gestione Array (es. controllo se un tipo specifico è incluso nei tipi del Pokémon)
+    if (Array.isArray(valoreEffettivo)) {
+        if (regola.operator === "equals") return valoreEffettivo.includes(target);
+    }
+
+    switch (regola.operator) {
+        case "equals":
+            return valoreEffettivo === target;
+        case "lt":
+            return valoreEffettivo < target;
+        case "gt":
+            return valoreEffettivo > target;
+        case "lte":
+            return valoreEffettivo <= target;
+        case "gte":
+            return valoreEffettivo >= target;
+        case "between":
+            return valoreEffettivo >= regola.min && valoreEffettivo <= regola.max;
+        default:
+            return valoreEffettivo === target;
+    }
 }
 
 function validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati) {
@@ -1613,19 +1941,72 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     const errori = [];
     if (!regolamento.baseTier || regolamento.baseTier === "ALL" || !jsonDati) return errori;
 
-    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
     const tierMassima = regolamento.baseTier.toUpperCase();
+
+    // ================= LOGICA TIER: STANDARD =================
+    if (tierMassima === "STANDARD") {
+        let contatoreUber = 0;
+
+        teamDatiPokeAPI.forEach(pkmn => {
+            if (pkmn.erroreDati) return;
+            
+            const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            let valoreGrezzo = jsonDati[nomeChiave];
+            
+            // 🌟 FALLBACK: Se non trova la forma specifica, prova con il nome base (es. Toxtricity)
+            if (!valoreGrezzo && pkmn.name.includes('-')) {
+                const nomeBase = pkmn.name.split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                valoreGrezzo = jsonDati[nomeBase];
+            }
+
+            if (!valoreGrezzo) {
+                console.warn(`Tier non trovata nel JSON nemmeno come nome base per: ${pkmn.name}`);
+                return;
+            }
+
+            const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
+
+            // 1. Blocco Pokémon Misteriosi
+            if (pkmn.isMythical) {
+                errori.push(`[${pkmn.name}] non è ammesso: i Pokémon Misteriosi sono vietati nel formato STANDARD.`);
+            }
+
+            // 2. Controllo tetti massimi (Max 2 Uber, No AG, il resto OU o inferiori)
+            if (tierPokemon === "AG") {
+                errori.push(`[${pkmn.name}] è bandito: appartiene alla tier AG, non ammessa nel formato STANDARD.`);
+            } else if (tierPokemon === "UBER") {
+                contatoreUber++;
+                if (contatoreUber > 2) {
+                    errori.push(`[${pkmn.name}] non è legale: il formato STANDARD permette al massimo 2 Pokémon di tier UBER.`);
+                }
+            } else {
+                // Se non è AG o UBER, verifichiamo che non superi comunque la barriera di OU
+                const gerarchiaStandard = ["OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
+                if (gerarchiaStandard.indexOf(tierPokemon) === -1) {
+                    errori.push(`[${pkmn.name}] ha una tier (${tierPokemon}) non valida per il formato STANDARD.`);
+                }
+            }
+        });
+        return errori;
+    }
+
+    // ================= LOGICA TIER: GERARCHICA CLASSICA (OU, UU, ecc.) =================
+    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
     const idxMax = gerarchia.indexOf(tierMassima);
 
     teamDatiPokeAPI.forEach(pkmn => {
         if (pkmn.erroreDati) return;
-        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
         
-        const valoreGrezzo = jsonDati[nomeChiave];
-        if (!valoreGrezzo) {
-            console.warn(`Tier non trovata nel JSON per: ${pkmn.name}`);
-            return;
+        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        let valoreGrezzo = jsonDati[nomeChiave];
+        
+        // 🌟 FALLBACK: Stessa logica di recupero nome base anche qui
+        if (!valoreGrezzo && pkmn.name.includes('-')) {
+            const nomeBase = pkmn.name.split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+            valoreGrezzo = jsonDati[nomeBase];
         }
+
+        if (!valoreGrezzo) return;
 
         const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
         const idxPkmn = gerarchia.indexOf(tierPokemon);
@@ -1642,8 +2023,6 @@ function validaClauses(teamDatiPokeAPI, regolamento) {
     if (!regolamento.strutturaSito) return errori;
 
     const struttura = regolamento.strutturaSito.toLowerCase();
-    
-    // Attivo solo per VGC (incluso l'eventuale typo vcg) e Custom
     if (struttura !== 'vgc' && struttura !== 'vcg' && struttura !== 'custom') {
         return errori;
     }
@@ -1654,7 +2033,7 @@ function validaClauses(teamDatiPokeAPI, regolamento) {
     teamDatiPokeAPI.forEach(pkmn => {
         if (pkmn.erroreDati) return;
 
-        // 1. Species Clause (No due Pokémon della stessa specie)
+        // 1. Species Clause
         const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (specieViste.has(nomeChiave)) {
             errori.push(`[Species Clause] Non puoi avere più di un Pokémon della stessa specie: ${pkmn.name}.`);
@@ -1662,7 +2041,7 @@ function validaClauses(teamDatiPokeAPI, regolamento) {
             specieViste.add(nomeChiave);
         }
 
-        // 2. Item Clause (No due strumenti uguali, ignorando "None" o stringhe vuote)
+        // 2. Item Clause
         if (pkmn.strumento) {
             const strumentoChiave = pkmn.strumento.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
             if (strumentoChiave && strumentoChiave !== 'none') {
@@ -1674,12 +2053,12 @@ function validaClauses(teamDatiPokeAPI, regolamento) {
             }
         }
 
-        // 3. Controllo mossa ad area / Sleep Clause (Dark Void / Vuototetro)
+        // 3. Sleep Clause limitata (Dark Void)
         if (pkmn.mosse && Array.isArray(pkmn.mosse)) {
             pkmn.mosse.forEach(mossa => {
                 const mossaChiave = mossa.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
                 if (mossaChiave === 'darkvoid' || mossaChiave === 'vuototetro') {
-                    errori.push(`[Mossa Bandita] [${pkmn.name}] ha la mossa "${mossa}", vietata perché addormenta più Pokémon.`);
+                    errori.push(`[Mossa Bandita] [${pkmn.name}] ha la mossa "${mossa}", vietata perché addormenta ad area.`);
                 }
             });
         }
@@ -1886,19 +2265,20 @@ async function resetPasswordDalLogin() {
 }
 
 function toggleTeambuilderHelper() {
-    const panel = document.getElementById('helper-panel');
-    if (!panel) return;
-    
-    if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'flex'; // Usiamo flex per mantenere la struttura colonna interna
+    const modal = document.getElementById('helper-modal-overlay');
+    if (!modal) return;
+
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        modal.style.display = 'flex';
     } else {
-        panel.style.display = 'none';
+        modal.style.display = 'none';
     }
 }
 
-// Stub temporaneo per evitare crash al cambio formato
+// Stub per evitare errori al cambio formato del selettore nell'helper
 function gestisciCambioFormatoHelper() {
-    console.log("Formato selezionato nell'helper:", document.getElementById('helper-format-select').value);
+    const selectedFormat = document.getElementById('helper-format-select').value;
+    console.log("Analisi restrizioni per il formato:", selectedFormat);
 }
 
     </script>
