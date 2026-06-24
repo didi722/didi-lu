@@ -132,6 +132,40 @@
     <span class="plus-icon">+</span>
 </button>
 
+<button onclick="toggleTeambuilderHelper()" class="btn-floating-helper" title="Teambuilder Explorer">
+    <i class="fas fa-tools"></i>
+</button>
+
+<div id="helper-panel" class="helper-panel">
+    <div class="helper-header">
+        <h3><i class="fas fa-tools"></i> Legality Explorer</h3>
+        <span class="close-helper" onclick="toggleTeambuilderHelper()">&times;</span>
+    </div>
+    
+    <div class="helper-body">
+        <div class="helper-section">
+            <label class="helper-label">Seleziona Formato</label>
+            <select id="helper-format-select" class="helper-select" onchange="gestisciCambioFormatoHelper()">
+                <option value="">Scegli un formato...</option>
+                </select>
+        </div>
+
+        <div id="helper-dynamic-filters" class="helper-section dynamic-filters-container">
+            </div>
+
+        <div class="helper-section border-top-helper">
+            <div class="results-meta">
+                <span>Pokémon Utilizzabili:</span>
+                <strong id="helper-count">0</strong>
+            </div>
+            
+            <div id="helper-pkm-grid" class="helper-grid">
+                <div class="helper-placeholder">Seleziona un formato per vedere i Pokémon legali.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // 1. Configurazione Firebase
 const firebaseConfig = {
@@ -1849,6 +1883,22 @@ async function resetPasswordDalLogin() {
         // 5. Spegni il loader
         if (loader) loader.classList.remove('active');
     }
+}
+
+function toggleTeambuilderHelper() {
+    const panel = document.getElementById('helper-panel');
+    if (!panel) return;
+    
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'flex'; // Usiamo flex per mantenere la struttura colonna interna
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Stub temporaneo per evitare crash al cambio formato
+function gestisciCambioFormatoHelper() {
+    console.log("Formato selezionato nell'helper:", document.getElementById('helper-format-select').value);
 }
 
     </script>
