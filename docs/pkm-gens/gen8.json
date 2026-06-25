@@ -53,7 +53,7 @@
   "pikachu": {
     "tier": "ZU"
   },
-  "pikachuoriginal": {
+  "pikachu-original": {
     "tier": "ZU"
   },
   "pikachuhoenn": {
@@ -68,7 +68,7 @@
   "pikachukalos": {
     "tier": "ZU"
   },
-  "pikachualola": {
+  "pikachu-alola": {
     "tier": "ZU"
   },
   "pikachupartner": {
@@ -83,19 +83,19 @@
   "raichu": {
     "tier": "ZU"
   },
-  "raichualola": {
+  "raichu-alola": {
     "tier": "PUBL"
   },
   "sandshrew": {
     "tier": "LC"
   },
-  "sandshrewalola": {
+  "sandshrew-alola": {
     "tier": "NUBL"
   },
   "sandslash": {
     "tier": "PU"
   },
-  "sandslashalola": {
+  "sandslash-alola": {
     "tier": "NUBL"
   },
   "nidoranf": {
@@ -128,13 +128,13 @@
   "vulpix": {
     "tier": "LC"
   },
-  "vulpixalola": {
+  "vulpix-alola": {
     "tier": "NFE"
   },
   "ninetales": {
     "tier": "ZU"
   },
-  "ninetalesalola": {
+  "ninetales-alola": {
     "tier": "OU"
   },
   "igglybuff": {
@@ -170,22 +170,22 @@
   "diglett": {
     "tier": "LC"
   },
-  "diglettalola": {
+  "diglett-alola": {
     "tier": "LC"
   },
   "dugtrio": {
     "tier": "ZU"
   },
-  "dugtrioalola": {
+  "dugtrio-alola": {
     "tier": "ZU"
   },
   "meowth": {
     "tier": "LC"
   },
-  "meowthalola": {
+  "meowth-alola": {
     "tier": "LC"
   },
-  "meowthgalar": {
+  "meowth-galar": {
     "tier": "LC"
   },
   "meowthgmax": {
@@ -194,7 +194,7 @@
   "persian": {
     "tier": "ZU"
   },
-  "persianalola": {
+  "persian-alola": {
     "tier": "ZU"
   },
   "perrserker": {
@@ -254,31 +254,31 @@
   "ponyta": {
     "tier": "LC"
   },
-  "ponytagalar": {
+  "ponyta-galar": {
     "tier": "LC"
   },
   "rapidash": {
     "tier": "ZU"
   },
-  "rapidashgalar": {
+  "rapidash-galar": {
     "tier": "ZU"
   },
   "slowpoke": {
     "tier": "LC"
   },
-  "slowpokegalar": {
+  "slowpoke-galar": {
     "tier": "LC"
   },
   "slowbro": {
     "tier": "OU"
   },
-  "slowbrogalar": {
+  "slowbro-galar": {
     "tier": "RUBL"
   },
   "slowking": {
     "tier": "UU"
   },
-  "slowkinggalar": {
+  "slowking-galar": {
     "tier": "OU"
   },
   "magnemite": {
@@ -293,7 +293,7 @@
   "farfetchd": {
     "tier": "ZU"
   },
-  "farfetchdgalar": {
+  "farfetchd-galar": {
     "tier": "LC"
   },
   "sirfetchd": {
@@ -338,7 +338,7 @@
   "exeggutor": {
     "tier": "ZU"
   },
-  "exeggutoralola": {
+  "exeggutor-alola": {
     "tier": "PUBL"
   },
   "cubone": {
@@ -347,7 +347,7 @@
   "marowak": {
     "tier": "ZU"
   },
-  "marowakalola": {
+  "marowak-alola": {
     "tier": "RU"
   },
   "tyrogue": {
@@ -374,7 +374,7 @@
   "weezing": {
     "tier": "PU"
   },
-  "weezinggalar": {
+  "weezing-galar": {
     "tier": "RU"
   },
   "rhyhorn": {
@@ -431,7 +431,7 @@
   "mrmime": {
     "tier": "ZU"
   },
-  "mrmimegalar": {
+  "mrmime-galar": {
     "tier": "NFE"
   },
   "mrrime": {
@@ -554,19 +554,19 @@
   "articuno": {
     "tier": "ZU"
   },
-  "articunogalar": {
+  "articuno-galar": {
     "tier": "PU"
   },
   "zapdos": {
     "tier": "OU"
   },
-  "zapdosgalar": {
+  "zapdos-galar": {
     "tier": "UUBL"
   },
   "moltres": {
     "tier": "UU"
   },
-  "moltresgalar": {
+  "moltres-galar": {
     "tier": "UUBL"
   },
   "dratini": {
@@ -668,7 +668,7 @@
   "corsola": {
     "tier": "ZU"
   },
-  "corsolagalar": {
+  "corsola-galar": {
     "tier": "NFE"
   },
   "cursola": {
@@ -752,13 +752,13 @@
   "zigzagoon": {
     "tier": "NFE"
   },
-  "zigzagoongalar": {
+  "zigzagoon-galar": {
     "tier": "LC"
   },
   "linoone": {
     "tier": "NUBL"
   },
-  "linoonegalar": {
+  "linoone-galar": {
     "tier": "NFE"
   },
   "obstagoon": {
@@ -1106,19 +1106,19 @@
   "rotom": {
     "tier": "ZU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "tier": "UU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "tier": "UU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "tier": "ZUBL"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "tier": "ZU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "tier": "NU"
   },
   "uxie": {
@@ -1145,7 +1145,7 @@
   "giratina": {
     "tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "tier": "Uber"
   },
   "cresselia": {
@@ -1307,9 +1307,6 @@
   "basculin": {
     "tier": "ZUBL"
   },
-  "basculinbluestriped": {
-    "tier": "ZUBL"
-  },
   "sandile": {
     "tier": "LC"
   },
@@ -1322,19 +1319,19 @@
   "darumaka": {
     "tier": "LC"
   },
-  "darumakagalar": {
+  "darumaka-galar": {
     "tier": "LC"
   },
   "darmanitan": {
     "tier": "UU"
   },
-  "darmanitanzen": {
+  "darmanitan-zen": {
     "tier": "UU"
   },
-  "darmanitangalar": {
+  "darmanitan-galar": {
     "tier": "Uber"
   },
-  "darmanitangalarzen": {
+  "darmanitan-galarzen": {
     "tier": "Uber"
   },
   "maractus": {
@@ -1358,7 +1355,7 @@
   "yamask": {
     "tier": "LC"
   },
-  "yamaskgalar": {
+  "yamask-galar": {
     "tier": "LC"
   },
   "cofagrigus": {
@@ -1511,7 +1508,7 @@
   "stunfisk": {
     "tier": "ZU"
   },
-  "stunfiskgalar": {
+  "stunfisk-galar": {
     "tier": "ZU"
   },
   "mienfoo": {
@@ -1583,13 +1580,13 @@
   "tornadus": {
     "tier": "NUBL"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "tier": "OU"
   },
   "thundurus": {
     "tier": "UUBL"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "tier": "UU"
   },
   "reshiram": {
@@ -1601,43 +1598,31 @@
   "landorus": {
     "tier": "Uber"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "tier": "OU"
   },
   "kyurem": {
     "tier": "Uber"
   },
-  "kyuremblack": {
+  "kyurem-black": {
     "tier": "Uber"
   },
-  "kyuremwhite": {
+  "kyurem-white": {
     "tier": "Uber"
   },
   "keldeo": {
     "tier": "UU"
   },
-  "keldeoresolute": {
+  "keldeo-resolute": {
     "tier": "Unknown"
   },
-  "meloettapirouette": {
+  "meloetta-pirouette": {
     "tier": "Unknown"
   },
   "genesect": {
     "tier": "Uber"
   },
-  "genesectburn": {
-    "tier": "Uber"
-  },
-  "genesectchill": {
-    "tier": "Uber"
-  },
-  "genesectdouse": {
-    "tier": "Uber"
-  },
-  "genesectshock": {
-    "tier": "Uber"
-  },
-  "greninjaash": {
+  "greninja-ash": {
     "tier": "Unknown"
   },
   "bunnelby": {
@@ -1655,12 +1640,6 @@
   "talonflame": {
     "tier": "NU"
   },
-  "vivillonfancy": {
-    "tier": "Unknown"
-  },
-  "vivillonpokeball": {
-    "tier": "Unknown"
-  },
   "pancham": {
     "tier": "LC"
   },
@@ -1673,7 +1652,7 @@
   "meowstic": {
     "tier": "ZU"
   },
-  "meowsticf": {
+  "meowstic-f": {
     "tier": "ZU"
   },
   "honedge": {
@@ -1683,9 +1662,6 @@
     "tier": "PU"
   },
   "aegislash": {
-    "tier": "UUBL"
-  },
-  "aegislashblade": {
     "tier": "UUBL"
   },
   "spritzee": {
@@ -1772,25 +1748,7 @@
   "pumpkaboo": {
     "tier": "LC"
   },
-  "pumpkaboosmall": {
-    "tier": "LC"
-  },
-  "pumpkaboolarge": {
-    "tier": "LC"
-  },
-  "pumpkaboosuper": {
-    "tier": "LC"
-  },
   "gourgeist": {
-    "tier": "ZU"
-  },
-  "gourgeistsmall": {
-    "tier": "ZU"
-  },
-  "gourgeistlarge": {
-    "tier": "ZU"
-  },
-  "gourgeistsuper": {
     "tier": "ZU"
   },
   "bergmite": {
@@ -1812,12 +1770,6 @@
     "tier": "Uber"
   },
   "zygarde": {
-    "tier": "Uber"
-  },
-  "zygarde10": {
-    "tier": "UU"
-  },
-  "zygardecomplete": {
     "tier": "Uber"
   },
   "diancie": {
@@ -1871,23 +1823,17 @@
   "rockruff": {
     "tier": "LC"
   },
-  "rockruffdusk": {
-    "tier": "LC"
-  },
   "lycanroc": {
     "tier": "PU"
   },
-  "lycanrocmidnight": {
+  "lycanroc-midnight": {
     "tier": "ZU"
   },
-  "lycanrocdusk": {
+  "lycanroc-dusk": {
     "tier": "UU"
   },
   "wishiwashi": {
     "tier": "PU"
-  },
-  "wishiwashischool": {
-    "tier": "Unknown"
   },
   "mareanie": {
     "tier": "LC"
@@ -2021,7 +1967,7 @@
   "silvallywater": {
     "tier": "ZU"
   },
-  "miniormeteor": {
+  "minior-meteor": {
     "tier": "Unknown"
   },
   "turtonator": {
@@ -2096,16 +2042,16 @@
   "necrozma": {
     "tier": "RUBL"
   },
-  "necrozmaduskmane": {
+  "necrozma-duskmane": {
     "tier": "Uber"
   },
-  "necrozmadawnwings": {
+  "necrozma-dawnwings": {
     "tier": "Uber"
   },
   "magearna": {
     "tier": "Uber"
   },
-  "magearnaoriginal": {
+  "magearna-original": {
     "tier": "Unknown"
   },
   "marshadow": {
@@ -2273,12 +2219,6 @@
   "cramorant": {
     "tier": "ZU"
   },
-  "cramorantgulping": {
-    "tier": "ZU"
-  },
-  "cramorantgorging": {
-    "tier": "ZU"
-  },
   "arrokuda": {
     "tier": "LC"
   },
@@ -2291,14 +2231,8 @@
   "toxtricity": {
     "tier": "RU"
   },
-  "toxtricitylowkey": {
+  "toxtricity-lowkey": {
     "tier": "RU"
-  },
-  "toxtricitygmax": {
-    "tier": "AG"
-  },
-  "toxtricitylowkeygmax": {
-    "tier": "AG"
   },
   "sizzlipede": {
     "tier": "LC"
@@ -2318,7 +2252,7 @@
   "sinistea": {
     "tier": "LC"
   },
-  "sinisteaantique": {
+  "sinistea-antique": {
     "tier": "LC"
   },
   "polteageist": {
@@ -2378,13 +2312,10 @@
   "indeedee": {
     "tier": "NUBL"
   },
-  "indeedeef": {
+  "indeedee-f": {
     "tier": "NUBL"
   },
   "morpeko": {
-    "tier": "ZU"
-  },
-  "morpekohangry": {
     "tier": "ZU"
   },
   "cufant": {
@@ -2426,13 +2357,13 @@
   "zacian": {
     "tier": "AG"
   },
-  "zaciancrowned": {
+  "zacian-crowned": {
     "tier": "AG"
   },
   "zamazenta": {
     "tier": "Uber"
   },
-  "zamazentacrowned": {
+  "zamazenta-crowned": {
     "tier": "Uber"
   },
   "eternatus": {
@@ -2444,19 +2375,10 @@
   "urshifu": {
     "tier": "Uber"
   },
-  "urshifurapidstrike": {
-    "tier": "OU"
-  },
-  "urshifugmax": {
-    "tier": "AG"
-  },
-  "urshifurapidstrikegmax": {
-    "tier": "AG"
-  },
   "zarude": {
     "tier": "UU"
   },
-  "zarudedada": {
+  "zarude-dada": {
     "tier": "Unknown"
   },
   "regieleki": {
@@ -2474,10 +2396,10 @@
   "calyrex": {
     "tier": "ZU"
   },
-  "calyrexice": {
+  "calyrex-ice": {
     "tier": "Uber"
   },
-  "calyrexshadow": {
+  "calyrex-shadow": {
     "tier": "Uber"
   },
   "syclar": {
@@ -2612,7 +2534,7 @@
   "crucibelle": {
     "tier": "CAP"
   },
-  "crucibellemega": {
+  "crucibelle-mega": {
     "tier": "CAP"
   },
   "pluffle": {
@@ -2681,7 +2603,7 @@
   "venomicon": {
     "tier": "CAP"
   },
-  "venomiconepilogue": {
+  "venomicon-epilogue": {
     "tier": "CAP"
   },
   "saharaja": {

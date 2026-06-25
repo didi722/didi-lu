@@ -2262,14 +2262,19 @@ async function resetPasswordDalLogin() {
     }
 }
 
-// 1. FUNZIONE APERTURA / CHIUSURA MANUALE (Legata al bottone o alla X)
+// ============================================================================
+// TEAMBUILDER HELPER: INTERFACCIA E GENERAZIONE LISTA POKÉMON PER GEN
+// ============================================================================
+
+/**
+ * Funzione di apertura / chiusura manuale della modale Helper
+ */
 function toggleTeambuilderHelper() {
     const modal = document.getElementById('helper-modal-overlay');
     if (!modal) return;
 
     if (modal.style.display === 'none' || modal.style.display === '') {
         modal.style.display = 'flex';
-        // --- AGGIUNTA ---
         popolaSelettoreFormati(); 
     } else {
         modal.style.display = 'none';
@@ -2303,9 +2308,8 @@ async function popolaSelettoreFormati() {
             select.appendChild(option);
         });
 
-        // --- QUESTA È LA CHIAMATA ---
-        // Collega l'evento change alla tua funzione
-        select.removeEventListener('change', gestisciCambioFormatoHelper); // Opzionale: evita duplicati
+        // Configura il listener escludendo duplicati
+        select.removeEventListener('change', gestisciCambioFormatoHelper);
         select.addEventListener('change', gestisciCambioFormatoHelper);
         
         console.log("Formati caricati e listener aggiunto.");
@@ -2315,47 +2319,12 @@ async function popolaSelettoreFormati() {
     }
 }
 
-function ottieniListaBasePerGenerazione(listaCompleta, jsonDati, regolamento) {
-    if (!regolamento.genRuleType || !regolamento.genRuleValue) return [];
-    
-    const genLimite = parseInt(regolamento.genRuleValue);
-    const listaLegali = [];
-
-    // CASO: WITHIN (Usa jsonDati come filtro)
-    if (regolamento.genRuleType === "within") {
-        if (!jsonDati) return [];
-        
-        Object.keys(jsonDati).forEach(nomeChiave => {
-            const dati = jsonDati[nomeChiave];
-            
-            // Logica speculare esatta: 
-            // validaGenerazione scarta se (!dati || dati.tier === "Illegal" || dati.tier === "Past")
-            // Quindi noi teniamo se (dati && dati.tier !== "Illegal" && dati.tier !== "Past")
-            if (dati && dati.tier !== "Illegal" && dati.tier !== "Past") {
-                listaLegali.push({ name: dati.name || nomeChiave, ...dati });
-            }
-        });
-    } 
-    
-    // CASO: UP_TO (Usa la lista completa e la proprietà generation)
-    else if (regolamento.genRuleType === "up_to") {
-        if (!listaCompleta) return [];
-        
-        listaCompleta.forEach(pkmn => {
-            if (pkmn.erroreDati) return;
-
-            // Logica speculare esatta:
-            // validaGenerazione scarta se (pkmn.generation > genLimite)
-            // Quindi noi teniamo se (pkmn.generation <= genLimite)
-            if (pkmn.generation <= genLimite) {
-                listaLegali.push(pkmn);
-            }
-        });
-    }
-
-    return listaLegali;
-}
-
+/**
+ * Intercetta il cambio formato, scarica il JSON corretto e avvia il filtro
+ */
+/**
+ * Intercetta il cambio formato, scarica il JSON corretto e avvia il filtro
+ */
 async function gestisciCambioFormatoHelper() {
     const select = document.getElementById('helper-format-select');
     if (!select || !select.value) return;
@@ -2367,7 +2336,6 @@ async function gestisciCambioFormatoHelper() {
         const regolamento = snapshot.val();
         if (!regolamento) return;
 
-        // Recupera il file JSON (il tuo database locale per quel formato)
         const genLimite = parseInt(regolamento.genRuleValue);
         let percorsoFile = regolamento.genRuleType === "within" 
             ? `pkm-gens/gen${genLimite}.json` 
@@ -2376,76 +2344,311 @@ async function gestisciCambioFormatoHelper() {
         const res = await fetch(percorsoFile);
         const jsonDati = await res.json(); 
 
-        // CHIAMA LA FUNZIONE SENZA POKEDEXMASTER
-        const listaFiltrata = await generaListaPokémonPerFormato(regolamento, jsonDati);
+        const risultatoFiltro = await generaListaPokémonPerFormato(regolamento, jsonDati);
 
-        console.log("Generazione completata. Pokémon ammessi:", listaFiltrata.length);
-        
-        // Ora listaFiltrata è pronta. 
-        // Puoi usarla per popolare la tua UI o per validare il team.
+        if (risultatoFiltro.tipoLayout === "FLAT") {
+            console.log("Generazione completata. Pokémon ammessi (FLAT):", risultatoFiltro.pokemon.length);
+            
+            // ATTIVATA: Adesso renderizza i quadratini a schermo
+            renderizzaListaPiatta(risultatoFiltro.pokemon);
+        }
 
     } catch (error) {
-        console.error("Errore nel flusso di generazione:", error);
+        console.error("Errore nel flusso di generazione dell'Helper:", error);
     }
 }
 
-function inizializzaChiusuraHelper(event) {
-    // 1. Se l'utente clicca sulla X di chiusura, lasciamo agire il suo onclick dedicato
-    if (event.target.closest('.format-close-btn')) {
+/**
+ * Prende l'array dei Pokémon filtrati e popola la griglia visiva (Card Destra)
+ */
+function renderizzaListaPiatta(pokemonList) {
+    const grid = document.getElementById('helper-pkm-grid');
+    const countSpan = document.getElementById('helper-count');
+
+    if (!grid) return;
+
+    // 1. Aggiorna il contatore dei Pokémon totali trovati
+    if (countSpan) {
+        countSpan.textContent = pokemonList.length;
+    }
+
+    // 2. Svuota la griglia dai vecchi dati o dai placeholder
+    grid.innerHTML = '';
+
+    if (pokemonList.length === 0) {
+        grid.innerHTML = `<div class="helper-placeholder-row">No legal Pokémon found for this format.</div>`;
         return;
     }
-    if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
-        const modal = document.getElementById('helper-modal-overlay');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
+
+    // 3. Cicla l'array e appende i quadratini (card)
+    pokemonList.forEach(pkm => {
+        const card = document.createElement('div');
+        card.className = 'helper-pkm-card';
+        card.dataset.id = pkm.id; // Utile per catturare il click in futuro
+
+        // Endpoint di Showdown per le GIF animate
+        const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
+        // Fallback statico se la GIF fallisce (es: forme rare o glitch)
+        const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
+
+        card.innerHTML = `
+            <div class="helper-pkm-gif-container">
+                <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
+                     onerror="this.onerror=null; this.src='${fallbackUrl}';">
+            </div>
+            <div class="helper-pkm-name">${pkm.name}</div>
+        `;
+
+        // Se in futuro ti servirà gestire il click sul quadratino (es: per ispezionarlo):
+        card.addEventListener('click', () => {
+            console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
+        });
+
+        grid.appendChild(card);
+    });
 }
 
 async function generaListaPokémonPerFormato(regolamento, jsonDati) {
-    // Trasformiamo le chiavi del JSON in un array di oggetti, così abbiamo la nostra lista completa
-    let listaCandidati = Object.keys(jsonDati).map(key => ({
-        name: key, 
-        ...jsonDati[key]
-    }));
-
-    // 2. Filtro Generazione (Se è "up_to", dobbiamo filtrare la lista basandoci sulla proprietà generation)
-    if (regolamento.genRuleType === "up_to") {
-        const genLimite = parseInt(regolamento.genRuleValue);
-        // Assumendo che il JSON contenga la proprietà 'generation'
-        listaCandidati = listaCandidati.filter(pkmn => pkmn.generation <= genLimite);
-    } 
-    // Se è "within", la lista è già filtrata dal file genX.json che abbiamo caricato
-    
-    // 3. Filtro Tier
-    if (regolamento.baseTier && regolamento.baseTier !== "ALL") {
-        const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
-        const idxMax = gerarchia.indexOf(regolamento.baseTier.toUpperCase());
-
-        if (idxMax !== -1) {
-            listaCandidati = listaCandidati.filter(pkmn => {
-                const tierPokemon = (pkmn.tier || "OU").toUpperCase();
-                const idxPkmn = gerarchia.indexOf(tierPokemon);
-                return idxPkmn >= idxMax;
-            });
-        }
+    if (!jsonDati) {
+        return { tipoLayout: "FLAT", pokemon: [] };
     }
 
-    // 4. Filtro Restrizioni Avanzate
-    if (regolamento.restrizioni && regolamento.restrizioni.pokemon) {
-        Object.keys(regolamento.restrizioni.pokemon).forEach(field => {
-            const regola = regolamento.restrizioni.pokemon[field];
-            if (regola.mode === "SPECIFIC") {
-                listaCandidati = listaCandidati.filter(pkmn => {
-                    let valoreEffettivo = pkmn[field];
-                    return validaSingoloOperatore(valoreEffettivo, regola);
-                });
+    const genLimite = parseInt(regolamento.genRuleValue);
+    const poolFiltrato = [];
+    
+    // Contatore per tracciare l'esatto ordine di lettura dei JSON
+    let contatoreOrdine = 0;
+
+    /**
+     * Helper interno per escludere i duplicati e le forme non desiderate
+     */
+    function escludeFormeInvalide(id) {
+        const idLower = id.toLowerCase();
+
+        // 1. Elimina qualsiasi forma Gigamax
+        if (idLower.includes('gmax')) return false;
+
+        // 2. Elimina i Pikachu speciali ed evento, e Pichu Spiky Eared
+        if (idLower.startsWith('pikachu') && idLower !== 'pikachu') return false;
+        if (idLower === 'pichuspikyeared') return false;
+
+        // 3. Elimina varianti evento / Totem / Partner
+        if (idLower.includes('totem')) return false;
+        if (idLower.includes('cap') && !idLower.includes('capsakid')) return false; 
+        if (idLower.includes('partner')) return false;
+
+        // 4. Elimina forme alternative di cui vogliamo SOLO il base
+        if (idLower.startsWith('arceus') && idLower !== 'arceus') return false;
+        if (idLower.startsWith('silvally') && idLower !== 'silvally') return false;
+        if (idLower.startsWith('castform') && idLower !== 'castform') return false;
+        if (idLower.startsWith('deoxys') && idLower !== 'deoxys') return false;
+        if (idLower.startsWith('wormadam') && idLower !== 'wormadam') return false;
+
+        // 5. Esclusioni puntuali (Cherrim Sunshine, Giratina Origin)
+        if (idLower === 'cherrimsunshine' || idLower === 'cherrimsunny') return false;
+        if (idLower === 'giratinaorigin') return false;
+
+        return true;
+    }
+
+    /**
+     * Trasforma le chiavi piatte di Firebase nei token con trattino per Showdown.
+     */
+    function calcolaSpriteId(id) {
+        const idLower = id.toLowerCase().trim();
+        if (idLower.includes('-')) return idLower;
+
+        // Gestione infallibile basata su come INIZIA il nome
+        const prefissiConTrattino = ['rotom', 'shaymin', 'kyurem', 'lycanroc', 'necrozma'];
+        for (const pref of prefissiConTrattino) {
+            if (idLower.startsWith(pref) && idLower !== pref) {
+                return pref + '-' + idLower.substring(pref.length);
             }
+        }
+
+        // Gestione delle forme regionali (basata sulla FINE del nome)
+        const suffissiRegionali = ['alola', 'galar', 'hisui', 'paldea'];
+        for (const suf of suffissiRegionali) {
+            if (idLower.endsWith(suf) && idLower !== suf) {
+                return idLower.slice(0, -suf.length) + '-' + suf;
+            }
+        }
+
+        return idLower;
+    }
+
+    /**
+     * NUOVO: Estrae la radice identificativa prima del trattino
+     * per associare le forme alternative al rispettivo Pokémon base.
+     */
+    function determinaRadice(id, spriteId) {
+        const idLower = id.toLowerCase().trim();
+        const spriteLower = spriteId.toLowerCase().trim();
+
+        if (idLower.includes('-')) return idLower.split('-')[0];
+        if (spriteLower.includes('-')) return spriteLower.split('-')[0];
+
+        return idLower;
+    }
+
+    // ================= CASO 1: UP_TO (Unione progressiva da Gen 1 a Gen X) =================
+    if (regolamento.genRuleType === "up_to") {
+        try {
+            let aggregatoGens = {};
+
+            for (let i = 1; i <= genLimite; i++) {
+                try {
+                    const resGen = await fetch(`pkm-gens/gen${i}.json`);
+                    const jsonGen = await resGen.json();
+                    Object.assign(aggregatoGens, jsonGen);
+                } catch (errFetch) {
+                    console.error(`[Helper] Impossibile caricare gen${i}.json:`, errFetch);
+                }
+            }
+
+            Object.keys(aggregatoGens).forEach(nomeChiave => {
+                if (!escludeFormeInvalide(nomeChiave)) return;
+
+                const datiNelPokedexGen = aggregatoGens[nomeChiave];
+                const tierUpper = (datiNelPokedexGen && datiNelPokedexGen.tier) ? datiNelPokedexGen.tier.toUpperCase() : "";
+
+                if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
+
+                const datoGrezzo = jsonDati[nomeChiave] || datiNelPokedexGen;
+                const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
+                
+                const spriteId = calcolaSpriteId(nomeChiave);
+                const radice = determinaRadice(nomeChiave, spriteId);
+                
+                poolFiltrato.push({ 
+                    id: nomeChiave, 
+                    name: nomeVisualizzato, 
+                    spriteId: spriteId,
+                    radice: radice,
+                    num: datoGrezzo.num || null,
+                    ordineIniziale: contatoreOrdine++
+                });
+            });
+
+        } catch (err) {
+            console.error("Errore generale nell'aggregazione delle liste UP_TO:", err);
+        }
+    } 
+    
+    // ================= CASO 2: WITHIN (Solo ed esclusivamente dentro la Gen X) =================
+    else if (regolamento.genRuleType === "within") {
+        Object.keys(jsonDati).forEach(nomeChiave => {
+            if (!escludeFormeInvalide(nomeChiave)) return;
+
+            const datoGrezzo = jsonDati[nomeChiave];
+            if (!datoGrezzo) return;
+
+            const tierUpper = datoGrezzo.tier ? datoGrezzo.tier.toUpperCase() : "";
+            if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
+
+            const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
+            
+            const spriteId = calcolaSpriteId(nomeChiave);
+            const radice = determinaRadice(nomeChiave, spriteId);
+
+            poolFiltrato.push({ 
+                id: nomeChiave, 
+                name: nomeVisualizzato, 
+                spriteId: spriteId,
+                radice: radice,
+                num: datoGrezzo.num || null,
+                ordineIniziale: contatoreOrdine++
+            });
         });
     }
 
-    return listaCandidati;
+    // ================= NUOVA LOGICA DI ORDINAMENTO PER GRUPPI DI FORMA =================
+    
+    // 1. Mappiamo i dati di ancoraggio (num e ordine del base) per ciascuna radice
+    const mappaAncoraggioRadici = {};
+    poolFiltrato.forEach(pkm => {
+        if (!mappaAncoraggioRadici[pkm.radice]) {
+            mappaAncoraggioRadici[pkm.radice] = {
+                num: pkm.num,
+                ordineIniziale: pkm.ordineIniziale
+            };
+        } else {
+            // Se la forma base ha il numero di dex ma una forma alternativa letta prima non lo aveva
+            if (!mappaAncoraggioRadici[pkm.radice].num && pkm.num) {
+                mappaAncoraggioRadici[pkm.radice].num = pkm.num;
+            }
+            // L'ancora cronologica della famiglia deve essere il momento in cui è comparso il primissimo membro
+            if (pkm.ordineIniziale < mappaAncoraggioRadici[pkm.radice].ordineIniziale) {
+                mappaAncoraggioRadici[pkm.radice].ordineIniziale = pkm.ordineIniziale;
+            }
+        }
+    });
+
+    // 2. Eseguiamo il sort definitivo sfruttando le ancore della mappa
+    poolFiltrato.sort((a, b) => {
+        // Se fanno parte della stessa identica famiglia (stessa radice, es: ninetales e ninetales-alola)
+        if (a.radice === b.radice) {
+            // Li ordiniamo internamente per ordine di inserimento nativo (il base viene prima delle forme)
+            return a.ordineIniziale - b.ordineIniziale;
+        }
+        
+        // Se sono specie diverse, confrontiamo i dati del rispettivo Pokémon base
+        const ancoraA = mappaAncoraggioRadici[a.radice];
+        const ancoraB = mappaAncoraggioRadici[b.radice];
+        
+        if (ancoraA.num && ancoraB.num) {
+            return ancoraA.num - ancoraB.num;
+        }
+        return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
+    });
+
+    return {
+        tipoLayout: "FLAT",
+        pokemon: poolFiltrato
+    };
 }
+
+/**
+ * Gestisce la chiusura della modale cliccando fuori dal wrapper o sulla X
+ */
+function inizializzaChiusuraHelper(event) {
+    // Caso A: Click sul bottone di chiusura (la X del modale)
+    if (event.target.closest('.format-close-btn')) {
+        chiudiTuttoHelper();
+        return;
+    }
+    
+    // Caso B: Click fuori dal modale (sull'overlay di sfondo o sul wrapper)
+    if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
+        chiudiTuttoHelper();
+    }
+}
+
+function chiudiTuttoHelper() {
+    // 1. Chiude il modale principale
+    const modal = document.getElementById('helper-modal-overlay');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // 2. Chiude la lista/dropdown dei formati aperta in precedenza.
+    // NOTA: Sostituisci '#selettore-formati-lista' o '.format-list' 
+    // con l'ID o la classe reale del tuo menu a tendina.
+    const listaFormati = document.getElementById('selettore-formati-lista') || document.querySelector('.format-list');
+    if (listaFormati) {
+        // Se usi le classi CSS per mostrare/nascondere:
+        listaFormati.classList.remove('active', 'open', 'show');
+        // Se invece usi il display inline, decommenta la riga sotto:
+        // listaFormati.style.display = 'none';
+    }
+
+    // 3. [Consigliato] Svuota la griglia dei Pokémon per non lasciare residui visivi
+    const grid = document.getElementById('helper-pkm-grid');
+    if (grid) {
+        grid.innerHTML = '';
+    }
+}
+
     </script>
 </body>
 </html>

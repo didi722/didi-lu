@@ -2717,7 +2717,7 @@ color:#eeeeee;
     background: transparent !important;
     border-bottom: none !important;
     position: absolute;
-    top: -150px;
+    top: -100px;
     left: 15px;
     right: 15px;
     padding: 0 !important;
@@ -2955,4 +2955,62 @@ color:#eeeeee;
     font-size: 0.85rem;
     color: #333333;
     transform: rotate(0.5deg);
+}
+
+/* Trasforma il container in una griglia di quadratini */
+.explorer-pkm-scroll-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 12px;
+    padding: 10px;
+    overflow-y: auto;
+    max-height: 500px; /* Adatta l'altezza massima alla tua modale */
+}
+
+/* Il singolo quadratino del Pokémon */
+.helper-pkm-card {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 5px;
+    aspect-ratio: 1 / 1; /* Forza la forma perfettamente quadrata */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.helper-pkm-card:hover {
+    transform: translateY(-2px);
+    border-color: #3b4cca; /* Colore highlight al passagio del mouse */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Box che contiene e centra verticalmente/orizzontalmente la GIF */
+.helper-pkm-gif-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+}
+
+/* Regola per l'immagine GIF */
+.helper-pkm-gif {
+    max-width: 56px;
+    max-height: 56px;
+    object-fit: contain;
+}
+
+/* Il testo con il nome sotto la GIF */
+.helper-pkm-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    word-break: break-word;
+    text-transform: capitalize;
+    margin-top: 4px;
 }

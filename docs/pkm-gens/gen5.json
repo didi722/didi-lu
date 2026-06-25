@@ -1460,19 +1460,19 @@
   "rotom": {
     "tier": "RU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "tier": "UU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "tier": "OU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "tier": "PUBL"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "tier": "NU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "tier": "RU"
   },
   "uxie": {
@@ -1499,7 +1499,7 @@
   "giratina": {
     "tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "tier": "Uber"
   },
   "cresselia": {
@@ -1517,7 +1517,7 @@
   "shaymin": {
     "tier": "UU"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "tier": "Uber"
   },
   "arceus": {
@@ -1740,9 +1740,6 @@
     "tier": "RU"
   },
   "basculin": {
-    "tier": "NU"
-  },
-  "basculinbluestriped": {
     "tier": "NU"
   },
   "sandile": {
@@ -2018,13 +2015,13 @@
   "tornadus": {
     "tier": "UU"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "tier": "Uber"
   },
   "thundurus": {
     "tier": "Uber"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "tier": "OU"
   },
   "reshiram": {
@@ -2036,43 +2033,31 @@
   "landorus": {
     "tier": "Uber"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "tier": "OU"
   },
   "kyurem": {
     "tier": "UUBL"
   },
-  "kyuremblack": {
+  "kyurem-black": {
     "tier": "OU"
   },
-  "kyuremwhite": {
+  "kyurem-white": {
     "tier": "Uber"
   },
   "keldeo": {
     "tier": "OU"
   },
-  "keldeoresolute": {
+  "keldeo-resolute": {
     "tier": "OU"
   },
   "meloetta": {
     "tier": "UU"
   },
-  "meloettapirouette": {
+  "meloetta-pirouette": {
     "tier": "Unknown"
   },
   "genesect": {
-    "tier": "Uber"
-  },
-  "genesectburn": {
-    "tier": "Uber"
-  },
-  "genesectchill": {
-    "tier": "Uber"
-  },
-  "genesectdouse": {
-    "tier": "Uber"
-  },
-  "genesectshock": {
     "tier": "Uber"
   }
 }

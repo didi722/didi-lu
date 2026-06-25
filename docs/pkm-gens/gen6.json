@@ -8,7 +8,7 @@
   "venusaur": {
     "tier": "RU"
   },
-  "venusaurmega": {
+  "venusaur-mega": {
     "tier": "OU"
   },
   "charmander": {
@@ -20,10 +20,10 @@
   "charizard": {
     "tier": "NU"
   },
-  "charizardmegax": {
+  "charizard-megax": {
     "tier": "OU"
   },
-  "charizardmegay": {
+  "charizard-megay": {
     "tier": "OU"
   },
   "squirtle": {
@@ -35,7 +35,7 @@
   "blastoise": {
     "tier": "RU"
   },
-  "blastoisemega": {
+  "blastoise-mega": {
     "tier": "UU"
   },
   "caterpie": {
@@ -56,7 +56,7 @@
   "beedrill": {
     "tier": "ZU"
   },
-  "beedrillmega": {
+  "beedrill-mega": {
     "tier": "UU"
   },
   "pidgey": {
@@ -68,7 +68,7 @@
   "pidgeot": {
     "tier": "ZU"
   },
-  "pidgeotmega": {
+  "pidgeot-mega": {
     "tier": "UUBL"
   },
   "rattata": {
@@ -248,7 +248,7 @@
   "alakazam": {
     "tier": "UUBL"
   },
-  "alakazammega": {
+  "alakazam-mega": {
     "tier": "UUBL"
   },
   "machop": {
@@ -296,7 +296,7 @@
   "slowbro": {
     "tier": "OU"
   },
-  "slowbromega": {
+  "slowbro-mega": {
     "tier": "(OU)"
   },
   "slowking": {
@@ -347,7 +347,7 @@
   "gengar": {
     "tier": "OU"
   },
-  "gengarmega": {
+  "gengar-mega": {
     "tier": "Uber"
   },
   "onix": {
@@ -356,7 +356,7 @@
   "steelix": {
     "tier": "NU"
   },
-  "steelixmega": {
+  "steelix-mega": {
     "tier": "RUBL"
   },
   "drowzee": {
@@ -440,7 +440,7 @@
   "kangaskhan": {
     "tier": "NU"
   },
-  "kangaskhanmega": {
+  "kangaskhan-mega": {
     "tier": "Uber"
   },
   "horsea": {
@@ -476,7 +476,7 @@
   "scizor": {
     "tier": "OU"
   },
-  "scizormega": {
+  "scizor-mega": {
     "tier": "OU"
   },
   "smoochum": {
@@ -506,7 +506,7 @@
   "pinsir": {
     "tier": "NU"
   },
-  "pinsirmega": {
+  "pinsir-mega": {
     "tier": "OU"
   },
   "tauros": {
@@ -518,7 +518,7 @@
   "gyarados": {
     "tier": "UU"
   },
-  "gyaradosmega": {
+  "gyarados-mega": {
     "tier": "UUBL"
   },
   "lapras": {
@@ -575,7 +575,7 @@
   "aerodactyl": {
     "tier": "RU"
   },
-  "aerodactylmega": {
+  "aerodactyl-mega": {
     "tier": "UU"
   },
   "munchlax": {
@@ -605,10 +605,10 @@
   "mewtwo": {
     "tier": "Uber"
   },
-  "mewtwomegax": {
+  "mewtwo-megax": {
     "tier": "Uber"
   },
-  "mewtwomegay": {
+  "mewtwo-megay": {
     "tier": "Uber"
   },
   "mew": {
@@ -695,7 +695,7 @@
   "ampharos": {
     "tier": "PU"
   },
-  "ampharosmega": {
+  "ampharos-mega": {
     "tier": "UU"
   },
   "azurill": {
@@ -800,7 +800,7 @@
   "heracross": {
     "tier": "UU"
   },
-  "heracrossmega": {
+  "heracross-mega": {
     "tier": "(OU)"
   },
   "sneasel": {
@@ -857,7 +857,7 @@
   "houndoom": {
     "tier": "RU"
   },
-  "houndoommega": {
+  "houndoom-mega": {
     "tier": "RUBL"
   },
   "phanpy": {
@@ -893,7 +893,7 @@
   "tyranitar": {
     "tier": "OU"
   },
-  "tyranitarmega": {
+  "tyranitar-mega": {
     "tier": "(OU)"
   },
   "lugia": {
@@ -914,7 +914,7 @@
   "sceptile": {
     "tier": "NUBL"
   },
-  "sceptilemega": {
+  "sceptile-mega": {
     "tier": "UU"
   },
   "torchic": {
@@ -926,7 +926,7 @@
   "blaziken": {
     "tier": "Uber"
   },
-  "blazikenmega": {
+  "blaziken-mega": {
     "tier": "Uber"
   },
   "mudkip": {
@@ -938,7 +938,7 @@
   "swampert": {
     "tier": "UU"
   },
-  "swampertmega": {
+  "swampert-mega": {
     "tier": "UU"
   },
   "poochyena": {
@@ -1007,13 +1007,13 @@
   "gardevoir": {
     "tier": "UU"
   },
-  "gardevoirmega": {
+  "gardevoir-mega": {
     "tier": "OU"
   },
   "gallade": {
     "tier": "RU"
   },
-  "gallademega": {
+  "gallade-mega": {
     "tier": "UUBL"
   },
   "surskit": {
@@ -1076,13 +1076,13 @@
   "sableye": {
     "tier": "RUBL"
   },
-  "sableyemega": {
+  "sableye-mega": {
     "tier": "Uber"
   },
   "mawile": {
     "tier": "PU"
   },
-  "mawilemega": {
+  "mawile-mega": {
     "tier": "Uber"
   },
   "aron": {
@@ -1094,7 +1094,7 @@
   "aggron": {
     "tier": "NU"
   },
-  "aggronmega": {
+  "aggron-mega": {
     "tier": "UU"
   },
   "meditite": {
@@ -1103,7 +1103,7 @@
   "medicham": {
     "tier": "RU"
   },
-  "medichammega": {
+  "medicham-mega": {
     "tier": "OU"
   },
   "electrike": {
@@ -1112,7 +1112,7 @@
   "manectric": {
     "tier": "NU"
   },
-  "manectricmega": {
+  "manectric-mega": {
     "tier": "OU"
   },
   "plusle": {
@@ -1148,7 +1148,7 @@
   "sharpedo": {
     "tier": "RUBL"
   },
-  "sharpedomega": {
+  "sharpedo-mega": {
     "tier": "UU"
   },
   "wailmer": {
@@ -1163,7 +1163,7 @@
   "camerupt": {
     "tier": "PU"
   },
-  "cameruptmega": {
+  "camerupt-mega": {
     "tier": "RU"
   },
   "torkoal": {
@@ -1199,7 +1199,7 @@
   "altaria": {
     "tier": "PU"
   },
-  "altariamega": {
+  "altaria-mega": {
     "tier": "UUBL"
   },
   "zangoose": {
@@ -1271,7 +1271,7 @@
   "banette": {
     "tier": "ZU"
   },
-  "banettemega": {
+  "banette-mega": {
     "tier": "RU"
   },
   "duskull": {
@@ -1295,7 +1295,7 @@
   "absol": {
     "tier": "RU"
   },
-  "absolmega": {
+  "absol-mega": {
     "tier": "UU"
   },
   "snorunt": {
@@ -1304,7 +1304,7 @@
   "glalie": {
     "tier": "ZU"
   },
-  "glaliemega": {
+  "glalie-mega": {
     "tier": "RU"
   },
   "froslass": {
@@ -1343,7 +1343,7 @@
   "salamence": {
     "tier": "UUBL"
   },
-  "salamencemega": {
+  "salamence-mega": {
     "tier": "Uber"
   },
   "beldum": {
@@ -1355,7 +1355,7 @@
   "metagross": {
     "tier": "UU"
   },
-  "metagrossmega": {
+  "metagross-mega": {
     "tier": "OU"
   },
   "regirock": {
@@ -1370,31 +1370,31 @@
   "latias": {
     "tier": "OU"
   },
-  "latiasmega": {
+  "latias-mega": {
     "tier": "(OU)"
   },
   "latios": {
     "tier": "OU"
   },
-  "latiosmega": {
+  "latios-mega": {
     "tier": "(OU)"
   },
   "kyogre": {
     "tier": "Uber"
   },
-  "kyogreprimal": {
+  "kyogre-primal": {
     "tier": "Unknown"
   },
   "groudon": {
     "tier": "Uber"
   },
-  "groudonprimal": {
+  "groudon-primal": {
     "tier": "Unknown"
   },
   "rayquaza": {
     "tier": "Uber"
   },
-  "rayquazamega": {
+  "rayquaza-mega": {
     "tier": "AG"
   },
   "jirachi": {
@@ -1538,7 +1538,7 @@
   "lopunny": {
     "tier": "ZU"
   },
-  "lopunnymega": {
+  "lopunny-mega": {
     "tier": "OU"
   },
   "glameow": {
@@ -1574,7 +1574,7 @@
   "garchomp": {
     "tier": "OU"
   },
-  "garchompmega": {
+  "garchomp-mega": {
     "tier": "(OU)"
   },
   "riolu": {
@@ -1583,7 +1583,7 @@
   "lucario": {
     "tier": "UU"
   },
-  "lucariomega": {
+  "lucario-mega": {
     "tier": "Uber"
   },
   "hippopotas": {
@@ -1619,25 +1619,25 @@
   "abomasnow": {
     "tier": "NU"
   },
-  "abomasnowmega": {
+  "abomasnow-mega": {
     "tier": "RUBL"
   },
   "rotom": {
     "tier": "NU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "tier": "UU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "tier": "OU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "tier": "PU"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "tier": "PU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "tier": "RU"
   },
   "uxie": {
@@ -1664,7 +1664,7 @@
   "giratina": {
     "tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "tier": "Unknown"
   },
   "cresselia": {
@@ -1682,7 +1682,7 @@
   "shaymin": {
     "tier": "RUBL"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "tier": "Uber"
   },
   "arceus": {
@@ -1853,7 +1853,7 @@
   "audino": {
     "tier": "PU"
   },
-  "audinomega": {
+  "audino-mega": {
     "tier": "NU"
   },
   "timburr": {
@@ -1911,9 +1911,6 @@
     "tier": "NU"
   },
   "basculin": {
-    "tier": "PU"
-  },
-  "basculinbluestriped": {
     "tier": "PU"
   },
   "sandile": {
@@ -2189,13 +2186,13 @@
   "tornadus": {
     "tier": "UU"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "tier": "OU"
   },
   "thundurus": {
     "tier": "OU"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "tier": "UUBL"
   },
   "reshiram": {
@@ -2207,43 +2204,31 @@
   "landorus": {
     "tier": "Uber"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "tier": "OU"
   },
   "kyurem": {
     "tier": "RUBL"
   },
-  "kyuremblack": {
+  "kyurem-black": {
     "tier": "OU"
   },
-  "kyuremwhite": {
+  "kyurem-white": {
     "tier": "Uber"
   },
   "keldeo": {
     "tier": "OU"
   },
-  "keldeoresolute": {
+  "keldeo-resolute": {
     "tier": "OU"
   },
   "meloetta": {
     "tier": "RU"
   },
-  "meloettapirouette": {
+  "meloetta-pirouette": {
     "tier": "Unknown"
   },
   "genesect": {
-    "tier": "Uber"
-  },
-  "genesectburn": {
-    "tier": "Uber"
-  },
-  "genesectchill": {
-    "tier": "Uber"
-  },
-  "genesectdouse": {
-    "tier": "Uber"
-  },
-  "genesectshock": {
     "tier": "Uber"
   },
   "chespin": {
@@ -2333,7 +2318,7 @@
   "meowstic": {
     "tier": "ZU"
   },
-  "meowsticf": {
+  "meowstic-f": {
     "tier": "ZU"
   },
   "honedge": {
@@ -2344,9 +2329,6 @@
   },
   "aegislash": {
     "tier": "Uber"
-  },
-  "aegislashblade": {
-    "tier": "Unknown"
   },
   "spritzee": {
     "tier": "LC"
@@ -2435,26 +2417,8 @@
   "pumpkaboo": {
     "tier": "LC"
   },
-  "pumpkaboosmall": {
-    "tier": "LC"
-  },
-  "pumpkaboolarge": {
-    "tier": "LC"
-  },
-  "pumpkaboosuper": {
-    "tier": "LC"
-  },
   "gourgeist": {
     "tier": "ZU"
-  },
-  "gourgeistsmall": {
-    "tier": "ZU"
-  },
-  "gourgeistlarge": {
-    "tier": "ZU"
-  },
-  "gourgeistsuper": {
-    "tier": "PU"
   },
   "bergmite": {
     "tier": "LC"
@@ -2480,13 +2444,13 @@
   "diancie": {
     "tier": "RU"
   },
-  "dianciemega": {
+  "diancie-mega": {
     "tier": "OU"
   },
   "hoopa": {
     "tier": "RU"
   },
-  "hoopaunbound": {
+  "hoopa-unbound": {
     "tier": "Uber"
   },
   "volcanion": {

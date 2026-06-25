@@ -20,7 +20,7 @@
   "pikachu": {
     "tier": "ZU"
   },
-  "pikachuoriginal": {
+  "pikachu-original": {
     "tier": "ZU"
   },
   "pikachuhoenn": {
@@ -35,7 +35,7 @@
   "pikachukalos": {
     "tier": "ZU"
   },
-  "pikachualola": {
+  "pikachu-alola": {
     "tier": "ZU"
   },
   "pikachupartner": {
@@ -47,19 +47,19 @@
   "raichu": {
     "tier": "ZUBL"
   },
-  "raichualola": {
+  "raichu-alola": {
     "tier": "PU"
   },
   "sandshrew": {
     "tier": "LC"
   },
-  "sandshrewalola": {
+  "sandshrew-alola": {
     "tier": "LC"
   },
   "sandslash": {
     "tier": "NU"
   },
-  "sandslashalola": {
+  "sandslash-alola": {
     "tier": "NU"
   },
   "cleffa": {
@@ -74,13 +74,13 @@
   "vulpix": {
     "tier": "NFE"
   },
-  "vulpixalola": {
+  "vulpix-alola": {
     "tier": "NFE"
   },
   "ninetales": {
     "tier": "NU"
   },
-  "ninetalesalola": {
+  "ninetales-alola": {
     "tier": "UU"
   },
   "igglybuff": {
@@ -101,28 +101,28 @@
   "diglett": {
     "tier": "NFE"
   },
-  "diglettalola": {
+  "diglett-alola": {
     "tier": "LC"
   },
   "dugtrio": {
     "tier": "ZU"
   },
-  "dugtrioalola": {
+  "dugtrio-alola": {
     "tier": "PU"
   },
   "meowth": {
     "tier": "LC"
   },
-  "meowthalola": {
+  "meowth-alola": {
     "tier": "LC"
   },
-  "meowthgalar": {
+  "meowth-galar": {
     "tier": "LC"
   },
   "persian": {
     "tier": "ZU"
   },
-  "persianalola": {
+  "persian-alola": {
     "tier": "PU"
   },
   "perrserker": {
@@ -143,13 +143,13 @@
   "growlithe": {
     "tier": "LC"
   },
-  "growlithehisui": {
+  "growlithe-hisui": {
     "tier": "NFE"
   },
   "arcanine": {
     "tier": "NU"
   },
-  "arcaninehisui": {
+  "arcanine-hisui": {
     "tier": "UU"
   },
   "poliwag": {
@@ -176,37 +176,37 @@
   "geodude": {
     "tier": "LC"
   },
-  "geodudealola": {
+  "geodude-alola": {
     "tier": "LC"
   },
   "graveler": {
     "tier": "NFE"
   },
-  "graveleralola": {
+  "graveler-alola": {
     "tier": "NFE"
   },
   "golem": {
     "tier": "PU"
   },
-  "golemalola": {
+  "golem-alola": {
     "tier": "PU"
   },
   "slowpoke": {
     "tier": "LC"
   },
-  "slowpokegalar": {
+  "slowpoke-galar": {
     "tier": "LC"
   },
   "slowbro": {
     "tier": "RU"
   },
-  "slowbrogalar": {
+  "slowbro-galar": {
     "tier": "NUBL"
   },
   "slowking": {
     "tier": "UU"
   },
-  "slowkinggalar": {
+  "slowking-galar": {
     "tier": "OU"
   },
   "magnemite": {
@@ -221,13 +221,13 @@
   "grimer": {
     "tier": "LC"
   },
-  "grimeralola": {
+  "grimer-alola": {
     "tier": "LC"
   },
   "muk": {
     "tier": "PU"
   },
-  "mukalola": {
+  "muk-alola": {
     "tier": "RU"
   },
   "shellder": {
@@ -254,13 +254,13 @@
   "voltorb": {
     "tier": "LC"
   },
-  "voltorbhisui": {
+  "voltorb-hisui": {
     "tier": "LC"
   },
   "electrode": {
     "tier": "ZUBL"
   },
-  "electrodehisui": {
+  "electrode-hisui": {
     "tier": "NU"
   },
   "koffing": {
@@ -269,7 +269,7 @@
   "weezing": {
     "tier": "PU"
   },
-  "weezinggalar": {
+  "weezing-galar": {
     "tier": "UU"
   },
   "happiny": {
@@ -293,13 +293,13 @@
   "tauros": {
     "tier": "ZUBL"
   },
-  "taurospaldeacombat": {
+  "tauros-paldeacombat": {
     "tier": "PU"
   },
-  "taurospaldeablaze": {
+  "tauros-paldeablaze": {
     "tier": "NU"
   },
-  "taurospaldeaaqua": {
+  "tauros-paldeaaqua": {
     "tier": "NU"
   },
   "magikarp": {
@@ -347,19 +347,19 @@
   "articuno": {
     "tier": "PU"
   },
-  "articunogalar": {
+  "articuno-galar": {
     "tier": "NU"
   },
   "zapdos": {
     "tier": "OU"
   },
-  "zapdosgalar": {
+  "zapdos-galar": {
     "tier": "UU"
   },
   "moltres": {
     "tier": "UU"
   },
-  "moltresgalar": {
+  "moltres-galar": {
     "tier": "RUBL"
   },
   "dratini": {
@@ -386,7 +386,7 @@
   "typhlosion": {
     "tier": "NU"
   },
-  "typhlosionhisui": {
+  "typhlosion-hisui": {
     "tier": "RU"
   },
   "sentret": {
@@ -461,7 +461,7 @@
   "wooper": {
     "tier": "LC"
   },
-  "wooperpaldea": {
+  "wooper-paldea": {
     "tier": "LC"
   },
   "quagsire": {
@@ -506,7 +506,7 @@
   "qwilfish": {
     "tier": "NU"
   },
-  "qwilfishhisui": {
+  "qwilfish-hisui": {
     "tier": "NU"
   },
   "overqwil": {
@@ -518,7 +518,7 @@
   "sneasel": {
     "tier": "ZU"
   },
-  "sneaselhisui": {
+  "sneasel-hisui": {
     "tier": "PU"
   },
   "weavile": {
@@ -536,7 +536,7 @@
   "ursaluna": {
     "tier": "UU"
   },
-  "ursalunabloodmoon": {
+  "ursaluna-bloodmoon": {
     "tier": "Uber"
   },
   "slugma": {
@@ -935,19 +935,19 @@
   "rotom": {
     "tier": "PU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "tier": "RU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "tier": "UU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "tier": "ZUBL"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "tier": "ZUBL"
   },
-  "rotommow": {
+  "rotom-mow": {
     "tier": "NU"
   },
   "uxie": {
@@ -962,13 +962,7 @@
   "dialga": {
     "tier": "Uber"
   },
-  "dialgaorigin": {
-    "tier": "Uber"
-  },
   "palkia": {
-    "tier": "Uber"
-  },
-  "palkiaorigin": {
     "tier": "Uber"
   },
   "heatran": {
@@ -977,7 +971,7 @@
   "giratina": {
     "tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "tier": "Uber"
   },
   "cresselia": {
@@ -995,7 +989,7 @@
   "shaymin": {
     "tier": "NU"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "tier": "Uber"
   },
   "arceus": {
@@ -1010,7 +1004,7 @@
   "samurott": {
     "tier": "PU"
   },
-  "samurotthisui": {
+  "samurott-hisui": {
     "tier": "OU"
   },
   "timburr": {
@@ -1037,7 +1031,7 @@
   "lilligant": {
     "tier": "PUBL"
   },
-  "lilliganthisui": {
+  "lilligant-hisui": {
     "tier": "RUBL"
   },
   "basculin": {
@@ -1046,7 +1040,7 @@
   "basculegion": {
     "tier": "RU"
   },
-  "basculegionf": {
+  "basculegion-f": {
     "tier": "UU"
   },
   "sandile": {
@@ -1058,22 +1052,22 @@
   "krookodile": {
     "tier": "RU"
   },
-  "darmanitanzen": {
+  "darmanitan-zen": {
     "tier": "Unknown"
   },
-  "darmanitangalarzen": {
+  "darmanitan-galarzen": {
     "tier": "Unknown"
   },
   "zorua": {
     "tier": "LC"
   },
-  "zoruahisui": {
+  "zorua-hisui": {
     "tier": "LC"
   },
   "zoroark": {
     "tier": "NU"
   },
-  "zoroarkhisui": {
+  "zoroark-hisui": {
     "tier": "RU"
   },
   "gothita": {
@@ -1160,7 +1154,7 @@
   "braviary": {
     "tier": "PU"
   },
-  "braviaryhisui": {
+  "braviary-hisui": {
     "tier": "NU"
   },
   "vullaby": {
@@ -1187,22 +1181,22 @@
   "tornadus": {
     "tier": "NU"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "tier": "UU"
   },
   "thundurus": {
     "tier": "RU"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "tier": "UU"
   },
   "landorus": {
     "tier": "Uber"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "tier": "OU"
   },
-  "keldeoresolute": {
+  "keldeo-resolute": {
     "tier": "Unknown"
   },
   "meloetta": {
@@ -1274,9 +1268,6 @@
   "gogoat": {
     "tier": "ZU"
   },
-  "aegislashblade": {
-    "tier": "Unknown"
-  },
   "skrelp": {
     "tier": "LC"
   },
@@ -1304,13 +1295,13 @@
   "sliggoo": {
     "tier": "NFE"
   },
-  "sliggoohisui": {
+  "sliggoo-hisui": {
     "tier": "NFE"
   },
   "goodra": {
     "tier": "NU"
   },
-  "goodrahisui": {
+  "goodra-hisui": {
     "tier": "UU"
   },
   "klefki": {
@@ -1322,22 +1313,10 @@
   "trevenant": {
     "tier": "ZU"
   },
-  "pumpkaboosmall": {
+  "pumpkaboo-small": {
     "tier": "Unknown"
   },
-  "pumpkaboolarge": {
-    "tier": "Unknown"
-  },
-  "pumpkaboosuper": {
-    "tier": "Unknown"
-  },
-  "gourgeistsmall": {
-    "tier": "Unknown"
-  },
-  "gourgeistlarge": {
-    "tier": "Unknown"
-  },
-  "gourgeistsuper": {
+  "gourgeist-small": {
     "tier": "Unknown"
   },
   "bergmite": {
@@ -1346,7 +1325,7 @@
   "avalugg": {
     "tier": "NU"
   },
-  "avalugghisui": {
+  "avalugg-hisui": {
     "tier": "PU"
   },
   "noibat": {
@@ -1361,7 +1340,7 @@
   "hoopa": {
     "tier": "NU"
   },
-  "hoopaunbound": {
+  "hoopa-unbound": {
     "tier": "UU"
   },
   "volcanion": {
@@ -1376,7 +1355,7 @@
   "decidueye": {
     "tier": "NU"
   },
-  "decidueyehisui": {
+  "decidueye-hisui": {
     "tier": "NU"
   },
   "yungoos": {
@@ -1403,15 +1382,6 @@
   "oricorio": {
     "tier": "NU"
   },
-  "oricoriopompom": {
-    "tier": "NUBL"
-  },
-  "oricoriopau": {
-    "tier": "PUBL"
-  },
-  "oricoriosensu": {
-    "tier": "NU"
-  },
   "cutiefly": {
     "tier": "NFE"
   },
@@ -1421,20 +1391,14 @@
   "rockruff": {
     "tier": "LC"
   },
-  "rockruffdusk": {
-    "tier": "LC"
-  },
   "lycanroc": {
     "tier": "NU"
   },
-  "lycanrocmidnight": {
+  "lycanroc-midnight": {
     "tier": "ZUBL"
   },
-  "lycanrocdusk": {
+  "lycanroc-dusk": {
     "tier": "RU"
-  },
-  "wishiwashischool": {
-    "tier": "Unknown"
   },
   "mareanie": {
     "tier": "LC"
@@ -1484,7 +1448,7 @@
   "palossand": {
     "tier": "PU"
   },
-  "miniormeteor": {
+  "minior-meteor": {
     "tier": "Unknown"
   },
   "komala": {
@@ -1646,7 +1610,7 @@
   "indeedee": {
     "tier": "PU"
   },
-  "indeedeef": {
+  "indeedee-f": {
     "tier": "ZU"
   },
   "morpeko": {
@@ -1670,13 +1634,13 @@
   "zacian": {
     "tier": "Uber"
   },
-  "zaciancrowned": {
+  "zacian-crowned": {
     "tier": "Uber"
   },
   "zamazenta": {
     "tier": "OU"
   },
-  "zamazentacrowned": {
+  "zamazenta-crowned": {
     "tier": "Uber"
   },
   "eternatus": {
@@ -1686,9 +1650,6 @@
     "tier": "NFE"
   },
   "urshifu": {
-    "tier": "Uber"
-  },
-  "urshifurapidstrike": {
     "tier": "Uber"
   },
   "zarude": {
@@ -1709,16 +1670,16 @@
   "calyrex": {
     "tier": "ZU"
   },
-  "calyrexice": {
+  "calyrex-ice": {
     "tier": "Uber"
   },
-  "calyrexshadow": {
+  "calyrex-shadow": {
     "tier": "AG"
   },
   "enamorus": {
     "tier": "OU"
   },
-  "enamorustherian": {
+  "enamorus-therian": {
     "tier": "UU"
   },
   "sprigatito": {
@@ -1752,9 +1713,6 @@
     "tier": "LC"
   },
   "oinkologne": {
-    "tier": "ZU"
-  },
-  "oinkolognef": {
     "tier": "ZU"
   },
   "tarountula": {
@@ -1931,7 +1889,7 @@
   "gimmighoul": {
     "tier": "LC"
   },
-  "gimmighoulroaming": {
+  "gimmighoul-roaming": {
     "tier": "LC"
   },
   "gholdengo": {
@@ -2054,13 +2012,13 @@
   "ogerpon": {
     "tier": "UU"
   },
-  "ogerponwellspring": {
+  "ogerpon-wellspring": {
     "tier": "OU"
   },
-  "ogerponhearthflame": {
+  "ogerpon-hearthflame": {
     "tier": "Uber"
   },
-  "ogerponcornerstone": {
+  "ogerpon-cornerstone": {
     "tier": "OU"
   }
 }

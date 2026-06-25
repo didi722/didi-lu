@@ -36015,7 +36015,7 @@
     ],
     "tier": "Uber"
   },
-  "magearnaoriginal": {
+  "magearna-original": {
     "num": 801,
     "name": "Magearna-Original",
     "baseSpecies": "Magearna",
@@ -36075,7 +36075,7 @@
     "tier": "Illegal",
     "isNonstandard": "Future"
   },
-  "magearnaoriginalmega": {
+  "magearna-original-mega": {
     "num": 801,
     "name": "Magearna-Original-Mega",
     "baseSpecies": "Magearna",

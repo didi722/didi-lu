@@ -2,34 +2,34 @@
   "venusaur": {
     "tier": "UU"
   },
-  "venusaurmega": {
+  "venusaur-mega": {
     "tier": "UU"
   },
   "charizard": {
     "tier": "UU"
   },
-  "charizardmegax": {
+  "charizard-megax": {
     "tier": "UUBL"
   },
-  "charizardmegay": {
+  "charizard-megay": {
     "tier": "UUBL"
   },
   "blastoise": {
     "tier": "UU"
   },
-  "blastoisemega": {
+  "blastoise-mega": {
     "tier": "Uber"
   },
   "beedrill": {
     "tier": "UU"
   },
-  "beedrillmega": {
+  "beedrill-mega": {
     "tier": "UU"
   },
   "pidgeot": {
     "tier": "UU"
   },
-  "pidgeotmega": {
+  "pidgeot-mega": {
     "tier": "UU"
   },
   "arbok": {
@@ -41,25 +41,25 @@
   "raichu": {
     "tier": "UU"
   },
-  "raichualola": {
+  "raichu-alola": {
     "tier": "UU"
   },
-  "raichumegax": {
+  "raichu--mega-x": {
     "tier": "OU"
   },
-  "raichumegay": {
+  "raichu--mega-y": {
     "tier": "OU"
   },
   "clefable": {
     "tier": "OU"
   },
-  "clefablemega": {
+  "clefable-mega": {
     "tier": "(OU)"
   },
   "ninetales": {
     "tier": "UU"
   },
-  "ninetalesalola": {
+  "ninetales-alola": {
     "tier": "UU"
   },
   "vileplume": {
@@ -68,7 +68,7 @@
   "arcanine": {
     "tier": "UU"
   },
-  "arcaninehisui": {
+  "arcanine-hisui": {
     "tier": "UU"
   },
   "politoed": {
@@ -77,7 +77,7 @@
   "alakazam": {
     "tier": "UU"
   },
-  "alakazammega": {
+  "alakazam-mega": {
     "tier": "UUBL"
   },
   "machamp": {
@@ -86,34 +86,34 @@
   "victreebel": {
     "tier": "UU"
   },
-  "victreebelmega": {
+  "victreebel-mega": {
     "tier": "UU"
   },
   "slowbro": {
     "tier": "UU"
   },
-  "slowbromega": {
+  "slowbro-mega": {
     "tier": "UU"
   },
-  "slowbrogalar": {
+  "slowbro-galar": {
     "tier": "UU"
   },
   "slowking": {
     "tier": "UU"
   },
-  "slowkinggalar": {
+  "slowking-galar": {
     "tier": "OU"
   },
   "gengar": {
     "tier": "UU"
   },
-  "gengarmega": {
+  "gengar-mega": {
     "tier": "Uber"
   },
   "steelix": {
     "tier": "UU"
   },
-  "steelixmega": {
+  "steelix-mega": {
     "tier": "UU"
   },
   "rhyperior": {
@@ -122,13 +122,13 @@
   "kangaskhan": {
     "tier": "UU"
   },
-  "kangaskhanmega": {
+  "kangaskhan-mega": {
     "tier": "UU"
   },
   "starmie": {
     "tier": "UU"
   },
-  "starmiemega": {
+  "starmie-mega": {
     "tier": "Uber"
   },
   "mrrime": {
@@ -137,7 +137,7 @@
   "scizor": {
     "tier": "OU"
   },
-  "scizormega": {
+  "scizor-mega": {
     "tier": "OU"
   },
   "kleavor": {
@@ -146,25 +146,25 @@
   "pinsir": {
     "tier": "UU"
   },
-  "pinsirmega": {
+  "pinsir-mega": {
     "tier": "UU"
   },
   "tauros": {
     "tier": "UU"
   },
-  "taurospaldeacombat": {
+  "tauros-paldea-combat": {
     "tier": "UU"
   },
-  "taurospaldeablaze": {
+  "tauros-paldea-blaze": {
     "tier": "UU"
   },
-  "taurospaldeaaqua": {
+  "tauros-paldea-aqua": {
     "tier": "UU"
   },
   "gyarados": {
     "tier": "UU"
   },
-  "gyaradosmega": {
+  "gyarados-mega": {
     "tier": "UU"
   },
   "ditto": {
@@ -197,7 +197,7 @@
   "aerodactyl": {
     "tier": "UU"
   },
-  "aerodactylmega": {
+  "aerodactyl-mega": {
     "tier": "UU"
   },
   "snorlax": {
@@ -206,25 +206,25 @@
   "dragonite": {
     "tier": "OU"
   },
-  "dragonitemega": {
+  "dragonite-mega": {
     "tier": "(OU)"
   },
-  "meganium": {
+  "-meganium": {
     "tier": "UU"
   },
-  "meganiummega": {
+  "-meganium-mega": {
     "tier": "OU"
   },
   "typhlosion": {
     "tier": "UU"
   },
-  "typhlosionhisui": {
+  "typhlosion-hisui": {
     "tier": "UU"
   },
   "feraligatr": {
     "tier": "UU"
   },
-  "feraligatrmega": {
+  "feraligatr-mega": {
     "tier": "UU"
   },
   "ariados": {
@@ -233,7 +233,7 @@
   "ampharos": {
     "tier": "UU"
   },
-  "ampharosmega": {
+  "ampharos-mega": {
     "tier": "UU"
   },
   "azumarill": {
@@ -260,7 +260,7 @@
   "heracross": {
     "tier": "UU"
   },
-  "heracrossmega": {
+  "heracross-mega": {
     "tier": "UU"
   },
   "weavile": {
@@ -275,13 +275,13 @@
   "skarmory": {
     "tier": "UU"
   },
-  "skarmorymega": {
+  "skarmory-mega": {
     "tier": "UU"
   },
   "houndoom": {
     "tier": "UU"
   },
-  "houndoommega": {
+  "houndoom-mega": {
     "tier": "UU"
   },
   "wyrdeer": {
@@ -290,25 +290,25 @@
   "tyranitar": {
     "tier": "UU"
   },
-  "tyranitarmega": {
+  "tyranitar-mega": {
     "tier": "UU"
   },
   "sceptile": {
     "tier": "OU"
   },
-  "sceptilemega": {
+  "sceptile-mega": {
     "tier": "OU"
   },
   "blaziken": {
     "tier": "OU"
   },
-  "blazikenmega": {
+  "blaziken-mega": {
     "tier": "OU"
   },
   "swampert": {
     "tier": "OU"
   },
-  "swampertmega": {
+  "swampert-mega": {
     "tier": "OU"
   },
   "pelipper": {
@@ -317,43 +317,43 @@
   "gardevoir": {
     "tier": "UU"
   },
-  "gardevoirmega": {
+  "gardevoir-mega": {
     "tier": "UU"
   },
   "gallade": {
     "tier": "UU"
   },
-  "gallademega": {
+  "gallade-mega": {
     "tier": "UU"
   },
   "sableye": {
     "tier": "UU"
   },
-  "sableyemega": {
+  "sableye-mega": {
     "tier": "UU"
   },
   "mawile": {
     "tier": "OU"
   },
-  "mawilemega": {
+  "mawile-mega": {
     "tier": "OU"
   },
   "aggron": {
     "tier": "UU"
   },
-  "aggronmega": {
+  "aggron-mega": {
     "tier": "UU"
   },
   "medicham": {
     "tier": "UU"
   },
-  "medichammega": {
+  "medicham-mega": {
     "tier": "UU"
   },
   "manectric": {
     "tier": "UU"
   },
-  "manectricmega": {
+  "manectric-mega": {
     "tier": "UU"
   },
   "roserade": {
@@ -362,13 +362,13 @@
   "sharpedo": {
     "tier": "UU"
   },
-  "sharpedomega": {
+  "sharpedo-mega": {
     "tier": "UU"
   },
   "camerupt": {
     "tier": "UU"
   },
-  "cameruptmega": {
+  "camerupt-mega": {
     "tier": "UU"
   },
   "torkoal": {
@@ -377,7 +377,7 @@
   "altaria": {
     "tier": "UU"
   },
-  "altariamega": {
+  "altaria-mega": {
     "tier": "UU"
   },
   "milotic": {
@@ -398,37 +398,37 @@
   "banette": {
     "tier": "UU"
   },
-  "banettemega": {
+  "banette-mega": {
     "tier": "UU"
   },
   "chimecho": {
     "tier": "UU"
   },
-  "chimechomega": {
+  "chimecho-mega": {
     "tier": "UU"
   },
   "absol": {
     "tier": "UU"
   },
-  "absolmega": {
+  "absol-mega": {
     "tier": "UU"
   },
   "glalie": {
     "tier": "UU"
   },
-  "glaliemega": {
+  "glalie-mega": {
     "tier": "UU"
   },
   "froslass": {
     "tier": "UU"
   },
-  "froslassmega": {
+  "froslass-mega": {
     "tier": "UU"
   },
   "metagross": {
     "tier": "OU"
   },
-  "metagrossmega": {
+  "metagross-mega": {
     "tier": "OU"
   },
   "torterra": {
@@ -443,7 +443,7 @@
   "staraptor": {
     "tier": "OU"
   },
-  "staraptormega": {
+  "staraptor-mega": {
     "tier": "OU"
   },
   "luxray": {
@@ -461,7 +461,7 @@
   "lopunny": {
     "tier": "UU"
   },
-  "lopunnymega": {
+  "lopunny-mega": {
     "tier": "OU"
   },
   "spiritomb": {
@@ -470,13 +470,13 @@
   "garchomp": {
     "tier": "OU"
   },
-  "garchompmega": {
+  "garchomp-mega": {
     "tier": "(OU)"
   },
   "lucario": {
     "tier": "UU"
   },
-  "lucariomega": {
+  "lucario-mega": {
     "tier": "Uber"
   },
   "hippowdon": {
@@ -488,7 +488,7 @@
   "abomasnow": {
     "tier": "UU"
   },
-  "abomasnowmega": {
+  "abomasnow-mega": {
     "tier": "UU"
   },
   "rotom": {
@@ -566,13 +566,13 @@
   "emboar": {
     "tier": "UU"
   },
-  "emboarmega": {
+  "emboar-mega": {
     "tier": "UU"
   },
   "samurott": {
     "tier": "UU"
   },
-  "samurotthisui": {
+  "samurott-hisui": {
     "tier": "OU"
   },
   "watchog": {
@@ -596,13 +596,13 @@
   "excadrill": {
     "tier": "OU"
   },
-  "excadrillmega": {
+  "excadrill-mega": {
     "tier": "(OU)"
   },
   "audino": {
     "tier": "UU"
   },
-  "audinomega": {
+  "audino-mega": {
     "tier": "UU"
   },
   "conkeldurr": {
@@ -611,7 +611,7 @@
   "scolipede": {
     "tier": "OU"
   },
-  "scolipedemega": {
+  "scolipede-mega": {
     "tier": "OU"
   },
   "whimsicott": {
@@ -626,22 +626,22 @@
   "basculegion": {
     "tier": "OU"
   },
-  "basculegionf": {
+  "basculegion-f": {
     "tier": "UU"
   },
   "krookodile": {
     "tier": "UU"
   },
-  "darmanitanzen": {
+  "darmanitan-zen": {
     "tier": "Unknown"
   },
-  "darmanitangalarzen": {
+  "darmanitan-galarzen": {
     "tier": "Unknown"
   },
   "scrafty": {
     "tier": "OU"
   },
-  "scraftymega": {
+  "scrafty-mega": {
     "tier": "OU"
   },
   "cofagrigus": {
@@ -656,7 +656,7 @@
   "zoroark": {
     "tier": "UU"
   },
-  "zoroarkhisui": {
+  "zoroark-hisui": {
     "tier": "UU"
   },
   "reuniclus": {
@@ -671,13 +671,13 @@
   "eelektross": {
     "tier": "OU"
   },
-  "eelektrossmega": {
+  "eelektross-mega": {
     "tier": "OU"
   },
   "chandelure": {
     "tier": "UU"
   },
-  "chandeluremega": {
+  "chandelure-mega": {
     "tier": "UU"
   },
   "beartic": {
@@ -686,13 +686,13 @@
   "stunfisk": {
     "tier": "UU"
   },
-  "stunfiskgalar": {
+  "stunfisk-galar": {
     "tier": "UU"
   },
   "golurk": {
     "tier": "UU"
   },
-  "golurkmega": {
+  "golurk-mega": {
     "tier": "UU"
   },
   "hydreigon": {
@@ -701,25 +701,25 @@
   "volcarona": {
     "tier": "OU"
   },
-  "keldeoresolute": {
+  "keldeo-resolute": {
     "tier": "Unknown"
   },
   "chesnaught": {
     "tier": "UU"
   },
-  "chesnaughtmega": {
+  "chesnaught-mega": {
     "tier": "UU"
   },
   "delphox": {
     "tier": "UU"
   },
-  "delphoxmega": {
+  "delphox-mega": {
     "tier": "OU"
   },
   "greninja": {
     "tier": "UU"
   },
-  "greninjamega": {
+  "greninja-mega": {
     "tier": "UU"
   },
   "diggersby": {
@@ -734,13 +734,13 @@
   "pyroar": {
     "tier": "OU"
   },
-  "pyroarmega": {
+  "pyroar-mega": {
     "tier": "OU"
   },
-  "floetteeternal": {
+  "floette-eternal": {
     "tier": "UU"
   },
-  "floettemega": {
+  "floette-mega": {
     "tier": "OU"
   },
   "florges": {
@@ -755,10 +755,10 @@
   "meowstic": {
     "tier": "UU"
   },
-  "meowsticmmega": {
+  "meowstic-m-mega": {
     "tier": "UU"
   },
-  "meowsticfmega": {
+  "meowstic-f-mega": {
     "tier": "UU"
   },
   "aegislash": {
@@ -776,19 +776,19 @@
   "malamar": {
     "tier": "OU"
   },
-  "malamarmega": {
+  "malamar-mega": {
     "tier": "OU"
   },
   "barbaracle": {
     "tier": "OU"
   },
-  "barbaraclemega": {
+  "barbaracle-mega": {
     "tier": "OU"
   },
   "dragalge": {
     "tier": "OU"
   },
-  "dragalgemega": {
+  "dragalge-mega": {
     "tier": "OU"
   },
   "clawitzer": {
@@ -806,7 +806,7 @@
   "hawlucha": {
     "tier": "UU"
   },
-  "hawluchamega": {
+  "hawlucha-mega": {
     "tier": "UU"
   },
   "dedenne": {
@@ -815,7 +815,7 @@
   "goodra": {
     "tier": "UU"
   },
-  "goodrahisui": {
+  "goodra-hisui": {
     "tier": "UU"
   },
   "klefki": {
@@ -824,31 +824,22 @@
   "trevenant": {
     "tier": "UU"
   },
-  "pumpkaboosmall": {
+  "pumpkaboo-small": {
     "tier": "Unknown"
   },
-  "pumpkaboolarge": {
+  "pumpkaboo-large": {
     "tier": "Unknown"
   },
-  "pumpkaboosuper": {
+  "pumpkaboo-super": {
     "tier": "Unknown"
   },
   "gourgeist": {
     "tier": "UU"
   },
-  "gourgeistsmall": {
-    "tier": "UU"
-  },
-  "gourgeistlarge": {
-    "tier": "UU"
-  },
-  "gourgeistsuper": {
-    "tier": "UU"
-  },
   "avalugg": {
     "tier": "UU"
   },
-  "avalugghisui": {
+  "avalugg-hisui": {
     "tier": "UU"
   },
   "noivern": {
@@ -857,7 +848,7 @@
   "decidueye": {
     "tier": "UU"
   },
-  "decidueyehisui": {
+  "decidueye-hisui": {
     "tier": "UU"
   },
   "incineroar": {
@@ -872,7 +863,7 @@
   "crabominable": {
     "tier": "UU"
   },
-  "crabominablemega": {
+  "crabominable-mega": {
     "tier": "UU"
   },
   "lycanroc": {
@@ -914,19 +905,19 @@
   "drampa": {
     "tier": "UU"
   },
-  "drampamega": {
+  "drampa-mega": {
     "tier": "UU"
   },
   "kommoo": {
     "tier": "UU"
   },
-  "magearnaoriginal": {
+  "magearna-original": {
     "tier": "Unknown"
   },
-  "magearnamega": {
+  "magearna-mega": {
     "tier": "Unknown"
   },
-  "magearnaoriginalmega": {
+  "magearna-original-mega": {
     "tier": "Unknown"
   },
   "corviknight": {
@@ -968,7 +959,7 @@
   "falinks": {
     "tier": "OU"
   },
-  "falinksmega": {
+  "falinks-mega": {
     "tier": "OU"
   },
   "morpeko": {
@@ -1001,7 +992,7 @@
   "scovillain": {
     "tier": "UU"
   },
-  "scovillainmega": {
+  "scovillain-mega": {
     "tier": "UU"
   },
   "bellibolt": {
@@ -1034,7 +1025,7 @@
   "glimmora": {
     "tier": "OU"
   },
-  "glimmoramega": {
+  "glimmora-mega": {
     "tier": "OU"
   },
   "gholdengo": {
