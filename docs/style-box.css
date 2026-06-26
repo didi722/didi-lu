@@ -2970,22 +2970,20 @@ color:#eeeeee;
 /* Il singolo quadratino del Pokémon */
 .helper-pkm-card {
     background: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    border: 2px solid black;
+    box-shadow: 4px 4px 0 black;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
     padding: 10px 5px;
-    aspect-ratio: 1 / 1; /* Forza la forma perfettamente quadrata */
+    aspect-ratio: 1 / 1 !important; /* Forza la forma perfettamente quadrata */
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    transition: all 0.1s ease;
 }
 
 .helper-pkm-card:hover {
     transform: translateY(-2px);
-    border-color: #3b4cca; /* Colore highlight al passagio del mouse */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Box che contiene e centra verticalmente/orizzontalmente la GIF */
@@ -3002,15 +3000,49 @@ color:#eeeeee;
     max-width: 56px;
     max-height: 56px;
     object-fit: contain;
+    filter: drop-shadow(1px 1px 0 black);
+    
 }
 
-/* Il testo con il nome sotto la GIF */
+/* Il contenitore del testo sotto la GIF */
 .helper-pkm-name {
     font-size: 0.75rem;
     font-weight: 600;
     color: #333;
-    text-align: center;
-    word-break: break-word;
     text-transform: capitalize;
     margin-top: 4px;
+    
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    
+    /* 🌟 Di base usa flex ed è centrato: i nomi corti staranno fermi al centro */
+    display: flex;
+    justify-content: center; 
+    box-sizing: border-box;
+}
+
+.helper-pkm-name span {
+    display: inline-block;
+}
+
+/* 🌟 SI ATTIVA SOLO SE IL NOME SUPERA I BORDI */
+.helper-pkm-name.marquee-bounce {
+    justify-content: flex-start; /* Forziamo l'inizio a sinistra per vedere la prima lettera */
+    padding: 0 4px;               /* Un minimo di respiro interno */
+}
+
+.helper-pkm-name.marquee-bounce span {
+    /* "alternate" fa muovere l'animazione avanti e indietro come un pendolo */
+    animation: rimbalzoOrizzontale 3s ease-in-out infinite alternate;
+}
+
+/* Animazione dinamica a pendolo con pause di lettura (0-20% e 80-100%) */
+@keyframes rimbalzoOrizzontale {
+    0%, 20% {
+        transform: translate3d(0, 0, 0); /* Resta fermo all'inizio per essere letto */
+    }
+    80%, 100% {
+        transform: translate3d(var(--distanza-scorrimento), 0, 0); /* Mostra la fine del nome e si ferma un istante */
+    }
 }

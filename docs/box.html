@@ -157,7 +157,7 @@
                     <div class="mandatory-title">RULES</div>
                     <div id="helper-dynamic-filters">
                         <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
-                            Choose a format to see rules and available Pokémons.
+                            Choose a format to see available Pokémons.
                         </div>
                     </div>
                 </div>
@@ -170,9 +170,7 @@
                 </div>
                 
                 <div id="helper-pkm-grid" class="explorer-pkm-scroll-container">
-                    <div class="helper-placeholder-row">
-                        Select a format to display legal entries.
-                    </div>
+
                 </div>
             </div>
             
@@ -1979,7 +1977,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
                 }
             } else {
                 // Se non è AG o UBER, verifichiamo che non superi comunque la barriera di OU
-                const gerarchiaStandard = ["OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
+                const gerarchiaStandard = ["OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
                 if (gerarchiaStandard.indexOf(tierPokemon) === -1) {
                     errori.push(`[${pkmn.name}] ha una tier (${tierPokemon}) non valida per il formato STANDARD.`);
                 }
@@ -1989,7 +1987,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     }
 
     // ================= LOGICA TIER: GERARCHICA CLASSICA (OU, UU, ecc.) =================
-    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "LC", "NFE"];
+    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
     const idxMax = gerarchia.indexOf(tierMassima);
 
     teamDatiPokeAPI.forEach(pkmn => {
@@ -2319,22 +2317,48 @@ async function popolaSelettoreFormati() {
     }
 }
 
-/**
- * Intercetta il cambio formato, scarica il JSON corretto e avvia il filtro
- */
-/**
- * Intercetta il cambio formato, scarica il JSON corretto e avvia il filtro
- */
 async function gestisciCambioFormatoHelper() {
     const select = document.getElementById('helper-format-select');
-    if (!select || !select.value) return;
+    if (!select) return;
 
     const selectedFormatId = select.value;
+    const grid = document.getElementById('helper-pkm-grid');
+    const countSpan = document.getElementById('helper-count');
+    const infoFilters = document.getElementById('helper-dynamic-filters');
+
+    if (!selectedFormatId) {
+        if (grid) grid.innerHTML = ''; 
+        if (countSpan) countSpan.textContent = '0'; 
+        if (infoFilters) {
+            infoFilters.innerHTML = `
+                <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
+                    Choose a format to see available Pokémons.
+                </div>
+            `;
+        }
+        return; 
+    }
 
     try {
         const snapshot = await db.ref(`regolamenti/${selectedFormatId}`).once('value');
         const regolamento = snapshot.val();
         if (!regolamento) return;
+
+        if (infoFilters) {
+            if (regolamento.baseTier && regolamento.baseTier.toUpperCase() === "STANDARD") {
+                infoFilters.innerHTML = `
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #d9534f; padding-top: 5px;">
+                        ⚠️ Max 2 Uber!
+                    </div>
+                `;
+            } else {
+                infoFilters.innerHTML = `
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #28a745; padding-top: 5px;">
+                        Format Tier: ${regolamento.baseTier ? regolamento.baseTier.toUpperCase() : 'Custom'}
+                    </div>
+                `;
+            }
+        }
 
         const genLimite = parseInt(regolamento.genRuleValue);
         let percorsoFile = regolamento.genRuleType === "within" 
@@ -2348,31 +2372,24 @@ async function gestisciCambioFormatoHelper() {
 
         if (risultatoFiltro.tipoLayout === "FLAT") {
             console.log("Generazione completata. Pokémon ammessi (FLAT):", risultatoFiltro.pokemon.length);
-            
-            // ATTIVATA: Adesso renderizza i quadratini a schermo
             renderizzaListaPiatta(risultatoFiltro.pokemon);
         }
 
     } catch (error) {
-        console.error("Errore nel flusso di generazione dell'Helper:", error);
+        console.error("Errore nel flusso di generatione dell'Helper:", error);
     }
 }
 
-/**
- * Prende l'array dei Pokémon filtrati e popola la griglia visiva (Card Destra)
- */
 function renderizzaListaPiatta(pokemonList) {
     const grid = document.getElementById('helper-pkm-grid');
     const countSpan = document.getElementById('helper-count');
 
     if (!grid) return;
 
-    // 1. Aggiorna il contatore dei Pokémon totali trovati
     if (countSpan) {
         countSpan.textContent = pokemonList.length;
     }
 
-    // 2. Svuota la griglia dai vecchi dati o dai placeholder
     grid.innerHTML = '';
 
     if (pokemonList.length === 0) {
@@ -2380,15 +2397,12 @@ function renderizzaListaPiatta(pokemonList) {
         return;
     }
 
-    // 3. Cicla l'array e appende i quadratini (card)
     pokemonList.forEach(pkm => {
         const card = document.createElement('div');
         card.className = 'helper-pkm-card';
-        card.dataset.id = pkm.id; // Utile per catturare il click in futuro
+        card.dataset.id = pkm.id;
 
-        // Endpoint di Showdown per le GIF animate
         const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
-        // Fallback statico se la GIF fallisce (es: forme rare o glitch)
         const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
 
         card.innerHTML = `
@@ -2396,15 +2410,27 @@ function renderizzaListaPiatta(pokemonList) {
                 <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
                      onerror="this.onerror=null; this.src='${fallbackUrl}';">
             </div>
-            <div class="helper-pkm-name">${pkm.name}</div>
+            <div class="helper-pkm-name"><span>${pkm.name}</span></div>
         `;
 
-        // Se in futuro ti servirà gestire il click sul quadratino (es: per ispezionarlo):
         card.addEventListener('click', () => {
             console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
         });
 
         grid.appendChild(card);
+
+        // 🌟 CALCOLO DINAMICO DEL RIMBALZO
+        const nameContainer = card.querySelector('.helper-pkm-name');
+        const nameSpan = nameContainer.querySelector('span');
+        
+        // Calcola quanti pixel sporgono oltre la larghezza della card
+        const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
+        
+        if (overflowPixels > 0) {
+            // Passiamo i pixel esatti (+ 8px di safe-margin finale) come variabile CSS alla card
+            nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
+            nameContainer.classList.add('marquee-bounce');
+        }
     });
 }
 
@@ -2415,50 +2441,31 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
     const genLimite = parseInt(regolamento.genRuleValue);
     const poolFiltrato = [];
-    
-    // Contatore per tracciare l'esatto ordine di lettura dei JSON
     let contatoreOrdine = 0;
 
-    /**
-     * Helper interno per escludere i duplicati e le forme non desiderate
-     */
     function escludeFormeInvalide(id) {
         const idLower = id.toLowerCase();
-
-        // 1. Elimina qualsiasi forma Gigamax
         if (idLower.includes('gmax')) return false;
-
-        // 2. Elimina i Pikachu speciali ed evento, e Pichu Spiky Eared
         if (idLower.startsWith('pikachu') && idLower !== 'pikachu') return false;
         if (idLower === 'pichuspikyeared') return false;
-
-        // 3. Elimina varianti evento / Totem / Partner
         if (idLower.includes('totem')) return false;
         if (idLower.includes('cap') && !idLower.includes('capsakid')) return false; 
         if (idLower.includes('partner')) return false;
-
-        // 4. Elimina forme alternative di cui vogliamo SOLO il base
         if (idLower.startsWith('arceus') && idLower !== 'arceus') return false;
         if (idLower.startsWith('silvally') && idLower !== 'silvally') return false;
         if (idLower.startsWith('castform') && idLower !== 'castform') return false;
         if (idLower.startsWith('deoxys') && idLower !== 'deoxys') return false;
         if (idLower.startsWith('wormadam') && idLower !== 'wormadam') return false;
-
-        // 5. Esclusioni puntuali (Cherrim Sunshine, Giratina Origin)
         if (idLower === 'cherrimsunshine' || idLower === 'cherrimsunny') return false;
         if (idLower === 'giratinaorigin') return false;
 
         return true;
     }
 
-    /**
-     * Trasforma le chiavi piatte di Firebase nei token con trattino per Showdown.
-     */
     function calcolaSpriteId(id) {
         const idLower = id.toLowerCase().trim();
         if (idLower.includes('-')) return idLower;
 
-        // Gestione infallibile basata su come INIZIA il nome
         const prefissiConTrattino = ['rotom', 'shaymin', 'kyurem', 'lycanroc', 'necrozma'];
         for (const pref of prefissiConTrattino) {
             if (idLower.startsWith(pref) && idLower !== pref) {
@@ -2466,7 +2473,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             }
         }
 
-        // Gestione delle forme regionali (basata sulla FINE del nome)
         const suffissiRegionali = ['alola', 'galar', 'hisui', 'paldea'];
         for (const suf of suffissiRegionali) {
             if (idLower.endsWith(suf) && idLower !== suf) {
@@ -2477,18 +2483,58 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         return idLower;
     }
 
-    /**
-     * NUOVO: Estrae la radice identificativa prima del trattino
-     * per associare le forme alternative al rispettivo Pokémon base.
-     */
     function determinaRadice(id, spriteId) {
         const idLower = id.toLowerCase().trim();
         const spriteLower = spriteId.toLowerCase().trim();
-
         if (idLower.includes('-')) return idLower.split('-')[0];
         if (spriteLower.includes('-')) return spriteLower.split('-')[0];
-
         return idLower;
+    }
+
+    function ottieniTierMaggiore(tierA, tierB) {
+        const gerarchia = {
+            "": 0, "ILLEGAL": 0, "PAST": 0, "UNTIERED": 1,
+            "LC": 2, "NFE": 3,
+            "ZU": 4, "ZUBL": 5,
+            "PU": 6, "PUBL": 7,
+            "NU": 8, "NUBL": 9,
+            "RU": 10, "RUBL": 11,
+            "UU": 12, "UUBL": 13,
+            "OU": 14,
+            "STANDARD": 15, "UBER": 15, "UBERS": 15,
+            "AG": 16
+        };
+        const tA = tierA ? tierA.toUpperCase().trim() : "";
+        const tB = tierB ? tierB.toUpperCase().trim() : "";
+        return (gerarchia[tA] || 0) >= (gerarchia[tB] || 0) ? tA : tB;
+    }
+
+    function controllaTierAmmessa(pkmTier, baseTier) {
+        if (!baseTier) return true;
+
+        const target = baseTier.toUpperCase().trim();
+        const current = pkmTier ? pkmTier.toUpperCase().trim() : "";
+
+        const blacklistPerTier = {
+            "AG": [],
+            "STANDARD": ["AG"],
+            "UBER":     ["AG"],
+            "UBERS":    ["AG"],
+            "OU": ["AG", "UBER", "UBERS"],
+            "UU": ["AG", "UBER", "UBERS", "OU", "UUBL"],
+            "RU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL"],
+            "NU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL"],
+            "PU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL"],
+            "ZU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "ZUBL"]
+        };
+
+        if (target === "LC") return current === "LC";
+        if (target === "NFE") return current === "NFE";
+
+        if (blacklistPerTier[target] !== undefined) {
+            return !blacklistPerTier[target].includes(current);
+        }
+        return true;
     }
 
     // ================= CASO 1: UP_TO (Unione progressiva da Gen 1 a Gen X) =================
@@ -2500,7 +2546,20 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 try {
                     const resGen = await fetch(`pkm-gens/gen${i}.json`);
                     const jsonGen = await resGen.json();
-                    Object.assign(aggregatoGens, jsonGen);
+                    
+                    Object.keys(jsonGen).forEach(key => {
+                        if (!aggregatoGens[key]) {
+                            aggregatoGens[key] = jsonGen[key];
+                        } else {
+                            const tierEsistente = aggregatoGens[key].tier || "";
+                            const tierNuova = jsonGen[key].tier || "";
+                            aggregatoGens[key] = {
+                                ...aggregatoGens[key],
+                                ...jsonGen[key],
+                                tier: ottieniTierMaggiore(tierEsistente, tierNuova)
+                            };
+                        }
+                    });
                 } catch (errFetch) {
                     console.error(`[Helper] Impossibile caricare gen${i}.json:`, errFetch);
                 }
@@ -2510,11 +2569,30 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 if (!escludeFormeInvalide(nomeChiave)) return;
 
                 const datiNelPokedexGen = aggregatoGens[nomeChiave];
-                const tierUpper = (datiNelPokedexGen && datiNelPokedexGen.tier) ? datiNelPokedexGen.tier.toUpperCase() : "";
+                const datoNatDex = jsonDati[nomeChiave];
+
+                const tierGen = datiNelPokedexGen ? datiNelPokedexGen.tier : "";
+                const tierNatDex = datoNatDex ? datoNatDex.tier : "";
+                let tierUpper = ottieniTierMaggiore(tierGen, tierNatDex);
+
+                // 🌟 PATCH MEGA EVOLUZIONI: Eredita la tier del Pokémon Base se più restrittiva
+                if (nomeChiave.toLowerCase().includes('-mega')) {
+                    const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
+                    const datiBaseGen = aggregatoGens[baseKey];
+                    const datoBaseNatDex = jsonDati[baseKey];
+                    
+                    const tierBaseGen = datiBaseGen ? datiBaseGen.tier : "";
+                    const tierBaseNatDex = datoBaseNatDex ? datoBaseNatDex.tier : "";
+                    const tierBaseUpper = ottieniTierMaggiore(tierBaseGen, tierBaseNatDex);
+                    
+                    tierUpper = ottieniTierMaggiore(tierUpper, tierBaseUpper);
+                }
 
                 if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
 
-                const datoGrezzo = jsonDati[nomeChiave] || datiNelPokedexGen;
+                if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
+
+                const datoGrezzo = { ...datiNelPokedexGen, ...datoNatDex, tier: tierUpper };
                 const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
                 
                 const spriteId = calcolaSpriteId(nomeChiave);
@@ -2543,8 +2621,20 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             const datoGrezzo = jsonDati[nomeChiave];
             if (!datoGrezzo) return;
 
-            const tierUpper = datoGrezzo.tier ? datoGrezzo.tier.toUpperCase() : "";
+            let tierUpper = datoGrezzo.tier ? datoGrezzo.tier.toUpperCase().trim() : "";
+
+            // 🌟 PATCH MEGA EVOLUZIONI: Eredita la tier del Pokémon Base se più restrittiva
+            if (nomeChiave.toLowerCase().includes('-mega')) {
+                const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
+                const datoBase = jsonDati[baseKey];
+                const tierBase = datoBase && datoBase.tier ? datoBase.tier.toUpperCase().trim() : "";
+                
+                tierUpper = ottieniTierMaggiore(tierUpper, tierBase);
+            }
+
             if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
+
+            if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
 
             const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
             
@@ -2562,9 +2652,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         });
     }
 
-    // ================= NUOVA LOGICA DI ORDINAMENTO PER GRUPPI DI FORMA =================
-    
-    // 1. Mappiamo i dati di ancoraggio (num e ordine del base) per ciascuna radice
+    // ================= LOGICA DI ORDINAMENTO PER GRUPPI DI FORMA =================
     const mappaAncoraggioRadici = {};
     poolFiltrato.forEach(pkm => {
         if (!mappaAncoraggioRadici[pkm.radice]) {
@@ -2573,32 +2661,27 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 ordineIniziale: pkm.ordineIniziale
             };
         } else {
-            // Se la forma base ha il numero di dex ma una forma alternativa letta prima non lo aveva
             if (!mappaAncoraggioRadici[pkm.radice].num && pkm.num) {
                 mappaAncoraggioRadici[pkm.radice].num = pkm.num;
             }
-            // L'ancora cronologica della famiglia deve essere il momento in cui è comparso il primissimo membro
             if (pkm.ordineIniziale < mappaAncoraggioRadici[pkm.radice].ordineIniziale) {
                 mappaAncoraggioRadici[pkm.radice].ordineIniziale = pkm.ordineIniziale;
             }
         }
     });
 
-    // 2. Eseguiamo il sort definitivo sfruttando le ancore della mappa
     poolFiltrato.sort((a, b) => {
-        // Se fanno parte della stessa identica famiglia (stessa radice, es: ninetales e ninetales-alola)
         if (a.radice === b.radice) {
-            // Li ordiniamo internamente per ordine di inserimento nativo (il base viene prima delle forme)
             return a.ordineIniziale - b.ordineIniziale;
         }
         
-        // Se sono specie diverse, confrontiamo i dati del rispettivo Pokémon base
         const ancoraA = mappaAncoraggioRadici[a.radice];
         const ancoraB = mappaAncoraggioRadici[b.radice];
         
         if (ancoraA.num && ancoraB.num) {
             return ancoraA.num - ancoraB.num;
         }
+        // Corretto qui: da "encoreA" a "ancoraA"
         return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
     });
 
@@ -2608,9 +2691,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     };
 }
 
-/**
- * Gestisce la chiusura della modale cliccando fuori dal wrapper o sulla X
- */
 function inizializzaChiusuraHelper(event) {
     // Caso A: Click sul bottone di chiusura (la X del modale)
     if (event.target.closest('.format-close-btn')) {
@@ -2627,25 +2707,28 @@ function inizializzaChiusuraHelper(event) {
 function chiudiTuttoHelper() {
     // 1. Chiude il modale principale
     const modal = document.getElementById('helper-modal-overlay');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 
-    // 2. Chiude la lista/dropdown dei formati aperta in precedenza.
-    // NOTA: Sostituisci '#selettore-formati-lista' o '.format-list' 
-    // con l'ID o la classe reale del tuo menu a tendina.
+    // 2. Chiude la lista/dropdown dei formati
     const listaFormati = document.getElementById('selettore-formati-lista') || document.querySelector('.format-list');
-    if (listaFormati) {
-        // Se usi le classi CSS per mostrare/nascondere:
-        listaFormati.classList.remove('active', 'open', 'show');
-        // Se invece usi il display inline, decommenta la riga sotto:
-        // listaFormati.style.display = 'none';
-    }
+    if (listaFormati) listaFormati.classList.remove('active', 'open', 'show');
 
-    // 3. [Consigliato] Svuota la griglia dei Pokémon per non lasciare residui visivi
+    // 3. Svuota la griglia dei Pokémon
     const grid = document.getElementById('helper-pkm-grid');
-    if (grid) {
-        grid.innerHTML = '';
+    if (grid) grid.innerHTML = '';
+
+    // 4. Resetta il contatore
+    const countSpan = document.getElementById('helper-count');
+    if (countSpan) countSpan.textContent = '0';
+
+    // 5. NUOVO: Resetta il box delle regole al placeholder originale
+    const infoFilters = document.getElementById('helper-dynamic-filters');
+    if (infoFilters) {
+        infoFilters.innerHTML = `
+            <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
+                Choose a format to see available Pokémons.
+            </div>
+        `;
     }
 }
 
