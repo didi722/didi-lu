@@ -2390,12 +2390,25 @@ async function gestisciCambioFormatoHelper() {
         
         const jsonDati = await res.json(); 
 
+        // 🌟 WHITELIST PROPRIETÀ BIOLOGICHE VALIDE (Ignora nature, mosse, strumenti ecc.)
+        const CHIAVI_BIOLOGICHE_VALIDE = [
+            'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
+            'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
+            'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
+            'base_friendship', 'habitat', 'name_lenght', 'name_starts', 
+            'evolutions_count', 'evolution_stage'
+        ];
+
         const restrizioniPokemon = regolamento.restrizioni?.pokemon;
         const chiaviSameAcross = [];
 
         if (restrizioniPokemon) {
             for (const chiave in restrizioniPokemon) {
                 if (Object.prototype.hasOwnProperty.call(restrizioniPokemon, chiave)) {
+                    
+                    // 🌟 CORREZIONE PRINCIPALE: Se la proprietà non esiste nel JSON biologico, ignorala subito
+                    if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
+
                     const restrizione = restrizioniPokemon[chiave];
                     if (
                         restrizione?.mode === "SAME_ACROSS_TEAM" || 
@@ -2416,7 +2429,6 @@ async function gestisciCambioFormatoHelper() {
                 throw new Error(`Missing pkm-gens/pokedex_base.json!`);
             }
             
-            // 🌟 CORREZIONE 1: Normalizzazione chiavi in minuscolo per evitare conflitti Case-Sensitive
             const pokedexBaseRaw = await resBase.json();
             const pokedexBase = {};
             Object.keys(pokedexBaseRaw).forEach(key => {
@@ -2628,7 +2640,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         try {
             const resBase = await fetch('pkm-gens/pokedex_base.json');
             
-            // 🌟 CORREZIONE 2: Normalizzazione chiavi in minuscolo anche dentro generaListaPokémonPerFormato
+            // 🌟 CORREZIONE 2: Normalizzazione chiavi in minuscolo
             const pokedexBaseRaw = await resBase.json();
             pokedexBase = {};
             Object.keys(pokedexBaseRaw).forEach(key => {
@@ -2693,6 +2705,14 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     function controllaRestrizioniBiologiche(nomeChiave) {
         if (!restrizioniPokemon || !pokedexBase) return true;
 
+        // 🌟 ECCEZIONE PROPRIETÀ: Elenco esplicito delle chiavi supportate da pokedex_base.json
+        // Qualsiasi restrizione che NON sia in questa lista (es. nature, moves, item) viene ignorata a monte.
+        const CHIAVI_BIOLOGICHE_VALIDE = [
+            'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
+            'types', 'abilities', 'baseStats', 'num', 'tier',
+            'hp', 'atk', 'def', 'spa', 'spd', 'spe' // se mappate flat
+        ];
+
         // 🌟 1. INTERCETTAZIONE FILTRI SPECIALI LEGENDARY / MYTHICAL
         const ruleLegendary = restrizioniPokemon['is_legendary'];
         const ruleMythical = restrizioniPokemon['is_mythical'];
@@ -2700,11 +2720,14 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const onlyLegendaryActive = ruleLegendary && String(ruleLegendary.value).toLowerCase().trim() === "only legendary";
         const onlyMythicalActive = ruleMythical && String(ruleMythical.value).toLowerCase().trim() === "only mythical";
 
-        // Se almeno uno dei due filtri è attivo come "Only", forziamo l'attivazione dei controlli biologici
+        // Verifichiamo se ci sono filtri validi attivi prima di procedere
         let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive;
         const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
         
         for (const chiave in restrizioniPokemon) {
+            // Se la chiave su Firebase non è biologica, la saltiamo e non attiviamo il filtro
+            if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
+
             const r = restrizioniPokemon[chiave];
             if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
                 const op = r.operator.toLowerCase().trim();
@@ -2726,25 +2749,22 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
         // 🌟 2. APPLICAZIONE LOGICA SPECIALE (CON COESISTENZA IN "OR")
         if (onlyLegendaryActive || onlyMythicalActive) {
-            // Normalizziamo i flag per accettare booleani, stringhe "true" o numeri 1 dal JSON
             const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
             const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
 
             if (onlyLegendaryActive && onlyMythicalActive) {
-                // Se Firebase richiede ENTRAMBI i filtri "Only", il Pokémon passa se è LEGENDARY OPPURE MYTHICAL (OR)
                 if (!isPkmLegendary && !isPkmMythical) return false;
             } else if (onlyLegendaryActive) {
-                // È attivo solo "Only Legendary"
                 if (!isPkmLegendary) return false;
             } else if (onlyMythicalActive) {
-                // È attivo solo "Only Mythical"
                 if (!isPkmMythical) return false;
             }
         }
 
         // 🌟 3. CICLO STANDARD PER GLI ALTRI FILTRI BIOLOGICI (Altezza, Peso, BST, ecc.)
         for (const chiaveRestrizione in restrizioniPokemon) {
-            // Saltiamo queste due chiavi perché le abbiamo già verificate sopra con la logica personalizzata
+            // Saltiamo le chiavi non biologiche/non presenti nel file json delle statistiche base
+            if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
             if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
 
             const regola = restrizioniPokemon[chiaveRestrizione];
