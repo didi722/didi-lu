@@ -2482,7 +2482,7 @@ async function gestisciCambioFormatoHelper() {
                 label.textContent = `Each Pokémon in the Team must have the same ${configConfigurata.label}:`;
 
                 const customSelect = document.createElement('select');
-                customSelect.style.cssText = "padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; background: #fff;";
+                customSelect.style.cssText = "padding: 6px; border: 3px solid black; box-shadow: 5px 5px 0 solid black; font-size: 0.9rem; background: #fff;";
                 customSelect.innerHTML = `<option value="">Select ${configConfigurata.label}...</option>`;
 
                 valoriOrdinati.forEach(val => {
@@ -2693,7 +2693,15 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     function controllaRestrizioniBiologiche(nomeChiave) {
         if (!restrizioniPokemon || !pokedexBase) return true;
 
-        let haFiltriAttivi = false;
+        // 🌟 1. INTERCETTAZIONE FILTRI SPECIALI LEGENDARY / MYTHICAL
+        const ruleLegendary = restrizioniPokemon['is_legendary'];
+        const ruleMythical = restrizioniPokemon['is_mythical'];
+        
+        const onlyLegendaryActive = ruleLegendary && String(ruleLegendary.value).toLowerCase().trim() === "only legendary";
+        const onlyMythicalActive = ruleMythical && String(ruleMythical.value).toLowerCase().trim() === "only mythical";
+
+        // Se almeno uno dei due filtri è attivo come "Only", forziamo l'attivazione dei controlli biologici
+        let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive;
         const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
         
         for (const chiave in restrizioniPokemon) {
@@ -2706,6 +2714,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
         if (!haFiltriAttivi) return true;
 
+        // Recupero i dati del Pokémon dal database base normalizzato
         let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
         if (!pkmDettaglio) {
             const spriteId = calcolaSpriteId(nomeChiave);
@@ -2715,7 +2724,29 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
         if (!pkmDettaglio) return false; 
 
+        // 🌟 2. APPLICAZIONE LOGICA SPECIALE (CON COESISTENZA IN "OR")
+        if (onlyLegendaryActive || onlyMythicalActive) {
+            // Normalizziamo i flag per accettare booleani, stringhe "true" o numeri 1 dal JSON
+            const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
+            const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
+
+            if (onlyLegendaryActive && onlyMythicalActive) {
+                // Se Firebase richiede ENTRAMBI i filtri "Only", il Pokémon passa se è LEGENDARY OPPURE MYTHICAL (OR)
+                if (!isPkmLegendary && !isPkmMythical) return false;
+            } else if (onlyLegendaryActive) {
+                // È attivo solo "Only Legendary"
+                if (!isPkmLegendary) return false;
+            } else if (onlyMythicalActive) {
+                // È attivo solo "Only Mythical"
+                if (!isPkmMythical) return false;
+            }
+        }
+
+        // 🌟 3. CICLO STANDARD PER GLI ALTRI FILTRI BIOLOGICI (Altezza, Peso, BST, ecc.)
         for (const chiaveRestrizione in restrizioniPokemon) {
+            // Saltiamo queste due chiavi perché le abbiamo già verificate sopra con la logica personalizzata
+            if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
+
             const regola = restrizioniPokemon[chiaveRestrizione];
             if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
 

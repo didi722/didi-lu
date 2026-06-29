@@ -1033,18 +1033,6 @@ function eseguiControlloConflitti() {
             
             // CASO B: Conflitto logico incrociato su campi diversi della stessa categoria
             
-            // CORREZIONE LEGENDARY / MYTHICAL
-            if (rA.category === "pokemon") {
-                if (
-                    (rA.field === "is_legendary" && rA.value === "Only Legendary" && rB.field === "is_mythical" && rB.value === "Only Mythical") ||
-                    (rB.field === "is_legendary" && rB.value === "Only Legendary" && rA.field === "is_mythical" && rA.value === "Only Mythical")
-                ) {
-                    IDConflitti.add(rA.id);
-                    IDConflitti.add(rB.id);
-                    messaggiErrore.push("Conflict in Pokémon selection restrictions.");
-                }
-            }
-
             // Conflitto incrociato Strumenti (Invariato)
             if (rA.category === "strumenti") {
                 if (
