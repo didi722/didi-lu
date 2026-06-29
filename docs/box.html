@@ -2322,9 +2322,16 @@ async function gestisciCambioFormatoHelper() {
     if (!select) return;
 
     const selectedFormatId = select.value;
+    
+    // 🛡️ Salviamo il formato corrente direttamente su window per evitare errori di inizializzazione
+    window.currentHelperFormatId = selectedFormatId;
+
     const grid = document.getElementById('helper-pkm-grid');
     const countSpan = document.getElementById('helper-count');
     const infoFilters = document.getElementById('helper-dynamic-filters');
+
+    // Svuota istantaneamente i filtri dinamici al cambio di selezione
+    if (infoFilters) infoFilters.innerHTML = '';
 
     if (!selectedFormatId) {
         if (grid) grid.innerHTML = ''; 
@@ -2341,9 +2348,14 @@ async function gestisciCambioFormatoHelper() {
 
     try {
         const snapshot = await db.ref(`regolamenti/${selectedFormatId}`).once('value');
+        
+        // 🛡️ GUARDIA ASINCRONA: Blocca l'esecuzione se l'utente ha già cambiato formato
+        if (selectedFormatId !== window.currentHelperFormatId) return;
+
         const regolamento = snapshot.val();
         if (!regolamento) return;
 
+        // Configurazione Box Info Formato (English)
         if (infoFilters) {
             if (regolamento.baseTier && regolamento.baseTier.toUpperCase() === "STANDARD") {
                 infoFilters.innerHTML = `
@@ -2366,17 +2378,156 @@ async function gestisciCambioFormatoHelper() {
             : `pkm-gens/natdex-tiers.json`;
 
         const res = await fetch(percorsoFile);
+        if (selectedFormatId !== window.currentHelperFormatId) return; // Controllo post-fetch
+        if (!res.ok) throw new Error(`Format file not found (${percorsoFile})`);
+        
         const jsonDati = await res.json(); 
 
-        const risultatoFiltro = await generaListaPokémonPerFormato(regolamento, jsonDati);
+        // Mappatura dinamica delle chiavi del nodo Firebase
+        const restrizioniPokemon = regolamento.restrizioni?.pokemon;
+        const chiaviSameAcross = [];
 
-        if (risultatoFiltro.tipoLayout === "FLAT") {
-            console.log("Generazione completata. Pokémon ammessi (FLAT):", risultatoFiltro.pokemon.length);
-            renderizzaListaPiatta(risultatoFiltro.pokemon);
+        if (restrizioniPokemon) {
+            for (const chiave in restrizioniPokemon) {
+                if (Object.prototype.hasOwnProperty.call(restrizioniPokemon, chiave)) {
+                    if (restrizioniPokemon[chiave]?.mode === "SAME_ACROSS_TEAM") {
+                        chiaviSameAcross.push(chiave);
+                    }
+                }
+            }
+        }
+
+        // ================= CASO A: FILTRI DINAMICI TROVATI =================
+        if (chiaviSameAcross.length > 0) {
+            const resBase = await fetch('pkm-gens/pokedex_base.json');
+            if (selectedFormatId !== window.currentHelperFormatId) return;
+            if (!resBase.ok) {
+                if (grid) grid.innerHTML = `<div class="helper-placeholder-row" style="color: #d9534f;">❌ Critical Error: Unable to load base database.</div>`;
+                throw new Error(`Missing pkm-gens/pokedex_base.json!`);
+            }
+            const pokedexBase = await resBase.json();
+
+            const regolamentoTemporaneo = JSON.parse(JSON.stringify(regolamento));
+            chiaviSameAcross.forEach(chiave => {
+                delete regolamentoTemporaneo.restrizioni.pokemon[chiave];
+            });
+
+            const risultatoFiltroBase = await generaListaPokémonPerFormato(regolamentoTemporaneo, jsonDati);
+            if (selectedFormatId !== window.currentHelperFormatId) return;
+            const poolPokemonBase = risultatoFiltroBase.pokemon;
+
+            // 🛡️ Svuotiamo preventivamente l'intero box dei filtri prima di rigenerare le nuove select
+            const vecchioContainer = infoFilters.querySelector('#helper-same-across-container');
+            if (vecchioContainer) vecchioContainer.remove();
+
+            const containerSelettori = document.createElement('div');
+            containerSelettori.id = "helper-same-across-container";
+            containerSelettori.style.cssText = "margin-top: 10px; display: flex; flex-direction: column; gap: 8px;";
+
+            const scelteUtente = {};
+
+            chiaviSameAcross.forEach(chiave => {
+                scelteUtente[chiave] = "";
+
+                // Mappa per contare quanti Pokémon ci sono per ogni specifico valore (es: { 110: 14, 120: 5 })
+                const conteggioValori = {};
+
+                poolPokemonBase.forEach(pkm => {
+                    const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
+                    if (dettagliBiologici && dettagliBiologici[chiave] !== undefined) {
+                        let val = dettagliBiologici[chiave];
+                        if (chiave === 'height') {
+                            val = Math.round(val * 100);
+                        }
+                        conteggioValori[val] = (conteggioValori[val] || 0) + 1;
+                    }
+                });
+
+                const valoriOrdinati = Object.keys(conteggioValori).map(Number).sort((a, b) => a - b);
+
+                const wrapperFiltro = document.createElement('div');
+                wrapperFiltro.style.cssText = "display: flex; flex-direction: column; gap: 3px;";
+
+                const nomeVisualizzato = chiave.charAt(0).toUpperCase() + chiave.slice(1);
+
+                const label = document.createElement('label');
+                label.style.cssText = "font-size: 0.85rem; font-weight: 700; color: #444;";
+                label.textContent = `Each Pokémon in the Team must have the same ${nomeVisualizzato}:`;
+
+                const customSelect = document.createElement('select');
+                customSelect.style.cssText = "padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; background: #fff;";
+                customSelect.innerHTML = `<option value="">Select ${nomeVisualizzato}...</option>`;
+
+                valoriOrdinati.forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    
+                    let unit = "";
+                    if (chiave === 'height') unit = " cm";
+                    else if (chiave === 'weight') unit = " kg";
+
+                    // Aggiunta del counter accanto al testo dell'opzione
+                    const quantita = conteggioValori[val];
+                    opt.textContent = `${val}${unit} (${quantita})`;
+                    
+                    customSelect.appendChild(opt);
+                });
+
+                customSelect.addEventListener('change', () => {
+                    scelteUtente[chiave] = customSelect.value;
+                    aggiornaListaPokémonSameAcross();
+                });
+
+                wrapperFiltro.appendChild(label);
+                wrapperFiltro.appendChild(customSelect);
+                containerSelettori.appendChild(wrapperFiltro);
+            });
+
+            if (infoFilters) {
+                infoFilters.appendChild(containerSelettori);
+            }
+
+            function aggiornaListaPokémonSameAcross() {
+                const tuttiSelezionati = chiaviSameAcross.every(chiave => scelteUtente[chiave] !== "");
+
+                if (!tuttiSelezionati) {
+                    if (grid) grid.innerHTML = `<div class="helper-placeholder-row"></div>`;
+                    if (countSpan) countSpan.textContent = '0';
+                    return;
+                }
+
+                const poolFiltratoFinale = poolPokemonBase.filter(pkm => {
+                    const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
+                    if (!dettagliBiologici) return false;
+
+                    return chiaviSameAcross.every(chiave => {
+                        let valPkm = dettagliBiologici[chiave];
+                        if (chiave === 'height') {
+                            valPkm = Math.round(valPkm * 100);
+                        }
+                        return Math.abs(parseFloat(valPkm) - parseFloat(scelteUtente[chiave])) < 0.001;
+                    });
+                });
+
+                renderizzaListaPiatta(poolFiltratoFinale);
+                if (countSpan) countSpan.textContent = poolFiltratoFinale.length; 
+            }
+
+            aggiornaListaPokémonSameAcross();
+        } 
+        // ================= CASO B: FORMATO STANDARD =================
+        else {
+            const risultatoFiltro = await generaListaPokémonPerFormato(regolamento, jsonDati);
+            if (selectedFormatId !== window.currentHelperFormatId) return;
+
+            if (risultatoFiltro.tipoLayout === "FLAT") {
+                renderizzaListaPiatta(risultatoFiltro.pokemon);
+                if (countSpan) countSpan.textContent = risultatoFiltro.pokemon.length;
+            }
         }
 
     } catch (error) {
-        console.error("Errore nel flusso di generatione dell'Helper:", error);
+        console.error("Error running Format Helper:", error);
     }
 }
 
@@ -2442,6 +2593,119 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     const genLimite = parseInt(regolamento.genRuleValue);
     const poolFiltrato = [];
     let contatoreOrdine = 0;
+
+    // 🌟 1. CARICAMENTO DINAMICO DI POKEDEX_BASE.JSON (Se ci sono restrizioni attive)
+    const restrizioniPokemon = regolamento.restrizioni?.pokemon;
+    let pokedexBase = null;
+
+    if (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) {
+        try {
+            const resBase = await fetch('pkm-gens/pokedex_base.json');
+            pokedexBase = await resBase.json();
+            console.log("[Helper] pkm-gens/pokedex_base.json caricato con successo per i filtri avanzati.");
+        } catch (e) {
+            console.error("[Helper] Errore nel caricamento di pkm-gens/pokedex_base.json:", e);
+        }
+    }
+
+    // 🌟 2. FUNZIONE HELPER DI VALUTAZIONE OPERATORI CORRETTA (Non blocca se mancano i valori numerici)
+    function valutaOperatore(valoreJson, operatore, regola) {
+        const vJson = parseFloat(valoreJson);
+        if (isNaN(vJson)) return false;
+
+        const op = operatore.toLowerCase().trim();
+
+        if (op === 'between') {
+            const vMin = parseFloat(regola.min);
+            const vMax = parseFloat(regola.max);
+            if (isNaN(vMin) || isNaN(vMax)) return true; // Se mancano i range reali, non bloccare il Pokémon
+            
+            return vJson >= vMin && vJson <= vMax;
+        }
+
+        const vFire = parseFloat(regola.value);
+        if (isNaN(vFire)) return true; // Se il valore inserito non è un numero valido, ignora il filtro e passa oltre
+
+        switch (op) {
+            case 'lt':  return vJson < vFire;   // Minore di (<)
+            case 'gt':  return vJson > vFire;   // Maggiore di (>)
+            case 'lte': return vJson <= vFire;  // Minore o uguale (<=)
+            case 'gte': return vJson >= vFire;  // Maggiore o uguale (>=)
+            case 'eq':  return vJson === vFire; // Uguale (==)
+            case 'neq': return vJson !== vFire; // Diverso (!=)
+            default:    return true; 
+        }
+    }
+
+    // 🌟 3. FUNZIONE HELPER PER VERIFICARE LE RESTRIZIONI BIOLOGICHE DINAMICAMENTE
+    function controllaRestrizioniBiologiche(nomeChiave) {
+        if (!restrizioniPokemon || !pokedexBase) return true;
+
+        // Pre-controllo: Verifichiamo se esistono REALI filtri biologici attivi compilati dall'utente
+        let haFiltriAttivi = false;
+        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'eq', 'neq', 'between'];
+        
+        for (const chiave in restrizioniPokemon) {
+            const r = restrizioniPokemon[chiave];
+            if (r && r.operator) {
+                const op = r.operator.toLowerCase().trim();
+                if (operatoriValidi.includes(op)) {
+                    if (op === 'between') {
+                        if (!isNaN(parseFloat(r.min)) && !isNaN(parseFloat(r.max))) haFiltriAttivi = true;
+                    } else {
+                        if (!isNaN(parseFloat(r.value))) haFiltriAttivi = true;
+                    }
+                }
+            }
+        }
+
+        // Se nel formato non ci sono regole biologiche attive o valide, il Pokémon passa indisturbato
+        if (!haFiltriAttivi) return true;
+
+        // Recuperiamo i dettagli biologici dal pokedex_base
+        let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
+        
+        // Fallback sulla radice se la forma specifica non ha un record diretto nel DB biologico
+        if (!pkmDettaglio) {
+            const spriteId = calcolaSpriteId(nomeChiave);
+            const radice = determinaRadice(nomeChiave, spriteId);
+            pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
+        }
+
+        // Se ci sono filtri biologici attivi ma il Pokémon non è censito nel DB biologico, lo escludiamo per sicurezza
+        if (!pkmDettaglio) return false; 
+
+        // Ciclo dinamico sulle restrizioni
+        for (const chiaveRestrizione in restrizioniPokemon) {
+            const regola = restrizioniPokemon[chiaveRestrizione];
+            if (!regola || !regola.operator) continue;
+
+            const op = regola.operator.toLowerCase().trim();
+            if (!operatoriValidi.includes(op)) continue;
+
+            let valoreJson = pkmDettaglio[chiaveRestrizione];
+            
+            // Gestione dei nodi annidati futuri (es. baseStats.hp)
+            if (valoreJson === undefined && chiaveRestrizione.includes('.')) {
+                valoreJson = chiaveRestrizione.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
+            }
+
+            // Se la proprietà biologica manca o è nulla su questo specifico Pokémon, saltiamo il filtro senza scartarlo
+            if (valoreJson === undefined || valoreJson === null) continue;
+
+            // NORMALIZZAZIONE UNITÀ DI MISURA (Altezza: JSON in metri, Firebase/UI in cm)
+            if (chiaveRestrizione === 'height') {
+                valoreJson = valoreJson * 100; 
+            }
+
+            const passaIlFiltro = valutaOperatore(valoreJson, op, regola);
+            
+            // Se anche una sola delle regole attive fallisce, il Pokémon viene scartato
+            if (!passaIlFiltro) return false;
+        }
+
+        return true;
+    }
 
     function escludeFormeInvalide(id) {
         const idLower = id.toLowerCase();
@@ -2575,7 +2839,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 const tierNatDex = datoNatDex ? datoNatDex.tier : "";
                 let tierUpper = ottieniTierMaggiore(tierGen, tierNatDex);
 
-                // 🌟 PATCH MEGA EVOLUZIONI: Eredita la tier del Pokémon Base se più restrittiva
+                // 🌟 PATCH MEGA EVOLUZIONI
                 if (nomeChiave.toLowerCase().includes('-mega')) {
                     const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
                     const datiBaseGen = aggregatoGens[baseKey];
@@ -2589,8 +2853,10 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 }
 
                 if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
-
                 if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
+
+                // 🌟 APPLICAZIONE FILTRO BIOLOGICO DINAMICO PROTETTO
+                if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
                 const datoGrezzo = { ...datiNelPokedexGen, ...datoNatDex, tier: tierUpper };
                 const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
@@ -2623,7 +2889,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
             let tierUpper = datoGrezzo.tier ? datoGrezzo.tier.toUpperCase().trim() : "";
 
-            // 🌟 PATCH MEGA EVOLUZIONI: Eredita la tier del Pokémon Base se più restrittiva
+            // 🌟 PATCH MEGA EVOLUZIONI
             if (nomeChiave.toLowerCase().includes('-mega')) {
                 const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
                 const datoBase = jsonDati[baseKey];
@@ -2633,8 +2899,10 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             }
 
             if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
-
             if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
+
+            // 🌟 APPLICAZIONE FILTRO BIOLOGICO DINAMICO PROTETTO
+            if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
             const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
             
@@ -2681,7 +2949,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         if (ancoraA.num && ancoraB.num) {
             return ancoraA.num - ancoraB.num;
         }
-        // Corretto qui: da "encoreA" a "ancoraA"
         return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
     });
 
