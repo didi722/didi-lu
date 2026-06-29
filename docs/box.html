@@ -2393,7 +2393,6 @@ async function gestisciCambioFormatoHelper() {
         const restrizioniPokemon = regolamento.restrizioni?.pokemon;
         const chiaviSameAcross = [];
 
-        // 🌟 CORREZIONE: Intercettiamo "SAME_ACROSS_TEAM" ovunque sia salvato nel DB
         if (restrizioniPokemon) {
             for (const chiave in restrizioniPokemon) {
                 if (Object.prototype.hasOwnProperty.call(restrizioniPokemon, chiave)) {
@@ -2416,7 +2415,13 @@ async function gestisciCambioFormatoHelper() {
                 if (grid) grid.innerHTML = `<div class="helper-placeholder-row" style="color: #d9534f;">❌ Critical Error: Unable to load base database.</div>`;
                 throw new Error(`Missing pkm-gens/pokedex_base.json!`);
             }
-            const pokedexBase = await resBase.json();
+            
+            // 🌟 CORREZIONE 1: Normalizzazione chiavi in minuscolo per evitare conflitti Case-Sensitive
+            const pokedexBaseRaw = await resBase.json();
+            const pokedexBase = {};
+            Object.keys(pokedexBaseRaw).forEach(key => {
+                pokedexBase[key.toLowerCase().trim()] = pokedexBaseRaw[key];
+            });
 
             const regolamentoTemporaneo = JSON.parse(JSON.stringify(regolamento));
             chiaviSameAcross.forEach(chiave => {
@@ -2450,7 +2455,6 @@ async function gestisciCambioFormatoHelper() {
                             val = Math.round(val * 100);
                         }
 
-                        // Gestione pulita di array (es. il tuo nuovo campo 'type') o valori singoli
                         if (Array.isArray(val)) {
                             val.forEach(item => {
                                 const itemStr = String(item).trim();
@@ -2596,15 +2600,12 @@ function renderizzaListaPiatta(pokemonList) {
 
         grid.appendChild(card);
 
-        // 🌟 CALCOLO DINAMICO DEL RIMBALZO
         const nameContainer = card.querySelector('.helper-pkm-name');
         const nameSpan = nameContainer.querySelector('span');
         
-        // Calcola quanti pixel sporgono oltre la larghezza della card
         const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
         
         if (overflowPixels > 0) {
-            // Passiamo i pixel esatti (+ 8px di safe-margin finale) come variabile CSS alla card
             nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
             nameContainer.classList.add('marquee-bounce');
         }
@@ -2626,17 +2627,22 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     if (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) {
         try {
             const resBase = await fetch('pkm-gens/pokedex_base.json');
-            pokedexBase = await resBase.json();
+            
+            // 🌟 CORREZIONE 2: Normalizzazione chiavi in minuscolo anche dentro generaListaPokémonPerFormato
+            const pokedexBaseRaw = await resBase.json();
+            pokedexBase = {};
+            Object.keys(pokedexBaseRaw).forEach(key => {
+                pokedexBase[key.toLowerCase().trim()] = pokedexBaseRaw[key];
+            });
+            
         } catch (e) {
             console.error("[Helper] Errore nel caricamento di pkm-gens/pokedex_base.json:", e);
         }
     }
 
-    // 🌟 HELPER OPERATORI POTENZIATO: Gestisce in modo nativo numeri, stringhe e array di stringhe
     function valutaOperatore(valoreJson, operatore, regola) {
         const op = operatore.toLowerCase().trim();
 
-        // CASO 1: Il dato nel JSON è un array (es: type o egg_group)
         if (Array.isArray(valoreJson)) {
             const arrLower = valoreJson.map(v => String(v).toLowerCase().trim());
             const target = String(regola.value || '').toLowerCase().trim();
@@ -2652,7 +2658,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             }
         }
 
-        // CASO 2: Operatore quantitativo di Range (between)
         if (op === 'between') {
             const vMin = parseFloat(regola.min);
             const vMax = parseFloat(regola.max);
@@ -2660,7 +2665,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             return parseFloat(valoreJson) >= vMin && parseFloat(valoreJson) <= vMax;
         }
 
-        // CASO 3: Operatori matematici quantitativi completi (<, >, <=, >=)
         if (['lt', 'gt', 'lte', 'gte'].includes(op)) {
             const vFire = parseFloat(regola.value);
             const vJson = parseFloat(valoreJson);
@@ -2673,7 +2677,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             }
         }
 
-        // CASO 4: Operatori testuali qualitativi (eq, neq, prefix/starts_with)
         const strJson = String(valoreJson).toLowerCase().trim();
         const strFire = String(regola.value || '').toLowerCase().trim();
         switch (op) {
@@ -2687,7 +2690,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
-    // 🌟 FILTRO BIOLOGICO DINAMICO: Controlla qualsiasi chiave ereditata dal database
     function controllaRestrizioniBiologiche(nomeChiave) {
         if (!restrizioniPokemon || !pokedexBase) return true;
 
