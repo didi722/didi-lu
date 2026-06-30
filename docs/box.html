@@ -1722,29 +1722,42 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     let tuttiGliErrori = [];
     
     if (regolamento.strutturaSito === 'anything_goes') {
-        return { valido: true, errori: [] }; // 🌟 Uniformato in 'errori'
+        return { valido: true, errori: [] }; 
     }
 
     let jsonDati = null;
     const genLimite = parseInt(regolamento.genRuleValue);
     
     try {
-        let percorsoFile = "";
         if (regolamento.genRuleType === "within") {
-            percorsoFile = `pkm-gens/gen${genLimite}.json`;
-        } else if (regolamento.genRuleType === "up_to") {
-            percorsoFile = `pkm-gens/natdex-tiers.json`;
-        }
-
-        if (percorsoFile) {
-            const risposta = await fetch(percorsoFile);
+            // Percorso Standard: solo la generazione specifica
+            const risposta = await fetch(`pkm-gens/gen${genLimite}.json`);
             if (risposta.ok) jsonDati = await risposta.json();
+            
+        } else if (regolamento.genRuleType === "up_to") {
+            // 🛠️ FIX: Carichiamo ENTRAMBI i file in parallelo per non rallentare l'esecuzione
+            const [resGen, resNatDex] = await Promise.all([
+                fetch(`pkm-gens/gen${genLimite}.json`).catch(() => null),
+                fetch(`pkm-gens/natdex-tiers.json`).catch(() => null)
+            ]);
+
+            let jsonGen = {};
+            let jsonNatDex = {};
+
+            if (resGen && resGen.ok) jsonGen = await resGen.json();
+            if (resNatDex && resNatDex.ok) jsonNatDex = await resNatDex.json();
+
+            // 🛠️ LOGICA DI PRIORITÀ:
+            // Uniamo i due oggetti. Mettendo 'jsonGen' per ULTIMO, lo spread operator 
+            // farà in modo che se una chiave esiste in entrambi i file, il valore di genX.json 
+            // sovrascriverà quello di natdex-tiers.json. Se non c'è, resta valido il natdex.
+            jsonDati = { ...jsonNatDex, ...jsonGen };
         }
     } catch (err) {
         console.error("Errore nel caricamento file validazione:", err);
     }
 
-    // Controlli Standard Preesistenti
+    // Controlli Standard Preesistenti (ricevono il jsonDati già perfettamente fuso e gerarchizzato)
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
@@ -1753,7 +1766,7 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
 
     // CONTROLLO DELLE RESTRIZIONI AVANZATE E DINAMICHE
     if (regolamento.restrizioni) {
-        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati);
+        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento);
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
@@ -1763,20 +1776,18 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     };
 }
 
-function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
+function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento) { // 🛠️ Aggiunto 'regolamento' ai parametri
     const errori = [];
 
-    // --- 1. CONTROLLI CATEGORIA: POKÉMON ---
+    // Determina la proprietà corretta in base al battleStyle ("single_tier" o "doubles_tier")
+    const proprietaTierDinamica = regolamento?.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
+
     if (restrizioni.pokemon) {
         Object.keys(restrizioni.pokemon).forEach(field => {
             const regola = restrizioni.pokemon[field];
 
-            // Intercetta se il "mode" o il "value" dicono di controllare l'uniformità del team
             if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
-                
-                // 🌟 ECCEZIONE SPECIALE: Formato Monotype (field === 'type')
                 if (field === 'type') {
-                    // Trasformiamo i tipi di ogni pokemon in array puliti (es. ['Water', 'Flying'])
                     const listeTipiPerPokemon = team.map(p => {
                         const val = p[field];
                         if (!val) return [];
@@ -1784,22 +1795,16 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
                     }).filter(arr => arr.length > 0);
 
                     if (listeTipiPerPokemon.length > 0) {
-                        // Partiamo dai tipi del primo Pokémon e filtriamo tenendo solo quelli presenti in TUTTI gli altri
                         let tipiComuni = listeTipiPerPokemon[0];
-                        
                         for (let i = 1; i < listeTipiPerPokemon.length; i++) {
                             tipiComuni = tipiComuni.filter(tipo => listeTipiPerPokemon[i].includes(tipo));
                         }
-
-                        // Se non è rimasto nessun tipo comune a tutta la squadra, il team non è Monotype
                         if (tipiComuni.length === 0) {
                             const tuttiITipiMisti = [...new Set(listeTipiPerPokemon.flat())];
                             errori.push(`[Restrizione Monotype] Il team non condivide alcun tipo comune. Per essere legale nel formato Monotype, tutti i membri devono avere almeno un tipo condiviso. Tipi trovati: ${tuttiITipiMisti.join(', ')}.`);
                         }
                     }
-                } 
-                // Logica standard per tutti gli altri campi (color, egg_group, ecc.)
-                else {
+                } else {
                     const valoriTeam = team.map(p => p[field]).filter(v => v !== undefined);
                     const valoriUnici = [...new Set(valoriTeam.flat())];
 
@@ -1807,9 +1812,7 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
                         errori.push(`[Restrizione Team] I Pokémon violano la regola di uniformità per il campo "${field}". Trovati valori differenti: ${valoriUnici.join(', ')}.`);
                     }
                 }
-            }
-            // Gestione dei valori fissi specifici (es. "color" equals "Red")
-            else if (regola.mode === "SPECIFIC") {
+            } else if (regola.mode === "SPECIFIC") {
                 team.forEach(p => {
                     if (p.erroreDati) return;
                     let valoreEffettivo = p[field];
@@ -1817,7 +1820,12 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
                     if (field === 'tier' && jsonDati) {
                         const nomeChiave = p.name.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const datoGrezzo = jsonDati[nomeChiave];
-                        const stringaTier = (typeof datoGrezzo === 'object' ? datoGrezzo.tier : datoGrezzo || "OU").toUpperCase();
+                        
+                        // 🛠️ FIX DINAMICO: Legge 'doubles_tier' o 'single_tier' dall'oggetto JSON
+                        const stringaTier = (datoGrezzo && typeof datoGrezzo === 'object' 
+                            ? datoGrezzo[proprietaTierDinamica] 
+                            : datoGrezzo || "OU").toUpperCase();
+                            
                         valoreEffettivo = ORDINE_TIER_REGOLE.indexOf(stringaTier);
                     }
 
@@ -1842,52 +1850,34 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati) {
         });
     }
 
-    // --- 2. CONTROLLI CATEGORIA: STRUMENTI ---
+    // --- CONTROLLI STRUMENTI E MOSSE (Invariati) ---
     if (restrizioni.strumenti) {
         Object.keys(restrizioni.strumenti).forEach(field => {
             const regola = restrizioni.strumenti[field];
-            
             if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
                 const valoriTeam = team.map(p => p.itemData?.[field]).filter(v => v !== undefined);
                 const valoriUnici = [...new Set(valoriTeam)];
-                if (valoriUnici.length > 1) {
-                    errori.push(`[Restrizione Strumenti] Gli strumenti violano la regola di uniformità per il campo "${field}".`);
-                }
-            }
-            else if (regola.mode === "SPECIFIC") {
+                if (valoriUnici.length > 1) errori.push(`[Restrizione Strumenti] Gli strumenti violano la regola di uniformità per il campo "${field}".`);
+            } else if (regola.mode === "SPECIFIC") {
                 team.forEach(p => {
                     if (!p.itemData || p.strumento === "None") return;
-                    const valoreEffettivo = p.itemData[field];
-
-                    if (!validaSingoloOperatore(valoreEffettivo, regola)) {
-                        errori.push(`Lo strumento "${p.strumento}" equipaggiato su [${p.name}] viola la restrizione "${field}".`);
-                    }
+                    if (!validaSingoloOperatore(p.itemData[field], regola)) errori.push(`Lo strumento "${p.strumento}" equipaggiato su [${p.name}] viola la restrizione "${field}".`);
                 });
             }
         });
     }
-
-    // --- 3. CONTROLLI CATEGORIA: MOSSE ---
     if (restrizioni.mosse) {
         Object.keys(restrizioni.mosse).forEach(field => {
             const regola = restrizioni.mosse[field];
-
             if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
                 const tuttiIValoriMosse = team.flatMap(p => p.movesData ? p.movesData.map(m => m[field]) : []).filter(v => v !== undefined);
                 const valoriUnici = [...new Set(tuttiIValoriMosse)];
-                if (valoriUnici.length > 1) {
-                    errori.push(`[Restrizione Mosse] Le mosse del team violano la regola di uniformità per il campo "${field}".`);
-                }
-            }
-            else if (regola.mode === "SPECIFIC") {
+                if (valoriUnici.length > 1) errori.push(`[Restrizione Mosse] Le mosse del team violano la regola di uniformità per il campo "${field}".`);
+            } else if (regola.mode === "SPECIFIC") {
                 team.forEach(p => {
                     if (!p.movesData) return;
                     p.movesData.forEach(mossa => {
-                        const valoreEffettivo = mossa[field];
-                        
-                        if (!validaSingoloOperatore(valoreEffettivo, regola)) {
-                            errori.push(`La mossa "${mossa.name}" scelta per [${p.name}] viola la restrizione "${field}".`);
-                        }
+                        if (!validaSingoloOperatore(mossa[field], regola)) errori.push(`La mossa "${mossa.name}" scelta per [${p.name}] viola la restrizione "${field}".`);
                     });
                 });
             }
@@ -1958,6 +1948,9 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     if (!regolamento.baseTier || regolamento.baseTier === "ALL" || !jsonDati) return errori;
 
     const tierMassima = regolamento.baseTier.toUpperCase();
+    
+    // 🛠️ DETERMINAZIONE PROPRIETÀ: single_tier o doubles_tier
+    const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
 
     // ================= LOGICA TIER: STANDARD =================
     if (tierMassima === "STANDARD") {
@@ -1969,7 +1962,6 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
             const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
             let valoreGrezzo = jsonDati[nomeChiave];
             
-            // 🌟 FALLBACK: Se non trova la forma specifica, prova con il nome base (es. Toxtricity)
             if (!valoreGrezzo && pkmn.name.includes('-')) {
                 const nomeBase = pkmn.name.split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
                 valoreGrezzo = jsonDati[nomeBase];
@@ -1980,14 +1972,13 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
                 return;
             }
 
-            const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
+            // 🛠️ FIX DINAMICO: Estrae il campo corretto dall'oggetto del Pokémon
+            const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
 
-            // 1. Blocco Pokémon Misteriosi
             if (pkmn.isMythical) {
                 errori.push(`[${pkmn.name}] non è ammesso: i Pokémon Misteriosi sono vietati nel formato STANDARD.`);
             }
 
-            // 2. Controllo tetti massimi (Max 2 Uber, No AG, il resto OU o inferiori)
             if (tierPokemon === "AG") {
                 errori.push(`[${pkmn.name}] è bandito: appartiene alla tier AG, non ammessa nel formato STANDARD.`);
             } else if (tierPokemon === "UBER") {
@@ -1996,7 +1987,6 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
                     errori.push(`[${pkmn.name}] non è legale: il formato STANDARD permette al massimo 2 Pokémon di tier UBER.`);
                 }
             } else {
-                // Se non è AG o UBER, verifichiamo che non superi comunque la barriera di OU
                 const gerarchiaStandard = ["OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
                 if (gerarchiaStandard.indexOf(tierPokemon) === -1) {
                     errori.push(`[${pkmn.name}] ha una tier (${tierPokemon}) non valida per il formato STANDARD.`);
@@ -2016,7 +2006,6 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
         const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
         let valoreGrezzo = jsonDati[nomeChiave];
         
-        // 🌟 FALLBACK: Stessa logica di recupero nome base anche qui
         if (!valoreGrezzo && pkmn.name.includes('-')) {
             const nomeBase = pkmn.name.split('-')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
             valoreGrezzo = jsonDati[nomeBase];
@@ -2024,7 +2013,8 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
 
         if (!valoreGrezzo) return;
 
-        const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo.tier : valoreGrezzo).toUpperCase();
+        // 🛠️ FIX DINAMICO: Estrae il campo corretto dall'oggetto del Pokémon
+        const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
         const idxPkmn = gerarchia.indexOf(tierPokemon);
         
         if (idxMax !== -1 && idxPkmn !== -1 && idxPkmn < idxMax) {
@@ -2382,7 +2372,6 @@ async function gestisciCambioFormatoHelper() {
         
         const jsonDati = await res.json(); 
 
-        // 🌟 WHITELIST COMPLETA E AGGIORNATA DELLE PROPRIETÀ BIOLOGICHE VALIDE
         const CHIAVI_BIOLOGICHE_VALIDE = [
             'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
             'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
@@ -2397,8 +2386,6 @@ async function gestisciCambioFormatoHelper() {
         if (restrizioniPokemon) {
             for (const chiave in restrizioniPokemon) {
                 if (Object.prototype.hasOwnProperty.call(restrizioniPokemon, chiave)) {
-                    
-                    // Se la proprietà non fa parte delle proprietà biologiche supportate, ignorala
                     if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
 
                     const restrizione = restrizioniPokemon[chiave];
@@ -2453,7 +2440,6 @@ async function gestisciCambioFormatoHelper() {
                 poolPokemonBase.forEach(pkm => {
                     const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
                     if (dettagliBiologici) {
-                        // Estrazione sicura (anche se annidata in .stats)
                         let val = dettagliBiologici[chiaveProprietareale];
                         if (val === undefined && dettagliBiologici.stats) {
                             val = dettagliBiologici.stats[chiaveProprietareale];
@@ -2589,7 +2575,9 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     const restrizioniPokemon = regolamento.restrizioni?.pokemon;
     let pokedexBase = null;
 
-    // 🌟 Forziamo il caricamento del database base se il formato è "custom"
+    // 🛠️ DETERMINAZIONE PROPRIETÀ DINAMICA TIER
+    const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
+
     const deveCaricarePokedexBase = (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) || (regolamento.strutturaSito === "custom");
 
     if (deveCaricarePokedexBase) {
@@ -2658,7 +2646,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     function controllaRestrizioniBiologiche(nomeChiave) {
         if (!pokedexBase) return true;
 
-        // 🌟 WHITELIST DELLE PROPRIETÀ BIOLOGICHE VALIDE
         const CHIAVI_BIOLOGICHE_VALIDE = [
             'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
             'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
@@ -2667,7 +2654,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             'evolutions_count', 'evolution_stage'
         ];
 
-        // 🛠️ CORRETTO: rimosse le virgolette errate dopo l'optional chaining
         const ruleLegendary = restrizioniPokemon?.is_legendary;
         const ruleMythical = restrizioniPokemon?.is_mythical;
         
@@ -2705,7 +2691,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
         const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
 
-        // APPLICAZIONE REGOLE ESCLUSIVA PER STRUTTURA CUSTOM
         if (regolamento.strutturaSito === "custom") {
             const ammessoLegendary = valLegendary === "allowed" || valLegendary === "only" || valLegendary === "only legendary";
             const ammessoMythical = valMythical === "allowed" || valMythical === "only" || valMythical === "only mythical";
@@ -2850,15 +2835,18 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     const resGen = await fetch(`pkm-gens/gen${i}.json`);
                     const jsonGen = await resGen.json();
                     Object.keys(jsonGen).forEach(key => {
+                        // 🛠️ FIX DINAMICO: Estrazione tier corretta dall'oggetto della singola gen
+                        const datoObj = jsonGen[key];
+                        const tGen = (datoObj && typeof datoObj === 'object' ? datoObj[proprietaTierDinamica] : datoObj || "");
+
                         if (!aggregatoGens[key]) {
-                            aggregatoGens[key] = jsonGen[key];
+                            aggregatoGens[key] = { ...datoObj, tier: tGen };
                         } else {
                             const tierEsistente = aggregatoGens[key].tier || "";
-                            const tierNuova = jsonGen[key].tier || "";
                             aggregatoGens[key] = {
                                 ...aggregatoGens[key],
-                                ...jsonGen[key],
-                                tier: ottieniTierMaggiore(tierEsistente, tierNuova)
+                                ...datoObj,
+                                tier: ottieniTierMaggiore(tierEsistente, tGen)
                             };
                         }
                     });
@@ -2871,16 +2859,21 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 if (!escludeFormeInvalide(nomeChiave)) return;
                 const datiNelPokedexGen = aggregatoGens[nomeChiave];
                 const datoNatDex = jsonDati[nomeChiave];
+                
                 const tierGen = datiNelPokedexGen ? datiNelPokedexGen.tier : "";
-                const tierNatDex = datoNatDex ? datoNatDex.tier : "";
+                // 🛠️ FIX DINAMICO: Estrazione tier dal National Dex
+                const tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
+                
                 let tierUpper = ottieniTierMaggiore(tierGen, tierNatDex);
 
                 if (nomeChiave.toLowerCase().includes('-mega')) {
                     const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
                     const datiBaseGen = aggregatoGens[baseKey];
                     const datoBaseNatDex = jsonDati[baseKey];
+                    
                     const tierBaseGen = datiBaseGen ? datiBaseGen.tier : "";
-                    const tierBaseNatDex = datoBaseNatDex ? datoBaseNatDex.tier : "";
+                    const tierBaseNatDex = datoBaseNatDex && typeof datoBaseNatDex === 'object' ? datoBaseNatDex[proprietaTierDinamica] : (datoBaseNatDex || "");
+                    
                     const tierBaseUpper = ottieniTierMaggiore(tierBaseGen, tierBaseNatDex);
                     tierUpper = ottieniTierMaggiore(tierUpper, tierBaseUpper);
                 }
@@ -2908,12 +2901,13 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             const datoGrezzo = jsonDati[nomeChiave];
             if (!datoGrezzo) return;
 
-            let tierUpper = datoGrezzo.tier ? datoGrezzo.tier.toUpperCase().trim() : "";
+            // 🛠️ FIX DINAMICO: Estrazione corretta per il blocco 'within'
+            let tierUpper = (typeof datoGrezzo === 'object' ? datoGrezzo[proprietaTierDinamica] : datoGrezzo || "").toUpperCase().trim();
 
             if (nomeChiave.toLowerCase().includes('-mega')) {
                 const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
                 const datoBase = jsonDati[baseKey];
-                const tierBase = datoBase && datoBase.tier ? datoBase.tier.toUpperCase().trim() : "";
+                const tierBase = datoBase && typeof datoBase === 'object' ? (datoBase[proprietaTierDinamica] || "") : (datoBase || "");
                 tierUpper = ottieniTierMaggiore(tierUpper, tierBase);
             }
 
@@ -2946,7 +2940,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const ancoraA = mappaAncoraggioRadici[a.radice];
         const ancoraB = mappaAncoraggioRadici[b.radice];
         if (ancoraA.num && ancoraB.num) return ancoraA.num - ancoraB.num;
-        // 🛠️ CORRETTO: era "encoreA", ora è "ancoraA"
         return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
     });
 

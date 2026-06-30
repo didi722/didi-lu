@@ -1,455 +1,610 @@
 {
   "bulbasaur": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "ivysaur": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "venusaur": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "charmander": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "charmeleon": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "charizard": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "squirtle": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "wartortle": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "blastoise": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "caterpie": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "metapod": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "butterfree": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "weedle": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "kakuna": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "beedrill": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "pidgey": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "pidgeotto": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "pidgeot": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "rattata": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "raticate": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "spearow": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "fearow": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "ekans": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "arbok": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "pikachu": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "raichu": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "sandshrew": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "sandslash": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "nidoranf": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "nidorina": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "nidoqueen": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "nidoranm": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "nidorino": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "nidoking": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "clefairy": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "clefable": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "vulpix": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "ninetales": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "jigglypuff": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "wigglytuff": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "zubat": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "golbat": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "oddish": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "gloom": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "vileplume": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "paras": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "parasect": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "venonat": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "venomoth": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "diglett": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "dugtrio": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "meowth": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "persian": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "psyduck": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "golduck": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "mankey": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "primeape": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "growlithe": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "arcanine": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "poliwag": {
-    "tier": "ZUBL"
+    "single_tier": "ZUBL",
+    "doubles_tier": "OU"
   },
   "poliwhirl": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "poliwrath": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "abra": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "kadabra": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "alakazam": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "machop": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "machoke": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "machamp": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "bellsprout": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "weepinbell": {
-    "tier": "NFE"
+    "single_tier": "NFE",
+    "doubles_tier": "OU"
   },
   "victreebel": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "tentacool": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "tentacruel": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "geodude": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "graveler": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "golem": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "ponyta": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "rapidash": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "slowpoke": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "slowbro": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "magnemite": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "magneton": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "farfetchd": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "doduo": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "dodrio": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "seel": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "dewgong": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "grimer": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "muk": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "shellder": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "cloyster": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "gastly": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "haunter": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "gengar": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "onix": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "drowzee": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "hypno": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "krabby": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "kingler": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "voltorb": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "electrode": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "exeggcute": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "exeggutor": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "cubone": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "marowak": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "hitmonlee": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "hitmonchan": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "lickitung": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "koffing": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "weezing": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "rhyhorn": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "rhydon": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "chansey": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "tangela": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "kangaskhan": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "horsea": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "seadra": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "goldeen": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "seaking": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "staryu": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "starmie": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "mrmime": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "scyther": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "jynx": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "electabuzz": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "magmar": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "pinsir": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "tauros": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "magikarp": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "gyarados": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "lapras": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "ditto": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "eevee": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "vaporeon": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "jolteon": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "flareon": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "porygon": {
-    "tier": "PU"
+    "single_tier": "PU",
+    "doubles_tier": "OU"
   },
   "omanyte": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "omastar": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "kabuto": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "kabutops": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "aerodactyl": {
-    "tier": "NU"
+    "single_tier": "NU",
+    "doubles_tier": "OU"
   },
   "snorlax": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "articuno": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "zapdos": {
-    "tier": "OU"
+    "single_tier": "OU",
+    "doubles_tier": "OU"
   },
   "moltres": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "dratini": {
-    "tier": "LC"
+    "single_tier": "LC",
+    "doubles_tier": "OU"
   },
   "dragonair": {
-    "tier": "ZU"
+    "single_tier": "ZU",
+    "doubles_tier": "OU"
   },
   "dragonite": {
-    "tier": "UU"
+    "single_tier": "UU",
+    "doubles_tier": "OU"
   },
   "mewtwo": {
-    "tier": "Uber"
+    "single_tier": "Uber",
+    "doubles_tier": "OU"
   },
   "mew": {
-    "tier": "Uber"
+    "single_tier": "Uber",
+    "doubles_tier": "OU"
+  },
+  "missingno": {
+    "single_tier": "Illegal",
+    "doubles_tier": "Illegal"
   }
 }
