@@ -2897,12 +2897,14 @@ color:#eeeeee;
 
 /* Area di Scorrimento dei Pokémon Legali */
 .explorer-pkm-scroll-container {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     gap: 12px;
+    padding: 20px 14px; /* 🌟 Aumentato il padding laterale e verticale per dare spazio di manovra ai tooltip sui bordi */
     overflow-y: auto;
-    padding-right: 8px;
-    padding-left: 2px; /* Margine di sicurezza per evitare tagli sulle ombre a riposo */
+    max-height: 500px;
+    position: relative; /* 🌟 Necessario per rendere effettivo lo z-index del contenitore */
+    z-index: 100;
 }
 
 /* Righe Pokémon dinamiche (Generate via JS, stile player-rank-row fluttuante) */
@@ -2957,10 +2959,12 @@ color:#eeeeee;
     padding: 10px;
     overflow-y: auto;
     max-height: 500px; /* Adatta l'altezza massima alla tua modale */
+    z-index: 10000 !important;
 }
 
-/* Il singolo quadratino del Pokémon */
 .helper-pkm-card {
+    position: relative;
+    cursor: pointer;
     background: #f9f9f9;
     border: 2px solid black;
     box-shadow: 4px 4px 0 black;
@@ -2969,13 +2973,14 @@ color:#eeeeee;
     align-items: center;
     justify-content: space-between;
     padding: 10px 5px;
-    aspect-ratio: 1 / 1 !important; /* Forza la forma perfettamente quadrata */
-    cursor: pointer;
+    aspect-ratio: 1 / 1 !important;
     transition: all 0.1s ease;
+    z-index: 1; /* 🌟 Di base ha priorità minima */
 }
 
 .helper-pkm-card:hover {
     transform: translateY(-2px);
+    z-index: 999999 !important;
 }
 
 /* Box che contiene e centra verticalmente/orizzontalmente la GIF */
@@ -3037,4 +3042,141 @@ color:#eeeeee;
     80%, 100% {
         transform: translate3d(var(--distanza-scorrimento), 0, 0); /* Mostra la fine del nome e si ferma un istante */
     }
+}
+
+/* Container della Card */
+.helper-pkm-card {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Mostra il tooltip al passaggio del mouse sulla card */
+.helper-pkm-card:hover .neubrutalist-tooltip {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.neubrutalist-tooltip {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute; /* 🌟 Libero nel body */
+    left: 0;
+    top: 0;
+    width: 245px;
+    background: #FFFDF6; 
+    border: 3px solid #000000;
+    box-shadow: 6px 6px 0px #000000; 
+    z-index: 999999999 !important; /* 🌟 Superiore a qualsiasi modale esistente sulla pagina */
+    padding: 10px;
+    font-family: 'Josefin Sans', sans-serif;
+    transition: opacity 0.1s ease-in-out;
+    transform: rotate(1deg) !important;
+}
+
+/* Ripristina la pulizia standard dei vecchi indicatori alto/basso poichè calcolati a coordinate */
+.neubrutalist-tooltip.tooltip-up,
+.neubrutalist-tooltip.tooltip-down {
+    bottom: auto;
+    top: auto;
+}
+
+/* Stato di caricamento interno */
+.neubrutalist-loading {
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px 0;
+    color: #000;
+}
+
+/* Header del Tooltip */
+.neubrutalist-tooltip-header {
+    border-bottom: 3px solid #000000;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.neubrutalist-tooltip-title {
+    font-weight: 900;
+    font-size: 1rem;
+    color: #000;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+}
+
+.neubrutalist-tooltip-types {
+    display: flex;
+    gap: 4px;
+}
+
+/* Badge dei Tipi */
+.neubrutalist-type-badge {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: #000;
+    padding: 2px 6px;
+    border: 2px solid #000000;
+    box-shadow: 2px 2px 0px #000000;
+}
+
+/* Righe delle Statistiche */
+.neubrutalist-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.neubrutalist-stat-label {
+    width: 32px;
+    color: #000;
+}
+
+/* Barre delle Statistiche */
+.neubrutalist-stat-bar-bg {
+    flex-grow: 1;
+    height: 10px;
+    background: #FFF;
+    border: 2px solid #000000;
+}
+
+.neubrutalist-stat-bar-fill {
+    height: 100%;
+    background: #00FF66; 
+    border-right: 1px solid #000;
+}
+
+.neubrutalist-stat-value {
+    width: 25px;
+    text-align: right;
+}
+
+/* Sezione Abilità */
+.neubrutalist-abilities-title {
+    font-weight: 900;
+    font-size: 0.75rem;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    border-top: 2px dashed #000;
+    padding-top: 6px;
+}
+
+.neubrutalist-abilities-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.neubrutalist-ability-tag {
+    font-size: 0.65rem;
+    background: #AEE2FF; 
+    color: #000;
+    padding: 2px 5px;
+    border: 2px solid #000;
+    font-weight: bold;
+    box-shadow: 1px 1px 0px #000;
 }

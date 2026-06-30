@@ -2962,10 +2962,34 @@ function renderizzaListaPiatta(pokemonList) {
         return;
     }
 
+    const COLORI_TIPI = {
+        normal: '#A8A77A', fire: '#FF421D', water: '#3381FF', electric: '#FFDA00',
+        grass: '#4EED55', ice: '#62E6FF', fighting: '#FF2A2A', poison: '#B322B8',
+        ground: '#E0A945', flying: '#9670FF', psychic: '#FF2E7E', bug: '#90C418',
+        rock: '#BAA22A', ghost: '#694D99', dragon: '#501DFF', steel: '#A0A0C0',
+        fairy: '#FF80D7', dark: '#523C2F'
+    };
+
+    const MAPPA_STATS = {
+        'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
+        'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
+    };
+
+    // 🌟 INIZIALIZZAZIONE TOOLTIP GLOBALE FUORI DALLA GABBIA OVERFLOW
+    let tooltip = document.getElementById('global-neubrutalist-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'global-neubrutalist-tooltip';
+        tooltip.className = 'neubrutalist-tooltip';
+        document.body.appendChild(tooltip); // Lo appendiamo al body, libero da vincoli!
+    }
+
     pokemonList.forEach(pkm => {
         const card = document.createElement('div');
         card.className = 'helper-pkm-card';
         card.dataset.id = pkm.id;
+        card.dataset.loaded = 'false';
+        card.dataset.cachedHtml = ''; // Salveremo qui l'HTML una volta scaricato
 
         const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
         const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
@@ -2978,6 +3002,118 @@ function renderizzaListaPiatta(pokemonList) {
             <div class="helper-pkm-name"><span>${pkm.name}</span></div>
         `;
 
+        // --- ENTRATA DEL MOUSE (MOSTRA E POSIZIONA IL TOOLTIP GLOBALE) ---
+        card.addEventListener('mouseenter', () => {
+            tooltip.dataset.currentId = pkm.id; // Evita sovrascritture se l'utente muove il mouse velocemente
+            tooltip.style.display = 'block';
+            tooltip.style.opacity = '1';
+
+            // 1. CALCOLO POSIZIONE ASSOLUTA SULLO SCHERMO
+            const rect = card.getBoundingClientRect();
+            const scrollY = window.scrollY;
+            const scrollX = window.scrollX;
+
+            // Centro orizzontale della card corrente
+            const cardCenter = rect.left + scrollX + (rect.width / 2);
+            const tooltipWidth = 245;
+            let tooltipLeft = cardCenter - (tooltipWidth / 2);
+
+            // Bilanciatore anti-taglio ai bordi del browser (Destra/Sinistra)
+            if (tooltipLeft < 10) tooltipLeft = 10;
+            if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
+                tooltipLeft = window.innerWidth - tooltipWidth - 10;
+            }
+            tooltip.style.left = `${tooltipLeft}px`;
+
+            // Controllo verticale (Sopra/Sotto rispetto alla metà dello schermo)
+            const metaSchermo = window.innerHeight / 2;
+            if (rect.top < metaSchermo) {
+                // Sotto alla card (Si apre verso il basso)
+                tooltip.style.top = `${rect.bottom + scrollY + 8}px`;
+                tooltip.style.transform = 'none'; // Cresce verso il basso normalmente
+            } else {
+                // Sopra alla card (Si apre verso l'alto)
+                tooltip.style.top = `${rect.top + scrollY - 8}px`;
+                tooltip.style.transform = 'translateY(-100%)'; // Il trucco magico: si ancora alla coordinata e si estende verso l'alto
+            }
+
+            // 2. GESTIONE DEI DATI (CACHE O API)
+            if (card.dataset.loaded === 'true') {
+                tooltip.innerHTML = card.dataset.cachedHtml;
+            } else {
+                tooltip.innerHTML = `<div class="neubrutalist-loading">LOADING DATA...</div>`;
+                
+                if (card.dataset.loaded === 'false') {
+                    card.dataset.loaded = 'loading';
+                    const pokeApiId = pkm.id.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+                    fetch(`https://pokeapi.co/api/v2/pokemon/${pokeApiId}`)
+                        .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+                        .then(data => {
+                            const htmlTipi = data.types.map(t => {
+                                const colore = COLORI_TIPI[t.type.name] || '#777';
+                                return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${t.type.name.toUpperCase()}</span>`;
+                            }).join('');
+
+                            const htmlStats = data.stats.map(s => {
+                                const nomeStat = MAPPA_STATS[s.stat.name] || s.stat.name.toUpperCase();
+                                const valore = s.base_stat;
+                                const percentualeBarra = Math.min(100, (valore / 160) * 100);
+                                return `
+                                    <div class="neubrutalist-stat-row">
+                                        <span class="neubrutalist-stat-label">${nomeStat}</span>
+                                        <div class="neubrutalist-stat-bar-bg">
+                                            <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%;"></div>
+                                        </div>
+                                        <span class="neubrutalist-stat-value">${valore}</span>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            const htmlAbilita = data.abilities.map(a => {
+                                const nascosta = a.is_hidden ? ' <small style="opacity:0.6">(H)</small>' : '';
+                                return `<span class="neubrutalist-ability-tag">${a.ability.name.replace('-', ' ').toUpperCase()}${nascosta}</span>`;
+                            }).join('');
+
+                            const finalHtml = `
+                                <div class="neubrutalist-tooltip-header">
+                                    <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
+                                    <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
+                                </div>
+                                <div class="neubrutalist-tooltip-body">
+                                    <div class="neubrutalist-stats-container">${htmlStats}</div>
+                                    <div class="neubrutalist-abilities-title">ABILITIES</div>
+                                    <div class="neubrutalist-abilities-container">${htmlAbilita}</div>
+                                </div>
+                            `;
+
+                            card.dataset.cachedHtml = finalHtml;
+                            card.dataset.loaded = 'true';
+
+                            // Inietta i dati solo se l'utente è ancora fermo su questo Pokémon
+                            if (tooltip.dataset.currentId === pkm.id) {
+                                tooltip.innerHTML = finalHtml;
+                            }
+                        })
+                        .catch(() => {
+                            const errorHtml = `<div class="neubrutalist-loading" style="color:red;">DATA ERROR</div>`;
+                            card.dataset.cachedHtml = errorHtml;
+                            card.dataset.loaded = 'false';
+                            if (tooltip.dataset.currentId === pkm.id) {
+                                tooltip.innerHTML = errorHtml;
+                            }
+                        });
+                }
+            }
+        });
+
+        // --- USCITA DEL MOUSE (NASCONDE IL TOOLTIP) ---
+        card.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+            tooltip.style.opacity = '0';
+            tooltip.dataset.currentId = '';
+        });
+
         card.addEventListener('click', () => {
             console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
         });
@@ -2986,7 +3122,6 @@ function renderizzaListaPiatta(pokemonList) {
 
         const nameContainer = card.querySelector('.helper-pkm-name');
         const nameSpan = nameContainer.querySelector('span');
-        
         const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
         
         if (overflowPixels > 0) {
@@ -2995,7 +3130,6 @@ function renderizzaListaPiatta(pokemonList) {
         }
     });
 }
-
 
 function inizializzaChiusuraHelper(event) {
     // Caso A: Click sul bottone di chiusura (la X del modale)
