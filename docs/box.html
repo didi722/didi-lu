@@ -2390,12 +2390,12 @@ async function gestisciCambioFormatoHelper() {
         
         const jsonDati = await res.json(); 
 
-        // 🌟 WHITELIST PROPRIETÀ BIOLOGICHE VALIDE (Ignora nature, mosse, strumenti ecc.)
+        // 🌟 WHITELIST COMPLETA E AGGIORNATA DELLE PROPRIETÀ BIOLOGICHE VALIDE
         const CHIAVI_BIOLOGICHE_VALIDE = [
             'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
             'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
             'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
-            'base_friendship', 'habitat', 'name_lenght', 'name_starts', 
+            'base_friendship', 'habitat', 'name_length', 'name_starts', 
             'evolutions_count', 'evolution_stage'
         ];
 
@@ -2406,7 +2406,7 @@ async function gestisciCambioFormatoHelper() {
             for (const chiave in restrizioniPokemon) {
                 if (Object.prototype.hasOwnProperty.call(restrizioniPokemon, chiave)) {
                     
-                    // 🌟 CORREZIONE PRINCIPALE: Se la proprietà non esiste nel JSON biologico, ignorala subito
+                    // Se la proprietà non fa parte delle proprietà biologiche supportate, ignorala
                     if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
 
                     const restrizione = restrizioniPokemon[chiave];
@@ -2456,25 +2456,31 @@ async function gestisciCambioFormatoHelper() {
             chiaviSameAcross.forEach(chiave => {
                 scelteUtente[chiave] = "";
                 const conteggioValori = {};
-                const chiaveProprietareale = normalizzaChiaveDatabase(chiave);
+                const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiave) : null) || chiave;
 
                 poolPokemonBase.forEach(pkm => {
                     const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
-                    if (dettagliBiologici && dettagliBiologici[chiaveProprietareale] !== undefined) {
+                    if (dettagliBiologici) {
+                        // Estrazione sicura (anche se annidata in .stats)
                         let val = dettagliBiologici[chiaveProprietareale];
-                        
-                        if (chiaveProprietareale === 'height') {
-                            val = Math.round(val * 100);
+                        if (val === undefined && dettagliBiologici.stats) {
+                            val = dettagliBiologici.stats[chiaveProprietareale];
                         }
 
-                        if (Array.isArray(val)) {
-                            val.forEach(item => {
-                                const itemStr = String(item).trim();
-                                conteggioValori[itemStr] = (conteggioValori[itemStr] || 0) + 1;
-                            });
-                        } else {
-                            const valStr = String(val).trim();
-                            conteggioValori[valStr] = (conteggioValori[valStr] || 0) + 1;
+                        if (val !== undefined) {
+                            if (chiaveProprietareale === 'height') {
+                                val = Math.round(val * 100);
+                            }
+
+                            if (Array.isArray(val)) {
+                                val.forEach(item => {
+                                    const itemStr = String(item).trim();
+                                    conteggioValori[itemStr] = (conteggioValori[itemStr] || 0) + 1;
+                                });
+                            } else {
+                                const valStr = String(val).trim();
+                                conteggioValori[valStr] = (conteggioValori[valStr] || 0) + 1;
+                            }
                         }
                     }
                 });
@@ -2534,9 +2540,15 @@ async function gestisciCambioFormatoHelper() {
                     if (!dettagliBiologici) return false;
 
                     return chiaviSameAcross.every(chiave => {
-                        const chiaveProprietareale = normalizzaChiaveDatabase(chiave);
+                        const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiave) : null) || chiave;
+                        
                         let valPkm = dettagliBiologici[chiaveProprietareale];
+                        if (valPkm === undefined && dettagliBiologici.stats) {
+                            valPkm = dettagliBiologici.stats[chiaveProprietareale];
+                        }
+                        
                         const sceltaUtente = scelteUtente[chiave];
+                        if (valPkm === undefined) return false;
 
                         if (chiaveProprietareale === 'height') {
                             valPkm = Math.round(valPkm * 100);
@@ -2573,57 +2585,6 @@ async function gestisciCambioFormatoHelper() {
     }
 }
 
-function renderizzaListaPiatta(pokemonList) {
-    const grid = document.getElementById('helper-pkm-grid');
-    const countSpan = document.getElementById('helper-count');
-
-    if (!grid) return;
-
-    if (countSpan) {
-        countSpan.textContent = pokemonList.length;
-    }
-
-    grid.innerHTML = '';
-
-    if (pokemonList.length === 0) {
-        grid.innerHTML = `<div class="helper-placeholder-row">No legal Pokémon found for this format.</div>`;
-        return;
-    }
-
-    pokemonList.forEach(pkm => {
-        const card = document.createElement('div');
-        card.className = 'helper-pkm-card';
-        card.dataset.id = pkm.id;
-
-        const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
-        const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
-
-        card.innerHTML = `
-            <div class="helper-pkm-gif-container">
-                <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
-                     onerror="this.onerror=null; this.src='${fallbackUrl}';">
-            </div>
-            <div class="helper-pkm-name"><span>${pkm.name}</span></div>
-        `;
-
-        card.addEventListener('click', () => {
-            console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
-        });
-
-        grid.appendChild(card);
-
-        const nameContainer = card.querySelector('.helper-pkm-name');
-        const nameSpan = nameContainer.querySelector('span');
-        
-        const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
-        
-        if (overflowPixels > 0) {
-            nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
-            nameContainer.classList.add('marquee-bounce');
-        }
-    });
-}
-
 async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     if (!jsonDati) {
         return { tipoLayout: "FLAT", pokemon: [] };
@@ -2639,8 +2600,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     if (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) {
         try {
             const resBase = await fetch('pkm-gens/pokedex_base.json');
-            
-            // 🌟 CORREZIONE 2: Normalizzazione chiavi in minuscolo
             const pokedexBaseRaw = await resBase.json();
             pokedexBase = {};
             Object.keys(pokedexBaseRaw).forEach(key => {
@@ -2659,7 +2618,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             const arrLower = valoreJson.map(v => String(v).toLowerCase().trim());
             const target = String(regola.value || '').toLowerCase().trim();
             switch (op) {
-                case 'eq':
                 case 'equals':
                 case 'contains':
                     return arrLower.includes(target);
@@ -2702,95 +2660,110 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
-    function controllaRestrizioniBiologiche(nomeChiave) {
-        if (!restrizioniPokemon || !pokedexBase) return true;
+function controllaRestrizioniBiologiche(nomeChiave) {
+    if (!restrizioniPokemon || !pokedexBase) return true;
 
-        // 🌟 ECCEZIONE PROPRIETÀ: Elenco esplicito delle chiavi supportate da pokedex_base.json
-        // Qualsiasi restrizione che NON sia in questa lista (es. nature, moves, item) viene ignorata a monte.
-        const CHIAVI_BIOLOGICHE_VALIDE = [
-            'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
-            'types', 'abilities', 'baseStats', 'num', 'tier',
-            'hp', 'atk', 'def', 'spa', 'spd', 'spe' // se mappate flat
-        ];
+    // 🌟 WHITELIST DELLE PROPRIETÀ BIOLOGICHE VALIDE
+    const CHIAVI_BIOLOGICHE_VALIDE = [
+        'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
+        'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
+        'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
+        'base_friendship', 'habitat', 'name_length', 'name_starts', 
+        'evolutions_count', 'evolution_stage'
+    ];
 
-        // 🌟 1. INTERCETTAZIONE FILTRI SPECIALI LEGENDARY / MYTHICAL
-        const ruleLegendary = restrizioniPokemon['is_legendary'];
-        const ruleMythical = restrizioniPokemon['is_mythical'];
-        
-        const onlyLegendaryActive = ruleLegendary && String(ruleLegendary.value).toLowerCase().trim() === "only legendary";
-        const onlyMythicalActive = ruleMythical && String(ruleMythical.value).toLowerCase().trim() === "only mythical";
+    const ruleLegendary = restrizioniPokemon['is_legendary'];
+    const ruleMythical = restrizioniPokemon['is_mythical'];
+    
+    const onlyLegendaryActive = ruleLegendary && String(ruleLegendary.value).toLowerCase().trim() === "only legendary";
+    const onlyMythicalActive = ruleMythical && String(ruleMythical.value).toLowerCase().trim() === "only mythical";
 
-        // Verifichiamo se ci sono filtri validi attivi prima di procedere
-        let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive;
-        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
-        
-        for (const chiave in restrizioniPokemon) {
-            // Se la chiave su Firebase non è biologica, la saltiamo e non attiviamo il filtro
-            if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
+    let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive;
+    const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
+    
+    for (const chiave in restrizioniPokemon) {
+        if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
 
-            const r = restrizioniPokemon[chiave];
-            if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
-                const op = r.operator.toLowerCase().trim();
-                if (operatoriValidi.includes(op)) haFiltriAttivi = true;
-            }
+        const r = restrizioniPokemon[chiave];
+        if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
+            const op = r.operator.toLowerCase().trim();
+            if (operatoriValidi.includes(op)) haFiltriAttivi = true;
         }
-
-        if (!haFiltriAttivi) return true;
-
-        // Recupero i dati del Pokémon dal database base normalizzato
-        let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
-        if (!pkmDettaglio) {
-            const spriteId = calcolaSpriteId(nomeChiave);
-            const radice = determinaRadice(nomeChiave, spriteId);
-            pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
-        }
-
-        if (!pkmDettaglio) return false; 
-
-        // 🌟 2. APPLICAZIONE LOGICA SPECIALE (CON COESISTENZA IN "OR")
-        if (onlyLegendaryActive || onlyMythicalActive) {
-            const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
-            const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
-
-            if (onlyLegendaryActive && onlyMythicalActive) {
-                if (!isPkmLegendary && !isPkmMythical) return false;
-            } else if (onlyLegendaryActive) {
-                if (!isPkmLegendary) return false;
-            } else if (onlyMythicalActive) {
-                if (!isPkmMythical) return false;
-            }
-        }
-
-        // 🌟 3. CICLO STANDARD PER GLI ALTRI FILTRI BIOLOGICI (Altezza, Peso, BST, ecc.)
-        for (const chiaveRestrizione in restrizioniPokemon) {
-            // Saltiamo le chiavi non biologiche/non presenti nel file json delle statistiche base
-            if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
-            if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
-
-            const regola = restrizioniPokemon[chiaveRestrizione];
-            if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
-
-            const op = regola.operator.toLowerCase().trim();
-            if (!operatoriValidi.includes(op)) continue;
-
-            const chiaveProprietareale = normalizzaChiaveDatabase(chiaveRestrizione);
-            let valoreJson = pkmDettaglio[chiaveProprietareale];
-            
-            if (valoreJson === undefined && chiaveProprietareale.includes('.')) {
-                valoreJson = chiaveProprietareale.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
-            }
-
-            if (valoreJson === undefined || valoreJson === null) continue;
-
-            if (chiaveProprietareale === 'height') {
-                valoreJson = valoreJson * 100; 
-            }
-
-            if (!valutaOperatore(valoreJson, op, regola)) return false;
-        }
-
-        return true;
     }
+
+    if (!haFiltriAttivi) return true;
+
+    let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
+    if (!pkmDettaglio) {
+        const spriteId = calcolaSpriteId(nomeChiave);
+        const radice = determinaRadice(nomeChiave, spriteId);
+        pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
+    }
+
+    if (!pkmDettaglio) return false; 
+
+    if (onlyLegendaryActive || onlyMythicalActive) {
+        const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
+        const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
+
+        if (onlyLegendaryActive && onlyMythicalActive) {
+            if (!isPkmLegendary && !isPkmMythical) return false;
+        } else if (onlyLegendaryActive) {
+            if (!isPkmLegendary) return false;
+        } else if (onlyMythicalActive) {
+            if (!isPkmMythical) return false;
+        }
+    }
+
+    for (const chiaveRestrizione in restrizioniPokemon) {
+        if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
+        if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
+
+        const regola = restrizioniPokemon[chiaveRestrizione];
+        if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
+
+        const op = regola.operator.toLowerCase().trim();
+        if (!operatoriValidi.includes(op)) continue;
+
+        // 🚀 ECCEZIONE SPECIFICA: evolution_stage === "Only"
+        if (chiaveRestrizione === 'evolution_stage' && String(regola.value).toLowerCase().trim() === 'only') {
+            // Estrazione sicura dei valori dal database locale (anche se annidati in .stats)
+            let evCount = pkmDettaglio['evolutions_count'];
+            if (evCount === undefined && pkmDettaglio.stats) evCount = pkmDettaglio.stats['evolutions_count'];
+            
+            let evStage = pkmDettaglio['evolution_stage'];
+            if (evStage === undefined && pkmDettaglio.stats) evStage = pkmDettaglio.stats['evolution_stage'];
+
+            // Se non ha entrambe le proprietà a 1, il Pokémon viene escluso
+            if (Number(evCount) !== 1 || Number(evStage) !== 1) {
+                return false;
+            }
+            // Condizione soddisfatta, salta la verifica standard per questa chiave e passa alla prossima
+            continue; 
+        }
+
+        const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiaveRestrizione) : null) || chiaveRestrizione;
+        
+        let valoreJson = pkmDettaglio[chiaveProprietareale];
+        if (valoreJson === undefined && pkmDettaglio.stats) {
+            valoreJson = pkmDettaglio.stats[chiaveProprietareale];
+        }
+        
+        if (valoreJson === undefined && chiaveProprietareale.includes('.')) {
+            valoreJson = chiaveProprietareale.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
+        }
+
+        if (valoreJson === undefined || valoreJson === null) continue;
+
+        if (chiaveProprietareale === 'height') {
+            valoreJson = valoreJson * 100; 
+        }
+
+        if (!valutaOperatore(valoreJson, op, regola)) return false;
+    }
+
+    return true;
+}
 
     function escludeFormeInvalide(id) {
         const idLower = id.toLowerCase();
@@ -2971,6 +2944,58 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
     return { tipoLayout: "FLAT", pokemon: poolFiltrato };
 }
+
+function renderizzaListaPiatta(pokemonList) {
+    const grid = document.getElementById('helper-pkm-grid');
+    const countSpan = document.getElementById('helper-count');
+
+    if (!grid) return;
+
+    if (countSpan) {
+        countSpan.textContent = pokemonList.length;
+    }
+
+    grid.innerHTML = '';
+
+    if (pokemonList.length === 0) {
+        grid.innerHTML = `<div class="helper-placeholder-row">No legal Pokémon found for this format.</div>`;
+        return;
+    }
+
+    pokemonList.forEach(pkm => {
+        const card = document.createElement('div');
+        card.className = 'helper-pkm-card';
+        card.dataset.id = pkm.id;
+
+        const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
+        const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
+
+        card.innerHTML = `
+            <div class="helper-pkm-gif-container">
+                <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
+                     onerror="this.onerror=null; this.src='${fallbackUrl}';">
+            </div>
+            <div class="helper-pkm-name"><span>${pkm.name}</span></div>
+        `;
+
+        card.addEventListener('click', () => {
+            console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
+        });
+
+        grid.appendChild(card);
+
+        const nameContainer = card.querySelector('.helper-pkm-name');
+        const nameSpan = nameContainer.querySelector('span');
+        
+        const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
+        
+        if (overflowPixels > 0) {
+            nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
+            nameContainer.classList.add('marquee-bounce');
+        }
+    });
+}
+
 
 function inizializzaChiusuraHelper(event) {
     // Caso A: Click sul bottone di chiusura (la X del modale)

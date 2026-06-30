@@ -21,8 +21,8 @@
     "is_mythical": false,
     "bst": 318,
     "highest_stat": [
-      "spa",
-      "spd"
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -58,8 +58,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spa",
-      "spd"
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -95,8 +95,8 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa",
-      "spd"
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -131,7 +131,7 @@
     "is_mythical": false,
     "bst": 309,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 39,
@@ -166,8 +166,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 58,
@@ -203,7 +203,7 @@
     "is_mythical": false,
     "bst": 534,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 78,
@@ -238,7 +238,7 @@
     "is_mythical": false,
     "bst": 314,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 44,
@@ -273,8 +273,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 59,
@@ -309,7 +309,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 79,
@@ -344,7 +344,7 @@
     "bst": 195,
     "highest_stat": [
       "hp",
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -378,7 +378,7 @@
     "is_mythical": false,
     "bst": 205,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -413,7 +413,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -448,7 +448,7 @@
     "is_mythical": false,
     "bst": 195,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -483,7 +483,7 @@
     "is_mythical": false,
     "bst": 205,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 45,
@@ -518,7 +518,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -553,7 +553,7 @@
     "is_mythical": false,
     "bst": 251,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -588,7 +588,7 @@
     "is_mythical": false,
     "bst": 349,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 63,
@@ -623,7 +623,7 @@
     "is_mythical": false,
     "bst": 479,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 83,
@@ -657,7 +657,7 @@
     "is_mythical": false,
     "bst": 253,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -691,7 +691,7 @@
     "is_mythical": false,
     "bst": 413,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -726,7 +726,7 @@
     "is_mythical": false,
     "bst": 262,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -761,7 +761,7 @@
     "is_mythical": false,
     "bst": 442,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -796,7 +796,7 @@
     "is_mythical": false,
     "bst": 288,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -831,7 +831,7 @@
     "is_mythical": false,
     "bst": 448,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -866,7 +866,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -901,7 +901,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -935,7 +935,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -969,7 +969,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -1073,7 +1073,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -1108,7 +1108,7 @@
     "is_mythical": false,
     "bst": 273,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 46,
@@ -1143,7 +1143,7 @@
     "is_mythical": false,
     "bst": 365,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 61,
@@ -1179,7 +1179,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 81,
@@ -1248,7 +1248,7 @@
     "bst": 483,
     "highest_stat": [
       "hp",
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 95,
@@ -1282,8 +1282,8 @@
     "is_mythical": false,
     "bst": 299,
     "highest_stat": [
-      "spd",
-      "spe"
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 38,
@@ -1317,8 +1317,8 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "spd",
-      "spe"
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 73,
@@ -1423,7 +1423,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -1458,7 +1458,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -1493,7 +1493,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -1528,7 +1528,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -1563,7 +1563,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -1599,7 +1599,7 @@
     "is_mythical": false,
     "bst": 285,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -1635,7 +1635,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -1705,8 +1705,8 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -1740,7 +1740,7 @@
     "is_mythical": false,
     "bst": 265,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 10,
@@ -1774,7 +1774,7 @@
     "is_mythical": false,
     "bst": 425,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -1808,7 +1808,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -1842,7 +1842,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -1877,7 +1877,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -1912,7 +1912,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -1946,7 +1946,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 40,
@@ -1980,7 +1980,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -2014,8 +2014,8 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -2049,7 +2049,7 @@
     "is_mythical": false,
     "bst": 555,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -2083,7 +2083,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -2117,7 +2117,7 @@
     "is_mythical": false,
     "bst": 385,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -2152,8 +2152,8 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -2187,7 +2187,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 25,
@@ -2221,7 +2221,7 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -2255,7 +2255,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -2289,7 +2289,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -2323,7 +2323,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -2357,7 +2357,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -2392,7 +2392,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -2427,7 +2427,7 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -2462,7 +2462,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -2497,7 +2497,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -2532,7 +2532,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -2567,7 +2567,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -2602,7 +2602,7 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -2637,7 +2637,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 80,
@@ -2671,7 +2671,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -2705,7 +2705,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -2777,7 +2777,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 95,
@@ -2812,7 +2812,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 25,
@@ -2847,7 +2847,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -2883,7 +2883,7 @@
     "is_mythical": false,
     "bst": 377,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 52,
@@ -2918,7 +2918,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -2953,8 +2953,8 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -2989,7 +2989,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -3025,7 +3025,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 90,
@@ -3060,7 +3060,7 @@
     "bst": 325,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -3095,7 +3095,7 @@
     "bst": 500,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -3129,7 +3129,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 30,
@@ -3164,7 +3164,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -3199,7 +3199,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 30,
@@ -3234,7 +3234,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -3269,7 +3269,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -3304,7 +3304,7 @@
     "is_mythical": false,
     "bst": 385,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 35,
@@ -3338,7 +3338,7 @@
     "is_mythical": false,
     "bst": 328,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -3372,7 +3372,7 @@
     "is_mythical": false,
     "bst": 483,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 85,
@@ -3406,7 +3406,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 30,
@@ -3440,7 +3440,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -3474,7 +3474,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -3508,7 +3508,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -3543,7 +3543,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -3578,7 +3578,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 95,
@@ -3612,7 +3612,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -3646,7 +3646,7 @@
     "is_mythical": false,
     "bst": 425,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -3680,7 +3680,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -3714,7 +3714,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -3782,7 +3782,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -3816,7 +3816,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -3852,7 +3852,7 @@
     "is_mythical": false,
     "bst": 345,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 80,
@@ -3888,7 +3888,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -3956,7 +3956,7 @@
     "is_mythical": false,
     "bst": 435,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -4025,8 +4025,8 @@
     "is_mythical": false,
     "bst": 295,
     "highest_stat": [
-      "def",
-      "spa"
+      "defense",
+      "sp. attack"
     ],
     "stats": {
       "hp": 30,
@@ -4061,8 +4061,8 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "def",
-      "spa"
+      "defense",
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -4096,7 +4096,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -4130,7 +4130,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -4164,7 +4164,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -4199,7 +4199,7 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -4234,7 +4234,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -4269,7 +4269,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -4304,7 +4304,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -4338,7 +4338,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -4372,7 +4372,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -4406,7 +4406,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -4440,7 +4440,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -4475,7 +4475,7 @@
     "is_mythical": false,
     "bst": 200,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 20,
@@ -4511,7 +4511,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -4582,11 +4582,11 @@
     "bst": 288,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 48,
@@ -4620,7 +4620,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -4688,7 +4688,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -4722,7 +4722,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -4756,7 +4756,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -4792,7 +4792,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 35,
@@ -4828,7 +4828,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -4864,7 +4864,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 30,
@@ -4900,7 +4900,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -4935,7 +4935,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -5004,7 +5004,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 90,
@@ -5039,7 +5039,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -5074,7 +5074,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -5109,7 +5109,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 41,
@@ -5144,7 +5144,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 61,
@@ -5180,7 +5180,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 91,
@@ -5214,7 +5214,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 106,
@@ -5249,11 +5249,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -5288,8 +5288,8 @@
     "is_mythical": false,
     "bst": 318,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -5324,8 +5324,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -5360,8 +5360,8 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -5395,7 +5395,7 @@
     "is_mythical": false,
     "bst": 309,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 39,
@@ -5429,8 +5429,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 58,
@@ -5464,7 +5464,7 @@
     "is_mythical": false,
     "bst": 534,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 78,
@@ -5499,7 +5499,7 @@
     "is_mythical": false,
     "bst": 314,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -5534,8 +5534,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -5570,7 +5570,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -5604,7 +5604,7 @@
     "is_mythical": false,
     "bst": 215,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -5638,7 +5638,7 @@
     "is_mythical": false,
     "bst": 415,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 85,
@@ -5743,7 +5743,7 @@
     "is_mythical": false,
     "bst": 265,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -5778,7 +5778,7 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -5813,7 +5813,7 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 40,
@@ -5848,7 +5848,7 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -5883,7 +5883,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 85,
@@ -5987,7 +5987,7 @@
     "is_mythical": false,
     "bst": 205,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 20,
@@ -6021,7 +6021,7 @@
     "is_mythical": false,
     "bst": 218,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -6090,8 +6090,8 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 35,
@@ -6127,7 +6127,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -6162,8 +6162,8 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -6198,8 +6198,8 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -6234,7 +6234,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -6269,7 +6269,7 @@
     "is_mythical": false,
     "bst": 365,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -6304,7 +6304,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -6338,7 +6338,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 75,
@@ -6444,7 +6444,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -6478,7 +6478,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 90,
@@ -6514,7 +6514,7 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 35,
@@ -6550,7 +6550,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -6586,7 +6586,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -6620,7 +6620,7 @@
     "is_mythical": false,
     "bst": 360,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -6655,11 +6655,11 @@
     "bst": 180,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -6693,7 +6693,7 @@
     "is_mythical": false,
     "bst": 425,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -6728,7 +6728,7 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -6834,7 +6834,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -6868,7 +6868,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 95,
@@ -6903,7 +6903,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -6939,7 +6939,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 95,
@@ -6973,9 +6973,9 @@
     "is_mythical": false,
     "bst": 435,
     "highest_stat": [
-      "spa",
-      "spd",
-      "spe"
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -7009,8 +7009,8 @@
     "is_mythical": false,
     "bst": 336,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 48,
@@ -7079,7 +7079,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -7113,7 +7113,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -7148,7 +7148,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -7217,7 +7217,7 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -7252,7 +7252,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -7287,7 +7287,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -7322,7 +7322,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -7357,7 +7357,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -7392,7 +7392,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -7427,8 +7427,8 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 20,
@@ -7463,7 +7463,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -7498,7 +7498,7 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -7532,7 +7532,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -7566,7 +7566,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -7600,7 +7600,7 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -7635,7 +7635,7 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -7671,8 +7671,8 @@
     "bst": 250,
     "highest_stat": [
       "hp",
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -7708,7 +7708,7 @@
     "bst": 450,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -7744,8 +7744,8 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -7780,9 +7780,9 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk",
-      "spa",
-      "spe"
+      "attack",
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -7817,8 +7817,8 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -7854,7 +7854,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -7889,7 +7889,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 85,
@@ -7924,7 +7924,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -7959,7 +7959,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -7994,7 +7994,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -8030,10 +8030,10 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "atk",
-      "def",
-      "spa",
-      "spd"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 75,
@@ -8101,8 +8101,8 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -8136,7 +8136,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -8170,7 +8170,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 73,
@@ -8204,7 +8204,7 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -8239,11 +8239,11 @@
     "bst": 210,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -8277,7 +8277,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -8312,7 +8312,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -8346,7 +8346,7 @@
     "is_mythical": false,
     "bst": 360,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -8380,7 +8380,7 @@
     "is_mythical": false,
     "bst": 365,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -8414,7 +8414,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 95,
@@ -8482,8 +8482,8 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 90,
@@ -8518,7 +8518,7 @@
     "bst": 580,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 115,
@@ -8552,8 +8552,8 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 100,
@@ -8588,7 +8588,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -8623,7 +8623,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -8658,7 +8658,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -8693,7 +8693,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 106,
@@ -8728,7 +8728,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 106,
@@ -8764,11 +8764,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -8803,7 +8803,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -8838,7 +8838,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -8873,7 +8873,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -8907,7 +8907,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -8942,8 +8942,8 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -8978,7 +8978,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -9013,7 +9013,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -9049,7 +9049,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -9085,7 +9085,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -9119,7 +9119,7 @@
     "is_mythical": false,
     "bst": 220,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -9153,7 +9153,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -9187,7 +9187,7 @@
     "is_mythical": false,
     "bst": 240,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 38,
@@ -9221,7 +9221,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 78,
@@ -9256,7 +9256,7 @@
     "bst": 195,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -9290,7 +9290,7 @@
     "is_mythical": false,
     "bst": 205,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -9325,7 +9325,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -9359,7 +9359,7 @@
     "is_mythical": false,
     "bst": 205,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -9394,7 +9394,7 @@
     "is_mythical": false,
     "bst": 385,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -9430,7 +9430,7 @@
     "is_mythical": false,
     "bst": 220,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -9466,7 +9466,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -9502,7 +9502,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -9537,7 +9537,7 @@
     "is_mythical": false,
     "bst": 220,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -9574,7 +9574,7 @@
     "bst": 340,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -9610,7 +9610,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -9645,7 +9645,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -9680,7 +9680,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -9716,7 +9716,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -9752,7 +9752,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -9788,7 +9788,7 @@
     "is_mythical": false,
     "bst": 198,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 28,
@@ -9824,7 +9824,7 @@
     "is_mythical": false,
     "bst": 278,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 38,
@@ -9860,7 +9860,7 @@
     "is_mythical": false,
     "bst": 518,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 68,
@@ -9896,7 +9896,7 @@
     "is_mythical": false,
     "bst": 269,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -9932,7 +9932,7 @@
     "is_mythical": false,
     "bst": 454,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -9968,8 +9968,8 @@
     "bst": 295,
     "highest_stat": [
       "hp",
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -10005,7 +10005,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -10040,8 +10040,8 @@
     "bst": 280,
     "highest_stat": [
       "hp",
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -10075,7 +10075,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -10109,7 +10109,7 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 150,
@@ -10144,7 +10144,7 @@
     "is_mythical": false,
     "bst": 266,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 31,
@@ -10179,7 +10179,7 @@
     "is_mythical": false,
     "bst": 456,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 61,
@@ -10214,7 +10214,7 @@
     "is_mythical": false,
     "bst": 236,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 1,
@@ -10456,7 +10456,7 @@
     "is_mythical": false,
     "bst": 375,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 30,
@@ -10492,7 +10492,7 @@
     "bst": 260,
     "highest_stat": [
       "hp",
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -10527,7 +10527,7 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -10562,8 +10562,8 @@
     "is_mythical": false,
     "bst": 380,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -10599,8 +10599,8 @@
     "is_mythical": false,
     "bst": 380,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -10635,7 +10635,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -10670,7 +10670,7 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -10705,7 +10705,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -10740,7 +10740,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -10775,7 +10775,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -10809,8 +10809,8 @@
     "is_mythical": false,
     "bst": 295,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -10844,8 +10844,8 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -10879,7 +10879,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -10913,7 +10913,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -10948,8 +10948,8 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "spd",
-      "spe"
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -10984,8 +10984,8 @@
     "is_mythical": false,
     "bst": 430,
     "highest_stat": [
-      "spd",
-      "spe"
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -11021,7 +11021,7 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -11124,7 +11124,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -11159,7 +11159,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -11264,7 +11264,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -11299,7 +11299,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -11333,7 +11333,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -11367,7 +11367,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -11401,7 +11401,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -11437,11 +11437,11 @@
     "bst": 360,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -11476,7 +11476,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -11512,8 +11512,8 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -11549,8 +11549,8 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -11585,8 +11585,8 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -11622,8 +11622,8 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -11659,7 +11659,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -11695,7 +11695,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 75,
@@ -11729,7 +11729,7 @@
     "is_mythical": false,
     "bst": 458,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 73,
@@ -11764,8 +11764,8 @@
     "is_mythical": false,
     "bst": 458,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 73,
@@ -11800,7 +11800,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -11835,7 +11835,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -11870,7 +11870,7 @@
     "is_mythical": false,
     "bst": 288,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -11940,7 +11940,7 @@
     "is_mythical": false,
     "bst": 308,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 43,
@@ -11976,7 +11976,7 @@
     "is_mythical": false,
     "bst": 468,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 63,
@@ -12011,7 +12011,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -12046,7 +12046,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -12081,7 +12081,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 66,
@@ -12116,7 +12116,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 86,
@@ -12151,7 +12151,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -12186,7 +12186,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -12221,7 +12221,7 @@
     "is_mythical": false,
     "bst": 200,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 20,
@@ -12256,7 +12256,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 95,
@@ -12292,11 +12292,11 @@
     "bst": 420,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -12330,7 +12330,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -12364,7 +12364,7 @@
     "is_mythical": false,
     "bst": 295,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 44,
@@ -12398,7 +12398,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 64,
@@ -12432,8 +12432,8 @@
     "is_mythical": false,
     "bst": 295,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 20,
@@ -12467,8 +12467,8 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -12538,7 +12538,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -12572,7 +12572,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -12642,11 +12642,11 @@
     "bst": 300,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -12682,11 +12682,11 @@
     "bst": 480,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -12828,7 +12828,7 @@
     "is_mythical": false,
     "bst": 345,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 35,
@@ -12862,7 +12862,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -12896,7 +12896,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -12932,7 +12932,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 100,
@@ -12966,7 +12966,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 43,
@@ -13000,7 +13000,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -13034,7 +13034,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -13069,7 +13069,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -13104,7 +13104,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -13139,7 +13139,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -13174,7 +13174,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -13208,7 +13208,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 80,
@@ -13242,7 +13242,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -13276,8 +13276,8 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -13312,7 +13312,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -13347,7 +13347,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -13381,7 +13381,7 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 100,
@@ -13415,7 +13415,7 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -13450,8 +13450,8 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 105,
@@ -13487,11 +13487,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -13525,9 +13525,9 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "atk",
-      "spa",
-      "spe"
+      "attack",
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -13562,7 +13562,7 @@
     "is_mythical": false,
     "bst": 318,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -13597,7 +13597,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -13633,7 +13633,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -13668,7 +13668,7 @@
     "is_mythical": false,
     "bst": 309,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 44,
@@ -13704,7 +13704,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 64,
@@ -13740,7 +13740,7 @@
     "is_mythical": false,
     "bst": 534,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 76,
@@ -13775,7 +13775,7 @@
     "is_mythical": false,
     "bst": 314,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 53,
@@ -13810,7 +13810,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 64,
@@ -13846,7 +13846,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 84,
@@ -13881,7 +13881,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -13916,7 +13916,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -13951,7 +13951,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -14022,7 +14022,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 79,
@@ -14056,8 +14056,8 @@
     "is_mythical": false,
     "bst": 194,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 37,
@@ -14091,7 +14091,7 @@
     "is_mythical": false,
     "bst": 384,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 77,
@@ -14125,7 +14125,7 @@
     "is_mythical": false,
     "bst": 263,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -14159,7 +14159,7 @@
     "is_mythical": false,
     "bst": 363,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -14193,7 +14193,7 @@
     "is_mythical": false,
     "bst": 523,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -14228,7 +14228,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -14264,7 +14264,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -14298,7 +14298,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 67,
@@ -14332,7 +14332,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 97,
@@ -14367,7 +14367,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 30,
@@ -14402,7 +14402,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -14436,8 +14436,8 @@
     "is_mythical": false,
     "bst": 224,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -14472,7 +14472,7 @@
     "is_mythical": false,
     "bst": 424,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -14507,8 +14507,8 @@
     "is_mythical": false,
     "bst": 424,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -14543,7 +14543,7 @@
     "is_mythical": false,
     "bst": 244,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -14578,8 +14578,8 @@
     "is_mythical": false,
     "bst": 474,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 70,
@@ -14614,7 +14614,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -14649,7 +14649,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -14684,7 +14684,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 85,
@@ -14719,7 +14719,7 @@
     "is_mythical": false,
     "bst": 275,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -14754,7 +14754,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -14859,7 +14859,7 @@
     "is_mythical": false,
     "bst": 482,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -14964,7 +14964,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -14999,7 +14999,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -15033,9 +15033,9 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spa",
-      "spd",
-      "spe"
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -15070,7 +15070,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -15104,7 +15104,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 49,
@@ -15138,7 +15138,7 @@
     "is_mythical": false,
     "bst": 452,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 71,
@@ -15172,7 +15172,7 @@
     "is_mythical": false,
     "bst": 285,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -15207,7 +15207,7 @@
     "is_mythical": false,
     "bst": 329,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 63,
@@ -15277,8 +15277,8 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 57,
@@ -15313,8 +15313,8 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 67,
@@ -15348,7 +15348,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -15383,7 +15383,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 20,
@@ -15452,7 +15452,7 @@
     "is_mythical": false,
     "bst": 411,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 76,
@@ -15487,8 +15487,8 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -15524,7 +15524,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 58,
@@ -15560,7 +15560,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 68,
@@ -15596,7 +15596,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 108,
@@ -15664,7 +15664,7 @@
     "is_mythical": false,
     "bst": 285,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 40,
@@ -15700,7 +15700,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -15734,7 +15734,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 68,
@@ -15768,7 +15768,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 108,
@@ -15804,7 +15804,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -15840,7 +15840,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -15875,8 +15875,8 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 48,
@@ -15911,7 +15911,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 83,
@@ -15945,7 +15945,7 @@
     "is_mythical": false,
     "bst": 454,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 74,
@@ -15979,7 +15979,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 49,
@@ -16013,7 +16013,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 69,
@@ -16048,7 +16048,7 @@
     "is_mythical": false,
     "bst": 345,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -16084,8 +16084,8 @@
     "is_mythical": false,
     "bst": 334,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -16121,8 +16121,8 @@
     "is_mythical": false,
     "bst": 494,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -16157,7 +16157,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -16192,7 +16192,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -16262,7 +16262,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 115,
@@ -16296,7 +16296,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 100,
@@ -16330,7 +16330,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -16364,7 +16364,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -16400,7 +16400,7 @@
     "is_mythical": false,
     "bst": 545,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -16435,7 +16435,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 86,
@@ -16469,7 +16469,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -16503,7 +16503,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -16538,7 +16538,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -16573,7 +16573,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 110,
@@ -16607,7 +16607,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -16643,7 +16643,7 @@
     "is_mythical": false,
     "bst": 518,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 68,
@@ -16678,7 +16678,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -16712,8 +16712,8 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -16749,7 +16749,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -16784,7 +16784,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -16818,8 +16818,8 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 75,
@@ -16853,10 +16853,10 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "atk",
-      "def",
-      "spa",
-      "spd"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -16890,8 +16890,8 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -16926,7 +16926,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 100,
@@ -16961,7 +16961,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -16996,7 +16996,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 91,
@@ -17030,7 +17030,7 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 110,
@@ -17100,7 +17100,7 @@
     "bst": 580,
     "highest_stat": [
       "hp",
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 120,
@@ -17136,11 +17136,11 @@
     "bst": 480,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -17176,11 +17176,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -17214,7 +17214,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -17249,11 +17249,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -17288,11 +17288,11 @@
     "bst": 720,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 120,
@@ -17328,11 +17328,11 @@
     "bst": 600,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -17367,7 +17367,7 @@
     "is_mythical": false,
     "bst": 308,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -17402,7 +17402,7 @@
     "is_mythical": false,
     "bst": 413,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -17437,7 +17437,7 @@
     "is_mythical": false,
     "bst": 528,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -17506,7 +17506,7 @@
     "is_mythical": false,
     "bst": 418,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -17541,7 +17541,7 @@
     "is_mythical": false,
     "bst": 528,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 110,
@@ -17575,7 +17575,7 @@
     "is_mythical": false,
     "bst": 308,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -17609,7 +17609,7 @@
     "is_mythical": false,
     "bst": 413,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -17643,7 +17643,7 @@
     "is_mythical": false,
     "bst": 528,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 95,
@@ -17677,7 +17677,7 @@
     "is_mythical": false,
     "bst": 255,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -17711,7 +17711,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -17745,7 +17745,7 @@
     "is_mythical": false,
     "bst": 275,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -17779,7 +17779,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -17813,7 +17813,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -17847,7 +17847,7 @@
     "is_mythical": false,
     "bst": 281,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 41,
@@ -17881,7 +17881,7 @@
     "is_mythical": false,
     "bst": 446,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 64,
@@ -17915,7 +17915,7 @@
     "is_mythical": false,
     "bst": 316,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -17949,7 +17949,7 @@
     "is_mythical": false,
     "bst": 498,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -17983,7 +17983,7 @@
     "is_mythical": false,
     "bst": 316,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -18017,7 +18017,7 @@
     "is_mythical": false,
     "bst": 498,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -18051,7 +18051,7 @@
     "is_mythical": false,
     "bst": 316,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -18085,7 +18085,7 @@
     "is_mythical": false,
     "bst": 498,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -18188,7 +18188,7 @@
     "is_mythical": false,
     "bst": 264,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -18223,7 +18223,7 @@
     "is_mythical": false,
     "bst": 358,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 62,
@@ -18258,7 +18258,7 @@
     "is_mythical": false,
     "bst": 488,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -18292,7 +18292,7 @@
     "is_mythical": false,
     "bst": 295,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -18326,7 +18326,7 @@
     "is_mythical": false,
     "bst": 497,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -18360,7 +18360,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -18394,8 +18394,8 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -18429,7 +18429,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -18465,7 +18465,7 @@
     "is_mythical": false,
     "bst": 323,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -18501,7 +18501,7 @@
     "is_mythical": false,
     "bst": 425,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 67,
@@ -18535,7 +18535,7 @@
     "is_mythical": false,
     "bst": 328,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -18570,7 +18570,7 @@
     "is_mythical": false,
     "bst": 508,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 110,
@@ -18638,7 +18638,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -18672,7 +18672,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -18706,7 +18706,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -18740,7 +18740,7 @@
     "is_mythical": false,
     "bst": 294,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -18878,7 +18878,7 @@
     "is_mythical": false,
     "bst": 465,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -18913,7 +18913,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 45,
@@ -18948,7 +18948,7 @@
     "is_mythical": false,
     "bst": 380,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -18983,7 +18983,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -19018,7 +19018,7 @@
     "is_mythical": false,
     "bst": 260,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 30,
@@ -19053,7 +19053,7 @@
     "is_mythical": false,
     "bst": 360,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -19088,7 +19088,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -19124,7 +19124,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -19160,7 +19160,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -19194,7 +19194,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -19228,7 +19228,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -19262,7 +19262,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -19297,7 +19297,7 @@
     "is_mythical": false,
     "bst": 292,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -19332,7 +19332,7 @@
     "is_mythical": false,
     "bst": 351,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -19367,7 +19367,7 @@
     "is_mythical": false,
     "bst": 519,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -19401,7 +19401,7 @@
     "is_mythical": false,
     "bst": 315,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -19435,7 +19435,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -19469,7 +19469,7 @@
     "is_mythical": false,
     "bst": 461,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -19505,7 +19505,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -19541,7 +19541,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -19577,7 +19577,7 @@
     "is_mythical": false,
     "bst": 348,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -19613,8 +19613,8 @@
     "is_mythical": false,
     "bst": 488,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -19649,7 +19649,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 72,
@@ -19684,7 +19684,7 @@
     "is_mythical": false,
     "bst": 303,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 38,
@@ -19719,7 +19719,7 @@
     "is_mythical": false,
     "bst": 483,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 58,
@@ -19755,7 +19755,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 54,
@@ -19791,7 +19791,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 74,
@@ -19827,7 +19827,7 @@
     "is_mythical": false,
     "bst": 401,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -19863,7 +19863,7 @@
     "is_mythical": false,
     "bst": 567,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -19897,7 +19897,7 @@
     "is_mythical": false,
     "bst": 329,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -19931,7 +19931,7 @@
     "is_mythical": false,
     "bst": 474,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -19965,7 +19965,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -19999,7 +19999,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -20033,7 +20033,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -20067,7 +20067,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -20101,7 +20101,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -20135,7 +20135,7 @@
     "is_mythical": false,
     "bst": 390,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -20169,7 +20169,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 70,
@@ -20203,7 +20203,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -20237,7 +20237,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -20271,7 +20271,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 110,
@@ -20343,7 +20343,7 @@
     "is_mythical": false,
     "bst": 473,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -20377,7 +20377,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 36,
@@ -20411,7 +20411,7 @@
     "is_mythical": false,
     "bst": 395,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 51,
@@ -20445,7 +20445,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 71,
@@ -20480,7 +20480,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -20515,7 +20515,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -20550,7 +20550,7 @@
     "is_mythical": false,
     "bst": 428,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -20584,7 +20584,7 @@
     "is_mythical": false,
     "bst": 315,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -20619,7 +20619,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -20724,7 +20724,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -20759,7 +20759,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 100,
@@ -20829,7 +20829,7 @@
     "is_mythical": false,
     "bst": 319,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -20864,7 +20864,7 @@
     "is_mythical": false,
     "bst": 472,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -20900,7 +20900,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 44,
@@ -20936,7 +20936,7 @@
     "is_mythical": false,
     "bst": 489,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 74,
@@ -20970,7 +20970,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -21004,7 +21004,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -21038,7 +21038,7 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -21072,7 +21072,7 @@
     "is_mythical": false,
     "bst": 275,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -21106,7 +21106,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -21140,7 +21140,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -21174,7 +21174,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -21208,7 +21208,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -21243,7 +21243,7 @@
     "is_mythical": false,
     "bst": 275,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -21278,7 +21278,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -21313,7 +21313,7 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -21348,7 +21348,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 46,
@@ -21383,7 +21383,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 66,
@@ -21418,7 +21418,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 76,
@@ -21452,7 +21452,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -21486,7 +21486,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -21520,7 +21520,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -21554,7 +21554,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -21588,7 +21588,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -21659,7 +21659,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -21694,7 +21694,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -21729,7 +21729,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 77,
@@ -21764,7 +21764,7 @@
     "is_mythical": false,
     "bst": 303,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 59,
@@ -21799,7 +21799,7 @@
     "is_mythical": false,
     "bst": 483,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 89,
@@ -21834,7 +21834,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -21869,7 +21869,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -21903,7 +21903,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -21938,7 +21938,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -21973,7 +21973,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -22008,7 +22008,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -22077,7 +22077,7 @@
     "is_mythical": false,
     "bst": 484,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -22112,7 +22112,7 @@
     "is_mythical": false,
     "bst": 484,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 58,
@@ -22147,7 +22147,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 52,
@@ -22182,7 +22182,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 72,
@@ -22217,7 +22217,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 92,
@@ -22252,7 +22252,7 @@
     "is_mythical": false,
     "bst": 360,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -22287,7 +22287,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -22322,7 +22322,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 91,
@@ -22357,7 +22357,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 91,
@@ -22392,7 +22392,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 91,
@@ -22426,7 +22426,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 79,
@@ -22461,7 +22461,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 79,
@@ -22496,7 +22496,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 100,
@@ -22531,7 +22531,7 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -22566,7 +22566,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 89,
@@ -22601,8 +22601,8 @@
     "is_mythical": false,
     "bst": 660,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 125,
@@ -22637,7 +22637,7 @@
     "is_mythical": true,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 91,
@@ -22672,8 +22672,8 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spa",
-      "spd"
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 100,
@@ -22708,8 +22708,8 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 71,
@@ -22743,7 +22743,7 @@
     "is_mythical": false,
     "bst": 313,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 56,
@@ -22777,7 +22777,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 61,
@@ -22812,7 +22812,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 88,
@@ -22846,7 +22846,7 @@
     "is_mythical": false,
     "bst": 307,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -22880,7 +22880,7 @@
     "is_mythical": false,
     "bst": 409,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 59,
@@ -22915,7 +22915,7 @@
     "is_mythical": false,
     "bst": 534,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -22949,7 +22949,7 @@
     "is_mythical": false,
     "bst": 314,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 41,
@@ -22983,7 +22983,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 54,
@@ -23018,7 +23018,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 72,
@@ -23052,7 +23052,7 @@
     "is_mythical": false,
     "bst": 237,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 38,
@@ -23122,7 +23122,7 @@
     "is_mythical": false,
     "bst": 278,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -23157,7 +23157,7 @@
     "is_mythical": false,
     "bst": 382,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 62,
@@ -23192,7 +23192,7 @@
     "is_mythical": false,
     "bst": 499,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 78,
@@ -23226,7 +23226,7 @@
     "is_mythical": false,
     "bst": 200,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 38,
@@ -23260,7 +23260,7 @@
     "is_mythical": false,
     "bst": 213,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 45,
@@ -23295,7 +23295,7 @@
     "is_mythical": false,
     "bst": 411,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -23330,7 +23330,7 @@
     "is_mythical": false,
     "bst": 369,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 62,
@@ -23365,7 +23365,7 @@
     "is_mythical": false,
     "bst": 507,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 86,
@@ -23399,7 +23399,7 @@
     "is_mythical": false,
     "bst": 303,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 44,
@@ -23433,7 +23433,7 @@
     "is_mythical": false,
     "bst": 371,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 54,
@@ -23467,7 +23467,7 @@
     "is_mythical": false,
     "bst": 552,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 78,
@@ -23570,7 +23570,7 @@
     "is_mythical": false,
     "bst": 348,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 67,
@@ -23606,7 +23606,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -23640,7 +23640,7 @@
     "is_mythical": false,
     "bst": 472,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 75,
@@ -23674,7 +23674,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 62,
@@ -23708,7 +23708,7 @@
     "is_mythical": false,
     "bst": 466,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 74,
@@ -23743,7 +23743,7 @@
     "is_mythical": false,
     "bst": 325,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 45,
@@ -23778,7 +23778,7 @@
     "is_mythical": false,
     "bst": 448,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 59,
@@ -23813,8 +23813,8 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -23916,7 +23916,7 @@
     "is_mythical": false,
     "bst": 341,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 62,
@@ -23950,7 +23950,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 82,
@@ -23986,7 +23986,7 @@
     "is_mythical": false,
     "bst": 288,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 53,
@@ -24022,7 +24022,7 @@
     "is_mythical": false,
     "bst": 482,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 86,
@@ -24057,7 +24057,7 @@
     "is_mythical": false,
     "bst": 306,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 42,
@@ -24092,7 +24092,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 72,
@@ -24128,10 +24128,10 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "atk",
-      "def",
-      "spa",
-      "spd"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -24167,7 +24167,7 @@
     "is_mythical": false,
     "bst": 494,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -24202,7 +24202,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -24237,7 +24237,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 71,
@@ -24273,7 +24273,7 @@
     "is_mythical": false,
     "bst": 289,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 44,
@@ -24309,8 +24309,8 @@
     "is_mythical": false,
     "bst": 481,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 62,
@@ -24346,7 +24346,7 @@
     "is_mythical": false,
     "bst": 362,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 58,
@@ -24382,7 +24382,7 @@
     "is_mythical": false,
     "bst": 521,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 82,
@@ -24486,7 +24486,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 95,
@@ -24522,7 +24522,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 78,
@@ -24558,7 +24558,7 @@
     "is_mythical": false,
     "bst": 431,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 67,
@@ -24594,8 +24594,8 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -24629,7 +24629,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -24663,7 +24663,7 @@
     "is_mythical": false,
     "bst": 452,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 68,
@@ -24697,7 +24697,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 90,
@@ -24732,7 +24732,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 57,
@@ -24768,7 +24768,7 @@
     "is_mythical": false,
     "bst": 309,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 43,
@@ -24804,7 +24804,7 @@
     "is_mythical": false,
     "bst": 474,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -24839,7 +24839,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 49,
@@ -24874,7 +24874,7 @@
     "is_mythical": false,
     "bst": 494,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -24909,7 +24909,7 @@
     "is_mythical": false,
     "bst": 304,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -24944,7 +24944,7 @@
     "is_mythical": false,
     "bst": 514,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 95,
@@ -24980,7 +24980,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -25016,7 +25016,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 85,
@@ -25050,8 +25050,8 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 126,
@@ -25086,8 +25086,8 @@
     "is_mythical": false,
     "bst": 680,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 126,
@@ -25122,7 +25122,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 108,
@@ -25157,8 +25157,8 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -25193,7 +25193,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -25228,7 +25228,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -25333,7 +25333,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 78,
@@ -25367,7 +25367,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -25401,7 +25401,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -25436,7 +25436,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -25471,7 +25471,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -25506,7 +25506,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -25542,7 +25542,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -25577,7 +25577,7 @@
     "is_mythical": false,
     "bst": 265,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 35,
@@ -25612,7 +25612,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -25647,7 +25647,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -25681,7 +25681,7 @@
     "is_mythical": false,
     "bst": 253,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 48,
@@ -25715,7 +25715,7 @@
     "is_mythical": false,
     "bst": 418,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 88,
@@ -25749,7 +25749,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 47,
@@ -25784,7 +25784,7 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 57,
@@ -25819,7 +25819,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 77,
@@ -25853,7 +25853,7 @@
     "is_mythical": false,
     "bst": 338,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 47,
@@ -25888,7 +25888,7 @@
     "is_mythical": false,
     "bst": 478,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 97,
@@ -25923,7 +25923,7 @@
     "is_mythical": false,
     "bst": 476,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -25959,7 +25959,7 @@
     "is_mythical": false,
     "bst": 304,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -25995,7 +25995,7 @@
     "is_mythical": false,
     "bst": 464,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -26029,7 +26029,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -26063,7 +26063,7 @@
     "is_mythical": false,
     "bst": 487,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -26132,7 +26132,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -26167,7 +26167,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 50,
@@ -26201,7 +26201,7 @@
     "is_mythical": false,
     "bst": 385,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -26235,7 +26235,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -26271,7 +26271,7 @@
     "is_mythical": false,
     "bst": 269,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 38,
@@ -26307,7 +26307,7 @@
     "is_mythical": false,
     "bst": 454,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 68,
@@ -26341,7 +26341,7 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 40,
@@ -26375,7 +26375,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -26410,7 +26410,7 @@
     "is_mythical": false,
     "bst": 285,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -26445,7 +26445,7 @@
     "is_mythical": false,
     "bst": 405,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -26481,7 +26481,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 48,
@@ -26517,7 +26517,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 68,
@@ -26552,7 +26552,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -26587,7 +26587,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 120,
@@ -26655,7 +26655,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 52,
@@ -26689,7 +26689,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 72,
@@ -26723,7 +26723,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 51,
@@ -26758,7 +26758,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 90,
@@ -26792,7 +26792,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -26828,7 +26828,7 @@
     "is_mythical": false,
     "bst": 230,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 25,
@@ -26864,7 +26864,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -26899,7 +26899,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -26934,7 +26934,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 85,
@@ -26968,8 +26968,8 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -27004,10 +27004,10 @@
     "bst": 534,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 95,
@@ -27042,11 +27042,11 @@
     "bst": 570,
     "highest_stat": [
       "hp",
-      "atk",
-      "def",
-      "spa",
-      "spd",
-      "spe"
+      "attack",
+      "defense",
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 95,
@@ -27081,8 +27081,8 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -27116,7 +27116,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -27152,7 +27152,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -27188,7 +27188,7 @@
     "is_mythical": false,
     "bst": 435,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -27223,7 +27223,7 @@
     "is_mythical": false,
     "bst": 476,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 55,
@@ -27258,7 +27258,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 68,
@@ -27294,7 +27294,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 78,
@@ -27329,7 +27329,7 @@
     "is_mythical": false,
     "bst": 517,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -27363,7 +27363,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 45,
@@ -27398,7 +27398,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -27433,7 +27433,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -27468,7 +27468,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -27503,7 +27503,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -27538,7 +27538,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -27573,7 +27573,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 70,
@@ -27641,8 +27641,8 @@
     "is_mythical": false,
     "bst": 400,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 43,
@@ -27678,7 +27678,7 @@
     "bst": 680,
     "highest_stat": [
       "hp",
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 137,
@@ -27714,7 +27714,7 @@
     "bst": 680,
     "highest_stat": [
       "hp",
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 137,
@@ -27749,7 +27749,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 109,
@@ -27784,8 +27784,8 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 107,
@@ -27820,7 +27820,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 71,
@@ -27854,7 +27854,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 83,
@@ -27889,7 +27889,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 97,
@@ -27924,7 +27924,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 59,
@@ -27993,7 +27993,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 97,
@@ -28028,7 +28028,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -28063,8 +28063,8 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 90,
@@ -28098,9 +28098,9 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk",
-      "spa",
-      "spe"
+      "attack",
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 67,
@@ -28135,7 +28135,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 73,
@@ -28170,7 +28170,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 61,
@@ -28205,7 +28205,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 53,
@@ -28239,7 +28239,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 88,
@@ -28273,8 +28273,8 @@
     "is_mythical": true,
     "bst": 300,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 46,
@@ -28308,8 +28308,8 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 135,
@@ -28344,8 +28344,8 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -28380,7 +28380,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -28415,7 +28415,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -28450,7 +28450,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -28485,7 +28485,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 65,
@@ -28520,7 +28520,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -28555,8 +28555,8 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -28591,7 +28591,7 @@
     "is_mythical": false,
     "bst": 420,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -28626,7 +28626,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -28728,7 +28728,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 38,
@@ -28762,7 +28762,7 @@
     "is_mythical": false,
     "bst": 365,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 68,
@@ -28797,7 +28797,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 98,
@@ -28831,8 +28831,8 @@
     "is_mythical": false,
     "bst": 180,
     "highest_stat": [
-      "spd",
-      "spe"
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 25,
@@ -28867,7 +28867,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -28902,7 +28902,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -28936,7 +28936,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -28970,7 +28970,7 @@
     "is_mythical": false,
     "bst": 455,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 70,
@@ -29004,8 +29004,8 @@
     "is_mythical": false,
     "bst": 250,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -29039,7 +29039,7 @@
     "is_mythical": false,
     "bst": 460,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 60,
@@ -29073,7 +29073,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 42,
@@ -29107,7 +29107,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 72,
@@ -29142,7 +29142,7 @@
     "is_mythical": false,
     "bst": 284,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -29178,7 +29178,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -29246,7 +29246,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 69,
@@ -29280,8 +29280,8 @@
     "is_mythical": false,
     "bst": 240,
     "highest_stat": [
-      "def",
-      "spd"
+      "defense",
+      "sp. defense"
     ],
     "stats": {
       "hp": 30,
@@ -29316,7 +29316,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 80,
@@ -29351,7 +29351,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 110,
@@ -29387,7 +29387,7 @@
     "is_mythical": false,
     "bst": 260,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 40,
@@ -29423,7 +29423,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -29494,7 +29494,7 @@
     "is_mythical": false,
     "bst": 315,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 52,
@@ -29529,7 +29529,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 72,
@@ -29565,7 +29565,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 70,
@@ -29599,7 +29599,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 41,
@@ -29633,7 +29633,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 61,
@@ -29668,7 +29668,7 @@
     "is_mythical": false,
     "bst": 242,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -29703,7 +29703,7 @@
     "is_mythical": false,
     "bst": 502,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -29738,7 +29738,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -29773,7 +29773,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -29808,7 +29808,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -29843,7 +29843,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -29878,7 +29878,7 @@
     "is_mythical": false,
     "bst": 308,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -29913,7 +29913,7 @@
     "is_mythical": false,
     "bst": 508,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -29947,7 +29947,7 @@
     "is_mythical": false,
     "bst": 265,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 42,
@@ -29981,7 +29981,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 57,
@@ -30016,7 +30016,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 57,
@@ -30052,7 +30052,7 @@
     "is_mythical": false,
     "bst": 265,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -30088,7 +30088,7 @@
     "is_mythical": false,
     "bst": 370,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -30124,7 +30124,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 95,
@@ -30159,7 +30159,7 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 93,
@@ -30193,7 +30193,7 @@
     "is_mythical": false,
     "bst": 440,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -30228,7 +30228,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -30263,7 +30263,7 @@
     "is_mythical": false,
     "bst": 507,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 62,
@@ -30298,7 +30298,7 @@
     "is_mythical": false,
     "bst": 520,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -30334,7 +30334,7 @@
     "is_mythical": false,
     "bst": 483,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 58,
@@ -30369,7 +30369,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 45,
@@ -30404,7 +30404,7 @@
     "is_mythical": false,
     "bst": 495,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -30439,8 +30439,8 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 65,
@@ -30475,7 +30475,7 @@
     "is_mythical": false,
     "bst": 435,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 48,
@@ -30510,7 +30510,7 @@
     "is_mythical": false,
     "bst": 185,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 30,
@@ -30545,7 +30545,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -30579,7 +30579,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 100,
@@ -30614,7 +30614,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 75,
@@ -30649,7 +30649,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 60,
@@ -30685,7 +30685,7 @@
     "is_mythical": false,
     "bst": 436,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 58,
@@ -30720,7 +30720,7 @@
     "is_mythical": false,
     "bst": 330,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 72,
@@ -30755,7 +30755,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 122,
@@ -30790,7 +30790,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -30825,7 +30825,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -30860,7 +30860,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -30895,7 +30895,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -30931,7 +30931,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 70,
@@ -30967,7 +30967,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 28,
@@ -31003,7 +31003,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 68,
@@ -31039,7 +31039,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 88,
@@ -31073,7 +31073,7 @@
     "is_mythical": false,
     "bst": 660,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 92,
@@ -31107,7 +31107,7 @@
     "is_mythical": false,
     "bst": 660,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 92,
@@ -31142,7 +31142,7 @@
     "is_mythical": false,
     "bst": 690,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 140,
@@ -31176,7 +31176,7 @@
     "is_mythical": false,
     "bst": 385,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -31211,7 +31211,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -31246,7 +31246,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -31280,7 +31280,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -31348,7 +31348,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -31382,7 +31382,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 100,
@@ -31452,8 +31452,8 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 103,
@@ -31488,7 +31488,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -31523,7 +31523,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 130,
@@ -31593,7 +31593,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -31628,7 +31628,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -31663,7 +31663,7 @@
     "is_mythical": false,
     "bst": 580,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 74,
@@ -31698,7 +31698,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -31733,7 +31733,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 61,
@@ -31769,7 +31769,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 76,
@@ -31837,7 +31837,7 @@
     "is_mythical": false,
     "bst": 411,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 81,
@@ -31872,7 +31872,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 104,
@@ -31907,7 +31907,7 @@
     "is_mythical": false,
     "bst": 310,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -31942,7 +31942,7 @@
     "is_mythical": false,
     "bst": 410,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -31978,7 +31978,7 @@
     "is_mythical": false,
     "bst": 530,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -32080,7 +32080,7 @@
     "is_mythical": false,
     "bst": 210,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 35,
@@ -32114,7 +32114,7 @@
     "is_mythical": false,
     "bst": 404,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -32148,7 +32148,7 @@
     "is_mythical": false,
     "bst": 210,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 33,
@@ -32183,7 +32183,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 71,
@@ -32217,7 +32217,7 @@
     "is_mythical": false,
     "bst": 240,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 45,
@@ -32252,7 +32252,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 60,
@@ -32287,7 +32287,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -32322,7 +32322,7 @@
     "is_mythical": false,
     "bst": 305,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 50,
@@ -32357,7 +32357,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 74,
@@ -32392,7 +32392,7 @@
     "is_mythical": false,
     "bst": 312,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 37,
@@ -32427,7 +32427,7 @@
     "is_mythical": false,
     "bst": 477,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 57,
@@ -32462,7 +32462,7 @@
     "is_mythical": false,
     "bst": 260,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 41,
@@ -32497,8 +32497,8 @@
     "is_mythical": false,
     "bst": 354,
     "highest_stat": [
-      "spa",
-      "spd"
+      "sp. attack",
+      "sp. defense"
     ],
     "stats": {
       "hp": 52,
@@ -32533,7 +32533,7 @@
     "is_mythical": false,
     "bst": 510,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 78,
@@ -32568,7 +32568,7 @@
     "is_mythical": false,
     "bst": 417,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 82,
@@ -32602,7 +32602,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 55,
@@ -32636,7 +32636,7 @@
     "is_mythical": false,
     "bst": 355,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 60,
@@ -32670,7 +32670,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 100,
@@ -32704,8 +32704,8 @@
     "is_mythical": false,
     "bst": 255,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -32740,7 +32740,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -32775,7 +32775,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 75,
@@ -32879,7 +32879,7 @@
     "is_mythical": false,
     "bst": 280,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -32915,7 +32915,7 @@
     "is_mythical": false,
     "bst": 490,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -32949,7 +32949,7 @@
     "is_mythical": false,
     "bst": 340,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 60,
@@ -32983,7 +32983,7 @@
     "is_mythical": false,
     "bst": 505,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -33018,7 +33018,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 40,
@@ -33053,7 +33053,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 63,
@@ -33088,7 +33088,7 @@
     "is_mythical": false,
     "bst": 275,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 40,
@@ -33123,7 +33123,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 55,
@@ -33158,7 +33158,7 @@
     "is_mythical": false,
     "bst": 335,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 40,
@@ -33193,7 +33193,7 @@
     "is_mythical": false,
     "bst": 515,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 80,
@@ -33227,7 +33227,7 @@
     "is_mythical": false,
     "bst": 450,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -33261,8 +33261,8 @@
     "is_mythical": false,
     "bst": 304,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 50,
@@ -33297,8 +33297,8 @@
     "is_mythical": false,
     "bst": 486,
     "highest_stat": [
-      "atk",
-      "spa"
+      "attack",
+      "sp. attack"
     ],
     "stats": {
       "hp": 65,
@@ -33332,7 +33332,7 @@
     "is_mythical": false,
     "bst": 270,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 41,
@@ -33367,7 +33367,7 @@
     "is_mythical": false,
     "bst": 470,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 75,
@@ -33401,7 +33401,7 @@
     "is_mythical": false,
     "bst": 255,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 30,
@@ -33435,7 +33435,7 @@
     "is_mythical": false,
     "bst": 481,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 95,
@@ -33470,7 +33470,7 @@
     "is_mythical": false,
     "bst": 297,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 50,
@@ -33505,7 +33505,7 @@
     "is_mythical": false,
     "bst": 380,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 65,
@@ -33540,7 +33540,7 @@
     "is_mythical": false,
     "bst": 506,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 85,
@@ -33574,7 +33574,7 @@
     "is_mythical": false,
     "bst": 245,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 10,
@@ -33608,7 +33608,7 @@
     "is_mythical": false,
     "bst": 425,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 35,
@@ -33643,7 +33643,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 70,
@@ -33678,7 +33678,7 @@
     "is_mythical": false,
     "bst": 315,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -33714,7 +33714,7 @@
     "bst": 457,
     "highest_stat": [
       "hp",
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -33749,7 +33749,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 45,
@@ -33784,7 +33784,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -33819,7 +33819,7 @@
     "is_mythical": false,
     "bst": 501,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 70,
@@ -33853,7 +33853,7 @@
     "is_mythical": false,
     "bst": 480,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 70,
@@ -33888,7 +33888,7 @@
     "is_mythical": false,
     "bst": 350,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 48,
@@ -33923,7 +33923,7 @@
     "is_mythical": false,
     "bst": 525,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 83,
@@ -33957,7 +33957,7 @@
     "is_mythical": false,
     "bst": 290,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 50,
@@ -33991,7 +33991,7 @@
     "is_mythical": false,
     "bst": 488,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 72,
@@ -34026,7 +34026,7 @@
     "is_mythical": false,
     "bst": 500,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 82,
@@ -34129,7 +34129,7 @@
     "is_mythical": false,
     "bst": 478,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -34198,7 +34198,7 @@
     "is_mythical": false,
     "bst": 475,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 68,
@@ -34233,7 +34233,7 @@
     "is_mythical": false,
     "bst": 535,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 110,
@@ -34373,7 +34373,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -34408,8 +34408,8 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk",
-      "def"
+      "attack",
+      "defense"
     ],
     "stats": {
       "hp": 115,
@@ -34445,7 +34445,7 @@
     "bst": 570,
     "highest_stat": [
       "hp",
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 115,
@@ -34480,7 +34480,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 111,
@@ -34515,9 +34515,9 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa",
-      "spd",
-      "spe"
+      "sp. attack",
+      "sp. defense",
+      "speed"
     ],
     "stats": {
       "hp": 55,
@@ -34552,7 +34552,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 85,
@@ -34587,7 +34587,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 85,
@@ -34622,7 +34622,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -34657,7 +34657,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 56,
@@ -34727,7 +34727,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 94,
@@ -34762,7 +34762,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 80,
@@ -34797,7 +34797,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 100,
@@ -34833,7 +34833,7 @@
     "is_mythical": false,
     "bst": 320,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 65,
@@ -34869,7 +34869,7 @@
     "is_mythical": false,
     "bst": 423,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -34905,7 +34905,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 115,
@@ -34939,7 +34939,7 @@
     "is_mythical": false,
     "bst": 300,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 45,
@@ -34974,7 +34974,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 87,
@@ -35009,7 +35009,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 85,
@@ -35044,7 +35044,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 80,
@@ -35114,7 +35114,7 @@
     "is_mythical": false,
     "bst": 570,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 55,
@@ -35149,7 +35149,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 105,
@@ -35184,7 +35184,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 74,
@@ -35219,8 +35219,8 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "atk",
-      "spe"
+      "attack",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -35255,8 +35255,8 @@
     "is_mythical": false,
     "bst": 670,
     "highest_stat": [
-      "spa",
-      "spe"
+      "sp. attack",
+      "speed"
     ],
     "stats": {
       "hp": 100,
@@ -35291,7 +35291,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 99,
@@ -35326,7 +35326,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 90,
@@ -35362,7 +35362,7 @@
     "is_mythical": false,
     "bst": 485,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 80,
@@ -35398,7 +35398,7 @@
     "is_mythical": false,
     "bst": 308,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 40,
@@ -35434,7 +35434,7 @@
     "is_mythical": false,
     "bst": 508,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 71,
@@ -35469,7 +35469,7 @@
     "is_mythical": false,
     "bst": 555,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 88,
@@ -35504,7 +35504,7 @@
     "is_mythical": false,
     "bst": 555,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 88,
@@ -35539,7 +35539,7 @@
     "is_mythical": false,
     "bst": 555,
     "highest_stat": [
-      "spd"
+      "sp. defense"
     ],
     "stats": {
       "hp": 88,
@@ -35573,7 +35573,7 @@
     "is_mythical": false,
     "bst": 550,
     "highest_stat": [
-      "atk"
+      "attack"
     ],
     "stats": {
       "hp": 80,
@@ -35609,7 +35609,7 @@
     "is_mythical": false,
     "bst": 600,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 90,
@@ -35645,7 +35645,7 @@
     "is_mythical": false,
     "bst": 540,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 106,
@@ -35680,7 +35680,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 105,
@@ -35715,7 +35715,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 125,
@@ -35750,7 +35750,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "spe"
+      "speed"
     ],
     "stats": {
       "hp": 90,
@@ -35785,7 +35785,7 @@
     "is_mythical": false,
     "bst": 590,
     "highest_stat": [
-      "spa"
+      "sp. attack"
     ],
     "stats": {
       "hp": 90,
@@ -35854,7 +35854,7 @@
     "is_mythical": true,
     "bst": 600,
     "highest_stat": [
-      "def"
+      "defense"
     ],
     "stats": {
       "hp": 88,
