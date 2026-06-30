@@ -593,10 +593,7 @@ const summaryBox = document.getElementById('season-summary-content');
                         <div id="hub-countdown-timer" class="countdown-digits">00D 00H 00M 00S</div>
                     </div>
                     
-                    <div class="info-box-mini showdowns-footer">
-                        <span class="mini-label">TOTAL SHOWDOWNS</span>
-                        <span class="mini-value">${info.total_days || 0}</span>
-                    </div>
+                    
                 </div>
 
             </div>
@@ -852,7 +849,6 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
         const palette = getPlayerPalette(baseColor); 
 
         // --- RICERCA TEAM DIRETTAMENTE SU FIREBASE ---
-        // Puntiamo a players/NOME_PLAYER/teams
         const teamsRef = db.ref(`players/${idPlayerPuro.toLowerCase()}/teams`);
         const teamsSnap = await teamsRef.once('value');
         const allTeams = teamsSnap.val();
@@ -866,25 +862,30 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
         let teamData = null;
         Object.values(allTeams).forEach(t => {
             const n = (typeof t.nome === 'object') ? t.nome.valore : t.nome;
-            // Confronto sicuro: minuscolo e senza spazi extra
             if (n && n.toString().trim().toLowerCase() === nomeTeam.toString().trim().toLowerCase()) {
                 teamData = t;
             }
         });
 
         if (teamData) {
-            // --- RECUPERO STATISTICHE (Facoltativo, da window o DB) ---
-            const stats = (window.databaseDidi && window.databaseDidi[nomeTeam]) || 
-                          (window.databaseLu && window.databaseLu[nomeTeam]) || {};
+            // --- RECUPERO STATISTICHE DA WINDOW (FALLBACK) ---
+            const statsLocali = (window.databaseDidi && window.databaseDidi[nomeTeam]) || 
+                                (window.databaseLu && window.databaseLu[nomeTeam]) || {};
+
+            // 🛠️ COSTRUZIONE ACCURATA DELLE STATS (Uniamo Firebase e Variabili Locali)
+            const statsFinali = {
+                won: teamData.stats?.won ?? statsLocali.won ?? statsLocali.vittorie ?? 0,
+                lost: teamData.stats?.lost ?? statsLocali.lost ?? statsLocali.sconfitte ?? 0,
+                setW: teamData.stats?.setW ?? statsLocali.setW ?? statsLocali.setVinti ?? 0,
+                setL: teamData.stats?.setL ?? statsLocali.setL ?? statsLocali.setPersi ?? 0,
+                points: teamData.stats?.points ?? statsLocali.points ?? statsLocali.puntiFatti ?? 0,
+                played: teamData.stats?.played ?? statsLocali.played ?? statsLocali.partiteGiocate ?? 0
+            };
 
             // --- COSTRUZIONE OGGETTO PER IL RENDER ---
             let teamFinalizzato = {
                 nome: (typeof teamData.nome === 'object') ? teamData.nome.valore : teamData.nome,
-                vittorie: stats.vittorie || 0,
-                sconfitte: stats.sconfitte || 0,
-                setVinti: stats.setVinti || 0,
-                setPersi: stats.setPersi || 0,
-                puntiFatti: stats.puntiFatti || 0,
+                stats: statsFinali, // 🛠️ FIX: Adesso passiamo l'oggetto completo che la funzione HTML si aspetta!
                 pokemon: []
             };
 
@@ -909,15 +910,15 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
 }
 
 function generaHtmlDettaglioTeam(team, proprietario, palette) {
-    const sV = Number(team.setVinti) || 0;
-    const sP = Number(team.setPersi) || 0;
-    const w = Number(team.vittorie) || 0;
-    const l = Number(team.sconfitte) || 0;
-    const pts = Number(team.puntiFatti) || 0;
+    // 🛠️ Recuperiamo l'oggetto stats strutturato poco fa
+    const stats = team.stats || {};
 
-    // Logica calcolo partite basata sui set (come nella tua funzione Admin)
-    const totSet = sV + sP;
-    const partiteGiocate = totSet > 0 ? Math.floor(totSet / 5) : 0;
+    const w = Number(stats.won) || 0;
+    const l = Number(stats.lost) || 0;
+    const sV = Number(stats.setW) || 0;
+    const sP = Number(stats.setL) || 0;
+    const pts = Number(stats.points) || 0;
+    const partiteGiocate = Number(stats.played) || 0; 
 
     // Generiamo la stringa delle variabili CSS
     const variabiliCSS = generaVariabiliCSS(palette);
@@ -925,32 +926,29 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
     return `
     <div class="palette-container" style="${variabiliCSS}">
         <div class="modal-header-container" style="position: relative;">
-            <h2>${team.nome}</h2>
+            <h2>${team.nome || 'Team senza nome'}</h2>
             <div class="team-score-banner">
                 <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
                 <div class="score-item"><span>Sets W/L</span><strong>${sV} - ${sP}</strong></div>
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
-
         </div>
 
         <div class="modal-grid">
-            ${team.pokemon.map((p, pIndex) => {
-                // Pulizia nome per URL (Showdown Style)
-                const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
+            ${(team.pokemon || []).map((p, pIndex) => {
+                const pkmNameUrl = p.nome ? p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '') : '';
                 const mIdPrefix = `types-${pIndex}`;
                 const statsId = `stats-${pIndex}`;
                 const abiId = `abi-${pIndex}`;
                 const itemId = `item-${pIndex}`;
                 
-                // Tooltip a sinistra per l'ultima colonna (indice 2 e 5 nella griglia da 3)
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 const direzioneTipi = pIndex < 3 ? 'v-down' : '';
                 
-                caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
+                if (pkmNameUrl) caricaTipi(pkmNameUrl, mIdPrefix, direzioneTipi);
                 
-                const itemUrlName = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '');
+                const itemUrlName = p.strumento ? p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é’%]/g, '') : '';
                 
                 return `
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
@@ -966,28 +964,27 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
-                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome || 'Sconosciuto'}</strong>
                             <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
                         <div class="info-container" style="position: relative;">
-                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita}', '${abiId}')">${p.abilita}</em></p>
+                            <p>✨ <em style="cursor: help;" onmouseover="caricaInfoAbilita('${p.abilita || ''}', '${abiId}')">${p.abilita || 'Nessuna'}</em></p>
                             <div id="${abiId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
                         <div class="info-container" style="position: relative;">
-                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento}', '${itemId}')">
-                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png" 
-                                     onerror="this.style.display='none'">
-                                <span>${p.strumento}</span>
+                            <div class="modal-item" style="cursor: help;" onmouseover="caricaInfoStrumento('${p.strumento || ''}', '${itemId}')">
+                                ${p.strumento ? `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemUrlName}.png" onerror="this.style.display='none'">` : ''}
+                                <span>${p.strumento || 'Nessuno'}</span>
                             </div>
                             <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
-                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs || '0 EVs'}</p>
                         
                         <div class="modal-moves">
-                            ${p.mosse.map((m, mIndex) => {
+                            ${(p.mosse || []).map((m, mIndex) => {
                                 if (!m || m === "-") return "";
                                 const mId = `mossa-${pIndex}-${mIndex}`;
                                 return `
