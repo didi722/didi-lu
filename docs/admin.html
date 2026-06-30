@@ -78,23 +78,23 @@
     
     <div class="admin-three-columns">
         <div class="admin-col">
-            <h4 class="col-title">SEASON INFO</h4>
-            <div class="form-group">
-                <label>Season Name:</label>
-                <input type="text" id="new-season-name" placeholder="Es: Spring Cup 2026">
-            </div>
-            <div class="form-group">
-    <label>Deadline:</label>
-    <input type="datetime-local" 
-           id="deadline-iscrizioni" 
-           step="1800" 
-           onchange="validaMezzora(this)">
-</div>  
-            <div class="form-group">
-                <label>Participants:</label>
-                <input type="number" id="num-partecipanti" value="4" oninput="aggiornaCalcoloDinamico()">
-            </div>
-        </div>
+    <h4 class="col-title">SEASON INFO</h4>
+    <div class="form-group">
+        <label>Season Name:</label>
+        <input type="text" id="new-season-name" placeholder="Es: Spring Cup 2026">
+    </div>
+    <div class="form-group">
+        <label>Deadline:</label>
+        <input type="datetime-local" 
+               id="deadline-iscrizioni" 
+               step="1800" 
+               onchange="validaMezzora(this)">
+    </div>  
+    <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+        <input type="checkbox" id="new-season-open-sheet" style="width: 20px; height: 20px; cursor: pointer;">
+        <label for="new-season-open-sheet" style="margin-bottom: 0; cursor: pointer;">Open Sheet</label>
+    </div>
+</div>
 
         <div class="admin-col">
             <h4 class="col-title">MATCH STRUCTURE</h4>
@@ -136,7 +136,7 @@
                            oninput="aggiornaCalcoloDinamico()" 
                            style="padding-right: 150px;"> <span id="calcolo-operazione" 
                           style="position: absolute; right: 12px; color: #31c489; font-weight: 800; font-size: 0.75rem; pointer-events: none; white-space: nowrap;">
-                        18 Showdown
+                        6 Sd / opponent 
                     </span>
                 </div>
             </div>
@@ -286,7 +286,7 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
     const stati = ['open', 'playing', 'closed', 'coming soon'];
     let indiceAttuale = stati.indexOf(statoCorrente);
     let prossimoIndice = (indiceAttuale + 1) % stati.length;
-    const nuovoStato = stati[prossimoIndice];
+    const nuovoStato = stati[prossidoIndice];
 
     try {
         // 1. Aggiorna lo stato nel database
@@ -427,9 +427,9 @@ async function apriModaleEdit(idStagione) {
 
         // 1. COMPILAZIONE CAMPI BASE
         document.getElementById('new-season-name').value = season.name || "";
-        document.getElementById('num-partecipanti').value = season.participants_limit || 4;
         document.getElementById('num-showdowns-per-format').value = season.showdowns_per_format || 2;
         document.getElementById('num-formati-target').value = season.num_formats || 3;
+        document.getElementById('new-season-open-sheet').checked = season.open_sheet || false;
         
         // Carica il valore di Best Of (se non presente default a 3)
         const bestOfInput = document.getElementById('best-of-format');
@@ -500,8 +500,8 @@ async function salvaModificheStagione() {
         const nomeStagione = document.getElementById('new-season-name').value;
         const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
         const n = parseInt(document.getElementById('num-formati-target').value) || 0;
-        const p = parseInt(document.getElementById('num-partecipanti').value) || 0;
         const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
+        const openSheetVal = document.getElementById('new-season-open-sheet').checked;
         
         // --- GESTIONE NO LIMIT ---
         const tInput = parseInt(document.getElementById('teams-per-formato').value);
@@ -519,13 +519,12 @@ async function salvaModificheStagione() {
         const updatedData = {
             name: nomeStagione,
             deadline: deadlineVal,
-            participants_limit: p,
             teams_per_format: t, // Salva numero o "No Limit"
             showdowns_per_format: s,
             best_of: bo,
             num_formats: n,
             selected_formats: formatiFinali,
-            total_days: s * n * (p > 0 ? p - 1 : 0),
+            open_sheet: openSheetVal,
             updated_at: new Date().toISOString()
         };
 
@@ -684,19 +683,16 @@ function validaMezzora(input) {
     }
 }
 
-/** 1. Funzione Calcolo Dinamico con Formula Round Robin **/
+/** 1. Funzione Calcolo Dinamico delle partite previste per avversario **/
 function aggiornaCalcoloDinamico() {
     const showdowns = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
     const formats = parseInt(document.getElementById('num-formati-target').value) || 0;
-    const players = parseInt(document.getElementById('num-partecipanti').value) || 0;
     
-    // Formula: Showdowns * Formati * (Partecipanti - 1)
-    const roundRobinFactor = players > 0 ? players - 1 : 0;
-    const totale = showdowns * formats * roundRobinFactor;
+    // Calcolo: Showdowns * Formati (Numero di partite che ciascun giocatore affronta contro un singolo avversario)
+    const totalePerAvversario = showdowns * formats;
     
-    // Mostra il calcolo esplicito: "4 x 1 x (4-1) = 12"
     document.getElementById('calcolo-operazione').innerText = 
-        `${totale} Showdown`;
+        `${totalePerAvversario} Sd / opponent`;
 }
 
 /** 2. Salvataggio su Firebase con ID Automatico **/
@@ -752,9 +748,9 @@ async function creaNuovaStagione() {
         const nuovoID = `s${maxIdx + 1}`;
 
         const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
-        const p = parseInt(document.getElementById('num-partecipanti').value) || 0;
         const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
         const bo = parseInt(document.getElementById('best-of-format').value) || 3;
+        const openSheetVal = document.getElementById('new-season-open-sheet').checked;
 
         // --- GESTIONE NO LIMIT ---
         const tInput = parseInt(document.getElementById('teams-per-formato').value);
@@ -764,14 +760,13 @@ async function creaNuovaStagione() {
             id: nuovoID,
             name: nomeStagione,
             deadline: deadlineVal,
-            participants_limit: p,
             teams_per_format: t, // Salva numero o "No Limit"
             showdowns_per_format: s,
             best_of: bo,
             num_formats: numFormatiTarget,
             selected_formats: formatiFinali,
-            total_days: s * numFormatiTarget * (p > 0 ? p - 1 : 0),
             status: "open",
+            open_sheet: openSheetVal,
             created_at: new Date().toISOString()
         };
 
@@ -788,8 +783,8 @@ async function creaNuovaStagione() {
 
 function aggiornaStatoConferma() {
     const target = parseInt(document.getElementById('num-formati-target').value);
-    const metodo = document.querySelector('input[name="metodo-formati"]:checked').value;
-    const btn = document.querySelector('.btn-confirm');
+    const metodo = document.getElementById('metodo-selezione-tendina').value;
+    const btn = document.querySelector('.btn-save'); // Aggiornato selettore coerente con classe del form
     
     if (metodo === 'casuale') {
         btn.disabled = false;
@@ -839,7 +834,7 @@ async function controllaScadenzeIscrizioni() {
 // Eseguiamo il controllo ogni volta che si carica la pagina
 window.onload = () => {
     caricaStagioni();
-    controllaScadenzeIscrizioni(); // <--- Aggiungi questa chiamata
+    controllaScadenzeIscrizioni(); 
 };
 
 // --- 4. UTILITY ---
@@ -851,7 +846,7 @@ window.onload = () => {
     // 2. Reset dei campi di input
     document.getElementById('new-season-name').value = "";
     document.getElementById('deadline-iscrizioni').value = "";
-    document.getElementById('num-partecipanti').value = "4";
+    document.getElementById('new-season-open-sheet').checked = true;
     document.getElementById('teams-per-formato').value = "3";
     document.getElementById('num-showdowns-per-format').value = "2";
     document.getElementById('num-formati-target').value = "3";
@@ -876,7 +871,7 @@ window.onload = () => {
     document.getElementById('modalCreazione').style.display = 'flex';
     popolaFormatiDaRegolamenti();
     
-    // Aggiorna il calcolo dinamico (es: "6 Showdowns")
+    // Aggiorna il calcolo dinamico (es: "6 Sd / avversario")
     aggiornaCalcoloDinamico();
 }
 

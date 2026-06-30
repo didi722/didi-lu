@@ -1052,11 +1052,16 @@ async function apriModaleTeamsIscritti() {
             if (typeof recuperaStagioneCorrente === 'function') await recuperaStagioneCorrente();
         }
 
-        // 1. Recuperiamo i team iscritti nella stagione attuale
-        const snapTeams = await db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value');
+        // 1. Recuperiamo IN PARALLELO sia lo stato di open_sheet che i team iscritti
+        const [snapOpenSheet, snapTeams] = await Promise.all([
+            db.ref(`seasons/${stagioneAttiva}/info/open_sheet`).once('value'),
+            db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value')
+        ]);
+
+        const isOpenSheet = snapOpenSheet.val() !== false; // È true di default, diventa false solo se esplicitamente disattivato
         const dataTeamsIscritti = snapTeams.val() || {};
 
-        // 2. Mappiamo i team per ciascun giocatore mantendo la struttura delle categorie
+        // 2. Mappiamo i team per ciascun giocatore mantenendo la struttura delle categorie
         const playerMap = {};
 
         Object.keys(dataTeamsIscritti).forEach(categoria => {
@@ -1070,8 +1075,24 @@ async function apriModaleTeamsIscritti() {
                     playerMap[playerKey] = {};
                 }
 
-                // Qui prendiamo semplicemente i valori dei team iscritti alla season
-                playerMap[playerKey][categoria] = Object.values(datiTeams);
+                // Convertiamo l'oggetto dei team in un array modificabile
+                const listaTeams = Object.values(datiTeams);
+
+                // --- AGGIUNTA: SE OPEN_SHEET È FALSE, NASCONDIAMO LO STRUMENTO ---
+                if (!isOpenSheet) {
+                    listaTeams.forEach(team => {
+                        if (team.pokemon) {
+                            // Gestiamo sia se team.pokemon è un array che un oggetto mappato
+                            const pokemonArray = Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon);
+                            pokemonArray.forEach(p => {
+                                p.strumento = " "; // Sostituisce l'oggetto con un testo di blocco
+                            });
+                        }
+                    });
+                }
+
+                // Salviamo i valori (eventualmente censurati) nella mappa dei giocatori
+                playerMap[playerKey][categoria] = listaTeams;
             });
         });
 
@@ -1151,7 +1172,6 @@ async function apriModaleTeamsIscritti() {
         tabsContainer.innerHTML = "<p>Errore nel caricamento dei dati.</p>";
     }
 }
-
 async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
     const teamsDisplay = document.getElementById('modal-teams-list-display');
     if (!teamsDisplay) return;
@@ -2086,6 +2106,29 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     modal.style.zIndex = '100002';
 
     try {
+        // --- 1. CONTROLLO OPEN SHEET DELLA STAGIONE ---
+        // Recupera l'ID della stagione dall'URL (?id=s1) o da una variabile globale se presente
+        const urlParams = new URLSearchParams(window.location.search);
+        const seasonId = urlParams.get('id') || (typeof idStagione !== 'undefined' ? idStagione : null);
+
+        if (seasonId) {
+            const openSheetSnap = await db.ref(`seasons/${seasonId}/info/open_sheet`).once('value');
+            const isOpenSheet = openSheetSnap.val();
+
+            // Se open_sheet è impostato esplicitamente su false, blocca la funzione
+            if (isOpenSheet === false) {
+                content.innerHTML = `
+                    <div style="color:white; text-align:center; padding:40px 20px;">
+                        <p style="color: black; font-weight: 900; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; background: white; padding: 15px; box-shadow: 8px 8px 0 black; border: 3px solid black;">
+                            🔒 This is a closed sheet season
+                        </p>
+                    
+                    </div>`;
+                return; // Interrompe la funzione ed evita il caricamento dei dati
+            }
+        }
+
+        // --- 2. PROSEGUIMENTO CARICAMENTO STANDARD ---
         // TRUCCO: Convertiamo l'ID in minuscolo per il database
         const idLower = idPlayerPuro.toLowerCase();
 
@@ -2148,7 +2191,6 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
         }
 
         // 5. Rendering
-        // Passiamo idLower per le icone o i link interni
         content.innerHTML = generaHtmlDettaglioTeam(team, idLower, palette);
 
     } catch (e) {

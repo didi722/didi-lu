@@ -4662,45 +4662,37 @@ transform: translate(-4px, -4px);
 }
 
 
-/* 1. SFONDO GENERALE MODALE (Prende tutto lo schermo, scuro trasparente) */
 #modal-registered-teams.custom-modal-backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.1); /* Oscura lo sfondo del sito */
-    z-index: 99999; /* Sopra a qualsiasi altra cosa */
+    /* inset: 0 sostituisce top/left/width/height ed è più stabile sui telefoni */
+    inset: 0; 
+    background: rgba(0, 0, 0, 0.4); /* Aumentato leggermente per distaccare dallo sfondo */
+    z-index: 99999; 
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Permette lo scroll naturale se ci sono molti dati */
-    overflow-y: auto;
-    padding: 40px 20px;
+    align-items: flex-start; 
+    overflow-y: auto; 
+    /* Lasciamo il padding sopra e ai lati, gestiamo il fondo in modo più sicuro */
+    padding: 40px 20px 0 20px; 
     backdrop-filter: blur(10px);
+    -webkit-overflow-scrolling: touch; /* Rende lo scroll fluido su iOS */
 }
 
-/* 2. CONTENITORE INTERNO (Rimosso lo sfondo bianco e i bordi neri) */
 #modal-registered-teams .pokemon-theme-modal {
-    background: transparent !important; /* VIA IL BIANCO */
-    border: none !important;             /* VIA I BORDI */
-    box-shadow: none !important;         /* VIA L'OMBRA OVERALL */
+    background: transparent !important; 
+    border: none !important;             
+    box-shadow: none !important;         
     width: 100%;
-    max-width: 1100px; /* Più largo per dare respiro ai popup dei Pokémon */
+    max-width: 1100px; 
     padding: 0;
-    margin: 0 auto;
+    /* Aggiungiamo un margine inferiore esplicito per garantire il distacco dal fondo */
+    margin: 0 auto 40px auto; 
     display: flex;
     flex-direction: column;
     
-    /* FONDAMENTALE: Impedisce ogni tipo di taglio visivo dei tooltip */
     overflow: visible !important; 
-
-    /* FIX SCROLL: Permette al modale di estendersi in altezza e generare lo scroll sul body del modale */
     max-height: none !important; 
     height: auto !important;
-}
-
-#modal-registered-teams {
-    overflow-y: auto !important; /* Lo scroll deve nascere sul nonno o sul padre */
 }
 
 
@@ -4999,4 +4991,91 @@ transform: translate(-4px, -4px);
     filter: blur(4px) !important;
     opacity: 0.6;
     pointer-events: none; /* Impedisce di cliccarci sopra mentre il menu è aperto */
+}
+
+#modal-registered-teams .pokemon-theme-modal::after {
+    content: "";
+    display: block;
+    height: 60px; /* Crea un'area vuota di sicurezza in fondo al modale */
+    width: 100%;
+    pointer-events: none;
+}
+
+/* Header personalizzato per risaltare sullo sfondo scuro */
+.modal-custom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 20px;
+    margin-bottom: 25px;
+    background: transparent !important; 
+    border: none !important;            
+    box-shadow: none !important;        
+    transform: none !important;         
+}
+
+/* IL NUOVO ADESIVO COMPATTO: Applica l'effetto stile fumetto solo al testo */
+.neubrutal-badge-title {
+    background: #000 !important;
+    color: #fff !important;
+    padding: 10px 25px; 
+    display: inline-block;
+    transform: rotate(-2deg); 
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4) !important;
+    font-size: 2.2rem; 
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+    white-space: nowrap;
+    width: max-content; 
+    max-width: 100%;
+}
+
+/* Stile pulito per il tasto di chiusura posizionato sulla destra */
+.close-modal-btn {
+    background: #ff5252;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0px #000;
+    font-size: 18px;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 6px 14px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: none; /* Mantengo la tua impostazione originale */
+}
+
+.close-modal-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000;
+}
+
+.modal-custom-header h2 {
+    color: #fff; 
+    font-weight: 900;
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+    margin: 0;
+    text-shadow: 3px 3px 0px #000;
+}
+
+/* Titoli delle categorie (es. GEN4<500BST) visibili sullo scuro */
+.category-title-modal {
+    text-transform: uppercase;
+    font-weight: 900;
+    margin-top: 25px;
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: #ffeb3b; 
+    text-shadow: 2px 2px 0px #000;
+}
+
+/* Separatore dashed convertito per sfondo scuro */
+.modal-separator {
+    border: 0;
+    border-top: 4px dashed #fff; /* Rimessa la proprietà dashed che mancava nel tuo frammento */
+    margin: 25px 0;
+    opacity: 0.7;
 }

@@ -2280,28 +2280,20 @@ async function resetPasswordDalLogin() {
     }
 }
 
-// ============================================================================
-// TEAMBUILDER HELPER: INTERFACCIA E GENERAZIONE LISTA POKÉMON PER GEN
-// ============================================================================
-
-/**
- * Funzione di apertura / chiusura manuale della modale Helper
- */
 function toggleTeambuilderHelper() {
     const modal = document.getElementById('helper-modal-overlay');
     if (!modal) return;
 
     if (modal.style.display === 'none' || modal.style.display === '') {
         modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // 🌟 BLOCCA lo schermo dietro
         popolaSelettoreFormati(); 
     } else {
         modal.style.display = 'none';
+        document.body.style.overflow = '';        // 🌟 RIPRISTINA lo scorrimento normale
     }
 }
 
-/**
- * Legge i regolamenti da Firebase e popola la select dell'Helper
- */
 async function popolaSelettoreFormati() {
     const select = document.getElementById('helper-format-select');
     if (!select) {
@@ -2597,7 +2589,10 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     const restrizioniPokemon = regolamento.restrizioni?.pokemon;
     let pokedexBase = null;
 
-    if (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) {
+    // 🌟 Forziamo il caricamento del database base se il formato è "custom"
+    const deveCaricarePokedexBase = (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) || (regolamento.strutturaSito === "custom");
+
+    if (deveCaricarePokedexBase) {
         try {
             const resBase = await fetch('pkm-gens/pokedex_base.json');
             const pokedexBaseRaw = await resBase.json();
@@ -2660,110 +2655,122 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
-function controllaRestrizioniBiologiche(nomeChiave) {
-    if (!restrizioniPokemon || !pokedexBase) return true;
+    function controllaRestrizioniBiologiche(nomeChiave) {
+        if (!pokedexBase) return true;
 
-    // 🌟 WHITELIST DELLE PROPRIETÀ BIOLOGICHE VALIDE
-    const CHIAVI_BIOLOGICHE_VALIDE = [
-        'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
-        'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
-        'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
-        'base_friendship', 'habitat', 'name_length', 'name_starts', 
-        'evolutions_count', 'evolution_stage'
-    ];
+        // 🌟 WHITELIST DELLE PROPRIETÀ BIOLOGICHE VALIDE
+        const CHIAVI_BIOLOGICHE_VALIDE = [
+            'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
+            'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
+            'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
+            'base_friendship', 'habitat', 'name_length', 'name_starts', 
+            'evolutions_count', 'evolution_stage'
+        ];
 
-    const ruleLegendary = restrizioniPokemon['is_legendary'];
-    const ruleMythical = restrizioniPokemon['is_mythical'];
-    
-    const onlyLegendaryActive = ruleLegendary && String(ruleLegendary.value).toLowerCase().trim() === "only legendary";
-    const onlyMythicalActive = ruleMythical && String(ruleMythical.value).toLowerCase().trim() === "only mythical";
+        // 🛠️ CORRETTO: rimosse le virgolette errate dopo l'optional chaining
+        const ruleLegendary = restrizioniPokemon?.is_legendary;
+        const ruleMythical = restrizioniPokemon?.is_mythical;
+        
+        const valLegendary = ruleLegendary?.value ? String(ruleLegendary.value).toLowerCase().trim() : '';
+        const valMythical = ruleMythical?.value ? String(ruleMythical.value).toLowerCase().trim() : '';
 
-    let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive;
-    const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
-    
-    for (const chiave in restrizioniPokemon) {
-        if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
+        const onlyLegendaryActive = valLegendary === "only" || valLegendary === "only legendary";
+        const onlyMythicalActive = valMythical === "only" || valMythical === "only mythical";
 
-        const r = restrizioniPokemon[chiave];
-        if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
-            const op = r.operator.toLowerCase().trim();
-            if (operatoriValidi.includes(op)) haFiltriAttivi = true;
+        let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive || (regolamento.strutturaSito === "custom");
+        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
+        
+        if (restrizioniPokemon) {
+            for (const chiave in restrizioniPokemon) {
+                if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
+                const r = restrizioniPokemon[chiave];
+                if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
+                    const op = r.operator.toLowerCase().trim();
+                    if (operatoriValidi.includes(op)) haFiltriAttivi = true;
+                }
+            }
         }
-    }
 
-    if (!haFiltriAttivi) return true;
+        if (!haFiltriAttivi) return true;
 
-    let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
-    if (!pkmDettaglio) {
-        const spriteId = calcolaSpriteId(nomeChiave);
-        const radice = determinaRadice(nomeChiave, spriteId);
-        pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
-    }
+        let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
+        if (!pkmDettaglio) {
+            const spriteId = calcolaSpriteId(nomeChiave);
+            const radice = determinaRadice(nomeChiave, spriteId);
+            pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
+        }
 
-    if (!pkmDettaglio) return false; 
+        if (!pkmDettaglio) return false; 
 
-    if (onlyLegendaryActive || onlyMythicalActive) {
         const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
         const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
 
-        if (onlyLegendaryActive && onlyMythicalActive) {
-            if (!isPkmLegendary && !isPkmMythical) return false;
-        } else if (onlyLegendaryActive) {
-            if (!isPkmLegendary) return false;
-        } else if (onlyMythicalActive) {
-            if (!isPkmMythical) return false;
+        // APPLICAZIONE REGOLE ESCLUSIVA PER STRUTTURA CUSTOM
+        if (regolamento.strutturaSito === "custom") {
+            const ammessoLegendary = valLegendary === "allowed" || valLegendary === "only" || valLegendary === "only legendary";
+            const ammessoMythical = valMythical === "allowed" || valMythical === "only" || valMythical === "only mythical";
+
+            if (isPkmLegendary && !ammessoLegendary) return false;
+            if (isPkmMythical && !ammessoMythical) return false;
         }
-    }
 
-    for (const chiaveRestrizione in restrizioniPokemon) {
-        if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
-        if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
-
-        const regola = restrizioniPokemon[chiaveRestrizione];
-        if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
-
-        const op = regola.operator.toLowerCase().trim();
-        if (!operatoriValidi.includes(op)) continue;
-
-        // 🚀 ECCEZIONE SPECIFICA: evolution_stage === "Only"
-        if (chiaveRestrizione === 'evolution_stage' && String(regola.value).toLowerCase().trim() === 'only') {
-            // Estrazione sicura dei valori dal database locale (anche se annidati in .stats)
-            let evCount = pkmDettaglio['evolutions_count'];
-            if (evCount === undefined && pkmDettaglio.stats) evCount = pkmDettaglio.stats['evolutions_count'];
-            
-            let evStage = pkmDettaglio['evolution_stage'];
-            if (evStage === undefined && pkmDettaglio.stats) evStage = pkmDettaglio.stats['evolution_stage'];
-
-            // Se non ha entrambe le proprietà a 1, il Pokémon viene escluso
-            if (Number(evCount) !== 1 || Number(evStage) !== 1) {
-                return false;
+        if (onlyLegendaryActive || onlyMythicalActive) {
+            if (onlyLegendaryActive && onlyMythicalActive) {
+                if (!isPkmLegendary && !isPkmMythical) return false;
+            } else if (onlyLegendaryActive) {
+                if (!isPkmLegendary) return false;
+            } else if (onlyMythicalActive) {
+                if (!isPkmMythical) return false;
             }
-            // Condizione soddisfatta, salta la verifica standard per questa chiave e passa alla prossima
-            continue; 
         }
 
-        const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiaveRestrizione) : null) || chiaveRestrizione;
-        
-        let valoreJson = pkmDettaglio[chiaveProprietareale];
-        if (valoreJson === undefined && pkmDettaglio.stats) {
-            valoreJson = pkmDettaglio.stats[chiaveProprietareale];
-        }
-        
-        if (valoreJson === undefined && chiaveProprietareale.includes('.')) {
-            valoreJson = chiaveProprietareale.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
+        if (restrizioniPokemon) {
+            for (const chiaveRestrizione in restrizioniPokemon) {
+                if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
+                if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
+
+                const regola = restrizioniPokemon[chiaveRestrizione];
+                if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
+
+                const op = regola.operator.toLowerCase().trim();
+                if (!operatoriValidi.includes(op)) continue;
+
+                if (chiaveRestrizione === 'evolution_stage' && String(regola.value).toLowerCase().trim() === 'only') {
+                    let evCount = pkmDettaglio['evolutions_count'];
+                    if (evCount === undefined && pkmDettaglio.stats) evCount = pkmDettaglio.stats['evolutions_count'];
+                    
+                    let evStage = pkmDettaglio['evolution_stage'];
+                    if (evStage === undefined && pkmDettaglio.stats) evStage = pkmDettaglio.stats['evolution_stage'];
+
+                    if (Number(evCount) !== 1 || Number(evStage) !== 1) {
+                        return false;
+                    }
+                    continue; 
+                }
+
+                const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiaveRestrizione) : null) || chiaveRestrizione;
+                
+                let valoreJson = pkmDettaglio[chiaveProprietareale];
+                if (valoreJson === undefined && pkmDettaglio.stats) {
+                    valoreJson = pkmDettaglio.stats[chiaveProprietareale];
+                }
+                
+                if (valoreJson === undefined && chiaveProprietareale.includes('.')) {
+                    valoreJson = chiaveProprietareale.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
+                }
+
+                if (valoreJson === undefined || valoreJson === null) continue;
+
+                if (chiaveProprietareale === 'height') {
+                    valoreJson = valoreJson * 100; 
+                }
+
+                if (!valutaOperatore(valoreJson, op, regola)) return false;
+            }
         }
 
-        if (valoreJson === undefined || valoreJson === null) continue;
-
-        if (chiaveProprietareale === 'height') {
-            valoreJson = valoreJson * 100; 
-        }
-
-        if (!valutaOperatore(valoreJson, op, regola)) return false;
+        return true;
     }
-
-    return true;
-}
 
     function escludeFormeInvalide(id) {
         const idLower = id.toLowerCase();
@@ -2939,6 +2946,7 @@ function controllaRestrizioniBiologiche(nomeChiave) {
         const ancoraA = mappaAncoraggioRadici[a.radice];
         const ancoraB = mappaAncoraggioRadici[b.radice];
         if (ancoraA.num && ancoraB.num) return ancoraA.num - ancoraB.num;
+        // 🛠️ CORRETTO: era "encoreA", ora è "ancoraA"
         return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
     });
 
@@ -2963,11 +2971,11 @@ function renderizzaListaPiatta(pokemonList) {
     }
 
     const COLORI_TIPI = {
-        normal: '#A8A77A', fire: '#FF421D', water: '#3381FF', electric: '#FFDA00',
-        grass: '#4EED55', ice: '#62E6FF', fighting: '#FF2A2A', poison: '#B322B8',
-        ground: '#E0A945', flying: '#9670FF', psychic: '#FF2E7E', bug: '#90C418',
-        rock: '#BAA22A', ghost: '#694D99', dragon: '#501DFF', steel: '#A0A0C0',
-        fairy: '#FF80D7', dark: '#523C2F'
+        normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33',
+        grass: '#77cc55', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599',
+        ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
+        rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544',
+        steel: '#aaaabb', fairy: '#ee99ee'
     };
 
     const MAPPA_STATS = {
@@ -2975,13 +2983,47 @@ function renderizzaListaPiatta(pokemonList) {
         'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
     };
 
-    // 🌟 INIZIALIZZAZIONE TOOLTIP GLOBALE FUORI DALLA GABBIA OVERFLOW
     let tooltip = document.getElementById('global-neubrutalist-tooltip');
     if (!tooltip) {
         tooltip = document.createElement('div');
         tooltip.id = 'global-neubrutalist-tooltip';
         tooltip.className = 'neubrutalist-tooltip';
-        document.body.appendChild(tooltip); // Lo appendiamo al body, libero da vincoli!
+        document.body.appendChild(tooltip);
+    }
+
+    // FUNZIONE DI POSIZIONAMENTO INTELLIGENTE CON COLLISION DETECTION
+    function aggiustaPosizioneTooltip(cardElement, tooltipElement) {
+        const rect = cardElement.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const scrollX = window.scrollX;
+
+        const cardCenter = rect.left + scrollX + (rect.width / 2);
+        const tooltipWidth = tooltipElement.offsetWidth || 245;
+        let tooltipLeft = cardCenter - (tooltipWidth / 2);
+
+        if (tooltipLeft < 10) tooltipLeft = 10;
+        if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
+            tooltipLeft = window.innerWidth - tooltipWidth - 10;
+        }
+        tooltipElement.style.left = `${tooltipLeft}px`;
+
+        const tooltipHeight = tooltipElement.offsetHeight;
+        const spazioSotto = window.innerHeight - rect.bottom;
+        const spazioSopra = rect.top;
+
+        // 🌟 MODIFICA: Invece di 'none', applichiamo la rotazione salvata nel dataset
+        const rotazioneCorrente = tooltipElement.dataset.rotation || '0deg';
+        tooltipElement.style.transform = `rotate(${rotazioneCorrente})`;
+
+        if (spazioSotto >= tooltipHeight) {
+            tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+        } else if (spazioSopra >= tooltipHeight) {
+            tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+        } else if (spazioSotto > spazioSopra) {
+            tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+        } else {
+            tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+        }
     }
 
     pokemonList.forEach(pkm => {
@@ -2989,7 +3031,9 @@ function renderizzaListaPiatta(pokemonList) {
         card.className = 'helper-pkm-card';
         card.dataset.id = pkm.id;
         card.dataset.loaded = 'false';
-        card.dataset.cachedHtml = ''; // Salveremo qui l'HTML una volta scaricato
+        card.dataset.cachedHtml = '';
+
+        let timerCaricamento;
 
         const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
         const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
@@ -3002,116 +3046,108 @@ function renderizzaListaPiatta(pokemonList) {
             <div class="helper-pkm-name"><span>${pkm.name}</span></div>
         `;
 
-        // --- ENTRATA DEL MOUSE (MOSTRA E POSIZIONA IL TOOLTIP GLOBALE) ---
+        // --- ENTRATA DEL MOUSE ---
         card.addEventListener('mouseenter', () => {
-            tooltip.dataset.currentId = pkm.id; // Evita sovrascritture se l'utente muove il mouse velocemente
-            tooltip.style.display = 'block';
-            tooltip.style.opacity = '1';
+            clearTimeout(timerCaricamento);
 
-            // 1. CALCOLO POSIZIONE ASSOLUTA SULLO SCHERMO
-            const rect = card.getBoundingClientRect();
-            const scrollY = window.scrollY;
-            const scrollX = window.scrollX;
+            timerCaricamento = setTimeout(() => {
+                tooltip.dataset.currentId = pkm.id;
 
-            // Centro orizzontale della card corrente
-            const cardCenter = rect.left + scrollX + (rect.width / 2);
-            const tooltipWidth = 245;
-            let tooltipLeft = cardCenter - (tooltipWidth / 2);
+                // 🌟 MODIFICA: Calcoliamo una rotazione casuale tra -1.5 e +1.5 gradi
+                // Math.random() * 3 genera un valore tra 0 e 3. Sottraendo 1.5 otteniamo il range [-1.5, 1.5]
+                const angoloCasuale = (Math.random() * 8 - 4).toFixed(2);
+                tooltip.dataset.rotation = `${angoloCasuale}deg`;
 
-            // Bilanciatore anti-taglio ai bordi del browser (Destra/Sinistra)
-            if (tooltipLeft < 10) tooltipLeft = 10;
-            if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
-                tooltipLeft = window.innerWidth - tooltipWidth - 10;
-            }
-            tooltip.style.left = `${tooltipLeft}px`;
+                tooltip.style.display = 'block';
+                tooltip.style.opacity = '1';
 
-            // Controllo verticale (Sopra/Sotto rispetto alla metà dello schermo)
-            const metaSchermo = window.innerHeight / 2;
-            if (rect.top < metaSchermo) {
-                // Sotto alla card (Si apre verso il basso)
-                tooltip.style.top = `${rect.bottom + scrollY + 8}px`;
-                tooltip.style.transform = 'none'; // Cresce verso il basso normalmente
-            } else {
-                // Sopra alla card (Si apre verso l'alto)
-                tooltip.style.top = `${rect.top + scrollY - 8}px`;
-                tooltip.style.transform = 'translateY(-100%)'; // Il trucco magico: si ancora alla coordinata e si estende verso l'alto
-            }
+                if (card.dataset.loaded === 'true') {
+                    tooltip.innerHTML = card.dataset.cachedHtml;
+                    aggiustaPosizioneTooltip(card, tooltip);
+                } else {
+                    tooltip.innerHTML = `<div class="neubrutalist-loading">LOADING DATA...</div>`;
+                    aggiustaPosizioneTooltip(card, tooltip);
+                    
+                    if (card.dataset.loaded === 'false') {
+                        card.dataset.loaded = 'loading';
+                        const pokeApiId = pkm.id.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
-            // 2. GESTIONE DEI DATI (CACHE O API)
-            if (card.dataset.loaded === 'true') {
-                tooltip.innerHTML = card.dataset.cachedHtml;
-            } else {
-                tooltip.innerHTML = `<div class="neubrutalist-loading">LOADING DATA...</div>`;
-                
-                if (card.dataset.loaded === 'false') {
-                    card.dataset.loaded = 'loading';
-                    const pokeApiId = pkm.id.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                        fetch(`https://pokeapi.co/api/v2/pokemon/${pokeApiId}`)
+                            .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+                            .then(data => {
+                                const htmlTipi = data.types.map(t => {
+                                    const colore = COLORI_TIPI[t.type.name] || '#777';
+                                    return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${t.type.name.toUpperCase()}</span>`;
+                                }).join('');
 
-                    fetch(`https://pokeapi.co/api/v2/pokemon/${pokeApiId}`)
-                        .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-                        .then(data => {
-                            const htmlTipi = data.types.map(t => {
-                                const colore = COLORI_TIPI[t.type.name] || '#777';
-                                return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${t.type.name.toUpperCase()}</span>`;
-                            }).join('');
+                                const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
+                                const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo]) ? playerColors[nomePlayerAttivo] : '#00FF66';
 
-                            const htmlStats = data.stats.map(s => {
-                                const nomeStat = MAPPA_STATS[s.stat.name] || s.stat.name.toUpperCase();
-                                const valore = s.base_stat;
-                                const percentualeBarra = Math.min(100, (valore / 160) * 100);
-                                return `
-                                    <div class="neubrutalist-stat-row">
-                                        <span class="neubrutalist-stat-label">${nomeStat}</span>
-                                        <div class="neubrutalist-stat-bar-bg">
-                                            <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%;"></div>
+                                const htmlStats = data.stats.map(s => {
+                                    const nomeStat = MAPPA_STATS[s.stat.name] || s.stat.name.toUpperCase();
+                                    const valore = s.base_stat;
+                                    const percentualeBarra = Math.min(100, (valore / 160) * 100);
+                                    
+                                    return `
+                                        <div class="neubrutalist-stat-row">
+                                            <span class="neubrutalist-stat-label">${nomeStat}</span>
+                                            <div class="neubrutalist-stat-bar-bg">
+                                                <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
+                                            </div>
+                                            <span class="neubrutalist-stat-value">${valore}</span>
                                         </div>
-                                        <span class="neubrutalist-stat-value">${valore}</span>
+                                    `;
+                                }).join('');
+
+                                const htmlAbilita = data.abilities.map(a => {
+                                    const nascosta = a.is_hidden ? ' <small style="opacity:0.6">(H)</small>' : '';
+                                    return `<span class="neubrutalist-ability-tag">${a.ability.name.replace('-', ' ').toUpperCase()}${nascosta}</span>`;
+                                }).join('');
+
+                                const finalHtml = `
+                                    <div class="neubrutalist-tooltip-header">
+                                        <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
+                                        <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
+                                    </div>
+                                    <div class="neubrutalist-tooltip-body">
+                                        <div class="neubrutalist-stats-container">${htmlStats}</div>
+                                        <div class="neubrutalist-abilities-title">ABILITIES</div>
+                                        <div class="neubrutalist-abilities-container">${htmlAbilita}</div>
                                     </div>
                                 `;
-                            }).join('');
 
-                            const htmlAbilita = data.abilities.map(a => {
-                                const nascosta = a.is_hidden ? ' <small style="opacity:0.6">(H)</small>' : '';
-                                return `<span class="neubrutalist-ability-tag">${a.ability.name.replace('-', ' ').toUpperCase()}${nascosta}</span>`;
-                            }).join('');
+                                card.dataset.cachedHtml = finalHtml;
+                                card.dataset.loaded = 'true';
 
-                            const finalHtml = `
-                                <div class="neubrutalist-tooltip-header">
-                                    <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
-                                    <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
-                                </div>
-                                <div class="neubrutalist-tooltip-body">
-                                    <div class="neubrutalist-stats-container">${htmlStats}</div>
-                                    <div class="neubrutalist-abilities-title">ABILITIES</div>
-                                    <div class="neubrutalist-abilities-container">${htmlAbilita}</div>
-                                </div>
-                            `;
-
-                            card.dataset.cachedHtml = finalHtml;
-                            card.dataset.loaded = 'true';
-
-                            // Inietta i dati solo se l'utente è ancora fermo su questo Pokémon
-                            if (tooltip.dataset.currentId === pkm.id) {
-                                tooltip.innerHTML = finalHtml;
-                            }
-                        })
-                        .catch(() => {
-                            const errorHtml = `<div class="neubrutalist-loading" style="color:red;">DATA ERROR</div>`;
-                            card.dataset.cachedHtml = errorHtml;
-                            card.dataset.loaded = 'false';
-                            if (tooltip.dataset.currentId === pkm.id) {
-                                tooltip.innerHTML = errorHtml;
-                            }
-                        });
+                                if (tooltip.dataset.currentId === pkm.id) {
+                                    tooltip.innerHTML = finalHtml;
+                                    aggiustaPosizioneTooltip(card, tooltip);
+                                }
+                            })
+                            .catch(() => {
+                                const errorHtml = `<div class="neubrutalist-loading" style="color:red;">DATA ERROR</div>`;
+                                card.dataset.cachedHtml = errorHtml;
+                                card.dataset.loaded = 'false';
+                                if (tooltip.dataset.currentId === pkm.id) {
+                                    tooltip.innerHTML = errorHtml;
+                                    aggiustaPosizioneTooltip(card, tooltip);
+                                }
+                            });
+                    }
                 }
-            }
+            }, 1000); 
         });
 
-        // --- USCITA DEL MOUSE (NASCONDE IL TOOLTIP) ---
+        // --- USCITA DEL MOUSE ---
         card.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-            tooltip.style.opacity = '0';
-            tooltip.dataset.currentId = '';
+            clearTimeout(timerCaricamento);
+
+            if (tooltip.dataset.currentId === pkm.id) {
+                tooltip.style.display = 'none';
+                tooltip.style.opacity = '0';
+                tooltip.dataset.currentId = '';
+                tooltip.dataset.rotation = '0deg'; // Reset sicurezza
+            }
         });
 
         card.addEventListener('click', () => {
