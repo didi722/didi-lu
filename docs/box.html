@@ -3174,9 +3174,10 @@ function inizializzaChiusuraHelper(event) {
 }
 
 function chiudiTuttoHelper() {
-    // 1. Chiude il modale principale
+    // 1. Chiude il modale principale e RIPRISTINA lo scorrimento
     const modal = document.getElementById('helper-modal-overlay');
     if (modal) modal.style.display = 'none';
+    document.body.style.overflow = ''; // 🌟 FISSA IL BUG: Ripristina lo scorrimento normale
 
     // 2. Chiude la lista/dropdown dei formati
     const listaFormati = document.getElementById('selettore-formati-lista') || document.querySelector('.format-list');
@@ -3190,7 +3191,7 @@ function chiudiTuttoHelper() {
     const countSpan = document.getElementById('helper-count');
     if (countSpan) countSpan.textContent = '0';
 
-    // 5. NUOVO: Resetta il box delle regole al placeholder originale
+    // 5. Resetta il box delle regole al placeholder originale
     const infoFilters = document.getElementById('helper-dynamic-filters');
     if (infoFilters) {
         infoFilters.innerHTML = `
