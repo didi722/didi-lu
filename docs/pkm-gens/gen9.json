@@ -739,10 +739,6 @@
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
-  "marowak-alolatotem": {
-    "single_tier": "Illegal",
-    "doubles_tier": "Illegal"
-  },
   "tyrogue": {
     "single_tier": "LC",
     "doubles_tier": "OU"
@@ -1011,7 +1007,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "porygon-2": {
+  "porygon2": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
@@ -1119,11 +1115,11 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "-meganium": {
+  "meganium": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "-meganium-mega": {
+  "meganium-mega": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -1287,7 +1283,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "yan-mega": {
+  "yanmega": {
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
@@ -2219,7 +2215,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "kyogreprimal": {
+  "kyogre-primal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -2227,7 +2223,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "groudonprimal": {
+  "groudon-primal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -2247,15 +2243,15 @@
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "deoxysattack": {
+  "deoxys-attack": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "deoxysdefense": {
+  "deoxys-defense": {
     "single_tier": "NUBL",
     "doubles_tier": "UU"
   },
-  "deoxysspeed": {
+  "deoxys-speed": {
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
@@ -2583,7 +2579,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "dialgaorigin": {
+  "dialga-origin": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -2591,7 +2587,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "palkiaorigin": {
+  "palkia-origin": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -2639,7 +2635,7 @@
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
@@ -2903,7 +2899,7 @@
     "single_tier": "NU",
     "doubles_tier": "Uber"
   },
-  "basculegionf": {
+  "basculegion-f": {
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
@@ -3923,7 +3919,7 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "rockruffdusk": {
+  "rockruff-dusk": {
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
@@ -3931,11 +3927,11 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "lycanrocmidnight": {
+  "lycanroc-midnight": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "lycanrocdusk": {
+  "lycanroc-dusk": {
     "single_tier": "NUBL",
     "doubles_tier": "UU"
   },
@@ -5291,7 +5287,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "terapagosstellar": {
+  "terapagos-stellar": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },

@@ -2760,23 +2760,24 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     function escludeFormeInvalide(id) {
     const idLower = id.toLowerCase().trim();
     
-    // 1. Esclusioni fisse (sempre)
     if (idLower.includes('gmax') || idLower === 'pichuspikyeared' || idLower.includes('-partner')) return false;
     if (idLower.includes('-cap-') || (idLower.startsWith('cap-') && idLower !== 'capsakid')) return false;
 
-    // 2. Identifica se è una Mega "vera" (ha il suffisso -mega, -megax, -megay)
-    // Usiamo il controllo di fine stringa per essere precisi
     const isMega = idLower.endsWith('-mega') || idLower.endsWith('-megax') || idLower.endsWith('-megay');
-    const isFalsoMega = idLower.includes('meganium') || idLower.includes('yanmega');
-
-    // 3. Se è una Mega reale, controlla il regolamento
+    const isFalsoMega = idLower === 'meganium' || idLower === 'yanmega';
     if (isMega && !isFalsoMega) {
         const rawValue = regolamento.restrizioni?.pokemon?.is_mega?.value;
         // Restituisce true se è permesso, false se è proibito
-        return rawValue === true || String(rawValue).toUpperCase().trim() === 'YES';
+        const megaAllowed = [
+    true,
+    "true",
+    "yes",
+    "allowed"
+].includes(String(rawValue).toLowerCase().trim());
+
+return megaAllowed;
     }
 
-    // 4. Se non è una mega, o è un falso positivo (Meganium/Yanmega), passa sempre
     return true; 
 }
 

@@ -663,7 +663,7 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "porygon-2": {
+  "porygon2": {
     "single_tier": "NU",
     "doubles_tier": "OU"
   },
@@ -1675,15 +1675,15 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysattack": {
+  "deoxys-attack": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysdefense": {
+  "deoxys-defense": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysspeed": {
+  "deoxys-speed": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
@@ -2031,7 +2031,7 @@
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },

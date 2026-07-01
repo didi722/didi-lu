@@ -739,7 +739,7 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "porygon-2": {
+  "porygon2": {
     "single_tier": "UU",
     "doubles_tier": "UU"
   },
@@ -827,7 +827,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "-meganium": {
+  "meganium": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
@@ -983,7 +983,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "yan-mega": {
+  "yanmega": {
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
@@ -1843,7 +1843,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "kyogreprimal": {
+  "kyogre-primal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -1851,7 +1851,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "groudonprimal": {
+  "groudon-primal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -1871,15 +1871,15 @@
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "deoxysattack": {
+  "deoxys-attack": {
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "deoxysdefense": {
+  "deoxys-defense": {
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "deoxysspeed": {
+  "deoxys-speed": {
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
@@ -2243,7 +2243,7 @@
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
-  "shayminsky": {
+  "shaymin-sky": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },

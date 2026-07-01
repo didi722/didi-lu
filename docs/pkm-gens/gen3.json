@@ -1555,15 +1555,15 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysattack": {
+  "deoxys-attack": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysdefense": {
+  "deoxys-defense": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "deoxysspeed": {
+  "deoxys-speed": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   }

@@ -285,7 +285,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Charizard-mega-x": {
+  "Charizard-megax": {
     "id": 6,
     "name": "Charizard-mega-x",
     "name_length": 16,
@@ -321,7 +321,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Charizard-mega-y": {
+  "Charizard-megay": {
     "id": 6,
     "name": "Charizard-mega-y",
     "name_length": 16,
@@ -2173,7 +2173,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Nidoran-f": {
+  "Nidoranf": {
     "id": 29,
     "name": "Nidoran-f",
     "name_length": 9,
@@ -2277,7 +2277,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Nidoran-m": {
+  "Nidoranm": {
     "id": 32,
     "name": "Nidoran-m",
     "name_length": 9,
@@ -5954,41 +5954,6 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Marowak-totem": {
-    "id": 105,
-    "name": "Marowak-totem",
-    "name_length": 13,
-    "name_starts": "M",
-    "height": 1.7,
-    "weight": 98,
-    "type": [
-      "fire",
-      "ghost"
-    ],
-    "color": "brown",
-    "egg_group": [
-      "monster"
-    ],
-    "base_friendship": 70,
-    "habitat": "mountain",
-    "shape": "upright",
-    "is_legendary": false,
-    "is_mythical": false,
-    "bst": 425,
-    "highest_stat": [
-      "defense"
-    ],
-    "stats": {
-      "hp": 60,
-      "attack": 80,
-      "defense": 110,
-      "sp. attack": 50,
-      "sp. defense": 80,
-      "speed": 45
-    },
-    "evolutions_count": 2,
-    "evolution_stage": 2
-  },
   "Hitmonlee": {
     "id": 106,
     "name": "Hitmonlee",
@@ -6644,7 +6609,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Mr-mime": {
+  "Mrmime": {
     "id": 122,
     "name": "Mr-mime",
     "name_length": 7,
@@ -6679,7 +6644,7 @@
     "evolutions_count": 3,
     "evolution_stage": 2
   },
-  "Mr-mime-galar": {
+  "Mrmime-galar": {
     "id": 122,
     "name": "Mr-mime-galar",
     "name_length": 13,
@@ -6955,9 +6920,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tauros-paldea-combat-breed": {
+  "Tauros-paldea-combat": {
     "id": 128,
-    "name": "Tauros-paldea-combat-breed",
+    "name": "Tauros-paldea-combat",
     "name_length": 26,
     "name_starts": "T",
     "height": 1.4,
@@ -6989,9 +6954,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tauros-paldea-blaze-breed": {
+  "Tauros-paldea-blaze": {
     "id": 128,
-    "name": "Tauros-paldea-blaze-breed",
+    "name": "Tauros-paldea-blaze",
     "name_length": 25,
     "name_starts": "T",
     "height": 1.4,
@@ -7024,9 +6989,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tauros-paldea-aqua-breed": {
+  "Tauros-paldea-aqua": {
     "id": 128,
-    "name": "Tauros-paldea-aqua-breed",
+    "name": "Tauros-paldea-aqua",
     "name_length": 24,
     "name_starts": "T",
     "height": 1.4,
@@ -12215,7 +12180,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Ho-oh": {
+  "Hooh": {
     "id": 250,
     "name": "Ho-oh",
     "name_length": 5,
@@ -17975,7 +17940,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Deoxys-normal": {
+  "Deoxys": {
     "id": 386,
     "name": "Deoxys-normal",
     "name_length": 13,
@@ -19054,9 +19019,9 @@
     "evolutions_count": 3,
     "evolution_stage": 1
   },
-  "Wormadam-plant": {
+  "Wormadam": {
     "id": 413,
-    "name": "Wormadam-plant",
+    "name": "Wormadam",
     "name_length": 14,
     "name_starts": "W",
     "height": 0.5,
@@ -20065,7 +20030,7 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Mime-jr": {
+  "Mimejr": {
     "id": 439,
     "name": "Mime-jr",
     "name_length": 7,
@@ -20348,7 +20313,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Garchomp-mega-z": {
+  "Garchomp-megaz": {
     "id": 445,
     "name": "Garchomp-mega-z",
     "name_length": 15,
@@ -20523,7 +20488,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Lucario-mega-z": {
+  "Lucario-megaz": {
     "id": 448,
     "name": "Lucario-mega-z",
     "name_length": 14,
@@ -22061,7 +22026,7 @@
   },
   "Dialga-origin": {
     "id": 483,
-    "name": "Dialga-origin",
+    "name": "dialga-origin",
     "name_length": 13,
     "name_starts": "D",
     "height": 7,
@@ -22510,7 +22475,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Shaymin-land": {
+  "Shaymin": {
     "id": 492,
     "name": "Shaymin-land",
     "name_length": 12,
@@ -24753,9 +24718,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Basculin-red-striped": {
+  "Basculin": {
     "id": 550,
-    "name": "Basculin-red-striped",
+    "name": "Basculin",
     "name_length": 20,
     "name_starts": "B",
     "height": 1,
@@ -25028,9 +24993,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Darmanitan-standard": {
+  "Darmanitan": {
     "id": 555,
-    "name": "Darmanitan-standard",
+    "name": "Darmanitan",
     "name_length": 19,
     "name_starts": "D",
     "height": 1.3,
@@ -25062,7 +25027,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Darmanitan-zen": {
+  "Darmanitanzen": {
     "id": 555,
     "name": "Darmanitan-zen",
     "name_length": 14,
@@ -25097,9 +25062,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Darmanitan-galar-standard": {
+  "Darmanitan-galar": {
     "id": 555,
-    "name": "Darmanitan-galar-standard",
+    "name": "Darmanitan-galar",
     "name_length": 25,
     "name_starts": "D",
     "height": 1.7,
@@ -25131,9 +25096,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Darmanitan-galar-zen": {
+  "Darmanitan-galarzen": {
     "id": 555,
-    "name": "Darmanitan-galar-zen",
+    "name": "Darmanitan-galarzen",
     "name_length": 20,
     "name_starts": "D",
     "height": 1.7,
@@ -26595,9 +26560,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Frillish-male": {
+  "Frillish": {
     "id": 592,
-    "name": "Frillish-male",
+    "name": "Frillish",
     "name_length": 13,
     "name_starts": "F",
     "height": 1.2,
@@ -26630,9 +26595,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Jellicent-male": {
+  "Jellicent": {
     "id": 593,
-    "name": "Jellicent-male",
+    "name": "Jellicent",
     "name_length": 14,
     "name_starts": "J",
     "height": 2.2,
@@ -28473,9 +28438,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tornadus-incarnate": {
+  "Tornadus": {
     "id": 641,
-    "name": "Tornadus-incarnate",
+    "name": "Tornadus",
     "name_length": 18,
     "name_starts": "T",
     "height": 1.5,
@@ -28541,9 +28506,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Thundurus-incarnate": {
+  "Thundurus": {
     "id": 642,
-    "name": "Thundurus-incarnate",
+    "name": "Thundurus",
     "name_length": 19,
     "name_starts": "T",
     "height": 1.5,
@@ -28681,9 +28646,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Landorus-incarnate": {
+  "Landorus": {
     "id": 645,
-    "name": "Landorus-incarnate",
+    "name": "Landorus",
     "name_length": 18,
     "name_starts": "L",
     "height": 1.5,
@@ -28856,9 +28821,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Keldeo-ordinary": {
+  "Keldeo": {
     "id": 647,
-    "name": "Keldeo-ordinary",
+    "name": "Keldeo",
     "name_length": 15,
     "name_starts": "K",
     "height": 1.4,
@@ -28926,9 +28891,9 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Meloetta-aria": {
+  "Meloetta": {
     "id": 648,
-    "name": "Meloetta-aria",
+    "name": "Meloetta",
     "name_length": 13,
     "name_starts": "M",
     "height": 0.6,
@@ -29827,9 +29792,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Pyroar-male": {
+  "Pyroar": {
     "id": 668,
-    "name": "Pyroar-male",
+    "name": "Pyroar",
     "name_length": 11,
     "name_starts": "P",
     "height": 1.5,
@@ -30274,9 +30239,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Meowstic-male": {
+  "Meowstic": {
     "id": 678,
-    "name": "Meowstic-male",
+    "name": "Meowstic",
     "name_length": 13,
     "name_starts": "M",
     "height": 0.6,
@@ -30446,9 +30411,9 @@
     "evolutions_count": 3,
     "evolution_stage": 2
   },
-  "Aegislash-shield": {
+  "Aegislash": {
     "id": 681,
-    "name": "Aegislash-shield",
+    "name": "Aegislash",
     "name_length": 16,
     "name_starts": "A",
     "height": 1.7,
@@ -31714,9 +31679,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Pumpkaboo-average": {
+  "Pumpkaboo": {
     "id": 710,
-    "name": "Pumpkaboo-average",
+    "name": "Pumpkaboo",
     "name_length": 17,
     "name_starts": "P",
     "height": 0.4,
@@ -31854,9 +31819,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Gourgeist-average": {
+  "Gourgeist": {
     "id": 711,
-    "name": "Gourgeist-average",
+    "name": "Gourgeist",
     "name_length": 17,
     "name_starts": "G",
     "height": 0.9,
@@ -33425,10 +33390,10 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Oricorio-baile": {
+  "Oricorio": {
     "id": 741,
-    "name": "Oricorio-baile",
-    "name_length": 14,
+    "name": "Oricorio",
+    "name_length": 8,
     "name_starts": "O",
     "height": 0.6,
     "weight": 3.4,
@@ -33707,7 +33672,7 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Rockruff-own-tempo": {
+  "Rockruffdusk": {
     "id": 744,
     "name": "Rockruff-own-tempo",
     "name_length": 18,
@@ -33741,9 +33706,9 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Lycanroc-midday": {
+  "Lycanroc": {
     "id": 745,
-    "name": "Lycanroc-midday",
+    "name": "Lycanroc",
     "name_length": 15,
     "name_starts": "L",
     "height": 0.8,
@@ -33843,10 +33808,10 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Wishiwashi-solo": {
+  "Wishiwashi": {
     "id": 746,
-    "name": "Wishiwashi-solo",
-    "name_length": 15,
+    "name": "Wishiwashi",
+    "name_length": 10,
     "name_starts": "W",
     "height": 0.2,
     "weight": 0.3,
@@ -34924,7 +34889,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Type-null": {
+  "Typenull": {
     "id": 772,
     "name": "Type-null",
     "name_length": 9,
@@ -34992,10 +34957,10 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Minior-red-meteor": {
+  "Minior": {
     "id": 774,
-    "name": "Minior-red-meteor",
-    "name_length": 17,
+    "name": "Minior",
+    "name_length": 6,
     "name_starts": "M",
     "height": 0.3,
     "weight": 40,
@@ -35624,10 +35589,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Mimikyu-disguised": {
+  "Mimikyu": {
     "id": 778,
-    "name": "Mimikyu-disguised",
-    "name_length": 17,
+    "name": "Mimikyu",
+    "name_length": 7,
     "name_starts": "M",
     "height": 0.2,
     "weight": 0.7,
@@ -35906,7 +35871,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Jangmo-o": {
+  "Jangmoo": {
     "id": 782,
     "name": "Jangmo-o",
     "name_length": 8,
@@ -35940,7 +35905,7 @@
     "evolutions_count": 3,
     "evolution_stage": 1
   },
-  "Hakamo-o": {
+  "Hakamoo": {
     "id": 783,
     "name": "Hakamo-o",
     "name_length": 8,
@@ -35975,7 +35940,7 @@
     "evolutions_count": 3,
     "evolution_stage": 2
   },
-  "Kommo-o": {
+  "Kommoo": {
     "id": 784,
     "name": "Kommo-o",
     "name_length": 7,
@@ -36045,10 +36010,10 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Tapu-koko": {
+  "tapukoko": {
     "id": 785,
-    "name": "Tapu-koko",
-    "name_length": 9,
+    "name": "tapukoko",
+    "name_length": 8,
     "name_starts": "T",
     "height": 1.8,
     "weight": 20.5,
@@ -36080,10 +36045,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tapu-lele": {
+  "tapulele": {
     "id": 786,
-    "name": "Tapu-lele",
-    "name_length": 9,
+    "name": "tapulele",
+    "name_length": 8,
     "name_starts": "T",
     "height": 1.2,
     "weight": 18.6,
@@ -36115,10 +36080,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tapu-bulu": {
+  "tapubulu": {
     "id": 787,
-    "name": "Tapu-bulu",
-    "name_length": 9,
+    "name": "tapubulu",
+    "name_length": 8,
     "name_starts": "T",
     "height": 1.9,
     "weight": 45.5,
@@ -36150,10 +36115,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tapu-fini": {
+  "tapufini": {
     "id": 788,
-    "name": "Tapu-fini",
-    "name_length": 9,
+    "name": "tapufini",
+    "name_length": 8,
     "name_starts": "T",
     "height": 1.3,
     "weight": 21.2,
@@ -38969,10 +38934,10 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Toxtricity-amped": {
+  "Toxtricity": {
     "id": 849,
-    "name": "Toxtricity-amped",
-    "name_length": 16,
+    "name": "Toxtricity",
+    "name_length": 10,
     "name_starts": "T",
     "height": 1.6,
     "weight": 40,
@@ -39775,7 +39740,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Mr-rime": {
+  "Mrrime": {
     "id": 866,
     "name": "Mr-rime",
     "name_length": 7,
@@ -40160,10 +40125,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Eiscue-ice": {
+  "Eiscue": {
     "id": 875,
-    "name": "Eiscue-ice",
-    "name_length": 10,
+    "name": "Eiscue",
+    "name_length": 6,
     "name_starts": "E",
     "height": 1.4,
     "weight": 89,
@@ -40230,10 +40195,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Indeedee-male": {
+  "Indeedee": {
     "id": 876,
-    "name": "Indeedee-male",
-    "name_length": 13,
+    "name": "Indeedee",
+    "name_length": 8,
     "name_starts": "I",
     "height": 0.9,
     "weight": 28,
@@ -40265,10 +40230,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Indeedee-female": {
+  "Indeedeef": {
     "id": 876,
-    "name": "Indeedee-female",
-    "name_length": 15,
+    "name": "Indeedeef",
+    "name_length": 9,
     "name_starts": "I",
     "height": 0.9,
     "weight": 28,
@@ -40300,10 +40265,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Morpeko-full-belly": {
+  "Morpeko": {
     "id": 877,
-    "name": "Morpeko-full-belly",
-    "name_length": 18,
+    "name": "Morpeko",
+    "name_length": 7,
     "name_starts": "M",
     "height": 0.3,
     "weight": 3,
@@ -41039,10 +41004,10 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Urshifu-single-strike": {
+  "Urshifu": {
     "id": 892,
-    "name": "Urshifu-single-strike",
-    "name_length": 21,
+    "name": "Urshifu",
+    "name_length": 7,
     "name_starts": "U",
     "height": 1.9,
     "weight": 105,
@@ -41630,10 +41595,10 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Basculegion-male": {
+  "Basculegion": {
     "id": 902,
-    "name": "Basculegion-male",
-    "name_length": 16,
+    "name": "Basculegion",
+    "name_length": 11,
     "name_starts": "B",
     "height": 3,
     "weight": 110,
@@ -41665,10 +41630,10 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Basculegion-female": {
+  "Basculegion-f": {
     "id": 902,
-    "name": "Basculegion-female",
-    "name_length": 18,
+    "name": "Basculegion",
+    "name_length": 11,
     "name_starts": "B",
     "height": 3,
     "weight": 110,
@@ -41770,9 +41735,9 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Enamorus-incarnate": {
+  "Enamorus": {
     "id": 905,
-    "name": "Enamorus-incarnate",
+    "name": "Enamorus",
     "name_length": 18,
     "name_starts": "E",
     "height": 1.6,
@@ -42189,10 +42154,10 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Oinkologne-male": {
+  "Oinkologne": {
     "id": 916,
-    "name": "Oinkologne-male",
-    "name_length": 15,
+    "name": "Oinkologne",
+    "name_length": 9,
     "name_starts": "O",
     "height": 1,
     "weight": 120,
@@ -42533,10 +42498,10 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Maushold-family-of-four": {
+  "Maushold": {
     "id": 925,
-    "name": "Maushold-family-of-four",
-    "name_length": 23,
+    "name": "Maushold",
+    "name_length": 7,
     "name_starts": "M",
     "height": 0.3,
     "weight": 2.8,
@@ -42778,7 +42743,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Squawkabilly-green-plumage": {
+  "Squawkabilly": {
     "id": 931,
     "name": "Squawkabilly-green-plumage",
     "name_length": 26,
@@ -44060,7 +44025,7 @@
     "evolutions_count": 2,
     "evolution_stage": 1
   },
-  "Palafin-zero": {
+  "Palafin": {
     "id": 964,
     "name": "Palafin-zero",
     "name_length": 12,
@@ -44614,10 +44579,10 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Tatsugiri-curly": {
+  "Tatsugiri": {
     "id": 978,
-    "name": "Tatsugiri-curly",
-    "name_length": 15,
+    "name": "Tatsugiri",
+    "name_length": 9,
     "name_starts": "T",
     "height": 0.3,
     "weight": 8,
@@ -45033,7 +44998,7 @@
     "evolutions_count": 3,
     "evolution_stage": 3
   },
-  "Great-tusk": {
+  "Greattusk": {
     "id": 984,
     "name": "Great-tusk",
     "name_length": 10,
@@ -45068,7 +45033,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Scream-tail": {
+  "Screamtail": {
     "id": 985,
     "name": "Scream-tail",
     "name_length": 11,
@@ -45103,7 +45068,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Brute-bonnet": {
+  "Brutebonnet": {
     "id": 986,
     "name": "Brute-bonnet",
     "name_length": 12,
@@ -45138,7 +45103,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Flutter-mane": {
+  "Fluttermane": {
     "id": 987,
     "name": "Flutter-mane",
     "name_length": 12,
@@ -45173,7 +45138,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Slither-wing": {
+  "Slitherwing": {
     "id": 988,
     "name": "Slither-wing",
     "name_length": 12,
@@ -45208,7 +45173,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Sandy-shocks": {
+  "Sandyshocks": {
     "id": 989,
     "name": "Sandy-shocks",
     "name_length": 12,
@@ -45243,7 +45208,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-treads": {
+  "Irontreads": {
     "id": 990,
     "name": "Iron-treads",
     "name_length": 11,
@@ -45278,7 +45243,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-bundle": {
+  "Ironbundle": {
     "id": 991,
     "name": "Iron-bundle",
     "name_length": 11,
@@ -45313,7 +45278,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-hands": {
+  "Ironhands": {
     "id": 992,
     "name": "Iron-hands",
     "name_length": 10,
@@ -45348,7 +45313,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-jugulis": {
+  "Ironjugulis": {
     "id": 993,
     "name": "Iron-jugulis",
     "name_length": 12,
@@ -45383,7 +45348,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-moth": {
+  "Ironmoth": {
     "id": 994,
     "name": "Iron-moth",
     "name_length": 9,
@@ -45418,7 +45383,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-thorns": {
+  "Ironthorns": {
     "id": 995,
     "name": "Iron-thorns",
     "name_length": 11,
@@ -45700,7 +45665,7 @@
     "evolutions_count": 2,
     "evolution_stage": 2
   },
-  "Wo-chien": {
+  "Wochien": {
     "id": 1001,
     "name": "Wo-chien",
     "name_length": 8,
@@ -45735,7 +45700,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Chien-pao": {
+  "Chienpao": {
     "id": 1002,
     "name": "Chien-pao",
     "name_length": 9,
@@ -45770,7 +45735,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Ting-lu": {
+  "Tinglu": {
     "id": 1003,
     "name": "Ting-lu",
     "name_length": 7,
@@ -45805,7 +45770,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Chi-yu": {
+  "Chiyu": {
     "id": 1004,
     "name": "Chi-yu",
     "name_length": 6,
@@ -45840,7 +45805,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Roaring-moon": {
+  "Roaringmoon": {
     "id": 1005,
     "name": "Roaring-moon",
     "name_length": 12,
@@ -45875,7 +45840,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-valiant": {
+  "Ironvaliant": {
     "id": 1006,
     "name": "Iron-valiant",
     "name_length": 12,
@@ -46260,7 +46225,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Walking-wake": {
+  "Walkingwake": {
     "id": 1009,
     "name": "Walking-wake",
     "name_length": 12,
@@ -46295,7 +46260,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-leaves": {
+  "Ironleaves": {
     "id": 1010,
     "name": "Iron-leaves",
     "name_length": 11,
@@ -46754,7 +46719,7 @@
     "evolutions_count": 5,
     "evolution_stage": 3
   },
-  "Gouging-fire": {
+  "Gougingfire": {
     "id": 1020,
     "name": "Gouging-fire",
     "name_length": 12,
@@ -46789,7 +46754,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Raging-bolt": {
+  "Ragingbolt": {
     "id": 1021,
     "name": "Raging-bolt",
     "name_length": 11,
@@ -46824,7 +46789,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-boulder": {
+  "Ironboulder": {
     "id": 1022,
     "name": "Iron-boulder",
     "name_length": 12,
@@ -46859,7 +46824,7 @@
     "evolutions_count": 1,
     "evolution_stage": 1
   },
-  "Iron-crown": {
+  "Ironcrown": {
     "id": 1023,
     "name": "Iron-crown",
     "name_length": 10,
