@@ -2814,8 +2814,12 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const target = baseTier.toUpperCase().trim();
         const current = pkmTier ? pkmTier.toUpperCase().trim() : "";
         const blacklistPerTier = {
-            "AG": [], "STANDARD": ["AG"], "UBER": ["AG"], "UBERS": ["AG"],
-            "OU": ["AG", "UBER", "UBERS"], "UU": ["AG", "UBER", "UBERS", "OU", "UUBL"],
+            "AG": [],
+            "STANDARD": ["AG"],
+            "UBER": ["AG"],
+            "UBERS": ["AG"],
+            "OU": ["AG", "UBER", "UBERS"],
+            "UU": ["AG", "UBER", "UBERS", "OU", "UUBL"],
             "RU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL"],
             "NU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL"],
             "PU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL"],
