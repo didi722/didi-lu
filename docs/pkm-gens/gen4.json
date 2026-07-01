@@ -663,11 +663,11 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "porygon2": {
+  "porygon-2": {
     "single_tier": "NU",
     "doubles_tier": "OU"
   },
-  "porygonz": {
+  "porygon-z": {
     "single_tier": "UUBL",
     "doubles_tier": "OU"
   },
@@ -1955,23 +1955,23 @@
     "single_tier": "UU",
     "doubles_tier": "OU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
@@ -2007,7 +2007,7 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },

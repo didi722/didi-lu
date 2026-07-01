@@ -927,15 +927,15 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "taurospaldeacombat": {
+  "tauros-paldea-combat": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "taurospaldeablaze": {
+  "tauros-paldea-blaze": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "taurospaldeaaqua": {
+  "tauros-paldea-aqua": {
     "single_tier": "NU",
     "doubles_tier": "UU"
   },
@@ -1011,11 +1011,11 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "porygon2": {
+  "porygon-2": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "porygonz": {
+  "porygon-z": {
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
@@ -1295,7 +1295,7 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "wooperpaldea": {
+  "wooper-paldea": {
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
@@ -2547,23 +2547,23 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "single_tier": "UU",
     "doubles_tier": "UU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
@@ -2611,7 +2611,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -3331,7 +3331,7 @@
     "single_tier": "NU",
     "doubles_tier": "OU"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
@@ -3339,7 +3339,7 @@
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "single_tier": "UU",
     "doubles_tier": "UU"
   },
@@ -3355,7 +3355,7 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
@@ -3363,11 +3363,11 @@
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "kyuremblack": {
+  "kyurem-black": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "kyuremwhite": {
+  "kyurem-white": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -3503,7 +3503,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "floetteeternal": {
+  "floette-eternal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -4267,15 +4267,15 @@
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
-  "necrozmaduskmane": {
+  "necrozma-duskmane": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "necrozmadawnwings": {
+  "necrozma-dawnwings": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "necrozmaultra": {
+  "necrozma-ultra": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -4287,7 +4287,7 @@
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
-  "magearnaoriginal-mega": {
+  "magearna-original-mega": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -4707,7 +4707,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "zaciancrowned": {
+  "zacian-crowned": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -4715,7 +4715,7 @@
     "single_tier": "OU",
     "doubles_tier": "Uber"
   },
-  "zamazentacrowned": {
+  "zamazenta-crowned": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -4771,11 +4771,11 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "calyrexice": {
+  "calyrex-ice": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "calyrexshadow": {
+  "calyrex-shadow": {
     "single_tier": "AG",
     "doubles_tier": "Uber"
   },
@@ -4783,7 +4783,7 @@
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
-  "enamorustherian": {
+  "enamorus-therian": {
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
@@ -5251,15 +5251,15 @@
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
-  "ogerponwellspring": {
+  "ogerpon-wellspring": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "ogerponhearthflame": {
+  "ogerpon-hearthflame": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "ogerponcornerstone": {
+  "ogerpon-cornerstone": {
     "single_tier": "UUBL",
     "doubles_tier": "UU"
   },
@@ -5298,337 +5298,5 @@
   "pecharunt": {
     "single_tier": "OU",
     "doubles_tier": "UU"
-  },
-  "missingno": {
-    "single_tier": "Illegal",
-    "doubles_tier": "Illegal"
-  },
-  "syclar": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "syclant": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "revenankh": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "embirch": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "flarelm": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "pyroak": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "breezi": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "fidgit": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "rebble": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "tactite": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "stratagem": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "privatyke": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "arghonaut": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "nohface": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "kitsunoh": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "monohm": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "duohm": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "cyclohm": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "dorsoil": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "colossoil": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "protowatt": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "krilowatt": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "voodoll": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "voodoom": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "scratchet": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "tomohawk": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "necturine": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "necturna": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "mollux": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "cupra": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "argalis": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "aurumoth": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "brattler": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "malaconda": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "cawdet": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "cawmodore": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "volkritter": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "volkraken": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "snugglow": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "plasmanta": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "floatoy": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "caimanoe": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "naviathan": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "crucibelle": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "crucibelle-mega": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "pluffle": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "kerfluffle": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "pajantom": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "mumbao": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "jumbao": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "fawnifer": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "electrelk": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "caribolt": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "smogecko": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "smoguana": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "smokomodo": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "swirlpool": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "coribalis": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "snaelstrom": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "justyke": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "equilibra": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "solotl": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "astrolotl": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "miasmite": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "miasmaw": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "chromera": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "venomicon": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "venomiconepilogue": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "saharascal": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "saharaja": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "ababo": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "scattervein": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "hemogoblin": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "cresceidon": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "chuggon": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "draggalong": {
-    "single_tier": "CAP NFE",
-    "doubles_tier": "OU"
-  },
-  "chuggalong": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "flox": {
-    "single_tier": "CAP LC",
-    "doubles_tier": "OU"
-  },
-  "shox": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "ramnarok": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
-  },
-  "ramnarokradiant": {
-    "single_tier": "Illegal",
-    "doubles_tier": "Illegal"
-  },
-  "obliteryx": {
-    "single_tier": "CAP",
-    "doubles_tier": "OU"
   }
 }

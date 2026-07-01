@@ -823,11 +823,11 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "porygon2": {
+  "porygon-2": {
     "single_tier": "RU",
     "doubles_tier": "OU"
   },
-  "porygonz": {
+  "porygon-z": {
     "single_tier": "UUBL",
     "doubles_tier": "UU"
   },
@@ -2251,23 +2251,23 @@
     "single_tier": "NU",
     "doubles_tier": "UU"
   },
-  "rotomheat": {
+  "rotom-heat": {
     "single_tier": "UU",
     "doubles_tier": "UU"
   },
-  "rotomwash": {
+  "rotom-wash": {
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
-  "rotomfrost": {
+  "rotom-frost": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "rotomfan": {
+  "rotom-fan": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "rotommow": {
+  "rotom-mow": {
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
@@ -2303,7 +2303,7 @@
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "giratinaorigin": {
+  "giratina-origin": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -3003,7 +3003,7 @@
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
-  "tornadustherian": {
+  "tornadus-therian": {
     "single_tier": "OU",
     "doubles_tier": "UU"
   },
@@ -3011,7 +3011,7 @@
     "single_tier": "UUBL",
     "doubles_tier": "UU"
   },
-  "thundurustherian": {
+  "thundurus-therian": {
     "single_tier": "UUBL",
     "doubles_tier": "UU"
   },
@@ -3027,7 +3027,7 @@
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "landorustherian": {
+  "landorus-therian": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
@@ -3035,11 +3035,11 @@
     "single_tier": "RUBL",
     "doubles_tier": "UU"
   },
-  "kyuremblack": {
+  "kyurem-black": {
     "single_tier": "OU",
     "doubles_tier": "OU"
   },
-  "kyuremwhite": {
+  "kyurem-white": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -3179,7 +3179,7 @@
     "single_tier": "NFE",
     "doubles_tier": "OU"
   },
-  "floetteeternal": {
+  "floette-eternal": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },
@@ -3891,15 +3891,15 @@
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
-  "necrozmaduskmane": {
+  "necrozma-duskmane": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "necrozmadawnwings": {
+  "necrozma-dawnwings": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
-  "necrozmaultra": {
+  "necrozma-ultra": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -3907,7 +3907,7 @@
     "single_tier": "OU",
     "doubles_tier": "Uber"
   },
-  "magearnaoriginal": {
+  "magearna-original": {
     "single_tier": "Illegal",
     "doubles_tier": "Illegal"
   },

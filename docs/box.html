@@ -2758,22 +2758,27 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     }
 
     function escludeFormeInvalide(id) {
-        const idLower = id.toLowerCase();
-        if (idLower.includes('gmax')) return false;
-        if (idLower.startsWith('pikachu') && idLower !== 'pikachu') return false;
-        if (idLower === 'pichuspikyeared') return false;
-        if (idLower.includes('totem')) return false;
-        if (idLower.includes('cap') && !idLower.includes('capsakid')) return false; 
-        if (idLower.includes('partner')) return false;
-        if (idLower.startsWith('arceus') && idLower !== 'arceus') return false;
-        if (idLower.startsWith('silvally') && idLower !== 'silvally') return false;
-        if (idLower.startsWith('castform') && idLower !== 'castform') return false;
-        if (idLower.startsWith('deoxys') && idLower !== 'deoxys') return false;
-        if (idLower.startsWith('wormadam') && idLower !== 'wormadam') return false;
-        if (idLower === 'cherrimsunshine' || idLower === 'cherrimsunny') return false;
-        if (idLower === 'giratinaorigin') return false;
-        return true;
+    const idLower = id.toLowerCase().trim();
+    
+    // 1. Esclusioni fisse (sempre)
+    if (idLower.includes('gmax') || idLower === 'pichuspikyeared' || idLower.includes('-partner')) return false;
+    if (idLower.includes('-cap-') || (idLower.startsWith('cap-') && idLower !== 'capsakid')) return false;
+
+    // 2. Identifica se è una Mega "vera" (ha il suffisso -mega, -megax, -megay)
+    // Usiamo il controllo di fine stringa per essere precisi
+    const isMega = idLower.endsWith('-mega') || idLower.endsWith('-megax') || idLower.endsWith('-megay');
+    const isFalsoMega = idLower.includes('meganium') || idLower.includes('yanmega');
+
+    // 3. Se è una Mega reale, controlla il regolamento
+    if (isMega && !isFalsoMega) {
+        const rawValue = regolamento.restrizioni?.pokemon?.is_mega?.value;
+        // Restituisce true se è permesso, false se è proibito
+        return rawValue === true || String(rawValue).toUpperCase().trim() === 'YES';
     }
+
+    // 4. Se non è una mega, o è un falso positivo (Meganium/Yanmega), passa sempre
+    return true; 
+}
 
     function calcolaSpriteId(id) {
         const idLower = id.toLowerCase().trim();
@@ -2833,25 +2838,34 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
     if (regolamento.genRuleType === "up_to") {
         try {
-            let aggregatoGens = {};
+            // Carica esplicitamente il file natdex-tiers.json per i fallback delle tier
+            let natdexTiers = {};
+            try {
+                const resNatDex = await fetch('pkm-gens/natdex-tiers.json');
+                natdexTiers = await resNatDex.json();
+            } catch (e) {
+                console.error("[Helper] Errore nel caricamento di pkm-gens/natdex-tiers.json:", e);
+            }
+
+            let tuttiIKnots = {};
+            let genLimiteJson = {};
+
+            // Accumula i Pokémon estratti da gen1 a genLimite
             for (let i = 1; i <= genLimite; i++) {
                 try {
                     const resGen = await fetch(`pkm-gens/gen${i}.json`);
                     const jsonGen = await resGen.json();
                     Object.keys(jsonGen).forEach(key => {
-                        // 🛠️ FIX DINAMICO: Estrazione tier corretta dall'oggetto della singola gen
-                        const datoObj = jsonGen[key];
-                        const tGen = (datoObj && typeof datoObj === 'object' ? datoObj[proprietaTierDinamica] : datoObj || "");
-
-                        if (!aggregatoGens[key]) {
-                            aggregatoGens[key] = { ...datoObj, tier: tGen };
+                        const lowKey = key.toLowerCase().trim();
+                        if (!tuttiIKnots[lowKey]) {
+                            tuttiIKnots[lowKey] = { originalKey: key, ...jsonGen[key] };
                         } else {
-                            const tierEsistente = aggregatoGens[key].tier || "";
-                            aggregatoGens[key] = {
-                                ...aggregatoGens[key],
-                                ...datoObj,
-                                tier: ottieniTierMaggiore(tierEsistente, tGen)
-                            };
+                            tuttiIKnots[lowKey] = { ...tuttiIKnots[lowKey], ...jsonGen[key] };
+                        }
+                        
+                        // Mantiene traccia dei dati nativi della generazione limite (Gen X)
+                        if (i === genLimite) {
+                            genLimiteJson[lowKey] = jsonGen[key];
                         }
                     });
                 } catch (errFetch) {
@@ -2859,40 +2873,63 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 }
             }
 
-            Object.keys(aggregatoGens).forEach(nomeChiave => {
+            // Analizza il pool aggregato totale
+            Object.keys(tuttiIKnots).forEach(lowKey => {
+                const nomeChiave = tuttiIKnots[lowKey].originalKey;
                 if (!escludeFormeInvalide(nomeChiave)) return;
-                const datiNelPokedexGen = aggregatoGens[nomeChiave];
-                const datoNatDex = jsonDati[nomeChiave];
-                
-                const tierGen = datiNelPokedexGen ? datiNelPokedexGen.tier : "";
-                // 🛠️ FIX DINAMICO: Estrazione tier dal National Dex
-                const tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
-                
-                let tierUpper = ottieniTierMaggiore(tierGen, tierNatDex);
 
-                if (nomeChiave.toLowerCase().includes('-mega')) {
-                    const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
-                    const datiBaseGen = aggregatoGens[baseKey];
-                    const datoBaseNatDex = jsonDati[baseKey];
-                    
-                    const tierBaseGen = datiBaseGen ? datiBaseGen.tier : "";
-                    const tierBaseNatDex = datoBaseNatDex && typeof datoBaseNatDex === 'object' ? datoBaseNatDex[proprietaTierDinamica] : (datoBaseNatDex || "");
-                    
-                    const tierBaseUpper = ottieniTierMaggiore(tierBaseGen, tierBaseNatDex);
-                    tierUpper = ottieniTierMaggiore(tierUpper, tierBaseUpper);
+                // Estrae la tier originale della Gen X
+                const datoGenX = genLimiteJson[lowKey];
+                let tierGenX = datoGenX && typeof datoGenX === 'object' ? datoGenX[proprietaTierDinamica] : (datoGenX || "");
+                tierGenX = tierGenX ? tierGenX.toUpperCase().trim() : "";
+
+                let tierFinale = tierGenX;
+
+                // FALLBACK: Se la tier in Gen X manca, è PAST o ILLEGAL, interroga il National Dex
+                if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
+                    const datoNatDex = natdexTiers[lowKey];
+                    let tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
+                    tierNatDex = tierNatDex ? tierNatDex.toUpperCase().trim() : "";
+
+                    const isMegaReale = (nomeChiave.toLowerCase().endsWith('-mega') || 
+                     nomeChiave.toLowerCase().endsWith('-megax') || 
+                     nomeChiave.toLowerCase().endsWith('-megay'));
+
+if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
+    const datoNatDex = natdexTiers[lowKey];
+    let tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
+    tierNatDex = tierNatDex ? tierNatDex.toUpperCase().trim() : "";
+
+    // SOLO se è una Mega reale e la tier è illegale, cerchiamo la base
+    if (isMegaReale && (tierNatDex === "ILLEGAL" || !tierNatDex)) {
+        const baseKey = nomeChiave.toLowerCase().replace(/-mega[xy]?$/, '').trim();
+        const datoBaseNatDex = natdexTiers[baseKey];
+        const tierBaseNatDex = datoBaseNatDex && typeof datoBaseNatDex === 'object' ? datoBaseNatDex[proprietaTierDinamica] : (datoBaseNatDex || "");
+        tierNatDex = tierBaseNatDex ? tierBaseNatDex.toUpperCase().trim() : "";
+    }}
+
+                    tierFinale = tierNatDex;
                 }
 
-                if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
-                if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
+                // Se dopo tutti i controlli è ancora non valida, la escludiamo
+                if (!tierFinale || tierFinale === "ILLEGAL" || tierFinale === "PAST") return;
+                
+                // Controlla se la tier rispetta la clausola del formato e i filtri biologici
+                if (!controllaTierAmmessa(tierFinale, regolamento.baseTier)) return;
                 if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
-                const datoGrezzo = { ...datiNelPokedexGen, ...datoNatDex, tier: tierUpper };
+                const datoGrezzo = { ...tuttiIKnots[lowKey], tier: tierFinale };
                 const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
                 const spriteId = calcolaSpriteId(nomeChiave);
                 const radice = determinaRadice(nomeChiave, spriteId);
                 
                 poolFiltrato.push({ 
-                    id: nomeChiave, name: nomeVisualizzato, spriteId: spriteId, radice: radice, num: datoGrezzo.num || null, ordineIniziale: contatoreOrdine++
+                    id: nomeChiave, 
+                    name: nomeVisualizzato, 
+                    spriteId: spriteId, 
+                    radice: radice, 
+                    num: datoGrezzo.num || null, 
+                    ordineIniziale: contatoreOrdine++
                 });
             });
         } catch (err) {
@@ -2905,7 +2942,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             const datoGrezzo = jsonDati[nomeChiave];
             if (!datoGrezzo) return;
 
-            // 🛠️ FIX DINAMICO: Estrazione corretta per il blocco 'within'
             let tierUpper = (typeof datoGrezzo === 'object' ? datoGrezzo[proprietaTierDinamica] : datoGrezzo || "").toUpperCase().trim();
 
             if (nomeChiave.toLowerCase().includes('-mega')) {
