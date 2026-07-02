@@ -127,30 +127,6 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "pikachucosplay": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachurockstar": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachubelle": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachupopstar": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachuphd": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachulibre": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
   "raichu": {
     "single_tier": "PU",
     "doubles_tier": "OU"
@@ -2551,7 +2527,7 @@
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
-  "basculinbluestriped": {
+  "basculin-bluestriped": {
     "single_tier": "PU",
     "doubles_tier": "UU"
   },
@@ -2979,22 +2955,6 @@
     "single_tier": "Uber",
     "doubles_tier": "UU"
   },
-  "genesectburn": {
-    "single_tier": "Uber",
-    "doubles_tier": "UU"
-  },
-  "genesectchill": {
-    "single_tier": "Uber",
-    "doubles_tier": "UU"
-  },
-  "genesectdouse": {
-    "single_tier": "Uber",
-    "doubles_tier": "UU"
-  },
-  "genesectshock": {
-    "single_tier": "Uber",
-    "doubles_tier": "UU"
-  },
   "chespin": {
     "single_tier": "LC",
     "doubles_tier": "OU"
@@ -3115,7 +3075,7 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "meowsticf": {
+  "meowstic-f": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
@@ -3130,10 +3090,6 @@
   "aegislash": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
-  },
-  "aegislashblade": {
-    "single_tier": "Illegal",
-    "doubles_tier": "Illegal"
   },
   "spritzee": {
     "single_tier": "LC",
@@ -3251,32 +3207,8 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "pumpkaboosmall": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
-  "pumpkaboolarge": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
-  "pumpkaboosuper": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
   "gourgeist": {
     "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistsmall": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistlarge": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistsuper": {
-    "single_tier": "PU",
     "doubles_tier": "UU"
   },
   "bergmite": {

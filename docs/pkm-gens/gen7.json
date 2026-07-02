@@ -139,34 +139,6 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "pikachuoriginal": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachuhoenn": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachusinnoh": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachuunova": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachukalos": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachu-alola": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "pikachupartner": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
   "raichu": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
@@ -2631,7 +2603,7 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "basculinbluestriped": {
+  "basculin-bluestriped": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
@@ -3059,22 +3031,6 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "genesectburn": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectchill": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectdouse": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectshock": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
   "chespin": {
     "single_tier": "LC",
     "doubles_tier": "OU"
@@ -3211,7 +3167,7 @@
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
-  "meowsticf": {
+  "meowstic-f": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
@@ -3226,10 +3182,6 @@
   "aegislash": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
-  },
-  "aegislashblade": {
-    "single_tier": "Illegal",
-    "doubles_tier": "Illegal"
   },
   "spritzee": {
     "single_tier": "LC",
@@ -3347,31 +3299,7 @@
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
-  "pumpkaboosmall": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
-  "pumpkaboolarge": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
-  "pumpkaboosuper": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
   "gourgeist": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistsmall": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistlarge": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "gourgeistsuper": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },
@@ -3403,11 +3331,11 @@
     "single_tier": "Uber",
     "doubles_tier": "OU"
   },
-  "zygarde10": {
+  "zygarde-10": {
     "single_tier": "RU",
     "doubles_tier": "UU"
   },
-  "zygardecomplete": {
+  "zygarde-complete": {
     "single_tier": "Uber",
     "doubles_tier": "Uber"
   },
@@ -3544,10 +3472,6 @@
     "doubles_tier": "UU"
   },
   "rockruff": {
-    "single_tier": "LC",
-    "doubles_tier": "OU"
-  },
-  "rockruff-dusk": {
     "single_tier": "LC",
     "doubles_tier": "OU"
   },
@@ -3688,74 +3612,6 @@
     "doubles_tier": "NFE"
   },
   "silvally": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallybug": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallydark": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallydragon": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyelectric": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyfairy": {
-    "single_tier": "PU",
-    "doubles_tier": "UU"
-  },
-  "silvallyfighting": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyfire": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyflying": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyghost": {
-    "single_tier": "PU",
-    "doubles_tier": "UU"
-  },
-  "silvallygrass": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyground": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyice": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallypoison": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallypsychic": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallyrock": {
-    "single_tier": "ZU",
-    "doubles_tier": "UU"
-  },
-  "silvallysteel": {
-    "single_tier": "NU",
-    "doubles_tier": "UU"
-  },
-  "silvallywater": {
     "single_tier": "ZU",
     "doubles_tier": "UU"
   },

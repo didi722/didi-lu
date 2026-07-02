@@ -2327,7 +2327,7 @@
     "single_tier": "NU",
     "doubles_tier": "UU"
   },
-  "basculinbluestriped": {
+  "-bluestriped": {
     "single_tier": "NU",
     "doubles_tier": "UU"
   },
@@ -2752,22 +2752,6 @@
     "doubles_tier": "Illegal"
   },
   "genesect": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectburn": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectchill": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectdouse": {
-    "single_tier": "Uber",
-    "doubles_tier": "OU"
-  },
-  "genesectshock": {
     "single_tier": "Uber",
     "doubles_tier": "OU"
   }

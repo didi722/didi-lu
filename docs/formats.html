@@ -520,8 +520,11 @@ function gestisciCambioTipoFormato(tipo) {
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
                             <span style="color: black; font-weight: 900;">✔</span> Item Clause
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
                             <span style="color: black; font-weight: 900;">✔</span> Max. 2 Uber (if Tier = Standard)
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">✔</span> No legendary / mythical (unless specified)
                         </div>
                     </div>
                 `;
@@ -539,8 +542,11 @@ function gestisciCambioTipoFormato(tipo) {
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
                             <span style="color: black; font-weight: 900;">❌</span> Item Clause
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;font-weight: bold;">
                             <span style="color: black; font-weight: 900;">❌</span> Max. 2 Uber (if Tier = Standard)
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;font-weight: bold;">
+                            <span style="color: black; font-weight: 900;">❌</span> No legendary / mythical (unless specified)
                         </div>
                     </div>
                 `;
@@ -1947,6 +1953,10 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'uber_limit': 'Uber / Legendary Limit',
             'specific_item': 'Specific Item',
             'specific_name': 'Specific Name',
+            'color': 'Color',
+            'bst': 'BST',
+            'type': 'Type',
+            'is_mega': 'Mega evolutions',
 
             // Operators & Logic
             'equals': '=',
@@ -1957,7 +1967,10 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'unique': 'Unique (No Duplicates)',
             'between': 'Between',
             'lt': '<',
-            'gt': '>'
+            'gt': '>',
+            'is_legendary': 'Legendary',
+            'is_mythical': 'Mythical',
+            'true': 'Allowed'
         };
 
         const umanizza = (valore) => {

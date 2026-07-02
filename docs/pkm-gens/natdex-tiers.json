@@ -151,75 +151,7 @@
         "single_tier": "LC",
         "doubles_tier": "LC"
     },
-    "pichuspikyeared": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
     "pikachu": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachucosplay": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachurockstar": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachubelle": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachupopstar": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachuphd": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachulibre": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pikachuoriginal": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachuhoenn": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachusinnoh": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachuunova": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachukalos": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachu-alola": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachupartner": {
-        "single_tier": "ZU",
-        "doubles_tier": "UU"
-    },
-    "pikachustarter": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
-    "pikachu-gmax": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
-    "pikachuworld": {
         "single_tier": "ZU",
         "doubles_tier": "UU"
     },
@@ -2927,15 +2859,7 @@
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
-    "darmanitanzen": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
     "darmanitan-galar": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "darmanitan-galarzen": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
@@ -3379,22 +3303,6 @@
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
-    "genesectburn": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "genesectchill": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "genesectdouse": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "genesectshock": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
     "chespin": {
         "single_tier": "LC",
         "doubles_tier": "LC"
@@ -3539,13 +3447,9 @@
         "single_tier": "ZU",
         "doubles_tier": "UU"
     },
-    "meowsticm-mega": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
-    "meowsticf-mega": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
+    "meowstic-f": {
+        "single_tier": "ZU",
+        "doubles_tier": "UU"
     },
     "honedge": {
         "single_tier": "OU",
@@ -3556,10 +3460,6 @@
         "doubles_tier": "OU"
     },
     "aegislash": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "aegislashblade": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
@@ -3699,31 +3599,7 @@
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
-    "pumpkaboosmall": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pumpkaboolarge": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "pumpkaboosuper": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
     "gourgeist": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "gourgeistsmall": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "gourgeistlarge": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "gourgeistsuper": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
@@ -3763,11 +3639,11 @@
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
-    "zygarde10": {
+    "zygarde-10": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
-    "zygardecomplete": {
+    "zygarde-complete": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
@@ -3919,10 +3795,6 @@
         "single_tier": "LC",
         "doubles_tier": "LC"
     },
-    "rockruff-dusk": {
-        "single_tier": "LC",
-        "doubles_tier": "LC"
-    },
     "lycanroc": {
         "single_tier": "ZU",
         "doubles_tier": "UU"
@@ -4064,74 +3936,6 @@
         "doubles_tier": "OU"
     },
     "silvally": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallybug": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallydark": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallydragon": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyelectric": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyfairy": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyfighting": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyfire": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyflying": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyghost": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallygrass": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyground": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyice": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallypoison": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallypsychic": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallyrock": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallysteel": {
-        "single_tier": "OU",
-        "doubles_tier": "OU"
-    },
-    "silvallywater": {
         "single_tier": "OU",
         "doubles_tier": "OU"
     },
@@ -4531,14 +4335,6 @@
         "single_tier": "RU",
         "doubles_tier": "UU"
     },
-    "toxtricity-gmax": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
-    "toxtricitylowkey-gmax": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
     "sizzlipede": {
         "single_tier": "OU",
         "doubles_tier": "OU"
@@ -4731,17 +4527,9 @@
         "single_tier": "Uber",
         "doubles_tier": "Uber"
     },
-    "urshifurapidstrike": {
+    "urshifu-rapidstrike": {
         "single_tier": "Uber",
         "doubles_tier": "Uber"
-    },
-    "urshifu-gmax": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
-    },
-    "urshifurapidstrike-gmax": {
-        "single_tier": "Illegal",
-        "doubles_tier": "Illegal"
     },
     "zarude": {
         "single_tier": "UUBL",
