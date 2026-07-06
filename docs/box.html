@@ -1776,7 +1776,7 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     };
 }
 
-function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento) { // 🛠️ Aggiunto 'regolamento' ai parametri
+function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento) { 
     const errori = [];
 
     // Determina la proprietà corretta in base al battleStyle ("single_tier" o "doubles_tier")
@@ -1821,7 +1821,6 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
                         const nomeChiave = p.name.toLowerCase().replace(/[^a-z0-9]/g, '');
                         const datoGrezzo = jsonDati[nomeChiave];
                         
-                        // 🛠️ FIX DINAMICO: Legge 'doubles_tier' o 'single_tier' dall'oggetto JSON
                         const stringaTier = (datoGrezzo && typeof datoGrezzo === 'object' 
                             ? datoGrezzo[proprietaTierDinamica] 
                             : datoGrezzo || "OU").toUpperCase();
@@ -1838,6 +1837,33 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
                     if (field === 'is_mythical') {
                         if (regola.value === "Only Mythical" && !p.is_mythical) {
                             errori.push(`[${p.name}] Non valido: Il formato accetta esclusivamente Pokémon Misteriosi.`);
+                        }
+                        return;
+                    }
+
+                    // 🔥 NUOVO CONTROLLO: Restrizione sulle Megaevoluzioni
+                    if (field === 'is_mega') {
+                        if (regola.value === false || regola.value === "false") {
+                            const nomeLower = p.name.toLowerCase();
+                            const idStrumento = p.strumento ? p.strumento.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : '';
+                            
+                            // Lista completa e ottimizzata di tutte le Megapietre ufficiali in lingua inglese (ID PokeAPI)
+                            const LISTA_MEGAPIETRE = [
+                                "abomasnite", "absolite", "aerodactylite", "aggronite", "alakazamite", "altarianite", "ampharosite", 
+                                "audinite", "banettite", "beedrillite", "blastoisinite", "blazikenite", "cameruptite", "charizardite-x", 
+                                "charizardite-y", "diancite", "galladite", "garchompite", "gardevoirite", "gengarite", "glalitite", 
+                                "gyaradosite", "heracronite", "houndoominite", "kangaskhanite", "latiasite", "latiosite", "lopunnite", 
+                                "lucarionite", "manectricite", "mawilite", "medichamite", "metagrossite", "mewtwonite-x", "mewtwonite-y", 
+                                "pidgeotite", "pinsirite", "sablenite", "salamencite", "sceptilite", "scizorite", "sharpedonite", 
+                                "slowbronite", "steelixite", "swampertite", "tyranitarite", "venusaurite"
+                            ];
+
+                            const terminaInMega = nomeLower.endsWith('-mega') || nomeLower.includes('-mega-');
+                            const haMegapietra = LISTA_MEGAPIETRE.includes(idStrumento);
+
+                            if (terminaInMega || haMegapietra) {
+                                errori.push(`[${p.name}] Non valido: Le Megaevoluzioni sono vietate in questo formato.`);
+                            }
                         }
                         return;
                     }
@@ -2349,6 +2375,23 @@ async function gestisciCambioFormatoHelper() {
     }
 
     try {
+        // 🌟 CORREZIONE CRUCIALE: Carichiamo il database globale SUBITO per qualsiasi formato, se non è in cache
+        if (!window.pokedexBase) {
+            console.log("[Helper Cache] Caricamento iniziale di pokedex_base.json...");
+            const resBase = await fetch('pkm-gens/pokedex_base.json');
+            if (!resBase.ok) {
+                if (grid) grid.innerHTML = `<div class="helper-placeholder-row" style="color: #d9534f;">❌ Critical Error: Unable to load base database.</div>`;
+                throw new Error(`Missing pkm-gens/pokedex_base.json!`);
+            }
+            
+            const pokedexBaseRaw = await resBase.json();
+            window.pokedexBase = {};
+            Object.keys(pokedexBaseRaw).forEach(key => {
+                window.pokedexBase[key.toLowerCase().trim()] = pokedexBaseRaw[key];
+            });
+            console.log("[Helper Cache] Database caricato in memoria globale con successo!");
+        }
+
         const snapshot = await db.ref(`regolamenti/${selectedFormatId}`).once('value');
         if (selectedFormatId !== window.currentHelperFormatId) return;
 
@@ -2401,18 +2444,8 @@ async function gestisciCambioFormatoHelper() {
         }
 
         if (chiaviSameAcross.length > 0) {
-            const resBase = await fetch('pkm-gens/pokedex_base.json');
-            if (selectedFormatId !== window.currentHelperFormatId) return;
-            if (!resBase.ok) {
-                if (grid) grid.innerHTML = `<div class="helper-placeholder-row" style="color: #d9534f;">❌ Critical Error: Unable to load base database.</div>`;
-                throw new Error(`Missing pkm-gens/pokedex_base.json!`);
-            }
-            
-            const pokedexBaseRaw = await resBase.json();
-            const pokedexBase = {};
-            Object.keys(pokedexBaseRaw).forEach(key => {
-                pokedexBase[key.toLowerCase().trim()] = pokedexBaseRaw[key];
-            });
+            // Utilizziamo il database centralizzato agganciato a window
+            const pokedexBase = window.pokedexBase;
 
             const regolamentoTemporaneo = JSON.parse(JSON.stringify(regolamento));
             chiaviSameAcross.forEach(chiave => {
@@ -2930,7 +2963,10 @@ if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
                     spriteId: spriteId, 
                     radice: radice, 
                     num: datoGrezzo.num || null, 
-                    ordineIniziale: contatoreOrdine++
+                    ordineIniziale: contatoreOrdine++,
+                    stats: datoGrezzo.stats || null,
+                    type: datoGrezzo.type || datoGrezzo.types || [],
+                    abilities: datoGrezzo.abilities || []
                 });
             });
         } catch (err) {
@@ -2961,8 +2997,16 @@ if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
             const radice = determinaRadice(nomeChiave, spriteId);
 
             poolFiltrato.push({ 
-                id: nomeChiave, name: nomeVisualizzato, spriteId: spriteId, radice: radice, num: datoGrezzo.num || null, ordineIniziale: contatoreOrdine++
-            });
+                    id: nomeChiave, 
+                    name: nomeVisualizzato, 
+                    spriteId: spriteId, 
+                    radice: radice, 
+                    num: datoGrezzo.num || null, 
+                    ordineIniziale: contatoreOrdine++,
+                    stats: datoGrezzo.stats || null,
+                    type: datoGrezzo.type || datoGrezzo.types || [],
+                    abilities: datoGrezzo.abilities || []
+                });
         });
     }
 
@@ -3014,7 +3058,7 @@ function renderizzaListaPiatta(pokemonList) {
 
     const MAPPA_STATS = {
         'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
-        'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
+        'sp. attack': 'SPA', 'sp. defense': 'SPD', 'speed': 'SPE'
     };
 
     let tooltip = document.getElementById('global-neubrutalist-tooltip');
@@ -3025,7 +3069,6 @@ function renderizzaListaPiatta(pokemonList) {
         document.body.appendChild(tooltip);
     }
 
-    // FUNZIONE DI POSIZIONAMENTO INTELLIGENTE CON COLLISION DETECTION
     function aggiustaPosizioneTooltip(cardElement, tooltipElement) {
         const rect = cardElement.getBoundingClientRect();
         const scrollY = window.scrollY;
@@ -3045,7 +3088,6 @@ function renderizzaListaPiatta(pokemonList) {
         const spazioSotto = window.innerHeight - rect.bottom;
         const spazioSopra = rect.top;
 
-        // 🌟 MODIFICA: Invece di 'none', applichiamo la rotazione salvata nel dataset
         const rotazioneCorrente = tooltipElement.dataset.rotation || '0deg';
         tooltipElement.style.transform = `rotate(${rotazioneCorrente})`;
 
@@ -3064,8 +3106,6 @@ function renderizzaListaPiatta(pokemonList) {
         const card = document.createElement('div');
         card.className = 'helper-pkm-card';
         card.dataset.id = pkm.id;
-        card.dataset.loaded = 'false';
-        card.dataset.cachedHtml = '';
 
         let timerCaricamento;
 
@@ -3087,88 +3127,96 @@ function renderizzaListaPiatta(pokemonList) {
             timerCaricamento = setTimeout(() => {
                 tooltip.dataset.currentId = pkm.id;
 
-                // 🌟 MODIFICA: Calcoliamo una rotazione casuale tra -1.5 e +1.5 gradi
-                // Math.random() * 3 genera un valore tra 0 e 3. Sottraendo 1.5 otteniamo il range [-1.5, 1.5]
                 const angoloCasuale = (Math.random() * 8 - 4).toFixed(2);
                 tooltip.dataset.rotation = `${angoloCasuale}deg`;
 
                 tooltip.style.display = 'block';
                 tooltip.style.opacity = '1';
 
-                if (card.dataset.loaded === 'true') {
-                    tooltip.innerHTML = card.dataset.cachedHtml;
-                    aggiustaPosizioneTooltip(card, tooltip);
-                } else {
-                    tooltip.innerHTML = `<div class="neubrutalist-loading">LOADING DATA...</div>`;
-                    aggiustaPosizioneTooltip(card, tooltip);
+                // 🌟 STRATEGIA DI RICERCA BLINDATA SU WINDOW
+                let infoPkm = null;
+
+                if (pkm && pkm.stats) {
+                    infoPkm = pkm;
+                } 
+                else if (window.pokedexBase) {
+                    const idCercato = String(pkm.id).toLowerCase().trim();
+                    const nomeCercato = String(pkm.name).toLowerCase().trim();
                     
-                    if (card.dataset.loaded === 'false') {
-                        card.dataset.loaded = 'loading';
-                        const pokeApiId = pkm.id.toLowerCase().replace(/[^a-z0-9-]/g, '');
-
-                        fetch(`https://pokeapi.co/api/v2/pokemon/${pokeApiId}`)
-                            .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-                            .then(data => {
-                                const htmlTipi = data.types.map(t => {
-                                    const colore = COLORI_TIPI[t.type.name] || '#777';
-                                    return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${t.type.name.toUpperCase()}</span>`;
-                                }).join('');
-
-                                const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
-                                const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo]) ? playerColors[nomePlayerAttivo] : '#00FF66';
-
-                                const htmlStats = data.stats.map(s => {
-                                    const nomeStat = MAPPA_STATS[s.stat.name] || s.stat.name.toUpperCase();
-                                    const valore = s.base_stat;
-                                    const percentualeBarra = Math.min(100, (valore / 160) * 100);
-                                    
-                                    return `
-                                        <div class="neubrutalist-stat-row">
-                                            <span class="neubrutalist-stat-label">${nomeStat}</span>
-                                            <div class="neubrutalist-stat-bar-bg">
-                                                <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
-                                            </div>
-                                            <span class="neubrutalist-stat-value">${valore}</span>
-                                        </div>
-                                    `;
-                                }).join('');
-
-                                const htmlAbilita = data.abilities.map(a => {
-                                    const nascosta = a.is_hidden ? ' <small style="opacity:0.6">(H)</small>' : '';
-                                    return `<span class="neubrutalist-ability-tag">${a.ability.name.replace('-', ' ').toUpperCase()}${nascosta}</span>`;
-                                }).join('');
-
-                                const finalHtml = `
-                                    <div class="neubrutalist-tooltip-header">
-                                        <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
-                                        <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
-                                    </div>
-                                    <div class="neubrutalist-tooltip-body">
-                                        <div class="neubrutalist-stats-container">${htmlStats}</div>
-                                        <div class="neubrutalist-abilities-title">ABILITIES</div>
-                                        <div class="neubrutalist-abilities-container">${htmlAbilita}</div>
-                                    </div>
-                                `;
-
-                                card.dataset.cachedHtml = finalHtml;
-                                card.dataset.loaded = 'true';
-
-                                if (tooltip.dataset.currentId === pkm.id) {
-                                    tooltip.innerHTML = finalHtml;
-                                    aggiustaPosizioneTooltip(card, tooltip);
-                                }
-                            })
-                            .catch(() => {
-                                const errorHtml = `<div class="neubrutalist-loading" style="color:red;">DATA ERROR</div>`;
-                                card.dataset.cachedHtml = errorHtml;
-                                card.dataset.loaded = 'false';
-                                if (tooltip.dataset.currentId === pkm.id) {
-                                    tooltip.innerHTML = errorHtml;
-                                    aggiustaPosizioneTooltip(card, tooltip);
-                                }
-                            });
-                    }
+                    // Cerca in modo sicuro basandosi sull'ID o sul Nome (tutto normalizzato in minuscolo)
+                    infoPkm = window.pokedexBase[idCercato] || window.pokedexBase[nomeCercato];
                 }
+
+                if (!infoPkm || !infoPkm.stats) {
+                    console.group(`❌ Errore di Mappatura per: ${pkm.name}`);
+                    console.log(`Dati ricevuti dalla lista (pkm):`, pkm);
+                    console.log(`window.pokedexBase esiste?`, !!window.pokedexBase);
+                    if (window.pokedexBase) {
+                        console.log(`Chiave cercata in minuscolo: "${String(pkm.id).toLowerCase().trim()}"`);
+                        console.log(`Esempio prime 3 chiavi disponibili nel DB:`, Object.keys(window.pokedexBase).slice(0, 3));
+                    }
+                    console.groupEnd();
+
+                    tooltip.innerHTML = `<div class="neubrutalist-loading" style="color:red; font-weight:bold; padding:10px;">DATA NOT FOUND</div>`;
+                    aggiustaPosizioneTooltip(card, tooltip);
+                    return;
+                }
+
+                // 1. Renderizzazione TIPI
+                const arrayTipi = infoPkm.type || infoPkm.types || [];
+                const htmlTipi = arrayTipi.map(t => {
+                    const tipoLower = t.toLowerCase().trim();
+                    const colore = COLORI_TIPI[tipoLower] || '#777';
+                    return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${tipoLower.toUpperCase()}</span>`;
+                }).join('');
+
+                // 2. Colore barra player
+                const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
+                const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo]) ? playerColors[nomePlayerAttivo] : '#00FF66';
+
+                // 3. Renderizzazione STATISTICHE
+                const htmlStats = Object.keys(MAPPA_STATS).map(chiaveStat => {
+                    const nomeStatVisualizzato = MAPPA_STATS[chiaveStat];
+                    const valore = infoPkm.stats[chiaveStat] || 0;
+                    const percentualeBarra = Math.min(100, (valore / 160) * 100);
+                    
+                    return `
+                        <div class="neubrutalist-stat-row">
+                            <span class="neubrutalist-stat-label">${nomeStatVisualizzato}</span>
+                            <div class="neubrutalist-stat-bar-bg">
+                                <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
+                            </div>
+                            <span class="neubrutalist-stat-value">${valore}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                // 4. Renderizzazione ABILITÀ
+                let arrayAbilita = [];
+                if (Array.isArray(infoPkm.abilities)) {
+                    arrayAbilita = infoPkm.abilities;
+                } else if (infoPkm.abilities && typeof infoPkm.abilities === 'object') {
+                    arrayAbilita = Object.values(infoPkm.abilities);
+                }
+
+                const htmlAbilita = arrayAbilita.map(abi => {
+                    return `<span class="neubrutalist-ability-tag">${String(abi).toUpperCase()}</span>`;
+                }).join('');
+
+                // Assemblaggio definitivo del Tooltip
+                tooltip.innerHTML = `
+                    <div class="neubrutalist-tooltip-header">
+                        <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
+                        <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
+                    </div>
+                    <div class="neubrutalist-tooltip-body">
+                        <div class="neubrutalist-stats-container">${htmlStats}</div>
+                        <div class="neubrutalist-abilities-title">ABILITIES</div>
+                        <div class="neubrutalist-abilities-container">${htmlAbilita || '<span class="neubrutalist-ability-tag" style="opacity:0.4;">UNKNOWN</span>'}</div>
+                    </div>
+                `;
+
+                aggiustaPosizioneTooltip(card, tooltip);
             }, 1000); 
         });
 
@@ -3180,7 +3228,7 @@ function renderizzaListaPiatta(pokemonList) {
                 tooltip.style.display = 'none';
                 tooltip.style.opacity = '0';
                 tooltip.dataset.currentId = '';
-                tooltip.dataset.rotation = '0deg'; // Reset sicurezza
+                tooltip.dataset.rotation = '0deg';
             }
         });
 

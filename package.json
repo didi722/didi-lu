@@ -21,6 +21,10 @@
   "dependencies": {
     "@capacitor/android": "^8.1.0",
     "@capacitor/cli": "^8.1.0",
-    "@capacitor/core": "^8.1.0"
+    "@capacitor/core": "^8.1.0",
+    "@pkmn/dex": "^0.10.11"
+  },
+  "directories": {
+    "doc": "docs"
   }
 }
