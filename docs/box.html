@@ -3037,216 +3037,322 @@ function renderizzaListaPiatta(pokemonList) {
 
     if (!grid) return;
 
-    if (countSpan) {
-        countSpan.textContent = pokemonList.length;
-    }
+    // 1. Salviamo la lista originale come proprietà del nodo DOM per accedervi durante i filtri
+    grid.originalPokemonList = pokemonList;
 
-    grid.innerHTML = '';
-
-    if (pokemonList.length === 0) {
-        grid.innerHTML = `<div class="helper-placeholder-row">No legal Pokémon found for this format.</div>`;
-        return;
-    }
-
-    const COLORI_TIPI = {
-        normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33',
-        grass: '#77cc55', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599',
-        ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
-        rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544',
-        steel: '#aaaabb', fairy: '#ee99ee'
-    };
-
-    const MAPPA_STATS = {
-        'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
-        'sp. attack': 'SPA', 'sp. defense': 'SPD', 'speed': 'SPE'
-    };
-
-    let tooltip = document.getElementById('global-neubrutalist-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'global-neubrutalist-tooltip';
-        tooltip.className = 'neubrutalist-tooltip';
-        document.body.appendChild(tooltip);
-    }
-
-    function aggiustaPosizioneTooltip(cardElement, tooltipElement) {
-        const rect = cardElement.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
-
-        const cardCenter = rect.left + scrollX + (rect.width / 2);
-        const tooltipWidth = tooltipElement.offsetWidth || 245;
-        let tooltipLeft = cardCenter - (tooltipWidth / 2);
-
-        if (tooltipLeft < 10) tooltipLeft = 10;
-        if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
-            tooltipLeft = window.innerWidth - tooltipWidth - 10;
-        }
-        tooltipElement.style.left = `${tooltipLeft}px`;
-
-        const tooltipHeight = tooltipElement.offsetHeight;
-        const spazioSotto = window.innerHeight - rect.bottom;
-        const spazioSopra = rect.top;
-
-        const rotazioneCorrente = tooltipElement.dataset.rotation || '0deg';
-        tooltipElement.style.transform = `rotate(${rotazioneCorrente})`;
-
-        if (spazioSotto >= tooltipHeight) {
-            tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
-        } else if (spazioSopra >= tooltipHeight) {
-            tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
-        } else if (spazioSotto > spazioSopra) {
-            tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
-        } else {
-            tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
-        }
-    }
-
-    pokemonList.forEach(pkm => {
-        const card = document.createElement('div');
-        card.className = 'helper-pkm-card';
-        card.dataset.id = pkm.id;
-
-        let timerCaricamento;
-
-        const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
-        const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
-
-        card.innerHTML = `
-            <div class="helper-pkm-gif-container">
-                <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
-                     onerror="this.onerror=null; this.src='${fallbackUrl}';">
-            </div>
-            <div class="helper-pkm-name"><span>${pkm.name}</span></div>
+    // 2. Creazione dinamica della barra dei controlli (Cerca + Ordina) SE non esiste già
+    let controlsContainer = document.getElementById('helper-pkm-controls');
+    if (!controlsContainer) {
+        controlsContainer = document.createElement('div');
+        controlsContainer.id = 'helper-pkm-controls';
+        controlsContainer.className = 'helper-controls-container';
+        
+        // Stile Neubrutalist compatto ottimizzato per l'allineamento nella barra superiore
+        controlsContainer.style.cssText = `
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            max-width: 450px;
+            margin: 0 15px;
+            flex-wrap: nowrap;
+            align-items: center;
         `;
 
-        // --- ENTRATA DEL MOUSE ---
-        card.addEventListener('mouseenter', () => {
-            clearTimeout(timerCaricamento);
+        controlsContainer.innerHTML = `
+            <input type="text" id="helper-search-bar" placeholder="🔍 Search Pokémon..." style="
+                flex: 1;
+                min-width: 130px;
+                padding: 6px 12px;
+                border: 3px solid #000;
+                border-radius: 0;
+                font-family: inherit;
+                font-size: 0.9rem;
+                box-shadow: 3px 3px 0px #000;
+                outline: none;
+                background: white;
+            ">
+            <select id="helper-sort-select" style="
+                padding: 6px 10px;
+                border: 3px solid #000;
+                border-radius: 0;
+                font-family: inherit;
+                font-size: 0.9rem;
+                box-shadow: 3px 3px 0px #000;
+                background: white;
+                cursor: pointer;
+                outline: none;
+            ">
+                <option value="num-asc">Pokédex N°</option>
+                <option value="alpha-asc">Alphabetical (A-Z)</option>
+                <option value="alpha-desc">Alphabetical (Z-A)</option>
+                <option value="bst-desc">BST (Strongest)</option>
+                <option value="bst-asc">BST (Weakest)</option>
+            </select>
+        `;
 
-            timerCaricamento = setTimeout(() => {
-                tooltip.dataset.currentId = pkm.id;
+        // 🌟 POSIZIONAMENTO AL LIVELLO SUPERIORE (Tra POKÉMONS e Found: X)
+        const badge = document.getElementById('helper-clause-badge');
+        if (badge && badge.parentNode) {
+            badge.parentNode.insertBefore(controlsContainer, badge);
+        } else {
+            // Fallback nel caso in cui il badge non venga trovato
+            grid.parentNode.insertBefore(controlsContainer, grid);
+        }
 
-                const angoloCasuale = (Math.random() * 8 - 4).toFixed(2);
-                tooltip.dataset.rotation = `${angoloCasuale}deg`;
+        // Listener per reagire istantaneamente ai cambi di input o select
+        document.getElementById('helper-search-bar').addEventListener('input', applicaFiltriEOrdinamento);
+        document.getElementById('helper-sort-select').addEventListener('change', applicaFiltriEOrdinamento);
+    } else {
+        // Se cambiamo formato o ricarichiamo la lista, resettiamo i campi ai valori di default
+        document.getElementById('helper-search-bar').value = '';
+        document.getElementById('helper-sort-select').value = 'num-asc';
+    }
 
-                tooltip.style.display = 'block';
-                tooltip.style.opacity = '1';
+    // --- FUNZIONI UTILITY DI SUPPORTO PER L'ORDINAMENTO ---
+    function calcolaBST(pkm) {
+        let infoPkm = (pkm && pkm.stats) ? pkm : (window.pokedexBase ? (window.pokedexBase[String(pkm.id).toLowerCase().trim()] || window.pokedexBase[String(pkm.name).toLowerCase().trim()]) : null);
+        if (!infoPkm || !infoPkm.stats) return 0;
+        return (infoPkm.stats['hp'] || 0) + 
+               (infoPkm.stats['attack'] || 0) + 
+               (infoPkm.stats['defense'] || 0) + 
+               (infoPkm.stats['sp. attack'] || 0) + 
+               (infoPkm.stats['sp. defense'] || 0) + 
+               (infoPkm.stats['speed'] || 0);
+    }
 
-                // 🌟 STRATEGIA DI RICERCA BLINDATA SU WINDOW
-                let infoPkm = null;
+    function getPokedexNum(pkm) {
+        if (pkm.num !== undefined) return pkm.num;
+        let infoPkm = window.pokedexBase ? (window.pokedexBase[String(pkm.id).toLowerCase().trim()] || window.pokedexBase[String(pkm.name).toLowerCase().trim()]) : null;
+        return infoPkm && infoPkm.num !== undefined ? infoPkm.num : 9999;
+    }
 
-                if (pkm && pkm.stats) {
-                    infoPkm = pkm;
-                } 
-                else if (window.pokedexBase) {
-                    const idCercato = String(pkm.id).toLowerCase().trim();
-                    const nomeCercato = String(pkm.name).toLowerCase().trim();
-                    
-                    // Cerca in modo sicuro basandosi sull'ID o sul Nome (tutto normalizzato in minuscolo)
-                    infoPkm = window.pokedexBase[idCercato] || window.pokedexBase[nomeCercato];
-                }
+    // --- LOGICA CORE DI FILTRAGGIO, ORDINAMENTO E RENDERING ---
+    function applicaFiltriEOrdinamento() {
+        const query = document.getElementById('helper-search-bar').value.toLowerCase().trim();
+        const criterioSort = document.getElementById('helper-sort-select').value;
 
-                if (!infoPkm || !infoPkm.stats) {
-                    console.group(`❌ Errore di Mappatura per: ${pkm.name}`);
-                    console.log(`Dati ricevuti dalla lista (pkm):`, pkm);
-                    console.log(`window.pokedexBase esiste?`, !!window.pokedexBase);
-                    if (window.pokedexBase) {
-                        console.log(`Chiave cercata in minuscolo: "${String(pkm.id).toLowerCase().trim()}"`);
-                        console.log(`Esempio prime 3 chiavi disponibili nel DB:`, Object.keys(window.pokedexBase).slice(0, 3));
-                    }
-                    console.groupEnd();
-
-                    tooltip.innerHTML = `<div class="neubrutalist-loading" style="color:red; font-weight:bold; padding:10px;">DATA NOT FOUND</div>`;
-                    aggiustaPosizioneTooltip(card, tooltip);
-                    return;
-                }
-
-                // 1. Renderizzazione TIPI
-                const arrayTipi = infoPkm.type || infoPkm.types || [];
-                const htmlTipi = arrayTipi.map(t => {
-                    const tipoLower = t.toLowerCase().trim();
-                    const colore = COLORI_TIPI[tipoLower] || '#777';
-                    return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${tipoLower.toUpperCase()}</span>`;
-                }).join('');
-
-                // 2. Colore barra player
-                const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
-                const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo]) ? playerColors[nomePlayerAttivo] : '#00FF66';
-
-                // 3. Renderizzazione STATISTICHE
-                const htmlStats = Object.keys(MAPPA_STATS).map(chiaveStat => {
-                    const nomeStatVisualizzato = MAPPA_STATS[chiaveStat];
-                    const valore = infoPkm.stats[chiaveStat] || 0;
-                    const percentualeBarra = Math.min(100, (valore / 160) * 100);
-                    
-                    return `
-                        <div class="neubrutalist-stat-row">
-                            <span class="neubrutalist-stat-label">${nomeStatVisualizzato}</span>
-                            <div class="neubrutalist-stat-bar-bg">
-                                <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
-                            </div>
-                            <span class="neubrutalist-stat-value">${valore}</span>
-                        </div>
-                    `;
-                }).join('');
-
-                // 4. Renderizzazione ABILITÀ
-                let arrayAbilita = [];
-                if (Array.isArray(infoPkm.abilities)) {
-                    arrayAbilita = infoPkm.abilities;
-                } else if (infoPkm.abilities && typeof infoPkm.abilities === 'object') {
-                    arrayAbilita = Object.values(infoPkm.abilities);
-                }
-
-                const htmlAbilita = arrayAbilita.map(abi => {
-                    return `<span class="neubrutalist-ability-tag">${String(abi).toUpperCase()}</span>`;
-                }).join('');
-
-                // Assemblaggio definitivo del Tooltip
-                tooltip.innerHTML = `
-                    <div class="neubrutalist-tooltip-header">
-                        <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
-                        <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
-                    </div>
-                    <div class="neubrutalist-tooltip-body">
-                        <div class="neubrutalist-stats-container">${htmlStats}</div>
-                        <div class="neubrutalist-abilities-title">ABILITIES</div>
-                        <div class="neubrutalist-abilities-container">${htmlAbilita || '<span class="neubrutalist-ability-tag" style="opacity:0.4;">UNKNOWN</span>'}</div>
-                    </div>
-                `;
-
-                aggiustaPosizioneTooltip(card, tooltip);
-            }, 1000); 
+        // A. FILTRAGGIO SU LISTA ORIGINALE
+        let listaFiltrata = grid.originalPokemonList.filter(pkm => {
+            return pkm.name.toLowerCase().includes(query);
         });
 
-        // --- USCITA DEL MOUSE ---
-        card.addEventListener('mouseleave', () => {
-            clearTimeout(timerCaricamento);
-
-            if (tooltip.dataset.currentId === pkm.id) {
-                tooltip.style.display = 'none';
-                tooltip.style.opacity = '0';
-                tooltip.dataset.currentId = '';
-                tooltip.dataset.rotation = '0deg';
+        // B. ORDINAMENTO DINAMICO
+        listaFiltrata.sort((a, b) => {
+            switch (criterioSort) {
+                case 'num-asc':
+                    return getPokedexNum(a) - getPokedexNum(b);
+                case 'alpha-asc':
+                    return a.name.localeCompare(b.name);
+                case 'alpha-desc':
+                    return b.name.localeCompare(a.name);
+                case 'bst-desc':
+                    return calcolaBST(b) - calcolaBST(a);
+                case 'bst-asc':
+                    return calcolaBST(a) - calcolaBST(b);
+                default:
+                    return 0;
             }
         });
 
-        card.addEventListener('click', () => {
-            console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
-        });
-
-        grid.appendChild(card);
-
-        const nameContainer = card.querySelector('.helper-pkm-name');
-        const nameSpan = nameContainer.querySelector('span');
-        const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
-        
-        if (overflowPixels > 0) {
-            nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
-            nameContainer.classList.add('marquee-bounce');
+        // Aggiorna il contatore in tempo reale basandosi sui risultati visibili
+        if (countSpan) {
+            countSpan.textContent = listaFiltrata.length;
         }
-    });
+
+        grid.innerHTML = '';
+
+        if (listaFiltrata.length === 0) {
+            grid.innerHTML = `<div class="helper-placeholder-row">No matching Pokémon found.</div>`;
+            return;
+        }
+
+        // Configurato costanti globali per il Tooltip (Invariate)
+        const COLORI_TIPI = {
+            normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33',
+            grass: '#77cc55', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599',
+            ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
+            rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544',
+            steel: '#aaaabb', fairy: '#ee99ee'
+        };
+
+        const MAPPA_STATS = {
+            'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
+            'sp. attack': 'SPA', 'sp. defense': 'SPD', 'speed': 'SPE'
+        };
+
+        let tooltip = document.getElementById('global-neubrutalist-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'global-neubrutalist-tooltip';
+            tooltip.className = 'neubrutalist-tooltip';
+            document.body.appendChild(tooltip);
+        }
+
+        function aggiustaPosizioneTooltip(cardElement, tooltipElement) {
+            const rect = cardElement.getBoundingClientRect();
+            const scrollY = window.scrollY;
+            const scrollX = window.scrollX;
+
+            const cardCenter = rect.left + scrollX + (rect.width / 2);
+            const tooltipWidth = tooltipElement.offsetWidth || 245;
+            let tooltipLeft = cardCenter - (tooltipWidth / 2);
+
+            if (tooltipLeft < 10) tooltipLeft = 10;
+            if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
+                tooltipLeft = window.innerWidth - tooltipWidth - 10;
+            }
+            tooltipElement.style.left = `${tooltipLeft}px`;
+
+            const tooltipHeight = tooltipElement.offsetHeight;
+            const spazioSotto = window.innerHeight - rect.bottom;
+            const spazioSopra = rect.top;
+
+            const rotazioneCorrente = tooltipElement.dataset.rotation || '0deg';
+            tooltipElement.style.transform = `rotate(${rotazioneCorrente})`;
+
+            if (spazioSotto >= tooltipHeight) {
+                tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+            } else if (spazioSopra >= tooltipHeight) {
+                tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+            } else if (spazioSotto > spazioSopra) {
+                tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+            } else {
+                tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+            }
+        }
+
+        // C. RENDER DELLE CARD (Ciclato esclusivamente sulla lista filtrata e ordinata)
+        listaFiltrata.forEach(pkm => {
+            const card = document.createElement('div');
+            card.className = 'helper-pkm-card';
+            card.dataset.id = pkm.id;
+
+            let timerCaricamento;
+
+            const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
+            const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
+
+            card.innerHTML = `
+                <div class="helper-pkm-gif-container">
+                    <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
+                         onerror="this.onerror=null; this.src='${fallbackUrl}';">
+                </div>
+                <div class="helper-pkm-name"><span>${pkm.name}</span></div>
+            `;
+
+            // MouseEnter, MouseLeave, Click ed effetti Marquee (Logiche invariate)
+            card.addEventListener('mouseenter', () => {
+                clearTimeout(timerCaricamento);
+
+                timerCaricamento = setTimeout(() => {
+                    tooltip.dataset.currentId = pkm.id;
+
+                    const angoloCasuale = (Math.random() * 8 - 4).toFixed(2);
+                    tooltip.dataset.rotation = `${angoloCasuale}deg`;
+
+                    tooltip.style.display = 'block';
+                    tooltip.style.opacity = '1';
+
+                    let infoPkm = null;
+
+                    if (pkm && pkm.stats) {
+                        infoPkm = pkm;
+                    } 
+                    else if (window.pokedexBase) {
+                        const idCercato = String(pkm.id).toLowerCase().trim();
+                        const nomeCercato = String(pkm.name).toLowerCase().trim();
+                        infoPkm = window.pokedexBase[idCercato] || window.pokedexBase[nomeCercato];
+                    }
+
+                    if (!infoPkm || !infoPkm.stats) {
+                        tooltip.innerHTML = `<div class="neubrutalist-loading" style="color:red; font-weight:bold; padding:10px;">DATA NOT FOUND</div>`;
+                        aggiustaPosizioneTooltip(card, tooltip);
+                        return;
+                    }
+
+                    const arrayTipi = infoPkm.type || infoPkm.types || [];
+                    const htmlTipi = arrayTipi.map(t => {
+                        const tipoLower = t.toLowerCase().trim();
+                        const colore = COLORI_TIPI[tipoLower] || '#777';
+                        return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${tipoLower.toUpperCase()}</span>`;
+                    }).join('');
+
+                    const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
+                    const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo]) ? playerColors[nomePlayerAttivo] : '#00FF66';
+
+                    const htmlStats = Object.keys(MAPPA_STATS).map(chiaveStat => {
+                        const nomeStatVisualizzato = MAPPA_STATS[chiaveStat];
+                        const valore = infoPkm.stats[chiaveStat] || 0;
+                        const percentualeBarra = Math.min(100, (valore / 160) * 100);
+                        
+                        return `
+                            <div class="neubrutalist-stat-row">
+                                <span class="neubrutalist-stat-label">${nomeStatVisualizzato}</span>
+                                <div class="neubrutalist-stat-bar-bg">
+                                    <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
+                                </div>
+                                <span class="neubrutalist-stat-value">${valore}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    let arrayAbilita = [];
+                    if (Array.isArray(infoPkm.abilities)) {
+                        arrayAbilita = infoPkm.abilities;
+                    } else if (infoPkm.abilities && typeof infoPkm.abilities === 'object') {
+                        arrayAbilita = Object.values(infoPkm.abilities);
+                    }
+
+                    const htmlAbilita = arrayAbilita.map(abi => {
+                        return `<span class="neubrutalist-ability-tag">${String(abi).toUpperCase()}</span>`;
+                    }).join('');
+
+                    tooltip.innerHTML = `
+                        <div class="neubrutalist-tooltip-header">
+                            <div class="neubrutalist-tooltip-title">${pkm.name.toUpperCase()}</div>
+                            <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
+                        </div>
+                        <div class="neubrutalist-tooltip-body">
+                            <div class="neubrutalist-stats-container">${htmlStats}</div>
+                            <div class="neubrutalist-abilities-title">ABILITIES</div>
+                            <div class="neubrutalist-abilities-container">${htmlAbilita || '<span class="neubrutalist-ability-tag" style="opacity:0.4;">UNKNOWN</span>'}</div>
+                        </div>
+                    `;
+
+                    aggiustaPosizioneTooltip(card, tooltip);
+                }, 1000); 
+            });
+
+            card.addEventListener('mouseleave', () => {
+                clearTimeout(timerCaricamento);
+
+                if (tooltip.dataset.currentId === pkm.id) {
+                    tooltip.style.display = 'none';
+                    tooltip.style.opacity = '0';
+                    tooltip.dataset.currentId = '';
+                    tooltip.dataset.rotation = '0deg';
+                }
+            });
+
+            card.addEventListener('click', () => {
+                console.log(`Selezionato dall'helper: ${pkm.name} (${pkm.id})`);
+            });
+
+            grid.appendChild(card);
+
+            const nameContainer = card.querySelector('.helper-pkm-name');
+            const nameSpan = nameContainer.querySelector('span');
+            const overflowPixels = nameSpan.offsetWidth - nameContainer.clientWidth;
+            
+            if (overflowPixels > 0) {
+                nameContainer.style.setProperty('--distanza-scorrimento', `-${overflowPixels + 8}px`);
+                nameContainer.classList.add('marquee-bounce');
+            }
+        });
+    }
+
+    // 4. Primo avvio forzato per popolare la griglia all'apertura del modale
+    applicaFiltriEOrdinamento();
 }
 
 function inizializzaChiusuraHelper(event) {
