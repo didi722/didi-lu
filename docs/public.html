@@ -1524,6 +1524,7 @@ async function caricaPokemonPreferito(pkmNome) {
 
         // 5. GESTIONE PROFONDITÀ (Z-INDEX)
         const sempreDavantiBlacklist = ['misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
+        const sempreDietroBlacklist = ['metagross'];
         const sogliaDietro = trainerAltezzaM * 1.2; 
         
         if (sempreDavantiBlacklist.includes(pkmNomePulito)) {
@@ -1532,6 +1533,14 @@ async function caricaPokemonPreferito(pkmNome) {
             pkmArea.className = "pokemon-column pokemon-back";
         } else {
             pkmArea.className = "pokemon-column pokemon-front";
+        }
+
+        if (sempreDietroBlacklist.includes(pkmNomePulito)) {
+            pkmArea.className = "pokemon-column pokemon-back";
+        } else if (isFloating || pkmAltezzaM <= sogliaDietro) {
+            pkmArea.className = "pokemon-column pokemon-front";
+        } else {
+            pkmArea.className = "pokemon-column pokemon-back";
         }
 
         // 6. INIEZIONE HTML - AGGIORNATA PER OMBRA SENZA SPORCO
