@@ -577,7 +577,6 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
     const limitLabel = isNoLimit ? "No Limit" : `${maxTeamsPerFormat} TEAMS PER FORMAT`;
 
     const countIscritti = data.iscritti ? Object.keys(data.iscritti).length : 0;
-    const limitIscritti = info.participants_limit || "0";
 
     // --- 2. AGGIORNAMENTO SUMMARY BOX (Neubrutalist) ---
 const summaryBox = document.getElementById('season-summary-content');
@@ -659,7 +658,7 @@ const summaryBox = document.getElementById('season-summary-content');
    // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
     const partCardTitle = document.getElementById('players-count-title');
     if (partCardTitle) {
-        partCardTitle.innerText = `PLAYERS: ${countIscritti}/${limitIscritti}`;
+        partCardTitle.innerText = `PLAYERS: ${countIscritti}`;
     }
     const partList = document.getElementById('participants-list');
     if (!partList) return;

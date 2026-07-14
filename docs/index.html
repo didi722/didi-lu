@@ -840,9 +840,9 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                     
                     <div style="flex: 1;" class="modal-structure-list">
                         <span class="modal-column-title" style="display: block; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; border-bottom: 2px solid #000;">Structure</span>
-                        <div class="modal-info-box" style="margin-bottom: 5px;">Players: <strong>${countIscritti} / ${limit}</strong></div>
+                        <div class="modal-info-box" style="margin-bottom: 5px;">Players: <strong>${countIscritti}</strong></div>
                         <div class="modal-info-box" style="margin-bottom: 5px;">Showdowns: <strong>${info.showdowns_per_format || 0}</strong></div>
-                        <div class="modal-info-box" style="margin-bottom: 5px;">Days: <strong>${info.total_days || 0}</strong></div>
+                        <div class="modal-info-box" style="margin-bottom: 5px;">Days: <strong>${(info.showdowns_per_format || 0) * countIscritti}</strong></div>
                     </div>
                 </div>
                 <p style="margin-top: 25px; text-align: center; font-size: 0.85rem; opacity: 0.7; font-style: italic;">
