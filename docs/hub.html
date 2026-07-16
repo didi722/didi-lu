@@ -578,55 +578,119 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
 
     const countIscritti = data.iscritti ? Object.keys(data.iscritti).length : 0;
 
+    // --- NUOVO CALCOLO FORMATI E MATCH TOTALI ---
+    let countFormati = 0;
+    if (info.selected_formats) {
+        countFormati = Array.isArray(info.selected_formats) 
+            ? info.selected_formats.length 
+            : Object.keys(info.selected_formats).length;
+    }
+    const showdownsPerFormato = parseInt(info.showdowns_per_format) || 0;
+    
+    // Formula corretta: (iscritti - 1) * formati * showdowns (minimo 0)
+    const totalMatches = Math.max(0, countIscritti - 1) * countFormati * showdownsPerFormato;
+
+    // Iniezione degli stili CSS per le etichette neubrutalist (Senza effetto Hover)
+    if (!document.getElementById('neubru-badge-styles')) {
+        const style = document.createElement('style');
+        style.id = 'neubru-badge-styles';
+        style.innerHTML = `
+            .hub-stats-row {
+                display: flex;
+                gap: 15px;
+                margin-top: 20px;
+                justify-content: center;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            .neubru-badge-white {
+                background: #ffffff !important;
+                border: 3px solid #000000 !important;
+                box-shadow: 4px 4px 0px #000000 !important;
+                padding: 10px 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-width: 140px;
+            }
+            .neubru-badge-white .badge-title {
+                font-size: 0.65rem;
+                font-weight: 900;
+                text-transform: uppercase;
+                color: #555555;
+                letter-spacing: 1.5px;
+                margin-bottom: 4px;
+                text-align: center;
+            }
+            .neubru-badge-white .badge-value {
+                font-size: 1.3rem;
+                font-weight: 900;
+                color: #000000;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     // --- 2. AGGIORNAMENTO SUMMARY BOX (Neubrutalist) ---
-const summaryBox = document.getElementById('season-summary-content');
+    const summaryBox = document.getElementById('season-summary-content');
     if (summaryBox) {
         summaryBox.innerHTML = `
             <div class="hub-new-layout">
                 <div id="registration-column" class="registration-column">
-                    </div>
+                </div>
 
                 <div class="hub-center-zone">
                     <div class="countdown-main-container">
-                        <div class="countdown-label">REGISTRATIONS <br> CLOSE IN</div>
+                        <div class="countdown-label">REGISTRATIONS <br> CLOSE IN:</div>
                         <div id="hub-countdown-timer" class="countdown-digits">00D 00H 00M 00S</div>
                     </div>
                     
-                    
+                    <!-- Box Informativi Bianchi Flottanti (Statici) -->
+                    <div class="hub-stats-row">
+                        <div class="neubru-badge-white">
+                            <span class="badge-title">Showdowns <br> Per Format</span>
+                            <span class="badge-value">${showdownsPerFormato}</span>
+                        </div>
+                        <div class="neubru-badge-white">
+                            <span class="badge-title">Total Matches</span>
+                            <span class="badge-value">${totalMatches}</span>
+                        </div>
+                    </div>
                 </div>
-
             </div>
         `;
 
-    // Avvia il timer se c'è una deadline
-    if (info.deadline) {
-        if (window.hubInterval) clearInterval(window.hubInterval); // Pulisci timer vecchi
-        
-        const updateTimer = () => {
-            const now = new Date().getTime();
-            const distance = new Date(info.deadline).getTime() - now;
-            const timerEl = document.getElementById('hub-countdown-timer');
+        // Avvia il timer se c'è una deadline
+        if (info.deadline) {
+            if (window.hubInterval) clearInterval(window.hubInterval); // Pulisci timer vecchi
             
-            if (!timerEl) return;
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const distance = new Date(info.deadline).getTime() - now;
+                const timerEl = document.getElementById('hub-countdown-timer');
+                
+                if (!timerEl) return;
 
-            if (distance < 0) {
-                timerEl.innerText = "CLOSED";
-                timerEl.style.color = "#ff4b4b";
-                return;
-            }
+                if (distance < 0) {
+                    timerEl.innerText = "CLOSED";
+                    timerEl.style.color = "#ff4b4b";
+                    return;
+                }
 
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            timerEl.innerText = `${days}D ${hours}H ${minutes}M ${seconds}S`;
-        };
+                timerEl.innerText = `${days}D ${hours}H ${minutes}M ${seconds}S`;
+            };
 
-        updateTimer();
-        window.hubInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+            window.hubInterval = setInterval(updateTimer, 1000);
+        }
     }
-}
+
     // --- 3. BOTTONI REGISTRAZIONE ---
     const btnContainer = document.getElementById('registration-column');
     btnContainer.innerHTML = '';
@@ -640,7 +704,6 @@ const summaryBox = document.getElementById('season-summary-content');
             const isFull = isNoLimit ? (count > 0) : (count >= maxTeamsPerFormat);
 
             const btn = document.createElement('button');
-            // Classi CSS per lo stato del bottone
             btn.className = `btn-team ${isOverLimit ? 'overlimit' : (isFull ? 'registered' : '')}`;
             
             let counterHTML = isNoLimit ? (count > 0 ? `${count}` : "∞") : `${count}/${maxTeamsPerFormat}`;
@@ -654,8 +717,7 @@ const summaryBox = document.getElementById('season-summary-content');
         });
     }
 
-    // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
-   // --- 4. SIDEBAR PARTECIPANTI (Con controllo ID Rendering) ---
+    // --- 4. SIDEBAR PARTECIPANTI ---
     const partCardTitle = document.getElementById('players-count-title');
     if (partCardTitle) {
         partCardTitle.innerText = `PLAYERS: ${countIscritti}`;
@@ -668,12 +730,10 @@ const summaryBox = document.getElementById('season-summary-content');
         const playerNames = Object.keys(data.iscritti);
         
         for (const player of playerNames) {
-            // Controllo anti-sovrapposizione pre-asincronia
             if (myRenderID !== currentRenderID) return;
 
             const colors = await getPlayersColors(player, player);
 
-            // Controllo anti-sovrapposizione post-asincronia
             if (myRenderID !== currentRenderID) return;
 
             const baseCol = colors.c1 || "#eeeeee";
@@ -682,15 +742,13 @@ const summaryBox = document.getElementById('season-summary-content');
             const tag = document.createElement('div');
             tag.className = "player-tag";
             
-            // Applichiamo i colori dinamici e aggiungiamo il puntatore per la cliccabilità
             tag.style.backgroundColor = baseCol;
             tag.style.borderColor = borderCol;
             tag.style.boxShadow = `4px 4px 0px ${borderCol}`;
-            tag.style.cursor = "pointer"; // Mostra la manina al passaggio del mouse
+            tag.style.cursor = "pointer";
 
             tag.innerHTML = `<span class="player-label">${player.toUpperCase()}</span>`;
             
-            // Reindirizzamento alla pagina pubblica del giocatore al click
             tag.onclick = () => {
                 window.location.href = `public.html?player=${encodeURIComponent(player)}`;
             };

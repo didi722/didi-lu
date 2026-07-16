@@ -115,6 +115,10 @@
     </div>
 </div>
 
+<!-- Sfondo scuro e sfocato -->
+<div id="admin-backdrop" class="admin-backdrop" onclick="chiudiAdminProtetto()"></div>
+
+<!-- Admin Panel (Ora si comporta da vero Modale) -->
 <div id="admin-panel" class="admin-panel">
     <h3 class="admin-panel.h3">Showdown Importer</h3>
     <input type="text" id="admin-team-name" class="admin-team-name" placeholder="Team Name">
@@ -125,7 +129,8 @@
 
     <textarea id="showdown-input" rows="8" class="showdown-input" placeholder="Paste Showdown team here..."></textarea>
     <button onclick="salvaTeamSuFirebase()" class="showdown-save">Upload</button>
-    <button onclick="document.getElementById('admin-panel').style.display='none'" class="showdown-cancel">Cancel</button>
+    
+    <!-- Modificato per chiudere correttamente il modale e il backdrop -->
 </div>
 
 <button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Team">
@@ -565,15 +570,25 @@ document.addEventListener('click', () => {
 // 6. Funzione Admin
 function apriAdminProtetto() {
     const adminPanel = document.getElementById('admin-panel');
-    
-    if (adminPanel) {
-        // Mostra il pannello
+    const backdrop = document.getElementById('admin-backdrop');
+   
+    if (adminPanel && backdrop) {
+        // Mostra sia il modale che lo sfondo sfocato
+        backdrop.style.display = 'block';
         adminPanel.style.display = 'block';
-        
-        // Opzionale: scrolla automaticamente fino al pannello se è in fondo alla pagina
-        adminPanel.scrollIntoView({ behavior: 'smooth' });
     } else {
-        console.error("Errore: Elemento 'admin-panel' non trovato nel DOM.");
+        console.error("Errore: Elementi del modale non trovati nel DOM.");
+    }
+}
+
+function chiudiAdminProtetto() {
+    const adminPanel = document.getElementById('admin-panel');
+    const backdrop = document.getElementById('admin-backdrop');
+
+    if (adminPanel && backdrop) {
+        // Nasconde entrambi
+        backdrop.style.display = 'none';
+        adminPanel.style.display = 'none';
     }
 }
 
@@ -2597,7 +2612,85 @@ async function gestisciCambioFormatoHelper() {
 }
 
 async function generaListaPokémonPerFormato(regolamento, jsonDati) {
-    if (!jsonDati) {
+    // 🌀 1. GESTIONE DIRETTA DEL CARICAMENTO (LOADER)
+    const grid = document.getElementById('helper-pkm-grid');
+    const countSpan = document.getElementById('helper-count');
+    
+    if (grid) {
+        if (countSpan) countSpan.textContent = "...";
+        
+        // Inseriamo la Pokéball rotante Neubrutalist nella griglia
+        grid.innerHTML = `
+            <div class="pokeball-loader-container">
+                <div class="pokeball-spinner"></div>
+                <div class="loading-text">Loading Pokédex...</div>
+            </div>
+        `;
+
+        // Se lo stile CSS del loader non esiste ancora nella pagina, lo iniettiamo dinamicamente
+        if (!document.getElementById('neubrutalist-loader-styles')) {
+            const style = document.createElement('style');
+            style.id = 'neubrutalist-loader-styles';
+            style.innerHTML = `
+                .pokeball-loader-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 80px 20px;
+                    grid-column: 1 / -1; /* Occupa tutta la larghezza se è una CSS Grid */
+                    width: 100%;
+                }
+                .pokeball-spinner {
+                    width: 60px;
+                    height: 60px;
+                    background: linear-gradient(to bottom, #ff3e3e 50%, #ffffff 50%);
+                    border: 5px solid #000000;
+                    border-radius: 50%;
+                    position: relative;
+                    /* Animazione fluida ma scattante in stile fumetto/Neubrutalist */
+                    animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+                }
+                /* Linea nera centrale della Pokéball */
+                .pokeball-spinner::before {
+                    content: "";
+                    position: absolute;
+                    height: 6px;
+                    width: 100%;
+                    background: #000000;
+                    top: 50%;
+                    left: 0;
+                    transform: translateY(-50%);
+                }
+                /* Pulsante centrale bianco */
+                .pokeball-spinner::after {
+                    content: "";
+                    position: absolute;
+                    width: 16px;
+                    height: 16px;
+                    background: #ffffff;
+                    border: 5px solid #000000;
+                    border-radius: 50%;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+                .loading-text {
+                    margin-top: 20px;
+                    font-size: 1.1rem;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    color: #000000;
+                }
+                @keyframes spinPokeball {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }    if (!jsonDati) {
         return { tipoLayout: "FLAT", pokemon: [] };
     }
 

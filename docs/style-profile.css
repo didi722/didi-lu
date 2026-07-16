@@ -18,7 +18,7 @@
 }
 
 body {
-    background-color: var(--bg-page);
+    background: linear-gradient(135deg, var(--bg-body-index) -50%, var(--bg-gradient-end-index) 100%) !important;
     color: var(--black);
     font-family: 'Montserrat', sans-serif;
     margin: 0;
@@ -707,6 +707,12 @@ body {
     transform: translate(-3px, -3px) rotate(0deg);
     box-shadow: 7px 7px 0px black;
 }
+
+.user-dropdown .menu-item:active{
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0;
+}
+
 
 /* Rimuoviamo il divisore classico, non serve più con questo stile */
 .menu-divider {

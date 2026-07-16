@@ -266,6 +266,12 @@ body {
     box-shadow: 7px 7px 0px black;
 }
 
+.user-dropdown .menu-item:active{
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0;
+}
+
+
 /* Rimuoviamo il divisore classico, non serve più con questo stile */
 .menu-divider {
     display: none;

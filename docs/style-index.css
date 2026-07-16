@@ -676,7 +676,7 @@ input, select {
     border: none;
     cursor: pointer;
     text-transform: uppercase;
-    border: 2px solid black !important;
+    border: 3px solid black !important;
     box-shadow: 6px 6px 0 black;
 }
 
@@ -688,13 +688,20 @@ input, select {
     padding: 12px;
     cursor: pointer;
     font-weight: bold;
-    transition: background 0.3s;
+    transition: 0.1s all ease;
     font-family: Josefin Sans, sans-serif;
+    transform: rotate(1deg);
 
 }
 
 .btn-save:hover {
-    background: #056425;
+    transform: translateY(-3px);
+    box-shadow: 8px 8px 0 black;
+}
+
+.btn-save:active {
+    transform: translateY(3px);
+    box-shadow: 0px 0px 0 black;
 }
 
 /* Bottone Cancella */
@@ -705,13 +712,20 @@ input, select {
     border: none;
     padding: 12px;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: 0.1s all ease;
     font-family: Josefin Sans, sans-serif;
     font-weight: bold;
+    transform: rotate(-2deg);
 }
 
 .btn-cancel:hover {
-    background: #6d0b0b;
+    transform: translateY(-3px);
+    box-shadow: 8px 8px 0 black;
+}
+
+.btn-cancel:active {
+    transform: translateY(3px);
+    box-shadow: 0px 0px 0 black;
 }
 
 .btn-save {
@@ -1254,9 +1268,7 @@ input, select {
     width: 95%;
     max-width: 600px;
     padding: 35px;
-    background: #2e53cd !important;
-    border: 2px solid black !important;
-    box-shadow: 8px 8px 0px black;
+    background: transparent !important;
     color: white;
 }
 
@@ -1305,8 +1317,8 @@ input, select {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
     z-index: 999;
 }
 
@@ -1326,13 +1338,15 @@ input, select {
 }
 
 .modal-format-list li {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--yellow);
     margin-bottom: 12px; /* Uguale al gap della colonna destra */
     padding: 12px 15px;
     font-size: 0.95rem;
-    color: white;
+    color:black;
     text-transform: uppercase;
     margin-top: 20px;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0 black;
 }
 
 /* COLONNA DESTRA: Structure */
@@ -1344,7 +1358,9 @@ input, select {
 }
 
 .modal-info-box {
-    background: rgba(255, 255, 255, 0.05);
+    background: #2e53cd;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0 black;
     padding: 12px 15px; /* Padding uguale a sinistra */
     font-size: 0.95rem;
     color: #eeeeee;
@@ -1356,7 +1372,37 @@ input, select {
     color: #5ff3b8 !important; /* Verde per contrasto, il nero #1a1a1a spariva */
 }
 
+.modal-info-box-2 {
+    background: #2e53cd;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0 black;
+    padding: 12px 15px; /* Padding uguale a sinistra */
+    font-size: 0.95rem;
+    color: #eeeeee;
+    text-transform: uppercase;
+    margin-left: 30px;
+}
 
+/* Testo importante */
+.modal-info-box-2 strong {
+    color: #5ff3b8 !important; /* Verde per contrasto, il nero #1a1a1a spariva */
+}
+
+.modal-info-box-3 {
+    background: #2e53cd;
+    border: 3px solid black;
+    box-shadow: 5px 5px 0 black;
+    padding: 12px 15px; /* Padding uguale a sinistra */
+    font-size: 0.95rem;
+    color: #eeeeee;
+    text-transform: uppercase;
+    margin-left: 60px;
+}
+
+/* Testo importante */
+.modal-info-box-3 strong {
+    color: #5ff3b8 !important; /* Verde per contrasto, il nero #1a1a1a spariva */
+}
 
 #login-modal.modal {
     backdrop-filter: blur(4px); /* Leggero blur per focus */
@@ -1615,6 +1661,11 @@ input, select {
     box-shadow: 7px 7px 0px black;
 }
 
+.user-dropdown .menu-item:active{
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0;
+}
+
 /* Rimuoviamo il divisore classico, non serve più con questo stile */
 .menu-divider {
     display: none;
@@ -1723,4 +1774,156 @@ input, select {
 .menu-backdrop.active {
     display: block;
     opacity: 1;
+}
+
+/* ==========================================================================
+   THE REAL NEUBRUTALIST MODAL (SCREENSHOT STYLE)
+   ========================================================================== */
+
+/* Overlay con effetto sfocatura sullo sfondo di gioco */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(233, 233, 233, 0.1) !important; /* Sfondo grigio semi-trasparente */
+    backdrop-filter: blur(25px);                 /* Sfocatura profonda */
+    -webkit-backdrop-filter: blur(25px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Contenitore principale del Modale (Frameless come nello screenshot) */
+.modal-content-box {
+    background: transparent;                     /* Gli elementi galleggiano direttamente sul blur */
+    max-width: 700px;
+    width: 90%;
+    font-family: 'Rubik', 'Montserrat', 'Impact', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* --- I BADGE / ETICHETTE --- */
+
+/* Titolo Principale (Nero con testo bianco) */
+.neubru-title-badge {
+    display: inline-block;
+    background: #000000;
+    color: #ffffff;
+    padding: 10px 22px;
+    border: 3px solid #000000;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
+    font-weight: 900;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transform: rotate(-2.5deg);                  /* Inclinazione decisa */
+    align-self: flex-start;
+    margin-bottom: 20px;
+}
+
+/* Etichette Gialle Flottanti (Format Name, Structure, ecc.) */
+.neubru-floating-label {
+    position: absolute;
+    top: -16px;                                  /* Taglia perfettamente a metà il bordo superiore */
+    left: 15px;
+    background: #FCD34D;                         /* Giallo caldo dello screenshot */
+    color: #000000;
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    z-index: 10;
+}
+
+/* Rotazioni asimmetriche per dare l'effetto "disegnato a mano" */
+.rotate-left  { transform: rotate(-2deg); }
+.rotate-right { transform: rotate(1.5deg); }
+
+/* --- I BOX DI CONTENUTO (Bordi spessi neri e ombre nette) --- */
+
+.neubru-content-card {
+    position: relative;                          /* Necessario per ancorare l'etichetta flottante */
+    background: #ffffff;
+    border: 3.5px solid #000000;
+    box-shadow: 6px 6px 0px #000000;             /* Ombra piatta prontamente visibile */
+    padding: 25px 20px 20px 20px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+/* Griglia per affiancare Formati e Struttura */
+.neubru-grid {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;                             /* Collassa in colonna su mobile */
+}
+
+.neubru-col {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;                                   /* Distanza verticale tra i vari box */
+}
+
+/* --- DETTAGLI INTERNI AI BOX --- */
+
+/* Lista dei formati */
+.neubru-format-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+}
+
+.neubru-format-list li {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #000;
+    text-transform: uppercase;
+    padding: 5px 0;
+    border-bottom: 2px dashed #ccc;              /* Separatore discreto */
+}
+
+/* Numeri giganti per le statistiche della struttura */
+.neubru-stat-value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #000000;
+    line-height: 1;
+    display: block;
+    margin-top: 5px;
+}
+
+/* --- IL BOTTONE DI CONFERMA (Verde Neon dello screenshot) --- */
+
+.neubru-btn-confirm {
+    align-self: flex-end;                        /* Lo allinea a destra proprio come "SAVE FORMAT" */
+    background: #38E54D;                         /* Verde Neon identico */
+    color: #000000;
+    font-weight: 900;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    border: 3px solid #000000;
+    box-shadow: 5px 5px 0px #000000;
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+    margin-top: 10px;
+}
+
+/* Effetto di pressione fisica del tasto */
+.neubru-btn-confirm:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0px #000000;
 }

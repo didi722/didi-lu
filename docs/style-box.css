@@ -349,8 +349,8 @@ input:focus {
 .modal-pkm-card {
     /* Manteniamo var(--accent-color) per lo sfondo dinamico del team */
     background: var(--accent-color); 
-    border: 2px solid var(--border-color); 
-    box-shadow: 5px 5px 0px var(--border-color); 
+    border: 3px solid black; 
+    box-shadow: 5px 5px 0px black; 
     padding: 12px;
     display: flex;
     flex-direction: row;
@@ -1864,40 +1864,65 @@ color:#eeeeee;
 
 .btn-admin-edit:hover { background: #ff4d4d; color: white; transform: scale(1.1);}
 .btn-admin-del:hover { background: #3498db; color: white; transform: scale(1.1);}
-
+/* 1. Il velo scuro che copre lo schermo e sfoca lo sfondo */
+.admin-backdrop {
+    display: none; /* Nascosto di default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.1); /* Opacità scura */
+    backdrop-filter: blur(10px);     /* 🌟 Sfocatura dello sfondo */
+    -webkit-backdrop-filter: blur(10px); /* Supporto per Safari */
+    z-index: 9998; /* Un gradino sotto al pannello admin */
+    transition: all 0.2s ease-in-out;
+}
 .admin-panel {
-    position:fixed;
-    top: 20px;
-    left: 20px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centra perfettamente il modale a schermo */
     padding: 20px;
-    border: 2px solid var(--accent-dark);
     z-index: 10000;
     display: none;
-    width: 320px;
     color: white;
-    background-color: var(--blue);
-    border: 2px solid var(--blue-border);
-    box-shadow: 4px 4px 0 var(--blue-border);
+    background-color: transparent;
+    width: 100%;
+    max-width: 500px; /* Impedisce al modale di allargarsi troppo su PC */
+    box-sizing: border-box;
 }
 
 .admin-panel h3 {
     margin-top: 0;
-    font-size: 1.2rem;
-    color: white;
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: #ffffff;
+    background: #000000; /* Sfondo nero solido */
+    padding: 10px 20px;
+    
+    /* Stile Etichetta Neubrutalist Spessa e Flottante */
+    border: 3px solid black; /* Bordo bianco di contrasto se lo sfondo generale è scuro */
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.3); /* Ombra nera netta senza sfocatura */
+    transform: rotate(-1.5deg); /* Rotazione asimmetrica in stile fumetto */
+    
+    display: inline-block; /* Avvolge perfettamente il testo senza occupare tutto lo spazio */
+    margin: 0 auto 25px auto; /* Centra l'etichetta orizzontalmente nel pannello */
     text-align: center;
-    margin-bottom: 15px;
+    text-transform: uppercase;
 }
 
 .admin-team-cat {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: bold;
     margin-top: 10px;
     margin-bottom: 20px;
     color: black;
+    margin-left: 20px;
 }
 
 .admin-team-name {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: bold;
     margin-top: 10px;
     margin-bottom: 5px;
@@ -1911,26 +1936,37 @@ color:#eeeeee;
     border: 1px solid #444;
     padding: 10px;
     font-family: monospace;
-    font-size: 11px;
+    font-size: 0.9rem;
 }
 
 .showdown-save {
+    display: block; /* 1. Lo rende un elemento di blocco per permettere il centraggio */
+    margin: 25px auto 0 auto;
     background: var(--save);
-    border: 2 px solid var(--save-border);
-    box-shadow: 4px 4px 0 var(--save-border);
+    border: 3px solid black !important;
+    box-shadow: 5px 5px 0 black;
     transition: background 0.3s;
     font-family: 'Josefin Sans', sans-serif;
-    color: white;
+    color: black;
     border: none;
     padding: 10px;
     cursor: pointer;
     font-weight: bold;
-    width: 100%;
-    margin-top: 10px;
+    width: 75%;
+    margin-top: 25px;
+    transform: rotate(2deg);
+    transition: 0.1s all ease;
+    font-size: 1rem;
 }
 
 .showdown-save:hover {
     transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 black;
+}
+
+.showdown-save:active {
+    box-shadow: 0px 0px 0px;
+    transform: translate(2px, 2px);
 }
 
 .showdown-cancel {
@@ -2364,7 +2400,7 @@ color:#eeeeee;
     font-weight: 900;
     transform: rotate(1deg);
     border: 3px solid #000;
-    box-shadow: 8px 8px 0px var(--accent-color); /* Ombra colorata col tipo del pkm */
+    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2); /* Ombra colorata col tipo del pkm */
 }
 
 .top-auth-bar {
@@ -2472,6 +2508,12 @@ color:#eeeeee;
     transform: translate(-3px, -3px) rotate(0deg);
     box-shadow: 7px 7px 0px black;
 }
+
+.user-dropdown .menu-item:active{
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0;
+}
+
 
 /* Rimuoviamo il divisore classico, non serve più con questo stile */
 .menu-divider {

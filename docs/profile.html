@@ -580,13 +580,59 @@ function selezionaCanzone(elementoSpan, url) {
 const LISTA_AVATAR = ["lance.png", "sage.png", "blue.png", "leaf.png", "ethan.png", "lyra.png", "brendan.png", "may.png", "lucas.png", "dawn.png"];
 
 const HONEYCOMB_COLORS = [
-    "#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#FFFF00", "#FFEE00", "#D4FF00", "#B2FF00", "#8CFF00",
-    "#66FF00", "#33FF00", "#00FF00", "#00FF33", "#00FF66", "#00FF99", "#00FFCC", "#00FFFF", "#00CCFF", "#0099FF",
-    "#0066FF", "#0033FF", "#0000FF", "#3300FF", "#6600FF", "#9900FF", "#CC00FF", "#FF00FF", "#FF00CC", "#FF0099",
-    "#FF0066", "#FF0033", "#E60000", "#B30000", "#800000", "#004D00", "#003366", "#000080", "#4B0082", "#2E0854"
-];
+    // 🌸 RIGA 1: PASTEL RAINBOW (Toni pastello morbidi e chiarissimi)
+    "#FFB3BA", // Col 1: Soft Red/Pink
+    "#FFDFBA", // Col 2: Soft Peach
+    "#FFFFBA", // Col 3: Soft Yellow
+    "#BAFFC9", // Col 4: Soft Mint
+    "#BAFFF0", // Col 5: Soft Teal
+    "#BAE1FF", // Col 6: Soft Sky Blue
+    "#D6CAFF", // Col 7: Soft Periwinkle
+    "#E8CAFF", // Col 8: Soft Lavender
+    "#FFCAFF", // Col 9: Soft Lilac
+    "#FFC2D1", // Col 10: Soft Rose (Allineato!)
 
-const GRAY_SCALE = ["#969696", "#737373", "#525252", "#252525", "#000000"];
+
+    // 🍂 RIGA 2: RETRO DESERT / DUSTY CHIC (Muted saturi, caldi e ultra-leggibili con testo nero)
+    "#C25959", // Col 1: Muted Terracotta
+    "#D48C5F", // Col 2: Muted Apricot
+    "#D9B462", // Col 3: Muted Mustard
+    "#8F9E6C", // Col 4: Sage Green
+    "#699E98", // Col 5: Eucalyptus Teal
+    "#6B93B0", // Col 6: Dusty Sky Blue
+    "#7A89A8", // Col 7: Slate Blue
+    "#9582A3", // Col 8: Dusty Grape
+    "#B07D9A", // Col 9: Dusty Plum (Allineato!)
+    "#C7889B",  // Col 10: Dusty Rose (Allineato!)
+
+
+    // 🎨 RIGA 3: RETRO POP / NEUBRUTALIST (Colori fumettistici pieni e decisi)
+    "#FF3333", // Col 1: Bold Red
+    "#FF8800", // Col 2: Retro Orange
+    "#FFDD00", // Col 3: Sunny Yellow
+    "#33CC66", // Col 4: Kelly Green
+    "#00BFA5", // Col 5: Deep Mint
+    "#3399FF", // Col 6: Dodger Blue
+    "#0055FF", // Col 7: Royal Blue
+    "#7A29FF", // Col 8: Comic Purple
+    "#D11A7A", // Col 9: Retro Magenta (Corretto!)
+    "#FF4D8D", // Col 10: Retro Pink (Corretto!)
+
+
+    // ⚡ RIGA 4: NEON / FLUO RAINBOW (Colori elettrici ad alto impatto)
+    "#FF1744", // Col 1: Neon Red
+    "#FF5E00", // Col 2: Neon Orange
+    "#FFEA00", // Col 3: Neon Yellow
+    "#00FF66", // Col 4: Neon Green
+    "#00FFCC", // Col 5: Neon Teal
+    "#00F0FF", // Col 6: Neon Cyan
+    "#0066FF", // Col 7: Neon Blue
+    "#7B00FF", // Col 8: Neon Violet
+    "#CC00FF", // Col 9: Neon Purple
+    "#FF0099" // Col 10: Neon Pink (Allineato!)
+
+    
+];
 
 function inizializzaAppearance() {
     console.log("🎨 Inizializzazione Appearance (Avatar + Colori)...");
@@ -619,19 +665,6 @@ function inizializzaAppearance() {
         });
     }
 
-    // 3. POPOLAMENTO GRIGI (Barra inferiore)
-    const grays = document.getElementById('honeycomb-grays');
-    if (grays && typeof GRAY_SCALE !== 'undefined') {
-        grays.className = "gray-bar"; 
-        grays.innerHTML = "";
-        GRAY_SCALE.forEach(color => {
-            const dot = document.createElement('div');
-            dot.className = "color-dot";
-            dot.style.backgroundColor = color;
-            dot.onclick = function() { selezionaColore(color); };
-            grays.appendChild(dot);
-        });
-    }
 }
 
 
@@ -1376,7 +1409,7 @@ async function salvaModificheProfilo() {
         // Feedback di successo
         if(btn) {
             btn.innerText = "UPDATED!";
-            btn.style.backgroundColor = "#bcff00"; // Verde fluo neubrutalist
+            btn.style.backgroundColor = "#16a445"; // Verde fluo neubrutalist
             btn.style.color = "#000";
         }
         

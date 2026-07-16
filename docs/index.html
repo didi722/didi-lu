@@ -773,7 +773,6 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
     } 
     
     if (s === 'closed' || s === 'terminata') {
-        // Puoi decidere se mandarli ai match per vedere lo storico o lasciarli nell'hub
         window.location.href = `matches.html?id=${seasonId}`;
         return;
     }
@@ -817,37 +816,67 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 return;
             }
 
-            // 3. Preparazione Formati HTML
+            // 3. Preparazione Formati HTML e Conteggio Formati
             let formatiHtml = "";
+            let countFormati = 0;
+
             if (info.selected_formats) {
-                Object.values(info.selected_formats).forEach(fmt => {
+                const listaFormati = Object.values(info.selected_formats);
+                countFormati = listaFormati.length; // Salviamo il numero esatto di formati
+                listaFormati.forEach(fmt => {
                     formatiHtml += `<li>${fmt}</li>`;
                 });
             } else {
                 formatiHtml = "<li>No formats selected</li>";
             }
 
-            // 4. Popolamento Modale con Layout Neubrutalist
-            document.getElementById('modal-season-name').innerText = `Register to: ${seasonName}`;
+            // 4. Calcolo dei Giorni Totali
+            const showdownsPerFormato = info.showdowns_per_format || 0;
+            const totalDays = countIscritti * countFormati * showdownsPerFormato;
+
+            // Impostiamo il titolo principale (stile "ADD NEW FORMAT")
+            document.getElementById('modal-season-name').style.display = "inline-block";
+            document.getElementById('modal-season-name').innerHTML = `
+                <span class="neubru-title-badge">Register to: ${seasonName}</span>
+            `;
+
+            // Generiamo la struttura del modale con le classi CSS
             document.getElementById('modal-season-rules').innerHTML = `
-                <div class="modal-grid-layout" style="display: flex; gap: 20px; text-align: left;">
-                    <div style="flex: 1;">
-                        <span class="modal-column-title" style="display: block; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; border-bottom: 2px solid #000;">Formats</span>
-                        <ul class="modal-format-list" style="list-style: none; padding: 0; font-weight: 700;">
-                            ${formatiHtml}
-                        </ul>
+                <div class="neubru-grid">
+                    
+                    <!-- COLONNA DI SINISTRA: FORMATI -->
+                    <div class="neubru-col">
+                        <div class="neubru-content-card">
+                            <span class="neubru-floating-label rotate-left">Formats</span>
+                            <ul class="neubru-format-list">
+                                ${formatiHtml}
+                            </ul>
+                        </div>
                     </div>
                     
-                    <div style="flex: 1;" class="modal-structure-list">
-                        <span class="modal-column-title" style="display: block; font-weight: 900; text-transform: uppercase; margin-bottom: 10px; border-bottom: 2px solid #000;">Structure</span>
-                        <div class="modal-info-box" style="margin-bottom: 5px;">Players: <strong>${countIscritti}</strong></div>
-                        <div class="modal-info-box" style="margin-bottom: 5px;">Showdowns: <strong>${info.showdowns_per_format || 0}</strong></div>
-                        <div class="modal-info-box" style="margin-bottom: 5px;">Days: <strong>${(info.showdowns_per_format || 0) * countIscritti}</strong></div>
+                    <!-- COLONNA DI DESTRA: STRUTTURA (Tre box distinti con etichette asimmetriche) -->
+                    <div class="neubru-col">
+                        
+                        <!-- Box Players -->
+                        <div class="neubru-content-card">
+                            <span class="neubru-floating-label rotate-left">Registered players</span>
+                            <span class="neubru-stat-value">${countIscritti}</span>
+                        </div>
+
+                        <!-- Box Showdowns -->
+                        <div class="neubru-content-card">
+                            <span class="neubru-floating-label rotate-right">Showdowns per format</span>
+                            <span class="neubru-stat-value">${showdownsPerFormato}</span>
+                        </div>
+
+                        <!-- Box Days (Fix calcolo: iscritti * formati * showdowns) -->
+                        <div class="neubru-content-card">
+                            <span class="neubru-floating-label rotate-left">Total days</span>
+                            <span class="neubru-stat-value">${totalDays}</span>
+                        </div>
+
                     </div>
                 </div>
-                <p style="margin-top: 25px; text-align: center; font-size: 0.85rem; opacity: 0.7; font-style: italic;">
-                    Clicking CONFIRM will register your profile to this competition.
-                </p>
             `;
 
             // 5. Gestione Click Conferma
