@@ -1608,13 +1608,13 @@ body.status-live .hub-header {
 
 .move-span:hover .move-tooltip {
     display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    opacity: 1;
+    visibility: visible;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;
+    animation-fill-mode: backwards !important;
 }
 
-/* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
-/* Se il Pokémon è nella prima riga, mostra il fumetto SOTTO invece che SOPRA */
-/* --- BADGE DEI TIPI (Effetto Etichetta Adesiva) --- */
 .type-badge {
     font-size: 0.55rem;
     padding: 2px 0;
@@ -1735,11 +1735,15 @@ body.status-live .hub-header {
     top: 125%;
 }
 
-/* Quando il contenitore genitore è in hover */
 .type-container:hover .type-effectiveness-tooltip {
     visibility: visible;
     opacity: 1;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards;
 }
+
+
 .type-effectiveness-tooltip.v-down {
     bottom: auto;
     top: 125%;
@@ -1748,7 +1752,11 @@ body.status-live .hub-header {
 .type-container:hover .type-effectiveness-tooltip {
     visibility: visible;
     opacity: 1;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards;
 }
+
 
 /* Freccetta del tooltip */
 
@@ -1901,9 +1909,38 @@ body.status-live .hub-header {
     right: 110%;
 }
 
+.info-container {
+    position: relative; /* Necessario per posizionare il tooltip rispetto a questo */
+    display: inline-block; /* Mantiene l'occupazione di spazio originale */
+    width: auto; /* Non forziamo larghezze che potrebbero sballare il layout */
+}
 .info-container:hover .generic-tooltip {
     display: block; /* Semplice block è più sicuro per il posizionamento absolute */
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards !important;
 }
+
+/* --- TIPOGRAFIA GENERALE --- */
+.info-container strong, 
+.info-container p, 
+.info-container span {
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+
+.info-container:hover .generic-tooltip {
+    display: block; /* Semplice block è più sicuro per il posizionamento absolute */
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards !important;
+}
+
+@keyframes popIn {
+    from { opacity: 0; margin-bottom: -10px; }
+    to { opacity: 1; margin-bottom: 0; }
+}
+
 
 .generic-tooltip {
     display: none;

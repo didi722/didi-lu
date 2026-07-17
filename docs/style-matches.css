@@ -2049,6 +2049,12 @@ button.btn-set.is-selected:hover {
     display:none;
 }
 
+.rank-btn:active {
+    box-shadow: 0 0 0 !important;
+    transform: translate(1px, 1px) !important;
+
+}
+
 /* --- LOGICA VINCITORE: COLORA IL BORDO DELLA CARD --- */
 /* Puoi aggiungere queste classi dinamicamente */
 .winner-left { border-left: 10px solid #000 !important; }
@@ -2359,8 +2365,11 @@ button.btn-set.is-selected:hover {
 
 .move-span:hover .move-tooltip {
     display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    opacity: 1;
+    visibility: visible;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;
+    animation-fill-mode: backwards !important;
 }
 
 /* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
@@ -2461,6 +2470,9 @@ button.btn-set.is-selected:hover {
 .type-container:hover .type-effectiveness-tooltip {
     visibility: visible;
     opacity: 1;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards;
 }
 
 /* Freccetta del tooltip */
@@ -3279,8 +3291,11 @@ transform: translate(-4px, -4px);
 
 .move-span:hover .move-tooltip {
     display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    opacity: 1;
+    visibility: visible;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;
+    animation-fill-mode: backwards !important;
 }
 
 /* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
@@ -3707,6 +3722,9 @@ transform: translate(-4px, -4px);
 
 .info-container:hover .generic-tooltip {
     display: block; /* Semplice block è più sicuro per il posizionamento absolute */
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards !important;
 }
 
 /* --- TIPOGRAFIA GENERALE --- */

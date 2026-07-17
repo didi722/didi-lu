@@ -153,6 +153,7 @@ input:focus {
     padding: 12px;
     z-index: 999;
     pointer-events: none;
+    transition-delay: 1s !important;
 }
 
 .pkm-hover-card.left-side {
@@ -185,9 +186,9 @@ input:focus {
 
 .pkm-box:hover .pkm-hover-card {
     display: block;
-    animation: fadeIn 0.2s ease-out;
     visibility: visible;
     opacity: 1;
+    transition-delay: 1s !important;
 }
 
 /* Stile per le mosse dentro l'hover */
@@ -530,12 +531,13 @@ input:focus {
 
 .move-span:hover .move-tooltip {
     display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    opacity: 1;
+    visibility: visible;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;
+    animation-fill-mode: backwards !important;
 }
 
-/* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
-/* Se il Pokémon è nella prima riga, mostra il fumetto SOTTO invece che SOPRA */
 /* --- BADGE DEI TIPI (Effetto Etichetta Adesiva) --- */
 .type-badge {
     font-size: 0.55rem;
@@ -662,9 +664,10 @@ input:focus {
 .type-container:hover .type-effectiveness-tooltip {
     visibility: visible;
     opacity: 1;
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards;
 }
-
-/* Freccetta del tooltip */
 
 
 .effectiveness-section { margin-bottom: 4px; }
@@ -873,6 +876,9 @@ input:focus {
 /* --- AZIONI HOVER --- */
 .info-container:hover .generic-tooltip {
     display: block; /* Semplice block è più sicuro per il posizionamento absolute */
+    animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s !important;             /* Aspetta 1 secondo prima di far partire il popIn */
+    animation-fill-mode: backwards !important;
 }
 
 /* --- TIPOGRAFIA GENERALE --- */
@@ -2265,6 +2271,8 @@ color:#eeeeee;
 .pkm-box:hover .pkm-hover-card {
     display: block;
     animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-delay: 0.4s;
+    animation-fill-mode: backwards;
 }
 
 @keyframes popIn {
