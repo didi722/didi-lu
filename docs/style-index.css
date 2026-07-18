@@ -989,6 +989,7 @@ input, select {
     box-shadow: 10px 10px 0 black;
 }
 
+
 #card-current {
     transform: scale(1.15) rotate(-2px); /* 15% più grande */
     z-index: 10;            /* Sopra le altre */
