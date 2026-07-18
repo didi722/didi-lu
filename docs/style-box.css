@@ -2535,6 +2535,12 @@ color:#eeeeee;
     margin-top:20px !important;
 }
 
+.logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: 0 0 0 !important;
+}
+
+
 .close-modal {
     position: absolute;
     right: 15px; top: 10px;

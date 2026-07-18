@@ -289,6 +289,12 @@ body {
     margin-top:20px !important;
 }
 
+.logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: 0 0 0 !important;
+}
+
+
 .ads-sidebar {
     width: 220px; /* Puoi regolarlo a piacimento, es. 15% o 250px */
     height: 100vh; 
@@ -687,7 +693,7 @@ body {
   gap: 40px !important;
   width: 80% !important;
   max-width: 1200px;
-  margin: 80px;
+  margin-top: 30px;
   box-sizing: border-box;
   margin-left: 20%;
 }

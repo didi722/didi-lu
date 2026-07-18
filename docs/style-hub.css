@@ -754,6 +754,12 @@ body.status-live .hub-header {
     margin-top:20px !important;
 }
 
+.logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: 0 0 0 !important;
+}
+
+
 .top-auth-bar {
     position: fixed;
     top: 20px;
@@ -2100,6 +2106,22 @@ body.status-live .hub-header {
     color: #000;
     font-size: 1.2rem; /* Numeri belli grandi e visibili */
     font-weight: 900;
+}
+
+.modal-blur-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.1); /* Leggera oscurità */
+    backdrop-filter: blur(8px);      /* L'effetto sfocatura */
+    z-index: 999;                    /* Sotto il modale, sopra tutto il resto */
+}
+
+#modal-select-team {
+    position: fixed;
+    z-index: 1000;
 }
 
 .modal-neubrutal {

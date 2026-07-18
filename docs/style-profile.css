@@ -754,6 +754,12 @@ body {
     margin-top:20px !important;
 }
 
+.logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: 0 0 0 !important;
+}
+
+
 /* Sfondo oscurato del modale */
 #login-modal.modal {
     backdrop-filter: blur(4px); /* Leggero blur per focus */
