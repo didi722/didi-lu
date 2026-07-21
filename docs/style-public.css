@@ -384,14 +384,14 @@ body {
     object-fit: contain;
     /* Effetto neubrutalist: ombra nera netta sul PNG */
     filter: drop-shadow(5px 5px 0px #000);
-    transition: transform 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 
 .badge-item {
     position: relative;
     cursor: help;
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
 }
 
 
@@ -665,7 +665,7 @@ body {
 .badges-top-left .badge-item {
     position: relative;
     display: inline-block;
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
 }
 
 /* Rotazioni alternate sui contenitori */
@@ -697,6 +697,7 @@ body {
 .badges-top-left .badge-item:hover {
     transform: scale(1.2) rotate(0deg) translateY(0px);
     z-index: 10;
+    filter: drop-shadow(8px 8px 0 black);
 }
 
 

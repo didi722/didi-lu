@@ -328,8 +328,14 @@ try {
 }
 
 if (typeof renderPalmares === 'function') {
-    // ADESSO PASSIAMO ANCHE IL QUARTO PARAMETRO!
-    renderPalmares(statsData.won || 0, palette, info.title || "", typeUsageData);
+    // PASSIAMO ANCHE IL 5° PARAMETRO: statsData.history !
+    renderPalmares(
+        statsData.won || 0, 
+        palette, 
+        info.title || "", 
+        typeUsageData, 
+        statsData.history || {}
+    );
 }
 
             // --- STATISTICHE E TEAM ---
@@ -1652,7 +1658,7 @@ async function caricaBestTeamDallAlto(playerKey) {
     }
 }
 
-function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}) {
+function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, seasonsHistory = {}) {
     const container = document.getElementById('trophy-list');
     if (!container) return;
     container.innerHTML = "";
@@ -1762,6 +1768,34 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}) {
         container.appendChild(titleBadge);
     }
 
+    // --- LOGICA DEL TOOLTIP TROFEO ---
+    let rawHistory = seasonsHistory;
+    if (rawHistory && typeof rawHistory.val === 'function') rawHistory = rawHistory.val();
+    const wonSeasons = Object.values(rawHistory || {}).filter(s => s && (s.rank === 1 || s.rank === "1"));
+
+    let trophyTooltipHTML = "";
+    if (wonSeasons.length > 0) {
+        const rows = wonSeasons.map(s => {
+            let formattedDate = s.enddate || 'N/D';
+            if (s.enddate && s.enddate.includes('-')) {
+                const parts = s.enddate.split('-');
+                if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return `
+                <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: bold; width: 100%;">
+                    <span style="white-space: nowrap;">🏆 ${s.name || 'Season'}</span>
+                    <span style="color: #888; font-size: 11px; white-space: nowrap;">${formattedDate}</span>
+                </div>
+            `;
+        }).join('');
+
+        trophyTooltipHTML = `
+            <span class="neubrutal-tooltip" style="position: absolute; z-index: 99999; min-width: 180px; box-sizing: border-box; transform: rotate(-3deg);">
+                ${rows}
+            </span>
+        `;
+    }
+
     const trophyWrapper = document.createElement('div');
     trophyWrapper.className = 'compact-palmares';
     trophyWrapper.style.setProperty('--player-color', playerColor);
@@ -1775,10 +1809,12 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}) {
         <div class="trophy-recolor-wrapper">
             <div class="trophy-color-base" style="-webkit-mask-image: ${colorMask}; mask-image: ${colorMask};"></div>
             <img src="${trophyImg}" class="trophy-icon-top">
+            ${trophyTooltipHTML}
         </div>
     `;
     container.appendChild(trophyWrapper);
 }
+
 
 // Chiamala dentro initPublicProfile() passandogli la playerKey normalizzata
 
