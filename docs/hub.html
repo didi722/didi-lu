@@ -144,6 +144,7 @@
     </div>
 </main>
 
+<div id="modal-overlay" class="modal-blur-overlay" style="display: none;"></div>
 <div id="modal-select-team" class="modal-neubrutal" style="display: none;">
     <h3 id="modal-format-title">Select your Team</h3>
     
@@ -761,6 +762,13 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
 }
 
 async function openTeamPicker(format, nomeUtenteClean) {
+
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+        // Chiude il modale se si clicca sullo sfondo sfocato
+        overlay.onclick = () => closeTeamModal();
+    }
     const seasonSnap = await db.ref(`seasons/${seasonId}/info`).once('value');
     const seasonInfo = seasonSnap.val() || {};
     
@@ -1663,7 +1671,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // 6. Utility
 function closeTeamModal() {
-    document.getElementById('modal-select-team').style.display = 'none';
+    // 1. Chiude il modale
+    const modal = document.getElementById('modal-select-team');
+    if (modal) modal.style.display = 'none';
+
+    // 2. Nasconde l'overlay (effetto blur)
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // 3. Pulisce il tooltip globale (evita che rimanga visibile per errore)
+    const tooltip = document.getElementById('global-team-tooltip');
+    if (tooltip) {
+        tooltip.style.display = 'none';
+        tooltip.style.opacity = '0';
+        tooltip.style.visibility = 'hidden';
+    }
 }
 
 function updatePageStatus(status) {

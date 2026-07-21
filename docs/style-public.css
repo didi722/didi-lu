@@ -234,6 +234,11 @@ body {
     box-shadow: 7px 7px 0px black;
 }
 
+.logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: 0 0 0 !important;
+}
+
 .user-dropdown .menu-item:active{
     transform: translate(3px, 3px);
     box-shadow: 0 0 0;
@@ -969,6 +974,9 @@ html, body {
     z-index: 10;
     background-color: var(--accent-color); /* Prende il colore del player al volo! */
 }
+
+
+
 
 /* Colore alternato neutro per non appesantire */
 .stat-bar:nth-child(even) {
@@ -1795,6 +1803,8 @@ html, body {
 .modal-pkm-info strong:hover + .stats-tooltip {
     display: block;
 }
+
+
 /* Tooltip generico per Stats, Abilità e Strumenti */
 .generic-tooltip {
     display: none;
@@ -2823,6 +2833,11 @@ color:#eeeeee;
 
 .stat-bar-fill {
     border-right: 2px solid #000;
+}
+
+.stat-bar:active {
+    transform: rotate(0deg) scale(1);
+    box-shadow: 0px 0px 0px #000 !important;
 }
 
 .evs-footer {
