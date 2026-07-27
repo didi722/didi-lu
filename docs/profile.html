@@ -974,6 +974,26 @@ async function integraTitoliNelloSnapshot(pId, playerData) {
     }
 }
 
+window.addEventListener('DOMContentLoaded', () => {
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+    const savedPref = localStorage.getItem('userMusicPref');
+
+    if (player && musicBtn) {
+        if (savedPref === 'off') {
+            // Se l'utente ha scelto 'off' altrove, non far partire nulla
+            player.pause();
+            musicBtn.classList.add('muted');
+        } else {
+            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
+            player.play().catch(() => {
+                musicBtn.classList.add('muted');
+            });
+        }
+    }
+});
+
+
     // --- 5. GESTIONE CLICK ESTERNI ---
     window.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-tooltip-wrapper')) {
