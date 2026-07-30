@@ -191,20 +191,35 @@ const db = firebase.database();
 let formatiSelezionati = [];
 let editingSeasonId = null;
 
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
-        // L'utente è loggato! Firebase ha recuperato la sessione dall'altra pagina.
-        console.log("Utente Amministratore autenticato:", user.email);
-        
-        // Solo ora che siamo sicuri del login, carichiamo i dati
-        caricaStagioni();
+        try {
+            // Recuperiamo i dettagli dell'utente dal Realtime Database
+            const userSnap = await db.ref(`users/${user.uid}`).once('value');
+            const userData = userSnap.val() || {};
+
+            // Verifichiamo se l'utente ha effettivamente il ruolo di admin
+            if (userData.role === 'admin') {
+                console.log("Utente Amministratore autenticato:", user.email);
+                
+                // Solo gli admin confermati possono caricare i dati della pagina
+                caricaStagioni();
+            } else {
+                // Utente loggato ma SENZA permessi da admin (es. "player")
+                console.warn("Accesso negato: l'utente non ha il ruolo di amministratore.");
+                alert("Accesso negato! Non disponi dei permessi da amministratore per questa pagina.");
+                window.location.href = "index.html";
+            }
+        } catch (error) {
+            console.error("Errore durante la verifica dei permessi:", error);
+            alert("Si è verificato un errore durante la verifica del tuo account.");
+            window.location.href = "index.html";
+        }
     } else {
-        // L'utente NON è loggato in questa sessione del browser
+        // L'utente NON è loggato
         console.warn("Nessun utente loggato. Accesso negato.");
-        
-        // OPZIONALE: Se vuoi proteggere la pagina admin rimandando l'utente alla home o al login:
         alert("Devi effettuare l'accesso per gestire il pannello di controllo.");
-        window.location.href = "index-copy.html"; 
+        window.location.href = "index.html"; 
     }
 });
 

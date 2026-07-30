@@ -564,8 +564,7 @@ async function inizializzaPaginaArchivio() {
     const topBar = document.querySelector('.top-bar');
     const adminPlusBtn = document.querySelector('.btn-floating-admin');
     
-    // --- 1. RESET INIZIALE (Risolve l'apertura automatica) ---
-    // Chiudiamo eventuali modali o pannelli rimasti aperti in cache
+    // --- 1. RESET INIZIALE ---
     if (typeof chiudiPannelli === 'function') chiudiPannelli();
     const adminPanel = document.getElementById('admin-create-showdown-panel');
     if (adminPanel) adminPanel.style.display = 'none';
@@ -576,26 +575,33 @@ async function inizializzaPaginaArchivio() {
     }
 
     try {
-        // --- 2. GESTIONE AUTENTICAZIONE E COLORE ---
+        // --- 2. GESTIONE AUTENTICAZIONE ROBUSTA ---
         const user = await new Promise((resolve) => {
-            const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
-                unsubscribe();
-                resolve(u);
-            });
+            const currentUser = firebase.auth().currentUser;
+            if (currentUser) {
+                resolve(currentUser);
+            } else {
+                const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            }
         });
 
         let userColor = "#FFA500"; 
-        let isAdmin = false; // Rappresenta se l'utente è loggato nel tuo sistema
+        let isLoggedIn = !!user; // True per qualsiasi utente autenticato (Admin o Player)
+        let isAdmin = false;    // True SOLO se role === 'admin'
 
         if (user) {
-            // Verifichiamo se l'utente è realmente un admin (o se è loggato)
-            isAdmin = true; 
+            const userSnap = await db.ref(`users/${user.uid}`).once('value');
+            const userData = userSnap.val() || {};
             
-            const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
-            const playerName = nameSnap.val();
+            // Verifichiamo il ruolo esatto dal database
+            isAdmin = (userData.role === 'admin'); 
+            
+            const playerName = userData.name;
 
             if (playerName) {
-                // Usiamo il percorso corretto e normalizzato
                 const colorSnap = await db.ref(`players/${playerName.toLowerCase().trim()}/info/color`).once('value');
                 if (colorSnap.exists()) {
                     userColor = colorSnap.val();
@@ -607,12 +613,11 @@ async function inizializzaPaginaArchivio() {
             topBar.style.setProperty('background-color', userColor, 'important');
         }
 
-        // --- 4. RECUPERO DATI STAGIONE ---
+        // --- 3. RECUPERO DATI STAGIONE ---
         if (typeof stagioneAttiva === 'undefined' || !stagioneAttiva) {
             await recuperaStagioneCorrente();
         }
 
-        // Recuperiamo i nodi della stagione corrente
         const [snapSeasonInfo, snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
             db.ref(`seasons/${stagioneAttiva}/info`).once('value'),
             db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value'),
@@ -629,18 +634,22 @@ async function inizializzaPaginaArchivio() {
         
         window.teamsIscrittiStagione = dataIscritti;
 
-        // --- 3. APPLICAZIONE VISIBILITÀ ADMIN E CONTROLLO STATO STAGIONE ---
-        if (adminPlusBtn) {
-            // Estraiamo la stringa dello status convertendola in MAIUSCOLO per sicurezza
-            const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
-            
-            console.log("Stagione Attiva:", stagioneAttiva, "Status Rilevato:", stringStatus);
+        // --- 4. CONTROLLO VISIBILITÀ BOTTONE NUOVO SHOWDOWN (+) ---
+        const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
+        const stagioneChiusa = (stringStatus === 'CLOSED');
 
-            const stagioneChiusa = (stringStatus === 'CLOSED');
-            
-            // Il pulsante viene mostrato se l'utente è loggato (isAdmin) AND la stagione NON è chiusa
-            if (isAdmin && !stagioneChiusa) {
+        // LOG DI DEBUG PER VERIFICARE IN CONSOLE (F12)
+        console.log("🔍 Stato Auth:", { 
+            isLoggedIn: isLoggedIn, 
+            isAdmin: isAdmin, 
+            stagioneChiusa: stagioneChiusa 
+        });
+
+        if (adminPlusBtn) {
+            // Il tasto "+" è visibile a QUALSIASI utente loggato (Admin o Player), a patto che la stagione sia aperta
+            if (isLoggedIn && !stagioneChiusa) {
                 adminPlusBtn.style.display = 'flex';
+                adminPlusBtn.style.visibility = 'visible';
             } else {
                 adminPlusBtn.style.display = 'none';
             }
@@ -671,7 +680,6 @@ async function inizializzaPaginaArchivio() {
                 else if (parseInt(m.p2score) > parseInt(m.p1score)) vintiP2++;
             });
 
-            // Recupero colore vincitore corretto
             const nomeVincitore = info.vincitoreShowdown; 
             let winnerColor = "#000"; 
             if (nomeVincitore) {
@@ -683,7 +691,6 @@ async function inizializzaPaginaArchivio() {
             sdCard.className = 'showdown-summary-card';
             sdCard.style.setProperty('--winner-color', winnerColor);
             
-            // Fix click sulla card: apriamo la modale solo se non clicchiamo tasti admin
             sdCard.onclick = (e) => {
                 if (e.target.closest('.sd-admin-overlay')) return; 
                 if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
@@ -708,6 +715,7 @@ async function inizializzaPaginaArchivio() {
                 <div class="sd-card-footer">
                     <span class="sd-date-text">${info.data || 'No date'}</span>
                     
+                    <!-- Matita (✏️) e Cestino (🗑️) visibili SOLO agli ADMIN -->
                     <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
                         <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
                         <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
