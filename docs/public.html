@@ -1553,7 +1553,7 @@ async function caricaPokemonPreferito(pkmNome) {
         const gifUrl = pkmData.sprites.other['showdown'].front_default 
                         || pkmData.sprites.other['official-artwork'].front_default;
 
-        // 3. CALCOLO ALTEZZA (SCALA) - TUA FORMULA ORIGINALE
+        // 3. CALCOLO ALTEZZA (SCALA)
         const pkmAltezzaM = pkmData.height / 10;
         const trainerAltezzaM = 1.70;
         const trainerPx = 150; 
@@ -1561,12 +1561,12 @@ async function caricaPokemonPreferito(pkmNome) {
 
         // --- GESTIONE SCALE SPECIALI ---
         const rimpicciolisciBlacklist = ['kyogre', 'wailord']; 
-        const ingrandisciBlacklist = ['charizard']
+        const ingrandisciBlacklist = ['charizard'];
         
         if (rimpicciolisciBlacklist.includes(pkmNomePulito)) {
             pkmPx *= 0.5; 
         } else if (ingrandisciBlacklist.includes(pkmNomePulito)) {
-            pkmPx *= 1.5; // Ingrandimento forzato del 50%
+            pkmPx *= 1.5; 
         } else if (pkmAltezzaM < 0.6) {
             pkmPx *= 1.6; 
         } else if (pkmAltezzaM < 1.3) {
@@ -1591,7 +1591,9 @@ async function caricaPokemonPreferito(pkmNome) {
         const sempreDietroBlacklist = ['metagross'];
         const sogliaDietro = trainerAltezzaM * 1.2; 
         
-        if (sempreDavantiBlacklist.includes(pkmNomePulito)) {
+        if (sempreDietroBlacklist.includes(pkmNomePulito)) {
+            pkmArea.className = "pokemon-column pokemon-back";
+        } else if (sempreDavantiBlacklist.includes(pkmNomePulito)) {
             pkmArea.className = "pokemon-column pokemon-front";
         } else if (isFloating || pkmAltezzaM >= sogliaDietro) {
             pkmArea.className = "pokemon-column pokemon-back";
@@ -1599,15 +1601,7 @@ async function caricaPokemonPreferito(pkmNome) {
             pkmArea.className = "pokemon-column pokemon-front";
         }
 
-        if (sempreDietroBlacklist.includes(pkmNomePulito)) {
-            pkmArea.className = "pokemon-column pokemon-back";
-        } else if (isFloating || pkmAltezzaM <= sogliaDietro) {
-            pkmArea.className = "pokemon-column pokemon-front";
-        } else {
-            pkmArea.className = "pokemon-column pokemon-back";
-        }
-
-        // 6. INIEZIONE HTML - AGGIORNATA PER OMBRA SENZA SPORCO
+        // 6. INIEZIONE HTML
         pkmArea.innerHTML = `
             <div class="pokemon-sprite-container ${isFloating ? 'floating-pkm' : ''}" 
                  style="height: ${pkmPx}px; opacity: 0; transition: opacity 0.3s;">
