@@ -790,7 +790,7 @@ async function integraTitoliNelloSnapshot(pId, playerData) {
             const nomeBase = TITOLI_BASE_TIPI[tipoInglese] || `${tipoFormattato} Trainer`;
 
             // Soglie di sblocco
-            if (played >= 20) {
+            if (played >= 50) {
                 titoliSbloccati.push({ id: `${tipoInglese}_base`, testo: nomeBase });
             }
             if (played >= 150 && won >= 25) {
