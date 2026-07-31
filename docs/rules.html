@@ -15,6 +15,12 @@
 </head>
 <body>
 
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
     <audio id="bg-music-home" loop preload="auto"></audio>
 
 <header class="top-bar">
@@ -466,6 +472,7 @@ async function applicaColoreUtente(user) {
         console.error("❌ Errore recupero colore:", e);
     }
 }
+
 
 
 </script>

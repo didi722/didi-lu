@@ -17,6 +17,12 @@
         </div>
     </header>
     
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
 <div class="top-auth-bar" style="display: flex; align-items: center; gap: 15px;">
     
     <button id="btn-disiscriviti" class="btn-unregister-brutal blur-target" onclick="gestisciDisiscrizione()" style="display: none;">
@@ -185,20 +191,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const seasonId = urlParams.get('id');
 let selectedTeamIds = []; 
 
-async function avviaApplicazione() {
-    try {
-        await initHub(); 
-    } catch (e) {
-        console.error("Errore generale:", e);
-    } finally {
-        const loader = document.getElementById('loading-screen');
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-    }
-}
-window.onload = avviaApplicazione;
+
 
 
 let playerColors = {};
@@ -301,19 +294,51 @@ async function getPlayersColors(p1, p2) {
 // Variable di controllo globale per gestire i rendering asincroni
 let currentRenderID = 0;
 
+// --- 1. FUNZIONE HELPER PER NASCONDERE IL LOADER CON TRANSIZIONE ---
+function nascondiLoader(loaderEl) {
+    const loader = loaderEl || document.getElementById('poke-loader');
+    if (!loader) return;
+    
+    loader.style.opacity = '0';
+    loader.classList.add('hidden');
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500);
+}
+
+// --- 2. INIZIALIZZAZIONE SEASON HUB CON GESTIONE LOADER ---
 async function initHub() {
+    // Mostra il loader all'inizio dell'operazione
+    const loader = document.getElementById('poke-loader');
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        loader.classList.remove('hidden');
+    }
+
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        nascondiLoader(loader);
+        return;
+    }
 
     if (typeof seasonId === 'undefined' || !seasonId) {
         alert("ID Stagione mancante nell'URL!");
+        nascondiLoader(loader);
         return;
     }
+
+    // Flag per rimuovere il loader solo al primo rendering dei dati
+    let isInitialLoad = true;
 
     try {
         const userSnap = await db.ref(`users/${user.uid}`).once('value');
         const userData = userSnap.val();
-        if (!userData || !userData.name) return;
+        
+        if (!userData || !userData.name) {
+            nascondiLoader(loader);
+            return;
+        }
 
         const nomeUtenteClean = userData.name.toLowerCase();
         window.currentNomeUtenteClean = nomeUtenteClean;
@@ -322,79 +347,89 @@ async function initHub() {
         db.ref(`seasons/${seasonId}`).off();
 
         db.ref(`seasons/${seasonId}`).on('value', async (snap) => {
-            const data = snap.val();
-            if (!data) return;
+            try {
+                const data = snap.val();
+                if (!data) return;
 
-            window.teamsIscrittiStagione = data.teams_iscritti || {};
-            currentRenderID++;
-            const myRenderID = currentRenderID;
+                window.teamsIscrittiStagione = data.teams_iscritti || {};
+                currentRenderID++;
+                const myRenderID = currentRenderID;
 
-            // --- CONTROLLO PULSANTE DISISCRIVITI CON DEBUG ---
-            const btnUnregister = document.getElementById('btn-disiscriviti');
-            if (btnUnregister) {
-                const iscritti = data.iscritti || {};
-                // Creiamo un array di nomi iscritti in minuscolo per confronto sicuro
-                const listaIscrittiLower = Object.keys(iscritti).map(n => n.toLowerCase());
-                const isIscritto = listaIscrittiLower.includes(nomeUtenteClean);
+                // --- CONTROLLO PULSANTE DISISCRIVITI CON DEBUG ---
+                const btnUnregister = document.getElementById('btn-disiscriviti');
+                if (btnUnregister) {
+                    const iscritti = data.iscritti || {};
+                    const listaIscrittiLower = Object.keys(iscritti).map(n => n.toLowerCase());
+                    const isIscritto = listaIscrittiLower.includes(nomeUtenteClean);
 
-                console.log("--- DEBUG DISISCRIZIONE ---");
-                console.log("Nome Utente Loggato (lower):", nomeUtenteClean);
-                console.log("Nomi Iscritti nel DB:", Object.keys(iscritti));
-                console.log("Esito controllo (isIscritto):", isIscritto);
+                    console.log("--- DEBUG DISISCRIZIONE ---");
+                    console.log("Nome Utente Loggato (lower):", nomeUtenteClean);
+                    console.log("Nomi Iscritti nel DB:", Object.keys(iscritti));
+                    console.log("Esito controllo (isIscritto):", isIscritto);
 
-                if (isIscritto) {
-                    btnUnregister.style.display = 'inline-flex';
+                    if (isIscritto) {
+                        btnUnregister.style.display = 'inline-flex';
+                    } else {
+                        btnUnregister.style.display = 'none';
+                    }
+                }
+
+                // --- AGGIORNAMENTO TICKER (LIVE) ---
+                if (typeof caricaTickerIscrizione === 'function') {
+                    caricaTickerIscrizione(data, seasonId);
+                }
+
+                const status = (data.info?.status || 'OPEN').toUpperCase();
+
+                // --- Aggiornamento UI Immediata ---
+                const titleDisp = document.getElementById('hub-title-display');
+                if (titleDisp) titleDisp.innerText = data.info?.name || "Season Hub";
+               
+                if (typeof updatePageStatus === 'function') {
+                    updatePageStatus(status);
+                }
+               
+                const teamsLimitDisplay = data.info?.teams_per_format === "No Limit" ? "No Limit" : (data.info?.teams_per_format || 1);
+                const rulesCont = document.getElementById('hub-rules-content');
+                if (rulesCont) {
+                    rulesCont.innerHTML = `
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Teams per Format:</strong> ${teamsLimitDisplay}</p>
+                    `;
+                }
+
+                // --- Gestione Rendering Hub ---
+                if (status === 'CLOSED') {
+                    if (typeof renderClosedHub === 'function') renderClosedHub(data);
                 } else {
-                    btnUnregister.style.display = 'none';
-                }
-            }
+                    if (typeof renderHub === 'function') {
+                        await renderHub(data, nomeUtenteClean, myRenderID);
+                    }
 
-            // --- AGGIORNAMENTO TICKER (LIVE) ---
-            if (typeof caricaTickerIscrizione === 'function') {
-                caricaTickerIscrizione(data, seasonId);
-            }
-
-            const status = (data.info?.status || 'OPEN').toUpperCase();
-
-            // --- Aggiornamento UI Immediata ---
-            const titleDisp = document.getElementById('hub-title-display');
-            if (titleDisp) titleDisp.innerText = data.info?.name || "Season Hub";
-            
-            if (typeof updatePageStatus === 'function') {
-                updatePageStatus(status);
-            }
-            
-            const teamsLimitDisplay = data.info?.teams_per_format === "No Limit" ? "No Limit" : (data.info?.teams_per_format || 1);
-            const rulesCont = document.getElementById('hub-rules-content');
-            if (rulesCont) {
-                rulesCont.innerHTML = `
-                    <p><strong>Status:</strong> ${status}</p>
-                    <p><strong>Teams per Format:</strong> ${teamsLimitDisplay}</p>
-                `;
-            }
-
-            // --- Gestione Rendering Hub ---
-            if (status === 'CLOSED') {
-                if (typeof renderClosedHub === 'function') renderClosedHub(data); 
-            } else {
-                if (typeof renderHub === 'function') {
-                    await renderHub(data, nomeUtenteClean, myRenderID);
-                }
-
-                if (myRenderID === currentRenderID) {
-                    const now = Date.now();
-                    if (now - lastAlertTime > 5000) {
-                        if (typeof checkOverlimitWarning === 'function') {
-                            if (checkOverlimitWarning(data, nomeUtenteClean)) {
-                                lastAlertTime = now;
+                    if (myRenderID === currentRenderID) {
+                        const now = Date.now();
+                        if (now - lastAlertTime > 5000) {
+                            if (typeof checkOverlimitWarning === 'function') {
+                                if (checkOverlimitWarning(data, nomeUtenteClean)) {
+                                    lastAlertTime = now;
+                                }
                             }
                         }
                     }
+                }
+            } catch (err) {
+                console.error("Errore durante il rendering dei dati dell'Hub:", err);
+            } finally {
+                // Nasconde il loader solo al primo caricamento dei dati real-time
+                if (isInitialLoad) {
+                    nascondiLoader(loader);
+                    isInitialLoad = false;
                 }
             }
         });
     } catch (error) {
         console.error("Errore critico durante l'inizializzazione dell'Hub:", error);
+        nascondiLoader(loader);
     }
 }
 
@@ -1740,5 +1775,6 @@ async function resetPasswordDalLogin() {
         if (loader) loader.classList.remove('active');
     }
 }
+
 
 </script>

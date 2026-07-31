@@ -14,10 +14,12 @@
 </head>
 <body> 
 
-    <div id="loading-screen">
-    <div class="pokeball-loader"></div>
-    <p>Please wait</p>
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
 </div>
+
 
 <audio id="bg-music" loop></audio>
 
@@ -452,16 +454,34 @@ function applicaPaletteUtente(baseColor) {
 }
 
 // 4. Funzione di Inizializzazione della Pagina
-async function inizializzaPaginaBox() {
-    const loader = document.getElementById('loading-screen');
+// Helper per nascondere il loader
+function nascondiLoader() {
+    const loader = document.getElementById('poke-loader');
+    if (!loader) return;
+
+    loader.style.opacity = '0';
+    loader.classList.add('hidden'); // Se usi la classe CSS per nasconderlo
     
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500); // Durata del fade-out CSS
+}
+
+async function inizializzaPaginaBox() {
+    const loader = document.getElementById('poke-loader');
+    
+    // Mostra il loader all'inizio dell'operazione
     if (loader) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
+        loader.classList.remove('hidden');
     }
 
     try {
-        if (!playerID) return;
+        if (!playerID) {
+            console.warn("⚠️ Player ID non trovato.");
+            return;
+        }
 
         const nomeFormattato = playerID.charAt(0).toUpperCase() + playerID.slice(1);
         document.title = `Box - ${nomeFormattato}`;
@@ -471,7 +491,7 @@ async function inizializzaPaginaBox() {
         const info = snapInfo.val() || {};
         const userColor = info.color || "#31c489"; 
 
-        // 2. Applicazione stile alla fascia intera (Top Bar)
+        // 2. Applicazione stile alla Top Bar
         const topBar = document.querySelector('.top-bar');
         const titoloDisplay = document.querySelector('.hub-title-display');
 
@@ -480,19 +500,26 @@ async function inizializzaPaginaBox() {
         }
 
         if (titoloDisplay) {
-            // Sticker Nero, Scritta Bianca
             titoloDisplay.style.backgroundColor = "#000"; 
             titoloDisplay.style.color = "#fff"; 
             titoloDisplay.innerHTML = `<span id="player-name-placeholder">${nomeFormattato.toUpperCase()}</span>'S BOX`;
         }
 
         // 3. Applicazione variabili colore globali
-        applicaPaletteUtente(userColor);
+        if (typeof applicaPaletteUtente === "function") {
+            applicaPaletteUtente(userColor);
+        }
 
         // 4. Caricamento dati e musica
-        sincronizzaCategorie(); 
+        if (typeof sincronizzaCategorie === "function") {
+            await sincronizzaCategorie(); 
+        }
+        
         await scaricaDati(); 
-        ascoltaMusicaFirebase();
+
+        if (typeof ascoltaMusicaFirebase === "function") {
+            ascoltaMusicaFirebase();
+        }
 
         // 5. Ordinamento e filtri iniziali
         const sortFilter = document.getElementById('sortFilter');
@@ -501,17 +528,13 @@ async function inizializzaPaginaBox() {
             if (typeof applicaFiltri === "function") applicaFiltri();
         }
 
-        console.log(`✅ Box caricato: Stile Side-by-Side con colore ${userColor}`);
+        console.log(`✅ Box caricato con successo per ${nomeFormattato}`);
 
     } catch (e) {
-        console.error("❌ Errore:", e);
+        console.error("❌ Errore durante l'inizializzazione della Box:", e);
     } finally {
-        setTimeout(() => {
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
-        }, 1000);
+        // Margine di 300ms prima di far scomparire il loader
+        setTimeout(nascondiLoader, 300);
     }
 }
 
@@ -775,28 +798,40 @@ function renderizza(lista) {
     const grid = document.getElementById('teamsGrid');
     if (!grid) return;
 
+    // Protezione se lista non è un array valido
+    if (!Array.isArray(lista)) return;
+
     grid.innerHTML = lista.map(team => {
+        // Fallback per l'array dei pokemon
+        const pokemonList = team.pokemon || [];
+
         return `
         <div class="card" onclick="apriDettagli('${team.id}')">
             <div class="card-header">
                 <span class="category">${team.category || team.categoria || 'VGC'}</span>
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
-            <h3>${team.nome}</h3>
+            <h3>${team.nome || 'No teams yet'}</h3>
             <div class="pkm-grid">
-                ${team.pokemon.map((p, index) => {
-                    const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                    const itemNameUrl = p.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                    const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif`;
+                ${pokemonList.map((p, index) => {
+                    const nomePkm = p.nome || '';
+                    const strumentoPkm = p.strumento || '';
+                    const mossePkm = p.mosse || [];
+
+                    const pkmNameUrl = nomePkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                    const itemNameUrl = strumentoPkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                    const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
                     const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
-                    const pkmBoxId = `box-${team.id.toString().replace(/-/g, '')}-${index}`;
+                    const teamIdSanitized = (team.id || '').toString().replace(/-/g, '');
+                    const pkmBoxId = `box-${teamIdSanitized}-${index}`;
                     
                     setTimeout(() => {
-                        if (typeof applicaColoreBordo === 'function') applicaColoreBordo(p.nome, pkmBoxId);
+                        if (typeof applicaColoreBordo === 'function' && nomePkm) {
+                            applicaColoreBordo(nomePkm, pkmBoxId);
+                        }
                     }, 50);
 
-                    // CHIAMATA SICURA: Passiamo l'ID del team e la posizione del pokemon (0, 1, 2...)
                     return `
                         <div class="pkm-box" id="${pkmBoxId}" 
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
@@ -804,19 +839,19 @@ function renderizza(lista) {
                                 <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
                             </div>
                             <div class="pkm-info">
-                                <span class="pkm-name">${p.nome}</span>
+                                <span class="pkm-name">${nomePkm}</span>
                                 <div class="item-container">
-                                    <img src="${itemSprite}" class="item-icon" title="${p.strumento}" onerror="this.style.display='none'">
-                                    <span class="pkm-item">${p.strumento}</span>
+                                    <img src="${itemSprite}" class="item-icon" title="${strumentoPkm}" onerror="this.style.display='none'">
+                                    <span class="pkm-item">${strumentoPkm}</span>
                                 </div>
                             </div>
 
                             <div class="pkm-hover-card ${sideClass}">
-                                <strong>${p.nome}</strong>
-                                <p>✨ ${p.abilita}</p>
-                                <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs}</p>
+                                <strong>${nomePkm}</strong>
+                                <p>✨ ${p.abilita || '-'}</p>
+                                <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs || '-'}</p>
                                 <div class="hover-moves">
-                                    ${p.mosse.map(m => `<span>${m}</span>`).join('')}
+                                    ${mossePkm.map(m => `<span>${m}</span>`).join('')}
                                 </div>
                             </div>
                         </div>
@@ -1182,55 +1217,81 @@ function applicaFiltri() {
     renderizza(filtrati);
 }
 
-    async function applicaColoreBordo(pkmName, elementId) {
-    const box = document.getElementById(elementId);
-    if (!box) return;
+async function applicaColoreBordo(pokemonNome, elemento) {
     try {
-        const cleanName = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
-        const data = await res.json();
-        
-        const colori = {
-            fire: '#ff4422', water: '#3399ff', grass: '#77cc55', electric: '#ffcc33', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22', rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
+        if (!pokemonNome) return;
+
+        // 1. Formattazione e pulizia nome
+        let nomeFormatted = pokemonNome.toLowerCase().trim()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
+
+        // 2. Mappatura nomi speciali che PokéAPI richiede con la forma base
+        const mappaturaNomi = {
+            'aegislash': 'aegislash-shield',
+            'indeedee': 'indeedee-male',
+            'mimikyu': 'mimikyu-disguised',
+            'meowstic': 'meowstic-male',
+            'toxtricity': 'toxtricity-amped',
+            'eiscue': 'eiscue-ice',
+            'urshifu': 'urshifu-single-strike',
+            'giratina': 'giratina-altered',
+            'deoxys': 'deoxys-normal',
+            'wormadam': 'wormadam-plant',
+            'basculin': 'basculin-red-striped',
+            'keldeo': 'keldeo-ordinary',
+            'meloetta': 'meloetta-aria',
+            'thundurus': 'thundurus-incarnate',
+            'tornadus': 'tornadus-incarnate',
+            'landorus': 'landorus-incarnate',
+            'pumpkaboo': 'pumpkaboo-average',
+            'gourgeist': 'gourgeist-average',
+            'zygarde': 'zygarde-50'
         };
 
-        const types = data.types.map(t => colori[t.type.name]);
-
-        // Applichiamo il colore allo pseudo-elemento ::before
-        if (types.length === 1) {
-            box.style.setProperty('--bordo-colore', types[0]);
-            box.style.styleSheet ? "" : box.setAttribute('style', `background-left: none;`); // cleanup
-            // Usiamo il background diretto sullo pseudo-elemento tramite una variabile o stile iniettato
-            box.style.setProperty('--bg-bordo', types[0]);
-        } else {
-            box.style.setProperty('--bg-bordo', `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`);
+        if (mappaturaNomi[nomeFormatted]) {
+            nomeFormatted = mappaturaNomi[nomeFormatted];
         }
-        
-        // Applichiamo lo stile finale
-        const bgEffettivo = types.length === 1 ? types[0] : `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`;
-        
-        // Creiamo una piccola regola stile al volo per colpire il ::before di quel box specifico
-        const stileDinamico = document.createElement('style');
-        stileDinamico.innerHTML = `#${elementId}::before { background: ${bgEffettivo} !important; }`;
-        document.head.appendChild(stileDinamico);
 
-    } catch (e) {
-        console.error("Error:", e);
+        // 3. Fetch dati da PokéAPI
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeFormatted}`);
+
+        // CONTROLLO FONDAMENTALE: Se la risposta NON è OK (es. 404), NON chiamare .json()
+        if (!res.ok) {
+            console.warn(`⚠️ Impossibile trovare "${nomeFormatted}" su PokéAPI (Status: ${res.status})`);
+            return; 
+        }
+
+        // 4. Parsing sicuro del JSON
+        const data = await res.json();
+
+        // --- INSERISCI QUI LA TUA LOGICA DI APPLICAZIONE COLORE ---
+        // Esempio:
+        // const primoTipo = data.types[0].type.name;
+        // elemento.style.borderColor = ottieniColoreTipo(primoTipo);
+
+    } catch (err) {
+        // Gestione silenziosa dell'errore per non bloccare mai la pagina
+        console.error(`Errore durante applicaColoreBordo per ${pokemonNome}:`, err);
     }
 }
-
 
 function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const modal = document.getElementById('pkmDetailModal');
     const content = document.getElementById('pkmModalBody');
     if (!modal || !content) return;
 
+    // Protezioni fallback per evitare crash se mancano proprietà
+    const mosseList = pokemonData.mosse || [];
+    const strumento = pokemonData.strumento || '';
+    const strumentoUrl = strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+
     content.innerHTML = `
         <div class="pkm-modal-grid">
             <div class="area-header">
                 <div id="single-types" class="types-centered"></div>
                 <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
-                <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
+                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
             </div>
             <div class="area-weakness pkm-panel">
                 <h4 class="panel-title">DEFENSE</h4>
@@ -1239,15 +1300,15 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
             <div class="area-info-strips">
                 <div class="pkm-panel info-box-compact">
                     <div class="info-content-clean">
-                        <strong class="info-name">${pokemonData.abilita}</strong>
+                        <strong class="info-name">${pokemonData.abilita || '-'}</strong>
                         <div id="single-abi" class="info-desc-tiny"></div>
                     </div>
                 </div>
                 <div class="pkm-panel info-box-compact">
                     <div class="info-content-clean">
                         <div class="item-title-row-new">
-                            <strong class="info-name">${pokemonData.strumento}</strong>
-                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${pokemonData.strumento.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '')}.png" class="item-icon-right" onerror="this.style.display='none'">
+                            <strong class="info-name">${strumento || '-'}</strong>
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${strumentoUrl}.png" class="item-icon-right" onerror="this.style.display='none'">
                         </div>
                         <div id="single-item" class="info-desc-tiny"></div>
                     </div>
@@ -1255,12 +1316,12 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
             </div>
             <div class="area-stats pkm-panel">
                 <div id="single-stats"></div>
-                <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs}</div>
+                <div class="evs-footer"><strong>EVs:</strong> ${pokemonData.evs || '-'}</div>
             </div>
             <div class="area-moves pkm-panel">
                 <h4 class="panel-title">MOVESET</h4>
                 <div class="moves-list-compact">
-                    ${pokemonData.mosse.map((m, i) => {
+                    ${mosseList.map((m, i) => {
                         if(!m || m === "-") return '';
                         return `
                         <div class="move-row-mini" id="move-card-${i}">
@@ -1285,12 +1346,15 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
         .then(res => res.json())
         .then(data => {
-            document.getElementById('pkm-hero-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            const heroSprite = document.getElementById('pkm-hero-sprite');
+            if (heroSprite) {
+                heroSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            }
             caricaStats(pkmNameUrl, 'single-stats');
             caricaTipi(pkmNameUrl, 'single-types', '');
-        });
+        }).catch(() => {});
 
-    pokemonData.mosse.forEach((m, i) => {
+    mosseList.forEach((m, i) => {
         if(m && m !== "-") {
             const mName = m.toLowerCase().replace(/ /g, '-');
             fetch(`https://pokeapi.co/api/v2/move/${mName}`)
@@ -1302,7 +1366,9 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                         if(el) el.innerText = entry.flavor_text.replace(/[\n\f]/g, ' ').trim();
                     }
                 }).catch(() => {});
-            aggiornaColoreMossa(m, `move-card-${i}`, i);
+            if (typeof aggiornaColoreMossa === 'function') {
+                aggiornaColoreMossa(m, `move-card-${i}`, i);
+            }
         }
     });
 
@@ -1312,41 +1378,21 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 }
 
 function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
-    // Cerchiamo il team nell'array globale usando l'ID di Firebase
     const team = tuttiITeam.find(t => t.id === teamId);
     
-    if (team && team.pokemon[pkmIndex]) {
-        // Se lo troviamo, chiamiamo la tua funzione originale con i dati corretti
+    if (team && team.pokemon && team.pokemon[pkmIndex]) {
         apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
     } else {
         console.error("Errore: Impossibile trovare il Pokémon per il team", teamId);
     }
 }
 
-modal.style.display = "flex";
-
-    // Esegui i caricamenti
-    caricaTipi(pkmNameUrl, 'single-types', '');
-    caricaDebolezzeStatiche(pkmNameUrl, 'static-weaknesses');
-    caricaStats(pkmNameUrl, 'single-stats');
-    caricaInfoAbilita(pokemonData.abilita, 'single-abi');
-    caricaInfoStrumento(pokemonData.strumento, 'single-item');
-
-    // CORREZIONE QUI: Passiamo l'indice 'i' correttamente alla funzione
-    pokemonData.mosse.forEach((m, i) => {
-        if(m && m !== "-") {
-            aggiornaColoreMossa(m, `move-card-${i}`, i);
-        }
-    });
-
-    function popolaFiltroCategorie(setInsieme) {
+function popolaFiltroCategorie(setInsieme) {
     const select = document.getElementById('categoryFilter');
     if (!select) return;
 
-    // Reset del menu (tiene solo la prima opzione)
     select.innerHTML = '<option value="">Category</option>';
     
-    // Ordina le categorie alfabeticamente
     const categorieOrdinate = Array.from(setInsieme).sort();
     
     categorieOrdinate.forEach(cat => {
@@ -2622,8 +2668,8 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         // Inseriamo la Pokéball rotante Neubrutalist nella griglia
         grid.innerHTML = `
             <div class="pokeball-loader-container">
-                <div class="pokeball-spinner"></div>
-                <div class="loading-text">Loading Pokédex...</div>
+                <div class="pokeball-spinner-builder"></div>
+                <div class="loading-text-builder">Loading Pokédex...</div>
             </div>
         `;
 
@@ -2641,7 +2687,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     grid-column: 1 / -1; /* Occupa tutta la larghezza se è una CSS Grid */
                     width: 100%;
                 }
-                .pokeball-spinner {
+                .pokeball-spinner-builder {
                     width: 60px;
                     height: 60px;
                     background: linear-gradient(to bottom, #ff3e3e 50%, #ffffff 50%);
@@ -2652,7 +2698,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
                 }
                 /* Linea nera centrale della Pokéball */
-                .pokeball-spinner::before {
+                .pokeball-spinner-builder::before {
                     content: "";
                     position: absolute;
                     height: 6px;
@@ -2663,7 +2709,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     transform: translateY(-50%);
                 }
                 /* Pulsante centrale bianco */
-                .pokeball-spinner::after {
+                .pokeball-spinner-builder::after {
                     content: "";
                     position: absolute;
                     width: 16px;
@@ -2675,7 +2721,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     left: 50%;
                     transform: translate(-50%, -50%);
                 }
-                .loading-text {
+                .loading-text-builder {
                     margin-top: 20px;
                     font-size: 1.1rem;
                     font-weight: 900;

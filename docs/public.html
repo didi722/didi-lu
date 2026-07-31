@@ -27,6 +27,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
     
     <audio id="bg-music-home" loop preload="auto"></audio>
 
@@ -84,11 +90,13 @@
 
             <section class="hub-hero">
                 <h1 class="hub-title-display">
-                    <span id="player-name-display">DIDI</span>
+                    <span id="player-name-display"></span>
                 </h1>
             </section>
         </div>
     </header>
+
+    <div id="player-title-container"></div>
 
     <div id="info-display-area"></div>
 
@@ -157,6 +165,19 @@ const firebaseConfig = {
     appId: "1:333119159516:web:689a9f5d3791093f66878b"
     
 };
+
+
+const trofeiCache = [
+    "immagini/season-winner.png",
+    "immagini/season-no-winner.png",
+    "immagini/season-winner-color.png",
+    "immagini/season-no-winner-color.png"
+];
+
+trofeiCache.forEach(src => {
+    const img = new Image();
+    img.src = src;
+});
 
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
@@ -266,13 +287,25 @@ const urlParams = new URLSearchParams(window.location.search);
 const playerNameFromURL = urlParams.get('name'); 
 
 async function initPublicProfile() {
+    const loader = document.getElementById('poke-loader');
+    
+    // Assicuriamoci che il loader sia visibile all'avvio
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        loader.classList.remove('hidden');
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     let playerKey = urlParams.get('player')?.trim(); 
 
+    // CASO 1: Nessun parametro nell'URL -> Chiudiamo il loader ed usciamo
     if (!playerKey) {
         console.error("Nessun giocatore specificato nell'URL");
-        const nameSpan = document.querySelector('.hub-title-display span');
+        const nameSpan = document.querySelector('.hub-title-display span') || document.getElementById('player-name-display');
         if (nameSpan) nameSpan.innerText = "PLAYER MISSING";
+        
+        nascondiLoader(loader);
         return;
     }
 
@@ -315,28 +348,26 @@ async function initPublicProfile() {
             if (info.musicaPreferita && typeof avviaMusicaGiocatore === 'function') avviaMusicaGiocatore(info.musicaPreferita);
 
             // --- CARICAMENTO PALMARÈS CORRETTO ASINCRONO ---
-const statsSnap = await db.ref(`players/${playerKey}/stats/seasons`).once('value');
-const statsData = statsSnap.val() || {};
+            const statsSnap = await db.ref(`players/${playerKey}/stats/seasons`).once('value');
+            const statsData = statsSnap.val() || {};
 
-// RECUPERIAMO I DATI DI TYPEUSAGE DIRETTAMENTE DAL PERCORSO CORRETTO
-let typeUsageData = {};
-try {
-    const typeUsageSnap = await db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value');
-    typeUsageData = typeUsageSnap.val() || {};
-} catch(err) {
-    console.error("Errore nel recupero typeusage:", err);
-}
+            let typeUsageData = {};
+            try {
+                const typeUsageSnap = await db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value');
+                typeUsageData = typeUsageSnap.val() || {};
+            } catch(err) {
+                console.error("Errore nel recupero typeusage:", err);
+            }
 
-if (typeof renderPalmares === 'function') {
-    // PASSIAMO ANCHE IL 5° PARAMETRO: statsData.history !
-    renderPalmares(
-        statsData.won || 0, 
-        palette, 
-        info.title || "", 
-        typeUsageData, 
-        statsData.history || {}
-    );
-}
+            if (typeof renderPalmares === 'function') {
+                renderPalmares(
+                    statsData.won || 0, 
+                    palette, 
+                    info.title || "", 
+                    typeUsageData, 
+                    statsData.history || {}
+                );
+            }
 
             // --- STATISTICHE E TEAM ---
             if (typeof renderPlayerStats === 'function') await renderPlayerStats(playerKey);
@@ -352,14 +383,34 @@ if (typeof renderPalmares === 'function') {
                     teamsArray.sort((a, b) => b.vittorie - a.vittorie);
                     if (typeof renderizzaBestTeam === 'function') renderizzaBestTeam(teamsArray[0]);
                 }
-            } catch (error) { console.error(error); }
+            } catch (error) { console.error("Errore recupero team:", error); }
 
-            inizializzaChiusuraModali();
+            if (typeof inizializzaChiusuraModali === 'function') inizializzaChiusuraModali();
+            
         } else {
+            // CASO 2: Giocatore non trovato nel database
             const nameSpan = document.getElementById('player-name-display');
             if (nameSpan) nameSpan.innerText = "PLAYER NOT FOUND";
         }
-    } catch (e) { console.error("Errore critico Firebase:", e); }
+    } catch (e) { 
+        console.error("Errore critico Firebase:", e); 
+    } finally {
+        // --- CHIUSURA LOADER GARANTITA ---
+        // Che il caricamento sia andato a buon fine o in errore, il loader sparisce qui
+        nascondiLoader(loader);
+    }
+}
+
+// Helper per nascondere il loader in modo fluido
+function nascondiLoader(loaderEl) {
+    const loader = loaderEl || document.getElementById('poke-loader');
+    if (!loader) return;
+    
+    loader.style.opacity = '0';
+    loader.classList.add('hidden');
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500);
 }
 
 function closeTeamModal() {
@@ -458,7 +509,7 @@ async function renderizzaBestTeam(team) {
     // 🎯 DIAGNOSI COMPLETATA: Sappiamo che i dati reali sono dentro team.stats
     const s = team.stats || {};
 
-    const teamName = team.nome || team.name || "Senza Nome";
+    const teamName = team.nome || team.name || "No best team yet";
     
     // Peschiamo i punti e le partite dal sotto-oggetto stats usando le chiavi di Firebase
     const teamPoints = typeof s.points !== 'undefined' ? s.points : 0;
@@ -1238,24 +1289,12 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 let eloChartInstance = null;
 
 async function renderPlayerStats(playerName) {
-    // 1. Recupero TUTTI i players per calcolare la posizione in classifica
+    // 1. Recupero TUTTI i players dal DB
     const playersRef = db.ref(`players`);
     const playersSnapshot = await playersRef.once('value');
     const allPlayers = playersSnapshot.val() || {};
 
-    // Trasformiamo l'oggetto in un array per poterlo ordinare
-    const playersArray = Object.keys(allPlayers).map(id => ({
-        id: id,
-        ranking: allPlayers[id].stats?.['individual-stats']?.ranking || 1000
-    }));
-
-    // Ordiniamo l'array dal ranking più alto al più basso
-    playersArray.sort((a, b) => b.ranking - a.ranking);
-
-    // Troviamo la posizione (index + 1)
-    const position = playersArray.findIndex(p => p.id === playerName) + 1;
-    
-    // 2. Recupero le stats specifiche del player
+    // 2. Recupero le stats specifiche del player selezionato
     const stats = allPlayers[playerName]?.stats?.['individual-stats'] || {};
 
     const won = stats.won || 0;
@@ -1267,6 +1306,26 @@ async function renderPlayerStats(playerName) {
     const sdWon = stats.showdownsWon || 0;
     const sdPlayed = stats.showdownsPlayed || 0;
     const sdLost = sdPlayed - sdWon;
+
+    // --- CALCOLO POSIZIONE RANKING ---
+    // Consideriamo nella classifica stilata solo chi ha giocato almeno 3 showdown
+    const rankedPlayersArray = Object.keys(allPlayers)
+        .filter(id => (allPlayers[id].stats?.['individual-stats']?.showdownsPlayed || 0) >= 3)
+        .map(id => ({
+            id: id,
+            ranking: allPlayers[id].stats?.['individual-stats']?.ranking || 1000
+        }));
+
+    // Ordiniamo l'array dal ranking più alto al più basso
+    rankedPlayersArray.sort((a, b) => b.ranking - a.ranking);
+
+    // Troviamo la posizione nella classifica (1-based index)
+    const position = rankedPlayersArray.findIndex(p => p.id === playerName) + 1;
+
+    // --- DETERMINAZIONE VALORE DEL RANKING ---
+    const rankingDisplay = sdPlayed >= 3 
+        ? `#${position} (${currentElo})` 
+        : "Unranked";
 
     // --- ACCESSO CHIAVI BEST FORMAT ---
     const bestFormatData = stats.format || {};
@@ -1285,11 +1344,11 @@ async function renderPlayerStats(playerName) {
     const container = document.getElementById('stats-container');
     if (!container) return;
 
-    // 3. Definizione della lista di stats ottimizzata e accorpata
+    // 3. Definizione della lista di stats
     const items = [
         { 
             label: "RANKING", 
-            value: `#${position} (${currentElo})`,
+            value: rankingDisplay,
             clickable: true // Flag per identificare la card cliccabile
         },
         { 
@@ -1331,7 +1390,6 @@ async function renderPlayerStats(playerName) {
         
         bar.style.setProperty('--rand-deg', `${randomDeg}deg`); 
         
-        // CORREZIONE FONDAMENTALE: Se l'elemento è cliccabile, aggiungiamo 'pointer-events: none;' agli span.
         bar.innerHTML = `
             <span class="stat-label" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.label}</span>
             <span class="stat-value" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.value}</span>
@@ -1660,10 +1718,12 @@ async function caricaBestTeamDallAlto(playerKey) {
 
 function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, seasonsHistory = {}) {
     const container = document.getElementById('trophy-list');
-    if (!container) return;
-    container.innerHTML = "";
+    const titleContainer = document.getElementById('player-title-container');
+    
+    if (container) container.innerHTML = "";
+    if (titleContainer) titleContainer.innerHTML = "";
 
-    const playerColor = baseColor.base || baseColor;
+    const playerColor = typeof baseColor === 'object' ? (baseColor.base || baseColor) : baseColor;
     const hasTrophies = count > 0;
     const displayCount = hasTrophies ? count : 0;
     const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
@@ -1678,15 +1738,15 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
         "Hiker": "rock", "Working Man": "steel", "Fisherman": "water"
     };
 
-    if (titoloSalvato && titoloSalvato !== "" && titoloSalvato !== "No Title") {
+    // --- 1. SEZIONE TITLE BADGE ---
+    if (titoloSalvato && titoloSalvato !== "" && titoloSalvato !== "No Title" && titleContainer) {
         const tipoAtteso = TITOLI_MAP[titoloSalvato] || titoloSalvato.split(" ")[0].toLowerCase();
 
-        // Navigazione sicura dell'oggetto dati
         let targetData = typeUsageData;
         if (targetData && typeof targetData.val === 'function') targetData = targetData.val();
-        if (targetData && targetData.stats) targetData = targetData.stats;
-        if (targetData && targetData['team-stats']) targetData = targetData['team-stats'];
-        if (targetData && targetData.typeusage) targetData = targetData.typeusage;
+        if (targetData?.stats) targetData = targetData.stats;
+        if (targetData?.['team-stats']) targetData = targetData['team-stats'];
+        if (targetData?.typeusage) targetData = targetData.typeusage;
 
         let stats = { played: 0, won: 0 };
         if (targetData) {
@@ -1698,55 +1758,49 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
         const played = Number(stats.played) || 0;
         const won = Number(stats.won) || 0;
 
-        // --- LOGICA DI CALCOLO DEL RANKING SUCCESSIVO ---
         let nextPlayedTarget = 50;
         let nextWonTarget = 0;
 
-        if (played >= 150 && won >= 50) {
-            nextPlayedTarget = 150;
+        if (played >= 250 && won >= 50) {
+            nextPlayedTarget = 250;
             nextWonTarget = 50;
-        } else if (played >= 100 && won >= 20) {
-            nextPlayedTarget = 150;
+        } else if (played >= 150 && won >= 25) {
+            nextPlayedTarget = 250;
             nextWonTarget = 50;
-        } else if (played >= 50) {
-            nextPlayedTarget = 100;
-            nextWonTarget = 20;
+        } else if (played >= 20) {
+            nextPlayedTarget = 150;
+            nextWonTarget = 25;
         } else {
-            nextPlayedTarget = 50;
+            nextPlayedTarget = 20;
             nextWonTarget = 0;
         }
 
-        // Calcolo percentuali sbarre di progressione
         const progPlayed = nextPlayedTarget > 0 ? Math.min((played / nextPlayedTarget) * 100, 100) : 100;
         const progWon = nextWonTarget > 0 ? Math.min((won / nextWonTarget) * 100, 100) : 100;
 
         const titleBadge = document.createElement('div');
         titleBadge.id = "player-active-title-badge";
         titleBadge.className = `hub-title-badge tipo-${tipoAtteso}`;
-        
-        // FISSIAMO LO STACKING CONTEXT SUL BADGE PADRE
-        titleBadge.style.position = "relative";
-        titleBadge.style.zIndex = "999"; 
-        titleBadge.style.display = "inline-block";
+        titleBadge.style.cssText = "position: relative; display: inline-block;";
         titleBadge.innerText = titoloSalvato;
 
-        // Stili CSS strutturali in linea per le barre interne
-        const bgStyle = `style="background: #e0e0e0; border: 2px solid #000; height: 12px; border-radius: 4px; margin: 4px 0 8px 0; overflow: hidden; position: relative; width: 100%; text-align: left;"`;
+        const bgStyle = `style="background: #e0e0e0; border: 2px solid #000; height: 12px; margin: 4px 0 8px 0; overflow: hidden; position: relative; width: 100%; text-align: left;"`;
         const fillStyle = (percent) => `style="background: ${playerColor}; height: 100%; width: ${percent}%; border-right: ${percent > 0 ? '2px solid #000' : 'none'}; transition: width 0.3s ease;"`;
 
         const tooltip = document.createElement('span');
         tooltip.className = "neubrutal-tooltip";
-        
-        // AGGRESSIVE OVERRIDE DELLO STACKING CONTEXT SUL TOOLTIP
-        tooltip.style.position = "absolute";
-        tooltip.style.zIndex = "99999";
-        tooltip.style.minWidth = "210px";
-        tooltip.style.boxSizing = "border-box";
-        tooltip.style.transform = "rotate(3deg)";
+        tooltip.style.cssText = "position: absolute; z-index: 99999; min-width: 220px; box-sizing: border-box; transform: rotate(3deg);";
 
         const grayWonText = nextWonTarget > 0 ? `<span style="color: #888; font-size: 11px; white-space: nowrap;">${nextWonTarget}</span>` : '';
+        const tipoNomeFormattato = tipoAtteso.toUpperCase();
 
         tooltip.innerHTML = `
+            <div style="margin-bottom: 10px; text-align: left;">
+                <span style="background: #000; color: #fff; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 8px; display: inline-block; box-shadow: 3.5px 3.5px 0px rgba(0,0,0,0.25);">
+                    ${tipoNomeFormattato} 
+                </span>
+            </div>
+
             <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%;">
                 <span style="white-space: nowrap;">Played: ${played}</span>
                 <span style="color: #888; font-size: 11px; white-space: nowrap;">${nextPlayedTarget}</span>
@@ -1765,10 +1819,13 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
         `;
         
         titleBadge.appendChild(tooltip);
-        container.appendChild(titleBadge);
+        titleContainer.appendChild(titleBadge);
     }
 
-    // --- LOGICA DEL TOOLTIP TROFEO ---
+    // --- 2. SEZIONE TROFEO / PALMARES ---
+    if (!container) return;
+    const fragment = document.createDocumentFragment();
+
     let rawHistory = seasonsHistory;
     if (rawHistory && typeof rawHistory.val === 'function') rawHistory = rawHistory.val();
     const wonSeasons = Object.values(rawHistory || {}).filter(s => s && (s.rank === 1 || s.rank === "1"));
@@ -1777,7 +1834,7 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     if (wonSeasons.length > 0) {
         const rows = wonSeasons.map(s => {
             let formattedDate = s.enddate || 'N/D';
-            if (s.enddate && s.enddate.includes('-')) {
+            if (s.enddate?.includes('-')) {
                 const parts = s.enddate.split('-');
                 if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
@@ -1799,24 +1856,20 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     const trophyWrapper = document.createElement('div');
     trophyWrapper.className = 'compact-palmares';
     trophyWrapper.style.setProperty('--player-color', playerColor);
-    
-    // Evitiamo che anche il wrapper dei trofei crei blocchi parassiti davanti al badge
-    trophyWrapper.style.position = "relative";
-    trophyWrapper.style.zIndex = "1";
+    trophyWrapper.style.cssText += "; position: relative; z-index: 1;";
 
     trophyWrapper.innerHTML = `
         <span class="trophy-count">x${displayCount}</span>
         <div class="trophy-recolor-wrapper">
             <div class="trophy-color-base" style="-webkit-mask-image: ${colorMask}; mask-image: ${colorMask};"></div>
-            <img src="${trophyImg}" class="trophy-icon-top">
+            <img src="${trophyImg}" class="trophy-icon-top" decoding="async">
             ${trophyTooltipHTML}
         </div>
     `;
-    container.appendChild(trophyWrapper);
+    
+    fragment.appendChild(trophyWrapper);
+    container.appendChild(fragment);
 }
-
-
-// Chiamala dentro initPublicProfile() passandogli la playerKey normalizzata
 
 function caricaBioAllenatore(testo) {
     const infoArea = document.getElementById('info-display-area');

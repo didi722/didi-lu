@@ -15,6 +15,89 @@ body {
     overflow-y: auto; 
 }
 
+/* Overlay che copre tutto lo schermo */
+.poke-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #f7f7f7;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+/* Classe aggiunta da JS per nasconderlo */
+.poke-loader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Pokéball Neubrutalist - Involucro esterno statico */
+.pokeball-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #000000;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 4px 4px 0px #000000; /* L'ombra rimane ora statica */
+    overflow: hidden; /* Mantiene la rotazione interna entro i bordi */
+}
+
+/* Contenuto interno che ruota (sfondo bicolore + striscia nera) */
+.pokeball-spinner::before {
+    content: "";
+    position: absolute;
+    top: -20%;
+    left: -20%;
+    width: 140%;
+    height: 140%;
+    background: linear-gradient(
+        to bottom, 
+        #ff3e3e calc(50% - 3px), 
+        #000000 calc(50% - 3px), 
+        #000000 calc(50% + 3px), 
+        #ffffff calc(50% + 3px)
+    );
+    animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+}
+
+/* Pulsante centrale della Pokéball */
+.pokeball-spinner::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #ffffff;
+    border: 5px solid #000000;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #000000;
+}
+
+@keyframes spinPokeball {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Il Wrapper limita la larghezza del contenuto */
 .site-wrapper {
     max-width: 1440px;      /* Larghezza ideale per desktop */
@@ -495,6 +578,7 @@ body {
     position: relative;
     z-index: 1; /* Z-index basso per stare sotto ai tooltip di sinistra */
 }
+
 
 .modal-content.glass-card {
     background: rgba(255, 255, 255, 0.1);
@@ -3144,4 +3228,12 @@ color:#eeeeee;
     box-shadow: 3px 3px 0px black;
     font-family: 'Josefin Sans', sans-serif;
     transform: rotate(4deg) !important;
+}
+
+#player-title-container {
+    padding: 12px 20px 0 20px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-left: 120px;
 }

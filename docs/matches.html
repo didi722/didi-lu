@@ -13,6 +13,12 @@
     </header>
 <body>
     
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
         <audio id="bg-music-home" loop preload="auto"></audio>
 
 <div id="music-control" class="music-btn" onclick="toggleMusic()">
@@ -181,10 +187,6 @@
         </div>
     </div>
 
-    <div id="loading-screen">
-    <div class="pokeball-loader"></div>
-    <p>Please wait</p>
-</div>
 
 
 <div id="admin-create-showdown-panel" class="admin-panel-modern">
@@ -378,13 +380,41 @@ const db = firebase.database();
 const auth = firebase.auth(); // Fondamentale!
 
 
-// Questo è il cuore del caricamento dinamico
+const windowLoaded = new Promise(resolve => {
+    if (document.readyState === 'complete') {
+        resolve();
+    } else {
+        window.addEventListener('load', resolve, { once: true });
+    }
+});
+// -------------------------------------------------------------
+// EVENT LISTENER PRINCIPALE: Gestisce l'intera sequenza di boot
+// -------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Aspetta che venga identificata la stagione dall'URL (?id=...)
-    await recuperaStagioneCorrente(); 
-    
-    // 2. Ora che stagioneAttiva è piena (es: "sbeta"), carica i dati
-    await inizializzaPaginaArchivio();
+    const loader = document.getElementById('poke-loader');
+
+    try {
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
+
+        // 1. Esegui il recupero e l'inserimento dei dati da Firebase
+        await inizializzaPaginaArchivio();
+
+    } catch (error) {
+        console.error("❌ Errore durante il caricamento della pagina:", error);
+    } finally {
+        // 2. Nascondi SUBITO il loader appena il layout/dati sono pronti
+        if (loader) {
+            loader.style.transition = 'opacity 0.3s ease';
+            loader.style.opacity = '0';
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
+        }
+    }
 });
 
 window.onclick = function(event) {
@@ -511,6 +541,7 @@ async function getPlayersColors(p1, p2) {
     };
 }
 
+
 async function recuperaStagioneCorrente() {
     // 1. Leggiamo l'ID dall'URL (es: matches.html?id=-O123456)
     const urlParams = new URLSearchParams(window.location.search);
@@ -558,8 +589,25 @@ async function recuperaStagioneCorrente() {
     }
 }
 
+// Funzione helper per attendere che tutte le immagini nel DOM siano decodificate e pronte
+function attendiCaricamentoImmagini() {
+    const immagini = Array.from(document.querySelectorAll('img'));
+    const promesse = immagini.map(img => {
+        if (img.complete) {
+            return img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+        }
+        return new Promise(resolve => {
+            img.onload = () => {
+                if (img.decode) img.decode().then(resolve).catch(resolve);
+                else resolve();
+            };
+            img.onerror = resolve; // Prosegue anche se un'immagine fallisce
+        });
+    });
+    return Promise.all(promesse);
+}
+
 async function inizializzaPaginaArchivio() {
-    const loader = document.getElementById('loading-screen');
     const container = document.getElementById('matchList');
     const topBar = document.querySelector('.top-bar');
     const adminPlusBtn = document.querySelector('.btn-floating-admin');
@@ -569,176 +617,145 @@ async function inizializzaPaginaArchivio() {
     const adminPanel = document.getElementById('admin-create-showdown-panel');
     if (adminPanel) adminPanel.style.display = 'none';
 
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
+    // --- 2. GESTIONE AUTENTICAZIONE ---
+    const user = await new Promise((resolve) => {
+        const currentUser = firebase.auth().currentUser;
+        if (currentUser) {
+            resolve(currentUser);
+        } else {
+            const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+                unsubscribe();
+                resolve(u);
+            });
+        }
+    });
+
+    let userColor = "#FFA500"; 
+    let isLoggedIn = !!user; 
+    let isAdmin = false;    
+
+    if (user) {
+        const userSnap = await db.ref(`users/${user.uid}`).once('value');
+        const userData = userSnap.val() || {};
+        
+        isAdmin = (userData.role === 'admin'); 
+        const playerName = userData.name;
+
+        if (playerName) {
+            const colorSnap = await db.ref(`players/${playerName.toLowerCase().trim()}/info/color`).once('value');
+            if (colorSnap.exists()) {
+                userColor = colorSnap.val();
+            }
+        }
     }
 
-    try {
-        // --- 2. GESTIONE AUTENTICAZIONE ROBUSTA ---
-        const user = await new Promise((resolve) => {
-            const currentUser = firebase.auth().currentUser;
-            if (currentUser) {
-                resolve(currentUser);
-            } else {
-                const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
-                    unsubscribe();
-                    resolve(u);
-                });
-            }
-        });
+    if (topBar) {
+        topBar.style.setProperty('background-color', userColor, 'important');
+    }
 
-        let userColor = "#FFA500"; 
-        let isLoggedIn = !!user; // True per qualsiasi utente autenticato (Admin o Player)
-        let isAdmin = false;    // True SOLO se role === 'admin'
+    // --- 3. RECUPERO DATI STAGIONE ---
+    if (typeof stagioneAttiva === 'undefined' || !stagioneAttiva) {
+        await recuperaStagioneCorrente();
+    }
 
-        if (user) {
-            const userSnap = await db.ref(`users/${user.uid}`).once('value');
-            const userData = userSnap.val() || {};
-            
-            // Verifichiamo il ruolo esatto dal database
-            isAdmin = (userData.role === 'admin'); 
-            
-            const playerName = userData.name;
+    const [snapSeasonInfo, snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
+        db.ref(`seasons/${stagioneAttiva}/info`).once('value'),
+        db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value'),
+        db.ref(`seasons/${stagioneAttiva}/showdowns`).once('value'),
+        db.ref(`seasons/${stagioneAttiva}/leaderboard`).once('value'),
+        db.ref(`players`).once('value') 
+    ]);
 
-            if (playerName) {
-                const colorSnap = await db.ref(`players/${playerName.toLowerCase().trim()}/info/color`).once('value');
-                if (colorSnap.exists()) {
-                    userColor = colorSnap.val();
-                }
-            }
-        }
+    const dataSeasonInfo = snapSeasonInfo.val() || {};
+    const dataIscritti = snapTeams.val() || {};
+    const dataShowdowns = snapShowdowns.val() || {};
+    const dataLeaderboard = snapLeaderboard.val() || {};
+    const dataPlayers = snapPlayersAll.val() || {};
+    
+    window.teamsIscrittiStagione = dataIscritti;
 
-        if (topBar) {
-            topBar.style.setProperty('background-color', userColor, 'important');
-        }
+    // --- 4. CONTROLLO VISIBILITÀ BOTTONE (+) ---
+    const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
+    const stagioneChiusa = (stringStatus === 'CLOSED');
 
-        // --- 3. RECUPERO DATI STAGIONE ---
-        if (typeof stagioneAttiva === 'undefined' || !stagioneAttiva) {
-            await recuperaStagioneCorrente();
-        }
+    if (adminPlusBtn) {
+        adminPlusBtn.style.display = (isLoggedIn && !stagioneChiusa) ? 'flex' : 'none';
+    }
 
-        const [snapSeasonInfo, snapTeams, snapShowdowns, snapLeaderboard, snapPlayersAll] = await Promise.all([
-            db.ref(`seasons/${stagioneAttiva}/info`).once('value'),
-            db.ref(`seasons/${stagioneAttiva}/teams_iscritti`).once('value'),
-            db.ref(`seasons/${stagioneAttiva}/showdowns`).once('value'),
-            db.ref(`seasons/${stagioneAttiva}/leaderboard`).once('value'),
-            db.ref(`players`).once('value') 
-        ]);
+    if (!container) return;
+    container.innerHTML = "";
 
-        const dataSeasonInfo = snapSeasonInfo.val() || {};
-        const dataIscritti = snapTeams.val() || {};
-        const dataShowdowns = snapShowdowns.val() || {};
-        const dataLeaderboard = snapLeaderboard.val() || {};
-        const dataPlayers = snapPlayersAll.val() || {};
+    // --- 5. RENDERING SHOWDOWNS ---
+    const sortedSdKeys = Object.keys(dataShowdowns).sort((a, b) => {
+        const dataA = dataShowdowns[a].info?.data || "";
+        const dataB = dataShowdowns[b].info?.data || "";
+        return dataB.localeCompare(dataA);
+    });
+
+    if (sortedSdKeys.length === 0) {
+        container.innerHTML = "<p style='color:black; text-align:center; padding:20px;'>No showdowns yet. Start battling with your friends!</p>";
+    }
+
+    sortedSdKeys.forEach(sdId => {
+        const sd = dataShowdowns[sdId];
+        const info = sd.info || {};
+        const matches = sd.matches || {};
         
-        window.teamsIscrittiStagione = dataIscritti;
-
-        // --- 4. CONTROLLO VISIBILITÀ BOTTONE NUOVO SHOWDOWN (+) ---
-        const stringStatus = dataSeasonInfo.status ? String(dataSeasonInfo.status).toUpperCase().trim() : "";
-        const stagioneChiusa = (stringStatus === 'CLOSED');
-
-        // LOG DI DEBUG PER VERIFICARE IN CONSOLE (F12)
-        console.log("🔍 Stato Auth:", { 
-            isLoggedIn: isLoggedIn, 
-            isAdmin: isAdmin, 
-            stagioneChiusa: stagioneChiusa 
+        let vintiP1 = 0, vintiP2 = 0;
+        Object.values(matches).forEach(m => {
+            if (parseInt(m.p1score) > parseInt(m.p2score)) vintiP1++;
+            else if (parseInt(m.p2score) > parseInt(m.p1score)) vintiP2++;
         });
 
-        if (adminPlusBtn) {
-            // Il tasto "+" è visibile a QUALSIASI utente loggato (Admin o Player), a patto che la stagione sia aperta
-            if (isLoggedIn && !stagioneChiusa) {
-                adminPlusBtn.style.display = 'flex';
-                adminPlusBtn.style.visibility = 'visible';
-            } else {
-                adminPlusBtn.style.display = 'none';
-            }
+        const nomeVincitore = info.vincitoreShowdown; 
+        let winnerColor = "#000"; 
+        if (nomeVincitore) {
+            const winKey = nomeVincitore.toLowerCase().trim();
+            winnerColor = dataPlayers[winKey]?.info?.color || "#000";
         }
 
-        if (!container) return;
-        container.innerHTML = "";
+        const sdCard = document.createElement('div');
+        sdCard.className = 'showdown-summary-card';
+        sdCard.style.setProperty('--winner-color', winnerColor);
+        
+        sdCard.onclick = (e) => {
+            if (e.target.closest('.sd-admin-overlay')) return; 
+            if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
+        };
 
-        // --- 5. RENDERING SHOWDOWNS ---
-        const sortedSdKeys = Object.keys(dataShowdowns).sort((a, b) => {
-            const dataA = dataShowdowns[a].info?.data || "";
-            const dataB = dataShowdowns[b].info?.data || "";
-            return dataB.localeCompare(dataA);
-        });
-
-        if (sortedSdKeys.length === 0) {
-            container.innerHTML = "<p style='color:black; text-align:center; padding:20px;'>No showdowns yet. Start battling with your friends!</p>";
-        }
-
-        sortedSdKeys.forEach(sdId => {
-            const sd = dataShowdowns[sdId];
-            const info = sd.info || {};
-            const matches = sd.matches || {};
-            
-            let vintiP1 = 0, vintiP2 = 0;
-            Object.values(matches).forEach(m => {
-                if (parseInt(m.p1score) > parseInt(m.p2score)) vintiP1++;
-                else if (parseInt(m.p2score) > parseInt(m.p1score)) vintiP2++;
-            });
-
-            const nomeVincitore = info.vincitoreShowdown; 
-            let winnerColor = "#000"; 
-            if (nomeVincitore) {
-                const winKey = nomeVincitore.toLowerCase().trim();
-                winnerColor = dataPlayers[winKey]?.info?.color || "#000";
-            }
-
-            const sdCard = document.createElement('div');
-            sdCard.className = 'showdown-summary-card';
-            sdCard.style.setProperty('--winner-color', winnerColor);
-            
-            sdCard.onclick = (e) => {
-                if (e.target.closest('.sd-admin-overlay')) return; 
-                if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
-            };
-
-            sdCard.innerHTML = `
-                <div class="sd-card-header">
-                    <span class="sd-badge-label">SHOWDOWN</span>
-                    <span class="sd-category-tag">${info.categoria || "OU"}</span>
+        sdCard.innerHTML = `
+            <div class="sd-card-header">
+                <span class="sd-badge-label">SHOWDOWN</span>
+                <span class="sd-category-tag">${info.categoria || "OU"}</span>
+            </div>
+            <div class="sd-card-content">
+                <div class="sd-player-display">
+                    <span class="sd-name">${info.player1 || 'TBD'}</span>
                 </div>
-                <div class="sd-card-content">
-                    <div class="sd-player-display">
-                        <span class="sd-name">${info.player1 || 'TBD'}</span>
-                    </div>
-                    <div class="sd-result-badge">
-                        <span class="sd-final-score">${vintiP1} - ${vintiP2}</span>
-                    </div>
-                    <div class="sd-player-display">
-                        <span class="sd-name">${info.player2 || 'TBD'}</span>
-                    </div>
+                <div class="sd-result-badge">
+                    <span class="sd-final-score">${vintiP1} - ${vintiP2}</span>
                 </div>
-                <div class="sd-card-footer">
-                    <span class="sd-date-text">${info.data || 'No date'}</span>
-                    
-                    <!-- Matita (✏️) e Cestino (🗑️) visibili SOLO agli ADMIN -->
-                    <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
-                        <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
-                        <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
-                    </div>
-                    
-                    <span class="sd-view-action">➜</span>
+                <div class="sd-player-display">
+                    <span class="sd-name">${info.player2 || 'TBD'}</span>
                 </div>
-            `;
-            container.appendChild(sdCard);
-        });
+            </div>
+            <div class="sd-card-footer">
+                <span class="sd-date-text">${info.data || 'No date'}</span>
+                
+                <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
+                    <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
+                    <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
+                </div>
+                
+                <span class="sd-view-action">➜</span>
+            </div>
+        `;
+        container.appendChild(sdCard);
+    });
 
-        // --- 6. RENDER RANKINGS ---
-        if (typeof renderRankings === 'function') {
-            await renderRankings(dataLeaderboard);
-        }
-
-    } catch (e) {
-        console.error("❌ Errore critico Archivio:", e);
-    } finally {
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
+    // --- 6. RENDER RANKINGS ---
+    if (typeof renderRankings === 'function') {
+        await renderRankings(dataLeaderboard);
     }
 }
 
@@ -2103,11 +2120,6 @@ function generaHtmlGifs(nomeTeam, categoria) {
         `;
     }).join('');
 }
-
-document.addEventListener('DOMContentLoaded', inizializzaPaginaArchivio);
-
-
-// --- 3. FUNZIONE CORE CARICA ARCHIVIO (FIREBASE VERSION) ---
 
 function formattaDataItaliana(dataStr) {
     if (!dataStr) return "";
@@ -4491,6 +4503,7 @@ async function resetPasswordDalLogin() {
         if (loader) loader.classList.remove('active');
     }
 }
+
 
     </script>
 </body>

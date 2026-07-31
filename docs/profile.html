@@ -25,7 +25,11 @@
 
 <audio id="bg-music" loop></audio>
 
-
+<!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
 
 
    <section class="hub-hero">
@@ -49,7 +53,7 @@
             <label>Trainer Avatar</label>
             <div class="custom-tooltip-wrapper">
                 <div class="avatar-current-preview" onclick="toggleTooltip('avatar-tooltip')">
-                    <img id="current-avatar-preview" src="immagini/profile/default.png" alt="Avatar">
+                    <img id="current-avatar-preview" src="immagini/profile/1.png" alt="Avatar">
                     <div class="edit-badge"></div>
                 </div>
                 <div id="avatar-tooltip" class="custom-tooltip-content">
@@ -219,7 +223,6 @@ const auth = firebase.auth();
 let playerID = ""; 
 let tuttiITeam = [];
 
-
 // --- 1. LISTENER DI AUTENTICAZIONE ---
 // Listener unico per lo stato autenticazione in profile.html
 auth.onAuthStateChanged(async (user) => {
@@ -379,138 +382,6 @@ const TITOLI_BASE_TIPI = {
     water: "Fisherman"
 };
 
-caricaEVerificaTitoliGiocatore();
-
-async function caricaEVerificaTitoliGiocatore(pId) {
-    const selectTitoli = document.getElementById('select-titoli');
-    if (!selectTitoli) return;
-
-    // Spostiamo il dizionario all'interno per assicurarci che sia sempre accessibile
-    const TITOLI_BASE_TIPI = {
-        bug: "Bug Catcher",
-        dark: "Punk Guy",
-        dragon: "Dragon Tamer",
-        electric: "Guitarist",
-        fairy: "Fairy Tale Girl",
-        fighting: "Black Belt",
-        fire: "Kindler",
-        flying: "Bird Keeper",
-        ghost: "Hex Maniac",
-        grass: "Aroma Lady",
-        ground: "Ruin Maniac",
-        ice: "Skier",
-        normal: "Rich Boy",
-        poison: "Ninja Boy",
-        psychic: "Psychic",
-        rock: "Hiker",
-        steel: "Working Man",
-        water: "Fisherman"
-    };
-
-    try {
-        console.log(`=== 📑 START LOADING TITLES FOR PLAYER: ${pId} ===`);
-
-        // 1. Recupera i dati di typeusage e il titolo attuale del giocatore
-        const statsSnap = await db.ref(`players/${pId}/stats/team-stats/typeusage`).once('value');
-        const typeUsage = statsSnap.val() || {};
-        console.log("📊 Raw typeusage data from Firebase:", typeUsage);
-
-        const profiloSnap = await db.ref(`players/${pId}/profilo`).once('value');
-        const profiloData = profiloSnap.val() || {};
-        const titoloEquipaggiato = profiloData.titoloAttuale || "";
-        console.log(`👑 Currently equipped title in database: "${titoloEquipaggiato}"`);
-
-        // Lista dei titoli sbloccati (In inglese)
-        let titoliSbloccati = [{ id: "none", testo: "No Title" }];
-
-        // Convertiamo l'oggetto in array per iterare in sicurezza
-        const entries = Object.entries(typeUsage);
-        
-        if (entries.length === 0) {
-            console.warn("⚠️ No type usage data found for this player in Firebase.");
-        }
-
-        // 2. Analizza ogni tipo registrato nel typeusage
-        entries.forEach(([tipoChiave, stat]) => {
-            if (!stat) return;
-
-            // FIX CASE SENSITIVITY: Trasforma la chiave in minuscolo (es. "Dragon" -> "dragon")
-            const tipoInglese = tipoChiave.toLowerCase().trim();
-
-            const played = stat.played || 0;
-            const won = stat.won || 0;
-            
-            // Rende maiuscola la prima lettera del tipo per comporre i titoli avanzati (es. "dragon" -> "Dragon")
-            const tipoFormattato = tipoInglese.charAt(0).toUpperCase() + tipoInglese.slice(1);
-            
-            // Recupera il nome della classe allenatore dal dizionario interno
-            const nomeBase = TITOLI_BASE_TIPI[tipoInglese] || `${tipoFormattato} Trainer`;
-
-            console.log(`Checking [${tipoFormattato}] -> Played: ${played}, Won: ${won}`);
-
-            // REQUISITO 1: 30 Partite Giocate -> Trainer Class Base
-            if (played >= 30) {
-                console.log(`   ✅ UNLOCKED Base Title: "${nomeBase}"`);
-                titoliSbloccati.push({
-                    id: `${tipoInglese}_base`,
-                    testo: nomeBase
-                });
-            } else {
-                console.log(`   ❌ Locked Base Title ("${nomeBase}") - Needs ${30 - played} more matches`);
-            }
-
-            // REQUISITO 2: 100 Partite E 10 Vittorie -> Gym Leader
-            if (played >= 100 && won >= 20) {
-                console.log(`   ✅ UNLOCKED Gym Leader: "${tipoFormattato} Gym Leader"`);
-                titoliSbloccati.push({
-                    id: `${tipoInglese}_capo`,
-                    testo: `${tipoFormattato} Gym Leader`
-                });
-            }
-
-            // REQUISITO 3: 150 Partite E 30 Vittorie -> Elite Four
-            if (played >= 150 && won >= 50) {
-                console.log(`   ✅ UNLOCKED Elite Four: "${tipoFormattato} Elite Four"`);
-                titoliSbloccati.push({
-                    id: `${tipoInglese}_s4`,
-                    testo: `${tipoFormattato} Elite Four`
-                });
-            }
-        });
-
-        console.log("📦 Total unlocked titles array:", titoliSbloccati);
-
-        // 3. Rigenera le opzioni all'interno del menù a tendina HTML
-        selectTitoli.innerHTML = "";
-
-        let matchingTitleFound = false;
-
-        titoliSbloccati.forEach(titolo => {
-            const option = document.createElement('option');
-            option.value = titolo.testo; 
-            option.textContent = titolo.testo;
-            
-            // Se è il titolo attualmente equipaggiato, lo imposta come selezionato
-            if (titolo.testo === titoloEquipaggiato) {
-                option.selected = true;
-                matchingTitleFound = true;
-                console.log(`🎯 Match found! Setting "${titolo.testo}" as selected in the dropdown.`);
-            }
-            
-            selectTitoli.appendChild(option);
-        });
-
-        if (!matchingTitleFound && titoloEquipaggiato !== "") {
-            console.warn(`⚠️ The equipped title "${titoloEquipaggiato}" is no longer unlocked or valid based on current stats.`);
-        }
-
-        console.log(`=== 🏁 TITLES LOADING COMPLETED FOR ${pId} ===`);
-
-    } catch (err) {
-        console.error("❌ Error loading trainer titles:", err);
-        selectTitoli.innerHTML = '<option value="">Error loading titles...</option>';
-    }
-}
 
 let badgeSelezionati = []; // Array globale che contiene gli ID dei badge scelti
 
@@ -784,10 +655,15 @@ function toggleTooltip(id) {
     if (!isVisible) target.classList.add('show');
 }
 
-// --- 4. CARICAMENTO DATI DA FIREBASE ---
+
+
 async function caricaDatiProfilo() {
     try {
-        if (!playerID) return;
+        // 1. Se manca playerID, avvisa invece di fare un return silenzioso
+        if (!playerID) {
+            console.warn("⚠️ playerID non ancora disponibile al momento della chiamata.");
+            return;
+        }
 
         // Inizializza i componenti grafici (palette colori, selettore avatar base)
         inizializzaAppearance();
@@ -798,12 +674,16 @@ async function caricaDatiProfilo() {
         ]);
 
         const playerData = snapPlayer.val() || {};
-        const info = playerData.info || {}; 
+        const info = playerData.info || {};
 
-        // A. SINCRONIZZAZIONE APPEARANCE & STYLE NEUBRUTALIST
+        // A. SINCRONIZZAZIONE APPEARANCE & AVATAR
         if (info.avatar) {
             const avatarPreview = document.getElementById('current-avatar-preview');
-            if (avatarPreview) avatarPreview.src = info.avatar;
+            if (avatarPreview) {
+                avatarPreview.src = info.avatar;
+                // 🔥 Aspetta che l'immagine dell'avatar sia scaricata e pronta
+                await avatarPreview.decode().catch(err => console.warn("Impossibile decodificare avatar subito:", err));
+            }
         }
 
         if (info.color) {
@@ -813,8 +693,8 @@ async function caricaDatiProfilo() {
 
             const titoloDisplay = document.querySelector('.hub-title-display');
             if (titoloDisplay) {
-                titoloDisplay.style.backgroundColor = "#000"; 
-                titoloDisplay.style.color = "#fff"; 
+                titoloDisplay.style.backgroundColor = "#000";
+                titoloDisplay.style.color = "#fff";
                 titoloDisplay.style.borderColor = "#000";
             }
 
@@ -826,7 +706,7 @@ async function caricaDatiProfilo() {
         if (info.badgeShowcase) {
             window.badgeSelezionati = info.badgeShowcase;
             if (typeof aggiornaTrophyShowcase === "function") {
-                aggiornaTrophyShowcase();
+                await aggiornaTrophyShowcase(); // 🔥 Aggiunto await
             }
         } else {
             window.badgeSelezionati = [];
@@ -848,7 +728,7 @@ async function caricaDatiProfilo() {
             if (songNameDisplay) songNameDisplay.innerText = info.musicName || "Musica Salvata";
         }
 
-        // --- NUOVO E: SINCRONIZZAZIONE POKÉMON PREFERITO ---
+        // E. SINCRONIZZAZIONE POKÉMON PREFERITO
         if (info.pkmPreferito) {
             const pkmNome = info.pkmPreferito.toLowerCase();
             const pkmDisplay = document.getElementById('selected-pkm-name');
@@ -860,20 +740,11 @@ async function caricaDatiProfilo() {
         
         // Inizializza la lista dei Pokémon nel dropdown
         if (typeof inizializzaPkmSelector === "function") {
-            inizializzaPkmSelector();
+            await inizializzaPkmSelector(); // 🔥 Aggiunto await
         }
 
-        // F. ELABORAZIONE STATISTICHE
-        if (typeof elaboraBadge === "function") {
-            await elaboraBadge(); 
-        }
-
-        // =========================================================
-        // 🔥 INIEZIONE TITOLI TRAINER
-        // Analizza lo snapshot e imposta il titolo corretto come selezionato
-        // =========================================================
+        // F. INIEZIONE TITOLI TRAINER
         await integraTitoliNelloSnapshot(playerID, playerData);
-        // =========================================================
 
         console.log("✅ Profilo Neubrutalist ricaricato con Pokémon preferito e Titoli.");
 
@@ -895,20 +766,15 @@ async function integraTitoliNelloSnapshot(pId, playerData) {
     };
 
     try {
-        console.log(`=== 📑 START PROCESSING TITLES FOR: ${pId} ===`);
+        console.log(`=== 📑 CARICAMENTO TITOLI PER: ${pId} ===`);
 
         const stats = playerData.stats || {};
         const teamStats = stats['team-stats'] || {};
         const typeUsage = teamStats.typeusage || {};
-        
         const info = playerData.info || {};
         
-        // CORREZIONE CRITICA: Andiamo a leggere "title" anziché "titoloAttuale"
-        // Se nel DB è salvato come stringa vuota, associamo il testo di fallback "No Title"
+        // Recupera il titolo salvato o imposta "No Title"
         const titoloEquipaggiato = info.title || "No Title";
-        
-        console.log("📊 Typeusage analizzato:", typeUsage);
-        console.log(`👑 Current active title tracked from DB: "${titoloEquipaggiato}"`);
 
         let titoliSbloccati = [{ id: "none", testo: "No Title" }];
         const entries = Object.entries(typeUsage);
@@ -923,51 +789,38 @@ async function integraTitoliNelloSnapshot(pId, playerData) {
             const tipoFormattato = tipoInglese.charAt(0).toUpperCase() + tipoInglese.slice(1);
             const nomeBase = TITOLI_BASE_TIPI[tipoInglese] || `${tipoFormattato} Trainer`;
 
-            // Calcolo dei requisiti di sblocco
-            if (played >= 50) {
+            // Soglie di sblocco
+            if (played >= 20) {
                 titoliSbloccati.push({ id: `${tipoInglese}_base`, testo: nomeBase });
             }
-            if (played >= 100 && won >= 15) {
+            if (played >= 150 && won >= 25) {
                 titoliSbloccati.push({ id: `${tipoInglese}_capo`, testo: `${tipoFormattato} Gym Leader` });
             }
-            if (played >= 150 && won >= 30) {
+            if (played >= 250 && won >= 50) {
                 titoliSbloccati.push({ id: `${tipoInglese}_s4`, testo: `${tipoFormattato} Elite Four` });
             }
         });
 
-        // Rigenerazione controllata del menu a tendina HTML
+        // Ripopolamento pulito del menu a tendina
         selectTitoli.innerHTML = "";
-
-        let matchingTitleFound = false;
 
         titoliSbloccati.forEach(titolo => {
             const option = document.createElement('option');
             option.value = titolo.testo; 
             option.textContent = titolo.testo;
             
-            // Verifica la corrispondenza esatta del testo del titolo salvato
             if (titolo.testo === titoloEquipaggiato) {
                 option.selected = true;
-                matchingTitleFound = true;
-                console.log(`🎯 Match trovato! Impostato come selezionato all'avvio: "${titolo.testo}"`);
             }
             
             selectTitoli.appendChild(option);
         });
 
-        // Caso limite: se l'utente ha un titolo vecchio salvato che non soddisfa più le statistiche attuali
-        if (!matchingTitleFound && titoloEquipaggiato !== "No Title") {
-            console.warn(`⚠️ Il titolo salvato "${titoloEquipaggiato}" non risulta sbloccato con le attuali statistiche.`);
-        }
-
-        console.log("=== 🏁 TITLES REFRESH COMPLETED ===");
-
     } catch (err) {
-        console.error("❌ Errore durante l'iniezione dei titoli nella select:", err);
+        console.error("❌ Errore durante il caricamento dei titoli:", err);
+        selectTitoli.innerHTML = '<option value="">Errore caricamento titoli</option>';
     }
 }
-
-
 
     // --- 5. GESTIONE CLICK ESTERNI ---
     window.addEventListener('click', (e) => {
@@ -1000,34 +853,65 @@ function aggiornaUIProfilo(gen, best, bestCat) {
     }
 }
 
+function nascondiLoader() {
+    const loader = document.getElementById('poke-loader');
+    if (!loader) return;
+
+    loader.style.opacity = '0';
+    loader.classList.add('hidden');
+    
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500);
+}
+
+// Helper per il timeout delle Promise
+const creaTimeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout caricamento")), ms));
 
 async function inizializzaPaginaDinamica() {
+    const loader = document.getElementById('poke-loader');
+
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        loader.classList.remove('hidden');
+    }
+
     try {
         console.log("🚀 Avvio Dashboard...");
-        
-        // 1. Popoliamo l'interfaccia statica (Colori e Avatar)
-        inizializzaAppearance(); 
 
         const namePlaceholder = document.getElementById('player-name-placeholder');
-        if (namePlaceholder && playerID) namePlaceholder.innerText = playerID.toUpperCase();
+        if (namePlaceholder && typeof playerID !== 'undefined' && playerID) {
+            namePlaceholder.innerText = playerID.toUpperCase();
+        }
 
-        // 2. Carichiamo i dati dinamici
-        await Promise.all([
-            caricaDatiProfilo(),
-            popolaSelettoreMusica(),
-            elaboraBadge()
+        // Aspetta che i dati del profilo e la musica vengano scaricati (max 7 secondi)
+        await Promise.race([
+            Promise.all([
+                caricaDatiProfilo().catch(err => console.error("❌ Errore Profilo:", err)),
+                popolaSelettoreMusica().catch(err => console.error("❌ Errore Musica:", err))
+            ]),
+            creaTimeout(7000)
         ]);
 
-        // 3. INTEGRAZIONE CONTEGGIO BIO
-        attivaContatoreBio();
+        // Aspetta che l'immagine dell'avatar sia completamente renderizzata nel browser
+        const avatarPreview = document.getElementById('current-avatar-preview');
+        if (avatarPreview && avatarPreview.src && avatarPreview.complete === false) {
+            await avatarPreview.decode().catch(() => {});
+        }
+
+        if (typeof attivaContatoreBio === "function") attivaContatoreBio();
 
     } catch (e) {
-        console.error("❌ Errore:", e);
+        console.warn("⚠️ Caricamento completato con warning/timeout:", e.message);
     } finally {
-        const loader = document.getElementById('loading-screen');
+        console.log("🏁 Chiusura loader in corso...");
         if (loader) {
             loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
+            loader.classList.add('hidden');
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
         }
     }
 }
@@ -1183,31 +1067,6 @@ function getPct(v, l) {
     return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
 }
 
-async function elaboraBadge() {
-    try {
-        if (!playerID) return;
-
-        // Recupero diretto dal nodo stats/badges
-        const snapStats = await db.ref(`players/${playerID}/stats/badges`).once('value');
-        const badgeData = snapStats.val() || {};
-
-        // Prepariamo i dati (se mancano, il default è 0)
-        const recordVinte = { 
-            max: badgeData.maxwonstrike || 0, 
-            data: badgeData.maxwonstrikedate || "" 
-        };
-        const recordClean = { 
-            max: badgeData.maxcleanstrike || 0, 
-            data: badgeData.maxcleanstrikedate || "" 
-        };
-
-        // Mostriamo solo se hanno almeno un record > 0
-        mostraBadge(recordVinte, recordClean);
-
-    } catch (e) {
-        console.error("❌ Errore nel recupero badge:", e);
-    }
-}
 
 function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
     const soglie = [...listaBadge].sort((a, b) => a.n - b.n);

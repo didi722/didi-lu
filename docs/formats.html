@@ -15,6 +15,12 @@
 </head>
 <body>
 
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
     <audio id="bg-music-home" loop preload="auto"></audio>
 
 <header class="top-bar">
@@ -1599,201 +1605,227 @@ async function applicaColoreUtente(user) {
 // Variabile globale per tracciare il formato in modifica
 let idFormatoInModifica = null;
 
-async function caricaEVisualizzaFormati() {
-  try {
-    // 0. VERIFICA SE L'UTENTE LOGGATO È UN ADMIN (Risoluzione sicura dei problemi di tempismo Firebase)
-    let isAdmin = false;
+// --- 1. FUNZIONE HELPER PER NASCONDERE IL LOADER CON TRANSIZIONE FLUIDA ---
+function nascondiLoader(loaderEl) {
+    const loader = loaderEl || document.getElementById('poke-loader');
+    if (!loader) return;
     
-    const ottieniUtenteAttuale = () => {
-      return new Promise((resolve) => {
-        if (typeof firebase === 'undefined') return resolve(null);
-        // Se l'istanza utente è già pronta, la usiamo subito
-        if (firebase.auth().currentUser) return resolve(firebase.auth().currentUser);
-        // Altrimenti restiamo in ascolto del completamento dell'autenticazione
-        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-          unsubscribe();
-          resolve(user);
-        });
-      });
-    };
-
-    const currentUser = await ottieniUtenteAttuale();
-    console.log("🕵️‍♂️ [DEBUG ADMIN] Utente autenticato:", currentUser ? currentUser.uid : "Nessuno");
-    
-    if (currentUser) {
-      // Controllo incrociato: verifica il ruolo sia dentro 'users' che dentro 'players'
-      let userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
-      let userData = userSnap.val();
-      
-      if (!userData || !userData.role) {
-        userSnap = await db.ref(`players/${currentUser.uid}`).once('value');
-        userData = userSnap.val();
-      }
-      
-      console.log("🕵️‍♂️ [DEBUG ADMIN] Dati ruolo recuperati:", userData);
-      
-      if (userData && userData.role === 'admin') {
-        isAdmin = true;
-      }
-    }
-    
-    console.log("🕵️‍♂️ [DEBUG ADMIN] Stato finale isAdmin:", isAdmin);
-
-    // --- CONTROLLO VISIBILITÀ BOTTONE DI CREAZIONE ---
-    // Ricorda di verificare che l'ID del bottone nel tuo HTML sia esattamente questo!
-    const btnNuovoFormato = document.getElementById('admin-plus-btn'); 
-    if (btnNuovoFormato) {
-      if (isAdmin) {
-        btnNuovoFormato.style.setProperty('display', 'inline-block', 'important'); // o 'block' in base al tuo stile
-      } else {
-        btnNuovoFormato.style.setProperty('display', 'none', 'important');
-      }
-    }
-
-    // 1. RECUPERA SIA I REGOLAMENTI CHE I GIOCATORI DA FIREBASE
-    const formatsSnap = await db.ref('regolamenti').once('value');
-    const formatsData = formatsSnap.val() || {};
-
-    const playersSnap = await db.ref('players').once('value');
-    const players = playersSnap.val() || {};
-
-    const allFormats = {};
-
-    // 2. INIZIALIZZA LA MAPPA CON TUTTI I FORMATI REALI PRESENTI NEL DB
-    Object.entries(formatsData).forEach(([fId, fData]) => {
-      const formatName = fData.categoria; 
-      if (formatName) {
-        allFormats[formatName] = {
-          id: fId, // Conserviamo l'ID Firebase del regolamento
-          formatName: formatName,
-          maxPoints: -1, 
-          avatar: "", 
-          color: "#e2e8f0", 
-          hasLeader: false,
-          rawDetails: fData // Salviamo i dati completi per poterli precompilare
-        };
-      }
-    });
-
-    // 3. AGGIORNA I LEADER IN BASE AI PUNTI FATTI DAI GIOCATORI
-    Object.entries(players).forEach(([pId, pData]) => {
-      const formatsStats = pData.stats?.['formats-stats'] || {};
-      const info = pData.info || {};
-      
-      const playerAvatar = info.avatar || "https://via.placeholder.com/150"; 
-      const playerColor = info.color || "#ffffff"; 
-
-      Object.entries(formatsStats).forEach(([formatName, stats]) => {
-        const points = Number(stats.points || 0);
-
-        if (!allFormats[formatName]) {
-          allFormats[formatName] = {
-            id: null, // Formati legacy senza un nodo regolamento attivo
-            formatName: formatName,
-            maxPoints: points,
-            avatar: playerAvatar,
-            color: playerColor,
-            hasLeader: true,
-            rawDetails: null
-          };
-        } 
-        else if (points > allFormats[formatName].maxPoints) {
-          allFormats[formatName].maxPoints = points;
-          allFormats[formatName].avatar = playerAvatar;
-          allFormats[formatName].color = playerColor;
-          allFormats[formatName].hasLeader = true;
-        }
-      });
-    });
-
-    const gridContainer = document.getElementById('formats-grid-container');
-    if (!gridContainer) return;
-
-    gridContainer.innerHTML = '';
-
-    // Serializzazione sicura dei giocatori per la modale dettagli
-    const playersEscaped = btoa(unescape(encodeURIComponent(JSON.stringify(players))));
-
-    // 4. STAMPA DELLE CARD NEUBRUTALIST
-    Object.values(allFormats).forEach(format => {
-      const formatEscaped = format.formatName.replace(/'/g, "\\'");
-      
-      const leaderContent = format.hasLeader 
-        ? `<img src="${format.avatar}" alt="Avatar Leader" style="width: 100%; height: 100%; object-fit: cover; transform: rotate(-6deg);" />`
-        : `<span style="font-size: 20px; transform: rotate(-6deg); filter: grayscale(1);">👑</span>`;
-
-      // Serializzazione dei dati del formato per la modifica
-      const formatDataEscaped = format.rawDetails ? btoa(unescape(encodeURIComponent(JSON.stringify(format.rawDetails)))) : '';
-
-      const cardHtml = `
-        <div class="format-card-nb" 
-             style="
-               background-color: #ffffff !important; 
-               cursor: pointer; 
-               position: relative; 
-               min-height: 180px; 
-               min-width: 150px !important;
-               padding: 30px !important;
-               display: flex;
-               flex-direction: column;
-               justify-content: flex-start;
-               align-items: flex-start;
-             " 
-             onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}', '${formatDataEscaped}')">
-          
-          ${isAdmin && format.id ? `
-            <div style="position: absolute; bottom: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10;">
-              
-              <button onclick="event.stopPropagation(); apriModaleModificaFormato('${format.id}', '${formatDataEscaped}')" 
-                      onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
-                      onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                      style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
-                      title="Modifica Formato">✏️</button>
-              
-              <button onclick="event.stopPropagation(); eliminaFormato('${format.id}', '${formatEscaped}')" 
-                      onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
-                      onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                      style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
-                      title="Elimina Formato">🗑️</button>
-
-            </div>
-          ` : ''}
-
-          <div class="format-nb-title-badge" style="margin-bottom: auto; max-width: 100%;">
-            ${format.formatName}
-          </div>
-          
-          <div class="format-nb-leader-box" 
-               style="
-                 position: absolute;
-                 bottom: 12px;
-                 right: 12px;
-                 width: 50px;
-                 height: 50px;
-                 background-color: ${format.color} !important;
-                 border: 3px solid #000;
-                 box-shadow: 4px 4px 0px #000;
-                 transform: rotate(6deg);
-                 display: flex;
-                 align-items: center;
-                 justify-content: center;
-                 overflow: hidden;
-                 padding: ${format.hasLeader ? '10px !important' : '0 !important'};
-                 transition: transform 0.2s ease;
-               "
-               title="${format.hasLeader ? 'Leader attuale' : 'Nessun leader - Gioca per primo!'}">
-            ${leaderContent}
-          </div>
-
-        </div>
-      `;
-      gridContainer.innerHTML += cardHtml;
-    });
-
-  } catch (error) {
-    console.error("Errore nel caricamento della griglia:", error);
-  }
+    loader.style.opacity = '0';
+    loader.classList.add('hidden');
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500);
 }
+
+// --- 2. FUNZIONE PRINCIPALE DI CARICAMENTO E RENDER ---
+async function caricaEVisualizzaFormati() {
+    // MOSTRA IL LOADER ALL'AVVIO
+    const loader = document.getElementById('poke-loader');
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        loader.classList.remove('hidden');
+    }
+
+    try {
+        // 0. VERIFICA SE L'UTENTE LOGGATO È UN ADMIN (Risoluzione tempismo Firebase)
+        let isAdmin = false;
+        
+        const ottieniUtenteAttuale = () => {
+            return new Promise((resolve) => {
+                if (typeof firebase === 'undefined' || !firebase.auth) return resolve(null);
+                if (firebase.auth().currentUser) return resolve(firebase.auth().currentUser);
+                
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    unsubscribe();
+                    resolve(user);
+                });
+            });
+        };
+
+        const currentUser = await ottieniUtenteAttuale();
+        console.log("🕵️‍♂️ [DEBUG ADMIN] Utente autenticato:", currentUser ? currentUser.uid : "Nessuno");
+        
+        if (currentUser) {
+            // Controllo incrociato: verifica il ruolo sia in 'users' che in 'players'
+            let userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
+            let userData = userSnap.val();
+            
+            if (!userData || !userData.role) {
+                userSnap = await db.ref(`players/${currentUser.uid}`).once('value');
+                userData = userSnap.val();
+            }
+            
+            console.log("🕵️‍♂️ [DEBUG ADMIN] Dati ruolo recuperati:", userData);
+            
+            if (userData && userData.role === 'admin') {
+                isAdmin = true;
+            }
+        }
+        
+        console.log("🕵️‍♂️ [DEBUG ADMIN] Stato finale isAdmin:", isAdmin);
+
+        // --- CONTROLLO VISIBILITÀ BOTTONE CREAZIONE ADMIN ---
+        const btnNuovoFormato = document.getElementById('admin-plus-btn'); 
+        if (btnNuovoFormato) {
+            if (isAdmin) {
+                btnNuovoFormato.style.setProperty('display', 'inline-block', 'important');
+            } else {
+                btnNuovoFormato.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        // 1. RECUPERA REGOLAMENTI E GIOCATORI DA FIREBASE
+        const formatsSnap = await db.ref('regolamenti').once('value');
+        const formatsData = formatsSnap.val() || {};
+
+        const playersSnap = await db.ref('players').once('value');
+        const players = playersSnap.val() || {};
+
+        const allFormats = {};
+
+        // 2. INIZIALIZZA LA MAPPA CON TUTTI I FORMATI REALI NEL DB
+        Object.entries(formatsData).forEach(([fId, fData]) => {
+            const formatName = fData.categoria; 
+            if (formatName) {
+                allFormats[formatName] = {
+                    id: fId,
+                    formatName: formatName,
+                    maxPoints: -1, 
+                    avatar: "", 
+                    color: "#e2e8f0", 
+                    hasLeader: false,
+                    rawDetails: fData
+                };
+            }
+        });
+
+        // 3. AGGIORNA I LEADER IN BASE AI PUNTI FATTI DAI GIOCATORI
+        Object.entries(players).forEach(([pId, pData]) => {
+            const formatsStats = pData.stats?.['formats-stats'] || {};
+            const info = pData.info || {};
+            
+            const playerAvatar = info.avatar || "https://via.placeholder.com/150"; 
+            const playerColor = info.color || "#ffffff"; 
+
+            Object.entries(formatsStats).forEach(([formatName, stats]) => {
+                const points = Number(stats.points || 0);
+
+                if (!allFormats[formatName]) {
+                    allFormats[formatName] = {
+                        id: null, // Formato legacy senza un nodo regolamento attivo
+                        formatName: formatName,
+                        maxPoints: points,
+                        avatar: playerAvatar,
+                        color: playerColor,
+                        hasLeader: true,
+                        rawDetails: null
+                    };
+                } else if (points > allFormats[formatName].maxPoints) {
+                    allFormats[formatName].maxPoints = points;
+                    allFormats[formatName].avatar = playerAvatar;
+                    allFormats[formatName].color = playerColor;
+                    allFormats[formatName].hasLeader = true;
+                }
+            });
+        });
+
+        const gridContainer = document.getElementById('formats-grid-container');
+        if (!gridContainer) return;
+
+        gridContainer.innerHTML = '';
+
+        // Serializzazione sicura dei giocatori per la modale dettagli
+        const playersEscaped = btoa(unescape(encodeURIComponent(JSON.stringify(players))));
+
+        // 4. STAMPA DELLE CARD NEUBRUTALIST
+        Object.values(allFormats).forEach(format => {
+            const formatEscaped = format.formatName.replace(/'/g, "\\'");
+            
+            const leaderContent = format.hasLeader 
+                ? `<img src="${format.avatar}" alt="Avatar Leader" style="width: 100%; height: 100%; object-fit: cover; transform: rotate(-6deg);" />`
+                : `<span style="font-size: 20px; transform: rotate(-6deg); filter: grayscale(1);">👑</span>`;
+
+            // Serializzazione dati formato per eventuale modale di modifica
+            const formatDataEscaped = format.rawDetails ? btoa(unescape(encodeURIComponent(JSON.stringify(format.rawDetails)))) : '';
+
+            const cardHtml = `
+                <div class="format-card-nb" 
+                     style="
+                       background-color: #ffffff !important; 
+                       cursor: pointer; 
+                       position: relative; 
+                       min-height: 180px; 
+                       min-width: 150px !important;
+                       padding: 30px !important;
+                       display: flex;
+                       flex-direction: column;
+                       justify-content: flex-start;
+                       align-items: flex-start;
+                     " 
+                     onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}', '${formatDataEscaped}')">
+                  
+                  ${isAdmin && format.id ? `
+                    <div style="position: absolute; bottom: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10;">
+                      
+                      <button onclick="event.stopPropagation(); apriModaleModificaFormato('${format.id}', '${formatDataEscaped}')" 
+                              onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
+                              onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
+                              style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                              title="Modifica Formato">✏️</button>
+                      
+                      <button onclick="event.stopPropagation(); eliminaFormato('${format.id}', '${formatEscaped}')" 
+                              onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
+                              onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
+                              style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                              title="Elimina Formato">🗑️</button>
+
+                    </div>
+                  ` : ''}
+
+                  <div class="format-nb-title-badge" style="margin-bottom: auto; max-width: 100%;">
+                    ${format.formatName}
+                  </div>
+                  
+                  <div class="format-nb-leader-box" 
+                       style="
+                         position: absolute;
+                         bottom: 12px;
+                         right: 12px;
+                         width: 50px;
+                         height: 50px;
+                         background-color: ${format.color} !important;
+                         border: 3px solid #000;
+                         box-shadow: 4px 4px 0px #000;
+                         transform: rotate(6deg);
+                         display: flex;
+                         align-items: center;
+                         justify-content: center;
+                         overflow: hidden;
+                         padding: ${format.hasLeader ? '10px !important' : '0 !important'};
+                         transition: transform 0.2s ease;
+                       "
+                       title="${format.hasLeader ? 'Leader attuale' : 'Nessun leader - Gioca per primo!'}">
+                    ${leaderContent}
+                  </div>
+
+                </div>
+            `;
+            gridContainer.innerHTML += cardHtml;
+        });
+
+    } catch (error) {
+        console.error("Errore nel caricamento della griglia formati:", error);
+    } finally {
+        // GARANTISCE CHE IL LOADER VENGA NASCOSTO SIA IN CASO DI SUCCESSO CHE DI ERRORE
+        nascondiLoader(loader);
+    }
+}
+
+// --- 3. AUTO-ESECUZIONE AL CARICAMENTO DELLA PAGINA ---
+document.addEventListener('DOMContentLoaded', () => {
+    caricaEVisualizzaFormati();
+});
 
 // Avvia la griglia e imposta il sistema di chiusura cliccando all'esterno del modale
 document.addEventListener("DOMContentLoaded", () => {

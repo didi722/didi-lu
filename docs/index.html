@@ -15,6 +15,12 @@
 </head>
 <body>
 
+    <!-- Loader iniziale (Visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
     <audio id="bg-music-home" loop preload="auto"></audio>
 
 <header class="top-bar">
@@ -379,14 +385,27 @@ function logout() {
     });
 }
 
+// Funzione Helper per nascondere il loader in modo fluido
+function nascondiPokeLoader() {
+    const loader = document.getElementById('poke-loader');
+    if (loader && loader.style.display !== 'none') {
+        loader.style.transition = 'opacity 0.3s ease';
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 300);
+    }
+}
+
 function caricaStagioniHome() {
-    console.log("⏳ Avvio caricamento stagioni con layout unificato, quadrato e semplificato...");
+    console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
     
     seasonsRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             console.warn("⚠️ Nessun dato trovato nel nodo 'seasons'");
+            nascondiPokeLoader();
             return;
         }
 
@@ -404,7 +423,7 @@ function caricaStagioniHome() {
             { key: lastThreeKeys[2] || null, label: 'next' }
         ];
 
-        // Inseriamo lo stile per l'animazione del lampeggio se non è già presente nella pagina
+        // Inseriamo lo stile per l'animazione se non presente
         if (!document.getElementById('trophy-blink-style')) {
             const style = document.createElement('style');
             style.id = 'trophy-blink-style';
@@ -480,7 +499,6 @@ function caricaStagioniHome() {
                     });
                 }
 
-                // Generiamo il badge a destra: pallino fisso/lampeggiante o trofeo grande (42px) lampeggiante
                 let badgeHtml = "";
                 if (isPlaying) {
                     badgeHtml = `<span class="live-dot" style="position: absolute; right: -32px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px;">●</span>`;
@@ -488,7 +506,6 @@ function caricaStagioniHome() {
                     badgeHtml = `<img src="immagini/season-winner-color.png" alt="Winner" style="position: absolute; right: -54px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; object-fit: contain;">`;
                 }
 
-                // Struttura pulita con avatar a 85px senza bordi circolari ritagliati
                 bodyHtml = `
                     <div class="winner-content-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 18px;">
                         <div style="position: relative; display: flex; align-items: center; justify-content: center;">
@@ -550,7 +567,14 @@ function caricaStagioniHome() {
                 card.className = `season-card status-${status.replace(/\s+/g, '-')}`;
             }
         });
-    }, (error) => console.error("❌ Errore:", error));
+
+        // ✅ NASCONDI IL LOADER SOLO DOPO CHE LE CARD SONO PRONTE NEL DOM
+        nascondiPokeLoader();
+
+    }, (error) => {
+        console.error("❌ Errore caricamento stagioni:", error);
+        nascondiPokeLoader();
+    });
 }
 // Lancio iniziale
 caricaStagioniHome();
@@ -1020,18 +1044,23 @@ if (localStorage.getItem('userMusicPref') === 'off') {
     if (audio) audio.pause();
 }
 
-musicBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); 
-    if (audio.paused) {
-        audio.play();
-        musicBtn.innerText = "🔊";
-        localStorage.setItem('userMusicPref', 'on'); // Salva preferenza ON
-    } else {
-        audio.pause();
-        musicBtn.innerText = "🔇";
-        localStorage.setItem('userMusicPref', 'off'); // Salva preferenza OFF
-    }
-});
+
+if (musicBtn) {
+    musicBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        if (audio.paused) {
+            audio.play();
+            musicBtn.innerText = "🔊";
+            localStorage.setItem('userMusicPref', 'on');
+        } else {
+            audio.pause();
+            musicBtn.innerText = "🔇";
+            localStorage.setItem('userMusicPref', 'off');
+        }
+    });
+} else {
+    console.warn("Pulsante musica 'musicBtn' non trovato nella pagina.");
+}
 
 
 let countdownInterval;
