@@ -723,33 +723,44 @@ async function inizializzaPaginaArchivio() {
             if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
         };
 
-        sdCard.innerHTML = `
-            <div class="sd-card-header">
-                <span class="sd-badge-label">SHOWDOWN</span>
-                <span class="sd-category-tag">${info.categoria || "OU"}</span>
+        const p1Name = info.player1 || 'TBD';
+const p2Name = info.player2 || 'TBD';
+
+// Controllo lunghezza > 5 caratteri
+const p1Class = p1Name.length > 5 ? 'sd-name scrollable' : 'sd-name';
+const p2Class = p2Name.length > 5 ? 'sd-name scrollable' : 'sd-name';
+
+sdCard.innerHTML = `
+    <div class="sd-card-header">
+        <span class="sd-badge-label">SHOWDOWN</span>
+        <span class="sd-category-tag">${info.categoria || "OU"}</span>
+    </div>
+    <div class="sd-card-content">
+        <div class="sd-player-display">
+            <div class="sd-name-container">
+                <span class="${p1Class}">${p1Name}</span>
             </div>
-            <div class="sd-card-content">
-                <div class="sd-player-display">
-                    <span class="sd-name">${info.player1 || 'TBD'}</span>
-                </div>
-                <div class="sd-result-badge">
-                    <span class="sd-final-score">${vintiP1} - ${vintiP2}</span>
-                </div>
-                <div class="sd-player-display">
-                    <span class="sd-name">${info.player2 || 'TBD'}</span>
-                </div>
+        </div>
+        <div class="sd-result-badge">
+            <span class="sd-final-score">${vintiP1} - ${vintiP2}</span>
+        </div>
+        <div class="sd-player-display">
+            <div class="sd-name-container">
+                <span class="${p2Class}">${p2Name}</span>
             </div>
-            <div class="sd-card-footer">
-                <span class="sd-date-text">${info.data || 'No date'}</span>
-                
-                <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
-                    <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
-                    <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
-                </div>
-                
-                <span class="sd-view-action">➜</span>
-            </div>
-        `;
+        </div>
+    </div>
+    <div class="sd-card-footer">
+        <span class="sd-date-text">${info.data || 'No date'}</span>
+        
+        <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
+            <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
+            <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
+        </div>
+        
+        <span class="sd-view-action">➜</span>
+    </div>
+`;
         container.appendChild(sdCard);
     });
 
