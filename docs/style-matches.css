@@ -1982,11 +1982,11 @@ button.btn-set.is-selected:hover {
 
 /* Il badge del risultato diventa un blocco solido */
 .sd-result-badge {
-    margin-right: 5px;
-    margin-left: 5px;
+    margin-right: 3px;
+    margin-left: 3px;
     background: var(--winner-color);
     color: black;
-    padding: 5px 8px;
+    padding: 5px 5px;
     border-radius: 0px; /* Squadrato */
     border: 2px solid #000;
     box-shadow: 3px 3px 0px black;
@@ -1994,7 +1994,7 @@ button.btn-set.is-selected:hover {
 }
 
 .sd-final-score {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 900;
     letter-spacing: 1px;
     font-family: 'Josefin Sans', sans-serif;
