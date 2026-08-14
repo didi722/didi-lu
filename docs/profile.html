@@ -264,8 +264,8 @@ auth.onAuthStateChanged(async (user) => {
         if (authIcon) authIcon.className = "fas fa-lock";
         if (authText) authText.innerText = "";
         
-        if (!window.location.pathname.includes("login.html")) {
-            window.location.href = "login.html";
+        if (!window.location.pathname.includes("index.html")) {
+            window.location.href = "index.html";
         }
     }
 });

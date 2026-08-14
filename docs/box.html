@@ -268,8 +268,8 @@ auth.onAuthStateChanged(async (user) => {
         if (authText) authText.innerText = "";
         
         // Se non è loggato e non è già nella pagina di login, lo reindirizziamo
-        if (!window.location.pathname.includes("login.html")) {
-            window.location.href = "login.html";
+        if (!window.location.pathname.includes("index.html")) {
+            window.location.href = "index.html";
         }
     }
 });
