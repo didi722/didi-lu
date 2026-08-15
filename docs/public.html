@@ -98,6 +98,8 @@
 
     <div id="player-title-container"></div>
 
+    <div id="player-favorite-song-container"></div>
+
     <div id="info-display-area"></div>
 
     <div id="trophy-shelf-container">
@@ -105,6 +107,12 @@
             <div id="trophy-list" class="trophy-grid"></div>
         </div>
         
+        <!-- Elemento canzone preferita sopra le statistiche, spostato a destra -->
+        <div id="player-music-container" style="display: none; align-items: center; justify-content: flex-end; margin: 0 15px 10px auto; gap: 8px; font-weight: bold; font-family: 'Josefin Sans', sans-serif;">
+            <i class="fas fa-headphones" style="font-size: 1.1rem;"></i>
+            <span id="player-music-title"></span>
+        </div>
+
         <div id="stats-container"></div>
     </div>
 
@@ -320,7 +328,13 @@ async function initPublicProfile() {
         }
 
         if (info) {
+            // --- CARICAMENTO BIO E MUSICA ---
             caricaBioAllenatore(info.bio);
+            
+            if (typeof caricaMusicaSottoBio === 'function') {
+                caricaMusicaSottoBio(info.musicName);
+            }
+
             const finalName = info.name || playerKey;
             const nameSpan = document.getElementById('player-name-display');
             if (nameSpan) nameSpan.innerText = finalName.toUpperCase();
@@ -396,7 +410,6 @@ async function initPublicProfile() {
         console.error("Errore critico Firebase:", e); 
     } finally {
         // --- CHIUSURA LOADER GARANTITA ---
-        // Che il caricamento sia andato a buon fine o in errore, il loader sparisce qui
         nascondiLoader(loader);
     }
 }
@@ -1865,6 +1878,43 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     container.appendChild(fragment);
 }
 
+function caricaMusicaSottoBio(canzone) {
+    const container = document.getElementById('player-favorite-song-container');
+    
+    if (!container) {
+        console.error("❌ Manca l'elemento <div id='player-favorite-song-container'> nell'HTML!");
+        return;
+    }
+
+    if (!canzone) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 800;
+            font-size: 12px;
+            text-transform: uppercase;
+            background: #ffffff;
+            border: 2px solid #000;
+            padding: 6px 14px;
+            box-shadow: 3px 3px 0 #000;
+            width: fit-content;
+            margin: 0px 100px 0 auto;
+            margin-bottom: -45px;
+            color: #000;
+            transform: rotate(0.8deg);
+        ">
+            🎵 <span>${canzone}</span>
+        </div>
+    `;
+}
+
 function caricaBioAllenatore(testo) {
     const infoArea = document.getElementById('info-display-area');
     if (!infoArea) return;
@@ -1926,7 +1976,7 @@ function caricaBadge(stats, playerKey) {
 
     // --- 1. FOUNDER BADGE ---
     const pKeyLower = playerKey ? playerKey.trim().toLowerCase() : "";
-    if (pKeyLower === 'didi' || pKeyLower === 'lu') {
+    if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
         const founderHTML = `
             <div class="badge-item">
                 <img src="immagini/badge_founder.png" class="badge-img" alt="Founder">

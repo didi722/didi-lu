@@ -1158,22 +1158,31 @@ async function salvaModificheProfilo() {
 
     const btn = document.querySelector('.save-btn-hub');
     
+    // 🔥 Normalizzatore avatar: estrae solo le ultime 2 parti del percorso (es: "profile/3.png")
+    const normalizzaAvatar = (str) => {
+        if (!str) return "";
+        try {
+            // Rimuove eventuale dominio/protocollo e pulisce query string o hash
+            const path = str.includes('://') ? new URL(str, window.location.href).pathname : str;
+            const parts = path.split('?')[0].split('#')[0].split('/').filter(Boolean);
+            // Prende le ultime due sezioni (es. ["profile", "3.png"] -> "profile/3.png")
+            return parts.slice(-2).join('/').toLowerCase().trim();
+        } catch (e) {
+            return str.toLowerCase().trim();
+        }
+    };
+
     // 1. Recupero dati dai campi Input
     const nuovaBio = document.getElementById('bio-input').value;
-    
-    // Recuperiamo il Pokémon dal campo hidden del nuovo selettore
     const pkmScelto = document.getElementById('team-selector-fav').value; 
     
-    // =========================================================
-    // 🔥 RECUPERO TITOLO SELEZIONATO
-    // Recuperiamo l'elemento select dei titoli e il suo valore attuale
-    // =========================================================
+    // Recuperiamo il titolo selezionato
     const selectTitoli = document.getElementById('select-titoli');
     const titoloScelto = selectTitoli ? selectTitoli.value : "No Title";
-    // =========================================================
     
-    // 2. Recupero Avatar e Colore (elementi UI Appearance)
+    // 2. Recupero Avatar e Colore
     const avatarImg = document.getElementById('current-avatar-preview');
+    const avatarSrc = avatarImg ? (avatarImg.getAttribute('src') || avatarImg.src) : "";
     const colorRect = document.getElementById('current-color-bg');
     
     // 3. Recupero Musica
@@ -1184,8 +1193,8 @@ async function salvaModificheProfilo() {
     const originalText = btn ? btn.innerHTML : "SAVE ALL CHANGES";
     if(btn) {
         btn.disabled = true;
-        btn.innerText = "SAVING...";
-        btn.style.transform = "translate(2px, 2px)"; // Effetto pressione neubrutalist
+        btn.innerText = "CHECKING...";
+        btn.style.transform = "translate(2px, 2px)";
         btn.style.boxShadow = "none";
     }
 
@@ -1193,42 +1202,104 @@ async function salvaModificheProfilo() {
     const datiDaSalvare = {
         bio: nuovaBio,
         pkmPreferito: pkmScelto || "", 
-        
-        // =========================================================
-        // 🔥 SALVATAGGIO TITOLO NEL NODO "title"
-        // Se l'utente seleziona "No Title", salviamo una stringa vuota o il testo stesso
-        // =========================================================
         title: titoloScelto === "No Title" ? "" : titoloScelto,
-        // =========================================================
-
-        // Converte il colore del quadratino in HEX per il DB
         color: colorRect ? rgbToHex(colorRect.style.backgroundColor) : "#31C489",
-        // Salva l'URL dell'avatar
-        avatar: avatarImg ? avatarImg.src : "", 
-        // Salva il nome della musica visualizzato
+        avatar: avatarSrc, 
         musicName: musicNameSpan ? musicNameSpan.innerText : "",
-        // SALVATAGGIO BADGE: Memorizza l'array dei badge selezionati
         badgeShowcase: typeof badgeSelezionati !== 'undefined' ? badgeSelezionati : []
     };
 
-    // Aggiunta URL musica se presente
     if (musicInput && musicInput.value.trim() !== "") {
         datiDaSalvare.musicaPreferita = musicInput.value;
     }
 
-    // 5. Update su Firebase nel percorso players/ID/info
+    // =========================================================
+    // 🔥 CONTROLLO UNICITÀ RISPETTO AGLI ALTRI GIOCATORI
+    // =========================================================
+    try {
+        const snapshot = await db.ref('players').once('value');
+        const playersData = snapshot.val() || {};
+
+        let duplicati = [];
+
+        for (const otherID in playersData) {
+            // Saltiamo il controllo se è lo stesso giocatore
+            if (otherID.toLowerCase() === playerID.toLowerCase()) continue;
+
+            const otherInfo = playersData[otherID].info;
+            if (!otherInfo) continue;
+
+            // 1. Controllo Colore (confronto HEX)
+            if (datiDaSalvare.color && otherInfo.color && 
+                datiDaSalvare.color.toUpperCase() === otherInfo.color.toUpperCase()) {
+                duplicati.push("Colore");
+            }
+
+            // 2. Controllo Pokémon Preferito
+            if (datiDaSalvare.pkmPreferito && otherInfo.pkmPreferito && 
+                datiDaSalvare.pkmPreferito.toLowerCase() === otherInfo.pkmPreferito.toLowerCase()) {
+                duplicati.push("Pokémon preferito");
+            }
+
+            // 3. Controllo Avatar (normalizzato sulle ultime componenti del path)
+            const currentAvatarClean = normalizzaAvatar(datiDaSalvare.avatar);
+            const otherAvatarClean = normalizzaAvatar(otherInfo.avatar);
+
+            if (currentAvatarClean && otherAvatarClean && currentAvatarClean === otherAvatarClean) {
+                duplicati.push("Avatar");
+            }
+
+            // 4. Controllo Canzone (URL o Nome)
+            const stessoUrl = datiDaSalvare.musicaPreferita && otherInfo.musicaPreferita && 
+                              datiDaSalvare.musicaPreferita.trim() === otherInfo.musicaPreferita.trim();
+            const stessoNome = datiDaSalvare.musicName && otherInfo.musicName && 
+                               datiDaSalvare.musicName.trim() !== "" && 
+                               datiDaSalvare.musicName.toLowerCase() === otherInfo.musicName.toLowerCase();
+
+            if (stessoUrl || stessoNome) {
+                duplicati.push("Canzone preferita");
+            }
+        }
+
+        // Se sono stati trovati duplicati, interrompiamo il salvataggio
+        if (duplicati.length > 0) {
+            const campiUnici = [...new Set(duplicati)];
+            alert(`❌ Salvataggio annullato!\n\nI seguenti elementi sono già stati scelti da un altro giocatore:\n• ${campiUnici.join('\n• ')}`);
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.style.transform = "";
+                btn.style.boxShadow = "";
+            }
+            return;
+        }
+
+    } catch (errorCheck) {
+        console.error("❌ Errore durante la verifica duplicati:", errorCheck);
+        alert("Errore di rete durante la verifica unicità: " + errorCheck.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            btn.style.transform = "";
+            btn.style.boxShadow = "";
+        }
+        return;
+    }
+
+    // 5. Update su Firebase
+    if(btn) btn.innerText = "SAVING...";
+
     db.ref(`players/${playerID}/info`).update(datiDaSalvare)
     .then(() => {
-        // Feedback di successo
         if(btn) {
             btn.innerText = "UPDATED!";
-            btn.style.backgroundColor = "#16a445"; // Verde fluo neubrutalist
+            btn.style.backgroundColor = "#16a445";
             btn.style.color = "#000";
         }
         
         console.log("✅ Profilo aggiornato con successo:", datiDaSalvare);
 
-        // Aspetta 1 secondo per mostrare il feedback visivo e poi ricarica la pagina
         setTimeout(() => {
             window.location.reload();
         }, 1000);
