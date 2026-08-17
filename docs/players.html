@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="immagini/magikarp.png">  
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
-    <link rel="stylesheet" href="style-rules.css">
+    <link rel="stylesheet" href="style-players.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -26,7 +26,7 @@
 <header class="top-bar">
         <div class="top-bar-inner">
             <section class="hub-hero">
-                <h1 class="hub-title-display">RULES</h1>
+                <h1 class="hub-title-display">TRAINERS LIST</h1>
             </section>
         </div>
     </header>
@@ -46,8 +46,8 @@
         <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
     </div>
 </div>
-
 <div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
+
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
@@ -95,9 +95,9 @@
         </div>
     </div>
 
-    <div class="main-wrapper">
-
-    <div class="home-seasons-container">
+<div id="wrapper" class="wrapper">
+    <div id="trainers-grid" class="trainers-grid"></div>
+</div>
 
         <div id="music-control" class="music-btn" onclick="toggleMusic()">
     <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
@@ -160,6 +160,127 @@ function handleAuthClick() {
     }
 }
 
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const loader = document.getElementById('poke-loader');
+
+    try {
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.style.opacity = '1';
+        }
+
+        // 1. Esegui il recupero e l'inserimento dei dati da Firebase
+        await initTrainersPage();
+
+    } catch (error) {
+        console.error("❌ Errore durante il caricamento della pagina:", error);
+    } finally {
+        // 2. Nascondi SUBITO il loader appena il layout/dati sono pronti
+        if (loader) {
+            loader.style.transition = 'opacity 0.3s ease';
+            loader.style.opacity = '0';
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
+        }
+    }
+});
+
+// Helper per nascondere il loader forzando la dissolvenza CSS
+function nascondiLoader() {
+    const loader = document.getElementById('poke-loader');
+    if (!loader) return;
+
+    // Applica la transizione e porta l'opacità a 0
+    loader.style.transition = 'opacity 0.5s ease';
+    loader.style.opacity = '0';
+    
+    // Rimuove l'elemento dal DOM solo dopo i 500ms della dissolvenza
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500);
+}
+// Funzione di caricamento unificata
+async function initTrainersPage() {
+    const gridContainer = document.getElementById('trainers-grid');
+    const loader = document.getElementById('poke-loader');
+
+    // All'inizio di initTrainersPage(), dentro l'if (loader)
+if (loader) {
+    // Resetta le proprietà per mostrarlo subito senza transizioni indesiderate all'avvio
+    loader.style.transition = 'none';
+    loader.style.display = 'flex'; // (o 'block', in base al tuo CSS originale)
+    loader.style.opacity = '1';
+    
+    // Forza il ricalcolo del DOM per prepararlo alla futura dissolvenza
+    loader.offsetHeight; 
+}
+
+    try {
+        const snapshot = await db.ref('players').once('value');
+        const playersData = snapshot.val();
+
+        if (!playersData) {
+            gridContainer.innerHTML = "<p style='font-weight:800;'>Nessun allenatore trovato.</p>";
+            return;
+        }
+
+        const playersList = [];
+        for (let key in playersData) {
+            const player = playersData[key];
+            const info = player.info || {};
+            const indStats = player.stats?.['individual-stats'] || {};
+
+            playersList.push({
+                id: key,
+                name: info.name || key,
+                avatar: info.avatar || 'immagini/magikarp.png',
+                color: info.color || '#31c489',
+                ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0
+            });
+        }
+
+        playersList.sort((a, b) => b.ranking - a.ranking);
+
+gridContainer.innerHTML = playersList.map((player, index) => {
+    // Genera un'inclinazione casuale leggera tra -1 e +1 gradi per un effetto pulito
+    const randomRotation = (Math.random() * 2 - 1).toFixed(2);
+
+    return `
+        <a href="public.html?player=${encodeURIComponent(player.id)}" 
+           class="trainer-card" 
+           style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
+            
+            <div class="trainer-left-group">
+                <span class="trainer-rank-text">#${index + 1}</span>
+                
+                <div class="trainer-avatar-box">
+                    <img src="${player.avatar}" alt="${player.name}" onerror="this.src='immagini/magikarp.png'">
+                </div>
+                
+                <h2 class="trainer-name">${player.name}</h2>
+            </div>
+            
+            <div class="trainer-points-box">
+                ${player.ranking}
+            </div>
+        </a>
+    `;
+}).join('');
+
+    } catch (error) {
+        console.error("Errore durante il caricamento dei giocatori:", error);
+        gridContainer.innerHTML = "<p style='font-weight:800;'>Errore nel caricamento della classifica.</p>";
+    } finally {
+        nascondiLoader();
+    }
+}
+
+// Unico entry-point al caricamento del DOM
+document.addEventListener('DOMContentLoaded', initTrainersPage);
+
 function chiudiMenuConOverlay() {
     const menu = document.getElementById('user-menu');
     const overlay = document.getElementById('menu-overlay');
@@ -187,24 +308,92 @@ document.addEventListener('click', function(event) {
     }
 });
 
-const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3"; 
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3";
 
-function avviaMusicaHome() {
+function syncMusicState() {
     const player = document.getElementById('bg-music-home');
-    
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player) return;
+
     if (player.src !== LINK_MP3_HOME) {
         player.src = LINK_MP3_HOME;
         player.volume = 0.3;
-        
-        player.play()
-            .then(() => { console.log("Musica Home partita al volo!"); })
-            .catch(() => { console.log("Autoplay Home bloccato, attendo il primo click."); });
+    }
+
+    const savedPref = localStorage.getItem('userMusicPref');
+
+    // Case 1: L'utente ha silenziato la musica
+    if (savedPref === 'off') {
+        player.pause();
+        if (musicBtn) musicBtn.classList.add('muted');
+        return;
+    }
+
+    // Case 2: La musica deve riprodursi ('on' o mai impostata)
+    player.play()
+        .then(() => {
+            if (musicBtn) musicBtn.classList.remove('muted');
+        })
+        .catch(() => {
+            // Se il browser blocca l'autoplay, mostra l'icona muted e attendi un click
+            if (musicBtn) musicBtn.classList.add('muted');
+            sbloccaAudioAlPrimoClick();
+        });
+}
+
+// Sblocca l'audio non appena l'utente clicca qualsiasi punto della pagina
+function sbloccaAudioAlPrimoClick() {
+    const unlock = () => {
+        const savedPref = localStorage.getItem('userMusicPref');
+        const player = document.getElementById('bg-music-home');
+        const musicBtn = document.getElementById('music-control');
+
+        if (savedPref !== 'off' && player && player.paused) {
+            player.play().then(() => {
+                if (musicBtn) musicBtn.classList.remove('muted');
+            }).catch(() => {});
+        }
+    };
+
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+}
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player || !musicBtn) return;
+
+    if (player.paused) {
+        player.play().then(() => {
+            musicBtn.classList.remove('muted');
+            localStorage.setItem('userMusicPref', 'on');
+        }).catch(error => {
+            console.warn("Riproduzione bloccata:", error);
+        });
+    } else {
+        player.pause();
+        musicBtn.classList.add('muted');
+        localStorage.setItem('userMusicPref', 'off');
     }
 }
 
-document.addEventListener('DOMContentLoaded', avviaMusicaHome);
+// Eventi di Inizializzazione e Sincronizzazione:
 
+// 1. Caricamento standard DOM
+document.addEventListener('DOMContentLoaded', syncMusicState);
 
+// 2. Navigazione indietro/avanti nel browser (bfcache)
+window.addEventListener('pageshow', syncMusicState);
+
+// 3. Modifica della preferenza in un'altra scheda o finestra del browser
+window.addEventListener('storage', (e) => {
+    if (e.key === 'userMusicPref') {
+        syncMusicState();
+    }
+});
 
 // UNICO listener per lo stato autenticazione
 auth.onAuthStateChanged(async (user) => {
@@ -388,55 +577,6 @@ async function getPlayersColors(p1, p2) {
     };
 }
 
-function toggleMusic() {
-    // 1. Identifica il player (usa l'ID presente in questa pagina, es. bg-music-home)
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
-
-    if (!player || !musicBtn) {
-        console.error("Elementi audio o tasto non trovati in questa pagina.");
-        return;
-    }
-
-    if (player.paused) {
-        player.play().then(() => {
-            // Se parte, rimuoviamo la sbarra e salviamo la preferenza 'on'
-            musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on');
-        }).catch(error => {
-            console.warn("Autoplay bloccato o errore riproduzione:", error);
-        });
-        
-    } else {
-        player.pause();
-        // Aggiungiamo la sbarra e salviamo la preferenza 'off'
-        musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off');
-    }
-}
-
-/** * AGGIUNTA FONDAMENTALE: 
- * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
- * silenziato la musica in un'altra parte del sito.
- */
-window.addEventListener('DOMContentLoaded', () => {
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
-    const savedPref = localStorage.getItem('userMusicPref');
-
-    if (player && musicBtn) {
-        if (savedPref === 'off') {
-            // Se l'utente ha scelto 'off' altrove, non far partire nulla
-            player.pause();
-            musicBtn.classList.add('muted');
-        } else {
-            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
-            player.play().catch(() => {
-                musicBtn.classList.add('muted');
-            });
-        }
-    }
-});
 
 
 // Seleziona l'elemento del modale
@@ -473,7 +613,6 @@ async function applicaColoreUtente(user) {
         console.error("❌ Errore recupero colore:", e);
     }
 }
-
 
 
 </script>
