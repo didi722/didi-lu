@@ -95,9 +95,45 @@
         </div>
     </div>
 
-    <div class="main-wrapper">
+<div class="rules-wrapper">
+    <!-- COLONNA PRINCIPALE: CONTENUTO REGOLAMENTO -->
+    <main class="rules-content">
+        
+        <section id="cap-1" class="rule-card">
+            <h2><i class="fas fa-gavel"></i> 1. Principi Generali e Condotta</h2>
+            <p>Inserisci qui i dettagli del primo capitolo tratti dal tuo file Word...</p>
+        </section>
 
-    <div class="home-seasons-container">
+        <section id="cap-2" class="rule-card">
+            <h2><i class="fas fa-swords"></i> 2. Struttura delle Sfide e Best of 3</h2>
+            <p>Inserisci qui i dettagli del secondo capitolo...</p>
+        </section>
+
+        <section id="cap-3" class="rule-card">
+            <h2><i class="fas fa-ban"></i> 3. Clonalità e Banlist</h2>
+            <p>Inserisci qui i dettagli del terzo capitolo...</p>
+        </section>
+
+        <section id="cap-4" class="rule-card">
+            <h2><i class="fas fa-clock"></i> 4. Tempistiche e Scadenze</h2>
+            <p>Inserisci qui i dettagli del quarto capitolo...</p>
+        </section>
+
+    </main>
+
+    <!-- COLONNA DESTRA: INDICE STICKY -->
+    <aside class="rules-sidebar">
+        <div class="toc-container">
+            <h3 class="toc-title"><i class="fas fa-list-ol"></i> INDICE</h3>
+            <nav class="toc-nav">
+                <a href="#cap-1" class="toc-link active">1. Principi Generali</a>
+                <a href="#cap-2" class="toc-link">2. Struttura Sfide</a>
+                <a href="#cap-3" class="toc-link">3. Banlist</a>
+                <a href="#cap-4" class="toc-link">4. Tempistiche</a>
+            </nav>
+        </div>
+    </aside>
+</div>
 
         <div id="music-control" class="music-btn" onclick="toggleMusic()">
     <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
@@ -204,7 +240,36 @@ function avviaMusicaHome() {
 
 document.addEventListener('DOMContentLoaded', avviaMusicaHome);
 
+function nascondiLoader() {
+    const loader = document.getElementById('poke-loader');
+    if (!loader) return;
 
+    loader.style.opacity = '0';
+    loader.classList.add('hidden');
+    
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 500); // Stessa durata della transizione CSS
+}
+
+// Funzione di inizializzazione principale per la pagina Rules
+async function inizializzaPaginaRules(user) {
+    try {
+        // 1. Applica il colore personalizzato della TopBar se l'utente è loggato
+        if (user) {
+            await applicaColoreUtente(user);
+        }
+
+        // 2. Eventuali altri caricamenti asincroni futuri per il regolamento
+        // (es. fetch da Firebase, conteggio capitoli, ecc.)
+
+    } catch (e) {
+        console.error("❌ Errore durante l'inizializzazione di Rules:", e);
+    } finally {
+        // Nascondi il loader al termine di tutte le operazioni
+        setTimeout(nascondiLoader, 300);
+    }
+}
 
 // UNICO listener per lo stato autenticazione
 auth.onAuthStateChanged(async (user) => {
@@ -242,6 +307,7 @@ auth.onAuthStateChanged(async (user) => {
         if (authText) authText.innerText = "Login";
         if (topBar) topBar.style.backgroundColor = "#FFA500";
     }
+    await inizializzaPaginaRules(user);
 });
 
 
@@ -474,6 +540,34 @@ async function applicaColoreUtente(user) {
     }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    const sections = document.querySelectorAll('.rule-card');
+    const navLinks = document.querySelectorAll('.toc-link');
 
+    // Configurazione Observer per tracciare la sezione visibile a schermo
+    const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const activeId = entry.target.getAttribute('id');
+                
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === `#${activeId}`) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, observerOptions);
+
+    sections.forEach(section => observer.observe(section));
+});
 
 </script>

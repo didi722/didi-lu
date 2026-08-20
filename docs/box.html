@@ -795,21 +795,77 @@ async function coloraBordoDinamico(pkmName, elementId) {
     }
 }
 
-function renderizza(lista) {
+// Recupera ed elenca tutti i nomi dei team iscritti a stagioni "playing" o "closed"
+async function caricaTeamBloccati() {
+    window.nomiTeamBloccati = new Set();
+    try {
+        const snap = await db.ref('seasons').once('value');
+        const seasons = snap.val() || {};
+
+        Object.values(seasons).forEach(season => {
+            const status = season?.info?.status;
+            
+            // Controlla se la stagione è in stato "playing" o "closed"
+            if (status === 'playing' || status === 'closed') {
+                const teamsIscritti = season.teams_iscritti || {};
+
+                // Naviga in formati -> allenatori -> datiTeams
+                Object.values(teamsIscritti).forEach(formato => {
+                    Object.values(formato || {}).forEach(allenatore => {
+                        const datiTeams = allenatore?.datiTeams || [];
+                        Object.values(datiTeams).forEach(t => {
+                            if (t && t.nome) {
+                                // Salviamo il nome in minuscolo per evitare discrepanze di maiuscole/minuscole
+                                window.nomiTeamBloccati.add(t.nome.trim().toLowerCase());
+                            }
+                        });
+                    });
+                });
+            }
+        });
+    } catch (e) {
+        console.error("Errore nel recupero dei team bloccati:", e);
+    }
+}
+
+async function renderizza(lista) {
+    await caricaTeamBloccati();
     const grid = document.getElementById('teamsGrid');
     if (!grid) return;
 
-    // Protezione se lista non è un array valido
     if (!Array.isArray(lista)) return;
 
     grid.innerHTML = lista.map(team => {
-        // Fallback per l'array dei pokemon
         const pokemonList = team.pokemon || [];
+
+        // Verifica se il team è bloccato da una stagione playing/closed
+        const nomeTeam = (team.nome || '').trim().toLowerCase();
+        const isBloccato = window.nomiTeamBloccati && window.nomiTeamBloccati.has(nomeTeam);
+
+        // Genera i pulsanti solo se il team NON è bloccato
+        const htmlAzioni = !isBloccato ? `
+            <div class="card-actions" style="display: flex; gap: 2px;">
+                <button onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')" 
+                        onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
+                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
+                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                        title="Edit team">✏️</button>
+
+                <button onclick="event.stopPropagation(); cancellaTeamDaFirebase('${team.id}')" 
+                        onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
+                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
+                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                        title="Delete team">🗑️</button>
+            </div>
+        ` : '';
 
         return `
         <div class="card" onclick="apriDettagli('${team.id}')">
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <span class="category">${team.category || team.categoria || 'VGC'}</span>
+
+                ${htmlAzioni}
+
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
@@ -826,7 +882,7 @@ function renderizza(lista) {
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
                     const teamIdSanitized = (team.id || '').toString().replace(/-/g, '');
                     const pkmBoxId = `box-${teamIdSanitized}-${index}`;
-                    
+
                     setTimeout(() => {
                         if (typeof applicaColoreBordo === 'function' && nomePkm) {
                             applicaColoreBordo(nomePkm, pkmBoxId);
@@ -2241,30 +2297,41 @@ function cancellaTeamDaFirebase(teamId) {
 
 // MODIFICA uno specifico team
 function caricaTeamPerModifica(teamId) {
-    
-
-    // --- Se autorizzato, procedi con il caricamento dei dati nel pannello ---
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
 
-    document.getElementById('admin-team-name').value = team.nome;
-    document.getElementById('admin-team-cat').value = team.categoria;
-    
-    let testoShowdown = "";
-    team.pokemon.forEach(p => {
-        testoShowdown += `${p.nome} @ ${p.strumento}\n`;
-        testoShowdown += `Ability: ${p.abilita}\n`;
-        testoShowdown += `EVs: ${p.evs}\n`;
-        p.mosse.forEach(m => { if (m && m !== "-") testoShowdown += `- ${m}\n`; });
-        testoShowdown += `\n`;
-    });
+    const elName = document.getElementById('admin-team-name');
+    const elCat = document.getElementById('admin-team-cat');
+    const elInput = document.getElementById('showdown-input');
+    const adminPanel = document.getElementById('admin-panel');
 
-    document.getElementById('showdown-input').value = testoShowdown.trim();
-    
-    // Salviamo l'ID per la modifica
-    document.getElementById('admin-panel').dataset.editingId = teamId;
-    
-    document.getElementById('admin-panel').style.display = 'block';
+    // 1. Popola i campi del form
+    if (elName) elName.value = team.nome || '';
+    if (elCat) elCat.value = team.categoria || team.category || 'VGC';
+
+    // 2. Ricostruisce il testo in formato Showdown
+    let testoShowdown = "";
+    if (Array.isArray(team.pokemon)) {
+        team.pokemon.forEach(p => {
+            testoShowdown += `${p.nome || ''} @ ${p.strumento || ''}\n`;
+            testoShowdown += `Ability: ${p.abilita || ''}\n`;
+            testoShowdown += `EVs: ${p.evs || ''}\n`;
+            if (Array.isArray(p.mosse)) {
+                p.mosse.forEach(m => { if (m && m !== "-") testoShowdown += `- ${m}\n`; });
+            }
+            testoShowdown += `\n`;
+        });
+    }
+
+    if (elInput) elInput.value = testoShowdown.trim();
+
+    // 3. Salva l'ID in modalità modifica
+    if (adminPanel) {
+        adminPanel.dataset.editingId = teamId;
+    }
+
+    // 4. Apre il modale mostrando anche lo sfondo sfocato (backdrop)
+    apriAdminProtetto();
 }
 
 // Forza la funzione a riconoscere il database

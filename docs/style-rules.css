@@ -28,7 +28,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
+
 }
 
 
@@ -442,19 +443,23 @@ body {
     padding: 50px 0; 
     border-bottom: 5px solid #000;
     display: flex;
-    justify-content: center; /* Centra il contenuto interno */
+    justify-content: center;
     align-items: center;
+    
+    /* Regole per lo Sticky Header */
+    position: sticky;
+    top: 0; /* 💡 OBBLIGATORIO: definisce dove si blocca la barra */
+    z-index: 100; /* Mantiene la barra sopra gli altri elementi che scorrono */
 }
 
 .top-bar-inner {
-    /* Occupa tutta la larghezza disponibile con un po' di margine ai lati */
     width: 100%;
     max-width: 1400px; 
     display: flex;
-    justify-content: space-between; /* Titolo a sx, Filtri a dx */
     padding: 0 30px;
     justify-content: center;
     align-items: center;
+    /* Rimosso position: sticky (deve stare solo sul contenitore padre .top-bar) */
 }
 
 /* --- TITOLO (Sticker Nero) --- */
@@ -780,4 +785,136 @@ body {
 .menu-backdrop.active {
     display: block;
     opacity: 1;
+}
+
+/* Wrapper principale con margini calcolati al millimetro */
+.rules-wrapper {
+    display: block;
+    margin-left: 220px;               /* Spazio esatto per la .ads-sidebar di sinistra */
+    width: calc(100% - 220px);        /* Occupa solo la porzione visibile rimanente */
+    padding-left: 25px;               /* Distanza dalla barra pubblicitaria */
+    padding-right: 340px;              /* RISERVA: 280px (indice) + 30px (right) + 30px (distanza di sicurezza) */
+    padding-top: 20px;
+    padding-bottom: 40px;
+    box-sizing: border-box;
+}
+
+/* Colonna del regolamento */
+.rules-content {
+    width: 100%;
+    max-width: 1200px;                 /* Limite di lettura ottimale per non allungare troppo i box */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Indice fisso e isolato a destra */
+.rules-sidebar {
+    position: fixed !important;
+    top: 200px !important;             /* Regola questo valore per allinearlo sotto la TopBar verde */
+    right: 30px;                       /* Distanza dal bordo destro del browser */
+    width: 280px;
+    z-index: 100;
+}
+
+/* Schede Neubrutalist */
+.rule-card, 
+.toc-container {
+    background: #ffffff;
+    border: 3px solid #000000;
+    box-shadow: 5px 5px 0px #000000;
+    border-radius: 8px;
+    color: #000000;
+}
+
+.rule-card {
+    padding: 25px;
+    scroll-margin-top: 100px;
+}
+
+.toc-container {
+    padding: 20px;
+}
+
+.rule-card h2 {
+    color: #000000;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rule-card p {
+    color: #1a1a1a;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Colonna Indice Sticky */
+.rules-sidebar {
+    width: 270px;
+    position: sticky;
+    top: 90px;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+/* Container Indice Neubrutalist */
+.toc-container {
+    background: #ffffff;
+    border: 3px solid #000000;
+    box-shadow: 5px 5px 0px #000000;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.toc-title {
+    color: #000000;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 3px solid #000000;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Link Indice */
+.toc-link {
+    color: #000000;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.toc-link:hover {
+    background: #f3f4f6;
+    border-color: #000000;
+}
+
+/* Stato Attivo (Stile badge con ombra netta) */
+.toc-link.active {
+    color: #000000;
+    background: #7dd3fc; /* Azzurro coordinato */
+    border: 2px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    font-weight: 700;
 }
