@@ -1732,10 +1732,6 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     if (titleContainer) titleContainer.innerHTML = "";
 
     const playerColor = typeof baseColor === 'object' ? (baseColor.base || baseColor) : baseColor;
-    const hasTrophies = count > 0;
-    const displayCount = hasTrophies ? count : 0;
-    const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
-    const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
 
     const TITOLI_MAP = {
         "Bug Catcher": "bug", "Punk Guy": "dark", "Dragon Tamer": "dragon",
@@ -1836,7 +1832,22 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
 
     let rawHistory = seasonsHistory;
     if (rawHistory && typeof rawHistory.val === 'function') rawHistory = rawHistory.val();
-    const wonSeasons = Object.values(rawHistory || {}).filter(s => s && (s.rank === 1 || s.rank === "1"));
+
+    // 🚫 FILTRO PER ESCLUDERE LA STAGIONE BETA ('sbeta')
+    const wonSeasons = Object.entries(rawHistory || {})
+        .filter(([sId, s]) => {
+            if (!s) return false;
+            const isBeta = sId === 'sbeta' || s.id === 'sbeta' || (s.name && s.name.toLowerCase().includes('beta'));
+            if (isBeta) return false;
+            return s.rank === 1 || s.rank === "1";
+        })
+        .map(([_, s]) => s);
+
+    // Calcolo dinamico del contatore senza la stagione beta
+    const displayCount = wonSeasons.length;
+    const hasTrophies = displayCount > 0;
+    const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
+    const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
 
     let trophyTooltipHTML = "";
     if (wonSeasons.length > 0) {

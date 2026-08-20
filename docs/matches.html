@@ -3394,6 +3394,9 @@ async function ricalcolaStatisticheGlobali(pId) {
 
         // 1. ESTRAZIONE DATI
         Object.entries(seasons).forEach(([sId, stagione]) => {
+            // 🚫 ESCLUSIONE STAGIONE BETA
+            if (sId === 'sbeta') return;
+
             if (stagione.leaderboard && stagione.leaderboard[pId]) {
                 const s = stagione.leaderboard[pId];
                 statsLeaderboard.won += (s.won || 0);
@@ -3658,7 +3661,6 @@ async function ricalcolaStatisticheGlobali(pId) {
         let bestFormatLose = 0;
         let maxWinsF = -1;
         
-        // Sostegni per memorizzare i dati degli Showdown del formato vincente
         let bestFormatSDPlayed = 0;
         let bestFormatSDWon = 0;
         let bestFormatSDLost = 0;
@@ -3670,7 +3672,6 @@ async function ricalcolaStatisticheGlobali(pId) {
                 bestFormatWon = fStats.won;
                 bestFormatLose = fStats.lost;
                 
-                // 🚀 Recuperiamo i contatori specifici degli showdown di questo formato
                 const fSD = sdStatsPerFormato[fName] || {};
                 bestFormatSDPlayed = fSD.showdownsPlayed || 0;
                 bestFormatSDWon = fSD.showdownsWon || 0;
@@ -3678,7 +3679,7 @@ async function ricalcolaStatisticheGlobali(pId) {
             } 
         });
 
-        // 6. SALVATAGGIO FINALE STATS GLOBALI (Inclusione chiavi Showdown mancanti)
+        // 6. SALVATAGGIO FINALE STATS GLOBALI
         await db.ref(`players/${pId}/stats`).update({
             'formats-stats': formatsStats, 
             'individual-stats': {
@@ -3689,7 +3690,6 @@ async function ricalcolaStatisticheGlobali(pId) {
                 setL: statsLeaderboard.setL,
                 points: totalPointsCalculated, 
                 ranking: ranking,
-                // 🌟 Nuovi campi Showdown globali a livello di allenatore:
                 showdownsPlayed: globalShowdownsPlayed,
                 showdownsWon: globalShowdownsWon,
                 showdownsLost: globalShowdownsLost,
@@ -3697,7 +3697,6 @@ async function ricalcolaStatisticheGlobali(pId) {
                     'format-name': bestFormatName,
                     'format-won': bestFormatWon,
                     'format-lose': bestFormatLose,
-                    // 🌟 Nuovi campi Showdown inseriti esplicitamente dentro il sotto-oggetto format:
                     'format-showdownsPlayed': bestFormatSDPlayed,
                     'format-showdownsWon': bestFormatSDWon,
                     'format-showdownsLost': bestFormatSDLost
@@ -3711,7 +3710,7 @@ async function ricalcolaStatisticheGlobali(pId) {
             'badges': badgeGlobali
         });
 
-        console.log(`✅ Ricalcolo completato per ${pId} con dati Showdown per formato.`);
+        console.log(`✅ Ricalcolo completato per ${pId} con dati Showdown per formato (esclusa sbeta).`);
 
     } catch (err) {
         console.error("❌ Errore critico nel ricalcolo:", err);

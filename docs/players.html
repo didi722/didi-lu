@@ -282,8 +282,20 @@ async function initTrainersPage() {
             const info = player.info || {};
             const stats = player.stats || {};
             const indStats = stats['individual-stats'] || {};
-            const seasonsStats = stats.seasons || {};
             const statsBadges = stats.badges || {};
+
+            // 🚫 RECUPERO ED ESCLUSIONE STAGIONE BETA DALLA CONTA TROFEI
+            const seasonsData = player['seasons-history'] || player.seasonsHistory || player.seasons || stats.seasons || {};
+            
+            let trophiesWon = 0;
+            if (seasonsData && typeof seasonsData === 'object') {
+                trophiesWon = Object.entries(seasonsData).filter(([sId, s]) => {
+                    if (!s || typeof s !== 'object') return false;
+                    const isBeta = sId === 'sbeta' || s.id === 'sbeta' || (s.name && String(s.name).toLowerCase().includes('beta'));
+                    if (isBeta) return false;
+                    return s.rank === 1 || s.rank === "1";
+                }).length;
+            }
 
             playersList.push({
                 id: key,
@@ -291,7 +303,7 @@ async function initTrainersPage() {
                 avatar: info.avatar || 'immagini/magikarp.png',
                 color: info.color || '#31c489',
                 ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
-                trophiesWon: Number(seasonsStats.won || 0),
+                trophiesWon: trophiesWon,
                 badgesHTML: generaHTMLBadge(statsBadges, key)
             });
         }
@@ -302,11 +314,11 @@ async function initTrainersPage() {
             const randomRotation = (Math.random() * 2 - 1).toFixed(2);
             
             const htmlTrofeati = player.trophiesWon > 0 
-    ? `<div class="trainer-card-trophy" title="Seasons">
-        <img src="immagini/season-winner-color.png" class="trophy-icon" alt="Trophy">
-        <span class="trophy-count">x${player.trophiesWon}</span>
-       </div>` 
-    : '';
+                ? `<div class="trainer-card-trophy" title="Seasons">
+                    <img src="immagini/season-winner-color.png" class="trophy-icon" alt="Trophy">
+                    <span class="trophy-count">x${player.trophiesWon}</span>
+                   </div>` 
+                : '';
 
             return `
                 <a href="public.html?player=${encodeURIComponent(player.id)}" 
