@@ -199,7 +199,7 @@ body {
 }
 
 .music-btn {
-    position: fixed;
+    position: absolute;
     top: 100px;
     right: 40px;
     width: 45px;
@@ -208,11 +208,11 @@ body {
     border: 2px solid black; 
     box-shadow: 4px 4px 0 black;
     cursor: pointer;
-    z-index: 999;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     outline: none;
+    z-index: 110;
 }
 
 .music-btn:hover {
@@ -446,9 +446,6 @@ body {
     justify-content: center;
     align-items: center;
     
-    /* Regole per lo Sticky Header */
-    position: sticky;
-    top: 0; /* 💡 OBBLIGATORIO: definisce dove si blocca la barra */
     z-index: 100; /* Mantiene la barra sopra gli altri elementi che scorrono */
 }
 
@@ -589,7 +586,7 @@ body {
 }
 
 .top-auth-bar {
-    position: fixed;
+    position:absolute;
     top: 20px;
     right: 20px;
     z-index: 3000;
@@ -787,43 +784,43 @@ body {
     opacity: 1;
 }
 
-/* Wrapper principale con margini calcolati al millimetro */
+/* Wrapper trasformato in layout Flex orizzontale */
 .rules-wrapper {
-    display: block;
-    margin-left: 220px;               /* Spazio esatto per la .ads-sidebar di sinistra */
-    width: calc(100% - 220px);        /* Occupa solo la porzione visibile rimanente */
-    padding-left: 25px;               /* Distanza dalla barra pubblicitaria */
-    padding-right: 340px;              /* RISERVA: 280px (indice) + 30px (right) + 30px (distanza di sicurezza) */
+    display: flex;                   /* Affianca contenuto e sidebar */
+    align-items: flex-start;         /* FONDAMENTALE: permette lo scroll dello sticky */
+    margin-left: 220px;              /* Spazio per la sidebar di sinistra */
+    width: calc(100% - 220px);
+    padding-left: 25px;
+    padding-right: 30px;             /* Margine destro standard */
     padding-top: 20px;
     padding-bottom: 40px;
+    gap: 30px;                       /* Spazio esatto tra contenuto e indice */
     box-sizing: border-box;
 }
 
 /* Colonna del regolamento */
 .rules-content {
-    width: 100%;
-    max-width: 1200px;                 /* Limite di lettura ottimale per non allungare troppo i box */
+    flex: 1;                         /* Prende tutto lo spazio orizzontale disponibile */
+    min-width: 0;                    /* Impedisce il degrado del layout flex */
+    max-width: 1200px;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* Indice fisso e isolato a destra */
+/* Indice dinamico con Sticky */
 .rules-sidebar {
-    position: fixed !important;
-    top: 200px !important;             /* Regola questo valore per allinearlo sotto la TopBar verde */
-    right: 30px;                       /* Distanza dal bordo destro del browser */
+    position: sticky !important;
+    top: 50px !important;           /* Distanza dal top dello schermo prima di bloccarsi */
     width: 280px;
+    flex-shrink: 0;                  /* Mantiene la larghezza fissa di 280px */
     z-index: 100;
 }
-
 /* Schede Neubrutalist */
-.rule-card, 
-.toc-container {
+.rule-card {
     background: #ffffff;
     border: 3px solid #000000;
     box-shadow: 5px 5px 0px #000000;
-    border-radius: 8px;
     color: #000000;
 }
 
@@ -841,7 +838,7 @@ body {
     font-family: 'Josefin Sans', sans-serif;
     font-weight: 700;
     margin-top: 0;
-    margin-bottom: 12px;
+    margin-bottom: 30px;
     font-size: 1.4rem;
     display: flex;
     align-items: center;
@@ -851,8 +848,38 @@ body {
 .rule-card p {
     color: #1a1a1a;
     font-size: 1rem;
-    line-height: 1.5;
-    margin: 0;
+    line-height: 1.7;
+    margin-top: 0;
+    margin-bottom: 5px; /* Distanza automatica tra un paragrafo e l'altro */
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Rimuove lo spazio vuoto in fondo al box dopo l'ultimo paragrafo */
+.rule-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Stile Sottocapitoli (h3) dentro le schede */
+.rule-card h3 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #000000;
+    margin-top: 25px;
+    margin-bottom: 20px;
+    padding-left: 10px;
+    
+    /* Bordo laterale in pieno stile Neubrutalist per staccare dal paragrafo sopra */
+    border-left: 4px solid #000000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Riduce lo spazio se l'h3 si trova subito dopo l'h2 */
+.rule-card h2 + h3 {
+    margin-top: 15px;
 }
 
 /* Colonna Indice Sticky */
@@ -866,10 +893,6 @@ body {
 
 /* Container Indice Neubrutalist */
 .toc-container {
-    background: #ffffff;
-    border: 3px solid #000000;
-    box-shadow: 5px 5px 0px #000000;
-    border-radius: 8px;
     padding: 20px;
 }
 
@@ -900,7 +923,6 @@ body {
     font-size: 0.95rem;
     font-weight: 600;
     padding: 8px 12px;
-    border-radius: 6px;
     border: 2px solid transparent;
     transition: all 0.15s ease;
 }
@@ -913,8 +935,202 @@ body {
 /* Stato Attivo (Stile badge con ombra netta) */
 .toc-link.active {
     color: #000000;
-    background: #7dd3fc; /* Azzurro coordinato */
+    background: var(--yellow); /* Azzurro coordinato */
     border: 2px solid #000000;
     box-shadow: 3px 3px 0px #000000;
     font-weight: 700;
+}
+
+/* Crea uno stacco marcato tra l'intro e la descrizione vera e propria */
+.spaced-paragraph {
+    margin-top: 20px !important;
+    padding-top: 10px;
+}
+
+/* Ripristino e spaziatura del contenitore lista */
+.rule-card ul {
+    list-style: none; /* Rimuove i pallini standard */
+    padding-left: 0;
+    margin: 15px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Spazio tra un elemento e l'altro */
+}
+
+/* Singolo elemento della lista */
+.rule-card li {
+    position: relative;
+    padding-left: 28px; /* Spazio per far rientrare il nuovo bullet */
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #1a1a1a;
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Bullet Point Neubrutalist personalizzato */
+.rule-card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px; /* Allineamento verticale con la prima riga di testo */
+    width: 10px;
+    height: 10px;
+    background-color: white; /* Azzurro coordinato col sito (puoi cambiarlo) */
+    border: 2px solid #000000;
+    box-shadow: 2px 2px 0px #000000; /* Piccola ombra netta */
+    border-radius: 2px;
+}
+
+/* Link all'interno dei testi */
+.rule-card a,
+.inline-link {
+    color: #000000;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    transition: all 0.15s ease;
+}
+
+/* Effetto Hover (evidenziatore azzurro) */
+.rule-card a:hover,
+.inline-link:hover {
+    background-color: var(--yellow); /* Azzurro coordinato */
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+/* Contenitore per la responsività su mobile */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
+    padding-bottom: 8px; /* Spazio per l'ombra del bordo inferiore */
+}
+
+/* Tabella Neubrutalist */
+.neubrutal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #ffffff;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 0.95rem;
+    table-layout: fixed;
+}
+
+/* Intestazione della tabella */
+.neubrutal-table thead {
+    background-color: var(--yellow); /* Azzurro accent coordinato col sito */
+}
+
+.neubrutal-table th {
+    color: #000000;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 3px solid #000000;
+    border-right: 2px solid #000000;
+}
+
+.neubrutal-table th:last-child {
+    border-right: none;
+}
+
+/* Celle della tabella */
+.neubrutal-table td {
+    padding: 12px 16px;
+    color: #1a1a1a;
+    border-bottom: 2px solid #000000;
+    border-right: 2px solid #000000;
+}
+
+.neubrutal-table td:last-child {
+    border-right: none;
+}
+
+/* Rimuove il bordo dall'ultima riga */
+.neubrutal-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Evidenziazione al passaggio del mouse */
+.neubrutal-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Contenitore a due colonne */
+.tables-grid {
+    display: flex;
+    gap: 20px; /* Spazio tra le due tabelle */
+    width: 100%;
+    margin: 20px 0;
+}
+
+/* Ogni colonna occupa esattamente il 50% dello spazio */
+.tables-grid .table-container {
+    flex: 1;
+    min-width: 0; /* Evita che il testo lungo rompa il layout flex */
+    margin: 0;
+}
+
+/* Citazione centrata e spaziata */
+.custom-quote {
+    text-align: center;
+    font-style: italic;
+    margin: 15px 0;          /* 30px di spazio sopra e sotto */
+    padding: 0 20px;         /* Un minimo di rientro ai lati */
+    font-size: 1rem;
+    color: #222222;
+    border: none;            /* Rimuove eventuali bordi predefiniti del browser */
+}
+
+/* Stile per h4 (Sotto-sezione di terzo livello) */
+.rule-card h4 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Trattino decorativo prima dell'h4 */
+.rule-card h4::before {
+    content: '—';
+    font-weight: 900;
+    color: white; /* Azzurro coordinato */
+}
+
+/* ENTIRELY NESTED LISTS (Secondo Livello) */
+
+/* Contenitore della sotto-lista */
+.rule-card ul ul {
+    margin: 8px 0 8px 10px; /* Rientro verso destra */
+    gap: 8px; /* Spazio ridotto tra sotto-punti */
+}
+
+/* Elemento del sotto-punto */
+.rule-card ul ul li {
+    padding-left: 22px;
+    font-size: 1rem;
+}
+
+/* Bullet Point del secondo livello (più piccolo e giallo) */
+.rule-card ul ul li::before {
+    top: 6px;
+    width: 7px;
+    height: 7px;
+    background-color: white; /* Giallo a contrasto */
+    border: 2px solid #000000;
+    box-shadow: 1px 1px 0px #000000;
 }
