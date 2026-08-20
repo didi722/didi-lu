@@ -1692,7 +1692,6 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
         const nomePkmn = pkmn.nome;
         if (!nomePkmn) return null;
 
-        // 🔥 MODIFICATO: Usa l'ID pulito estratto dal parser, con fallback di sicurezza per vecchi dati DB
         const nomeIdPokeAPI = pkmn.idPokeAPI || normalizzaNomePerPokeAPI(nomePkmn);
 
         try {
@@ -1715,7 +1714,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 }
             });
 
-            // 2. FETCH SPECIE POKÉMON (Colore, Sagoma, Habitat, Legend/Mythical)
+            // 2. FETCH SPECIE POKÉMON
             const resSpecies = await fetch(dataPkmn.species.url);
             let genId = 1, misterioso = false, leggendario = false, baseFriendship = 70;
             let colore = "White", habitat = "Grassland", shape = "Ball", eggGroups = [];
@@ -1728,7 +1727,6 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 colore = dataSpecie.color?.name ? dataSpecie.color.name.charAt(0).toUpperCase() + dataSpecie.color.name.slice(1) : "White";
                 habitat = dataSpecie.habitat?.name ? dataSpecie.habitat.name.charAt(0).toUpperCase() + dataSpecie.habitat.name.slice(1) : "Grassland";
                 
-                // Formatta la sagoma per allinearla alle opzioni delle tue regole
                 const shapeRaw = dataSpecie.shape?.name || "ball";
                 shape = shapeRaw.charAt(0).toUpperCase() + shapeRaw.slice(1).replace('-', '_');
 
@@ -1742,7 +1740,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 }) || [];
             }
 
-            // 3. FETCH STRUMENTO IN PARALLELO
+            // 3. FETCH STRUMENTO
             let infoStrumento = { is_berry: false, is_consumable: false, is_healing: false, has_negative_effect: false };
             if (pkmn.strumento && pkmn.strumento.toLowerCase() !== 'none') {
                 try {
@@ -1758,7 +1756,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 } catch(e) { console.warn("Errore fetch strumento", e); }
             }
 
-            // 4. FETCH MOSSE IN PARALLELO
+            // 4. FETCH MOSSE
             const promesseMosse = pkmn.mosse.map(async (nomeMossa) => {
                 if (!nomeMossa) return null;
                 try {
@@ -1785,20 +1783,18 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
             });
             const infoMosse = (await Promise.all(promesseMosse)).filter(Boolean);
 
-            // 5. COMPILAZIONE PAYLOAD COMPLETO PER REGOLE DINAMICHE
+            // 5. COMPILAZIONE PAYLOAD COMPLETO
             return {
                 name: nomePkmn,
-                idPokeAPI: nomeIdPokeAPI, // 🔥 Conserviamo l'ID associato anche per usi futuri sulla UI
+                idPokeAPI: nomeIdPokeAPI,
                 generation: genId,
                 erroreDati: false,
                 strumento: pkmn.strumento || "None",
                 mosse: pkmn.mosse || [],
-                
-                // Variabili meccanismo Regole Avanzate (Categoria Pokémon)
                 name_starts: nomePkmn.trim().charAt(0).toUpperCase(),
                 name_length: nomePkmn.replace(/\s+/g, '').length,
-                height: dataPkmn.height * 10, // PokeAPI restituisce decimetri -> convertiamo in cm
-                weight: dataPkmn.weight / 10, // PokeAPI restituisce ettogrammi -> convertiamo in kg
+                height: dataPkmn.height * 10,
+                weight: dataPkmn.weight / 10,
                 type: dataPkmn.types.map(t => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)),
                 color: colore,
                 egg_group: eggGroups,
@@ -1810,8 +1806,6 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 nature: pkmn.natura || "Serious",
                 is_legendary: leggendario,
                 is_mythical: misterioso,
-
-                // Sotto-strutture per Strumenti e Mosse
                 itemData: infoStrumento,
                 movesData: infoMosse
             };
@@ -1820,7 +1814,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
             console.error(`Errore nel recupero dati per ${nomePkmn}:`, err);
             return { 
                 name: nomePkmn, 
-                idPokeAPI: nomeIdPokeAPI, // 🔥 Passiamo l'ID anche nel catch per non rompere i grafici/sprite esterni
+                idPokeAPI: nomeIdPokeAPI, 
                 erroreDati: true, 
                 strumento: pkmn.strumento || "None", 
                 mosse: pkmn.mosse || [] 
@@ -1831,12 +1825,10 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
     return (await Promise.all(promesse)).filter(p => p !== null);
 }
 
-// --- 2. FUNZIONI DI VALIDAZIONE (Logica Core) ---
-
-// Array di supporto per mappare gli indici delle Tier Smogon salvate nel DB
+// Array di supporto per mappe tier
 const ORDINE_TIER_REGOLE = ["LC", "NFE", "ZU", "PU", "NU", "RU", "UU", "OU", "Ubers", "AG"];
 
-async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
+async function validaTeamDinamico(teamDatiPokeAPI, regolamento, altriTeamEsistenti = []) {
     let tuttiGliErrori = [];
     
     if (regolamento.strutturaSito === 'anything_goes') {
@@ -1848,12 +1840,10 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
     
     try {
         if (regolamento.genRuleType === "within") {
-            // Percorso Standard: solo la generazione specifica
             const risposta = await fetch(`pkm-gens/gen${genLimite}.json`);
             if (risposta.ok) jsonDati = await risposta.json();
             
         } else if (regolamento.genRuleType === "up_to") {
-            // 🛠️ FIX: Carichiamo ENTRAMBI i file in parallelo per non rallentare l'esecuzione
             const [resGen, resNatDex] = await Promise.all([
                 fetch(`pkm-gens/gen${genLimite}.json`).catch(() => null),
                 fetch(`pkm-gens/natdex-tiers.json`).catch(() => null)
@@ -1865,17 +1855,43 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
             if (resGen && resGen.ok) jsonGen = await resGen.json();
             if (resNatDex && resNatDex.ok) jsonNatDex = await resNatDex.json();
 
-            // 🛠️ LOGICA DI PRIORITÀ:
-            // Uniamo i due oggetti. Mettendo 'jsonGen' per ULTIMO, lo spread operator 
-            // farà in modo che se una chiave esiste in entrambi i file, il valore di genX.json 
-            // sovrascriverà quello di natdex-tiers.json. Se non c'è, resta valido il natdex.
-            jsonDati = { ...jsonNatDex, ...jsonGen };
+            // 🛠️ MERGE INTELLIGENTE PER "UP_TO":
+            // Inizializziamo con NatDex. Sovrascriviamo con la Gen specifica SOLO se la tier NON è "Illegal" o "Unreleased".
+            // Se un Pokémon (es. Togekiss) è "Illegal" in Gen 9 causa Dex-Cut, manterrà la sua tier storica da NatDex!
+            jsonDati = { ...jsonNatDex };
+
+            for (const key in jsonGen) {
+                const valGen = jsonGen[key];
+                const valNat = jsonNatDex[key];
+
+                if (!valNat) {
+                    jsonDati[key] = valGen;
+                    continue;
+                }
+
+                if (typeof valGen === 'object' && valGen !== null) {
+                    const singleGen = (valGen.single_tier || '').toUpperCase();
+                    const doublesGen = (valGen.doubles_tier || '').toUpperCase();
+
+                    const singleValido = singleGen && singleGen !== 'ILLEGAL' && singleGen !== 'UNRELEASED';
+                    const doublesValido = doublesGen && doublesGen !== 'ILLEGAL' && doublesGen !== 'UNRELEASED';
+
+                    jsonDati[key] = {
+                        single_tier: singleValido ? valGen.single_tier : (valNat.single_tier || valGen.single_tier),
+                        doubles_tier: doublesValido ? valGen.doubles_tier : (valNat.doubles_tier || valGen.doubles_tier)
+                    };
+                } else if (typeof valGen === 'string') {
+                    if (valGen.toUpperCase() !== 'ILLEGAL' && valGen.toUpperCase() !== 'UNRELEASED') {
+                        jsonDati[key] = valGen;
+                    }
+                }
+            }
         }
     } catch (err) {
         console.error("Errore nel caricamento file validazione:", err);
     }
 
-    // Controlli Standard Preesistenti (ricevono il jsonDati già perfettamente fuso e gerarchizzato)
+    // Controlli Standard
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
@@ -1888,10 +1904,54 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento) {
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
+    // CONTROLLO SOVRAPPOSIZIONE PER FORMATI "CUSTOM" (Max 2 Pokémon uguali rispetto a team esistenti)
+    if (regolamento.strutturaSito === 'custom' && altriTeamEsistenti.length > 0) {
+        const erroriSovrapposizione = validaSovrapposizioneTeam(teamDatiPokeAPI, altriTeamEsistenti);
+        tuttiGliErrori = tuttiGliErrori.concat(erroriSovrapposizione);
+    }
+
     return {
         valido: tuttiGliErrori.length === 0,
         errori: tuttiGliErrori
     };
+}
+
+/**
+ * Funzione Helper per verificare che il team non condivida più di 2 Pokémon con altri team
+ */
+function validaSovrapposizioneTeam(teamCorrente, altriTeam) {
+    const errori = [];
+
+    // Estraiamo e normalizziamo i nomi dei Pokémon del team in validazione
+    const nomiTeamCorrente = teamCorrente
+        .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase())
+        .filter(Boolean);
+
+    for (const teamEsistente of altriTeam) {
+        // Se si sta modificando un team già esistente, lo ignoriamo durante il controllo
+        if (teamEsistente.id && teamCorrente.id && teamEsistente.id === teamCorrente.id) {
+            continue;
+        }
+
+        const listaPokemonEsistenti = teamEsistente.pokemon || teamEsistente.teamDati || [];
+        
+        const nomiTeamEsistente = listaPokemonEsistenti
+            .map(p => (typeof p === 'string' ? p : (p.species?.name || p.name || p.nome || p.pokemon || '')).toLowerCase())
+            .filter(Boolean);
+
+        // Calcoliamo quanti Pokémon coesistono in entrambi i team
+        const pokemonInComune = nomiTeamCorrente.filter(nome => nomiTeamEsistente.includes(nome));
+
+        if (pokemonInComune.length > 2) {
+            const listaNomiFormatted = pokemonInComune.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(', ');
+            errori.push(
+                `Il team condivide troppi Pokémon (${pokemonInComune.length}: ${listaNomiFormatted}) con un altro team già registrato (${teamEsistente.nome || 'Team esistente'}). Nei formati custom sono consentiti al massimo 2 Pokémon uguali.`
+            );
+            break; // Interrompe al primo conflitto trovato
+        }
+    }
+
+    return errori;
 }
 
 function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento) { 
@@ -2092,9 +2152,8 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     if (!regolamento.baseTier || regolamento.baseTier === "ALL" || !jsonDati) return errori;
 
     const tierMassima = regolamento.baseTier.toUpperCase();
-    
-    // 🛠️ DETERMINAZIONE PROPRIETÀ: single_tier o doubles_tier
     const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
+    const genLimite = regolamento.genRuleValue || "selezionata";
 
     // ================= LOGICA TIER: STANDARD =================
     if (tierMassima === "STANDARD") {
@@ -2112,20 +2171,27 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
             }
 
             if (!valoreGrezzo) {
-                console.warn(`Tier non trovata nel JSON nemmeno come nome base per: ${pkmn.name}`);
+                console.warn(`Tier non trovata nel JSON per: ${pkmn.name}`);
                 return;
             }
 
-            // 🛠️ FIX DINAMICO: Estrae il campo corretto dall'oggetto del Pokémon
             const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
 
-            if (pkmn.isMythical) {
+            // Gestione "Illegal" (valido solo per formati 'within' in cui il pokemon è Dex-cut)
+            if (tierPokemon === "ILLEGAL" || tierPokemon === "UNRELEASED") {
+                errori.push(`[${pkmn.name}] non è disponibile o è bandito nella Gen ${genLimite}.`);
+                return;
+            }
+
+            // Controllo Pokémon Misteriosi (Fix campo: is_mythical)
+            const isMisterioso = pkmn.is_mythical || pkmn.isMythical || false;
+            if (isMisterioso) {
                 errori.push(`[${pkmn.name}] non è ammesso: i Pokémon Misteriosi sono vietati nel formato STANDARD.`);
             }
 
             if (tierPokemon === "AG") {
                 errori.push(`[${pkmn.name}] è bandito: appartiene alla tier AG, non ammessa nel formato STANDARD.`);
-            } else if (tierPokemon === "UBER") {
+            } else if (tierPokemon === "UBER" || tierPokemon === "UBERS") {
                 contatoreUber++;
                 if (contatoreUber > 2) {
                     errori.push(`[${pkmn.name}] non è legale: il formato STANDARD permette al massimo 2 Pokémon di tier UBER.`);
@@ -2141,7 +2207,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     }
 
     // ================= LOGICA TIER: GERARCHICA CLASSICA (OU, UU, ecc.) =================
-    const gerarchia = ["AG", "UBER", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
+    const gerarchia = ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
     const idxMax = gerarchia.indexOf(tierMassima);
 
     teamDatiPokeAPI.forEach(pkmn => {
@@ -2157,8 +2223,13 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
 
         if (!valoreGrezzo) return;
 
-        // 🛠️ FIX DINAMICO: Estrae il campo corretto dall'oggetto del Pokémon
         const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
+
+        if (tierPokemon === "ILLEGAL" || tierPokemon === "UNRELEASED") {
+            errori.push(`[${pkmn.name}] non è disponibile o è bandito nella Gen ${genLimite}.`);
+            return;
+        }
+
         const idxPkmn = gerarchia.indexOf(tierPokemon);
         
         if (idxMax !== -1 && idxPkmn !== -1 && idxPkmn < idxMax) {
@@ -2251,8 +2322,26 @@ async function salvaTeamSuFirebase() {
         if (!regolamento) { alert("Regolamento non trovato."); return; }
     } catch (error) { alert("Errore database: " + error.message); return; }
 
+    // 🆕 RECUPERO TEAM ESISTENTI PER FORMATO CUSTOM
+    let altriTeamEsistenti = [];
+    if (regolamento.strutturaSito === 'custom') {
+        try {
+            const teamsSnap = await databaseRef.child('players/didi/teams').once('value');
+            teamsSnap.forEach(childSnap => {
+                const teamVal = childSnap.val();
+                if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()) {
+                    altriTeamEsistenti.push({ id: childSnap.key, ...teamVal });
+                }
+            });
+        } catch (e) {
+            console.warn("Errore durante il recupero dei team esistenti:", e);
+        }
+    }
+
     const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
-    const esitoValidazione = await validaTeamDinamico(datiPokeAPI, regolamento);
+    
+    // 🛠️ Passiamo 'altriTeamEsistenti' alla funzione di validazione
+    const esitoValidazione = await validaTeamDinamico(datiPokeAPI, regolamento, altriTeamEsistenti);
 
     if (!esitoValidazione.valido) {
         let outputErrori = `Il team non è legale:\n\n`;
