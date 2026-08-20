@@ -26,7 +26,7 @@
 <header class="top-bar">
         <div class="top-bar-inner">
             <section class="hub-hero">
-                <h1 class="hub-title-display">TRAINERS LIST</h1>
+                <h1 class="hub-title-display">TRAINERS</h1>
             </section>
         </div>
     </header>
@@ -203,20 +203,69 @@ function nascondiLoader() {
     }, 500);
 }
 // Funzione di caricamento unificata
+
+// Funzione per generare i badge dinamici e il Founder badge
+function generaHTMLBadge(statsBadges = {}, playerKey = "") {
+    let html = "";
+
+    // 1. FOUNDER BADGE (Didi e Lukiani)
+    const pKeyLower = (playerKey || "").trim().toLowerCase();
+    if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
+        html += `<img src="immagini/badge_founder.png" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
+    }
+
+    // 2. DYNAMIC BADGES (Clean, Won, SD Streaks)
+    const badgeConfig = [
+        {
+            id: 'clean',
+            label: 'Clean Streak',
+            max: parseInt(statsBadges.maxcleanstrike) || 0,
+            steps: [3, 5, 7]
+        },
+        {
+            id: 'won',
+            label: 'Win Streak',
+            max: parseInt(statsBadges.maxwonstrike) || 0,
+            steps: [5, 7, 10]
+        },
+        {
+            id: 'sd',
+            label: 'SD Streak',
+            max: parseInt(statsBadges.maxsdstrike) || 0,
+            steps: [3, 5, 7]
+        }
+    ];
+
+    badgeConfig.forEach(b => {
+        let level = "";
+
+        if (b.max >= b.steps[2]) {
+            level = "gold";
+        } else if (b.max >= b.steps[1]) {
+            level = "silver";
+        } else if (b.max >= b.steps[0]) {
+            level = "bronze";
+        }
+
+        if (level !== "") {
+            const imagePath = `immagini/badge_${b.id}_${level}.png`;
+            html += `<img src="${imagePath}" class="trainer-mini-badge" title="${b.label} (${level.toUpperCase()})" alt="${b.label} ${level}">`;
+        }
+    });
+
+    return html;
+}
+
 async function initTrainersPage() {
     const gridContainer = document.getElementById('trainers-grid');
     const loader = document.getElementById('poke-loader');
 
-    // All'inizio di initTrainersPage(), dentro l'if (loader)
-if (loader) {
-    // Resetta le proprietà per mostrarlo subito senza transizioni indesiderate all'avvio
-    loader.style.transition = 'none';
-    loader.style.display = 'flex'; // (o 'block', in base al tuo CSS originale)
-    loader.style.opacity = '1';
-    
-    // Forza il ricalcolo del DOM per prepararlo alla futura dissolvenza
-    loader.offsetHeight; 
-}
+    if (loader) {
+        loader.style.transition = 'none';
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        loader.offsetHeight; 
+    }
 
     try {
         const snapshot = await db.ref('players').once('value');
@@ -231,44 +280,64 @@ if (loader) {
         for (let key in playersData) {
             const player = playersData[key];
             const info = player.info || {};
-            const indStats = player.stats?.['individual-stats'] || {};
+            const stats = player.stats || {};
+            const indStats = stats['individual-stats'] || {};
+            const seasonsStats = stats.seasons || {};
+            const statsBadges = stats.badges || {};
 
             playersList.push({
                 id: key,
                 name: info.name || key,
                 avatar: info.avatar || 'immagini/magikarp.png',
                 color: info.color || '#31c489',
-                ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0
+                ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
+                trophiesWon: Number(seasonsStats.won || 0),
+                badgesHTML: generaHTMLBadge(statsBadges, key)
             });
         }
 
         playersList.sort((a, b) => b.ranking - a.ranking);
 
-gridContainer.innerHTML = playersList.map((player, index) => {
-    // Genera un'inclinazione casuale leggera tra -1 e +1 gradi per un effetto pulito
-    const randomRotation = (Math.random() * 2 - 1).toFixed(2);
+        gridContainer.innerHTML = playersList.map((player, index) => {
+            const randomRotation = (Math.random() * 2 - 1).toFixed(2);
+            
+            const htmlTrofeati = player.trophiesWon > 0 
+    ? `<div class="trainer-card-trophy" title="Seasons">
+        <img src="immagini/season-winner-color.png" class="trophy-icon" alt="Trophy">
+        <span class="trophy-count">x${player.trophiesWon}</span>
+       </div>` 
+    : '';
 
-    return `
-        <a href="public.html?player=${encodeURIComponent(player.id)}" 
-           class="trainer-card" 
-           style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
-            
-            <div class="trainer-left-group">
-                <span class="trainer-rank-text">#${index + 1}</span>
-                
-                <div class="trainer-avatar-box">
-                    <img src="${player.avatar}" alt="${player.name}" onerror="this.src='immagini/magikarp.png'">
-                </div>
-                
-                <h2 class="trainer-name">${player.name}</h2>
-            </div>
-            
-            <div class="trainer-points-box">
-                ${player.ranking}
-            </div>
-        </a>
-    `;
-}).join('');
+            return `
+                <a href="public.html?player=${encodeURIComponent(player.id)}" 
+                   class="trainer-card" 
+                   style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
+                    
+                    <div class="trainer-left-group">
+                        <span class="trainer-rank-text">#${index + 1}</span>
+                        
+                        <div class="trainer-avatar-box">
+                            <img src="${player.avatar}" alt="${player.name}" onerror="this.src='immagini/magikarp.png'">
+                        </div>
+                        
+                        <div class="trainer-info-block">
+                            <h2 class="trainer-name">${player.name}</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="trainer-achievements-group">
+                        ${htmlTrofeati}
+                        <div class="trainer-badges-container">
+                            ${player.badgesHTML}
+                        </div>
+                    </div>
+
+                    <div class="trainer-points-box">
+                        ${player.ranking}
+                    </div>
+                </a>
+            `;
+        }).join('');
 
     } catch (error) {
         console.error("Errore durante il caricamento dei giocatori:", error);
@@ -278,7 +347,6 @@ gridContainer.innerHTML = playersList.map((player, index) => {
     }
 }
 
-// Unico entry-point al caricamento del DOM
 document.addEventListener('DOMContentLoaded', initTrainersPage);
 
 function chiudiMenuConOverlay() {

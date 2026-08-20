@@ -879,6 +879,7 @@ body {
     object-fit: contain;
     /* Applicazione del movimento Pokémon retrò a scatti */
     animation: pokemon-bounce 0.8s steps(1) infinite;
+    filter: drop-shadow(1.5px 1.5px 0 black);
 }
 
 /* Nome dell'allenatore */
@@ -905,4 +906,74 @@ body {
     text-align: center;
     min-width: 40px;
     letter-spacing: 0.5px;
+}
+
+/* Container centrale dei trofei e badge */
+/* Container della card (deve avere display: flex) */
+.trainer-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Spinge il gruppo obiettivi a destra e lo allinea a fine riga */
+/* Il contenitore centrale copre tutto lo spazio vuoto tra info e punteggio */
+.trainer-achievements-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Mantiene sempre i badge a destra */
+    flex: 1;
+    margin: 0 15px;
+    min-height: 30px;
+}
+
+/* Il trofeo viene bloccato esattamente al centro della sezione centrale */
+.trainer-card-trophy {
+    position: absolute;
+    left: 40%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+/* I badge rimangono allineati a destra */
+.trainer-badges-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Singola icona del badge (ridimensionata) */
+.trainer-mini-badge {
+    width: 24px;           /* Forza la larghezza esatta */
+    height: 24px;          /* Forza l'altezza esatta */
+    object-fit: contain;  /* Mantiene le proporzioni originali */
+    filter: drop-shadow(1px 1px 0px #000); /* Ombra stile neubrutalist */
+    flex-shrink: 0;        /* Impedisce al browser di schiacciarle */
+}
+
+
+/* Icona dell'immagine del trofeo */
+.trophy-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    filter: drop-shadow(1px 1px 0px #000);
+}
+
+/* Badge bianco con bordo solo per il numero */
+.trophy-count {
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0px #000;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    white-space: nowrap;
 }
