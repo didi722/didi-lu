@@ -680,7 +680,7 @@ document.addEventListener('click', function(event) {
 });
 
 function ascoltaCambiamentiFirebase() {
-    db.ref('players/didi/teams').on('value', (snapshot) => {
+    db.ref('players/${playerID}/teams').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.musicaPreferita) {
             const player = document.getElementById('bg-music');
@@ -2333,7 +2333,19 @@ async function salvaTeamSuFirebase() {
     const inputNome = document.getElementById('admin-team-name'); 
     const selectFormato = document.getElementById('admin-team-cat'); 
     const textareaShowdown = document.getElementById('showdown-input'); 
-    const adminPanel = document.getElementById('admin-panel'); // 🆕 Recuperiamo il pannello admin
+    const adminPanel = document.getElementById('admin-panel'); 
+
+    // 🆕 RECUPERO DINAMICO DELL'UTENTE LOGGATO
+    // Opzione A: Da Firebase Auth (es. UID o displayName)
+    const currentUser = firebase.auth ? firebase.auth().currentUser : null;
+    
+    // Opzione B: Da data-attribute del pannello admin o variabile globale (fallback)
+    const currentPlayerId = currentUser ? currentUser.uid : (adminPanel?.dataset.playerId || window.activePlayerId);
+
+    if (!currentPlayerId) {
+        alert("Errore: Nessun utente loggato o identificato. Impossibile salvare il team.");
+        return;
+    }
 
     if (!inputNome || !selectFormato || !textareaShowdown) return;
 
@@ -2341,7 +2353,6 @@ async function salvaTeamSuFirebase() {
     const idRegolamentoScelto = selectFormato.value;
     const testoShowdown = textareaShowdown.value.trim();
     
-    // 🆕 Estraiamo l'ID di modifica (se presente)
     const editingId = adminPanel ? adminPanel.dataset.editingId : null;
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
@@ -2372,7 +2383,8 @@ async function salvaTeamSuFirebase() {
     let altriTeamEsistenti = [];
     if (regolamento.strutturaSito === 'custom') {
         try {
-            const teamsSnap = await databaseRef.child('players/didi/teams').once('value');
+            // 🆕 Sostituito 'didi' con la variabile 'currentPlayerId'
+            const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
             teamsSnap.forEach(childSnap => {
                 const teamVal = childSnap.val();
                 if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()) {
@@ -2386,7 +2398,6 @@ async function salvaTeamSuFirebase() {
 
     const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
     
-    // 🆕 Passiamo l'ID corrente al validatore così ignora il confronto con se stesso
     const oggettoTeamPerValidazione = {
         id: editingId,
         nome: nomeTeamScelto,
@@ -2406,13 +2417,13 @@ async function salvaTeamSuFirebase() {
         datiTeamDaSalvare.categoria = regolamento.categoria; 
 
         if (editingId) {
-            // 🆕 SE IN MODIFICA: Aggiorna il nodo esistente
+            // 🆕 Salvataggio dinamico sul player loggato in caso di modifica
             datiTeamDaSalvare.id = editingId;
-            await databaseRef.child(`players/didi/teams/${editingId}`).update(datiTeamDaSalvare);
+            await databaseRef.child(`players/${playerID}/teams/${editingId}`).update(datiTeamDaSalvare);
             alert("Team aggiornato con successo!");
         } else {
-            // 🆕 SE NUOVO: Genera un nuovo nodo tramite .push()
-            const newTeamRef = databaseRef.child('players/didi/teams').push();
+            // 🆕 Salvataggio dinamico sul player loggato per nuovi team
+            const newTeamRef = databaseRef.child(`players/${playerID}/teams`).push();
             datiTeamDaSalvare.id = newTeamRef.key;
             await newTeamRef.set(datiTeamDaSalvare);
             alert("Team creato con successo!");
@@ -2438,7 +2449,7 @@ function cancellaTeamDaFirebase(teamId) {
     // 2. Conferma finale
     if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
         // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
-        db.ref(`players/didi/teams/${teamId}`).remove()
+        db.ref(`players/${playerID}/teams/${teamId}`).remove()
             .then(() => {
                 alert("Team eliminato correttamente!");
                 chiudiTeamModal();
