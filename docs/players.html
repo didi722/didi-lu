@@ -398,7 +398,7 @@ function syncMusicState() {
 
     if (player.src !== LINK_MP3_HOME) {
         player.src = LINK_MP3_HOME;
-        player.volume = 0.3;
+        player.volume = 1;
     }
 
     const savedPref = localStorage.getItem('userMusicPref');
@@ -441,22 +441,33 @@ function sbloccaAudioAlPrimoClick() {
 }
 
 function toggleMusic() {
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
 
     if (!player || !musicBtn) return;
 
-    if (player.paused) {
+    if (player.paused || player.muted) {
+        // RESET E ACCENSIONE
+        player.muted = false; 
+        player.volume = 1; 
+
         player.play().then(() => {
             musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on');
+            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
+            console.log("🔊 Musica ripresa");
         }).catch(error => {
-            console.warn("Riproduzione bloccata:", error);
+            console.warn("Autoplay bloccato:", error);
+            musicBtn.classList.add('muted');
         });
+        
     } else {
+        // SPEGNIMENTO TOTALE
         player.pause();
+        player.muted = true; 
+        
         musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off');
+        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
+        console.log("🔇 Musica fermata");
     }
 }
 

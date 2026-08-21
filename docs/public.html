@@ -546,20 +546,28 @@ function applicaPaletteUtente(baseColor) {
 
 async function renderizzaBestTeam(team) {
     const container = document.getElementById('best-team-container');
-    if (!team || !container) return;
+    if (!container) return;
 
-    // 🎯 DIAGNOSI COMPLETATA: Sappiamo che i dati reali sono dentro team.stats
+    // Se non c'è alcun team passato, svuota il contenitore ed esci
+    if (!team) {
+        container.innerHTML = '';
+        return;
+    }
+
     const s = team.stats || {};
+    const teamPlayed = typeof s.played !== 'undefined' ? Number(s.played) : (Number(team.partite) || 0);
+
+    // 🎯 REQUISITO PRESENZE: Se il team ha meno di 1 presenza (0 presenze), nasconde il componente
+    if (teamPlayed < 1) {
+        container.innerHTML = '';
+        return;
+    }
 
     const teamName = team.nome || team.name || "No best team yet";
-    
-    // Peschiamo i punti e le partite dal sotto-oggetto stats usando le chiavi di Firebase
     const teamPoints = typeof s.points !== 'undefined' ? s.points : 0;
-    const teamPlayed = typeof s.played !== 'undefined' ? s.played : 0;
     const teamWon    = typeof s.won !== 'undefined' ? s.won : (team.vittorie || 0);
     const teamLose   = typeof s.lose !== 'undefined' ? s.lose : 0;
-    
-    const category = team.categoria || team.category || 'VGC';
+    const category   = team.categoria || team.category || 'VGC';
 
     container.innerHTML = `
     <div class="card" style="cursor: default;">
@@ -603,6 +611,7 @@ async function renderizzaBestTeam(team) {
     </div>
     `;
 }
+
 async function apriDettagli(id) {
     const listaTeam = (typeof tuttiITeam !== 'undefined') ? tuttiITeam : window.tuttiITeam;
     
@@ -2183,7 +2192,7 @@ function avviaMusicaGiocatore(urlMusica) {
 
     if (player.src !== urlMusica) {
         player.src = urlMusica;
-        player.volume = 0.7;
+        player.volume = 1.2;
         player.loop = true; // Assicuriamoci che vada in loop
         
         // Se l'utente non ha silenziato il sito precedentemente, proviamo l'autoplay
@@ -2229,7 +2238,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 0.3; 
+        player.volume = 1.2; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');

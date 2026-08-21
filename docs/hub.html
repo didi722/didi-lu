@@ -1612,7 +1612,7 @@ function avviaMusicaHome() {
     
     if (player.src !== LINK_MP3_HOME) {
         player.src = LINK_MP3_HOME;
-        player.volume = 0.3;
+        player.volume = 1;
         
         // PRIMO COLPO: Tenta l'autoplay immediato
         player.play()
@@ -1650,7 +1650,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 0.3; 
+        player.volume = 1; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');

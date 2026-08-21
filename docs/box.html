@@ -556,7 +556,7 @@ function ascoltaMusicaFirebase() {
         if (data && data.musicaPreferita) {
             if (player.src !== data.musicaPreferita) {
                 player.src = data.musicaPreferita;
-                player.volume = 0.3;
+                player.volume = 1.2;
                 player.load();
 
                 // 2. Logica di riproduzione dinamica
@@ -630,21 +630,33 @@ function chiudiAdminProtetto() {
 
 // 7. Gestione Play/Pause Manuale
 function toggleMusic() {
-    const player = document.getElementById('bg-music');
-    const musicBtn = document.getElementById('music-control');
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
 
-    if (!player) return;
+    if (!player || !musicBtn) return;
 
-    if (player.paused) {
-        player.play();
-        musicBtn.classList.remove('muted');
-        // Salviamo la preferenza: musica ON
-        localStorage.setItem('userMusicPref', 'on');
+    if (player.paused || player.muted) {
+        // RESET E ACCENSIONE
+        player.muted = false; 
+        player.volume = 1.2; 
+
+        player.play().then(() => {
+            musicBtn.classList.remove('muted');
+            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
+            console.log("🔊 Musica ripresa");
+        }).catch(error => {
+            console.warn("Autoplay bloccato:", error);
+            musicBtn.classList.add('muted');
+        });
+        
     } else {
+        // SPEGNIMENTO TOTALE
         player.pause();
+        player.muted = true; 
+        
         musicBtn.classList.add('muted');
-        // Salviamo la preferenza: musica OFF
-        localStorage.setItem('userMusicPref', 'off');
+        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
+        console.log("🔇 Musica fermata");
     }
 }
 

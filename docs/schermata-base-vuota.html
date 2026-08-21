@@ -194,7 +194,7 @@ function avviaMusicaHome() {
     
     if (player.src !== LINK_MP3_HOME) {
         player.src = LINK_MP3_HOME;
-        player.volume = 0.3;
+        player.volume = 1;
         
         player.play()
             .then(() => { console.log("Musica Home partita al volo!"); })
@@ -389,29 +389,33 @@ async function getPlayersColors(p1, p2) {
 }
 
 function toggleMusic() {
-    // 1. Identifica il player (usa l'ID presente in questa pagina, es. bg-music-home)
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
 
-    if (!player || !musicBtn) {
-        console.error("Elementi audio o tasto non trovati in questa pagina.");
-        return;
-    }
+    if (!player || !musicBtn) return;
 
-    if (player.paused) {
+    if (player.paused || player.muted) {
+        // RESET E ACCENSIONE
+        player.muted = false; 
+        player.volume = 1; 
+
         player.play().then(() => {
-            // Se parte, rimuoviamo la sbarra e salviamo la preferenza 'on'
             musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on');
+            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
+            console.log("🔊 Musica ripresa");
         }).catch(error => {
-            console.warn("Autoplay bloccato o errore riproduzione:", error);
+            console.warn("Autoplay bloccato:", error);
+            musicBtn.classList.add('muted');
         });
         
     } else {
+        // SPEGNIMENTO TOTALE
         player.pause();
-        // Aggiungiamo la sbarra e salviamo la preferenza 'off'
+        player.muted = true; 
+        
         musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off');
+        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
+        console.log("🔇 Musica fermata");
     }
 }
 
