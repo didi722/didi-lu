@@ -595,7 +595,19 @@ document.addEventListener('click', () => {
 function apriAdminProtetto() {
     const adminPanel = document.getElementById('admin-panel');
     const backdrop = document.getElementById('admin-backdrop');
-   
+
+    // 🆕 1. Azzera l'ID del team in modifica per indicare che si tratta di un NUOVO team
+    currentTeamId = null; // Se la tua variabile globale ha un altro nome (es. editingTeamId), usa quello
+
+    // 🆕 2. Svuota i campi di testo del form
+    const inputNome = document.getElementById('nome-team'); // Sostituisci con l'ID del tuo campo nome
+    if (inputNome) inputNome.value = '';
+
+    // 🆕 3. Ripristina la grafica vuota per gli slot dei Pokémon
+    if (typeof aggiornaGraficaBoxVuoto === 'function') {
+        aggiornaGraficaBoxVuoto(); // O la tua funzione per svuotare la griglia/card
+    }
+
     if (adminPanel && backdrop) {
         // Mostra sia il modale che lo sfondo sfocato
         backdrop.style.display = 'block';
