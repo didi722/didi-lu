@@ -2192,7 +2192,7 @@ function avviaMusicaGiocatore(urlMusica) {
 
     if (player.src !== urlMusica) {
         player.src = urlMusica;
-        player.volume = 1.2;
+        player.volume = 1;
         player.loop = true; // Assicuriamoci che vada in loop
         
         // Se l'utente non ha silenziato il sito precedentemente, proviamo l'autoplay
@@ -2238,7 +2238,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 1.2; 
+        player.volume = 1; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');

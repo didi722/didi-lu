@@ -556,7 +556,7 @@ function ascoltaMusicaFirebase() {
         if (data && data.musicaPreferita) {
             if (player.src !== data.musicaPreferita) {
                 player.src = data.musicaPreferita;
-                player.volume = 1.2;
+                player.volume = 1;
                 player.load();
 
                 // 2. Logica di riproduzione dinamica
@@ -638,7 +638,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 1.2; 
+        player.volume = 1; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');
