@@ -1440,48 +1440,56 @@ async function mostraGraficoElo(playerName) {
     modal.onclick = (e) => { if (e.target === modal) modal.style.setProperty('display', 'none', 'important'); };
 
     try {
-        const snapshot = await db.ref(`seasons/sbeta/showdowns`).once('value');
-        const showdowns = snapshot.val() || {};
+        // Recupera tutte le stagioni anziché solo sbeta
+        const snapshot = await db.ref(`seasons`).once('value');
+        const seasons = snapshot.val() || {};
         const searchName = playerName.toLowerCase().trim();
         let matchStorici = [];
 
         console.log("--- INIZIO ANALISI DATI ELO ---");
 
-        Object.keys(showdowns).forEach(sdId => {
-            const sd = showdowns[sdId];
-            if (sd.matches) {
-                Object.entries(sd.matches).forEach(([matchKey, m]) => {
-                    // Controllo validità base
-                    if (!m.player1Id || !m.player2Id || !m.data) return;
+        Object.keys(seasons).forEach(seasonKey => {
+            // 🛠️ ESCLUSIONE STAGIONE SBETA
+            if (seasonKey === 'sbeta') return;
 
-                    // --- CACCIA ALL'ERRORE (DEBUG) ---
-                    // Se la data contiene 03-16 (16 marzo), logga tutto in rosso
-                    if (m.data && m.data.includes("03-16")) {
-                        console.error(`!!! DATO SOSPETTO TROVATO !!! 
-                        Showdown: ${sdId}
-                        Match: ${matchKey}
-                        Data nel DB: ${m.data}
-                        Oggetto Completo:`, m);
-                    }
-                    // ---------------------------------
+            const showdowns = seasons[seasonKey]?.showdowns || {};
 
-                    const p1 = m.player1Id.toLowerCase().trim();
-                    const p2 = m.player2Id.toLowerCase().trim();
+            Object.keys(showdowns).forEach(sdId => {
+                const sd = showdowns[sdId];
+                if (sd.matches) {
+                    Object.entries(sd.matches).forEach(([matchKey, m]) => {
+                        // Controllo validità base
+                        if (!m.player1Id || !m.player2Id || !m.data) return;
 
-                    if (p1 === searchName || p2 === searchName) {
-                        const base = p1 === searchName ? parseFloat(m.p1EloAtMatch) : parseFloat(m.p2EloAtMatch);
-                        const delta = p1 === searchName ? parseFloat(m.p1DeltaElo) : parseFloat(m.p2DeltaElo);
-                        
-                        if (!isNaN(base) && !isNaN(delta)) {
-                            matchStorici.push({
-                                dataRaw: m.data,
-                                elo: base + delta,
-                                timestamp: new Date(m.data).getTime()
-                            });
+                        // --- CACCIA ALL'ERRORE (DEBUG) ---
+                        if (m.data && m.data.includes("03-16")) {
+                            console.error(`!!! DATO SOSPETTO TROVATO !!! 
+                            Stagione: ${seasonKey}
+                            Showdown: ${sdId}
+                            Match: ${matchKey}
+                            Data nel DB: ${m.data}
+                            Oggetto Completo:`, m);
                         }
-                    }
-                });
-            }
+                        // ---------------------------------
+
+                        const p1 = m.player1Id.toLowerCase().trim();
+                        const p2 = m.player2Id.toLowerCase().trim();
+
+                        if (p1 === searchName || p2 === searchName) {
+                            const base = p1 === searchName ? parseFloat(m.p1EloAtMatch) : parseFloat(m.p2EloAtMatch);
+                            const delta = p1 === searchName ? parseFloat(m.p1DeltaElo) : parseFloat(m.p2DeltaElo);
+                            
+                            if (!isNaN(base) && !isNaN(delta)) {
+                                matchStorici.push({
+                                    dataRaw: m.data,
+                                    elo: base + delta,
+                                    timestamp: new Date(m.data).getTime()
+                                });
+                            }
+                        }
+                    });
+                }
+            });
         });
 
         // Ordine cronologico
