@@ -1831,9 +1831,60 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
 // Array di supporto per mappe tier
 const ORDINE_TIER_REGOLE = ["LC", "NFE", "ZU", "PU", "NU", "RU", "UU", "OU", "Ubers", "AG"];
 
-async function validaTeamDinamico(teamDatiPokeAPI, regolamento, altriTeamEsistenti = []) {
+// 🆕 1. FUNZIONE DI VALIDAZIONE GENERAZIONE CON PROTEZIONE BLINDATA
+function validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati) {
+    const errori = [];
+    if (!regolamento || !regolamento.genRuleType || !regolamento.genRuleValue) return errori;
+
+    // 🛡️ Trasforma qualsiasi dato in ingresso (Array, Oggetto o null) in un Array valido
+    let listaPokemon = [];
+    if (Array.isArray(teamDatiPokeAPI)) {
+        listaPokemon = teamDatiPokeAPI;
+    } else if (teamDatiPokeAPI && typeof teamDatiPokeAPI === 'object') {
+        listaPokemon = Object.values(teamDatiPokeAPI);
+    }
+
+    const genLimite = parseInt(regolamento.genRuleValue);
+
+    listaPokemon.forEach(pkmn => {
+        if (!pkmn || pkmn.erroreDati) return;
+        
+        const nomePkmn = pkmn.name || pkmn.nome || '';
+        const nomeChiave = nomePkmn.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        if (regolamento.genRuleType === "up_to") {
+            if (pkmn.generation > genLimite) {
+                errori.push(`[${nomePkmn}] non è legale: il formato permette solo Gen ${genLimite} (Introdotto in Gen ${pkmn.generation}).`);
+            }
+        } else if (regolamento.genRuleType === "within") {
+            const dati = jsonDati ? jsonDati[nomeChiave] : null;
+            if (!dati || dati.tier === "Illegal" || dati.tier === "Past") {
+                errori.push(`[${nomePkmn}] non è legale: non fa parte del Pokédex per la Gen ${genLimite}.`);
+            }
+        }
+    });
+    return errori;
+}
+
+// 🆕 2. VALIDA TEAM DINAMICO CORRETTA
+async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = []) {
     let tuttiGliErrori = [];
     
+    // 🛡️ Estrazione ed unificazione sicura dei dati dei Pokémon
+    let teamDatiPokeAPI = [];
+    let currentTeamId = null;
+
+    if (Array.isArray(teamInput)) {
+        teamDatiPokeAPI = teamInput;
+    } else if (teamInput && typeof teamInput === 'object') {
+        currentTeamId = teamInput.id || null;
+        if (Array.isArray(teamInput.pokemon)) {
+            teamDatiPokeAPI = teamInput.pokemon;
+        } else if (teamInput.pokemon && typeof teamInput.pokemon === 'object') {
+            teamDatiPokeAPI = Object.values(teamInput.pokemon);
+        }
+    }
+
     if (regolamento.strutturaSito === 'anything_goes') {
         return { valido: true, errori: [] }; 
     }
@@ -1858,9 +1909,6 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento, altriTeamEsisten
             if (resGen && resGen.ok) jsonGen = await resGen.json();
             if (resNatDex && resNatDex.ok) jsonNatDex = await resNatDex.json();
 
-            // 🛠️ MERGE INTELLIGENTE PER "UP_TO":
-            // Inizializziamo con NatDex. Sovrascriviamo con la Gen specifica SOLO se la tier NON è "Illegal" o "Unreleased".
-            // Se un Pokémon (es. Togekiss) è "Illegal" in Gen 9 causa Dex-Cut, manterrà la sua tier storica da NatDex!
             jsonDati = { ...jsonNatDex };
 
             for (const key in jsonGen) {
@@ -1894,22 +1942,20 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento, altriTeamEsisten
         console.error("Errore nel caricamento file validazione:", err);
     }
 
-    // Controlli Standard
+    // Controlli Standard (ora ricevono sempre un Array sicuro)
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
     
     tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
 
-    // CONTROLLO DELLE RESTRIZIONI AVANZATE E DINAMICHE
     if (regolamento.restrizioni) {
         const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento);
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
-    // CONTROLLO SOVRAPPOSIZIONE PER FORMATI "CUSTOM" (Max 2 Pokémon uguali rispetto a team esistenti)
     if (regolamento.strutturaSito === 'custom' && altriTeamEsistenti.length > 0) {
-        const erroriSovrapposizione = validaSovrapposizioneTeam(teamDatiPokeAPI, altriTeamEsistenti);
+        const erroriSovrapposizione = validaSovrapposizioneTeam(teamDatiPokeAPI, altriTeamEsistenti, currentTeamId);
         tuttiGliErrori = tuttiGliErrori.concat(erroriSovrapposizione);
     }
 
@@ -1922,7 +1968,7 @@ async function validaTeamDinamico(teamDatiPokeAPI, regolamento, altriTeamEsisten
 /**
  * Funzione Helper per verificare che il team non condivida più di 2 Pokémon con altri team
  */
-function validaSovrapposizioneTeam(teamCorrente, altriTeam) {
+function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null) {
     const errori = [];
 
     // Estraiamo e normalizziamo i nomi dei Pokémon del team in validazione
@@ -1931,8 +1977,8 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam) {
         .filter(Boolean);
 
     for (const teamEsistente of altriTeam) {
-        // Se si sta modificando un team già esistente, lo ignoriamo durante il controllo
-        if (teamEsistente.id && teamCorrente.id && teamEsistente.id === teamCorrente.id) {
+        // 🆕 Se si sta modificando un team già esistente, lo ignoriamo tramite currentTeamId
+        if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) {
             continue;
         }
 
@@ -1950,7 +1996,7 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam) {
             errori.push(
                 `Il team condivide troppi Pokémon (${pokemonInComune.length}: ${listaNomiFormatted}) con un altro team già registrato (${teamEsistente.nome || 'Team esistente'}). Nei formati custom sono consentiti al massimo 2 Pokémon uguali.`
             );
-            break; // Interrompe al primo conflitto trovato
+            break; 
         }
     }
 
@@ -2126,29 +2172,6 @@ function validaSingoloOperatore(valoreEffettivo, regola) {
     }
 }
 
-function validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati) {
-    const errori = [];
-    if (!regolamento.genRuleType || !regolamento.genRuleValue) return errori;
-    
-    const genLimite = parseInt(regolamento.genRuleValue);
-
-    teamDatiPokeAPI.forEach(pkmn => {
-        if (pkmn.erroreDati) return;
-        const nomeChiave = pkmn.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-        if (regolamento.genRuleType === "up_to") {
-            if (pkmn.generation > genLimite) {
-                errori.push(`[${pkmn.name}] non è legale: il formato permette solo Gen ${genLimite} (Introdotto in Gen ${pkmn.generation}).`);
-            }
-        } else if (regolamento.genRuleType === "within") {
-            const dati = jsonDati ? jsonDati[nomeChiave] : null;
-            if (!dati || dati.tier === "Illegal" || dati.tier === "Past") {
-                errori.push(`[${pkmn.name}] non è legale: non fa parte del Pokédex per la Gen ${genLimite}.`);
-            }
-        }
-    });
-    return errori;
-}
 
 function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     const errori = [];
@@ -2298,12 +2321,16 @@ async function salvaTeamSuFirebase() {
     const inputNome = document.getElementById('admin-team-name'); 
     const selectFormato = document.getElementById('admin-team-cat'); 
     const textareaShowdown = document.getElementById('showdown-input'); 
+    const adminPanel = document.getElementById('admin-panel'); // 🆕 Recuperiamo il pannello admin
 
     if (!inputNome || !selectFormato || !textareaShowdown) return;
 
     const nomeTeamScelto = inputNome.value.trim();
     const idRegolamentoScelto = selectFormato.value;
     const testoShowdown = textareaShowdown.value.trim();
+    
+    // 🆕 Estraiamo l'ID di modifica (se presente)
+    const editingId = adminPanel ? adminPanel.dataset.editingId : null;
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
         alert("Compila tutti i campi.");
@@ -2311,7 +2338,12 @@ async function salvaTeamSuFirebase() {
     }
 
     const listaPokemonEstratti = parseShowdown(testoShowdown); 
-    const datiTeamDaSalvare = { nome: nomeTeamScelto, pokemon: listaPokemonEstratti, categoria: null, dataUltimaModifica: Date.now() };
+    const datiTeamDaSalvare = { 
+        nome: nomeTeamScelto, 
+        pokemon: listaPokemonEstratti, 
+        categoria: null, 
+        dataUltimaModifica: Date.now() 
+    };
 
     let regolamento = null;
     try {
@@ -2325,7 +2357,6 @@ async function salvaTeamSuFirebase() {
         if (!regolamento) { alert("Regolamento non trovato."); return; }
     } catch (error) { alert("Errore database: " + error.message); return; }
 
-    // 🆕 RECUPERO TEAM ESISTENTI PER FORMATO CUSTOM
     let altriTeamEsistenti = [];
     if (regolamento.strutturaSito === 'custom') {
         try {
@@ -2343,8 +2374,14 @@ async function salvaTeamSuFirebase() {
 
     const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
     
-    // 🛠️ Passiamo 'altriTeamEsistenti' alla funzione di validazione
-    const esitoValidazione = await validaTeamDinamico(datiPokeAPI, regolamento, altriTeamEsistenti);
+    // 🆕 Passiamo l'ID corrente al validatore così ignora il confronto con se stesso
+    const oggettoTeamPerValidazione = {
+        id: editingId,
+        nome: nomeTeamScelto,
+        pokemon: datiPokeAPI
+    };
+    
+    const esitoValidazione = await validaTeamDinamico(oggettoTeamPerValidazione, regolamento, altriTeamEsistenti);
 
     if (!esitoValidazione.valido) {
         let outputErrori = `Il team non è legale:\n\n`;
@@ -2354,13 +2391,29 @@ async function salvaTeamSuFirebase() {
     }
 
     try {
-        const teamRef = databaseRef.child('players/didi/teams').push();
         datiTeamDaSalvare.categoria = regolamento.categoria; 
-        await teamRef.set(datiTeamDaSalvare);
-        alert("Team salvato con successo!");
+
+        if (editingId) {
+            // 🆕 SE IN MODIFICA: Aggiorna il nodo esistente
+            datiTeamDaSalvare.id = editingId;
+            await databaseRef.child(`players/didi/teams/${editingId}`).update(datiTeamDaSalvare);
+            alert("Team aggiornato con successo!");
+        } else {
+            // 🆕 SE NUOVO: Genera un nuovo nodo tramite .push()
+            const newTeamRef = databaseRef.child('players/didi/teams').push();
+            datiTeamDaSalvare.id = newTeamRef.key;
+            await newTeamRef.set(datiTeamDaSalvare);
+            alert("Team creato con successo!");
+        }
+
+        // Resettiamo il form e ripuliamo la modalità editing
         textareaShowdown.value = "";
         inputNome.value = "";
-    } catch (error) { alert("Errore salvataggio: " + error.message); }
+        if (adminPanel) delete adminPanel.dataset.editingId;
+
+    } catch (error) { 
+        alert("Errore salvataggio: " + error.message); 
+    }
 }
 
 // Funzione per ELIMINARE
