@@ -1098,7 +1098,7 @@ async function salvaNuovoFormato() {
     eseguiControlloConflitti();
     const boxErrore = document.getElementById('rules-error-summary');
     if (boxErrore && boxErrore.style.display === 'block') {
-        alert("Impossibile salvare: ci sono dei conflitti o degli errori nelle regole inserite.");
+        alert("Error: Unable to save: There are conflicts or errors in the rules entered.");
         return;
     }
 
@@ -1109,15 +1109,15 @@ async function salvaNuovoFormato() {
     
     // VALIDAZIONE BASE ASSOLUTA
     if (!fName || !fName.value.trim()) {
-        alert("Inserisci un nome per il formato.");
+        alert(" Please enter a name for the format.");
         return;
     }
     if (!fDesc || !fDesc.value.trim()) {
-        alert("Inserisci una descrizione breve per il formato.");
+        alert("Please enter a brief description for the format.");
         return;
     }
     if (!fType || !fType.value || fType.value.trim() === "") {
-        alert("Seleziona una tipologia di formato (VGC, Custom o Anything Goes).");
+        alert("Please select a format type (VGC, Custom or Anything Goes).");
         return;
     }
 
@@ -1138,11 +1138,11 @@ async function salvaNuovoFormato() {
         const vgcFormat = document.getElementById('vgc-format');
         
         if (!vgcGen || !vgcGen.value) {
-            alert("Seleziona la Generazione VGC.");
+            alert("Please select the VGC Generation.");
             return;
         }
         if (!vgcFormat || !vgcFormat.value) {
-            alert("Seleziona il Formato Regolamento VGC.");
+            alert("Please select the VGC Rules Format.");
             return;
         }
 
@@ -1163,19 +1163,19 @@ async function salvaNuovoFormato() {
         const mTier = document.getElementById('mandatory-tier');
 
         if (!mStyle || !mStyle.value) {
-            alert("Seleziona lo Stile di Lotta (Singolo/Doppio).");
+            alert("Please select the Battle Style (Single/Doubles).");
             return;
         }
         if (!mGenType || !mGenType.value) {
-            alert("Seleziona il Tipo di Regola per la Generazione.");
+            alert("Please select the Generation Rule Type.");
             return;
         }
         if (!mGenVal || !mGenVal.value) {
-            alert("Seleziona il valore della Generazione.");
+            alert("Please select the Generation value.");
             return;
         }
         if (!mTier || !mTier.value) {
-            alert("Seleziona la Tier di base (es. OU, Uber, UU).");
+            alert("Please select the base Tier (e.g., OU, Uber, UU).");
             return;
         }
 
@@ -1239,12 +1239,12 @@ async function salvaNuovoFormato() {
 
             formatoRef = databaseRef.child(`regolamenti/${idFormatoInModifica}`);
             await formatoRef.set(payload);
-            alert("Formato e relative dipendenze aggiornati con successo!");
+            alert("Format and relative dependencies updated successfully!");
 
         } else {
             formatoRef = databaseRef.child('regolamenti').push();
             await formatoRef.set(payload);
-            alert("Nuovo formato creato con successo!");
+            alert("New format created successfully!");
         }
 
         // --- RESET DELLO STATO E DEL POPUP ---
@@ -1264,8 +1264,8 @@ async function salvaNuovoFormato() {
         if (typeof caricaEVisualizzaFormati === 'function') caricaEVisualizzaFormati();
         
     } catch (error) {
-        console.error("Errore durante il salvataggio o la migrazione:", error);
-        alert("Errore durante il salvataggio: " + error.message);
+        console.error("Error during saving or migration:", error);
+        alert("Error during saving: " + error.message);
     }
 }
 
@@ -1311,8 +1311,8 @@ async function eseguiMigrazioneGlobaleAssoluta(vecchioNome, nuovoNome) {
         console.log(`✅ MIGRAZIONE GLOBALE COMPLETATA! Il nome "${vecchioNome}" è stato sostituito con "${nuovoNome}".`);
 
     } catch (error) {
-        console.error("❌ Errore critico durante la migrazione globale:", error);
-        alert("Errore durante la migrazione globale: " + error.message);
+        console.error("❌ Error critical during global migration:", error);
+        alert("Error during global migration: " + error.message);
     }
 }
 
@@ -1365,9 +1365,9 @@ auth.onAuthStateChanged(async (user) => {
                     console.warn("⚠️ Percorso colore non trovato nel DB");
                 }
             }
-        } catch (e) { console.error("Errore debug:", e); }
+        } catch (e) { console.error("Debug Error:", e); }
     } else {
-        console.log("Utente non loggato.");
+        console.log("User not logged in.");
         if (authText) authText.innerText = "Login";
         if (topBar) topBar.style.backgroundColor = "#FFA500";
     }
@@ -1393,8 +1393,8 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
             // L'ascoltatore auth.onAuthStateChanged qui sotto aggiornerà tutto da solo.
         })
         .catch((error) => {
-            console.error("Errore login:", error);
-            errorEl.innerText = "Email o Password errati.";
+            console.error("Login Error:", error);
+            errorEl.innerText = "Email or Password are incorrect.";
         });
 });
 
@@ -1441,7 +1441,7 @@ async function caricaColoriPlayers() {
         }
         console.log("Colori mappati:", playerColors);
     } catch (error) {
-        console.error("Errore caricamento:", error);
+        console.error("Load Error:", error);
     }
 }
 
@@ -1603,7 +1603,7 @@ async function applicaColoreUtente(user) {
             }
         }
     } catch (e) {
-        console.error("❌ Errore recupero colore:", e);
+        console.error("❌ Error retrieving color:", e);
     }
 }
 
@@ -1820,7 +1820,7 @@ async function caricaEVisualizzaFormati() {
         });
 
     } catch (error) {
-        console.error("Errore nel caricamento della griglia formati:", error);
+        console.error("Error loading formats grid:", error);
     } finally {
         // GARANTISCE CHE IL LOADER VENGA NASCOSTO SIA IN CASO DI SUCCESSO CHE DI ERRORE
         nascondiLoader(loader);
@@ -1908,21 +1908,21 @@ function apriModaleModificaFormato(id, dataJsonB64) {
     if (modal) modal.style.setProperty('display', 'flex', 'important');
 
   } catch (e) {
-    console.error("Errore nel caricamento dei dati di modifica:", e);
+    console.error("Error loading modification data:", e);
   }
 }
 
 async function eliminaFormato(id, nomeFormato) {
-  const conferma = confirm(`Sei sicuro di voler eliminare definitivamente il formato "${nomeFormato}"?\nL'operazione non toccherà i punti dei giocatori.`);
+  const conferma = confirm(`Are you sure you want to permanently delete the format "${nomeFormato}"?\nThis action will not affect players' points.`);
   if (!conferma) return;
 
   try {
     await db.ref('regolamenti').child(id).remove();
-    alert(`Il formato "${nomeFormato}" è stato rimosso.`);
+    alert(`The format "${nomeFormato}" has been removed.`);
     caricaEVisualizzaFormati(); // Rinfresca la vista
   } catch (error) {
-    console.error("Errore durante l'eliminazione:", error);
-    alert("Errore: " + error.message);
+    console.error("Error during deletion:", error);
+    alert("Error: " + error.message);
   }
 }
 

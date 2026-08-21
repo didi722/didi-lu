@@ -215,7 +215,7 @@ async function caricaColoriPlayers() {
         }
         console.log("Colori mappati:", playerColors);
     } catch (error) {
-        console.error("Errore caricamento:", error);
+        console.error("Load Error:", error);
     }
 }
 
@@ -324,7 +324,7 @@ async function initHub() {
     }
 
     if (typeof seasonId === 'undefined' || !seasonId) {
-        alert("ID Stagione mancante nell'URL!");
+        alert("Season ID missing in the URL!");
         nascondiLoader(loader);
         return;
     }
@@ -419,7 +419,7 @@ async function initHub() {
                     }
                 }
             } catch (err) {
-                console.error("Errore durante il rendering dei dati dell'Hub:", err);
+                console.error("Error during Hub data rendering:", err);
             } finally {
                 // Nasconde il loader solo al primo caricamento dei dati real-time
                 if (isInitialLoad) {
@@ -429,7 +429,7 @@ async function initHub() {
             }
         });
     } catch (error) {
-        console.error("Errore critico durante l'inizializzazione dell'Hub:", error);
+        console.error("Critical error during Hub initialization:", error);
         nascondiLoader(loader);
     }
 }
@@ -444,11 +444,11 @@ async function gestisciDisiscrizione() {
     const chiaveEsatta = Object.keys(iscritti).find(k => k.toLowerCase() === nomeLoggatoLower);
 
     if (!chiaveEsatta) {
-        alert("Errore: non risulti iscritto a questa stagione.");
+        alert("Error: You are not registered for this season.");
         return;
     }
 
-    if (!confirm("Sei sicuro di volerti disiscrivere? Tutti i tuoi team associati verranno rimossi.")) {
+    if (!confirm("Are you sure you want to unregister? All your teams will be removed.")) {
         return;
     }
     
@@ -487,8 +487,8 @@ async function gestisciDisiscrizione() {
         window.location.href = "index.html";
 
     } catch (error) {
-        console.error("Errore durante la disiscrizione:", error);
-        alert("Errore durante la disiscrizione. Riprova.");
+        console.error("Error during unregistering:", error);
+        alert("Error during unregistering. Please try again.");
         location.reload();
     }
 }
@@ -1301,7 +1301,7 @@ async function inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTea
         await db.ref(`seasons/${seasonId}/teams_iscritti/${format}/${nomeUtenteClean}`).set(payload);
         closeTeamModal();
     } catch (e) {
-        console.error("Errore salvataggio:", e);
+        console.error("Save Error:", e);
     }
 }
 
@@ -1310,7 +1310,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
 
     if (status === 'open') {
         if (!user) {
-            alert("Per iscriverti devi prima effettuare il login!");
+            alert("To register, you must first log in!");
             if (typeof toggleLoginModal === 'function') toggleLoginModal();
             return;
         }
@@ -1568,11 +1568,11 @@ auth.onAuthStateChanged(async (user) => {
             }
 
         } catch (e) { 
-            console.error("Errore nel processo Auth:", e); 
+            console.error("Error in Auth process:", e); 
         }
     } else {
         // Utente non loggato
-        console.log("Modalità Guest.");
+        console.log("Guest mode.");
         if (authText) authText.innerText = "Login";
         if (topBar) topBar.style.setProperty('background-color', '#FFA500', 'important');
     
@@ -1599,8 +1599,8 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
             // L'ascoltatore auth.onAuthStateChanged qui sotto aggiornerà tutto da solo.
         })
         .catch((error) => {
-            console.error("Errore login:", error);
-            errorEl.innerText = "Email o Password errati.";
+            console.error("Login Error:", error);
+            errorEl.innerText = "Email or Password are incorrect.";
         });
 });
 
@@ -1740,13 +1740,13 @@ async function resetPasswordDalLogin() {
 
     // 1. Controlla se l'utente ha inserito l'email
     if (!emailValue) {
-        alert("⚠️ Inserisci il tuo indirizzo email nel campo sopra per richiedere il reset della password.");
+        alert("⚠️ Write you email address in the field above to request a password reset.");
         if (emailInput) emailInput.focus();
         return;
     }
 
     // 2. Chiedi conferma
-    if (!confirm(`Inviare il link per reimpostare la password a: ${emailValue}?`)) return;
+    if (!confirm(`Send a password reset link to: ${emailValue}?`)) return;
 
     // 3. Attiva l'overlay della Pokeball se presente nella pagina di login
     const loader = document.getElementById('loading-overlay');
@@ -1756,20 +1756,20 @@ async function resetPasswordDalLogin() {
         // 4. Chiamata a Firebase Auth tramite l'email passata dall'input
         await firebase.auth().sendPasswordResetEmail(emailValue);
         
-        alert(`📧 Email di ripristino inviata!\n\nControlla la casella di posta (e la cartella Spam) all'indirizzo: ${emailValue}`);
+        alert(`📧 Reset email sent!\n\nCheck your inbox (and spam folder) at: ${emailValue}`);
         
     } catch (error) {
-        console.error("Errore durante il reset della password dal login:", error);
+        console.error("Error during password reset from login:", error);
         
         // Gestione degli errori tipici in fase di login
         if (error.code === 'auth/user-not-found') {
-            alert("Errore: Questo indirizzo email non è registrato nel sistema.");
+            alert("Error: This email address is not registered in the system.");
         } else if (error.code === 'auth/invalid-email') {
-            alert("Errore: L'indirizzo email inserito non è valido.");
+            alert("Error: The email address entered is not valid.");
         } else if (error.code === 'auth/too-many-requests') {
-            alert("Errore: Troppi tentativi di recente. Riprova tra qualche minuto.");
+            alert("Error: Too many recent requests. Please try again in a few minutes.");
         } else {
-            alert("Errore: " + error.message);
+            alert("Error: " + error.message);
         }
     } finally {
         // 5. Spegni il loader

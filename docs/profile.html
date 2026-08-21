@@ -253,11 +253,11 @@ auth.onAuthStateChanged(async (user) => {
                 // inizializzaAppearance(); 
 
             } else {
-                console.error("Nome utente non trovato nel database.");
+                console.error("User name not found in the database.");
                 if (authText) authText.innerText = "Profile Error";
             }
         } catch (error) {
-            console.error("Errore durante il recupero dei dati utente:", error);
+            console.error("Error occurred while fetching user data:", error);
             if (authText) authText.innerText = "Logged In";
         }
     } else {
@@ -350,13 +350,13 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     // Firebase Auth Login
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            console.log("Login effettuato:", userCredential.user);
+            console.log("Login success:", userCredential.user);
             toggleLoginModal();
             // Il refresh non è obbligatorio ma aiuta a resettare lo stato della UI
             location.reload(); 
         })
         .catch((error) => {
-            errorEl.innerText = "Email o Password errati.";
+            errorEl.innerText = "Invalid email or password.";
             console.error(error);
         });
 });
@@ -396,7 +396,7 @@ function toggleBadge(badgeId, element) {
     } else {
         // Se non è selezionato, lo aggiungiamo (limite massimo 3 per estetica)
         if (badgeSelezionati.length >= 3) {
-            alert("Puoi mostrare al massimo 3 badge!");
+            alert("You can display a maximum of 3 badges!");
             return;
         }
         badgeSelezionati.push(badgeId);
@@ -578,7 +578,7 @@ async function inizializzaPkmSelector() {
 
         renderPkmList(listaCompletaPokemon);
     } catch (e) {
-        console.error("Errore fetch Pokémon:", e);
+        console.error("Error fetching Pokémon:", e);
     }
 }
 
@@ -747,10 +747,10 @@ async function caricaDatiProfilo() {
         // F. INIEZIONE TITOLI TRAINER
         await integraTitoliNelloSnapshot(playerID, playerData);
 
-        console.log("✅ Profilo Neubrutalist ricaricato con Pokémon preferito e Titoli.");
+        console.log("✅ Profile reloaded with favorite Pokémon and Titles.");
 
     } catch (e) {
-        console.error("❌ Errore nel caricamento profilo:", e);
+        console.error("❌ Error occurred while loading profile:", e);
     }
 }
 
@@ -818,8 +818,8 @@ async function integraTitoliNelloSnapshot(pId, playerData) {
         });
 
     } catch (err) {
-        console.error("❌ Errore durante il caricamento dei titoli:", err);
-        selectTitoli.innerHTML = '<option value="">Errore caricamento titoli</option>';
+        console.error("❌ Error occurred while loading titles:", err);
+        selectTitoli.innerHTML = '<option value="">Error loading titles</option>';
     }
 }
 
@@ -889,8 +889,8 @@ async function inizializzaPaginaDinamica() {
         // Aspetta che i dati del profilo e la musica vengano scaricati (max 7 secondi)
         await Promise.race([
             Promise.all([
-                caricaDatiProfilo().catch(err => console.error("❌ Errore Profilo:", err)),
-                popolaSelettoreMusica().catch(err => console.error("❌ Errore Musica:", err))
+                caricaDatiProfilo().catch(err => console.error("❌ Error occurred while loading profile:", err)),
+                popolaSelettoreMusica().catch(err => console.error("❌ Error occurred while loading music:", err))
             ]),
             creaTimeout(7000)
         ]);
@@ -1094,7 +1094,7 @@ function toggleMusic() {
     const musicBtn = document.getElementById('music-control');
 
     if (!player || !musicBtn) {
-        console.error("Elementi audio o tasto non trovati in questa pagina.");
+        console.error("Elements not found in this page.");
         return;
     }
 
@@ -1104,7 +1104,7 @@ function toggleMusic() {
             musicBtn.classList.remove('muted');
             localStorage.setItem('userMusicPref', 'on');
         }).catch(error => {
-            console.warn("Autoplay bloccato o errore riproduzione:", error);
+            console.warn("Autoplay blocked or playback error:", error);
         });
         
     } else {
@@ -1155,7 +1155,7 @@ document.addEventListener('click', function(event) {
 });
 
 async function salvaModificheProfilo() {
-    if (!playerID) return alert("Errore: Utente non identificato.");
+    if (!playerID) return alert("Error: User not identified.");
 
     const btn = document.querySelector('.save-btn-hub');
     
@@ -1265,7 +1265,7 @@ async function salvaModificheProfilo() {
         // Se sono stati trovati duplicati, interrompiamo il salvataggio
         if (duplicati.length > 0) {
             const campiUnici = [...new Set(duplicati)];
-            alert(`❌ Salvataggio annullato!\n\nI seguenti elementi sono già stati scelti da un altro giocatore:\n• ${campiUnici.join('\n• ')}`);
+            alert(`❌ Saving cancelled!\n\nThe following items have already been chosen by another player:\n• ${campiUnici.join('\n• ')}`);
 
             if (btn) {
                 btn.disabled = false;
@@ -1277,8 +1277,8 @@ async function salvaModificheProfilo() {
         }
 
     } catch (errorCheck) {
-        console.error("❌ Errore durante la verifica duplicati:", errorCheck);
-        alert("Errore di rete durante la verifica unicità: " + errorCheck.message);
+        console.error("❌ Error during duplicate verification:", errorCheck);
+        alert("Network error during uniqueness check: " + errorCheck.message);
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -1306,8 +1306,8 @@ async function salvaModificheProfilo() {
         }, 1000);
     })
     .catch(e => {
-        console.error("❌ Errore durante il salvataggio:", e);
-        alert("Errore nel salvataggio: " + e.message);
+        console.error("❌ Error during saving:", e);
+        alert("Error during saving: " + e.message);
         if(btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -1513,8 +1513,8 @@ async function popolaSelettoreMusica() {
             }
         });
     } catch (e) {
-        console.error("Errore playlist:", e);
-        listaUI.innerHTML = '<li style="padding:10px; color:red;">Errore nel caricamento</li>';
+        console.error("Error loading playlist:", e);
+        listaUI.innerHTML = '<li style="padding:10px; color:red;">Error occurred while loading</li>';
     }
 }
 
@@ -1548,12 +1548,12 @@ async function richiediResetPasswordEmail() {
     const user = firebase.auth().currentUser;
     
     if (!user) {
-        alert("⚠️ Errore: Sessione non valida o utente non autenticato.");
+        alert("⚠️ Error: Invalid session or user not authenticated.");
         return;
     }
 
     // Chiediamo una conferma nativa all'utente prima di procedere
-    if (!confirm(`Inviare un'email di reset password all'indirizzo ${user.email}?`)) return;
+    if (!confirm(`Send a password reset email to ${user.email}?`)) return;
 
     // 2. Attivazione del loader (Pokeball o overlay di caricamento)
     const loader = document.getElementById('loading-overlay');
@@ -1563,17 +1563,17 @@ async function richiediResetPasswordEmail() {
         // 3. Chiamata ufficiale a Firebase Auth per l'invio dell'email di reset
         await firebase.auth().sendPasswordResetEmail(user.email);
         
-        alert(`📧 Email inviata con successo!\n\nAbbiamo inviato un link sicuro a: ${user.email}\nControlla la tua casella di posta (e lo Spam) per impostare la nuova password.`);
+        alert(`📧 Password reset email sent!\n\nCheck your inbox (and spam folder) at: ${user.email}`);
         
     } catch (error) {
-        console.error("Errore durante l'invio dell'email di reset:", error);
+        console.error("Error during password reset:", error);
         
         if (error.code === 'auth/user-not-found') {
-            alert("Errore: Nessun utente corrispondente a questa email.");
+            alert("Error: No user corresponding to this email.");
         } else if (error.code === 'auth/too-many-requests') {
-            alert("Errore: Troppe richieste inviate di recente. Riprova tra qualche minuto.");
+            alert("Error: Too many requests sent recently. Please try again in a few minutes.");
         } else {
-            alert("Errore tecnico durante l'invio: " + error.message);
+            alert("Technical error during sending: " + error.message);
         }
     } finally {
         // 4. Disattivazione del loader
@@ -1587,13 +1587,13 @@ async function resetPasswordDalLogin() {
 
     // 1. Controlla se l'utente ha inserito l'email
     if (!emailValue) {
-        alert("⚠️ Inserisci il tuo indirizzo email nel campo sopra per richiedere il reset della password.");
+        alert("⚠️ Please enter your email address in the field above to request a password reset.");
         if (emailInput) emailInput.focus();
         return;
     }
 
     // 2. Chiedi conferma
-    if (!confirm(`Inviare il link per reimpostare la password a: ${emailValue}?`)) return;
+    if (!confirm(`Send a password reset link to: ${emailValue}?`)) return;
 
     // 3. Attiva l'overlay della Pokeball se presente nella pagina di login
     const loader = document.getElementById('loading-overlay');
@@ -1603,20 +1603,20 @@ async function resetPasswordDalLogin() {
         // 4. Chiamata a Firebase Auth tramite l'email passata dall'input
         await firebase.auth().sendPasswordResetEmail(emailValue);
         
-        alert(`📧 Email di ripristino inviata!\n\nControlla la casella di posta (e la cartella Spam) all'indirizzo: ${emailValue}`);
+        alert(`📧 Password reset email sent!\n\nCheck your inbox (and spam folder) at: ${emailValue}`);
         
     } catch (error) {
-        console.error("Errore durante il reset della password dal login:", error);
+        console.error("Error during password reset from login:", error);
         
         // Gestione degli errori tipici in fase di login
         if (error.code === 'auth/user-not-found') {
-            alert("Errore: Questo indirizzo email non è registrato nel sistema.");
+            alert("Error: This email address is not registered in the system.");
         } else if (error.code === 'auth/invalid-email') {
-            alert("Errore: L'indirizzo email inserito non è valido.");
+            alert("Error: The email address entered is not valid.");
         } else if (error.code === 'auth/too-many-requests') {
-            alert("Errore: Troppi tentativi di recente. Riprova tra qualche minuto.");
+            alert("Error: Too many attempts recently. Please try again in a few minutes.");
         } else {
-            alert("Errore: " + error.message);
+            alert("Error: " + error.message);
         }
     } finally {
         // 5. Spegni il loader

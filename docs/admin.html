@@ -206,19 +206,19 @@ firebase.auth().onAuthStateChanged(async (user) => {
                 caricaStagioni();
             } else {
                 // Utente loggato ma SENZA permessi da admin (es. "player")
-                console.warn("Accesso negato: l'utente non ha il ruolo di amministratore.");
-                alert("Accesso negato! Non disponi dei permessi da amministratore per questa pagina.");
+                console.warn("Access denied: the user does not have the administrator role.");
+                alert("Access denied! You do not have administrator permissions for this page.");
                 window.location.href = "index.html";
             }
         } catch (error) {
-            console.error("Errore durante la verifica dei permessi:", error);
-            alert("Si è verificato un errore durante la verifica del tuo account.");
+            console.error("Error during permission verification:", error);
+            alert("An error occurred while verifying your account.");
             window.location.href = "index.html";
         }
     } else {
         // L'utente NON è loggato
-        console.warn("Nessun utente loggato. Accesso negato.");
-        alert("Devi effettuare l'accesso per gestire il pannello di controllo.");
+        console.warn("No user logged in. Access denied.");
+        alert("You must log in to manage the control panel.");
         window.location.href = "index.html"; 
     }
 });
@@ -310,15 +310,15 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
 
         // 2. SE IL NUOVO STATO È "CLOSED", CALCOLA E SALVA IL VINCITORE
         if (nuovoStato === 'closed') {
-            console.log(`Rilevato stato CLOSED per ${idStagione}. Calcolo vincitore...`);
+            console.log(`CLOSED state detected for ${idStagione}. Calculating winner...`);
             const vincitore = await salvaVincitoreStagione(idStagione);
-            alert(`Stagione Chiusa! Vincitore salvato: ${vincitore}`);
+            alert(`Season Closed! Winner saved: ${vincitore}`);
         }
         
         caricaStagioni(); 
     } catch (e) {
-        console.error("Errore nel cambio stato:", e);
-        alert("Impossibile aggiornare lo stato.");
+        console.error("Error during status change:", e);
+        alert("Unable to update the status.");
     }
 }
 
@@ -359,13 +359,13 @@ function aggiungiFormatoTag() {
     
     // Controlli: non duplicati e non oltre il limite
     if (formatiSelezionati.includes(nomeFormato)) {
-        alert("Formato già aggiunto!");
+        alert("This format is already added!");
         select.value = "";
         return;
     }
     
     if (formatiSelezionati.length >= target) {
-        alert(`Hai già selezionato i ${target} formati richiesti!`);
+        alert(`You have already selected the required ${target} formats!`);
         select.value = "";
         return;
     }
@@ -435,7 +435,7 @@ async function apriModaleEdit(idStagione) {
     try {
         const snapshot = await db.ref(`seasons/${idStagione}`).once('value');
         const data = snapshot.val();
-        if (!data) return alert("Stagione non trovata!");
+        if (!data) return alert("Season not found!");
 
         const season = data.info ? data.info : data;
         editingSeasonId = idStagione;
@@ -507,7 +507,7 @@ async function apriModaleEdit(idStagione) {
 
 async function salvaModificheStagione() {
     if (!editingSeasonId) {
-        alert("Errore: ID stagione mancante. Impossibile sovrascrivere.");
+        alert("Error: Season ID missing. Unable to overwrite.");
         return;
     }
 
@@ -545,14 +545,14 @@ async function salvaModificheStagione() {
 
         await db.ref(`seasons/${editingSeasonId}/info`).update(updatedData);
 
-        alert(`Stagione ${editingSeasonId} sovrascritta con successo!`);
+        alert(`Season ${editingSeasonId} overwritten successfully!`);
         
         editingSeasonId = null;
         location.reload();
 
     } catch (e) {
-        console.error("Errore nel salvataggio modifiche:", e);
-        alert("Errore durante l'aggiornamento dei dati.");
+        console.error("Error saving changes:", e);
+        alert("An error occurred while updating the data.");
     }
 }
 
@@ -564,16 +564,16 @@ async function eliminaStagioneCorrente(idDaEliminare) {
     const rigaStagione = document.querySelector(`tr[data-id="${idDaEliminare}"]`);
     const nomeStagione = rigaStagione ? rigaStagione.querySelector('.nome-cella').innerText : idDaEliminare;
 
-    if (confirm(`Sei sicuro di voler eliminare definitivamente la stagione "${nomeStagione}"? questa azione non è reversibile.`)) {
+    if (confirm(`Are you sure you want to permanently delete the season "${nomeStagione}"? This action is irreversible.`)) {
         try {
             // Riferimento preciso al nodo da cancellare
             await db.ref(`seasons/${idDaEliminare}`).remove();
             
-            alert("Stagione eliminata con successo!");
+            alert("Season deleted successfully!");
             location.reload();
         } catch (e) {
-            console.error("Errore eliminazione:", e);
-            alert("Errore tecnico: Impossibile eliminare la stagione.");
+            console.error("Error during deletion:", e);
+            alert("Technical error: Unable to delete the season.");
         }
     }
 }
@@ -714,7 +714,7 @@ function aggiornaCalcoloDinamico() {
 async function creaNuovaStagione() {
     try {
         const nomeStagione = document.getElementById('new-season-name').value;
-        if (!nomeStagione) return alert("Inserisci un nome per la stagione!");
+        if (!nomeStagione) return alert("Please enter a name for the season!");
 
         const metodo = document.getElementById('metodo-selezione-tendina').value;
         const numFormatiTarget = parseInt(document.getElementById('num-formati-target').value) || 1;
@@ -729,7 +729,7 @@ async function creaNuovaStagione() {
             });
             
             if (formatiFinali.length < numFormatiTarget) {
-                return alert(`Seleziona almeno ${numFormatiTarget} formati!`);
+                return alert(`Please select at least ${numFormatiTarget} formats!`);
             }
         } else {
             const regSnapshot = await db.ref('regolamenti').once('value');
@@ -741,7 +741,7 @@ async function creaNuovaStagione() {
                 });
             }
             if (tuttiIFormati.length < numFormatiTarget) {
-                return alert("Formati insufficienti nel database!");
+                return alert("Insufficient formats in the database!");
             }
             for (let i = tuttiIFormati.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -787,12 +787,12 @@ async function creaNuovaStagione() {
 
         await db.ref(`seasons/${nuovoID}/info`).set(seasonInfo);
 
-        alert(`Stagione ${nuovoID} creata!`);
+        alert(`Season ${nuovoID} created!`);
         location.reload();
 
     } catch (e) {
-        console.error("Errore:", e);
-        alert("Errore durante la creazione.");
+        console.error("Error:", e);
+        alert("An error occurred while creating the season.");
     }
 }
 
@@ -961,7 +961,7 @@ async function modificaPlayer(nomePlayer, realUid) {
     const snapshot = await rootRef.once('value');
 
     if (!snapshot.exists()) {
-      alert("Database non trovato.");
+      alert("Database not found.");
       return;
     }
 
@@ -1006,11 +1006,11 @@ async function modificaPlayer(nomePlayer, realUid) {
     // Salvataggio nel database
     await rootRef.set(updatedData);
 
-    alert(`Player "${vecchioNome}" aggiornato in "${nCap}"! L'UID (${realUid}) è stato preservato.`);
+    alert(`Player "${vecchioNome}" updated to "${nCap}"! The UID (${realUid}) has been preserved.`);
     location.reload();
   } catch (error) {
-    console.error("Errore durante la modifica del player:", error);
-    alert("Si è verificato un errore durante l'aggiornamento del database.");
+    console.error("Error during player modification:", error);
+    alert("An error occurred while updating the database.");
   }
 }
 
@@ -1021,7 +1021,7 @@ async function creaNuovoPlayerAdmin() {
     const password = "password123"; 
 
     if (!nome || !email) {
-        alert("Inserisci nome ed email!");
+        alert("Please enter a name and email!");
         return;
     }
 
@@ -1074,14 +1074,14 @@ async function creaNuovoPlayerAdmin() {
             descrizione: "Lista team ancora vuota" 
         });
 
-        alert(`Giocatore ${nome} creato con successo! Struttura info, teams e stats pronta.`);
+        alert(`Player ${nome} created successfully! Info, teams and stats structure is ready.`);
         
         document.getElementById('new-player-name').value = "";
         document.getElementById('new-player-email').value = "";
 
     } catch (error) {
-        console.error("Errore durante la creazione:", error);
-        alert("Errore: " + error.message);
+        console.error("Error during player creation:", error);
+        alert("Error: " + error.message);
     }
 }
 
@@ -1089,7 +1089,7 @@ async function eliminaPlayer(nomePlayer) {
     // 1. Pulizia del nome per sicurezza (minuscolo come nel database)
     const nomeID = nomePlayer.toLowerCase().trim();
     
-    const conferma = confirm(`ELIMINAZIONE TOTALE: Vuoi cancellare definitivamente ${nomeID.toUpperCase()}?`);
+    const conferma = confirm(`PERMANENT DELETION: Do you want to permanently delete ${nomeID.toUpperCase()}?`);
     
     if (conferma) {
         try {
@@ -1112,14 +1112,14 @@ async function eliminaPlayer(nomePlayer) {
             await db.ref(`players/${nomeID}`).set(null);
             console.log(`Rimosso intero nodo players/${nomeID}`);
 
-            alert(`Giocatore ${nomeID.toUpperCase()} rimosso con successo da ogni archivio.`);
+            alert(`Player ${nomeID.toUpperCase()} removed successfully from all archives.`);
             
             // 5. Refresh tabella
             if (typeof caricaListaPlayers === "function") caricaListaPlayers();
 
         } catch (e) {
-            console.error("Errore critico durante l'eliminazione:", e);
-            alert("Errore tecnico: il database non ha risposto correttamente.");
+            console.error("Critical Error during deletion:", e);
+            alert("Technical Error: The database did not respond correctly.");
         }
     }
 }

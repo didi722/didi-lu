@@ -254,11 +254,11 @@ auth.onAuthStateChanged(async (user) => {
                 inizializzaPaginaBox();
 
             } else {
-                console.error("Nome utente non trovato nel database per l'UID:", user.uid);
+                console.error("Username not found in the database for UID:", user.uid);
                 if (authText) authText.innerText = "Profile Error";
             }
         } catch (error) {
-            console.error("Errore durante il recupero dei dati utente:", error);
+            console.error("Error while retrieving user data:", error);
             if (authText) authText.innerText = "Logged In";
             // Proviamo comunque a inizializzare se playerID è gestito altrove
             // inizializzaPaginaBox(); 
@@ -363,7 +363,7 @@ async function caricaColoriPlayers() {
         }
         console.log("Colori mappati:", playerColors);
     } catch (error) {
-        console.error("Errore caricamento:", error);
+        console.error("Error loading colors:", error);
     }
 }
 
@@ -468,10 +468,57 @@ function nascondiLoader() {
     }, 500); // Durata del fade-out CSS
 }
 
+async function scaricaDati() {
+    return new Promise((resolve, reject) => {
+        if (!playerID) {
+            console.warn("playerID non ancora disponibile...");
+            return resolve([]);
+        }
+
+        // Usiamo .once('value') all'avvio o lasciamo l'ascoltatore .on
+        db.ref(`players/${playerID}/teams`).on('value', (snapshot) => {
+            const dataTeams = snapshot.val();
+            
+            if (dataTeams) {
+                let tempTeams = Object.keys(dataTeams).map(key => {
+                    const team = dataTeams[key];
+                    const s = team.stats || {};
+                    
+                    let nomiPokemon = "";
+                    if (team.pokemon && Array.isArray(team.pokemon)) {
+                        nomiPokemon = team.pokemon.map(p => p ? p.nome : "").join(" ");
+                    } else if (team.pokemon && typeof team.pokemon === 'object') {
+                        nomiPokemon = Object.values(team.pokemon).map(p => p ? p.nome : "").join(" ");
+                    }
+
+                    return {
+                        ...team,
+                        id: key,
+                        vittorie: Number(s.won) || 0,
+                        sconfitte: Number(s.lost) || 0,
+                        giocate: Number(s.played) || 0,
+                        setVinti: Number(s.setW) || 0,
+                        setPersi: Number(s.setL) || 0,
+                        puntiFatti: Number(s.punti) || 0, 
+                        tuttoIlTesto: ((team.nome || "") + " " + (team.categoria || "") + " " + nomiPokemon).toLowerCase()
+                    };
+                });
+
+                tuttiITeam = tempTeams;
+                resolve(tuttiITeam);
+            } else {
+                tuttiITeam = [];
+                resolve([]);
+            }
+        }, (error) => {
+            reject(error);
+        });
+    });
+}
+
 async function inizializzaPaginaBox() {
     const loader = document.getElementById('poke-loader');
     
-    // Mostra il loader all'inizio dell'operazione
     if (loader) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
@@ -496,9 +543,7 @@ async function inizializzaPaginaBox() {
         const topBar = document.querySelector('.top-bar');
         const titoloDisplay = document.querySelector('.hub-title-display');
 
-        if (topBar) {
-            topBar.style.backgroundColor = userColor;
-        }
+        if (topBar) topBar.style.backgroundColor = userColor;
 
         if (titoloDisplay) {
             titoloDisplay.style.backgroundColor = "#000"; 
@@ -506,35 +551,39 @@ async function inizializzaPaginaBox() {
             titoloDisplay.innerHTML = `<span id="player-name-placeholder">${nomeFormattato.toUpperCase()}</span>'S BOX`;
         }
 
-        // 3. Applicazione variabili colore globali
         if (typeof applicaPaletteUtente === "function") {
             applicaPaletteUtente(userColor);
         }
 
-        // 4. Caricamento dati e musica
         if (typeof sincronizzaCategorie === "function") {
             await sincronizzaCategorie(); 
         }
         
+        // 3. ATTENDIAMO che i team siano stati scaricati ed elaborati
         await scaricaDati(); 
 
         if (typeof ascoltaMusicaFirebase === "function") {
             ascoltaMusicaFirebase();
         }
 
-        // 5. Ordinamento e filtri iniziali
+        // 4. Impostiamo l'ordinamento e mostriamo i team A SCHERMO
         const sortFilter = document.getElementById('sortFilter');
         if (sortFilter) {
             sortFilter.value = 'win';
-            if (typeof applicaFiltri === "function") applicaFiltri();
         }
 
-        console.log(`✅ Box caricato con successo per ${nomeFormattato}`);
+        // Lancia il rendering effettivo
+        if (typeof applicaFiltri === "function") {
+            applicaFiltri();
+        } else if (typeof renderizza === "function") {
+            renderizza(tuttiITeam);
+        }
+
+        console.log(`✅ Box loaded successfully for ${nomeFormattato}. Teams found: ${tuttiITeam.length}`);
 
     } catch (e) {
-        console.error("❌ Errore durante l'inizializzazione della Box:", e);
+        console.error("❌ Error during Box initialization:", e);
     } finally {
-        // Margine di 300ms prima di far scomparire il loader
         setTimeout(nascondiLoader, 300);
     }
 }
@@ -613,7 +662,7 @@ function apriAdminProtetto() {
         backdrop.style.display = 'block';
         adminPanel.style.display = 'block';
     } else {
-        console.error("Errore: Elementi del modale non trovati nel DOM.");
+        console.error("Error: Modal elements not found in the DOM.");
     }
 }
 
@@ -726,68 +775,6 @@ document.addEventListener('click', () => {
 }, { once: true });
 
 
-async function scaricaDati() {
-    try {
-        // Verifichiamo che il playerID sia disponibile
-        if (!playerID) {
-            console.warn("playerID non ancora disponibile...");
-            return;
-        }
-
-        // 1. Puntiamo al nodo dei team dell'utente loggato
-        db.ref(`players/${playerID}/teams`).on('value', (snapshot) => {
-            const dataTeams = snapshot.val();
-            
-            if (dataTeams) {
-                // 2. Trasformiamo l'oggetto in array recuperando le statistiche dal sotto-nodo /stats
-                let tempTeams = Object.keys(dataTeams).map(key => {
-                    const team = dataTeams[key];
-                    // Recuperiamo l'oggetto stats (se manca, inizializziamo a 0 per sicurezza)
-                    const s = team.stats || {};
-                    
-                    // Recupero nomi pokemon per la ricerca testuale
-                    let nomiPokemon = "";
-                    if (team.pokemon && Array.isArray(team.pokemon)) {
-                        nomiPokemon = team.pokemon.map(p => p ? p.nome : "").join(" ");
-                    } else if (team.pokemon && typeof team.pokemon === 'object') {
-                        nomiPokemon = Object.values(team.pokemon).map(p => p ? p.nome : "").join(" ");
-                    }
-
-                    return {
-                        ...team,
-                        id: key,
-                        // PESCAGGIO DAL NUOVO PERCORSO: players/ID/teams/ID_TEAM/stats/
-                        vittorie: s.won || 0,
-                        sconfitte: s.lost || 0,
-                        giocate: s.played || 0,
-                        setVinti: s.setW || 0,
-                        setPersi: s.setL || 0,
-                        // I punti fatti (se non presenti nel DB) rimangono calcolabili o inizializzati
-                        puntiFatti: s.punti || 0, 
-                        tuttoIlTesto: ((team.nome || "") + " " + (team.categoria || "") + " " + nomiPokemon).toLowerCase()
-                    };
-                });
-
-                // 3. Salvataggio e aggiornamento UI
-                tuttiITeam = tempTeams;
-                applicaFiltri(); 
-                
-                // Gestione Loader
-                const loader = document.getElementById('loading-screen');
-                if (loader) loader.style.display = 'none';
-
-            } else {
-                tuttiITeam = [];
-                renderizza([]);
-                const loader = document.getElementById('loading-screen');
-                if (loader) loader.style.display = 'none';
-            }
-        });
-    } catch (error) {
-        console.error("Errore critico nello scaricamento dati:", error);
-    }
-}
-
 async function coloraBordoDinamico(pkmName, elementId) {
     try {
         const cleanName = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
@@ -851,7 +838,7 @@ async function caricaTeamBloccati() {
             }
         });
     } catch (e) {
-        console.error("Errore nel recupero dei team bloccati:", e);
+        console.error("Error retrieving blocked teams:", e);
     }
 }
 
@@ -1058,7 +1045,7 @@ async function apriDettagli(id) {
     // Recupero il team dall'array globale
     const team = tuttiITeam.find(t => t.id === id);
     if (!team) {
-        console.error("Team non trovato per l'ID:", id);
+        console.error("Team not found for ID:", id);
         return;
     }
 
@@ -1356,7 +1343,7 @@ async function applicaColoreBordo(pokemonNome, elemento) {
 
     } catch (err) {
         // Gestione silenziosa dell'errore per non bloccare mai la pagina
-        console.error(`Errore durante applicaColoreBordo per ${pokemonNome}:`, err);
+        console.error(`Error during applyBorderColor for ${pokemonNome}:`, err);
     }
 }
 
@@ -1467,7 +1454,7 @@ function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
     if (team && team.pokemon && team.pokemon[pkmIndex]) {
         apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
     } else {
-        console.error("Errore: Impossibile trovare il Pokémon per il team", teamId);
+        console.error("Error: Impossible to find the Pokémon for the team", teamId);
     }
 }
 
@@ -1724,7 +1711,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
         try {
             // 1. FETCH BASE POKÉMON
             const resPokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeIdPokeAPI}`);
-            if (!resPokemon.ok) throw new Error(`Non trovato su PokeAPI`);
+            if (!resPokemon.ok) throw new Error(`Not found on PokeAPI`);
             const dataPkmn = await resPokemon.json();
 
             // Calcolo BST e Statistica migliore
@@ -1838,7 +1825,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
             };
 
         } catch (err) {
-            console.error(`Errore nel recupero dati per ${nomePkmn}:`, err);
+            console.error(`Error retrieving data for ${nomePkmn}:`, err);
             return { 
                 name: nomePkmn, 
                 idPokeAPI: nomeIdPokeAPI, 
@@ -1963,7 +1950,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
             }
         }
     } catch (err) {
-        console.error("Errore nel caricamento file validazione:", err);
+        console.error("Error loading validation file:", err);
     }
 
     // Controlli Standard (ora ricevono sempre un Array sicuro)
@@ -2355,7 +2342,7 @@ async function salvaTeamSuFirebase() {
     const currentPlayerId = currentUser ? currentUser.uid : (adminPanel?.dataset.playerId || window.activePlayerId);
 
     if (!currentPlayerId) {
-        alert("Errore: Nessun utente loggato o identificato. Impossibile salvare il team.");
+        alert("Error: No logged-in user or identified. Unable to save the team.");
         return;
     }
 
@@ -2368,7 +2355,7 @@ async function salvaTeamSuFirebase() {
     const editingId = adminPanel ? adminPanel.dataset.editingId : null;
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
-        alert("Compila tutti i campi.");
+        alert("Error: Please fill in all fields.");
         return;
     }
 
@@ -2389,8 +2376,8 @@ async function salvaTeamSuFirebase() {
                 regolamento = datiFormato; 
             }
         });
-        if (!regolamento) { alert("Regolamento non trovato."); return; }
-    } catch (error) { alert("Errore database: " + error.message); return; }
+        if (!regolamento) { alert("Error: Format not found."); return; }
+    } catch (error) { alert("Error: Database error: " + error.message); return; }
 
     let altriTeamEsistenti = [];
     if (regolamento.strutturaSito === 'custom') {
@@ -2403,7 +2390,7 @@ async function salvaTeamSuFirebase() {
                 }
             });
         } catch (e) {
-            console.warn("Errore durante il recupero dei team esistenti:", e);
+            console.warn("Error: Error during retrieval of existing teams:", e);
         }
     }
 
@@ -2431,13 +2418,13 @@ async function salvaTeamSuFirebase() {
             // 🆕 Salvataggio dinamico sul player loggato in caso di modifica
             datiTeamDaSalvare.id = editingId;
             await databaseRef.child(`players/${playerID}/teams/${editingId}`).update(datiTeamDaSalvare);
-            alert("Team aggiornato con successo!");
+            alert("Team updated!");
         } else {
             // 🆕 Salvataggio dinamico sul player loggato per nuovi team
             const newTeamRef = databaseRef.child(`players/${playerID}/teams`).push();
             datiTeamDaSalvare.id = newTeamRef.key;
             await newTeamRef.set(datiTeamDaSalvare);
-            alert("Team creato con successo!");
+            alert("Team created!");
         }
 
         // Resettiamo il form e ripuliamo la modalità editing
@@ -2445,32 +2432,36 @@ async function salvaTeamSuFirebase() {
         inputNome.value = "";
         if (adminPanel) delete adminPanel.dataset.editingId;
 
+        location.reload();
+
     } catch (error) { 
-        alert("Errore salvataggio: " + error.message); 
+        alert("Error: Error saving team: " + error.message); 
     }
 }
 
 // Funzione per ELIMINARE
 // CANCELLA uno specifico team
 function cancellaTeamDaFirebase(teamId) {
-    if (!teamId) return alert("ID team non trovato");
+    if (!teamId) return alert("Error: Team ID not found");
 
 
 
     // 2. Conferma finale
-    if (confirm("Sei assolutamente sicuro? Questa operazione è irreversibile e il team sparirà dal Box.")) {
+    if (confirm("Are you absolutely sure? This action is irreversible and the team will be removed from the Box.")) {
         // sia dinamico se la funzione è condivisa, o corretto per questa pagina.
         db.ref(`players/${playerID}/teams/${teamId}`).remove()
             .then(() => {
-                alert("Team eliminato correttamente!");
+                alert("Error: Team deleted successfully!");
                 chiudiTeamModal();
                 // Ricarichiamo i dati per aggiornare la griglia dei team
                 if (typeof caricaBox === "function") caricaBox();
             })
             .catch(e => {
-                console.error("Errore durante l'eliminazione del team:", e);
-                alert("Errore tecnico durante l'eliminazione.");
+                console.error("Error: Error during team deletion:", e);
+                alert("Error: Technical error during deletion.");
             });
+
+            location.reload();
     }
 }
 
@@ -2567,13 +2558,13 @@ async function resetPasswordDalLogin() {
 
     // 1. Controlla se l'utente ha inserito l'email
     if (!emailValue) {
-        alert("⚠️ Inserisci il tuo indirizzo email nel campo sopra per richiedere il reset della password.");
+        alert("⚠️ Write you email address in the field above to request a password reset.");
         if (emailInput) emailInput.focus();
         return;
     }
 
     // 2. Chiedi conferma
-    if (!confirm(`Inviare il link per reimpostare la password a: ${emailValue}?`)) return;
+    if (!confirm(`Send a password reset link to: ${emailValue}?`)) return;
 
     // 3. Attiva l'overlay della Pokeball se presente nella pagina di login
     const loader = document.getElementById('loading-overlay');
@@ -2583,20 +2574,20 @@ async function resetPasswordDalLogin() {
         // 4. Chiamata a Firebase Auth tramite l'email passata dall'input
         await firebase.auth().sendPasswordResetEmail(emailValue);
         
-        alert(`📧 Email di ripristino inviata!\n\nControlla la casella di posta (e la cartella Spam) all'indirizzo: ${emailValue}`);
+        alert(`📧 Reset email sent!\n\nCheck your inbox (and spam folder) at: ${emailValue}`);
         
     } catch (error) {
-        console.error("Errore durante il reset della password dal login:", error);
+        console.error("Error during password reset from login:", error);
         
         // Gestione degli errori tipici in fase di login
         if (error.code === 'auth/user-not-found') {
-            alert("Errore: Questo indirizzo email non è registrato nel sistema.");
+            alert("Error: This email address is not registered in the system.");
         } else if (error.code === 'auth/invalid-email') {
-            alert("Errore: L'indirizzo email inserito non è valido.");
+            alert("Error: The email address entered is not valid.");
         } else if (error.code === 'auth/too-many-requests') {
-            alert("Errore: Troppi tentativi di recente. Riprova tra qualche minuto.");
+            alert("Error: Too many recent requests. Please try again in a few minutes.");
         } else {
-            alert("Errore: " + error.message);
+            alert("Error: " + error.message);
         }
     } finally {
         // 5. Spegni il loader
@@ -2621,7 +2612,7 @@ function toggleTeambuilderHelper() {
 async function popolaSelettoreFormati() {
     const select = document.getElementById('helper-format-select');
     if (!select) {
-        console.error("Elemento 'helper-format-select' non trovato nel DOM.");
+        console.error("Element 'helper-format-select' not found in the DOM.");
         return;
     }
 
@@ -2646,10 +2637,10 @@ async function popolaSelettoreFormati() {
         select.removeEventListener('change', gestisciCambioFormatoHelper);
         select.addEventListener('change', gestisciCambioFormatoHelper);
         
-        console.log("Formati caricati e listener aggiunto.");
+        console.log("Formats loaded and listener added.");
 
     } catch (error) {
-        console.error("Errore durante il caricamento dei formati:", error);
+        console.error("Error loading formats:", error);
     }
 }
 function normalizzaChiaveDatabase(chiave) {
@@ -3009,7 +3000,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             });
             
         } catch (e) {
-            console.error("[Helper] Errore nel caricamento di pkm-gens/pokedex_base.json:", e);
+            console.error("[Helper] Error loading pkm-gens/pokedex_base.json:", e);
         }
     }
 
@@ -3264,7 +3255,7 @@ return megaAllowed;
                 const resNatDex = await fetch('pkm-gens/natdex-tiers.json');
                 natdexTiers = await resNatDex.json();
             } catch (e) {
-                console.error("[Helper] Errore nel caricamento di pkm-gens/natdex-tiers.json:", e);
+                console.error("[Helper] Error loading pkm-gens/natdex-tiers.json:", e);
             }
 
             let tuttiIKnots = {};
@@ -3289,7 +3280,7 @@ return megaAllowed;
                         }
                     });
                 } catch (errFetch) {
-                    console.error(`[Helper] Impossibile caricare gen${i}.json:`, errFetch);
+                    console.error(`[Helper] Impossible to load gen${i}.json:`, errFetch);
                 }
             }
 
@@ -3356,7 +3347,7 @@ if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
                 });
             });
         } catch (err) {
-            console.error("Errore generale nell'aggregazione delle liste UP_TO:", err);
+            console.error("General error in aggregating UP_TO lists:", err);
         }
     } 
     else if (regolamento.genRuleType === "within") {
