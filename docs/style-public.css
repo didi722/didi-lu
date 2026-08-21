@@ -173,6 +173,7 @@ body {
     justify-content: center;
     transition: all 0.3s ease;
     outline: none;
+    z-index: 100;
 }
 
 .music-btn:hover {
@@ -1098,6 +1099,7 @@ html, body {
     position: relative;
     transition: all 0.2s ease;
     cursor: pointer;
+    margin-top:-50px;
 }
 
 /* Header della Card */
@@ -3236,4 +3238,54 @@ color:#eeeeee;
     justify-content: flex-start;
     align-items: center;
     margin-left: 120px;
+}
+
+/* Tooltip posizionato SOTTO il pulsante e spostato a SINISTRA */
+.music-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    
+    /* Con il parent ruotato di 90deg:
+       - 'left' sposta in VERTICALE (sotto al pulsante)
+       - 'top' sposta in ORIZZONTALE (verso sinistra) */
+    right: calc(100% - 60px);
+    top: -5px;              
+
+    background: var(--yellow);    
+    color: #000000;
+    border: 2px solid #000000;
+    padding: 6px 12px;
+    box-shadow: 3px 3px 0 #000000;
+    font-weight: 800;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 10000;
+    pointer-events: none;
+
+    /* Ancoraggio in alto a destra per mantenere la rotazione dritta */
+    transform-origin: top right;
+    transform: rotate(-80deg) translateY(-5px);
+    transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+}
+
+/* Freccetta sul bordo superiore del tooltip (punta verso il pulsante) */
+.music-tooltip::before {
+    position: absolute;
+    top: -6px;            /* Bordo superiore del tooltip */
+    right: 12px;          /* Allineata al pulsante */
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border-top: 2px solid #000000;
+    border-left: 2px solid #000000;
+    transform: rotate(45deg);
+}
+
+/* Hover: comparsa con leggero scorrimento */
+.music-btn:hover .music-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: rotate(-80deg) translateY(0);
 }

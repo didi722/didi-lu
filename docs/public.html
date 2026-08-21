@@ -79,7 +79,7 @@
     <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
-    <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> Rulebook</a>
+    <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> PLAYBOOK</a>
             <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
         </div>
     </div>
@@ -288,6 +288,34 @@ async function getPlayersColors(p1, p2) {
         c1: snap1.val() || '#31c489',
         c2: snap2.val() || '#8e44ad'
     };
+}
+
+function caricaMusicaSottoBio(canzone) {
+    const musicBtn = document.getElementById('music-control');
+    
+    if (!musicBtn) {
+        console.error("❌ Manca l'elemento #music-control nell'HTML!");
+        return;
+    }
+
+    let tooltip = document.getElementById('music-tooltip');
+
+    // Se non c'è una canzone, rimuove il tooltip se presente
+    if (!canzone) {
+        if (tooltip) tooltip.remove();
+        return;
+    }
+
+    // Se il tooltip non esiste ancora, lo crea
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'music-tooltip';
+        tooltip.className = 'music-tooltip';
+        musicBtn.appendChild(tooltip);
+    }
+
+    // Imposta il testo del brano
+    tooltip.innerHTML = `<span>${canzone}</span>`;
 }
 
 
@@ -1740,6 +1768,10 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     if (titleContainer) titleContainer.innerHTML = "";
 
     const playerColor = typeof baseColor === 'object' ? (baseColor.base || baseColor) : baseColor;
+    const hasTrophies = count > 0;
+    const displayCount = hasTrophies ? count : 0;
+    const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
+    const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
 
     const TITOLI_MAP = {
         "Bug Catcher": "bug", "Punk Guy": "dark", "Dragon Tamer": "dragon",
@@ -1840,22 +1872,7 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
 
     let rawHistory = seasonsHistory;
     if (rawHistory && typeof rawHistory.val === 'function') rawHistory = rawHistory.val();
-
-    // 🚫 FILTRO PER ESCLUDERE LA STAGIONE BETA ('sbeta')
-    const wonSeasons = Object.entries(rawHistory || {})
-        .filter(([sId, s]) => {
-            if (!s) return false;
-            const isBeta = sId === 'sbeta' || s.id === 'sbeta' || (s.name && s.name.toLowerCase().includes('beta'));
-            if (isBeta) return false;
-            return s.rank === 1 || s.rank === "1";
-        })
-        .map(([_, s]) => s);
-
-    // Calcolo dinamico del contatore senza la stagione beta
-    const displayCount = wonSeasons.length;
-    const hasTrophies = displayCount > 0;
-    const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
-    const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
+    const wonSeasons = Object.values(rawHistory || {}).filter(s => s && (s.rank === 1 || s.rank === "1"));
 
     let trophyTooltipHTML = "";
     if (wonSeasons.length > 0) {
@@ -1898,42 +1915,6 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     container.appendChild(fragment);
 }
 
-function caricaMusicaSottoBio(canzone) {
-    const container = document.getElementById('player-favorite-song-container');
-    
-    if (!container) {
-        console.error("❌ Manca l'elemento <div id='player-favorite-song-container'> nell'HTML!");
-        return;
-    }
-
-    if (!canzone) {
-        container.innerHTML = '';
-        return;
-    }
-
-    container.innerHTML = `
-        <div style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-weight: 800;
-            font-size: 12px;
-            text-transform: uppercase;
-            background: #ffffff;
-            border: 2px solid #000;
-            padding: 6px 14px;
-            box-shadow: 3px 3px 0 #000;
-            width: fit-content;
-            margin: 0px 100px 0 auto;
-            margin-bottom: -45px;
-            color: #000;
-            transform: rotate(0.8deg);
-        ">
-            🎵 <span>${canzone}</span>
-        </div>
-    `;
-}
 
 function caricaBioAllenatore(testo) {
     const infoArea = document.getElementById('info-display-area');
