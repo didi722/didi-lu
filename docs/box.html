@@ -802,7 +802,10 @@ async function caricaTeamBloccati() {
         const snap = await db.ref('seasons').once('value');
         const seasons = snap.val() || {};
 
-        Object.values(seasons).forEach(season => {
+        Object.entries(seasons).forEach(([seasonKey, season]) => {
+            // 🛠️ Esclude la stagione 'sbeta' dal blocco
+            if (seasonKey === 'sbeta') return;
+
             const status = season?.info?.status;
             
             // Controlla se la stagione è in stato "playing" o "closed"
@@ -815,7 +818,7 @@ async function caricaTeamBloccati() {
                         const datiTeams = allenatore?.datiTeams || [];
                         Object.values(datiTeams).forEach(t => {
                             if (t && t.nome) {
-                                // Salviamo il nome in minuscolo per evitare discrepanze di maiuscole/minuscole
+                                // Salviamo il nome in minuscolo per evitare discrepanze
                                 window.nomiTeamBloccati.add(t.nome.trim().toLowerCase());
                             }
                         });
