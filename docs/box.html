@@ -2383,7 +2383,6 @@ async function salvaTeamSuFirebase() {
     let altriTeamEsistenti = [];
     if (regolamento.strutturaSito === 'custom') {
         try {
-            // 🆕 Sostituito 'didi' con la variabile 'currentPlayerId'
             const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
             teamsSnap.forEach(childSnap => {
                 const teamVal = childSnap.val();
