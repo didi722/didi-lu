@@ -746,7 +746,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 0.8c ; 
+        player.volume = 0.8 ; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');
