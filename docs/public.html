@@ -1635,8 +1635,8 @@ async function caricaPokemonPreferito(pkmNome) {
         pkmPx = Math.min(Math.max(pkmPx, 85), 350);
 
         // 4. LOGICA VOLO
-        const aTerraBlacklist = ['gyarados','dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
-        const floatingBlacklist = ['magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter'];
+        const aTerraBlacklist = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'lunala', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'gyarados', 'porygon', 'porygon-2', 'porygon-z', 'dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
+        const floatingBlacklist = ['yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter'];
 
         const isFloating = (
             pkmData.types.some(t => t.type.name === 'flying') || 
@@ -1646,8 +1646,8 @@ async function caricaPokemonPreferito(pkmNome) {
         ) && !aTerraBlacklist.includes(pkmNomePulito);
 
         // 5. GESTIONE PROFONDITÀ (Z-INDEX)
-        const sempreDavantiBlacklist = ['magnezone', 'magnemite', 'magneton', 'misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
-        const sempreDietroBlacklist = ['metagross'];
+        const sempreDavantiBlacklist = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'porygon', 'porygon-2', 'porygon-z', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter', 'magnezone', 'magnemite', 'magneton', 'misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
+        const sempreDietroBlacklist = ['lunala', 'metagross'];
         const sogliaDietro = trainerAltezzaM * 1.2; 
         
         if (sempreDietroBlacklist.includes(pkmNomePulito)) {
