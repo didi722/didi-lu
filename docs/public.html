@@ -1627,7 +1627,7 @@ async function caricaPokemonPreferito(pkmNome) {
 
         // 4. LOGICA VOLO
         const aTerraBlacklist = ['gyarados','dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
-        const floatingBlacklist = ['klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter'];
+        const floatingBlacklist = ['magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter'];
 
         const isFloating = (
             pkmData.types.some(t => t.type.name === 'flying') || 
@@ -1637,7 +1637,7 @@ async function caricaPokemonPreferito(pkmNome) {
         ) && !aTerraBlacklist.includes(pkmNomePulito);
 
         // 5. GESTIONE PROFONDITÀ (Z-INDEX)
-        const sempreDavantiBlacklist = ['misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
+        const sempreDavantiBlacklist = ['magnezone', 'magnemite', 'magneton', 'misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
         const sempreDietroBlacklist = ['metagross'];
         const sogliaDietro = trainerAltezzaM * 1.2; 
         
