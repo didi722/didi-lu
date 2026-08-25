@@ -214,7 +214,7 @@ async function caricaColoriPlayers() {
         }
         console.log("Colori mappati:", playerColors);
     } catch (error) {
-        console.error("Errore caricamento:", error);
+        console.error("Error loading colors:", error);
     }
 }
 
@@ -294,7 +294,7 @@ function caricaMusicaSottoBio(canzone) {
     const musicBtn = document.getElementById('music-control');
     
     if (!musicBtn) {
-        console.error("❌ Manca l'elemento #music-control nell'HTML!");
+        console.error("❌ Missing #music-control element in HTML!");
         return;
     }
 
@@ -338,7 +338,7 @@ async function initPublicProfile() {
 
     // CASO 1: Nessun parametro nell'URL -> Chiudiamo il loader ed usciamo
     if (!playerKey) {
-        console.error("Nessun giocatore specificato nell'URL");
+        console.error("No player specified in URL");
         const nameSpan = document.querySelector('.hub-title-display span') || document.getElementById('player-name-display');
         if (nameSpan) nameSpan.innerText = "PLAYER MISSING";
         
@@ -399,7 +399,7 @@ async function initPublicProfile() {
                 const typeUsageSnap = await db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value');
                 typeUsageData = typeUsageSnap.val() || {};
             } catch(err) {
-                console.error("Errore nel recupero typeusage:", err);
+                console.error("Error occurred while fetching typeusage:", err);
             }
 
             if (typeof renderPalmares === 'function') {
@@ -426,7 +426,7 @@ async function initPublicProfile() {
                     teamsArray.sort((a, b) => b.vittorie - a.vittorie);
                     if (typeof renderizzaBestTeam === 'function') renderizzaBestTeam(teamsArray[0]);
                 }
-            } catch (error) { console.error("Errore recupero team:", error); }
+            } catch (error) { console.error("Error occurred while fetching teams:", error); }
 
             if (typeof inizializzaChiusuraModali === 'function') inizializzaChiusuraModali();
             
@@ -436,7 +436,7 @@ async function initPublicProfile() {
             if (nameSpan) nameSpan.innerText = "PLAYER NOT FOUND";
         }
     } catch (e) { 
-        console.error("Errore critico Firebase:", e); 
+        console.error("Error occurred while fetching player data:", e); 
     } finally {
         // --- CHIUSURA LOADER GARANTITA ---
         nascondiLoader(loader);
@@ -546,20 +546,28 @@ function applicaPaletteUtente(baseColor) {
 
 async function renderizzaBestTeam(team) {
     const container = document.getElementById('best-team-container');
-    if (!team || !container) return;
+    if (!container) return;
 
-    // 🎯 DIAGNOSI COMPLETATA: Sappiamo che i dati reali sono dentro team.stats
+    // Se non c'è alcun team passato, svuota il contenitore ed esci
+    if (!team) {
+        container.innerHTML = '';
+        return;
+    }
+
     const s = team.stats || {};
+    const teamPlayed = typeof s.played !== 'undefined' ? Number(s.played) : (Number(team.partite) || 0);
+
+    // 🎯 REQUISITO PRESENZE: Se il team ha meno di 1 presenza (0 presenze), nasconde il componente
+    if (teamPlayed < 1) {
+        container.innerHTML = '';
+        return;
+    }
 
     const teamName = team.nome || team.name || "No best team yet";
-    
-    // Peschiamo i punti e le partite dal sotto-oggetto stats usando le chiavi di Firebase
     const teamPoints = typeof s.points !== 'undefined' ? s.points : 0;
-    const teamPlayed = typeof s.played !== 'undefined' ? s.played : 0;
     const teamWon    = typeof s.won !== 'undefined' ? s.won : (team.vittorie || 0);
     const teamLose   = typeof s.lose !== 'undefined' ? s.lose : 0;
-    
-    const category = team.categoria || team.category || 'VGC';
+    const category   = team.categoria || team.category || 'VGC';
 
     container.innerHTML = `
     <div class="card" style="cursor: default;">
@@ -603,18 +611,19 @@ async function renderizzaBestTeam(team) {
     </div>
     `;
 }
+
 async function apriDettagli(id) {
     const listaTeam = (typeof tuttiITeam !== 'undefined') ? tuttiITeam : window.tuttiITeam;
     
     if (!listaTeam || listaTeam.length === 0) {
-        console.error("L'array dei team è vuoto o non caricato.");
+        console.error("The teams array is empty or not loaded.");
         return;
     }
 
     const team = listaTeam.find(t => t.id === id);
     
     if (!team) {
-        console.error("Team non trovato per l'ID:", id);
+        console.error("Team not found for ID:", id);
         return;
     }
 
@@ -1171,7 +1180,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const playerName = urlParams.get('player');
 
     if (!playerName) {
-        console.error("Nome allenatore non trovato nell'URL!");
+        console.error("Player name not found in URL!");
         return;
     }
 
@@ -1444,7 +1453,7 @@ async function renderPlayerStats(playerName) {
                 if (typeof mostraGraficoElo === "function") {
                     mostraGraficoElo(playerName);
                 } else {
-                    console.error("Errore: La funzione 'mostraGraficoElo' non è definita!");
+                    console.error("Error: The function 'mostraGraficoElo' is not defined!");
                 }
             });
         }
@@ -1491,8 +1500,8 @@ async function mostraGraficoElo(playerName) {
 
                         // --- CACCIA ALL'ERRORE (DEBUG) ---
                         if (m.data && m.data.includes("03-16")) {
-                            console.error(`!!! DATO SOSPETTO TROVATO !!! 
-                            Stagione: ${seasonKey}
+                            console.error(`!!! SUSPICIOUS DATA FOUND !!! 
+                            Season: ${seasonKey}
                             Showdown: ${sdId}
                             Match: ${matchKey}
                             Data nel DB: ${m.data}
@@ -1574,7 +1583,7 @@ async function mostraGraficoElo(playerName) {
         });
 
     } catch (e) {
-        console.error("Errore critico:", e);
+        console.error("Critical error:", e);
     }
 }
 
@@ -1597,7 +1606,7 @@ async function caricaPokemonPreferito(pkmNome) {
 
         // 2. FETCH DATI
         const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNomePulito}`);
-        if (!response.ok) throw new Error("Pokémon non trovato");
+        if (!response.ok) throw new Error("Pokémon not found");
         const pkmData = await response.json();
 
         const gifUrl = pkmData.sprites.other['showdown'].front_default 
@@ -1686,7 +1695,7 @@ async function caricaPokemonPreferito(pkmNome) {
         };
 
     } catch (err) {
-        console.error("Errore:", err);
+        console.error("Error:", err);
     }
 }
 
@@ -1756,7 +1765,7 @@ async function caricaBestTeamDallAlto(playerKey) {
         }
 
     } catch (error) {
-        console.error("Errore nel caricamento del Best Team:", error);
+        console.error("Error occurred while loading the Best Team:", error);
     }
 }
 
@@ -2183,7 +2192,7 @@ function avviaMusicaGiocatore(urlMusica) {
 
     if (player.src !== urlMusica) {
         player.src = urlMusica;
-        player.volume = 0.7;
+        player.volume = 1;
         player.loop = true; // Assicuriamoci che vada in loop
         
         // Se l'utente non ha silenziato il sito precedentemente, proviamo l'autoplay
@@ -2229,7 +2238,7 @@ function toggleMusic() {
     if (player.paused || player.muted) {
         // RESET E ACCENSIONE
         player.muted = false; 
-        player.volume = 0.3; 
+        player.volume = 1; 
 
         player.play().then(() => {
             musicBtn.classList.remove('muted');
@@ -2296,13 +2305,13 @@ async function resetPasswordDalLogin() {
 
     // 1. Controlla se l'utente ha inserito l'email
     if (!emailValue) {
-        alert("⚠️ Inserisci il tuo indirizzo email nel campo sopra per richiedere il reset della password.");
+        alert("⚠️ Please enter your email address in the field above to request a password reset.");
         if (emailInput) emailInput.focus();
         return;
     }
 
     // 2. Chiedi conferma
-    if (!confirm(`Inviare il link per reimpostare la password a: ${emailValue}?`)) return;
+    if (!confirm(`Send a password reset link to: ${emailValue}?`)) return;
 
     // 3. Attiva l'overlay della Pokeball se presente nella pagina di login
     const loader = document.getElementById('loading-overlay');
@@ -2312,20 +2321,20 @@ async function resetPasswordDalLogin() {
         // 4. Chiamata a Firebase Auth tramite l'email passata dall'input
         await firebase.auth().sendPasswordResetEmail(emailValue);
         
-        alert(`📧 Email di ripristino inviata!\n\nControlla la casella di posta (e la cartella Spam) all'indirizzo: ${emailValue}`);
+        alert(`📧 Password reset email sent!\n\nCheck your inbox (and spam folder) at: ${emailValue}`);
         
     } catch (error) {
-        console.error("Errore durante il reset della password dal login:", error);
+        console.error("Error during password reset from login:", error);
         
         // Gestione degli errori tipici in fase di login
         if (error.code === 'auth/user-not-found') {
-            alert("Errore: Questo indirizzo email non è registrato nel sistema.");
+            alert("Error: This email address is not registered in the system.");
         } else if (error.code === 'auth/invalid-email') {
-            alert("Errore: L'indirizzo email inserito non è valido.");
+            alert("Error: The email address entered is not valid.");
         } else if (error.code === 'auth/too-many-requests') {
-            alert("Errore: Troppi tentativi di recente. Riprova tra qualche minuto.");
+            alert("Error: Too many attempts recently. Please try again in a few minutes.");
         } else {
-            alert("Errore: " + error.message);
+            alert("Error: " + error.message);
         }
     } finally {
         // 5. Spegni il loader
