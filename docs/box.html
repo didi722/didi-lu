@@ -2974,7 +2974,9 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             `;
             document.head.appendChild(style);
         }
-    }    if (!jsonDati) {
+    }
+
+    if (!jsonDati) {
         return { tipoLayout: "FLAT", pokemon: [] };
     }
 
@@ -3168,28 +3170,27 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     }
 
     function escludeFormeInvalide(id) {
-    const idLower = id.toLowerCase().trim();
-    
-    if (idLower.includes('gmax') || idLower === 'pichuspikyeared' || idLower.includes('-partner')) return false;
-    if (idLower.includes('-cap-') || (idLower.startsWith('cap-') && idLower !== 'capsakid')) return false;
+        const idLower = id.toLowerCase().trim();
+        
+        if (idLower.includes('gmax') || idLower === 'pichuspikyeared' || idLower.includes('-partner')) return false;
+        if (idLower.includes('-cap-') || (idLower.startsWith('cap-') && idLower !== 'capsakid')) return false;
 
-    const isMega = idLower.endsWith('-mega') || idLower.endsWith('-megax') || idLower.endsWith('-megay');
-    const isFalsoMega = idLower === 'meganium' || idLower === 'yanmega';
-    if (isMega && !isFalsoMega) {
-        const rawValue = regolamento.restrizioni?.pokemon?.is_mega?.value;
-        // Restituisce true se è permesso, false se è proibito
-        const megaAllowed = [
-    true,
-    "true",
-    "yes",
-    "allowed"
-].includes(String(rawValue).toLowerCase().trim());
+        const isMega = idLower.endsWith('-mega') || idLower.endsWith('-megax') || idLower.endsWith('-megay');
+        const isFalsoMega = idLower === 'meganium' || idLower === 'yanmega';
+        if (isMega && !isFalsoMega) {
+            const rawValue = regolamento.restrizioni?.pokemon?.is_mega?.value;
+            const megaAllowed = [
+                true,
+                "true",
+                "yes",
+                "allowed"
+            ].includes(String(rawValue).toLowerCase().trim());
 
-return megaAllowed;
+            return megaAllowed;
+        }
+
+        return true; 
     }
-
-    return true; 
-}
 
     function calcolaSpriteId(id) {
         const idLower = id.toLowerCase().trim();
@@ -3211,6 +3212,25 @@ return megaAllowed;
         if (idLower.includes('-')) return idLower.split('-')[0];
         if (spriteLower.includes('-')) return spriteLower.split('-')[0];
         return idLower;
+    }
+
+    // 🌟 HELPER PER ESTRAZIONE TIER (Incluso supporto Little Cup sia Singolo che Doppio)
+    function ottieniTierDaOggetto(dato, proprietaDinamica, baseTier) {
+        if (!dato) return "";
+        if (typeof dato === 'string') return dato.toUpperCase().trim();
+
+        const isTargetLC = baseTier && baseTier.toUpperCase().trim() === "LC";
+
+        if (isTargetLC) {
+            const singleTier = dato.single_tier ? String(dato.single_tier).toUpperCase().trim() : "";
+            const doublesTier = dato.doubles_tier ? String(dato.doubles_tier).toUpperCase().trim() : "";
+            if (singleTier === "LC" || doublesTier === "LC") {
+                return "LC";
+            }
+        }
+
+        const tier = dato[proprietaDinamica] || "";
+        return String(tier).toUpperCase().trim();
     }
 
     function ottieniTierMaggiore(tierA, tierB) {
@@ -3249,7 +3269,6 @@ return megaAllowed;
 
     if (regolamento.genRuleType === "up_to") {
         try {
-            // Carica esplicitamente il file natdex-tiers.json per i fallback delle tier
             let natdexTiers = {};
             try {
                 const resNatDex = await fetch('pkm-gens/natdex-tiers.json');
@@ -3261,7 +3280,6 @@ return megaAllowed;
             let tuttiIKnots = {};
             let genLimiteJson = {};
 
-            // Accumula i Pokémon estratti da gen1 a genLimite
             for (let i = 1; i <= genLimite; i++) {
                 try {
                     const resGen = await fetch(`pkm-gens/gen${i}.json`);
@@ -3274,7 +3292,6 @@ return megaAllowed;
                             tuttiIKnots[lowKey] = { ...tuttiIKnots[lowKey], ...jsonGen[key] };
                         }
                         
-                        // Mantiene traccia dei dati nativi della generazione limite (Gen X)
                         if (i === genLimite) {
                             genLimiteJson[lowKey] = jsonGen[key];
                         }
@@ -3284,48 +3301,34 @@ return megaAllowed;
                 }
             }
 
-            // Analizza il pool aggregato totale
             Object.keys(tuttiIKnots).forEach(lowKey => {
                 const nomeChiave = tuttiIKnots[lowKey].originalKey;
                 if (!escludeFormeInvalide(nomeChiave)) return;
 
-                // Estrae la tier originale della Gen X
                 const datoGenX = genLimiteJson[lowKey];
-                let tierGenX = datoGenX && typeof datoGenX === 'object' ? datoGenX[proprietaTierDinamica] : (datoGenX || "");
-                tierGenX = tierGenX ? tierGenX.toUpperCase().trim() : "";
+                let tierGenX = ottieniTierDaOggetto(datoGenX, proprietaTierDinamica, regolamento.baseTier);
 
                 let tierFinale = tierGenX;
 
-                // FALLBACK: Se la tier in Gen X manca, è PAST o ILLEGAL, interroga il National Dex
                 if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
                     const datoNatDex = natdexTiers[lowKey];
-                    let tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
-                    tierNatDex = tierNatDex ? tierNatDex.toUpperCase().trim() : "";
+                    let tierNatDex = ottieniTierDaOggetto(datoNatDex, proprietaTierDinamica, regolamento.baseTier);
 
                     const isMegaReale = (nomeChiave.toLowerCase().endsWith('-mega') || 
-                     nomeChiave.toLowerCase().endsWith('-megax') || 
-                     nomeChiave.toLowerCase().endsWith('-megay'));
+                                         nomeChiave.toLowerCase().endsWith('-megax') || 
+                                         nomeChiave.toLowerCase().endsWith('-megay'));
 
-if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
-    const datoNatDex = natdexTiers[lowKey];
-    let tierNatDex = datoNatDex && typeof datoNatDex === 'object' ? datoNatDex[proprietaTierDinamica] : (datoNatDex || "");
-    tierNatDex = tierNatDex ? tierNatDex.toUpperCase().trim() : "";
-
-    // SOLO se è una Mega reale e la tier è illegale, cerchiamo la base
-    if (isMegaReale && (tierNatDex === "ILLEGAL" || !tierNatDex)) {
-        const baseKey = nomeChiave.toLowerCase().replace(/-mega[xy]?$/, '').trim();
-        const datoBaseNatDex = natdexTiers[baseKey];
-        const tierBaseNatDex = datoBaseNatDex && typeof datoBaseNatDex === 'object' ? datoBaseNatDex[proprietaTierDinamica] : (datoBaseNatDex || "");
-        tierNatDex = tierBaseNatDex ? tierBaseNatDex.toUpperCase().trim() : "";
-    }}
+                    if (isMegaReale && (tierNatDex === "ILLEGAL" || !tierNatDex)) {
+                        const baseKey = nomeChiave.toLowerCase().replace(/-mega[xy]?$/, '').trim();
+                        const datoBaseNatDex = natdexTiers[baseKey];
+                        tierNatDex = ottieniTierDaOggetto(datoBaseNatDex, proprietaTierDinamica, regolamento.baseTier);
+                    }
 
                     tierFinale = tierNatDex;
                 }
 
-                // Se dopo tutti i controlli è ancora non valida, la escludiamo
                 if (!tierFinale || tierFinale === "ILLEGAL" || tierFinale === "PAST") return;
                 
-                // Controlla se la tier rispetta la clausola del formato e i filtri biologici
                 if (!controllaTierAmmessa(tierFinale, regolamento.baseTier)) return;
                 if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
@@ -3356,12 +3359,12 @@ if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
             const datoGrezzo = jsonDati[nomeChiave];
             if (!datoGrezzo) return;
 
-            let tierUpper = (typeof datoGrezzo === 'object' ? datoGrezzo[proprietaTierDinamica] : datoGrezzo || "").toUpperCase().trim();
+            let tierUpper = ottieniTierDaOggetto(datoGrezzo, proprietaTierDinamica, regolamento.baseTier);
 
             if (nomeChiave.toLowerCase().includes('-mega')) {
                 const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
                 const datoBase = jsonDati[baseKey];
-                const tierBase = datoBase && typeof datoBase === 'object' ? (datoBase[proprietaTierDinamica] || "") : (datoBase || "");
+                const tierBase = ottieniTierDaOggetto(datoBase, proprietaTierDinamica, regolamento.baseTier);
                 tierUpper = ottieniTierMaggiore(tierUpper, tierBase);
             }
 
@@ -3374,16 +3377,16 @@ if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
             const radice = determinaRadice(nomeChiave, spriteId);
 
             poolFiltrato.push({ 
-                    id: nomeChiave, 
-                    name: nomeVisualizzato, 
-                    spriteId: spriteId, 
-                    radice: radice, 
-                    num: datoGrezzo.num || null, 
-                    ordineIniziale: contatoreOrdine++,
-                    stats: datoGrezzo.stats || null,
-                    type: datoGrezzo.type || datoGrezzo.types || [],
-                    abilities: datoGrezzo.abilities || []
-                });
+                id: nomeChiave, 
+                name: nomeVisualizzato, 
+                spriteId: spriteId, 
+                radice: radice, 
+                num: datoGrezzo.num || null, 
+                ordineIniziale: contatoreOrdine++,
+                stats: datoGrezzo.stats || null,
+                type: datoGrezzo.type || datoGrezzo.types || [],
+                abilities: datoGrezzo.abilities || []
+            });
         });
     }
 
