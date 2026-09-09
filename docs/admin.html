@@ -52,6 +52,10 @@
                 <input type="text" id="new-player-name" placeholder="Es: didi">
             </div>
             <div class="form-group" style="flex: 1;">
+                <label>Real Name:</label>
+                <input type="text" id="new-player-real-name" placeholder="Es: Davide Tomio">
+            </div>
+            <div class="form-group" style="flex: 1;">
                 <label>Email:</label>
                 <input type="email" id="new-player-email" placeholder="email@esempio.com">
             </div>
@@ -68,7 +72,7 @@
                 </tr>
             </thead>
             <tbody id="lista-players-admin">
-                </tbody>
+            </tbody>
         </table>
     </div>
 </section>
@@ -1017,11 +1021,12 @@ async function modificaPlayer(nomePlayer, realUid) {
 // --- CREAZIONE PLAYER (METODO SEMPLICE) ---
 async function creaNuovoPlayerAdmin() {
     const nome = document.getElementById('new-player-name').value.trim().toLowerCase();
+    const realName = document.getElementById('new-player-real-name').value.trim();
     const email = document.getElementById('new-player-email').value.trim();
     const password = "password123"; 
 
-    if (!nome || !email) {
-        alert("Please enter a name and email!");
+    if (!nome || !realName || !email) {
+        alert("Please enter a nickname, real name and email!");
         return;
     }
 
@@ -1037,19 +1042,19 @@ async function creaNuovoPlayerAdmin() {
         await tempApp.auth().signOut();
         await tempApp.delete();
 
-        // 2. Creazione nodo users/UID (per il sistema di login)
+        // 2. Creazione nodo users/UID (con salvataggio del Nome Reale)
         await db.ref(`users/${uid}`).set({
             uid: uid,
             name: nome,
+            real_name: realName,
             email: email,
             role: "player"
         });
 
         // 3. Creazione STRUTTURA COMPLETA in players/NOME_UTENTE
-        // Creiamo il riferimento principale al player
         const playerRef = db.ref(`players/${nome}`);
         
-        // Prepariamo l'oggetto info richiesto
+        // Prepariamo l'oggetto info includendo il Nome Reale
         const infoData = {
             avatar: "https://via.placeholder.com/150",
             bio: "Hello there, I'm a new trainer!",
@@ -1057,16 +1062,15 @@ async function creaNuovoPlayerAdmin() {
             fav_team: "Non impostato",
             idTeamPreferito: "",
             musicaPreferita: "",
-            name: nome.charAt(0).toUpperCase() + nome.slice(1)
+            name: nome.charAt(0).toUpperCase() + nome.slice(1),
+            real_name: realName
         };
 
         // Eseguiamo i set separati per assicurarci che ogni nodo esista
         await playerRef.child('info').set(infoData);
         
-        // Creiamo stats e teams come nodi esistenti ma "vuoti" (usando un segnaposto se necessario 
-        // o inizializzandoli come oggetti pronti)
+        // Creiamo stats e teams come nodi esistenti
         await playerRef.child('stats').set({ 
-            // Lasciamo qui solo l'UID di riferimento per "ancorare" il nodo stats
             uid_riferimento: uid 
         });
         
@@ -1076,7 +1080,9 @@ async function creaNuovoPlayerAdmin() {
 
         alert(`Player ${nome} created successfully! Info, teams and stats structure is ready.`);
         
+        // Resettiamo i campi del form
         document.getElementById('new-player-name').value = "";
+        document.getElementById('new-player-real-name').value = "";
         document.getElementById('new-player-email').value = "";
 
     } catch (error) {

@@ -1902,7 +1902,64 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
 
     let jsonDati = null;
     const genLimite = parseInt(regolamento.genRuleValue);
-    
+
+    // 👤 RECUPERO DELL'INIZIALE DI REAL_NAME (PER LA REGOLA PLAYER_INITIAL)
+    let inizialeNomeUtente = "";
+    const regolaNameStarts = regolamento.restrizioni?.pokemon?.name_starts;
+
+    if (regolaNameStarts && regolaNameStarts.mode === "PLAYER_INITIAL") {
+        try {
+            const authObj = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
+            const currentUser = authObj?.currentUser;
+            let realNameEstratto = "";
+
+            if (currentUser && typeof db !== 'undefined') {
+                // 1. Recupera i dati account dell'utente per conoscere il nickname / playerKey
+                const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
+                const userData = userSnap.val() || {};
+
+                // 2. Determina la chiave giocatore usata nel nodo `players/`
+                const playerKey = userData.name || currentUser.displayName || currentUser.uid;
+
+                if (playerKey) {
+                    // Cerca prima in `players/${playerKey}/info/real_name`
+                    let playerSnap = await db.ref(`players/${playerKey}/info/real_name`).once('value');
+                    
+                    // Se non trova nulla, tenta la ricerca in minuscolo
+                    if (!playerSnap.exists() || !playerSnap.val()) {
+                        playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info/real_name`).once('value');
+                    }
+
+                    if (playerSnap.exists() && playerSnap.val()) {
+                        realNameEstratto = playerSnap.val();
+                    }
+                }
+
+                // Backup 1: Se non presente in players/, controlla in users/{uid}/real_name
+                if (!realNameEstratto && userData.real_name) {
+                    realNameEstratto = userData.real_name;
+                }
+            }
+
+            // Backup 2: Verifica eventuali variabili globali esplicite per real_name (SENZA FALLBACK SU NICKNAME)
+            if (!realNameEstratto) {
+                realNameEstratto = window.currentUserRealName || 
+                                   window.currentPlayer?.info?.real_name || 
+                                   window.currentUser?.real_name || "";
+            }
+
+            // Assegna l'iniziale ESCLUSIVAMENTE se real_name è una stringa valida
+            if (realNameEstratto && typeof realNameEstratto === 'string') {
+                inizialeNomeUtente = realNameEstratto.trim().charAt(0).toLowerCase();
+            } else {
+                console.warn("[Validazione] Attenzione: 'real_name' non trovato per l'utente loggato.");
+            }
+
+        } catch (errUser) {
+            console.error("[Validazione] Errore durante il recupero di 'real_name':", errUser);
+        }
+    }
+
     try {
         if (regolamento.genRuleType === "within") {
             const risposta = await fetch(`pkm-gens/gen${genLimite}.json`);
@@ -1953,7 +2010,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
         console.error("Error loading validation file:", err);
     }
 
-    // Controlli Standard (ora ricevono sempre un Array sicuro)
+    // Controlli Standard
     const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
     const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
@@ -1961,7 +2018,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
     tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
 
     if (regolamento.restrizioni) {
-        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento);
+        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento, inizialeNomeUtente);
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
@@ -1982,13 +2039,11 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
 function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null) {
     const errori = [];
 
-    // Estraiamo e normalizziamo i nomi dei Pokémon del team in validazione
     const nomiTeamCorrente = teamCorrente
         .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase())
         .filter(Boolean);
 
     for (const teamEsistente of altriTeam) {
-        // 🆕 Se si sta modificando un team già esistente, lo ignoriamo tramite currentTeamId
         if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) {
             continue;
         }
@@ -1999,7 +2054,6 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null
             .map(p => (typeof p === 'string' ? p : (p.species?.name || p.name || p.nome || p.pokemon || '')).toLowerCase())
             .filter(Boolean);
 
-        // Calcoliamo quanti Pokémon coesistono in entrambi i team
         const pokemonInComune = nomiTeamCorrente.filter(nome => nomiTeamEsistente.includes(nome));
 
         if (pokemonInComune.length > 2) {
@@ -2014,15 +2068,32 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null
     return errori;
 }
 
-function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento) { 
+function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento, inizialeNomeUtente = "") { 
     const errori = [];
 
-    // Determina la proprietà corretta in base al battleStyle ("single_tier" o "doubles_tier")
     const proprietaTierDinamica = regolamento?.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
 
     if (restrizioni.pokemon) {
         Object.keys(restrizioni.pokemon).forEach(field => {
             const regola = restrizioni.pokemon[field];
+
+            // 🔤 CONTROLLO RESTRIZIONE INIZIALE NOME (real_name)
+            if (field === 'name_starts') {
+                if (regola.mode === "PLAYER_INITIAL") {
+                    if (!inizialeNomeUtente) {
+                        errori.push(`[Restrizione Nome] Impossibile convalidare la regola sull'iniziale: il nome reale (real_name) dell'utente non è presente o non è stato trovato.`);
+                    } else {
+                        team.forEach(p => {
+                            const nomePkm = (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase().trim();
+                            if (!nomePkm.startsWith(inizialeNomeUtente)) {
+                                const nomeFormattato = p.name || p.nome || 'Pokémon';
+                                errori.push(`[${nomeFormattato}] Non valido: il nome del Pokémon deve iniziare con l'iniziale del tuo nome reale ("${inizialeNomeUtente.toUpperCase()}").`);
+                            }
+                        });
+                    }
+                    return;
+                }
+            }
 
             if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
                 if (field === 'type') {
@@ -2079,13 +2150,12 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
                         return;
                     }
 
-                    // 🔥 NUOVO CONTROLLO: Restrizione sulle Megaevoluzioni
+                    // 🔥 Restrizione sulle Megaevoluzioni
                     if (field === 'is_mega') {
                         if (regola.value === false || regola.value === "false") {
                             const nomeLower = p.name.toLowerCase();
                             const idStrumento = p.strumento ? p.strumento.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : '';
                             
-                            // Lista completa e ottimizzata di tutte le Megapietre ufficiali in lingua inglese (ID PokeAPI)
                             const LISTA_MEGAPIETRE = [
                                 "abomasnite", "absolite", "aerodactylite", "aggronite", "alakazamite", "altarianite", "ampharosite", 
                                 "audinite", "banettite", "beedrillite", "blastoisinite", "blazikenite", "cameruptite", "charizardite-x", 
@@ -2114,7 +2184,7 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
         });
     }
 
-    // --- CONTROLLI STRUMENTI E MOSSE (Invariati) ---
+    // --- CONTROLLI STRUMENTI E MOSSE ---
     if (restrizioni.strumenti) {
         Object.keys(restrizioni.strumenti).forEach(field => {
             const regola = restrizioni.strumenti[field];
@@ -2154,13 +2224,11 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
 function validaSingoloOperatore(valoreEffettivo, regola) {
     let target = regola.value;
     
-    // Normalizzazione booleani salvati come stringhe all'interno del DB Firebase
     if (target === "true") target = true;
     if (target === "false") target = false;
     if (valoreEffettivo === "true") valoreEffettivo = true;
     if (valoreEffettivo === "false") valoreEffettivo = false;
 
-    // Gestione Array (es. controllo se un tipo specifico è incluso nei tipi del Pokémon)
     if (Array.isArray(valoreEffettivo)) {
         if (regola.operator === "equals") return valoreEffettivo.includes(target);
     }
@@ -2294,6 +2362,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     });
     return errori;
 }
+
 function validaClauses(teamDatiPokeAPI, regolamento) {
     const errori = [];
     if (!regolamento.strutturaSito) return errori;
@@ -3005,6 +3074,63 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     const restrizioniPokemon = regolamento.restrizioni?.pokemon;
     let pokedexBase = null;
 
+    // 👤 RECUPERO DEL VERO NOME (real_name) DAL NODO PLAYERS/{PLAYERKEY}/INFO/REAL_NAME
+    let inizialeNomeUtente = "";
+    const regolaNameStarts = restrizioniPokemon?.name_starts;
+
+    if (regolaNameStarts && regolaNameStarts.mode === "PLAYER_INITIAL") {
+        try {
+            const authObj = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
+            const currentUser = authObj?.currentUser;
+            let realNameEstratto = "";
+
+            if (currentUser && typeof db !== 'undefined') {
+                // 1. Recupera i dati account dell'utente per conoscere il nickname / playerKey
+                const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
+                const userData = userSnap.val() || {};
+
+                // 2. Determina la chiave giocatore usata nel nodo `players/`
+                const playerKey = userData.name || currentUser.displayName || currentUser.uid;
+
+                if (playerKey) {
+                    // Cerca prima in `players/{playerKey}/info/real_name`
+                    let playerSnap = await db.ref(`players/${playerKey}/info/real_name`).once('value');
+                    
+                    // Se non trova nulla, tenta la ricerca in minuscolo
+                    if (!playerSnap.exists() || !playerSnap.val()) {
+                        playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info/real_name`).once('value');
+                    }
+
+                    if (playerSnap.exists() && playerSnap.val()) {
+                        realNameEstratto = playerSnap.val();
+                    }
+                }
+
+                // Backup: Se non presente in players/, controlla in users/{uid}/real_name
+                if (!realNameEstratto && userData.real_name) {
+                    realNameEstratto = userData.real_name;
+                }
+            }
+
+            // Backup 2: Verifica eventuali variabili globali esplicite per real_name (SENZA FALLBACK SU NICKNAME)
+            if (!realNameEstratto) {
+                realNameEstratto = window.currentUserRealName || 
+                                   window.currentPlayer?.info?.real_name || 
+                                   window.currentUser?.real_name || "";
+            }
+
+            // Assegna l'iniziale ESCLUSIVAMENTE se real_name è una stringa valida
+            if (realNameEstratto && typeof realNameEstratto === 'string') {
+                inizialeNomeUtente = realNameEstratto.trim().charAt(0).toLowerCase();
+            } else {
+                console.warn("[Helper] Attenzione: 'real_name' non trovato per l'utente loggato. Nessun Pokémon verrà mostrato.");
+            }
+
+        } catch (errUser) {
+            console.error("[Helper] Errore durante il recupero di 'real_name':", errUser);
+        }
+    }
+
     // 🛠️ DETERMINAZIONE PROPRIETÀ DINAMICA TIER
     const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
 
@@ -3100,9 +3226,12 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             for (const chiave in restrizioniPokemon) {
                 if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
                 const r = restrizioniPokemon[chiave];
-                if (r && r.operator && r.mode !== "SAME_ACROSS_TEAM") {
-                    const op = r.operator.toLowerCase().trim();
-                    if (operatoriValidi.includes(op)) haFiltriAttivi = true;
+                if (r) {
+                    if (r.mode === "PLAYER_INITIAL") haFiltriAttivi = true;
+                    if (r.operator && r.mode !== "SAME_ACROSS_TEAM") {
+                        const op = r.operator.toLowerCase().trim();
+                        if (operatoriValidi.includes(op)) haFiltriAttivi = true;
+                    }
                 }
             }
         }
@@ -3145,7 +3274,20 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
 
                 const regola = restrizioniPokemon[chiaveRestrizione];
-                if (!regola || !regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
+                if (!regola) continue;
+
+                // 🔤 FILTRO: NOME POKÉMON CHE INIZIA CON L'INIZIALE DI REAL_NAME
+                if (chiaveRestrizione === 'name_starts' && regola.mode === "PLAYER_INITIAL") {
+                    if (!inizialeNomeUtente) return false; // Se manca real_name, blocca i Pokémon
+                    
+                    const nomePkm = (pkmDettaglio.name || nomeChiave).toLowerCase().trim();
+                    if (!nomePkm.startsWith(inizialeNomeUtente)) {
+                        return false;
+                    }
+                    continue; 
+                }
+
+                if (!regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
 
                 const op = regola.operator.toLowerCase().trim();
                 if (!operatoriValidi.includes(op)) continue;

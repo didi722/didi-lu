@@ -754,10 +754,20 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
         valueContainer.style.order = "3";     
         operatorContainer.style.order = "4";  
         
+        // Costruzione opzioni della modalità di input
+        let modeOptions = `
+            <option value="SPECIFIC">Is...</option>
+            <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>
+        `;
+
+        // Se il campo è la lettera iniziale del Pokémon, aggiungiamo la modalità "Player's Initial"
+        if (campo === "name_starts") {
+            modeOptions += `<option value="PLAYER_INITIAL" style="font-weight: 900; color: #3b82f6;">Player's Initial</option>`;
+        }
+
         valueContainer.innerHTML = `
             <select class="select-mode" style="width: 100%;" onchange="gestisciCambioModalitaInput(${id}, this.value); eseguiControlloConflitti();">
-                <option value="SPECIFIC">Is...</option>
-                <option value="SAME_ACROSS_TEAM" style="font-weight: 900; color: #22c55e;">Same</option>
+                ${modeOptions}
             </select>
         `;
 
@@ -765,7 +775,7 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
             <span id="custom-field-box-${id}" style="display: inline-block;"></span>
         `);
         
-        // 🌟 PRE-COMPILAZIONE MODALITA' NUMERICA (Specific / Same) prima del rendering del box
+        // 🌟 PRE-COMPILAZIONE MODALITA' NUMERICA / TESTUALE (Specific / Same / Player Initial)
         if (presetRule && presetRule.mode) {
             const selectMode = valueContainer.querySelector('.select-mode');
             if (selectMode) {
@@ -773,14 +783,20 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
             }
         }
         
-        // Esegue il rendering effettivo dei campi numerici (<input>)
+        // Esegue il rendering effettivo dei campi di input
         renderizzaInputNumerici(id, categoria, campo);
 
-        // 🌟 PRE-COMPILAZIONE DEI VALORI NUMERICI NEI CAMPI REALI APPENA GENERATI (Es: "500")
+        // Aggiorna lo stato dei campi (es. nascondere input per SAME o PLAYER_INITIAL)
+        if (presetRule && presetRule.mode) {
+            if (typeof gestisciCambioModalitaInput === "function") {
+                gestisciCambioModalitaInput(id, presetRule.mode);
+            }
+        }
+
+        // 🌟 PRE-COMPILAZIONE DEI VALORI NEI CAMPI REALI APPENA GENERATI
         if (presetRule) {
             const customBox = document.getElementById(`custom-field-box-${id}`);
             if (customBox) {
-                // Cerca un input singolo (es. numerico, testo o select a seconda delle tue estensioni)
                 const singleInput = customBox.querySelector('input[type="number"], input[type="text"], select');
                 if (singleInput && presetRule.value !== undefined) {
                     singleInput.value = presetRule.value;
@@ -871,15 +887,15 @@ function gestisciCambioModalitaInput(id, modalita) {
     
     if (!customFieldBox) return;
 
-    if (modalita === "SAME_ACROSS_TEAM") {
+    if (modalita === "SAME_ACROSS_TEAM" || modalita === "PLAYER_INITIAL") {
         customFieldBox.style.display = "none"; 
         if (operatorSelect) {
-            operatorSelect.value = "equals"; // Forza su "="
+            operatorSelect.value = "equals"; // Forza l'operatore su "="
             operatorSelect.style.opacity = "0.5";
             operatorSelect.style.pointerEvents = "none"; 
         }
     } else {
-        customFieldBox.style.display = "inline-block"; // Mantieni inline-block coerente
+        customFieldBox.style.display = "inline-block"; 
         if (operatorSelect) {
             operatorSelect.style.opacity = "1";
             operatorSelect.style.pointerEvents = "auto"; 
@@ -1994,6 +2010,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'bst': 'BST',
             'type': 'Type',
             'is_mega': 'Mega evolutions',
+            'player_initial': "Player's Initial",
 
             // Operators & Logic
             'equals': '=',
@@ -2114,23 +2131,28 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             Object.entries(formatoDati.restrizioni).forEach(([categoria, campi]) => {
                 Object.entries(campi).forEach(([campo, regola]) => {
                     let badgeStato = '';
-                    if (regola.mode === 'BANNED') {
-                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">BANNED</span>`;
-                    } else if (regola.mode === 'ALLOWED') {
-                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">ALLOWED</span>`;
-                    } else if (regola.mode === 'SPECIFIC') {
-                        let dettagliOp = '';
-                        if (regola.operator === 'between') {
-                            dettagliOp = `${regola.min} - ${regola.max}`;
-                        } else {
-                            const opUmano = umanizza(regola.operator);
-                            const valUmano = umanizza(regola.value);
-                            
-                            // Se l'operatore è '=', mostra direttamente la stringa pulita
-                            dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
-                        }
-                        badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">${dettagliOp.toUpperCase()}</span>`;
-                    }
+
+if (regola.mode === 'BANNED') {
+    badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">BANNED</span>`;
+} else if (regola.mode === 'ALLOWED') {
+    badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">ALLOWED</span>`;
+} else if (regola.mode === 'PLAYER_INITIAL') {
+    badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">PLAYER INITIAL</span>`;
+} else if (regola.mode === 'SAME_ACROSS_TEAM') {
+    badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">SAME ACROSS TEAM</span>`;
+} else if (regola.mode === 'SPECIFIC') {
+    let dettagliOp = '';
+    if (regola.operator === 'between') {
+        dettagliOp = `${regola.min} - ${regola.max}`;
+    } else {
+        const opUmano = umanizza(regola.operator);
+        const valUmano = umanizza(regola.value);
+        
+        // Se l'operatore è '=', mostra direttamente la stringa pulita
+        dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
+    }
+    badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">${dettagliOp.toUpperCase()}</span>`;
+}
                     
                     // Umanizzazione delle chiavi strutturali in Inglese Pulito
                     const categoriaUmana = umanizza(categoria).toUpperCase();
