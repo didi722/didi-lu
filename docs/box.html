@@ -2192,6 +2192,25 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
     const genLimite = regolamento.genRuleValue || "selezionata";
 
+    // 🌟 HELPER PER ESTRAZIONE TIER (Supporto Little Cup per Singolo e Doppio)
+    function ottieniTierDaOggetto(valoreGrezzo, proprietaDinamica, targetTier) {
+        if (!valoreGrezzo) return "";
+        if (typeof valoreGrezzo === 'string') return valoreGrezzo.toUpperCase().trim();
+
+        const isTargetLC = targetTier && targetTier.toUpperCase().trim() === "LC";
+
+        if (isTargetLC) {
+            const singleTier = valoreGrezzo.single_tier ? String(valoreGrezzo.single_tier).toUpperCase().trim() : "";
+            const doublesTier = valoreGrezzo.doubles_tier ? String(valoreGrezzo.doubles_tier).toUpperCase().trim() : "";
+            if (singleTier === "LC" || doublesTier === "LC") {
+                return "LC";
+            }
+        }
+
+        const tier = valoreGrezzo[proprietaDinamica] || "";
+        return String(tier).toUpperCase().trim();
+    }
+
     // ================= LOGICA TIER: STANDARD =================
     if (tierMassima === "STANDARD") {
         let contatoreUber = 0;
@@ -2212,7 +2231,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
                 return;
             }
 
-            const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
+            const tierPokemon = ottieniTierDaOggetto(valoreGrezzo, proprietaTierDinamica, tierMassima);
 
             // Gestione "Illegal" (valido solo per formati 'within' in cui il pokemon è Dex-cut)
             if (tierPokemon === "ILLEGAL" || tierPokemon === "UNRELEASED") {
@@ -2243,7 +2262,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
         return errori;
     }
 
-    // ================= LOGICA TIER: GERARCHICA CLASSICA (OU, UU, ecc.) =================
+    // ================= LOGICA TIER: GERARCHICA CLASSICA (OU, UU, LC, ecc.) =================
     const gerarchia = ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PU", "ZU", "NFE", "LC"];
     const idxMax = gerarchia.indexOf(tierMassima);
 
@@ -2260,7 +2279,7 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
 
         if (!valoreGrezzo) return;
 
-        const tierPokemon = (typeof valoreGrezzo === 'object' ? valoreGrezzo[proprietaTierDinamica] : valoreGrezzo).toUpperCase();
+        const tierPokemon = ottieniTierDaOggetto(valoreGrezzo, proprietaTierDinamica, tierMassima);
 
         if (tierPokemon === "ILLEGAL" || tierPokemon === "UNRELEASED") {
             errori.push(`[${pkmn.name}] non è disponibile o è bandito nella Gen ${genLimite}.`);
@@ -2275,7 +2294,6 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     });
     return errori;
 }
-
 function validaClauses(teamDatiPokeAPI, regolamento) {
     const errori = [];
     if (!regolamento.strutturaSito) return errori;
