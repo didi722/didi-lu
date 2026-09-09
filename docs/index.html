@@ -859,9 +859,10 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 formatiHtml = "<li>No formats selected</li>";
             }
 
-            // 4. Calcolo dei Giorni Totali
+            // 4. Calcolo dei Giorni Totali e Giorni per Giocatore
             const showdownsPerFormato = info.showdowns_per_format || 0;
             const totalDays = countIscritti * countFormati * showdownsPerFormato;
+            const daysPerPlayer = countFormati * showdownsPerFormato; // Formati * Showdowns per formato
 
             // Impostiamo il titolo principale (stile "ADD NEW FORMAT")
             document.getElementById('modal-season-name').style.display = "inline-block";
@@ -883,7 +884,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                         </div>
                     </div>
                     
-                    <!-- COLONNA DI DESTRA: STRUTTURA (Tre box distinti con etichette asimmetriche) -->
+                    <!-- COLONNA DI DESTRA: STRUTTURA -->
                     <div class="neubru-col">
                         
                         <!-- Box Players -->
@@ -898,10 +899,10 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                             <span class="neubru-stat-value">${showdownsPerFormato}</span>
                         </div>
 
-                        <!-- Box Days (Fix calcolo: iscritti * formati * showdowns) -->
+                        <!-- Box Days Per Player (Formati * Showdowns per format) -->
                         <div class="neubru-content-card">
-                            <span class="neubru-floating-label rotate-left">Total days</span>
-                            <span class="neubru-stat-value">${totalDays}</span>
+                            <span class="neubru-floating-label rotate-right">Showdowns per opponent</span>
+                            <span class="neubru-stat-value">${daysPerPlayer}</span>
                         </div>
 
                     </div>
