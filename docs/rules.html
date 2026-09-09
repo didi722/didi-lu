@@ -42,9 +42,10 @@
     <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
-    <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> Rulebook</a>
-        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
-    </div>
+    <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
+    <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
+    <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+</div>
 </div>
 
 <div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
@@ -826,6 +827,32 @@ async function applicaColoreUtente(user) {
         console.error("❌ Errore recupero colore:", e);
     }
 }
+
+firebase.auth().onAuthStateChanged(async (currentUser) => {
+    const adminMenuItem = document.getElementById('admin-menu-item');
+    if (!adminMenuItem) return;
+
+    if (currentUser) {
+        try {
+            // Recupera i dati dell'utente dal nodo Realtime Database
+            const userSnap = await firebase.database().ref(`users/${currentUser.uid}`).once('value');
+            const userData = userSnap.val();
+
+            // Verifica se il ruolo impostato è "admin"
+            if (userData && userData.role === 'admin') {
+                adminMenuItem.style.display = 'flex'; // Mostra il menu ADMIN
+            } else {
+                adminMenuItem.style.display = 'none'; // Nasconde se è "player" o altro
+            }
+        } catch (error) {
+            console.error("Errore nel recupero del ruolo utente:", error);
+            adminMenuItem.style.display = 'none';
+        }
+    } else {
+        // Nessun utente loggato
+        adminMenuItem.style.display = 'none';
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('.rule-card');
