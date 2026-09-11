@@ -1904,8 +1904,8 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
     let jsonDati = null;
     const genLimite = parseInt(regolamento.genRuleValue);
 
-    // 👤 RECUPERO DELL'INIZIALE DI REAL_NAME (PER LA REGOLA PLAYER_INITIAL)
-    let inizialeNomeUtente = "";
+    // 👤 RECUPERO DELLE INIZIALI (NOME E COGNOME PER LA REGOLA PLAYER_INITIAL)
+    let inizialiUtente = { nome: "", cognome: "" };
     const regolaNameStarts = regolamento.restrizioni?.pokemon?.name_starts;
 
     if (regolaNameStarts && regolaNameStarts.mode === "PLAYER_INITIAL") {
@@ -1913,51 +1913,57 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
             const authObj = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
             const currentUser = authObj?.currentUser;
             let realNameEstratto = "";
+            let lastNameEstratto = "";
 
             if (currentUser && typeof db !== 'undefined') {
-                // 1. Recupera i dati account dell'utente per conoscere il nickname / playerKey
+                // 1. Recupera i dati account dell'utente
                 const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
                 const userData = userSnap.val() || {};
 
-                // 2. Determina la chiave giocatore usata nel nodo `players/`
-                const playerKey = userData.name || currentUser.displayName || currentUser.uid;
+                // Cerca prima su users/
+                realNameEstratto = userData.real_name || userData.realName || "";
+                lastNameEstratto = userData.last_name || userData.lastName || "";
 
-                if (playerKey) {
-                    // Cerca prima in `players/${playerKey}/info/real_name`
-                    let playerSnap = await db.ref(`players/${playerKey}/info/real_name`).once('value');
-                    
-                    // Se non trova nulla, tenta la ricerca in minuscolo
-                    if (!playerSnap.exists() || !playerSnap.val()) {
-                        playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info/real_name`).once('value');
+                // 2. Se mancanti, cerca sul nodo players/
+                if (!realNameEstratto || !lastNameEstratto) {
+                    const playerKey = userData.name || currentUser.displayName || currentUser.uid;
+                    if (playerKey) {
+                        let playerSnap = await db.ref(`players/${playerKey}/info`).once('value');
+                        if (!playerSnap.exists() || !playerSnap.val()) {
+                            playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info`).once('value');
+                        }
+
+                        if (playerSnap.exists() && playerSnap.val()) {
+                            const pInfo = playerSnap.val();
+                            if (!realNameEstratto) realNameEstratto = pInfo.real_name || pInfo.realName || "";
+                            if (!lastNameEstratto) lastNameEstratto = pInfo.last_name || pInfo.lastName || "";
+                        }
                     }
-
-                    if (playerSnap.exists() && playerSnap.val()) {
-                        realNameEstratto = playerSnap.val();
-                    }
-                }
-
-                // Backup 1: Se non presente in players/, controlla in users/{uid}/real_name
-                if (!realNameEstratto && userData.real_name) {
-                    realNameEstratto = userData.real_name;
                 }
             }
 
-            // Backup 2: Verifica eventuali variabili globali esplicite per real_name (SENZA FALLBACK SU NICKNAME)
+            // Backup su variabili globali di contesto
             if (!realNameEstratto) {
-                realNameEstratto = window.currentUserRealName || 
-                                   window.currentPlayer?.info?.real_name || 
-                                   window.currentUser?.real_name || "";
+                realNameEstratto = window.currentUserRealName || window.currentPlayer?.info?.real_name || window.currentUser?.real_name || "";
+            }
+            if (!lastNameEstratto) {
+                lastNameEstratto = window.currentUserLastName || window.currentPlayer?.info?.last_name || window.currentUser?.last_name || "";
             }
 
-            // Assegna l'iniziale ESCLUSIVAMENTE se real_name è una stringa valida
+            // Assegnazione delle iniziali pulite
             if (realNameEstratto && typeof realNameEstratto === 'string') {
-                inizialeNomeUtente = realNameEstratto.trim().charAt(0).toLowerCase();
-            } else {
-                console.warn("[Validazione] Attenzione: 'real_name' non trovato per l'utente loggato.");
+                inizialiUtente.nome = realNameEstratto.trim().charAt(0).toLowerCase();
+            }
+            if (lastNameEstratto && typeof lastNameEstratto === 'string') {
+                inizialiUtente.cognome = lastNameEstratto.trim().charAt(0).toLowerCase();
+            }
+
+            if (!inizialiUtente.nome && !inizialiUtente.cognome) {
+                console.warn("[Validazione] Attenzione: Nome/Cognome reale non trovato per l'utente loggato.");
             }
 
         } catch (errUser) {
-            console.error("[Validazione] Errore durante il recupero di 'real_name':", errUser);
+            console.error("[Validazione] Errore durante il recupero di 'real_name' / 'last_name':", errUser);
         }
     }
 
@@ -2019,7 +2025,7 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
     tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
 
     if (regolamento.restrizioni) {
-        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento, inizialeNomeUtente);
+        const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento, inizialiUtente);
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
@@ -2069,7 +2075,42 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null
     return errori;
 }
 
-function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento, inizialeNomeUtente = "") { 
+/**
+ * Funzione Helper per verificare che il team non condivida più di 2 Pokémon con altri team
+ */
+function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null) {
+    const errori = [];
+
+    const nomiTeamCorrente = teamCorrente
+        .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase())
+        .filter(Boolean);
+
+    for (const teamEsistente of altriTeam) {
+        if (currentTeamId && teamEsistente.id && teamEsistente.id === currentTeamId) {
+            continue;
+        }
+
+        const listaPokemonEsistenti = teamEsistente.pokemon || teamEsistente.teamDati || [];
+        
+        const nomiTeamEsistente = listaPokemonEsistenti
+            .map(p => (typeof p === 'string' ? p : (p.species?.name || p.name || p.nome || p.pokemon || '')).toLowerCase())
+            .filter(Boolean);
+
+        const pokemonInComune = nomiTeamCorrente.filter(nome => nomiTeamEsistente.includes(nome));
+
+        if (pokemonInComune.length > 2) {
+            const listaNomiFormatted = pokemonInComune.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(', ');
+            errori.push(
+                `Il team condivide troppi Pokémon (${pokemonInComune.length}: ${listaNomiFormatted}) con un altro team già registrato (${teamEsistente.nome || 'Team esistente'}). Nei formati custom sono consentiti al massimo 2 Pokémon uguali.`
+            );
+            break; 
+        }
+    }
+
+    return errori;
+}
+
+function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento, inizialiUtente = { nome: "", cognome: "" }) { 
     const errori = [];
 
     const proprietaTierDinamica = regolamento?.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
@@ -2078,19 +2119,36 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
         Object.keys(restrizioni.pokemon).forEach(field => {
             const regola = restrizioni.pokemon[field];
 
-            // 🔤 CONTROLLO RESTRIZIONE INIZIALE NOME (real_name)
+            // 🔤 CONTROLLO RESTRIZIONE INIZIALE NOME/COGNOME (PLAYER_INITIAL)
             if (field === 'name_starts') {
                 if (regola.mode === "PLAYER_INITIAL") {
-                    if (!inizialeNomeUtente) {
-                        errori.push(`[Restrizione Nome] Impossibile convalidare la regola sull'iniziale: il nome reale (real_name) dell'utente non è presente o non è stato trovato.`);
+                    const initNome = (inizialiUtente.nome || "").toLowerCase();
+                    const initCognome = (inizialiUtente.cognome || "").toLowerCase();
+
+                    if (!initNome && !initCognome) {
+                        errori.push(`[Restrizione Nome] Impossibile convalidare la regola sull'iniziale: né il nome né il cognome reale dell'utente sono stati trovati.`);
                     } else {
-                        team.forEach(p => {
+                        // Verifica se TUTTI i Pokémon iniziano con l'iniziale del NOME
+                        const tuttiConInizialeNome = initNome && team.every(p => {
                             const nomePkm = (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase().trim();
-                            if (!nomePkm.startsWith(inizialeNomeUtente)) {
-                                const nomeFormattato = p.name || p.nome || 'Pokémon';
-                                errori.push(`[${nomeFormattato}] Non valido: il nome del Pokémon deve iniziare con l'iniziale del tuo nome reale ("${inizialeNomeUtente.toUpperCase()}").`);
-                            }
+                            return nomePkm.startsWith(initNome);
                         });
+
+                        // Verifica se TUTTI i Pokémon iniziano con l'iniziale del COGNOME
+                        const tuttiConInizialeCognome = initCognome && team.every(p => {
+                            const nomePkm = (p.species?.name || p.name || p.nome || p.pokemon || '').toLowerCase().trim();
+                            return nomePkm.startsWith(initCognome);
+                        });
+
+                        // Se NON soddisfano completamente l'una O l'altra regola (team misto o con altre lettere)
+                        if (!tuttiConInizialeNome && !tuttiConInizialeCognome) {
+                            if (initNome && initCognome && initNome !== initCognome) {
+                                errori.push(`[Restrizione Nome] Team non valido: tutti i Pokémon devono iniziare con l'iniziale del tuo Nome ("${initNome.toUpperCase()}") OPPURE tutti con l'iniziale del Cognome ("${initCognome.toUpperCase()}"). I team misti o con altre lettere non sono consentiti.`);
+                            } else {
+                                const letteraValida = (initNome || initCognome).toUpperCase();
+                                errori.push(`[Restrizione Nome] Team non valido: tutti i Pokémon devono iniziare con la tua iniziale ("${letteraValida}").`);
+                            }
+                        }
                     }
                     return;
                 }
@@ -2730,7 +2788,7 @@ async function popolaSelettoreFormati() {
         return;
     }
 
-    select.innerHTML = '<option value="">Seleziona Formato...</option>';
+    select.innerHTML = '<option value="">Choose Format...</option>';
 
     try {
         const snapshot = await db.ref('regolamenti').once('value');
@@ -2788,10 +2846,12 @@ async function gestisciCambioFormatoHelper() {
     }
 
     try {
-        // 🌟 CORREZIONE CRUCIALE: Carichiamo il database globale SUBITO per qualsiasi formato, se non è in cache
+        // Caricamento database base globale in cache se assente
         if (!window.pokedexBase) {
             console.log("[Helper Cache] Caricamento iniziale di pokedex_base.json...");
             const resBase = await fetch('pkm-gens/pokedex_base.json');
+            if (selectedFormatId !== window.currentHelperFormatId) return;
+
             if (!resBase.ok) {
                 if (grid) grid.innerHTML = `<div class="helper-placeholder-row" style="color: #d9534f;">❌ Critical Error: Unable to load base database.</div>`;
                 throw new Error(`Missing pkm-gens/pokedex_base.json!`);
@@ -2828,6 +2888,130 @@ async function gestisciCambioFormatoHelper() {
         
         const jsonDati = await res.json(); 
 
+        // ----------------------------------------------------
+        // 🎯 GESTIONE PLAYER_INITIAL (Nome vs Cognome)
+        // ----------------------------------------------------
+        const restrizioneNameStarts = regolamento.restrizioni?.pokemon?.name_starts;
+        
+        if (restrizioneNameStarts && restrizioneNameStarts.mode === "PLAYER_INITIAL") {
+            const currentUser = firebase.auth().currentUser;
+            let realName = "";
+            let lastName = "";
+
+            if (currentUser) {
+                const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
+                if (selectedFormatId !== window.currentHelperFormatId) return;
+                
+                if (userSnap.exists()) {
+                    const uData = userSnap.val();
+                    realName = uData.real_name || "";
+                    lastName = uData.last_name || "";
+                }
+            }
+
+            const initNome = realName ? realName.trim().charAt(0).toUpperCase() : "";
+            const initCognome = lastName ? lastName.trim().charAt(0).toUpperCase() : "";
+
+            const inizialiUniche = new Set();
+            if (initNome) inizialiUniche.add(initNome);
+            if (initCognome) inizialiUniche.add(initCognome);
+
+            const arrayIniziali = Array.from(inizialiUniche);
+
+            // Funzione helper per applicare il filtro per lettera
+            const applicaFiltroIniziale = async (lettera) => {
+                const regolamentoModificato = JSON.parse(JSON.stringify(regolamento));
+                regolamentoModificato.restrizioni.pokemon.name_starts = {
+                    mode: "VALUE",
+                    operator: "STARTS_WITH",
+                    value: lettera
+                };
+
+                const risultatoFiltro = await generaListaPokémonPerFormato(regolamentoModificato, jsonDati);
+                if (selectedFormatId !== window.currentHelperFormatId) return;
+
+                if (risultatoFiltro.tipoLayout === "FLAT") {
+                    renderizzaListaPiatta(risultatoFiltro.pokemon);
+                    if (countSpan) countSpan.textContent = risultatoFiltro.pokemon.length;
+                }
+            };
+
+            // CASO 1: Una sola iniziale disponibile
+            if (arrayIniziali.length <= 1) {
+                const letteraUnica = arrayIniziali[0] || "";
+                if (letteraUnica) {
+                    await applicaFiltroIniziale(letteraUnica);
+                } else {
+                    if (grid) grid.innerHTML = `<div class="helper-placeholder-row">No initial letter found for user.</div>`;
+                    if (countSpan) countSpan.textContent = '0';
+                }
+                return;
+            }
+
+            // CASO 2: Iniziali DIVERSE - Creazione del menù a tendina
+            if (arrayIniziali.length > 1) {
+                // Calcolo preventivo dei Pokémon disponibili per ogni iniziale
+                const conteggiIniziali = {};
+                for (const lettera of arrayIniziali) {
+                    const regolamentoModificato = JSON.parse(JSON.stringify(regolamento));
+                    regolamentoModificato.restrizioni.pokemon.name_starts = {
+                        mode: "VALUE",
+                        operator: "STARTS_WITH",
+                        value: lettera
+                    };
+                    const risultatoTemp = await generaListaPokémonPerFormato(regolamentoModificato, jsonDati);
+                    if (selectedFormatId !== window.currentHelperFormatId) return;
+                    conteggiIniziali[lettera] = risultatoTemp.pokemon ? risultatoTemp.pokemon.length : 0;
+                }
+
+                // Pulizia del DOM eseguita IMMEDIATAMENTE PRIMA di creare e appendere il nuovo elemento
+                const oldContainer = document.getElementById('helper-player-initial-container');
+                if (oldContainer) oldContainer.remove();
+
+                const containerInitial = document.createElement('div');
+                containerInitial.id = "helper-player-initial-container";
+                containerInitial.style.cssText = "margin-top: 10px; display: flex; flex-direction: column; gap: 4px;";
+
+                const labelInitial = document.createElement('label');
+                labelInitial.style.cssText = "font-size: 0.85rem; font-weight: 700; color: #444;";
+                labelInitial.textContent = "Select Player Initial for Pokémon names:";
+
+                const selectInitial = document.createElement('select');
+                selectInitial.id = "helper-player-initial-select";
+                selectInitial.style.cssText = "padding: 6px; border: 3px solid black; box-shadow: 4px 4px 0 solid black; font-size: 0.9rem; background: #fff;";
+
+                selectInitial.innerHTML = `<option value="">-- Choose Initial --</option>`;
+
+                arrayIniziali.forEach(lettera => {
+                    const opt = document.createElement('option');
+                    opt.value = lettera;
+                    opt.textContent = `${lettera}   •   ${conteggiIniziali[lettera]}`;
+                    selectInitial.appendChild(opt);
+                });
+
+                containerInitial.appendChild(labelInitial);
+                containerInitial.appendChild(selectInitial);
+                if (infoFilters) infoFilters.appendChild(containerInitial);
+
+                selectInitial.addEventListener('change', async () => {
+                    const letteraScelta = selectInitial.value;
+                    if (!letteraScelta) {
+                        if (grid) grid.innerHTML = `<div class="helper-placeholder-row">Please select an initial letter above.</div>`;
+                        if (countSpan) countSpan.textContent = '0';
+                        return;
+                    }
+                    await applicaFiltroIniziale(letteraScelta);
+                });
+
+                if (grid) grid.innerHTML = `<div class="helper-placeholder-row">Please select an initial letter above.</div>`;
+                if (countSpan) countSpan.textContent = '0';
+                return;
+            }
+        }
+
+        // ----------------------------------------------------
+        // GESTIONE RESTRIZIONI SAME_ACROSS_TEAM
+        // ----------------------------------------------------
         const CHIAVI_BIOLOGICHE_VALIDE = [
             'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
             'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
@@ -2857,7 +3041,6 @@ async function gestisciCambioFormatoHelper() {
         }
 
         if (chiaviSameAcross.length > 0) {
-            // Utilizziamo il database centralizzato agganciato a window
             const pokedexBase = window.pokedexBase;
 
             const regolamentoTemporaneo = JSON.parse(JSON.stringify(regolamento));
@@ -3036,7 +3219,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     align-items: center;
                     justify-content: center;
                     padding: 80px 20px;
-                    grid-column: 1 / -1; /* Occupa tutta la larghezza se è una CSS Grid */
+                    grid-column: 1 / -1;
                     width: 100%;
                 }
                 .pokeball-spinner-builder {
@@ -3046,10 +3229,8 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     border: 5px solid #000000;
                     border-radius: 50%;
                     position: relative;
-                    /* Animazione fluida ma scattante in stile fumetto/Neubrutalist */
                     animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
                 }
-                /* Linea nera centrale della Pokéball */
                 .pokeball-spinner-builder::before {
                     content: "";
                     position: absolute;
@@ -3060,7 +3241,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     left: 0;
                     transform: translateY(-50%);
                 }
-                /* Pulsante centrale bianco */
                 .pokeball-spinner-builder::after {
                     content: "";
                     position: absolute;
@@ -3099,62 +3279,59 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     let contatoreOrdine = 0;
 
     const restrizioniPokemon = regolamento.restrizioni?.pokemon;
-    let pokedexBase = null;
+    let pokedexBase = window.pokedexBase || null;
 
     // 👤 RECUPERO DEL VERO NOME (real_name) DAL NODO PLAYERS/{PLAYERKEY}/INFO/REAL_NAME
     let inizialeNomeUtente = "";
     const regolaNameStarts = restrizioniPokemon?.name_starts;
 
-    if (regolaNameStarts && regolaNameStarts.mode === "PLAYER_INITIAL") {
-        try {
-            const authObj = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
-            const currentUser = authObj?.currentUser;
-            let realNameEstratto = "";
+    if (regolaNameStarts) {
+        if (regolaNameStarts.mode === "PLAYER_INITIAL") {
+            try {
+                const authObj = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth() : (typeof auth !== 'undefined' ? auth : null);
+                const currentUser = authObj?.currentUser;
+                let realNameEstratto = "";
 
-            if (currentUser && typeof db !== 'undefined') {
-                // 1. Recupera i dati account dell'utente per conoscere il nickname / playerKey
-                const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
-                const userData = userSnap.val() || {};
+                if (currentUser && typeof db !== 'undefined') {
+                    const userSnap = await db.ref(`users/${currentUser.uid}`).once('value');
+                    const userData = userSnap.val() || {};
 
-                // 2. Determina la chiave giocatore usata nel nodo `players/`
-                const playerKey = userData.name || currentUser.displayName || currentUser.uid;
+                    const playerKey = userData.name || currentUser.displayName || currentUser.uid;
 
-                if (playerKey) {
-                    // Cerca prima in `players/{playerKey}/info/real_name`
-                    let playerSnap = await db.ref(`players/${playerKey}/info/real_name`).once('value');
-                    
-                    // Se non trova nulla, tenta la ricerca in minuscolo
-                    if (!playerSnap.exists() || !playerSnap.val()) {
-                        playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info/real_name`).once('value');
+                    if (playerKey) {
+                        let playerSnap = await db.ref(`players/${playerKey}/info/real_name`).once('value');
+                        
+                        if (!playerSnap.exists() || !playerSnap.val()) {
+                            playerSnap = await db.ref(`players/${playerKey.toLowerCase()}/info/real_name`).once('value');
+                        }
+
+                        if (playerSnap.exists() && playerSnap.val()) {
+                            realNameEstratto = playerSnap.val();
+                        }
                     }
 
-                    if (playerSnap.exists() && playerSnap.val()) {
-                        realNameEstratto = playerSnap.val();
+                    if (!realNameEstratto && userData.real_name) {
+                        realNameEstratto = userData.real_name;
                     }
                 }
 
-                // Backup: Se non presente in players/, controlla in users/{uid}/real_name
-                if (!realNameEstratto && userData.real_name) {
-                    realNameEstratto = userData.real_name;
+                if (!realNameEstratto) {
+                    realNameEstratto = window.currentUserRealName || 
+                                       window.currentPlayer?.info?.real_name || 
+                                       window.currentUser?.real_name || "";
                 }
-            }
 
-            // Backup 2: Verifica eventuali variabili globali esplicite per real_name (SENZA FALLBACK SU NICKNAME)
-            if (!realNameEstratto) {
-                realNameEstratto = window.currentUserRealName || 
-                                   window.currentPlayer?.info?.real_name || 
-                                   window.currentUser?.real_name || "";
-            }
+                if (realNameEstratto && typeof realNameEstratto === 'string') {
+                    inizialeNomeUtente = realNameEstratto.trim().charAt(0).toLowerCase();
+                } else {
+                    console.warn("[Helper] Attenzione: 'real_name' non trovato per l'utente loggato.");
+                }
 
-            // Assegna l'iniziale ESCLUSIVAMENTE se real_name è una stringa valida
-            if (realNameEstratto && typeof realNameEstratto === 'string') {
-                inizialeNomeUtente = realNameEstratto.trim().charAt(0).toLowerCase();
-            } else {
-                console.warn("[Helper] Attenzione: 'real_name' non trovato per l'utente loggato. Nessun Pokémon verrà mostrato.");
+            } catch (errUser) {
+                console.error("[Helper] Errore durante il recupero di 'real_name':", errUser);
             }
-
-        } catch (errUser) {
-            console.error("[Helper] Errore durante il recupero di 'real_name':", errUser);
+        } else if (regolaNameStarts.value) {
+            inizialeNomeUtente = String(regolaNameStarts.value).trim().charAt(0).toLowerCase();
         }
     }
 
@@ -3163,7 +3340,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
 
     const deveCaricarePokedexBase = (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) || (regolamento.strutturaSito === "custom");
 
-    if (deveCaricarePokedexBase) {
+    if (deveCaricarePokedexBase && !pokedexBase) {
         try {
             const resBase = await fetch('pkm-gens/pokedex_base.json');
             const pokedexBaseRaw = await resBase.json();
@@ -3171,7 +3348,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
             Object.keys(pokedexBaseRaw).forEach(key => {
                 pokedexBase[key.toLowerCase().trim()] = pokedexBaseRaw[key];
             });
-            
+            window.pokedexBase = pokedexBase;
         } catch (e) {
             console.error("[Helper] Error loading pkm-gens/pokedex_base.json:", e);
         }
@@ -3216,13 +3393,11 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const strJson = String(valoreJson).toLowerCase().trim();
         const strFire = String(regola.value || '').toLowerCase().trim();
         switch (op) {
-            case 'equals':  return strJson === strFire;
-            case 'neq': return strJson !== strFire;
+            case 'equals':      return strJson === strFire;
+            case 'neq':         return strJson !== strFire;
             case 'prefix':
-            case 'starts_with':
-                return strJson.startsWith(strFire);
-            default:
-                return true;
+            case 'starts_with': return strJson.startsWith(strFire);
+            default:            return true;
         }
     }
 
@@ -3247,14 +3422,14 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         const onlyMythicalActive = valMythical === "only" || valMythical === "only mythical";
 
         let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive || (regolamento.strutturaSito === "custom");
-        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between'];
+        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between', 'starts_with', 'prefix'];
         
         if (restrizioniPokemon) {
             for (const chiave in restrizioniPokemon) {
                 if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
                 const r = restrizioniPokemon[chiave];
                 if (r) {
-                    if (r.mode === "PLAYER_INITIAL") haFiltriAttivi = true;
+                    if (r.mode === "PLAYER_INITIAL" || r.value || r.operator || chiave === 'name_starts') haFiltriAttivi = true;
                     if (r.operator && r.mode !== "SAME_ACROSS_TEAM") {
                         const op = r.operator.toLowerCase().trim();
                         if (operatoriValidi.includes(op)) haFiltriAttivi = true;
@@ -3303,12 +3478,19 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                 const regola = restrizioniPokemon[chiaveRestrizione];
                 if (!regola) continue;
 
-                // 🔤 FILTRO: NOME POKÉMON CHE INIZIA CON L'INIZIALE DI REAL_NAME
-                if (chiaveRestrizione === 'name_starts' && regola.mode === "PLAYER_INITIAL") {
-                    if (!inizialeNomeUtente) return false; // Se manca real_name, blocca i Pokémon
+                // 🔤 FILTRO SUPPORTO INIZIALE NOME POKÉMON (VALORE SINGOLO O PLAYER_INITIAL)
+                if (chiaveRestrizione === 'name_starts') {
+                    let letteraTarget = "";
+                    if (regola.mode === "PLAYER_INITIAL") {
+                        letteraTarget = inizialeNomeUtente;
+                    } else if (regola.value) {
+                        letteraTarget = String(regola.value).toLowerCase().trim();
+                    }
+
+                    if (!letteraTarget) return false; 
                     
                     const nomePkm = (pkmDettaglio.name || nomeChiave).toLowerCase().trim();
-                    if (!nomePkm.startsWith(inizialeNomeUtente)) {
+                    if (!nomePkm.startsWith(letteraTarget)) {
                         return false;
                     }
                     continue; 
@@ -3401,7 +3583,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         return idLower;
     }
 
-    // 🌟 HELPER PER ESTRAZIONE TIER (Incluso supporto Little Cup sia Singolo che Doppio)
     function ottieniTierDaOggetto(dato, proprietaDinamica, baseTier) {
         if (!dato) return "";
         if (typeof dato === 'string') return dato.toUpperCase().trim();
