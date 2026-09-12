@@ -110,6 +110,21 @@
                 <textarea id="format-desc" rows="2" placeholder="Explain the rules or the spirit of this format to players..."></textarea>
             </div>
 
+            <!-- 🆕 NUOVA RIGA: SHOWDOWN FORMAT & GENERATIONAL MECHANICS -->
+            <div class="format-input-row">
+                <div class="format-input-group flex-2">
+                    <label>SHOWDOWN FORMAT FOR VALIDATION</label>
+                    <input type="text" id="format-showdown-format" placeholder="Es: gen9ou, gen8vgc2021, gen9doublesou...">
+                </div>
+
+                <div class="format-input-group flex-1" style="justify-content: center;">
+                    <label for="format-generational-mechanics" style="cursor: pointer; display: flex; align-items: center; gap: 10px; margin-top: 22px; font-weight: bold; user-select: none;">
+                        <input type="checkbox" id="format-generational-mechanics" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ffcb05;">
+                        <span>GENERATIONAL MECHANICS</span>
+                    </label>
+                </div>
+            </div>
+
             <div id="section-official-vgc" class="format-conditional-section" style="display: none;">
                 <h3>OFFICIAL METAGAME SELECTOR</h3>
                 <div class="format-input-row">
@@ -144,7 +159,6 @@
                 </div>
                 
                 <div class="format-mandatory-box">
-                    
                     <div class="format-input-row">
                         <div class="format-input-group flex-1">
                             <label>BATTLE STYLE</label>
@@ -197,7 +211,7 @@
 
                 <div class="format-optional-box">
                     <div id="dynamic-rules-container">
-                        </div>
+                    </div>
                     
                     <button type="button" class="btn-add-rule" onclick="aggiungiRigaRegola()">
                         + ADD SPECIFIC RESTRICTION
@@ -207,7 +221,7 @@
         </div>
 
         <div class="format-modal-footer">
-            <button type="button" class="btn-save-format" onclick="salvaNuovoFormato()">SAVE FORMAT</button>
+            <button type="button" id="btn-salva-formato" class="btn-save-format" onclick="salvaNuovoFormato()">SAVE FORMAT</button>
         </div>
     </div>
 </div>
@@ -1124,9 +1138,13 @@ async function salvaNuovoFormato() {
     const fDesc = document.getElementById('format-desc');
     const fType = document.getElementById('format-type');
     
+    // 🆕 RECUPERO NUOVI CAMPI
+    const fGenMechanics = document.getElementById('format-generational-mechanics');
+    const fShowdownFormat = document.getElementById('format-showdown-format');
+    
     // VALIDAZIONE BASE ASSOLUTA
     if (!fName || !fName.value.trim()) {
-        alert(" Please enter a name for the format.");
+        alert("Please enter a name for the format.");
         return;
     }
     if (!fDesc || !fDesc.value.trim()) {
@@ -1141,11 +1159,13 @@ async function salvaNuovoFormato() {
     const tipoFormato = fType.value;
     const nuovoNome = fName.value.trim();
 
-    // 3. COSTRUZIONE DEL PAYLOAD BASE
+    // 3. COSTRUZIONE DEL PAYLOAD BASE (Con inclusione dei nuovi campi)
     const payload = {
         categoria: nuovoNome, 
         descrizioneBreve: fDesc.value.trim(),
         strutturaSito: tipoFormato, 
+        generationalMechanics: fGenMechanics ? fGenMechanics.checked : false, // 🆕 Booleano (true/false)
+        showdownFormat: fShowdownFormat ? fShowdownFormat.value.trim() : "",    // 🆕 Stringa ID showdown
         createdAt: new Date().toISOString()
     };
 
@@ -1275,8 +1295,11 @@ async function salvaNuovoFormato() {
         if (modalTitle) modalTitle.innerText = "CREA NUOVO FORMATO REGOLE";
         if (btnInvia) btnInvia.innerText = "CREA FORMATO";
 
+        // Reset di tutti i campi input
         if (fName) fName.value = "";
         if (fDesc) fDesc.value = "";
+        if (fGenMechanics) fGenMechanics.checked = false; // 🆕 Reset spunta
+        if (fShowdownFormat) fShowdownFormat.value = "";   // 🆕 Reset testo
 
         if (typeof caricaEVisualizzaFormati === 'function') caricaEVisualizzaFormati();
         
@@ -1877,12 +1900,27 @@ function apriModaleModificaFormato(id, dataJsonB64) {
     const fName = document.getElementById('format-name');
     const fDesc = document.getElementById('format-desc');
     const fType = document.getElementById('format-type');
+    
+    // 🆕 Nuovi elementi per Generational Mechanics e Showdown Format
+    const fGenMechanics = document.getElementById('format-generational-mechanics');
+    const fShowdownFormat = document.getElementById('format-showdown-format');
+
     const modalTitle = document.querySelector('#format-modal h2');
     const btnInvia = document.getElementById('btn-salva-formato');
 
     if (fName) fName.value = formato.categoria || "";
     if (fDesc) fDesc.value = formato.descrizioneBreve || "";
     
+    // 🆕 Popolamento spunta Generational Mechanics (default: false se non definito)
+    if (fGenMechanics) {
+      fGenMechanics.checked = Boolean(formato.generationalMechanics);
+    }
+
+    // 🆕 Popolamento casella di testo Showdown Format
+    if (fShowdownFormat) {
+      fShowdownFormat.value = formato.showdownFormat || "";
+    }
+
     if (fType) {
       fType.value = formato.strutturaSito || (formato.gen === "vgc" ? "vgc" : "custom");
       fType.dispatchEvent(new Event('change')); // Aggiorna i sottomenu della modale
@@ -2025,7 +2063,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'abilities': 'Abilities',
             'moves': 'Moves',
 
-            // Fields and Sub-rules (Removing underscores and camelCase leaking)
+            // Fields and Sub-rules
             'species': 'Specific Pokémon',
             'duplicates': 'Duplicate Clause',
             'total_allowed': 'Total Allowed',
@@ -2051,7 +2089,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'gt': '>',
             'is_legendary': 'Legendary',
             'is_mythical': 'Mythical',
-            'true': 'Allowed'
+            'true': 'Allowed',
+            'name_starts': 'Name starts with:'
         };
 
         const umanizza = (valore) => {
@@ -2084,7 +2123,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                 <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                     Format Type
                 </div>
-                <span style="color: #black; padding: 2px 8px; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; display: inline-block;">${tipoStrutturaUmano}</span>
+                <span style="color: #000; padding: 2px 8px; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; display: inline-block;">${tipoStrutturaUmano}</span>
             </div>
         `;
 
@@ -2137,9 +2176,33 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             }
         }
 
+        // 🆕 4e. SHOWDOWN FORMAT BLOCK (Se presente)
+        if (formatoDati.showdownFormat && formatoDati.showdownFormat.trim() !== "") {
+            blocksHtml += `
+                <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                    <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                        Showdown Format
+                    </div>
+                    <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: lowercase;">${formatoDati.showdownFormat.trim()}</span>
+                </div>
+            `;
+        }
+
+        // 🆕 4f. GENERATIONAL MECHANICS BLOCK
+        const genMechText = formatoDati.generationalMechanics ? 'ENABLED' : 'DISABLED';
+        const genMechColor = formatoDati.generationalMechanics ? '#15803d' : '#b91c1c'; // Verde o Rosso scuro
+        blocksHtml += `
+            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                    Gen Mechanics
+                </div>
+                <span style="font-weight: 900; font-size: 0.95rem; color: ${genMechColor}; text-transform: uppercase;">${genMechText}</span>
+            </div>
+        `;
+
         blocksHtml += `</div>`; // Close Row
 
-        // --- 4e. TIER BLOCK ---
+        // --- 4g. TIER BLOCK ---
         if (formatoDati.strutturaSito !== 'vgc' && formatoDati.baseTier) {
             blocksHtml += `
                 <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 5px 5px 0px #000; padding: 22px 20px 16px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
@@ -2151,7 +2214,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             `;
         }
 
-        // --- 4f. CLAUSES & RESTRICTIONS BLOCK (Umanizzato in Inglese) ---
+        // --- 4h. CLAUSES & RESTRICTIONS BLOCK ---
         if (formatoDati.restrizioni && Object.keys(formatoDati.restrizioni).length > 0) {
             let restrizioniItemsHtml = '';
 
@@ -2159,29 +2222,27 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                 Object.entries(campi).forEach(([campo, regola]) => {
                     let badgeStato = '';
 
-if (regola.mode === 'BANNED') {
-    badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">BANNED</span>`;
-} else if (regola.mode === 'ALLOWED') {
-    badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">ALLOWED</span>`;
-} else if (regola.mode === 'PLAYER_INITIAL') {
-    badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">PLAYER INITIAL</span>`;
-} else if (regola.mode === 'SAME_ACROSS_TEAM') {
-    badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">SAME ACROSS TEAM</span>`;
-} else if (regola.mode === 'SPECIFIC') {
-    let dettagliOp = '';
-    if (regola.operator === 'between') {
-        dettagliOp = `${regola.min} - ${regola.max}`;
-    } else {
-        const opUmano = umanizza(regola.operator);
-        const valUmano = umanizza(regola.value);
-        
-        // Se l'operatore è '=', mostra direttamente la stringa pulita
-        dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
-    }
-    badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">${dettagliOp.toUpperCase()}</span>`;
-}
+                    if (regola.mode === 'BANNED') {
+                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">BANNED</span>`;
+                    } else if (regola.mode === 'ALLOWED') {
+                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">ALLOWED</span>`;
+                    } else if (regola.mode === 'PLAYER_INITIAL') {
+                        badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">PLAYER INITIAL</span>`;
+                    } else if (regola.mode === 'SAME_ACROSS_TEAM') {
+                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">SAME ACROSS TEAM</span>`;
+                    } else if (regola.mode === 'SPECIFIC') {
+                        let dettagliOp = '';
+                        if (regola.operator === 'between') {
+                            dettagliOp = `${regola.min} - ${regola.max}`;
+                        } else {
+                            const opUmano = umanizza(regola.operator);
+                            const valUmano = umanizza(regola.value);
+                            
+                            dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
+                        }
+                        badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">${dettagliOp.toUpperCase()}</span>`;
+                    }
                     
-                    // Umanizzazione delle chiavi strutturali in Inglese Pulito
                     const categoriaUmana = umanizza(categoria).toUpperCase();
                     const campoUmano = umanizza(campo);
 
@@ -2246,8 +2307,7 @@ if (regola.mode === 'BANNED') {
 
     document.body.style.overflow = 'hidden';
 
-    // 🌟 LOGICA DI CHIUSURA AGGIORNATA
-    // Si chiude cliccando ovunque (sfondo o card di sinistra), TRANNE se si clicca all'interno delle card del ranking (colonna destra)
+    // 🌟 LOGICA DI CHIUSURA
     modalOverlay.onclick = (e) => {
         if (!e.target.closest('.format-modal-card-right')) {
             chiudiModaleFormato();
