@@ -1878,6 +1878,55 @@ function validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati) {
     return errori;
 }
 
+/**
+ * Pulizia e normalizzazione estrema dei nomi Pokémon.
+ * Rimuove spazi, trattini, apostrofi, punti e converte in minuscolo.
+ * Es: "Urshifu-Rapid-Strike" ➔ "urshifurapidstrike"
+ * Es: "urshifu-rapidstrike"  ➔ "urshifurapidstrike"
+ */
+function normalizzaNomePokemon(nome) {
+    if (!nome) return '';
+    return nome.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Prende un oggetto JSON e ne duplica/mappa le chiavi in formato normalizzato.
+ * In questo modo jsonDati conterrà sia le chiavi originali sia quelle super-pulite.
+ */
+function normalizzaMappaJson(jsonOriginale) {
+    if (!jsonOriginale || typeof jsonOriginale !== 'object') return {};
+    
+    const jsonNormalizzato = { ...jsonOriginale };
+
+    for (const key in jsonOriginale) {
+        const keyPulita = normalizzaNomePokemon(key);
+        if (keyPulita && !jsonNormalizzato[keyPulita]) {
+            jsonNormalizzato[keyPulita] = jsonOriginale[key];
+        }
+    }
+    return jsonNormalizzato;
+}
+
+/**
+ * Funzione di ricerca flessibile e sicura all'interno del JSON
+ */
+function trovaDatiPokemonNelJson(jsonDati, nomePoke) {
+    if (!jsonDati || !nomePoke) return null;
+
+    // 1. Prova ricerca esatta (es. "urshifu-rapidstrike")
+    if (jsonDati[nomePoke]) return jsonDati[nomePoke];
+
+    // 2. Prova ricerca in minuscolo (es. "landorus-therian")
+    const lower = nomePoke.toLowerCase();
+    if (jsonDati[lower]) return jsonDati[lower];
+
+    // 3. Prova ricerca pulita senza trattini/spazi (es. "urshifurapidstrike")
+    const pulito = normalizzaNomePokemon(nomePoke);
+    if (jsonDati[pulito]) return jsonDati[pulito];
+
+    return null;
+}
+
 // 🆕 2. VALIDA TEAM DINAMICO CORRETTA
 async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = []) {
     let tuttiGliErrori = [];
@@ -2013,6 +2062,11 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
                 }
             }
         }
+
+        // 🔥 NORMALIZZAZIONE MAPPA JSON:
+        // Genera automaticamente chiavi senza trattini e spazi per ogni entry (es. "urshifurapidstrike")
+        jsonDati = normalizzaMappaJson(jsonDati);
+
     } catch (err) {
         console.error("Error loading validation file:", err);
     }

@@ -1166,12 +1166,13 @@ async function salvaNuovoFormato() {
         payload.vgcGen = vgcGen.value;
         payload.vgcFormat = vgcFormat.value;
 
-        // 🔥 AUTOMAZIONE FORMATO VGC: Iniezione parametri impliciti nel Database
+        // AUTOMAZIONE FORMATO VGC: Iniezione parametri impliciti nel Database
         payload.baseTier = "OU";
         payload.battleStyle = "doubles";
+
+        // IMPOSTAZIONE SPECIFICA DELLA GENERAZIONE PER VGC
         payload.genRuleType = "within";
-        // Estrae solo il valore numerico (es: "Gen 8 VGC" o "8" diventano coerentemente "8")
-        payload.genRuleValue = vgcGen.value.replace(/[^0-9]/g, '');
+        payload.genRuleValue = String(vgcGen.value).replace(/[^0-9]/g, '');
 
     } else {
         const mStyle = document.getElementById('mandatory-battle-style');
@@ -1200,7 +1201,7 @@ async function salvaNuovoFormato() {
         payload.genRuleType = mGenType.value;
         payload.genRuleValue = mGenVal.value;
 
-        // FIX ANTERIORE: Controllo pulito del valore testuale / option value per AG e STANDARD
+        // Controllo pulito del valore testuale / option value per AG e STANDARD
         const valoreTierSelezionato = mTier.value.trim();
         const opzioneSelezionata = mTier.options[mTier.selectedIndex];
         const testoTierSelezionato = opzioneSelezionata ? opzioneSelezionata.text.toUpperCase().trim() : "";
