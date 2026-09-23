@@ -908,8 +908,8 @@ async function renderizza(lista) {
                         <div class="pkm-box" id="${pkmBoxId}" 
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
-                                <img src="${pkmSprite}" class="pkm-sprite" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
-                            </div>
+                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">
+                                </div>
                             <div class="pkm-info">
                                 <span class="pkm-name">${nomePkm}</span>
                                 <div class="item-container">
@@ -1096,8 +1096,7 @@ async function apriDettagli(id) {
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm">
-                    </div>
+<img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
                             <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
@@ -1348,6 +1347,33 @@ async function applicaColoreBordo(pokemonNome, elemento) {
     }
 }
 
+function gestisciErroreSprite(img, pkmNameUrl) {
+    const fase = parseInt(img.dataset.spriteFase || '0', 10);
+    img.dataset.spriteFase = String(fase + 1);
+
+    if (fase === 0) {
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        return;
+    }
+
+    if (fase === 1) {
+        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            })
+            .catch(() => {
+                img.onerror = null;
+                img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+            });
+        return;
+    }
+
+    // Ultimo fallback: niente più tentativi
+    img.onerror = null;
+    img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
 function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const modal = document.getElementById('pkmDetailModal');
     const content = document.getElementById('pkmModalBody');
@@ -1362,8 +1388,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
         <div class="pkm-modal-grid">
             <div class="area-header">
                 <div id="single-types" class="types-centered"></div>
-                <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
-                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
+<img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
             </div>
             <div class="area-weakness pkm-panel">
                 <h4 class="panel-title">DEFENSE</h4>
