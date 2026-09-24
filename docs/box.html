@@ -3909,11 +3909,20 @@ function renderizzaListaPiatta(pokemonList) {
                 cursor: pointer;
                 outline: none;
             ">
+                <optgroup label="Pokémon">
                 <option value="num-asc">Pokédex N°</option>
                 <option value="alpha-asc">Alphabetical (A-Z)</option>
                 <option value="alpha-desc">Alphabetical (Z-A)</option>
-                <option value="bst-desc">BST (Strongest)</option>
-                <option value="bst-asc">BST (Weakest)</option>
+                </optgroup>
+                <optgroup label="Best stat">
+                    <option value="bst-desc">BST</option>
+                    <option value="stat|hp|desc">HP</option>
+                    <option value="stat|attack|desc">Attack</option>
+                    <option value="stat|defense|desc">Defense</option>
+                    <option value="stat|sp. attack|desc">Sp. Attack</option>
+                    <option value="stat|sp. defense|desc">Sp. Defense</option>
+                    <option value="stat|speed|desc">Speed</option>
+                </optgroup>
             </select>
         `;
 
@@ -3936,21 +3945,30 @@ function renderizzaListaPiatta(pokemonList) {
     }
 
     // --- FUNZIONI UTILITY DI SUPPORTO PER L'ORDINAMENTO ---
+    const CHIAVI_STATS = ['hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed'];
+
+    // Unico punto di lookup nel pokedexBase (usato da sort e tooltip)
+    function getInfoPkm(pkm) {
+        if (pkm && pkm.stats) return pkm;
+        if (!window.pokedexBase) return null;
+        return window.pokedexBase[String(pkm.id).toLowerCase().trim()]
+            || window.pokedexBase[String(pkm.name).toLowerCase().trim()]
+            || null;
+    }
+
+    function getStat(pkm, chiave) {
+        const info = getInfoPkm(pkm);
+        return (info && info.stats && info.stats[chiave]) || 0;
+    }
+
     function calcolaBST(pkm) {
-        let infoPkm = (pkm && pkm.stats) ? pkm : (window.pokedexBase ? (window.pokedexBase[String(pkm.id).toLowerCase().trim()] || window.pokedexBase[String(pkm.name).toLowerCase().trim()]) : null);
-        if (!infoPkm || !infoPkm.stats) return 0;
-        return (infoPkm.stats['hp'] || 0) + 
-               (infoPkm.stats['attack'] || 0) + 
-               (infoPkm.stats['defense'] || 0) + 
-               (infoPkm.stats['sp. attack'] || 0) + 
-               (infoPkm.stats['sp. defense'] || 0) + 
-               (infoPkm.stats['speed'] || 0);
+        return CHIAVI_STATS.reduce((tot, chiave) => tot + getStat(pkm, chiave), 0);
     }
 
     function getPokedexNum(pkm) {
         if (pkm.num !== undefined) return pkm.num;
-        let infoPkm = window.pokedexBase ? (window.pokedexBase[String(pkm.id).toLowerCase().trim()] || window.pokedexBase[String(pkm.name).toLowerCase().trim()]) : null;
-        return infoPkm && infoPkm.num !== undefined ? infoPkm.num : 9999;
+        const info = getInfoPkm(pkm);
+        return info && info.num !== undefined ? info.num : 9999;
     }
 
     // --- LOGICA CORE DI FILTRAGGIO, ORDINAMENTO E RENDERING ---
@@ -3965,6 +3983,15 @@ function renderizzaListaPiatta(pokemonList) {
 
         // B. ORDINAMENTO DINAMICO
         listaFiltrata.sort((a, b) => {
+            // Ordinamento per singola stat (formato: "stat|chiave|direzione")
+            if (criterioSort.startsWith('stat|')) {
+                const [, chiave, direzione] = criterioSort.split('|');
+                const diff = getStat(a, chiave) - getStat(b, chiave);
+                const risultato = direzione === 'asc' ? diff : -diff;
+                // A parità di stat, ordine di Pokédex
+                return risultato || getPokedexNum(a) - getPokedexNum(b);
+            }
+
             switch (criterioSort) {
                 case 'num-asc':
                     return getPokedexNum(a) - getPokedexNum(b);
@@ -4080,16 +4107,7 @@ function renderizzaListaPiatta(pokemonList) {
                     tooltip.style.display = 'block';
                     tooltip.style.opacity = '1';
 
-                    let infoPkm = null;
-
-                    if (pkm && pkm.stats) {
-                        infoPkm = pkm;
-                    } 
-                    else if (window.pokedexBase) {
-                        const idCercato = String(pkm.id).toLowerCase().trim();
-                        const nomeCercato = String(pkm.name).toLowerCase().trim();
-                        infoPkm = window.pokedexBase[idCercato] || window.pokedexBase[nomeCercato];
-                    }
+                    const infoPkm = getInfoPkm(pkm);
 
                     if (!infoPkm || !infoPkm.stats) {
                         tooltip.innerHTML = `<div class="neubrutalist-loading" style="color:red; font-weight:bold; padding:10px;">DATA NOT FOUND</div>`;
