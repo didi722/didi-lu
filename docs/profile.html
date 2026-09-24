@@ -32,7 +32,10 @@
 </div>
 
 
-   <section class="hub-hero">
+      <section class="hub-hero">
+        <button type="button" class="ach-open-btn" onclick="apriModaleAchievements()" title="Badges & titles progress">
+            <i class="fas fa-medal"></i><span class="ach-btn-label">Achievements</span>
+        </button>
         <div class="hub-hero-content">
             <h1 class="hub-title-display">
                 <span id="player-name-placeholder"></span>YOUR PROFILE
@@ -1650,6 +1653,318 @@ firebase.auth().onAuthStateChanged(async (currentUser) => {
         adminMenuItem.style.display = 'none';
     }
 });
+
+const ACH_LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
+
+const ACH_BADGES = [
+    {
+        id: 'clean', label: 'Clean Streak',
+        desc: 'Go undefeated in consecutive matches.',
+        unita: 'undefeated matches',
+        maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'],
+        steps: [3, 5, 7]
+    },
+    {
+        id: 'won', label: 'Win Streak',
+        desc: 'Win consecutive matches.',
+        unita: 'match wins',
+        maxKey: 'maxwonstrike', curKey: 'wonstrike', dateKeys: ['maxwonstrikedate'],
+        steps: [5, 7, 10]
+    },
+    {
+        id: 'sd', label: 'SD Streak',
+        desc: 'Win consecutive showdowns.',
+        unita: 'showdown wins',
+        maxKey: 'maxsdstrike', curKey: 'sdstrike', dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'],
+        steps: [3, 5, 7]
+    }
+];
+
+const ACH_TIPI = {
+    bug:      { base: 'Bug Catcher',     color: '#aabb22' },
+    dark:     { base: 'Punk Guy',        color: '#775544' },
+    dragon:   { base: 'Dragon Tamer',    color: '#7766ee' },
+    electric: { base: 'Guitarist',       color: '#ffcc33' },
+    fairy:    { base: 'Fairy Tale Girl', color: '#ee99ee' },
+    fighting: { base: 'Black Belt',      color: '#bb5544' },
+    fire:     { base: 'Kindler',         color: '#de3a1d' },
+    flying:   { base: 'Bird Keeper',     color: '#8899ff' },
+    ghost:    { base: 'Hex Maniac',      color: '#6666bb' },
+    grass:    { base: 'Aroma Lady',      color: '#77cc55' },
+    ground:   { base: 'Ruin Maniac',     color: '#ddbb55' },
+    ice:      { base: 'Skier',           color: '#66ccff' },
+    normal:   { base: 'Rich Boy',        color: '#aaaa99' },
+    poison:   { base: 'Ninja Boy',       color: '#aa5599' },
+    psychic:  { base: 'Psychic',         color: '#ff5599' },
+    rock:     { base: 'Hiker',           color: '#bbaa66' },
+    steel:    { base: 'Working Man',     color: '#aaaabb' },
+    water:    { base: 'Fisherman',       color: '#3399ff' }
+};
+
+const achMaiuscola = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const ACH_LIVELLI_TITOLO = [
+    { chip: (t) => ACH_TIPI[t].base, nome: (t) => ACH_TIPI[t].base,                  played: 50,  won: 0  },
+    { chip: () => 'Gym Leader',      nome: (t) => `${achMaiuscola(t)} Gym Leader`,     played: 150, won: 25 },
+    { chip: () => 'Elite Four',      nome: (t) => `${achMaiuscola(t)} Elite Four`,     played: 250, won: 50 }
+];
+
+function achFormattaData(dataRaw) {
+    if (!dataRaw || dataRaw === '--/--/--' || dataRaw === 'Data N.D.') return '';
+    const d = new Date(dataRaw);
+    if (isNaN(d.getTime())) return String(dataRaw);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+function achBarra(etichetta, valore, obiettivo) {
+    const pct = obiettivo > 0 ? Math.min((valore / obiettivo) * 100, 100) : 100;
+    return `
+        <div>
+            <div class="ach-progress-row">
+                <span>${etichetta}: ${valore}</span>
+                <span class="ach-target">${obiettivo}</span>
+            </div>
+            <div class="ach-bar">
+                <div class="ach-bar-fill ${pct <= 0 ? 'empty' : ''}" style="width: ${pct}%;"></div>
+            </div>
+        </div>`;
+}
+
+// Crea il modale una sola volta e lo aggiunge al body
+function creaModaleAchievements() {
+    let overlay = document.getElementById('ach-overlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'ach-overlay';
+    overlay.className = 'ach-overlay';
+    overlay.innerHTML = `
+        <div class="ach-modal" role="dialog" aria-modal="true" aria-labelledby="ach-modal-title">
+            <div class="ach-modal-head">
+                <h2 id="ach-modal-title" class="ach-modal-title">Achievements</h2>
+                <button type="button" class="ach-close" onclick="chiudiModaleAchievements()" aria-label="Close">&times;</button>
+            </div>
+            <div class="ach-body">
+                <section class="ach-column">
+                    <span class="ach-column-label">Badges</span>
+                    <p id="ach-badges-summary" class="ach-summary"></p>
+                    <div id="ach-badges-list" class="ach-list"></div>
+                </section>
+                <section class="ach-column">
+                    <span class="ach-column-label">Titles</span>
+                    <p id="ach-titles-summary" class="ach-summary"></p>
+                    <div id="ach-titles-list" class="ach-list"></div>
+                </section>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Click sullo sfondo sfocato → chiude
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) chiudiModaleAchievements();
+    });
+
+    // Tasto ESC → chiude
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) chiudiModaleAchievements();
+    });
+
+    return overlay;
+}
+
+async function apriModaleAchievements() {
+    if (typeof playerID === 'undefined' || !playerID) {
+        alert("Log in to see your achievements.");
+        return;
+    }
+
+    const overlay = creaModaleAchievements();
+    const badgeList = document.getElementById('ach-badges-list');
+    const titleList = document.getElementById('ach-titles-list');
+    const badgeSummary = document.getElementById('ach-badges-summary');
+    const titleSummary = document.getElementById('ach-titles-summary');
+
+    badgeList.innerHTML = titleList.innerHTML = '<p class="ach-loading">Loading...</p>';
+    badgeSummary.textContent = titleSummary.textContent = '';
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const [statsSnap, infoSnap] = await Promise.all([
+            db.ref(`players/${playerID}/stats`).once('value'),
+            db.ref(`players/${playerID}/info`).once('value')
+        ]);
+        const stats = statsSnap.val() || {};
+        const info = infoSnap.val() || {};
+
+        if (info.color) {
+            overlay.querySelector('.ach-modal').style.setProperty('--ach-accent', info.color);
+        }
+
+        renderBadgeAchievements(stats.badges || {}, badgeList, badgeSummary);
+        renderTitoliAchievements(stats['team-stats']?.typeusage || {}, info.title || '', titleList, titleSummary);
+
+    } catch (err) {
+        console.error("❌ Error loading achievements:", err);
+        badgeList.innerHTML = titleList.innerHTML = '<p class="ach-loading">Could not load achievements. Try again later.</p>';
+    }
+}
+
+function chiudiModaleAchievements() {
+    const overlay = document.getElementById('ach-overlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function renderBadgeAchievements(badges, lista, summary) {
+    let html = '';
+    let livelliSbloccati = 0;
+    const livelliTotali = ACH_BADGES.length * ACH_LIVELLI_BADGE.length;
+
+    // Badge speciale dei fondatori (non ha progressi)
+    const id = String(playerID).toLowerCase().trim();
+    if (id === 'didi' || id === 'lukiani') {
+        html += `
+            <div class="ach-card ach-badge-card">
+                <img src="immagini/badge_founder.png" class="ach-badge-img" alt="League Founder">
+                <div>
+                    <div class="ach-card-name">League Founder</div>
+                    <p class="ach-card-desc">Hail to the kings.</p>
+                    <div class="ach-missing maxed">Special badge unlocked</div>
+                </div>
+            </div>`;
+    }
+
+    ACH_BADGES.forEach(b => {
+        const record = parseInt(badges[b.maxKey]) || 0;
+        const attuale = parseInt(badges[b.curKey]) || 0;
+        const data = achFormattaData(b.dateKeys.map(k => badges[k]).find(Boolean));
+
+        const livello = b.steps.filter(s => record >= s).length; // 0 = bloccato, 3 = oro
+        livelliSbloccati += livello;
+
+        const bloccato = livello === 0;
+        const completo = livello === b.steps.length;
+        const obiettivo = completo ? null : b.steps[livello];
+        const nomeProssimo = completo ? '' : achMaiuscola(ACH_LIVELLI_BADGE[livello]);
+        const img = `immagini/badge_${b.id}_${ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]}.png`;
+
+        const chips = b.steps.map((s, i) => {
+            const stato = i < livello ? 'done' : (i === livello ? 'next' : '');
+            return `<span class="ach-tier ${ACH_LIVELLI_BADGE[i]} ${stato}">${ACH_LIVELLI_BADGE[i]} ${s}</span>`;
+        }).join('');
+
+        let progresso;
+        if (completo) {
+            progresso = `<div class="ach-missing maxed">Gold reached: badge complete!</div>`;
+        } else {
+            const mancano = Math.max(obiettivo - attuale, 0);
+            progresso = `
+                ${achBarra('Current streak', attuale, obiettivo)}
+                <div class="ach-missing">
+                    ${mancano > 0
+                        ? `${mancano} more ${b.unita} in a row to unlock ${nomeProssimo}.`
+                        : `${nomeProssimo} unlocks with your next update.`}
+                </div>`;
+        }
+
+        html += `
+            <div class="ach-card ach-badge-card ${bloccato ? 'locked' : ''}">
+                <img src="${img}" class="ach-badge-img" alt="${b.label}">
+                <div>
+                    <div class="ach-card-top">
+                        <div class="ach-card-name">${b.label}</div>
+                        ${data && !bloccato ? `<span class="ach-card-date">${data}</span>` : ''}
+                    </div>
+                    <p class="ach-card-desc">${b.desc}</p>
+                    <div class="ach-tiers">${chips}</div>
+                    <div class="ach-stats-line">
+                        <span>Best: ${record}</span>
+                        <span>Current: ${attuale}</span>
+                    </div>
+                    ${progresso}
+                </div>
+            </div>`;
+    });
+
+    lista.innerHTML = html;
+    summary.textContent = `${livelliSbloccati} of ${livelliTotali} badge levels unlocked`;
+}
+
+function renderTitoliAchievements(typeUsage, titoloEquipaggiato, lista, summary) {
+    // Normalizza le chiavi dei tipi (es. "Fire" → "fire")
+    const usage = {};
+    Object.entries(typeUsage || {}).forEach(([k, v]) => {
+        usage[String(k).toLowerCase().trim()] = v || {};
+    });
+
+    let titoliSbloccati = 0;
+    const titoliTotali = Object.keys(ACH_TIPI).length * ACH_LIVELLI_TITOLO.length;
+
+    const righe = Object.keys(ACH_TIPI).map(tipo => {
+        const st = usage[tipo] || {};
+        const played = Number(st.played) || 0;
+        const won = Number(st.won) || 0;
+
+        const livello = ACH_LIVELLI_TITOLO.filter(l => played >= l.played && won >= l.won).length;
+        titoliSbloccati += livello;
+
+        const prossimo = ACH_LIVELLI_TITOLO[livello] || null;
+        let pct = 1;
+        if (prossimo) {
+            const pPlayed = Math.min(played / prossimo.played, 1);
+            const pWon = prossimo.won > 0 ? Math.min(won / prossimo.won, 1) : null;
+            pct = pWon === null ? pPlayed : (pPlayed + pWon) / 2;
+        }
+
+        return { tipo, played, won, livello, prossimo, pct };
+    }).sort((a, b) => (b.livello - a.livello) || (b.pct - a.pct));
+
+    lista.innerHTML = righe.map(r => {
+        const { tipo, played, won, livello, prossimo } = r;
+        const titoloAttuale = livello > 0 ? ACH_LIVELLI_TITOLO[livello - 1].nome(tipo) : 'No title yet';
+        const equipaggiato = ACH_LIVELLI_TITOLO.some(l => l.nome(tipo) === titoloEquipaggiato);
+
+        const chips = ACH_LIVELLI_TITOLO.map((l, i) => {
+            const stato = i < livello ? 'done' : (i === livello ? 'next' : '');
+            return `<span class="ach-tier ${stato}">${l.chip(tipo)}</span>`;
+        }).join('');
+
+        let progresso;
+        if (!prossimo) {
+            progresso = `<div class="ach-missing maxed">All ${tipo} titles unlocked!</div>`;
+        } else {
+            const mancaPlayed = Math.max(prossimo.played - played, 0);
+            const mancaWon = Math.max(prossimo.won - won, 0);
+            const pezzi = [];
+            if (mancaPlayed > 0) pezzi.push(`${mancaPlayed} played`);
+            if (mancaWon > 0) pezzi.push(`${mancaWon} won`);
+
+            progresso = `
+                <div class="ach-next-label">Next: <b>${prossimo.nome(tipo)}</b></div>
+                <div class="${prossimo.won > 0 ? 'ach-bars-2' : ''}">
+                    ${achBarra('Played', played, prossimo.played)}
+                    ${prossimo.won > 0 ? achBarra('Won', won, prossimo.won) : ''}
+                </div>
+                <div class="ach-missing">Still needed: ${pezzi.join(', ')}</div>`;
+        }
+
+        return `
+            <div class="ach-card ${livello === 0 ? 'locked' : ''}">
+                <div class="ach-card-top">
+                    <span class="ach-type-chip" style="background: ${ACH_TIPI[tipo].color};">${tipo}</span>
+                    ${equipaggiato ? '<span class="ach-equipped">Equipped</span>' : ''}
+                </div>
+                <div class="ach-card-name">${titoloAttuale}</div>
+                <div class="ach-tiers">${chips}</div>
+                ${progresso}
+            </div>`;
+    }).join('');
+
+    summary.textContent = `${titoliSbloccati} of ${titoliTotali} titles unlocked`;
+}
 
     </script>
     </body>

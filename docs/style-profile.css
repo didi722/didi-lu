@@ -1105,3 +1105,372 @@ body.has-alert-banner .top-auth-bar {
     display: block;
     opacity: 1;
 }
+
+.ach-open-btn {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white);
+    color: var(--black);
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow-small);
+    padding: 8px 14px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 900;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transform: rotate(-2deg);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+
+.ach-open-btn:hover {
+    background: var(--yellow);
+    transform: translate(-2px, -2px) rotate(-2deg);
+    box-shadow: 6px 6px 0 var(--black);
+}
+
+.ach-open-btn:active {
+    transform: translate(2px, 2px) rotate(-2deg);
+    box-shadow: 1px 1px 0 var(--black);
+}
+
+.ach-open-btn:focus-visible {
+    outline: 3px dashed var(--black);
+    outline-offset: 4px;
+}
+
+/* --- Overlay con sfondo sfocato --- */
+.ach-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.ach-overlay.open {
+    display: flex;
+}
+
+.ach-modal {
+    --ach-accent: #31c489; /* sovrascritto col colore del giocatore */
+    width: 100%;
+    max-width: 1100px;
+    max-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    font-family: 'Montserrat', sans-serif;
+    color: var(--black);
+}
+
+.ach-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.ach-modal-title {
+    margin: 0;
+    background: var(--black);
+    color: var(--white);
+    border: 3px solid var(--black);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+    padding: 10px 24px;
+    transform: rotate(-1deg);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.ach-close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    background: var(--white);
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow-small);
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ach-close:hover {
+    background: var(--cancel);
+    color: var(--white);
+}
+
+.ach-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 30px;
+}
+
+.ach-column {
+    position: relative;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+    padding: 30px 14px 14px 18px;
+}
+
+.ach-column-label {
+    position: absolute;
+    top: -18px;
+    left: 16px;
+    background: var(--yellow);
+    border: 3px solid var(--black);
+    box-shadow: 3px 3px 0 var(--black);
+    padding: 4px 12px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 900;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    transform: rotate(-1.5deg);
+}
+
+.ach-summary {
+    margin: 0 0 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.ach-list {
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 4px 8px 10px 2px;
+}
+
+.ach-loading {
+    margin: 0;
+    font-style: italic;
+    color: #555;
+}
+
+/* --- Card singolo achievement --- */
+.ach-card {
+    background: var(--white);
+    border: 3px solid var(--black);
+    box-shadow: var(--shadow-small);
+    padding: 12px 14px;
+}
+
+.ach-card.locked {
+    background: #f3f3f3;
+}
+
+.ach-badge-card {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.ach-badge-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 0 #000);
+}
+
+.ach-card.locked .ach-badge-img {
+    filter: grayscale(1) opacity(0.45);
+}
+
+.ach-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.ach-card-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 900;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    margin: 4px 0 2px;
+}
+
+.ach-card-date {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #777;
+    white-space: nowrap;
+}
+
+.ach-card-desc {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: #333;
+}
+
+.ach-tiers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0 8px;
+}
+
+.ach-tier {
+    border: 2px solid var(--black);
+    background: var(--white);
+    color: #999;
+    padding: 2px 7px;
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.ach-tier.next {
+    color: var(--black);
+    border-style: dashed;
+}
+
+.ach-tier.done {
+    color: var(--black);
+    box-shadow: 2px 2px 0 var(--black);
+    background: #d9f99d;
+}
+
+.ach-tier.bronze.done { background: #e0a26b; }
+.ach-tier.silver.done { background: #d7d7de; }
+.ach-tier.gold.done   { background: #ffd23f; }
+
+.ach-stats-line {
+    display: flex;
+    gap: 14px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.ach-progress-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.ach-progress-row .ach-target {
+    color: #888;
+}
+
+.ach-bar {
+    height: 12px;
+    margin-top: 3px;
+    background: #e0e0e0;
+    border: 2px solid var(--black);
+    overflow: hidden;
+}
+
+.ach-bar-fill {
+    height: 100%;
+    background: var(--ach-accent);
+    border-right: 2px solid var(--black);
+    box-sizing: border-box;
+}
+
+.ach-bar-fill.empty {
+    border-right: none;
+}
+
+.ach-missing {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.ach-missing.maxed {
+    color: #15803d;
+}
+
+/* --- Card titoli --- */
+.ach-type-chip {
+    display: inline-block;
+    color: var(--white);
+    border: 2px solid var(--black);
+    box-shadow: 2px 2px 0 var(--black);
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 0 var(--black);
+}
+
+.ach-equipped {
+    background: var(--black);
+    color: var(--white);
+    padding: 2px 7px;
+    font-size: 0.62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.ach-next-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.ach-bars-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 800px) {
+    .ach-overlay {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 20px 12px;
+    }
+    .ach-modal {
+        max-height: none;
+    }
+    .ach-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        gap: 40px;
+    }
+    .ach-list {
+        overflow: visible;
+    }
+    .ach-modal-title {
+        font-size: 1.3rem;
+        padding: 8px 16px;
+    }
+}
+
+.ach-card-top + .ach-card-name {
+    margin-top: 12px;
+}
