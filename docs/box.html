@@ -4083,13 +4083,14 @@ function renderizzaListaPiatta(pokemonList) {
 
             let timerCaricamento;
 
-            const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkm.id}.gif`;
-            const fallbackUrl = `https://play.pokemonshowdown.com/sprites/dex/${pkm.id}.png`;
+            // Stessa normalizzazione e stesso fallback usati in renderizza()
+            const pkmNameUrl = String(pkm.name || pkm.id).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+            const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
 
             card.innerHTML = `
                 <div class="helper-pkm-gif-container">
                     <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
-                         onerror="this.onerror=null; this.src='${fallbackUrl}';">
+                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">
                 </div>
                 <div class="helper-pkm-name"><span>${pkm.name}</span></div>
             `;

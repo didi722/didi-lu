@@ -2025,4 +2025,116 @@ input, select {
     transform: translate(3px, 3px);
     box-shadow: 2px 2px 0px #000000;
 }
-
+      
+/* --- TOOLTIP RIEPILOGO REGOLE FORMATO (modale iscrizione) --- */
+        .neubru-format-list li.format-has-rules {
+            cursor: help;
+            text-decoration: underline dotted 2px;
+            text-underline-offset: 3px;
+        }
+        .format-rules-tooltip {
+            position: fixed;
+            z-index: 100000;
+            display: none;
+            width: 460px;
+            max-width: calc(100vw - 20px);
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            box-sizing: border-box;
+            background: #7ea9ff;
+            color: #000;
+            border: 3px solid #000;
+            box-shadow: 6px 6px 0 #000;
+            padding: 18px;
+            font-family: 'Josefin Sans', sans-serif;
+            text-align: left;
+        }
+        .frt-title {
+            display: table;
+            background: #000;
+            color: #fff;
+            padding: 5px 14px;
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            transform: rotate(-1deg);
+            margin-bottom: 14px;
+        }
+        .frt-label {
+            display: inline-block;
+            background: #ffde00;
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0 #000;
+            padding: 1px 7px;
+            font-weight: 900;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .frt-desc {
+            margin: 0 0 16px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        .frt-desc.frt-empty {
+            color: #000;
+            font-weight: 400;
+            font-style: italic;
+        }
+        .frt-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .frt-cell {
+            border: 2px solid #000;
+            box-shadow: 3px 3px 0 #000;
+            padding: 7px 9px;
+            min-width: 0;
+            background: white;
+        }
+        .frt-value {
+            display: block;
+            font-weight: 900;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+        }
+        .frt-value.frt-lower { text-transform: lowercase; }
+        .frt-rules {
+            display: flex;
+            flex-direction: column;
+        }
+        .frt-rule {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 2px dashed #000;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .frt-rule:last-child { border-bottom: none; }
+        .frt-rule b { text-transform: uppercase; color: #000; }
+        .frt-badge {
+            flex-shrink: 0;
+            max-width: 55%;
+            border: 2px solid #000;
+            box-shadow: 1px 1px 0 #000;
+            padding: 2px 6px;
+            font-weight: 900;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+        .frt-badge.banned   { background: #ef4444; color: #fff; }
+        .frt-badge.allowed  { background: #22c55e; color: #fff; }
+        .frt-badge.initial  { background: #3b82f6; color: #fff; }
+        .frt-badge.specific { background: #fbbf24; color: #000; }
+        @media (max-width: 520px) {
+            .frt-grid { grid-template-columns: 1fr; }
+        }

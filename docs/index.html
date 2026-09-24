@@ -817,6 +817,244 @@ function toggleIscrizioneModal() {
     
     modal.style.display = isVisible ? 'none' : 'block';
     overlay.style.display = isVisible ? 'none' : 'block';
+
+    if (isVisible) nascondiTooltipFormato();
+}
+
+// ============================================================
+// TOOLTIP RIEPILOGO REGOLE FORMATO (stessa logica di formats.html)
+// ============================================================
+const DIZIONARIO_TERMINI_FORMATO = {
+    'custom': 'Custom', 'vgc': 'Official VGC', 'singles': 'Singles', 'doubles': 'Doubles',
+    'anything_goes': 'Goose',
+    'pokemon': 'Pokémon', 'items': 'Items', 'abilities': 'Abilities', 'moves': 'Moves',
+    'species': 'Specific Pokémon', 'duplicates': 'Duplicate Clause', 'total_allowed': 'Total Allowed',
+    'same_across_team': 'Same Across Team', 'uber_limit': 'Uber / Legendary Limit',
+    'specific_item': 'Specific Item', 'specific_name': 'Specific Name', 'color': 'Color',
+    'bst': 'BST', 'type': 'Type', 'is_mega': 'Mega evolutions', 'player_initial': "Player's Initial",
+    'equals': '=', 'is': 'Is', 'up_to': 'Max', 'at_least': 'Min', 'exact': 'Exact',
+    'unique': 'Unique (No Duplicates)', 'between': 'Between', 'lt': '<', 'gt': '>',
+    'lte': '≤', 'gte': '≥',
+    'is_legendary': 'Legendary', 'is_mythical': 'Mythical', 'true': 'Allowed',
+    'name_starts': 'Name starts with:'
+};
+
+function umanizzaTermineFormato(valore) {
+    if (valore === undefined || valore === null || valore === '') return '';
+    if (Array.isArray(valore)) return valore.map(umanizzaTermineFormato).join(', ');
+    const chiave = valore.toString().toLowerCase().trim();
+    return DIZIONARIO_TERMINI_FORMATO[chiave] || valore.toString();
+}
+
+function escapeHtmlFormato(testo) {
+    return String(testo ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Costruisce l'HTML del riepilogo a partire dal nodo regolamenti/<id>
+function generaRiepilogoFormatoHtml(nomeFormato, dati) {
+    const cella = (label, valore, extraClass = '') => `
+        <div class="frt-cell">
+            <span class="frt-label">${label}</span>
+            <span class="frt-value ${extraClass}">${escapeHtmlFormato(valore)}</span>
+        </div>`;
+
+    let html = `<div class="frt-title">${escapeHtmlFormato(nomeFormato)}</div>`;
+
+    if (!dati) {
+        return html + `<p class="frt-desc frt-empty">No configurations found for this format.</p>`;
+    }
+
+    // Descrizione
+    const descr = (dati.descrizioneBreve || '').trim();
+    html += `<span class="frt-label">Description / Rules</span>`;
+    html += descr
+        ? `<p class="frt-desc">${escapeHtmlFormato(descr)}</p>`
+        : `<p class="frt-desc frt-empty">No description provided for this format.</p>`;
+
+    // Griglia dati principali
+    let celle = cella('Format Type', umanizzaTermineFormato(dati.strutturaSito || 'custom'));
+
+    if (dati.strutturaSito === 'vgc') {
+        if (dati.vgcGen) celle += cella('Generation', `GEN ${dati.vgcGen}`);
+        if (dati.vgcFormat) celle += cella('VGC Regulation', dati.vgcFormat);
+    } else {
+        if (dati.battleStyle) celle += cella('Battle Style', umanizzaTermineFormato(dati.battleStyle));
+        if (dati.genRuleValue) {
+            const tipoGen = dati.genRuleType ? ` (${umanizzaTermineFormato(dati.genRuleType)})` : '';
+            celle += cella('Pokémon Origin', `GEN ${dati.genRuleValue}${tipoGen}`);
+        }
+        if (dati.baseTier) celle += cella('Max. Tier', dati.baseTier);
+    }
+
+    if (dati.showdownFormat && dati.showdownFormat.trim() !== '') {
+        celle += cella('Showdown Format', dati.showdownFormat.trim(), 'frt-lower');
+    }
+
+    celle += `
+        <div class="frt-cell">
+            <span class="frt-label">Gen Mechanics</span>
+            <span class="frt-value" style="color: ${dati.generationalMechanics ? '#15803d' : '#b91c1c'};">
+                ${dati.generationalMechanics ? 'Enabled' : 'Disabled'}
+            </span>
+        </div>`;
+
+    html += `<div class="frt-grid">${celle}</div>`;
+
+    // Clausole e restrizioni
+    if (dati.restrizioni && Object.keys(dati.restrizioni).length > 0) {
+        let righe = '';
+
+        Object.entries(dati.restrizioni).forEach(([categoria, campi]) => {
+            Object.entries(campi || {}).forEach(([campo, regola]) => {
+                regola = regola || {};
+                let badge = '';
+
+                if (regola.mode === 'BANNED') {
+                    badge = `<span class="frt-badge banned">Banned</span>`;
+                } else if (regola.mode === 'ALLOWED') {
+                    badge = `<span class="frt-badge allowed">Allowed</span>`;
+                } else if (regola.mode === 'PLAYER_INITIAL') {
+                    badge = `<span class="frt-badge initial">Player initial</span>`;
+                } else if (regola.mode === 'SAME_ACROSS_TEAM') {
+                    badge = `<span class="frt-badge allowed">Same across team</span>`;
+                } else if (regola.mode === 'SPECIFIC') {
+                    let dettaglio;
+                    if (regola.operator === 'between') {
+                        dettaglio = `${regola.min} - ${regola.max}`;
+                    } else {
+                        const op = umanizzaTermineFormato(regola.operator);
+                        const val = umanizzaTermineFormato(regola.value);
+                        dettaglio = (op === '=' || !op) ? val : `${op} ${val}`;
+                    }
+                    badge = `<span class="frt-badge specific">${escapeHtmlFormato(dettaglio)}</span>`;
+                }
+
+                righe += `
+                    <div class="frt-rule">
+                        <span>
+                            <b>${escapeHtmlFormato(umanizzaTermineFormato(categoria))}</b>
+                            <span style="color: #64748b; font-weight: 400;">➔</span>
+                            ${escapeHtmlFormato(umanizzaTermineFormato(campo))}
+                        </span>
+                        ${badge}
+                    </div>`;
+            });
+        });
+
+        html += `<span class="frt-label">Clauses & Restrictions</span><div class="frt-rules">${righe}</div>`;
+    }
+
+    return html;
+}
+
+let timerNascondiTooltipFormato = null;
+
+function getTooltipFormato() {
+    let tip = document.getElementById('format-rules-tooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'format-rules-tooltip';
+        tip.className = 'format-rules-tooltip';
+        document.body.appendChild(tip);
+
+        // Il mouse può entrare nel tooltip (per scorrere le regole) senza farlo sparire
+        tip.addEventListener('mouseenter', () => clearTimeout(timerNascondiTooltipFormato));
+        tip.addEventListener('mouseleave', () => programmaNascondiTooltipFormato());
+        tip.addEventListener('click', (e) => e.stopPropagation());
+
+        // Tap fuori dal tooltip (touch) → chiude
+        document.addEventListener('click', () => nascondiTooltipFormato());
+
+        // Scroll della pagina/modale → chiude (ma non lo scroll interno al tooltip)
+        window.addEventListener('scroll', (e) => {
+            if (e.target !== tip) nascondiTooltipFormato();
+        }, true);
+    }
+    return tip;
+}
+
+function posizionaTooltipFormato(ancora, tip) {
+    const r = ancora.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
+    const margine = 14;
+    const bordo = 10;
+
+    let left, top;
+
+    if (r.right + margine + w <= window.innerWidth - bordo) {
+        // A destra della voce
+        left = r.right + margine;
+        top = r.top + r.height / 2 - h / 2;
+    } else if (r.left - margine - w >= bordo) {
+        // A sinistra della voce
+        left = r.left - margine - w;
+        top = r.top + r.height / 2 - h / 2;
+    } else {
+        // Schermo stretto: sotto (o sopra) la voce
+        left = r.left + r.width / 2 - w / 2;
+        top = (window.innerHeight - r.bottom >= h + margine) ? r.bottom + margine : r.top - margine - h;
+    }
+
+    left = Math.max(bordo, Math.min(left, window.innerWidth - w - bordo));
+    top = Math.max(bordo, Math.min(top, window.innerHeight - h - bordo));
+
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+}
+
+function mostraTooltipFormato(ancora, html) {
+    clearTimeout(timerNascondiTooltipFormato);
+    const tip = getTooltipFormato();
+    tip.innerHTML = html;
+    tip.scrollTop = 0;
+    tip.style.display = 'block';
+    tip.dataset.ancora = ancora.dataset.formatIdx;
+    posizionaTooltipFormato(ancora, tip);
+}
+
+function programmaNascondiTooltipFormato() {
+    clearTimeout(timerNascondiTooltipFormato);
+    timerNascondiTooltipFormato = setTimeout(nascondiTooltipFormato, 180);
+}
+
+function nascondiTooltipFormato() {
+    clearTimeout(timerNascondiTooltipFormato);
+    const tip = document.getElementById('format-rules-tooltip');
+    if (tip) {
+        tip.style.display = 'none';
+        tip.dataset.ancora = '';
+    }
+}
+
+// Collega il tooltip alle <li> della lista formati del modale
+function attivaTooltipFormati(contenitore, listaFormati, mappaRegolamenti) {
+    contenitore.querySelectorAll('li[data-format-idx]').forEach(li => {
+        const nome = listaFormati[Number(li.dataset.formatIdx)];
+        const dati = mappaRegolamenti[String(nome).toLowerCase().trim()] || null;
+        const html = generaRiepilogoFormatoHtml(nome, dati);
+        let ultimoPuntatore = 'mouse';
+
+        li.addEventListener('pointerdown', (e) => { ultimoPuntatore = e.pointerType; });
+
+        li.addEventListener('pointerenter', (e) => {
+            if (e.pointerType === 'mouse') mostraTooltipFormato(li, html);
+        });
+        li.addEventListener('pointerleave', (e) => {
+            if (e.pointerType === 'mouse') programmaNascondiTooltipFormato();
+        });
+
+        // Touch: tap per aprire/chiudere
+        li.addEventListener('click', (e) => {
+            if (ultimoPuntatore === 'mouse') return;
+            e.stopPropagation();
+            const tip = document.getElementById('format-rules-tooltip');
+            const giaAperto = tip && tip.style.display === 'block' && tip.dataset.ancora === li.dataset.formatIdx;
+            giaAperto ? nascondiTooltipFormato() : mostraTooltipFormato(li, html);
+        });
+    });
 }
 
 async function gestisciAccessoHub(seasonId, status, seasonName) {
@@ -843,11 +1081,20 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
         }
 
         try {
-            // Recupero dati utente e stagione in parallelo per velocità
-            const [userSnap, seasonSnap] = await Promise.all([
+            // Recupero dati utente, stagione e regolamenti in parallelo
+            const [userSnap, seasonSnap, regolamentiSnap] = await Promise.all([
                 db.ref(`users/${user.uid}`).once('value'),
-                db.ref(`seasons/${seasonId}`).once('value')
+                db.ref(`seasons/${seasonId}`).once('value'),
+                db.ref('regolamenti').once('value')
             ]);
+
+            // Mappa nome formato (e id) → dati del regolamento, per il tooltip
+            const mappaRegolamenti = {};
+            Object.entries(regolamentiSnap.val() || {}).forEach(([idReg, datiReg]) => {
+                if (!datiReg) return;
+                mappaRegolamenti[String(idReg).toLowerCase().trim()] = datiReg;
+                if (datiReg.categoria) mappaRegolamenti[String(datiReg.categoria).toLowerCase().trim()] = datiReg;
+            });
 
             const nomePlayer = userSnap.val()?.name;
             const seasonData = seasonSnap.val() || {};
@@ -876,12 +1123,13 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
             // 3. Preparazione Formati HTML e Conteggio Formati
             let formatiHtml = "";
             let countFormati = 0;
+            let listaFormati = [];
 
             if (info.selected_formats) {
-                const listaFormati = Object.values(info.selected_formats);
+                listaFormati = Object.values(info.selected_formats);
                 countFormati = listaFormati.length; // Salviamo il numero esatto di formati
-                listaFormati.forEach(fmt => {
-                    formatiHtml += `<li>${fmt}</li>`;
+                listaFormati.forEach((fmt, idx) => {
+                    formatiHtml += `<li class="format-has-rules" data-format-idx="${idx}">${fmt}</li>`;
                 });
             } else {
                 formatiHtml = "<li>No formats selected</li>";
@@ -936,6 +1184,9 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                     </div>
                 </div>
             `;
+
+            // Tooltip con il riepilogo delle regole di ogni formato
+            attivaTooltipFormati(document.getElementById('modal-season-rules'), listaFormati, mappaRegolamenti);
 
             // 5. Gestione Click Conferma
             document.getElementById('btn-conferma-iscrizione').onclick = async () => {

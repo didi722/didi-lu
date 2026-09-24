@@ -449,7 +449,7 @@ async function gestisciDisiscrizione() {
         return;
     }
 
-    if (!confirm("Are you sure you want to unregister? All your teams will be removed.")) {
+    if (!confirm("Are you sure you want to unregister? All your teams will be removed from this season.")) {
         return;
     }
     
@@ -603,6 +603,385 @@ function checkOverlimitWarning(data, nomeUtenteClean) {
     }
 }
 
+// ============================================================
+// TOOLTIP RIEPILOGO REGOLE FORMATO (stessa logica di formats.html)
+// ============================================================
+function iniettaStiliTooltipFormato() {
+    if (document.getElementById('format-tooltip-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'format-tooltip-styles';
+    style.innerHTML = `
+        #registration-column .btn-team { position: relative; overflow: visible; }
+        #registration-column .btn-team-info {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #ffde00;
+            color: #000;
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0 #000;
+            font-family: Georgia, serif;
+            font-style: italic;
+            font-weight: 900;
+            font-size: 0.85rem;
+            cursor: pointer;
+            z-index: 2;
+        }
+        /* L'icona "i" serve solo su touch: col mouse basta passare sopra al rettangolo */
+        @media (hover: none) {
+            #registration-column .btn-team-info { display: flex; }
+        }
+        .format-rules-tooltip {
+            position: fixed;
+            z-index: 100000;
+            display: none;
+            width: 460px;
+            max-width: calc(100vw - 20px);
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            box-sizing: border-box;
+            background: #7ea9ff;
+            color: #000;
+            border: 3px solid #000;
+            box-shadow: 6px 6px 0 #000;
+            padding: 18px;
+            font-family: 'Josefin Sans', sans-serif;
+            text-align: left;
+        }
+        .frt-title {
+            display: table;
+            background: #000;
+            color: #fff;
+            padding: 5px 14px;
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            transform: rotate(-1deg);
+            margin-bottom: 14px;
+        }
+        .frt-label {
+            display: inline-block;
+            background: #ffde00;
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0 #000;
+            padding: 1px 7px;
+            font-weight: 900;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .frt-desc { margin: 0 0 16px; font-size: 0.92rem; font-weight: 600; line-height: 1.4; }
+        .frt-desc.frt-empty { color: #475569; font-weight: 400; font-style: italic; }
+        .frt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .frt-cell { background: white; border: 2px solid #000; box-shadow: 3px 3px 0 #000; padding: 7px 9px; min-width: 0; }
+        .frt-value {
+            display: block;
+            font-weight: 900;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+        }
+        .frt-value.frt-lower { text-transform: lowercase; }
+        .frt-rules { display: flex; flex-direction: column; }
+        .frt-rule {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 2px dashed #000;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .frt-rule:last-child { border-bottom: none; }
+        .frt-rule b { text-transform: uppercase; color: #000; }
+        .frt-badge {
+            flex-shrink: 0;
+            max-width: 55%;
+            border: 2px solid #000;
+            box-shadow: 1px 1px 0 #000;
+            padding: 2px 6px;
+            font-weight: 900;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+        .frt-badge.banned   { background: #ef4444; color: #fff; }
+        .frt-badge.allowed  { background: #22c55e; color: #fff; }
+        .frt-badge.initial  { background: #3b82f6; color: #fff; }
+        .frt-badge.specific { background: #fbbf24; color: #000; }
+        @media (max-width: 520px) {
+            .frt-grid { grid-template-columns: 1fr; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+const DIZIONARIO_TERMINI_FORMATO = {
+    'custom': 'Custom', 'vgc': 'Official VGC', 'singles': 'Singles', 'doubles': 'Doubles',
+    'anything_goes': 'Goose',
+    'pokemon': 'Pokémon', 'items': 'Items', 'abilities': 'Abilities', 'moves': 'Moves',
+    'species': 'Specific Pokémon', 'duplicates': 'Duplicate Clause', 'total_allowed': 'Total Allowed',
+    'same_across_team': 'Same Across Team', 'uber_limit': 'Uber / Legendary Limit',
+    'specific_item': 'Specific Item', 'specific_name': 'Specific Name', 'color': 'Color',
+    'bst': 'BST', 'type': 'Type', 'is_mega': 'Mega evolutions', 'player_initial': "Player's Initial",
+    'equals': '=', 'is': 'Is', 'up_to': 'Max', 'at_least': 'Min', 'exact': 'Exact',
+    'unique': 'Unique (No Duplicates)', 'between': 'Between', 'lt': '<', 'gt': '>',
+    'lte': '≤', 'gte': '≥',
+    'is_legendary': 'Legendary', 'is_mythical': 'Mythical', 'true': 'Allowed',
+    'name_starts': 'Name starts with:'
+};
+
+function umanizzaTermineFormato(valore) {
+    if (valore === undefined || valore === null || valore === '') return '';
+    if (Array.isArray(valore)) return valore.map(umanizzaTermineFormato).join(', ');
+    const chiave = valore.toString().toLowerCase().trim();
+    return DIZIONARIO_TERMINI_FORMATO[chiave] || valore.toString();
+}
+
+function escapeHtmlFormato(testo) {
+    return String(testo ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Scarica i regolamenti una sola volta e li tiene in cache (nome formato / id → dati)
+let promessaMappaRegolamenti = null;
+
+function caricaMappaRegolamenti() {
+    if (!promessaMappaRegolamenti) {
+        promessaMappaRegolamenti = db.ref('regolamenti').once('value')
+            .then(snap => {
+                const mappa = {};
+                Object.entries(snap.val() || {}).forEach(([idReg, datiReg]) => {
+                    if (!datiReg) return;
+                    mappa[String(idReg).toLowerCase().trim()] = datiReg;
+                    if (datiReg.categoria) mappa[String(datiReg.categoria).toLowerCase().trim()] = datiReg;
+                });
+                return mappa;
+            })
+            .catch(err => {
+                console.error("Errore caricamento regolamenti:", err);
+                promessaMappaRegolamenti = null; // riprova al prossimo render
+                return {};
+            });
+    }
+    return promessaMappaRegolamenti;
+}
+
+// Costruisce l'HTML del riepilogo a partire dal nodo regolamenti/<id>
+function generaRiepilogoFormatoHtml(nomeFormato, dati) {
+    const cella = (label, valore, extraClass = '') => `
+        <div class="frt-cell">
+            <span class="frt-label">${label}</span>
+            <span class="frt-value ${extraClass}">${escapeHtmlFormato(valore)}</span>
+        </div>`;
+
+    let html = `<div class="frt-title">${escapeHtmlFormato(nomeFormato)}</div>`;
+
+    if (!dati) {
+        return html + `<p class="frt-desc frt-empty">No configurations found for this format.</p>`;
+    }
+
+    // Descrizione
+    const descr = (dati.descrizioneBreve || '').trim();
+    html += `<span class="frt-label">Description / Rules</span>`;
+    html += descr
+        ? `<p class="frt-desc">${escapeHtmlFormato(descr)}</p>`
+        : `<p class="frt-desc frt-empty">No description provided for this format.</p>`;
+
+    // Griglia dati principali
+    let celle = cella('Format Type', umanizzaTermineFormato(dati.strutturaSito || 'custom'));
+
+    if (dati.strutturaSito === 'vgc') {
+        if (dati.vgcGen) celle += cella('Generation', `GEN ${dati.vgcGen}`);
+        if (dati.vgcFormat) celle += cella('VGC Regulation', dati.vgcFormat);
+    } else {
+        if (dati.battleStyle) celle += cella('Battle Style', umanizzaTermineFormato(dati.battleStyle));
+        if (dati.genRuleValue) {
+            const tipoGen = dati.genRuleType ? ` (${umanizzaTermineFormato(dati.genRuleType)})` : '';
+            celle += cella('Pokémon Origin', `GEN ${dati.genRuleValue}${tipoGen}`);
+        }
+        if (dati.baseTier) celle += cella('Max. Tier', dati.baseTier);
+    }
+
+    if (dati.showdownFormat && dati.showdownFormat.trim() !== '') {
+        celle += cella('Showdown Format', dati.showdownFormat.trim(), 'frt-lower');
+    }
+
+    celle += `
+        <div class="frt-cell">
+            <span class="frt-label">Gen Mechanics</span>
+            <span class="frt-value" style="color: ${dati.generationalMechanics ? '#15803d' : '#b91c1c'};">
+                ${dati.generationalMechanics ? 'Enabled' : 'Disabled'}
+            </span>
+        </div>`;
+
+    html += `<div class="frt-grid">${celle}</div>`;
+
+    // Clausole e restrizioni
+    if (dati.restrizioni && Object.keys(dati.restrizioni).length > 0) {
+        let righe = '';
+
+        Object.entries(dati.restrizioni).forEach(([categoria, campi]) => {
+            Object.entries(campi || {}).forEach(([campo, regola]) => {
+                regola = regola || {};
+                let badge = '';
+
+                if (regola.mode === 'BANNED') {
+                    badge = `<span class="frt-badge banned">Banned</span>`;
+                } else if (regola.mode === 'ALLOWED') {
+                    badge = `<span class="frt-badge allowed">Allowed</span>`;
+                } else if (regola.mode === 'PLAYER_INITIAL') {
+                    badge = `<span class="frt-badge initial">Player initial</span>`;
+                } else if (regola.mode === 'SAME_ACROSS_TEAM') {
+                    badge = `<span class="frt-badge allowed">Same across team</span>`;
+                } else if (regola.mode === 'SPECIFIC') {
+                    let dettaglio;
+                    if (regola.operator === 'between') {
+                        dettaglio = `${regola.min} - ${regola.max}`;
+                    } else {
+                        const op = umanizzaTermineFormato(regola.operator);
+                        const val = umanizzaTermineFormato(regola.value);
+                        dettaglio = (op === '=' || !op) ? val : `${op} ${val}`;
+                    }
+                    badge = `<span class="frt-badge specific">${escapeHtmlFormato(dettaglio)}</span>`;
+                }
+
+                righe += `
+                    <div class="frt-rule">
+                        <span>
+                            <b>${escapeHtmlFormato(umanizzaTermineFormato(categoria))}</b>
+                            <span style="color: #64748b; font-weight: 400;">➔</span>
+                            ${escapeHtmlFormato(umanizzaTermineFormato(campo))}
+                        </span>
+                        ${badge}
+                    </div>`;
+            });
+        });
+
+        html += `<span class="frt-label">Clauses & Restrictions</span><div class="frt-rules">${righe}</div>`;
+    }
+
+    return html;
+}
+
+let timerMostraTooltipFormato = null;
+let timerNascondiTooltipFormato = null;
+
+function getTooltipFormato() {
+    iniettaStiliTooltipFormato();
+    let tip = document.getElementById('format-rules-tooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'format-rules-tooltip';
+        tip.className = 'format-rules-tooltip';
+        document.body.appendChild(tip);
+
+        // Il mouse può entrare nel tooltip (per scorrere le regole) senza farlo sparire
+        tip.addEventListener('mouseenter', () => clearTimeout(timerNascondiTooltipFormato));
+        tip.addEventListener('mouseleave', () => programmaNascondiTooltipFormato());
+        tip.addEventListener('click', (e) => e.stopPropagation());
+
+        // Tap fuori dal tooltip (touch) → chiude
+        document.addEventListener('click', () => nascondiTooltipFormato());
+
+        // Scroll della pagina → chiude (ma non lo scroll interno al tooltip)
+        window.addEventListener('scroll', (e) => {
+            if (e.target !== tip) nascondiTooltipFormato();
+        }, true);
+    }
+    return tip;
+}
+
+function posizionaTooltipFormato(ancora, tip) {
+    const r = ancora.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
+    const margine = 14;
+    const bordo = 10;
+
+    let left, top;
+
+    if (r.right + margine + w <= window.innerWidth - bordo) {
+        left = r.right + margine;                 // a destra
+        top = r.top + r.height / 2 - h / 2;
+    } else if (r.left - margine - w >= bordo) {
+        left = r.left - margine - w;              // a sinistra
+        top = r.top + r.height / 2 - h / 2;
+    } else {
+        left = r.left + r.width / 2 - w / 2;      // schermo stretto: sotto o sopra
+        top = (window.innerHeight - r.bottom >= h + margine) ? r.bottom + margine : r.top - margine - h;
+    }
+
+    left = Math.max(bordo, Math.min(left, window.innerWidth - w - bordo));
+    top = Math.max(bordo, Math.min(top, window.innerHeight - h - bordo));
+
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+}
+
+function mostraTooltipFormato(ancora, html, chiave) {
+    clearTimeout(timerNascondiTooltipFormato);
+    const tip = getTooltipFormato();
+    tip.innerHTML = html;
+    tip.scrollTop = 0;
+    tip.style.display = 'block';
+    tip.dataset.ancora = chiave;
+    posizionaTooltipFormato(ancora, tip);
+}
+
+function programmaNascondiTooltipFormato() {
+    clearTimeout(timerNascondiTooltipFormato);
+    timerNascondiTooltipFormato = setTimeout(nascondiTooltipFormato, 180);
+}
+
+function nascondiTooltipFormato() {
+    clearTimeout(timerMostraTooltipFormato);
+    clearTimeout(timerNascondiTooltipFormato);
+    const tip = document.getElementById('format-rules-tooltip');
+    if (tip) {
+        tip.style.display = 'none';
+        tip.dataset.ancora = '';
+    }
+}
+
+// Collega il tooltip a un elemento: hover col mouse, oppure tap sull'icona "i" (touch)
+function collegaTooltipFormato(elemento, html, chiave, iconaInfo = null) {
+    iniettaStiliTooltipFormato();
+
+    elemento.addEventListener('pointerenter', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        clearTimeout(timerMostraTooltipFormato);
+        clearTimeout(timerNascondiTooltipFormato);
+        // Piccolo ritardo: se passi col mouse solo per cliccare, il tooltip non ti copre la pagina
+        timerMostraTooltipFormato = setTimeout(() => mostraTooltipFormato(elemento, html, chiave), 300);
+    });
+
+    elemento.addEventListener('pointerleave', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        clearTimeout(timerMostraTooltipFormato);
+        programmaNascondiTooltipFormato();
+    });
+
+    // Click sul rettangolo (apre il team picker) → chiude il tooltip
+    elemento.addEventListener('click', () => nascondiTooltipFormato());
+
+    if (iconaInfo) {
+        iconaInfo.addEventListener('click', (e) => {
+            e.stopPropagation(); // non apre il team picker
+            const tip = document.getElementById('format-rules-tooltip');
+            const giaAperto = tip && tip.style.display === 'block' && tip.dataset.ancora === chiave;
+            giaAperto ? nascondiTooltipFormato() : mostraTooltipFormato(elemento, html, chiave);
+        });
+    }
+}
 
 // 4. Rendering dell'Hub
 async function renderHub(data, nomeUtenteClean, myRenderID) {
@@ -731,11 +1110,17 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
 
     // --- 3. BOTTONI REGISTRAZIONE ---
     const btnContainer = document.getElementById('registration-column');
+
+    // Regolamenti per i tooltip (scaricati una volta sola, poi dalla cache)
+    const mappaRegolamenti = await caricaMappaRegolamenti();
+    if (myRenderID !== currentRenderID) return;
+
+    nascondiTooltipFormato();
     btnContainer.innerHTML = '';
 
     if (info.selected_formats) {
         const formats = Array.isArray(info.selected_formats) ? info.selected_formats : Object.values(info.selected_formats);
-        formats.forEach(format => {
+        formats.forEach((format, idx) => {
             const iscrizione = teamsIscritti[format] ? teamsIscritti[format][nomeUtenteClean] : null;
             const count = iscrizione ? (iscrizione.count || 0) : 0;
             const isOverLimit = !isNoLimit && count > maxTeamsPerFormat;
@@ -749,8 +1134,19 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
             btn.innerHTML = `
                 <div class="btn-team-label">${format.toUpperCase()}</div>
                 <div class="btn-team-counter">${counterHTML}</div>
+                <span class="btn-team-info" title="Format rules">i</span>
             `;
             btn.onclick = () => openTeamPicker(format, nomeUtenteClean);
+
+            // Tooltip con il riepilogo delle regole del formato
+            const datiFormato = mappaRegolamenti[String(format).toLowerCase().trim()] || null;
+            collegaTooltipFormato(
+                btn,
+                generaRiepilogoFormatoHtml(format, datiFormato),
+                `hub-format-${idx}`,
+                btn.querySelector('.btn-team-info')
+            );
+
             btnContainer.appendChild(btn);
         });
     }
@@ -797,6 +1193,34 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
         partList.innerHTML = '<p class="empty-list-text">No players joined yet</p>';
     }
 }
+
+function gestisciErroreSprite(img, pkmNameUrl) {
+    const fase = parseInt(img.dataset.spriteFase || '0', 10);
+    img.dataset.spriteFase = String(fase + 1);
+
+    if (fase === 0) {
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        return;
+    }
+
+    if (fase === 1) {
+        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            })
+            .catch(() => {
+                img.onerror = null;
+                img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+            });
+        return;
+    }
+
+    // Ultimo fallback: niente più tentativi
+    img.onerror = null;
+    img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
 
 async function openTeamPicker(format, nomeUtenteClean) {
 
@@ -873,10 +1297,14 @@ async function openTeamPicker(format, nomeUtenteClean) {
             const pokemonImages = pokemonArray.map(p => {
                 const pkmnName = p && typeof p === 'object' ? p.nome : p;
                 if (!pkmnName || typeof pkmnName !== 'string') return '';
-                const spriteName = pkmnName.toLowerCase().trim().replace(/\s+/g, '-');
-                return `<img src="https://play.pokemonshowdown.com/sprites/ani/${spriteName}.gif" 
-                        onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${spriteName}.png'"
-                        class="preview-pkmn-img" title="${pkmnName}">`;
+
+                // Stessa normalizzazione e stesso fallback usati in renderizza()
+                const pkmNameUrl = pkmnName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+                const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+
+                return `<img src="${pkmSprite}" alt="${pkmnName}" title="${pkmnName}"
+                        class="preview-pkmn-img"
+                        onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">`;
             }).join('');
 
             div.innerHTML = `
