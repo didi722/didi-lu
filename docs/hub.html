@@ -1442,6 +1442,22 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     }
 }
 
+// Effetto delle nature sulle statistiche: [statistica aumentata, statistica diminuita]
+const EFFETTI_NATURE = {
+    lonely:  ['Atk', 'Def'], brave:   ['Atk', 'Spe'], adamant: ['Atk', 'SpA'], naughty: ['Atk', 'SpD'],
+    bold:    ['Def', 'Atk'], relaxed: ['Def', 'Spe'], impish:  ['Def', 'SpA'], lax:     ['Def', 'SpD'],
+    timid:   ['Spe', 'Atk'], hasty:   ['Spe', 'Def'], jolly:   ['Spe', 'SpA'], naive:   ['Spe', 'SpD'],
+    modest:  ['SpA', 'Atk'], mild:    ['SpA', 'Def'], quiet:   ['SpA', 'Spe'], rash:    ['SpA', 'SpD'],
+    calm:    ['SpD', 'Atk'], gentle:  ['SpD', 'Def'], sassy:   ['SpD', 'Spe'], careful: ['SpD', 'SpA']
+    // Hardy, Docile, Serious, Bashful, Quirky: neutre, nessun effetto
+};
+
+function formattaEffettoNatura(natura) {
+    const effetto = EFFETTI_NATURE[String(natura || '').toLowerCase().trim()];
+    if (!effetto) return '';
+    return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
+}
+
 function generaHtmlDettaglioTeam(team, proprietario, palette) {
     // 🛠️ Recuperiamo l'oggetto stats strutturato poco fa
     const stats = team.stats || {};
@@ -1514,7 +1530,8 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                             <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
 
-                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs || '0 EVs'}</p>
+                        <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        <p style="color: #1a1a1a; margin-top: 2px !important; margin-bottom: 8px !important;">🌿 ${formattaEffettoNatura(p.natura)}</p>
                         
                         <div class="modal-moves">
                             ${(p.mosse || []).map((m, mIndex) => {

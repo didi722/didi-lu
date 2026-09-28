@@ -858,6 +858,22 @@ async function caricaTeamBloccati() {
     }
 }
 
+// Effetto delle nature sulle statistiche: [statistica aumentata, statistica diminuita]
+const EFFETTI_NATURE = {
+    lonely:  ['Atk', 'Def'], brave:   ['Atk', 'Spe'], adamant: ['Atk', 'SpA'], naughty: ['Atk', 'SpD'],
+    bold:    ['Def', 'Atk'], relaxed: ['Def', 'Spe'], impish:  ['Def', 'SpA'], lax:     ['Def', 'SpD'],
+    timid:   ['Spe', 'Atk'], hasty:   ['Spe', 'Def'], jolly:   ['Spe', 'SpA'], naive:   ['Spe', 'SpD'],
+    modest:  ['SpA', 'Atk'], mild:    ['SpA', 'Def'], quiet:   ['SpA', 'Spe'], rash:    ['SpA', 'SpD'],
+    calm:    ['SpD', 'Atk'], gentle:  ['SpD', 'Def'], sassy:   ['SpD', 'Spe'], careful: ['SpD', 'SpA']
+    // Hardy, Docile, Serious, Bashful, Quirky: neutre, nessun effetto
+};
+
+function formattaEffettoNatura(natura) {
+    const effetto = EFFETTI_NATURE[String(natura || '').toLowerCase().trim()];
+    if (!effetto) return '';
+    return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
+}
+
 async function renderizza(lista) {
     await caricaTeamBloccati();
     const grid = document.getElementById('teamsGrid');
@@ -936,7 +952,8 @@ async function renderizza(lista) {
                             <div class="pkm-hover-card ${sideClass}">
                                 <strong>${nomePkm}</strong>
                                 <p>✨ ${p.abilita || '-'}</p>
-                                <p style="color: #1a1a1a; margin-bottom: 8px !important;">📊 ${p.evs || '-'}</p>
+                                <p style="color: #1a1a1a !important;">📊 ${p.evs || '-'}</p>
+                                <p style="color: #1a1a1a; margin-bottom: 8px !important;">🌿 ${formattaEffettoNatura(p.natura)}</p>
                                 <div class="hover-moves">
                                     ${mossePkm.map(m => `<span>${m}</span>`).join('')}
                                 </div>
@@ -1114,7 +1131,7 @@ async function apriDettagli(id) {
 <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
-                            <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}')">${p.nome}</strong>
+                                                        <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}', '${p.natura || ''}')">${p.nome}</strong>
                             <div id="${statsId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <div class="info-container" style="position: relative;">
@@ -1129,6 +1146,7 @@ async function apriDettagli(id) {
                             <div id="${itemId}" class="generic-tooltip ${classePosizione}">Loading...</div>
                         </div>
                         <p style="color:#1a1a1a; font-size:0.65rem; margin-top:2px !important;">📊 ${p.evs}</p>
+                        <p style="color: #1a1a1a; margin-top: 2px !important; margin-bottom: 8px !important;">🌿 ${formattaEffettoNatura(p.natura)}</p>
                         <div class="modal-moves">
                             ${p.mosse.map((m, mIndex) => {
                                 const mId = `mossa-${pIndex}-${mIndex}`;
@@ -1163,7 +1181,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 
-async function caricaStats(pkmName, elementId) {
+async function caricaStats(pkmName, elementId, natura = '') {
     const tooltip = document.getElementById(elementId);
     if (tooltip.dataset.loaded === "true") return;
 
@@ -1180,15 +1198,42 @@ async function caricaStats(pkmName, elementId) {
             'speed': 'SPE'
         };
 
+        // Da nomi usati in EFFETTI_NATURE ai nomi delle stat di PokeAPI
+        const statNaturaPokeAPI = {
+            'Atk': 'attack',
+            'Def': 'defense',
+            'SpA': 'special-attack',
+            'SpD': 'special-defense',
+            'Spe': 'speed'
+        };
+
+        const effetto = (typeof EFFETTI_NATURE !== 'undefined')
+            ? EFFETTI_NATURE[String(natura || '').toLowerCase().trim()]
+            : null;
+        const statAumentata = effetto ? statNaturaPokeAPI[effetto[0]] : null;
+        const statDiminuita = effetto ? statNaturaPokeAPI[effetto[1]] : null;
+
         let statsHTML = `<h4 class="panel-title">BASE STATS</h4>`;
         
         data.stats.forEach(s => {
             const val = s.base_stat;
             // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
             const width = Math.min((val / 150) * 100, 100); 
+
+            // Colore dell'etichetta in base alla natura
+            let stileEtichetta = 'width: 30px; font-weight:bold;';
+            let segno = '';
+            if (s.stat.name === statAumentata) {
+                stileEtichetta += ' color: #15803d !important;';
+                segno = '+';
+            } else if (s.stat.name === statDiminuita) {
+                stileEtichetta += ' color: #b91c1c !important;';
+                segno = '-';
+            }
+
             statsHTML += `
                 <div class="stat-row">
-                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="${stileEtichetta}">${statsMap[s.stat.name]}${segno}</span>
                     <span style="width: 25px; text-align:right;">${val}</span>
                     <div class="stat-bar-bg">
                         <div class="stat-bar-fill" style="width: ${width}%"></div>
@@ -1462,7 +1507,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
             if (heroSprite) {
                 heroSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
             }
-            caricaStats(pkmNameUrl, 'single-stats');
+                        caricaStats(pkmNameUrl, 'single-stats', pokemonData.natura);
             caricaTipi(pkmNameUrl, 'single-types', '');
         }).catch(() => {});
 
