@@ -1420,6 +1420,7 @@ body.status-live .hub-header {
     margin-left: -5px; /* Leggero tocco per incollarlo al bordo */
     margin-top: 35px;
     margin-bottom: -10px;
+    filter: drop-shadow(2px 2px 0 black);
 }
 
 .modal-pkm-info {

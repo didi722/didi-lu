@@ -2292,6 +2292,33 @@ function formattaEffettoNatura(natura) {
     return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
 }
 
+function gestisciErroreSprite(img, pkmNameUrl) {
+    const fase = parseInt(img.dataset.spriteFase || '0', 10);
+    img.dataset.spriteFase = String(fase + 1);
+
+    if (fase === 0) {
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        return;
+    }
+
+    if (fase === 1) {
+        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            })
+            .catch(() => {
+                img.onerror = null;
+                img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+            });
+        return;
+    }
+
+    // Ultimo fallback: niente più tentativi
+    img.onerror = null;
+    img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
 
 function generaHtmlDettaglioTeam(team, proprietario, palette) {
     const variabiliCSS = generaVariabiliCSS(palette);
@@ -2334,8 +2361,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
                              class="modal-sprite clickable-pkm" 
-                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png'">
-                    </div>
+                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
@@ -2727,7 +2753,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
         tooltip.style.background = "#33261c"; // Colore di fallback in caso di errore
     }
 }
-async function caricaStats(pkmName, elementId) {
+async function caricaStats(pkmName, elementId, natura = '') {
     const tooltip = document.getElementById(elementId);
     if (tooltip.dataset.loaded === "true") return;
 
@@ -2744,15 +2770,36 @@ async function caricaStats(pkmName, elementId) {
             'speed': 'SPE'
         };
 
+        // Natura → [stat aumentata, stat diminuita] (nomi PokeAPI). Le nature neutre non ci sono.
+        const effettiNatura = {
+            lonely:  ['attack', 'defense'],         brave:   ['attack', 'speed'],
+            adamant: ['attack', 'special-attack'],  naughty: ['attack', 'special-defense'],
+            bold:    ['defense', 'attack'],         relaxed: ['defense', 'speed'],
+            impish:  ['defense', 'special-attack'], lax:     ['defense', 'special-defense'],
+            timid:   ['speed', 'attack'],           hasty:   ['speed', 'defense'],
+            jolly:   ['speed', 'special-attack'],   naive:   ['speed', 'special-defense'],
+            modest:  ['special-attack', 'attack'],  mild:    ['special-attack', 'defense'],
+            quiet:   ['special-attack', 'speed'],   rash:    ['special-attack', 'special-defense'],
+            calm:    ['special-defense', 'attack'], gentle:  ['special-defense', 'defense'],
+            sassy:   ['special-defense', 'speed'],  careful: ['special-defense', 'special-attack']
+        };
+        const [statAumentata, statDiminuita] = effettiNatura[String(natura || '').toLowerCase().trim()] || [null, null];
+
         let statsHTML = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #eeeeee; font-size:0.8rem;">BASE STATS</div>`;
         
         data.stats.forEach(s => {
             const val = s.base_stat;
             // Calcoliamo la larghezza della barra (max 150 per le stats base medie)
             const width = Math.min((val / 150) * 100, 100); 
+
+            // Verde per la stat aumentata dalla natura, rosso per quella diminuita
+            let stileEtichetta = 'width: 30px; font-weight:bold;';
+            if (s.stat.name === statAumentata) stileEtichetta += ' color: #15803d !important;';
+            if (s.stat.name === statDiminuita) stileEtichetta += ' color: #b91c1c !important;';
+
             statsHTML += `
                 <div class="stat-row">
-                    <span style="width: 30px; font-weight:bold;">${statsMap[s.stat.name]}</span>
+                    <span style="${stileEtichetta}">${statsMap[s.stat.name]}</span>
                     <span style="width: 25px; text-align:right;">${val}</span>
                     <div class="stat-bar-bg">
                         <div class="stat-bar-fill" style="width: ${width}%"></div>

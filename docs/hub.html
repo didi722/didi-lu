@@ -1442,6 +1442,34 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     }
 }
 
+function gestisciErroreSprite(img, pkmNameUrl) {
+    const fase = parseInt(img.dataset.spriteFase || '0', 10);
+    img.dataset.spriteFase = String(fase + 1);
+
+    if (fase === 0) {
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        return;
+    }
+
+    if (fase === 1) {
+        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            })
+            .catch(() => {
+                img.onerror = null;
+                img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+            });
+        return;
+    }
+
+    // Ultimo fallback: niente più tentativi
+    img.onerror = null;
+    img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
+
 // Effetto delle nature sulle statistiche: [statistica aumentata, statistica diminuita]
 const EFFETTI_NATURE = {
     lonely:  ['Atk', 'Def'], brave:   ['Atk', 'Spe'], adamant: ['Atk', 'SpA'], naughty: ['Atk', 'SpD'],
@@ -1508,8 +1536,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
                              class="modal-sprite clickable-pkm" 
-                             onerror="this.src='https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png'">
-                    </div>
+                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
