@@ -137,7 +137,7 @@
     <!-- Modificato per chiudere correttamente il modale e il backdrop -->
 </div>
 
-<button onclick="apriAdminProtetto()" class="btn-floating-admin" title="Add Team">
+<button onclick="apriNuovoTeam()" class="btn-floating-admin" title="Add Team">
     <span class="plus-icon">+</span>
 </button>
 
@@ -665,6 +665,21 @@ function apriAdminProtetto() {
     } else {
         console.error("Error: Modal elements not found in the DOM.");
     }
+}
+
+// Apre il pannello per un team NUOVO: azzera la modalità modifica e svuota il form
+function apriNuovoTeam() {
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel) delete adminPanel.dataset.editingId;
+
+    const elName = document.getElementById('admin-team-name');
+    const elCat = document.getElementById('admin-team-cat');
+    const elInput = document.getElementById('showdown-input');
+    if (elName) elName.value = '';
+    if (elCat) elCat.value = '';
+    if (elInput) elInput.value = '';
+
+    apriAdminProtetto();
 }
 
 function chiudiAdminProtetto() {
@@ -1716,7 +1731,13 @@ function parseShowdown(text) {
             if (line.startsWith('Ability:')) pokemon.abilita = line.replace('Ability:', '').trim();
             if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
             if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
-            if (line.endsWith('Nature')) pokemon.natura = line.replace('Nature', '').trim();
+            if (line.startsWith('IVs:')) pokemon.ivs = line.replace('IVs:', '').trim();
+
+            const matchNatura = line.match(/^([A-Za-z]+)\s+Nature$/i);
+            if (matchNatura) {
+                pokemon.natura = matchNatura[1].charAt(0).toUpperCase() + matchNatura[1].slice(1).toLowerCase();
+            }
+
             if (line.startsWith('-')) pokemon.mosse.push(line.replace('-', '').trim());
         });
 
@@ -1971,9 +1992,8 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
         }
     }
 
-    if (regolamento.strutturaSito === 'anything_goes') {
-        return { valido: true, errori: [] }; 
-    }
+    const strutturaFormato = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
+    const isAnythingGoes = strutturaFormato === 'anything_goes';
 
     let jsonDati = null;
     const genLimite = parseInt(regolamento.genRuleValue);
@@ -2096,19 +2116,22 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
         console.error("Error loading validation file:", err);
     }
 
-    // Controlli Standard
-    const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
-    const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
-    const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
-    
-    tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
+        // Controlli Standard (gen, tier, clausole): saltati solo nei formati Anything Goes
+    if (!isAnythingGoes) {
+        const erroriGen = validaGenerazione(teamDatiPokeAPI, regolamento, jsonDati);
+        const erroriTier = validaTier(teamDatiPokeAPI, regolamento, jsonDati);
+        const erroriClauses = validaClauses(teamDatiPokeAPI, regolamento);
+        tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
+    }
 
+    // Restrizioni del formato: valgono SEMPRE, anche in Anything Goes
     if (regolamento.restrizioni) {
         const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento, inizialiUtente);
         tuttiGliErrori = tuttiGliErrori.concat(erroriAvanzati);
     }
 
-    if (regolamento.strutturaSito === 'custom' && altriTeamEsistenti.length > 0) {
+    // Max 2 Pokémon in comune con gli altri team: formati custom e Anything Goes
+    if ((strutturaFormato === 'custom' || isAnythingGoes) && altriTeamEsistenti.length > 0) {
         const erroriSovrapposizione = validaSovrapposizioneTeam(teamDatiPokeAPI, altriTeamEsistenti, currentTeamId);
         tuttiGliErrori = tuttiGliErrori.concat(erroriSovrapposizione);
     }
@@ -2199,7 +2222,19 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
             const regola = restrizioni.pokemon[field];
 
             // 🔤 CONTROLLO RESTRIZIONE INIZIALE NOME/COGNOME (PLAYER_INITIAL)
-            if (field === 'name_starts') {
+                        if (field === 'name_starts') {
+                // Tutti i Pokémon con la stessa iniziale (calcolata dal nome, vale anche se PokeAPI fallisce)
+                if (regola.mode === "SAME_ACROSS_TEAM" || regola.value === "SAME_ACROSS_TEAM") {
+                    const iniziali = team
+                        .map(p => (p.species?.name || p.name || p.nome || p.pokemon || '').trim().charAt(0).toUpperCase())
+                        .filter(Boolean);
+                    const inizialiUniche = [...new Set(iniziali)];
+                    if (inizialiUniche.length > 1) {
+                        errori.push(`[Restrizione Nome] Tutti i Pokémon devono iniziare con la stessa lettera. Iniziali trovate: ${inizialiUniche.join(', ')}.`);
+                    }
+                    return;
+                }
+
                 if (regola.mode === "PLAYER_INITIAL") {
                     const initNome = (inizialiUtente.nome || "").toLowerCase();
                     const initCognome = (inizialiUtente.cognome || "").toLowerCase();
@@ -2604,8 +2639,9 @@ async function salvaTeamSuFirebase() {
         if (!regolamento) { alert("Error: Format not found."); return; }
     } catch (error) { alert("Error: Database error: " + error.message); return; }
 
-    let altriTeamEsistenti = [];
-    if (regolamento.strutturaSito === 'custom') {
+        let altriTeamEsistenti = [];
+    const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
+    if (strutturaFormatoSalvataggio === 'custom' || strutturaFormatoSalvataggio === 'anything_goes') {
         try {
             const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
             teamsSnap.forEach(childSnap => {
@@ -2704,13 +2740,18 @@ function caricaTeamPerModifica(teamId) {
     if (elName) elName.value = team.nome || '';
     if (elCat) elCat.value = team.categoria || team.category || 'VGC';
 
-    // 2. Ricostruisce il testo in formato Showdown
+        // 2. Ricostruisce il testo in formato Showdown (con natura, tera e IVs)
     let testoShowdown = "";
     if (Array.isArray(team.pokemon)) {
         team.pokemon.forEach(p => {
-            testoShowdown += `${p.nome || ''} @ ${p.strumento || ''}\n`;
-            testoShowdown += `Ability: ${p.abilita || ''}\n`;
-            testoShowdown += `EVs: ${p.evs || ''}\n`;
+            testoShowdown += p.strumento && p.strumento !== 'None'
+                ? `${p.nome || ''} @ ${p.strumento}\n`
+                : `${p.nome || ''}\n`;
+            if (p.abilita) testoShowdown += `Ability: ${p.abilita}\n`;
+            if (p.tera) testoShowdown += `Tera Type: ${p.tera}\n`;
+            if (p.evs) testoShowdown += `EVs: ${p.evs}\n`;
+            if (p.natura) testoShowdown += `${p.natura} Nature\n`;
+            if (p.ivs) testoShowdown += `IVs: ${p.ivs}\n`;
             if (Array.isArray(p.mosse)) {
                 p.mosse.forEach(m => { if (m && m !== "-") testoShowdown += `- ${m}\n`; });
             }
