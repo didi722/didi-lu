@@ -5867,17 +5867,22 @@ function tbCreaOverlay() {
             <div class="tb-header">
                 <h2 id="tb-title" class="tb-title">Build Team</h2>
                 <span id="tb-format-badge" class="tb-format-badge"></span>
-<button type="button" class="tb-close" onclick="tbChiediChiusura()" aria-label="Close">&times;</button>            </div>
-            <div id="tb-slots" class="tb-slots"></div>
-            <div id="tb-body" class="tb-body"></div>
+                <button type="button" class="tb-close" onclick="tbChiediChiusura()" aria-label="Close">&times;</button>
+            </div>
+            <div class="tb-content-container">
+                <div id="tb-slots" class="tb-slots"></div>
+                <div id="tb-body" class="tb-body"></div>
+            </div>
         </div>
     `;
     document.body.appendChild(overlay);
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) tbChiediChiusura();    });
+        if (e.target === overlay) tbChiediChiusura();
+    });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && overlay.classList.contains('open') && !tbCombo.input) tbChiediChiusura();    });
+        if (e.key === 'Escape' && overlay.classList.contains('open') && !tbCombo.input) tbChiediChiusura();
+    });
 
     return overlay;
 }
@@ -6265,7 +6270,7 @@ function tbRenderLeggero() {
     const s = tbStato.slot[tbStato.attivo];
     const etichetta = bottone && bottone.querySelector('.tb-slot-item');
     if (s && etichetta) {
-        etichetta.textContent = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : 'No item';
+        etichetta.textContent = s.oggetto;
     } else {
         tbRenderSlot();
     }
@@ -6278,24 +6283,35 @@ function tbRenderSlot() {
 
     contenitore.innerHTML = tbStato.slot.map((s, i) => {
         const attivo = i === tbStato.attivo ? 'active' : '';
+        
+        // Slot Vuoto
         if (!s) {
             return `
                 <button type="button" class="tb-slot empty ${attivo}" onclick="tbSelezionaSlot(${i})">
-                    <span class="tb-slot-num">${i + 1}</span>
                     <span class="tb-slot-plus">+</span>
-                    <span class="tb-slot-name">Empty</span>
                 </button>`;
         }
+
+        // Slot con Pokémon
         const sp = tbSpecie(s.specieId);
-        const oggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : 'No item';
+        const oggetto = s.oggetto;
         const spriteId = tbSpriteId(sp);
+        
         return `
-            <button type="button" class="tb-slot ${attivo}" onclick="tbSelezionaSlot(${i})">
-                <span class="tb-slot-num">${i + 1}</span>
+            <div class="tb-slot ${attivo}" onclick="tbSelezionaSlot(${i})">
                 <img src="https://play.pokemonshowdown.com/sprites/ani/${spriteId}.gif" alt=""
-                     onerror="gestisciErroreSprite(this, '${spriteId}')">                <span class="tb-slot-name">${tbEsc(tbNomeBello(sp))}</span>
+                     onerror="gestisciErroreSprite(this, '${spriteId}')">                
                 <span class="tb-slot-item">${tbEsc(oggetto)}</span>
-            </button>`;
+                
+                <!-- PULSANTE FRECCETTE ROTANTI PER CAMBIARE POKÉMON -->
+<button type="button" 
+        class="tb-btn-change-pkmn" 
+        title="Change Pokémon" 
+        aria-label="Change Pokémon"
+        onclick="event.stopPropagation(); tbRimuoviPokemon(${i})">
+    <i class="fa-solid fa-rotate tb-icon-spin"></i>
+</button>   
+            </div>`;
     }).join('');
 }
 
@@ -6762,14 +6778,12 @@ function tbHtmlEditor(s) {
                 <div class="tb-base-stats">
                     ${statiBase}
                 </div>
-                <button type="button" class="tb-btn-small danger" onclick="tbRimuoviPokemon()">Change Pokémon</button>
                             ${tbHtmlAzioni('colonna')}
                 </div>
 
             <div class="tb-fields">
                 <div class="tb-row">
                     <div class="tb-field">
-                        <span class="tb-label">Item</span>
                         <div class="tb-combo">
                             <input type="text" class="tb-input" value="${tbEsc(nomeOggetto)}" autocomplete="off"
                                    placeholder="${tbStato.gen < 2 ? 'No items in Gen 1' : 'No item'}"
@@ -6781,7 +6795,6 @@ function tbHtmlEditor(s) {
                         <div id="tb-msg-oggetto" class="tb-msg"></div>
                     </div>
                     <div class="tb-field">
-                        <span class="tb-label">Ability</span>
                         ${campoAbilita}
                         <p class="tb-desc" id="tb-desc-abilita"></p>
                     </div>
