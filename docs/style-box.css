@@ -3316,3 +3316,1280 @@ color:#eeeeee;
     font-weight: bold;
     box-shadow: 1px 1px 0px #000;
 }
+
+/* =========================================================
+   TEAM BUILDER (bottone nell'helper + modale di costruzione)
+   ========================================================= */
+
+/* --- Bottone "BUILD TEAM" nella colonna sinistra dell'helper --- */
+.tb-open-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 6px;
+    padding: 14px 18px;
+    background: #4ade80;
+    color: #000;
+    border: 4px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    font-weight: 900;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transform: rotate(-1deg);
+    transition: transform 0.08s, box-shadow 0.08s, background-color 0.1s;
+}
+
+.tb-open-btn:hover {
+    background: var(--accent-color, #ffde4d);
+    transform: translate(-2px, -2px) rotate(-1deg);
+    box-shadow: 7px 7px 0 #000;
+}
+
+.tb-open-btn:active {
+    transform: translate(3px, 3px) rotate(-1deg);
+    box-shadow: 1px 1px 0 #000;
+}
+
+/* --- Overlay e struttura --- */
+.tb-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.tb-overlay.open {
+    display: flex;
+}
+
+.tb-overlay,
+.tb-overlay * {
+    box-sizing: border-box;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+.tb-wrapper {
+    width: 100%;
+    max-width: 1150px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    color: #000;
+}
+
+.tb-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.tb-title {
+    margin: 0;
+    background: #000;
+    color: #fff;
+    border: 4px solid #000;
+    padding: 8px 20px;
+    font-size: 2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    transform: rotate(-2deg);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tb-format-badge {
+    background: #4ade80;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    padding: 4px 10px;
+    font-weight: 900;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    transform: rotate(1.5deg);
+}
+
+.tb-close {
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.tb-close:hover {
+    background: #b51e1e;
+    color: #fff;
+}
+
+/* --- Slot del team --- */
+.tb-slots {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.tb-slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-height: 120px;
+    padding: 10px 6px;
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.tb-slot:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #000;
+}
+
+.tb-slot.empty:hover {
+    background: var(--accent-color, #4ade80);
+    border-style: solid;
+}
+
+.tb-slot.active {
+    background: var(--accent-color, #4ade80);
+    transform: rotate(-1.5deg) translateY(-3px);
+    box-shadow: 6px 6px 0 #000;
+}
+
+.tb-slot.empty {
+    background: rgba(255, 255, 255, 0.55);
+    border-style: dashed;
+    box-shadow: none;
+}
+
+.tb-slot.empty.active {
+    background: var(--accent-color, #4ade80);
+    border-style: solid;
+    box-shadow: 6px 6px 0 #000;
+}
+
+.tb-slot img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.tb-slot-num {
+    position: absolute;
+    top: -12px;
+    left: -10px;
+    background: #000;
+    color: #fff;
+    padding: 2px 7px;
+    font-weight: 900;
+    font-size: 0.7rem;
+}
+
+.tb-slot-plus {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 60px;
+}
+
+.tb-slot-name {
+    font-weight: 900;
+    font-size: 0.85rem;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.tb-slot-item {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #444;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+/* --- Corpo centrale --- */
+.tb-body {
+    position: relative;
+    min-height: 280px;
+    padding: 24px 22px 22px;
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #000;
+}
+
+.tb-label {
+    display: inline-block;
+    width: fit-content;
+    margin-bottom: 8px;
+    background: #ffde4d;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    padding: 2px 8px;
+    font-weight: 900;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    transform: rotate(-1.5deg);
+}
+
+.tb-input,
+.tb-select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 0;
+    box-shadow: 3px 3px 0 #000;
+    font-weight: 700;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.tb-input:focus,
+.tb-select:focus {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 #000;
+}
+
+.tb-input.invalid {
+    background: #fee2e2;
+    border-color: #b51e1e;
+}
+
+.tb-input:disabled {
+    background: #eee;
+    color: #555;
+}
+
+.tb-msg {
+    min-height: 1em;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #b51e1e;
+}
+
+.tb-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 230px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.tb-loading-ball {
+    width: 54px;
+    height: 54px;
+    border: 5px solid #000;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #ff3e3e 46%, #000 46%, #000 54%, #fff 54%);
+    animation: tbGira 1s linear infinite;
+}
+
+@keyframes tbGira {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Selettore Pokémon --- */
+.tb-picker-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.tb-picker-top .tb-label {
+    margin-bottom: 0;
+}
+
+.tb-picker-top .tb-input {
+    max-width: 320px;
+}
+
+.tb-picker-count {
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #555;
+}
+
+.tb-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: 4px 8px 8px 2px;
+}
+
+.tb-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    cursor: pointer;
+}
+
+.tb-pick:hover:not(:disabled) {
+    background: var(--accent-color, #4ade80);
+    transform: translate(-1px, -1px);
+}
+
+.tb-pick img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    margin-bottom: 8px !important;
+}
+
+.tb-pick-name {
+        font-size: 0.75rem;
+    font-weight: 600;
+    color: #333;
+    text-transform: capitalize;
+    
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    justify-content: center; 
+    box-sizing: border-box;
+    container-type: inline-size; 
+}
+
+.tb-pick-name span {
+    display: inline-block;
+}
+
+.tb-pick-name.marquee-bounce {
+    justify-content: flex-start; /* Forziamo l'inizio a sinistra per vedere la prima lettera */
+    padding: 0 4px;               /* Un minimo di respiro interno */
+}
+
+.tb-pick-name.marquee-bounce span {
+    /* "alternate" fa muovere l'animazione avanti e indietro come un pendolo */
+    animation: rimbalzoOrizzontale 3s ease-in-out infinite alternate;
+}
+
+/* Animazione dinamica a pendolo con pause di lettura (0-20% e 80-100%) */
+@keyframes rimbalzoOrizzontale {
+    0%, 20% {
+        transform: translate3d(0, 0, 0); /* Resta fermo all'inizio per essere letto */
+    }
+    80%, 100% {
+        transform: translate3d(var(--distanza-scorrimento), 0, 0); /* Mostra la fine del nome e si ferma un istante */
+    }
+}
+
+
+.tb-pick-bst {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.tb-pick.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.tb-empty {
+    grid-column: 1 / -1;
+    padding: 30px;
+    text-align: center;
+    font-weight: 900;
+}
+
+/* --- Editor del Pokémon --- */
+.tb-editor {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 28px;
+}
+
+.tb-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.tb-side-sprite {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+}
+
+.tb-side-name {
+    background: #000;
+    color: #fff;
+    padding: 4px 12px;
+    font-weight: 900;
+    font-size: 1.1rem;
+    transform: rotate(-1deg);
+    text-align: center;
+}
+
+.tb-types {
+    display: flex;
+    gap: 6px;
+}
+
+.tb-types .type-container {
+    z-index: 5;
+}
+
+.tb-eff-note {
+    margin-top: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.tb-base-stats {
+    width: 100%;
+    border-top: 3px dashed #000;
+    padding-top: 8px;
+}
+
+.tb-base-row {
+    display: grid;
+    grid-template-columns: 34px 1fr 32px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.tb-base-row b {
+    text-align: right;
+}
+
+.tb-base-bar {
+    height: 8px;
+    background: #fff;
+    border: 2px solid #000;
+}
+
+.tb-base-bar div {
+    height: 100%;
+    background: var(--accent-color, #4ade80);
+}
+
+.tb-base-total {
+    margin-top: 6px;
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.tb-btn-small {
+    width: 100%;
+    padding: 8px 10px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font-weight: 900;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.tb-btn-small:hover {
+    background: var(--accent-color, #4ade80);
+}
+
+.tb-btn-small.danger:hover {
+    background: #b51e1e;
+    color: #fff;
+}
+
+.tb-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+.tb-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+}
+
+.tb-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.tb-moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* --- Tabella EV / IV / Natura --- */
+.tb-evs {
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    padding: 10px 12px;
+}
+
+.tb-ev-head,
+.tb-ev-row {
+    display: grid;
+    grid-template-columns: 40px 38px minmax(0, 1fr) 66px 54px 58px 44px;
+    align-items: center;
+    gap: 10px;
+}
+
+.tb-ev-head {
+    margin-bottom: 4px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.tb-ev-row {
+    padding: 4px 0;
+    border-bottom: 2px dashed #000;
+}
+
+.tb-ev-label {
+    font-weight: 900;
+}
+
+.tb-ev-label.plus  { color: #15803d; }
+.tb-ev-label.minus { color: #b91c1c; }
+
+.tb-ev-base {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.tb-ev-row input[type="range"] {
+    width: 100%;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    accent-color: #000;
+    transform: none;
+    cursor: pointer;
+}
+
+.tb-num {
+    padding: 4px 6px;
+    font-size: 0.85rem;
+    box-shadow: 2px 2px 0 #000;
+}
+
+.tb-ev-stat {
+    font-weight: 900;
+    text-align: right;
+}
+
+.tb-ev-footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+}
+
+.tb-ev-remaining {
+    font-weight: 900;
+}
+
+.tb-ev-remaining.full {
+    color: #15803d;
+}
+
+.tb-nature-label {
+    font-weight: 700;
+}
+
+.tb-nat {
+    display: flex;
+    gap: 4px;
+}
+
+.tb-nat-btn {
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    font-weight: 900;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.tb-nat-btn:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+}
+
+.tb-nat-btn.plus.on  { background: #15803d; color: #fff; }
+.tb-nat-btn.minus.on { background: #b91c1c; color: #fff; }
+
+.tb-nat-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* --- Footer: dettagli, debolezze del team e azioni --- */
+.tb-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 270px;
+    gap: 22px;
+    align-items: start;
+}
+
+.tb-footer-main {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-width: 0;
+}
+
+.tb-panel {
+    background: #fff;
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    padding: 16px;
+}
+
+.tb-placeholder {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.tb-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.tb-info-card {
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    padding: 10px 12px;
+}
+
+.tb-info-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 900;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.tb-info-title img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.tb-info-card p {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.tb-cov-summary {
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    font-weight: 900;
+}
+
+.tb-cov-summary.bad  { color: #b51e1e; }
+.tb-cov-summary.good { color: #15803d; }
+
+.tb-cov-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+    gap: 8px;
+}
+
+.tb-cov-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+}
+
+.tb-cov-cell .mini-type-badge {
+    width: fit-content;
+}
+
+.tb-cov-cell.critical { background: #fee2e2; border-color: #b51e1e; box-shadow: 2px 2px 0 #b51e1e; }
+.tb-cov-cell.warning  { background: #ffedd5; border-color: #c2410c; box-shadow: 2px 2px 0 #c2410c; }
+.tb-cov-cell.strong   { background: #dcfce7; border-color: #15803d; box-shadow: 2px 2px 0 #15803d; }
+
+.tb-cov-nums {
+    display: flex;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.tb-cov-w { color: #b51e1e; }
+.tb-cov-r { color: #15803d; }
+.tb-cov-i { color: #475569; }
+.tb-cov-nums .zero { opacity: 0.3; }
+.tb-cov-nums small { font-size: 0.65rem; }
+
+.tb-cov-legend {
+    margin-top: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #555;
+}
+
+/* --- Menù a tendina di mosse e strumenti --- */
+.tb-combo {
+    position: relative;
+}
+
+.tb-combo.has-move .tb-input {
+    color: black;
+    font-weight: 900;
+    padding-right: 44px;
+}
+
+.tb-combo-cat {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 30px;
+    height: 16px;
+    object-fit: contain;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.tb-combo-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 8px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tb-combo-list.open {
+    display: flex;
+}
+
+.tb-opt {
+    display: grid;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    cursor: pointer;
+    transition: transform 0.05s;
+}
+
+.tb-opt:hover,
+.tb-opt.hl {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 #000;
+    outline: 3px solid #000;
+}
+
+.tb-opt-move {
+    grid-template-columns: 32px minmax(0, 1fr);
+    color: black;
+}
+
+.tb-opt-move .tb-opt-meta {
+    grid-column: 2;
+    font-size: 0.66rem;
+    font-weight: 700;
+    opacity: 0.95;
+}
+
+.tb-opt-cat {
+    grid-row: span 2;
+    width: 32px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.tb-opt-name {
+    font-weight: 900;
+    font-size: 0.85rem;
+}
+
+.tb-opt-item {
+    grid-template-columns: 28px minmax(0, 1fr);
+    background: #fff;
+}
+
+.tb-opt-item:hover,
+.tb-opt-item.hl {
+    background: var(--accent-color, #4ade80);
+}
+
+.tb-opt-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.tb-opt-empty {
+    padding: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #555;
+}
+
+/* --- Pannello laterale: avvisi e bottoni --- */
+.tb-side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tb-avvisi {
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tb-avvisi .err  { color: #b51e1e; }
+.tb-avvisi .warn { color: #92400e; }
+.tb-avvisi .ok   { color: #15803d; }
+
+.tb-btn {
+    width: 100%;
+    padding: 13px 14px;
+    border: 4px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    font-weight: 900;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.tb-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 #000;
+}
+
+.tb-btn:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 #000;
+}
+
+.tb-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.tb-btn-copy { background: #fff; }
+.tb-btn-save { background: #4ade80; }
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    .tb-slots   { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .tb-editor  { grid-template-columns: 1fr; }
+    .tb-footer  { grid-template-columns: 1fr; }
+    .tb-title   { font-size: 1.5rem; }
+}
+
+@media (max-width: 560px) {
+    .tb-overlay { padding: 24px 10px; }
+    .tb-body    { padding: 20px 12px 14px; }
+    .tb-slots   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tb-moves   { grid-template-columns: 1fr; }
+    .tb-ev-head,
+    .tb-ev-row  { grid-template-columns: 34px 30px minmax(0, 1fr) 56px 48px 58px; gap: 6px; }
+    .tb-info-grid { grid-template-columns: 1fr; }
+    .tb-ev-stat,
+    .tb-ev-head span:last-child { display: none; }
+}
+
+/* =========================================================
+   TEAM BUILDER · azioni nella colonna, fumetto, tag debolezze
+   ========================================================= */
+.tb-slot img,
+.tb-pick img,
+.tb-side-sprite {
+    filter: drop-shadow(2px 2px 0 black);
+}
+
+.tb-row {
+    align-items: start;
+}
+
+.tb-msg:empty {
+    display: none;
+}
+
+.tb-desc {
+    margin: 8px 2px 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #333;
+}
+
+.tb-desc:empty {
+    display: none;
+}
+
+/* --- Azioni: Copy, Save e tag delle debolezze --- */
+.tb-actions {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.tb-actions-row {
+    width: auto;
+    margin: 0 0 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.tb-actions-row .tb-btn {
+    width: auto;
+    padding: 9px 14px;
+    font-size: 0.82rem;
+}
+
+.tb-save-wrap {
+    position: relative;
+}
+
+.tb-btn-save.blocked,
+.tb-btn-save.blocked:hover {
+    background: #d4d4d4;
+    color: #6b6b6b;
+    box-shadow: 3px 3px 0 #000;
+    transform: none;
+    cursor: not-allowed;
+}
+
+/* Fumetto a destra del bottone (in colonna), sotto (in riga), sopra (su schermi stretti) */
+.tb-bubble {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: calc(100% + 16px);
+    width: 270px;
+    z-index: 60;
+    pointer-events: none; /* non blocca i click sotto al fumetto */
+    padding: 10px 12px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #b51e1e;
+}
+
+.tb-bubble::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: 100%;
+    border: 10px solid transparent;
+    border-right-color: #000;
+}
+
+.tb-bubble ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+}
+
+.tb-bubble b {
+    color: #000;
+}
+
+.tb-save-wrap.blocked:hover .tb-bubble,
+.tb-save-wrap.blocked.show .tb-bubble {
+    display: block;
+}
+
+.tb-save-wrap.show .tb-bubble {
+    animation: tbScuoti 0.35s;
+}
+
+@keyframes tbScuoti {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+.tb-actions-row .tb-bubble {
+    top: calc(100% + 14px);
+    left: auto;
+    right: 0;
+}
+
+.tb-actions-row .tb-bubble::after {
+    top: auto;
+    bottom: 100%;
+    right: 22px;
+    border-right-color: transparent;
+    border-bottom-color: #000;
+}
+
+/* In colonna il tooltip parte dal bordo destro della colonna, in riga dal tag */
+.tb-cov-wrap {
+    position: static;
+    width: 100%;
+}
+
+.tb-actions-row .tb-cov-wrap {
+    position: relative;
+    width: auto;
+}
+
+.tb-cov-tag {
+    display: inline-block;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    padding: 4px 10px;
+    font-weight: 900;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    transform: rotate(-2deg);
+    cursor: help;
+}
+
+.tb-cov-tag.bad  { background: #fee2e2; color: #b51e1e; }
+.tb-cov-tag.good { background: #dcfce7; color: #15803d; }
+
+/* Tooltip a destra del tag, verso l'alto (sopra ai campi dell'editor) */
+.tb-cov-tooltip {
+    display: none;
+    position: absolute;
+    left: 100%;
+    bottom: -6px;
+    z-index: 70;
+    width: min(760px, calc(100vw - 360px));
+    padding-left: 16px; /* ponte invisibile: il tooltip resta aperto passandoci sopra */
+}
+
+.tb-cov-wrap:hover .tb-cov-tooltip {
+    display: block;
+}
+
+.tb-actions-row .tb-cov-tooltip {
+    top: 100%;
+    bottom: auto;
+    left: auto;
+    right: 0;
+    width: min(760px, calc(100vw - 60px));
+    padding-left: 0;
+    padding-top: 10px;
+}
+
+.tb-cov-box {
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    padding: 14px;
+}
+
+@media (max-width: 900px) {
+    .tb-bubble,
+    .tb-actions-row .tb-bubble {
+        top: auto;
+        bottom: calc(100% + 14px);
+        left: 0;
+        right: auto;
+        width: 100%;
+        min-width: 220px;
+    }
+    .tb-bubble::after,
+    .tb-actions-row .tb-bubble::after {
+        top: 100%;
+        bottom: auto;
+        left: 22px;
+        right: auto;
+        border-color: transparent;
+        border-top-color: #000;
+    }
+    .tb-cov-tooltip,
+    .tb-actions-row .tb-cov-tooltip {
+        top: 100%;
+        bottom: auto;
+        left: 0;
+        right: auto;
+        width: min(760px, calc(100vw - 50px));
+        padding-left: 0;
+        padding-top: 10px;
+    }
+}
+
+/* Ombra uniforme per le gif dei Pokémon in tutto il box */
+.pkm-sprite,
+.modal-sprite,
+.helper-pkm-gif {
+    filter: drop-shadow(2px 2px 0 black);
+}
+
+.pkm-sprite-hero {
+    filter: contrast(1.1) drop-shadow(2px 2px 0 black);
+}
+
+/* =========================================================
+   TEAM BUILDER · descrizioni mosse + filtro categorie
+   ========================================================= */
+
+/* Menù a tendina: icona · nome · tipo/BP/precisione · descrizione */
+.tb-opt-move {
+    display: flex;
+    align-items: center;
+}
+.tb-opt-move .tb-opt-name,
+.tb-opt-move .tb-opt-meta {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.tb-opt-desc {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 10px;
+    font-size: 0.66rem;
+    font-weight: 400;
+    line-height: 1.2;
+    opacity: 0.9;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Campo del moveset: descrizione dentro il rettangolo, dopo il nome */
+.tb-moves .tb-combo {
+    position: relative;
+}
+.tb-moves .tb-combo:focus-within {
+    z-index: 20; /* la tendina aperta resta sopra le descrizioni dei campi sotto */
+}
+.tb-move-desc {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 50%;   /* valori provvisori: li calcola tbPosizionaDescMosse() */
+    right: 34px;
+    pointer-events: none;
+    font-size: 0.64rem;
+    font-weight: 400;
+    line-height: 1.2;
+    color: black;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.tb-moves .tb-combo:focus-within .tb-move-desc {
+    visibility: hidden; /* mentre scrivi nel campo non si sovrappone al testo */
+}
+
+/* Filtro categorie in cima alla lista mosse */
+.tb-cat-filter {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 8px 10px;
+    background: #fff;
+    color: #111;
+    border-bottom: 2px solid #111;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.tb-cat-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+.tb-cat-check input {
+    margin: 0;
+    width: 14px;
+    height: 14px;
+    pointer-events: none; /* il click lo gestisce lo span */
+    accent-color: #fff;
+}
+.tb-cat-check img {
+    height: 14px;
+    width: auto;
+}
+.tb-cat-check:not(.on) {
+    opacity: 0.45;
+}
+/* Con le frecce la voce evidenziata non finisce sotto la barra del filtro */
+.tb-combo-list .tb-opt {
+    scroll-margin-top: 44px;
+}

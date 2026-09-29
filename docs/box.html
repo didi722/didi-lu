@@ -163,6 +163,9 @@
                 </div>
                 
                 <div class="format-optional-box" style="margin-top: 30px;">
+                                    <button type="button" id="helper-build-team-btn" class="tb-open-btn" onclick="apriTeamBuilder()" style="margin-bottom: 15px !important; display: none;">
+                    Build Team
+                </button>
                     <div class="mandatory-title">RULES</div>
                     <div id="helper-dynamic-filters">
                         <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
@@ -2992,6 +2995,8 @@ async function gestisciCambioFormatoHelper() {
     const select = document.getElementById('helper-format-select');
     if (!select) return;
 
+        aggiornaBottoneBuildTeam([]); // riappare quando la nuova lista è pronta
+
     const selectedFormatId = select.value;
     window.currentHelperFormatId = selectedFormatId;
 
@@ -3952,6 +3957,7 @@ function renderizzaListaPiatta(pokemonList) {
 
     // 1. Salviamo la lista originale come proprietà del nodo DOM per accedervi durante i filtri
     grid.originalPokemonList = pokemonList;
+        aggiornaBottoneBuildTeam(pokemonList);
 
     // 2. Creazione dinamica della barra dei controlli (Cerca + Ordina) SE non esiste già
     let controlsContainer = document.getElementById('helper-pkm-controls');
@@ -3972,7 +3978,7 @@ function renderizzaListaPiatta(pokemonList) {
         `;
 
         controlsContainer.innerHTML = `
-            <input type="text" id="helper-search-bar" placeholder="🔍 Search Pokémon..." style="
+            <input type="text" id="helper-search-bar" placeholder="🔍 Search Pokémon or Ability..." style="
                 flex: 1;
                 min-width: 130px;
                 padding: 6px 12px;
@@ -4001,7 +4007,7 @@ function renderizzaListaPiatta(pokemonList) {
                 <option value="alpha-desc">Alphabetical (Z-A)</option>
                 </optgroup>
                 <optgroup label="Best stat">
-                    <option value="bst-desc">BST</option>
+                    <option value="bst-desc" selected>BST</option>
                     <option value="stat|hp|desc">HP</option>
                     <option value="stat|attack|desc">Attack</option>
                     <option value="stat|defense|desc">Defense</option>
@@ -4027,7 +4033,7 @@ function renderizzaListaPiatta(pokemonList) {
     } else {
         // Se cambiamo formato o ricarichiamo la lista, resettiamo i campi ai valori di default
         document.getElementById('helper-search-bar').value = '';
-        document.getElementById('helper-sort-select').value = 'num-asc';
+        document.getElementById('helper-sort-select').value = 'bst-desc';
     }
 
     // --- FUNZIONI UTILITY DI SUPPORTO PER L'ORDINAMENTO ---
@@ -4063,9 +4069,8 @@ function renderizzaListaPiatta(pokemonList) {
         const criterioSort = document.getElementById('helper-sort-select').value;
 
         // A. FILTRAGGIO SU LISTA ORIGINALE
-        let listaFiltrata = grid.originalPokemonList.filter(pkm => {
-            return pkm.name.toLowerCase().includes(query);
-        });
+        // A. FILTRAGGIO SU LISTA ORIGINALE (nome o abilità)
+let listaFiltrata = grid.originalPokemonList.filter(pkm => pokemonCorrispondeRicerca(pkm, query));
 
         // B. ORDINAMENTO DINAMICO
         listaFiltrata.sort((a, b) => {
@@ -4202,8 +4207,7 @@ function renderizzaListaPiatta(pokemonList) {
                         return;
                     }
 
-                    const arrayTipi = infoPkm.type || infoPkm.types || [];
-                    const htmlTipi = arrayTipi.map(t => {
+                    const arrayTipi = tbTipiSincroni(pkm, infoPkm);                    const htmlTipi = arrayTipi.map(t => {
                         const tipoLower = t.toLowerCase().trim();
                         const colore = COLORI_TIPI[tipoLower] || '#777';
                         return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${tipoLower.toUpperCase()}</span>`;
@@ -4251,8 +4255,11 @@ function renderizzaListaPiatta(pokemonList) {
                         </div>
                     `;
 
-                    aggiustaPosizioneTooltip(card, tooltip);
-                }, 1000); 
+                                        aggiustaPosizioneTooltip(card, tooltip);
+
+                    // Se i tipi non sono nei dati locali, li recupera dal Pokédex di Showdown
+                    if (arrayTipi.length === 0) tbCompletaTipiTooltip(pkm, tooltip);
+                }, 1000);
             });
 
             card.addEventListener('mouseleave', () => {
@@ -4318,6 +4325,8 @@ function chiudiTuttoHelper() {
     const countSpan = document.getElementById('helper-count');
     if (countSpan) countSpan.textContent = '0';
 
+        aggiornaBottoneBuildTeam([]);
+
     // 5. Resetta il box delle regole al placeholder originale
     const infoFilters = document.getElementById('helper-dynamic-filters');
     if (infoFilters) {
@@ -4327,6 +4336,2013 @@ function chiudiTuttoHelper() {
             </div>
         `;
     }
+}
+
+// =====================================================================
+// 🛠️ TEAM BUILDER: costruzione del team partendo dal pool del formato
+// Dati di mosse, learnset, abilità e strumenti presi da Pokémon Showdown
+// =====================================================================
+const TB_URL_DATI_SHOWDOWN = 'https://play.pokemonshowdown.com/data/';
+
+const TB_STAT = [
+    { key: 'hp',  label: 'HP'  },
+    { key: 'atk', label: 'Atk' },
+    { key: 'def', label: 'Def' },
+    { key: 'spa', label: 'SpA' },
+    { key: 'spd', label: 'SpD' },
+    { key: 'spe', label: 'Spe' }
+];
+
+// Natura → [stat aumentata, stat diminuita] (null = neutra)
+const TB_NATURE = {
+    Adamant: ['atk', 'spa'], Bashful: null,           Bold:    ['def', 'atk'], Brave:   ['atk', 'spe'],
+    Calm:    ['spd', 'atk'], Careful: ['spd', 'spa'], Docile:  null,           Gentle:  ['spd', 'def'],
+    Hardy:   null,           Hasty:   ['spe', 'def'], Impish:  ['def', 'spa'], Jolly:   ['spe', 'spa'],
+    Lax:     ['def', 'spd'], Lonely:  ['atk', 'def'], Mild:    ['spa', 'def'], Modest:  ['spa', 'atk'],
+    Naive:   ['spe', 'spd'], Naughty: ['atk', 'spd'], Quiet:   ['spa', 'spe'], Quirky:  null,
+    Rash:    ['spa', 'spd'], Relaxed: ['def', 'spe'], Sassy:   ['spd', 'spe'], Serious: null,
+    Timid:   ['spe', 'atk']
+};
+
+const TB_TIPI = ['Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting', 'Poison', 'Ground',
+                 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'];
+
+const TB_COLORI_TIPI = {
+    normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33',
+    grass: '#77cc55', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599',
+    ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
+    rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544',
+    steel: '#aaaabb', fairy: '#ee99ee', stellar: '#44aacc'
+};
+
+// Tabella difensiva: tipo che subisce → [deboli a, resiste a, immune a]
+const TB_DIFESE = {
+    Normal:   [['Fighting'], [], ['Ghost']],
+    Fire:     [['Water', 'Ground', 'Rock'], ['Fire', 'Grass', 'Ice', 'Bug', 'Steel', 'Fairy'], []],
+    Water:    [['Electric', 'Grass'], ['Fire', 'Water', 'Ice', 'Steel'], []],
+    Electric: [['Ground'], ['Electric', 'Flying', 'Steel'], []],
+    Grass:    [['Fire', 'Ice', 'Poison', 'Flying', 'Bug'], ['Water', 'Electric', 'Grass', 'Ground'], []],
+    Ice:      [['Fire', 'Fighting', 'Rock', 'Steel'], ['Ice'], []],
+    Fighting: [['Flying', 'Psychic', 'Fairy'], ['Bug', 'Rock', 'Dark'], []],
+    Poison:   [['Ground', 'Psychic'], ['Grass', 'Fighting', 'Poison', 'Bug', 'Fairy'], []],
+    Ground:   [['Water', 'Grass', 'Ice'], ['Poison', 'Rock'], ['Electric']],
+    Flying:   [['Electric', 'Ice', 'Rock'], ['Grass', 'Fighting', 'Bug'], ['Ground']],
+    Psychic:  [['Bug', 'Ghost', 'Dark'], ['Fighting', 'Psychic'], []],
+    Bug:      [['Fire', 'Flying', 'Rock'], ['Grass', 'Fighting', 'Ground'], []],
+    Rock:     [['Water', 'Grass', 'Fighting', 'Ground', 'Steel'], ['Normal', 'Fire', 'Poison', 'Flying'], []],
+    Ghost:    [['Ghost', 'Dark'], ['Poison', 'Bug'], ['Normal', 'Fighting']],
+    Dragon:   [['Ice', 'Dragon', 'Fairy'], ['Fire', 'Water', 'Electric', 'Grass'], []],
+    Dark:     [['Fighting', 'Bug', 'Fairy'], ['Ghost', 'Dark'], ['Psychic']],
+    Steel:    [['Fire', 'Fighting', 'Ground'], ['Normal', 'Grass', 'Ice', 'Flying', 'Psychic', 'Bug', 'Rock', 'Dragon', 'Steel', 'Fairy'], ['Poison']],
+    Fairy:    [['Poison', 'Steel'], ['Fighting', 'Bug', 'Dark'], ['Dragon']]
+};
+
+// Abilità che cambiano debolezze/resistenze: tipo attaccante → moltiplicatore
+const TB_ABILITA_DIFENSIVE = {
+    levitate: { Ground: 0 },
+    flashfire: { Fire: 0 },
+    wellbakedbody: { Fire: 0 },
+    waterabsorb: { Water: 0 },
+    stormdrain: { Water: 0 },
+    dryskin: { Water: 0 },
+    voltabsorb: { Electric: 0 },
+    lightningrod: { Electric: 0 },
+    motordrive: { Electric: 0 },
+    sapsipper: { Grass: 0 },
+    eartheater: { Ground: 0 },
+    thickfat: { Fire: 0.5, Ice: 0.5 },
+    heatproof: { Fire: 0.5 },
+    waterbubble: { Fire: 0.5 },
+    purifyingsalt: { Ghost: 0.5 },
+    fluffy: { Fire: 2 }
+};
+
+const TB_MOSSE_PROTECT = ['protect', 'detect', 'spikyshield', 'banefulbunker', 'kingsshield', 'silktrap'];
+
+// Dati di Showdown (riempiti al primo caricamento)
+const tbDex = { pokedex: null, moves: null, items: null, abilities: null, learnsets: null };
+
+// Stato del builder
+const tbStato = {
+    firma: '',
+    regolamento: null,
+    gen: 9,
+    within: false,
+    struttura: 'custom',
+    clausole: true,
+    livello: 100,
+    pool: [],
+    slot: [null, null, null, null, null, null],
+    attivo: 0,
+    cacheMosse: {},
+    oggetti: null
+};
+
+// Stato del menù a tendina (mosse / strumenti)
+const tbCombo = {
+    input: null, tipo: '', indice: 0, voci: [], evidenziata: 0, digitato: false,
+    categorie: { Physical: true, Special: true, Status: true } // filtro categorie nella lista mosse
+};
+// --- UTILITY ---------------------------------------------------------
+function tbToID(testo) {
+    return String(testo || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function tbEsc(testo) {
+    return String(testo ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function tbColoreTipo(tipo) {
+    return TB_COLORI_TIPI[String(tipo).toLowerCase()] || '#777';
+}
+
+// "Zoroark-Hisui" → "Zoroark Hisui" (il nome di Showdown resta per l'export)
+function tbNomeBello(sp, nomeRiserva = '') {
+    if (!sp) {
+        return String(nomeRiserva).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    if (sp.baseSpecies && sp.forme) return `${sp.baseSpecies} ${sp.forme.replace(/-/g, ' ')}`;
+    return sp.name;
+}
+
+function tbBST(sp) {
+    if (!sp || !sp.baseStats) return 0;
+    return Object.values(sp.baseStats).reduce((t, v) => t + v, 0);
+}
+
+function tbSlugOggetto(nome) {
+    return String(nome || '').toLowerCase().replace(/[’']/g, '').replace(/\./g, '').replace(/\s+/g, '-');
+}
+
+// --- CARICAMENTO DATI SHOWDOWN (script caricati uno alla volta) ------
+let tbCodaScript = Promise.resolve();
+const tbPromesseDati = {};
+
+function tbCaricaDatoShowdown(file, nomeGlobale) {
+    if (tbPromesseDati[nomeGlobale]) return tbPromesseDati[nomeGlobale];
+
+    const promessa = tbCodaScript.then(() => new Promise((resolve, reject) => {
+        const exportsPrecedente = window.exports;
+        const contenitore = {};
+        window.exports = contenitore; // i file di Showdown scrivono in "exports.BattleXxx"
+
+        const ripristina = () => {
+            if (exportsPrecedente === undefined) {
+                try { delete window.exports; } catch (e) { window.exports = undefined; }
+            } else {
+                window.exports = exportsPrecedente;
+            }
+        };
+
+        const script = document.createElement('script');
+        script.src = TB_URL_DATI_SHOWDOWN + file;
+        script.onload = () => {
+            ripristina();
+            const dati = contenitore[nomeGlobale];
+            dati ? resolve(dati) : reject(new Error(`${file}: data not found`));
+        };
+        script.onerror = () => {
+            ripristina();
+            reject(new Error(`Unable to load ${file}`));
+        };
+        document.head.appendChild(script);
+    }));
+
+    tbCodaScript = promessa.catch(() => {});
+    tbPromesseDati[nomeGlobale] = promessa.catch(err => {
+        delete tbPromesseDati[nomeGlobale]; // riprova al prossimo tentativo
+        throw err;
+    });
+    return tbPromesseDati[nomeGlobale];
+}
+
+async function tbCaricaPokedex() {
+    if (!tbDex.pokedex) tbDex.pokedex = await tbCaricaDatoShowdown('pokedex.js', 'BattlePokedex');
+    return tbDex.pokedex;
+}
+
+async function tbCaricaTuttiDati() {
+    const [pokedex, moves, items, abilities, learnsets] = await Promise.all([
+        tbCaricaDatoShowdown('pokedex.js', 'BattlePokedex'),
+        tbCaricaDatoShowdown('moves.js', 'BattleMovedex'),
+        tbCaricaDatoShowdown('items.js', 'BattleItems'),
+        tbCaricaDatoShowdown('abilities.js', 'BattleAbilities'),
+        tbCaricaDatoShowdown('learnsets.js', 'BattleLearnsets')
+    ]);
+    Object.assign(tbDex, { pokedex, moves, items, abilities, learnsets });
+}
+
+// --- TIPI NEL TOOLTIP DELLA LISTA -----------------------------------
+function tbNormalizzaTipi(valore) {
+    if (!valore) return [];
+    if (typeof valore === 'string') return valore.split(/[\/,]/).map(t => t.trim()).filter(Boolean);
+    if (Array.isArray(valore)) return valore.map(t => String(t).trim()).filter(Boolean);
+    return [];
+}
+
+function tbTipiSincroni(pkm, infoPkm) {
+    const candidati = [];
+    if (infoPkm) candidati.push(infoPkm.type || infoPkm.types);
+    if (pkm) candidati.push(pkm.type || pkm.types);
+
+    if (window.pokedexBase && pkm) {
+        const base = window.pokedexBase[String(pkm.id).toLowerCase().trim()] ||
+                     window.pokedexBase[String(pkm.name).toLowerCase().trim()];
+        if (base) candidati.push(base.type || base.types);
+    }
+
+    if (tbDex.pokedex && pkm) {
+        const sp = tbDex.pokedex[tbToID(pkm.id)] || tbDex.pokedex[tbToID(pkm.name)];
+        if (sp) candidati.push(sp.types);
+    }
+
+    for (const c of candidati) {
+        const tipi = tbNormalizzaTipi(c);
+        if (tipi.length) return tipi;
+    }
+    return [];
+}
+
+// Se nei dati locali mancano i tipi, li prende dal Pokédex di Showdown e aggiorna il tooltip
+async function tbCompletaTipiTooltip(pkm, tooltip) {
+    try {
+        await tbCaricaPokedex();
+    } catch (err) {
+        return;
+    }
+    if (tooltip.dataset.currentId !== String(pkm.id)) return;
+
+    const tipi = tbTipiSincroni(pkm, null);
+    const contenitore = tooltip.querySelector('.neubrutalist-tooltip-types');
+    if (!tipi.length || !contenitore) return;
+
+    contenitore.innerHTML = tipi.map(t =>
+        `<span class="neubrutalist-type-badge" style="background-color: ${tbColoreTipo(t)};">${t.toUpperCase()}</span>`
+    ).join('');
+}
+
+// --- BOTTONE "BUILD TEAM" --------------------------------------------
+function aggiornaBottoneBuildTeam(lista) {
+    const btn = document.getElementById('helper-build-team-btn');
+    if (btn) btn.style.display = (Array.isArray(lista) && lista.length > 0) ? 'flex' : 'none';
+}
+
+// --- SPECIE, LEARNSET, ABILITÀ, STRUMENTI ---------------------------
+function tbSpecie(id) {
+    return (tbDex.pokedex && tbDex.pokedex[id]) || null;
+}
+
+function tbSpriteId(sp) {
+    if (!sp) return '';
+    const base = tbToID(sp.baseSpecies || sp.name);
+    return sp.forme && sp.baseSpecies ? `${base}-${tbToID(sp.forme)}` : tbToID(sp.name);
+}
+
+// Specie "fuori dalla lotta" (per abilità e Species Clause): Zacian-Crowned → Zacian
+function tbSpecieBase(sp) {
+    if (!sp) return null;
+    if (sp.battleOnly) {
+        const base = Array.isArray(sp.battleOnly) ? sp.battleOnly[0] : sp.battleOnly;
+        return tbSpecie(tbToID(base)) || sp;
+    }
+    if (/^(Mega|Primal)/.test(sp.forme || '') && sp.baseSpecies) {
+        return tbSpecie(tbToID(sp.baseSpecies)) || sp;
+    }
+    return sp;
+}
+
+// Strumento obbligatorio per alcune forme (Rusted Sword, Megapietre, Tavole di Arceus...)
+function tbOggettoObbligatorio(sp) {
+    if (!sp) return '';
+    const lista = sp.requiredItem ? [sp.requiredItem] : (sp.requiredItems || []);
+    for (const nome of lista) {
+        const item = tbDex.items[tbToID(nome)];
+        if (item && (item.gen || 0) <= tbStato.gen) return tbToID(nome);
+    }
+    return lista.length ? tbToID(lista[0]) : '';
+}
+
+// Generazione di debutto della specie (stessa logica di Showdown: le forme di Hisui sono Gen 8)
+function tbGenSpecie(sp) {
+    if (!sp) return 0;
+    if (sp.gen) return sp.gen;
+    const forme = sp.forme || '';
+    const n = sp.num || 0;
+    if (n < 1) {
+        // forme cosmetiche senza numero (Gastrodon-East...): conta la specie base
+        const base = sp.baseSpecies && tbSpecie(tbToID(sp.baseSpecies));
+        return base && base !== sp ? tbGenSpecie(base) : 99;
+    }
+    if (n >= 906 || forme.includes('Paldea')) return 9;
+    if (n >= 810 || ['Gmax', 'Galar', 'Galar-Zen', 'Hisui'].includes(forme)) return 8;
+    if (n >= 722 || forme.startsWith('Alola') || forme === 'Starter') return 7;
+    if (n >= 650 || /^(Mega|Primal)/.test(forme)) return 6;
+    if (n >= 494) return 5;
+    if (n >= 387) return 4;
+    if (n >= 252) return 3;
+    if (n >= 152) return 2;
+    return 1;
+}
+
+// Specie che esistono già nella gen del formato ma di cui Showdown ha solo il learnset
+// di una gen successiva (forme di Hisui, Wyrdeer, Kleavor, Ursaluna, Basculegion,
+// Sneasler, Overqwil, Enamorus): si usa la gen più vicina con dati
+function tbGenRipiegoLearnset(sp, learnset) {
+    if (!sp || !learnset || tbGenSpecie(sp) > tbStato.gen) return 0;
+
+    const genDati = Object.values(learnset)
+        .flatMap(fonti => [].concat(fonti))
+        .map(f => parseInt(String(f).charAt(0), 10))
+        .filter(g => !isNaN(g));
+
+    if (!genDati.length || genDati.some(g => g <= tbStato.gen)) return 0;
+    return Math.min(...genDati);
+}
+
+function tbRaccogliLearnset(specieId) {
+    const risultato = {};
+    const visti = new Set();
+    const coda = [specieId];
+
+    while (coda.length) {
+        const id = coda.shift();
+        if (!id || visti.has(id)) continue;
+        visti.add(id);
+
+        const sp = tbSpecie(id);
+        const voce = tbDex.learnsets[id];
+        const learnset = voce && voce.learnset;
+        const genRipiego = tbGenRipiegoLearnset(sp, learnset);
+        let haMosse = false;
+
+        if (learnset) {
+            Object.entries(learnset).forEach(([mossa, fonti]) => {
+                let lista = [].concat(fonti);
+                if (genRipiego) {
+                    lista = lista
+                        .filter(f => parseInt(String(f).charAt(0), 10) === genRipiego)
+                        .map(f => tbStato.gen + String(f).slice(1));
+                    if (!lista.length) return;
+                }
+                haMosse = true;
+                if (!risultato[mossa]) risultato[mossa] = [];
+                risultato[mossa].push(...lista);
+            });
+        }
+
+        if (!sp) continue;        if (sp.prevo) coda.push(tbToID(sp.prevo));
+        if (sp.changesFrom) coda.push(tbToID(sp.changesFrom));
+        if (sp.battleOnly) [].concat(sp.battleOnly).forEach(b => coda.push(tbToID(b)));
+        if (!haMosse && sp.baseSpecies && tbToID(sp.baseSpecies) !== id) coda.push(tbToID(sp.baseSpecies));
+    }
+
+    return risultato;
+}
+
+// "9M", "8L20", "7E"... → la prima cifra è la generazione
+function tbFonteValida(fonte) {
+    const s = String(fonte);
+    const generazioni = /^\d+$/.test(s) ? s.split('').map(Number) : [parseInt(s.charAt(0), 10)];
+    return generazioni.some(g => !isNaN(g) && (tbStato.within ? g === tbStato.gen : g <= tbStato.gen));
+}
+
+function tbGenMossa(m) {
+    const n = m.num || 0;
+    // Mosse di Leggende Arceus (Dire Claw → Take Heart): Showdown le conta di Gen 9,
+    // qui valgono come Gen 8, coerentemente con le forme di Hisui
+    if (n >= 827 && n <= 850 && !m.isMax && !m.isZ) return 8;
+    if (m.gen) return m.gen;if (n >= 827) return 9;
+    if (n >= 743) return 8;
+    if (n >= 622) return 7;
+    if (n >= 560) return 6;
+    if (n >= 468) return 5;
+    if (n >= 355) return 4;
+    if (n >= 252) return 3;
+    if (n >= 166) return 2;
+    return 1;
+}
+
+function tbGenAbilita(nome) {
+    const a = tbDex.abilities[tbToID(nome)];
+    if (!a) return 3;
+    if (a.gen) return a.gen;
+    const n = a.num || 0;
+    if (n >= 268) return 9;
+    if (n >= 234) return 8;
+    if (n >= 192) return 7;
+    if (n >= 165) return 6;
+    if (n >= 124) return 5;
+    if (n >= 77) return 4;
+    return 3;
+}
+
+// Valori della mossa con gli stessi nomi usati dal validatore del sito
+function tbValoriMossa(m) {
+    return {
+        power: m.basePower || 0,
+        category: m.category,
+        type: m.type,
+        max_pp: m.pp || 0,
+        accuracy: m.accuracy === true ? 100 : (m.accuracy || 100),
+        priority: m.priority || 0,
+        is_protect: TB_MOSSE_PROTECT.includes(tbToID(m.name)),
+        is_contact: !!(m.flags && m.flags.contact),
+        sound_based: !!(m.flags && m.flags.sound),
+        punch: !!(m.flags && m.flags.punch),
+        healing: !!(m.flags && m.flags.heal) && m.category === 'Status'
+    };
+}
+
+function tbMossaAmmessaDalFormato(m) {
+    if (!m || !m.name) return false;
+    if (m.isZ || m.isMax) return false;
+    if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future', 'Gigantamax'].includes(m.isNonstandard)) return false;
+    if (tbStato.within && tbStato.gen === 9 && m.isNonstandard === 'Past') return false;
+
+    const regole = tbStato.regolamento?.restrizioni?.mosse;
+    if (!regole) return true;
+
+    const valori = tbValoriMossa(m);
+    return Object.entries(regole).every(([campo, regola]) => {
+        if (!regola || !(campo in valori)) return true;
+        if (regola.mode === 'SPECIFIC' && typeof validaSingoloOperatore === 'function') {
+            return validaSingoloOperatore(valori[campo], regola);
+        }
+        if (regola.mode === 'BANNED') return valori[campo] !== true;
+        return true;
+    });
+}
+
+function tbMosseLegali(specieId) {
+    if (tbStato.cacheMosse[specieId]) return tbStato.cacheMosse[specieId];
+
+    const learnset = tbRaccogliLearnset(specieId);
+    let ids;
+
+    if (learnset.sketch && learnset.sketch.some(tbFonteValida)) {
+        // Smeargle: Sketch permette qualsiasi mossa esistente nella generazione
+        ids = Object.keys(tbDex.moves).filter(id => tbGenMossa(tbDex.moves[id]) <= tbStato.gen && id !== 'struggle' && id !== 'chatter');
+    } else {
+        ids = Object.keys(learnset).filter(id =>
+            learnset[id].some(tbFonteValida) &&
+            (!tbDex.moves[id] || tbGenMossa(tbDex.moves[id]) <= tbStato.gen)
+        );    }
+
+    const legali = ids
+        .map(id => tbDex.moves[id] ? { id, dati: tbDex.moves[id] } : null)
+        .filter(m => m && tbMossaAmmessaDalFormato(m.dati))
+        .sort((a, b) => a.dati.name.localeCompare(b.dati.name));
+
+    tbStato.cacheMosse[specieId] = legali;
+    return legali;
+}
+
+function tbAbilitaLegali(spBase) {
+    if (!spBase || tbStato.gen < 3) return [];
+    const abilita = spBase.abilities || {};
+    const nomi = ['0', '1', 'H', 'S']
+        .filter(k => abilita[k])
+        .filter(k => !(k === 'H' && tbStato.gen < 5))
+        .map(k => abilita[k])
+        .filter(nome => tbGenAbilita(nome) <= tbStato.gen);
+    return [...new Set(nomi)];
+}
+
+function tbOggettiLegali() {
+    if (tbStato.oggetti) return tbStato.oggetti;
+    if (tbStato.gen < 2) return (tbStato.oggetti = []);
+
+    const valoreMega = tbStato.regolamento?.restrizioni?.pokemon?.is_mega?.value;
+    const megaAmmesse = ['true', 'yes', 'allowed'].includes(String(valoreMega).toLowerCase().trim());
+    const regoleStrumenti = tbStato.regolamento?.restrizioni?.strumenti || {};
+    const regolaBacche = regoleStrumenti.is_berry;
+
+    tbStato.oggetti = Object.entries(tbDex.items)
+        .filter(([id, it]) => {
+            if (!it || !it.name) return false;
+            if ((it.gen || 0) > tbStato.gen) return false;
+            if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future'].includes(it.isNonstandard)) return false;
+            if (it.isPokeball) return false;
+            if (it.zMove && tbStato.gen !== 7) return false;
+            if (it.megaStone && (!megaAmmesse || tbStato.gen < 6)) return false;
+            if (tbStato.within && tbStato.gen === 9 && it.isNonstandard === 'Past') return false;
+
+            if (regolaBacche) {
+                if (regolaBacche.mode === 'BANNED' && it.isBerry) return false;
+                if (regolaBacche.mode === 'SPECIFIC' && typeof validaSingoloOperatore === 'function' &&
+                    !validaSingoloOperatore(!!it.isBerry, regolaBacche)) return false;
+            }
+            return true;
+        })
+        .map(([id, it]) => ({ id, nome: it.name }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    return tbStato.oggetti;
+}
+
+// --- NATURA (stile Showdown: + e − sulle statistiche) ----------------
+function tbNatureAmmesse() {
+    const regola = tbStato.regolamento?.restrizioni?.pokemon?.nature;
+    const tutte = Object.keys(TB_NATURE);
+    if (regola && regola.mode === 'SPECIFIC' && regola.value && (!regola.operator || regola.operator === 'equals')) {
+        const filtrate = tutte.filter(n => n.toLowerCase() === String(regola.value).toLowerCase().trim());
+        if (filtrate.length) return filtrate;
+    }
+    return tutte;
+}
+
+function tbNaturaImposta() {
+    const ammesse = tbNatureAmmesse();
+    return ammesse.length === 1 ? ammesse[0] : '';
+}
+
+function tbTrovaNatura(plus, minus) {
+    if (!plus || !minus || plus === minus) return '';
+    return Object.keys(TB_NATURE).find(n => TB_NATURE[n] && TB_NATURE[n][0] === plus && TB_NATURE[n][1] === minus) || '';
+}
+
+function tbEtichettaNatura(s) {
+    const eff = TB_NATURE[s.natura];
+    if (!eff) return `${s.natura} (neutral)`;
+    const lab = k => TB_STAT.find(x => x.key === k).label;
+    return `${s.natura} (+${lab(eff[0])}, −${lab(eff[1])})`;
+}
+
+function tbImpostaNatura(tipo, chiave) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s || tbNaturaImposta()) return;
+
+    if (tipo === 'plus') {
+        s.natPlus = s.natPlus === chiave ? '' : chiave;
+        if (s.natMinus === s.natPlus) s.natMinus = '';
+    } else {
+        s.natMinus = s.natMinus === chiave ? '' : chiave;
+        if (s.natPlus === s.natMinus) s.natPlus = '';
+    }
+    s.natura = tbTrovaNatura(s.natPlus, s.natMinus) || 'Serious';
+
+    const pannello = document.getElementById('tb-ev-panel');
+    if (pannello) pannello.innerHTML = tbHtmlPannelloEV(s);
+    tbRenderLeggero();
+}
+
+// --- DEBOLEZZE E RESISTENZE ------------------------------------------
+function tbTipiAttaccanti() {
+    return tbStato.gen >= 6 ? TB_TIPI : TB_TIPI.filter(t => t !== 'Fairy');
+}
+
+function tbMoltiplicatore(attacco, tipiDifesa, abilita) {
+    let mult = 1;
+    tipiDifesa.forEach(dif => {
+        const tabella = TB_DIFESE[dif];
+        if (!tabella) return;
+        let [deboli, resiste, immune] = tabella;
+        if (tbStato.gen < 6 && dif === 'Steel') resiste = [...resiste, 'Ghost', 'Dark'];
+        if (immune.includes(attacco)) mult *= 0;
+        else if (deboli.includes(attacco)) mult *= 2;
+        else if (resiste.includes(attacco)) mult *= 0.5;
+    });
+    const mod = TB_ABILITA_DIFENSIVE[tbToID(abilita)];
+    if (mod && mod[attacco] !== undefined && mult !== 0) mult *= mod[attacco];
+    return mult;
+}
+
+function tbHtmlEfficacia(tipiDifesa, abilita) {
+    const gruppi = { 4: [], 2: [], 0.5: [], 0.25: [], 0: [] };
+    tbTipiAttaccanti().forEach(t => {
+        const m = tbMoltiplicatore(t, tipiDifesa, abilita);
+        if (m >= 4) gruppi[4].push(t);
+        else if (m >= 2) gruppi[2].push(t);
+        else if (m === 0) gruppi[0].push(t);
+        else if (m <= 0.25) gruppi[0.25].push(t);
+        else if (m < 1) gruppi[0.5].push(t);
+    });
+
+    const badge = lista => `<div class="eff-badge-container">${lista.map(t =>
+        `<span class="mini-type-badge ${t.toLowerCase()}">${t.toLowerCase()}</span>`).join('')}</div>`;
+
+    let html = '';
+    if (gruppi[4].length)    html += `<div class="eff-section"><span class="eff-title v-4">4x</span>${badge(gruppi[4])}</div>`;
+    if (gruppi[2].length)    html += `<div class="eff-section"><span class="eff-title v-2">2x</span>${badge(gruppi[2])}</div>`;
+    if (gruppi[0.5].length)  html += `<div class="eff-section"><span class="eff-title v-05">0.5x</span>${badge(gruppi[0.5])}</div>`;
+    if (gruppi[0.25].length) html += `<div class="eff-section"><span class="eff-title v-025">0.25x</span>${badge(gruppi[0.25])}</div>`;
+    if (gruppi[0].length)    html += `<div class="eff-section"><span class="eff-title v-0">0x</span>${badge(gruppi[0])}</div>`;
+    if (TB_ABILITA_DIFENSIVE[tbToID(abilita)]) html += `<div class="tb-eff-note">Includes ${tbEsc(abilita)}</div>`;
+    return html;
+}
+
+function tbCalcolaCopertura() {
+    const pieni = tbStato.slot.filter(Boolean);
+    if (!pieni.length) {
+        return { pieni: 0, critici: [], html: `<div class="tb-placeholder">Add Pokémon to see the team's weaknesses and resistances.</div>` };
+    }
+
+    const critici = [];
+    const celle = tbTipiAttaccanti().map(t => {
+        let deboli = 0, x4 = 0, resiste = 0, immune = 0;
+        pieni.forEach(s => {
+            const sp = tbSpecie(s.specieId);
+            const m = tbMoltiplicatore(t, sp.types || [], s.abilita);
+            if (m === 0) immune++;
+            else if (m > 1) { deboli++; if (m >= 4) x4++; }
+            else if (m < 1) resiste++;
+        });
+
+        const coperti = resiste + immune;
+        let stato = '';
+        if (deboli >= 3 || (deboli >= 2 && deboli - coperti >= 2)) stato = 'critical';
+        else if (deboli >= 2 && coperti === 0) stato = 'warning';
+        else if (deboli === 0 && coperti >= 2) stato = 'strong';
+        if (stato === 'critical') critici.push(t);
+
+        return `
+            <div class="tb-cov-cell ${stato}">
+                <span class="mini-type-badge ${t.toLowerCase()}">${t.toLowerCase()}</span>
+                <div class="tb-cov-nums">
+                    <span class="tb-cov-w ${deboli ? '' : 'zero'}" title="Weak">▼ ${deboli}${x4 ? `<small> (${x4}×4)</small>` : ''}</span>
+                    <span class="tb-cov-r ${resiste ? '' : 'zero'}" title="Resists">▲ ${resiste}</span>
+                    <span class="tb-cov-i ${immune ? '' : 'zero'}" title="Immune">✕ ${immune}</span>
+                </div>
+            </div>`;
+    }).join('');
+
+    const sintesi = critici.length
+        ? `<div class="tb-cov-summary bad">⚠ Critical weaknesses: ${critici.join(', ')}</div>`
+        : `<div class="tb-cov-summary good">✔ No critical weaknesses</div>`;
+
+    return {
+        pieni: pieni.length,
+        critici,
+        html: `
+            ${sintesi}
+            <div class="tb-cov-grid">${celle}</div>
+            <div class="tb-cov-legend">▼ weak · ▲ resists · ✕ immune — red: too many weaknesses · orange: weak with no answers · green: well covered</div>`
+    };
+}
+
+// Bottoni Copy / Save e tag delle debolezze (in colonna nell'editor, in riga nella scelta Pokémon)
+function tbHtmlAzioni(variante) {
+    return `
+        <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}">
+            <button type="button" id="tb-btn-copy" class="tb-btn tb-btn-copy" onclick="tbCopiaShowdown()">Copy Showdown</button>
+            <div class="tb-save-wrap" id="tb-save-wrap">
+                <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">Save to box</button>
+                <div class="tb-bubble" id="tb-save-bubble"></div>
+            </div>
+            <div class="tb-cov-wrap">
+                <span class="tb-cov-tag" id="tb-cov-tag">Team weaknesses</span>
+                <div class="tb-cov-tooltip"><div class="tb-cov-box" id="tb-cov-box"></div></div>
+            </div>
+        </div>`;
+}
+
+// --- CONTROLLI DI SUPPORTO -------------------------------------------
+function tbNumeriUsati(escludiIndice) {
+    const numeri = new Set();
+    tbStato.slot.forEach((s, i) => {
+        if (!s || i === escludiIndice) return;
+        const base = tbSpecieBase(tbSpecie(s.specieId));
+        if (base) numeri.add(base.num);
+    });
+    return numeri;
+}
+
+function tbOggettiUsati(escludiIndice) {
+    const usati = new Set();
+    tbStato.slot.forEach((s, i) => {
+        if (s && i !== escludiIndice && s.oggetto) usati.add(s.oggetto);
+    });
+    return usati;
+}
+
+function tbCalcolaStat(chiave, base, ev, iv, natura) {
+    const L = tbStato.livello;
+    if (chiave === 'hp') {
+        if (base === 1) return 1; // Shedinja
+        return Math.floor((2 * base + iv + Math.floor(ev / 4)) * L / 100) + L + 10;
+    }
+    const effetto = TB_NATURE[natura];
+    let mod = 1;
+    if (effetto && effetto[0] === chiave) mod = 1.1;
+    if (effetto && effetto[1] === chiave) mod = 0.9;
+    return Math.floor((Math.floor((2 * base + iv + Math.floor(ev / 4)) * L / 100) + 5) * mod);
+}
+
+// --- APERTURA / CHIUSURA ---------------------------------------------
+function tbCreaOverlay() {
+    let overlay = document.getElementById('tb-overlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'tb-overlay';
+    overlay.className = 'tb-overlay';
+    overlay.innerHTML = `
+        <div class="tb-wrapper" role="dialog" aria-modal="true" aria-labelledby="tb-title">
+            <div class="tb-header">
+                <h2 id="tb-title" class="tb-title">Build Team</h2>
+                <span id="tb-format-badge" class="tb-format-badge"></span>
+<button type="button" class="tb-close" onclick="tbChiediChiusura()" aria-label="Close">&times;</button>            </div>
+            <div id="tb-slots" class="tb-slots"></div>
+            <div id="tb-body" class="tb-body"></div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) tbChiediChiusura();    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('open') && !tbCombo.input) tbChiediChiusura();    });
+
+    return overlay;
+}
+
+async function apriTeamBuilder() {
+    const grid = document.getElementById('helper-pkm-grid');
+    const lista = grid && Array.isArray(grid.originalPokemonList) ? grid.originalPokemonList : [];
+    const formatId = window.currentHelperFormatId;
+
+    if (!formatId || lista.length === 0) {
+        alert("Choose a format with at least one available Pokémon first.");
+        return;
+    }
+
+    const overlay = tbCreaOverlay();
+    overlay.classList.add('open');
+
+    // Nasconde l'helper mentre il builder è aperto (riappare alla chiusura)
+    const helper = document.getElementById('helper-modal-overlay');
+    if (helper && helper.style.display !== 'none') {
+        helper.dataset.nascostoDaBuilder = '1';
+        helper.style.display = 'none';
+    }
+
+    document.getElementById('tb-slots').innerHTML = '';
+    document.getElementById('tb-body').innerHTML = `
+        <div class="tb-loading">
+            <div class="tb-loading-ball"></div>
+            <span>Loading moves, abilities and items...</span>
+        </div>`;
+
+    try {
+        const [regSnap] = await Promise.all([
+            db.ref(`regolamenti/${formatId}`).once('value'),
+            tbCaricaTuttiDati()
+        ]);
+        const regolamento = regSnap.val();
+        if (!regolamento) throw new Error('Format not found.');
+
+        const firma = `${formatId}|${lista.length}|${lista.map(p => p.id).join(',')}`;
+        if (tbStato.firma !== firma) {
+            tbInizializzaStato(firma, regolamento, lista);
+        } else {
+            tbStato.regolamento = regolamento;
+        }
+
+        tbRender();
+    } catch (err) {
+        console.error('[Team Builder]', err);
+        document.getElementById('tb-body').innerHTML = `
+            <div class="tb-loading">
+                <span>❌ Could not load Pokémon data (${tbEsc(err.message)}).</span>
+                <button type="button" class="tb-btn-small" onclick="apriTeamBuilder()">Try again</button>
+            </div>`;
+    }
+}
+
+function chiudiTeamBuilder() {
+    const overlay = document.getElementById('tb-overlay');
+    if (overlay) overlay.classList.remove('open');
+
+    const helper = document.getElementById('helper-modal-overlay');
+    if (helper && helper.dataset.nascostoDaBuilder === '1') {
+        helper.style.display = 'flex';
+        delete helper.dataset.nascostoDaBuilder;
+    }
+}
+
+// Il builder è aperto e nel team c'è almeno un Pokémon
+function tbCiSonoModifiche() {
+    const overlay = document.getElementById('tb-overlay');
+    return !!(overlay && overlay.classList.contains('open') && tbStato.slot.some(Boolean));
+}
+
+// X, clic fuori dal builder o Esc: chiede conferma se il team non è vuoto
+function tbChiediChiusura() {
+    if (tbCiSonoModifiche() &&
+        !confirm("Are you sure you want to close the Team Builder? Your changes to the team will not be saved.")) {
+        return;
+    }
+    tbStato.firma = ''; // alla prossima apertura il team riparte da zero
+    chiudiTeamBuilder();
+}
+
+// Ricarica, chiusura della scheda, frecce avanti/indietro del browser
+window.addEventListener('beforeunload', (e) => {
+    if (!tbCiSonoModifiche()) return;
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+function tbInizializzaStato(firma, regolamento, lista) {
+    const struttura = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
+    const gen = parseInt(regolamento.genRuleValue, 10) ||
+                parseInt(String(regolamento.vgcGen || '').replace(/\D/g, ''), 10) || 9;
+
+    tbStato.firma = firma;
+    tbStato.regolamento = regolamento;
+    tbStato.gen = gen;
+    tbStato.within = regolamento.genRuleType === 'within' || struttura === 'vgc';
+    tbStato.struttura = struttura;
+    tbStato.clausole = ['custom', 'vgc', 'vcg'].includes(struttura);
+    tbStato.livello = struttura === 'vgc' ? 50 : (String(regolamento.baseTier || '').toUpperCase() === 'LC' ? 5 : 100);
+    tbStato.slot = [null, null, null, null, null, null];
+    tbStato.attivo = 0;
+    tbStato.cacheMosse = {};
+    tbStato.oggetti = null;
+
+    const visti = new Set();
+    tbStato.pool = lista.map(pkm => {
+        const candidati = [pkm.id, pkm.name, pkm.spriteId].map(tbToID).filter(Boolean);
+        const specieId = candidati.find(c => tbSpecie(c)) || candidati[0];
+        const sp = tbSpecie(specieId);
+        return {
+            specieId,
+            sp,
+            nome: tbNomeBello(sp, pkm.name || pkm.id),
+            bst: tbBST(sp),
+            spriteId: pkm.spriteId || (sp ? tbSpriteId(sp) : specieId)
+        };
+    }).filter(v => {
+        if (!v.specieId || visti.has(v.specieId)) return false;
+        visti.add(v.specieId);
+        return true;
+    }).sort((a, b) => (b.bst - a.bst) || a.nome.localeCompare(b.nome)); // dal BST più alto
+}
+
+// --- RENDER ----------------------------------------------------------
+function tbRender() {
+    const badge = document.getElementById('tb-format-badge');
+    if (badge) {
+        const tipoGen = tbStato.within ? 'Within' : 'Up to';
+        const clausole = tbStato.clausole ? 'Species & Item Clause' : 'Duplicates allowed';
+        badge.textContent = `${tbStato.regolamento.categoria || 'Format'} · ${tipoGen} Gen ${tbStato.gen} · Lv. ${tbStato.livello} · ${clausole}`;
+    }
+    tbRenderSlot();
+    tbRenderCorpo();
+    tbRenderRiepilogo();
+}
+
+// Aggiorna solo il testo dello slot attivo: ricreare i bottoni farebbe perdere il click
+// quando un campo perde il focus (es. scrivo un EV e clicco subito un altro slot)
+function tbRenderLeggero() {
+    const bottone = document.querySelectorAll('#tb-slots .tb-slot')[tbStato.attivo];
+    const s = tbStato.slot[tbStato.attivo];
+    const etichetta = bottone && bottone.querySelector('.tb-slot-item');
+    if (s && etichetta) {
+        etichetta.textContent = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : 'No item';
+    } else {
+        tbRenderSlot();
+    }
+    tbRenderRiepilogo();
+}
+
+function tbRenderSlot() {
+    const contenitore = document.getElementById('tb-slots');
+    if (!contenitore) return;
+
+    contenitore.innerHTML = tbStato.slot.map((s, i) => {
+        const attivo = i === tbStato.attivo ? 'active' : '';
+        if (!s) {
+            return `
+                <button type="button" class="tb-slot empty ${attivo}" onclick="tbSelezionaSlot(${i})">
+                    <span class="tb-slot-num">${i + 1}</span>
+                    <span class="tb-slot-plus">+</span>
+                    <span class="tb-slot-name">Empty</span>
+                </button>`;
+        }
+        const sp = tbSpecie(s.specieId);
+        const oggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : 'No item';
+        const spriteId = tbSpriteId(sp);
+        return `
+            <button type="button" class="tb-slot ${attivo}" onclick="tbSelezionaSlot(${i})">
+                <span class="tb-slot-num">${i + 1}</span>
+                <img src="https://play.pokemonshowdown.com/sprites/ani/${spriteId}.gif" alt=""
+                     onerror="gestisciErroreSprite(this, '${spriteId}')">                <span class="tb-slot-name">${tbEsc(tbNomeBello(sp))}</span>
+                <span class="tb-slot-item">${tbEsc(oggetto)}</span>
+            </button>`;
+    }).join('');
+}
+
+function tbRenderCorpo() {
+    const corpo = document.getElementById('tb-body');
+    if (!corpo) return;
+    tbChiudiCombo();
+
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) {
+        corpo.innerHTML = `
+            <div class="tb-picker-top">
+                <span class="tb-label">Choose a Pokémon for slot ${tbStato.attivo + 1}</span>
+                <input type="text" id="tb-picker-search" class="tb-input" placeholder="🔍 Search Pokémon or Ability..." oninput="tbFiltraPicker(this.value)">
+                <select id="tb-picker-sort" class="tb-input tb-picker-sort" onchange="tbCambiaOrdinamento(this.value)">
+                    <optgroup label="Pokémon">
+                        <option value="num-asc">Pokédex N°</option>
+                        <option value="alpha-asc">Alphabetical (A-Z)</option>
+                        <option value="alpha-desc">Alphabetical (Z-A)</option>
+                    </optgroup>
+                    <optgroup label="Best stat">
+                        <option value="bst-desc">BST</option>
+                        <option value="stat|hp|desc">HP</option>
+                        <option value="stat|attack|desc">Attack</option>
+                        <option value="stat|defense|desc">Defense</option>
+                        <option value="stat|sp. attack|desc">Sp. Attack</option>
+                        <option value="stat|sp. defense|desc">Sp. Defense</option>
+                        <option value="stat|speed|desc">Speed</option>
+                    </optgroup>
+                </select>
+                <span class="tb-picker-count">${tbStato.pool.length} available</span>
+                ${tbHtmlAzioni('riga')}
+            </div>
+            <div id="tb-picker-grid" class="tb-picker-grid"></div>`;
+        document.getElementById('tb-picker-sort').value = tbStato.ordinamento || 'bst-desc';
+        tbFiltraPicker('');
+        return;
+    }
+
+    corpo.innerHTML = tbHtmlEditor(s);
+    document.fonts.ready.then(() => requestAnimationFrame(tbPosizionaDescMosse));
+}
+const TB_MAPPA_STATS = {
+    'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
+    'sp. attack': 'SPA', 'sp. defense': 'SPD', 'speed': 'SPE'
+};
+
+let tbTooltipTimer = null;
+
+function tbGetTooltip() {
+    let tooltip = document.getElementById('global-neubrutalist-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'global-neubrutalist-tooltip';
+        tooltip.className = 'neubrutalist-tooltip';
+        document.body.appendChild(tooltip);
+    }
+    return tooltip;
+}
+
+function tbPosizionaTooltip(cardElement, tooltipElement) {
+    const rect = cardElement.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+
+    const cardCenter = rect.left + scrollX + (rect.width / 2);
+    const tooltipWidth = tooltipElement.offsetWidth || 245;
+    let tooltipLeft = cardCenter - (tooltipWidth / 2);
+
+    if (tooltipLeft < 10) tooltipLeft = 10;
+    if (tooltipLeft + tooltipWidth > window.innerWidth - 10) {
+        tooltipLeft = window.innerWidth - tooltipWidth - 10;
+    }
+    tooltipElement.style.left = `${tooltipLeft}px`;
+
+    const tooltipHeight = tooltipElement.offsetHeight;
+    const spazioSotto = window.innerHeight - rect.bottom;
+    const spazioSopra = rect.top;
+
+    const rotazioneCorrente = tooltipElement.dataset.rotation || '0deg';
+    tooltipElement.style.transform = `rotate(${rotazioneCorrente})`;
+
+    if (spazioSotto >= tooltipHeight) {
+        tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+    } else if (spazioSopra >= tooltipHeight) {
+        tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+    } else if (spazioSotto > spazioSopra) {
+        tooltipElement.style.top = `${rect.bottom + scrollY + 8}px`;
+    } else {
+        tooltipElement.style.top = `${rect.top + scrollY - 8 - tooltipHeight}px`;
+    }
+}
+
+// Riempie e mostra il tooltip. pkm = { id, name }
+function tbMostraTooltip(pkm, card, infoPkm) {
+    const tooltip = tbGetTooltip();
+
+    tooltip.dataset.currentId = pkm.id;
+    tooltip.dataset.rotation = `${(Math.random() * 8 - 4).toFixed(2)}deg`;
+    tooltip.style.display = 'block';
+    tooltip.style.opacity = '1';
+
+    if (!infoPkm || !infoPkm.stats) {
+        tooltip.innerHTML = `<div class="neubrutalist-loading" style="color:red; font-weight:bold; padding:10px;">DATA NOT FOUND</div>`;
+        tbPosizionaTooltip(card, tooltip);
+        return;
+    }
+
+    const arrayTipi = tbTipiSincroni(pkm, infoPkm);
+    const htmlTipi = arrayTipi.map(t => {
+        const tipoLower = t.toLowerCase().trim();
+        const colore = TB_COLORI_TIPI[tipoLower] || '#777';
+        return `<span class="neubrutalist-type-badge" style="background-color: ${colore};">${tipoLower.toUpperCase()}</span>`;
+    }).join('');
+
+    const nomePlayerAttivo = (typeof currentPlayer !== 'undefined') ? currentPlayer.toLowerCase() : '';
+    const coloreBarraPlayer = (typeof playerColors !== 'undefined' && playerColors[nomePlayerAttivo])
+        ? playerColors[nomePlayerAttivo]
+        : '#00FF66';
+
+    const htmlStats = Object.keys(TB_MAPPA_STATS).map(chiaveStat => {
+        const valore = infoPkm.stats[chiaveStat] || 0;
+        const percentualeBarra = Math.min(100, (valore / 160) * 100);
+        return `
+            <div class="neubrutalist-stat-row">
+                <span class="neubrutalist-stat-label">${TB_MAPPA_STATS[chiaveStat]}</span>
+                <div class="neubrutalist-stat-bar-bg">
+                    <div class="neubrutalist-stat-bar-fill" style="width: ${percentualeBarra}%; background-color: var(--accent-color, ${coloreBarraPlayer});"></div>
+                </div>
+                <span class="neubrutalist-stat-value">${valore}</span>
+            </div>`;
+    }).join('');
+
+    let arrayAbilita = [];
+    if (Array.isArray(infoPkm.abilities)) {
+        arrayAbilita = infoPkm.abilities;
+    } else if (infoPkm.abilities && typeof infoPkm.abilities === 'object') {
+        arrayAbilita = Object.values(infoPkm.abilities);
+    }
+
+    const htmlAbilita = arrayAbilita
+        .map(abi => `<span class="neubrutalist-ability-tag">${String(abi).toUpperCase()}</span>`)
+        .join('');
+
+    tooltip.innerHTML = `
+        <div class="neubrutalist-tooltip-header">
+            <div class="neubrutalist-tooltip-title">${tbEsc(String(pkm.name).toUpperCase())}</div>
+            <div class="neubrutalist-tooltip-types">${htmlTipi}</div>
+        </div>
+        <div class="neubrutalist-tooltip-body">
+            <div class="neubrutalist-stats-container">${htmlStats}</div>
+            <div class="neubrutalist-abilities-title">ABILITIES</div>
+            <div class="neubrutalist-abilities-container">${htmlAbilita || '<span class="neubrutalist-ability-tag" style="opacity:0.4;">UNKNOWN</span>'}</div>
+        </div>`;
+
+    tbPosizionaTooltip(card, tooltip);
+
+    // Se i tipi non sono nei dati locali, li recupera dal Pokédex di Showdown
+    if (arrayTipi.length === 0) tbCompletaTipiTooltip(pkm, tooltip);
+}
+
+// Mostra il tooltip dopo 1 secondo di hover (come nell'Helper).
+// leggiInfo viene chiamata solo allo scadere del timer, non a ogni passaggio del mouse.
+function tbProgrammaTooltip(pkm, card, leggiInfo) {
+    clearTimeout(tbTooltipTimer);
+    tbTooltipTimer = setTimeout(() => {
+        if (!card.isConnected) return; // la griglia è stata ri-renderizzata nel frattempo
+        tbMostraTooltip(pkm, card, leggiInfo());
+    }, 1000);
+}
+
+// Senza id: chiude sempre. Con id: chiude solo se il tooltip è di quel Pokémon.
+function tbNascondiTooltip(id) {
+    clearTimeout(tbTooltipTimer);
+    const tooltip = document.getElementById('global-neubrutalist-tooltip');
+    if (!tooltip) return;
+    if (id !== undefined && tooltip.dataset.currentId !== String(id)) return;
+
+    tooltip.style.display = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.dataset.currentId = '';
+    tooltip.dataset.rotation = '0deg';
+}
+
+
+/* =========================================================
+   PICKER DEL TEAM BUILDER
+   ========================================================= */
+
+// Dati per il tooltip di una voce del picker: prima la stessa fonte dell'Helper,
+// poi, se manca, i dati della specie già presenti nella voce (v.sp).
+function tbInfoPicker(v, pkm) {
+    let info = null;
+    try {
+        info = getInfoPkm(pkm); // se getInfoPkm non è raggiungibile da qui, si passa al fallback
+    } catch {
+        info = null;
+    }
+
+    if ((!info || !info.stats) && v.sp && v.sp.baseStats) {
+        const bs = v.sp.baseStats;
+        info = {
+            stats: {
+                'hp': bs.hp, 'attack': bs.atk, 'defense': bs.def,
+                'sp. attack': bs.spa, 'sp. defense': bs.spd, 'speed': bs.spe
+            },
+            types: v.sp.types || [],
+            abilities: v.sp.abilities || []
+        };
+    }
+    return info;
+}
+
+// Aggiunge marquee-bounce solo ai nomi che sbordano
+function tbApplicaMarquee(griglia) {
+    const boxes = [...griglia.querySelectorAll('.tb-pick-name')];
+
+    // 1) reset (utile quando viene richiamata dopo un resize)
+    boxes.forEach(b => b.classList.remove('marquee-bounce'));
+
+    // 2) prima tutte le letture...
+    const overflow = boxes.map(b => {
+        const larghezzaBox = b.clientWidth;
+        if (!larghezzaBox || !b.firstElementChild) return 0; // griglia nascosta: non misurare
+        return Math.ceil(b.firstElementChild.getBoundingClientRect().width - larghezzaBox);
+    });
+
+    // 3) ...poi tutte le scritture
+    boxes.forEach((b, i) => {
+        if (overflow[i] > 0) {
+            b.style.setProperty('--distanza-scorrimento', `-${overflow[i] + 8}px`);
+            b.classList.add('marquee-bounce');
+        }
+    });
+}
+
+function tbFiltraPicker(testo) {
+    const griglia = document.getElementById('tb-picker-grid');
+    if (!griglia) return;
+
+    // Il contenuto sta per essere sostituito: chiude il tooltip e annulla quelli in attesa
+    tbNascondiTooltip();
+
+    const numeriUsati = tbStato.clausole ? tbNumeriUsati(tbStato.attivo) : new Set();
+const criterio = tbStato.ordinamento || 'bst-desc';
+const voci = tbStato.pool
+    .filter(v => pokemonCorrispondeRicerca(v, testo))
+    .sort((a, b) => tbConfrontaVoci(a, b, criterio));
+    griglia.innerHTML = voci.map((v, i) => {
+        const base = v.sp ? tbSpecieBase(v.sp) : null;
+        const bloccato = !v.sp || (base && numeriUsati.has(base.num));
+
+        // Il title resta solo sulle card bloccate, per spiegarne il motivo.
+        // Sulle altre c'è il tooltip personalizzato: con entrambi si sovrapporrebbero.
+        const motivo = !v.sp
+            ? 'No data available for this Pokémon'
+            : (bloccato ? 'Species Clause: already in your team' : '');
+
+        return `
+            <button type="button" class="tb-pick ${bloccato ? 'disabled' : ''}" ${bloccato ? 'disabled' : ''}
+                    ${motivo ? `title="${tbEsc(motivo)}"` : ''}
+                    data-idx="${i}" data-nome="${tbEsc(v.nome)}"
+                    onclick="tbScegliPokemon('${v.specieId}')">
+                <img loading="lazy" alt="" src="https://play.pokemonshowdown.com/sprites/ani/${v.spriteId}.gif"
+                     onerror="gestisciErroreSprite(this, '${v.spriteId}')">
+                <span class="tb-pick-name"><span>${tbEsc(v.nome)}</span></span>
+            </button>`;
+    }).join('') || `<div class="tb-empty">No Pokémon found.</div>`;
+
+    // Tooltip con delega: un solo gestore sulla griglia invece di uno per card.
+    // Le assegnazioni "on..." sostituiscono quelle del render precedente, quindi non si accumulano.
+    griglia.onmouseover = e => {
+        const card = e.target.closest('.tb-pick');
+        // contains(relatedTarget): il mouse si sta muovendo dentro la stessa card (img → nome)
+        if (!card || card.disabled || card.contains(e.relatedTarget)) return;
+
+        const v = voci[card.dataset.idx];
+        const pkm = { id: v.specieId, name: v.nome };
+        tbProgrammaTooltip(pkm, card, () => tbInfoPicker(v, pkm));
+    };
+
+    griglia.onmouseout = e => {
+        const card = e.target.closest('.tb-pick');
+        if (!card || card.contains(e.relatedTarget)) return;
+        tbNascondiTooltip(voci[card.dataset.idx]?.specieId);
+    };
+
+    // Dopo la scelta di un Pokémon il tooltip non deve restare aperto
+    griglia.onclick = () => tbNascondiTooltip();
+
+    // Marquee: misura quando font e layout sono pronti
+    document.fonts.ready.then(() => requestAnimationFrame(() => tbApplicaMarquee(griglia)));
+}
+
+
+function tbHtmlCampoMossa(s, j) {
+    const id = s.mosse[j];
+    const d = id ? tbDex.moves[id] : null;
+    const stile = d ? `style="background: ${tbColoreTipo(d.type)};"` : '';
+    const descrizione = d ? (d.shortDesc || d.desc || '') : '';
+    const icona = d
+        ? `<img class="tb-combo-cat" alt="${d.category}" src="immagini/move-${d.category.toLowerCase()}.png"
+                onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/categories/${d.category}.png';">`
+        : '';
+    return `
+        <div class="tb-combo ${d ? 'has-move' : ''}">
+            <input type="text" class="tb-input tb-move" ${stile} value="${tbEsc(d ? d.name : '')}" placeholder="Move ${j + 1}"
+                   title="${tbEsc(descrizione)}"
+                   autocomplete="off" data-tipo="mossa" data-indice="${j}"
+                   onfocus="tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
+            ${icona}
+            ${descrizione ? `<span class="tb-move-desc">${tbEsc(descrizione)}</span>` : ''}
+            <div class="tb-combo-list"></div>
+        </div>`;
+}
+
+// Mette la descrizione subito dopo il nome della mossa, dentro il rettangolo colorato.
+// Il nome viene misurato con un canvas usando il font reale dell'input,
+// così la posizione è giusta qualunque sia lo stile in style-box.css.
+let tbCanvasMisura = null;
+
+function tbPosizionaDescMosse() {
+    if (!tbCanvasMisura) tbCanvasMisura = document.createElement('canvas');
+    const ctx = tbCanvasMisura.getContext('2d');
+
+    document.querySelectorAll('.tb-moves .tb-combo').forEach(campo => {
+        const input = campo.querySelector('.tb-move');
+        const desc = campo.querySelector('.tb-move-desc');
+        if (!input || !desc || !input.offsetWidth) return; // campo non visibile: niente da misurare
+
+        const cs = getComputedStyle(input);
+        ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = cs.letterSpacing === 'normal' ? '0px' : cs.letterSpacing;
+
+        let nome = input.value;
+        if (cs.textTransform === 'uppercase') nome = nome.toUpperCase();
+
+        const sinistra = input.offsetLeft + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft)
+                       + ctx.measureText(nome).width + 10;
+        let destra = campo.clientWidth - (input.offsetLeft + input.offsetWidth)
+                   + parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingRight);
+
+        // Se l'icona della categoria sta sulla destra, la descrizione si ferma prima
+        const icona = campo.querySelector('.tb-combo-cat');
+        if (icona && icona.offsetWidth && icona.offsetLeft > input.offsetLeft + input.offsetWidth / 2) {
+            destra = Math.max(destra, campo.clientWidth - icona.offsetLeft + 6);
+        }
+
+        desc.style.left = `${sinistra}px`;
+        desc.style.right = `${destra}px`;
+        desc.style.display = campo.clientWidth - sinistra - destra < 40 ? 'none' : ''; // troppo poco spazio: nascosta
+    });
+}
+
+window.addEventListener('resize', () => requestAnimationFrame(tbPosizionaDescMosse));
+
+function tbHtmlPannelloEV(s) {
+    const sp = tbSpecie(s.specieId);
+    const bloccata = !!tbNaturaImposta();
+    const totaleEV = TB_STAT.reduce((t, st) => t + s.evs[st.key], 0);
+
+    const righe = TB_STAT.map(st => {
+        const base = sp.baseStats[st.key];
+        let classe = '';
+        if (s.natPlus === st.key) classe = 'plus';
+        if (s.natMinus === st.key) classe = 'minus';
+
+        const bottoniNatura = st.key === 'hp' || tbStato.gen < 3
+            ? '<span></span>'
+            : `<span class="tb-nat">
+                   <button type="button" class="tb-nat-btn plus ${s.natPlus === st.key ? 'on' : ''}" ${bloccata ? 'disabled' : ''}
+                           title="Nature: raise ${st.label}" onclick="tbImpostaNatura('plus', '${st.key}')">+</button>
+                   <button type="button" class="tb-nat-btn minus ${s.natMinus === st.key ? 'on' : ''}" ${bloccata ? 'disabled' : ''}
+                           title="Nature: lower ${st.label}" onclick="tbImpostaNatura('minus', '${st.key}')">−</button>
+               </span>`;
+
+        return `
+            <div class="tb-ev-row">
+                <span class="tb-ev-label ${classe}">${st.label}</span>
+                <span class="tb-ev-base">${base}</span>
+                <input type="range" min="0" max="252" step="4" value="${s.evs[st.key]}" id="tb-ev-range-${st.key}"
+                       oninput="tbImpostaEV('${st.key}', this.value)">
+                <input type="number" min="0" max="252" step="4" value="${s.evs[st.key]}" id="tb-ev-num-${st.key}"
+                       class="tb-input tb-num" onchange="tbImpostaEV('${st.key}', this.value)">
+                <input type="number" min="0" max="31" value="${s.ivs[st.key]}" id="tb-iv-num-${st.key}"
+                       class="tb-input tb-num" onchange="tbImpostaIV('${st.key}', this.value)">
+                ${bottoniNatura}
+                <span class="tb-ev-stat" id="tb-stat-${st.key}">${tbCalcolaStat(st.key, base, s.evs[st.key], s.ivs[st.key], s.natura)}</span>
+            </div>`;
+    }).join('');
+
+    const testoNatura = tbStato.gen < 3
+        ? `No natures in Gen ${tbStato.gen}`
+        : `Nature: <b>${tbEsc(tbEtichettaNatura(s))}</b>${bloccata ? ' · fixed by the format' : ''}`;
+
+    return `
+        <div class="tb-ev-head">
+            <span>Stat</span><span>Base</span><span>EVs</span><span></span><span>IVs</span><span>Nature</span><span>Lv. ${tbStato.livello}</span>
+        </div>
+        ${righe}
+        <div class="tb-ev-footer">
+            <span id="tb-ev-remaining" class="tb-ev-remaining ${totaleEV >= 508 ? 'full' : ''}">
+                ${tbStato.gen >= 3 ? `EVs left: ${510 - totaleEV} / 510` : 'No EV total limit in this generation'}
+            </span>
+            <span class="tb-nature-label">${testoNatura}</span>
+        </div>`;
+}
+
+function tbHtmlEditor(s) {
+    const sp = tbSpecie(s.specieId);
+    const spBase = tbSpecieBase(sp);
+    const spriteId = tbSpriteId(sp);
+    const abilita = tbAbilitaLegali(spBase);
+    const oggettoFisso = tbOggettoObbligatorio(sp);
+    const mosseLegali = tbMosseLegali(s.specieId);
+    const nomeOggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
+
+    const campoAbilita = abilita.length
+        ? `<select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();">
+               ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
+           </select>`
+        : `<input class="tb-input" value="No ability in Gen ${tbStato.gen}" disabled>`;
+
+    const campoTera = tbStato.gen === 9
+        ? `<div class="tb-field">
+               <span class="tb-label">Tera Type</span>
+               <select class="tb-select" onchange="tbImpostaCampo('tera', this.value)">
+                   ${[...TB_TIPI, 'Stellar'].map(t => `<option value="${t}" ${t === s.tera ? 'selected' : ''}>${t}</option>`).join('')}
+               </select>
+           </div>`
+        : '';
+
+    const statiBase = TB_STAT.map(st => {
+        const v = sp.baseStats[st.key];
+        return `
+            <div class="tb-base-row">
+                <span>${st.label}</span>
+                <div class="tb-base-bar"><div style="width: ${Math.min(100, v / 1.6)}%;"></div></div>
+                <b>${v}</b>
+            </div>`;
+    }).join('');
+
+    return `
+        <div class="tb-editor">
+            <div class="tb-side">
+                <img class="tb-side-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${spriteId}.gif" alt=""
+                     onerror="gestisciErroreSprite(this, '${spriteId}')">
+                <div class="tb-side-name">${tbEsc(tbNomeBello(sp))}</div>
+                <div class="tb-types" id="tb-editor-types">${tbHtmlTipiEditor(sp, s.abilita)}</div>
+                <div class="tb-base-stats">
+                    ${statiBase}
+                    <div class="tb-base-total">BST <b>${tbBST(sp)}</b></div>
+                </div>
+                <button type="button" class="tb-btn-small danger" onclick="tbRimuoviPokemon()">Change Pokémon</button>
+                            ${tbHtmlAzioni('colonna')}
+                </div>
+
+            <div class="tb-fields">
+                <div class="tb-row">
+                    <div class="tb-field">
+                        <span class="tb-label">Item</span>
+                        <div class="tb-combo">
+                            <input type="text" class="tb-input" value="${tbEsc(nomeOggetto)}" autocomplete="off"
+                                   placeholder="${tbStato.gen < 2 ? 'No items in Gen 1' : 'No item'}"
+                                   data-tipo="oggetto" ${oggettoFisso || tbStato.gen < 2 ? 'disabled' : ''}
+                                   onfocus="tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
+                            <div class="tb-combo-list"></div>
+                        </div>
+                        <p class="tb-desc" id="tb-desc-oggetto"></p>
+                        <div id="tb-msg-oggetto" class="tb-msg"></div>
+                    </div>
+                    <div class="tb-field">
+                        <span class="tb-label">Ability</span>
+                        ${campoAbilita}
+                        <p class="tb-desc" id="tb-desc-abilita"></p>
+                    </div>
+                    ${campoTera}
+                </div>
+                <div class="tb-field">
+                    <span class="tb-label">Moves · ${mosseLegali.length} learnable in this format</span>
+                    <div class="tb-moves">${s.mosse.map((m, j) => tbHtmlCampoMossa(s, j)).join('')}</div>
+                    ${mosseLegali.length === 0 ? `<div class="tb-msg">No moves found for this Pokémon in Gen ${tbStato.gen}: it may not be available in this generation.</div>` : ''}
+                    <div id="tb-msg-mosse" class="tb-msg"></div>
+                </div>
+
+                <div class="tb-field">
+                    <span class="tb-label">EVs, IVs &amp; Nature</span>
+                    <div class="tb-evs" id="tb-ev-panel">${tbHtmlPannelloEV(s)}</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+// Badge tipo con il tooltip di debolezze/resistenze già usato nel resto del box
+function tbHtmlTipiEditor(sp, abilita) {
+    const tipi = sp.types || [];
+    const tooltip = tbHtmlEfficacia(tipi, abilita);
+    return tipi.map(t => `
+        <div class="type-container">
+            <span class="type-badge ${t.toLowerCase()}">${t.toUpperCase()}</span>
+            <div class="type-effectiveness-tooltip v-down">${tooltip}</div>
+        </div>`).join('');
+}
+
+function tbAggiornaTipiEditor() {
+    const s = tbStato.slot[tbStato.attivo];
+    const box = document.getElementById('tb-editor-types');
+    if (s && box) box.innerHTML = tbHtmlTipiEditor(tbSpecie(s.specieId), s.abilita);
+}
+
+let tbTimerFumetto = null;
+
+// Aggiorna descrizioni, tag delle debolezze e stato del salvataggio senza ricreare i bottoni
+function tbRenderRiepilogo() {
+    const s = tbStato.slot[tbStato.attivo];
+
+    const descAbilita = document.getElementById('tb-desc-abilita');
+    if (descAbilita) {
+        const ab = s && s.abilita ? tbDex.abilities[tbToID(s.abilita)] : null;
+        descAbilita.textContent = ab ? (ab.shortDesc || ab.desc || '') : '';
+    }
+    const descOggetto = document.getElementById('tb-desc-oggetto');
+    if (descOggetto) {
+        const it = s && s.oggetto ? tbDex.items[s.oggetto] : null;
+        descOggetto.textContent = it ? (it.shortDesc || it.desc || '') : '';
+    }
+
+    const copertura = tbCalcolaCopertura();
+    const tag = document.getElementById('tb-cov-tag');
+    if (tag) {
+        tag.className = `tb-cov-tag ${copertura.critici.length ? 'bad' : (copertura.pieni ? 'good' : '')}`;
+        tag.textContent = copertura.critici.length
+            ? `⚠ Team weaknesses · ${copertura.critici.length}`
+            : (copertura.pieni ? '✔ Team weaknesses' : 'Team weaknesses');
+    }
+    const boxCopertura = document.getElementById('tb-cov-box');
+    if (boxCopertura) boxCopertura.innerHTML = copertura.html;
+
+    const errori = tbControllaTeam();
+    const wrap = document.getElementById('tb-save-wrap');
+    const btnSalva = document.getElementById('tb-btn-save');
+    const fumetto = document.getElementById('tb-save-bubble');
+    if (wrap) wrap.classList.toggle('blocked', errori.length > 0);
+    if (btnSalva) {
+        btnSalva.classList.toggle('blocked', errori.length > 0);
+        btnSalva.setAttribute('aria-disabled', errori.length > 0 ? 'true' : 'false');
+    }
+    if (fumetto) {
+        fumetto.innerHTML = errori.length
+            ? `<b>Can't save to the box yet:</b><ul>${errori.map(e => `<li>${tbEsc(e)}</li>`).join('')}</ul>`
+            : '';
+    }
+
+    const btnCopia = document.getElementById('tb-btn-copy');
+    if (btnCopia) btnCopia.disabled = !tbStato.slot.some(Boolean);
+}
+
+// --- MENÙ A TENDINA DI MOSSE E STRUMENTI -----------------------------
+function tbVociCombo(tipo, indice) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return [];
+
+    if (tipo === 'mossa') {
+        const altre = new Set(s.mosse.filter((m, k) => m && k !== indice));
+        return tbMosseLegali(s.specieId)
+            .filter(m => !altre.has(m.id))
+            .map(m => ({ id: m.id, nome: m.dati.name, dati: m.dati }));
+    }
+
+    const usati = tbStato.clausole ? tbOggettiUsati(tbStato.attivo) : new Set();
+    return tbOggettiLegali()
+        .filter(o => !usati.has(o.id))
+        .map(o => ({ id: o.id, nome: o.nome, dati: tbDex.items[o.id] }));
+}
+
+function tbApriCombo(input) {
+    tbCombo.input = input;
+    tbCombo.tipo = input.dataset.tipo;
+    tbCombo.indice = parseInt(input.dataset.indice || '0', 10);
+    tbCombo.digitato = false;
+    input.select();
+    tbAggiornaCombo();
+}
+
+function tbFiltraCombo(input) {
+    if (tbCombo.input !== input) tbApriCombo(input);
+    tbCombo.digitato = true;
+    tbCombo.evidenziata = 0;
+    tbAggiornaCombo();
+}
+
+function tbAggiornaCombo() {
+    const input = tbCombo.input;
+    if (!input) return;
+    const lista = input.parentElement.querySelector('.tb-combo-list');
+    if (!lista) return;
+
+    const query = tbCombo.digitato ? tbToID(input.value) : '';
+    let voci = tbVociCombo(tbCombo.tipo, tbCombo.indice);
+    if (tbCombo.tipo === 'mossa') {
+        voci = voci.filter(v => tbCombo.categorie[v.dati.category]); // filtro Physical / Special / Status
+    }
+    if (query) {        const inizio = voci.filter(v => v.id.startsWith(query));
+        const dentro = voci.filter(v => !v.id.startsWith(query) && v.id.includes(query));
+        voci = [...inizio, ...dentro];
+    }
+    tbCombo.voci = voci.slice(0, 120);
+    if (tbCombo.evidenziata >= tbCombo.voci.length) tbCombo.evidenziata = 0;
+
+    const filtro = tbCombo.tipo === 'mossa' ? tbHtmlFiltroCategorie() : '';
+
+    if (!tbCombo.voci.length) {
+        let vuoto = 'No item matches.';
+        if (tbCombo.tipo === 'mossa') {
+            vuoto = Object.values(tbCombo.categorie).some(Boolean) ? 'No learnable move matches.' : 'Select at least one category.';
+        }
+        lista.innerHTML = `${filtro}<div class="tb-opt-empty">${vuoto}</div>`;
+    } else if (tbCombo.tipo === 'mossa') {
+        lista.innerHTML = filtro + tbCombo.voci.map((v, i) => {
+            const d = v.dati;
+            const potenza = d.basePower ? `${d.basePower} BP` : '— BP';
+            const precisione = d.accuracy === true ? '—' : `${d.accuracy}%`;
+            const descrizione = d.shortDesc || d.desc || '';
+            return `
+                <div class="tb-opt tb-opt-move ${i === tbCombo.evidenziata ? 'hl' : ''}" style="background: ${tbColoreTipo(d.type)};"
+                     title="${tbEsc(descrizione)}" onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
+                    <img class="tb-opt-cat" alt="${d.category}" src="immagini/move-${d.category.toLowerCase()}.png"
+                         onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/categories/${d.category}.png';">
+                    <span class="tb-opt-name">${tbEsc(d.name)}</span>
+                    <span class="tb-opt-meta">${d.type} · ${potenza} · ${precisione}</span>
+                    <span class="tb-opt-desc">${tbEsc(descrizione)}</span>
+                </div>`;
+        }).join('');    } else {
+        lista.innerHTML = tbCombo.voci.map((v, i) => `
+            <div class="tb-opt tb-opt-item ${i === tbCombo.evidenziata ? 'hl' : ''}"
+                 title="${tbEsc(v.dati?.shortDesc || v.dati?.desc || '')}" onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
+                <img class="tb-opt-icon" alt="" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${tbSlugOggetto(v.nome)}.png"
+                     onerror="this.style.visibility='hidden'">
+                <span class="tb-opt-name">${tbEsc(v.nome)}</span>
+            </div>`).join('');
+    }
+
+    lista.classList.add('open');
+    const evidenziata = lista.querySelector('.tb-opt.hl');
+    if (evidenziata) evidenziata.scrollIntoView({ block: 'nearest' });
+}
+
+// Barra bianca in cima alla lista mosse con le tre spunte di categoria.
+// Il click è gestito sul mousedown (con preventDefault) come le voci della lista,
+// così l'input non perde il focus e la tendina resta aperta.
+function tbHtmlFiltroCategorie() {
+    return `
+        <div class="tb-cat-filter" onmousedown="event.preventDefault()">
+            ${['Physical', 'Special', 'Status'].map(c => `
+                <span class="tb-cat-check ${tbCombo.categorie[c] ? 'on' : ''}"
+                      onmousedown="event.preventDefault(); tbCambiaCategoria('${c}')">
+                    <input type="checkbox" tabindex="-1" ${tbCombo.categorie[c] ? 'checked' : ''}>
+                    <img alt="" src="immagini/move-${c.toLowerCase()}.png"
+                         onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/categories/${c}.png';">
+                    ${c}
+                </span>`).join('')}
+        </div>`;
+}
+
+function tbCambiaCategoria(categoria) {
+    tbCombo.categorie[categoria] = !tbCombo.categorie[categoria];
+    tbCombo.evidenziata = 0;
+    tbAggiornaCombo();
+    const lista = tbCombo.input?.parentElement.querySelector('.tb-combo-list');
+    if (lista) lista.scrollTop = 0;
+}
+
+function tbTastoCombo(event, input) {
+    if (tbCombo.input !== input) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const passo = event.key === 'ArrowDown' ? 1 : -1;
+        const n = tbCombo.voci.length;
+        if (n) tbCombo.evidenziata = (tbCombo.evidenziata + passo + n) % n;
+        tbAggiornaCombo();
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        if (tbCombo.voci.length) tbScegliDaCombo(tbCombo.evidenziata); // la prima (o l'unica) della lista
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        input.blur();
+    }
+}
+
+function tbScegliDaCombo(i) {
+    const voce = tbCombo.voci[i];
+    const input = tbCombo.input;
+    if (!voce || !input) return;
+
+    const tipo = tbCombo.tipo;
+    const indice = tbCombo.indice;
+    tbChiudiCombo();
+
+    if (tipo === 'mossa') tbImpostaMossa(indice, voce.id);
+    else tbImpostaOggetto(voce.id);
+}
+
+function tbBlurCombo(input) {
+    setTimeout(() => {
+        if (tbCombo.input !== input) return;
+        const tipo = tbCombo.tipo;
+        const indice = tbCombo.indice;
+        const testo = input.value.trim();
+        tbChiudiCombo();
+
+        const s = tbStato.slot[tbStato.attivo];
+        if (!s) return;
+        const attuale = tipo === 'mossa' ? s.mosse[indice] : s.oggetto;
+
+        if (!testo) {
+            if (tipo === 'mossa') tbImpostaMossa(indice, '');
+            else tbImpostaOggetto('');
+            return;
+        }
+        if (tbToID(testo) === attuale) {
+            tbAggiornaCampoCombo(tipo, indice); // ripristina il nome corretto
+            return;
+        }
+        if (tipo === 'mossa') tbImpostaMossa(indice, tbToID(testo));
+        else tbImpostaOggetto(tbToID(testo));
+    }, 150);
+}
+
+function tbChiudiCombo() {
+    if (tbCombo.input) {
+        const lista = tbCombo.input.parentElement?.querySelector('.tb-combo-list');
+        if (lista) {
+            lista.classList.remove('open');
+            lista.innerHTML = '';
+        }
+    }
+    tbCombo.input = null;
+    tbCombo.voci = [];
+    tbCombo.evidenziata = 0;
+}
+
+// Ridisegna il singolo campo (colore e icona della mossa) senza rifare tutto l'editor
+function tbAggiornaCampoCombo(tipo, indice) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return;
+
+    if (tipo === 'mossa') {
+        const campi = document.querySelectorAll('.tb-moves .tb-combo');
+        const vecchio = campi[indice];
+        if (!vecchio) return;
+        const temp = document.createElement('div');
+        temp.innerHTML = tbHtmlCampoMossa(s, indice).trim();
+        vecchio.replaceWith(temp.firstElementChild);
+        tbPosizionaDescMosse();
+    } else {
+        const input = document.querySelector('.tb-fields input[data-tipo="oggetto"]');
+        if (input) input.value = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
+    }
+}
+
+// --- AZIONI ----------------------------------------------------------
+function tbSelezionaSlot(i) {
+    tbStato.attivo = i;
+    tbRenderSlot();
+    tbRenderCorpo();
+    tbRenderRiepilogo();
+}
+
+function tbScegliPokemon(specieId) {
+    const sp = tbSpecie(specieId);
+    if (!sp) return;
+    const abilita = tbAbilitaLegali(tbSpecieBase(sp));
+    const naturaFissa = tbNaturaImposta();
+    const effetto = naturaFissa ? TB_NATURE[naturaFissa] : null;
+
+    tbStato.slot[tbStato.attivo] = {
+        specieId,
+        oggetto: tbOggettoObbligatorio(sp),
+        abilita: abilita[0] || '',
+        natura: naturaFissa || 'Serious',
+        natPlus: effetto ? effetto[0] : '',
+        natMinus: effetto ? effetto[1] : '',
+        tera: (sp.types && sp.types[0]) || 'Normal',
+        mosse: ['', '', '', ''],
+        evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
+    };
+    tbRender();
+}
+
+function tbRimuoviPokemon() {
+    tbStato.slot[tbStato.attivo] = null;
+    tbRender();
+}
+
+function tbImpostaCampo(campo, valore) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return;
+    s[campo] = valore;
+    tbRenderLeggero();
+}
+
+function tbImpostaOggetto(id) {
+    const s = tbStato.slot[tbStato.attivo];
+    const msg = document.getElementById('tb-msg-oggetto');
+    if (!s) return;
+
+    if (!id) {
+        s.oggetto = '';
+        if (msg) msg.textContent = '';
+        tbAggiornaCampoCombo('oggetto');
+        tbRenderLeggero();
+        return;
+    }
+
+    const legale = tbOggettiLegali().find(o => o.id === id);
+    let errore = '';
+    if (!legale) errore = 'This item is not available in this format.';
+    else if (tbStato.clausole && tbOggettiUsati(tbStato.attivo).has(id)) errore = `Item Clause: ${legale.nome} is already used by another Pokémon.`;
+
+    if (msg) msg.textContent = errore;
+    if (!errore) s.oggetto = id;
+    tbAggiornaCampoCombo('oggetto');
+    tbRenderLeggero();
+}
+
+function tbImpostaMossa(indice, id) {
+    const s = tbStato.slot[tbStato.attivo];
+    const msg = document.getElementById('tb-msg-mosse');
+    if (!s) return;
+
+    if (!id) {
+        s.mosse[indice] = '';
+        if (msg) msg.textContent = '';
+        tbAggiornaCampoCombo('mossa', indice);
+        tbRenderLeggero();
+        return;
+    }
+
+    const trovata = tbMosseLegali(s.specieId).find(m => m.id === id);
+    let errore = '';
+    if (!trovata) errore = "That move can't be learned in this format.";
+    else if (s.mosse.some((m, k) => k !== indice && m === id)) errore = `${trovata.dati.name} is already in the moveset.`;
+
+    if (msg) msg.textContent = errore;
+    if (!errore) s.mosse[indice] = id;
+    tbAggiornaCampoCombo('mossa', indice);
+    tbRenderLeggero();
+}
+
+function tbAggiornaRigaStat(chiave) {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = tbSpecie(s.specieId);
+    const range = document.getElementById(`tb-ev-range-${chiave}`);
+    const numero = document.getElementById(`tb-ev-num-${chiave}`);
+    const stat = document.getElementById(`tb-stat-${chiave}`);
+    if (range) range.value = s.evs[chiave];
+    if (numero) numero.value = s.evs[chiave];
+    if (stat) stat.textContent = tbCalcolaStat(chiave, sp.baseStats[chiave], s.evs[chiave], s.ivs[chiave], s.natura);
+
+    const totale = TB_STAT.reduce((t, st) => t + s.evs[st.key], 0);
+    const rimanenti = document.getElementById('tb-ev-remaining');
+    if (rimanenti && tbStato.gen >= 3) {
+        rimanenti.textContent = `EVs left: ${510 - totale} / 510`;
+        rimanenti.classList.toggle('full', totale >= 508);
+    }
+}
+
+function tbImpostaEV(chiave, valore) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return;
+
+    let v = Math.max(0, Math.min(252, parseInt(valore, 10) || 0));
+    if (tbStato.gen >= 3) {
+        const altri = TB_STAT.reduce((t, st) => t + (st.key === chiave ? 0 : s.evs[st.key]), 0);
+        v = Math.max(0, Math.min(v, 510 - altri));
+    }
+    s.evs[chiave] = v;
+    tbAggiornaRigaStat(chiave);
+    tbRenderLeggero();
+}
+
+function tbImpostaIV(chiave, valore) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return;
+    s.ivs[chiave] = Math.max(0, Math.min(31, parseInt(valore, 10) || 0));
+    const input = document.getElementById(`tb-iv-num-${chiave}`);
+    if (input) input.value = s.ivs[chiave];
+    tbAggiornaRigaStat(chiave);
+    tbRenderLeggero();
+}
+
+// --- EXPORT E CONTROLLI ----------------------------------------------
+function tbTestoSlot(s) {
+    const sp = tbSpecie(s.specieId);
+    const righe = [];
+
+    const oggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
+    righe.push(oggetto ? `${sp.name} @ ${oggetto}` : sp.name); // es. "Zacian-Crowned @ Rusted Sword"
+    if (s.abilita) righe.push(`Ability: ${s.abilita}`);
+    if (tbStato.livello !== 100) righe.push(`Level: ${tbStato.livello}`);
+    if (tbStato.gen === 9 && s.tera) righe.push(`Tera Type: ${s.tera}`);
+
+    const evs = TB_STAT.filter(st => s.evs[st.key] > 0).map(st => `${s.evs[st.key]} ${st.label}`);
+    if (evs.length) righe.push(`EVs: ${evs.join(' / ')}`);
+    if (tbStato.gen >= 3 && s.natura) righe.push(`${s.natura} Nature`);
+
+    const ivs = TB_STAT.filter(st => s.ivs[st.key] !== 31).map(st => `${s.ivs[st.key]} ${st.label}`);
+    if (ivs.length) righe.push(`IVs: ${ivs.join(' / ')}`);
+
+    s.mosse.filter(Boolean).forEach(id => righe.push(`- ${tbDex.moves[id]?.name || id}`));
+    return righe.join('\n');
+}
+
+function tbTestoShowdown() {
+    return tbStato.slot.filter(Boolean).map(tbTestoSlot).join('\n\n');
+}
+
+// Motivi per cui il team non si può ancora salvare nel box
+function tbControllaTeam() {
+    const errori = [];
+    const pieni = tbStato.slot.filter(Boolean);
+
+    if (pieni.length < 6) errori.push(`The team has ${pieni.length}/6 Pokémon.`);
+
+    if (tbStato.clausole) {
+        const numeri = new Set();
+        const oggetti = new Set();
+        pieni.forEach(s => {
+            const base = tbSpecieBase(tbSpecie(s.specieId));
+            if (numeri.has(base.num)) errori.push(`Species Clause: ${tbNomeBello(base)} is in the team twice.`);
+            numeri.add(base.num);
+            if (s.oggetto) {
+                if (oggetti.has(s.oggetto)) errori.push(`Item Clause: ${tbDex.items[s.oggetto]?.name || s.oggetto} is used twice.`);
+                oggetti.add(s.oggetto);
+            }
+        });
+    }
+
+    pieni.forEach(s => {
+        const nome = tbNomeBello(tbSpecie(s.specieId));
+        if (!s.mosse.some(Boolean)) errori.push(`${nome}: choose at least one move.`);
+        const totale = TB_STAT.reduce((t, st) => t + s.evs[st.key], 0);
+        if (tbStato.gen >= 3 && totale > 510) errori.push(`${nome}: more than 510 EVs.`);
+    });
+
+    const regolaNatura = tbStato.regolamento?.restrizioni?.pokemon?.nature;
+    if (regolaNatura && (regolaNatura.mode === 'SAME_ACROSS_TEAM' || regolaNatura.value === 'SAME_ACROSS_TEAM')) {
+        const nature = new Set(pieni.map(s => s.natura));
+        if (nature.size > 1) errori.push('This format requires the same Nature on every Pokémon.');
+    }
+
+    return errori;
+}
+
+async function tbCopiaShowdown() {
+    const testo = tbTestoShowdown();
+    if (!testo) return;
+
+    try {
+        await navigator.clipboard.writeText(testo);
+    } catch (e) {
+        const area = document.createElement('textarea');
+        area.value = testo;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+    }
+
+    const btn = document.getElementById('tb-btn-copy');
+    if (btn) {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy Showdown'; }, 1500);
+    }
+}
+
+function tbSalvaNelBox() {
+    if (tbControllaTeam().length) {
+        // Team non valido: il bottone resta grigio e il fumetto spiega perché
+        const wrap = document.getElementById('tb-save-wrap');
+        if (wrap) {
+            wrap.classList.add('show');
+            clearTimeout(tbTimerFumetto);
+            tbTimerFumetto = setTimeout(() => wrap.classList.remove('show'), 2500);
+        }
+        return;
+    }
+
+    const testo = tbTestoShowdown();
+    const categoria = tbStato.regolamento.categoria || '';
+
+    chiudiTeamBuilder();
+    if (typeof chiudiTuttoHelper === 'function') chiudiTuttoHelper();
+
+    apriNuovoTeam();
+
+    const selectFormato = document.getElementById('admin-team-cat');
+    const textarea = document.getElementById('showdown-input');
+    const inputNome = document.getElementById('admin-team-name');
+
+    if (selectFormato) selectFormato.value = categoria;
+    if (textarea) textarea.value = testo;
+    if (inputNome) setTimeout(() => inputNome.focus(), 50);
+}
+
+function normalizzaRicerca(testo) {
+    return String(testo || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+}
+
+// Estrae i nomi delle abilità da qualsiasi formato: array, oggetto {0, 1, H} o array di oggetti {name}
+function estraiNomiAbilita(abilities) {
+    if (!abilities) return [];
+    const lista = Array.isArray(abilities) ? abilities : Object.values(abilities);
+    return lista
+        .map(a => (a && typeof a === 'object') ? (a.name || a.nome || '') : a)
+        .filter(Boolean)
+        .map(String);
+}
+
+// Raccoglie le abilità da tutte le fonti: l'oggetto stesso, i dati specie (sp) e il pokedexBase
+function abilitaDiPokemon(pkm) {
+    if (!pkm) return [];
+    const fonti = [pkm.abilities, pkm.sp && pkm.sp.abilities];
+
+    if (window.pokedexBase) {
+        const chiavi = [pkm.id, pkm.specieId, pkm.name, pkm.nome].filter(Boolean);
+        for (const k of chiavi) {
+            const voce = window.pokedexBase[String(k).toLowerCase().trim()];
+            if (voce) { fonti.push(voce.abilities); break; }
+        }
+    }
+
+    return [...new Set(fonti.flatMap(estraiNomiAbilita))];
+}
+
+// true se la query compare nel nome del Pokémon o in una delle sue abilità
+function pokemonCorrispondeRicerca(pkm, query) {
+    const q = normalizzaRicerca(query);
+    if (!q) return true;
+    const nome = pkm.name || pkm.nome || pkm.id || pkm.specieId;
+    if (normalizzaRicerca(nome).includes(q)) return true;
+    return abilitaDiPokemon(pkm).some(abi => normalizzaRicerca(abi).includes(q));
+}
+// Chiavi stat del pokedexBase → chiavi di Showdown (baseStats)
+const TB_MAPPA_STAT = {
+    'hp': 'hp', 'attack': 'atk', 'defense': 'def',
+    'sp. attack': 'spa', 'sp. defense': 'spd', 'speed': 'spe'
+};
+
+// Voce del pokedexBase di una voce del picker (prova specieId, id, nome)
+function tbVoceDexBase(v) {
+    if (!v || !window.pokedexBase) return null;
+    for (const k of [v.specieId, v.id, v.nome, v.name]) {
+        if (!k) continue;
+        const voce = window.pokedexBase[String(k).toLowerCase().trim()];
+        if (voce) return voce;
+    }
+    return null;
+}
+
+function tbStatVoce(v, chiave) {
+    const chiaveSd = TB_MAPPA_STAT[chiave];
+    const dex = tbVoceDexBase(v);
+    const fonti = [v.stats, v.baseStats, v.sp && v.sp.baseStats, v.sp && v.sp.stats, dex && dex.stats];
+    for (const f of fonti) {
+        if (!f) continue;
+        const val = f[chiave] ?? f[chiaveSd];
+        if (typeof val === 'number') return val;
+    }
+    return 0;
+}
+
+function tbBstVoce(v) {
+    return Object.keys(TB_MAPPA_STAT).reduce((tot, k) => tot + tbStatVoce(v, k), 0);
+}
+
+function tbNumDexVoce(v) {
+    const dex = tbVoceDexBase(v);
+    const n = [v.num, v.sp && v.sp.num, dex && dex.num].find(x => typeof x === 'number');
+    return n !== undefined ? n : 9999;
+}
+
+// Stessi criteri della select di renderizzaListaPiatta.
+// A parità si restituisce 0: il sort è stabile, quindi resta l'ordine del pool (già per BST).
+function tbConfrontaVoci(a, b, criterio) {
+    if (criterio.startsWith('stat|')) {
+        const [, chiave, direzione] = criterio.split('|');
+        const diff = tbStatVoce(a, chiave) - tbStatVoce(b, chiave);
+        return direzione === 'asc' ? diff : -diff;
+    }
+    switch (criterio) {
+        case 'num-asc':    return tbNumDexVoce(a) - tbNumDexVoce(b);
+        case 'alpha-asc':  return String(a.nome).localeCompare(String(b.nome));
+        case 'alpha-desc': return String(b.nome).localeCompare(String(a.nome));
+        case 'bst-desc':   return tbBstVoce(b) - tbBstVoce(a);
+        case 'bst-asc':    return tbBstVoce(a) - tbBstVoce(b);
+        default:           return 0;
+    }
+}
+
+// Cambio ordinamento: lo memorizza nello stato e ridisegna mantenendo la ricerca corrente
+function tbCambiaOrdinamento(criterio) {
+    tbStato.ordinamento = criterio;
+    const campo = document.getElementById('tb-picker-search');
+    tbFiltraPicker(campo ? campo.value : '');
 }
 
     </script>
