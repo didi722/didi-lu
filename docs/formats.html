@@ -400,7 +400,8 @@ const MAPPA_DEFINIZIONE_REGOLE = {
             multi_turn: { label: "Multi-turn move", type: "boolean" },
             has_secondary_effect: { label: "Seconday effects", type: "boolean" },
             has_flinch: { label: "Flinch", type: "boolean" },
-            target: { label: "Target", type: "select", options: ["Single-target", "All-foes", "All-other-pokemon", "User"] }
+            target: { label: "Target", type: "select", options: ["Single-target", "All-foes", "All-other-pokemon", "User"] },
+            banned_list: { label: "Banned moves", type: "banlist", source: "moves" }
         }
     },
     strumenti: {
@@ -411,8 +412,82 @@ const MAPPA_DEFINIZIONE_REGOLE = {
             is_healing: { label: "Healing", type: "boolean" },
             has_negative_effect: { label: "Self-damaging", type: "boolean" }
         }
+        },
+    abilita: {
+        label: "Abilities",
+        fields: {
+            banned_list: { label: "Banned abilities", type: "banlist", source: "abilities" }
+        }
     }
 };
+
+// ===== BAN LIST (mosse / abilità): elenchi presi dai dati di Showdown =====
+const URL_DATI_SHOWDOWN = 'https://play.pokemonshowdown.com/data/';
+const FONTI_BANLIST = {
+    moves:     { file: 'moves.js',     globale: 'BattleMovedex' },
+    abilities: { file: 'abilities.js', globale: 'BattleAbilities' }
+};
+const promesseBanlist = {};
+let codaScriptBanlist = Promise.resolve();
+
+function caricaListaBanlist(fonte) {
+    if (promesseBanlist[fonte]) return promesseBanlist[fonte];
+    const { file, globale } = FONTI_BANLIST[fonte];
+
+    const promessa = codaScriptBanlist.then(() => new Promise((resolve, reject) => {
+        const exportsPrecedente = window.exports;
+        const contenitore = {};
+        window.exports = contenitore; // i file di Showdown scrivono in "exports.BattleXxx"
+
+        const script = document.createElement('script');
+        script.src = URL_DATI_SHOWDOWN + file;
+        script.onload = () => {
+            window.exports = exportsPrecedente;
+            const dati = contenitore[globale];
+            if (!dati) return reject(new Error(`${file}: data not found`));
+            const lista = Object.entries(dati)
+                .filter(([id, d]) => d && d.name && id !== 'noability' && !d.isZ && !d.isMax &&
+                                     !['CAP', 'LGPE', 'Custom'].includes(d.isNonstandard))
+                .map(([id, d]) => ({ id, nome: d.name }))
+                .sort((a, b) => a.nome.localeCompare(b.nome));
+            resolve(lista);
+        };
+        script.onerror = () => {
+            window.exports = exportsPrecedente;
+            reject(new Error(`Unable to load ${file}`));
+        };
+        document.head.appendChild(script);
+    }));
+
+    codaScriptBanlist = promessa.catch(() => {});
+    promesseBanlist[fonte] = promessa.catch(err => { delete promesseBanlist[fonte]; throw err; });
+    return promesseBanlist[fonte];
+}
+
+function aggiungiChipBanlist(id, voceId, nome) {
+    const box = document.getElementById(`banlist-chips-${id}`);
+    if (!box || box.querySelector(`[data-id="${voceId}"]`)) return; // già in lista
+    const chip = document.createElement('span');
+    chip.className = 'banlist-chip';
+    chip.dataset.id = voceId;
+    chip.dataset.nome = nome;
+    chip.title = 'Click to remove';
+    chip.textContent = `${nome} ✕`;
+    chip.style.cssText = "background:#ef4444; color:#fff; border:2px solid #000; box-shadow:2px 2px 0 #000; font-weight:900; font-size:0.75rem; padding:2px 8px; text-transform:uppercase; cursor:pointer;";
+    chip.onclick = () => { chip.remove(); eseguiControlloConflitti(); };
+    box.appendChild(chip);
+}
+
+function aggiungiVoceBanlist(id) {
+    const input = document.getElementById(`banlist-search-${id}`);
+    if (!input || !input._listaBan) return;
+    const testo = input.value.trim().toLowerCase();
+    const voce = input._listaBan.find(v => v.nome.toLowerCase() === testo);
+    if (!voce) return; // il testo non corrisponde a nessuna mossa/abilità
+    aggiungiChipBanlist(id, voce.id, voce.nome);
+    input.value = '';
+    eseguiControlloConflitti();
+}
 
 function apriCreazioneFormato() {
     const modal = document.getElementById('format-modal');
@@ -651,6 +726,7 @@ function aggiornaCampiRegola(id, categoria, presetField = '', presetRule = null)
     fieldContainer.innerHTML = "";
     operatorContainer.innerHTML = "";
     valueContainer.innerHTML = "";
+        valueContainer.style.flex = "";
 
     if (!categoria || !MAPPA_DEFINIZIONE_REGOLE[categoria]) return;
 
@@ -691,6 +767,7 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
     // 1. RIPRISTINA L'ORDINE STANDARD DI DEFAULT SU OGNI CAMBIO
     operatorContainer.innerHTML = "";
     valueContainer.innerHTML = "";
+        valueContainer.style.flex = "";
     operatorContainer.style.order = "";
     valueContainer.style.order = "";
 
@@ -848,6 +925,44 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
         }
     }
 
+        else if (infoCampo.type === "banlist") {
+        valueContainer.style.flex = "1 1 260px";
+        const testoRicerca = infoCampo.source === "moves" ? "Search a move to ban..." : "Search an ability to ban...";
+
+        valueContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="banlist-search-${id}" list="banlist-dl-${id}" placeholder="Loading list..." disabled
+                           style="flex: 1; border: 2px solid #000; font-weight: bold; padding: 4px 8px;"
+                           oninput="if (!event.inputType || event.inputType === 'insertReplacementText') aggiungiVoceBanlist(${id});"
+                           onkeydown="if (event.key === 'Enter') { event.preventDefault(); aggiungiVoceBanlist(${id}); }">
+                    <button type="button" onclick="aggiungiVoceBanlist(${id})"
+                            style="border: 2px solid #000; background: #ffde00; font-weight: 900; padding: 2px 10px; cursor: pointer;">BAN</button>
+                </div>
+                <datalist id="banlist-dl-${id}"></datalist>
+                <div id="banlist-chips-${id}" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            </div>
+        `;
+
+        // In modifica: ricrea i chip già salvati nel DB
+        if (presetRule && presetRule.value && typeof presetRule.value === "object") {
+            Object.entries(presetRule.value).forEach(([voceId, nome]) => aggiungiChipBanlist(id, voceId, nome));
+        }
+
+        caricaListaBanlist(infoCampo.source).then(lista => {
+            const input = document.getElementById(`banlist-search-${id}`);
+            const datalist = document.getElementById(`banlist-dl-${id}`);
+            if (!input || !datalist) return; // riga rimossa o cambiata nel frattempo
+            datalist.innerHTML = lista.map(v => `<option value="${v.nome}"></option>`).join('');
+            input._listaBan = lista;
+            input.disabled = false;
+            input.placeholder = testoRicerca;
+        }).catch(() => {
+            const input = document.getElementById(`banlist-search-${id}`);
+            if (input) input.placeholder = "Unable to load the list";
+        });
+    }
+
     if (typeof eseguiControlloConflitti === "function") eseguiControlloConflitti();
 }
 
@@ -951,6 +1066,14 @@ function raccogliDatiRegole() {
         const info = MAPPA_DEFINIZIONE_REGOLE[category]?.fields?.[field];
         if (!info) return;
         
+                // Ban list: il valore è l'insieme dei chip → { idShowdown: "Nome" }
+        if (info.type === "banlist") {
+            const value = {};
+            row.querySelectorAll('.banlist-chip').forEach(chip => { value[chip.dataset.id] = chip.dataset.nome; });
+            data.push({ id, rowElement: row, category, field, mode: "BANLIST", operator: "equals", value, min: null, max: null });
+            return;
+        }
+
         const modeSelect = row.querySelector('.select-mode');
         const mode = modeSelect ? modeSelect.value : "SPECIFIC";
         
@@ -1242,6 +1365,14 @@ async function salvaNuovoFormato() {
             regoleInserite.forEach(r => {
                 if (!payload.restrizioni[r.category]) {
                     payload.restrizioni[r.category] = {};
+                }
+
+                                // Ban list: più righe sullo stesso campo vengono unite, le righe vuote ignorate
+                if (r.mode === "BANLIST") {
+                    if (Object.keys(r.value).length === 0) return;
+                    const precedente = payload.restrizioni[r.category][r.field]?.value || {};
+                    payload.restrizioni[r.category][r.field] = { mode: "BANLIST", value: { ...precedente, ...r.value } };
+                    return;
                 }
 
                 const oggettoRegola = { mode: r.mode };
@@ -2091,7 +2222,11 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'is_legendary': 'Legendary',
             'is_mythical': 'Mythical',
             'true': 'Allowed',
-            'name_starts': 'Name starts with:'
+            'name_starts': 'Name starts with:',
+                        'banned_list': 'Banned',
+            'abilita': 'Abilities',
+            'mosse': 'Moves',
+            'strumenti': 'Items'
         };
 
         const umanizza = (valore) => {
@@ -2231,6 +2366,9 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                         badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">PLAYER INITIAL</span>`;
                     } else if (regola.mode === 'SAME_ACROSS_TEAM') {
                         badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">SAME ACROSS TEAM</span>`;
+                                        } else if (regola.mode === 'BANLIST') {
+                        const nomi = Object.values(regola.value || {}).sort();
+                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000; max-width: 65%; text-align: right; white-space: normal;">${nomi.join(' · ')}</span>`;
                     } else if (regola.mode === 'SPECIFIC') {
                         let dettagliOp = '';
                         if (regola.operator === 'between') {

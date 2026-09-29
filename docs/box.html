@@ -20,6 +20,14 @@
     <div class="loading-text">Loading...</div>
 </div>
 
+<div id="poke-saving" class="poke-loader-overlay poke-loader-blur hidden" role="status" aria-live="polite">
+    <div class="pokeball-spinner"></div>
+    <div class="poke-saving-testi">
+        <div class="loading-text">Saving...</div>
+        <div class="saving-message"></div>
+    </div>
+</div>
+
 
 <audio id="bg-music" loop></audio>
 
@@ -132,8 +140,10 @@
     </select>
 
     <textarea id="showdown-input" rows="8" class="showdown-input" placeholder="Paste Showdown team here..."></textarea>
-    <button onclick="salvaTeamSuFirebase()" class="showdown-save">Upload</button>
-    
+<button onclick="salvaTeamSuFirebase()" class="showdown-save">Upload</button>
+<button type="button" id="btn-edit-builder" onclick="modificaTeamNelBuilder()" class="showdown-save showdown-builder" style="display: none;">
+    <i class="fas fa-tools"></i> Edit in Team Builder
+</button>    
     <!-- Modificato per chiudere correttamente il modale e il backdrop -->
 </div>
 
@@ -163,9 +173,7 @@
                 </div>
                 
                 <div class="format-optional-box" style="margin-top: 30px;">
-                                    <button type="button" id="helper-build-team-btn" class="tb-open-btn" onclick="apriTeamBuilder()" style="margin-bottom: 15px !important; display: none;">
-                    Build Team
-                </button>
+                                    
                     <div class="mandatory-title">RULES</div>
                     <div id="helper-dynamic-filters">
                         <div style="font-size: 0.9rem; font-weight: 700; color: #555; padding-top: 5px;">
@@ -173,6 +181,9 @@
                         </div>
                     </div>
                 </div>
+                <button type="button" id="helper-build-team-btn" class="tb-open-btn" onclick="apriTeamBuilder()" style="margin-bottom: 15px !important; display: none;">
+                    Build Team
+                </button>
             </div>
             
             <div class="format-modal-card-right">
@@ -460,16 +471,35 @@ function applicaPaletteUtente(baseColor) {
 
 // 4. Funzione di Inizializzazione della Pagina
 // Helper per nascondere il loader
+let timerNascondiLoader = null;
+
 function nascondiLoader() {
     const loader = document.getElementById('poke-loader');
     if (!loader) return;
 
     loader.style.opacity = '0';
     loader.classList.add('hidden'); // Se usi la classe CSS per nasconderlo
-    
-    setTimeout(() => {
+
+    clearTimeout(timerNascondiLoader);
+    timerNascondiLoader = setTimeout(() => {
         loader.style.display = 'none';
+        loader.style.zIndex = '';
     }, 500); // Durata del fade-out CSS
+}
+
+// Rimette il loader della pagina a tutto schermo, all'istante (senza dissolvenza in entrata)
+function mostraLoaderPagina() {
+    const loader = document.getElementById('poke-loader');
+    if (!loader) return;
+
+    clearTimeout(timerNascondiLoader); // un nascondiLoader precedente non deve spegnerlo a metà
+    loader.style.transition = 'none';
+    loader.classList.remove('hidden');
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+    loader.style.zIndex = '100000'; // sopra pannello, helper e builder
+    void loader.offsetHeight;       // applica subito; poi la dissolvenza in uscita torna quella del CSS
+    loader.style.transition = '';
 }
 
 async function scaricaDati() {
@@ -674,6 +704,10 @@ function apriAdminProtetto() {
 function apriNuovoTeam() {
     const adminPanel = document.getElementById('admin-panel');
     if (adminPanel) delete adminPanel.dataset.editingId;
+        if (adminPanel) delete adminPanel.dataset.daBuilder;
+
+    const btnBuilder = document.getElementById('btn-edit-builder');
+    if (btnBuilder) btnBuilder.style.display = 'none';
 
     const elName = document.getElementById('admin-team-name');
     const elCat = document.getElementById('admin-team-cat');
@@ -1900,6 +1934,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 erroreDati: false,
                 strumento: pkmn.strumento || "None",
                 mosse: pkmn.mosse || [],
+                                abilita: pkmn.abilita || "",
                 name_starts: nomePkmn.trim().charAt(0).toUpperCase(),
                 name_length: nomePkmn.replace(/\s+/g, '').length,
                 height: dataPkmn.height * 10,
@@ -1926,7 +1961,8 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 idPokeAPI: nomeIdPokeAPI, 
                 erroreDati: true, 
                 strumento: pkmn.strumento || "None", 
-                mosse: pkmn.mosse || [] 
+                mosse: pkmn.mosse || [] ,
+                                abilita: pkmn.abilita || ""
             };
         }
     });
@@ -2172,6 +2208,9 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
         tuttiGliErrori = tuttiGliErrori.concat(erroriGen, erroriTier, erroriClauses);
     }
 
+        // Mosse ripetute o più di 4 mosse: impossibili nel gioco, quindi valgono in tutti i formati
+    tuttiGliErrori = tuttiGliErrori.concat(validaMosseDuplicate(teamDatiPokeAPI));
+
     // Restrizioni del formato: valgono SEMPRE, anche in Anything Goes
     if (regolamento.restrizioni) {
         const erroriAvanzati = eseguiValidazioneRestrizioniAvanzate(teamDatiPokeAPI, regolamento.restrizioni, jsonDati, regolamento, inizialiUtente);
@@ -2258,6 +2297,21 @@ function validaSovrapposizioneTeam(teamCorrente, altriTeam, currentTeamId = null
     }
 
     return errori;
+}
+
+// ID stile Showdown: "Fake Out" / "fake-out" → "fakeout"
+function idVoceBanlist(nome) {
+    return String(nome || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// true se la mossa/abilità è nella ban list del formato (categoria: 'mosse' | 'abilita')
+function voceBannata(restrizioni, categoria, nome) {
+    const lista = restrizioni?.[categoria]?.banned_list;
+    if (!lista || lista.mode !== 'BANLIST' || !lista.value || !nome) return false;
+    const id = idVoceBanlist(nome);
+    const presente = (k) => Object.prototype.hasOwnProperty.call(lista.value, k);
+    // "Hidden Power [Fire]" risulta bannata anche se in lista c'è solo "Hidden Power"
+    return presente(id) || (id.startsWith('hiddenpower') && presente('hiddenpower'));
 }
 
 function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regolamento, inizialiUtente = { nome: "", cognome: "" }) { 
@@ -2439,6 +2493,20 @@ function eseguiValidazioneRestrizioniAvanzate(team, restrizioni, jsonDati, regol
         });
     }
 
+        // --- MOSSE E ABILITÀ BANNATE ---
+    // Usa i nomi grezzi del team: funziona anche se PokeAPI non ha risposto
+    team.forEach(p => {
+        const mosse = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
+        mosse.filter(Boolean).forEach(nomeMossa => {
+            if (voceBannata(restrizioni, 'mosse', nomeMossa)) {
+                errori.push(`[${p.name}] La mossa "${nomeMossa}" è bannata in questo formato.`);
+            }
+        });
+        if (voceBannata(restrizioni, 'abilita', p.abilita)) {
+            errori.push(`[${p.name}] L'abilità "${p.abilita}" è bannata in questo formato.`);
+        }
+    });
+
     return errori;
 }
 
@@ -2584,6 +2652,38 @@ function validaTier(teamDatiPokeAPI, regolamento, jsonDati) {
     return errori;
 }
 
+// Controlla le mosse di ogni Pokémon: niente doppioni (es. Protect due volte) e massimo 4
+function validaMosseDuplicate(teamDatiPokeAPI) {
+    const errori = [];
+
+    teamDatiPokeAPI.forEach(pkmn => {
+        if (!Array.isArray(pkmn.mosse)) return;
+
+        const mosseReali = pkmn.mosse.filter(m => m && m.trim() && m.trim() !== '-');
+        if (mosseReali.length > 4) {
+            errori.push(`[${pkmn.name}] ha ${mosseReali.length} mosse: il massimo è 4.`);
+        }
+
+        const mosseViste = new Set();
+        const giaSegnalate = new Set();
+
+        mosseReali.forEach(mossa => {
+            // "Hidden Power [Fire]" e "Hidden Power [Ice]" contano come la stessa mossa
+            const chiave = mossa.replace(/\[.*?\]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!chiave) return;
+
+            if (mosseViste.has(chiave) && !giaSegnalate.has(chiave)) {
+                errori.push(`[${pkmn.name}] ha la mossa "${mossa}" più di una volta.`);
+                giaSegnalate.add(chiave);
+            }
+            mosseViste.add(chiave);
+        });
+    });
+
+    return errori;
+}
+
+
 function validaClauses(teamDatiPokeAPI, regolamento) {
     const errori = [];
     if (!regolamento.strutturaSito) return errori;
@@ -2633,9 +2733,71 @@ function validaClauses(teamDatiPokeAPI, regolamento) {
     return errori;
 }
 
+// --- LOADER DI SALVATAGGIO (sfondo sfocato + Pokéball che gira) ---
+
+function mostraLoaderSalvataggio(testo = 'Saving...') {
+    const overlay = document.getElementById('poke-saving');
+    if (!overlay) return;
+
+    const etichetta = overlay.querySelector('.loading-text');
+    if (etichetta) etichetta.textContent = testo;
+
+    overlay.classList.remove('hidden', 'successo', 'in-uscita');}
+
+function nascondiLoaderSalvataggio() {
+    const overlay = document.getElementById('poke-saving');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+// alert() blocca la pagina all'istante: prima togliamo il loader e aspettiamo che il browser
+// lo ridisegni davvero, altrimenti il popup comparirebbe con la Pokéball che gira ancora dietro
+async function avvisoSenzaLoader(messaggio) {
+    nascondiLoaderSalvataggio();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    alert(messaggio);
+}
+
+// Fa svanire dolcemente il loader sfocato e lo rimette com'era
+async function sfumaLoaderSalvataggio() {
+    const overlay = document.getElementById('poke-saving');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+
+    overlay.style.transition = 'opacity 0.45s ease';
+    overlay.style.opacity = '0';
+    await attendi(450);
+
+    overlay.classList.add('hidden');
+    overlay.style.transition = '';
+    overlay.style.opacity = '';
+}
+
+const attendi = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Salvataggio riuscito: la Pokéball si ferma e dondola come dopo una cattura, compare il messaggio,
+// poi tutto sfuma nel grigio del loader iniziale, così il ricaricamento della pagina non si nota
+async function mostraSuccessoSalvataggio(messaggio) {
+    const overlay = document.getElementById('poke-saving');
+    if (!overlay) return;
+
+    const etichetta = overlay.querySelector('.loading-text');
+    const avviso = overlay.querySelector('.saving-message');
+    if (avviso) avviso.textContent = messaggio;
+    if (etichetta) etichetta.textContent = 'Loading...'; // è invisibile ora, riappare nell'uscita
+
+    overlay.classList.add('successo');
+    await attendi(Math.max(1300, messaggio.length * 45)); // i messaggi lunghi restano più a lungo
+
+    overlay.classList.add('in-uscita');
+    await attendi(450); // durata della dissolvenza nel CSS
+}
+
 // --- 3. FUNZIONE DI SALVATAGGIO (Firebase) ---
 
+let salvataggioTeamInCorso = false; // evita doppi salvataggi (es. Invio premuto sul bottone durante l'attesa)
+
 async function salvaTeamSuFirebase() {
+    if (salvataggioTeamInCorso) return;
+
     const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
     const inputNome = document.getElementById('admin-team-name'); 
     const selectFormato = document.getElementById('admin-team-cat'); 
@@ -2659,7 +2821,6 @@ async function salvaTeamSuFirebase() {
     const nomeTeamScelto = inputNome.value.trim();
     const idRegolamentoScelto = selectFormato.value;
     const testoShowdown = textareaShowdown.value.trim();
-    
     const editingId = adminPanel ? adminPanel.dataset.editingId : null;
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
@@ -2667,84 +2828,112 @@ async function salvaTeamSuFirebase() {
         return;
     }
 
-    const listaPokemonEstratti = parseShowdown(testoShowdown); 
-    const datiTeamDaSalvare = { 
-        nome: nomeTeamScelto, 
-        pokemon: listaPokemonEstratti, 
-        categoria: null, 
-        dataUltimaModifica: Date.now() 
-    };
+    // Salvataggio partito dal Team Builder: copia SUBITO il testo per Showdown.
+    // Va fatto prima di qualsiasi await, finché il browser considera valido il click dell'utente.
+    const daBuilder = adminPanel?.dataset.daBuilder === '1';
+    const copiaRiuscita = daBuilder ? tbCopiaNegliAppunti(testoShowdown) : Promise.resolve(false);
 
-    let regolamento = null;
+    // ⏳ Da qui in poi parte l'attesa (Firebase + PokeAPI): il loader compare subito
+    salvataggioTeamInCorso = true;
+    mostraLoaderSalvataggio(editingId ? 'Updating team...' : 'Saving team...');
+    let staRicaricando = false;
+
     try {
-        const allRegolamentiSnap = await databaseRef.child('regolamenti').once('value');
-        allRegolamentiSnap.forEach(childSnapshot => {
-            const datiFormato = childSnapshot.val();
-            if (datiFormato.categoria && idRegolamentoScelto && datiFormato.categoria.toLowerCase() === idRegolamentoScelto.toLowerCase()) {
-                regolamento = datiFormato; 
-            }
-        });
-        if (!regolamento) { alert("Error: Format not found."); return; }
-    } catch (error) { alert("Error: Database error: " + error.message); return; }
+        const listaPokemonEstratti = parseShowdown(testoShowdown);
+        const datiTeamDaSalvare = { 
+            nome: nomeTeamScelto, 
+            pokemon: listaPokemonEstratti, 
+            categoria: null, 
+            dataUltimaModifica: Date.now() 
+        };
 
-        let altriTeamEsistenti = [];
-    const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
-    if (strutturaFormatoSalvataggio === 'custom' || strutturaFormatoSalvataggio === 'anything_goes') {
+        let regolamento = null;
         try {
-            const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
-            teamsSnap.forEach(childSnap => {
-                const teamVal = childSnap.val();
-                if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()) {
-                    altriTeamEsistenti.push({ id: childSnap.key, ...teamVal });
+            const allRegolamentiSnap = await databaseRef.child('regolamenti').once('value');
+            allRegolamentiSnap.forEach(childSnapshot => {
+                const datiFormato = childSnapshot.val();
+                if (datiFormato.categoria && idRegolamentoScelto && datiFormato.categoria.toLowerCase() === idRegolamentoScelto.toLowerCase()) {
+                    regolamento = datiFormato; 
                 }
             });
-        } catch (e) {
-            console.warn("Error: Error during retrieval of existing teams:", e);
+            if (!regolamento) { await avvisoSenzaLoader("Error: Format not found."); return; }
+        } catch (error) { await avvisoSenzaLoader("Error: Database error: " + error.message); return; }
+
+        let altriTeamEsistenti = [];
+        const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
+        if (strutturaFormatoSalvataggio === 'custom' || strutturaFormatoSalvataggio === 'anything_goes') {
+            try {
+                const teamsSnap = await databaseRef.child(`players/${playerID}/teams`).once('value');
+                teamsSnap.forEach(childSnap => {
+                    const teamVal = childSnap.val();
+                    if (teamVal.categoria && teamVal.categoria.toLowerCase() === regolamento.categoria.toLowerCase()) {
+                        altriTeamEsistenti.push({ id: childSnap.key, ...teamVal });
+                    }
+                });
+            } catch (e) {
+                console.warn("Error: Error during retrieval of existing teams:", e);
+            }
         }
-    }
 
-    const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
-    
-    const oggettoTeamPerValidazione = {
-        id: editingId,
-        nome: nomeTeamScelto,
-        pokemon: datiPokeAPI
-    };
-    
-    const esitoValidazione = await validaTeamDinamico(oggettoTeamPerValidazione, regolamento, altriTeamEsistenti);
+        const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
+        
+        const oggettoTeamPerValidazione = {
+            id: editingId,
+            nome: nomeTeamScelto,
+            pokemon: datiPokeAPI
+        };
+        
+        const esitoValidazione = await validaTeamDinamico(oggettoTeamPerValidazione, regolamento, altriTeamEsistenti);
 
-    if (!esitoValidazione.valido) {
-        let outputErrori = `Il team non è legale:\n\n`;
-        esitoValidazione.errori.forEach(err => outputErrori += `- ${err}\n`);
-        alert(outputErrori);
-        return;
-    }
+        if (!esitoValidazione.valido) {
+            let outputErrori = `Il team non è legale:\n\n`;
+            esitoValidazione.errori.forEach(err => outputErrori += `- ${err}\n`);
+            await avvisoSenzaLoader(outputErrori);
+            return;
+        }
 
-    try {
         datiTeamDaSalvare.categoria = regolamento.categoria; 
 
         if (editingId) {
             // 🆕 Salvataggio dinamico sul player loggato in caso di modifica
             datiTeamDaSalvare.id = editingId;
             await databaseRef.child(`players/${playerID}/teams/${editingId}`).update(datiTeamDaSalvare);
-            alert("Team updated!");
         } else {
             // 🆕 Salvataggio dinamico sul player loggato per nuovi team
             const newTeamRef = databaseRef.child(`players/${playerID}/teams`).push();
             datiTeamDaSalvare.id = newTeamRef.key;
             await newTeamRef.set(datiTeamDaSalvare);
-            alert("Team created!");
         }
 
-        // Resettiamo il form e ripuliamo la modalità editing
+        // Messaggio finale, mostrato dentro il loader (niente popup del browser)
+        let messaggio = editingId ? "Team updated!" : "Team created!";
+        if (daBuilder) {
+            const azione = editingId ? "Team updated" : "Team saved";
+            messaggio = (await copiaRiuscita)
+                ? `${azione} and Showdown text copied to clipboard!`
+                : `${azione}, but the Showdown text could not be copied.`;
+        }
+
+        staRicaricando = true;
+        await mostraSuccessoSalvataggio(messaggio);
+
+        // Ora lo schermo è coperto dal grigio del loader: si può ripulire e ricaricare senza che si veda
         textareaShowdown.value = "";
         inputNome.value = "";
         if (adminPanel) delete adminPanel.dataset.editingId;
 
+        // Con il builder ancora aperto il browser chiederebbe "Leave site?"
+        const overlayBuilder = document.getElementById('tb-overlay');
+        if (overlayBuilder) overlayBuilder.classList.remove('open');
+
         location.reload();
 
     } catch (error) { 
-        alert("Error: Error saving team: " + error.message); 
+        await avvisoSenzaLoader("Error: Error saving team: " + error.message); 
+    } finally {
+        // Rete di sicurezza: qualunque cosa vada storta, il loader non resta mai bloccato a schermo
+        salvataggioTeamInCorso = false;
+        if (!staRicaricando) nascondiLoaderSalvataggio();
     }
 }
 
@@ -2809,10 +2998,15 @@ function caricaTeamPerModifica(teamId) {
 
     if (elInput) elInput.value = testoShowdown.trim();
 
-    // 3. Salva l'ID in modalità modifica
+        // 3. Salva l'ID in modalità modifica
     if (adminPanel) {
         adminPanel.dataset.editingId = teamId;
+        delete adminPanel.dataset.daBuilder;
     }
+
+    // Mostra il bottone per aprire il team nel Team Builder
+    const btnBuilder = document.getElementById('btn-edit-builder');
+    if (btnBuilder) btnBuilder.style.display = 'block';
 
     // 4. Apre il modale mostrando anche lo sfondo sfocato (backdrop)
     apriAdminProtetto();
@@ -3131,8 +3325,8 @@ async function gestisciCambioFormatoHelper() {
                     };
                     const risultatoTemp = await generaListaPokémonPerFormato(regolamentoModificato, jsonDati);
                     if (selectedFormatId !== window.currentHelperFormatId) return;
-                    conteggiIniziali[lettera] = risultatoTemp.pokemon ? risultatoTemp.pokemon.length : 0;
-                }
+  listePerIniziale[lettera] = risultatoTemp.pokemon || [];
+  conteggiIniziali[lettera] = listePerIniziale[lettera].length;                }
 
                 // Pulizia del DOM eseguita IMMEDIATAMENTE PRIMA di creare e appendere il nuovo elemento
                 const oldContainer = document.getElementById('helper-player-initial-container');
@@ -3172,6 +3366,21 @@ async function gestisciCambioFormatoHelper() {
                     }
                     await applicaFiltroIniziale(letteraScelta);
                 });
+
+                                // Modifica di un team del box: sceglie da sola l'iniziale che contiene i suoi Pokémon
+                const specieTeam = tbSpecieTeamInModifica();
+                if (specieTeam.length) {
+                    let migliore = '', trovatiMax = 0;
+                    arrayIniziali.forEach(lettera => {
+                        const trovati = tbQuantiNellaLista(listePerIniziale[lettera], specieTeam);
+                        if (trovati > trovatiMax) { trovatiMax = trovati; migliore = lettera; }
+                    });
+                    if (migliore) {
+                        selectInitial.value = migliore;
+                        await applicaFiltroIniziale(migliore);
+                        return;
+                    }
+                }
 
                 if (grid) grid.innerHTML = `<div class="helper-placeholder-row">Please select an initial letter above.</div>`;
                 if (countSpan) countSpan.textContent = '0';
@@ -3230,6 +3439,33 @@ async function gestisciCambioFormatoHelper() {
             containerSelettori.style.cssText = "margin-top: 10px; display: flex; flex-direction: column; gap: 8px;";
 
             const scelteUtente = {};
+
+                        const selectPerChiave = {};
+
+            // Il Pokémon ha il valore scelto per questa caratteristica?
+            const corrispondeAllaScelta = (pkm, chiave, sceltaUtente) => {
+                const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
+                if (!dettagliBiologici) return false;
+
+                const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiave) : null) || chiave;
+                let valPkm = dettagliBiologici[chiaveProprietareale];
+                if (valPkm === undefined && dettagliBiologici.stats) {
+                    valPkm = dettagliBiologici.stats[chiaveProprietareale];
+                }
+                if (valPkm === undefined) return false;
+
+                if (chiaveProprietareale === 'height') {
+                    valPkm = Math.round(valPkm * 100);
+                }
+
+                if (Array.isArray(valPkm)) {
+                    return valPkm.map(v => String(v).toLowerCase().trim()).includes(String(sceltaUtente).toLowerCase().trim());
+                }
+                if (typeof valPkm === 'number') {
+                    return Math.abs(parseFloat(valPkm) - parseFloat(sceltaUtente)) < 0.001;
+                }
+                return String(valPkm).toLowerCase().trim() === String(sceltaUtente).toLowerCase().trim();
+            };
 
             chiaviSameAcross.forEach(chiave => {
                 scelteUtente[chiave] = "";
@@ -3296,6 +3532,8 @@ async function gestisciCambioFormatoHelper() {
                     aggiornaListaPokémonSameAcross();
                 });
 
+                                selectPerChiave[chiave] = customSelect;
+
                 wrapperFiltro.appendChild(label);
                 wrapperFiltro.appendChild(customSelect);
                 containerSelettori.appendChild(wrapperFiltro);
@@ -3312,38 +3550,32 @@ async function gestisciCambioFormatoHelper() {
                     return;
                 }
 
-                const poolFiltratoFinale = poolPokemonBase.filter(pkm => {
-                    const dettagliBiologici = pokedexBase[pkm.id.toLowerCase().trim()];
-                    if (!dettagliBiologici) return false;
-
-                    return chiaviSameAcross.every(chiave => {
-                        const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiave) : null) || chiave;
-                        
-                        let valPkm = dettagliBiologici[chiaveProprietareale];
-                        if (valPkm === undefined && dettagliBiologici.stats) {
-                            valPkm = dettagliBiologici.stats[chiaveProprietareale];
-                        }
-                        
-                        const sceltaUtente = scelteUtente[chiave];
-                        if (valPkm === undefined) return false;
-
-                        if (chiaveProprietareale === 'height') {
-                            valPkm = Math.round(valPkm * 100);
-                        }
-
-                        if (Array.isArray(valPkm)) {
-                            return valPkm.map(v => String(v).toLowerCase().trim()).includes(String(sceltaUtente).toLowerCase().trim());
-                        } else {
-                            if (typeof valPkm === 'number') {
-                                return Math.abs(parseFloat(valPkm) - parseFloat(sceltaUtente)) < 0.001;
-                            }
-                            return String(valPkm).toLowerCase().trim() === String(sceltaUtente).toLowerCase().trim();
-                        }
-                    });
-                });
+                                const poolFiltratoFinale = poolPokemonBase.filter(pkm =>
+                    chiaviSameAcross.every(chiave => corrispondeAllaScelta(pkm, chiave, scelteUtente[chiave]))
+                );
 
                 renderizzaListaPiatta(poolFiltratoFinale);
                 if (countSpan) countSpan.textContent = poolFiltratoFinale.length; 
+            }
+
+                        // Modifica di un team del box: preimposta i valori condivisi dai suoi Pokémon
+            const specieTeam = tbSpecieTeamInModifica();
+            if (specieTeam.length) {
+                const membriDelTeam = poolPokemonBase.filter(pkm => tbQuantiNellaLista([pkm], specieTeam) > 0);
+                chiaviSameAcross.forEach(chiave => {
+                    const sel = selectPerChiave[chiave];
+                    if (!sel) return;
+                    let migliore = '', trovatiMax = 0;
+                    Array.from(sel.options).forEach(opt => {
+                        if (!opt.value) return;
+                        const trovati = membriDelTeam.filter(pkm => corrispondeAllaScelta(pkm, chiave, opt.value)).length;
+                        if (trovati > trovatiMax) { trovatiMax = trovati; migliore = opt.value; }
+                    });
+                    if (migliore) {
+                        sel.value = migliore;
+                        scelteUtente[chiave] = migliore;
+                    }
+                });
             }
 
             aggiornaListaPokémonSameAcross();
@@ -4308,6 +4540,7 @@ function inizializzaChiusuraHelper(event) {
 }
 
 function chiudiTuttoHelper() {
+        tbModifica = null; // chiudendo l'helper si esce dalla modifica di un team del box
     // 1. Chiude il modale principale e RIPRISTINA lo scorrimento
     const modal = document.getElementById('helper-modal-overlay');
     if (modal) modal.style.display = 'none';
@@ -4437,6 +4670,9 @@ const tbStato = {
     cacheMosse: {},
     oggetti: null
 };
+
+// Team del box aperto nel builder per la modifica (null = team nuovo)
+let tbModifica = null;
 
 // Stato del menù a tendina (mosse / strumenti)
 const tbCombo = {
@@ -4760,6 +4996,7 @@ function tbMossaAmmessaDalFormato(m) {
     if (m.isZ || m.isMax) return false;
     if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future', 'Gigantamax'].includes(m.isNonstandard)) return false;
     if (tbStato.within && tbStato.gen === 9 && m.isNonstandard === 'Past') return false;
+        if (voceBannata(tbStato.regolamento?.restrizioni, 'mosse', m.name)) return false;
 
     const regole = tbStato.regolamento?.restrizioni?.mosse;
     if (!regole) return true;
@@ -4799,14 +5036,15 @@ function tbMosseLegali(specieId) {
     return legali;
 }
 
-function tbAbilitaLegali(spBase) {
+function tbAbilitaLegali(spBase, ignoraBan = false) {
     if (!spBase || tbStato.gen < 3) return [];
     const abilita = spBase.abilities || {};
     const nomi = ['0', '1', 'H', 'S']
         .filter(k => abilita[k])
         .filter(k => !(k === 'H' && tbStato.gen < 5))
         .map(k => abilita[k])
-        .filter(nome => tbGenAbilita(nome) <= tbStato.gen);
+        .filter(nome => tbGenAbilita(nome) <= tbStato.gen)
+                .filter(nome => ignoraBan || !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', nome));
     return [...new Set(nomi)];
 }
 
@@ -4940,6 +5178,7 @@ function tbCalcolaCopertura() {
     }
 
     const critici = [];
+        const avvisi = [];
     const celle = tbTipiAttaccanti().map(t => {
         let deboli = 0, x4 = 0, resiste = 0, immune = 0;
         pieni.forEach(s => {
@@ -4956,6 +5195,7 @@ function tbCalcolaCopertura() {
         else if (deboli >= 2 && coperti === 0) stato = 'warning';
         else if (deboli === 0 && coperti >= 2) stato = 'strong';
         if (stato === 'critical') critici.push(t);
+            if (stato === 'warning') avvisi.push(t);
 
         return `
             <div class="tb-cov-cell ${stato}">
@@ -4968,8 +5208,9 @@ function tbCalcolaCopertura() {
             </div>`;
     }).join('');
 
-    const sintesi = critici.length
-        ? `<div class="tb-cov-summary bad">⚠ Critical weaknesses: ${critici.join(', ')}</div>`
+        const sintesi = critici.length
+        ? `<div class="tb-cov-summary bad">⚠ Critical weaknesses: ${critici.join(', ')}</div>
+           ${tbHtmlSuggerimenti(critici, avvisi, pieni.length)}`
         : `<div class="tb-cov-summary good">✔ No critical weaknesses</div>`;
 
     return {
@@ -4982,13 +5223,70 @@ function tbCalcolaCopertura() {
     };
 }
 
+// Debolezze critiche: suggerisce le tipizzazioni presenti nel formato che le coprono
+// (resistenza o immunità) senza aggiungere debolezze ai tipi già problematici
+function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
+    const problemi = [...critici, ...avvisi];
+    const numeriUsati = tbStato.clausole ? tbNumeriUsati(-1) : new Set();
+
+    // Raggruppa i Pokémon disponibili per tipizzazione (esclusi quelli già nel team)
+    const gruppi = new Map();
+    tbStato.pool.forEach(v => {
+        const tipi = v.sp && Array.isArray(v.sp.types) ? v.sp.types : [];
+        if (!tipi.length) return;
+        const base = tbSpecieBase(v.sp);
+        if (base && numeriUsati.has(base.num)) return;
+        const chiave = tipi.join('/');
+        if (!gruppi.has(chiave)) gruppi.set(chiave, { tipi, pokemon: [] });
+        gruppi.get(chiave).pokemon.push(v); // il pool è già ordinato per BST
+    });
+
+    const valutati = [...gruppi.values()].map(g => ({
+        ...g,
+        copre: critici.filter(t => tbMoltiplicatore(t, g.tipi, '') < 1),
+        peggiora: problemi.filter(t => tbMoltiplicatore(t, g.tipi, '') > 1),
+        // resistenze meno debolezze su tutti i tipi: a parità premia le tipizzazioni più solide
+        bilancio: tbTipiAttaccanti().reduce((tot, t) => {
+            const m = tbMoltiplicatore(t, g.tipi, '');
+            return tot + (m < 1 ? 1 : (m > 1 ? -1 : 0));
+        }, 0)
+    })).filter(g => g.copre.length);
+
+    // Prima le tipizzazioni che non peggiorano nulla; se non ce ne sono, le migliori disponibili
+    const puliti = valutati.filter(g => !g.peggiora.length);
+    const scelti = (puliti.length ? puliti : valutati)
+        .sort((a, b) => (b.copre.length - a.copre.length)
+                     || (a.peggiora.length - b.peggiora.length)
+                     || (b.bilancio - a.bilancio)
+                     || (b.pokemon[0].bst - a.pokemon[0].bst))
+        .slice(0, 3);
+
+    if (!scelti.length) return '';
+
+    const badge = t => `<span class="mini-type-badge ${t.toLowerCase()}">${t.toLowerCase()}</span>`;
+    const righe = scelti.map(g => `
+        <div class="tb-cov-suggest-row">
+            <div class="tb-cov-suggest-types">${g.tipi.map(badge).join('')}</div>
+            <div class="tb-cov-suggest-info">
+                covers <b>${g.copre.join(', ')}</b>${g.peggiora.length ? `<span class="tb-cov-suggest-warn"> · but weak to ${g.peggiora.join(', ')}</span>` : ''}
+                <small>e.g. ${g.pokemon.slice(0, 3).map(v => tbEsc(v.nome)).join(', ')}</small>
+            </div>
+        </div>`).join('');
+
+    return `
+        <div class="tb-cov-suggest">
+            <div class="tb-cov-suggest-title">💡 ${quantiNelTeam < 6 ? 'Consider adding' : 'Consider swapping in'} a Pokémon of type:</div>
+            ${righe}
+        </div>`;
+}
+
 // Bottoni Copy / Save e tag delle debolezze (in colonna nell'editor, in riga nella scelta Pokémon)
 function tbHtmlAzioni(variante) {
     return `
         <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}">
             <button type="button" id="tb-btn-copy" class="tb-btn tb-btn-copy" onclick="tbCopiaShowdown()">Copy Showdown</button>
             <div class="tb-save-wrap" id="tb-save-wrap">
-                <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">Save to box</button>
+                <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">${tbModifica ? 'Update team' : 'Save to box'}</button>
                 <div class="tb-bubble" id="tb-save-bubble"></div>
             </div>
             <div class="tb-cov-wrap">
@@ -5030,6 +5328,532 @@ function tbCalcolaStat(chiave, base, ev, iv, natura) {
     return Math.floor((Math.floor((2 * base + iv + Math.floor(ev / 4)) * L / 100) + 5) * mod);
 }
 
+// =====================================================================
+// 🧮 SPREAD SUGGERITO: porting di "BattleStatGuesser" di Pokémon Showdown
+// Originale: github.com/smogon/pokemon-showdown-client
+//            → play.pokemonshowdown.com/src/battle-tooltips.ts
+// Dalle 4 mosse (+ strumento, abilità e statistiche base) indovina un "ruolo";
+// dal ruolo ricava la statistica principale e quella secondaria da maxare,
+// distribuisce gli EV rimasti e sceglie la natura. È l'euristica che Showdown
+// usa per il singolo: in VGC va presa come punto di partenza, non come calc.
+// =====================================================================
+
+// Ruolo → [statistica principale (di norma anche il "+" della natura), statistica secondaria]
+const TB_RUOLI_SPREAD = {
+    'Bulky Band':                  ['atk', 'hp'],
+    'Fast Band':                   ['spe', 'atk'],
+    'Bulky Specs':                 ['spa', 'hp'],
+    'Fast Specs':                  ['spe', 'spa'],
+    'Physical Scarf':              ['spe', 'atk'],
+    'Special Scarf':               ['spe', 'spa'],
+    'Physical Biased Mixed Scarf': ['spe', 'atk'],
+    'Special Biased Mixed Scarf':  ['spe', 'spa'],
+    'Fast Physical Sweeper':       ['spe', 'atk'],
+    'Fast Special Sweeper':        ['spe', 'spa'],
+    'Bulky Physical Sweeper':      ['atk', 'hp'],
+    'Bulky Special Sweeper':       ['spa', 'hp'],
+    'Fast Bulky Support':          ['spe', 'hp'],
+    'Physically Defensive':        ['def', 'hp'],
+    'Specially Defensive':         ['spd', 'hp']
+};
+
+// Statistica calcolata come fa il guesser di Showdown.
+// "mod" forza il moltiplicatore di natura (1.1 o 1.0); se manca usa la natura attuale dello slot.
+function tbStatPerGuess(s, sp, chiave, ev, mod) {
+    const L = tbStato.livello;
+    const base = sp.baseStats[chiave];
+    let iv = typeof s.ivs?.[chiave] === 'number' ? s.ivs[chiave] : 31;
+    if (chiave === 'atk' && iv === 0) iv = 31; // se servono EV in Atk, l'applica rimette l'IV a 31: calcoliamo già così
+    if (chiave === 'hp') {
+        if (base === 1) return 1; // Shedinja
+        return Math.floor((2 * base + iv + Math.floor(ev / 4) + 100) * L / 100 + 10);
+    }
+    let val = Math.floor((2 * base + iv + Math.floor(ev / 4)) * L / 100 + 5);
+    const effetto = TB_NATURE[s.natura];
+    if (mod) val *= mod;
+    else if (effetto && effetto[0] === chiave) val *= 1.1;
+    else if (effetto && effetto[1] === chiave) val *= 0.9;
+    return Math.floor(val);
+}
+
+// 1ª FASE: dal moveset al ruolo (BattleStatGuesser.guessRole)
+function tbIndovinaRuolo(s) {
+    let sp = tbSpecie(s.specieId);
+    if (!sp || !sp.baseStats) return { ruolo: '?' };
+
+    const itemId = s.oggetto || '';
+    const item = itemId ? tbDex.items[itemId] : null;
+    const abilityId = tbToID(s.abilita);
+
+    // Megapietra data alla forma base: il ruolo si calcola sulla Mega, come fa Showdown
+    const mega = item && item.megaStone;
+    if (mega && typeof mega === 'object' && mega[sp.name]) {
+        const spMega = tbSpecie(tbToID(mega[sp.name]));
+        if (spMega && spMega.baseStats) sp = spMega;
+    }
+    const stats = sp.baseStats;
+
+    const mosse = s.mosse.filter(Boolean);
+    if (!mosse.length) return { ruolo: '?' };
+    let servonoQuattro = !['Unown', 'Ditto'].includes(sp.baseSpecies || sp.name);
+    if (mosse.includes('lastresort')) servonoQuattro = false;
+    if (mosse.length < 4 && servonoQuattro) return { ruolo: '?' };
+
+    // Contatori (stessi nomi di Showdown, così è facile confrontare con l'originale)
+    const mc = {
+        Physical: 0, Special: 0, PhysicalAttack: 0, SpecialAttack: 0, PhysicalSetup: 0, SpecialSetup: 0,
+        Support: 0, Setup: 0, Restoration: 0, Offense: 0, Stall: 0, SpecialStall: 0, PhysicalStall: 0,
+        Fast: 0, Ultrafast: 0, bulk: 0, specialBulk: 0, physicalBulk: 0
+    };
+    const ha = {}; // id mossa → true
+
+    for (const id of mosse) {
+        const m = tbDex.moves[id];
+        if (!m) continue;
+        ha[id] = true;
+
+        if (m.category === 'Status') {
+            if (['batonpass', 'healingwish', 'lunardance'].includes(id)) {
+                mc.Support++;
+            } else if (['metronome', 'assist', 'copycat', 'mefirst', 'photongeyser', 'shellsidearm'].includes(id)) {
+                mc.Physical += 0.5;
+                mc.Special += 0.5;
+            } else if (id === 'naturepower') {
+                mc.Special++;
+            } else if (['protect', 'detect', 'spikyshield', 'kingsshield'].includes(id)) {
+                mc.Stall++;
+            } else if (id === 'wish') {
+                mc.Restoration++;
+                mc.Stall++;
+                mc.Support++;
+            } else if (m.heal) {
+                mc.Restoration++;
+                mc.Stall++;
+            } else if (m.target === 'self') {
+                if (['agility', 'rockpolish', 'shellsmash', 'growth', 'workup'].includes(id)) {
+                    mc.PhysicalSetup++;
+                    mc.SpecialSetup++;
+                } else if (['dragondance', 'swordsdance', 'coil', 'bulkup', 'curse', 'bellydrum'].includes(id)) {
+                    mc.PhysicalSetup++;
+                } else if (['nastyplot', 'tailglow', 'quiverdance', 'calmmind', 'geomancy'].includes(id)) {
+                    mc.SpecialSetup++;
+                }
+                if (id === 'substitute') mc.Stall++;
+                mc.Setup++;
+            } else {
+                if (['toxic', 'leechseed', 'willowisp'].includes(id)) mc.Stall++;
+                mc.Support++;
+            }
+        } else if (['counter', 'endeavor', 'metalburst', 'mirrorcoat', 'rapidspin'].includes(id)) {
+            mc.Support++;
+        } else if (['nightshade', 'seismictoss', 'psywave', 'superfang', 'naturesmadness',
+                    'foulplay', 'endeavor', 'finalgambit', 'bodypress'].includes(id)) {
+            mc.Offense++;
+        } else if (id === 'fellstinger') {
+            mc.PhysicalSetup++;
+            mc.Setup++;
+        } else {
+            mc[m.category]++;
+            mc.Offense++;
+            if (id === 'knockoff') mc.Support++;
+            if (['scald', 'voltswitch', 'uturn', 'flipturn'].includes(id)) mc[m.category] -= 0.2;
+        }
+    }
+
+    if (ha.batonpass) mc.Support += mc.Setup;
+    mc.PhysicalAttack = mc.Physical;
+    mc.Physical += mc.PhysicalSetup;
+    mc.SpecialAttack = mc.Special;
+    mc.Special += mc.SpecialSetup;
+    if (ha.dragondance || ha.quiverdance) mc.Ultrafast = 1;
+
+    // Stima della resistenza fisica / speciale
+    let veloce = stats.spe >= 80;
+    let bulkFis = (stats.hp + 75) * (stats.def + 87);
+    let bulkSpe = (stats.hp + 75) * (stats.spd + 87);
+
+    if (ha.willowisp || ha.acidarmor || ha.irondefense || ha.cottonguard) {
+        bulkFis *= 1.6;
+        mc.PhysicalStall++;
+    } else if (ha.scald || ha.bulkup || ha.coil || ha.cosmicpower) {
+        bulkFis *= 1.3;
+        if (ha.scald) mc.SpecialStall++; // lo stall "parziale" va al contrario
+        else mc.PhysicalStall++;
+    }
+    if (abilityId === 'flamebody') bulkFis *= 1.1;
+
+    if (ha.calmmind || ha.quiverdance || ha.geomancy) {
+        bulkSpe *= 1.3;
+        mc.SpecialStall++;
+    }
+    if (abilityId === 'sandstream' && (sp.types || []).includes('Rock')) bulkSpe *= 1.5;
+
+    if (ha.bellydrum) {
+        bulkFis *= 0.6;
+        bulkSpe *= 0.6;
+    }
+    if (mc.Restoration) {
+        bulkFis *= 1.5;
+        bulkSpe *= 1.5;
+    } else if (ha.painsplit && ha.substitute) {
+        mc.Stall--; // SubSplit di solito non è un set da stall
+    } else if (ha.painsplit || ha.rest) {
+        bulkFis *= 1.4;
+        bulkSpe *= 1.4;
+    }
+    if ((ha.bodyslam || ha.thunder) && abilityId === 'serenegrace' || ha.thunderwave) {
+        bulkFis *= 1.1;
+        bulkSpe *= 1.1;
+    }
+    if ((ha.ironhead || ha.airslash) && abilityId === 'serenegrace') {
+        bulkFis *= 1.1;
+        bulkSpe *= 1.1;
+    }
+    if (ha.gigadrain || ha.drainpunch || ha.hornleech) {
+        bulkFis *= 1.15;
+        bulkSpe *= 1.15;
+    }
+    if (itemId === 'leftovers' || itemId === 'blacksludge') {
+        bulkFis *= 1 + 0.1 * (1 + mc.Stall / 1.5);
+        bulkSpe *= 1 + 0.1 * (1 + mc.Stall / 1.5);
+    }
+    if (ha.leechseed) {
+        bulkFis *= 1 + 0.1 * (1 + mc.Stall / 1.5);
+        bulkSpe *= 1 + 0.1 * (1 + mc.Stall / 1.5);
+    }
+    if ((itemId === 'flameorb' || itemId === 'toxicorb') && abilityId !== 'magicguard') {
+        if (itemId === 'toxicorb' && abilityId === 'poisonheal') {
+            bulkFis *= 1 + 0.1 * (2 + mc.Stall);
+            bulkSpe *= 1 + 0.1 * (2 + mc.Stall);
+        } else {
+            bulkFis *= 0.8;
+            bulkSpe *= 0.8;
+        }
+    }
+    if (itemId === 'lifeorb') {
+        bulkFis *= 0.7;
+        bulkSpe *= 0.7;
+    }
+    if (['multiscale', 'magicguard', 'regenerator'].includes(abilityId)) {
+        bulkFis *= 1.4;
+        bulkSpe *= 1.4;
+    }
+    if (itemId === 'eviolite') {
+        bulkFis *= 1.5;
+        bulkSpe *= 1.5;
+    }
+    if (itemId === 'assaultvest') bulkSpe *= 1.5;
+
+    const bulk = bulkFis + bulkSpe;
+    if (bulk < 46000 && stats.spe >= 70) veloce = true;
+    if (ha.trickroom) veloce = false;
+    mc.bulk = bulk;
+    mc.physicalBulk = bulkFis;
+    mc.specialBulk = bulkSpe;
+
+    if (ha.agility || ha.dragondance || ha.quiverdance || ha.rockpolish || ha.shellsmash || ha.flamecharge) {
+        veloce = true;
+    } else if (['unburden', 'speedboost', 'motordrive'].includes(abilityId)) {
+        veloce = true;
+        mc.Ultrafast = 1;
+    } else if (['chlorophyll', 'swiftswim', 'sandrush'].includes(abilityId)) {
+        veloce = true;
+        mc.Ultrafast = 2;
+    } else if (itemId === 'salacberry') {
+        veloce = true;
+    }
+    if (ha.agility || ha.shellsmash || ha.autotomize || ha.shiftgear || ha.rockpolish) mc.Ultrafast = 2;
+    mc.Fast = veloce ? 1 : 0;
+
+    // Decisione del ruolo
+    const esito = ruolo => ({ ruolo, mc, ha });
+    const idSp = tbToID(sp.name);
+
+    if (idSp === 'ditto') return esito(abilityId === 'imposter' ? 'Physically Defensive' : 'Fast Bulky Support');
+    if (idSp === 'shedinja') return esito('Fast Physical Sweeper');
+
+    if (itemId === 'choiceband' && mc.PhysicalAttack >= 2) return esito(veloce ? 'Fast Band' : 'Bulky Band');
+    if (itemId === 'choicespecs' && mc.SpecialAttack >= 2) return esito(veloce ? 'Fast Specs' : 'Bulky Specs');
+    if (itemId === 'choicescarf') {
+        if (mc.PhysicalAttack === 0) return esito('Special Scarf');
+        if (mc.SpecialAttack === 0) return esito('Physical Scarf');
+        if (mc.PhysicalAttack > mc.SpecialAttack) return esito('Physical Biased Mixed Scarf');
+        if (mc.PhysicalAttack < mc.SpecialAttack) return esito('Special Biased Mixed Scarf');
+        if (stats.atk < stats.spa) return esito('Special Biased Mixed Scarf');
+        return esito('Physical Biased Mixed Scarf');
+    }
+
+    if (idSp === 'unown') return esito('Fast Special Sweeper');
+
+    if (mc.PhysicalStall && mc.Restoration) {
+        if (stats.spe > 110 && abilityId !== 'prankster') return esito('Fast Bulky Support');
+        return esito('Specially Defensive');
+    }
+    if (mc.SpecialStall && mc.Restoration && itemId !== 'lifeorb') {
+        if (stats.spe > 110 && abilityId !== 'prankster') return esito('Fast Bulky Support');
+        return esito('Physically Defensive');
+    }
+
+    let bias = 'Physical';
+    if (stats.spa > stats.atk && mc.Special > 1) bias = 'Special';
+    else if (stats.atk > stats.spa && mc.Physical > 1) bias = 'Physical';
+    else if (mc.Special > mc.Physical) bias = 'Special';
+
+    if (mc.Stall + mc.Support / 2 <= 2 && bulk < 135000 && mc[bias] >= 1.5) {
+        if (veloce) {
+            if (bulk > 80000 && !mc.Ultrafast) return esito('Bulky ' + bias + ' Sweeper');
+            return esito('Fast ' + bias + ' Sweeper');
+        } else if (mc[bias] >= 3 || mc.Stall <= 0) {
+            return esito('Bulky ' + bias + ' Sweeper');
+        }
+    }
+
+    if (veloce && abilityId !== 'prankster') {
+        if (stats.spe > 100 || bulk < 55000 || mc.Ultrafast) return esito('Fast Bulky Support');
+    }
+    if (mc.SpecialStall) return esito('Physically Defensive');
+    if (mc.PhysicalStall) return esito('Specially Defensive');
+    if (idSp === 'blissey' || idSp === 'chansey') return esito('Physically Defensive');
+    if (bulkSpe >= bulkFis) return esito('Specially Defensive');
+    return esito('Physically Defensive');
+}
+
+// 2ª FASE: dal ruolo a EV, natura e IV minime (BattleStatGuesser.guessEVs + prefersMinStats)
+// Restituisce null se non si può suggerire nulla, { ruolo: '?' } se mancano mosse.
+function tbIndovinaSpread(s) {
+    const sp = s ? tbSpecie(s.specieId) : null;
+    if (!sp || !sp.baseStats || tbStato.gen < 3) return null; // come Showdown: niente spread suggerito in Gen 1-2
+
+    const { ruolo, mc, ha } = tbIndovinaRuolo(s);
+    if (!TB_RUOLI_SPREAD[ruolo]) return { ruolo: '?' };
+
+    const stats = sp.baseStats;
+    const itemId = s.oggetto || '';
+    const abilityId = tbToID(s.abilita);
+    const mosse = s.mosse.filter(Boolean);
+    const evs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    const stat = (chiave, ev, mod) => tbStatPerGuess(s, sp, chiave, ev, mod);
+    const MAX = 252, TOTALE = 508, PASSO = 4;
+
+    let [primaria, secondaria] = TB_RUOLI_SPREAD[ruolo];
+    let plus = primaria;
+    if (ruolo === 'Fast Bulky Support') mc.Ultrafast = 0;
+    if (plus === 'spe' && mc.Ultrafast) {
+        // Con setup di velocità (o abilità meteo) il "+" va sull'attacco o sulla difesa
+        if (secondaria === 'atk' || secondaria === 'spa') plus = secondaria;
+        else if (mc.Physical >= 3) plus = 'atk';
+        else if (stats.spd > stats.def) plus = 'spd';
+        else plus = 'def';
+    }
+
+    // Toglie EV finché la statistica non scende (evita EV sprecati, conta molto al Lv. 50)
+    const evUtili = (chiave, ev, mod) => {
+        const valore = stat(chiave, ev, mod);
+        while (ev > 0 && valore <= stat(chiave, ev - PASSO, mod)) ev -= PASSO;
+        return ev;
+    };
+
+    let totale = 0;
+    evs[primaria] = evUtili(primaria, MAX, plus === primaria ? 1.1 : 1.0);
+    totale += evs[primaria];
+
+    if (secondaria === 'hp' && tbStato.livello < 20) secondaria = 'spd';
+    evs[secondaria] = evUtili(secondaria, MAX, plus === secondaria ? 1.1 : 1.0);
+    totale += evs[secondaria];
+
+    // Soglie di Speed "storiche" di Showdown per alcune specie
+    const minimiSpe = { tentacruel: 16, skarmory: 24, jirachi: 32, celebi: 36, volcarona: 52, gliscor: 72 };
+    const idSp = tbToID(sp.name);
+    if (minimiSpe[idSp]) {
+        let diff = minimiSpe[idSp] - evs.spe;
+        if (diff > 0 && totale <= 504) {
+            const cambio = Math.min(508 - totale, diff);
+            totale += cambio;
+            evs.spe += cambio;
+            diff -= cambio;
+        }
+        if (diff > 0) {
+            const donatrice = ['def', 'spd', 'hp', 'atk', 'spa'].find(k => evs[k] > 128);
+            if (donatrice) {
+                evs[donatrice] -= diff;
+                evs.spe += diff;
+            }
+        }
+    } else if (idSp === 'dragonite' && evs.hp && evs.spe > 220) {
+        totale -= evs.spe - 220;
+        evs.spe = 220;
+    }
+
+    // PS "giusti": divisibili (o no) per 2/4/8 in base a Stealth Rock, Substitute, Belly Drum, bacche...
+    let debolezzaSR = 0;
+    if (abilityId !== 'magicguard' && abilityId !== 'mountaineer') {
+        const tipi = sp.types || [];
+        [tipi[0], tipi[1]].forEach(t => {
+            if (['Fire', 'Flying', 'Bug', 'Ice'].includes(t)) debolezzaSR++;
+            else if (['Ground', 'Steel', 'Fighting'].includes(t)) debolezzaSR--;
+        });
+    }
+    const avanzi = itemId === 'leftovers' || itemId === 'blacksludge';
+    const bacca = itemId.endsWith('berry');
+
+    const sistemaPS = tot => {
+        let divisore = 0;
+        let divisibile = false;
+        let hp = evs.hp || 0;
+        let ps = stat('hp', hp, 1);
+        if (avanzi && ha.substitute && ps !== 404) divisore = 4;
+        else if (avanzi) divisore = 0;
+        else if (ha.bellydrum && bacca) { divisore = 2; divisibile = true; }
+        else if (ha.substitute && bacca) { divisore = 4; divisibile = true; }
+        else if (debolezzaSR >= 2 || ha.bellydrum) divisore = 2;
+        else if (debolezzaSR >= 1 || ha.substitute || ha.transform) divisore = 4;
+        else if (abilityId !== 'magicguard') divisore = 8;
+
+        if (divisore) {
+            const ok = () => !(ps % divisore) === divisibile;
+            while (hp < MAX && tot < TOTALE && !ok()) {
+                hp += PASSO;
+                ps = stat('hp', hp, 1);
+                tot += PASSO;
+            }
+            while (hp > 0 && !ok()) {
+                hp -= PASSO;
+                ps = stat('hp', hp, 1);
+                tot -= PASSO;
+            }
+            while (hp > 0 && ps === stat('hp', hp - PASSO, 1)) {
+                hp -= PASSO;
+                tot -= PASSO;
+            }
+            if (hp || evs.hp) evs.hp = hp;
+        }
+        return tot;
+    };
+    totale = sistemaPS(totale);
+
+    // EV rimasti: attacco usato, poi PS, SpD, Def, Spe (la natura attuale conta, come in Showdown)
+    let psScelti = false;
+    while (totale < TOTALE) {
+        const prima = totale;
+        let extra = null;
+        if (!evs.atk && mc.PhysicalAttack >= 1) extra = 'atk';
+        else if (!evs.spa && mc.SpecialAttack >= 1) extra = 'spa';
+        else if (!evs.hp && stats.hp > 1 && !psScelti) extra = 'hp';
+        else if (!evs.spd && stats.hp > 1) extra = 'spd';
+        else if (!evs.def && stats.hp > 1) extra = 'def';
+        else if (!evs.spe) extra = 'spe';
+        if (!extra) break;
+
+        let ev = Math.min(TOTALE - totale, MAX);
+        const valore = stat(extra, ev);
+        while (ev > 0 && valore === stat(extra, ev - PASSO)) ev -= PASSO;
+        if (ev) evs[extra] = ev;
+        totale += ev;
+
+        if (extra === 'hp') {
+            psScelti = true;
+            totale = sistemaPS(totale);
+            continue;
+        }
+        if (totale === prima) break;
+    }
+
+    // Il "−" della natura
+    let minus = '';
+    if (ha.gyroball || ha.trickroom) {
+        minus = 'spe';
+    } else if (!mc.PhysicalAttack) {
+        minus = 'atk';
+    } else if (mc.SpecialAttack < 1 && !evs.spa) {
+        if (mc.SpecialAttack < mc.PhysicalAttack) minus = 'spa';
+        else if (!evs.atk) minus = 'atk';
+    } else if (mc.PhysicalAttack < 1 && !evs.atk) {
+        minus = 'atk';
+    } else if (stats.def > stats.spe && stats.spd > stats.spe && !evs.spe) {
+        minus = 'spe';
+    } else if (plus === 'def' || plus === 'spd') {
+        // set difensivo: non sacrificare l'altra difesa
+        minus = evs.atk && !evs.spe ? 'spe' : 'atk';
+    } else if (stats.def > stats.spd) {
+        minus = 'spd';
+    } else {
+        minus = 'def';
+    }
+    if (!minus || plus === minus) minus = plus === 'spe' ? 'spd' : 'spe';
+
+    // IV minime (dal team editor di Showdown: prefersMinStats)
+    let minSpe = !evs.spe && !!(ha.gyroball || ha.trickroom); // Trick Room: aggiunta nostra, Showdown guarda solo Gyro Ball
+    let minAtk = !evs.atk;
+    if (sp.name.startsWith('Terapagos')) minSpe = false;
+    if (abilityId === 'battlebond' || ['Koraidon', 'Miraidon', 'Gimmighoul-Roaming'].includes(sp.name)) {
+        minAtk = false;
+    } else {
+        if (!mosse.length) minAtk = false;
+        for (const id of mosse) {
+            const m = tbDex.moves[id];
+            if (!m) continue;
+            if (id === 'transform') {
+                if (mosse.length <= 1) minAtk = false;
+            } else if (m.category === 'Physical' && !m.damage && !m.ohko &&
+                       !['foulplay', 'endeavor', 'counter', 'bodypress', 'seismictoss', 'bide', 'metalburst', 'superfang'].includes(id) &&
+                       !(tbStato.gen < 8 && id === 'rapidspin')) {
+                minAtk = false;
+            } else if (['metronome', 'assist', 'copycat', 'mefirst', 'photongeyser', 'shellsidearm', 'terablast'].includes(id) ||
+                       (tbStato.gen === 5 && id === 'naturepower')) {
+                minAtk = false;
+            }
+        }
+    }
+
+    return { ruolo, evs, plus, minus, minAtk, minSpe };
+}
+
+// Riga "Guessed spread" sotto la tabella EV
+function tbHtmlSpreadSuggerito(s) {
+    const g = tbIndovinaSpread(s);
+    if (!g) return '';
+    if (g.ruolo === '?') {
+        return `<span class="tb-guess-title">Guessed spread</span>
+                <span class="tb-guess-hint">Choose 4 moves to get a guessed spread</span>`;
+    }
+
+    const etichetta = k => TB_STAT.find(x => x.key === k).label;
+    const evs = TB_STAT.filter(st => g.evs[st.key]).map(st => `${g.evs[st.key]} ${st.label}`).join(' / ');
+    const naturaFissa = tbNaturaImposta();
+    const natura = naturaFissa
+        ? `${naturaFissa} (fixed by the format)`
+        : `${tbTrovaNatura(g.plus, g.minus)} (+${etichetta(g.plus)}, −${etichetta(g.minus)})`;
+    const ivs = [g.minAtk ? '0 Atk' : '', g.minSpe ? '0 Spe' : ''].filter(Boolean).join(' / ');
+
+    return `<span class="tb-guess-title">Guessed spread</span>
+            <button type="button" class="tb-guess-btn" onclick="tbApplicaSpreadSuggerito()" title="Apply this spread">
+                <b>${tbEsc(g.ruolo)}</b>
+                <span>${evs}</span>
+                <span>${tbEsc(natura)}${ivs ? ` · IVs: ${ivs}` : ''}</span>
+            </button>`;
+}
+
+// Clic sul bottone: applica EV, natura e IV suggerite allo slot attivo
+function tbApplicaSpreadSuggerito() {
+    const s = tbStato.slot[tbStato.attivo];
+    const g = tbIndovinaSpread(s);
+    if (!g || g.ruolo === '?') return;
+
+    Object.assign(s.evs, g.evs);
+    if (!tbNaturaImposta()) {
+        s.natPlus = g.plus;
+        s.natMinus = g.minus;
+        s.natura = tbTrovaNatura(g.plus, g.minus) || 'Serious';
+    }
+    if (g.minAtk) s.ivs.atk = 0;
+    else if (s.ivs.atk === 0) s.ivs.atk = 31; // c'è di nuovo una mossa fisica: l'Atk torna a 31
+    if (g.minSpe) s.ivs.spe = 0;             // la Speed non viene mai rialzata da sola (team Trick Room)
+
+    const pannello = document.getElementById('tb-ev-panel');
+    if (pannello) pannello.innerHTML = tbHtmlPannelloEV(s);
+    tbRenderLeggero();
+}
+
 // --- APERTURA / CHIUSURA ---------------------------------------------
 function tbCreaOverlay() {
     let overlay = document.getElementById('tb-overlay');
@@ -5058,6 +5882,176 @@ function tbCreaOverlay() {
     return overlay;
 }
 
+// "Soprannome (Garchomp) (M)" → "garchomp": specie di un Pokémon salvato nel box
+function tbSpecieDaNome(nome) {
+    const pulito = String(nome || '').replace(/\s*\([MF]\)\s*$/i, '').trim();
+    const conNick = pulito.match(/\(([^()]+)\)\s*$/);
+    return tbToID(conNick ? conNick[1] : pulito);
+}
+
+// Specie del team del box aperto nel builder (vuoto se si sta creando un team nuovo)
+function tbSpecieTeamInModifica() {
+    if (!tbModifica) return [];
+    return (tbModifica.pokemon || [])
+        .filter(p => p && p.nome)
+        .map(p => tbSpecieDaNome(p.nome))
+        .filter(Boolean);
+}
+
+// Quante delle specie indicate sono presenti in una lista dell'helper
+function tbQuantiNellaLista(lista, specie) {
+    const ids = new Set();
+    (lista || []).forEach(pkm => {
+        [pkm.id, pkm.name, pkm.spriteId].forEach(v => {
+            const id = tbToID(v);
+            if (id) ids.add(id);
+        });
+    });
+    return specie.filter(id => ids.has(id)).length;
+}
+
+// Apre il builder mostrando solo il caricamento (titolo e badge già ripuliti)
+function tbApriOverlayCaricamento(titolo, testo) {
+    const overlay = tbCreaOverlay();
+    overlay.classList.add('open');
+
+    const elTitolo = document.getElementById('tb-title');
+    if (elTitolo) elTitolo.textContent = titolo;
+    const badge = document.getElementById('tb-format-badge');
+    if (badge) badge.textContent = '';
+
+    document.getElementById('tb-slots').innerHTML = '';
+    document.getElementById('tb-body').innerHTML = `
+        <div class="tb-loading">
+            <div class="pokeball-spinner"></div>
+            <div class="loading-text">${tbEsc(testo)}</div>
+        </div>`;
+    return overlay;
+}
+
+// Aspetta che il builder sia disegnato davvero (font e sprite) prima di scoprirlo, al massimo 1,5 secondi
+async function tbAttendiBuilderPronto() {
+    const overlay = document.getElementById('tb-overlay');
+    const immagini = overlay ? Array.from(overlay.querySelectorAll('img')) : [];
+    const caricamenti = immagini
+        .filter(img => !img.complete)
+        .map(img => new Promise(resolve => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+        }));
+
+    await Promise.race([
+        Promise.all([document.fonts ? document.fonts.ready : null, ...caricamenti]),
+        attendi(1500)
+    ]);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+// Dal pannello Showdown: apre nel Team Builder il team che si sta modificando.
+// Il loader sfocato copre subito tutto; sotto si prepara il builder, invisibile (la lista del formato
+// la calcola l'helper, anche lui nascosto) e il loader svanisce solo quando il team è pronto.
+async function modificaTeamNelBuilder() {
+    const adminPanel = document.getElementById('admin-panel');
+    const teamId = adminPanel ? adminPanel.dataset.editingId : null;
+    const team = teamId ? tuttiITeam.find(t => t.id === teamId) : null;
+    if (!team) {
+        alert("Error: Team not found.");
+        return;
+    }
+
+    const helper = document.getElementById('helper-modal-overlay');
+    const select = document.getElementById('helper-format-select');
+    const grid = document.getElementById('helper-pkm-grid');
+    if (!helper || !select || !grid) return;
+
+    // Il team da aprire è quello scritto nel pannello (comprese le modifiche inline non salvate);
+    // se il pannello è vuoto si usano i Pokémon salvati nel box, array o oggetto che siano
+    const textarea = document.getElementById('showdown-input');
+    const testo = textarea ? textarea.value.trim() : '';
+    let pokemon = testo ? parseShowdown(testo) : [];
+    if (!pokemon.length) {
+        pokemon = Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon || {});
+    }
+
+    const inputNome = document.getElementById('admin-team-name');
+    const nome = (inputNome && inputNome.value.trim()) || team.nome || '';
+
+    // Loader sfocato sopra il pannello, che resta aperto (e sfocato) finché il builder non è pronto
+    mostraLoaderSalvataggio('Loading...');
+    const sessione = tbModifica = { teamId, nome, pokemon };
+    tbStato.firma = '';
+    tbStato.slot = [null, null, null, null, null, null];
+    helper.style.display = 'none';
+    document.body.style.overflow = 'hidden';
+
+    // Il builder si apre e si riempie senza farsi vedere
+    const overlay = tbCreaOverlay();
+    overlay.style.visibility = 'hidden';
+
+    // I dati di Showdown intanto si scaricano in parallelo (apriTeamBuilder riusa la stessa richiesta)
+    tbCaricaTuttiDati().catch(() => {});
+
+    // Se qualcosa va storto si resta sul pannello di modifica e compare l'avviso
+    const annulla = async (messaggio) => {
+        if (tbModifica !== sessione) return;
+        tbModifica = null;
+        document.body.style.overflow = '';
+        await sfumaLoaderSalvataggio();
+        alert(messaggio);
+    };
+
+    try {
+        // Formato: quello scelto nel pannello, poi quello salvato nel team (nome o id del regolamento)
+        const selectCat = document.getElementById('admin-team-cat');
+        const candidati = [selectCat && selectCat.value, team.categoria, team.category]
+            .map(v => String(v || '').toLowerCase().trim())
+            .filter(Boolean);
+
+        let formatId = null;
+        try {
+            const snap = await db.ref('regolamenti').once('value');
+            const formati = [];
+            snap.forEach(c => { formati.push({ id: c.key, categoria: String(c.val()?.categoria || '').toLowerCase().trim() }); });
+            for (const cand of candidati) {
+                const trovato = formati.find(f => f.categoria === cand) || formati.find(f => f.id.toLowerCase() === cand);
+                if (trovato) { formatId = trovato.id; break; }
+            }
+        } catch (err) {
+            await annulla("Error: Database error: " + err.message);
+            return;
+        }
+        if (tbModifica !== sessione) return;
+        if (!formatId) {
+            await annulla("Error: The format of this team was not found. Choose the format in the panel and try again.");
+            return;
+        }
+        sessione.formatId = formatId;
+
+        // L'helper calcola i Pokémon del formato restando invisibile.
+        // Se il formato chiede una scelta (iniziale, "same across team"...) la deduce dal team stesso.
+        await popolaSelettoreFormati();
+        if (tbModifica !== sessione) return;
+        select.value = formatId;
+        grid.originalPokemonList = [];
+        await gestisciCambioFormatoHelper();
+        if (tbModifica !== sessione) return;
+
+        if (grid.originalPokemonList.length > 0) {
+            await apriTeamBuilder();
+            await tbAttendiBuilderPronto();
+        } else {
+            // Scelta impossibile da dedurre: si passa all'helper, il team si carica con "Build Team"
+            helper.style.display = 'flex';
+        }
+
+        // Solo ora, sotto il loader, il pannello lascia il posto al builder
+        if (tbModifica === sessione) chiudiAdminProtetto();
+    } finally {
+        overlay.style.visibility = '';
+        await sfumaLoaderSalvataggio(); // svanisce e scopre il builder già completo
+    }
+}
+
 async function apriTeamBuilder() {
     const grid = document.getElementById('helper-pkm-grid');
     const lista = grid && Array.isArray(grid.originalPokemonList) ? grid.originalPokemonList : [];
@@ -5068,8 +6062,10 @@ async function apriTeamBuilder() {
         return;
     }
 
-    const overlay = tbCreaOverlay();
-    overlay.classList.add('open');
+    tbApriOverlayCaricamento(
+        tbModifica ? `Edit Team · ${tbModifica.nome}` : 'Build Team',
+        tbModifica ? 'Loading team...' : 'Loading moves, abilities and items...'
+    );
 
     // Nasconde l'helper mentre il builder è aperto (riappare alla chiusura)
     const helper = document.getElementById('helper-modal-overlay');
@@ -5077,13 +6073,6 @@ async function apriTeamBuilder() {
         helper.dataset.nascostoDaBuilder = '1';
         helper.style.display = 'none';
     }
-
-    document.getElementById('tb-slots').innerHTML = '';
-    document.getElementById('tb-body').innerHTML = `
-        <div class="tb-loading">
-            <div class="tb-loading-ball"></div>
-            <span>Loading moves, abilities and items...</span>
-        </div>`;
 
     try {
         const [regSnap] = await Promise.all([
@@ -5094,10 +6083,16 @@ async function apriTeamBuilder() {
         if (!regolamento) throw new Error('Format not found.');
 
         const firma = `${formatId}|${lista.length}|${lista.map(p => p.id).join(',')}`;
-        if (tbStato.firma !== firma) {
+        if (tbModifica) {
+            // Modifica di un team del box: si riparte sempre dal team salvato
+            tbInizializzaStato(firma, regolamento, lista);
+            tbCaricaTeamEsistente(tbModifica.pokemon);
+            tbModifica.testoIniziale = tbTestoShowdown();
+        } else if (tbStato.firma !== firma) {
             tbInizializzaStato(firma, regolamento, lista);
         } else {
             tbStato.regolamento = regolamento;
+                        tbStato.cacheMosse = {}; // le regole del formato potrebbero essere cambiate
         }
 
         tbRender();
@@ -5116,16 +6111,21 @@ function chiudiTeamBuilder() {
     if (overlay) overlay.classList.remove('open');
 
     const helper = document.getElementById('helper-modal-overlay');
-    if (helper && helper.dataset.nascostoDaBuilder === '1') {
+        if (helper && helper.dataset.nascostoDaBuilder === '1') {
         helper.style.display = 'flex';
         delete helper.dataset.nascostoDaBuilder;
+    } else {
+        // Aperto direttamente dal box (modifica di un team): si torna al box e la pagina scorre di nuovo
+        document.body.style.overflow = '';
     }
 }
 
 // Il builder è aperto e nel team c'è almeno un Pokémon
 function tbCiSonoModifiche() {
     const overlay = document.getElementById('tb-overlay');
-    return !!(overlay && overlay.classList.contains('open') && tbStato.slot.some(Boolean));
+    if (!(overlay && overlay.classList.contains('open') && tbStato.slot.some(Boolean))) return false;
+    // In modifica conta solo se il team è diverso da quello caricato dal box
+    return !(tbModifica && tbTestoShowdown() === tbModifica.testoIniziale);
 }
 
 // X, clic fuori dal builder o Esc: chiede conferma se il team non è vuoto
@@ -5135,6 +6135,7 @@ function tbChiediChiusura() {
         return;
     }
     tbStato.firma = ''; // alla prossima apertura il team riparte da zero
+        tbModifica = null;  // ed esce dalla modifica del team del box
     chiudiTeamBuilder();
 }
 
@@ -5161,6 +6162,7 @@ function tbInizializzaStato(firma, regolamento, lista) {
     tbStato.attivo = 0;
     tbStato.cacheMosse = {};
     tbStato.oggetti = null;
+        tbStato.filtroTipo = '';
 
     const visti = new Set();
     tbStato.pool = lista.map(pkm => {
@@ -5176,9 +6178,71 @@ function tbInizializzaStato(firma, regolamento, lista) {
         };
     }).filter(v => {
         if (!v.specieId || visti.has(v.specieId)) return false;
+                // Tutte le sue abilità sono bannate (es. Shedinja con Wonder Guard): non selezionabile
+        if (v.sp && tbAbilitaLegali(tbSpecieBase(v.sp), true).length && !tbAbilitaLegali(tbSpecieBase(v.sp)).length) return false;
         visti.add(v.specieId);
         return true;
     }).sort((a, b) => (b.bst - a.bst) || a.nome.localeCompare(b.nome)); // dal BST più alto
+}
+
+// Riempie gli slot con un team salvato nel box (stesso formato prodotto da parseShowdown)
+function tbCaricaTeamEsistente(pokemonSalvati) {
+    const lista = (Array.isArray(pokemonSalvati) ? pokemonSalvati : Object.values(pokemonSalvati || {}))
+        .filter(p => p && p.nome);
+
+    // "252 Atk / 4 SpD / 252 Spe" → { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 }
+    const leggiStat = (testo, predefinito) => {
+        const valori = {};
+        TB_STAT.forEach(st => { valori[st.key] = predefinito; });
+        String(testo || '').split('/').forEach(parte => {
+            const m = parte.trim().match(/^(\d+)\s+(\S+)$/);
+            const st = m && TB_STAT.find(x => x.label.toLowerCase() === m[2].toLowerCase());
+            if (st) valori[st.key] = parseInt(m[1], 10);
+        });
+        return valori;
+    };
+
+    tbStato.slot = [null, null, null, null, null, null];
+    lista.slice(0, 6).forEach((p, i) => {
+                // "Soprannome (Garchomp) (M)" → "garchomp"; se la forma non esiste si ripiega sulla specie base
+        let specieId = tbSpecieDaNome(p.nome);
+        if (!tbSpecie(specieId)) {
+            const pulito = String(p.nome).replace(/\s*\([MF]\)\s*$/i, '').replace(/^.*\(([^()]+)\)\s*$/, '$1');
+            const parti = pulito.split('-');
+            while (parti.length > 1 && !tbSpecie(specieId)) {
+                parti.pop();
+                specieId = tbToID(parti.join('-'));
+            }
+        }
+        const sp = tbSpecie(specieId);
+        if (!sp) {
+            console.warn('[Team Builder] Species not found:', p.nome);
+            return;
+        }
+
+        const natura = Object.prototype.hasOwnProperty.call(TB_NATURE, p.natura) ? p.natura : 'Serious';
+        const effetto = TB_NATURE[natura];
+        const oggetto = p.strumento && p.strumento !== 'None' ? tbToID(p.strumento) : '';
+        const mosseSalvate = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
+        const mosse = mosseSalvate.map(m => tbToID(m))
+            .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name))
+            .slice(0, 4);        while (mosse.length < 4) mosse.push('');
+
+        tbStato.slot[i] = {
+            specieId,
+            oggetto: tbDex.items[oggetto] ? oggetto : '',
+            abilita: (p.abilita && !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', p.abilita))
+                ? p.abilita
+                : (tbAbilitaLegali(tbSpecieBase(sp))[0] || ''),            natura,
+            natPlus: effetto ? effetto[0] : '',
+            natMinus: effetto ? effetto[1] : '',
+            tera: p.tera || (sp.types && sp.types[0]) || 'Normal',
+            mosse,
+            evs: leggiStat(p.evs, 0),
+            ivs: leggiStat(p.ivs, 31)
+        };
+    });
+    tbStato.attivo = 0;
 }
 
 // --- RENDER ----------------------------------------------------------
@@ -5262,11 +6326,16 @@ function tbRenderCorpo() {
                         <option value="stat|speed|desc">Speed</option>
                     </optgroup>
                 </select>
+                                <select id="tb-picker-type" class="tb-input tb-picker-sort" onchange="tbCambiaFiltroTipo(this.value)">
+                    <option value="">All types</option>
+                    ${tbTipiAttaccanti().map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
                 <span class="tb-picker-count">${tbStato.pool.length} available</span>
                 ${tbHtmlAzioni('riga')}
             </div>
             <div id="tb-picker-grid" class="tb-picker-grid"></div>`;
         document.getElementById('tb-picker-sort').value = tbStato.ordinamento || 'bst-desc';
+                document.getElementById('tb-picker-type').value = tbStato.filtroTipo || '';
         tbFiltraPicker('');
         return;
     }
@@ -5476,10 +6545,19 @@ function tbFiltraPicker(testo) {
     tbNascondiTooltip();
 
     const numeriUsati = tbStato.clausole ? tbNumeriUsati(tbStato.attivo) : new Set();
-const criterio = tbStato.ordinamento || 'bst-desc';
-const voci = tbStato.pool
-    .filter(v => pokemonCorrispondeRicerca(v, testo))
-    .sort((a, b) => tbConfrontaVoci(a, b, criterio));
+    const criterio = tbStato.ordinamento || 'bst-desc';
+    const tipo = tbStato.filtroTipo || '';
+    const voci = tbStato.pool
+        .filter(v => pokemonCorrispondeRicerca(v, testo))
+        .filter(v => !tipo || (v.sp && (v.sp.types || []).includes(tipo)))
+        .sort((a, b) => tbConfrontaVoci(a, b, criterio));
+
+    const conta = document.querySelector('.tb-picker-count');
+    if (conta) {
+        conta.textContent = voci.length === tbStato.pool.length
+            ? `${voci.length} available`
+            : `${voci.length} / ${tbStato.pool.length} available`;
+    }
     griglia.innerHTML = voci.map((v, i) => {
         const base = v.sp ? tbSpecieBase(v.sp) : null;
         const bloccato = !v.sp || (base && numeriUsati.has(base.num));
@@ -5636,8 +6714,9 @@ function tbHtmlPannelloEV(s) {
             <span id="tb-ev-remaining" class="tb-ev-remaining ${totaleEV >= 508 ? 'full' : ''}">
                 ${tbStato.gen >= 3 ? `EVs left: ${510 - totaleEV} / 510` : 'No EV total limit in this generation'}
             </span>
-            <span class="tb-nature-label">${testoNatura}</span>
-        </div>`;
+                        <span class="tb-nature-label">${testoNatura}</span>
+        </div>
+        <div class="tb-ev-guess" id="tb-ev-guess">${tbHtmlSpreadSuggerito(s)}</div>`;
 }
 
 function tbHtmlEditor(s) {
@@ -5653,8 +6732,7 @@ function tbHtmlEditor(s) {
         ? `<select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();">
                ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
            </select>`
-        : `<input class="tb-input" value="No ability in Gen ${tbStato.gen}" disabled>`;
-
+        : `<input class="tb-input" value="${tbAbilitaLegali(spBase, true).length ? 'All abilities are banned in this format' : `No ability in Gen ${tbStato.gen}`}" disabled>`;
     const campoTera = tbStato.gen === 9
         ? `<div class="tb-field">
                <span class="tb-label">Tera Type</span>
@@ -5683,7 +6761,6 @@ function tbHtmlEditor(s) {
                 <div class="tb-types" id="tb-editor-types">${tbHtmlTipiEditor(sp, s.abilita)}</div>
                 <div class="tb-base-stats">
                     ${statiBase}
-                    <div class="tb-base-total">BST <b>${tbBST(sp)}</b></div>
                 </div>
                 <button type="button" class="tb-btn-small danger" onclick="tbRimuoviPokemon()">Change Pokémon</button>
                             ${tbHtmlAzioni('colonna')}
@@ -5711,14 +6788,12 @@ function tbHtmlEditor(s) {
                     ${campoTera}
                 </div>
                 <div class="tb-field">
-                    <span class="tb-label">Moves · ${mosseLegali.length} learnable in this format</span>
                     <div class="tb-moves">${s.mosse.map((m, j) => tbHtmlCampoMossa(s, j)).join('')}</div>
                     ${mosseLegali.length === 0 ? `<div class="tb-msg">No moves found for this Pokémon in Gen ${tbStato.gen}: it may not be available in this generation.</div>` : ''}
                     <div id="tb-msg-mosse" class="tb-msg"></div>
                 </div>
 
                 <div class="tb-field">
-                    <span class="tb-label">EVs, IVs &amp; Nature</span>
                     <div class="tb-evs" id="tb-ev-panel">${tbHtmlPannelloEV(s)}</div>
                 </div>
             </div>
@@ -5998,6 +7073,10 @@ function tbSelezionaSlot(i) {
     tbRenderSlot();
     tbRenderCorpo();
     tbRenderRiepilogo();
+
+        // Spread suggerito: si ricalcola quando cambiano mosse, strumento, abilità o natura
+    const suggerito = document.getElementById('tb-ev-guess');
+    if (s && suggerito) suggerito.innerHTML = tbHtmlSpreadSuggerito(s);
 }
 
 function tbScegliPokemon(specieId) {
@@ -6176,6 +7255,16 @@ function tbControllaTeam() {
         if (!s.mosse.some(Boolean)) errori.push(`${nome}: choose at least one move.`);
         const totale = TB_STAT.reduce((t, st) => t + s.evs[st.key], 0);
         if (tbStato.gen >= 3 && totale > 510) errori.push(`${nome}: more than 510 EVs.`);
+                // Ban list del formato
+        const restrizioni = tbStato.regolamento?.restrizioni;
+        s.mosse.filter(Boolean).forEach(id => {
+            const nomeMossa = tbDex.moves[id]?.name || id;
+            if (voceBannata(restrizioni, 'mosse', nomeMossa)) errori.push(`${nome}: ${nomeMossa} is banned in this format.`);
+        });
+        if (voceBannata(restrizioni, 'abilita', s.abilita)) errori.push(`${nome}: ${s.abilita} is banned in this format.`);
+        if (!s.abilita && tbAbilitaLegali(tbSpecieBase(tbSpecie(s.specieId)), true).length) {
+            errori.push(`${nome}: all its abilities are banned in this format.`);
+        }
     });
 
     const regolaNatura = tbStato.regolamento?.restrizioni?.pokemon?.nature;
@@ -6187,12 +7276,11 @@ function tbControllaTeam() {
     return errori;
 }
 
-async function tbCopiaShowdown() {
-    const testo = tbTestoShowdown();
-    if (!testo) return;
-
+// Copia un testo negli appunti; restituisce true se ci è riuscita
+async function tbCopiaNegliAppunti(testo) {
     try {
         await navigator.clipboard.writeText(testo);
+        return true;
     } catch (e) {
         const area = document.createElement('textarea');
         area.value = testo;
@@ -6200,9 +7288,17 @@ async function tbCopiaShowdown() {
         area.style.opacity = '0';
         document.body.appendChild(area);
         area.select();
-        document.execCommand('copy');
+        const ok = document.execCommand('copy');
         area.remove();
+        return ok;
     }
+}
+
+async function tbCopiaShowdown() {
+    const testo = tbTestoShowdown();
+    if (!testo) return;
+
+    await tbCopiaNegliAppunti(testo);
 
     const btn = document.getElementById('tb-btn-copy');
     if (btn) {
@@ -6211,7 +7307,7 @@ async function tbCopiaShowdown() {
     }
 }
 
-function tbSalvaNelBox() {
+async function tbSalvaNelBox() {
     if (tbControllaTeam().length) {
         // Team non valido: il bottone resta grigio e il fumetto spiega perché
         const wrap = document.getElementById('tb-save-wrap');
@@ -6225,15 +7321,34 @@ function tbSalvaNelBox() {
 
     const testo = tbTestoShowdown();
     const categoria = tbStato.regolamento.categoria || '';
+    const adminPanel = document.getElementById('admin-panel');
+    const selectFormato = document.getElementById('admin-team-cat');
+    const textarea = document.getElementById('showdown-input');
+    const inputNome = document.getElementById('admin-team-name');
 
+    // MODIFICA di un team del box: si aggiorna subito, senza passare dal pannello
+    if (tbModifica) {
+        if (inputNome) inputNome.value = tbModifica.nome;
+        if (selectFormato) selectFormato.value = categoria;
+        if (textarea) textarea.value = testo;
+        if (adminPanel) {
+            adminPanel.dataset.editingId = tbModifica.teamId;
+            adminPanel.dataset.daBuilder = '1';
+        }
+
+        const btn = document.getElementById('tb-btn-save');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+        await salvaTeamSuFirebase(); // copia il testo, valida, aggiorna e ricarica la pagina
+        if (btn) { btn.disabled = false; btn.textContent = 'Update team'; } // se il salvataggio fallisce si può riprovare
+        return;
+    }
+
+    // TEAM NUOVO: pannello Showdown già compilato, manca solo il nome
     chiudiTeamBuilder();
     if (typeof chiudiTuttoHelper === 'function') chiudiTuttoHelper();
 
     apriNuovoTeam();
-
-    const selectFormato = document.getElementById('admin-team-cat');
-    const textarea = document.getElementById('showdown-input');
-    const inputNome = document.getElementById('admin-team-name');
+    if (adminPanel) adminPanel.dataset.daBuilder = '1'; // dopo apriNuovoTeam, che lo azzera
 
     if (selectFormato) selectFormato.value = categoria;
     if (textarea) textarea.value = testo;
@@ -6341,6 +7456,13 @@ function tbConfrontaVoci(a, b, criterio) {
 // Cambio ordinamento: lo memorizza nello stato e ridisegna mantenendo la ricerca corrente
 function tbCambiaOrdinamento(criterio) {
     tbStato.ordinamento = criterio;
+    const campo = document.getElementById('tb-picker-search');
+    tbFiltraPicker(campo ? campo.value : '');
+}
+
+// Filtro per tipo: lo memorizza nello stato e ridisegna mantenendo la ricerca corrente
+function tbCambiaFiltroTipo(tipo) {
+    tbStato.filtroTipo = tipo;
     const campo = document.getElementById('tb-picker-search');
     tbFiltraPicker(campo ? campo.value : '');
 }

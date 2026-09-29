@@ -2056,6 +2056,13 @@ color:#eeeeee;
     transform: translate(2px, 2px);
 }
 
+/* Bottone "Edit in Team Builder" (visibile solo in modifica) */
+.showdown-builder {
+    background: #7dd3fc;
+    margin-top: 15px;
+    transform: rotate(-1.5deg);
+}
+
 .showdown-cancel {
     background: var(--cancel);
     border: 2 px solid var(--cancel-border);
@@ -3597,17 +3604,9 @@ color:#eeeeee;
     text-align: center;
 }
 
-.tb-loading-ball {
-    width: 54px;
-    height: 54px;
-    border: 5px solid #000;
-    border-radius: 50%;
-    background: linear-gradient(to bottom, #ff3e3e 46%, #000 46%, #000 54%, #fff 54%);
-    animation: tbGira 1s linear infinite;
-}
-
-@keyframes tbGira {
-    to { transform: rotate(360deg); }
+/* Il loader usa .pokeball-spinner e .loading-text del resto del sito */
+.tb-loading .loading-text {
+    margin-top: 0; /* la distanza la dà già il gap di .tb-loading */
 }
 
 /* --- Selettore Pokémon --- */
@@ -4038,6 +4037,55 @@ color:#eeeeee;
 
 .tb-cov-summary.bad  { color: #b51e1e; }
 .tb-cov-summary.good { color: #15803d; }
+
+/* Suggerimenti per le debolezze critiche */
+.tb-cov-suggest {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #fef9c3;
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+}
+
+.tb-cov-suggest-title {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+.tb-cov-suggest-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-top: 2px dashed rgba(0, 0, 0, 0.15);
+}
+
+.tb-cov-suggest-title + .tb-cov-suggest-row {
+    border-top: 0;
+}
+
+.tb-cov-suggest-types {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.tb-cov-suggest-info {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.tb-cov-suggest-info small {
+    display: block;
+    color: #555;
+}
+
+.tb-cov-suggest-warn {
+    color: #c2410c;
+}
 
 .tb-cov-grid {
     display: grid;
@@ -4592,4 +4640,170 @@ color:#eeeeee;
 /* Con le frecce la voce evidenziata non finisce sotto la barra del filtro */
 .tb-combo-list .tb-opt {
     scroll-margin-top: 44px;
+}
+
+/* Variante per il salvataggio: invece del fondo pieno sfoca la pagina dietro
+   (stessa sfocatura del backdrop dei modali) */
+.poke-loader-overlay.poke-loader-blur {
+    background-color: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.15s ease, visibility 0.15s ease; /* compare quasi all'istante */
+}
+
+/* Si chiude di colpo, così il popup di conferma non la trova a metà dissolvenza */
+.poke-loader-overlay.poke-loader-blur.hidden {
+    transition: none;
+}
+
+/* Sullo sfondo sfocato la scritta può finire sopra colori scuri: etichetta bianca neubrutalist */
+/* Blocco testi sotto la Pokéball: occupa lo stesso spazio della scritta del loader iniziale,
+   così la Pokéball resta esattamente alla stessa altezza quando la pagina si ricarica */
+.poke-saving-testi {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Etichetta bianca per leggerla sullo sfondo sfocato. Il "bordo" è fatto con le ombre
+   (non con padding e border) per non spostare la Pokéball rispetto al loader iniziale */
+.poke-loader-blur .loading-text {
+    background-color: #ffffff;
+    padding: 0 7px;
+    box-shadow: 0 0 0 7px #ffffff, 0 0 0 10px #000000, 4px 4px 0 10px #000000;
+}
+
+/* Messaggio di salvataggio: sta sopra l'etichetta e può andare a capo senza spostare nulla */
+.saving-message {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: max-content;
+    max-width: min(88vw, 440px);
+    box-sizing: border-box;
+    padding: 7px 14px;
+    background: #ffffff;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #000000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- Salvataggio riuscito --- */
+
+/* La Pokéball si ferma (rossa in alto) e dondola come dopo una cattura */
+.poke-loader-blur.successo .pokeball-spinner {
+    animation: dondolaCattura 0.7s ease-in-out;
+}
+.poke-loader-blur.successo .pokeball-spinner::before {
+    animation: none;
+}
+
+/* "Saving team..." sparisce e al suo posto compare il messaggio */
+.poke-loader-blur.successo .loading-text {
+    opacity: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+.poke-loader-blur.successo .saving-message {
+    opacity: 1;
+    animation: scattoMessaggio 0.25s ease-out;
+}
+
+/* Uscita: lo sfondo diventa il grigio pieno del loader iniziale, il messaggio sfuma
+   e ricompare "Loading..." con la Pokéball che gira: identico alla pagina che si ricarica */
+.poke-loader-blur.in-uscita {
+    background-color: #f7f7f7;
+    transition: background-color 0.4s ease;
+}
+.poke-loader-blur.in-uscita .saving-message {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+.poke-loader-blur.in-uscita .loading-text {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.15s;
+}
+.poke-loader-blur.in-uscita .pokeball-spinner::before {
+    animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+}
+
+@keyframes dondolaCattura {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-18deg); }
+    45% { transform: rotate(14deg); }
+    70% { transform: rotate(-6deg); }
+}
+
+@keyframes scattoMessaggio {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* --- Spread suggerito (riga sotto la tabella EV) --- */
+.tb-ev-guess {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px dashed #000;
+}
+
+.tb-ev-guess:empty {
+    display: none;
+}
+
+.tb-guess-title {
+    background: #ffde4d;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    padding: 1px 6px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    transform: rotate(-1.5deg);
+}
+
+.tb-guess-hint {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #555;
+}
+
+.tb-guess-btn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    flex: 1 1 260px;
+    padding: 6px 10px;
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tb-guess-btn:hover {
+    background: var(--accent-color, #4ade80);
+}
+
+.tb-guess-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 #000;
 }
