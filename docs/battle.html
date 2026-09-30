@@ -6,6 +6,23 @@
     <title>Battaglia | Poké-Tournament</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase: stessa configurazione di matches.html -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+            authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+            databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "pokemonsuite-didi-lu",
+            storageBucket: "pokemonsuite-didi-lu.appspot.com",
+            messagingSenderId: "333119159516",
+            appId: "1:333119159516:web:689a9f5d3791093f66878b"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    </script>
     <style>
         :root {
             --inchiostro: #000;
@@ -120,7 +137,13 @@
         .vittoria h2 { margin: 0 0 12px; font-size: 1.8rem; }
         .vittoria .btn { display: inline-flex; }
 
-        .caricamento { text-align: center; font-weight: 700; padding: 30px; }
+        .caricamento { text-align: center; font-weight: 700; padding: 30px; align-self: center; }
+        .scelta-team {
+            width: 100%; padding: 10px; font: 700 1rem 'Josefin Sans', sans-serif;
+            border: 3px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro); background: var(--carta);
+        }
+        .scelta-team:disabled { background: #eee; }
+        .avviso { margin: 0; background: #fff4d6; border: 2px solid var(--ambra); padding: 8px 10px; font-size: .8rem; font-weight: 600; }
 
         /* Tipi (colore del bordo delle mosse) */
         .t-normal{--tipo:#a8a878}.t-fire{--tipo:#f08030}.t-water{--tipo:#6890f0}.t-electric{--tipo:#f8d030}

@@ -143,6 +143,8 @@ export function leggiRichiesta(richiesta) {
         condizione: p.condition,
         esausto: p.condition.endsWith(' fnt'),
         attivo: !!p.active,
+        rianima: !!p.reviving,       // Revival Blessing: deve scegliere un Pokémon esausto
+        comanda: !!p.commanding,     // Commander (Tatsugiri): non agisce
         strumento: p.item,
         abilita: p.ability || p.baseAbility,
         mosse: p.moves
@@ -160,13 +162,25 @@ export function leggiRichiesta(richiesta) {
         const pkm = squadra[i];
         const dinamizzato = !!a.maxMoves && !a.canDynamax;
         const mosseMax = a.maxMoves ? a.maxMoves.maxMoves : null;
+        const mosseZ = Array.isArray(a.canZMove) ? a.canZMove : null;
+
+        // Meccaniche speciali disponibili in questo turno (una per volta)
+        const potenziamenti = [];
+        if (a.canDynamax) potenziamenti.push({ tipo: 'dynamax', etichetta: 'Dynamax' });
+        if (a.canTerastallize) potenziamenti.push({ tipo: 'terastallize', etichetta: `Teracristal ${a.canTerastallize}` });
+        if (a.canMegaEvo) potenziamenti.push({ tipo: 'mega', etichetta: 'Megaevoluzione' });
+        if (a.canMegaEvoX) potenziamenti.push({ tipo: 'megax', etichetta: 'Megaevoluzione X' });
+        if (a.canMegaEvoY) potenziamenti.push({ tipo: 'megay', etichetta: 'Megaevoluzione Y' });
+        if (a.canUltraBurst) potenziamenti.push({ tipo: 'ultra', etichetta: 'Ultraesplosione' });
+        if (mosseZ) potenziamenti.push({ tipo: 'zmove', etichetta: 'Mossa Z' });
+
         return {
             slot: i,
             pokemon: pkm,
-            esausto: pkm.esausto,
+            esausto: pkm.esausto || pkm.comanda,   // in entrambi i casi lo slot passa
             bloccato: !!a.trapped,
-            puoDinamizzare: !!a.canDynamax,
             dinamizzato,
+            potenziamenti,
             mosse: a.moves.map((m, j) => ({
                 numero: j + 1,
                 nome: m.move,
@@ -174,12 +188,40 @@ export function leggiRichiesta(richiesta) {
                 ppMax: m.maxpp,
                 target: m.target,
                 disabilitata: !!m.disabled,
-                max: mosseMax && mosseMax[j] ? { nome: mosseMax[j].move, target: mosseMax[j].target } : null
+                max: mosseMax && mosseMax[j] ? { nome: mosseMax[j].move, target: mosseMax[j].target } : null,
+                z: mosseZ && mosseZ[j] ? { nome: mosseZ[j].move, target: mosseZ[j].target } : null
             }))
         };
     });
 
     return { tipo: 'mossa', squadra, attivi };
+}
+
+
+// Chi può entrare in uno slot. Con Revival Blessing si sceglie
+// invece un Pokémon esausto da rianimare.
+export function candidatiCambio(r, slot, esclusi = []) {
+    const rianima = r.tipo === 'cambio' && r.squadra[slot] && r.squadra[slot].rianima;
+    return r.squadra.filter(p => !esclusi.includes(p.indice) && !p.attivo &&
+        (rianima ? p.esausto : !p.esausto));
+}
+
+// Bersagli selezionabili. Se nessun bersaglio è in piedi (es. Helping Hand
+// con l'alleato esausto) il simulatore vuole comunque una posizione:
+// in quel caso si restituiscono le posizioni valide anche se vuote.
+export function bersagliScegliibili(tipoTarget, slot, vivo) {
+    const tutti = bersagliPossibili(tipoTarget, slot);
+    const inPiedi = tutti.filter(vivo);
+    return inPiedi.length ? inPiedi : tutti.slice(0, 1);
+}
+
+// Nome e bersaglio effettivi di una mossa, dato il potenziamento scelto.
+// Restituisce null se con quel potenziamento la mossa non si può usare
+// (es. mossa senza versione Z).
+export function mossaEffettiva(attivo, mossa, potenziamento) {
+    if (potenziamento === 'zmove') return mossa.z ? { ...mossa.z } : null;
+    if ((potenziamento === 'dynamax' || attivo.dinamizzato) && mossa.max) return { ...mossa.max };
+    return { nome: mossa.nome, target: mossa.target };
 }
 
 
@@ -238,6 +280,7 @@ export class StatoCampo {
             case '-curestatus': { const pkm = this._pkm(p[1]); if (pkm) pkm.stato = ''; break; }
             case '-start': if (p[2] === 'Dynamax') { const pkm = this._pkm(p[1]); if (pkm) pkm.dinamax = true; } break;
             case '-end': if (p[2] === 'Dynamax') { const pkm = this._pkm(p[1]); if (pkm) pkm.dinamax = false; } break;
+            case '-terastallize': { const pkm = this._pkm(p[1]); if (pkm) pkm.tera = p[2]; break; }
             case '-weather': this.meteo = (p[1] === 'none') ? null : p[1]; break;
             case '-fieldstart': if (/Terrain/.test(p[1])) this.terreno = p[1].replace('move: ', ''); break;
             case '-fieldend': if (/Terrain/.test(p[1])) this.terreno = null; break;
@@ -298,6 +341,9 @@ export function formattaRiga(riga, stato) {
             return p[2] === '[upkeep]' ? null : { testo: `Meteo: ${p[1]}` };
         case '-fieldstart': return { testo: `${p[1].replace('move: ', '')} attivo` };
         case '-start': return p[2] === 'Dynamax' ? { tipo: 'evento', testo: `${nome(p[1])} si dinamizza!` } : null;
+        case '-terastallize': return { tipo: 'evento', testo: `${nome(p[1])} si teracristallizza: tipo ${p[2]}!` };
+        case '-mega': return { tipo: 'evento', testo: `${nome(p[1])} megaevolve!` };
+        case '-zpower': return { tipo: 'evento', testo: `${nome(p[1])} scatena il potere Z!` };
         case 'win': return { tipo: 'fine', testo: `${p[1]} vince la battaglia!` };
         case 'tie': return { tipo: 'fine', testo: 'Pareggio!' };
         default: return null;
@@ -323,12 +369,12 @@ export function sceltaCasuale(richiesta, stato, lato) {
     }
 
     const giaScelti = new Set();
-    const panchinaLibera = () => r.squadra.filter(p => !p.attivo && !p.esausto && !giaScelti.has(p.indice));
+    const panchinaLibera = (slot = 0) => candidatiCambio(r, slot, [...giaScelti]);
 
     if (r.tipo === 'cambio') {
-        return r.slotDaCambiare.map(deveCambiare => {
+        return r.slotDaCambiare.map((deveCambiare, slot) => {
             if (!deveCambiare) return 'pass';
-            const libero = panchinaLibera();
+            const libero = panchinaLibera(slot);
             if (!libero.length) return 'pass';
             const scelto = caso(libero);
             giaScelti.add(scelto.indice);
@@ -336,38 +382,42 @@ export function sceltaCasuale(richiesta, stato, lato) {
         }).join(', ');
     }
 
-    let dinamaxUsato = false;
+    const usati = new Set();
     const numAttivi = r.attivi.length;
 
     return r.attivi.map(a => {
         if (a.esausto) return 'pass';
 
-        const mosseUsabili = a.mosse.filter(m => !m.disabilitata && m.pp !== 0);
         const libero = a.bloccato ? [] : panchinaLibera();
-
         if (libero.length && Math.random() < 0.1) {
             const scelto = caso(libero);
             giaScelti.add(scelto.indice);
             return `switch ${scelto.indice}`;
         }
+
+        const disponibili = a.potenziamenti.filter(p => !usati.has(p.tipo));
+        let potenziamento = disponibili.length && Math.random() < 0.3 ? caso(disponibili).tipo : null;
+
+        let mosseUsabili = a.mosse.filter(m => !m.disabilitata && m.pp !== 0 && mossaEffettiva(a, m, potenziamento));
+        if (!mosseUsabili.length && potenziamento) {
+            potenziamento = null;
+            mosseUsabili = a.mosse.filter(m => !m.disabilitata && m.pp !== 0);
+        }
         if (!mosseUsabili.length) return 'move 1';
+        if (potenziamento) usati.add(potenziamento);
 
         const mossa = caso(mosseUsabili);
-        const dinamizza = a.puoDinamizzare && !dinamaxUsato && Math.random() < 0.3;
-        if (dinamizza) dinamaxUsato = true;
-
-        const target = (dinamizza || a.dinamizzato) && mossa.max ? mossa.max.target : mossa.target;
+        const { target } = mossaEffettiva(a, mossa, potenziamento);
         let scelta = `move ${mossa.numero}`;
 
         if (richiedeBersaglio(target, numAttivi)) {
-            const validi = bersagliPossibili(target, a.slot).filter(b => {
-                const l = b.lato === 'mio' ? lato : avversario;
-                const pkm = stato.campo[l][b.slot];
+            const validi = bersagliScegliibili(target, a.slot, b => {
+                const pkm = stato.campo[b.lato === 'mio' ? lato : avversario][b.slot];
                 return pkm && pkm.hp > 0;
             });
-            if (validi.length) scelta += ` ${caso(validi).valore}`;
+            scelta += ` ${caso(validi).valore}`;
         }
-        if (dinamizza) scelta += ' dynamax';
+        if (potenziamento) scelta += ` ${potenziamento}`;
         return scelta;
     }).join(', ');
 }

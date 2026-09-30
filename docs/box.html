@@ -2843,12 +2843,13 @@ async function salvaTeamSuFirebase() {
 
     try {
         const listaPokemonEstratti = parseShowdown(testoShowdown);
-        const datiTeamDaSalvare = { 
-            nome: nomeTeamScelto, 
-            pokemon: listaPokemonEstratti, 
-            categoria: null, 
-            dataUltimaModifica: Date.now() 
-        };
+           const datiTeamDaSalvare = { 
+       nome: nomeTeamScelto, 
+       pokemon: listaPokemonEstratti, 
+       testoShowdown: testoShowdown,
+       categoria: null, 
+       dataUltimaModifica: Date.now() 
+   };
 
         let regolamento = null;
         try {
@@ -2999,8 +3000,7 @@ function caricaTeamPerModifica(teamId) {
         });
     }
 
-    if (elInput) elInput.value = testoShowdown.trim();
-
+   if (elInput) elInput.value = (team.testoShowdown || testoShowdown).trim();
         // 3. Salva l'ID in modalità modifica
     if (adminPanel) {
         adminPanel.dataset.editingId = teamId;
