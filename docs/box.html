@@ -8726,7 +8726,21 @@ function tbHtmlAltriDati(s, sp) {
             </div>`);
     }
 
-    return `<div class="tb-row">${campi.join('')}</div>`;
+    // Se non ci sono campi da mostrare, non renderizziamo nulla
+    if (campi.length === 0) return '';
+
+    // Restituiamo la struttura a tendina/tooltip
+    return `
+        <div class="tb-dropdown-wrapper">
+            <div class="tb-dropdown-trigger">
+                Other<span>▼</span>
+            </div>
+            <div class="tb-dropdown-tooltip">
+                <div class="tb-dropdown-content">
+                    ${campi.join('')}
+                </div>
+            </div>
+        </div>`;
 }
 
 
@@ -8743,6 +8757,7 @@ function tbImpostaNumero(campo, input, min, max, predefinito) {
 }
 
 
+// Assicurati di passare 's' e 'sp' anche per gestire 'tbHtmlAltriDati'
 function tbHtmlEditor(s) {
     const sp = tbSpecie(s.specieId);
     const spBase = tbSpecieBase(sp);
@@ -8752,11 +8767,19 @@ function tbHtmlEditor(s) {
     const mosseLegali = tbMosseLegali(s.specieId);
     const nomeOggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
 
+    // Aggiungo il tooltip direttamente accanto alla select dell'abilità
     const campoAbilita = abilita.length
-        ? `<select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();">
-               ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
-           </select>`
-        : `<input class="tb-input" value="${tbAbilitaLegali(spBase, true).length ? 'All abilities are banned in this format' : `No ability in Gen ${tbStato.gen}`}" disabled>`;
+        ? `<div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+             <select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();" style="flex-grow: 1;">
+                 ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
+             </select>
+             ${tbHtmlAltriDati(s, sp)} 
+           </div>`
+        : `<div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+             <input class="tb-input" value="${tbAbilitaLegali(spBase, true).length ? 'All abilities are banned in this format' : `No ability in Gen ${tbStato.gen}`}" disabled style="flex-grow: 1;">
+             ${tbHtmlAltriDati(s, sp)}
+           </div>`;
+           
     const campoTera = tbStato.gen === 9 && tbMeccanicheAttive()
         ? `<div class="tb-field">
                <span class="tb-label">Tera Type</span>
@@ -8813,9 +8836,84 @@ function tbHtmlEditor(s) {
                     ${mosseLegali.length === 0 ? `<div class="tb-msg">No moves found for this Pokémon in Gen ${tbStato.gen}: it may not be available in this generation.</div>` : ''}
                     <div id="tb-msg-mosse" class="tb-msg"></div>
                 </div>
- ${tbHtmlAltriDati(s, sp)}
                 <div class="tb-field">
                     <div class="tb-evs" id="tb-ev-panel">${tbHtmlPannelloEV(s)}</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+// Funzione aggiornata per usare l'icona cog
+function tbHtmlAltriDati(s, sp) {
+    const campi = [];
+
+    campi.push(`
+        <div class="tb-field">
+            <span class="tb-label">Level</span>
+            <input class="tb-input" value="${tbStato.livello}" disabled title="Fixed by the format">
+        </div>`);
+
+    if (tbStato.gen >= 2) {
+        if (!sp.gender) {
+            campi.push(`
+                <div class="tb-field">
+                    <span class="tb-label">Gender</span>
+                    <select class="tb-select" onchange="tbImpostaCampo('sesso', this.value)">
+                        <option value="" ${!s.sesso ? 'selected' : ''}>Random</option>
+                        <option value="M" ${s.sesso === 'M' ? 'selected' : ''}>Male</option>
+                        <option value="F" ${s.sesso === 'F' ? 'selected' : ''}>Female</option>
+                    </select>
+                </div>`);
+        }
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Happiness</span>
+                <input type="number" class="tb-input" min="0" max="255" value="${s.felicita ?? 255}"
+                       onchange="tbImpostaNumero('felicita', this, 0, 255, 255)">
+            </div>`);
+    }
+
+    if (tbStato.gen === 8 && tbMeccanicheAttive()) {
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Dynamax Level</span>
+                <input type="number" class="tb-input" min="0" max="10" value="${s.livelloDynamax ?? 10}"
+                       onchange="tbImpostaNumero('livelloDynamax', this, 0, 10, 10)">
+            </div>`);
+        if (sp.canGigantamax) {
+            campi.push(`
+                <div class="tb-field">
+                    <span class="tb-label">Gigantamax</span>
+                    <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" ${s.gigantamax ? 'checked' : ''} onchange="tbImpostaCampo('gigantamax', this.checked)">
+                        ${tbEsc(sp.canGigantamax)}
+                    </label>
+                </div>`);
+        }
+    }
+
+    if (tbStato.gen >= 2) {
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Shiny</span>
+                <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" ${s.shiny ? 'checked' : ''} onchange="tbImpostaCampo('shiny', this.checked)">
+                    Shiny
+                </label>
+            </div>`);
+    }
+
+    if (campi.length === 0) return '';
+
+    // Sostituito il testo con l'icona FontAwesome fa-cog
+    return `
+        <div class="tb-dropdown-wrapper">
+            <div class="tb-dropdown-trigger icon-only">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="tb-dropdown-tooltip">
+                <div class="tb-dropdown-content">
+                    ${campi.join('')}
                 </div>
             </div>
         </div>`;

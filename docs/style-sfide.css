@@ -1,0 +1,352 @@
+/* =====================================================
+   SFIDE — stesso linguaggio di style-matches.css:
+   bordi neri pieni, ombre nette, adesivi ruotati.
+   ===================================================== */
+
+.sfide-btn[hidden], .sfide-badge[hidden], .sfide-dropdown[hidden],
+.live-list[hidden], .sfida-card [hidden] { display: none !important; }
+
+/* ---------- Campanella ----------
+   Usa anche la classe .music-btn: stessa misura, bordo, ombra e hover
+   del bottone volume. Qui cambia solo la posizione e l'icona bianca in hover. */
+.sfide-btn { right: 110px; padding: 0; }
+.sfide-btn svg { display: block; width: 100%; height: 100%; }
+.sfide-btn svg path { transition: stroke 0.3s ease; }
+.sfide-btn:hover svg { stroke: #fff; }
+.sfide-btn:focus-visible { outline: 3px solid #ffbd44; outline-offset: 4px; }
+
+.sfide-badge {
+    position: absolute;
+    top: -11px;
+    right: -11px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ea1818;
+    color: #fff;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    font: 700 0.8rem 'Josefin Sans', sans-serif;
+    transform: rotate(8deg);
+}
+
+.sfide-btn {
+    width: 47.5px !important;
+    height: 47.5px !important;
+
+}
+/* Arriva una sfida: la campanella si scuote due volte */
+.sfide-btn.squilla { animation: sfide-squilla 0.7s ease 2; }
+@keyframes sfide-squilla {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-18deg); }
+    40% { transform: rotate(16deg); }
+    60% { transform: rotate(-10deg); }
+    80% { transform: rotate(6deg); }
+}
+
+
+/* ---------- Menu delle notifiche ---------- */
+.sfide-dropdown {
+    position: fixed;
+    top: 160px;
+    right: 40px;
+    width: min(360px, calc(100vw - 40px));
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 16px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 8px 8px 0 #000;
+    z-index: 3001;
+    font-family: 'Montserrat', sans-serif;
+}
+.sfide-dropdown h3 {
+    display: inline-block;
+    margin: 0 0 6px;
+    padding: 6px 14px;
+    background: #000;
+    color: #fff;
+    font: 700 1.2rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    transform: rotate(-2deg);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+.sfide-sezione {
+    margin: 14px 0 8px;
+    font: 700 0.8rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+}
+.sfide-voce {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+}
+.sfide-voce.ricevuta { background: #ffbd44; transform: rotate(-0.5deg); }
+.sfide-voce.da-giocare { background: #d4f7df; }
+.sfide-voce.rifiutata { background: #f1f1f1; }
+.sfide-voce-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.sfide-tag {
+    padding: 2px 8px;
+    background: #000;
+    color: #fff;
+    font: 700 0.75rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    transform: rotate(-2deg);
+}
+.sfide-quando { font-size: 0.7rem; font-weight: 600; color: #333; }
+.sfide-voce p { margin: 0 0 4px; font-size: 0.9rem; }
+.sfide-voce p strong { font-family: 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.sfide-dettagli { font-size: 0.75rem !important; font-weight: 600; color: #333; }
+.sfide-azioni { display: flex; gap: 10px; margin-top: 10px; }
+.sfide-azione {
+    flex: 1;
+    padding: 8px;
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font: 700 0.85rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.sfide-azione.si { background: #09ca49; }
+.sfide-azione.no { background: #ea1818; color: #fff; }
+.sfide-azione:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
+.sfide-azione:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.sfide-azione:focus-visible { outline: 3px solid #000; outline-offset: 2px; }
+.sfide-azione:disabled { opacity: 0.4; cursor: not-allowed; }
+.sfide-vuoto { margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; }
+
+
+/* ---------- Bottone VS: fuori dalla riga della classifica, a sinistra ---------- */
+.rank-riga { position: relative; }
+.sfida-rank-btn {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    height: 38px;
+    padding: 0 9px;
+    background: #ffbd44;
+    color: black;
+    border: 3px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    font: 700 0.85rem 'Josefin Sans', sans-serif;
+    cursor: pointer;
+    transform: rotate(-3deg);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+.sfida-rank-btn:hover {
+    background: #ffbd44;
+    color: #000;
+    transform: translate(-2px, -2px) rotate(-3deg);
+    box-shadow: 7px 7px 0 #000;
+}
+.sfida-rank-btn:active { transform: translate(2px, 2px) rotate(-3deg); box-shadow: none; }
+.sfida-rank-btn:focus-visible { outline: 3px solid #ffbd44; outline-offset: 2px; }
+
+
+/* ---------- Finestra "lancia la sfida" ---------- */
+.sfida-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+.sfida-card {
+    width: min(480px, 100%);
+    padding: 24px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 10px 10px 0 #000;
+    font-family: 'Josefin Sans', sans-serif;
+}
+.sfida-sticker {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #ffbd44;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font-weight: 700;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+}
+.sfida-card h2 {
+    margin: 16px 0 4px;
+    font-size: 2rem;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+.sfida-card h2 small { font-size: 1rem; }
+.sfida-sotto { margin: 0 0 18px; font: 600 0.85rem 'Montserrat', sans-serif; }
+.sfida-formati { display: grid; gap: 12px; }
+.sfida-formato {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    font: 700 1.05rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.sfida-formato:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.sfida-formato:focus-visible { outline: 3px solid #ffbd44; outline-offset: 3px; }
+.sfida-formato.scelto { background: #ffbd44; transform: rotate(-1deg); }
+.sfida-rimasti {
+    flex-shrink: 0;
+    padding: 2px 8px;
+    background: #000;
+    color: #fff;
+    font-size: 0.75rem;
+}
+.sfida-messaggio {
+    margin: 0;
+    padding: 12px;
+    background: #fff4d6;
+    border: 3px solid #000;
+    font-weight: 700;
+}
+.sfida-azioni { display: flex; gap: 14px; margin-top: 22px; }
+.sfida-azioni .btn-save, .sfida-azioni .btn-cancel { font-size: 1.15rem; }
+.sfida-azioni .btn-save:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+
+/* ---------- Showdown in corso ---------- */
+.live-list { margin: 25px 0 10px; }
+.live-testa {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 6px 14px;
+    background: #ea1818;
+    color: #fff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    font: 700 1.1rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    transform: rotate(-2deg);
+}
+.live-punto {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border: 2px solid #000;
+    border-radius: 50%;
+    animation: live-pulsa 1.2s ease-in-out infinite;
+}
+@keyframes live-pulsa { 50% { opacity: 0.2; } }
+.live-griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+}
+.live-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 15px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0 #000;
+}
+.live-card-testa { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.live-match {
+    padding: 2px 8px;
+    background: #ffbd44;
+    border: 2.5px solid #000;
+    font: 700 0.8rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+}
+.live-nomi {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font: 700 1.05rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+}
+.live-nomi span { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-nomi b {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    background: #000;
+    color: #fff;
+    transform: rotate(-2deg);
+}
+.live-azioni { display: flex; gap: 10px; }
+.live-btn {
+    flex: 1;
+    padding: 10px;
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    font: 700 0.95rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.live-btn.gioca { background: #09ca49; }
+.live-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.live-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.live-btn:focus-visible { outline: 3px solid #ffbd44; outline-offset: 3px; }
+.live-elimina {
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    cursor: pointer;
+}
+
+
+/* ---------- Avviso a comparsa ---------- */
+.sfide-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 30px;
+    z-index: 10001;
+    padding: 12px 20px;
+    background: #ffbd44;
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    font: 700 1rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    transform: translate(-50%, 200%);
+    transition: transform 0.25s ease;
+}
+.sfide-toast.visibile { transform: translate(-50%, 0) rotate(-1deg); }
+
+@media (prefers-reduced-motion: reduce) {
+    .sfide-btn.squilla, .live-punto { animation: none; }
+    .sfide-toast { transition: none; }
+}

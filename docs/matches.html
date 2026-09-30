@@ -6,13 +6,15 @@
         <title>Season Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-matches.css">
+       <link rel="stylesheet" href="style-sfide.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
        <script src="risultati-match.js"></script>
-    </header>
+          <script src="sfide.js"></script>
+</head>
 <body>
     
     <!-- Loader iniziale (Visibile di default) -->
@@ -28,6 +30,15 @@
         <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
     </svg>
 </div>
+
+   <button type="button" id="sfide-control" class="music-btn sfide-btn" aria-label="Challenges" aria-haspopup="true" aria-expanded="false" hidden>
+       <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+       </svg>
+       <span id="sfide-badge" class="sfide-badge" hidden>0</span>
+   </button>
+   <div id="sfide-dropdown" class="sfide-dropdown" hidden></div>
 
 <div id="loading-overlay">
     <div class="pokeball-spinner"></div>
@@ -138,7 +149,7 @@
             <div class="neubrutal-card info-summary-card">
                 <div id="season-summary-content" class="summary-grid"></div>
             </div>
-
+   <div id="liveList" class="live-list" hidden></div>
             <div id="matchList" class="showdown-grid-double">
                 </div>
         </div>
@@ -329,11 +340,6 @@
         <button onclick="chiudiPannelli()" class="btn-cancel">Cancel</button>
     </div>
 </div>
-
-<button id="admin-plus-btn" class="btn-floating-admin" onclick="apriCreazioneShowdown()" title="New Showdown">
-    <span class="plus-icon">+</span>
-</button>
-
 
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
     
@@ -715,14 +721,16 @@ async function inizializzaPaginaArchivio() {
     const stagioneChiusa = (stringStatus === 'CLOSED');
 
     if (adminPlusBtn) {
-        adminPlusBtn.style.display = (isLoggedIn && !stagioneChiusa) ? 'flex' : 'none';
+        adminPlusBtn.style.display = (isAdmin && !stagioneChiusa) ? 'flex' : 'none';
     }
 
     if (!container) return;
     container.innerHTML = "";
 
     // --- 5. RENDERING SHOWDOWNS ---
-    const sortedSdKeys = Object.keys(dataShowdowns).sort((a, b) => {
+    const sortedSdKeys = Object.keys(dataShowdowns)
+       .filter(id => Sfide.completato(dataShowdowns[id]))
+       .sort((a, b) => {
         const dataA = dataShowdowns[a].info?.data || "";
         const dataB = dataShowdowns[b].info?.data || "";
         return dataB.localeCompare(dataA);
@@ -789,16 +797,15 @@ sdCard.innerHTML = `
     <div class="sd-card-footer">
         <span class="sd-date-text">${info.data || 'No date'}</span>
         
-        <div class="sd-admin-overlay" style="display: ${isAdmin ? 'flex' : 'none'}">
-            <button class="btn-sd-icon edit" onclick="event.stopPropagation(); window.apriCreazioneShowdown('${sdId}')">✏️</button>
-            <button class="btn-sd-icon delete" onclick="event.stopPropagation(); window.eliminaShowdown('${sdId}')">🗑️</button>
-        </div>
+
         
         <span class="sd-view-action">➜</span>
     </div>
 `;
         container.appendChild(sdCard);
     });
+
+       await Sfide.avvia({ stagione: stagioneAttiva, infoStagione: dataSeasonInfo });
 
     // --- 6. RENDER RANKINGS ---
     if (typeof renderRankings === 'function') {
@@ -856,6 +863,9 @@ async function renderRankings(leaderboardData) {
         const playerUrlParam = encodeURIComponent(player.name.trim());
 
         return `
+       <div class="rank-riga">
+           ${Sfide.bottoneRanking(player.name)}
+
             <div class="player-rank-row" 
                 onclick="window.location.href='public.html?player=${playerUrlParam}'"
                 style="
@@ -885,11 +895,11 @@ async function renderRankings(leaderboardData) {
                         P: ${totalShowdowns}, S: ${sdWon}/${sdLost}, W/L: ${player.won || 0}/${player.lost || 0}
                     </div>
                 </div>
-
                 <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; transform: rotate(1deg);">
                     ${player.points}
                 </div>
             </div>
+        </div>
         `;
     }));
 

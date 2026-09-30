@@ -3,8 +3,8 @@
 // Fa da ponte tra il simulatore di Showdown e la pagina.
 // Nessun riferimento al DOM: la grafica sta in battle-ui.js.
 //
-// Oggi: BattagliaLocale (il simulatore gira nel browser).
-// Domani: BattagliaOnline, stessa interfaccia, via Firebase.
+// BattagliaLocale: il simulatore gira nel browser (prove e modalità locale).
+// La partita online usa BattagliaOnline (motore-online.js), stessa interfaccia.
 // =====================================================
 
 import { BattleStreams, Teams, TeamValidator } from './pkmn-sim.js';
@@ -97,7 +97,7 @@ export function impacchettaTeam(team) {
 // Restituisce null se il team è valido, altrimenti l'elenco dei problemi.
 export function validaTeam(formato, team) {
     const sets = typeof team === 'string' ? Teams.import(team) : team;
-    if (!sets || !sets.length) return ['Team vuoto o non leggibile'];
+    if (!sets || !sets.length) return ['The team is empty or unreadable'];
     return TeamValidator.get(formato).validateTeam(sets);
 }
 
@@ -165,14 +165,15 @@ export function leggiRichiesta(richiesta) {
         const mosseZ = Array.isArray(a.canZMove) ? a.canZMove : null;
 
         // Meccaniche speciali disponibili in questo turno (una per volta)
+        // (etichette in inglese: sono i testi dei bottoni della pagina)
         const potenziamenti = [];
         if (a.canDynamax) potenziamenti.push({ tipo: 'dynamax', etichetta: 'Dynamax' });
-        if (a.canTerastallize) potenziamenti.push({ tipo: 'terastallize', etichetta: `Teracristal ${a.canTerastallize}` });
-        if (a.canMegaEvo) potenziamenti.push({ tipo: 'mega', etichetta: 'Megaevoluzione' });
-        if (a.canMegaEvoX) potenziamenti.push({ tipo: 'megax', etichetta: 'Megaevoluzione X' });
-        if (a.canMegaEvoY) potenziamenti.push({ tipo: 'megay', etichetta: 'Megaevoluzione Y' });
-        if (a.canUltraBurst) potenziamenti.push({ tipo: 'ultra', etichetta: 'Ultraesplosione' });
-        if (mosseZ) potenziamenti.push({ tipo: 'zmove', etichetta: 'Mossa Z' });
+        if (a.canTerastallize) potenziamenti.push({ tipo: 'terastallize', etichetta: `Terastallize (${a.canTerastallize})` });
+        if (a.canMegaEvo) potenziamenti.push({ tipo: 'mega', etichetta: 'Mega Evolve' });
+        if (a.canMegaEvoX) potenziamenti.push({ tipo: 'megax', etichetta: 'Mega Evolve X' });
+        if (a.canMegaEvoY) potenziamenti.push({ tipo: 'megay', etichetta: 'Mega Evolve Y' });
+        if (a.canUltraBurst) potenziamenti.push({ tipo: 'ultra', etichetta: 'Ultra Burst' });
+        if (mosseZ) potenziamenti.push({ tipo: 'zmove', etichetta: 'Z-Move' });
 
         return {
             slot: i,
@@ -320,46 +321,7 @@ function leggiHp(testo) {
 
 
 // -----------------------------------------------------
-// 6. LOG LEGGIBILE (provvisorio, in italiano)
-// -----------------------------------------------------
-export function formattaRiga(riga, stato) {
-    const p = riga.split('|').slice(1);
-    const nome = ident => ident ? ident.split(': ')[1] : '';
-    const di = ident => ident ? ` (${stato.nomi[ident.slice(0, 2)] || ident.slice(0, 2)})` : '';
-
-    switch (p[0]) {
-        case 'turn': return { tipo: 'turno', testo: `Turno ${p[1]}` };
-        case 'switch': case 'drag': return { testo: `${stato.nomi[p[1].slice(0, 2)]} manda in campo ${nome(p[1])}` };
-        case 'move': return { testo: `${nome(p[1])}${di(p[1])} usa ${p[2]}` };
-        case '-damage': return p[2] === '0 fnt' ? null : { testo: `${nome(p[1])} scende al ${p[2].split('/')[0]}%` };
-        case '-heal': return { testo: `${nome(p[1])} recupera salute (${p[2].split('/')[0]}%)` };
-        case 'faint': return { tipo: 'ko', testo: `${nome(p[1])}${di(p[1])} è esausto!` };
-        case '-supereffective': return { testo: 'È superefficace!' };
-        case '-resisted': return { testo: 'Non è molto efficace…' };
-        case '-immune': return { testo: `Non ha effetto su ${nome(p[1])}` };
-        case '-crit': return { testo: 'Brutto colpo!' };
-        case '-miss': return { testo: `${nome(p[1])} manca il colpo` };
-        case '-fail': return { testo: 'Ma fallisce!' };
-        case '-boost': return { testo: `${nome(p[1])}: ${p[2]} +${p[3]}` };
-        case '-unboost': return { testo: `${nome(p[1])}: ${p[2]} -${p[3]}` };
-        case '-status': return { testo: `${nome(p[1])} ora è ${p[2]}` };
-        case '-weather':
-            if (p[1] === 'none') return { testo: 'Il meteo torna normale' };
-            return p[2] === '[upkeep]' ? null : { testo: `Meteo: ${p[1]}` };
-        case '-fieldstart': return { testo: `${p[1].replace('move: ', '')} attivo` };
-        case '-start': return p[2] === 'Dynamax' ? { tipo: 'evento', testo: `${nome(p[1])} si dinamizza!` } : null;
-        case '-terastallize': return { tipo: 'evento', testo: `${nome(p[1])} si teracristallizza: tipo ${p[2]}!` };
-        case '-mega': return { tipo: 'evento', testo: `${nome(p[1])} megaevolve!` };
-        case '-zpower': return { tipo: 'evento', testo: `${nome(p[1])} scatena il potere Z!` };
-        case 'win': return { tipo: 'fine', testo: `${p[1]} vince la battaglia!` };
-        case 'tie': return { tipo: 'fine', testo: 'Pareggio!' };
-        default: return null;
-    }
-}
-
-
-// -----------------------------------------------------
-// 7. SCELTA CASUALE (bot di prova)
+// 6. SCELTA CASUALE (bot di prova)
 // -----------------------------------------------------
 // Serve per provare la pagina da soli: il bot sceglie a caso
 // tra le opzioni valide. Più avanti si potrà togliere.

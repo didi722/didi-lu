@@ -716,7 +716,7 @@ button.btn-set.is-selected:hover {
     font-weight: bold;
     font-family: Josefin Sans, sans-serif;
     text-transform: uppercase;
-    border: 2px solid black;
+    border: 4px solid black;
     box-shadow: 5px 5px 0 black;
     transition: all 0.2s ease;
     transform: rotate(-0.5deg);
@@ -744,7 +744,7 @@ button.btn-set.is-selected:hover {
     font-family: Josefin Sans, sans-serif;
     font-weight: bold;
     text-transform: uppercase;
-    border: 2px solid black;
+    border: 4px solid black;
     box-shadow: 5px 5px 0 black;
     transition: all 0.2s ease;
     transform: rotate(1deg);
@@ -1988,7 +1988,7 @@ button.btn-set.is-selected:hover {
     color: black;
     padding: 5px 5px;
     border-radius: 0px; /* Squadrato */
-    border: 2px solid #000;
+    border: 3px solid #000;
     box-shadow: 3px 3px 0px black;
     transform: rotate(-2deg);
 }

@@ -70,15 +70,15 @@ export function meccanicheAttive(regolamento) {
 // (Stesso controllo che fa il server in functions/partita.js.)
 export function controllaTeam(testo, regolamento) {
     const sets = Teams.import(testo) || [];
-    if (!sets.length) return ['Il team è vuoto o illeggibile'];
+    if (!sets.length) return ['The team is empty or unreadable'];
     const livello = livelloFormato(regolamento);
     const dex = Dex.forGen(generazioneFormato(regolamento));
     const problemi = [];
     for (const set of sets) {
-        if ((set.level || 100) !== livello) problemi.push(`${set.species} è al livello ${set.level || 100} invece di ${livello}`);
+        if ((set.level || 100) !== livello) problemi.push(`${set.species} is level ${set.level || 100} instead of ${livello}`);
         const strumento = dex.items.get(set.item);
         if (!meccanicheAttive(regolamento) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
-            problemi.push(`${set.species} tiene ${strumento.name}, ma il formato non ha le meccaniche generazionali`);
+            problemi.push(`${set.species} holds ${strumento.name}, but this format has no generational mechanics`);
         }
     }
     return problemi;
@@ -135,13 +135,13 @@ function nomeTeam(t) {
 export async function caricaMatch(db, { stagione, showdown, match }) {
     const infoSnap = await db.ref(`seasons/${stagione}/showdowns/${showdown}/info`).once('value');
     const info = infoSnap.val();
-    if (!info) throw new Error(`Showdown "${showdown}" non trovato nella stagione "${stagione}".`);
+    if (!info) throw new Error(`Showdown "${showdown}" not found in season "${stagione}".`);
 
     const categoria = info.categoria;
     const regolamentiSnap = await db.ref('regolamenti').once('value');
     const regolamento = Object.values(regolamentiSnap.val() || {})
         .find(r => r && r.categoria && String(r.categoria).toLowerCase() === String(categoria).toLowerCase());
-    if (!regolamento) throw new Error(`Regolamento "${categoria}" non trovato.`);
+    if (!regolamento) throw new Error(`Ruleset "${categoria}" not found.`);
 
     const livello = livelloFormato(regolamento);
     const giocatori = {};
