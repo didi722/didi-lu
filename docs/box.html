@@ -1142,8 +1142,8 @@ async function apriDettagli(id) {
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
+            ${tbHtmlTagDettaglio()}
         </div>
-
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
                 const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
@@ -1200,6 +1200,7 @@ async function apriDettagli(id) {
         </div>
     `;
     modal.style.display = "flex";
+        tbPreparaDettaglio(team);
 }
 
 // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
@@ -1212,7 +1213,7 @@ document.addEventListener('keydown', (e) => {
         } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
             apriDettagli(tuttiITeam[currentIndex + 1].id);
         } else if (e.key === "Escape") {
-            modal.style.display = "none";
+            chiudiTeamModal();
         }
     }
 });
@@ -1717,7 +1718,12 @@ container.innerHTML = `
         container.innerHTML = "<span style='color:red'>Error.</span>"; 
     }
 }
+
 function chiudiTeamModal() {
+    tbTokenDettaglio = null;   // ferma un'eventuale preparazione dei tag ancora in corso
+    tbStatoDettaglio = null;
+    tbNascondiTooltip();
+
     const modal = document.getElementById('teamModal');
     if (modal) {
         modal.style.display = "none";
@@ -1734,9 +1740,6 @@ function chiudiTeamModal() {
 // Gestione intelligente della chiusura cliccando fuori
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('teamModal');
-    
-    // Se il click è avvenuto ESATTAMENTE sul contenitore scuro (l'overlay)
-    // e non su uno dei bottoni o sulle card dei pokemon...
     if (event.target === modal) {
         chiudiTeamModal();
     }
@@ -4822,6 +4825,9 @@ async function tbCompletaTipiTooltip(pkm, tooltip) {
 
 // --- BOTTONE "BUILD TEAM" --------------------------------------------
 function aggiornaBottoneBuildTeam(lista) {
+        if (Array.isArray(lista) && lista.length && window.currentHelperFormatId) {
+        tbPoolPerFormato[window.currentHelperFormatId] = lista; // riusata dal dettaglio dei team del box
+    }
     const btn = document.getElementById('helper-build-team-btn');
     if (btn) btn.style.display = (Array.isArray(lista) && lista.length > 0) ? 'flex' : 'none';
 }
@@ -5222,8 +5228,8 @@ function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
         const tipi = v.sp && Array.isArray(v.sp.types) ? v.sp.types : [];
         if (!tipi.length) return;
         const base = tbSpecieBase(v.sp);
-        if (base && numeriUsati.has(base.num)) return;
-        const chiave = [...tipi].sort().join('/'); // Steel/Flying e Flying/Steel sono la stessa tipizzazione
+        if ((base && numeriUsati.has(base.num)) || tbEvolveNelFormato(v.sp)) return;
+                const chiave = [...tipi].sort().join('/'); // Steel/Flying e Flying/Steel sono la stessa tipizzazione
         if (!gruppi.has(chiave)) gruppi.set(chiave, { tipi, pokemon: [] });
         gruppi.get(chiave).pokemon.push(v); // il pool è già ordinato per BST
     });
@@ -5249,8 +5255,8 @@ function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
         .slice(0, 3);
     if (!scelti.length) return '';
 
-    const slotLibero = tbStato.slot.some(s => !s);
-    const esempio = v => slotLibero
+    const slotLibero = tbStato.slot.some(s => !s) && !tbStato.solaLettura;
+        const esempio = v => slotLibero
         ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${v.specieId}')">${tbEsc(v.nome)}</span>`
         : tbEsc(v.nome);
 
@@ -5503,9 +5509,14 @@ function tbHtmlAttacco() {
            </div>`
         : `<div class="tb-tip-section"><div class="tb-tip-sub">🏁 Everything in the format is hit super-effectively</div></div>`;
 
+    // Per ogni tipo d'attacco: quali dei Pokémon non colpiti superefficace colpirebbe superefficace
+    const colpitiDaTipo = new Map(tbTipiAttaccanti().map(t => [
+        t, new Set(nonSE.map((b, i) => (tbEfficaciaTipoSuBersaglio(t, b) > 1 ? i : -1)).filter(i => i >= 0))
+    ]));
+
     // Tipi che aggiungerebbero più superefficaci, con chi li può imparare
-    const suggerimenti = tbTipiAttaccanti()
-        .map(t => ({ tipo: t, guadagno: nonSE.filter(b => tbEfficaciaTipoSuBersaglio(t, b) > 1).length }))
+    const suggerimenti = [...colpitiDaTipo.entries()]
+        .map(([tipo, colpiti]) => ({ tipo, guadagno: colpiti.size }))
         .filter(x => x.guadagno > 0)
         .sort((x, y) => y.guadagno - x.guadagno)
         .slice(0, 3);
@@ -5524,6 +5535,57 @@ function tbHtmlAttacco() {
         ? `<div class="tb-tip-section">
                <div class="tb-tip-title">💡 Best type to add · who can learn it</div>
                ${righeSuggerimenti}
+           </div>`
+        : '';
+
+    // Pokémon del formato i cui STAB aggiungono più superefficaci (uno per tipizzazione, es. Bug/Steel → Scizor);
+    // a parità si preferisce chi copre anche le debolezze difensive del team e non ne aggiunge
+    const numeriUsati = tbStato.clausole ? tbNumeriUsati(-1) : new Set();
+    const difesa = tbCalcolaCopertura();
+    const problemiDifesa = [...difesa.critici, ...difesa.avvisi];
+    const tipizzazioni = new Map();
+    tbStato.pool.forEach(v => {
+        const tipi = v.sp && Array.isArray(v.sp.types) ? v.sp.types : [];
+        if (!tipi.length) return;
+        const base = tbSpecieBase(v.sp);
+        if ((base && numeriUsati.has(base.num)) || tbEvolveNelFormato(v.sp)) return;
+        const k = [...tipi].sort().join('/');
+        if (!tipizzazioni.has(k)) tipizzazioni.set(k, { tipi, pokemon: [] });
+        const gruppo = tipizzazioni.get(k);
+        if (base && gruppo.pokemon.some(p => tbSpecieBase(p.sp)?.num === base.num)) return; // una forma per specie
+        gruppo.pokemon.push(v); // il pool è già ordinato per BST
+    });
+    const proposte = [...tipizzazioni.values()]
+        .map(g => {
+            const colpiti = new Set();
+            g.tipi.forEach(t => (colpitiDaTipo.get(t) || new Set()).forEach(i => colpiti.add(i)));
+            return {
+                ...g,
+                guadagno: colpiti.size,
+                aiuta: problemiDifesa.filter(t => tbMoltiplicatore(t, g.tipi, '') < 1),
+                peggiora: problemiDifesa.filter(t => tbMoltiplicatore(t, g.tipi, '') > 1)
+            };
+        })
+        .filter(g => g.guadagno > 0)
+        .sort((x, y) => (y.guadagno - x.guadagno)
+                     || ((y.aiuta.length - y.peggiora.length) - (x.aiuta.length - x.peggiora.length))
+                     || (y.pokemon[0].bst - x.pokemon[0].bst))
+        .slice(0, 3);
+    const slotLibero = tbStato.slot.some(s => !s) && !tbStato.solaLettura;
+        const esempio = v => slotLibero
+        ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${v.specieId}')">${tbEsc(v.nome)}</span>`
+        : tbEsc(v.nome);
+    const sezionePokemon = proposte.length
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-title">💡 ${slotLibero ? 'Or add' : 'Or swap in'} a Pokémon with these STABs</div>
+               ${proposte.map(g => `
+                   <div class="tb-tip-row">
+                       <span class="tb-tip-types">${g.tipi.map(tbBadgeTipoMini).join('')}</span>
+                       <span class="tb-tip-names wrap">${g.aiuta.length ? `also resists <b>${g.aiuta.join(', ')}</b>` : ''}${g.peggiora.length ? `${g.aiuta.length ? ' · ' : ''}<i>weak to ${g.peggiora.join(', ')}</i>` : ''}</span>
+                       <span class="tb-tip-badge ok">+${g.guadagno}</span>
+                   </div>
+                   <div class="tb-tip-examples">e.g. ${g.pokemon.slice(0, 3).map(esempio).join(', ')}</div>`).join('')}
+               ${slotLibero ? '<div class="tb-tip-note">Click a name to add it to the first empty slot</div>' : ''}
            </div>`
         : '';
 
@@ -5549,6 +5611,7 @@ function tbHtmlAttacco() {
             ${sezioneMuri}
             ${sezioneGruppi}
             ${sezioneSuggerimenti}
+                        ${sezionePokemon}
             <div class="tb-tip-section">
                 <div class="tb-tip-title">Per Pokémon · % of the format hit super-effectively</div>
                 ${righeMembri}
@@ -5637,10 +5700,11 @@ function tbDatiCalc(chiave, idCoach, calcola) {
     if (tbCacheCalc.has(chiave)) return tbCacheCalc.get(chiave);
     if (!tbCalcInCorso.has(chiave)) {
         tbCalcInCorso.add(chiave);
+        const contesto = tbStatoInUso; // se parte dal dettaglio del box, il calcolo usa lo stato del dettaglio
         setTimeout(() => {
             let dati = null;
             try {
-                dati = calcola();
+                dati = contesto ? tbEseguiCon(contesto, calcola) : calcola();
             } catch (err) {
                 console.error('[Damage calc]', err);
                 dati = { errore: err.message };
@@ -6155,6 +6219,471 @@ function tbHtmlCalcDifesa(chiave) {
         </div>`;
 }
 
+// =====================================================================
+// 🧩 RUOLI DI SQUADRA (tooltip "Team roles")
+// Controlla i ruoli chiave del formato (doppio o singolo), chi li copre e, se mancano,
+// chi nel team può impararli e quali Pokémon del formato li portano.
+// Sotto: bilanciamento fisico/speciale, Protect o Stealth Rock, ordine di velocità del team
+// =====================================================================
+const TB_RUOLI = [
+    // Doppio
+    { id: 'fakeout', nome: 'Fake Out', stile: 'doubles', chiave: true, mosse: ['fakeout'] },
+    { id: 'intimidate', nome: 'Intimidate', stile: 'doubles', chiave: true, abilita: ['intimidate'] },
+    { id: 'speed', nome: 'Speed control', stile: 'doubles', chiave: true, maxAirstream: true,
+      suggerisci: ['tailwind', 'trickroom'], // tra i Pokémon da aggiungere: uno per ciascuna, poi il resto
+      mosse: ['tailwind', 'trickroom', 'icywind', 'electroweb', 'thunderwave', 'scaryface', 'bulldoze',
+              'rocktomb', 'glare', 'nuzzle', 'bleakwindstorm', 'stringshot', 'cottonspore', 'lowsweep'] },
+    { id: 'spread', nome: 'Spread attacks', stile: 'doubles', chiave: true, spread: true },
+    { id: 'redirect', nome: 'Redirection', stile: 'doubles', chiave: false,
+      mosse: ['followme', 'ragepowder', 'spotlight'], abilita: ['lightningrod', 'stormdrain'] },
+    { id: 'guard', nome: 'Wide / Quick Guard', stile: 'doubles', chiave: false, mosse: ['wideguard', 'quickguard'] },
+    // Singolo
+    { id: 'hazards', nome: 'Entry hazards', stile: 'singles', chiave: true, suggerisci: ['stealthrock', 'spikes'],
+      mosse: ['stealthrock', 'spikes', 'toxicspikes', 'stickyweb', 'stoneaxe', 'ceaselessedge'] },
+    { id: 'removal', nome: 'Hazard removal', stile: 'singles', chiave: true, suggerisci: ['defog', 'rapidspin'],
+      mosse: ['rapidspin', 'defog', 'courtchange', 'mortalspin', 'tidyup'] },
+    { id: 'recovery', nome: 'Reliable recovery', stile: 'singles', chiave: false,
+      mosse: ['recover', 'roost', 'slackoff', 'softboiled', 'synthesis', 'moonlight', 'morningsun', 'wish',
+              'shoreup', 'strengthsap', 'milkdrink', 'healorder', 'junglehealing', 'lunarblessing'] },
+    // Entrambi
+    { id: 'pivot', nome: 'Pivot', stile: 'both', chiave: false,
+      mosse: ['uturn', 'voltswitch', 'flipturn', 'partingshot', 'teleport', 'chillyreception', 'shedtail'] },
+    { id: 'priority', nome: 'Priority attack', stile: 'both', chiave: false, priorita: true },
+    { id: 'field', nome: 'Weather / terrain', stile: 'both', chiave: false,
+      mosse: ['sunnyday', 'raindance', 'sandstorm', 'hail', 'snowscape',
+              'electricterrain', 'grassyterrain', 'psychicterrain', 'mistyterrain'],
+      abilita: ['drought', 'drizzle', 'sandstream', 'snowwarning', 'electricsurge', 'grassysurge', 'psychicsurge',
+                'mistysurge', 'orichalcumpulse', 'hadronengine', 'desolateland', 'primordialsea', 'deltastream'] },
+    { id: 'disrupt', nome: 'Disruption', stile: 'both', chiave: false,
+      mosse: ['taunt', 'encore', 'willowisp', 'spore', 'sleeppowder', 'yawn', 'snarl', 'haze', 'perishsong', 'imprison', 'disable'] },
+    { id: 'setup', nome: 'Setup', stile: 'both', chiave: false,
+      mosse: ['swordsdance', 'nastyplot', 'dragondance', 'calmmind', 'quiverdance', 'shellsmash', 'bulkup', 'bellydrum',
+              'coil', 'shiftgear', 'victorydance', 'geomancy', 'clangoroussoul', 'noretreat', 'coaching', 'howl'] }
+];
+const TB_RUOLI_ESCLUSE_PRIORITA = ['fakeout', 'feint'];
+const TB_RUOLI_SCAN = 250; // quanti Pokémon del formato (dal BST più alto) guardare per i suggerimenti
+
+// true se la specie può ancora evolversi dentro il formato: nei suggerimenti meglio le forme finali
+function tbEvolveNelFormato(sp) {
+    if (!sp || !sp.evos || !sp.evos.length) return false;
+    if (!tbStato.idPool || tbStato.idPool.firma !== tbStato.firma) {
+        tbStato.idPool = { firma: tbStato.firma, ids: new Set(tbStato.pool.map(v => v.specieId)) };
+    }
+    return sp.evos.some(e => tbStato.idPool.ids.has(tbToID(e)));
+}
+
+function tbDoppio() {
+    return tbStato.struttura === 'vgc' || tbStato.regolamento?.battleStyle === 'doubles';
+}
+
+// Il ruolo esiste nel formato? (mosse/abilità presenti nella generazione e non bannate)
+function tbRuoloDisponibile(r) {
+    if (r.spread || r.priorita) return true;
+    if (r.maxAirstream && tbStato.gen === 8) return true;
+    const mossaOk = (r.mosse || []).some(id => {
+        const m = tbDex.moves[id];
+        return m && tbGenMossa(m) <= tbStato.gen && tbMossaAmmessaDalFormato(m);
+    });
+    const abilitaOk = tbStato.gen >= 3 && (r.abilita || []).some(id => {
+        const a = tbDex.abilities[id];
+        return a && tbGenAbilita(a.name) <= tbStato.gen && !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', a.name);
+    });
+    return mossaOk || abilitaOk;
+}
+
+function tbMossaSpread(id, m) {
+    return !!m && tbMossaOffensiva(m, id) && !TB_MOSSE_NON_SUGGERIRE.includes(id)
+        && (m.target === 'allAdjacentFoes' || m.target === 'allAdjacent');
+}
+
+function tbMossaPriorita(id, m) {
+    return !!m && tbMossaOffensiva(m, id) && m.priority > 0 && !TB_RUOLI_ESCLUSE_PRIORITA.includes(id);
+}
+
+// Con cosa un set copre il ruolo (nome della mossa o dell'abilità), '' se non lo copre
+function tbComeCopreRuolo(r, s) {
+    const mosse = s.mosse.filter(Boolean);
+    const diretta = mosse.find(id => (r.mosse || []).includes(id));
+    if (diretta) return tbDex.moves[diretta].name;
+    if ((r.abilita || []).includes(tbToID(s.abilita))) return s.abilita;
+    const trova = test => mosse.find(id => test(id, tbDex.moves[id]));
+    if (r.spread) { const id = trova(tbMossaSpread); if (id) return tbDex.moves[id].name; }
+    if (r.priorita) { const id = trova(tbMossaPriorita); if (id) return tbDex.moves[id].name; }
+    if (r.maxAirstream && tbStato.gen === 8) {
+        const id = trova((i, m) => !!m && tbMossaOffensiva(m, i) && m.type === 'Flying');
+        if (id) return `Max Airstream via ${tbDex.moves[id].name}`;
+    }
+    return '';
+}
+
+// Con cosa una specie POTREBBE coprire il ruolo (abilità legale o mossa imparabile)
+function tbComePuoCoprireRuolo(r, specieId, sp) {
+    if (tbStato.gen >= 3 && (r.abilita || []).length) {
+        const ab = tbAbilitaLegali(tbSpecieBase(sp)).find(a => r.abilita.includes(tbToID(a)));
+        if (ab) return ab;
+    }
+    if (!(r.mosse || []).length && !r.spread && !r.priorita) return '';
+    const legali = tbMosseLegali(specieId);
+    const ids = new Set(legali.map(m => m.id));
+    const diretta = (r.mosse || []).find(id => ids.has(id));
+    if (diretta) return tbDex.moves[diretta].name;
+    if (r.spread || r.priorita) {
+        let migliore = null;
+        legali.forEach(({ id, dati }) => {
+            const ok = r.spread ? tbMossaSpread(id, dati) : tbMossaPriorita(id, dati);
+            if (ok && dati.basePower && (!migliore || dati.basePower > migliore.basePower)) migliore = dati;
+        });
+        if (migliore) return migliore.name;
+    }
+    return '';
+}
+
+function tbCalcolaRuoli() {
+    const stile = tbDoppio() ? 'doubles' : 'singles';
+    const membri = tbStato.slot.filter(Boolean).map(s => {
+        const sp = tbSpecie(s.specieId);
+        return { s, sp, nome: tbNomeBello(sp) };
+    });
+    const ruoli = TB_RUOLI
+        .filter(r => (r.stile === 'both' || r.stile === stile) && tbRuoloDisponibile(r))
+        .map(r => ({
+            ...r,
+            chi: membri.map(x => ({ nome: x.nome, come: tbComeCopreRuolo(r, x.s) })).filter(x => x.come)
+        }));
+    return { stile, membri, ruoli, mancanti: membri.length ? ruoli.filter(r => r.chiave && !r.chi.length) : [] };
+}
+
+// Per i ruoli chiave mancanti: chi nel team può impararli, e quali Pokémon del formato li portano
+function tbOpzioniRuoliMancanti(dati) {
+    const numeriUsati = tbStato.clausole ? tbNumeriUsati(-1) : new Set();
+    const risultato = {};
+    dati.mancanti.forEach(r => {
+        const nelTeam = dati.membri
+            .map(x => ({ nome: x.nome, come: tbComePuoCoprireRuolo(r, x.s.specieId, x.sp) }))
+            .filter(x => x.come);
+        // Dal formato: prima un Pokémon per ogni opzione migliore del ruolo (es. uno con Tailwind e uno
+        // con Trick Room), poi si riempie con le altre opzioni
+        const daAggiungere = [];
+        const giro = (ruolo, quanti) => {
+            let presi = 0;
+            for (const v of tbStato.pool.slice(0, TB_RUOLI_SCAN)) {
+                if (daAggiungere.length >= 3 || presi >= quanti) break;
+                if (!v.sp || tbEvolveNelFormato(v.sp)) continue;
+                const base = tbSpecieBase(v.sp);
+                if (base && numeriUsati.has(base.num)) continue;
+                if (daAggiungere.some(x => x.v === v || (base && tbSpecieBase(x.v.sp)?.num === base.num))) continue; // una forma per specie
+                const come = tbComePuoCoprireRuolo(ruolo, v.specieId, v.sp);
+                if (come) { daAggiungere.push({ v, come }); presi++; }
+            }
+        };
+        (r.suggerisci || []).forEach(id => giro({ ...r, mosse: [id], abilita: [], maxAirstream: false }, 1));
+        giro(r, 3);
+        risultato[r.id] = { nelTeam, daAggiungere };
+    });
+    return risultato;
+}
+
+function tbHtmlRuoli() {
+    const dati = tbCalcolaRuoli();
+    const testata = tbTestataCoach(`TEAM ROLES · ${dati.stile.toUpperCase()}`);
+    if (!dati.membri.length) {
+        return `${testata}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">Add Pokémon to check the team's roles.</div></div>`;
+    }
+
+    const chiave = dati.ruoli.filter(r => r.chiave);
+    const coperti = chiave.filter(r => r.chi.length).length;
+    const elencoChi = r => r.chi
+        .map(x => x.come === r.nome ? tbEsc(x.nome) : `${tbEsc(x.nome)} <small>(${tbEsc(x.come)})</small>`)
+        .join(', ');
+
+    // Suggerimenti per i mancanti: calcolati in differita (guardano i learnset di molti Pokémon)
+    const chiaveCache = `ruoli|${tbStato.firma}|${JSON.stringify(tbStato.slot.map(s => s && [s.specieId, s.abilita, s.mosse]))}`;
+    const opzioni = dati.mancanti.length ? tbDatiCalc(chiaveCache, 'cov-roles', () => tbOpzioniRuoliMancanti(dati)) : {};
+    const slotLibero = tbStato.slot.some(s => !s) && !tbStato.solaLettura;
+        const conCome = (nome, come, ruolo) => come === ruolo.nome ? nome : `${nome} <small>(${tbEsc(come)})</small>`;
+    const nomePool = (x, ruolo) => conCome(slotLibero
+        ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${x.v.specieId}')">${tbEsc(x.v.nome)}</span>`
+        : tbEsc(x.v.nome), x.come, ruolo);
+
+    const righeChiave = chiave.map(r => {
+        if (r.chi.length) {
+            return `
+                <div class="tb-tip-row">
+                    <span class="tb-tip-role">✔ ${tbEsc(r.nome)}</span><span class="tb-tip-names">${elencoChi(r)}</span>
+                    <span class="tb-tip-badge ok">${r.chi.length}</span>
+                </div>`;
+        }
+        const o = opzioni && opzioni[r.id];
+        let aiuto = '<div class="tb-tip-examples">↳ looking for options...</div>';
+        if (opzioni && opzioni.errore) aiuto = '<div class="tb-tip-examples">↳ couldn\'t look for options</div>';
+        else if (o) {
+            const parti = [];
+            if (o.nelTeam.length) parti.push(`in your team: ${o.nelTeam.slice(0, 3).map(x => conCome(tbEsc(x.nome), x.come, r)).join(', ')}`);
+            if (o.daAggiungere.length) parti.push(`${slotLibero ? 'or add' : 'or swap in'}: ${o.daAggiungere.map(x => nomePool(x, r)).join(', ')}`);
+            aiuto = `<div class="tb-tip-examples">↳ ${parti.length ? parti.join(' · ') : 'nothing in the format covers it'}</div>`;
+        }
+        return `
+            <div class="tb-tip-row critical">
+                <span class="tb-tip-role">✕ ${tbEsc(r.nome)}</span><span class="tb-tip-names"><i>missing</i></span>
+                <span class="tb-tip-badge bad">0</span>
+            </div>
+            ${aiuto}`;
+    }).join('');
+
+    const righeExtra = dati.ruoli.filter(r => !r.chiave).map(r => `
+        <div class="tb-tip-row">
+            <span class="tb-tip-role ${r.chi.length ? '' : 'off'}">${tbEsc(r.nome)}</span>
+            <span class="tb-tip-names">${r.chi.length ? elencoChi(r) : '—'}</span>
+        </div>`).join('');
+
+    // Bilanciamento fisico / speciale (in base alle mosse d'attacco)
+    const split = { Physical: 0, Special: 0, Mixed: 0, Support: 0 };
+    dati.membri.forEach(x => {
+        let f = 0, sp = 0;
+        x.s.mosse.forEach(id => {
+            const m = id && tbDex.moves[id];
+            if (!tbMossaOffensiva(m, id)) return;
+            if (m.category === 'Physical') f++; else sp++;
+        });
+        split[!f && !sp ? 'Support' : (f > sp ? 'Physical' : (sp > f ? 'Special' : 'Mixed'))]++;
+    });
+    const avvisoSplit = split.Physical >= 4
+        ? `<span class="tb-tip-badge warn">watch Intimidate / Will-O-Wisp</span>`
+        : (split.Special >= 4 ? `<span class="tb-tip-badge warn">watch Snarl / Assault Vest</span>` : `<span class="tb-tip-badge ok">balanced</span>`);
+    const rigaSplit = `
+        <div class="tb-tip-row">
+            <span class="tb-tip-names">${split.Physical} physical · ${split.Special} special${split.Mixed ? ` · ${split.Mixed} mixed` : ''}${split.Support ? ` · ${split.Support} support` : ''}</span>
+            ${avvisoSplit}
+        </div>`;
+
+    // Doppio: quanti hanno Protect · Singolo: debolezza a Stealth Rock (esclusi Heavy-Duty Boots)
+    let rigaExtra = '';
+    if (dati.stile === 'doubles') {
+        const conProtect = dati.membri.filter(x => x.s.mosse.some(id => TB_MOSSE_PROTECT.includes(id))).length;
+        rigaExtra = `
+            <div class="tb-tip-row">
+                <span class="tb-tip-names">Protect / Detect on ${conProtect} of ${dati.membri.length}</span>
+                <span class="tb-tip-badge ${conProtect * 2 >= dati.membri.length ? 'ok' : 'warn'}">${conProtect}/${dati.membri.length}</span>
+            </div>`;
+    } else if (tbStato.gen >= 4) {
+        const deboli = dati.membri.filter(x => x.s.oggetto !== 'heavydutyboots' && tbMoltiplicatore('Rock', x.sp.types || [], '') > 1);
+        rigaExtra = `
+            <div class="tb-tip-row">
+                <span class="tb-tip-names">Weak to Stealth Rock: ${deboli.length ? deboli.map(x => tbEsc(x.nome)).join(', ') : 'nobody'}</span>
+                <span class="tb-tip-badge ${deboli.length >= 2 ? 'warn' : 'ok'}">${deboli.length}</span>
+            </div>`;
+    }
+
+    // Ordine di velocità del team (utile per Tailwind / Trick Room e per il lead)
+    const velocita = dati.membri
+        .map(x => ({ nome: x.nome, spe: tbCalcolaStat('spe', x.sp.baseStats.spe, x.s.evs.spe, x.s.ivs.spe, x.s.natura) }))
+        .sort((a, b) => b.spe - a.spe)
+        .map(x => `<span class="tb-tip-chip">${tbEsc(x.nome)} <b>${x.spe}</b></span>`)
+        .join('<span class="tb-tip-chip-sep">›</span>');
+
+    return `
+        ${testata}
+        <div class="neubrutalist-tooltip-body">
+            <div class="tb-tip-big">${coperti}/${chiave.length}</div>
+            <div class="tb-tip-sub">key ${dati.stile} roles covered</div>
+            <div class="tb-tip-bar"><div style="width: ${chiave.length ? (100 * coperti / chiave.length).toFixed(1) : 0}%;"></div></div>
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Key roles</div>
+                ${righeChiave}
+                ${dati.mancanti.length && slotLibero ? '<div class="tb-tip-note">Click a name to add it to the first empty slot</div>' : ''}
+            </div>
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Nice to have</div>
+                ${righeExtra}
+            </div>
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Balance</div>
+                ${rigaSplit}
+                ${rigaExtra}
+            </div>
+            `;
+}
+
+// =====================================================================
+// 📋 TAG DI SQUADRA NEL DETTAGLIO DI UN TEAM DEL BOX
+// Il dettaglio usa uno stato tutto suo (tbStatoDettaglio): i tooltip coach lo "prendono in prestito"
+// solo mentre calcolano (tbEseguiCon), così il team lasciato a metà nel builder non viene mai toccato.
+// La lista dei Pokémon del formato arriva dall'helper: se è già stata calcolata si riusa,
+// altrimenti la calcola l'helper restando invisibile, come fa "Edit in team builder"
+// =====================================================================
+const tbPoolPerFormato = {};   // formatId → lista del formato calcolata dall'helper
+let tbStatoDettaglio = null;   // stato del team aperto nel dettaglio (null finché non è pronto)
+let tbStatoInUso = null;       // stato "prestato" a tbStato in questo momento
+let tbTokenDettaglio = null;
+let tbErroreDettaglio = '';
+let tbCodaPool = Promise.resolve();
+let tbFormatiCache = null;
+
+const TB_ID_TAG_DETTAGLIO = { difesa: 'box-cov-tag', attacco: 'box-off-tag', ruoli: 'box-roles-tag' };
+
+// Esegue fn con "stato" al posto di tbStato, poi rimette tutto com'era.
+// Le cache create durante fn restano nello stato prestato
+function tbEseguiCon(stato, fn) {
+    if (!stato || tbStatoInUso === stato) return fn();
+    const salvato = { ...tbStato };
+    const precedente = tbStatoInUso;
+    Object.keys(tbStato).forEach(k => { delete tbStato[k]; });
+    Object.assign(tbStato, stato);
+    tbStatoInUso = stato;
+    try {
+        return fn();
+    } finally {
+        Object.assign(stato, tbStato);
+        Object.keys(tbStato).forEach(k => { delete tbStato[k]; });
+        Object.assign(tbStato, salvato);
+        tbStatoInUso = precedente;
+    }
+}
+
+// Stato dei tre tag di squadra (lo usano sia il builder sia il dettaglio del box)
+function tbAggiornaTag(ids) {
+    const imposta = (id, classe, testo) => {
+        const tag = document.getElementById(id);
+        if (!tag) return;
+        tag.className = `tb-cov-tag ${classe}`;
+        tag.textContent = testo;
+    };
+
+    const copertura = tbCalcolaCopertura();
+    imposta(ids.difesa,
+        copertura.critici.length ? 'bad' : (copertura.pieni ? 'good' : ''),
+        copertura.critici.length ? `⚠ Team weaknesses · ${copertura.critici.length}` : (copertura.pieni ? '✔ Team weaknesses' : 'Team weaknesses'));
+
+    const attacco = tbCalcolaAttacco();
+    const muri = attacco.muri.length;
+    const senzaDati = !attacco.attaccanti || !attacco.totale;
+    imposta(ids.attacco,
+        senzaDati ? '' : (muri ? 'bad' : 'good'),
+        senzaDati ? 'Team coverage'
+            : (muri ? `⚠ Team coverage · ${muri} wall${muri === 1 ? '' : 's'}` : `✔ Team coverage · ${tbPerc(attacco.superEfficaci, attacco.totale)}%`));
+
+    const ruoli = tbCalcolaRuoli();
+    const mancano = ruoli.mancanti.length;
+    imposta(ids.ruoli,
+        !ruoli.membri.length ? '' : (mancano ? 'bad' : 'good'),
+        !ruoli.membri.length ? 'Team roles' : (mancano ? `⚠ Team roles · ${mancano} missing` : '✔ Team roles'));
+}
+
+// HTML dei tag nel dettaglio (all'apertura in caricamento)
+function tbHtmlTagDettaglio() {
+    const tag = (id, coach, costruttore, testo) => `
+        <div class="tb-cov-wrap">
+            <span class="tb-cov-tag" id="${id}"
+                  onmouseenter="tbApriCoachDettaglio(this, '${coach}', ${costruttore})"
+                  onmouseleave="tbChiudiCoachPresto('${coach}')">⏳ ${testo}</span>
+        </div>`;
+    return `
+        <div class="box-coach-tags">
+            ${tag(TB_ID_TAG_DETTAGLIO.difesa, 'cov-def', 'tbHtmlDifesa', 'Team weaknesses')}
+            ${tag(TB_ID_TAG_DETTAGLIO.attacco, 'cov-off', 'tbHtmlAttacco', 'Team coverage')}
+            ${tag(TB_ID_TAG_DETTAGLIO.ruoli, 'cov-roles', 'tbHtmlRuoli', 'Team roles')}
+        </div>`;
+}
+
+function tbApriCoachDettaglio(el, id, costruisci) {
+    tbApriCoach(el, id, () => {
+        if (!tbStatoDettaglio) {
+            return `${tbTestataCoach('TEAM')}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">${tbEsc(tbErroreDettaglio || '⏳ Loading team data...')}</div></div>`;
+        }
+        if (id === 'cov-off' && !tbStatoDettaglio.pool.length) {
+            return `${tbTestataCoach('TEAM COVERAGE')}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">The Pokémon list of this format isn't available yet: choose the format once in the helper, then reopen this team.</div></div>`;
+        }
+        return tbEseguiCon(tbStatoDettaglio, costruisci);
+    });
+}
+
+// Formato del team: stesso criterio di "Edit in team builder" (categoria o id del regolamento)
+async function tbTrovaFormatoTeam(team) {
+    const candidati = [team.categoria, team.category]
+        .map(v => String(v || '').toLowerCase().trim())
+        .filter(Boolean);
+    if (!candidati.length) return null;
+
+    if (!tbFormatiCache) {
+        const snap = await db.ref('regolamenti').once('value');
+        const formati = [];
+        snap.forEach(c => { formati.push({ id: c.key, regolamento: c.val(), categoria: String(c.val()?.categoria || '').toLowerCase().trim() }); });
+        tbFormatiCache = formati;
+    }
+    for (const cand of candidati) {
+        const f = tbFormatiCache.find(x => x.categoria === cand) || tbFormatiCache.find(x => x.id.toLowerCase() === cand);
+        if (f) return f;
+    }
+    return null;
+}
+
+// Lista dei Pokémon del formato: dalla cache, altrimenti dall'helper invisibile (una richiesta alla volta).
+// Le scelte che alcuni formati chiedono (iniziale, "same across team"...) l'helper le deduce dal team
+function tbPoolDelFormato(formatId, pokemonTeam) {
+    if (tbPoolPerFormato[formatId]) return Promise.resolve(tbPoolPerFormato[formatId]);
+
+    const lavoro = tbCodaPool.then(async () => {
+        if (tbPoolPerFormato[formatId]) return tbPoolPerFormato[formatId];
+        const helper = document.getElementById('helper-modal-overlay');
+        const select = document.getElementById('helper-format-select');
+        const grid = document.getElementById('helper-pkm-grid');
+        if (!select || !grid) return [];
+        if (helper && helper.style.display === 'flex') return []; // l'helper è aperto: non lo si tocca
+
+        const modificaPrima = tbModifica;
+        const sessione = tbModifica = { pokemon: pokemonTeam };
+        try {
+            await popolaSelettoreFormati();
+            select.value = formatId;
+            grid.originalPokemonList = [];
+            await gestisciCambioFormatoHelper();
+            const lista = Array.isArray(grid.originalPokemonList) ? [...grid.originalPokemonList] : [];
+            if (lista.length) tbPoolPerFormato[formatId] = lista;
+            return lista;
+        } finally {
+            if (tbModifica === sessione) tbModifica = modificaPrima;
+        }
+    });
+    tbCodaPool = lavoro.catch(() => []);
+    return lavoro;
+}
+
+async function tbPreparaDettaglio(team) {
+    const token = tbTokenDettaglio = {};
+    tbStatoDettaglio = null;
+    tbErroreDettaglio = '';
+
+    try {
+        const pokemonTeam = (Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon || {}))
+            .filter(p => p && p.nome);
+        const [formato] = await Promise.all([tbTrovaFormatoTeam(team), tbCaricaTuttiDati()]);
+        if (token !== tbTokenDettaglio) return;
+        if (!formato) throw new Error("This team's format was not found.");
+
+        const lista = await tbPoolDelFormato(formato.id, pokemonTeam);
+        if (token !== tbTokenDettaglio) return;
+
+        const stato = {};
+        tbEseguiCon(stato, () => {
+            tbInizializzaStato(`${formato.id}|${lista.length}|${lista.map(p => p.id).join(',')}`, formato.regolamento, lista);
+            tbCaricaTeamEsistente(pokemonTeam);
+            tbStato.solaLettura = true; // niente nomi cliccabili: il team del box non si modifica da qui
+        });
+        tbStatoDettaglio = stato;
+        tbEseguiCon(stato, () => tbAggiornaTag(TB_ID_TAG_DETTAGLIO));
+    } catch (err) {
+        if (token !== tbTokenDettaglio) return;
+        console.error('[Box · team tags]', err);
+        tbErroreDettaglio = `❌ ${err.message}`;
+        Object.values(TB_ID_TAG_DETTAGLIO).forEach(id => {
+            const tag = document.getElementById(id);
+            if (tag) tag.textContent = tag.textContent.replace('⏳ ', '');
+        });
+    }
+    // Se il mouse era già su un tag, il tooltip si aggiorna da solo
+    if (tbCoachAncora && tbCoachAperto(tbCoachAncora.id)) tbAggiornaCoach();
+}
+
 // Bottoni Copy / Save e tag delle debolezze (in colonna nell'editor, in riga nella scelta Pokémon)
 function tbHtmlAzioni(variante) {
     return `
@@ -6171,6 +6700,10 @@ function tbHtmlAzioni(variante) {
             <div class="tb-cov-wrap">
                 <span class="tb-cov-tag" id="tb-off-tag"
                       onmouseenter="tbApriCoach(this, 'cov-off', tbHtmlAttacco)" onmouseleave="tbChiudiCoachPresto('cov-off')">Team coverage</span>
+            </div>
+                        <div class="tb-cov-wrap">
+                <span class="tb-cov-tag" id="tb-roles-tag"
+                      onmouseenter="tbApriCoach(this, 'cov-roles', tbHtmlRuoli)" onmouseleave="tbChiudiCoachPresto('cov-roles')">Team roles</span>
             </div>
                     </div>`;
 }
@@ -8159,23 +8692,7 @@ function tbRenderRiepilogo() {
         descOggetto.textContent = it ? (it.shortDesc || it.desc || '') : '';
     }
 
-    const copertura = tbCalcolaCopertura();
-    const tag = document.getElementById('tb-cov-tag');
-    if (tag) {
-        tag.className = `tb-cov-tag ${copertura.critici.length ? 'bad' : (copertura.pieni ? 'good' : '')}`;
-        tag.textContent = copertura.critici.length
-            ? `⚠ Team weaknesses · ${copertura.critici.length}`
-            : (copertura.pieni ? '✔ Team weaknesses' : 'Team weaknesses');
-    }
-    const attacco = tbCalcolaAttacco();
-    const tagAttacco = document.getElementById('tb-off-tag');
-    if (tagAttacco) {
-        const muri = attacco.muri.length;
-        tagAttacco.className = `tb-cov-tag ${!attacco.attaccanti ? '' : (muri ? 'bad' : 'good')}`;
-        tagAttacco.textContent = !attacco.attaccanti
-            ? 'Team coverage'
-            : (muri ? `⚠ Team coverage · ${muri} walls` : `✔ Team coverage · ${tbPerc(attacco.superEfficaci, attacco.totale)}%`);
-    }
+    tbAggiornaTag({ difesa: 'tb-cov-tag', attacco: 'tb-off-tag', ruoli: 'tb-roles-tag' });
     const errori = tbControllaTeam();
     const wrap = document.getElementById('tb-save-wrap');
     const btnSalva = document.getElementById('tb-btn-save');
@@ -8428,8 +8945,9 @@ function tbScegliPokemon(specieId) {
     tbRender();
 }
 
-function tbRimuoviPokemon() {
-    tbStato.slot[tbStato.attivo] = null;
+function tbRimuoviPokemon(i = tbStato.attivo) {
+    tbStato.slot[i] = null;
+    tbStato.attivo = i;
     tbRender();
 }
 
