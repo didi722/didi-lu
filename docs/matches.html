@@ -1709,49 +1709,91 @@ async function eliminaShowdown(sdId) {
 
 async function popolaSelectShowdown() {
     try {
-        // Recupera la stagione attiva (usa 'sbeta' come fallback)
         const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
-        const snap = await db.ref(`seasons/${stagione}`).once('value');
-        const data = snap.val();
-
+        const [snapStagione, snapUtente] = await Promise.all([
+            db.ref(`seasons/${stagione}`).once('value'),
+            firebase.auth().currentUser
+                ? db.ref(`users/${firebase.auth().currentUser.uid}`).once('value')
+                : Promise.resolve(null)
+        ]);
+        const data = snapStagione.val();
         if (!data) {
             console.error("Data for season not found!");
             return;
         }
 
-        // 1. Popolamento Formati (Categoria)
-        const formats = data.info?.selected_formats || [];
-        let htmlCat = '<option value="">Select Format</option>';
-        formats.forEach(f => {
-            htmlCat += `<option value="${f}">${f}</option>`;
-        });
-        
-        // Puntiamo agli ID del pannello "admin-create-showdown-panel"
+        const utente = snapUtente ? (snapUtente.val() || {}) : {};
+        const isAdmin = utente.role === 'admin';
+        const iscritti = Object.keys(data.iscritti || {});
+        const io = iscritti.find(p => p.toLowerCase().trim() === String(utente.name || '').toLowerCase().trim()) || '';
+
+        // Dati che servono per contare gli showdown rimasti
+        window.datiSfide = {
+            formati: data.info?.selected_formats || [],
+            massimo: parseInt(data.info?.showdowns_per_format, 10) || 0,
+            showdowns: data.showdowns || {},
+            isAdmin, io
+        };
+
         const sdCat = document.getElementById('sd-cat');
-        if (sdCat) sdCat.innerHTML = htmlCat;
-
-        // 2. Popolamento Players
-        const players = Object.keys(data.iscritti || {});
-        let htmlP1 = '<option value="">Select Player 1</option>';
-        let htmlP2 = '<option value="">Select Player 2</option>';
-        
-        players.forEach(p => {
-            htmlP1 += `<option value="${p}">${p}</option>`;
-            htmlP2 += `<option value="${p}">${p}</option>`;
-        });
-
         const sdp1 = document.getElementById('sd-player1');
         const sdp2 = document.getElementById('sd-player2');
-        
-        if (sdp1) sdp1.innerHTML = htmlP1;
-        if (sdp2) sdp2.innerHTML = htmlP2;
+
+        if (isAdmin) {
+            sdp1.innerHTML = '<option value="">Select Player 1</option>' + iscritti.map(p => `<option value="${p}">${p}</option>`).join('');
+            sdp1.disabled = false;
+        } else {
+            // Un giocatore può creare solo sfide in cui è lui il Player 1
+            sdp1.innerHTML = io ? `<option value="${io}">${io}</option>` : '<option value="">You are not registered in this season</option>';
+            sdp1.disabled = true;
+        }
+        const avversari = iscritti.filter(p => isAdmin || p !== io);
+        sdp2.innerHTML = '<option value="">Select opponent</option>' + avversari.map(p => `<option value="${p}">${p}</option>`).join('');
+
+        sdCat.innerHTML = '<option value="">Select Format</option>' +
+            window.datiSfide.formati.map(f => `<option value="${f}">${f}</option>`).join('');
+
+        sdp1.onchange = aggiornaFormatiRimasti;
+        sdp2.onchange = aggiornaFormatiRimasti;
+        aggiornaFormatiRimasti();
 
         console.log("✅ Select Showdown popolate con successo");
-
     } catch (e) {
         console.error("Error occurred while populating showdown select:", e);
     }
 }
+
+function contaShowdownTra(p1, p2, formato) {
+    const a = String(p1).toLowerCase().trim(), b = String(p2).toLowerCase().trim();
+    return Object.values(window.datiSfide?.showdowns || {}).filter(sd => {
+        const i = sd?.info || {};
+        const x = String(i.player1 || '').toLowerCase().trim(), y = String(i.player2 || '').toLowerCase().trim();
+        return i.categoria === formato && ((x === a && y === b) || (x === b && y === a));
+    }).length;
+}
+
+// Mostra accanto a ogni formato quanti showdown restano contro l'avversario scelto
+function aggiornaFormatiRimasti() {
+    const dati = window.datiSfide;
+    const sdCat = document.getElementById('sd-cat');
+    const p1 = document.getElementById('sd-player1').value;
+    const p2 = document.getElementById('sd-player2').value;
+    if (!dati || !sdCat) return;
+
+    [...sdCat.options].forEach(opt => {
+        if (!opt.value) return;
+        if (!p1 || !p2 || !dati.massimo) {
+            opt.textContent = opt.value;
+            opt.disabled = false;
+            return;
+        }
+        const rimasti = Math.max(0, dati.massimo - contaShowdownTra(p1, p2, opt.value));
+        opt.textContent = `${opt.value} (${rimasti} left)`;
+        opt.disabled = rimasti === 0;
+        if (opt.disabled && sdCat.value === opt.value) sdCat.value = '';
+    });
+}
+
 
 async function inizializzaShowdown() {
     // 1. Recupero riferimenti dagli input
@@ -1773,6 +1815,19 @@ async function inizializzaShowdown() {
         alert("⚠️ A player cannot challenge themselves!");
         return;
     }
+
+    if (!showdownIdEsistente) {
+        const dati = window.datiSfide || {};
+        if (!dati.isAdmin && p1 !== dati.io) {
+            alert("⚠️ You can only create showdowns in which you are Player 1.");
+            return;
+        }
+        if (dati.massimo && contaShowdownTra(p1, p2, cat) >= dati.massimo) {
+            alert(`⚠️ ${p1} and ${p2} have already played all ${dati.massimo} showdowns allowed in ${cat} this season.`);
+            return;
+        }
+    }
+
 
     // Preparazione dell'oggetto con le informazioni generali
     const infoShowdown = {

@@ -1790,16 +1790,47 @@ function livelloDelRegolamento(regolamento) {
     return String(regolamento?.baseTier || '').toUpperCase() === 'LC' ? 5 : 100;
 }
 
-function normalizzaLivelloTesto(testo, livello) {
+function generazioneDelRegolamento(regolamento) {
+    return parseInt(regolamento?.genRuleValue, 10) ||
+        parseInt(String(regolamento?.vgcGen || '').replace(/\D/g, ''), 10) || 9;
+}
+
+function meccanicheAttiveRegolamento(regolamento) {
+    return regolamento?.generationalMechanics === true;
+}
+
+// Scrive il livello del formato e toglie dal testo ciò che il formato non prevede
+function adattaTestoAlFormato(testo, regolamento) {
+    const livello = livelloDelRegolamento(regolamento);
+    const gen = generazioneDelRegolamento(regolamento);
+    const meccaniche = meccanicheAttiveRegolamento(regolamento);
+    const tieniDynamax = gen === 8 && meccaniche;
+    const tieniTera = gen === 9 && meccaniche;
+
     return String(testo || '').trim().split(/\n\s*\n/).map(blocco => {
         const righe = blocco.split('\n').map(r => r.trim()).filter(r => r !== '');
         if (righe.length < 2) return righe.join('\n');
-        const senzaLivello = righe.filter(r => !/^Level:/i.test(r));
-        const dopoAbilita = senzaLivello.findIndex(r => /^Ability:/i.test(r));
-        senzaLivello.splice(dopoAbilita >= 0 ? dopoAbilita + 1 : 1, 0, `Level: ${livello}`);
-        return senzaLivello.join('\n');
+        const filtrate = righe.filter(r => !/^Level:/i.test(r)
+            && (tieniDynamax || !/^(Dynamax Level|Gigantamax):/i.test(r))
+            && (tieniTera || !/^Tera Type:/i.test(r)));
+        const dopoAbilita = filtrate.findIndex(r => /^Ability:/i.test(r));
+        filtrate.splice(dopoAbilita >= 0 ? dopoAbilita + 1 : 1, 0, `Level: ${livello}`);
+        return filtrate.join('\n');
     }).join('\n\n');
 }
+
+// Toglie dai campi dei Pokémon ciò che il formato non prevede
+function pulisciCampiPokemon(lista, regolamento) {
+    const gen = generazioneDelRegolamento(regolamento);
+    const meccaniche = meccanicheAttiveRegolamento(regolamento);
+    return lista.map(p => {
+        const copia = { ...p };
+        if (!(gen === 8 && meccaniche)) { delete copia.livelloDynamax; delete copia.gigantamax; }
+        if (!(gen === 9 && meccaniche)) delete copia.tera;
+        return copia;
+    });
+}
+
 
 
 function parseShowdown(text) {
@@ -2902,9 +2933,9 @@ async function salvaTeamSuFirebase() {
             if (!regolamento) { await avvisoSenzaLoader("Error: Format not found."); return; }
         } catch (error) { await avvisoSenzaLoader("Error: Database error: " + error.message); return; }
 
-const testoConLivello = normalizzaLivelloTesto(testoShowdown, livelloDelRegolamento(regolamento));
-        datiTeamDaSalvare.pokemon = parseShowdown(testoConLivello);
-        datiTeamDaSalvare.testoShowdown = testoConLivello;
+const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
+        datiTeamDaSalvare.pokemon = pulisciCampiPokemon(parseShowdown(testoAdattato), regolamento);
+        datiTeamDaSalvare.testoShowdown = testoAdattato;
 
         let altriTeamEsistenti = [];
         const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
@@ -5113,8 +5144,8 @@ function tbOggettiLegali() {
             if ((it.gen || 0) > tbStato.gen) return false;
             if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future'].includes(it.isNonstandard)) return false;
             if (it.isPokeball) return false;
-            if (it.zMove && tbStato.gen !== 7) return false;
-            if (it.megaStone && (!megaAmmesse || tbStato.gen < 6)) return false;
+if (it.zMove && (tbStato.gen !== 7 || !tbMeccanicheAttive())) return false;
+if (it.megaStone && (!megaAmmesse || tbStato.gen < 6 || !tbMeccanicheAttive())) return false;
             if (tbStato.within && tbStato.gen === 9 && it.isNonstandard === 'Past') return false;
 
             if (regolaBacche) {
@@ -8632,6 +8663,10 @@ function tbHtmlPannelloEV(s) {
         <div class="tb-ev-guess" id="tb-ev-guess">${tbHtmlSpreadSuggerito(s)}</div>`;
 }
 
+function tbMeccanicheAttive() {
+    return tbStato.regolamento?.generationalMechanics === true;
+}
+
 function tbHtmlAltriDati(s, sp) {
     const campi = [];
 
@@ -8642,7 +8677,6 @@ function tbHtmlAltriDati(s, sp) {
         </div>`);
 
     if (tbStato.gen >= 2) {
-        // Il sesso si sceglie solo se la specie non ne ha uno fisso (o non è senza sesso)
         if (!sp.gender) {
             campi.push(`
                 <div class="tb-field">
@@ -8662,7 +8696,7 @@ function tbHtmlAltriDati(s, sp) {
             </div>`);
     }
 
-    if (tbStato.gen === 8) {
+    if (tbStato.gen === 8 && tbMeccanicheAttive()) {
         campi.push(`
             <div class="tb-field">
                 <span class="tb-label">Dynamax Level</span>
@@ -8695,6 +8729,7 @@ function tbHtmlAltriDati(s, sp) {
     return `<div class="tb-row">${campi.join('')}</div>`;
 }
 
+
 // Imposta un campo numerico dello slot attivo, limitandolo tra min e max
 function tbImpostaNumero(campo, input, min, max, predefinito) {
     const s = tbStato.slot[tbStato.attivo];
@@ -8722,7 +8757,7 @@ function tbHtmlEditor(s) {
                ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
            </select>`
         : `<input class="tb-input" value="${tbAbilitaLegali(spBase, true).length ? 'All abilities are banned in this format' : `No ability in Gen ${tbStato.gen}`}" disabled>`;
-    const campoTera = tbStato.gen === 9
+    const campoTera = tbStato.gen === 9 && tbMeccanicheAttive()
         ? `<div class="tb-field">
                <span class="tb-label">Tera Type</span>
                <select class="tb-select" onchange="tbImpostaCampo('tera', this.value)">
@@ -9186,17 +9221,18 @@ function tbImpostaIV(chiave, valore) {
 function tbTestoSlot(s) {
     const sp = tbSpecie(s.specieId);
     const righe = [];
+    const meccaniche = tbMeccanicheAttive();
 
     const oggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
     const sesso = tbStato.gen >= 2 && (s.sesso === 'M' || s.sesso === 'F') ? ` (${s.sesso})` : '';
-    righe.push(oggetto ? `${sp.name}${sesso} @ ${oggetto}` : `${sp.name}${sesso}`); // es. "Zacian-Crowned @ Rusted Sword"
+    righe.push(oggetto ? `${sp.name}${sesso} @ ${oggetto}` : `${sp.name}${sesso}`);
     if (s.abilita) righe.push(`Ability: ${s.abilita}`);
     righe.push(`Level: ${tbStato.livello}`);
     if (tbStato.gen >= 2 && s.shiny) righe.push('Shiny: Yes');
     if (tbStato.gen >= 2 && (s.felicita ?? 255) !== 255) righe.push(`Happiness: ${s.felicita}`);
-    if (tbStato.gen === 8 && (s.livelloDynamax ?? 10) !== 10) righe.push(`Dynamax Level: ${s.livelloDynamax}`);
-    if (tbStato.gen === 8 && s.gigantamax && sp.canGigantamax) righe.push('Gigantamax: Yes');
-    if (tbStato.gen === 9 && s.tera) righe.push(`Tera Type: ${s.tera}`);
+    if (tbStato.gen === 8 && meccaniche && (s.livelloDynamax ?? 10) !== 10) righe.push(`Dynamax Level: ${s.livelloDynamax}`);
+    if (tbStato.gen === 8 && meccaniche && s.gigantamax && sp.canGigantamax) righe.push('Gigantamax: Yes');
+    if (tbStato.gen === 9 && meccaniche && s.tera) righe.push(`Tera Type: ${s.tera}`);
 
     const evs = TB_STAT.filter(st => s.evs[st.key] > 0).map(st => `${s.evs[st.key]} ${st.label}`);
     if (evs.length) righe.push(`EVs: ${evs.join(' / ')}`);
@@ -9208,6 +9244,7 @@ function tbTestoSlot(s) {
     s.mosse.filter(Boolean).forEach(id => righe.push(`- ${tbDex.moves[id]?.name || id}`));
     return righe.join('\n');
 }
+
 
 function tbTestoShowdown() {
     return tbStato.slot.filter(Boolean).map(tbTestoSlot).join('\n\n');

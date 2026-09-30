@@ -24,7 +24,8 @@
     "@capacitor/core": "^8.1.0",
     "@firebase/app": "^0.16.0",
     "@pkmn/dex": "^0.10.11",
-    "firebase-admin": "^14.2.0"
+    "firebase-admin": "^14.2.0",
+    "pokemon-showdown": "^0.11.11"
   },
   "directories": {
     "doc": "docs"

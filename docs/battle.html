@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-functions-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
@@ -137,7 +138,8 @@
         }
         .vittoria.visibile { display: block; }
         .vittoria h2 { margin: 0 0 12px; font-size: 1.8rem; }
-        .vittoria .btn { display: inline-flex; }
+        .vittoria .btn { display: inline-flex; text-decoration: none; color: var(--inchiostro); }
+        [hidden] { display: none !important; }
 
         .caricamento { text-align: center; font-weight: 700; padding: 30px; align-self: center; }
         .scelta-team {
@@ -170,7 +172,7 @@
         <header class="testata">
             <h1><span class="p1" id="nome-p1">P1</span> vs <span class="p2" id="nome-p2">P2</span></h1>
             <div class="info-turno" id="info-turno"></div>
-            <label class="opzione-bot">
+            <label class="opzione-bot" id="opzione-bot">
                 <input type="checkbox" id="bot-p2">
                 P2 giocato dal bot
             </label>

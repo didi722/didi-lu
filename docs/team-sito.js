@@ -7,7 +7,7 @@
 // Nessun riferimento al DOM.
 // =====================================================
 
-import { Teams } from './pkmn-sim.js';
+import { Teams, Dex } from './pkmn-sim.js';
 
 
 // -----------------------------------------------------
@@ -33,8 +33,9 @@ export function livelloFormato(regolamento) {
 //     (Sleep Clause Mod, Endless Battle Clause). Le altre clausole standard
 //     (Species, Item, Uber, leggendari) riguardano il team e le controlla box.html
 //   - Anything Goose: nessuna clausola
-//   - Generational Mechanics disattivato: niente Dynamax (Gen 8) o Teracristal (Gen 9).
-//     Mega e Mosse Z dipendono dagli strumenti, quindi le decide il team builder.
+//   - Generational Mechanics: attive solo se spuntate nel formato. Se spente,
+//     niente Dynamax (Gen 8) o Teracristal (Gen 9); Mega e Mosse Z dipendono
+//     dagli strumenti, quindi un team con Megapietre o Cristalli Z viene rifiutato.
 // Il livello NON viene toccato: è già scritto nel team da box.html.
 //
 // Se nel regolamento su Firebase esiste il campo "formatoSimulatore",
@@ -50,9 +51,9 @@ export function formatoSimulatore(regolamento) {
         : regolamento.battleStyle === 'doubles';
     if (gen < 3) doppio = false;   // il doppio esiste dalla Gen 3
 
-    const regole = ['Picked Team Size = 4'];
+    const regole = ['Picked Team Size = 4', 'HP Percentage Mod'];
     if (struttura === 'custom') regole.push('Sleep Clause Mod', 'Endless Battle Clause');
-    if (regolamento.generationalMechanics === false) {
+    if (!meccanicheAttive(regolamento)) {
         if (gen === 8) regole.push('Dynamax Clause');
         if (gen === 9) regole.push('Terastal Clause');
     }
@@ -60,13 +61,27 @@ export function formatoSimulatore(regolamento) {
     return `gen${gen}${doppio ? 'doubles' : ''}customgame@@@${regole.join(',')}`;
 }
 
-// Elenco dei Pokémon che non sono al livello del formato.
-// Il simulatore non corregge i livelli: se un team non è conforme, non si gioca.
-export function controllaLivelli(testo, livello) {
+export function meccanicheAttive(regolamento) {
+    return regolamento.generationalMechanics === true;
+}
+
+// Problemi che impediscono di giocare con un team. Il simulatore non
+// corregge nulla: se un team non è conforme, non si gioca.
+// (Stesso controllo che fa il server in functions/partita.js.)
+export function controllaTeam(testo, regolamento) {
     const sets = Teams.import(testo) || [];
-    return sets
-        .filter(set => (set.level || 100) !== livello)
-        .map(set => `${set.species} è al livello ${set.level || 100} invece di ${livello}`);
+    if (!sets.length) return ['Il team è vuoto o illeggibile'];
+    const livello = livelloFormato(regolamento);
+    const dex = Dex.forGen(generazioneFormato(regolamento));
+    const problemi = [];
+    for (const set of sets) {
+        if ((set.level || 100) !== livello) problemi.push(`${set.species} è al livello ${set.level || 100} invece di ${livello}`);
+        const strumento = dex.items.get(set.item);
+        if (!meccanicheAttive(regolamento) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
+            problemi.push(`${set.species} tiene ${strumento.name}, ma il formato non ha le meccaniche generazionali`);
+        }
+    }
+    return problemi;
 }
 
 
@@ -85,9 +100,14 @@ export function testoShowdownDaTeam(team, livello = 100) {
     return lista.filter(p => p && p.nome).map(p => {
         const righe = [];
         const strumento = (p.strumento || '').trim();
-        righe.push(strumento && strumento !== 'None' ? `${p.nome} @ ${strumento}` : p.nome);
+        const sesso = p.sesso === 'M' || p.sesso === 'F' ? ` (${p.sesso})` : '';
+        righe.push(strumento && strumento !== 'None' ? `${p.nome}${sesso} @ ${strumento}` : `${p.nome}${sesso}`);
         if (p.abilita) righe.push(`Ability: ${p.abilita}`);
         righe.push(`Level: ${p.livello || livello}`);
+        if (p.shiny) righe.push('Shiny: Yes');
+        if (Number.isInteger(p.felicita) && p.felicita !== 255) righe.push(`Happiness: ${p.felicita}`);
+        if (Number.isInteger(p.livelloDynamax) && p.livelloDynamax !== 10) righe.push(`Dynamax Level: ${p.livelloDynamax}`);
+        if (p.gigantamax) righe.push('Gigantamax: Yes');
         if (p.tera) righe.push(`Tera Type: ${p.tera}`);
         if (p.evs && p.evs !== '-') righe.push(`EVs: ${p.evs}`);
         if (p.natura) righe.push(`${p.natura} Nature`);
@@ -142,7 +162,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
             const sorgente = (iscritto && iscritto.pokemon) ? iscritto : (dalBox || {});
             const testoSalvato = (iscritto && iscritto.testoShowdown) || (dalBox && dalBox.testoShowdown) || '';
             const testo = testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, livello);
-            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaLivelli(testo, livello) };
+            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento) };
         }).filter(t => t.nome && t.testo);
 
         giocatori[lato] = { nome, id, colore: coloreSnap.val(), teams };
