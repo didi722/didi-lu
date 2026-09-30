@@ -3177,6 +3177,7 @@ async function popolaSelettoreFormati() {
         console.error("Error loading formats:", error);
     }
 }
+
 function normalizzaChiaveDatabase(chiave) {
     const mappa = {
         'name_lenght': 'name_length',
@@ -5171,62 +5172,48 @@ function tbHtmlEfficacia(tipiDifesa, abilita) {
     return html;
 }
 
+// =====================================================================
+// 🛡️ COPERTURA DIFENSIVA (tooltip "Team weaknesses")
+// =====================================================================
 function tbCalcolaCopertura() {
     const pieni = tbStato.slot.filter(Boolean);
-    if (!pieni.length) {
-        return { pieni: 0, critici: [], html: `<div class="tb-placeholder">Add Pokémon to see the team's weaknesses and resistances.</div>` };
-    }
-
     const critici = [];
-        const avvisi = [];
-    const celle = tbTipiAttaccanti().map(t => {
-        let deboli = 0, x4 = 0, resiste = 0, immune = 0;
+    const avvisi = [];
+
+    const tipi = tbTipiAttaccanti().map(t => {
+        const r = { tipo: t, deboli: [], x4: [], resiste: [], immune: [] };
         pieni.forEach(s => {
             const sp = tbSpecie(s.specieId);
+            const nome = tbNomeBello(sp);
             const m = tbMoltiplicatore(t, sp.types || [], s.abilita);
-            if (m === 0) immune++;
-            else if (m > 1) { deboli++; if (m >= 4) x4++; }
-            else if (m < 1) resiste++;
+            if (m === 0) r.immune.push(nome);
+            else if (m > 1) { r.deboli.push(nome); if (m >= 4) r.x4.push(nome); }
+            else if (m < 1) r.resiste.push(nome);
         });
 
-        const coperti = resiste + immune;
-        let stato = '';
-        if (deboli >= 3 || (deboli >= 2 && deboli - coperti >= 2)) stato = 'critical';
-        else if (deboli >= 2 && coperti === 0) stato = 'warning';
-        else if (deboli === 0 && coperti >= 2) stato = 'strong';
-        if (stato === 'critical') critici.push(t);
-            if (stato === 'warning') avvisi.push(t);
+        const d = r.deboli.length;
+        const c = r.resiste.length + r.immune.length;
+        // rosso: 3+ deboli, o 2+ deboli senza nessuna risposta
+        // arancione: più deboli che risposte, o un 4× senza risposta
+        if (d >= 3 || (d >= 2 && c === 0)) r.stato = 'critical';
+        else if ((d >= 2 && c < d) || (r.x4.length && c === 0)) r.stato = 'warning';
+        else if (d === 0 && c >= 2) r.stato = 'strong';
+        else r.stato = '';
 
-        return `
-            <div class="tb-cov-cell ${stato}">
-                <span class="mini-type-badge ${t.toLowerCase()}">${t.toLowerCase()}</span>
-                <div class="tb-cov-nums">
-                    <span class="tb-cov-w ${deboli ? '' : 'zero'}" title="Weak">▼ ${deboli}${x4 ? `<small> (${x4}×4)</small>` : ''}</span>
-                    <span class="tb-cov-r ${resiste ? '' : 'zero'}" title="Resists">▲ ${resiste}</span>
-                    <span class="tb-cov-i ${immune ? '' : 'zero'}" title="Immune">✕ ${immune}</span>
-                </div>
-            </div>`;
-    }).join('');
+        if (r.stato === 'critical') critici.push(t);
+        if (r.stato === 'warning') avvisi.push(t);
+        return r;
+    });
 
-        const sintesi = critici.length
-        ? `<div class="tb-cov-summary bad">⚠ Critical weaknesses: ${critici.join(', ')}</div>
-           ${tbHtmlSuggerimenti(critici, avvisi, pieni.length)}`
-        : `<div class="tb-cov-summary good">✔ No critical weaknesses</div>`;
-
-    return {
-        pieni: pieni.length,
-        critici,
-        html: `
-            ${sintesi}
-            <div class="tb-cov-grid">${celle}</div>
-            <div class="tb-cov-legend">▼ weak · ▲ resists · ✕ immune — red: too many weaknesses · orange: weak with no answers · green: well covered</div>`
-    };
+    return { pieni: pieni.length, tipi, critici, avvisi };
 }
 
-// Debolezze critiche: suggerisce le tipizzazioni presenti nel formato che le coprono
-// (resistenza o immunità) senza aggiungere debolezze ai tipi già problematici
+// Tipizzazioni presenti nel formato che coprono i tipi problematici (resistenza o immunità)
+// senza aggiungere debolezze ai tipi già problematici. I nomi sono cliccabili se c'è uno slot libero
 function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
+    const bersagli = critici.length ? critici : avvisi;
     const problemi = [...critici, ...avvisi];
+    if (!bersagli.length) return '';
     const numeriUsati = tbStato.clausole ? tbNumeriUsati(-1) : new Set();
 
     // Raggruppa i Pokémon disponibili per tipizzazione (esclusi quelli già nel team)
@@ -5236,14 +5223,14 @@ function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
         if (!tipi.length) return;
         const base = tbSpecieBase(v.sp);
         if (base && numeriUsati.has(base.num)) return;
-        const chiave = tipi.join('/');
+        const chiave = [...tipi].sort().join('/'); // Steel/Flying e Flying/Steel sono la stessa tipizzazione
         if (!gruppi.has(chiave)) gruppi.set(chiave, { tipi, pokemon: [] });
         gruppi.get(chiave).pokemon.push(v); // il pool è già ordinato per BST
     });
 
     const valutati = [...gruppi.values()].map(g => ({
         ...g,
-        copre: critici.filter(t => tbMoltiplicatore(t, g.tipi, '') < 1),
+        copre: bersagli.filter(t => tbMoltiplicatore(t, g.tipi, '') < 1),
         peggiora: problemi.filter(t => tbMoltiplicatore(t, g.tipi, '') > 1),
         // resistenze meno debolezze su tutti i tipi: a parità premia le tipizzazioni più solide
         bilancio: tbTipiAttaccanti().reduce((tot, t) => {
@@ -5260,23 +5247,911 @@ function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
                      || (b.bilancio - a.bilancio)
                      || (b.pokemon[0].bst - a.pokemon[0].bst))
         .slice(0, 3);
-
     if (!scelti.length) return '';
 
-    const badge = t => `<span class="mini-type-badge ${t.toLowerCase()}">${t.toLowerCase()}</span>`;
+    const slotLibero = tbStato.slot.some(s => !s);
+    const esempio = v => slotLibero
+        ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${v.specieId}')">${tbEsc(v.nome)}</span>`
+        : tbEsc(v.nome);
+
     const righe = scelti.map(g => `
-        <div class="tb-cov-suggest-row">
-            <div class="tb-cov-suggest-types">${g.tipi.map(badge).join('')}</div>
-            <div class="tb-cov-suggest-info">
-                covers <b>${g.copre.join(', ')}</b>${g.peggiora.length ? `<span class="tb-cov-suggest-warn"> · but weak to ${g.peggiora.join(', ')}</span>` : ''}
-                <small>e.g. ${g.pokemon.slice(0, 3).map(v => tbEsc(v.nome)).join(', ')}</small>
-            </div>
+        <div class="tb-tip-row">
+            <span class="tb-tip-types">${g.tipi.map(tbBadgeTipoMini).join('')}</span>
+            <span class="tb-tip-names wrap">covers <b>${g.copre.join(', ')}</b>${g.peggiora.length ? ` · <i>weak to ${g.peggiora.join(', ')}</i>` : ''}</span>
+        </div>
+        <div class="tb-tip-examples">e.g. ${g.pokemon.slice(0, 3).map(esempio).join(', ')}</div>`).join('');
+
+    return `
+        <div class="tb-tip-section">
+            <div class="tb-tip-title">💡 ${quantiNelTeam < 6 ? 'Consider adding' : 'Consider swapping in'}</div>
+            ${righe}
+            ${slotLibero ? `<div class="tb-tip-note">Click a name to add it to the first empty slot</div>` : ''}
+        </div>`;
+}
+
+function tbAggiungiSuggerito(specieId) {
+    const libero = tbStato.slot.findIndex(s => !s);
+    if (libero < 0) return;
+    tbNascondiTooltip();
+    tbStato.attivo = libero;
+    tbScegliPokemon(specieId);
+}
+
+function tbHtmlDifesa() {
+    const c = tbCalcolaCopertura();
+    const testata = tbTestataCoach(`TEAM DEFENCE · ${c.pieni}/6`);
+    if (!c.pieni) {
+        return `${testata}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">Add Pokémon to see the team's weaknesses and resistances.</div></div>`;
+    }
+
+    const totale = c.tipi.length;
+    const conRisposta = c.tipi.filter(r => r.resiste.length + r.immune.length > 0).length;
+
+    // Tipi problematici: prima i rossi, poi per numero di deboli
+    const problemi = c.tipi
+        .filter(r => r.stato === 'critical' || r.stato === 'warning')
+        .sort((a, b) => ((a.stato === 'critical' ? 0 : 1) - (b.stato === 'critical' ? 0 : 1))
+                     || (b.deboli.length - a.deboli.length)
+                     || (b.x4.length - a.x4.length));
+
+    const righeProblemi = problemi.map(r => {
+        const nomi = r.deboli.map(n => r.x4.includes(n) ? `<b>${tbEsc(n)} 4×</b>` : tbEsc(n)).join(', ');
+        const risposte = [...r.immune, ...r.resiste];
+        const badge = risposte.length
+            ? `<span class="tb-tip-badge ok">↳ ${tbEsc(risposte[0])}${risposte.length > 1 ? ` +${risposte.length - 1}` : ''}</span>`
+            : `<span class="tb-tip-badge bad">no switch-in</span>`;
+        return `
+            <div class="tb-tip-row ${r.stato}">
+                ${tbBadgeTipoMini(r.tipo)}<span class="tb-tip-names">${nomi}</span>${badge}
+            </div>`;
+    }).join('');
+
+    const sezioneProblemi = problemi.length
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-title">⚠ Problem types · who is weak</div>
+               ${righeProblemi}
+           </div>
+           ${tbHtmlSuggerimenti(c.critici, c.avvisi, c.pieni)}`
+        : `<div class="tb-tip-section"><div class="tb-tip-sub">✔ No critical weaknesses</div></div>`;
+
+    const celle = c.tipi.map(r => `
+        <div class="tb-tip-cell ${r.stato}">
+            ${tbBadgeTipoMini(r.tipo)}
+            <small>▼${r.deboli.length} ▲${r.resiste.length + r.immune.length}</small>
         </div>`).join('');
 
     return `
-        <div class="tb-cov-suggest">
-            <div class="tb-cov-suggest-title">💡 ${quantiNelTeam < 6 ? 'Consider adding' : 'Consider swapping in'} a Pokémon of type:</div>
-            ${righe}
+        ${testata}
+        <div class="neubrutalist-tooltip-body">
+            <div class="tb-tip-big">${conRisposta}/${totale}</div>
+            <div class="tb-tip-sub">attacking types with a safe switch-in</div>
+            <div class="tb-tip-bar"><div style="width: ${(100 * conRisposta / totale).toFixed(1)}%;"></div></div>
+            <div class="tb-tip-sub">${c.critici.length} critical · ${c.avvisi.length} to watch</div>
+            ${sezioneProblemi}
+            <div class="tb-tip-section"><div class="tb-tip-grid">${celle}</div></div>
+        </div>`;
+}
+
+// =====================================================================
+// ⚔️ COPERTURA OFFENSIVA (tooltip "Team coverage")
+// Per ogni Pokémon del formato calcola la miglior efficacia che il team ottiene
+// con le mosse d'attacco scelte. Considera il tipo reale della mossa (Pixilate & co.,
+// Tera Blast, Freeze-Dry...) e l'abilità del bersaglio solo se è garantita
+// (es. Levitate su Rotom-Wash, che non ha alternative)
+// =====================================================================
+const TB_ABILITA_ATE = { pixilate: 'Fairy', aerilate: 'Flying', refrigerate: 'Ice', galvanize: 'Electric' };
+const TB_ABILITA_MOLD = ['moldbreaker', 'teravolt', 'turboblaze'];
+const TB_MOSSE_POTENZA_VARIABILE = ['lowkick', 'grassknot', 'heavyslam', 'heatcrash', 'gyroball', 'electroball',
+    'return', 'frustration', 'reversal', 'flail', 'crushgrip', 'wringout', 'hardpress', 'punishment'];
+const TB_MOSSE_NON_SUGGERIRE = ['explosion', 'selfdestruct', 'mistyexplosion', 'finalgambit', 'steelbeam', 'mindblown'];
+const TB_MOSSE_SOLO_SUPPORTO = ['fakeout', 'feint']; // fanno danno, ma non sono copertura
+
+// Conta per la copertura: mossa d'attacco, non a danno fisso (Seismic Toss), né OHKO, né Fake Out & co.
+function tbMossaOffensiva(m, id) {
+    if (!m || m.category === 'Status' || m.damage || m.ohko || TB_MOSSE_SOLO_SUPPORTO.includes(id)) return false;
+    return m.basePower > 0 || TB_MOSSE_POTENZA_VARIABILE.includes(id);
+}
+
+// Tipo effettivo della mossa per questo Pokémon
+function tbTipoMossa(id, m, s, sp) {
+    const ab = tbToID(s.abilita);
+    if (ab === 'normalize') return 'Normal';
+    if (id === 'terablast' && tbStato.gen === 9 && s.tera && s.tera !== 'Stellar') return s.tera;
+    if (['judgment', 'multiattack', 'revelationdance'].includes(id)) return (sp.types || [m.type])[0];
+    if (m.type === 'Normal' && TB_ABILITA_ATE[ab]) return TB_ABILITA_ATE[ab];
+    return m.type;
+}
+
+function tbEfficaciaMossa(id, tipo, abilitaAttaccante, tipiDifesa, abilitaDifesa) {
+    const abAtt = tbToID(abilitaAttaccante);
+    let tipi = tipiDifesa;
+    let abDif = TB_ABILITA_MOLD.includes(abAtt) ? '' : abilitaDifesa;
+
+    if ((abAtt === 'scrappy' || abAtt === 'mindseye') && (tipo === 'Normal' || tipo === 'Fighting')) {
+        tipi = tipi.filter(t => t !== 'Ghost');
+    }
+    if (id === 'thousandarrows') { // colpisce anche i Volante e chi ha Levitate
+        tipi = tipi.filter(t => t !== 'Flying');
+        abDif = '';
+    }
+
+    let m = tbMoltiplicatore(tipo, tipi, abDif);
+    if (id === 'freezedry' && tipi.includes('Water')) m *= 4;
+    if (id === 'flyingpress') m *= tbMoltiplicatore('Flying', tipi, '');
+    return m;
+}
+
+// Efficacia di un tipo "puro" su un bersaglio (abilità contata solo se garantita)
+function tbEfficaciaTipoSuBersaglio(tipo, b) {
+    return Math.max(...b.abilita.map(a => tbMoltiplicatore(tipo, b.v.sp.types, a)));
+}
+
+function tbCalcolaAttacco() {
+    const chiave = tbStato.firma + '|' + JSON.stringify(tbStato.slot.map(s => s && [s.specieId, s.abilita, s.tera, s.mosse]));
+    if (tbStato.cacheAttacco && tbStato.cacheAttacco.chiave === chiave) return tbStato.cacheAttacco.dati;
+
+    const membri = tbStato.slot.filter(Boolean).map(s => {
+        const sp = tbSpecie(s.specieId);
+        const mosse = s.mosse
+            .filter(id => id && tbMossaOffensiva(tbDex.moves[id], id))
+            .map(id => ({ id, tipo: tbTipoMossa(id, tbDex.moves[id], s, sp) }));
+        return { s, sp, nome: tbNomeBello(sp), mosse, colpiti: 0 };
+    });
+    const attaccanti = membri.filter(x => x.mosse.length);
+
+    const bersagli = tbStato.pool.filter(v => v.sp && Array.isArray(v.sp.types)).map(v => {
+        const abilita = tbAbilitaLegali(v.sp);
+        if (!abilita.length) abilita.push('');
+        let migliore = 0;
+        attaccanti.forEach(x => {
+            let delMembro = 0;
+            x.mosse.forEach(mv => {
+                // max sulle abilità: un'immunità da abilità conta solo se tutte le sue abilità la danno
+                const eff = Math.max(...abilita.map(a => tbEfficaciaMossa(mv.id, mv.tipo, x.s.abilita, v.sp.types, a)));
+                if (eff > delMembro) delMembro = eff;
+            });
+            if (delMembro > 1) x.colpiti++;
+            if (delMembro > migliore) migliore = delMembro;
+        });
+        return { v, abilita, migliore };
+    });
+
+    const dati = {
+        membri,
+        attaccanti: attaccanti.length,
+        mosse: attaccanti.reduce((t, x) => t + x.mosse.length, 0),
+        bersagli,
+        totale: bersagli.length,
+        superEfficaci: bersagli.filter(b => b.migliore > 1).length,
+        muri: bersagli.filter(b => b.migliore < 1)
+    };
+    tbStato.cacheAttacco = { chiave, dati };
+    return dati;
+}
+
+// Chi nel team può imparare una mossa di quel tipo, con la mossa migliore
+// (potenza × STAB × stat d'attacco base × precisione; mosse a carica/ricarica penalizzate)
+function tbChiImparaTipo(membri, tipo) {
+    return membri.map(x => {
+        const giaNelSet = new Set(x.s.mosse);
+        let migliore = null, punteggio = 0;
+        tbMosseLegali(x.s.specieId).forEach(({ id, dati }) => {
+            if (giaNelSet.has(id) || TB_MOSSE_NON_SUGGERIRE.includes(id) || !tbMossaOffensiva(dati, id)) return;
+            if (tbTipoMossa(id, dati, x.s, x.sp) !== tipo) return;
+            const stat = dati.category === 'Physical' ? x.sp.baseStats.atk : x.sp.baseStats.spa;
+            const stab = (x.sp.types || []).includes(tipo) ? 1.5 : 1;
+            const precisione = dati.accuracy === true ? 100 : (dati.accuracy || 100);
+            const penalita = dati.flags && (dati.flags.recharge || dati.flags.charge) ? 0.5 : 1;
+            const p = (dati.basePower || 60) * stab * stat * precisione * penalita;
+            if (p > punteggio) { punteggio = p; migliore = dati.name; }
+        });
+        return migliore ? { nome: x.nome, mossa: migliore, punteggio } : null;
+    }).filter(Boolean).sort((a, b) => b.punteggio - a.punteggio);
+}
+
+function tbHtmlAttacco() {
+    const a = tbCalcolaAttacco();
+    const testata = tbTestataCoach(`TEAM COVERAGE · ${a.mosse} attacks`);
+    if (!a.attaccanti || !a.totale) {
+        return `${testata}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">Give your Pokémon some attacking moves to see the offensive coverage.</div></div>`;
+    }
+
+    const nonSE = a.bersagli.filter(b => b.migliore <= 1);
+    const neutri = nonSE.length - a.muri.length;
+    const nomiBersagli = (lista, quanti) =>
+        lista.slice(0, quanti).map(b => tbEsc(b.v.nome)).join(', ') + (lista.length > quanti ? ` +${lista.length - quanti}` : '');
+
+    // Tipi d'attacco del team (quante mosse per tipo)
+    const conteggioTipi = {};
+    a.membri.forEach(x => x.mosse.forEach(mv => { conteggioTipi[mv.tipo] = (conteggioTipi[mv.tipo] || 0) + 1; }));
+    const htmlTipiTeam = Object.entries(conteggioTipi)
+        .sort((x, y) => y[1] - x[1])
+        .map(([t, n]) => `<span class="tb-tip-chip">${tbBadgeTipoMini(t)}${n > 1 ? `<small>×${n}</small>` : ''}</span>`)
+        .join('');
+
+    // Pokémon che resistono a tutto il team
+    const sezioneMuri = a.muri.length
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-title">🧱 Resist your whole team · ${a.muri.length}</div>
+               <div class="tb-tip-examples">${nomiBersagli(a.muri, 8)}</div>
+           </div>`
+        : '';
+
+    // Non colpiti superefficace, raggruppati per tipizzazione (le più numerose prima)
+    const gruppi = new Map();
+    nonSE.forEach(b => {
+        const k = [...b.v.sp.types].sort().join('/');
+        if (!gruppi.has(k)) gruppi.set(k, { tipi: b.v.sp.types, lista: [], peggiore: 4 });
+        const g = gruppi.get(k);
+        g.lista.push(b);
+        g.peggiore = Math.min(g.peggiore, b.migliore);
+    });
+    const righeGruppi = [...gruppi.values()]
+        .sort((x, y) => (y.lista.length - x.lista.length) || (x.peggiore - y.peggiore))
+        .slice(0, 5)
+        .map(g => `
+            <div class="tb-tip-row">
+                <span class="tb-tip-types">${g.tipi.map(tbBadgeTipoMini).join('')}</span>
+                <span class="tb-tip-names">${nomiBersagli(g.lista, 2)}</span>
+                <span class="tb-tip-badge ${g.peggiore < 1 ? 'bad' : 'warn'}">${g.lista.length}</span>
+            </div>`).join('');
+    const sezioneGruppi = nonSE.length
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-title">Not hit super-effectively · by typing</div>
+               ${righeGruppi}
+               ${gruppi.size > 5 ? `<div class="tb-tip-note">…and ${gruppi.size - 5} more typings</div>` : ''}
+           </div>`
+        : `<div class="tb-tip-section"><div class="tb-tip-sub">🏁 Everything in the format is hit super-effectively</div></div>`;
+
+    // Tipi che aggiungerebbero più superefficaci, con chi li può imparare
+    const suggerimenti = tbTipiAttaccanti()
+        .map(t => ({ tipo: t, guadagno: nonSE.filter(b => tbEfficaciaTipoSuBersaglio(t, b) > 1).length }))
+        .filter(x => x.guadagno > 0)
+        .sort((x, y) => y.guadagno - x.guadagno)
+        .slice(0, 3);
+    const righeSuggerimenti = suggerimenti.map(sug => {
+        const chi = tbChiImparaTipo(a.membri, sug.tipo).slice(0, 2);
+        return `
+            <div class="tb-tip-row">
+                ${tbBadgeTipoMini(sug.tipo)}
+                <span class="tb-tip-names wrap">${chi.length
+                    ? chi.map(c => `${tbEsc(c.nome)}: <b>${tbEsc(c.mossa)}</b>`).join(' · ')
+                    : '<i>nobody in the team learns one</i>'}</span>
+                <span class="tb-tip-badge ok">+${sug.guadagno}</span>
+            </div>`;
+    }).join('');
+    const sezioneSuggerimenti = suggerimenti.length
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-title">💡 Best type to add · who can learn it</div>
+               ${righeSuggerimenti}
+           </div>`
+        : '';
+
+    // Contributo di ogni membro
+    const righeMembri = a.membri.map(x => {
+        const tipi = [...new Set(x.mosse.map(mv => mv.tipo))];
+        return `
+            <div class="tb-tip-row">
+                <span class="tb-tip-names">${tbEsc(x.nome)}</span>
+                <span class="tb-tip-types">${tipi.length ? tipi.map(tbBadgeTipoMini).join('') : '<i>no attacks</i>'}</span>
+                <b>${tipi.length ? `${tbPerc(x.colpiti, a.totale)}%` : '—'}</b>
+            </div>`;
+    }).join('');
+
+    return `
+        ${testata}
+        <div class="neubrutalist-tooltip-body">
+            <div class="tb-tip-big">${tbPerc(a.superEfficaci, a.totale)}%</div>
+            <div class="tb-tip-sub">of the format hit super-effectively</div>
+            <div class="tb-tip-bar"><div style="width: ${(100 * a.superEfficaci / a.totale).toFixed(1)}%;"></div></div>
+            <div class="tb-tip-sub">${a.superEfficaci} super-effective · ${neutri} neutral at best · ${a.muri.length} resist everything</div>
+            <div class="tb-tip-section"><div class="tb-tip-chips">${htmlTipiTeam}</div></div>
+            ${sezioneMuri}
+            ${sezioneGruppi}
+            ${sezioneSuggerimenti}
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Per Pokémon · % of the format hit super-effectively</div>
+                ${righeMembri}
+            </div>
+            <div class="tb-tip-note">${a.totale} Pokémon · target abilities counted only when guaranteed (e.g. Levitate on Rotom-Wash)</div>
+        </div>`;
+}
+
+// =====================================================================
+// 🧮 DAMAGE CALC: tooltip su Atk/SpA (danni che fai) e su HP/Def/SpD (danni che subisci)
+// Motore: @smogon/calc, lo stesso calcolatore di Showdown, caricato da jsDelivr.
+// Avversari: i TB_CALC_MINACCE Pokémon completamente evoluti del formato con BST più alto.
+// I calcoli pesanti partono dopo che il tooltip è comparso e restano in cache
+// finché il Pokémon non cambia, quindi il primo hover mostra "Calculating..." per un attimo
+// =====================================================================
+const TB_CALC_URL = 'https://cdn.jsdelivr.net/npm/@smogon/calc@0.12.0/dist/';
+const TB_CALC_MINACCE = 80;
+const TB_CALC_MOSSE_ESCLUSE = ['dreameater', 'belch', 'lastresort', 'synchronoise', 'focuspunch', 'steelroller',
+    'shelltrap', 'burnup', 'futuresight', 'doomdesire', 'hyperspacefury', 'spitup', 'fling', 'naturalgift'];
+const TB_CALC_METEO = {
+    drought: 'Sun', orichalcumpulse: 'Sun', drizzle: 'Rain', sandstream: 'Sand',
+    desolateland: 'Harsh Sunshine', primordialsea: 'Heavy Rain', deltastream: 'Strong Winds'
+};
+const TB_CALC_TERRENI = {
+    electricsurge: 'Electric', hadronengine: 'Electric', grassysurge: 'Grassy',
+    psychicsurge: 'Psychic', mistysurge: 'Misty'
+};
+
+let tbPromessaCalc = null;
+const tbCacheCalc = new Map();
+const tbCalcInCorso = new Set();
+
+// --- CARICAMENTO DELLA LIBRERIA ---------------------------------------
+function tbCalcPronto() {
+    return !!(window.calc && window.calc.calculate && window.calc.Generations);
+}
+
+function tbCaricaCalc() {
+    if (tbCalcPronto()) return Promise.resolve(window.calc);
+    if (tbPromessaCalc) return tbPromessaCalc;
+
+    const carica = src => new Promise((ok, ko) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = ok;
+        script.onerror = () => ko(new Error(`Unable to load ${src}`));
+        document.head.appendChild(script);
+    });
+    tbPromessaCalc = carica(TB_CALC_URL + 'data/production.min.js')
+        .then(() => carica(TB_CALC_URL + 'production.min.js'))
+        .then(() => window.calc)
+        .catch(err => { tbPromessaCalc = null; throw err; });
+    return tbPromessaCalc;
+}
+
+function tbCoachAperto(id) {
+    const tooltip = document.getElementById('global-neubrutalist-tooltip');
+    return !!tooltip && tooltip.style.display !== 'none' && tooltip.dataset.currentId === id;
+}
+
+// Tooltip sulle statistiche del pannello EV: Velocità → speed tier, Atk/SpA → danni fatti, HP/Def/SpD → danni subiti
+function tbApriCoachStat(el, chiave) {
+    const id = `stat-${chiave}`;
+    if (chiave === 'spe') return tbApriCoach(el, id, tbHtmlSpeedTier);
+    const costruisci = (chiave === 'atk' || chiave === 'spa')
+        ? () => tbHtmlCalcAttacco(chiave)
+        : () => tbHtmlCalcDifesa(chiave);
+    tbApriCoach(el, id, () => tbHtmlCalcConLibreria(id, costruisci));
+}
+
+// Se la libreria non è ancora arrivata mostra un messaggio e aggiorna il tooltip appena è pronta
+function tbHtmlCalcConLibreria(id, costruisci) {
+    if (tbCalcPronto()) return costruisci();
+    tbCaricaCalc()
+        .then(() => { if (tbCoachAperto(id)) tbAggiornaCoach(); })
+        .catch(() => {
+            if (!tbCoachAperto(id)) return;
+            const tooltip = tbGetTooltip();
+            tooltip.innerHTML = `${tbTestataCoach('DAMAGE CALC')}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">❌ Couldn't load the damage calculator. Check the connection and hover again.</div></div>`;
+        });
+    return `${tbTestataCoach('DAMAGE CALC')}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">⏳ Loading the damage calculator...</div></div>`;
+}
+
+// Calcolo in differita: il tooltip compare subito, i numeri arrivano appena pronti
+function tbDatiCalc(chiave, idCoach, calcola) {
+    if (tbCacheCalc.has(chiave)) return tbCacheCalc.get(chiave);
+    if (!tbCalcInCorso.has(chiave)) {
+        tbCalcInCorso.add(chiave);
+        setTimeout(() => {
+            let dati = null;
+            try {
+                dati = calcola();
+            } catch (err) {
+                console.error('[Damage calc]', err);
+                dati = { errore: err.message };
+            }
+            if (tbCacheCalc.size > 60) tbCacheCalc.clear();
+            tbCacheCalc.set(chiave, dati);
+            tbCalcInCorso.delete(chiave);
+            if (tbCoachAperto(idCoach)) tbAggiornaCoach();
+        }, 30);
+    }
+    return null;
+}
+
+// --- OPZIONI (chip cliccabili nel tooltip) ------------------------------
+function tbOpzCalc() {
+    if (!tbStato.opzCalc) tbStato.opzCalc = { bulk: 'hp', invest: 'max', boost: false };
+    return tbStato.opzCalc;
+}
+
+function tbCambiaOpzCalc(campo, valore) {
+    const opz = tbOpzCalc();
+    opz[campo] = campo === 'boost' ? !opz.boost : valore;
+    tbAggiornaCoach();
+}
+
+function tbChipCalc(etichetta, attivo, campo, valore = '') {
+    return `<span class="tb-tip-chip-btn ${attivo ? 'on' : ''}" onclick="tbCambiaOpzCalc('${campo}', '${valore}')">${etichetta}</span>`;
+}
+
+// Dynamax in Gen 8, Terastal in Gen 9
+function tbChipBoost(s) {
+    const opz = tbOpzCalc();
+    if (tbStato.gen === 8) return tbChipCalc('Dynamax', opz.boost, 'boost');
+    if (tbStato.gen === 9 && s.tera && s.tera !== 'Stellar') return tbChipCalc(`Tera ${tbEsc(s.tera)}`, opz.boost, 'boost');
+    return '';
+}
+
+// --- COSTRUZIONE DEI POKÉMON PER IL CALCOLATORE -------------------------
+function tbCalcGen() {
+    return window.calc.Generations.get(Math.min(9, Math.max(1, tbStato.gen)));
+}
+
+// Formato (singolo/doppio) + meteo e terreno portati dall'abilità del tuo Pokémon
+function tbCampoCalc(s) {
+    const doppio = tbStato.struttura === 'vgc' || tbStato.regolamento?.battleStyle === 'doubles';
+    const opz = { gameType: doppio ? 'Doubles' : 'Singles' };
+    const ab = tbToID(s.abilita);
+    const meteo = ab === 'snowwarning' ? (tbStato.gen >= 9 ? 'Snow' : 'Hail') : TB_CALC_METEO[ab];
+    if (meteo) opz.weather = meteo;
+    if (TB_CALC_TERRENI[ab]) opz.terrain = TB_CALC_TERRENI[ab];
+    return new window.calc.Field(opz);
+}
+
+function tbPokemonCalc(s, evsDiversi = {}) {
+    const sp = tbSpecie(s.specieId);
+    const opz = tbOpzCalc();
+    const dati = {
+        level: tbStato.livello,
+        nature: s.natura,
+        evs: { ...s.evs, ...evsDiversi },
+        ivs: { ...s.ivs }
+    };
+    if (s.abilita) dati.ability = s.abilita;
+    if (s.oggetto && tbDex.items[s.oggetto]) dati.item = tbDex.items[s.oggetto].name;
+    if (opz.boost && tbStato.gen === 8) dati.isDynamaxed = true;
+    if (opz.boost && tbStato.gen === 9 && s.tera && s.tera !== 'Stellar') dati.teraType = s.tera;
+    return new window.calc.Pokemon(tbCalcGen(), sp.name, dati);
+}
+
+// Bersaglio quando attacchi tu: niente strumento, prima abilità legale
+function tbPokemonBersaglio(m, categoria, bulk) {
+    const dif = categoria === 'Physical' ? 'def' : 'spd';
+    const evs = bulk === 'frail' ? {} : (bulk === 'max' ? { hp: 252, [dif]: 252 } : { hp: 252 });
+    const nature = bulk === 'max' ? (categoria === 'Physical' ? 'Bold' : 'Calm') : 'Serious';
+    const dati = { level: tbStato.livello, nature, evs };
+    if (m.abilita[0]) dati.ability = m.abilita[0];
+    return new window.calc.Pokemon(tbCalcGen(), m.v.sp.name, dati);
+}
+
+// Minaccia quando attacca lei: 252 nella stat d'attacco (con o senza natura), niente strumento.
+// Gli oggetti restano in m.cache perché non dipendono dal tuo Pokémon
+function tbPokemonMinaccia(m, categoria, invest, abilita) {
+    const chiave = `${categoria}|${invest}|${abilita || ''}|${tbStato.livello}`;
+    m.cache = m.cache || {};
+    if (!m.cache[chiave]) {
+        const piu = categoria === 'Physical' ? 'Adamant' : 'Modest';
+        const dati = {
+            level: tbStato.livello,
+            nature: invest === 'max' ? piu : 'Serious',
+            evs: categoria === 'Physical' ? { atk: 252 } : { spa: 252 }
+        };
+        if (abilita) dati.ability = abilita;
+        m.cache[chiave] = new window.calc.Pokemon(tbCalcGen(), m.v.sp.name, dati);
+    }
+    return m.cache[chiave];
+}
+
+// Un solo calcolo, in percentuale degli HP del difensore (null se la mossa non fa danni)
+function tbCalcola(attaccante, difensore, mossa, campo) {
+    try {
+        const r = window.calc.calculate(tbCalcGen(), attaccante, difensore, mossa, campo);
+        const [min, max] = r.range();
+        if (!max) return null;
+        const hp = r.defender.maxHP();
+        return { min: 100 * min / hp, max: 100 * max / hp, nome: r.move.name };
+    } catch (err) {
+        return null;
+    }
+}
+
+function tbEtichettaKO(r) {
+    if (r.min >= 100) return 'OHKO';
+    if (r.max >= 100) return 'OHKO?';
+    return r.min > 0 ? `${Math.ceil(100 / r.min)}HKO` : '—';
+}
+
+function tbPercCalc(r) {
+    return `${r.min.toFixed(1)}–${r.max.toFixed(1)}%`;
+}
+
+// --- LISTA DEGLI AVVERSARI -----------------------------------------------
+// Completamente evoluti dentro il formato, dal BST più alto, senza forme identiche (Gastrodon East/West)
+function tbMinacceCalc() {
+    const cache = tbStato.cacheMinacce;
+    if (cache && cache.firma === tbStato.firma) return cache.lista;
+
+    const nelPool = new Set(tbStato.pool.map(v => v.specieId));
+    const visti = new Set();
+    const lista = [];
+    for (const v of tbStato.pool) {
+        if (!v.sp || !v.sp.baseStats || !Array.isArray(v.sp.types)) continue;
+        if ((v.sp.evos || []).some(e => nelPool.has(tbToID(e)))) continue;
+        const abilita = tbAbilitaLegali(v.sp);
+        const impronta = `${v.sp.types.join('/')}|${Object.values(v.sp.baseStats).join(',')}|${abilita.join(',')}`;
+        if (visti.has(impronta)) continue;
+        visti.add(impronta);
+        lista.push({ v, abilita: abilita.length ? abilita : [''], mosse: null });
+        if (lista.length >= TB_CALC_MINACCE) break;
+    }
+    tbStato.cacheMinacce = { firma: tbStato.firma, lista };
+    return lista;
+}
+
+// Mosse STAB migliori della minaccia: una per tipo e per categoria (fisica/speciale)
+function tbMosseMinaccia(m) {
+    if (m.mosse) return m.mosse;
+    const tipi = m.v.sp.types || [];
+    const migliori = {};
+    tbMosseLegali(m.v.specieId).forEach(({ id, dati }) => {
+        if (!tbMossaOffensiva(dati, id) || !dati.basePower || !tipi.includes(dati.type)) return;
+        if (TB_MOSSE_NON_SUGGERIRE.includes(id) || TB_CALC_MOSSE_ESCLUSE.includes(id)) return;
+        const precisione = dati.accuracy === true ? 100 : (dati.accuracy || 100);
+        const penalita = dati.flags && (dati.flags.recharge || dati.flags.charge) ? 0.5 : 1;
+        const colpi = Array.isArray(dati.multihit) ? 3 : (dati.multihit || 1);
+        const punti = dati.basePower * colpi * precisione * penalita;
+        const k = `${dati.category}|${dati.type}`;
+        if (!migliori[k] || punti > migliori[k].punti) migliori[k] = { nome: dati.name, categoria: dati.category, punti };
+    });
+    m.mosse = Object.values(migliori);
+    return m.mosse;
+}
+
+// --- EV: PIANO PER ARRIVARE AI NUOVI VALORI -------------------------------
+// nuovi = valori finali (es. { hp: 36, def: 12 }). Gli EV che mancano si prendono prima da quelli
+// sprecati, poi dall'attacco che il set non usa, poi dalle altre stat difensive, per ultimo dall'attacco.
+// La Velocità non si tocca. Ritorna { tolti } oppure null se non bastano.
+function tbPianoEV(s, sp, nuovi) {
+    const tolti = {};
+    if (tbStato.gen < 3) return { tolti };
+
+    const protette = new Set(['spe', ...Object.keys(nuovi)]);
+    const totaleDopo = TB_STAT.reduce((t, st) => t + (st.key in nuovi ? nuovi[st.key] : s.evs[st.key]), 0);
+    let mancano = totaleDopo - 510;
+    if (mancano <= 0) return { tolti };
+    mancano = Math.ceil(mancano / 4) * 4;
+
+    const prendi = (k, quanto) => {
+        if (protette.has(k)) return;
+        const q = Math.min(quanto, s.evs[k] - (tolti[k] || 0), mancano);
+        if (q > 0) { tolti[k] = (tolti[k] || 0) + q; mancano -= q; }
+    };
+    TB_STAT.forEach(st => prendi(st.key, s.evs[st.key] - tbEvUtili(st.key, sp.baseStats[st.key], s.evs[st.key], s.ivs[st.key], s.natura)));
+    const cat = tbCategoriaPrevalente(s);
+    if (cat.fisiche + cat.speciali > 0 && (cat.fisiche === 0 || cat.speciali === 0)) prendi(cat.fisiche ? 'spa' : 'atk', Infinity);
+    ['hp', 'def', 'spd']
+        .sort((a, b) => (s.evs[b] - (tolti[b] || 0)) - (s.evs[a] - (tolti[a] || 0)))
+        .forEach(k => prendi(k, Infinity));
+    ['atk', 'spa'].forEach(k => prendi(k, Infinity));
+    return mancano > 0 ? null : { tolti };
+}
+
+function tbApplicaEV(nuovi, idAncora) {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = s && tbSpecie(s.specieId);
+    const piano = sp && tbPianoEV(s, sp, nuovi);
+    if (!piano) return;
+
+    Object.entries(piano.tolti).forEach(([k, v]) => { s.evs[k] -= v; });
+    Object.assign(s.evs, nuovi);
+
+    const pannello = document.getElementById('tb-ev-panel');
+    if (pannello) pannello.innerHTML = tbHtmlPannelloEV(s);
+    tbRenderLeggero();
+    tbAggiornaCoach(idAncora);
+}
+
+// Riga cliccabile con il costo del piano (verde: EV liberi, arancione: EV spostati, ✕: impossibile)
+function tbBadgePianoEV(s, sp, nuovi, idAncora) {
+    const piano = tbPianoEV(s, sp, nuovi);
+    const aggiunte = Object.entries(nuovi)
+        .filter(([k, v]) => v > s.evs[k])
+        .map(([k, v]) => `+${v - s.evs[k]} ${tbEtichettaStat(k)}`);
+    if (!piano) return { badge: `<span class="tb-tip-badge bad">${aggiunte.join(' · ')} ✕ EVs</span>`, attr: 'class="tb-tip-row"' };
+    const tolti = Object.entries(piano.tolti).map(([k, v]) => `−${v} ${tbEtichettaStat(k)}`);
+    const argomento = `{${Object.entries(nuovi).map(([k, v]) => `${k}: ${v}`).join(', ')}}`;
+    return {
+        badge: `<span class="tb-tip-badge ${tolti.length ? 'warn' : 'ok'}">${[...aggiunte, ...tolti].join(' · ')}</span>`,
+        attr: `class="tb-tip-row tb-click" onclick="tbApplicaEV(${argomento}, '${idAncora}')"`
+    };
+}
+
+// Primo valore di EV (multiplo di 4, tra da e 252) per cui ok(ev) è vero; null se nemmeno a 252
+function tbCercaEV(da, ok) {
+    let basso = Math.ceil(da / 4), alto = 63;
+    if (!ok(252)) return null;
+    while (basso < alto) {
+        const medio = Math.floor((basso + alto) / 2);
+        if (ok(medio * 4)) alto = medio; else basso = medio + 1;
+    }
+    return Math.min(252, basso * 4);
+}
+
+// =====================================================================
+// ⚔️ DANNI CHE FAI (tooltip su Atk / SpA)
+// =====================================================================
+function tbAnalisiAttacco(s, chiave) {
+    const sp = tbSpecie(s.specieId);
+    const categoria = chiave === 'atk' ? 'Physical' : 'Special';
+    const opz = tbOpzCalc();
+    const gen = tbCalcGen();
+    const campo = tbCampoCalc(s);
+    const dmax = opz.boost && tbStato.gen === 8;
+
+    const mosse = s.mosse
+        .filter(id => id && tbMossaOffensiva(tbDex.moves[id], id) && tbDex.moves[id].category === categoria)
+        .map(id => {
+            try { return { id, tipo: tbTipoMossa(id, tbDex.moves[id], s, sp), mossa: new window.calc.Move(gen, tbDex.moves[id].name, { useMax: dmax }) }; }
+            catch (err) { return null; }
+        })
+        .filter(Boolean);
+    if (!mosse.length) return { mosse: [] };
+
+    const attaccante = tbPokemonCalc(s);
+    const bersagli = tbMinacceCalc().map(m => {
+        let difensore;
+        try { difensore = tbPokemonBersaglio(m, categoria, opz.bulk); } catch (err) { return null; }
+        const risultati = mosse.map(mv => tbCalcola(attaccante, difensore, mv.mossa, campo));
+        let migliore = -1;
+        risultati.forEach((r, i) => { if (r && (migliore < 0 || r.min > risultati[migliore].min)) migliore = i; });
+        return { m, difensore, risultati, migliore };
+    }).filter(Boolean);
+
+    // Soglie a portata con più EV (stessa natura): OHKO se ora è 2HKO, 2HKO se ora è 3HKO.
+    // Prima un controllo a 252 EV, poi la ricerca binaria solo dove la soglia è raggiungibile
+    // (Body Press e Foul Play non usano la tua stat d'attacco: escluse)
+    const soglie = [];
+    if (s.evs[chiave] < 252) {
+        const attaccantiPerEv = new Map();
+        const attaccanteCon = ev => {
+            if (!attaccantiPerEv.has(ev)) attaccantiPerEv.set(ev, tbPokemonCalc(s, { [chiave]: ev }));
+            return attaccantiPerEv.get(ev);
+        };
+        const utili = mosse.filter(mv => !['bodypress', 'foulplay'].includes(mv.id));
+        bersagli.forEach(b => {
+            if (b.migliore < 0) return;
+            const ora = b.risultati[b.migliore];
+            const colpi = Math.ceil(100 / ora.min);
+            if (colpi < 2 || colpi > 3) return;
+            const obiettivo = 100 / (colpi - 1) - 1e-9;
+
+            let mossa = null, alMassimo = 0;
+            utili.forEach(mv => {
+                const r = tbCalcola(attaccanteCon(252), b.difensore, mv.mossa, campo);
+                if (r && r.min >= obiettivo && r.min > alMassimo) { mossa = mv; alMassimo = r.min; }
+            });
+            if (!mossa) return;
+            const ev = tbCercaEV(s.evs[chiave] + 4, e => {
+                const r = tbCalcola(attaccanteCon(e), b.difensore, mossa.mossa, campo);
+                return !!r && r.min >= obiettivo;
+            });
+            if (ev !== null) soglie.push({ b, ev, etichetta: colpi === 2 ? 'OHKO' : '2HKO', ora });
+        });
+        soglie.sort((a, b) => a.ev - b.ev);
+    }
+
+    return { mosse, bersagli, soglie: soglie.slice(0, 5) };
+}
+
+function tbHtmlCalcAttacco(chiave) {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = s && tbSpecie(s.specieId);
+    if (!sp) return '';
+
+    const categoria = chiave === 'atk' ? 'Physical' : 'Special';
+    const opz = tbOpzCalc();
+    const valore = tbCalcolaStat(chiave, sp.baseStats[chiave], s.evs[chiave], s.ivs[chiave], s.natura);
+    const idCoach = `stat-${chiave}`;
+    const testata = tbTestataCoach(`DAMAGE · ${categoria.toUpperCase()} · ${valore} ${tbEtichettaStat(chiave)}`);
+    const chip = `
+        <div class="tb-tip-chips">
+            <span class="tb-tip-chip-label">Targets</span>
+            ${tbChipCalc('Frail', opz.bulk === 'frail', 'bulk', 'frail')}
+            ${tbChipCalc('252 HP', opz.bulk === 'hp', 'bulk', 'hp')}
+            ${tbChipCalc('Max bulk', opz.bulk === 'max', 'bulk', 'max')}
+            ${tbChipBoost(s)}
+        </div>`;
+
+    const chiaveCache = `att|${chiave}|${tbStato.firma}|${JSON.stringify(s)}|${JSON.stringify(opz)}`;
+    const a = tbDatiCalc(chiaveCache, idCoach, () => tbAnalisiAttacco(s, chiave));
+    if (!a) return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">⏳ Calculating...</div></div>`;
+    if (a.errore) return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">❌ ${tbEsc(a.errore)}</div></div>`;
+    if (!a.mosse.length) {
+        const altra = chiave === 'atk' ? 'SpA' : 'Atk';
+        return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">No ${categoria.toLowerCase()} attacks in the set — hover ${altra} for the other ones.</div></div>`;
+    }
+
+    const totale = a.bersagli.length;
+    const ohko = a.bersagli.filter(b => b.migliore >= 0 && b.risultati[b.migliore].min >= 100).length;
+    const dueHko = a.bersagli.filter(b => b.migliore >= 0 && b.risultati[b.migliore].min >= 50).length;
+
+    const righeMosse = a.mosse.map((mv, i) => {
+        const validi = a.bersagli.map(b => b.risultati[i]).filter(Boolean);
+        const o = validi.filter(r => r.min >= 100).length;
+        const d = validi.filter(r => r.min >= 50).length;
+        return `
+            <div class="tb-tip-row">
+                ${tbBadgeTipoMini(mv.tipo)}<span class="tb-tip-names">${tbEsc(validi[0]?.nome || tbDex.moves[mv.id].name)}</span>
+                <span class="tb-tip-badge ok">OHKO ${tbPerc(o, totale)}% · 2HKO ${tbPerc(d, totale)}%</span>
+            </div>`;
+    }).join('');
+
+    const righeSoglie = a.soglie.map(t => {
+        const c = tbBadgePianoEV(s, sp, { [chiave]: t.ev }, `tb-stat-${chiave}`);
+        return `
+            <div ${c.attr}>
+                <span class="tb-tip-names"><b>${tbEsc(t.b.m.v.nome)}</b> · ${tbPercCalc(t.ora)} → ${t.etichetta}</span>${c.badge}
+            </div>`;
+    }).join('');
+
+    // Chi incassa meglio (gli immuni a tutte le mosse per primi)
+    const danno = b => b.migliore >= 0 ? b.risultati[b.migliore].max : -1;
+    const difficili = [...a.bersagli]
+        .sort((x, y) => danno(x) - danno(y))
+        .slice(0, 3)
+        .map(b => {
+            const r = b.migliore >= 0 ? b.risultati[b.migliore] : null;
+            return `
+                <div class="tb-tip-row">
+                    <span class="tb-tip-names">${tbEsc(b.m.v.nome)}${r ? ` · ${tbEsc(r.nome)}` : ''}</span>
+                    <span class="tb-tip-badge bad">${r ? tbPercCalc(r) : 'immune'}</span>
+                </div>`;
+        }).join('');
+
+    return `
+        ${testata}
+        <div class="neubrutalist-tooltip-body">
+            ${chip}
+            <div class="tb-tip-big">${tbPerc(ohko, totale)}%</div>
+            <div class="tb-tip-sub">of the top ${totale} threats OHKO'd by your best ${categoria.toLowerCase()} move</div>
+            <div class="tb-tip-bar"><div style="width: ${(100 * ohko / totale).toFixed(1)}%;"></div></div>
+            <div class="tb-tip-sub">${ohko} OHKO · ${dueHko} at least 2HKO</div>
+            <div class="tb-tip-section">${righeMosse}</div>
+            ${righeSoglie ? `
+                <div class="tb-tip-section">
+                    <div class="tb-tip-title">More ${tbEtichettaStat(chiave)} EVs → next KO · click to apply</div>
+                    ${righeSoglie}
+                </div>` : ''}
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Hardest to damage</div>
+                ${difficili}
+            </div>
+            <div class="tb-tip-note">Top ${totale} fully evolved threats by BST · no item, first ability · guaranteed KOs (min roll), no recovery${tbCampoCalc(s).gameType === 'Doubles' ? ' · doubles: spread moves ×0.75' : ''}</div>
+        </div>`;
+}
+
+// =====================================================================
+// 🛡️ DANNI CHE SUBISCI (tooltip su HP / Def / SpD)
+// HP considera sia gli attacchi fisici sia gli speciali, Def solo i fisici, SpD solo gli speciali
+// =====================================================================
+function tbAnalisiDifesa(s, chiave) {
+    const sp = tbSpecie(s.specieId);
+    const opz = tbOpzCalc();
+    const gen = tbCalcGen();
+    const campo = tbCampoCalc(s);
+    const categorie = chiave === 'def' ? ['Physical'] : (chiave === 'spd' ? ['Special'] : ['Physical', 'Special']);
+    const difensore = tbPokemonCalc(s);
+
+    const colpi = tbMinacceCalc().map(m => {
+        const mosse = tbMosseMinaccia(m).filter(x => categorie.includes(x.categoria));
+        if (!mosse.length) return null;
+
+        // Mossa più forte con la prima abilità, poi si prova quella mossa con le altre abilità
+        let migliore = null;
+        mosse.forEach(x => {
+            let mossa;
+            try { mossa = new window.calc.Move(gen, x.nome); } catch (err) { return; }
+            let att;
+            try { att = tbPokemonMinaccia(m, x.categoria, opz.invest, m.abilita[0]); } catch (err) { return; }
+            const r = tbCalcola(att, difensore, mossa, campo);
+            if (r && (!migliore || r.max > migliore.r.max)) migliore = { r, mossa, categoria: x.categoria, abilita: m.abilita[0], att };
+        });
+        if (!migliore) return { m, r: { min: 0, max: 0, nome: mosse[0].nome }, immune: true }; // immune a tutti i suoi STAB
+        m.abilita.slice(1).forEach(ab => {
+            let att;
+            try { att = tbPokemonMinaccia(m, migliore.categoria, opz.invest, ab); } catch (err) { return; }
+            const r = tbCalcola(att, difensore, migliore.mossa, campo);
+            if (r && r.max > migliore.r.max) migliore = { ...migliore, r, abilita: ab, att };
+        });
+        return { m, ...migliore };
+    }).filter(Boolean);
+
+    // OHKO più vicini da evitare: EV minimi in HP + Def/SpD per sopravvivere al roll massimo
+    const daSistemare = colpi.filter(c => c.r.max >= 100).sort((a, b) => a.r.max - b.r.max).slice(0, 5);
+    daSistemare.forEach(c => {
+        const dif = c.categoria === 'Physical' ? 'def' : 'spd';
+        const sopravvive = (hp, d) => {
+            const r = tbCalcola(c.att, tbPokemonCalc(s, { hp, [dif]: d }), c.mossa, campo);
+            return !!r && r.max < 100;
+        };
+        if (!sopravvive(252, 252)) { c.piano = null; return; }
+
+        let meglio = null;
+        for (let hp = s.evs.hp; hp <= 252; hp += 4) {
+            if (hp > s.evs.hp && tbCalcolaStat('hp', sp.baseStats.hp, hp, s.ivs.hp, s.natura) === tbCalcolaStat('hp', sp.baseStats.hp, hp - 4, s.ivs.hp, s.natura)) continue;
+            const aggiuntaHp = hp - s.evs.hp;
+            if (meglio && aggiuntaHp >= meglio.totale) break;
+            const d = sopravvive(hp, s.evs[dif]) ? s.evs[dif] : tbCercaEV(s.evs[dif] + 4, ev => sopravvive(hp, ev));
+            if (d === null) continue;
+            const totale = aggiuntaHp + (d - s.evs[dif]);
+            if (!meglio || totale < meglio.totale) meglio = { totale, nuovi: { hp, [dif]: d } };
+        }
+        c.piano = meglio;
+    });
+
+    return { colpi, daSistemare, pesanti: [...colpi].sort((a, b) => b.r.max - a.r.max).slice(0, 3) };
+}
+
+function tbHtmlCalcDifesa(chiave) {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = s && tbSpecie(s.specieId);
+    if (!sp) return '';
+
+    const opz = tbOpzCalc();
+    const valore = tbCalcolaStat(chiave, sp.baseStats[chiave], s.evs[chiave], s.ivs[chiave], s.natura);
+    const idCoach = `stat-${chiave}`;
+    const tipoAttacchi = chiave === 'def' ? 'physical ' : (chiave === 'spd' ? 'special ' : '');
+    const testata = tbTestataCoach(`BULK · ${valore} ${tbEtichettaStat(chiave)}`);
+    const chip = `
+        <div class="tb-tip-chips">
+            <span class="tb-tip-chip-label">Threats</span>
+            ${tbChipCalc('252+', opz.invest === 'max', 'invest', 'max')}
+            ${tbChipCalc('252 neutral', opz.invest === 'neutral', 'invest', 'neutral')}
+            ${tbChipBoost(s)}
+        </div>`;
+
+    const chiaveCache = `dif|${chiave}|${tbStato.firma}|${JSON.stringify(s)}|${JSON.stringify(opz)}`;
+    const d = tbDatiCalc(chiaveCache, idCoach, () => tbAnalisiDifesa(s, chiave));
+    if (!d) return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">⏳ Calculating...</div></div>`;
+    if (d.errore) return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">❌ ${tbEsc(d.errore)}</div></div>`;
+    if (!d.colpi.length) return `${testata}<div class="neubrutalist-tooltip-body">${chip}<div class="tb-tip-sub">No ${tipoAttacchi}threats found in the format.</div></div>`;
+
+    const totale = d.colpi.length;
+    const sopravvivi = d.colpi.filter(c => c.r.max < 100).length;
+    const sicuri = d.colpi.filter(c => c.r.min >= 100).length;
+    const forse = totale - sopravvivi - sicuri;
+    const classeKO = r => r.min >= 100 ? 'bad' : (r.max >= 100 ? 'warn' : 'ok');
+
+    const righeSistemare = d.daSistemare.map(c => {
+        const b = c.piano
+            ? tbBadgePianoEV(s, sp, c.piano.nuovi, `tb-stat-${chiave}`)
+            : { badge: `<span class="tb-tip-badge bad">✕ even at max</span>`, attr: 'class="tb-tip-row"' };
+        return `
+            <div ${b.attr}>
+                <span class="tb-tip-names"><b>${tbEsc(c.m.v.nome)}</b> · ${tbEsc(c.r.nome)} ${tbPercCalc(c.r)}</span>${b.badge}
+            </div>`;
+    }).join('');
+
+    const righePesanti = d.pesanti.map(c => `
+        <div class="tb-tip-row">
+            <span class="tb-tip-names">${tbEsc(c.m.v.nome)} · ${tbEsc(c.r.nome)}${c.abilita && c.abilita !== c.m.abilita[0] ? ` <i>(${tbEsc(c.abilita)})</i>` : ''}</span>
+            <span class="tb-tip-badge ${classeKO(c.r)}">${tbPercCalc(c.r)} · ${tbEtichettaKO(c.r)}</span>
+        </div>`).join('');
+
+    return `
+        ${testata}
+        <div class="neubrutalist-tooltip-body">
+            ${chip}
+            <div class="tb-tip-big">${tbPerc(sopravvivi, totale)}%</div>
+            <div class="tb-tip-sub">of the top ${totale} threats' strongest ${tipoAttacchi}STAB survived</div>
+            <div class="tb-tip-bar"><div style="width: ${(100 * sopravvivi / totale).toFixed(1)}%;"></div></div>
+            <div class="tb-tip-sub">${sicuri} always OHKO you · ${forse} might (high roll)</div>
+            ${righeSistemare ? `
+                <div class="tb-tip-section">
+                    <div class="tb-tip-title">Closest OHKOs to fix · click to apply</div>
+                    ${righeSistemare}
+                </div>` : ''}
+            <div class="tb-tip-section">
+                <div class="tb-tip-title">Hits you hardest</div>
+                ${righePesanti}
+            </div>
+            <div class="tb-tip-note">Top ${totale} fully evolved threats by BST · their best STAB and ability, no item · no crits, no Intimidate${tbCampoCalc(s).gameType === 'Doubles' ? ' · doubles: spread moves ×0.75' : ''}</div>
         </div>`;
 }
 
@@ -5290,10 +6165,14 @@ function tbHtmlAzioni(variante) {
                 <div class="tb-bubble" id="tb-save-bubble"></div>
             </div>
             <div class="tb-cov-wrap">
-                <span class="tb-cov-tag" id="tb-cov-tag">Team weaknesses</span>
-                <div class="tb-cov-tooltip"><div class="tb-cov-box" id="tb-cov-box"></div></div>
+                <span class="tb-cov-tag" id="tb-cov-tag"
+                      onmouseenter="tbApriCoach(this, 'cov-def', tbHtmlDifesa)" onmouseleave="tbChiudiCoachPresto('cov-def')">Team weaknesses</span>
             </div>
-        </div>`;
+            <div class="tb-cov-wrap">
+                <span class="tb-cov-tag" id="tb-off-tag"
+                      onmouseenter="tbApriCoach(this, 'cov-off', tbHtmlAttacco)" onmouseleave="tbChiudiCoachPresto('cov-off')">Team coverage</span>
+            </div>
+                    </div>`;
 }
 
 // --- CONTROLLI DI SUPPORTO -------------------------------------------
@@ -5326,6 +6205,315 @@ function tbCalcolaStat(chiave, base, ev, iv, natura) {
     if (effetto && effetto[0] === chiave) mod = 1.1;
     if (effetto && effetto[1] === chiave) mod = 0.9;
     return Math.floor((Math.floor((2 * base + iv + Math.floor(ev / 4)) * L / 100) + 5) * mod);
+}
+
+// =====================================================================
+// 🧢 TOOLTIP "COACH": base comune per Speed tier, Team weaknesses e Team coverage
+// Usa il tooltip globale del picker, ma resta aperto quando il mouse ci passa sopra:
+// così le righe si possono cliccare (speed creep, aggiunta dei Pokémon suggeriti)
+// =====================================================================
+let tbCoachTimer = null;
+let tbCoachAncora = null;
+
+function tbApriCoach(el, id, costruisci) {
+    clearTimeout(tbCoachTimer);
+    const html = costruisci();
+    if (!html) return;
+
+    const tooltip = tbGetTooltip();
+    const giaAperto = tooltip.dataset.currentId === id && tooltip.style.display === 'block';
+    if (!giaAperto) {
+                tooltip.dataset.rotation = `${(Math.random() * 3 - 1.5).toFixed(2)}deg`;
+    }
+    tooltip.dataset.currentId = id;
+    tooltip.classList.add('tb-coach');
+    tooltip.style.display = 'block';
+    tooltip.style.opacity = '1';
+    tooltip.innerHTML = html;
+    tooltip.onmouseenter = () => clearTimeout(tbCoachTimer);
+    tooltip.onmouseleave = () => tbChiudiCoachPresto(id);
+    tbCoachAncora = { el, id, costruisci };
+    tbPosizionaCoach(el, tooltip, giaAperto);
+}
+
+// Piccolo ritardo: dà il tempo di passare dal testo al tooltip senza che si chiuda
+function tbChiudiCoachPresto(id) {
+    clearTimeout(tbCoachTimer);
+    tbCoachTimer = setTimeout(() => tbNascondiTooltip(id), 200);
+}
+
+// Dopo un click dentro il tooltip: ricalcola il contenuto senza chiuderlo.
+// Se il pannello è stato ricreato, si riaggancia al nuovo elemento con quell'id
+function tbAggiornaCoach(idNuovaAncora) {
+    if (!tbCoachAncora) return;
+    const el = (idNuovaAncora && document.getElementById(idNuovaAncora)) || tbCoachAncora.el;
+    if (!el || !el.isConnected) {
+        tbNascondiTooltip(tbCoachAncora.id);
+        return;
+    }
+    tbApriCoach(el, tbCoachAncora.id, tbCoachAncora.costruisci);
+}
+
+// Percentuale che dà 0% e 100% solo se davvero nessuno / tutti
+function tbPerc(n, totale) {
+    if (!totale || n === 0) return 0;
+    if (n === totale) return 100;
+    return Math.min(99, Math.max(1, Math.round(100 * n / totale)));
+}
+
+function tbEtichettaStat(chiave) {
+    return (TB_STAT.find(st => st.key === chiave) || {}).label || chiave;
+}
+
+function tbBadgeTipoMini(tipo) {
+    return `<span class="mini-type-badge ${String(tipo).toLowerCase()}">${String(tipo).toLowerCase()}</span>`;
+}
+
+function tbTestataCoach(titolo) {
+    return `<div class="neubrutalist-tooltip-header"><div class="neubrutalist-tooltip-title">${titolo}</div></div>`;
+}
+
+// =====================================================================
+// ⚡ SPEED TIER + SPEED CREEP (tooltip sulla velocità nel pannello EV)
+// Confronta la velocità attuale con quella massima (252 EV, 31 IV, natura +Spe)
+// di tutti i Pokémon del formato; cliccando una riga applica il creep
+// =====================================================================
+const TB_ABILITA_VELOCITA_X2 = {
+    swiftswim: 'Swift Swim', chlorophyll: 'Chlorophyll', sandrush: 'Sand Rush',
+    slushrush: 'Slush Rush', surgesurfer: 'Surge Surfer', unburden: 'Unburden'
+};
+
+// Nature di riferimento per gli avversari: +Spe per la velocità massima, −Spe per la minima (Trick Room)
+function tbNatureVelocita() {
+    const fissa = tbNaturaImposta();
+    if (fissa) return { max: fissa, min: fissa, conNatura: false };
+    if (tbStato.gen < 3) return { max: 'Serious', min: 'Serious', conNatura: false };
+    return { max: 'Jolly', min: 'Brave', conNatura: true };
+}
+
+// Quante mosse fisiche e speciali ha il set: serve a capire quale stat d'attacco è sacrificabile
+function tbCategoriaPrevalente(s) {
+    let fisiche = 0, speciali = 0;
+    s.mosse.forEach(id => {
+        const m = id && tbDex.moves[id];
+        if (m && m.category === 'Physical') fisiche++;
+        if (m && m.category === 'Special') speciali++;
+    });
+    return { fisiche, speciali };
+}
+
+// EV minimi che danno la stessa statistica: quelli oltre sono "sprecati"
+function tbEvUtili(chiave, base, ev, iv, natura) {
+    const valore = tbCalcolaStat(chiave, base, ev, iv, natura);
+    for (let e = 0; e < ev; e += 4) {
+        if (tbCalcolaStat(chiave, base, e, iv, natura) === valore) return e;
+    }
+    return ev;
+}
+
+// Piano per superare "bersaglio" in Velocità.
+// Nature provate in ordine: quella attuale → se ha −Spe, stesso + ma il − sull'attacco che non usa
+// → natura +Spe (tiene il − attuale, altrimenti l'attacco che non usa).
+// Gli EV mancanti si prendono prima da quelli sprecati, poi dall'attacco che non usa,
+// poi da HP/Def/SpD (dal più investito), per ultimo dall'attacco.
+// Ritorna { ev, natura, natPlus, natMinus, tolti } oppure null se irraggiungibile.
+function tbPianoCreep(s, sp, bersaglio) {
+    const base = sp.baseStats.spe;
+    const minimoEv = natura => {
+        for (let ev = 0; ev <= 252; ev += 4) {
+            if (tbCalcolaStat('spe', base, ev, s.ivs.spe, natura) > bersaglio) return ev;
+        }
+        return null;
+    };
+
+    const cat = tbCategoriaPrevalente(s);
+    const attaccoInutile = cat.speciali > cat.fisiche ? 'atk' : 'spa';
+    const effetto = TB_NATURE[s.natura] || null;
+    const candidate = [s.natura];
+
+    if (tbNatureVelocita().conNatura) {
+        if (effetto && effetto[1] === 'spe') candidate.push(tbTrovaNatura(effetto[0], attaccoInutile));
+        if (!effetto || effetto[0] !== 'spe') {
+            const meno = effetto && effetto[1] !== 'spe' ? effetto[1] : attaccoInutile;
+            candidate.push(tbTrovaNatura('spe', meno));
+        }
+    }
+
+    let natura = null, ev = null;
+    for (const n of candidate) {
+        if (!n) continue;
+        const e = minimoEv(n);
+        if (e !== null) { natura = n; ev = e; break; }
+    }
+    if (natura === null) return null;
+
+    const tolti = {};
+    if (tbStato.gen >= 3) {
+        const spesiAltri = TB_STAT.reduce((t, st) => t + (st.key === 'spe' ? 0 : s.evs[st.key]), 0);
+        let mancano = spesiAltri + ev - 510;
+        if (mancano > 0) {
+            mancano = Math.ceil(mancano / 4) * 4;
+            const prendi = (k, quanto) => {
+                const q = Math.min(quanto, s.evs[k] - (tolti[k] || 0), mancano);
+                if (q > 0) { tolti[k] = (tolti[k] || 0) + q; mancano -= q; }
+            };
+            TB_STAT.forEach(st => {
+                if (st.key === 'spe') return;
+                prendi(st.key, s.evs[st.key] - tbEvUtili(st.key, sp.baseStats[st.key], s.evs[st.key], s.ivs[st.key], natura));
+            });
+            if (cat.fisiche + cat.speciali > 0 && (cat.fisiche === 0 || cat.speciali === 0)) prendi(attaccoInutile, Infinity);
+            ['hp', 'def', 'spd']
+                .sort((a, b) => (s.evs[b] - (tolti[b] || 0)) - (s.evs[a] - (tolti[a] || 0)))
+                .forEach(k => prendi(k, Infinity));
+            ['atk', 'spa'].forEach(k => prendi(k, Infinity));
+            if (mancano > 0) return null;
+        }
+    }
+
+    const nuovoEffetto = TB_NATURE[natura];
+    return {
+        ev,
+        natura,
+        natPlus: natura === s.natura ? s.natPlus : (nuovoEffetto ? nuovoEffetto[0] : ''),
+        natMinus: natura === s.natura ? s.natMinus : (nuovoEffetto ? nuovoEffetto[1] : ''),
+        tolti
+    };
+}
+
+function tbApplicaCreep(bersaglio) {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = s && tbSpecie(s.specieId);
+    const piano = sp && tbPianoCreep(s, sp, bersaglio);
+    if (!piano) return;
+
+    Object.entries(piano.tolti).forEach(([k, v]) => { s.evs[k] -= v; });
+    s.evs.spe = piano.ev;
+    s.natura = piano.natura;
+    s.natPlus = piano.natPlus;
+    s.natMinus = piano.natMinus;
+
+    const pannello = document.getElementById('tb-ev-panel');
+    if (pannello) pannello.innerHTML = tbHtmlPannelloEV(s);
+    tbRenderLeggero();
+    tbAggiornaCoach('tb-stat-spe');
+}
+
+function tbApplicaEVSpe(ev) {
+    tbImpostaEV('spe', ev);
+    tbAggiornaCoach('tb-stat-spe');
+}
+
+function tbHtmlSpeedTier() {
+    const s = tbStato.slot[tbStato.attivo];
+    const sp = s && tbSpecie(s.specieId);
+    if (!sp) return '';
+
+    const nat = tbNatureVelocita();
+    const base = sp.baseStats.spe;
+    const mia = tbCalcolaStat('spe', base, s.evs.spe, s.ivs.spe, s.natura);
+
+    const altri = tbStato.pool.filter(v => v.sp && v.sp.baseStats).map(v => ({
+        nome: v.nome,
+        max: tbCalcolaStat('spe', v.sp.baseStats.spe, 252, 31, nat.max),
+        min: tbCalcolaStat('spe', v.sp.baseStats.spe, 0, 0, nat.min)
+    }));
+    const totale = altri.length;
+    if (!totale) return '';
+
+    const superati = vel => altri.filter(a => a.max < vel).length;
+    const piuLenti = superati(mia);
+    const pari = altri.filter(a => a.max === mia);
+    const piuVeloci = totale - piuLenti - pari.length;
+    const elencoNomi = (nomi, quanti) =>
+        nomi.slice(0, quanti).map(tbEsc).join(', ') + (nomi.length > quanti ? ` +${nomi.length - quanti}` : '');
+
+    // Badge del piano di creep per superare una certa velocità (verde: solo EV,
+    // arancione: EV tolti ad altre stat, giallo: cambia natura)
+    const creep = bersaglio => {
+        const p = tbPianoCreep(s, sp, bersaglio);
+        if (!p) return { badge: `<span class="tb-tip-badge bad">✕</span>`, attr: '' };
+        const parti = [];
+        if (p.natura !== s.natura) parti.push(p.natura);
+        parti.push(`${p.ev} EV`);
+        Object.entries(p.tolti).forEach(([k, v]) => parti.push(`−${v} ${tbEtichettaStat(k)}`));
+        const classe = p.natura !== s.natura ? 'nat' : (Object.keys(p.tolti).length ? 'warn' : 'ok');
+        return {
+            badge: `<span class="tb-tip-badge ${classe}">${parti.join(' · ')}</span>`,
+            attr: `class="tb-tip-row tb-click" onclick="tbApplicaCreep(${bersaglio})"`
+        };
+    };
+
+    // EV in Velocità che non aggiungono punti (es. 8 invece di 4 al livello 50)
+    const utili = tbEvUtili('spe', base, s.evs.spe, s.ivs.spe, s.natura);
+    const rigaSprechi = tbStato.gen >= 3 && utili < s.evs.spe
+        ? `<div class="tb-tip-row tb-click" onclick="tbApplicaEVSpe(${utili})">
+               <span>✂ ${s.evs.spe - utili} Spe EVs add no speed</span><span class="tb-tip-badge warn">set ${utili}</span>
+           </div>`
+        : '';
+
+    // Moltiplicatori più comuni
+    const abilitaX2 = TB_ABILITA_VELOCITA_X2[tbToID(s.abilita)];
+    const htmlModificatori = [
+        { etichetta: '+1 / Choice Scarf', vel: Math.floor(mia * 1.5), attivo: s.oggetto === 'choicescarf' },
+        { etichetta: `Tailwind${abilitaX2 ? ` / ${abilitaX2}` : ''}`, vel: mia * 2, attivo: !!abilitaX2 }
+    ].map(m => `
+        <div class="tb-tip-row ${m.attivo ? 'on' : ''}">
+            <span>${m.etichetta} → ${m.vel}</span><b>${tbPerc(superati(m.vel), totale)}%</b>
+        </div>`).join('');
+
+    // Chi resta più veloce, raggruppato per velocità (dal più vicino)
+    const gruppi = new Map();
+    altri.filter(a => a.max > mia).sort((a, b) => a.max - b.max).forEach(a => {
+        if (!gruppi.has(a.max)) gruppi.set(a.max, []);
+        gruppi.get(a.max).push(a.nome);
+    });
+    const MAX_GRUPPI = 6;
+    const htmlVeloci = [...gruppi.entries()].slice(0, MAX_GRUPPI).map(([vel, nomi]) => {
+        const c = creep(vel);
+        return `
+            <div ${c.attr || 'class="tb-tip-row"'}>
+                <b>${vel}</b><span class="tb-tip-names">${elencoNomi(nomi, 3)}</span>${c.badge}
+            </div>`;
+    }).join('');
+
+    const cPari = pari.length ? creep(mia) : null;
+    const sezionePari = pari.length
+        ? `<div ${cPari.attr || 'class="tb-tip-row"'}>
+               <span>= Tie</span><span class="tb-tip-names">${elencoNomi(pari.map(a => a.nome), 3)}</span>${cPari.badge}
+           </div>`
+        : '';
+
+    const sezioneVeloci = piuVeloci || pari.length
+        ? `<div class="tb-tip-title">Still faster (or tied)</div>
+           ${htmlVeloci}${sezionePari}
+           ${gruppi.size > MAX_GRUPPI ? `<div class="tb-tip-note">…and ${gruppi.size - MAX_GRUPPI} more speed tiers</div>` : ''}
+           <div class="tb-tip-note">Click a row to creep · green: EVs only · orange: EVs moved from other stats · yellow: nature change · ✕ out of reach</div>`
+        : `<div class="tb-tip-sub">🏁 Nothing in the format is faster</div>`;
+
+    // Trick Room: se la velocità è "minimizzata", conta chi ti resta sopra anche al minimo
+    // (in quel caso modificatori e lista dei più veloci non servono e vengono nascosti)
+    const modoTR = s.ivs.spe === 0 || (s.natMinus === 'spe' && !s.evs.spe);
+    const sezioneTR = modoTR
+        ? `<div class="tb-tip-section">
+               <div class="tb-tip-row"><span>🔄 Trick Room: slower than</span><b>${tbPerc(altri.filter(a => a.min > mia).length, totale)}%</b></div>
+               <div class="tb-tip-note">opponents at 0 EV / 0 IV${nat.conNatura ? ' / −Spe' : ''}</div>
+           </div>`
+        : '';
+
+    return `
+        ${tbTestataCoach(`SPEED TIER · ${mia}`)}
+        <div class="neubrutalist-tooltip-body">
+            <div class="tb-tip-big">${tbPerc(piuLenti, totale)}%</div>
+            <div class="tb-tip-sub">of the format outsped</div>
+            <div class="tb-tip-bar"><div style="width: ${(100 * piuLenti / totale).toFixed(1)}%;"></div></div>
+            <div class="tb-tip-sub">${piuLenti} slower · ${pari.length} ties · ${piuVeloci} faster</div>
+            ${rigaSprechi}
+            ${modoTR ? '' : `
+                <div class="tb-tip-section">${htmlModificatori}</div>
+                <div class="tb-tip-section">${sezioneVeloci}</div>`}
+            ${sezioneTR}
+            <div class="tb-tip-note">${totale} Pokémon · Lv. ${tbStato.livello} · opponents at 252 EV / 31 IV${nat.conNatura ? ' / +Spe' : ''}</div>
+        </div>`;
 }
 
 // =====================================================================
@@ -5781,6 +6969,52 @@ function tbIndovinaSpread(s) {
     }
     if (!minus || plus === minus) minus = plus === 'spe' ? 'spd' : 'spe';
 
+        // EV avanzati: al Lv. 5 (e in parte al 50) un punto costa fino a 80 EV, quindi dopo i tagli ne restano molti.
+    // 1) Ritaglia ogni statistica con la natura finale: toglie gli EV che non danno punti
+    const naturaFissa = tbNaturaImposta();
+    const modFinale = k => naturaFissa ? undefined : (k === plus ? 1.1 : k === minus ? 0.9 : 1.0);
+    for (const k of Object.keys(evs)) {
+        const mod = modFinale(k);
+        const valore = stat(k, evs[k], mod);
+        while (evs[k] > 0 && stat(k, evs[k] - PASSO, mod) === valore) evs[k] -= PASSO;
+    }
+    totale = Object.values(evs).reduce((t, v) => t + v, 0);
+
+    // 2) Ridistribuisce il resto: a ogni giro un punto in più alla statistica che costa meno EV
+    //    (a parità vince l'ordine), finché nessuna statistica può più salire
+    const bloccati = new Set();
+    if (!mc.PhysicalAttack) bloccati.add('atk');
+    if (!mc.SpecialAttack) bloccati.add('spa');
+    if (stats.hp === 1) bloccati.add('hp'); // Shedinja
+    if (ha.gyroball || ha.trickroom) bloccati.add('spe');
+    if (minus === 'atk' || minus === 'spe') bloccati.add(minus);
+    const ordine = [primaria, secondaria, 'atk', 'spa', 'hp', 'spd', 'def', 'spe'];
+
+    while (totale < TOTALE) {
+        let scelta = null, costo = Infinity;
+        for (const k of ordine) {
+            if (bloccati.has(k)) continue;
+            const mod = modFinale(k);
+            const attuale = stat(k, evs[k], mod);
+            const limite = Math.min(MAX, evs[k] + TOTALE - totale);
+            let ev = evs[k];
+            while (ev < limite && stat(k, ev, mod) === attuale) ev += PASSO;
+            if (stat(k, ev, mod) > attuale && ev - evs[k] < costo) {
+                scelta = k;
+                costo = ev - evs[k];
+            }
+        }
+        if (!scelta) break;
+
+        const hpPrima = evs.hp;
+        evs[scelta] += costo;
+        totale += costo;
+        if (scelta === 'hp') {
+            totale = sistemaPS(totale);                    // rispetta la regola dei PS (Stealth Rock, Sub...)
+            if (evs.hp <= hpPrima) bloccati.add('hp');     // la regola non lo permette: niente altri PS
+        }
+    }
+
     // IV minime (dal team editor di Showdown: prefersMinStats)
     let minSpe = !evs.spe && !!(ha.gyroball || ha.trickroom); // Trick Room: aggiunta nostra, Showdown guarda solo Gyro Ball
     let minAtk = !evs.atk;
@@ -6067,17 +7301,29 @@ async function apriTeamBuilder() {
         return;
     }
 
-    tbApriOverlayCaricamento(
+    // Aperto dal pulsante "Build Team" dell'helper: stessa transizione di "Edit in team builder".
+    // Il loader sfocato copre l'helper, il builder si prepara invisibile e si scopre solo quando è pronto.
+    // Dal pannello di modifica (helper già nascosto) il loader lo gestisce modificaTeamNelBuilder;
+    // "Try again" invece riprova dentro il builder già aperto.
+    const helper = document.getElementById('helper-modal-overlay');
+    const daHelper = !!helper && helper.style.display !== 'none';
+    if (daHelper) mostraLoaderSalvataggio('Loading...');
+
+    const overlay = tbApriOverlayCaricamento(
         tbModifica ? `Edit Team · ${tbModifica.nome}` : 'Build Team',
         tbModifica ? 'Loading team...' : 'Loading moves, abilities and items...'
     );
+    if (daHelper) overlay.style.visibility = 'hidden';
 
-    // Nasconde l'helper mentre il builder è aperto (riappare alla chiusura)
-    const helper = document.getElementById('helper-modal-overlay');
-    if (helper && helper.style.display !== 'none') {
-        helper.dataset.nascostoDaBuilder = '1';
-        helper.style.display = 'none';
-    }
+    // Nasconde l'helper mentre il builder è aperto (riappare alla chiusura).
+    // Con il loader resta sotto, sfocato, fino all'ultimo, come fa il pannello in modifica
+    const nascondiHelper = () => {
+        if (helper && helper.style.display !== 'none') {
+            helper.dataset.nascostoDaBuilder = '1';
+            helper.style.display = 'none';
+        }
+    };
+    if (!daHelper) nascondiHelper();
 
     try {
         const [regSnap] = await Promise.all([
@@ -6097,10 +7343,12 @@ async function apriTeamBuilder() {
             tbInizializzaStato(firma, regolamento, lista);
         } else {
             tbStato.regolamento = regolamento;
-                        tbStato.cacheMosse = {}; // le regole del formato potrebbero essere cambiate
+            tbStato.cacheMosse = {}; // le regole del formato potrebbero essere cambiate
         }
 
         tbRender();
+                tbCaricaCalc().catch(() => {}); // precarica il damage calc in background
+        if (daHelper) await tbAttendiBuilderPronto(); // font e sprite pronti prima di scoprirlo
     } catch (err) {
         console.error('[Team Builder]', err);
         document.getElementById('tb-body').innerHTML = `
@@ -6108,6 +7356,12 @@ async function apriTeamBuilder() {
                 <span>❌ Could not load Pokémon data (${tbEsc(err.message)}).</span>
                 <button type="button" class="tb-btn-small" onclick="apriTeamBuilder()">Try again</button>
             </div>`;
+    } finally {
+        if (daHelper) {
+            nascondiHelper();
+            overlay.style.visibility = '';
+            await sfumaLoaderSalvataggio(); // svanisce e scopre il builder già completo
+        }
     }
 }
 
@@ -6275,6 +7529,14 @@ function tbRenderLeggero() {
         tbRenderSlot();
     }
     tbRenderRiepilogo();
+const suggerito = document.getElementById('tb-ev-guess');
+    if (s && suggerito) {
+        const nuovo = tbHtmlSpreadSuggerito(s);
+        if (suggerito.dataset.html !== nuovo) {
+            suggerito.innerHTML = nuovo;
+            suggerito.dataset.html = nuovo;
+        }
+    }
 }
 
 function tbRenderSlot() {
@@ -6301,7 +7563,6 @@ function tbRenderSlot() {
             <div class="tb-slot ${attivo}" onclick="tbSelezionaSlot(${i})">
                 <img src="https://play.pokemonshowdown.com/sprites/ani/${spriteId}.gif" alt=""
                      onerror="gestisciErroreSprite(this, '${spriteId}')">                
-                <span class="tb-slot-item">${tbEsc(oggetto)}</span>
                 
                 <!-- PULSANTE FRECCETTE ROTANTI PER CAMBIARE POKÉMON -->
 <button type="button" 
@@ -6410,9 +7671,57 @@ function tbPosizionaTooltip(cardElement, tooltipElement) {
     }
 }
 
+// Posiziona i tooltip "coach": di fianco al bottone, dal lato verso il centro dello schermo,
+// centrati in verticale sul bottone e poi tenuti dentro lo schermo.
+// Se ai lati non c'è spazio (schermi stretti) si aprono sopra o sotto, verso il centro.
+function tbPosizionaCoach(el, tooltip, mantieniPosizione) {
+    const rect = el.getBoundingClientRect();
+    const margine = 10;  // distanza minima dai bordi dello schermo
+    const stacco = 12;   // distanza dal bottone
+    const w = tooltip.offsetWidth;
+    const h = tooltip.offsetHeight;
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const tra = (v, min, max) => Math.max(min, Math.min(v, max));
+
+    tooltip.style.transform = `rotate(${tooltip.dataset.rotation || '0deg'})`;
+
+    // Contenuto aggiornato da un click: resta dov'è, al massimo rientra nello schermo
+    if (mantieniPosizione && tooltip.style.top) {
+        const topAttuale = parseFloat(tooltip.style.top) - window.scrollY;
+        tooltip.style.top = `${tra(topAttuale, margine, vh - h - margine) + window.scrollY}px`;
+        return;
+    }
+
+    let left, top;
+    const aDestra = rect.right + stacco;
+    const aSinistra = rect.left - stacco - w;
+    const entraDestra = aDestra + w <= vw - margine;
+    const entraSinistra = aSinistra >= margine;
+    const preferisciDestra = rect.left + rect.width / 2 < vw / 2;
+
+    if (entraDestra && (preferisciDestra || !entraSinistra)) left = aDestra;
+    else if (entraSinistra) left = aSinistra;
+
+    if (left !== undefined) {
+        // Di fianco al bottone: centrato in verticale, poi spinto dentro lo schermo
+        top = tra(rect.top + rect.height / 2 - h / 2, margine, vh - h - margine);
+    } else {
+        // Niente spazio ai lati: sopra o sotto, dal lato del centro dello schermo
+        left = tra(rect.left + rect.width / 2 - w / 2, margine, vw - w - margine);
+        top = (rect.top + rect.height / 2 > vh / 2) ? rect.top - stacco - h : rect.bottom + stacco;
+        top = tra(top, margine, vh - h - margine);
+    }
+
+    tooltip.style.left = `${left + window.scrollX}px`;
+    tooltip.style.top = `${top + window.scrollY}px`;
+}
+
 // Riempie e mostra il tooltip. pkm = { id, name }
 function tbMostraTooltip(pkm, card, infoPkm) {
     const tooltip = tbGetTooltip();
+        tooltip.classList.remove('tb-coach');
+    tooltip.onmouseenter = tooltip.onmouseleave = null;
 
     tooltip.dataset.currentId = pkm.id;
     tooltip.dataset.rotation = `${(Math.random() * 8 - 4).toFixed(2)}deg`;
@@ -6494,6 +7803,8 @@ function tbNascondiTooltip(id) {
     const tooltip = document.getElementById('global-neubrutalist-tooltip');
     if (!tooltip) return;
     if (id !== undefined && tooltip.dataset.currentId !== String(id)) return;
+    tooltip.classList.remove('tb-coach');
+    tooltip.onmouseenter = tooltip.onmouseleave = null;
 
     tooltip.style.display = 'none';
     tooltip.style.opacity = '0';
@@ -6713,8 +8024,9 @@ function tbHtmlPannelloEV(s) {
                 <input type="number" min="0" max="31" value="${s.ivs[st.key]}" id="tb-iv-num-${st.key}"
                        class="tb-input tb-num" onchange="tbImpostaIV('${st.key}', this.value)">
                 ${bottoniNatura}
-                <span class="tb-ev-stat" id="tb-stat-${st.key}">${tbCalcolaStat(st.key, base, s.evs[st.key], s.ivs[st.key], s.natura)}</span>
-            </div>`;
+                <span class="tb-ev-stat tb-spe-hover" id="tb-stat-${st.key}"
+                      onmouseenter="tbApriCoachStat(this, '${st.key}')" onmouseleave="tbChiudiCoachPresto('stat-${st.key}')">${tbCalcolaStat(st.key, base, s.evs[st.key], s.ivs[st.key], s.natura)}</span>
+                                  </div>`;
     }).join('');
 
     const testoNatura = tbStato.gen < 3
@@ -6855,9 +8167,15 @@ function tbRenderRiepilogo() {
             ? `⚠ Team weaknesses · ${copertura.critici.length}`
             : (copertura.pieni ? '✔ Team weaknesses' : 'Team weaknesses');
     }
-    const boxCopertura = document.getElementById('tb-cov-box');
-    if (boxCopertura) boxCopertura.innerHTML = copertura.html;
-
+    const attacco = tbCalcolaAttacco();
+    const tagAttacco = document.getElementById('tb-off-tag');
+    if (tagAttacco) {
+        const muri = attacco.muri.length;
+        tagAttacco.className = `tb-cov-tag ${!attacco.attaccanti ? '' : (muri ? 'bad' : 'good')}`;
+        tagAttacco.textContent = !attacco.attaccanti
+            ? 'Team coverage'
+            : (muri ? `⚠ Team coverage · ${muri} walls` : `✔ Team coverage · ${tbPerc(attacco.superEfficaci, attacco.totale)}%`);
+    }
     const errori = tbControllaTeam();
     const wrap = document.getElementById('tb-save-wrap');
     const btnSalva = document.getElementById('tb-btn-save');
@@ -7086,10 +8404,6 @@ function tbSelezionaSlot(i) {
     tbRenderSlot();
     tbRenderCorpo();
     tbRenderRiepilogo();
-
-        // Spread suggerito: si ricalcola quando cambiano mosse, strumento, abilità o natura
-    const suggerito = document.getElementById('tb-ev-guess');
-    if (s && suggerito) suggerito.innerHTML = tbHtmlSpreadSuggerito(s);
 }
 
 function tbScegliPokemon(specieId) {

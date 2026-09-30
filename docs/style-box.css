@@ -767,14 +767,14 @@ input:focus {
 
 /* Badge piccolo per il tooltip */
 .mini-type-badge {
-    font-size: 0.55rem;
-    padding: 1px 4px;
+    font-size: 0.5rem !important;
+    padding: 1px 2px;
     color: white;
     font-weight: bold;
     text-transform: uppercase;
     text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
-    border: 1.5px solid black;
-    box-shadow: 2px 2px 0 black;
+    border: 1px solid black;
+    box-shadow: 1.5px 1.5px 0 black;
     
 }
 
@@ -1067,7 +1067,6 @@ color:#eeeeee;
 .mini-type-badge {
     padding: 1px 6px;
     text-transform: uppercase;
-    font-size: 0.6rem;
     color: white;
     font-weight: bold;
     transform-origin: bottom center;
@@ -4891,3 +4890,72 @@ color:#eeeeee;
 .tb-btn-change-pkmn:hover .tb-icon-spin {
     animation: fa-spin 2s infinite linear;
 }
+
+/* =========================================================
+   🧢 TOOLTIP "COACH" (speed tier, team weaknesses, team coverage)
+   ========================================================= */
+#global-neubrutalist-tooltip.tb-coach {
+    width: 340px;
+    max-width: calc(100vw - 20px);
+    max-height: 80vh;
+    overflow-y: auto;
+    pointer-events: auto;
+}
+.tb-ev-stat.tb-spe-hover,
+.tb-cov-tag { cursor: help; }
+.tb-ev-stat.tb-spe-hover { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+.tb-tip-big { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.tb-tip-sub { font-size: 0.75rem; font-weight: 700; }
+.tb-tip-bar { height: 10px; border: 2px solid #000; background: #fff; margin: 6px 0 4px; }
+.tb-tip-bar > div { height: 100%; background: var(--accent-color, #00FF66); }
+.tb-tip-section { margin-top: 8px; padding-top: 6px; border-top: 2px dashed #000; }
+.tb-tip-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
+.tb-tip-note { font-size: 0.68rem; opacity: 0.7; margin-top: 4px; }
+
+.tb-tip-row {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 6px;
+    font-size: 0.78rem; font-weight: 600; padding: 2px 4px; margin: 0 -4px;
+}
+.tb-tip-row b { white-space: nowrap; }
+.tb-tip-row.on { background: #fff3b0; outline: 2px solid #000; }
+.tb-tip-row.critical { border-left: 4px solid #ff4d4d; }
+.tb-tip-row.warning  { border-left: 4px solid #ff9f1c; }
+.tb-tip-row.tb-click { cursor: pointer; }
+.tb-tip-row.tb-click:hover { background: #000; color: #fff; }
+
+.tb-tip-names { flex: 1 1 90px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-tip-names.wrap { white-space: normal; }
+.tb-tip-types { display: inline-flex; gap: 2px; flex-shrink: 0; }
+.tb-tip-examples { font-size: 0.72rem; margin: 0 0 4px 4px; opacity: 0.85; }
+.tb-tip-link { text-decoration: underline; cursor: pointer; font-weight: 700; }
+.tb-tip-link:hover { background: #000; color: #fff; }
+
+.tb-tip-badge {
+    margin-left: auto; flex-shrink: 0; font-size: 0.68rem; font-weight: 700; color: #000;
+    padding: 0 4px; border: 2px solid #000; background: #d9ffe6; white-space: nowrap;
+}
+.tb-tip-badge.warn { background: #ffd9a8; }
+.tb-tip-badge.nat  { background: #fff3b0; }
+.tb-tip-badge.bad  { background: #ffd6d6; }
+
+.tb-tip-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.tb-tip-chip { display: inline-flex; align-items: center; gap: 2px; font-size: 0.68rem; font-weight: 700; }
+
+.tb-tip-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.tb-tip-cell { border: 2px solid #000; padding: 2px; text-align: center; background: #fff; min-width: 0; }
+.tb-tip-cell .mini-type-badge { display: block; overflow: hidden; text-overflow: ellipsis; }
+.tb-tip-cell small { display: block; font-size: 0.62rem; font-weight: 700; }
+.tb-tip-cell.critical { background: #ffd6d6; }
+.tb-tip-cell.warning  { background: #ffd9a8; }
+.tb-tip-cell.strong   { background: #d9ffe6; }
+
+/* Chip cliccabili nei tooltip del damage calc */
+.tb-tip-chips + .tb-tip-big { margin-top: 6px; }
+.tb-tip-chip-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; align-self: center; }
+.tb-tip-chip-btn {
+    font-size: 0.68rem; font-weight: 700; padding: 1px 6px; cursor: pointer; user-select: none;
+    border: 2px solid #000; background: #fff; color: #000;
+}
+.tb-tip-chip-btn:hover { background: #000; color: #fff; }
+.tb-tip-chip-btn.on { background: var(--accent-color, #00FF66); box-shadow: 2px 2px 0 #000; }
