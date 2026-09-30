@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Battaglia | Poké-Tournament</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --inchiostro: #000;
+            --carta: #fff;
+            --sfondo-a: #dfdfdf;
+            --sfondo-b: #b2b2b2;
+            --ambra: #ffbd44;
+            --conferma: #09ca49;
+            --colore-p1: #6fa8ff;   /* poi arriverà da players/{id}/info/color */
+            --colore-p2: #ff7b6b;
+            --ombra: 4px 4px 0 var(--inchiostro);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--inchiostro);
+            background: linear-gradient(135deg, var(--sfondo-a) -50%, var(--sfondo-b) 100%);
+        }
+        h1, h2, h3, button { font-family: 'Josefin Sans', sans-serif; }
+        .pagina { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 18px; }
+
+        /* --- Intestazione --- */
+        .testata {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+            background: var(--ambra); border: 3px solid var(--inchiostro); box-shadow: var(--ombra); padding: 12px 16px;
+        }
+        .testata h1 { margin: 0; font-size: 1.5rem; }
+        .testata h1 .p1 { background: var(--colore-p1); padding: 0 6px; border: 2px solid var(--inchiostro); }
+        .testata h1 .p2 { background: var(--colore-p2); padding: 0 6px; border: 2px solid var(--inchiostro); }
+        .info-turno { display: flex; gap: 8px; flex-wrap: wrap; font-weight: 700; font-size: .85rem; }
+        .info-turno span { background: var(--carta); border: 2px solid var(--inchiostro); padding: 3px 8px; }
+        .opzione-bot { display: flex; gap: 6px; align-items: center; font-weight: 600; font-size: .85rem; cursor: pointer; }
+        .opzione-bot input { width: 18px; height: 18px; accent-color: var(--inchiostro); }
+
+        /* --- Campo --- */
+        .campo {
+            position: relative; min-height: 360px; overflow: hidden;
+            background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: 6px 6px 0 var(--inchiostro);
+            display: grid; grid-template-rows: 1fr 1fr; padding: 14px;
+        }
+        .campo::before {
+            content: ''; position: absolute; inset: 50% -10% auto -10%; height: 3px; background: var(--inchiostro);
+            transform: rotate(-4deg); opacity: .15;
+        }
+        .fila { display: flex; gap: 16px; align-items: flex-end; position: relative; }
+        .fila.avversario { justify-content: flex-end; align-items: flex-start; }
+        .scheda {
+            width: 220px; display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: center;
+            background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: var(--ombra); padding: 8px;
+        }
+        .fila.avversario .scheda { border-top: 8px solid var(--colore-p2); }
+        .fila.mia .scheda { border-top: 8px solid var(--colore-p1); }
+        .scheda.vuota { opacity: .35; }
+        .scheda.ko .sprite img { filter: grayscale(1); opacity: .4; }
+        .sprite { height: 96px; display: flex; align-items: flex-end; justify-content: center; }
+        .sprite img { max-height: 96px; max-width: 96px; image-rendering: pixelated; transition: transform .3s; }
+        .scheda.dinamax { border-color: #d6002a; box-shadow: 4px 4px 0 #d6002a; }
+        .scheda.dinamax .sprite img { transform: scale(1.35); transform-origin: bottom center; }
+        .nome-pkm { font-family: 'Josefin Sans', sans-serif; font-weight: 700; font-size: .95rem; line-height: 1.1; }
+        .barra { height: 12px; border: 2px solid var(--inchiostro); background: #eee; margin: 6px 0 3px; }
+        .barra > div { height: 100%; transition: width .5s ease, background-color .5s; }
+        .dettagli { display: flex; justify-content: space-between; font-size: .75rem; font-weight: 600; }
+        .stato { background: var(--inchiostro); color: var(--carta); padding: 0 5px; text-transform: uppercase; font-size: .7rem; }
+        .anteprima-fila { display: flex; gap: 6px; flex-wrap: wrap; }
+        .anteprima-fila img { width: 64px; height: 64px; object-fit: contain; border: 2px solid var(--inchiostro); background: var(--carta); }
+
+        /* --- Comandi --- */
+        .comandi { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .pannello { background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: var(--ombra); }
+        .pannello h2 { margin: 0; padding: 10px 14px; font-size: 1.1rem; border-bottom: 3px solid var(--inchiostro); }
+        #comandi-p1 h2 { background: var(--colore-p1); }
+        #comandi-p2 h2 { background: var(--colore-p2); }
+        .corpo { padding: 14px; display: grid; gap: 12px; }
+        .domanda { font-weight: 700; margin: 0; }
+        .griglia { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn {
+            border: 2px solid var(--inchiostro); background: var(--carta); box-shadow: 3px 3px 0 var(--inchiostro);
+            padding: 9px 10px; cursor: pointer; font-weight: 700; font-size: .9rem; text-align: left;
+            display: flex; justify-content: space-between; gap: 6px; align-items: center;
+        }
+        .btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--inchiostro); }
+        .btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--inchiostro); }
+        .btn:focus-visible { outline: 3px solid var(--ambra); outline-offset: 2px; }
+        .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+        .btn small { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: .7rem; }
+        .btn.primario { background: var(--conferma); justify-content: center; text-transform: uppercase; }
+        .btn.secondario { background: #eee; justify-content: center; }
+        .btn.attivo { background: #d6002a; color: var(--carta); }
+        .btn.scelto { background: var(--ambra); }
+        .mossa { border-left: 8px solid var(--tipo, #aaa); }
+        .riga-azioni { display: flex; gap: 8px; flex-wrap: wrap; }
+        .messaggio { padding: 10px; border: 2px dashed var(--inchiostro); font-weight: 600; }
+        .errore { background: #ffe0e0; border: 2px solid #d6002a; padding: 8px 10px; font-weight: 600; font-size: .85rem; }
+        .etichetta { font-size: .75rem; font-weight: 700; margin: 0 0 -4px; }
+
+        /* --- Log --- */
+        .log { background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: var(--ombra); max-height: 260px; overflow-y: auto; padding: 10px 14px; font-size: .85rem; line-height: 1.6; }
+        .log p { margin: 0; }
+        .log .turno { font-family: 'Josefin Sans', sans-serif; font-weight: 700; margin-top: 8px; border-bottom: 2px solid var(--inchiostro); }
+        .log .ko { font-weight: 700; }
+        .log .evento { font-weight: 700; color: #d6002a; }
+        .log .fine { font-weight: 700; background: var(--ambra); padding: 4px 8px; margin-top: 8px; }
+
+        /* --- Fine --- */
+        .vittoria {
+            display: none; text-align: center; background: var(--ambra); border: 3px solid var(--inchiostro);
+            box-shadow: 6px 6px 0 var(--inchiostro); padding: 18px;
+        }
+        .vittoria.visibile { display: block; }
+        .vittoria h2 { margin: 0 0 12px; font-size: 1.8rem; }
+        .vittoria .btn { display: inline-flex; }
+
+        .caricamento { text-align: center; font-weight: 700; padding: 30px; }
+
+        /* Tipi (colore del bordo delle mosse) */
+        .t-normal{--tipo:#a8a878}.t-fire{--tipo:#f08030}.t-water{--tipo:#6890f0}.t-electric{--tipo:#f8d030}
+        .t-grass{--tipo:#78c850}.t-ice{--tipo:#98d8d8}.t-fighting{--tipo:#c03028}.t-poison{--tipo:#a040a0}
+        .t-ground{--tipo:#e0c068}.t-flying{--tipo:#a890f0}.t-psychic{--tipo:#f85888}.t-bug{--tipo:#a8b820}
+        .t-rock{--tipo:#b8a038}.t-ghost{--tipo:#705898}.t-dragon{--tipo:#7038f8}.t-dark{--tipo:#705848}
+        .t-steel{--tipo:#b8b8d0}.t-fairy{--tipo:#ee99ac}
+
+        @media (max-width: 760px) {
+            .comandi { grid-template-columns: 1fr; }
+            .scheda { width: 100%; grid-template-columns: 72px 1fr; }
+            .sprite, .sprite img { max-height: 72px; height: 72px; }
+            .fila { gap: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .barra > div, .sprite img { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <main class="pagina">
+        <header class="testata">
+            <h1><span class="p1" id="nome-p1">P1</span> vs <span class="p2" id="nome-p2">P2</span></h1>
+            <div class="info-turno" id="info-turno"></div>
+            <label class="opzione-bot">
+                <input type="checkbox" id="bot-p2">
+                P2 giocato dal bot
+            </label>
+        </header>
+
+        <section class="campo" id="campo" aria-label="Campo di battaglia">
+            <div class="caricamento" id="caricamento">Caricamento del simulatore…</div>
+        </section>
+
+        <section class="vittoria" id="vittoria" aria-live="polite">
+            <h2 id="testo-vittoria"></h2>
+            <button class="btn primario" id="btn-rigioca">Nuova battaglia</button>
+        </section>
+
+        <section class="comandi">
+            <div class="pannello" id="comandi-p1">
+                <h2 id="titolo-p1">Giocatore 1</h2>
+                <div class="corpo" id="corpo-p1"></div>
+            </div>
+            <div class="pannello" id="comandi-p2">
+                <h2 id="titolo-p2">Giocatore 2</h2>
+                <div class="corpo" id="corpo-p2"></div>
+            </div>
+        </section>
+
+        <section class="log" id="log" aria-label="Cronaca della battaglia" aria-live="polite"></section>
+    </main>
+
+    <script>
+        // Se dopo qualche secondo il simulatore non è partito, quasi sempre
+        // la pagina è stata aperta con doppio clic (file://) invece che da un server.
+        setTimeout(() => {
+            if (!window.battagliaPronta) {
+                document.getElementById('caricamento').innerHTML =
+                    'Il simulatore non si è avviato. Apri la pagina dal sito (o da un server locale come Live Server), non con doppio clic sul file. Controlla anche la console per errori.';
+            }
+        }, 6000);
+    </script>
+    <script type="module" src="battle-ui.js"></script>
+</body>
+</html>

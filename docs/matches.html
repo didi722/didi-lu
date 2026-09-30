@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+       <script src="risultati-match.js"></script>
     </header>
 <body>
     
@@ -2029,7 +2030,7 @@ async function popolaSelectTeamSpecificoPerPlayer(p1, p2, formato) {
         // --- POPOLAMENTO SCORE ---
         const bestOf = (data.info && data.info.best_of) ? parseInt(data.info.best_of) : 5;
         let opzioniScore = (bestOf === 3) 
-            ? ["2-0", "2-1", "1-2", "0-2"] 
+            ? ["3-0", "2-1", "1-2", "0-3"] 
             : ["5-0", "4-1", "3-2", "2-3", "1-4", "0-5"];
         
         scoreSelect.innerHTML = '<option value="">Select Score</option>' + 
@@ -3129,13 +3130,17 @@ function calcolaVariazioneElo(ratingA, ratingB, vittoriaA) {
     return Math.round(K * ((vittoriaA ? 1 : 0) - expectedA));
 }
 
+// Sostituisce INTERAMENTE la vecchia salvaMatchFirebase() in matches.html.
+// Legge il modulo, prepara i dati e passa tutto a registraRisultatoMatch()
+// (che si trova in risultati-match.js).
+
 async function salvaMatchFirebase() {
     const panel = document.getElementById('admin-matches-panel');
     if (!panel) return;
 
-    // 1. Recupero riferimenti e ID fondamentali
+    // 1. ID fondamentali
     const showdownId = document.getElementById('current-showdown-id')?.value;
-    const matchNum = panel.dataset.currentMatchNum; 
+    const matchNum = panel.dataset.currentMatchNum;
     const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
 
     if (!showdownId || !matchNum) {
@@ -3143,242 +3148,58 @@ async function salvaMatchFirebase() {
         return;
     }
 
-    // 2. Recupero riferimenti agli elementi HTML
-    const team1Select = document.getElementById('match-team1'); 
-    const team2Select = document.getElementById('match-team2');
-    const p1Select = document.getElementById('match-player1');
-    const p2Select = document.getElementById('match-player2');
-    const scoreSelect = document.getElementById('match-score'); 
-    const dataMatchInput = document.getElementById('match-date');
-    const categoriaInput = document.getElementById('match-cat');
+    // 2. Lettura del modulo
+    const player1 = document.getElementById('match-player1').value;
+    const player2 = document.getElementById('match-player2').value;
+    const team1 = document.getElementById('match-team1').value;
+    const team2 = document.getElementById('match-team2').value;
+    const score = document.getElementById('match-score').value;
+    const data = document.getElementById('match-date').value;
+    const categoria = document.getElementById('match-cat').value;
 
-    // 3. Parsing del punteggio e validazione
-    const scoreVal = scoreSelect.value;
-    const [s1, s2] = scoreVal.split('-').map(val => parseInt(val) || 0);
-    const dataMatch = dataMatchInput.value;
-    const categoria = categoriaInput.value;
-
-    if (!team1Select.value || !team2Select.value || !dataMatch) {
-        alert("Please select teams for both players and provide a date!");
+    if (!team1 || !team2 || !data || !score) {
+        alert("Please select teams, score and date!");
         return;
     }
 
-    // ==========================================
-    // 🔥 ATTIVAZIONE LOADER: Parte l'operazione di salvataggio
-    // ==========================================
-    const loader = document.getElementById('loading-overlay');
-    if (loader) loader.classList.add('active');
-
-    // 4. Logica Punti e Identità Player
-    const p1Id = p1Select.value.toLowerCase().trim();
-    const p2Id = p2Select.value.toLowerCase().trim();
-    const winnerId = s1 > s2 ? p1Id : p2Id;
-
-    const totalSets = s1 + s2;
-    const isBO3 = totalSets <= 3; 
-
-    const calcolaPunti = (vinti, bo3) => {
-        if (bo3) {
-            if (vinti >= 2) return 2;
-            if (vinti === 1) return 1;
-            return 0;
-        } else {
-            if (vinti === 5) return 3;
-            if (vinti >= 3) return 2;
-            if (vinti === 2) return 1;
-            return 0;
-        }
-    };
-
-    const p1points = calcolaPunti(s1, isBO3);
-    const p2points = calcolaPunti(s2, isBO3);
-
-    // 5. Costruzione Replays
+    // 3. Replay e vincitori dei set
     const replays = {};
     for (let i = 1; i <= 5; i++) {
         const replayEl = document.getElementById(`replay-s${i}`);
         if (!replayEl) continue;
         const urlValue = replayEl.value.trim();
-        const vincitoreVal = (typeof vincitoriSelezionati !== 'undefined') ? vincitoriSelezionati[`set${i}`] : ""; 
-        
+        const vincitoreVal = (typeof vincitoriSelezionati !== 'undefined') ? vincitoriSelezionati[`set${i}`] : "";
+
         if (urlValue || vincitoreVal) {
-            replays[`set${i}`] = { 
-                url: urlValue, 
+            replays[`set${i}`] = {
+                url: urlValue,
                 vincitore: vincitoreVal === 'D' ? "1" : (vincitoreVal === 'L' ? "2" : vincitoreVal)
             };
         }
     }
 
+    // 4. Salvataggio tramite la logica condivisa
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.classList.add('active');
+
     try {
-        // --- RECUPERO RANKING ATTUALI E MATCH ESISTENTE ---
-        const snapP1 = await db.ref(`players/${p1Id}/stats/individual-stats/ranking`).once('value');
-        const snapP2 = await db.ref(`players/${p2Id}/stats/individual-stats/ranking`).once('value');
-        const snapEsistente = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`).once('value');
-        
-        const eloP1_pre = snapP1.val() || 1000;
-        const eloP2_pre = snapP2.val() || 1000;
-        const matchEsistente = snapEsistente.val();
-
-        // --- LOGICA DELTA ELO INTEGRATA ---
-        let delta1, delta2;
-        const K = 32;
-
-        if (matchEsistente && 
-            matchEsistente.player1Id === p1Id && 
-            matchEsistente.player2Id === p2Id && 
-            matchEsistente.winnerId === winnerId &&
-            matchEsistente.p1DeltaElo !== undefined) {
-            
-            delta1 = matchEsistente.p1DeltaElo;
-            delta2 = matchEsistente.p2DeltaElo;
-        } else {
-            const exp1 = 1 / (1 + Math.pow(10, (eloP2_pre - eloP1_pre) / 400));
-            const exp2 = 1 / (1 + Math.pow(10, (eloP1_pre - eloP2_pre) / 400));
-            
-            const score1 = (winnerId === p1Id) ? 1 : 0;
-            const score2 = (winnerId === p2Id) ? 1 : 0;
-
-            delta1 = Math.round(K * (score1 - exp1));
-            delta2 = Math.round(K * (score2 - exp2));
-        }
-
-        // 6. Creazione dell'oggetto Match (Assicuriamo il salvataggio dei punti fatti in p1points e p2points)
-        const datiMatch = {
-            player1: p1Select.value,
-            player1Id: p1Id,
-            player2: p2Select.value,
-            player2Id: p2Id,
-            winnerId: winnerId,
-            team1: team1Select.value,
-            team2: team2Select.value,
-            score: scoreVal,
-            p1score: s1,
-            p2score: s2,
-            p1points: p1points, // <-- Punti fatti inseriti esplicitamente
-            p2points: p2points, // <-- Punti fatti inseriti esplicitamente
-            data: dataMatch,
-            categoria: categoria,
-            replays: replays,
-            lastEdit: new Date().toISOString(),
-            showdownId: showdownId,
-            p1EloAtMatch: eloP1_pre,
-            p2EloAtMatch: eloP2_pre,
-            p1DeltaElo: delta1,
-            p2DeltaElo: delta2
-        };
-
-        // 7. SALVATAGGIO MATCH
-        const pathMatch = `seasons/${stagione}/showdowns/${showdownId}/matches/match${matchNum}`;
-        await db.ref(pathMatch).set(datiMatch);
-
-        // --- AGGIORNAMENTO ELO NEI PROFILI ---
-        await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1_pre + delta1 });
-        await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2_pre + delta2 });
-        
-        console.log(`Elo aggiornato con Delta: ${p1Id} (${delta1}), ${p2Id} (${delta2})`);
-
-        // --- LOGICA VINCITORE SHOWDOWN ---
-        const sdSnap = await db.ref(`seasons/${stagione}/showdowns/${showdownId}/matches`).once('value');
-        const allMatches = sdSnap.val() || {};
-        const matchesArray = Object.values(allMatches);
-
-        let winsRecord = {}; 
-        matchesArray.forEach(m => {
-            if (!m.winnerId) return;
-            winsRecord[m.winnerId] = (winsRecord[m.winnerId] || 0) + 1;
+        const esito = await registraRisultatoMatch({
+            stagione, showdownId, matchNum,
+            player1, player2, team1, team2,
+            score, data, categoria, replays
         });
 
-        let seriesWinnerId = null;
-        let maxWins = 0;
-        let isTie = false;
-
-        Object.entries(winsRecord).forEach(([id, count]) => {
-            if (count > maxWins) {
-                maxWins = count;
-                seriesWinnerId = id;
-                isTie = false;
-            } else if (count === maxWins) {
-                isTie = true;
-            }
-        });
-
-        const infoUpdate = {
-            punteggioSerie: Object.entries(winsRecord).map(([id, w]) => `${id}: ${w}`).join(' vs '),
-            ultimoAggiornamento: new Date().toISOString()
-        };
-
-        if (seriesWinnerId && !isTie && matchesArray.length >= 2) {
-            infoUpdate.vincitoreShowdown = seriesWinnerId;
-        } else {
-            await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info/vincitoreShowdown`).remove();
-        }
-
-        await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
-
-        // ==========================================
-        // 🔥 LOGICA: CONTROLLO CHIUSURA STAGIONE AUTOCLOSED
-        // ==========================================
-        const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
-        const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-        
-        const stagioneInfo = snapStagioneInfo.val() || {};
-        const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-        if (stagioneInfo.status === 'playing' && stagioneInfo.total_days) {
-            const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
-            const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-            const matchInQuestoShowdown = allMatches ? Object.keys(allMatches).length : 0;
-
-            if (numeroShowdownAttuali >= totalDaysPrevisti && matchInQuestoShowdown >= 3) {
-                
-                await db.ref(`seasons/${stagione}/info`).update({ status: 'closed' });
-                console.log(`La stagione ${stagione} è stata impostata automaticamente su CLOSED.`);
-
-                const snapLeaderboard = await db.ref(`players`).once('value');
-                const tuttiIPlayers = snapLeaderboard.val() || {};
-                
-                let vincitoreStagioneId = "Nessuno";
-                let punteggioMassimo = -1;
-
-                Object.entries(tuttiIPlayers).forEach(([idPlayer, datiPlayer]) => {
-                    const rankingActual = datiPlayer.stats?.['individual-stats']?.ranking || 1000;
-                    if (rankingActual > punteggioMassimo) {
-                        punteggioMassimo = rankingActual;
-                        vincitoreStagioneId = idPlayer.toUpperCase();
-                    }
-                });
-
-                setTimeout(() => {
-                    alert(`🏆 SEASON ENDS! 🏆\n\nThe maximum number of Showdowns (${totalDaysPrevisti}/${totalDaysPrevisti}) has been completed successfully.\nThe season status is now: CLOSED.\n\n👑 Congratulations to ${vincitoreStagioneId}, the Absolute Winner of the Season! 👑`);
-                }, 600);
-            }
-        }
-        // ==========================================
-
-        // 8. SINCRONIZZAZIONE STATISTICHE
-        if (typeof aggiornaLeaderboard === "function") {
-            await aggiornaLeaderboard(stagione);
-        }
-        
-        if (typeof ricalcolaStatisticheGlobali === "function") {
-            await ricalcolaStatisticheGlobali(p1Id);
-            await ricalcolaStatisticheGlobali(p2Id);
-        }
-        
         alert(`Match #${matchNum} saved!`);
 
-        // 9. CHIUSURA E PULIZIA
+        if (esito.stagioneChiusa) {
+            alert(`🏆 SEASON ENDS! 🏆\n\nThe maximum number of Showdowns (${esito.totalDays}/${esito.totalDays}) has been completed successfully.\nThe season status is now: CLOSED.\n\n👑 Congratulations to ${esito.vincitoreStagione}, the Absolute Winner of the Season! 👑`);
+        }
+
+        // 5. Chiusura e pulizia
         panel.style.display = 'none';
         if (typeof resetStatoModaleMatch === "function") {
             resetStatoModaleMatch();
-        } else {
-            if (typeof vincitoriSelezionati !== 'undefined') vincitoriSelezionati = {}; 
-            for (let i = 1; i <= 5; i++) {
-                const el = document.getElementById(`replay-s${i}`);
-                if(el) el.value = "";
-            }
         }
-
         if (typeof aggiornaGraficaShowdown === "function") {
             aggiornaGraficaShowdown();
         }
@@ -3387,426 +3208,7 @@ async function salvaMatchFirebase() {
         console.error("Error during saving:", err);
         alert("Technical error: " + err.message);
     } finally {
-        // ==========================================
-        // 🛑 DISATTIVAZIONE LOADER: Operazione conclusa
-        // ==========================================
         if (loader) loader.classList.remove('active');
-    }
-}
-
-async function ricalcolaStatisticheGlobali(pId) {
-    try {
-        const seasonsSnap = await db.ref(`seasons`).once('value');
-        const seasons = seasonsSnap.val() || {};
-        
-        const playerSnap = await db.ref(`players/${pId}`).once('value');
-        const playerData = playerSnap.val() || {};
-        
-        const teamCompositionMap = {};
-        const teamTypesMap = {}; 
-
-        // --- 1A. CONFIGURAZIONE CACHE E FUNZIONE LOCALE POKEAPI ---
-        const pokemonTypesCache = {};
-
-        async function ottieniTipiDaPokeAPI(nomePokemon) {
-            if (!nomePokemon) return [];
-            if (/^\d+$/.test(nomePokemon.trim())) {
-                console.warn(`⚠️ Saltato nome Pokémon non valido (ID numerico): "${nomePokemon}"`);
-                return [];
-            }
-            let nomeClean = nomePokemon.toLowerCase().trim()
-                .replace(/\s+/g, '-')      
-                .replace(/[^a-z0-9-]/g, ''); 
-
-            const dizionarioEccezioni = {
-                "darmanitan-galar": "darmanitan-galar-standard",
-                "darmanitan-galar-zen": "darmanitan-galar-zen",
-                "meloetta": "meloetta-aria",
-                "meowstic": "meowstic-male",
-                "aegislash": "aegislash-shield",
-                "indeedee" : "indeedee-male",
-                "tapufini" : "tapu-fini",
-                "kommoo": "kommo-o",
-                "pumpkaboo": "pumpkaboo-average",
-                "gourgeist": "gourgeist-average",
-                "mimikyu": "mimikyu-disguised",
-                "toxtricity": "toxtricity-amped",
-                "eiscue": "eiscue-ice",
-                "morpeko": "morpeko-full-belly",
-                "urshifu": "urshifu-single-strike",
-                "urshifu-rapidstrike" : "urshifu-rapid-strike",
-                "tornadus" : "tornadus-incarnate",
-                "basculegion": "basculegion-male",
-                "enamorus": "enamorus-incarnate",
-                "mrmime": "mr-mime",
-                "keldeo": "keldeo-ordinary",
-                "lycanroc": "lycanroc-midday",
-                "wishiwashi": "wishiwashi-solo",
-                "minior": "minior-red-meteor"
-            };
-
-            if (dizionarioEccezioni[nomeClean]) {
-                nomeClean = dizionarioEccezioni[nomeClean];
-            }
-            if (pokemonTypesCache[nomeClean]) {
-                return pokemonTypesCache[nomeClean];
-            }
-
-            try {
-                const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomeClean}`);
-                if (!response.ok) throw new Error(`Pokémon ${nomeClean} not found`);
-                const data = await response.json();
-                const types = data.types.map(t => t.type.name.toLowerCase());
-                pokemonTypesCache[nomeClean] = types;
-                return types;
-            } catch (err) {
-                console.warn(`⚠️ Impossibile recuperare i tipi per "${nomePokemon}" (Provato come: ${nomeClean}):`, err.message);
-                return []; 
-            }
-        }
-
-        if (playerData.teams) {
-            for (const t of Object.values(playerData.teams)) {
-                teamCompositionMap[t.nome] = (t.pokemon || []).map(p => p.nome);
-                const promesseTipi = (t.pokemon || []).map(p => ottieniTipiDaPokeAPI(p.nome));
-                teamTypesMap[t.nome] = await Promise.all(promesseTipi);
-            }
-        }
-
-        let cronologiaMatchPiatta = [];
-        let listaShowdownPartecipati = [];
-        let statsLeaderboard = { won: 0, lost: 0, setW: 0, setL: 0, points: 0, formats: {} };
-        
-        // Struttura di supporto temporanea per tracciare gli Showdown per ciascun formato
-        const sdStatsPerFormato = {};
-        
-        // 🌟 CONTATORI GLOBALI PER GLI SHOWDOWN DELL'ALLENATORE
-        let globalShowdownsPlayed = 0;
-        let globalShowdownsWon = 0;
-        let globalShowdownsLost = 0;
-
-        // 1. ESTRAZIONE DATI
-        Object.entries(seasons).forEach(([sId, stagione]) => {
-            // 🚫 ESCLUSIONE STAGIONE BETA
-            if (sId === 'sbeta') return;
-
-            if (stagione.leaderboard && stagione.leaderboard[pId]) {
-                const s = stagione.leaderboard[pId];
-                statsLeaderboard.won += (s.won || 0);
-                statsLeaderboard.lost += (s.lost || 0);
-                statsLeaderboard.setW += (s.setW || 0);
-                statsLeaderboard.setL += (s.setL || 0);
-            }
-
-            const showdowns = stagione.showdowns || {};
-            Object.entries(showdowns).forEach(([sdId, sd]) => {
-                const infoSD = sd.info || {};
-                const dataSD = infoSD.data || infoSD.lastEdit || "2000-01-01";
-                const categoria = infoSD.categoria || "Standard";
-                let haGiocatoInQuestoSD = false;
-                let lastTeamInSD = null;
-
-                const matchesNodo = sd.matches || {};
-                Object.entries(matchesNodo).forEach(([mKey, mData]) => {
-                    const isP1 = mData.player1Id === pId;
-                    const isP2 = mData.player2Id === pId;
-
-                    if (isP1 || isP2) {
-                        haGiocatoInQuestoSD = true;
-                        const vinceMatch = (mData.winnerId === pId);
-                        const scoreAvversario = isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0);
-                        const teamUsato = isP1 ? mData.team1 : mData.team2;
-                        const matchPoints = isP1 ? Number(mData.p1points || 0) : Number(mData.p2points || 0);
-                        lastTeamInSD = teamUsato;
-
-                        const matchNumber = parseInt(mKey.replace(/\D/g, '')) || 0;
-
-                        cronologiaMatchPiatta.push({
-                            data: dataSD,
-                            ordineInterno: matchNumber,
-                            vittoria: vinceMatch,
-                            punteggioAvversario: scoreAvversario,
-                            team: teamUsato,
-                            categoria: categoria,
-                            deltaElo: isP1 ? Number(mData.p1DeltaElo || 0) : Number(mData.p2DeltaElo || 0),
-                            points: matchPoints,
-                            setW: isP1 ? Number(mData.p1score || 0) : Number(mData.p2score || 0),
-                            setL: isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0)
-                        });
-
-                        if (!statsLeaderboard.formats[categoria]) {
-                            statsLeaderboard.formats[categoria] = { won: 0, lost: 0 };
-                        }
-                        if (vinceMatch) {
-                            statsLeaderboard.formats[categoria].won++;
-                        } else {
-                            statsLeaderboard.formats[categoria].lost++;
-                        }
-                    }
-                });
-
-                if (haGiocatoInQuestoSD && lastTeamInSD) {
-                    const haVintoSD = (infoSD.vincitoreShowdown === pId);
-
-                    listaShowdownPartecipati.push({
-                        data: dataSD,
-                        vintoTorneo: haVintoSD,
-                        team: lastTeamInSD,
-                        pokemon: [...new Set(teamCompositionMap[lastTeamInSD] || [])]
-                    });
-
-                    // Aggiornamento contatori Showdown globali dell'allenatore
-                    globalShowdownsPlayed += 1;
-                    if (haVintoSD) {
-                        globalShowdownsWon += 1;
-                    } else {
-                        globalShowdownsLost += 1;
-                    }
-
-                    // Inizializza e traccia le statistiche dello Showdown divise per formato
-                    if (!sdStatsPerFormato[categoria]) {
-                        sdStatsPerFormato[categoria] = { showdownsPlayed: 0, showdownsWon: 0, showdownsLost: 0 };
-                    }
-                    sdStatsPerFormato[categoria].showdownsPlayed += 1;
-                    if (haVintoSD) {
-                        sdStatsPerFormato[categoria].showdownsWon += 1;
-                    } else {
-                        sdStatsPerFormato[categoria].showdownsLost += 1;
-                    }
-                }
-            });
-        });
-
-        // 2. ORDINAMENTO
-        cronologiaMatchPiatta.sort((a, b) => {
-            const d1 = new Date(a.data);
-            const d2 = new Date(b.data);
-            if (d1.getTime() !== d2.getTime()) return d1 - d2;
-            return a.ordineInterno - b.ordineInterno;
-        });
-
-        listaShowdownPartecipati.sort((a, b) => new Date(a.data) - new Date(b.data));
-
-        // 3. FUNZIONE CALCOLO BADGE
-        const calcolaParametriBadge = (matchList, showdownList, filtro = null, tipoFiltro = 'global') => {
-            let matches = matchList;
-            if (tipoFiltro === 'team') matches = matchList.filter(m => m.team === filtro);
-            if (tipoFiltro === 'pokemon') matches = matchList.filter(m => teamCompositionMap[m.team]?.includes(filtro));
-            
-            let curWS = 0, maxWS = 0, maxWSD = "-";
-            let curCS = 0, maxCS = 0, maxCSD = "-";
-
-            matches.forEach(m => {
-                if (m.vittoria) {
-                    curWS++;
-                    if (curWS > maxWS) { maxWS = curWS; maxWSD = m.data; }
-                    if (m.punteggioAvversario === 0) {
-                        curCS++;
-                        if (curCS > maxCS) { maxCS = curCS; maxCSD = m.data; }
-                    } else { curCS = 0; }
-                } else { curWS = 0; curCS = 0; }
-            });
-
-            let sds = showdownList;
-            if (tipoFiltro === 'team') sds = showdownList.filter(s => s.team === filtro);
-            if (tipoFiltro === 'pokemon') sds = showdownList.filter(s => s.pokemon.includes(filtro));
-            
-            let curSS = 0, maxSS = 0, maxSSD = "-";
-            sds.forEach(s => {
-                if (s.vintoTorneo) {
-                    curSS++;
-                    if (curSS > maxSS) { maxSS = curSS; maxSSD = s.data; }
-                } else { curSS = 0; }
-            });
-
-            return {
-                wonstrike: curWS, maxwonstrike: maxWS, maxwonstrikedate: maxWSD,
-                cleanstrike: curCS, maxcleanstrike: maxCS, maxcleanstrikedate: maxCSD,
-                showdownstrike: curSS, maxshowdownstrike: maxSS, maxshowdownstrikedate: maxSSD,
-                played: matches.length
-            };
-        };
-
-        // 4. CALCOLO RANKING E TOTALIZZAZIONE PUNTI ASSOLUTI
-        let ranking = 1000;
-        let totalPointsCalculated = 0;
-        cronologiaMatchPiatta.forEach(m => {
-            ranking += m.deltaElo;
-            totalPointsCalculated += m.points; 
-        });
-
-        // 5. SALVATAGGIO E ANALISI TEAM
-        const badgeGlobali = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati);
-
-        let bestTeamData = { name: "-", played: 0, won: 0, lose: 0, setW: 0, setL: 0, points: 0 };
-        let mostUsedData = { name: "-", played: 0 };
-        let maxWinsRecord = -1;
-        let maxPlayedRecord = -1;
-
-        if (playerData.teams) {
-            for (const [tId, tObj] of Object.entries(playerData.teams)) {
-                const bTeam = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, tObj.nome, 'team');
-                
-                const matchDelTeam = cronologiaMatchPiatta.filter(m => m.team === tObj.nome);
-                const winT = matchDelTeam.filter(m => m.vittoria).length;
-                const lostT = bTeam.played - winT;
-                
-                const sW = matchDelTeam.reduce((acc, curr) => acc + Number(curr.setW || 0), 0);
-                const sL = matchDelTeam.reduce((acc, curr) => acc + Number(curr.setL || 0), 0);
-                const ptsT = matchDelTeam.reduce((acc, curr) => acc + Number(curr.points || 0), 0);
-
-                await db.ref(`players/${pId}/teams/${tId}/stats`).update({ 
-                    played: bTeam.played, 
-                    won: winT, 
-                    lost: lostT,
-                    setW: sW,
-                    setL: sL,
-                    points: ptsT
-                });
-                
-                await db.ref(`players/${pId}/teams/${tId}/badges`).set(bTeam);
-
-                if (winT > maxWinsRecord) {
-                    maxWinsRecord = winT;
-                    bestTeamData = { 
-                        name: tObj.nome, 
-                        played: bTeam.played, 
-                        won: winT, 
-                        lose: lostT, 
-                        setW: sW, 
-                        setL: sL, 
-                        points: ptsT 
-                    };
-                }
-
-                if (bTeam.played > maxPlayedRecord) {
-                    maxPlayedRecord = bTeam.played;
-                    mostUsedData = { name: tObj.nome, played: bTeam.played };
-                }
-            }
-        }
-
-        // --- 5B. ANALISI E CONTEGGIO TYPEUSAGE ---
-        const typeUsage = {};
-
-        cronologiaMatchPiatta.forEach(m => {
-            const listaTipiDelTeam = teamTypesMap[m.team] || []; 
-            const countTipiInMatch = {};
-            
-            listaTipiDelTeam.forEach(tipiPokemon => {
-                tipiPokemon.forEach(tipo => {
-                    countTipiInMatch[tipo] = (countTipiInMatch[tipo] || 0) + 1;
-                });
-            });
-
-            Object.entries(countTipiInMatch).forEach(([tipo, numeroPresenze]) => {
-                if (!typeUsage[tipo]) {
-                    typeUsage[tipo] = { played: 0, won: 0 };
-                }
-                typeUsage[tipo].played += numeroPresenze;
-                if (m.vittoria && numeroPresenze >= 2) {
-                    typeUsage[tipo].won++;
-                }
-            });
-        });
-
-        // --- AGGREGAZIONE PARAMETRI PER SINGOLO FORMATO ---
-        const formatsStats = {};
-
-        cronologiaMatchPiatta.forEach(m => {
-            const cat = m.categoria || "Standard";
-            
-            if (!formatsStats[cat]) {
-                formatsStats[cat] = { 
-                    played: 0, won: 0, lost: 0, setW: 0, setL: 0, points: 0,
-                    showdownsPlayed: 0, showdownsWon: 0, showdownsLost: 0 
-                };
-            }
-
-            formatsStats[cat].played += 1;
-            formatsStats[cat].won += (m.vittoria ? 1 : 0);
-            formatsStats[cat].lost += (m.vittoria ? 0 : 1);
-            formatsStats[cat].setW += Number(m.setW || 0);
-            formatsStats[cat].setL += Number(m.setL || 0);
-            formatsStats[cat].points += Number(m.points || 0);
-        });
-
-        // Iniettiamo i conteggi degli Showdown calcolati al punto 1 nel rispettivo formato dentro formatsStats
-        Object.entries(sdStatsPerFormato).forEach(([cat, sdData]) => {
-            if (formatsStats[cat]) {
-                formatsStats[cat].showdownsPlayed = sdData.showdownsPlayed;
-                formatsStats[cat].showdownsWon = sdData.showdownsWon;
-                formatsStats[cat].showdownsLost = sdData.showdownsLost;
-            }
-        });
-
-        // Calcolo Pokemon Badges
-        const allPokemon = [...new Set(Object.values(teamCompositionMap).flat())];
-        const pkmBadges = {};
-        allPokemon.forEach(pkm => {
-            pkmBadges[pkm] = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, pkm, 'pokemon');
-        });
-        await db.ref(`players/${pId}/pokemon-badges`).set(pkmBadges);
-
-        // Calcolo Best Format e caricamento dei relativi Showdown vinti/giocati/persi
-        let bestFormatName = "-";
-        let bestFormatWon = 0;
-        let bestFormatLose = 0;
-        let maxWinsF = -1;
-        
-        let bestFormatSDPlayed = 0;
-        let bestFormatSDWon = 0;
-        let bestFormatSDLost = 0;
-
-        Object.entries(statsLeaderboard.formats).forEach(([fName, fStats]) => { 
-            if (fStats.won > maxWinsF) { 
-                maxWinsF = fStats.won; 
-                bestFormatName = fName;
-                bestFormatWon = fStats.won;
-                bestFormatLose = fStats.lost;
-                
-                const fSD = sdStatsPerFormato[fName] || {};
-                bestFormatSDPlayed = fSD.showdownsPlayed || 0;
-                bestFormatSDWon = fSD.showdownsWon || 0;
-                bestFormatSDLost = fSD.showdownsLost || 0;
-            } 
-        });
-
-        // 6. SALVATAGGIO FINALE STATS GLOBALI
-        await db.ref(`players/${pId}/stats`).update({
-            'formats-stats': formatsStats, 
-            'individual-stats': {
-                played: statsLeaderboard.won + statsLeaderboard.lost,
-                won: statsLeaderboard.won,
-                lost: statsLeaderboard.lost,
-                setW: statsLeaderboard.setW,
-                setL: statsLeaderboard.setL,
-                points: totalPointsCalculated, 
-                ranking: ranking,
-                showdownsPlayed: globalShowdownsPlayed,
-                showdownsWon: globalShowdownsWon,
-                showdownsLost: globalShowdownsLost,
-                format: { 
-                    'format-name': bestFormatName,
-                    'format-won': bestFormatWon,
-                    'format-lose': bestFormatLose,
-                    'format-showdownsPlayed': bestFormatSDPlayed,
-                    'format-showdownsWon': bestFormatSDWon,
-                    'format-showdownsLost': bestFormatSDLost
-                }
-            },
-            'team-stats': {
-                bestteam: bestTeamData,
-                mostusedteam: mostUsedData,
-                typeusage: typeUsage
-            },
-            'badges': badgeGlobali
-        });
-
-        console.log(`✅ Recalculation completed for ${pId} with Showdown data per format (excluding beta).`);
-
-    } catch (err) {
-        console.error("❌ Critical error in recalculation:", err);
     }
 }
 
@@ -3849,160 +3251,7 @@ async function forzamentoRicalcoloGlobale() {
 // Per avviarlo ti basta chiamare la funzione:
 // forzaRicalcoloTuttiIGiocatori();
 
-async function aggiornaLeaderboard(stagione) {
-    try {
-        // 1. Recupero dati necessari
-        const showdownsSnap = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-        const showdowns = showdownsSnap.val() || {};
-        
-        const playersRegistrySnap = await db.ref(`players`).once('value');
-        const playersRegistry = playersRegistrySnap.val() || {};
 
-        const stats = {}; 
-
-        // 2. Iteriamo attraverso ogni showdown
-        Object.values(showdowns).forEach(sd => {
-            const matches = sd.matches || {};
-            const infoSD = sd.info || {};
-            const vincitoreSerieID = infoSD.vincitoreShowdown;
-
-            // Identifichiamo i due player dello showdown per assegnare S: W/L
-            // Usiamo un Set per estrarre gli ID unici dai match di questo showdown
-            const playerIdsInShowdown = new Set();
-
-            // --- A. Processamento Match Singoli ---
-            Object.values(matches).forEach(m => {
-                if (m.player1Id) playerIdsInShowdown.add(m.player1Id);
-                if (m.player2Id) playerIdsInShowdown.add(m.player2Id);
-
-                const pData = [
-                    { id: m.player1Id, teamNomeMatch: m.team1, score: m.p1score, oppScore: m.p2score, points: m.p1points },
-                    { id: m.player2Id, teamNomeMatch: m.team2, score: m.p2score, oppScore: m.p1score, points: m.p2points }
-                ];
-
-                pData.forEach(p => {
-                    if (!p.id) return;
-                    
-                    // Inizializzazione stats estesa con sdWon e sdLost
-                    if (!stats[p.id]) {
-                        stats[p.id] = { 
-                            won: 0, lost: 0, setW: 0, setL: 0, points: 0,
-                            sdWon: 0, sdLost: 0, // <--- NUOVI CAMPI
-                            teams: {}, 
-                            pkmnCounter: {}, 
-                            records: {
-                                mostUsedTeam: { name: "", presence: 0, won: 0, lost: 0, setW: 0, setL: 0 },
-                                mostUsedPokemon: { name: "-", count: 0 },
-                                mvpPokemon: { name: "-", wins: 0, played: 0, lose: 0, setW: 0, setL: 0 }
-                            }
-                        };
-                    }
-
-                    const s = stats[p.id];
-                    const isWinner = p.score > p.oppScore;
-
-                    s.won += isWinner ? 1 : 0;
-                    s.lost += isWinner ? 0 : 1;
-                    s.setW += (p.score || 0);
-                    s.setL += (p.oppScore || 0);
-                    s.points += (p.points || 0);
-
-                    // Stats Team e Pokemon (Logica invariata)
-                    const tNome = p.teamNomeMatch;
-                    if (tNome) {
-                        if (!s.teams[tNome]) s.teams[tNome] = { played: 0, won: 0, lost: 0, setW: 0, setL: 0 };
-                        const st = s.teams[tNome];
-                        st.played += 1;
-                        st.won += isWinner ? 1 : 0;
-                        st.lost += isWinner ? 0 : 1;
-                        st.setW += (p.score || 0);
-                        st.setL += (p.oppScore || 0);
-                    }
-
-                    const playerEntry = playersRegistry[p.id];
-                    if (playerEntry && playerEntry.teams && tNome) {
-                        const teamTrovato = Object.values(playerEntry.teams).find(t => t.nome === tNome);
-                        if (teamTrovato && teamTrovato.pokemon) {
-                            const nomiUnici = new Set();
-                            Object.values(teamTrovato.pokemon).forEach(pObj => {
-                                if (pObj && pObj.nome) nomiUnici.add(pObj.nome);
-                            });
-                            nomiUnici.forEach(nPkmn => {
-                                if (!s.pkmnCounter[nPkmn]) s.pkmnCounter[nPkmn] = { count: 0, wins: 0, setW: 0, setL: 0 };
-                                s.pkmnCounter[nPkmn].count += 1;
-                                if (isWinner) s.pkmnCounter[nPkmn].wins += 1;
-                                s.pkmnCounter[nPkmn].setW += (p.score || 0);
-                                s.pkmnCounter[nPkmn].setL += (p.oppScore || 0);
-                            });
-                        }
-                    }
-                });
-            });
-
-            // --- B. Assegnazione S: W/L (Showdown Vinti/Persi) ---
-            if (vincitoreSerieID && playerIdsInShowdown.has(vincitoreSerieID)) {
-                // Chi ha vinto lo showdown
-                if (stats[vincitoreSerieID]) {
-                    stats[vincitoreSerieID].points += 1; // Punto bonus
-                    stats[vincitoreSerieID].sdWon += 1;  // Vittoria Showdown
-                }
-
-                // Chi ha perso lo showdown
-                playerIdsInShowdown.forEach(pid => {
-                    if (pid !== vincitoreSerieID && stats[pid]) {
-                        stats[pid].sdLost += 1; // Sconfitta Showdown
-                    }
-                });
-            }
-        });
-
-        // 3. Elaborazione Record Finali (Invariata)
-        for (const pid in stats) {
-            const s = stats[pid];
-            const getWinRate = (w, tot) => tot > 0 ? (w / tot) : 0;
-
-            let bestT = { name: "", presence: -1, winRate: -1 };
-            for (const [tn, td] of Object.entries(s.teams)) {
-                const wr = getWinRate(td.won, td.played);
-                if (td.played > bestT.presence || (td.played === bestT.presence && wr > bestT.winRate)) {
-                    bestT = { name: tn, presence: td.played, winRate: wr };
-                }
-            }
-            if (bestT.name) {
-                const b = s.teams[bestT.name];
-                s.records.mostUsedTeam = { name: bestT.name, presence: b.played, won: b.won, lost: b.lost, setW: b.setW, setL: b.setL };
-            }
-
-            let topPk = { name: "-", count: -1, winRate: -1 };
-            let topMv = { name: "-", wins: -1, winRate: -1, data: null, setRate: -1 };
-            for (const [pkName, pkData] of Object.entries(s.pkmnCounter)) {
-                const wr = getWinRate(pkData.wins, pkData.count);
-                const sr = getWinRate(pkData.setW, (pkData.setW + pkData.setL));
-                if (pkData.count > topPk.count || (pkData.count === topPk.count && wr > topPk.winRate)) {
-                    topPk = { name: pkName, count: pkData.count, winRate: wr };
-                }
-                if (pkData.wins > topMv.wins || (pkData.wins === topMv.wins && wr > topMv.winRate) || (pkData.wins === topMv.wins && wr === topMv.winRate && sr > topMv.setRate)) {
-                    topMv = { name: pkName, wins: pkData.wins, winRate: wr, setRate: sr, data: pkData };
-                }
-            }
-            s.records.mostUsedPokemon = { name: topPk.name, count: topPk.count };
-            if (topMv.data) {
-                s.records.mvpPokemon = { 
-                    name: topMv.name, wins: topMv.wins, played: topMv.data.count,
-                    lose: topMv.data.count - topMv.data.wins, setW: topMv.data.setW, setL: topMv.data.setL
-                };
-            }
-            delete s.pkmnCounter; 
-        }
-
-        // 4. Salvataggio finale
-        await db.ref(`seasons/${stagione}/leaderboard`).set(stats);
-        console.log(`Leaderboard aggiornata con Bonus e SD W/L per: ${stagione}`);
-
-    } catch (e) {
-        console.error("Error recalculation leaderboard:", e);
-    }
-}
 
 async function verificaEDecretaVincitoreShowdown(stagione, showdownId) {
     const sdRef = db.ref(`seasons/${stagione}/showdowns/${showdownId}`);
