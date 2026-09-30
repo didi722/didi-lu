@@ -5151,3 +5151,16 @@ transform: translate(-4px, -4px);
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.btn-gioca {
+    margin-top: 12px;
+    padding: 6px 14px;
+    background: #09ca49;
+    border: 3px solid black;
+    box-shadow: 3px 3px 0 black;
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.btn-gioca:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 black; }

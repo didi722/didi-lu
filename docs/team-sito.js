@@ -7,6 +7,8 @@
 // Nessun riferimento al DOM.
 // =====================================================
 
+import { Teams } from './pkmn-sim.js';
+
 
 // -----------------------------------------------------
 // 1. REGOLAMENTO -> FORMATO DEL SIMULATORE
@@ -23,28 +25,48 @@ export function livelloFormato(regolamento) {
     return String(regolamento.baseTier || '').toUpperCase() === 'LC' ? 5 : 100;
 }
 
-// Formati VGC ufficiali usati come base, per generazione.
-const VGC_PER_GEN = {
-    5: 'gen5vgc2013',
-    6: 'gen6vgc2016',
-    7: 'gen7vgc2019',
-    8: 'gen8vgc2022',
-    9: 'gen9vgc2025regi'
-};
-
+// Il formato del simulatore si costruisce dal regolamento del sito
+// (formats.html), sempre a partire dalla "custom game" della generazione:
+//   - tutte le partite: anteprima squadre, bring 6 pick 4
+//   - Official VGC: singolo o doppio secondo vgcFormat, nessuna clausola in battaglia
+//   - Custom Format: clausole standard di Showdown attive in battaglia
+//     (Sleep Clause Mod, Endless Battle Clause). Le altre clausole standard
+//     (Species, Item, Uber, leggendari) riguardano il team e le controlla box.html
+//   - Anything Goose: nessuna clausola
+//   - Generational Mechanics disattivato: niente Dynamax (Gen 8) o Teracristal (Gen 9).
+//     Mega e Mosse Z dipendono dagli strumenti, quindi le decide il team builder.
+// Il livello NON viene toccato: è già scritto nel team da box.html.
+//
 // Se nel regolamento su Firebase esiste il campo "formatoSimulatore",
-// vince sempre lui (es. "gen9customgame@@@Sleep Clause Mod").
-// Altrimenti il formato viene dedotto.
+// vince sempre lui (serve solo per casi eccezionali).
 export function formatoSimulatore(regolamento) {
     if (regolamento.formatoSimulatore) return regolamento.formatoSimulatore;
 
     const struttura = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
     const gen = generazioneFormato(regolamento);
 
-    if (struttura === 'vgc' && VGC_PER_GEN[gen]) return VGC_PER_GEN[gen];
+    let doppio = struttura === 'vgc'
+        ? !String(regolamento.vgcFormat || 'doubles').toLowerCase().startsWith('singles')
+        : regolamento.battleStyle === 'doubles';
+    if (gen < 3) doppio = false;   // il doppio esiste dalla Gen 3
 
-    const doppio = (struttura === 'vgc' || regolamento.battleStyle === 'doubles') && gen >= 3;
-    return `gen${gen}${doppio ? 'doubles' : ''}customgame`;
+    const regole = ['Picked Team Size = 4'];
+    if (struttura === 'custom') regole.push('Sleep Clause Mod', 'Endless Battle Clause');
+    if (regolamento.generationalMechanics === false) {
+        if (gen === 8) regole.push('Dynamax Clause');
+        if (gen === 9) regole.push('Terastal Clause');
+    }
+
+    return `gen${gen}${doppio ? 'doubles' : ''}customgame@@@${regole.join(',')}`;
+}
+
+// Elenco dei Pokémon che non sono al livello del formato.
+// Il simulatore non corregge i livelli: se un team non è conforme, non si gioca.
+export function controllaLivelli(testo, livello) {
+    const sets = Teams.import(testo) || [];
+    return sets
+        .filter(set => (set.level || 100) !== livello)
+        .map(set => `${set.species} è al livello ${set.level || 100} invece di ${livello}`);
 }
 
 
@@ -65,7 +87,7 @@ export function testoShowdownDaTeam(team, livello = 100) {
         const strumento = (p.strumento || '').trim();
         righe.push(strumento && strumento !== 'None' ? `${p.nome} @ ${strumento}` : p.nome);
         if (p.abilita) righe.push(`Ability: ${p.abilita}`);
-        if (livello !== 100) righe.push(`Level: ${livello}`);
+        righe.push(`Level: ${p.livello || livello}`);
         if (p.tera) righe.push(`Tera Type: ${p.tera}`);
         if (p.evs && p.evs !== '-') righe.push(`EVs: ${p.evs}`);
         if (p.natura) righe.push(`${p.natura} Nature`);
@@ -120,7 +142,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
             const sorgente = (iscritto && iscritto.pokemon) ? iscritto : (dalBox || {});
             const testoSalvato = (iscritto && iscritto.testoShowdown) || (dalBox && dalBox.testoShowdown) || '';
             const testo = testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, livello);
-            return { nome: nomeT, testo, completo: !!testoSalvato };
+            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaLivelli(testo, livello) };
         }).filter(t => t.nome && t.testo);
 
         giocatori[lato] = { nome, id, colore: coloreSnap.val(), teams };

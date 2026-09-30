@@ -107,12 +107,19 @@ async function preparaDaSito(chiavi) {
 
         const sets = Teams.import(scelte[lato].testo) || [];
         corpo.append(el('div', { class: 'anteprima-fila' }, sets.map(s => sprite(s.species, false))));
+        const problemi = scelte[lato].problemi || [];
+        if (problemi.length) {
+            corpo.append(el('div', { class: 'errore' },
+                el('strong', { testo: `Questo team non è al livello del formato (${dati.livello}). Risalvalo dal Box.` }),
+                el('ul', {}, problemi.map(t => el('li', { testo: t })))));
+        }
         if (!scelte[lato].completo) {
             corpo.append(el('p', { class: 'avviso', testo: 'Team salvato prima dell\'aggiornamento del Box: livello, Gigantamax, sesso e felicità usano i valori predefiniti. Risalvalo dal Box incollando il testo originale.' }));
         }
 
         corpo.append(el('div', { class: 'riga-azioni' }, el('button', {
             class: 'btn ' + (pronti[lato] ? 'scelto' : 'primario'),
+            disabled: problemi.length > 0,
             onclick: () => {
                 pronti[lato] = !pronti[lato];
                 if (pronti.p1 && pronti.p2) {
@@ -471,7 +478,7 @@ function scheda(pkm, retro) {
     return el('div', { class: classi },
         el('div', { class: 'sprite' }, sprite(pkm.specie, retro)),
         el('div', {},
-            el('div', { class: 'nome-pkm', testo: pkm.nome }),
+            el('div', { class: 'nome-pkm' }, pkm.nome, el('small', { class: 'livello', testo: ` Lv ${pkm.livello}` })),
             el('div', { class: 'barra', role: 'img', 'aria-label': `Salute ${pct}%` },
                 el('div', { style: `width:${pct}%;background:${colore}` })),
             el('div', { class: 'dettagli' },

@@ -256,6 +256,7 @@ export class StatoCampo {
                 this.campo[lato][slot] = {
                     nome: p[1].split(': ')[1],
                     specie: p[2].split(',')[0],
+                    livello: leggiLivello(p[2]),
                     ...leggiHp(p[3]),
                     dinamax: false
                 };
@@ -300,6 +301,12 @@ function posizione(ident) {
     const lato = ident.slice(0, 2);
     const lettera = ident.charAt(2);
     return { lato, slot: lettera === 'b' ? 1 : 0 };
+}
+
+function leggiLivello(dettagli) {
+    // "Calyrex-Shadow, L50, M" -> 50; senza "L" il livello è 100
+    const m = String(dettagli || '').match(/, L(\d+)/);
+    return m ? parseInt(m[1], 10) : 100;
 }
 
 function leggiHp(testo) {

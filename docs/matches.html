@@ -233,25 +233,31 @@
     </div>
 
     <div class="showdown-matches-list">
-        <div class="match-slot" id="slot-1" onclick="apriModaleMatch(1)">
+        <div class="match-slot" id="slot-1" onclick="apriBattaglia(1)">
             <div class="match-status-indicator empty" id="status-1">Match 1</div>
             <div id="details-1" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
             </div>
+                            <button type="button" class="btn-gioca" onclick="event.stopPropagation(); apriBattaglia(1)">▶ Play</button>
+
         </div>
 
-        <div class="match-slot" id="slot-2" onclick="apriModaleMatch(2)">
+        <div class="match-slot" id="slot-2" onclick="apriBattaglia(2)">
             <div class="match-status-indicator empty" id="status-2">Match 2</div>
             <div id="details-2" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
             </div>
+                            <button type="button" class="btn-gioca" onclick="event.stopPropagation(); apriBattaglia(2)">▶ Play</button>
+
         </div>
 
-        <div class="match-slot" id="slot-3" onclick="apriModaleMatch(3)">
+        <div class="match-slot" id="slot-3" onclick="apriBattaglia(3)">
             <div class="match-status-indicator empty" id="status-3">Match 3</div>
             <div id="details-3" class="match-filled-details" style="display:none;">
                 <span class="match-score-summary"></span>
             </div>
+                            <button type="button" class="btn-gioca" onclick="event.stopPropagation(); apriBattaglia(3)">▶ Play</button>
+
         </div>
     </div>
 
@@ -3857,6 +3863,12 @@ async function resetPasswordDalLogin() {
     }
 }
 
+function apriBattaglia(num) {
+    const sdId = document.getElementById('current-showdown-id')?.value;
+    const stagione = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : 'sbeta';
+    if (!sdId) return alert("Error: Showdown ID missing!");
+    window.open(`battle.html?stagione=${encodeURIComponent(stagione)}&showdown=${encodeURIComponent(sdId)}&match=${num}`, '_blank');
+}
 
     </script>
 </body>

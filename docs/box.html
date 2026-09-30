@@ -1784,12 +1784,30 @@ function normalizzaNomePerPokeAPI(nomeShowdown) {
     return eccezioniForme[slug] || slug;
 }
 
+function livelloDelRegolamento(regolamento) {
+    const struttura = String(regolamento?.strutturaSito || 'custom').toLowerCase().trim();
+    if (struttura === 'vgc') return 50;
+    return String(regolamento?.baseTier || '').toUpperCase() === 'LC' ? 5 : 100;
+}
+
+function normalizzaLivelloTesto(testo, livello) {
+    return String(testo || '').trim().split(/\n\s*\n/).map(blocco => {
+        const righe = blocco.split('\n').map(r => r.trim()).filter(r => r !== '');
+        if (righe.length < 2) return righe.join('\n');
+        const senzaLivello = righe.filter(r => !/^Level:/i.test(r));
+        const dopoAbilita = senzaLivello.findIndex(r => /^Ability:/i.test(r));
+        senzaLivello.splice(dopoAbilita >= 0 ? dopoAbilita + 1 : 1, 0, `Level: ${livello}`);
+        return senzaLivello.join('\n');
+    }).join('\n\n');
+}
+
+
 function parseShowdown(text) {
     const teams = [];
-    const blocks = text.split(/\n\s*\n/);
+    const blocks = String(text || '').split(/\n\s*\n/);
 
     blocks.forEach(block => {
-        const lines = block.split('\n').map(l => l.trim());
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l !== '');
         if (lines.length < 2) return;
 
         let pokemon = {};
@@ -1802,21 +1820,41 @@ function parseShowdown(text) {
             strumentoScelto = parts[1].trim();
         }
 
+        // Sesso: "(M)" o "(F)" in fondo alla riga del nome
+        const matchSesso = rigaNome.match(/\(([MF])\)\s*$/i);
+        pokemon.sesso = matchSesso ? matchSesso[1].toUpperCase() : '';
+
         // Nome pulito per la UI (es. "Mimikyu")
         pokemon.nome = rigaNome.replace(/\s*\([MF]\)\s*/gi, '').trim();
-        
-        // 🔥 NUOVO: Generiamo l'ID PokeAPI una volta sola qui!
-        pokemon.idPokeAPI = normalizzaNomePerPokeAPI(pokemon.nome); 
-        
+
+        // ID PokeAPI generato una volta sola qui
+        pokemon.idPokeAPI = normalizzaNomePerPokeAPI(pokemon.nome);
+
         pokemon.strumento = strumentoScelto;
         pokemon.mosse = [];
         pokemon.natura = "Serious";
+        pokemon.livello = 100;
+        pokemon.felicita = 255;
+        pokemon.shiny = false;
+        pokemon.gigantamax = false;
+        pokemon.livelloDynamax = 10;
+
+        const numero = (riga, prefisso, min, max) => {
+            const v = parseInt(riga.slice(prefisso.length).trim(), 10);
+            return isNaN(v) ? null : Math.max(min, Math.min(max, v));
+        };
 
         lines.forEach(line => {
             if (line.startsWith('Ability:')) pokemon.abilita = line.replace('Ability:', '').trim();
             if (line.startsWith('Tera Type:')) pokemon.tera = line.replace('Tera Type:', '').trim();
             if (line.startsWith('EVs:')) pokemon.evs = line.replace('EVs:', '').trim();
             if (line.startsWith('IVs:')) pokemon.ivs = line.replace('IVs:', '').trim();
+
+            if (line.startsWith('Level:')) pokemon.livello = numero(line, 'Level:', 1, 100) ?? 100;
+            if (line.startsWith('Happiness:')) pokemon.felicita = numero(line, 'Happiness:', 0, 255) ?? 255;
+            if (line.startsWith('Dynamax Level:')) pokemon.livelloDynamax = numero(line, 'Dynamax Level:', 0, 10) ?? 10;
+            if (/^Shiny:\s*Yes/i.test(line)) pokemon.shiny = true;
+            if (/^Gigantamax:\s*Yes/i.test(line)) pokemon.gigantamax = true;
 
             const matchNatura = line.match(/^([A-Za-z]+)\s+Nature$/i);
             if (matchNatura) {
@@ -1832,6 +1870,7 @@ function parseShowdown(text) {
 
     return teams;
 }
+
 
 async function preparaDatiTeamPerValidazione(listaPokemon) {
     const promesse = listaPokemon.map(async (pkmn) => {
@@ -2862,6 +2901,10 @@ async function salvaTeamSuFirebase() {
             });
             if (!regolamento) { await avvisoSenzaLoader("Error: Format not found."); return; }
         } catch (error) { await avvisoSenzaLoader("Error: Database error: " + error.message); return; }
+
+const testoConLivello = normalizzaLivelloTesto(testoShowdown, livelloDelRegolamento(regolamento));
+        datiTeamDaSalvare.pokemon = parseShowdown(testoConLivello);
+        datiTeamDaSalvare.testoShowdown = testoConLivello;
 
         let altriTeamEsistenti = [];
         const strutturaFormatoSalvataggio = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
@@ -7993,10 +8036,11 @@ function tbCaricaTeamEsistente(pokemonSalvati) {
         });
         return valori;
     };
+    const intero = (v, predefinito) => Number.isInteger(v) ? v : predefinito;
 
     tbStato.slot = [null, null, null, null, null, null];
     lista.slice(0, 6).forEach((p, i) => {
-                // "Soprannome (Garchomp) (M)" → "garchomp"; se la forma non esiste si ripiega sulla specie base
+        // "Soprannome (Garchomp) (M)" → "garchomp"; se la forma non esiste si ripiega sulla specie base
         let specieId = tbSpecieDaNome(p.nome);
         if (!tbSpecie(specieId)) {
             const pulito = String(p.nome).replace(/\s*\([MF]\)\s*$/i, '').replace(/^.*\(([^()]+)\)\s*$/, '$1');
@@ -8018,24 +8062,32 @@ function tbCaricaTeamEsistente(pokemonSalvati) {
         const mosseSalvate = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
         const mosse = mosseSalvate.map(m => tbToID(m))
             .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name))
-            .slice(0, 4);        while (mosse.length < 4) mosse.push('');
+            .slice(0, 4);
+        while (mosse.length < 4) mosse.push('');
 
         tbStato.slot[i] = {
             specieId,
             oggetto: tbDex.items[oggetto] ? oggetto : '',
             abilita: (p.abilita && !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', p.abilita))
                 ? p.abilita
-                : (tbAbilitaLegali(tbSpecieBase(sp))[0] || ''),            natura,
+                : (tbAbilitaLegali(tbSpecieBase(sp))[0] || ''),
+            natura,
             natPlus: effetto ? effetto[0] : '',
             natMinus: effetto ? effetto[1] : '',
             tera: p.tera || (sp.types && sp.types[0]) || 'Normal',
             mosse,
             evs: leggiStat(p.evs, 0),
-            ivs: leggiStat(p.ivs, 31)
+            ivs: leggiStat(p.ivs, 31),
+            sesso: p.sesso === 'M' || p.sesso === 'F' ? p.sesso : '',
+            felicita: intero(p.felicita, 255),
+            shiny: !!p.shiny,
+            gigantamax: !!p.gigantamax,
+            livelloDynamax: intero(p.livelloDynamax, 10)
         };
     });
     tbStato.attivo = 0;
 }
+
 
 // --- RENDER ----------------------------------------------------------
 function tbRender() {
@@ -8580,6 +8632,82 @@ function tbHtmlPannelloEV(s) {
         <div class="tb-ev-guess" id="tb-ev-guess">${tbHtmlSpreadSuggerito(s)}</div>`;
 }
 
+function tbHtmlAltriDati(s, sp) {
+    const campi = [];
+
+    campi.push(`
+        <div class="tb-field">
+            <span class="tb-label">Level</span>
+            <input class="tb-input" value="${tbStato.livello}" disabled title="Fixed by the format">
+        </div>`);
+
+    if (tbStato.gen >= 2) {
+        // Il sesso si sceglie solo se la specie non ne ha uno fisso (o non è senza sesso)
+        if (!sp.gender) {
+            campi.push(`
+                <div class="tb-field">
+                    <span class="tb-label">Gender</span>
+                    <select class="tb-select" onchange="tbImpostaCampo('sesso', this.value)">
+                        <option value="" ${!s.sesso ? 'selected' : ''}>Random</option>
+                        <option value="M" ${s.sesso === 'M' ? 'selected' : ''}>Male</option>
+                        <option value="F" ${s.sesso === 'F' ? 'selected' : ''}>Female</option>
+                    </select>
+                </div>`);
+        }
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Happiness</span>
+                <input type="number" class="tb-input" min="0" max="255" value="${s.felicita ?? 255}"
+                       onchange="tbImpostaNumero('felicita', this, 0, 255, 255)">
+            </div>`);
+    }
+
+    if (tbStato.gen === 8) {
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Dynamax Level</span>
+                <input type="number" class="tb-input" min="0" max="10" value="${s.livelloDynamax ?? 10}"
+                       onchange="tbImpostaNumero('livelloDynamax', this, 0, 10, 10)">
+            </div>`);
+        if (sp.canGigantamax) {
+            campi.push(`
+                <div class="tb-field">
+                    <span class="tb-label">Gigantamax</span>
+                    <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" ${s.gigantamax ? 'checked' : ''} onchange="tbImpostaCampo('gigantamax', this.checked)">
+                        ${tbEsc(sp.canGigantamax)}
+                    </label>
+                </div>`);
+        }
+    }
+
+    if (tbStato.gen >= 2) {
+        campi.push(`
+            <div class="tb-field">
+                <span class="tb-label">Shiny</span>
+                <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" ${s.shiny ? 'checked' : ''} onchange="tbImpostaCampo('shiny', this.checked)">
+                    Shiny
+                </label>
+            </div>`);
+    }
+
+    return `<div class="tb-row">${campi.join('')}</div>`;
+}
+
+// Imposta un campo numerico dello slot attivo, limitandolo tra min e max
+function tbImpostaNumero(campo, input, min, max, predefinito) {
+    const s = tbStato.slot[tbStato.attivo];
+    if (!s) return;
+    let v = parseInt(input.value, 10);
+    if (isNaN(v)) v = predefinito;
+    v = Math.max(min, Math.min(max, v));
+    s[campo] = v;
+    input.value = v;
+    tbRenderLeggero();
+}
+
+
 function tbHtmlEditor(s) {
     const sp = tbSpecie(s.specieId);
     const spBase = tbSpecieBase(sp);
@@ -8650,7 +8778,7 @@ function tbHtmlEditor(s) {
                     ${mosseLegali.length === 0 ? `<div class="tb-msg">No moves found for this Pokémon in Gen ${tbStato.gen}: it may not be available in this generation.</div>` : ''}
                     <div id="tb-msg-mosse" class="tb-msg"></div>
                 </div>
-
+ ${tbHtmlAltriDati(s, sp)}
                 <div class="tb-field">
                     <div class="tb-evs" id="tb-ev-panel">${tbHtmlPannelloEV(s)}</div>
                 </div>
@@ -8940,10 +9068,16 @@ function tbScegliPokemon(specieId) {
         tera: (sp.types && sp.types[0]) || 'Normal',
         mosse: ['', '', '', ''],
         evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
-        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }
+        ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+        sesso: '',            // '' = casuale, 'M', 'F'
+        felicita: 255,
+        shiny: false,
+        gigantamax: false,
+        livelloDynamax: 10
     };
     tbRender();
 }
+
 
 function tbRimuoviPokemon(i = tbStato.attivo) {
     tbStato.slot[i] = null;
@@ -9054,9 +9188,14 @@ function tbTestoSlot(s) {
     const righe = [];
 
     const oggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
-    righe.push(oggetto ? `${sp.name} @ ${oggetto}` : sp.name); // es. "Zacian-Crowned @ Rusted Sword"
+    const sesso = tbStato.gen >= 2 && (s.sesso === 'M' || s.sesso === 'F') ? ` (${s.sesso})` : '';
+    righe.push(oggetto ? `${sp.name}${sesso} @ ${oggetto}` : `${sp.name}${sesso}`); // es. "Zacian-Crowned @ Rusted Sword"
     if (s.abilita) righe.push(`Ability: ${s.abilita}`);
-    if (tbStato.livello !== 100) righe.push(`Level: ${tbStato.livello}`);
+    righe.push(`Level: ${tbStato.livello}`);
+    if (tbStato.gen >= 2 && s.shiny) righe.push('Shiny: Yes');
+    if (tbStato.gen >= 2 && (s.felicita ?? 255) !== 255) righe.push(`Happiness: ${s.felicita}`);
+    if (tbStato.gen === 8 && (s.livelloDynamax ?? 10) !== 10) righe.push(`Dynamax Level: ${s.livelloDynamax}`);
+    if (tbStato.gen === 8 && s.gigantamax && sp.canGigantamax) righe.push('Gigantamax: Yes');
     if (tbStato.gen === 9 && s.tera) righe.push(`Tera Type: ${s.tera}`);
 
     const evs = TB_STAT.filter(st => s.evs[st.key] > 0).map(st => `${s.evs[st.key]} ${st.label}`);
