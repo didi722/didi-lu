@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats</title>
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- l'ossatura (loader, menu, login, banner) è quella di tutte le pagine -->
+    <link rel="stylesheet" href="style-schermata-base-vuota.css">
+    <link rel="stylesheet" href="style-stats.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="style-sfide.css">
+    <script src="sfide.js"></script>
+</head>
+<body>
+
+<!-- Loader iniziale (visibile di default) -->
+<div id="poke-loader" class="poke-loader-overlay">
+    <div class="pokeball-spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
+<audio id="bg-music-home" loop preload="auto"></audio>
+
+<header class="top-bar">
+    <div class="top-bar-inner">
+        <section class="hub-hero">
+            <h1 class="hub-title-display">STATS</h1>
+        </section>
+    </div>
+</header>
+
+<div class="top-auth-bar">
+    <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+        <i id="auth-icon" class="fas fa-lock"></i>
+        <span id="auth-text"></span>
+    </div>
+    <div id="user-menu" class="user-dropdown">
+        <a href="index.html" class="menu-item"><i class="fas fa-home"></i> HOME</a>
+        <a href="box.html" class="menu-item"><i class="fas fa-archive"></i> BOX</a>
+        <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
+        <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
+        <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
+        <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
+        <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
+        <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
+        <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</button>
+    </div>
+</div>
+<div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
+
+<div id="login-modal" class="modal">
+    <div class="modal-content glass-card">
+        <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+        <h2>Login</h2>
+        <form id="login-form">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="Your email">
+            </div>
+            <div class="input-group" style="margin-bottom: 5px;">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+
+            <div style="text-align: right; margin-bottom: 20px;">
+                <a href="javascript:void(0)" onclick="resetPasswordDalLogin()" class="forgot-pwd-link">
+                    Forgot password?
+                </a>
+            </div>
+
+            <button type="submit" class="btn-login">Login</button>
+            <div id="login-error" class="error-msg"></div>
+        </form>
+    </div>
+</div>
+
+<div class="ads-sidebar">
+    <div class="ads-track">
+        <img src="immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+        <img src="immagini/3.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/4.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/5.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/6.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/7.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/8.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/9.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/10.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/11.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/12.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/13.jpeg" alt="Ad 3" class="ad-banner">
+        <img src="immagini/1.jpeg" alt="Ad 1" class="ad-banner">
+        <img src="immagini/2.jpeg" alt="Ad 2" class="ad-banner">
+    </div>
+</div>
+
+<div id="music-control" class="music-btn" onclick="toggleMusic()">
+    <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
+</div>
+
+<main class="stats-pagina">
+
+    <!-- Controlli: la categoria (tag), la stagione, il formato, la ricerca -->
+    <section class="stats-controlli" aria-label="Statistics filters">
+        <div class="stats-tag" role="tablist" aria-label="Statistics category">
+            <button type="button" class="tag tag-players" role="tab" data-tab="players" aria-selected="true">Players</button>
+            <button type="button" class="tag tag-teams" role="tab" data-tab="teams" aria-selected="false">Teams</button>
+            <button type="button" class="tag tag-pokemon" role="tab" data-tab="pokemon" aria-selected="false">Pokémon</button>
+        </div>
+        <div class="stats-filtri">
+            <label class="filtro">
+                <span>Season</span>
+                <select id="sel-stagione"></select>
+            </label>
+            <label class="filtro">
+                <span>Format</span>
+                <select id="sel-formato"></select>
+            </label>
+            <label class="filtro filtro-cerca">
+                <span>Search</span>
+                <input type="search" id="cerca" placeholder="Name…" autocomplete="off">
+            </label>
+        </div>
+    </section>
+
+    <div id="stats-riepilogo" class="stats-riepilogo" aria-live="polite"></div>
+
+    <section class="stats-tabella-card">
+        <div class="stats-scorri" id="stats-tabella"></div>
+    </section>
+
+    <details class="stats-note">
+        <summary>How are these numbers calculated?</summary>
+        <ul>
+            <li><b>Global</b> adds up every season except the Beta one, like the rest of the site. The Beta season can still be picked from the list.</li>
+            <li><b>Elo</b> in the global view is the trainer's ranking; in a season it is the rating at the end of that season. Players are ordered by Elo (global) or by season points.</li>
+            <li><b>Seasons won</b>: the trainer with the most points when a season closes. A team or a Pokémon gets the credit if it played at least one match in that season.</li>
+            <li><b>Showdowns</b>: won by whoever wins more matches. A team (or a Pokémon of that team) gets the result of every showdown it played in.</li>
+            <li><b>Pokémon</b> are the individual ones of each team (not the species): the Garchomp of one team and the Garchomp of another are different entries.</li>
+            <li><b>KOs</b> come from the sets played on the site. Matches entered by hand have no KO data, so they count for results but not for KOs.
+                A KO is credited to the Pokémon that caused it, also when it comes from poison, burn, entry hazards, weather, Leech Seed, Perish Song…; self-inflicted KOs (recoil, Life Orb) are credited to nobody.</li>
+            <li><b>KO share</b> is the part of the team's credited KOs scored by that Pokémon. <b>Last standing</b>: it was the only Pokémon left on its team.</li>
+        </ul>
+    </details>
+</main>
+
+<!-- Scheda di dettaglio -->
+<div id="stats-modal" class="stats-modal" hidden>
+    <div class="stats-modal-card" role="dialog" aria-modal="true" aria-labelledby="stats-modal-titolo">
+        <button type="button" class="stats-modal-chiudi" id="stats-modal-chiudi" aria-label="Close">&times;</button>
+        <div id="stats-modal-corpo"></div>
+    </div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.appspot.com",
+    messagingSenderId: "333119159516",
+    appId: "1:333119159516:web:689a9f5d3791093f66878b"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+const auth = firebase.auth();
+
+// Funzione per aprire/chiudere il modale
+function toggleLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
+
+function handleAuthClick() {
+    const user = auth.currentUser;
+    if (!user) {
+        toggleLoginModal();
+    } else {
+        const menu = document.getElementById('user-menu');
+        const overlay = document.getElementById('menu-overlay');
+
+        if (menu) {
+            if (menu.style.display === 'block') {
+                menu.style.display = 'none';
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+            } else {
+                menu.style.display = 'block';
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    // il piccolo timeout garantisce che la transizione CSS dell'opacity funzioni
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+            }
+        }
+    }
+}
+
+function chiudiMenuConOverlay() {
+    const menu = document.getElementById('user-menu');
+    const overlay = document.getElementById('menu-overlay');
+
+    if (menu) menu.style.display = 'none';
+
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+    }
+}
+
+// Click fuori dal menu: lo chiude
+document.addEventListener('click', function (event) {
+    const menu = document.getElementById('user-menu');
+    const authBtn = document.getElementById('auth-content');
+
+    if (menu && menu.style.display === 'block') {
+        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
+            chiudiMenuConOverlay();
+        }
+    }
+});
+
+// ---------- Musica: stessa preferenza del resto del sito ----------
+const LINK_MP3_HOME = "https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3";
+
+function syncMusicState() {
+    const player = document.getElementById('bg-music-home');
+    const musicBtn = document.getElementById('music-control');
+
+    if (!player) return;
+
+    if (player.src !== LINK_MP3_HOME) {
+        player.src = LINK_MP3_HOME;
+        player.volume = 0.8;
+    }
+
+    const savedPref = localStorage.getItem('userMusicPref');
+
+    if (savedPref === 'off') {
+        player.pause();
+        if (musicBtn) musicBtn.classList.add('muted');
+        return;
+    }
+
+    player.play()
+        .then(() => {
+            if (musicBtn) musicBtn.classList.remove('muted');
+        })
+        .catch(() => {
+            // se il browser blocca l'autoplay, mostra l'icona muted e attendi un click
+            if (musicBtn) musicBtn.classList.add('muted');
+            sbloccaAudioAlPrimoClick();
+        });
+}
+
+function sbloccaAudioAlPrimoClick() {
+    const unlock = () => {
+        const savedPref = localStorage.getItem('userMusicPref');
+        const player = document.getElementById('bg-music-home');
+        const musicBtn = document.getElementById('music-control');
+
+        if (savedPref !== 'off' && player && player.paused) {
+            player.play().then(() => {
+                if (musicBtn) musicBtn.classList.remove('muted');
+            }).catch(() => {});
+        }
+    };
+
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+}
+
+function toggleMusic() {
+    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
+
+    if (!player || !musicBtn) return;
+
+    if (player.paused || player.muted) {
+        player.muted = false;
+        player.volume = 1;
+
+        player.play().then(() => {
+            musicBtn.classList.remove('muted');
+            localStorage.setItem('userMusicPref', 'on');
+        }).catch(() => {
+            musicBtn.classList.add('muted');
+        });
+    } else {
+        player.pause();
+        player.muted = true;
+
+        musicBtn.classList.add('muted');
+        localStorage.setItem('userMusicPref', 'off');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', syncMusicState);
+window.addEventListener('pageshow', syncMusicState);
+window.addEventListener('storage', (e) => {
+    if (e.key === 'userMusicPref') syncMusicState();
+});
+
+// ---------- Login e menu ----------
+auth.onAuthStateChanged(async (user) => {
+    const authIcon = document.getElementById('auth-icon');
+    const authText = document.getElementById('auth-text');
+    const topBar = document.querySelector('.top-bar');
+
+    if (user) {
+        try {
+            const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
+            const userName = nameSnap.val();
+
+            if (userName) {
+                if (authText) authText.innerText = userName;
+                if (authIcon) authIcon.className = "fas fa-user-circle";
+
+                const colorSnap = await db.ref(`players/${userName.toLowerCase().trim()}/info/color`).once('value');
+                if (colorSnap.exists()) {
+                    topBar.style.setProperty('background-color', colorSnap.val(), 'important');
+                }
+            }
+        } catch (e) { console.error("Errore nel recupero del profilo:", e); }
+    } else {
+        if (authText) authText.innerText = "Login";
+        if (topBar) topBar.style.backgroundColor = "#FFA500";
+    }
+});
+
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => auth.signInWithEmailAndPassword(email, password))
+        .then(() => {
+            toggleLoginModal();
+            // le statistiche si ricaricano da sole quando cambia l'utente (stats.js)
+        })
+        .catch((error) => {
+            console.error("Errore login:", error);
+            errorEl.innerText = "Email o Password errati.";
+        });
+});
+
+async function resetPasswordDalLogin() {
+    const emailInput = document.getElementById('login-email');
+    const emailValue = emailInput ? emailInput.value.trim() : "";
+
+    if (!emailValue) {
+        alert("⚠️ Please enter your email address in the field above to request a password reset.");
+        if (emailInput) emailInput.focus();
+        return;
+    }
+    if (!confirm(`Send a password reset link to: ${emailValue}?`)) return;
+
+    try {
+        await firebase.auth().sendPasswordResetEmail(emailValue);
+        alert(`📧 Password reset email sent!\n\nCheck your inbox (and spam folder) at: ${emailValue}`);
+    } catch (error) {
+        console.error("Error during password reset from login:", error);
+        if (error.code === 'auth/user-not-found') {
+            alert("Error: This email address is not registered in the system.");
+        } else if (error.code === 'auth/invalid-email') {
+            alert("Error: The email address entered is not valid.");
+        } else if (error.code === 'auth/too-many-requests') {
+            alert("Error: Too many recent requests. Please try again in a few minutes.");
+        } else {
+            alert("Error: " + error.message);
+        }
+    }
+}
+
+function logout() {
+    auth.signOut().then(() => {
+        location.reload();
+    });
+}
+
+firebase.auth().onAuthStateChanged(async (currentUser) => {
+    const adminMenuItem = document.getElementById('admin-menu-item');
+    if (!adminMenuItem) return;
+
+    if (currentUser) {
+        try {
+            const userSnap = await firebase.database().ref(`users/${currentUser.uid}`).once('value');
+            const userData = userSnap.val();
+            adminMenuItem.style.display = (userData && userData.role === 'admin') ? 'flex' : 'none';
+        } catch (error) {
+            adminMenuItem.style.display = 'none';
+        }
+    } else {
+        adminMenuItem.style.display = 'none';
+    }
+});
+
+const loginModal = document.getElementById('login-modal');
+loginModal.addEventListener('click', (event) => {
+    if (event.target === loginModal) toggleLoginModal();
+});
+</script>
+<script src="statistiche.js"></script>
+<script src="stats.js"></script>
+</body>
+</html>
