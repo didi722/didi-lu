@@ -148,10 +148,11 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
 
     for (const [lato, nome] of [['p1', info.player1], ['p2', info.player2]]) {
         const id = String(nome || '').toLowerCase().trim();
-        const [iscrittiSnap, boxSnap, coloreSnap] = await Promise.all([
+        const [iscrittiSnap, boxSnap, coloreSnap, avatarSnap] = await Promise.all([
             db.ref(`seasons/${stagione}/teams_iscritti/${categoria}/${id}/datiTeams`).once('value'),
             db.ref(`players/${id}/teams`).once('value'),
-            db.ref(`players/${id}/info/color`).once('value')
+            db.ref(`players/${id}/info/color`).once('value'),
+            db.ref(`players/${id}/info/avatar`).once('value')
         ]);
 
         const box = Object.values(boxSnap.val() || {});
@@ -165,8 +166,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
             return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento) };
         }).filter(t => t.nome && t.testo);
 
-        giocatori[lato] = { nome, id, colore: coloreSnap.val(), teams };
-    }
+           giocatori[lato] = { nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', teams };    }
 
     const matchSnap = await db.ref(`seasons/${stagione}/showdowns/${showdown}/matches/match${match}`).once('value');
     const datiMatch = matchSnap.val();
@@ -174,5 +174,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
         ? { p1: datiMatch.team1, p2: datiMatch.team2 }
         : null;
 
-    return { categoria, regolamento, formato: formatoSimulatore(regolamento), livello, giocatori, bloccati };
+    const openSheet = (await db.ref(`seasons/${stagione}/info/open_sheet`).once('value')).val() === true;
+
+    return { categoria, regolamento, formato: formatoSimulatore(regolamento), livello, giocatori, bloccati, openSheet };
 }

@@ -1,35 +1,35 @@
 /* =====================================================
-   BATTLE — stile del sito attorno al campo di Pokémon Showdown.
+   BATTLE — neubrutalist: bordi spessi, ombre nere piene, elementi inclinati.
 
-   Regola di base: ciò che si può cliccare "galleggia".
-   - I tasti stanno leggermente inclinati, con un'ombra nera piena:
-     sono sollevati dal foglio.
-   - Al passaggio del mouse si raddrizzano e salgono ancora;
-     alla pressione atterrano (ombra a zero).
-   - Quelli spenti restano piatti: niente ombra, niente inclinazione.
-   Le superfici (campo, cronaca, pannelli) hanno ombre decise ma stanno dritte;
-   le etichette informative sono piatte.
+   Un solo pezzo "forte": il cabinato arcade attorno allo schermo di
+   Showdown (insegna col formato, cornice nera, plancia coi comandi
+   nei colori dei due player). Ai lati, i due player: il nome in un
+   tag grande del loro colore, il team e i 6 Pokémon.
 
-   Il colore del player segna ciò che gli appartiene: i nomi nel titolo,
-   la testata e l'ombra del suo pannello, le scelte fatte dentro il pannello.
+   Regole di movimento:
+   - ciò che si clicca è inclinato e sollevato (ombra nera piena);
+     al passaggio del mouse si raddrizza e sale, al clic atterra;
+   - ciò che è spento è piatto: niente ombra, niente inclinazione;
+   - le superfici (cabinato, pannelli, cronaca) stanno dritte.
 
-   Niente regole globali tipo "* { box-sizing }": il campo e la
-   cronaca di Showdown hanno bisogno dei loro stili originali.
+   Niente regole globali tipo "* { box-sizing }": il campo e la cronaca
+   di Showdown hanno bisogno dei loro stili originali.
    ===================================================== */
 :root {
     --inchiostro: #000;
     --carta: #fff;
-    --crema: #fffdf6;             /* = sfondo dei tooltip del box */
-    --sfondo-a: #f4f4f4;          /* versione chiara di --bg-body-index */
-    --sfondo-b: #d3d3d3;          /* versione chiara di --bg-gradient-end-index */
-    --ambra: #ffbd44;             /* = --yellow */
+    --crema: #fffdf6;             /* = sfondo dei tooltip coach del box */
+    --sfondo-a: #f4f4f4;
+    --sfondo-b: #d3d3d3;
+    --ambra: #ffbd44;             /* = --yellow del sito */
     --conferma: #09ca49;          /* come .btn-save */
     --conferma-scuro: #056425;
     --pericolo: #ea1818;          /* come .btn-cancel */
     --colore-p1: #6fa8ff;         /* battle-ui.js li sostituisce con players/{id}/info/color */
     --colore-p2: #ff7b6b;
 
-    /* Movimento dei tasti flottanti */
+    --bordo: 3px solid var(--inchiostro);
+    --bordo-forte: 4px solid var(--inchiostro);
     --alza: translate(-3px, -3px) rotate(0deg);
     --atterra: translate(3px, 3px) rotate(0deg);
     --tempo: .12s ease;
@@ -45,23 +45,24 @@ body {
 
 .pagina {
     box-sizing: border-box;
-    max-width: 1080px;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 22px 18px 36px;
+    padding: 18px 20px 40px;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 24px;
 }
 
 
-/* ---------- Intestazione ---------- */
+/* ---------- Intestazione: solo servizi, i nomi stanno ai lati ---------- */
 .testata { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.testata .btn-audio { margin-left: auto; }
 
 .btn-hub {
     --tilt: -2deg;
     padding: 8px 12px 6px;
     background: var(--carta); color: var(--inchiostro);
-    border: 3px solid var(--inchiostro); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
     font: 700 .8rem 'Josefin Sans', sans-serif; text-transform: uppercase; text-decoration: none;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo);
@@ -70,26 +71,12 @@ body {
 .btn-hub:active { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .btn-hub:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 
-/* L'elemento forte della pagina: il titolo adesivo con i nomi dei due player */
+/* Il titolo "P1 vs P2" resta per i lettori di schermo: a vista ci sono i tag ai lati */
 .titolo {
-    margin: 0;
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 8px 16px;
-    background: var(--inchiostro); color: var(--carta);
-    font: 700 1.35rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase;
-    transform: rotate(-2deg);
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, .25);
+    position: absolute;
+    width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.titolo small { font-size: .8rem; }
-.titolo .nome {
-    display: inline-block;
-    padding: 4px 9px 2px;
-    color: var(--inchiostro);
-    border: 2px solid var(--inchiostro);
-    box-shadow: 3px 3px 0 var(--carta);
-}
-.titolo .p1 { background: var(--colore-p1); transform: rotate(3deg); }
-.titolo .p2 { background: var(--colore-p2); transform: rotate(-3deg); }
 
 .badge-live {
     display: inline-flex; align-items: center; gap: 6px;
@@ -106,21 +93,13 @@ body {
 }
 @keyframes pulsa { 50% { opacity: .2; } }
 
-/* Informazioni: etichette piatte, non si cliccano */
-.info-turno { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.info-turno span {
-    padding: 5px 9px 3px;
-    background: var(--crema); border: 2px solid var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-}
 .opzione-bot { display: flex; gap: 6px; align-items: center; font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; cursor: pointer; }
 .opzione-bot input { width: 16px; height: 16px; accent-color: var(--inchiostro); }
 
-/* Volume: stesso bottone e stesso hover del sito */
 .btn-audio {
     width: 40px; height: 40px; padding: 5px;
     background: var(--carta);
-    border: 3px solid var(--inchiostro); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
     transform: rotate(3deg);
     cursor: pointer;
     transition: all .3s ease;
@@ -133,40 +112,335 @@ body {
 .btn-audio.muted svg { opacity: .15; }
 
 
-/* ---------- Campo e cronaca: superfici dritte, ombre decise ---------- */
-.arena { display: flex; gap: 18px; align-items: stretch; }
+/* ---------- Arena: player 1 | cabinato | player 2 ---------- */
+.arena {
+    display: grid;
+    grid-template-columns: minmax(150px, 190px) auto minmax(150px, 190px);
+    grid-template-areas: "p1 cab p2";
+    justify-content: center;
+    align-items: start;
+    gap: 30px;
+}
+.lato.p1 { grid-area: p1; --colore-mio: var(--colore-p1); --verso: -1; }
+.lato.p2 { grid-area: p2; --colore-mio: var(--colore-p2); --verso: 1; }
+.cabinato { grid-area: cab; min-width: 0; }
+
+
+/* ---------- Colonna di un player ---------- */
+.lato { display: flex; flex-direction: column; gap: 18px; padding-top: 14px; min-width: 0; }
+
+/* Il nome: tag grande del colore del player, ombra nera piena */
+.lato-nome {
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px 14px 7px;
+    background: var(--colore-mio);
+    color: var(--inchiostro);
+    border: var(--bordo-forte);
+    box-shadow: 9px 9px 0 var(--inchiostro);
+    font: 700 clamp(1.5rem, 2.3vw, 2.3rem) 'Josefin Sans', sans-serif;
+    line-height: 1; letter-spacing: .01em;
+    text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transform: rotate(calc(var(--verso) * 4deg));
+}
+.lato-team {
+    align-self: flex-start;
+    max-width: calc(100% - 10px);
+    margin: 0;
+    padding: 6px 10px 4px;
+    background: var(--inchiostro); color: var(--carta);
+    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 4px 4px 0 var(--colore-mio);
+    transform: rotate(calc(var(--verso) * -2deg));
+}
+.lato.p2 .lato-team { align-self: flex-end; }
+
+.lato-pkm {
+    list-style: none; margin: 0; padding: 4px 6px 6px 0;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px;
+}
+.membro {
+    --tilt: -1.5deg;
+    position: relative;
+    box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 2px 4px 6px;
+    background: var(--carta);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    transform: rotate(var(--tilt));
+    transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
+}
+.membro:nth-child(4n+2) { --tilt: 1.2deg; }
+.membro:nth-child(4n+3) { --tilt: .8deg; }
+.membro:nth-child(4n+4) { --tilt: -1deg; }
+.membro img { display: block; width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.membro-nome {
+    max-width: 100%;
+    font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;
+    overflow-wrap: anywhere;
+}
+.membro-hp { display: block; width: 100%; height: 5px; border: 2px solid var(--inchiostro); background: var(--carta); visibility: hidden; }
+.membro-hp.visibile { visibility: visible; }
+.membro-hp > span { display: block; height: 100%; }
+
+/* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),
+   oppure si sa che è rimasto fuori (il tuo team). Torna pieno quando scende in campo. */
+.membro.incerto { opacity: .45; box-shadow: 2px 2px 0 var(--inchiostro); }
+.membro.non-portato { opacity: .3; box-shadow: none; transform: none; }
+.membro.incerto.con-tooltip:hover, .membro.incerto.con-tooltip:focus-visible,
+.membro.non-portato.con-tooltip:hover, .membro.non-portato.con-tooltip:focus-visible { opacity: 1; }
+
+/* In open sheet: il Pokémon si solleva come un tasto e apre la scheda */
+.membro.con-tooltip { cursor: help; }
+.membro.con-tooltip:hover, .membro.con-tooltip:focus-visible {
+    z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro);
+}
+.membro.con-tooltip:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
+
+/* In campo: fondo del colore del player e cartellino "In" */
+.membro.in-campo { background: color-mix(in srgb, var(--colore-mio) 40%, #fff); }
+.membro.in-campo::after {
+    content: 'In';
+    position: absolute; top: -10px; right: -9px;
+    padding: 3px 6px 1px;
+    background: var(--inchiostro); color: var(--carta);
+    font: 700 .62rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transform: rotate(8deg);
+}
+/* KO: piatto, grigio, barrato */
+.membro.ko { background: #ececec; box-shadow: none; transform: none; }
+.membro.ko img { filter: grayscale(1); opacity: .45; }
+.membro.ko .membro-nome { text-decoration: line-through 2px; }
+.membro.ko::before {
+    content: ''; position: absolute; left: 8px; right: 8px; top: 34px; height: 5px;
+    background: var(--pericolo); border: 2px solid var(--inchiostro);
+    transform: rotate(-32deg);
+}
+
+
+/* ---------- Il cabinato ---------- */
+.cabinato {
+    position: relative;
+    box-sizing: border-box;
+    padding: 0 14px 16px;
+    background: var(--carta);
+    border: var(--bordo-forte);
+    box-shadow: 12px 12px 0 var(--inchiostro);
+}
+
+/* Insegna: la riga info del match. Il primo dato (il formato) diventa
+   l'adesivo nero grande; match, set e punteggio restano etichette piatte. */
+.cab-insegna {
+    margin: 0 -14px 16px;
+    padding: 10px 16px 8px;
+    background: var(--ambra);
+    border-bottom: var(--bordo-forte);
+    /* righe diagonali leggere, come la luce dietro l'insegna */
+    background-image: repeating-linear-gradient(-45deg, transparent 0 14px, rgba(255, 255, 255, .28) 14px 22px);
+}
+.info-turno { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; }
+.info-turno span {
+    padding: 5px 9px 3px;
+    background: var(--crema); border: 2px solid var(--inchiostro);
+    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+}
+.cab-insegna .info-turno span:first-child {
+    max-width: 55%;
+    margin-right: auto;
+    padding: 7px 12px 4px;
+    background: var(--inchiostro); color: var(--carta);
+    border: 0;
+    font-size: 1.3rem; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transform: rotate(-2deg);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+}
+
+/* Cornice nera dello schermo */
+.cab-schermo {
+    position: relative;
+    padding: 14px;
+    background: var(--inchiostro);
+    border: var(--bordo);
+    overflow-x: auto;
+}
+/* bordino del vetro */
+.cab-schermo::before {
+    content: ''; position: absolute; inset: 9px;
+    border: 2px solid #3a3a3a;
+    pointer-events: none;
+}
+/* righe di scansione leggerissime sopra la partita */
+.cab-schermo::after {
+    content: ''; position: absolute; inset: 14px; z-index: 25;
+    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+}
+
+/* Effetti di campo: fuori dallo schermo, tra lo schermo e la plancia */
+.cab-campo {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    min-height: 30px;
+    margin-top: 12px;
+}
+.campo-voce {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    padding: 5px 9px 3px;
+    background: var(--crema);
+    border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
+    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transform: rotate(-1.5deg);
+}
+.campo-voce:nth-child(even) { transform: rotate(1.2deg); }
+.campo-voce small { font: 600 .66rem 'Montserrat', sans-serif; text-transform: none; }
+.campo-voce.meteo { background: var(--ambra); }
+.campo-voce.meteo.annullato { text-decoration: line-through 2px; }
+.campo-voce.terreno { background: #d4f7df; }
+.campo-voce.campo { background: var(--inchiostro); color: var(--carta); }
+.campo-voce.lato-cond.p1 { background: var(--colore-p1); }
+.campo-voce.lato-cond.p2 { background: var(--colore-p2); }
+.campo-vuoto { font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: #8a8a8a; }
+
+/* Plancia: leva e due tasti per player, gettoniera in mezzo */
+.cab-plancia {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    margin: 16px -26px 0;
+    border: var(--bordo-forte);
+    box-shadow: 6px 6px 0 var(--inchiostro);
+    background: var(--carta);
+    transform: perspective(700px) rotateX(16deg);
+    transform-origin: top center;
+}
+.cab-comandi {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    height: 54px;
+    background: var(--colore-mio);
+}
+.cab-comandi.p1 { --colore-mio: var(--colore-p1); border-right: var(--bordo-forte); }
+.cab-comandi.p2 { --colore-mio: var(--colore-p2); border-left: var(--bordo-forte); flex-direction: row-reverse; }
+.cab-leva {
+    position: relative; width: 34px; height: 46px; margin-top: -14px;
+    /* base nera della leva */
+    background: linear-gradient(var(--inchiostro), var(--inchiostro)) center bottom / 30px 7px no-repeat;
+}
+.cab-leva::before { /* asta */
+    content: ''; position: absolute; left: 14px; bottom: 6px; width: 6px; height: 26px;
+    background: var(--inchiostro);
+}
+.cab-leva::after { /* pomello */
+    content: ''; position: absolute; left: 5px; top: 0; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--pericolo); border: var(--bordo);
+    box-shadow: 3px 3px 0 var(--inchiostro);
+}
+.cab-tasto {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--carta); border: var(--bordo);
+    box-shadow: 3px 3px 0 var(--inchiostro);
+}
+.cab-tasto + .cab-tasto { background: var(--ambra); }
+.cab-gettone {
+    display: flex; align-items: center; justify-content: center;
+    height: 54px; padding: 0 16px;
+    background: var(--inchiostro); color: var(--carta);
+    font: 700 1.25rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+}
+.cab-gettone span { padding: 4px 8px 1px; border: 2px solid var(--carta); transform: rotate(-4deg); }
+
+
+/* ---------- Lo schermo di Showdown ---------- */
 .palco {
     position: relative;
-    flex: 0 0 auto;
     width: 640px; height: 360px;
-    border: 3px solid var(--inchiostro);
-    box-shadow: 8px 8px 0 var(--inchiostro);
     background: #cfd5da;
     overflow: hidden;
 }
 .palco .battle { position: absolute; top: 0; left: 0; border: 0; }
 
-.cronaca.battle-log {
-    position: relative; top: auto; left: auto; right: auto;
-    flex: 1 1 auto; min-width: 0;
-    height: 360px;
-    background: var(--carta);
-    border: 3px solid var(--inchiostro);
-    box-shadow: 8px 8px 0 var(--inchiostro);
-    font-family: 'Montserrat', sans-serif;
-    font-size: .78rem;
-    scrollbar-color: var(--inchiostro) #eee;
-}
-.cronaca h2.battle-history {
-    display: inline-block;
-    margin: 14px 0 6px;
-    padding: 4px 10px 2px;
+/* Allenatori: i 6 Pokémon stanno già nelle colonne ai lati */
+.palco .trainer div.teamicons { display: none; }
+/* senza le icone sotto, l'allenatore scende: lo rimetto dov'era (le barre sono alte 450px) */
+.palco .trainer-near, .palco .trainer-far2 { bottom: 135px; }
+.palco .trainer-far, .palco .trainer-near2 { bottom: 292px; }
+.palco .trainer strong {
+    display: table;
+    margin: 0 auto 6px;
+    padding: 4px 7px 2px;
     background: var(--inchiostro); color: var(--carta);
-    border: 0;
-    font: 700 .85rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    transform: rotate(-1.5deg);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, .25);
+    border: 2px solid var(--carta);
+    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transform: rotate(-3deg);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
 }
+.palco .rightbar .trainer strong { transform: rotate(3deg); }
+.palco .trainer div.trainersprite { opacity: 1; }
+
+/* Meteo, terreni e condizioni sono scritti fuori dallo schermo (#cab-campo);
+   resta solo l'effetto grafico della pioggia, del sole ecc. */
+.palco .weather em { display: none; }
+
+/* Contatore del turno: adesivo nero */
+.palco .turn {
+    top: 8px; left: 108px;
+    padding: 4px 9px 2px;
+    background: var(--inchiostro); color: var(--carta);
+    border: 2px solid var(--carta); border-radius: 0;
+    font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transform: rotate(-3deg);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
+}
+
+/* Barre della salute: niente stondature, bordo nero, colori pieni */
+.palco .statbar strong {
+    font: 700 10px/11px 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .02em;
+    color: var(--inchiostro);
+    margin-bottom: 1px;
+}
+.palco .statbar .hpbar {
+    box-sizing: content-box;
+    width: 148px; height: 6px; padding: 0;
+    background: var(--carta);
+    border: 2px solid var(--inchiostro); border-radius: 0;
+    box-shadow: 2px 2px 0 var(--inchiostro);
+}
+.palco .statbar .hpbar .hp,
+.palco .statbar .hpbar .prevhp { height: 6px; border: 0; border-radius: 0; }
+.palco .statbar .hpbar .hp { background: var(--conferma); }
+.palco .statbar .hpbar .hp-yellow { background: var(--ambra); }
+.palco .statbar .hpbar .hp-red { background: var(--pericolo); }
+.palco .statbar .hpbar .prevhp { background: #b9efc9; }
+.palco .statbar .hpbar .prevhp-yellow { background: #ffe4b0; }
+.palco .statbar .hpbar .prevhp-red { background: #ffc4c4; }
+.palco .statbar .hpbar .hptext {
+    top: -2px; height: 10px; width: 30px;
+    background: var(--inchiostro); color: var(--carta);
+    border-radius: 0; text-shadow: none;
+    font: 700 8px/11px 'Josefin Sans', sans-serif;
+}
+.palco .rstatbar .hpbar .hptext { right: -32px; border-radius: 0; }
+.palco .lstatbar .hpbar .hptext { left: -32px; border-radius: 0; }
+.palco .statbar .hpbar .hptextborder { display: none; }
+/* In doppio il secondo Pokémon vicino ha la statbar subito sotto quella del primo:
+   un po' più in basso, così il nome non tocca la percentuale dell'altro */
+.palco .rstatbar.rightstatbar { margin-top: 6px; }
+/* Etichette sotto la barra: stato e boost */
+.palco .statbar .status { margin-top: 2px; }
+.palco .statbar span {
+    display: inline-block; margin: 0 2px 2px 0; padding: 0 3px;
+    border: 1px solid var(--inchiostro); border-radius: 0;
+    font: 700 8px/11px 'Montserrat', sans-serif;
+}
+.palco .statbar span.brn { background: #ff4422; color: var(--carta); border: 1px solid var(--inchiostro); border-radius: 0; }
+.palco .statbar span.psn,
+.palco .statbar span.tox { background: #aa5599; color: var(--carta); border: 1px solid var(--inchiostro); border-radius: 0; }
+.palco .statbar span.par { background: #ffcc33; color: var(--inchiostro); border: 1px solid var(--inchiostro); border-radius: 0; }
+.palco .statbar span.slp { background: #c8c8a8; color: var(--inchiostro); border: 1px solid var(--inchiostro); border-radius: 0; }
+.palco .statbar span.frz { background: #66ccff; color: var(--inchiostro); border: 1px solid var(--inchiostro); border-radius: 0; }
+.palco .statbar span.good { background: #d4f7df; color: var(--conferma-scuro); border-color: var(--inchiostro); }
+.palco .statbar span.bad { background: #ffd9d9; color: #a10d0d; border-color: var(--inchiostro); }
+.palco .statbar span.neutral { background: var(--crema); color: var(--inchiostro); border-color: var(--inchiostro); }
 
 /* Velo sopra il campo: caricamento, errori, lobby */
 .velo {
@@ -174,7 +448,7 @@ body {
     box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    background: rgba(255, 253, 246, .95);
+    background: rgba(255, 253, 246, .96);
     text-align: center;
 }
 .velo p { margin: 0; max-width: 460px; font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
@@ -202,7 +476,7 @@ body {
     display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
     padding: 9px 11px;
     background: var(--carta); color: var(--inchiostro);
-    border: 3px solid var(--inchiostro); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
     font: inherit; text-align: left; cursor: pointer;
     transform: rotate(var(--tilt));
     transition: transform var(--tempo), box-shadow var(--tempo), background-color var(--tempo);
@@ -222,22 +496,22 @@ body {
 .esito {
     position: absolute; inset: 0; z-index: 30;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(0, 0, 0, .18);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, .25);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
 }
 .esito-card {
     box-sizing: border-box; max-width: 480px;
     padding: 22px 24px 20px;
     background: var(--ambra);
-    border: 3px solid var(--inchiostro); box-shadow: 9px 9px 0 var(--inchiostro);
+    border: var(--bordo-forte); box-shadow: 9px 9px 0 var(--inchiostro);
     text-align: center;
-    transform: rotate(-1deg);
-    animation: esitoEntra .18s cubic-bezier(.175, .885, .32, 1.275);
+    transform: rotate(-2deg);
+    animation: esitoEntra .2s cubic-bezier(.175, .885, .32, 1.275);
 }
 @keyframes esitoEntra {
-    from { opacity: 0; transform: rotate(-1deg) scale(.92) translateY(10px); }
-    to   { opacity: 1; transform: rotate(-1deg) scale(1) translateY(0); }
+    from { opacity: 0; transform: rotate(-2deg) scale(.9) translateY(12px); }
+    to   { opacity: 1; transform: rotate(-2deg) scale(1) translateY(0); }
 }
 .esito-card h2 {
     display: inline-block; margin: 0;
@@ -251,25 +525,54 @@ body {
 .esito-card .riga-azioni { margin-top: 16px; }
 
 
+/* ---------- Sotto il cabinato: comandi | cronaca ---------- */
+.sotto {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    gap: 28px;
+    align-items: start;
+}
+
+.cronaca.battle-log {
+    position: relative; top: auto; left: auto; right: auto; bottom: auto;
+    box-sizing: border-box;
+    height: 300px;
+    background: var(--carta);
+    border: var(--bordo);
+    box-shadow: 8px 8px 0 var(--inchiostro);
+    font-family: 'Montserrat', sans-serif;
+    font-size: .78rem;
+    scrollbar-color: var(--inchiostro) #eee;
+}
+.cronaca h2.battle-history {
+    display: inline-block;
+    margin: 14px 0 6px;
+    padding: 4px 10px 2px;
+    background: var(--inchiostro); color: var(--carta);
+    border: 0;
+    font: 700 .85rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transform: rotate(-1.5deg);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .25);
+}
+
+
 /* ---------- Comandi ---------- */
-.comandi { display: grid; gap: 22px; }
+.comandi { display: grid; gap: 22px; min-width: 0; }
 .comandi.doppio { grid-template-columns: 1fr 1fr; }
 
-/* Il pannello prende il colore del player che lo usa: --colore-mio vale
-   per tutto quello che c'è dentro (scelte, tessere, mosse selezionate) */
+/* Il pannello prende il colore del player che lo usa */
 .pannello:has(> .pannello-testa.p1) { --colore-mio: var(--colore-p1); }
 .pannello:has(> .pannello-testa.p2) { --colore-mio: var(--colore-p2); }
 .pannello {
     background: var(--carta);
-    border: 3px solid var(--inchiostro);
-    /* ombra piena del colore del player, contornata di nero */
-    box-shadow: 8px 8px 0 var(--colore-mio, var(--inchiostro)), 8px 8px 0 3px var(--inchiostro);
-    margin: 0 11px 11px 0;
+    border: var(--bordo);
+    box-shadow: 8px 8px 0 var(--inchiostro);
+    margin: 0 8px 8px 0;
 }
 .pannello-testa {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 8px 14px 6px;
-    border-bottom: 3px solid var(--inchiostro);
+    border-bottom: var(--bordo);
 }
 .pannello-testa.p1 { background: var(--colore-p1); }
 .pannello-testa.p2 { background: var(--colore-p2); }
@@ -284,7 +587,7 @@ body {
 .striscia {
     margin: 0; padding: 11px 14px 9px;
     background: var(--crema);
-    border: 3px solid var(--inchiostro); box-shadow: 6px 6px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 6px 6px 0 var(--inchiostro);
     font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase;
 }
 
@@ -306,7 +609,7 @@ body {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 10px 16px 8px;
     background: var(--carta); color: var(--inchiostro);
-    border: 3px solid var(--inchiostro); box-shadow: 4px 4px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
     font: 700 .85rem 'Josefin Sans', sans-serif; text-transform: uppercase; text-decoration: none;
     cursor: pointer;
     transform: rotate(var(--tilt));
@@ -326,9 +629,8 @@ body {
 .riga-azioni { display: flex; flex-wrap: wrap; gap: 14px; }
 .riga-azioni.centrata { justify-content: center; }
 
-/* Mosse: colore del tipo (palette del sito), tooltip di Showdown in hover */
+/* Mosse: colore del tipo */
 .mosse { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-/* con due pannelli affiancati quattro mosse in fila non ci stanno: 2 × 2 */
 .comandi.doppio .mosse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .mossa {
     --tipo: #aaaa99;
@@ -340,7 +642,7 @@ body {
     padding: 8px 10px 6px;
     background: color-mix(in srgb, var(--tipo) 28%, #fff);
     color: var(--inchiostro);
-    border: 3px solid var(--inchiostro); border-left: 10px solid var(--tipo);
+    border: var(--bordo); border-left: 10px solid var(--tipo);
     box-shadow: 4px 4px 0 var(--inchiostro);
     font-family: 'Josefin Sans', sans-serif; text-align: left;
     cursor: pointer;
@@ -361,7 +663,7 @@ body {
 .meccaniche { display: flex; gap: 10px; }
 .cambi { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .cambi.grandi { gap: 14px; }
-.bersagli-riga { display: flex; flex-wrap: wrap; gap: 14px; }
+.bersagli-riga { display: flex; flex-wrap: wrap; gap: 18px 14px; padding-top: 6px; }
 
 /* Pokémon da mandare in campo o da colpire */
 .btn-pkm {
@@ -403,6 +705,19 @@ body {
 .tag-stato.slp { background: #c8c8a8; }
 .tag-stato.frz { background: #66ccff; }
 
+/* Efficacia scritta sul bersaglio: cartellino sopra al bottone */
+.eff {
+    position: absolute; top: -11px; right: -8px; z-index: 1;
+    padding: 2px 5px 0;
+    border: 2px solid var(--inchiostro);
+    font: 700 .6rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
+    transform: rotate(4deg);
+}
+.eff.super { background: var(--conferma); }
+.eff.poco { background: var(--ambra); }
+.eff.nullo { background: var(--pericolo); color: var(--carta); }
+.eff.neutro { display: none; }
+
 /* Team preview: le GIF dei tuoi 6, come carte appoggiate storte */
 .anteprima-griglia { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; padding: 10px 6px 6px 10px; }
 .tessera {
@@ -413,7 +728,7 @@ body {
     height: 122px;
     padding: 6px 4px;
     background: var(--carta); color: var(--inchiostro);
-    border: 3px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro);
+    border: var(--bordo); box-shadow: 5px 5px 0 var(--inchiostro);
     font-family: 'Josefin Sans', sans-serif;
     cursor: pointer;
     transform: rotate(var(--tilt));
@@ -454,7 +769,7 @@ body {
 /* Messaggi */
 .errore {
     margin: 0; padding: 9px 11px;
-    background: #ffd9d9; border: 3px solid var(--inchiostro); box-shadow: 4px 4px 0 var(--pericolo);
+    background: #ffd9d9; border: var(--bordo); box-shadow: 4px 4px 0 var(--pericolo);
     font-size: .8rem; font-weight: 600;
 }
 .errore ul { margin: 6px 0 0; padding-left: 18px; }
@@ -464,42 +779,186 @@ body {
     font-size: .75rem; font-weight: 600;
 }
 
-/* Tooltip di Showdown come i tooltip "coach" del box */
+
+/* =====================================================
+   TOOLTIP — come i tooltip "coach" del box:
+   crema, bordo da 3px, ombra da 6px, leggermente storti,
+   sezioni separate da tratteggio, badge ok / warn / bad.
+   ===================================================== */
+#tooltipwrapper { z-index: 1000; }
 #tooltipwrapper .tooltip {
-    border: 3px solid var(--inchiostro);
+    box-sizing: border-box;
+    width: 320px;
+    border: var(--bordo);
     border-radius: 0;
     background: var(--crema);
     box-shadow: 6px 6px 0 var(--inchiostro);
     font-family: 'Montserrat', sans-serif;
+    color: var(--inchiostro);
+    transform: rotate(-1deg);
+    transform-origin: bottom left;
 }
-#tooltipwrapper .tooltip h2 {
-    background: var(--ambra);
-    border-bottom: 3px solid var(--inchiostro);
-    font-family: 'Josefin Sans', sans-serif;
-}
-#tooltipwrapper .tooltip p.tooltip-section { border-top: 2px dashed var(--inchiostro); }
-#tooltipwrapper.tooltip-locked .tooltip { border: 3px solid var(--inchiostro); background: var(--crema); }
+#tooltipwrapper.tooltip-locked .tooltip { border: var(--bordo); background: var(--crema); box-shadow: 6px 6px 0 var(--ambra), 6px 6px 0 3px var(--inchiostro); }
+.tooltip-locking-click .tooltip::before, .tooltip-locking-click .tooltip::after,
+.tooltip-locking-tap .tooltip::before, .tooltip-locking-tap .tooltip::after { border-radius: 0; }
 
-/* Tipi (colore delle mosse): stessa palette dei badge del sito */
+/* Testata dei tooltip originali di Showdown (mosse, campo) */
+#tooltipwrapper .tooltip h2 {
+    margin: 0;
+    padding: 7px 10px 5px;
+    background: var(--ambra);
+    border-bottom: var(--bordo);
+    font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+}
+#tooltipwrapper .tooltip h2 small { font-family: 'Montserrat', sans-serif; font-size: .7rem; text-transform: none; }
+#tooltipwrapper .tooltip p { padding: 4px 10px; font-size: .78rem; line-height: 1.35; }
+#tooltipwrapper .tooltip p small { font-size: .68rem; font-weight: 700; }
+#tooltipwrapper .tooltip p.tooltip-section { margin-top: 2px; padding-top: 7px; border-top: 2px dashed var(--inchiostro); }
+
+/* Testata dei nostri tooltip: colore del player a cui appartiene il Pokémon */
+.tt-testa {
+    padding: 8px 10px 7px;
+    background: var(--ambra);
+    border-bottom: var(--bordo);
+}
+.tt-testa.p1 { background: var(--colore-p1); }
+.tt-testa.p2 { background: var(--colore-p2); }
+.tt-nome { font: 700 1rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; }
+.tt-nome small { font: 600 .7rem 'Montserrat', sans-serif; text-transform: none; }
+.tt-tipi { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 6px; }
+.tt-tipo {
+    display: inline-block;
+    padding: 2px 6px 0;
+    background: var(--tipo, #aaa);
+    border: 2px solid var(--inchiostro);
+    font: 700 .62rem 'Josefin Sans', sans-serif; text-transform: uppercase; line-height: 1.3;
+}
+.tt-corpo { padding: 8px 10px 10px; font-size: .78rem; }
+.tt-sezione { margin-top: 8px; padding-top: 7px; border-top: 2px dashed var(--inchiostro); }
+.tt-titolo {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 5px;
+    font: 800 .68rem 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: .03em;
+}
+.tt-riga { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.tt-riga.a-capo { flex-direction: column; align-items: flex-start; gap: 4px; }
+.tt-etichetta { flex-shrink: 0; font: 800 .65rem 'Montserrat', sans-serif; text-transform: uppercase; }
+.tt-valore { text-align: right; font-weight: 600; }
+.tt-valore small, .tt-nomi small { font-size: .65rem; }
+.tt-ignoto { color: #666; font-style: italic; }
+.tt-nomi { font-weight: 700; }
+.tt-nota {
+    margin-left: 5px; padding: 1px 4px;
+    background: var(--carta); border: 1px solid var(--inchiostro);
+    font: 700 .58rem 'Montserrat', sans-serif; text-transform: uppercase;
+}
+.tt-sub { margin-top: 3px; font-size: .68rem; font-weight: 600; color: #333; }
+.tt-grande { font: 800 1.6rem 'Montserrat', sans-serif; line-height: 1; }
+.tt-barra-range { display: none; }
+.tt-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.tt-chip {
+    padding: 2px 6px 1px;
+    background: var(--carta); border: 2px solid var(--inchiostro);
+    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+}
+.tt-chip.su { background: #d4f7df; }
+.tt-chip.giu { background: #ffd9d9; }
+.tt-badge {
+    flex-shrink: 0;
+    padding: 2px 6px 1px;
+    border: 2px solid var(--inchiostro);
+    font: 700 .65rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
+}
+.tt-badge.super { background: var(--conferma); }
+.tt-badge.poco { background: var(--ambra); }
+.tt-badge.nullo { background: var(--pericolo); color: var(--carta); }
+.tt-badge.neutro { background: var(--carta); }
+
+/* HP */
+.tt-hp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tt-hp b { font-size: .8rem; }
+.tt-hp small { font-size: .65rem; font-weight: 600; }
+.tt-barra { flex: 0 0 100%; height: 8px; margin-bottom: 2px; background: var(--carta); border: 2px solid var(--inchiostro); }
+.tt-barra > span { display: block; height: 100%; }
+
+/* Stat: cinque celle; la cifra grande è quella che conta in battaglia */
+.tt-griglia-stat { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.tt-cella {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 3px 2px 2px;
+    background: var(--carta); border: 2px solid var(--inchiostro);
+}
+.tt-cella span { font: 800 .58rem 'Montserrat', sans-serif; text-transform: uppercase; }
+.tt-cella b { font: 800 .95rem 'Montserrat', sans-serif; line-height: 1.15; }
+.tt-cella small { font-size: .58rem; font-weight: 600; text-decoration: line-through; color: #555; }
+.tt-cella em {
+    position: absolute; top: -9px; right: -6px;
+    padding: 0 3px;
+    background: var(--inchiostro); color: var(--carta);
+    font: 700 .58rem 'Josefin Sans', sans-serif; font-style: normal;
+    transform: rotate(6deg);
+}
+.tt-cella.su { background: #d4f7df; }
+.tt-cella.giu { background: #ffd9d9; }
+
+/* Mosse nel tooltip */
+.tt-mossa { display: flex; align-items: center; gap: 6px; padding: 2px 0; font-weight: 700; }
+.tt-mossa .tt-tipo { min-width: 52px; text-align: center; }
+.tt-mossa small { margin-left: auto; font-size: .66rem; font-weight: 600; }
+
+/* Efficacia in fondo al tooltip della mossa */
+#tooltipwrapper .tooltip .tt-efficacia { margin: 4px 10px 10px; }
+
+/* Tipi (colore delle mosse e dei cartellini): stessa palette dei badge del sito */
 .t-normal{--tipo:#aaaa99}.t-fire{--tipo:#ff4422}.t-water{--tipo:#3399ff}.t-electric{--tipo:#ffcc33}
 .t-grass{--tipo:#77cc55}.t-ice{--tipo:#66ccff}.t-fighting{--tipo:#bb5544}.t-poison{--tipo:#aa5599}
 .t-ground{--tipo:#ddbb55}.t-flying{--tipo:#8899ff}.t-psychic{--tipo:#ff5599}.t-bug{--tipo:#aabb22}
 .t-rock{--tipo:#bbaa66}.t-ghost{--tipo:#6666bb}.t-dragon{--tipo:#7766ee}.t-dark{--tipo:#775544}
 .t-steel{--tipo:#aaaabb}.t-fairy{--tipo:#ee99ee}
+.tt-tipo.t-ghost, .tt-tipo.t-dark, .tt-tipo.t-dragon, .tt-tipo.t-poison, .tt-tipo.t-fighting { color: var(--carta); }
 
-@media (max-width: 1080px) {
-    .arena { flex-direction: column; align-items: center; }
-    .cronaca.battle-log { box-sizing: border-box; flex: none; width: 646px; max-width: 100%; height: 170px; }
+
+/* =====================================================
+   Schermi più stretti
+   ===================================================== */
+/* Sotto i 1220px i player salgono sopra il cabinato, uno per lato */
+@media (max-width: 1220px) {
+    .arena {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "p1 p2" "cab cab";
+        gap: 26px 30px;
+    }
+    .cabinato { justify-self: center; max-width: 100%; }
+    .lato { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 14px 18px; padding-top: 0; }
+    .lato.p2 { flex-direction: row-reverse; }
+    .lato-nome { max-width: 60%; font-size: 1.7rem; }
+    .lato-team { align-self: center; }
+    .lato.p2 .lato-team { align-self: center; }
+    .lato-pkm { flex: 0 0 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .membro img { width: 48px; height: 48px; }
+}
+@media (max-width: 900px) {
+    .sotto { grid-template-columns: 1fr; }
+    .cronaca.battle-log { height: 200px; }
 }
 @media (max-width: 760px) {
-    .pagina { padding: 16px 12px 28px; gap: 18px; }
-    .info-turno { margin-left: 0; }
+    .pagina { padding: 16px 12px 28px; gap: 20px; }
+    .arena { grid-template-columns: minmax(0, 1fr); grid-template-areas: "p1" "p2" "cab"; }
+    .cabinato { justify-self: stretch; min-width: 0; }
+    .lato.p2 { flex-direction: row; }
+    .lato-pkm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cabinato { padding: 0 8px 12px; box-shadow: 8px 8px 0 var(--inchiostro); }
+    .cab-insegna { margin: 0 -8px 12px; }
+    .cab-insegna .info-turno span:first-child { max-width: 100%; font-size: 1.1rem; }
+    .cab-schermo { padding: 8px; }
+    .cab-plancia { margin: 12px -12px 0; }
+    .cab-comandi, .cab-gettone { height: 44px; }
     .comandi.doppio, .lobby-colonne { grid-template-columns: 1fr; }
     .mosse { grid-template-columns: 1fr 1fr; }
     .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .arena { overflow-x: auto; align-items: flex-start; padding-bottom: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio { transition: none; }
+    .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro { transition: none; }
     .badge-live::before, .esito-card { animation: none; }
 }

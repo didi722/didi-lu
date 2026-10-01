@@ -19,7 +19,7 @@ import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch } from './team-sito.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
-
+   import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
 const CONFIG_PROVA = {
     formato: 'gen8vgc2022',
     etichetta: 'Test · VGC Gen 8',
@@ -53,7 +53,7 @@ let squadraTooltip = null;  // ultima squadra (dalla richiesta) del lato che i t
 // -----------------------------------------------------
 preparaAudio();
 $('bot-p2').addEventListener('change', cambioBot);
-
+   if (PS) installaSchede({ BattleTooltips: PS.BattleTooltips, ritardoMosse: 350 });
 if (!PS || !PS.Battle || !jq) {
     mostraMessaggioCampo("Showdown's battle engine didn't load. Check your connection and reload the page.");
 } else {
@@ -68,6 +68,7 @@ if (!PS || !PS.Battle || !jq) {
         else preparaOnline(chiavi);
     } else {
         config = CONFIG_PROVA;
+                   schedeLocali();
         impostaPannelli();
         avviaBattaglia();
     }
@@ -103,6 +104,7 @@ async function preparaDaSito(chiavi) {
         const g = dati.giocatori[lato];
         impostaNomeGiocatore(lato, g.nome);
         if (g.colore) document.documentElement.style.setProperty(`--colore-${lato}`, g.colore);
+                   config[lato].avatar = g.avatar;
         const bloccato = dati.bloccati && dati.bloccati[lato];
         scelte[lato] = (bloccato && g.teams.find(t => t.nome === bloccato)) || g.teams[0] || null;
     }
@@ -126,6 +128,9 @@ async function preparaDaSito(chiavi) {
                     if (pronti.p1 && pronti.p2) {
                         config.p1.team = scelte.p1.testo;
                         config.p2.team = scelte.p2.testo;
+                                                   config.p1.nomeTeam = scelte.p1.nome;
+                           config.p2.nomeTeam = scelte.p2.nome;
+                           schedeLocali();
                         $('lobby').hidden = true;
                         return avviaBattaglia();
                     }
@@ -179,6 +184,7 @@ async function preparaOnline(chiavi) {
             const colore = online.datiMatch.giocatori[l].colore;
             if (colore) document.documentElement.style.setProperty(`--colore-${l}`, colore);
         }
+                   schedeOnline();
     } catch (e) {
         console.warn('Match data not loaded', e);
     }
@@ -401,7 +407,7 @@ function creaScena({ recupera = false } = {}) {
     const tooltips = battle.scene.tooltips;
     tooltips.listen($('comandi'));
     scena = { battle, tooltips, righe: 0, turnoVisto: false };
-
+       seguiBattaglia(battle);
     // Chi arriva a set iniziato non rivede tutte le animazioni: si salta al turno in corso
     if (recupera) {
         const questa = scena;
@@ -666,8 +672,7 @@ function sceltaMossa(lato, attivo, mossa) {
     if (richiedeBersaglio(eff.target, p.r.attivi.length)) {
         const validi = bersagliValidi(lato, eff.target, attivo.slot);
         if (validi.length > 1) {
-            p.attesaBersaglio = { base, suffisso, validi, nomeMossa: eff.nome };
-            return disegnaPannello(lato);
+               p.attesaBersaglio = { base, suffisso, validi, nomeMossa: eff.nome, slot: attivo.slot };            return disegnaPannello(lato);
         }
         return scegliSlot(lato, `${base} ${validi[0].valore}${suffisso}`);
     }
@@ -865,9 +870,9 @@ function disegnaMosse(lato, corpo) {
 }
 
 function disegnaBersagli(lato, corpo) {
+    
     const p = pannelli[lato];
-    const { base, suffisso, validi, nomeMossa } = p.attesaBersaglio;
-    const lato2 = avversarioDi(lato);
+         const { base, suffisso, validi, nomeMossa, slot } = p.attesaBersaglio;    const lato2 = avversarioDi(lato);
 
     // Come sul campo: gli avversari sopra (specchiati), i tuoi sotto
     const riga = (chi, lista) => el('div', { class: 'bersagli-riga' }, lista.map(b => bottonePokemon({
@@ -875,6 +880,7 @@ function disegnaBersagli(lato, corpo) {
         nome: b.pkm ? b.pkm.nome : 'Empty spot',
         condizione: b.pkm ? `${b.pkm.hp}/${b.pkm.hpMax}${b.pkm.stato ? ' ' + b.pkm.stato : ''}` : '',
         nota: b.se ? 'you' : null,
+                     efficacia: chi === 1 ? efficaciaSu(lato, slot, nomeMossa, b) : null,
         attrTooltip: b.pkm ? tooltip(lato, `activepokemon|${chi}|${b.slot}`) : {},
         grande: true,
         onclick: () => scegliSlot(lato, `${base} ${b.valore}${suffisso}`)
@@ -909,7 +915,7 @@ function disegnaCambio(lato, corpo) {
 }
 
 // Bottone con icona, nome, salute e stato (cambi e bersagli)
-function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, grande, onclick }) {
+function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, efficacia, grande, onclick }) {
     const c = leggiCondizione(condizione);
     return el('button', {
         type: 'button',
@@ -925,8 +931,8 @@ function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, no
             : condizione ? el('span', { class: 'btn-pkm-hp', role: 'img', 'aria-label': `${c.pct}% HP` },
                 el('span', { class: 'hp-' + (c.pct > 50 ? 'g' : c.pct > 20 ? 'y' : 'r'), style: `width:${c.pct}%` })) : null),
     c.stato ? el('span', { class: `tag-stato ${c.stato}`, testo: c.stato.toUpperCase() }) : null,
-    nota ? el('span', { class: 'btn-pkm-nota', testo: nota }) : null);
-}
+         nota ? el('span', { class: 'btn-pkm-nota', testo: nota }) : null,
+         efficacia ? el('span', { class: `eff ${efficacia.classe}`, testo: `${efficacia.segno} ${efficacia.testo}` }) : null);}
 
 // "123/175 par" -> { pct: 70, stato: 'par' }; "0 fnt" -> { ko: true }
 function leggiCondizione(condizione) {
@@ -970,10 +976,51 @@ function disegnaInfo() {
     $('info-turno').replaceChildren(...chip);
 }
 
-function impostaNomeGiocatore(lato, nome) {
-    $(`nome-${lato}`).textContent = nome;
-    $(`titolo-${lato}`).textContent = nome;
-}
+   // -----------------------------------------------------
+   // Colonne dei player, tooltip ed efficacia (battle-extra.js)
+   // -----------------------------------------------------
+   // In locale e in prova i due team sono sullo stesso schermo: si vedono entrambi
+   function schedeLocali() {
+       const lato = l => ({
+           nome: config[l].nome,
+                      avatar: config[l].avatar || '',
+           candidati: [{ nome: config[l].nomeTeam || 'Test team', set: Teams.import(config[l].team || '') || [] }]
+       });
+       impostaPartita({ openSheet: true, latiNoti: ['p1', 'p2'], p1: lato('p1'), p2: lato('p2') });
+   }
+
+   // Online: il mio team sempre; quello dell'avversario solo in una stagione open sheet.
+   // Senza open sheet passano solo le specie, che il team preview mostra comunque:
+   // servono a riconoscere quale team ha scelto, per scriverne il nome.
+   function schedeOnline() {
+       const d = online.datiMatch;
+       if (!d) return;
+       const lato = l => {
+           const vedo = d.openSheet || l === mioLato;
+           return {
+               nome: d.giocatori[l].nome,
+                              avatar: d.giocatori[l].avatar || '',
+               candidati: d.giocatori[l].teams.map(t => {
+                   const sets = Teams.import(t.testo) || [];
+                   return { nome: t.nome, set: vedo ? sets : sets.map(x => ({ species: x.species, name: x.name })) };
+               })
+           };
+       };
+       impostaPartita({ openSheet: !!d.openSheet, latiNoti: mioLato ? [mioLato] : [], p1: lato('p1'), p2: lato('p2') });
+   }
+
+   // Cartellino sul bottone del bersaglio: superefficace, poco efficace, nessun effetto
+   function efficaciaSu(lato, slot, nomeMossa, b) {
+       if (!scena || !b.pkm) return null;
+       const battle = scena.battle;
+       return efficaciaBersaglio(battle, nomeMossa, battle[lato].active[slot], battle[avversarioDi(lato)].active[b.slot]);
+   }
+
+   function impostaNomeGiocatore(lato, nome) {
+       $(`nome-${lato}`).textContent = nome;
+       $(`titolo-${lato}`).textContent = nome;
+       impostaPartita({ [lato]: { nome } });
+   }
 
 function mostraMessaggioCampo(testo) {
     $('testo-palco').textContent = testo;

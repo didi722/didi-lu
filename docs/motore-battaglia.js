@@ -263,6 +263,15 @@ export class StatoCampo {
                 };
                 break;
             }
+                        case 'swap': {
+                // Ally Switch: "|swap|p1a: Oranguru|1" = Oranguru va nello slot 1
+                // e chi era lì prende il suo posto.
+                const { lato, slot } = posizione(p[1]);
+                const nuovo = /^\d+$/.test(p[2]) ? parseInt(p[2], 10) : posizione(p[2]).slot;
+                const c = this.campo[lato];
+                if (c && nuovo !== slot) [c[slot], c[nuovo]] = [c[nuovo] || null, c[slot]];
+                break;
+            }
             case 'detailschange': case '-formechange': {
                 const pkm = this._pkm(p[1]);
                 if (pkm) pkm.specie = p[2].split(',')[0];
