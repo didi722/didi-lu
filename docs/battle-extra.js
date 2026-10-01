@@ -626,13 +626,23 @@ function sezioneMosse(tt, clientPokemon, serverPokemon, attivo, daSheet) {
 // -----------------------------------------------------
 // Colonne laterali dei player
 // -----------------------------------------------------
-function sprite(specie) {
-    try {
-        const d = window.Dex?.getSpriteData?.(specie, true, { gen: 5, noScale: true });
-        if (d?.url) return d.url;
-    } catch (e) { /* uso l'URL diretto */ }
+// Le stesse GIF animate del resto del sito (sprites/ani di Showdown, come
+// getGifUrl e generaHtmlGifs in matches.html). Il nome del file lo dà Showdown
+// (spriteid), così anche le forme hanno la GIF giusta: "urshifu-rapidstrike".
+const POKEBALL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+function slugSprite(specie) {
     const sp = window.Dex?.species?.get?.(specie);
-    return `https://play.pokemonshowdown.com/sprites/gen5/${sp?.spriteid || idDi(specie)}.png`;
+    return sp?.spriteid || String(specie ?? '').toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, '');
+}
+function sprite(specie) {
+    return `https://play.pokemonshowdown.com/sprites/ani/${slugSprite(specie)}.gif`;
+}
+// GIF mancante: PNG del Pokédex, poi la Poké Ball (come gestisciErroreSprite del sito)
+function spriteDiRiserva(img) {
+    const fase = Number(img.dataset.fase || 0);
+    img.dataset.fase = String(fase + 1);
+    if (fase === 0) img.src = `https://play.pokemonshowdown.com/sprites/dex/${img.dataset.slug}.png`;
+    else if (fase === 1) img.src = POKEBALL;
 }
 
 // I 6 da mostrare: dal set (se lo conosco), altrimenti dal team preview di Showdown
@@ -661,12 +671,14 @@ function disegnaLati() {
             <ol class="lato-pkm">${elenco.map((x, i) => `
                 <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
                     ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
-                    <img src="${esc(sprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
+                    <img src="${esc(sprite(x.specie))}" data-slug="${esc(slugSprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
                 </li>`).join('')}
             </ol>`;
         if (!box.dataset.ascolto) {
             box.dataset.ascolto = '1';
+            // gli errori delle immagini non risalgono: li si prende in cattura
+            box.addEventListener('error', e => { if (e.target.tagName === 'IMG') spriteDiRiserva(e.target); }, true);
             box.addEventListener('mouseover', e => tooltipMembro(e, lato));
             box.addEventListener('focusin', e => tooltipMembro(e, lato));
             box.addEventListener('mouseout', e => {

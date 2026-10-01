@@ -176,7 +176,8 @@ body {
 .membro:nth-child(4n+2) { --tilt: 1.2deg; }
 .membro:nth-child(4n+3) { --tilt: .8deg; }
 .membro:nth-child(4n+4) { --tilt: -1deg; }
-.membro img { display: block; width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+/* GIF animate come nel resto del sito: contenute nel riquadro, con l'ombra nera di .modal-sprite */
+.membro img { display: block; width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
 .membro-nome {
     max-width: 100%;
     font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;

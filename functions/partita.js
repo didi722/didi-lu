@@ -12,6 +12,7 @@
 
 const crypto = require('crypto');
 const PS = require('pokemon-showdown');
+const { creaReplayHtml } = require('./replay-sito');
 
 class ErroreUtente extends Error {}
 
@@ -177,33 +178,10 @@ function latiCheDevonoScegliere(b) {
 
 
 // -----------------------------------------------------
-// 4. REPLAY (stesso formato dei file scaricati da Showdown)
+// 4. REPLAY
 // -----------------------------------------------------
-function escHtml(t) {
-    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function creaReplayHtml({ titoloFormato, p1, p2, righe, id }) {
-    const log = righe.join('\n').replace(/<\//g, '<\\/');
-    return `<!DOCTYPE html>
-<meta charset="utf-8" />
-<!-- version 1 -->
-<title>${escHtml(titoloFormato)} replay: ${escHtml(p1)} vs. ${escHtml(p2)}</title>
-<style>
-html,body {font-family:Verdana, sans-serif;font-size:10pt;margin:0;padding:0;}body{padding:12px 0;} .battle-log {font-family:Verdana, sans-serif;font-size:10pt;} .battle-log-inline {border:1px solid #AAAAAA;background:#EEF2F5;color:black;max-width:640px;margin:0 auto 80px;padding-bottom:5px;} .battle-log .inner {padding:4px 8px 0px 8px;} .battle-log .inner-preempt {padding:0 8px 4px 8px;} .battle-log .inner-after {margin-top:0.5em;} .battle-log h2 {margin:0.5em -8px;padding:4px 8px;border:1px solid #AAAAAA;background:#E0E7EA;border-left:0;border-right:0;font-family:Verdana, sans-serif;font-size:13pt;} .subtle {color:#3A4A66;}
-</style>
-<div class="wrapper replay-wrapper" style="max-width:1180px;margin:0 auto">
-<input type="hidden" name="replayid" value="${escHtml(id)}" />
-<div class="battle"></div><div class="battle-log"></div><div class="replay-controls"></div><div class="replay-controls-2"></div>
-<h1 style="font-weight:normal;text-align:center"><strong>${escHtml(titoloFormato)}</strong><br />${escHtml(p1)} vs. ${escHtml(p2)}</h1>
-<script type="text/plain" class="battle-log-data">${log}
-</script>
-</div>
-<script>
-let daily = Math.floor(Date.now()/1000/60/60/24);document.write('<script src="https://play.pokemonshowdown.com/js/replay-embed.js?version'+daily+'"></'+'script>');
-</script>
-`;
-}
+// Il file del replay ha l'estetica del simulatore del sito: lo costruisce
+// creaReplayHtml() di replay-sito.js (motore grafico di Showdown, schermo nostro).
 
 
 // -----------------------------------------------------
@@ -234,7 +212,8 @@ function creaCifratura(segreto) {
 // -----------------------------------------------------
 // db: database Admin; salvaReplay(percorso, html) -> url;
 // registraRisultato(r) -> registraRisultatoMatch di risultati-match.js
-function creaServizio({ db, salvaReplay, registraRisultato, segreto, ora = () => Date.now() }) {
+// sito: indirizzo del sito, per gli avatar salvati con un percorso relativo
+function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', ora = () => Date.now() }) {
     const { cifra, decifra } = creaCifratura(segreto);
     const leggi = async percorso => (await db.ref(percorso).once('value')).val();
 
@@ -443,11 +422,20 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, ora = () =>
         const vincitore = b.winner === b.p1.name ? 'p1' : (b.winner === b.p2.name ? 'p2' : '');
         let url = '';
         try {
+            // Colore e avatar come nel resto del sito: players/{id}/info
+            const [anag1, anag2] = await Promise.all([
+                leggi(`players/${info.p1.id}/info`).catch(() => null),
+                leggi(`players/${info.p2.id}/info`).catch(() => null)
+            ]);
+            const giocatore = (g, anag) => ({ nome: g.nome, colore: anag?.color || '', avatar: anag?.avatar || '' });
             const html = creaReplayHtml({
-                titoloFormato: `${info.categoria} (${b.format.name})`,
-                p1: info.p1.nome, p2: info.p2.nome,
-                righe: righePubbliche(b.log),
-                id: `${id}-set${stato.set}`
+                log: righePubbliche(b.log),
+                p1: giocatore(info.p1, anag1),
+                p2: giocatore(info.p2, anag2),
+                etichetta: info.categoria,
+                match: info.match,
+                set: stato.set,
+                sito
             });
             url = await salvaReplay(`replays/${info.showdown}/match${info.match}/set${stato.set}.html`, html);
         } catch (e) {

@@ -20,6 +20,9 @@ initializeApp();
 const REGIONE = 'europe-west1';
 const ISTANZA_DB = 'pokemonsuite-didi-lu-default-rtdb';
 const BUCKET = 'pokemonsuite-didi-lu.firebasestorage.app';
+// Indirizzo del sito: serve ai replay per gli avatar salvati con un percorso relativo
+// (es. "immagini/avatar/didi.png"). Gli avatar con l'indirizzo completo funzionano comunque.
+const SITO = process.env.SITO_URL || 'https://pokemonsuite-didi-lu.web.app';
 
 // risultati-match.js è lo STESSO file del sito: lo si esegue qui con il database del server.
 function caricaRegistraRisultato(db) {
@@ -50,7 +53,8 @@ function prendiServizio() {
         db,
         salvaReplay,
         registraRisultato: r => caricaRegistraRisultato(db)(r),
-        segreto: process.env.CHIAVE_SCELTE
+        segreto: process.env.CHIAVE_SCELTE,
+        sito: SITO
     });
     return servizio;
 }

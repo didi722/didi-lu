@@ -802,7 +802,7 @@ function disegnaAnteprima(lato, corpo) {
         pos >= 0 ? el('span', { class: 'tessera-numero', testo: String(pos + 1) }) : null,
         pos >= 0 && pos < inCampo ? el('span', { class: 'tessera-lead', testo: 'Lead' }) : null,
         el('span', { class: 'tessera-sprite' }, sprite(pkm.nome, false)),
-        el('span', { class: 'tessera-nome', testo: pkm.nome }));
+        );
     })));
 }
 
