@@ -1,16 +1,22 @@
 /* =====================================================
    BATTLE — neubrutalist: bordi spessi, ombre nere piene, elementi inclinati.
 
-   Un solo pezzo "forte": il cabinato arcade attorno allo schermo di
-   Showdown (insegna col formato, cornice nera, plancia coi comandi
-   nei colori dei due player). Ai lati, i due player: il nome in un
-   tag grande del loro colore, il team e i 6 Pokémon.
+   Un solo pezzo "forte": la console attorno allo schermo di Showdown
+   (insegna ambra col formato, cornice nera e, subito sotto lo schermo,
+   i comandi del player). Ai lati, i due player: il nome in un tag grande
+   del loro colore, il team, i 6 Pokémon e le condizioni del loro lato.
+   A destra la cronaca.
+
+   Tutto sta in una schermata: battle-layout.js misura la finestra e, se serve,
+   rimpicciolisce l'insieme (html[data-modo="fit"]). Dove non c'è spazio
+   (telefono, finestre molto basse) il layout è a colonna e la pagina scorre.
+   Le misure del tavolo sono le variabili --w-* e --h-comandi qui sotto.
 
    Regole di movimento:
    - ciò che si clicca è inclinato e sollevato (ombra nera piena);
      al passaggio del mouse si raddrizza e sale, al clic atterra;
    - ciò che è spento è piatto: niente ombra, niente inclinazione;
-   - le superfici (cabinato, pannelli, cronaca) stanno dritte.
+   - le superfici (console, pannelli, cronaca) stanno dritte.
 
    Niente regole globali tipo "* { box-sizing }": il campo e la cronaca
    di Showdown hanno bisogno dei loro stili originali.
@@ -33,6 +39,13 @@
     --alza: translate(-3px, -3px) rotate(0deg);
     --atterra: translate(3px, 3px) rotate(0deg);
     --tempo: .12s ease;
+
+    /* misure del tavolo "una schermata" (battle-layout.js ne misura il risultato) */
+    --w-lato: 176px;
+    --w-console: 672px;           /* 640 dello schermo + 2 × 12 di cornice + 2 × 4 di bordo */
+    --w-log: 280px;
+    --h-comandi: 216px;           /* fissa: lo schermo non cambia misura da una fase all'altra */
+    --h-comandi-doppio: 340px;    /* prove in locale: i comandi di entrambi i player */
 }
 body {
     margin: 0;
@@ -43,20 +56,35 @@ body {
 }
 [hidden] { display: none !important; }
 
+/* Layout a colonna (telefono, finestre molto basse): la pagina scorre */
 .pagina {
     box-sizing: border-box;
     max-width: 1240px;
     margin: 0 auto;
-    padding: 18px 20px 40px;
+    padding: 18px 16px 40px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
+/* Tutto in una schermata: battle-layout.js sceglie la scala (html[data-modo="fit"]).
+   .scala è larga quanto il tavolo e centrata; lo spazio che avanza resta ai lati. */
+html[data-modo="fit"], html[data-modo="fit"] body { height: 100%; overflow: hidden; }
+html[data-modo="fit"] .scala {
+    position: absolute; top: 0; left: 50%;
+    width: max-content;
+    transform: translateX(-50%) scale(var(--scala, 1));
+    transform-origin: top center;
+}
+html[data-modo="fit"] .pagina { max-width: none; margin: 0; padding: 12px 16px 18px; gap: 12px; }
+/* finché battle-layout.js non ha misurato non si vede nulla (mai oltre un secondo e mezzo) */
+html[data-modo="fit"]:not([data-pronto]) .scala { visibility: hidden; animation: mostra 0s 1.5s forwards; }
+@keyframes mostra { to { visibility: visible; } }
 
 /* ---------- Intestazione: solo servizi, i nomi stanno ai lati ---------- */
-.testata { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-.testata .btn-audio { margin-left: auto; }
+/* Servizi: il bottone dell'hub in cima alla colonna del player 1, volume e opzione bot in cima alla colonna del 2 */
+#link-hub { grid-area: hub; justify-self: start; }
+.servizi { grid-area: servizi; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; }
 
 .btn-hub {
     --tilt: -2deg;
@@ -112,41 +140,57 @@ body {
 .btn-audio.muted svg { opacity: .15; }
 
 
-/* ---------- Arena: player 1 | cabinato | player 2 ---------- */
-.arena {
+/* ---------- Tavolo: player 1 | console | player 2 | cronaca ---------- */
+/* Layout a colonna: la console, poi i due player affiancati, poi la cronaca */
+.tavolo {
     display: grid;
-    grid-template-columns: minmax(150px, 190px) auto minmax(150px, 190px);
-    grid-template-areas: "p1 cab p2";
-    justify-content: center;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "hub servizi" "cons cons" "p1 p2" "log log";
+    gap: 22px 26px;
     align-items: start;
-    gap: 30px;
 }
 .lato.p1 { grid-area: p1; --colore-mio: var(--colore-p1); --verso: -1; }
 .lato.p2 { grid-area: p2; --colore-mio: var(--colore-p2); --verso: 1; }
-.cabinato { grid-area: cab; min-width: 0; }
+.console { grid-area: cons; justify-self: center; width: 100%; max-width: var(--w-console); min-width: 0; }
+.colonna-log { grid-area: log; position: relative; min-width: 0; }
 
+html[data-modo="fit"] .tavolo {
+    grid-template-columns: var(--w-lato) var(--w-console) var(--w-lato) var(--w-log);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "hub cons servizi log" "p1 cons p2 log";
+    justify-content: center;
+    gap: 14px 26px;
+}
+html[data-modo="fit"] .console { width: var(--w-console); }
+html[data-modo="fit"] .colonna-log { align-self: stretch; }
 
 /* ---------- Colonna di un player ---------- */
-.lato { display: flex; flex-direction: column; gap: 18px; padding-top: 14px; min-width: 0; }
+/* Layout a colonna: nome e team sulla stessa riga, poi i 6 Pokémon */
+.lato { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; min-width: 0; }
+.lato.p2 { flex-direction: row-reverse; }
+/* Tutto in una schermata: la colonna è alta quanto la console (contain: size = il suo contenuto non allunga la riga) */
+html[data-modo="fit"] .lato { flex-direction: column; flex-wrap: nowrap; align-items: stretch; align-self: stretch; contain: size; gap: 18px; padding-top: 6px; }
+html[data-modo="fit"] .lato > * { flex-shrink: 0; }
 
 /* Il nome: tag grande del colore del player, ombra nera piena */
 .lato-nome {
     box-sizing: border-box;
-    max-width: 100%;
+    max-width: 60%;
     margin: 0;
     padding: 12px 14px 7px;
     background: var(--colore-mio);
     color: var(--inchiostro);
     border: var(--bordo-forte);
     box-shadow: 9px 9px 0 var(--inchiostro);
-    font: 700 clamp(1.5rem, 2.3vw, 2.3rem) 'Josefin Sans', sans-serif;
+    font: 700 1.7rem 'Josefin Sans', sans-serif;
     line-height: 1; letter-spacing: .01em;
     text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transform: rotate(calc(var(--verso) * 4deg));
 }
+html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
 .lato-team {
-    align-self: flex-start;
+    align-self: center;
     max-width: calc(100% - 10px);
     margin: 0;
     padding: 6px 10px 4px;
@@ -156,12 +200,15 @@ body {
     box-shadow: 4px 4px 0 var(--colore-mio);
     transform: rotate(calc(var(--verso) * -2deg));
 }
-.lato.p2 .lato-team { align-self: flex-end; }
+html[data-modo="fit"] .lato-team { align-self: flex-start; }
+html[data-modo="fit"] .lato.p2 .lato-team { align-self: flex-end; }
 
 .lato-pkm {
+    flex: 0 0 100%;
     list-style: none; margin: 0; padding: 4px 6px 6px 0;
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px;
 }
+html[data-modo="fit"] .lato-pkm { flex-basis: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
 .membro {
     --tilt: -1.5deg;
     position: relative;
@@ -177,7 +224,8 @@ body {
 .membro:nth-child(4n+3) { --tilt: .8deg; }
 .membro:nth-child(4n+4) { --tilt: -1deg; }
 /* GIF animate come nel resto del sito: contenute nel riquadro, con l'ombra nera di .modal-sprite */
-.membro img { display: block; width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
+.membro img { display: block; width: 100%; max-width: 48px; aspect-ratio: 1; height: auto; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
+html[data-modo="fit"] .membro img { width: 64px; max-width: none; height: 64px; }
 .membro-nome {
     max-width: 100%;
     font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;
@@ -222,11 +270,10 @@ body {
 }
 
 
-/* ---------- Il cabinato ---------- */
-.cabinato {
+/* ---------- La console ---------- */
+.console {
     position: relative;
     box-sizing: border-box;
-    padding: 0 14px 16px;
     background: var(--carta);
     border: var(--bordo-forte);
     box-shadow: 12px 12px 0 var(--inchiostro);
@@ -235,14 +282,14 @@ body {
 /* Insegna: la riga info del match. Il primo dato (il formato) diventa
    l'adesivo nero grande; match, set e punteggio restano etichette piatte. */
 .cab-insegna {
-    margin: 0 -14px 16px;
-    padding: 10px 16px 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 14px 7px;
     background: var(--ambra);
     border-bottom: var(--bordo-forte);
     /* righe diagonali leggere, come la luce dietro l'insegna */
     background-image: repeating-linear-gradient(-45deg, transparent 0 14px, rgba(255, 255, 255, .28) 14px 22px);
 }
-.info-turno { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; }
+.info-turno { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; }
 .info-turno span {
     padding: 5px 9px 3px;
     background: var(--crema); border: 2px solid var(--inchiostro);
@@ -259,33 +306,34 @@ body {
     transform: rotate(-2deg);
     box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
 }
+.cab-insegna .badge-live { flex: none; }
 
-/* Cornice nera dello schermo */
+/* Cornice nera: lo schermo e, sotto, la riga degli effetti di campo */
 .cab-schermo {
     position: relative;
-    padding: 14px;
+    padding: 12px 12px 8px;
     background: var(--inchiostro);
-    border: var(--bordo);
-    overflow-x: auto;
 }
+.palco-box { position: relative; width: 100%; max-width: 640px; margin: 0 auto; }
 /* bordino del vetro */
-.cab-schermo::before {
-    content: ''; position: absolute; inset: 9px;
+.palco-box::before {
+    content: ''; position: absolute; inset: -5px;
     border: 2px solid #3a3a3a;
     pointer-events: none;
 }
 /* righe di scansione leggerissime sopra la partita */
-.cab-schermo::after {
-    content: ''; position: absolute; inset: 14px; z-index: 25;
+.palco-box::after {
+    content: ''; position: absolute; inset: 0; z-index: 25;
     background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px);
     pointer-events: none;
 }
 
-/* Effetti di campo: fuori dallo schermo, tra lo schermo e la plancia */
+/* Effetti di campo (meteo, terreni, Trick Room…): una riga fissa sotto lo schermo.
+   Le condizioni di ciascun lato stanno invece nella colonna del player. */
 .cab-campo {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
-    min-height: 30px;
-    margin-top: 12px;
+    display: flex; align-items: center; gap: 6px 8px;
+    height: 30px; margin-top: 8px;
+    overflow: hidden;
 }
 .campo-voce {
     display: inline-flex; align-items: baseline; gap: 6px;
@@ -300,65 +348,33 @@ body {
 .campo-voce.meteo { background: var(--ambra); }
 .campo-voce.meteo.annullato { text-decoration: line-through 2px; }
 .campo-voce.terreno { background: #d4f7df; }
-.campo-voce.campo { background: var(--inchiostro); color: var(--carta); }
-.campo-voce.lato-cond.p1 { background: var(--colore-p1); }
-.campo-voce.lato-cond.p2 { background: var(--colore-p2); }
+.campo-voce.campo { background: #d9ccff; }
+.cab-campo .campo-voce { flex: none; padding: 4px 8px 2px; font-size: .72rem; white-space: nowrap; box-shadow: none; transform: none; }
 .campo-vuoto { font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: #8a8a8a; }
 
-/* Plancia: leva e due tasti per player, gettoniera in mezzo */
-.cab-plancia {
-    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-    margin: 16px -26px 0;
-    border: var(--bordo-forte);
-    box-shadow: 6px 6px 0 var(--inchiostro);
-    background: var(--carta);
-    transform: perspective(700px) rotateX(16deg);
-    transform-origin: top center;
+/* Condizioni del lato di un player (Stealth Rock, Tailwind…): sotto i suoi Pokémon */
+.lato-condizioni { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 7px; padding: 4px 8px 8px 2px; }
+html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.lato-condizioni:empty { display: none; }
+.lato-condizioni::before {
+    content: 'Side effects'; flex: 0 0 100%;
+    font: 700 .68rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: #555;
 }
-.cab-comandi {
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-    height: 54px;
-    background: var(--colore-mio);
-}
-.cab-comandi.p1 { --colore-mio: var(--colore-p1); border-right: var(--bordo-forte); }
-.cab-comandi.p2 { --colore-mio: var(--colore-p2); border-left: var(--bordo-forte); flex-direction: row-reverse; }
-.cab-leva {
-    position: relative; width: 34px; height: 46px; margin-top: -14px;
-    /* base nera della leva */
-    background: linear-gradient(var(--inchiostro), var(--inchiostro)) center bottom / 30px 7px no-repeat;
-}
-.cab-leva::before { /* asta */
-    content: ''; position: absolute; left: 14px; bottom: 6px; width: 6px; height: 26px;
-    background: var(--inchiostro);
-}
-.cab-leva::after { /* pomello */
-    content: ''; position: absolute; left: 5px; top: 0; width: 24px; height: 24px; border-radius: 50%;
-    background: var(--pericolo); border: var(--bordo);
-    box-shadow: 3px 3px 0 var(--inchiostro);
-}
-.cab-tasto {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--carta); border: var(--bordo);
-    box-shadow: 3px 3px 0 var(--inchiostro);
-}
-.cab-tasto + .cab-tasto { background: var(--ambra); }
-.cab-gettone {
-    display: flex; align-items: center; justify-content: center;
-    height: 54px; padding: 0 16px;
-    background: var(--inchiostro); color: var(--carta);
-    font: 700 1.25rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-}
-.cab-gettone span { padding: 4px 8px 1px; border: 2px solid var(--carta); transform: rotate(-4deg); }
+.lato-condizioni .campo-voce { padding: 3px 7px 1px; font-size: .7rem; transform: none; background: color-mix(in srgb, var(--colore-mio) 35%, #fff); }
 
 
 /* ---------- Lo schermo di Showdown ---------- */
 .palco {
     position: relative;
-    width: 640px; height: 360px;
+    width: 640px; max-width: 100%;
+    aspect-ratio: 16 / 9;
     background: #cfd5da;
     overflow: hidden;
 }
 .palco .battle { position: absolute; top: 0; left: 0; border: 0; }
+/* Layout a colonna: lo schermo si rimpicciolisce con la larghezza (battle-layout.js scrive --scala-campo).
+   Showdown lo farebbe da solo solo sotto i 640px di finestra e senza contare i margini. */
+#campo { transform: scale(var(--scala-campo, 1)) !important; transform-origin: top left !important; margin-bottom: 0 !important; }
 
 /* Allenatori: i 6 Pokémon stanno già nelle colonne ai lati */
 .palco .trainer div.teamicons { display: none; }
@@ -470,7 +486,8 @@ body {
 
 .scelta-team { display: grid; gap: 12px; }
 .scelta-team-titolo { margin: 0; font: 700 .95rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
-.schede-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; padding: 2px 8px 8px 2px; }
+/* le 6 icone (6 × 40px) stanno su una riga sola */
+.schede-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; padding: 2px 8px 8px 2px; }
 .scheda-team {
     --tilt: -1deg;
     position: relative;
@@ -526,18 +543,11 @@ body {
 .esito-card .riga-azioni { margin-top: 16px; }
 
 
-/* ---------- Sotto il cabinato: comandi | cronaca ---------- */
-.sotto {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-    gap: 28px;
-    align-items: start;
-}
-
+/* ---------- Cronaca ---------- */
 .cronaca.battle-log {
     position: relative; top: auto; left: auto; right: auto; bottom: auto;
     box-sizing: border-box;
-    height: 300px;
+    height: 220px;
     background: var(--carta);
     border: var(--bordo);
     box-shadow: 8px 8px 0 var(--inchiostro);
@@ -545,6 +555,8 @@ body {
     font-size: .78rem;
     scrollbar-color: var(--inchiostro) #eee;
 }
+/* Tutto in una schermata: la cronaca è alta quanto la console e scorre al suo interno */
+html[data-modo="fit"] .cronaca.battle-log { position: absolute; inset: 0 8px 8px 0; height: auto; }
 .cronaca h2.battle-history {
     display: inline-block;
     margin: 14px 0 6px;
@@ -557,38 +569,45 @@ body {
 }
 
 
-/* ---------- Comandi ---------- */
-.comandi { display: grid; gap: 22px; min-width: 0; }
+/* ---------- Comandi: la fascia sotto lo schermo ---------- */
+.comandi { display: grid; min-width: 0; background: var(--crema); border-top: var(--bordo-forte); }
 .comandi.doppio { grid-template-columns: 1fr 1fr; }
+.comandi.doppio .pannello + .pannello { border-left: var(--bordo-forte); }
+/* Altezza fissa: lo schermo non cambia misura (né scala) da una fase all'altra del turno */
+html[data-modo="fit"] .comandi { height: var(--h-comandi); }
+html[data-modo="fit"] .comandi.doppio { height: var(--h-comandi-doppio); }
+html[data-modo="fit"] body.spettatore .comandi { height: auto; }
 
 /* Il pannello prende il colore del player che lo usa */
 .pannello:has(> .pannello-testa.p1) { --colore-mio: var(--colore-p1); }
 .pannello:has(> .pannello-testa.p2) { --colore-mio: var(--colore-p2); }
-.pannello {
-    background: var(--carta);
-    border: var(--bordo);
-    box-shadow: 8px 8px 0 var(--inchiostro);
-    margin: 0 8px 8px 0;
-}
+.pannello { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .pannello-testa {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 8px 14px 6px;
+    padding: 6px 14px 4px;
     border-bottom: var(--bordo);
 }
 .pannello-testa.p1 { background: var(--colore-p1); }
 .pannello-testa.p2 { background: var(--colore-p2); }
-.pannello-testa h2 { margin: 0; font: 700 1.05rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.pannello-testa h2 { margin: 0; font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
 .stato-avversario {
     margin: 0;
     padding: 3px 8px 1px;
     background: var(--carta); border: 2px solid var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase;
 }
-.corpo { box-sizing: border-box; min-height: 118px; padding: 16px 16px 18px; display: grid; align-content: start; gap: 14px; }
+.stato-avversario:empty { display: none; }
+.corpo {
+    box-sizing: border-box;
+    flex: 1 1 auto; min-height: 118px;
+    padding: 12px 18px 14px 16px;
+    display: grid; align-content: start; gap: 10px;
+}
+html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: auto; }
+/* c'è solo un messaggio ("Waiting for…"): sta in mezzo alla fascia */
+.corpo:has(> .messaggio:only-child) { align-content: center; justify-items: center; text-align: center; }
 .striscia {
-    margin: 0; padding: 11px 14px 9px;
-    background: var(--crema);
-    border: var(--bordo); box-shadow: 6px 6px 0 var(--inchiostro);
+    margin: 0; padding: 16px 18px 14px;
     font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase;
 }
 
@@ -597,7 +616,7 @@ body {
 .domanda small { font-size: .75rem; }
 .etichetta { margin: 0; font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
 .messaggio {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px;
     min-height: 40px;
     font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase;
 }
@@ -631,16 +650,16 @@ body {
 .riga-azioni.centrata { justify-content: center; }
 
 /* Mosse: colore del tipo */
-.mosse { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.mosse { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .comandi.doppio .mosse { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .mossa {
     --tipo: #aaaa99;
     --tilt: -1.2deg;
     position: relative;
     box-sizing: border-box;
-    display: flex; flex-direction: column; gap: 5px;
-    min-height: 58px;
-    padding: 8px 10px 6px;
+    display: flex; flex-direction: column; gap: 3px;
+    min-height: 54px;
+    padding: 6px 10px 5px;
     background: color-mix(in srgb, var(--tipo) 28%, #fff);
     color: var(--inchiostro);
     border: var(--bordo); border-left: 10px solid var(--tipo);
@@ -653,18 +672,21 @@ body {
 .mossa:nth-child(4n+2) { --tilt: .9deg; }
 .mossa:nth-child(4n+3) { --tilt: -.6deg; }
 .mossa:nth-child(4n+4) { --tilt: 1.3deg; }
-.mossa-nome { font-size: .95rem; font-weight: 700; line-height: 1.1; text-transform: uppercase; overflow-wrap: anywhere; }
+.mossa-nome { font-size: .9rem; font-weight: 700; line-height: 1.1; text-transform: uppercase; overflow-wrap: anywhere; }
 .mossa-info { display: flex; justify-content: space-between; gap: 6px; font: 600 .7rem 'Montserrat', sans-serif; }
 .mossa:hover:not(.spenta) { z-index: 2; transform: var(--alza); box-shadow: 7px 7px 0 var(--inchiostro); }
 .mossa:active:not(.spenta) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .mossa:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .mossa.spenta { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
 
-.piede-mosse { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.piede-mosse { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
 .meccaniche { display: flex; gap: 10px; }
 .cambi { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .cambi.grandi { gap: 14px; }
-.bersagli-riga { display: flex; flex-wrap: wrap; gap: 18px 14px; padding-top: 6px; }
+/* Bersagli: gli avversari e i tuoi, due gruppi sulla stessa riga */
+.bersagli { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 26px; }
+.bersagli-gruppo { display: grid; gap: 7px; }
+.bersagli-riga { display: flex; flex-wrap: wrap; gap: 8px 12px; padding-top: 4px; }
 
 /* Pokémon da mandare in campo o da colpire */
 .btn-pkm {
@@ -688,11 +710,15 @@ body {
 .btn-pkm:active:not(.spento) { transform: var(--atterra); box-shadow: 0 0 0 var(--inchiostro); }
 .btn-pkm:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 .btn-pkm.spento { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
-.btn-pkm.grande { padding: 4px 13px 4px 4px; font-size: .85rem; border-width: 3px; box-shadow: 4px 4px 0 var(--inchiostro); }
+.btn-pkm.grande { padding: 3px 11px 3px 3px; font-size: .8rem; border-width: 3px; box-shadow: 4px 4px 0 var(--inchiostro); }
 .btn-pkm.grande:hover:not(.spento) { box-shadow: 7px 7px 0 var(--inchiostro); }
 .btn-pkm-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .btn-pkm-hp { display: block; width: 52px; height: 5px; border: 1px solid var(--inchiostro); background: var(--carta); }
-.btn-pkm.grande .btn-pkm-hp { width: 84px; height: 7px; border-width: 2px; }
+.btn-pkm.grande .btn-pkm-hp { width: 68px; height: 7px; border-width: 2px; }
+/* Compatto (il cambio sotto le mosse): icona e barra della salute, il nome sta nel tooltip */
+.btn-pkm.compatto { flex-direction: column; gap: 2px; padding: 2px 4px 4px; }
+.btn-pkm.compatto .btn-pkm-hp { width: 38px; }
+.btn-pkm.compatto .tag-stato { position: absolute; top: -8px; right: -7px; z-index: 1; font-size: .55rem; transform: rotate(5deg); }
 .btn-pkm-hp span { display: block; height: 100%; }
 .hp-g { background: var(--conferma); }
 .hp-y { background: var(--ambra); }
@@ -720,13 +746,13 @@ body {
 .eff.neutro { display: none; }
 
 /* Team preview: le GIF dei tuoi 6, come carte appoggiate storte */
-.anteprima-griglia { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; padding: 10px 6px 6px 10px; }
+.anteprima-griglia { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; padding: 8px 6px 6px 10px; }
 .tessera {
     --tilt: -2deg;
     position: relative;
     box-sizing: border-box;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;
-    height: 122px;
+    height: 100px;
     padding: 6px 4px;
     background: var(--carta); color: var(--inchiostro);
     border: var(--bordo); box-shadow: 5px 5px 0 var(--inchiostro);
@@ -747,7 +773,7 @@ body {
 .tessera.spenta { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
 .tessera.spenta:hover { transform: none; box-shadow: none; }
 .tessera-sprite { flex: 1; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
-.tessera-sprite img { max-width: 100%; max-height: 84px; image-rendering: pixelated; }
+.tessera-sprite img { max-width: 100%; max-height: 66px; image-rendering: pixelated; }
 .tessera-nome { font-size: .72rem; font-weight: 700; line-height: 1.1; text-align: center; text-transform: uppercase; }
 .tessera-numero {
     position: absolute; top: -12px; left: -12px;
@@ -921,41 +947,22 @@ body {
 
 
 /* =====================================================
-   Schermi più stretti
+   Layout a colonna: finestre strette
    ===================================================== */
-/* Sotto i 1220px i player salgono sopra il cabinato, uno per lato */
-@media (max-width: 1220px) {
-    .arena {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-areas: "p1 p2" "cab cab";
-        gap: 26px 30px;
-    }
-    .cabinato { justify-self: center; max-width: 100%; }
-    .lato { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 14px 18px; padding-top: 0; }
-    .lato.p2 { flex-direction: row-reverse; }
-    .lato-nome { max-width: 60%; font-size: 1.7rem; }
-    .lato-team { align-self: center; }
-    .lato.p2 .lato-team { align-self: center; }
-    .lato-pkm { flex: 0 0 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-    .membro img { width: 48px; height: 48px; }
-}
-@media (max-width: 900px) {
-    .sotto { grid-template-columns: 1fr; }
-    .cronaca.battle-log { height: 200px; }
-}
-@media (max-width: 760px) {
-    .pagina { padding: 16px 12px 28px; gap: 20px; }
-    .arena { grid-template-columns: minmax(0, 1fr); grid-template-areas: "p1" "p2" "cab"; }
-    .cabinato { justify-self: stretch; min-width: 0; }
-    .lato.p2 { flex-direction: row; }
+@media (min-width: 700px) {
     .lato-pkm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .cabinato { padding: 0 8px 12px; box-shadow: 8px 8px 0 var(--inchiostro); }
-    .cab-insegna { margin: 0 -8px 12px; }
+    .membro img { max-width: 56px; }
+}
+@media (max-width: 699px) {
+    .pagina { padding: 14px 12px 28px; gap: 16px; }
+    .tavolo { grid-template-areas: "hub servizi" "cons cons" "p1 p1" "p2 p2" "log log"; }
+    .lato.p2 { flex-direction: row; }
+    .console { box-shadow: 8px 8px 0 var(--inchiostro); }
+    .cab-insegna { padding: 8px 10px 6px; }
     .cab-insegna .info-turno span:first-child { max-width: 100%; font-size: 1.1rem; }
-    .cab-schermo { padding: 8px; }
-    .cab-plancia { margin: 12px -12px 0; }
-    .cab-comandi, .cab-gettone { height: 44px; }
+    .cab-schermo { padding: 8px 8px 6px; }
     .comandi.doppio, .lobby-colonne { grid-template-columns: 1fr; }
+    .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
     .mosse { grid-template-columns: 1fr 1fr; }
     .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

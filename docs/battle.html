@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        // Finestra abbastanza grande: parte subito nel layout "tutto in una schermata" (niente lampo
+        // del layout a colonna). battle-layout.js poi misura e decide: rimpicciolire, o lasciar scorrere.
+        (function () {
+            var d = document.documentElement;
+            if (d.clientWidth >= 1000 && d.clientWidth >= window.innerHeight && window.innerHeight >= 480) d.setAttribute('data-modo', 'fit');
+        })();
+    </script>
     <title>Battle | Poké-Tournament</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,8 +69,11 @@
     </script>
 </head>
 <body>
+    <!-- .scala: in "una schermata" (html[data-modo="fit"]) battle-layout.js rimpicciolisce tutto l'insieme
+         quanto basta per farlo stare nella finestra. Altrimenti è un normale contenitore. -->
+    <div class="scala" id="scala">
     <main class="pagina">
-        <header class="testata">
+        <div class="tavolo">
             <a class="btn-hub" id="link-hub" href="matches.html">← Hub</a>
             <!-- Solo per i lettori di schermo: a vista i nomi stanno nei tag ai lati -->
             <h1 class="titolo">
@@ -70,74 +81,75 @@
                 <small>vs</small>
                 <span class="nome p2" id="nome-p2">P2</span>
             </h1>
-            <span class="badge-live" id="badge-live" hidden>Watching live</span>
-            <label class="opzione-bot" id="opzione-bot">
-                <input type="checkbox" id="bot-p2">
-                Bot plays P2
-            </label>
-            <button type="button" class="btn-audio" id="btn-audio" aria-label="Battle sound">
-                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-                    <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
-            </button>
-        </header>
+            <div class="servizi">
+                <label class="opzione-bot" id="opzione-bot">
+                    <input type="checkbox" id="bot-p2">
+                    Bot plays P2
+                </label>
+                <button type="button" class="btn-audio" id="btn-audio" aria-label="Battle sound">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                </button>
+            </div>
 
-        <div class="arena">
             <!-- Colonne dei player: le riempie battle-extra.js -->
             <aside class="lato p1" id="lato-p1" aria-label="Player 1"></aside>
 
-            <div class="cabinato">
+            <!-- Console: insegna col formato, schermo di Showdown, i comandi subito sotto -->
+            <section class="console" aria-label="Battle">
                 <div class="cab-insegna">
                     <div class="info-turno" id="info-turno"></div>
+                    <span class="badge-live" id="badge-live" hidden>Watching live</span>
                 </div>
                 <div class="cab-schermo">
-                    <section class="palco" id="palco" aria-label="Battle field">
-                        <div id="campo"></div>
-                        <div class="velo" id="messaggio-palco">
-                            <p id="testo-palco">Loading the battle engine…</p>
-                        </div>
-                        <div class="velo lobby" id="lobby" hidden></div>
-                        <div class="esito" id="vittoria" aria-live="polite" hidden>
-                            <div class="esito-card">
-                                <h2 id="testo-vittoria"></h2>
-                                <p id="sotto-vittoria" hidden></p>
-                                <div class="riga-azioni centrata" id="azioni-vittoria" hidden></div>
+                    <div class="palco-box">
+                        <section class="palco" id="palco" aria-label="Battle field">
+                            <div id="campo"></div>
+                            <div class="velo" id="messaggio-palco">
+                                <p id="testo-palco">Loading the battle engine…</p>
                             </div>
+                            <div class="velo lobby" id="lobby" hidden></div>
+                            <div class="esito" id="vittoria" aria-live="polite" hidden>
+                                <div class="esito-card">
+                                    <h2 id="testo-vittoria"></h2>
+                                    <p id="sotto-vittoria" hidden></p>
+                                    <div class="riga-azioni centrata" id="azioni-vittoria" hidden></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <!-- Meteo, terreni, Trick Room: la riga sotto lo schermo -->
+                    <div class="cab-campo" id="cab-campo" aria-label="Field effects"></div>
+                </div>
+
+                <section class="comandi" id="comandi" aria-label="Your commands">
+                    <div class="pannello" id="comandi-p1">
+                        <div class="pannello-testa p1">
+                            <h2 id="titolo-p1">Player 1</h2>
+                            <p class="stato-avversario" id="stato-p1" aria-live="polite"></p>
                         </div>
-                    </section>
-                </div>
-                                <div class="cab-campo" id="cab-campo" aria-label="Field effects"></div>
-                <div class="cab-plancia" aria-hidden="true">
-                    <div class="cab-comandi p1"><span class="cab-leva"></span><span class="cab-tasto"></span><span class="cab-tasto"></span></div>
-                    <div class="cab-gettone"><span>VS</span></div>
-                    <div class="cab-comandi p2"><span class="cab-leva"></span><span class="cab-tasto"></span><span class="cab-tasto"></span></div>
-                </div>
-            </div>
+                        <div class="corpo" id="corpo-p1"></div>
+                    </div>
+                    <div class="pannello" id="comandi-p2">
+                        <div class="pannello-testa p2">
+                            <h2 id="titolo-p2">Player 2</h2>
+                            <p class="stato-avversario" id="stato-p2" aria-live="polite"></p>
+                        </div>
+                        <div class="corpo" id="corpo-p2"></div>
+                    </div>
+                    <p class="striscia" id="striscia-spettatore" aria-live="polite" hidden></p>
+                </section>
+            </section>
 
             <aside class="lato p2" id="lato-p2" aria-label="Player 2"></aside>
-        </div>
 
-        <div class="sotto">
-            <section class="comandi" id="comandi" aria-label="Your commands">
-                <div class="pannello" id="comandi-p1">
-                    <div class="pannello-testa p1">
-                        <h2 id="titolo-p1">Player 1</h2>
-                        <p class="stato-avversario" id="stato-p1" aria-live="polite"></p>
-                    </div>
-                    <div class="corpo" id="corpo-p1"></div>
-                </div>
-                <div class="pannello" id="comandi-p2">
-                    <div class="pannello-testa p2">
-                        <h2 id="titolo-p2">Player 2</h2>
-                        <p class="stato-avversario" id="stato-p2" aria-live="polite"></p>
-                    </div>
-                    <div class="corpo" id="corpo-p2"></div>
-                </div>
-                <p class="striscia" id="striscia-spettatore" aria-live="polite" hidden></p>
-            </section>
-            <aside class="cronaca battle-log" id="log" aria-label="Battle log"></aside>
+            <div class="colonna-log">
+                <aside class="cronaca battle-log" id="log" aria-label="Battle log"></aside>
+            </div>
         </div>
     </main>
+    </div>
 
     <script>
         // Se dopo qualche secondo la pagina non è partita, quasi sempre è stata
@@ -149,6 +161,7 @@
             }
         }, 6000);
     </script>
+    <script src="battle-layout.js"></script>
     <script type="module" src="battle-ui.js"></script>
 </body>
 </html>

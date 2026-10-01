@@ -11,8 +11,9 @@
 //    (in campo, KO, HP). In open sheet ogni Pokémon ha il suo tooltip.
 // 4. efficaciaBersaglio(): l'etichetta da scrivere sui bottoni dei bersagli.
 // 5. Dentro lo schermo: l'avatar di ciascun player al posto di quello a caso
-//    di Showdown. Fuori dallo schermo (#cab-campo): meteo, terreni, Trick Room
-//    e condizioni di ciascun lato, con i turni rimasti.
+//    di Showdown. Fuori dallo schermo, con i turni rimasti: meteo, terreni e
+//    Trick Room nella riga sotto lo schermo (#cab-campo); le condizioni di
+//    ciascun lato (Stealth Rock, Tailwind…) nella colonna del suo player.
 //
 // Si appoggia ai file di Showdown già caricati dalla pagina
 // (BattleTooltips, Dex, BattleNatures). Non tocca il motore della battaglia.
@@ -674,7 +675,8 @@ function disegnaLati() {
                     <img src="${esc(sprite(x.specie))}" data-slug="${esc(slugSprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
                 </li>`).join('')}
-            </ol>`;
+            </ol>
+            <div class="lato-condizioni" id="condizioni-${lato}" aria-label="Side effects"></div>`;
         if (!box.dataset.ascolto) {
             box.dataset.ascolto = '1';
             // gli errori delle immagini non risalgono: li si prende in cattura
@@ -734,29 +736,35 @@ function turniRimasti(min, max) {
     return n ? `${n} turn${n === 1 ? '' : 's'}` : '';
 }
 function aggiornaCampo(battle) {
-    const box = document.getElementById('cab-campo');
-    if (!box) return;
-    const voci = [];
+    const globali = [];
+    const deiLati = { p1: [], p2: [] };
     if (battle.weather) {
         const nome = window.BattleTextParser?.weatherName?.(battle.weather) || battle.weather;
         const annullato = !!battle.abilityActive?.(['Air Lock', 'Cloud Nine']);
-        voci.push({ classe: 'meteo' + (annullato ? ' annullato' : ''), nome, turni: turniRimasti(battle.weatherMinTimeLeft, battle.weatherTimeLeft) });
+        globali.push({ classe: 'meteo' + (annullato ? ' annullato' : ''), nome, turni: turniRimasti(battle.weatherMinTimeLeft, battle.weatherTimeLeft) });
     }
     for (const [nome, min, max] of battle.pseudoWeather || []) {
-        voci.push({ classe: /terrain/i.test(nome) ? 'terreno' : 'campo', nome: battle.dex.moves.get(nome).name || nome, turni: turniRimasti(min, max) });
+        globali.push({ classe: /terrain/i.test(nome) ? 'terreno' : 'campo', nome: battle.dex.moves.get(nome).name || nome, turni: turniRimasti(min, max) });
     }
     for (const lato of ['p1', 'p2']) {
         for (const [nome, livelli, min, max] of Object.values(battle[lato]?.sideConditions || {})) {
             const strati = livelli > 1 ? ` ×${livelli}` : '';
-            voci.push({ classe: `lato-cond ${lato}`, nome: (battle.dex.moves.get(nome).name || nome) + strati, turni: turniRimasti(min, max), di: S.info[lato].nome || battle[lato].name });
+            deiLati[lato].push({ classe: 'lato-cond', nome: (battle.dex.moves.get(nome).name || nome) + strati, turni: turniRimasti(min, max) });
         }
     }
+    scriviVoci(document.getElementById('cab-campo'), globali, '<span class="campo-vuoto">No field effects</span>');
+    for (const lato of ['p1', 'p2']) scriviVoci(document.getElementById(`condizioni-${lato}`), deiLati[lato], '');
+}
+
+// Scrive le voci in un contenitore, solo se sono cambiate
+function scriviVoci(box, voci, vuoto) {
+    if (!box) return;
     const firma = JSON.stringify(voci);
     if (box.dataset.firma === firma) return;
     box.dataset.firma = firma;
     box.innerHTML = voci.length
-        ? voci.map(v => `<span class="campo-voce ${v.classe}"${v.di ? ` title="${esc(v.di)}'s side"` : ''}>${esc(v.nome)}${v.turni ? `<small>${esc(v.turni)}</small>` : ''}</span>`).join('')
-        : '<span class="campo-vuoto">No field effects</span>';
+        ? voci.map(v => `<span class="campo-voce ${v.classe}">${esc(v.nome)}${v.turni ? `<small>${esc(v.turni)}</small>` : ''}</span>`).join('')
+        : vuoto;
 }
 
 function aggiornaLati() {
