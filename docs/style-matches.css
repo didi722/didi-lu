@@ -2,7 +2,7 @@
     --yellow: #ffbd44;
     --bg-body-index: #dfdfdf;   
     --bg-gradient-end-index: #b2b2b2;
-    --cards: #31c489;
+    --cards: hwb(156 19% 23%);
     --borders: #025534;
 }
 
@@ -2074,7 +2074,7 @@ max-width: 100%;
 
 /* 3. La sidebar diventa fissa e si sposta a destra */
 .hub-right-column {
-    width: 275px; /* Un po' più larga per bilanciare */
+    width: 315px; /* Allargata per fare spazio all'avatar */
     flex-shrink: 0;
     margin-left: 50px;
     position: sticky;
@@ -2795,6 +2795,21 @@ transform: translate(-4px, -4px);
     50% {
         transform: translateY(-4px); /* Si sposta in alto di 4 pixel di colpo */
     }
+}
+
+/* Avatar nella classifica compatta (colonna destra): salta come nella classifica estesa */
+.rank-avatar-mini {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(2px 2px 0 #000);
+    animation: pokemon-bounce 0.8s steps(1) infinite;
+}
+.rank-avatar-mini.rank-avatar-vuoto { filter: none; animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .rank-avatar-mini, .stack-avatar-inline { animation: none; }
 }
 
 /* Spazio vuoto alternativo se il giocatore non ha l'avatar, per tenere i nomi dritti */

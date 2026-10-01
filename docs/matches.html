@@ -31,14 +31,7 @@
     </svg>
 </div>
 
-   <button type="button" id="sfide-control" class="music-btn sfide-btn" aria-label="Challenges" aria-haspopup="true" aria-expanded="false" hidden>
-       <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-       </svg>
-       <span id="sfide-badge" class="sfide-badge" hidden>0</span>
-   </button>
-   <div id="sfide-dropdown" class="sfide-dropdown" hidden></div>
+   <!-- Campanella e bottone battaglie: li crea sfide.js -->
 
 <div id="loading-overlay">
     <div class="pokeball-spinner"></div>
@@ -854,8 +847,12 @@ async function renderRankings(leaderboardData) {
     // Generiamo l'HTML con i colori dinamici recuperati da players
     const htmlRows = await Promise.all(sortedPlayers.map(async (player, index) => {
         const nameClean = player.name.toLowerCase().trim();
-        const snapColor = await db.ref(`players/${nameClean}/info/color`).once('value');
-        const color = snapColor.val() || "#31c489";
+        const snapInfo = await db.ref(`players/${nameClean}/info`).once('value');
+        const infoPlayer = snapInfo.val() || {};
+        const color = infoPlayer.color || "#31c489";
+        const avatarHtml = infoPlayer.avatar
+            ? `<img src="${infoPlayer.avatar}" class="rank-avatar-mini" alt="" loading="lazy">`
+            : `<div class="rank-avatar-mini rank-avatar-vuoto"></div>`;
 
         const sdWon = player.sdWon || 0; 
         const sdLost = player.sdLost || 0; 
@@ -886,8 +883,10 @@ async function renderRankings(leaderboardData) {
                 onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px #000';"
             >
                 <div style="font-weight: 900; font-size: 1.1rem; min-width: 25px;">#${index + 1}</div>
-                
-                <div style="flex-grow: 1;">
+
+                ${avatarHtml}
+
+                <div style="flex-grow: 1; min-width: 0;">
                     <div style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #1a1a1a; font-family: 'Josefin Sans';">
                         ${player.name}
                     </div>

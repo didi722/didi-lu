@@ -6,14 +6,51 @@
 .sfide-btn[hidden], .sfide-badge[hidden], .sfide-dropdown[hidden],
 .live-list[hidden], .sfida-card [hidden] { display: none !important; }
 
-/* ---------- Campanella ----------
-   Usa anche la classe .music-btn: stessa misura, bordo, ombra e hover
-   del bottone volume. Qui cambia solo la posizione e l'icona bianca in hover. */
-.sfide-btn { right: 110px; padding: 0; }
-.sfide-btn svg { display: block; width: 100%; height: 100%; }
-.sfide-btn svg path { transition: stroke 0.3s ease; }
-.sfide-btn:hover svg { stroke: #fff; }
+/* ---------- Bottoni fissi: campanella e battaglie ----------
+   Stesso aspetto del bottone volume (.music-btn), ma con stili propri:
+   così sono uguali su ogni pagina, qualunque CSS la pagina carichi. */
+.sfide-btn {
+    position: fixed;
+    top: 100px;
+    right: 110px;
+    z-index: 999;
+    box-sizing: border-box;
+    width: 47.5px;
+    height: 47.5px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+/* L'icona riempie il quadrato: la grandezza la decide il viewBox nello script */
+.sfide-btn svg { display: block; width: 100%; height: 100%; pointer-events: none; }
+.sfide-btn:hover {
+    background: #000;
+    color: #fff;
+    transform: scale(1.3) rotate(90deg);
+    box-shadow: 0 0 0;
+}
+.sfide-btn:active {
+    background: #fff;
+    color: #000;
+    transform: scale(1.1);
+    box-shadow: 0 0 0;
+}
 .sfide-btn:focus-visible { outline: 3px solid #ffbd44; outline-offset: 4px; }
+
+/* Battaglie: a sinistra della campanella (o al suo posto se non c'è) */
+.sfide-live-btn { right: 180px; }
+.sfide-live-btn.senza-campanella { right: 110px; }
+/* Una delle battaglie è tua: bottone giallo */
+.sfide-live-btn.mia { background: #ffbd44; }
+.sfide-live-btn.mia:hover { background: #000; }
 
 .sfide-badge {
     position: absolute;
@@ -22,6 +59,7 @@
     min-width: 22px;
     height: 22px;
     padding: 0 4px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,13 +70,9 @@
     font: 700 0.8rem 'Josefin Sans', sans-serif;
     transform: rotate(8deg);
 }
+.sfide-live-btn .sfide-badge { background: #09ca49; color: #000; }
 
-.sfide-btn {
-    width: 47.5px !important;
-    height: 47.5px !important;
-
-}
-/* Arriva una sfida: la campanella si scuote due volte */
+/* Arriva qualcosa di nuovo: il bottone si scuote due volte */
 .sfide-btn.squilla { animation: sfide-squilla 0.7s ease 2; }
 @keyframes sfide-squilla {
     0%, 100% { transform: rotate(0); }
@@ -88,8 +122,9 @@
     box-shadow: 4px 4px 0 #000;
 }
 .sfide-voce.ricevuta { background: #ffbd44; transform: rotate(-0.5deg); }
-.sfide-voce.da-giocare { background: #d4f7df; }
-.sfide-voce.rifiutata { background: #f1f1f1; }
+.sfide-voce.da-giocare { background: #d4f7df; color: #000 }
+.sfide-voce.accettata { background: #d4f7df; color: #000}
+.sfide-voce.rifiutata { background: #f1f1f1; color: #000}
 .sfide-voce-top {
     display: flex;
     justify-content: space-between;
@@ -105,7 +140,16 @@
     text-transform: uppercase;
     transform: rotate(-2deg);
 }
-.sfide-quando { font-size: 0.7rem; font-weight: 600; color: #333; }
+.sfide-quando { margin-left: auto; font-size: 0.7rem; font-weight: 600; color: #333; }
+.sfide-nuova {
+    padding: 1px 6px;
+    background: #ea1818;
+    color: #fff;
+    border: 2px solid #000;
+    font: 700 0.65rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    transform: rotate(3deg);
+}
 .sfide-voce p { margin: 0 0 4px; font-size: 0.9rem; }
 .sfide-voce p strong { font-family: 'Josefin Sans', sans-serif; text-transform: uppercase; }
 .sfide-dettagli { font-size: 0.75rem !important; font-weight: 600; color: #333; }

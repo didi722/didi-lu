@@ -662,7 +662,6 @@ function disegnaLati() {
                 <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
                     ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
                     <img src="${esc(sprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
-                    <span class="membro-nome">${esc(x.nome)}</span>
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
                 </li>`).join('')}
             </ol>`;

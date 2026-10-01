@@ -1,8 +1,16 @@
 // =====================================================
 // SFIDE — Poké-Tournament
 // Sfide lanciate dalla classifica, campanella delle notifiche,
-// accettazione (crea lo showdown e apre battle.html),
-// elenco degli showdown in corso con accesso da spettatore.
+// bottone delle battaglie in corso, accettazione (crea lo
+// showdown e apre battle.html), elenco "Live now" in matches.html.
+//
+// Funziona su qualsiasi pagina: crea da solo i bottoni e i menu,
+// si avvia da solo appena Firebase è inizializzato e segue TUTTE
+// le stagioni non chiuse (sbeta, s1, s2, …), così campanella e
+// spade non dipendono dalla stagione che la pagina sta mostrando.
+//
+// matches.html chiama Sfide.avvia({ stagione, infoStagione }) per
+// dire qual è la stagione della pagina (classifica, VS, Live now).
 //
 // Dati:
 //   sfide/{stagione}/{idSfida} = {
@@ -10,29 +18,33 @@
 //     stato: 'in_attesa' | 'accettata' | 'rifiutata' | 'annullata',
 //     creata, risposta, showdownId
 //   }
-//
-// Usa solo Firebase compat (auth + database). Non dipende dalle
-// variabili di matches.html: la pagina chiama Sfide.avvia(...).
+//   notifiche/{uid}/{stagione}/{idSfida-stato} = timestamp di lettura
 // =====================================================
 (function () {
     'use strict';
 
     const MATCH_PER_SHOWDOWN = 3;
+    const UN_GIORNO = 24 * 3600 * 1000;
+    const PAGINA = location.pathname.split('/').pop().toLowerCase();
+    const IN_BATTAGLIA = PAGINA === 'battle.html';
 
     const S = {
-        stagione: null,
-        ascolti: null,            // stagione su cui sono attivi gli ascoltatori
-        info: {},                 // seasons/{s}/info
-        iscritti: [],             // nomi come in seasons/{s}/iscritti
+        stagione: null,           // stagione della pagina (matches.html / battle.html), se c'è
+        stagioni: {},             // id → dati della stagione seguita (vedi nuovaStagione)
+        ascolti: {},              // id → [[ref, callback], …] per poterli staccare
+        uidAscolti: null,         // utente per cui sono attivi gli ascoltatori
+        scoperta: null,           // Promise: stagioni non chiuse trovate su Firebase
+        giro: 0,                  // ogni chiamata ad avvia() annulla quelle ancora in corso
+        avviato: false,
         utente: null,
-        io: '', ioId: '',
+        ioId: '',
         admin: false,
-        sfide: {},
-        showdowns: {},
-        firma: null,              // cambia quando si salva un match o nasce/sparisce uno showdown
-        vistePendenti: new Set(), // sfide mie viste "in attesa" in questa sessione
+        letteLocali: new Set(),   // "stagione/chiave" lette in questa pagina
+        nuoveAperte: new Set(),   // "stagione/chiave" da mostrare come "new" a menu aperto
+        vistePendenti: new Set(), // "stagione/idSfida" mie viste in attesa in questa sessione
         inPartenza: false,
-        ricevutePrima: 0
+        nonLettePrima: 0,
+        battagliePrima: 0
     };
 
     const db = () => firebase.database();
@@ -41,9 +53,18 @@
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+    const nuovaStagione = id => ({
+        id, info: {}, iscritti: [], io: '',
+        sfide: {}, showdowns: {}, lette: {},
+        pronti: { sfide: false, lette: false },
+        firma: null
+    });
+    const elencoStagioni = () => Object.values(S.stagioni);
+    const pagina = () => (S.stagione ? S.stagioni[S.stagione] : null);
+
 
     // -----------------------------------------------------
-    // 1. Showdown: stato e conteggi
+    // 1. Showdown e sfide di una stagione (D = dati della stagione)
     // -----------------------------------------------------
     const matchValido = m => m && m.p1score != null && m.p2score != null;
 
@@ -68,33 +89,33 @@
     }
 
     // [[id, showdown], ...] tra due giocatori (tutti gli stati), opzionalmente in un formato
-    function showdownTra(a, b, formato) {
-        return Object.entries(S.showdowns).filter(([, sd]) => {
+    function showdownTra(D, a, b, formato) {
+        return Object.entries(D.showdowns).filter(([, sd]) => {
             const i = sd?.info || {};
             return coppia(i.player1, i.player2, a, b) && (!formato || i.categoria === formato);
         });
     }
 
-    function sfideInAttesaTra(a, b) {
-        return Object.entries(S.sfide).filter(([, s]) => s?.stato === 'in_attesa' && coppia(s.daId, s.aId, a, b));
+    function sfideInAttesaTra(D, a, b) {
+        return Object.entries(D.sfide).filter(([, s]) => s?.stato === 'in_attesa' && coppia(s.daId, s.aId, a, b));
     }
 
     // Stesso campo usato da matches.html: 0 = nessun limite
-    const massimo = () => parseInt(S.info.showdowns_per_format, 10) || 0;
+    const massimo = D => parseInt(D.info.showdowns_per_format, 10) || 0;
 
-    function rimasti(a, b, formato) {
-        if (!massimo()) return Infinity;
-        const inAttesa = sfideInAttesaTra(a, b).filter(([, s]) => s.categoria === formato).length;
-        return Math.max(0, massimo() - showdownTra(a, b, formato).length - inAttesa);
+    function rimasti(D, a, b, formato) {
+        if (!massimo(D)) return Infinity;
+        const inAttesa = sfideInAttesaTra(D, a, b).filter(([, s]) => s.categoria === formato).length;
+        return Math.max(0, massimo(D) - showdownTra(D, a, b, formato).length - inAttesa);
     }
 
-    const stagioneChiusa = () => String(S.info.status || '').toUpperCase().trim() === 'CLOSED';
-    const formatiStagione = () => Object.values(S.info.selected_formats || {});
-    const bestOf = () => parseInt(S.info.best_of, 10) === 5 ? 5 : 3;
-    const nomeIscritto = nome => S.iscritti.find(p => idDi(p) === idDi(nome)) || nome;
+    const chiusa = info => String(info?.status || '').toUpperCase().trim() === 'CLOSED';
+    const formatiStagione = D => Object.values(D.info.selected_formats || {});
+    const bestOf = D => parseInt(D.info.best_of, 10) === 5 ? 5 : 3;
+    const nomeIscritto = (D, nome) => D.iscritti.find(p => idDi(p) === idDi(nome)) || nome;
 
-    function linkBattaglia(sdId, n) {
-        return `battle.html?stagione=${encodeURIComponent(S.stagione)}&showdown=${encodeURIComponent(sdId)}&match=${n}`;
+    function linkBattaglia(stagione, sdId, n) {
+        return `battle.html?stagione=${encodeURIComponent(stagione)}&showdown=${encodeURIComponent(sdId)}&match=${n}`;
     }
 
     function oggi() {
@@ -111,9 +132,142 @@
         return ore < 24 ? `${ore} h ago` : new Date(ts).toLocaleDateString();
     }
 
+    // Showdown non conclusi di una stagione, con punteggio e "tocca a me"
+    function battaglieInCorso(D) {
+        if (!D) return [];
+        return Object.entries(D.showdowns)
+            .filter(([, sd]) => sd?.info && !completato(sd))
+            .map(([id, sd]) => {
+                const i = sd.info;
+                let v1 = 0, v2 = 0;
+                Object.values(sd.matches || {}).filter(matchValido).forEach(m => {
+                    if (+m.p1score > +m.p2score) v1++;
+                    else if (+m.p2score > +m.p1score) v2++;
+                });
+                const sono1 = !!S.ioId && idDi(i.player1) === S.ioId;
+                const sono2 = !!S.ioId && idDi(i.player2) === S.ioId;
+                return {
+                    stagione: D.id, id, sd, i, v1, v2,
+                    n: prossimoMatch(sd),
+                    gioco: sono1 || sono2,
+                    avversario: sono1 ? i.player2 : i.player1,
+                    mioPunteggio: sono2 ? `${v2} - ${v1}` : `${v1} - ${v2}`,
+                    ordine: String(i.timestamp || ''),
+                    quando: Date.parse(i.lastUpdate || i.timestamp) || 0
+                };
+            });
+    }
+
+    const dalPiuRecente = (x, y) => y.ordine.localeCompare(x.ordine);
+
 
     // -----------------------------------------------------
-    // 2. Avvio (la pagina lo chiama; si può richiamare più volte)
+    // 2. Bottoni e menu (creati dallo script, uguali su ogni pagina)
+    // -----------------------------------------------------
+    const ICONA_CAMPANELLA = `
+        <svg viewBox="-5 -5 34 34" fill="none" stroke="currentColor" stroke-width="3.5"
+             stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>`;
+
+    const ICONA_SPADE = `
+        <svg viewBox="-5 -5 34 34" fill="none" stroke="currentColor" stroke-width="3.2"
+             stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+            <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+            <line x1="13" y1="19" x2="19" y2="13"></line>
+            <line x1="16" y1="16" x2="20" y2="20"></line>
+            <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
+            <line x1="5" y1="14" x2="9" y2="18"></line>
+            <line x1="7" y1="17" x2="4" y2="20"></line>
+        </svg>`;
+
+    // [bottone, badge, menu]
+    const CAMPANELLA = ['sfide-control', 'sfide-badge', 'sfide-dropdown'];
+    const BATTAGLIE = ['sfide-live-control', 'sfide-live-badge', 'sfide-live-dropdown'];
+
+    function creaBottone([idBtn, idBadge, idMenu], classe, etichetta, icona) {
+        if ($(idBtn)?.dataset.pronto) return;
+        // Se la pagina ha ancora il vecchio markup, lo sostituisco
+        $(idBtn)?.remove();
+        $(idMenu)?.remove();
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = idBtn;
+        btn.className = `sfide-btn ${classe}`;
+        btn.hidden = true;
+        btn.dataset.pronto = '1';
+        btn.setAttribute('aria-label', etichetta);
+        btn.setAttribute('aria-haspopup', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', idMenu);
+        btn.innerHTML = `${icona}<span id="${idBadge}" class="sfide-badge" hidden>0</span>`;
+
+        const menu = document.createElement('div');
+        menu.id = idMenu;
+        menu.className = 'sfide-dropdown';
+        menu.hidden = true;
+
+        document.body.append(btn, menu);
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (menu.hidden) apriMenu(idBtn);
+            else chiudiMenu();
+        });
+        menu.addEventListener('click', e => e.stopPropagation());
+    }
+
+    function creaInterfaccia() {
+        creaBottone(CAMPANELLA, 'sfide-campanella', 'Notifications', ICONA_CAMPANELLA);
+        creaBottone(BATTAGLIE, 'sfide-live-btn', 'Battles in progress', ICONA_SPADE);
+        if (document.documentElement.dataset.sfideMenu) return;
+        document.documentElement.dataset.sfideMenu = '1';
+        document.addEventListener('click', () => chiudiMenu());
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            const aperto = [CAMPANELLA, BATTAGLIE].find(([, , m]) => $(m) && !$(m).hidden);
+            if (aperto) { chiudiMenu(); $(aperto[0])?.focus(); }
+        });
+    }
+
+    function apriMenu(idBtn) {
+        chiudiMenu();
+        const [b, , m] = idBtn === CAMPANELLA[0] ? CAMPANELLA : BATTAGLIE;
+        $(m).hidden = false;
+        $(b).setAttribute('aria-expanded', 'true');
+        if (b === CAMPANELLA[0]) {
+            S.nuoveAperte.clear();
+            disegnaCampanella();   // a menu aperto segna come lette quelle visibili
+        }
+    }
+
+    function chiudiMenu() {
+        for (const [b, , m] of [CAMPANELLA, BATTAGLIE]) {
+            if (!$(m) || $(m).hidden) continue;
+            $(m).hidden = true;
+            $(b)?.setAttribute('aria-expanded', 'false');
+            if (b === CAMPANELLA[0]) {
+                S.nuoveAperte.clear();
+                disegnaCampanella();
+            }
+        }
+    }
+
+    function aggiornaVisibilita() {
+        const campanella = $(CAMPANELLA[0]);
+        if (campanella) {
+            // La campanella serve a chi è iscritto ad almeno una stagione seguita
+            campanella.hidden = !(S.utente && elencoStagioni().some(D => D.io));
+            if (campanella.hidden) $(CAMPANELLA[2]).hidden = true;
+        }
+        // Se la campanella non c'è, le spade prendono il suo posto
+        $(BATTAGLIE[0])?.classList.toggle('senza-campanella', !campanella || campanella.hidden);
+    }
+
+
+    // -----------------------------------------------------
+    // 3. Avvio (automatico, oppure chiamato dalla pagina)
     // -----------------------------------------------------
     function utenteCorrente() {
         return new Promise(ok => {
@@ -122,67 +276,174 @@
         });
     }
 
+    // Tutte le stagioni non chiuse: sbeta, s1, s2, … (come l'index) + settings/currentSeason
+    async function trovaStagioniAperte() {
+        const leggi = id => db().ref(`seasons/${id}/info`).once('value')
+            .then(s => [id, s.val()]).catch(() => [id, null]);
+
+        const [beta, corrente] = await Promise.all([
+            leggi('sbeta'),
+            db().ref('settings/currentSeason').once('value').then(s => s.val()).catch(() => null)
+        ]);
+        const trovate = [beta];
+        for (let da = 1; da < 500; da += 10) {
+            const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`s${da + i}`)));
+            trovate.push(...blocco);
+            if (!blocco[blocco.length - 1][1]) break;   // l'ultima del blocco non esiste: finito
+        }
+        if (corrente && !trovate.some(([id]) => id === corrente)) trovate.push(await leggi(corrente));
+        return trovate.filter(([, info]) => info && !chiusa(info));
+    }
+
+    function stagioneDallaPagina() {
+        const p = new URLSearchParams(location.search);
+        if (p.get('stagione')) return p.get('stagione');
+        if (PAGINA === 'matches.html' && p.get('id')) return p.get('id');
+        return null;
+    }
+
     async function avvia({ stagione, infoStagione } = {}) {
         if (!window.firebase || !firebase.apps.length) return;
-        S.utente = await utenteCorrente();
-        if (!stagione) stagione = (await db().ref('settings/currentSeason').once('value')).val();
-        if (!stagione) return;
-        S.stagione = stagione;
+        const giro = ++S.giro;
+        S.avviato = true;
+        creaInterfaccia();
 
-        const [snapInfo, snapIscritti, snapUtente] = await Promise.all([
-            infoStagione ? null : db().ref(`seasons/${stagione}/info`).once('value'),
-            db().ref(`seasons/${stagione}/iscritti`).once('value'),
-            S.utente ? db().ref(`users/${S.utente.uid}`).once('value') : null
+        stagione = stagione || S.stagione || stagioneDallaPagina();
+        const utente = await utenteCorrente();
+        if (!S.scoperta) S.scoperta = trovaStagioniAperte();
+
+        const [aperte, datiUtente] = await Promise.all([
+            S.scoperta,
+            utente ? db().ref(`users/${utente.uid}`).once('value').then(s => s.val() || {}).catch(() => ({})) : {}
         ]);
-        S.info = infoStagione || snapInfo?.val() || {};
-        S.iscritti = Object.keys(snapIscritti.val() || {});
-        const utente = snapUtente?.val() || {};
-        S.admin = utente.role === 'admin';
-        S.io = S.iscritti.find(p => idDi(p) === idDi(utente.name)) || '';
-        S.ioId = idDi(S.io);
+        if (giro !== S.giro) return;
 
-        preparaCampanella();
-
-        if (S.ascolti !== stagione) {
-            S.ascolti = stagione;
-
-            db().ref(`seasons/${stagione}/showdowns`).on('value', snap => {
-                S.showdowns = snap.val() || {};
-                const firma = Object.keys(S.showdowns).sort()
-                    .map(id => `${id}:${matchSalvati(S.showdowns[id])}`).join('|');
-                const cambiata = S.firma !== null && firma !== S.firma;
-                S.firma = firma;
-
-                disegnaLive();
-                controllaAccettate();
-                disegnaCampanella();
-                // Un match salvato o uno showdown concluso: ricarico griglia e classifica
-                if (cambiata && typeof window.inizializzaPaginaArchivio === 'function') {
-                    window.inizializzaPaginaArchivio();
-                }
-            });
-
-            if (S.utente) {
-                db().ref(`sfide/${stagione}`).on('value', snap => {
-                    S.sfide = snap.val() || {};
-                    controllaAccettate();
-                    disegnaCampanella();
-                }, err => console.warn('Sfide non leggibili: controlla le regole del database', err));
-            }
+        // Stagioni da seguire: quelle non chiuse + quella della pagina (anche se chiusa)
+        const desiderate = new Map(aperte);
+        if (stagione) {
+            const info = infoStagione || desiderate.get(stagione)
+                || (await db().ref(`seasons/${stagione}/info`).once('value')).val() || {};
+            desiderate.set(stagione, info);
         }
+        const ids = [...desiderate.keys()];
+        const iscritti = await Promise.all(ids.map(id => db().ref(`seasons/${id}/iscritti`).once('value')
+            .then(s => Object.keys(s.val() || {})).catch(() => [])));
+        if (giro !== S.giro) return;   // nel frattempo è partita un'altra chiamata
 
+        // ---- da qui in poi niente await: lo stato cambia tutto insieme ----
+        const uid = utente?.uid || '';
+        if (S.uidAscolti !== uid) {
+            Object.keys(S.stagioni).forEach(stacca);
+            S.uidAscolti = uid;
+        }
+        S.utente = utente;
+        S.admin = datiUtente.role === 'admin';
+        S.ioId = idDi(datiUtente.name);
+        S.stagione = stagione || null;
+
+        Object.keys(S.stagioni).filter(id => !desiderate.has(id)).forEach(stacca);
+        ids.forEach((id, k) => {
+            const nuova = !S.stagioni[id];
+            const D = S.stagioni[id] || (S.stagioni[id] = nuovaStagione(id));
+            D.info = desiderate.get(id) || {};
+            D.iscritti = iscritti[k];
+            D.io = S.ioId ? (D.iscritti.find(p => idDi(p) === S.ioId) || '') : '';
+            if (nuova) ascolta(D);
+        });
+
+        aggiornaVisibilita();
+        ridisegna();
+    }
+
+    function stacca(id) {
+        (S.ascolti[id] || []).forEach(([ref, cb]) => ref.off('value', cb));
+        delete S.ascolti[id];
+        delete S.stagioni[id];
+    }
+
+    function ascolta(D) {
+        const refs = S.ascolti[D.id] = [];
+        const attiva = () => S.stagioni[D.id] === D;
+        const segui = (percorso, cb, errore) => {
+            const ref = db().ref(percorso);
+            const fn = snap => { if (attiva()) cb(snap); };
+            ref.on('value', fn, errore);
+            refs.push([ref, fn]);
+        };
+
+        segui(`seasons/${D.id}/showdowns`, snap => {
+            D.showdowns = snap.val() || {};
+            const firma = Object.keys(D.showdowns).sort()
+                .map(id => `${id}:${matchSalvati(D.showdowns[id])}`).join('|');
+            const cambiata = D.firma !== null && firma !== D.firma;
+            D.firma = firma;
+
+            controllaAccettate();
+            ridisegna();
+            // Un match salvato o uno showdown concluso: matches.html ricarica griglia e classifica
+            if (cambiata && D.id === S.stagione && typeof window.inizializzaPaginaArchivio === 'function') {
+                window.inizializzaPaginaArchivio();
+            }
+        });
+
+        if (!S.utente) return;
+
+        segui(`sfide/${D.id}`, snap => {
+            D.sfide = snap.val() || {};
+            D.pronti.sfide = true;
+            controllaAccettate();
+            disegnaCampanella();
+        }, err => {
+            console.warn(`Sfide di ${D.id} non leggibili: controlla le regole del database`, err);
+            D.pronti.sfide = true;
+        });
+
+        // Notifiche lette: condivise in tempo reale tra pagine, schede e dispositivi
+        segui(`notifiche/${S.utente.uid}/${D.id}`, snap => {
+            D.lette = snap.val() || {};
+            D.pronti.lette = true;
+            disegnaCampanella();
+        }, err => {
+            console.warn('Notifiche lette non leggibili: controlla le regole del database', err);
+            D.pronti.lette = true;
+            if (attiva()) disegnaCampanella();
+        });
+    }
+
+    function ridisegna() {
         disegnaLive();
+        disegnaBattaglie();
         disegnaCampanella();
     }
 
+    // Su ogni pagina che carica sfide.js: parte da sola quando Firebase è pronto,
+    // e riparte se l'utente fa login o logout senza ricaricare la pagina
+    function avvioAutomatico() {
+        let tentativi = 0;
+        const prova = () => {
+            if (!(window.firebase && firebase.apps.length)) {
+                if (++tentativi < 50) setTimeout(prova, 200);
+                return;
+            }
+            if (!S.avviato) avvia();
+            firebase.auth().onAuthStateChanged(u => {
+                if (S.uidAscolti !== null && (u?.uid || '') !== S.uidAscolti) avvia();
+            });
+        };
+        prova();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvioAutomatico);
+    else avvioAutomatico();
+
 
     // -----------------------------------------------------
-    // 3. Bottone nella classifica
+    // 4. Bottone nella classifica (stagione della pagina)
     // -----------------------------------------------------
     function bottoneRanking(nome) {
-        if (!S.utente || !S.io || stagioneChiusa()) return '';
+        const D = pagina();
+        if (!D || !S.utente || !D.io || chiusa(D.info)) return '';
         if (idDi(nome) === S.ioId) return '';
-        if (!S.iscritti.some(p => idDi(p) === idDi(nome))) return '';
+        if (!D.iscritti.some(p => idDi(p) === idDi(nome))) return '';
         return `<button type="button" class="sfida-rank-btn" data-nome="${esc(nome)}"
                     title="Challenge ${esc(nome)}" aria-label="Challenge ${esc(nome)}"
                     onclick="event.stopPropagation(); Sfide.apriSfida(this.dataset.nome)">VS</button>`;
@@ -190,7 +451,7 @@
 
 
     // -----------------------------------------------------
-    // 4. Finestra per lanciare la sfida
+    // 5. Finestra per lanciare la sfida
     // -----------------------------------------------------
     function chiudiModale() {
         $('sfida-overlay')?.remove();
@@ -201,13 +462,15 @@
     }
 
     function apriSfida(nome) {
-        nome = nomeIscritto(nome);
+        const D = pagina();
+        if (!D) return;
+        nome = nomeIscritto(D, nome);
         if (!S.utente) {
             if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
             return;
         }
-        if (!S.io) return alert('You are not registered in this season.');
-        if (idDi(nome) === S.ioId || stagioneChiusa()) return;
+        if (!D.io) return alert('You are not registered in this season.');
+        if (idDi(nome) === S.ioId || chiusa(D.info)) return;
 
         chiudiModale();
         const overlay = document.createElement('div');
@@ -216,8 +479,8 @@
         overlay.innerHTML = `
             <div class="sfida-card" role="dialog" aria-modal="true" aria-labelledby="sfida-titolo">
                 <span class="sfida-sticker">Challenge</span>
-                <h2 id="sfida-titolo">${esc(S.io)} <small>vs</small> ${esc(nome)}</h2>
-                <p class="sfida-sotto">${MATCH_PER_SHOWDOWN} matches, best of ${bestOf()} each. Pick the format.</p>
+                <h2 id="sfida-titolo">${esc(D.io)} <small>vs</small> ${esc(nome)}</h2>
+                <p class="sfida-sotto">${MATCH_PER_SHOWDOWN} matches, best of ${bestOf(D)} each. Pick the format.</p>
                 <div class="sfida-corpo"></div>
                 <div class="sfida-azioni">
                     <button type="button" class="btn-save" id="sfida-invia" disabled>Send challenge</button>
@@ -235,18 +498,18 @@
             { className: 'sfida-messaggio', textContent: testo }));
 
         // Uno showdown già in corso tra voi due: si riprende quello
-        const inCorso = showdownTra(S.io, nome).find(([, sd]) => !completato(sd));
+        const inCorso = showdownTra(D, D.io, nome).find(([, sd]) => !completato(sd));
         if (inCorso) {
             const [sdId, sd] = inCorso;
             messaggio(`You already have a showdown in progress against ${nome}.`);
             invia.textContent = 'Resume showdown';
             invia.disabled = false;
-            invia.addEventListener('click', () => { location.href = linkBattaglia(sdId, prossimoMatch(sd)); });
+            invia.addEventListener('click', () => { location.href = linkBattaglia(D.id, sdId, prossimoMatch(sd)); });
             return;
         }
 
         // Una sola sfida in attesa per coppia
-        const pendente = sfideInAttesaTra(S.io, nome)[0];
+        const pendente = sfideInAttesaTra(D, D.io, nome)[0];
         if (pendente) {
             const s = pendente[1];
             messaggio(s.daId === S.ioId
@@ -257,7 +520,7 @@
         }
 
         // Solo i formati con showdown ancora da giocare
-        const formati = formatiStagione().map(f => [f, rimasti(S.io, nome, f)]).filter(([, r]) => r > 0);
+        const formati = formatiStagione(D).map(f => [f, rimasti(D, D.io, nome, f)]).filter(([, r]) => r > 0);
         if (!formati.length) {
             messaggio(`You have played every showdown against ${nome} this season.`);
             invia.hidden = true;
@@ -285,26 +548,26 @@
         }
         corpo.append(lista);
         lista.querySelector('button')?.focus();
-        invia.addEventListener('click', () => { if (scelto) lancia(nome, scelto, invia); });
+        invia.addEventListener('click', () => { if (scelto) lancia(D, nome, scelto, invia); });
     }
 
-    async function lancia(nome, formato, bottone) {
+    async function lancia(D, nome, formato, bottone) {
         bottone.disabled = true;
         // Ricontrollo con i dati più freschi
-        if (sfideInAttesaTra(S.io, nome).length) {
+        if (sfideInAttesaTra(D, D.io, nome).length) {
             chiudiModale();
             return mostraAvviso(`There is already a pending challenge with ${nome}`);
         }
-        if (rimasti(S.io, nome, formato) <= 0) {
+        if (rimasti(D, D.io, nome, formato) <= 0) {
             chiudiModale();
             return mostraAvviso(`No ${formato} showdowns left against ${nome}`);
         }
         try {
-            await db().ref(`sfide/${S.stagione}`).push({
-                da: S.io, daId: S.ioId,
+            await db().ref(`sfide/${D.id}`).push({
+                da: D.io, daId: S.ioId,
                 a: nome, aId: idDi(nome),
                 categoria: formato,
-                bestOf: bestOf(),
+                bestOf: bestOf(D),
                 stato: 'in_attesa',
                 creata: firebase.database.ServerValue.TIMESTAMP
             });
@@ -318,12 +581,12 @@
 
 
     // -----------------------------------------------------
-    // 5. Risposte: accetta, rifiuta, annulla
+    // 6. Risposte: accetta, rifiuta, annulla
     // -----------------------------------------------------
     // Cambia stato solo se la sfida è ancora in attesa
-    async function cambiaStato(id, nuovo) {
+    async function cambiaStato(D, id, nuovo) {
         try {
-            await db().ref(`sfide/${S.stagione}/${id}`).transaction(cur => {
+            await db().ref(`sfide/${D.id}/${id}`).transaction(cur => {
                 if (cur === null) return null;          // cache vuota: Firebase riprova col valore vero
                 if (cur.stato !== 'in_attesa') return;  // già gestita: annullo
                 return { ...cur, stato: nuovo, risposta: Date.now() };
@@ -333,17 +596,17 @@
         }
     }
 
-    async function accetta(id) {
-        const sf = S.sfide[id];
+    async function accetta(D, id) {
+        const sf = D.sfide[id];
         if (!sf || sf.aId !== S.ioId || sf.stato !== 'in_attesa') return;
 
-        if (massimo() && showdownTra(sf.daId, sf.aId, sf.categoria).length >= massimo()) {
+        if (massimo(D) && showdownTra(D, sf.daId, sf.aId, sf.categoria).length >= massimo(D)) {
             alert(`You have already played every ${sf.categoria} showdown against ${sf.da}.`);
-            return cambiaStato(id, 'annullata');
+            return cambiaStato(D, id, 'annullata');
         }
 
-        const rif = db().ref(`sfide/${S.stagione}/${id}`);
-        const sdId = db().ref(`seasons/${S.stagione}/showdowns`).push().key;
+        const rif = db().ref(`sfide/${D.id}/${id}`);
+        const sdId = db().ref(`seasons/${D.id}/showdowns`).push().key;
 
         // 1. Blocco la sfida: se nel frattempo è stata annullata, non succede nulla
         let esito;
@@ -363,7 +626,7 @@
         // 2. Creo lo showdown (stessa struttura di inizializzaShowdown in matches.html)
         const adesso = new Date().toISOString();
         try {
-            await db().ref(`seasons/${S.stagione}/showdowns/${sdId}`).set({
+            await db().ref(`seasons/${D.id}/showdowns/${sdId}`).set({
                 info: {
                     player1: sf.da, player1Id: sf.daId,
                     player2: sf.a, player2Id: sf.aId,
@@ -381,50 +644,80 @@
         }
 
         // 3. Si parte dal match 1
-        location.href = linkBattaglia(sdId, 1);
+        location.href = linkBattaglia(D.id, sdId, 1);
     }
 
     // Lo sfidante viene portato in battaglia quando l'altro accetta
+    // (ma non se sta già giocando un'altra battaglia)
     function controllaAccettate() {
         if (!S.ioId || S.inPartenza) return;
-        for (const [id, s] of Object.entries(S.sfide)) {
-            if (!s || s.daId !== S.ioId) continue;
-            if (s.stato === 'in_attesa') { S.vistePendenti.add(id); continue; }
-            if (s.stato === 'accettata' && s.showdownId && S.vistePendenti.has(id) && S.showdowns[s.showdownId]) {
-                S.inPartenza = true;
-                mostraAvviso(`${s.a} accepted. Opening the battle…`);
-                setTimeout(() => { location.href = linkBattaglia(s.showdownId, 1); }, 1500);
-                return;
+        for (const D of elencoStagioni()) {
+            for (const [id, s] of Object.entries(D.sfide)) {
+                if (!s || s.daId !== S.ioId) continue;
+                const chiave = `${D.id}/${id}`;
+                if (s.stato === 'in_attesa') { S.vistePendenti.add(chiave); continue; }
+                if (s.stato === 'accettata' && s.showdownId && S.vistePendenti.has(chiave) && D.showdowns[s.showdownId]) {
+                    S.vistePendenti.delete(chiave);
+                    if (IN_BATTAGLIA) {
+                        mostraAvviso(`${s.a} accepted your challenge`);
+                        continue;
+                    }
+                    S.inPartenza = true;
+                    segnaLette([{ D, chiave: chiaveNotifica(id, s) }]);
+                    mostraAvviso(`${s.a} accepted. Opening the battle…`);
+                    setTimeout(() => { location.href = linkBattaglia(D.id, s.showdownId, 1); }, 1500);
+                    return;
+                }
             }
         }
     }
 
 
     // -----------------------------------------------------
-    // 6. Campanella e menu delle notifiche
+    // 7. Notifiche: cosa sono e quali sono già lette
     // -----------------------------------------------------
-    function preparaCampanella() {
-        const btn = $('sfide-control'), box = $('sfide-dropdown');
-        if (!btn || !box) return;
-        btn.hidden = !(S.utente && S.io);
-        if (!S.io) box.hidden = true;
-        if (btn.dataset.pronto) return;
-        btn.dataset.pronto = '1';
+    const chiaveNotifica = (id, s) => `${id}-${s.stato}`;
+    const letta = (D, chiave) => !!D.lette[chiave] || S.letteLocali.has(`${D.id}/${chiave}`);
 
-        btn.addEventListener('click', e => {
-            e.stopPropagation();
-            box.hidden = !box.hidden;
-            btn.setAttribute('aria-expanded', String(!box.hidden));
-        });
-        box.addEventListener('click', e => e.stopPropagation());
-        document.addEventListener('click', () => {
-            if (!box.hidden) { box.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
-        });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && !box.hidden) { box.hidden = true; btn.focus(); }
-        });
+    // Sfide ricevute in attesa + risposte alle mie sfide nelle ultime 24 ore, in tutte le stagioni
+    function notifiche() {
+        if (!S.ioId) return [];
+        const ieri = Date.now() - UN_GIORNO;
+        const elenco = [];
+        for (const D of elencoStagioni()) {
+            for (const [id, s] of Object.entries(D.sfide)) {
+                if (!s) continue;
+                if (s.stato === 'in_attesa' && s.aId === S.ioId) {
+                    elenco.push({ D, id, s, tipo: 'ricevuta', quando: s.creata });
+                } else if (s.daId === S.ioId && ['accettata', 'rifiutata'].includes(s.stato) && (s.risposta || 0) > ieri) {
+                    elenco.push({ D, id, s, tipo: s.stato, quando: s.risposta });
+                }
+            }
+        }
+        return elenco
+            .map(n => ({ ...n, chiave: chiaveNotifica(n.id, n.s) }))
+            .sort((x, y) => (y.quando || 0) - (x.quando || 0));
     }
 
+    // voci: [{ D, chiave }]
+    function segnaLette(voci) {
+        if (!S.utente) return;
+        const perStagione = {};
+        for (const { D, chiave } of voci) {
+            if (letta(D, chiave)) continue;
+            S.letteLocali.add(`${D.id}/${chiave}`);
+            (perStagione[D.id] ||= {})[chiave] = firebase.database.ServerValue.TIMESTAMP;
+        }
+        for (const [stagione, aggiornamento] of Object.entries(perStagione)) {
+            db().ref(`notifiche/${S.utente.uid}/${stagione}`).update(aggiornamento)
+                .catch(e => console.warn('Notifiche lette non salvate: controlla le regole del database', e));
+        }
+    }
+
+
+    // -----------------------------------------------------
+    // 8. Disegno dei menu
+    // -----------------------------------------------------
     function el(tag, classe, html) {
         const e = document.createElement(tag);
         if (classe) e.className = classe;
@@ -450,10 +743,12 @@
         return a;
     }
 
-    function voce({ classe = '', tag, quando, testo, dettagli, azioni = [] }) {
+    function voce({ classe = '', tag, quando, nuova = false, testo, dettagli, azioni = [] }) {
         const v = el('div', `sfide-voce ${classe}`);
         const top = el('div', 'sfide-voce-top');
-        top.append(el('span', 'sfide-tag', esc(tag)), el('span', 'sfide-quando', esc(quandoFa(quando))));
+        top.append(el('span', 'sfide-tag', esc(tag)));
+        if (nuova) top.append(el('span', 'sfide-nuova', 'New'));
+        top.append(el('span', 'sfide-quando', esc(quandoFa(quando))));
         v.append(top, el('p', '', testo));
         if (dettagli) v.append(el('p', 'sfide-dettagli', esc(dettagli)));
         if (azioni.length) {
@@ -464,92 +759,139 @@
         return v;
     }
 
+    function menuConSezioni(titolo, sezioni, vuoto) {
+        const parti = [el('h3', '', esc(titolo))];
+        for (const [nome, voci] of sezioni) {
+            if (voci.length) parti.push(el('div', 'sfide-sezione', esc(nome)), ...voci);
+        }
+        if (parti.length === 1) parti.push(el('p', 'sfide-vuoto', vuoto));
+        return parti;
+    }
+
+    function scuoti(btn) {
+        btn.classList.remove('squilla');
+        void btn.offsetWidth;
+        btn.classList.add('squilla');
+    }
+
+    // ---- Campanella: solo notifiche ----
     function disegnaCampanella() {
-        const btn = $('sfide-control'), badge = $('sfide-badge'), box = $('sfide-dropdown');
-        if (!btn || !badge || !box || !S.io) return;
+        const [btn, badge, box] = CAMPANELLA.map($);
+        if (!btn || !badge || !box) return;
+        aggiornaVisibilita();
+        if (btn.hidden) return;
 
-        const tutte = Object.entries(S.sfide).filter(([, s]) => s)
-            .sort((x, y) => (y[1].creata || 0) - (x[1].creata || 0));
-        const mia = s => s.daId === S.ioId || s.aId === S.ioId;
-        const avversario = s => (s.daId === S.ioId ? s.a : s.da);
-        const ieri = Date.now() - 24 * 3600 * 1000;
+        const tutte = notifiche();
+        const caricata = D => D.pronti.sfide && D.pronti.lette;
+        let nonLette = tutte.filter(n => caricata(n.D) && !letta(n.D, n.chiave));
 
-        const daGiocare = tutte.filter(([, s]) => s.stato === 'accettata' && mia(s)
-            && S.showdowns[s.showdownId] && !completato(S.showdowns[s.showdownId]));
-        const ricevute = tutte.filter(([, s]) => s.stato === 'in_attesa' && s.aId === S.ioId);
-        const inviate = tutte.filter(([, s]) => s.stato === 'in_attesa' && s.daId === S.ioId);
-        const rifiutate = tutte.filter(([, s]) => s.stato === 'rifiutata' && s.daId === S.ioId && (s.risposta || 0) > ieri);
+        // Menu aperto: quello che si vede è letto (anche nelle altre pagine)
+        if (!box.hidden && nonLette.length) {
+            nonLette.forEach(n => S.nuoveAperte.add(`${n.D.id}/${n.chiave}`));
+            segnaLette(nonLette);
+            nonLette = [];
+        }
 
-        // Contatore, titolo della scheda e scossa quando arriva una sfida nuova
-        const n = ricevute.length;
+        // Contatore, titolo della scheda e scossa quando arriva qualcosa di nuovo
+        const n = nonLette.length;
         badge.textContent = n;
         badge.hidden = n === 0;
-        btn.setAttribute('aria-label', n ? `Challenges: ${n} waiting for you` : 'Challenges');
-        if (n > S.ricevutePrima) {
-            btn.classList.remove('squilla');
-            void btn.offsetWidth;
-            btn.classList.add('squilla');
-        }
-        S.ricevutePrima = n;
+        btn.setAttribute('aria-label', n ? `Notifications: ${n} unread` : 'Notifications');
+        if (n > S.nonLettePrima) scuoti(btn);
+        S.nonLettePrima = n;
         const titoloBase = document.title.replace(/^\(\d+\)\s*/, '');
         document.title = n ? `(${n}) ${titoloBase}` : titoloBase;
 
+        const nuova = x => S.nuoveAperte.has(`${x.D.id}/${x.chiave}`) || !letta(x.D, x.chiave);
         const regole = `${MATCH_PER_SHOWDOWN} matches, best of `;
-        const parti = [el('h3', '', 'Challenges')];
-        const sezione = (titolo, voci) => {
-            if (voci.length) parti.push(el('div', 'sfide-sezione', esc(titolo)), ...voci);
-        };
 
-        sezione('Ready to play', daGiocare.map(([, s]) => {
-            const sd = S.showdowns[s.showdownId];
-            const n = prossimoMatch(sd);
-            return voce({
-                classe: 'da-giocare', tag: s.categoria, quando: s.risposta,
-                testo: `Showdown against <strong>${esc(avversario(s))}</strong> is on`,
-                dettagli: `Next up: match ${n} of ${MATCH_PER_SHOWDOWN}`,
-                azioni: [collegamento('Play', 'si', linkBattaglia(s.showdownId, n))]
-            });
+        const ricevute = tutte.filter(x => x.tipo === 'ricevuta').map(x => voce({
+            classe: 'ricevuta', tag: x.s.categoria, quando: x.quando, nuova: nuova(x),
+            testo: `<strong>${esc(x.s.da)}</strong> challenges you`,
+            dettagli: `${regole}${x.s.bestOf || bestOf(x.D)} each`,
+            azioni: [
+                azione('Accept', 'si', () => accetta(x.D, x.id)),
+                azione('Decline', 'no', () => cambiaStato(x.D, x.id, 'rifiutata'))
+            ]
         }));
 
-        sezione('Waiting for you', ricevute.map(([id, s]) => voce({
-            classe: 'ricevuta', tag: s.categoria, quando: s.creata,
-            testo: `<strong>${esc(s.da)}</strong> challenges you`,
-            dettagli: `${regole}${s.bestOf || bestOf()} each`,
-            azioni: [
-                azione('Accept', 'si', () => accetta(id)),
-                azione('Decline', 'no', () => cambiaStato(id, 'rifiutata'))
-            ]
-        })));
+        // Solo l'avviso: la battaglia in corso si apre dal bottone con le spade
+        const risposte = tutte.filter(x => x.tipo !== 'ricevuta').map(x => voce({
+            classe: x.tipo === 'rifiutata' ? 'rifiutata' : 'accettata',
+            tag: x.s.categoria, quando: x.quando, nuova: nuova(x),
+            testo: `<strong>${esc(x.s.a)}</strong> ${x.tipo === 'rifiutata' ? 'declined' : 'accepted'} your challenge`
+        }));
 
-        sezione('Sent', inviate.map(([id, s]) => voce({
-            tag: s.categoria, quando: s.creata,
-            testo: `Waiting for <strong>${esc(s.a)}</strong> to answer`,
-            azioni: [azione('Withdraw', 'no', () => cambiaStato(id, 'annullata'))]
-        })));
+        const inviate = elencoStagioni()
+            .flatMap(D => Object.entries(D.sfide)
+                .filter(([, s]) => s?.stato === 'in_attesa' && s.daId === S.ioId)
+                .map(([id, s]) => ({ D, id, s })))
+            .sort((x, y) => (y.s.creata || 0) - (x.s.creata || 0))
+            .map(({ D, id, s }) => voce({
+                tag: s.categoria, quando: s.creata,
+                testo: `Waiting for <strong>${esc(s.a)}</strong> to answer`,
+                azioni: [azione('Withdraw', 'no', () => cambiaStato(D, id, 'annullata'))]
+            }));
 
-        sezione('Declined', rifiutate.map(([, s]) => voce({
-            classe: 'rifiutata', tag: s.categoria, quando: s.risposta,
-            testo: `<strong>${esc(s.a)}</strong> declined your challenge`
-        })));
+        box.replaceChildren(...menuConSezioni('Notifications', [
+            ['Waiting for you', ricevute],
+            ['Replies', risposte],
+            ['Sent', inviate]
+        ], 'No notifications. Press VS next to a player in the rankings to send a challenge.'));
+    }
 
-        if (parti.length === 1) {
-            parti.push(el('p', 'sfide-vuoto', 'No challenges right now. Press VS next to a player in the rankings to send one.'));
+    // ---- Spade: battaglie in corso in tutte le stagioni (compare solo se ce ne sono) ----
+    function disegnaBattaglie() {
+        const [btn, badge, box] = BATTAGLIE.map($);
+        if (!btn || !badge || !box) return;
+
+        const live = S.utente ? elencoStagioni().flatMap(battaglieInCorso).sort(dalPiuRecente) : [];
+        btn.hidden = live.length === 0;
+        aggiornaVisibilita();
+        if (!live.length) {
+            box.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+            S.battagliePrima = 0;
+            return;
         }
-        box.replaceChildren(...parti);
+
+        const mie = live.filter(b => b.gioco);
+        const altre = live.filter(b => !b.gioco);
+        badge.textContent = live.length;
+        badge.hidden = false;
+        btn.classList.toggle('mia', mie.length > 0);
+        btn.setAttribute('aria-label', mie.length
+            ? `Battles in progress: ${live.length}, ${mie.length} of yours`
+            : `Battles in progress: ${live.length}`);
+        if (S.battagliePrima > 0 && live.length > S.battagliePrima) scuoti(btn);
+        S.battagliePrima = live.length;
+
+        const dettagli = b => `Match ${b.n} of ${MATCH_PER_SHOWDOWN}`;
+        box.replaceChildren(...menuConSezioni('Battles', [
+            ['Your battles', mie.map(b => voce({
+                classe: 'da-giocare', tag: b.i.categoria, quando: b.quando,
+                testo: `Against <strong>${esc(b.avversario)}</strong> &middot; ${esc(b.mioPunteggio)}`,
+                dettagli: dettagli(b),
+                azioni: [collegamento('Play', 'si', linkBattaglia(b.stagione, b.id, b.n))]
+            }))],
+            ['Live now', altre.map(b => voce({
+                tag: b.i.categoria, quando: b.quando,
+                testo: `<strong>${esc(b.i.player1)}</strong> ${b.v1} - ${b.v2} <strong>${esc(b.i.player2)}</strong>`,
+                dettagli: dettagli(b),
+                azioni: [collegamento('Watch', '', linkBattaglia(b.stagione, b.id, b.n))]
+            }))]
+        ], 'No battles right now.'));
     }
 
 
     // -----------------------------------------------------
-    // 7. Showdown in corso (giocatori: riprendi, altri: guarda)
+    // 9. Showdown in corso in matches.html (solo la stagione della pagina)
     // -----------------------------------------------------
     function disegnaLive() {
         const box = $('liveList');
         if (!box) return;
 
-        const live = Object.entries(S.showdowns)
-            .filter(([, sd]) => sd?.info && !completato(sd))
-            .sort((x, y) => String(y[1].info.timestamp || '').localeCompare(String(x[1].info.timestamp || '')));
-
+        const live = battaglieInCorso(pagina()).sort(dalPiuRecente);
         if (!live.length) {
             box.hidden = true;
             box.replaceChildren();
@@ -560,29 +902,20 @@
         const testa = el('div', 'live-testa', '<span class="live-punto" aria-hidden="true"></span>Live now');
         const griglia = el('div', 'live-griglia');
 
-        for (const [id, sd] of live) {
-            const i = sd.info;
-            const n = prossimoMatch(sd);
-            let v1 = 0, v2 = 0;
-            Object.values(sd.matches || {}).filter(matchValido).forEach(m => {
-                if (+m.p1score > +m.p2score) v1++;
-                else if (+m.p2score > +m.p1score) v2++;
-            });
-            const gioco = !!S.ioId && (idDi(i.player1) === S.ioId || idDi(i.player2) === S.ioId);
-
+        for (const b of live) {
             const card = el('div', 'live-card', `
                 <div class="live-card-testa">
-                    <span class="sd-category-tag">${esc(i.categoria)}</span>
-                    <span class="live-match">Match ${n}/${MATCH_PER_SHOWDOWN}</span>
+                    <span class="sd-category-tag">${esc(b.i.categoria)}</span>
+                    <span class="live-match">Match ${b.n}/${MATCH_PER_SHOWDOWN}</span>
                 </div>
                 <div class="live-nomi">
-                    <span>${esc(i.player1)}</span>
-                    <b>${v1} - ${v2}</b>
-                    <span>${esc(i.player2)}</span>
+                    <span>${esc(b.i.player1)}</span>
+                    <b>${b.v1} - ${b.v2}</b>
+                    <span>${esc(b.i.player2)}</span>
                 </div>`);
 
             const azioni = el('div', 'live-azioni');
-            const vai = el('a', `live-btn${gioco ? ' gioca' : ''}`);
+            const vai = el('a', `live-btn${b.gioco ? ' gioca' : ''}`);
             if (!S.utente) {
                 vai.textContent = 'Log in to watch';
                 vai.href = '#';
@@ -591,12 +924,10 @@
                     if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
                 });
             } else {
-                vai.textContent = gioco ? 'Play' : 'Watch live';
-                vai.href = linkBattaglia(id, n);
+                vai.textContent = b.gioco ? 'Play' : 'Watch live';
+                vai.href = linkBattaglia(b.stagione, b.id, b.n);
             }
             azioni.append(vai);
-
-
             card.append(azioni);
             griglia.append(card);
         }
@@ -605,7 +936,7 @@
 
 
     // -----------------------------------------------------
-    // 8. Avviso a comparsa
+    // 10. Avviso a comparsa
     // -----------------------------------------------------
     function mostraAvviso(testo) {
         let t = $('sfide-toast');
