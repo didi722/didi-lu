@@ -2,7 +2,7 @@
     --yellow: #ffbd44;
     --bg-body-index: #dfdfdf;   
     --bg-gradient-end-index: #b2b2b2;
-    --cards: hwb(156 19% 23%);
+    --cards: #31c489;
     --borders: #025534;
 }
 
@@ -1840,6 +1840,7 @@ button.btn-set.is-selected:hover {
     gap: 20px;                             /* Spazio tra le card */
     margin-top: 25px;
     width: 100%;
+    margin-right: 50px !important;
 }
 
 
@@ -2054,6 +2055,7 @@ max-width: 100%;
     flex-direction: column;
     gap: 30px;
     flex: 1;
+    margin-right: 30px !important;
 }
 
 
