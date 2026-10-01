@@ -3397,11 +3397,12 @@ color:#eeeeee;
 .tb-header {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 40px;
     margin-left: 300px;
     margin-top: -5px;
-    margin-bottom: -50px;
+    margin-bottom: -40px;
+    z-index: 1;
 }
 
 .tb-title {
@@ -3415,6 +3416,7 @@ color:#eeeeee;
     text-transform: uppercase;
     transform: rotate(-2deg);
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .tb-format-badge {
@@ -3426,6 +3428,7 @@ color:#eeeeee;
     font-size: 0.78rem;
     text-transform: uppercase;
     transform: rotate(1.5deg);
+    flex-shrink: 0; white-space: nowrap;
 }
 
 .tb-close {
@@ -3439,6 +3442,7 @@ color:#eeeeee;
     font-weight: 900;
     line-height: 1;
     cursor: pointer;
+    flex-shrink: 0; position: relative; z-index: 2;
 }
 
 .tb-close:hover {
@@ -3779,8 +3783,8 @@ color:#eeeeee;
 
 .tb-base-stats {
     width: 100%;
-    border-top: 3px dashed #000;
-    padding-top: 8px;
+    border-top: 2px dashed #000;
+    padding-top: 5px;
 }
 
 .tb-base-row {
@@ -3788,7 +3792,7 @@ color:#eeeeee;
     grid-template-columns: 34px 1fr 32px;
     align-items: center;
     gap: 6px;
-    margin-bottom: 4px;
+    margin-bottom: 0px;
     font-size: 0.75rem;
     font-weight: 900;
 }
@@ -3811,7 +3815,7 @@ color:#eeeeee;
 .tb-base-total {
     margin-top: 6px;
     text-align: right;
-    font-size: 0.75rem;
+    font-size: 0.5rem;
     font-weight: 900;
 }
 
@@ -4974,79 +4978,42 @@ color:#eeeeee;
 /* il tooltip coach deve stare sopra al modale del dettaglio */
 #global-neubrutalist-tooltip.tb-coach { z-index: 100000; }
 
-/* Contenitore principale */
-.tb-dropdown-wrapper {
-    position: relative;
-    display: inline-block;
-}
-
-/* Il "pulsante" che si vede di default */
+.tb-dropdown-wrapper { position: relative; display: inline-block; flex-shrink: 0; }
 .tb-dropdown-trigger {
-    background-color: #f0f0f0;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    user-select: none;
-    border: 1px solid #ccc;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 6px 12px; background: #fff; color: #000;
+    border: 3px solid #000; border-radius: 0; box-shadow: 3px 3px 0 #000;
+    font-weight: 900; cursor: pointer; user-select: none;
+    transition: transform .1s ease, box-shadow .1s ease, background-color .1s ease;
 }
-
-.tb-dropdown-trigger:hover {
-    background-color: #e0e0e0;
+.tb-dropdown-trigger.icon-only { width: 40px; height: 40px; padding: 0; }
+.tb-dropdown-trigger i { transition: transform .3s ease; }
+.tb-dropdown-wrapper:hover .tb-dropdown-trigger,
+.tb-dropdown-wrapper:focus-within .tb-dropdown-trigger {
+    background: #000; color: #fff; transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000;
 }
-
-
-/* Cosa succede quando il mouse è sul wrapper (o dentro il tooltip stesso) */
-.tb-dropdown-wrapper:hover .tb-dropdown-tooltip {
-    visibility: visible;
-    opacity: 1;
-    /* Annulliamo il ritardo in apertura: si apre istantaneamente */
-    transition-delay: 0s; 
-}
-
-/* Il vero e proprio box visivo del menu */
-.tb-dropdown-content {
-    background: #d9ffe6;
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0 #000;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-width: 220px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px; 
-}
-
-/* Assicuriamoci che i campi interni si adattino bene */
-.tb-dropdown-content .tb-field {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Stile specifico per il pulsante ad icona */
-.tb-dropdown-trigger.icon-only {
-    padding: 6px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Modifica la posizione del tooltip affinché si allinei correttamente */
-/* Potrebbe essere necessario aggiustare questi valori (right/left) a seconda del tuo layout */
+.tb-dropdown-wrapper:hover .tb-dropdown-trigger i,
+.tb-dropdown-wrapper:focus-within .tb-dropdown-trigger i { transform: rotate(90deg); }
 .tb-dropdown-tooltip {
-    position: absolute;
-    top: 100%;
-    
-    z-index: 1000;
-    padding-top: 8px; 
-    right: 0;
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s linear 0.3s, opacity 0.3s linear;
+    position: absolute; top: 100%; right: 0; z-index: 1000; padding-top: 12px;
+    visibility: hidden; opacity: 0;
+    transition: visibility 0s linear .3s, opacity .1s ease-in-out .2s;
 }
+.tb-dropdown-wrapper:hover .tb-dropdown-tooltip,
+.tb-dropdown-wrapper:focus-within .tb-dropdown-tooltip { visibility: visible; opacity: 1; transition-delay: 0s; }
+.tb-dropdown-content {
+    width: 250px; max-width: calc(100vw - 20px); padding: 10px;
+    background: #FFFDF6; border: 3px solid #000; box-shadow: 6px 6px 0 #000;
+    transform: rotate(-1deg); display: flex; flex-direction: column;
+}
+.tb-dropdown-content .tb-field { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
+.tb-dropdown-content .tb-field + .tb-field { border-top: 2px dashed #000; }
+.tb-dropdown-content .tb-field:last-child { padding-bottom: 2px; }
+.tb-dropdown-content .tb-label {
+    margin: 0; padding: 0; background: none; border: 0; box-shadow: none; transform: none;
+    font-size: .72rem; font-weight: 800; letter-spacing: .03em;
+}
+.tb-dropdown-content .tb-input,
+.tb-dropdown-content .tb-select { width: 104px; flex-shrink: 0; padding: 4px 6px; font-size: .85rem; box-shadow: 2px 2px 0 #000; }
+.tb-dropdown-content label.tb-input { width: auto; }
+.tb-dropdown-content input[type="checkbox"] { accent-color: #000; }

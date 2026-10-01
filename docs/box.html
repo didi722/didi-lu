@@ -8667,81 +8667,7 @@ function tbMeccanicheAttive() {
     return tbStato.regolamento?.generationalMechanics === true;
 }
 
-function tbHtmlAltriDati(s, sp) {
-    const campi = [];
 
-    campi.push(`
-        <div class="tb-field">
-            <span class="tb-label">Level</span>
-            <input class="tb-input" value="${tbStato.livello}" disabled title="Fixed by the format">
-        </div>`);
-
-    if (tbStato.gen >= 2) {
-        if (!sp.gender) {
-            campi.push(`
-                <div class="tb-field">
-                    <span class="tb-label">Gender</span>
-                    <select class="tb-select" onchange="tbImpostaCampo('sesso', this.value)">
-                        <option value="" ${!s.sesso ? 'selected' : ''}>Random</option>
-                        <option value="M" ${s.sesso === 'M' ? 'selected' : ''}>Male</option>
-                        <option value="F" ${s.sesso === 'F' ? 'selected' : ''}>Female</option>
-                    </select>
-                </div>`);
-        }
-        campi.push(`
-            <div class="tb-field">
-                <span class="tb-label">Happiness</span>
-                <input type="number" class="tb-input" min="0" max="255" value="${s.felicita ?? 255}"
-                       onchange="tbImpostaNumero('felicita', this, 0, 255, 255)">
-            </div>`);
-    }
-
-    if (tbStato.gen === 8 && tbMeccanicheAttive()) {
-        campi.push(`
-            <div class="tb-field">
-                <span class="tb-label">Dynamax Level</span>
-                <input type="number" class="tb-input" min="0" max="10" value="${s.livelloDynamax ?? 10}"
-                       onchange="tbImpostaNumero('livelloDynamax', this, 0, 10, 10)">
-            </div>`);
-        if (sp.canGigantamax) {
-            campi.push(`
-                <div class="tb-field">
-                    <span class="tb-label">Gigantamax</span>
-                    <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="checkbox" ${s.gigantamax ? 'checked' : ''} onchange="tbImpostaCampo('gigantamax', this.checked)">
-                        ${tbEsc(sp.canGigantamax)}
-                    </label>
-                </div>`);
-        }
-    }
-
-    if (tbStato.gen >= 2) {
-        campi.push(`
-            <div class="tb-field">
-                <span class="tb-label">Shiny</span>
-                <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" ${s.shiny ? 'checked' : ''} onchange="tbImpostaCampo('shiny', this.checked)">
-                    Shiny
-                </label>
-            </div>`);
-    }
-
-    // Se non ci sono campi da mostrare, non renderizziamo nulla
-    if (campi.length === 0) return '';
-
-    // Restituiamo la struttura a tendina/tooltip
-    return `
-        <div class="tb-dropdown-wrapper">
-            <div class="tb-dropdown-trigger">
-                Other<span>▼</span>
-            </div>
-            <div class="tb-dropdown-tooltip">
-                <div class="tb-dropdown-content">
-                    ${campi.join('')}
-                </div>
-            </div>
-        </div>`;
-}
 
 
 // Imposta un campo numerico dello slot attivo, limitandolo tra min e max
@@ -8892,16 +8818,7 @@ function tbHtmlAltriDati(s, sp) {
         }
     }
 
-    if (tbStato.gen >= 2) {
-        campi.push(`
-            <div class="tb-field">
-                <span class="tb-label">Shiny</span>
-                <label class="tb-input" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" ${s.shiny ? 'checked' : ''} onchange="tbImpostaCampo('shiny', this.checked)">
-                    Shiny
-                </label>
-            </div>`);
-    }
+
 
     if (campi.length === 0) return '';
 
@@ -8913,8 +8830,9 @@ function tbHtmlAltriDati(s, sp) {
             </div>
             <div class="tb-dropdown-tooltip">
                 <div class="tb-dropdown-content">
-                    ${campi.join('')}
-                </div>
+    ${tbTestataCoach('OTHER DETAILS')}
+    ${campi.join('')}
+</div>
             </div>
         </div>`;
 }
