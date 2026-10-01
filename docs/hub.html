@@ -639,87 +639,100 @@ function iniettaStiliTooltipFormato() {
         @media (hover: none) {
             #registration-column .btn-team-info { display: flex; }
         }
+        /* Stesso stile del tooltip "coach" del box */
         .format-rules-tooltip {
             position: fixed;
             z-index: 100000;
             display: none;
-            width: 460px;
+            width: 366px; /* 340px di contenuto + padding + bordi, come nel box */
             max-width: calc(100vw - 20px);
-            max-height: calc(100vh - 20px);
+            max-height: 80vh;
             overflow-y: auto;
             box-sizing: border-box;
-            background: #7ea9ff;
+            background: #FFFDF6;
             color: #000;
             border: 3px solid #000;
             box-shadow: 6px 6px 0 #000;
-            padding: 18px;
+            padding: 10px;
             font-family: 'Josefin Sans', sans-serif;
             text-align: left;
+            transition: opacity 0.1s ease-in-out;
+        }
+        .frt-header {
+            border-bottom: 3px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
         }
         .frt-title {
-            display: table;
-            background: #000;
-            color: #fff;
-            padding: 5px 14px;
             font-weight: 900;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
             text-transform: uppercase;
-            transform: rotate(-1deg);
-            margin-bottom: 14px;
+            margin-bottom: 4px;
+            margin-top: 3px;
         }
-        .frt-label {
-            display: inline-block;
-            background: #ffde00;
-            border: 2px solid #000;
-            box-shadow: 2px 2px 0 #000;
-            padding: 1px 7px;
-            font-weight: 900;
-            font-size: 0.68rem;
+        .frt-section { margin-top: 8px; padding-top: 6px; border-top: 2px dashed #000; }
+        .frt-section-title {
+            font-size: 0.9rem;
+            font-weight: 800;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            letter-spacing: 0.03em;
+            margin-bottom: 3px;
         }
-        .frt-desc { margin: 0 0 16px; font-size: 0.92rem; font-weight: 600; line-height: 1.4; }
-        .frt-desc.frt-empty { color: #475569; font-weight: 400; font-style: italic; }
-        .frt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .frt-cell { background: white; border: 2px solid #000; box-shadow: 3px 3px 0 #000; padding: 7px 9px; min-width: 0; }
+        .frt-desc { margin: 0; font-size: 0.78rem; font-weight: 600; line-height: 1.35; }
+        .frt-empty { font-size: 0.68rem; font-weight: 400; opacity: 0.7; margin: 0; }
+        .frt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+        .frt-cell { border: 2px solid #000; padding: 2px 4px; background: #fff; min-width: 0; }
+        .frt-cell.strong   { background: #d9ffe6; }
+        .frt-cell.critical { background: #ffd6d6; }
+        .frt-cell small {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            opacity: 0.75;
+            padding: 6px 6px;
+        }
         .frt-value {
             display: block;
-            font-weight: 900;
-            font-size: 0.88rem;
+            font-weight: 800;
+            font-size: 0.9rem;
             text-transform: uppercase;
             overflow-wrap: anywhere;
+            padding: 0 6px;
         }
         .frt-value.frt-lower { text-transform: lowercase; }
-        .frt-rules { display: flex; flex-direction: column; }
         .frt-rule {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            padding: 6px 0;
-            border-bottom: 2px dashed #000;
-            font-size: 0.85rem;
+            flex-wrap: wrap;
+            gap: 4px 6px;
+            font-size: 0.8rem;
             font-weight: 600;
+            padding: 2px 4px;
+            margin: 0 -4px;
         }
-        .frt-rule:last-child { border-bottom: none; }
-        .frt-rule b { text-transform: uppercase; color: #000; }
+        .frt-rule b { white-space: nowrap; }
+        .frt-sep { font-weight: 800; opacity: 0.5; margin: 0 2px; }
         .frt-badge {
+            margin-left: auto;
             flex-shrink: 0;
-            max-width: 55%;
+            max-width: 60%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #000;
+            padding: 0 4px;
             border: 2px solid #000;
-            box-shadow: 1px 1px 0 #000;
-            padding: 2px 6px;
-            font-weight: 900;
-            font-size: 0.68rem;
-            text-transform: uppercase;
+            background: #d9ffe6;
             text-align: right;
             overflow-wrap: anywhere;
         }
-        .frt-badge.banned   { background: #ef4444; color: #fff; }
-        .frt-badge.allowed  { background: #22c55e; color: #fff; }
-        .frt-badge.initial  { background: #3b82f6; color: #fff; }
-        .frt-badge.specific { background: #fbbf24; color: #000; }
-        @media (max-width: 520px) {
+        .frt-badge.allowed  { background: #d9ffe6; }
+        .frt-badge.banned   { background: #ffd6d6; }
+        .frt-badge.specific { background: #fff3b0; }
+        .frt-badge.initial  { background: #ffd9a8; }
+        @media (max-width: 400px) {
             .frt-grid { grid-template-columns: 1fr; }
         }
     `;
@@ -780,24 +793,24 @@ function caricaMappaRegolamenti() {
 
 // Costruisce l'HTML del riepilogo a partire dal nodo regolamenti/<id>
 function generaRiepilogoFormatoHtml(nomeFormato, dati) {
-    const cella = (label, valore, extraClass = '') => `
-        <div class="frt-cell">
-            <span class="frt-label">${label}</span>
+    const cella = (label, valore, extraClass = '', classeCella = '') => `
+        <div class="frt-cell ${classeCella}">
+            <small>${label}</small>
             <span class="frt-value ${extraClass}">${escapeHtmlFormato(valore)}</span>
         </div>`;
 
-    let html = `<div class="frt-title">${escapeHtmlFormato(nomeFormato)}</div>`;
+    let html = `<div class="frt-header"><div class="frt-title">${escapeHtmlFormato(nomeFormato)}</div></div>`;
 
     if (!dati) {
-        return html + `<p class="frt-desc frt-empty">No configurations found for this format.</p>`;
+        return html + `<p class="frt-empty">No configurations found for this format.</p>`;
     }
 
     // Descrizione
     const descr = (dati.descrizioneBreve || '').trim();
-    html += `<span class="frt-label">Description / Rules</span>`;
+    html += `<div class="frt-section-title">Description / Rules</div>`;
     html += descr
         ? `<p class="frt-desc">${escapeHtmlFormato(descr)}</p>`
-        : `<p class="frt-desc frt-empty">No description provided for this format.</p>`;
+        : `<p class="frt-empty">No description provided for this format.</p>`;
 
     // Griglia dati principali
     let celle = cella('Format Type', umanizzaTermineFormato(dati.strutturaSito || 'custom'));
@@ -818,15 +831,14 @@ function generaRiepilogoFormatoHtml(nomeFormato, dati) {
         celle += cella('Showdown Format', dati.showdownFormat.trim(), 'frt-lower');
     }
 
-    celle += `
-        <div class="frt-cell">
-            <span class="frt-label">Gen Mechanics</span>
-            <span class="frt-value" style="color: ${dati.generationalMechanics ? '#15803d' : '#b91c1c'};">
-                ${dati.generationalMechanics ? 'Enabled' : 'Disabled'}
-            </span>
-        </div>`;
+    celle += cella(
+        'Gen Mechanics',
+        dati.generationalMechanics ? 'Enabled' : 'Disabled',
+        '',
+        dati.generationalMechanics ? 'strong' : 'critical'
+    );
 
-    html += `<div class="frt-grid">${celle}</div>`;
+    html += `<div class="frt-section"><div class="frt-section-title">Format</div><div class="frt-grid">${celle}</div></div>`;
 
     // Clausole e restrizioni
     if (dati.restrizioni && Object.keys(dati.restrizioni).length > 0) {
@@ -861,7 +873,7 @@ function generaRiepilogoFormatoHtml(nomeFormato, dati) {
                     <div class="frt-rule">
                         <span>
                             <b>${escapeHtmlFormato(umanizzaTermineFormato(categoria))}</b>
-                            <span style="color: #64748b; font-weight: 400;">➔</span>
+                            <span class="frt-sep">›</span>
                             ${escapeHtmlFormato(umanizzaTermineFormato(campo))}
                         </span>
                         ${badge}
@@ -869,7 +881,7 @@ function generaRiepilogoFormatoHtml(nomeFormato, dati) {
             });
         });
 
-        html += `<span class="frt-label">Clauses & Restrictions</span><div class="frt-rules">${righe}</div>`;
+        html += `<div class="frt-section"><div class="frt-section-title">Clauses & Restrictions</div><div class="frt-rules">${righe}</div></div>`;
     }
 
     return html;
@@ -933,6 +945,11 @@ function posizionaTooltipFormato(ancora, tip) {
 function mostraTooltipFormato(ancora, html, chiave) {
     clearTimeout(timerNascondiTooltipFormato);
     const tip = getTooltipFormato();
+    const giaAperto = tip.style.display === 'block' && tip.dataset.ancora === chiave;
+    if (!giaAperto) {
+        // Leggera inclinazione casuale, come il tooltip coach del box
+        tip.style.transform = `rotate(${(Math.random() * 3 - 1.5).toFixed(2)}deg)`;
+    }
     tip.innerHTML = html;
     tip.scrollTop = 0;
     tip.style.display = 'block';
