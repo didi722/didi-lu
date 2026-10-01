@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
        <script src="risultati-match.js"></script>
+       <script src="replay-sito.js"></script>
           <script src="sfide.js"></script>
 </head>
 <body>
@@ -3528,6 +3529,21 @@ function selectWinner(setNum, winner, isEdit = false) {
     }
 }
 
+// Un replay scaricato da Showdown ha le barre della salute di Showdown e mostra una scheda
+// al passaggio del mouse sui Pokémon: prima di salvarlo gli si danno le barre del simulatore
+// del sito e si toglie l'hover (replay-sito.js). Se qualcosa va storto si carica l'originale.
+async function replayAdattato(file) {
+    try {
+        if (!window.ReplaySito || !file.text) return file;
+        const testo = await file.text();
+        const adattato = window.ReplaySito.adattaReplayShowdown(testo);
+        return adattato === testo ? file : new Blob([adattato], { type: 'text/html' });
+    } catch (errore) {
+        console.warn("Replay non adattato, carico l'originale:", errore);
+        return file;
+    }
+}
+
 async function uploadNuovoReplay(setNum) {
     // Se non abbiamo ancora un ID per il nuovo match, lo generiamo ora
     let matchID = document.getElementById('match-id-nascosto').value;
@@ -3553,8 +3569,8 @@ async function uploadNuovoReplay(setNum) {
 
         const metadata = { contentType: 'text/html' };
         
-        // Eseguiamo l'upload
-        const snapshot = await fileRef.put(file, metadata);
+        // Eseguiamo l'upload (con le barre della salute del sito e senza hover sui Pokémon)
+        const snapshot = await fileRef.put(await replayAdattato(file), metadata);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
         // leggerà questo valore quando l'utente premerà "Add Match"
@@ -3594,8 +3610,8 @@ async function uploadReplay(setNum) {
 
         const metadata = { contentType: 'text/html' };
         
-        // 3. Esecuzione Upload
-        const snapshot = await fileRef.put(file, metadata);
+        // 3. Esecuzione Upload (con le barre della salute del sito e senza hover sui Pokémon)
+        const snapshot = await fileRef.put(await replayAdattato(file), metadata);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
         // 4. Aggiornamento Database Realtime (Percorso Gerarchico)
