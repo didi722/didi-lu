@@ -278,7 +278,7 @@ table.stats-tabella { width: 100%; border-collapse: separate; border-spacing: 0;
 .scheda-tag { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .scheda-avatar { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(3px 3px 0 #000); flex-shrink: 0; }
 .scheda-grande { width: 120px; height: 100px; object-fit: contain; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, .4)); flex-shrink: 0; }
-.scheda-roster { display: flex; flex-wrap: wrap; max-width: 300px; flex-shrink: 0; }
+.scheda-roster { display: flex; flex-wrap: wrap; max-width: 176px; flex-shrink: 0; }
 .scheda-mini { width: 56px; height: 48px; object-fit: contain; flex-shrink: 0; }
 
 .scheda-sezione { padding: 22px 26px 0; }

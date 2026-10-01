@@ -887,6 +887,9 @@
     // -----------------------------------------------------
     // 9. Showdown in corso in matches.html (solo la stagione della pagina)
     // -----------------------------------------------------
+    // Una sola riga bassa: l'etichetta "Live" e un chip per ogni showdown in corso
+    // (formato, nomi e punteggio, match, azione). Con tanti showdown la riga scorre di lato:
+    // non cresce mai in altezza, così lo spazio resta agli showdown.
     function disegnaLive() {
         const box = $('liveList');
         if (!box) return;
@@ -899,39 +902,37 @@
         }
         box.hidden = false;
 
-        const testa = el('div', 'live-testa', '<span class="live-punto" aria-hidden="true"></span>Live now');
-        const griglia = el('div', 'live-griglia');
+        const testa = el('div', 'live-testa', `<span class="live-punto" aria-hidden="true"></span>Live<b>${live.length}</b>`);
+        const riga = el('div', 'live-riga');
+        riga.setAttribute('role', 'list');
 
         for (const b of live) {
-            const card = el('div', 'live-card', `
-                <div class="live-card-testa">
-                    <span class="sd-category-tag">${esc(b.i.categoria)}</span>
-                    <span class="live-match">Match ${b.n}/${MATCH_PER_SHOWDOWN}</span>
-                </div>
-                <div class="live-nomi">
-                    <span>${esc(b.i.player1)}</span>
-                    <b>${b.v1} - ${b.v2}</b>
-                    <span>${esc(b.i.player2)}</span>
-                </div>`);
-
-            const azioni = el('div', 'live-azioni');
-            const vai = el('a', `live-btn${b.gioco ? ' gioca' : ''}`);
+            const chip = el('a', `live-chip${b.gioco ? ' gioca' : ''}`);
+            chip.setAttribute('role', 'listitem');
+            const azione = !S.utente ? 'Log in' : b.gioco ? 'Play' : 'Watch';
+            chip.setAttribute('aria-label', `${azione}: ${b.i.player1} ${b.v1} - ${b.v2} ${b.i.player2}, ${b.i.categoria}, match ${b.n} of ${MATCH_PER_SHOWDOWN}`);
+            chip.title = `${b.i.player1} vs ${b.i.player2} · ${b.i.categoria} · Match ${b.n} of ${MATCH_PER_SHOWDOWN}`;
+            chip.innerHTML = `
+                <span class="live-fmt">${esc(b.i.categoria)}</span>
+                <span class="live-vs">
+                    <span class="live-n">${esc(b.i.player1)}</span>
+                    <b>${b.v1}-${b.v2}</b>
+                    <span class="live-n">${esc(b.i.player2)}</span>
+                </span>
+                <span class="live-m">M${b.n}/${MATCH_PER_SHOWDOWN}</span>
+                <span class="live-vai">${azione}</span>`;
             if (!S.utente) {
-                vai.textContent = 'Log in to watch';
-                vai.href = '#';
-                vai.addEventListener('click', e => {
+                chip.href = '#';
+                chip.addEventListener('click', e => {
                     e.preventDefault();
                     if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
                 });
             } else {
-                vai.textContent = b.gioco ? 'Play' : 'Watch live';
-                vai.href = linkBattaglia(b.stagione, b.id, b.n);
+                chip.href = linkBattaglia(b.stagione, b.id, b.n);
             }
-            azioni.append(vai);
-            card.append(azioni);
-            griglia.append(card);
+            riga.append(chip);
         }
-        box.replaceChildren(testa, griglia);
+        box.replaceChildren(testa, riga);
     }
 
 
