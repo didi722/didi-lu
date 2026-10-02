@@ -658,8 +658,8 @@ test('i minimi dei blocchi coincidono con quelli dello stile (min-width a scherm
     const fs = require('node:fs'), path = require('node:path');
     const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
     for (const [id, [w, h]] of Object.entries(P.MINIMI)) {
-        assert.match(css, new RegExp(`body\\.pp-fisso \\.pp-zona > \\.pp-${id}\\s*\\{[^}]*min-width:\\s*${w}px`), `${id}: larghezza ${w}`);
-        if (id === 'palco') assert.match(css, new RegExp(`body\\.pp-fisso \\.pp-zona > \\.pp-palco\\s*\\{[^}]*min-height:\\s*${h}px`), `${id}: altezza ${h}`);
+        assert.match(css, new RegExp(`body\\.pp-fisso :is\\(\\.pp-zona, \\.pp-linea\\) > \\.pp-${id}\\s*\\{[^}]*min-width:\\s*${w}px`), `${id}: larghezza ${w}`);
+        if (id === 'palco') assert.match(css, new RegExp(`body\\.pp-fisso :is\\(\\.pp-zona, \\.pp-linea\\) > \\.pp-palco\\s*\\{[^}]*min-height:\\s*${h}px`), `${id}: altezza ${h}`);
     }
     assert.deepEqual(Object.keys(P.MINIMI).sort(), Object.keys(P.BLOCCHI).sort());
 });
@@ -708,4 +708,129 @@ test('inclinazione: la carta parte dritta; la vecchia inclinazione di partenza (
     const scelta = P.normalizza({ v: 2, carta: { inclinazione: 'lieve' } });
     assert.deepEqual(P.normalizza(scelta), scelta);
     assert.equal(scelta.v, 2);
+});
+
+
+// ---- Blocchi affiancati: più blocchi sulla stessa riga di una zona ----------------------------
+
+const ordine = (c, zona) => c.blocchi.filter(b => b.zona === zona).map(b => b.id + (b.accanto ? '+' : ''));
+
+test('accanto: si salva solo quando è vero, e la configurazione di partenza non ne ha', () => {
+    assert.ok(P.predefinita().blocchi.every(b => !('accanto' in b)));
+    const c = P.normalizza({ blocchi: [{ id: 'trofei', zona: 'c', on: true, accanto: true }, { id: 'medaglie', zona: 'c', accanto: false }, { id: 'party', zona: 'c', accanto: 'si' }] });
+    assert.equal(c.blocchi.find(b => b.id === 'trofei').accanto, true);
+    assert.ok(!('accanto' in c.blocchi.find(b => b.id === 'medaglie')));
+    assert.ok(!('accanto' in c.blocchi.find(b => b.id === 'party')));
+    assert.ok(P.uguali(P.normalizza(P.predefinita()), P.predefinita()));
+    assert.ok(P.uguali(P.normalizza(c), c));
+});
+
+test('lineeDiZona: i blocchi con "accanto" stanno sulla riga del precedente; i blocchi spenti non spostano gli altri', () => {
+    let c = P.predefinita();           // a: palco musica | b: identita statistiche | c: party trofei medaglie
+    assert.deepEqual(P.lineeDiZona(c), { a: [['palco'], ['musica']], b: [['identita'], ['statistiche']], c: [['party'], ['trofei'], ['medaglie']] });
+    c = P.affianca(c, 'medaglie', true);
+    assert.deepEqual(P.lineeDiZona(c).c, [['party'], ['trofei', 'medaglie']]);
+    c = P.affianca(c, 'trofei', true);
+    assert.deepEqual(P.lineeDiZona(c).c, [['party', 'trofei', 'medaglie']]);
+    // il primo di una zona non può essere affiancato a niente
+    assert.deepEqual(ordine(P.affianca(P.predefinita(), 'palco', true), 'a'), ['palco', 'musica']);
+    // togliere "accanto" a uno in mezzo spezza la riga: lui apre una riga nuova e il successivo lo segue
+    assert.deepEqual(P.lineeDiZona(P.affianca(c, 'trofei', false)).c, [['party'], ['trofei', 'medaglie']]);
+    // con i blocchi in vista: uno spento sparisce dalla sua riga, una riga vuota sparisce
+    const vis = ['palco', 'musica', 'identita', 'statistiche', 'party', 'medaglie'];
+    assert.deepEqual(P.lineeDiZona(P.affianca(P.affianca(P.predefinita(), 'medaglie', true), 'trofei', true), vis).c, [['party', 'medaglie']]);
+    // se il blocco che apriva la riga è spento, quelli accanto non passano alla riga prima
+    const c2 = P.affianca(P.predefinita(), 'medaglie', true);          // c: party | trofei+medaglie
+    assert.deepEqual(P.lineeDiZona(c2, ['palco', 'musica', 'identita', 'statistiche', 'party', 'medaglie']).c, [['party'], ['medaglie']]);
+    assert.equal(P.affianca(P.predefinita(), 'inesistente', true).blocchi.length, 7);
+});
+
+test('sposta con accanto: su una riga nuova, accanto al precedente, accanto al successivo (in testa), o in mezzo a una riga', () => {
+    const base = P.predefinita();      // c: party trofei medaglie
+    // false: riga tutta sua (come prima)
+    assert.deepEqual(ordine(P.sposta(base, 'musica', 'c', 1), 'c'), ['party', 'musica', 'trofei', 'medaglie']);
+    // true: sulla riga di party
+    assert.deepEqual(ordine(P.sposta(base, 'musica', 'c', 1, true), 'c'), ['party', 'musica+', 'trofei', 'medaglie']);
+    assert.deepEqual(P.lineeDiZona(P.sposta(base, 'musica', 'c', 1, true)).c, [['party', 'musica'], ['trofei'], ['medaglie']]);
+    // 'testa': prima di trofei, sulla sua riga (trofei diventa il secondo)
+    const testa = P.sposta(base, 'musica', 'c', 1, 'testa');
+    assert.deepEqual(ordine(testa, 'c'), ['party', 'musica', 'trofei+', 'medaglie']);
+    assert.deepEqual(P.lineeDiZona(testa).c, [['party'], ['musica', 'trofei'], ['medaglie']]);
+    // in cima a una zona non c'è un precedente: "accanto" diventa una riga sua
+    assert.deepEqual(P.lineeDiZona(P.sposta(base, 'musica', 'c', 0, true)).c, [['musica'], ['party'], ['trofei'], ['medaglie']]);
+    // in mezzo a una riga già fatta la divide
+    const riga = P.affianca(P.affianca(base, 'trofei', true), 'medaglie', true);      // party+trofei+medaglie
+    assert.deepEqual(P.lineeDiZona(P.sposta(riga, 'musica', 'c', 2)).c, [['party', 'trofei'], ['musica'], ['medaglie']]);
+    // ... mentre accanto la allunga
+    assert.deepEqual(P.lineeDiZona(P.sposta(riga, 'musica', 'c', 2, true)).c, [['party', 'trofei', 'musica', 'medaglie']]);
+    // portare via il blocco che apriva la riga: il successivo la apre lui
+    assert.deepEqual(P.lineeDiZona(P.sposta(P.affianca(base, 'trofei', true), 'party', 'a', 0)).c, [['trofei'], ['medaglie']]);
+    // spostare un blocco accanto fa sparire il suo vecchio "accanto"
+    const spostato = P.sposta(P.affianca(base, 'trofei', true), 'trofei', 'b', 0);
+    assert.ok(!('accanto' in spostato.blocchi.find(b => b.id === 'trofei')));
+    // zona non valida o blocco sconosciuto: niente
+    assert.deepEqual(P.sposta(base, 'party', 'z', 0, true), base);
+    assert.deepEqual(P.sposta(base, 'nessuno', 'a', 0, true), base);
+    // la configurazione data non cambia
+    assert.ok(!base.blocchi.some(b => 'accanto' in b));
+});
+
+test('griglia con righe di blocchi: la riga pesa quanto il suo blocco più pesante e i blocchi dividono la larghezza della riga', () => {
+    // zona a: palco | trofei + medaglie sulla stessa riga
+    let c = P.impostaLayout(P.predefinita(), 'dossier');
+    c.blocchi = [{ id: 'palco', zona: 'a', on: true }, { id: 'trofei', zona: 'a', on: true }, { id: 'medaglie', zona: 'a', on: true, accanto: true },
+        { id: 'identita', zona: 'b', on: true }, { id: 'statistiche', zona: 'b', on: true }, { id: 'party', zona: 'c', on: true }, { id: 'musica', zona: 'c', on: true }];
+    const g = P.griglia(c, ['palco', 'trofei', 'medaglie', 'identita', 'statistiche', 'party', 'musica'], { garantisciPalco: false });
+    assert.deepEqual(g.zone.a.linee, [['palco'], ['trofei', 'medaglie']]);
+    // la riga di trofei e medaglie pesa 1,4 (il maggiore dei due) contro i 6 del palco: 1,4 / 7,4 dell'altezza della zona
+    const zona = g.area.palco + g.area.trofei + g.area.medaglie;
+    assert.ok(Math.abs(g.area.palco / zona - 6 / 7.4) < 1e-9, 'il palco');
+    assert.ok(Math.abs(g.area.trofei / zona - 0.7 / 7.4) < 1e-9, 'metà della riga ciascuno');
+    assert.ok(Math.abs(g.area.trofei - g.area.medaglie) < 1e-12);
+    assert.ok(Math.abs(Object.values(g.area).reduce((s, x) => s + x, 0) - 1) < 1e-9, 'tutta la tela è assegnata');
+    // affiancati occupano la metà di quando stanno uno sotto l'altro, e il palco ne guadagna
+    const sotto = P.griglia(P.affianca(c, 'medaglie', false), ['palco', 'trofei', 'medaglie', 'identita', 'statistiche', 'party', 'musica'], { garantisciPalco: false });
+    assert.ok(g.area.palco > sotto.area.palco);
+    assert.ok(Math.abs(g.area.trofei * 2 - sotto.area.trofei) < 1e-9 || g.area.trofei < sotto.area.trofei);
+});
+
+test('impostaPesi e ripristinaPesi su due righe di blocchi: ogni blocco della riga cresce dello stesso fattore', () => {
+    let c = P.predefinita();
+    c = P.affianca(c, 'medaglie', true);         // c: party | trofei+medaglie
+    const vis = Object.keys(P.BLOCCHI);
+    const g = P.griglia(c, vis);
+    assert.deepEqual(g.zone.c.linee, [['party'], ['trofei', 'medaglie']]);
+    // la riga di party (5) cede alla riga di trofei+medaglie (1,4): 4 e 2,4
+    const nuova = P.impostaPesi(c, g, 'linee', ['c', 0], [4, 2.4]);
+    assert.equal(nuova.misure.blocchi.party, 4);
+    assert.ok(Math.abs(nuova.misure.blocchi.trofei - 2.4) < 1e-9 && Math.abs(nuova.misure.blocchi.medaglie - 2.4) < 1e-9);
+    // la proporzione dentro la riga resta (trofei 1,4 e medaglie 1,4 -> uguali)
+    const g2 = P.griglia(P.impostaPesi(c, g, 'linee', ['c', 0], [4, 2.4]), vis, { garantisciPalco: false });
+    assert.ok(Math.abs(g2.area.trofei - g2.area.medaglie) < 1e-12);
+    // se i due pesi dentro la riga sono diversi, il rapporto si conserva
+    let diversi = P.copia(c); diversi.misure.blocchi = { trofei: 1, medaglie: 3 };
+    const gd = P.griglia(diversi, vis, { garantisciPalco: false });
+    const dopo = P.impostaPesi(diversi, gd, 'linee', ['c', 0], [2.5, 6]);           // la riga pesava 3, ora 6: fattore 2
+    assert.deepEqual([dopo.misure.blocchi.trofei, dopo.misure.blocchi.medaglie], [2, 6]);
+    // ripristinare toglie i pesi di tutti i blocchi delle due righe
+    assert.deepEqual(P.ripristinaPesi(nuova, g, 'linee', ['c', 0]).misure.blocchi, {});
+});
+
+test('palco: resta il blocco più grande anche con righe affiancate a caso', () => {
+    let seme = 20260702;
+    const rnd = () => ((seme = (seme * 1664525 + 1013904223) >>> 0) / 4294967296);
+    let conAccanto = 0;
+    for (let i = 0; i < 3000; i++) {
+        const layout = Object.keys(P.LAYOUT)[Math.floor(rnd() * 6)];
+        let c = conZone(layout, TUTTI.map(() => 'abc'[Math.floor(rnd() * 3)]));
+        c.blocchi.forEach(b => { if (rnd() < 0.4) b.accanto = true; });
+        c = P.normalizza(c);
+        if (c.blocchi.some(b => b.accanto)) conAccanto++;
+        const visibili = TUTTI.filter(id => id === 'palco' || rnd() < 0.8);
+        const g = P.griglia(c, visibili);
+        const altri = Object.entries(g.area).filter(([id]) => id !== 'palco').map(([, a]) => a);
+        assert.ok(!altri.length || g.area.palco >= Math.max(...altri) * P.MARGINE_PALCO - 1e-9, `caso ${i} (${layout})`);
+        assert.ok(Math.abs(Object.values(g.area).reduce((s, x) => s + x, 0) - 1) < 1e-9, `quote ${i}`);
+    }
+    assert.ok(conAccanto > 2000);
 });

@@ -14,7 +14,8 @@
 //     maniglie: trascinandole un blocco si allarga e i vicini si stringono, fino alla misura minima in cui si
 //     leggono ancora. Il palco resta sempre il blocco più grande;
 //   - spegnere, accendere e spostare i blocchi: coi pulsanti del pannello, oppure afferrandoli sulla
-//     carta e trascinandoli: si agganciano ai posti dove possono stare;
+//     carta e trascinandoli: si agganciano ai posti dove possono stare, anche di fianco a un altro blocco
+//     (stessa riga) invece che sopra o sotto;
 //   - sfondo (colore, motivo, nome gigante, movimento), stile della carta (colore, ombra, bordi,
 //     angoli, inclinazione, carattere, effetto olografico);
 //   - adesivi da trascinare dove si vuole;
@@ -159,7 +160,7 @@
         const per = P.blocchiPerZona(cfg());
         const zone = P.LAYOUT[cfg().layout].zone;
         return [
-            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up. To make a block bigger or smaller, drag the handles on the card between blocks (Layout tab › Sizes).' }),
+            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up. Drop it next to another block (a bar along its side) to put the two on the same row, or use ⇄ to put a block beside the one before it. To make a block bigger or smaller, drag the handles on the card between blocks (Layout tab › Sizes).' }),
             ...P.ZONE.map(z => h('section', { class: 'pe-zona', 'data-zona': z },
                 h('h3', {}, h('span', { class: 'pe-zona-lettera', testo: z.toUpperCase() }), zone[z]),
                 h('ul', { class: 'pe-lista', 'data-zona': z }, per[z].length
@@ -178,6 +179,7 @@
             icona(b.on ? 'Hide' : 'Show', b.on ? '◉' : '○', b.on, () => cambia(c => P.accendi(c, b.id, !b.on))),
             icona('Move up', '▲', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i - 1)), i === 0),
             icona('Move down', '▼', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i + 1)), i === quanti - 1),
+            icona(b.accanto ? 'On its own row' : 'Beside the previous block', '⇄', !!b.accanto, () => cambia(c => P.affianca(c, b.id, !b.accanto)), i === 0),
             h('span', { class: 'pe-zone', role: 'group', 'aria-label': 'Zone' }, P.ZONE.map(z =>
                 h('button', { type: 'button', class: z === b.zona ? 'is-on' : '', title: `Move to zone ${z.toUpperCase()}`, onclick: () => z !== b.zona && cambia(c => P.sposta(c, b.id, z, 999)), testo: z.toUpperCase() }))));
     }
@@ -450,27 +452,67 @@
     const sopra = (r, x, y) => Math.hypot(Math.max(r.left - x, 0, x - (r.left + r.width)), Math.max(r.top - y, 0, y - (r.top + r.height)));
 
     /**
-     * I posti dove può stare un blocco: posti = [{ zona, indice, rect }] con la misura dello "slot" sullo schermo,
-     * e zone = [{ zona, rect, riga }] (la zona e se i suoi blocchi stanno in riga o in colonna)
+     * I posti dove può stare un blocco, in pixel dello schermo: posti = [{ zona, indice, modo, rect }] con la misura
+     * dello "slot", e zone = [{ zona, rect, riga }] (la zona e se le sue righe di blocchi stanno affiancate o impilate).
+     * `indice` e `modo` sono quelli di P.sposta: modo false = su una riga tutta sua (tra due righe, o in mezzo a una
+     * riga per dividerla), true = affiancato al blocco che precede, 'testa' = affiancato a quello che segue.
+     * Gli slot "di fianco" ci sono solo a schermo intero: sugli schermi stretti i blocchi stanno tutti in fila.
      */
     function postiPossibili(idEscluso) {
         const posti = [], zone = [];
+        const affiancabile = !!C.stato.lineeIntero;
+        const senza = P.senzaBlocco(cfg(), idEscluso);
+        const linee = P.lineeDiZona(senza);
+        const mostrato = id => { const e = C.stato.blocchi[id]; return e && getComputedStyle(e).display !== 'none'; };
         for (const zonaEl of Object.values(C.stato.zone)) {
             const stile = getComputedStyle(zonaEl);
             if (stile.display === 'none') continue;
             const zona = zonaEl.dataset.zona;
-            const figli = Array.from(zonaEl.children).filter(e => e.classList.contains('pp-blocco') && e.dataset.blocco !== idEscluso && getComputedStyle(e).display !== 'none');
             const zr = zonaEl.getBoundingClientRect();
-            zone.push({ zona, rect: zr, riga: stile.flexDirection.startsWith('row') });
-            if (!figli.length) { posti.push({ zona, indice: 0, rect: { left: zr.left + 8, top: zr.top + 8, width: Math.max(zr.width - 16, 20), height: Math.max(zr.height - 16, 20) } }); continue; }
-            const riga = stile.flexDirection.startsWith('row');
-            const r = figli.map(e => e.getBoundingClientRect());
-            for (let i = 0; i <= figli.length; i++) {
-                const rif = r[Math.min(i, figli.length - 1)];
-                const bordo = riga ? (i < figli.length ? r[i].left : r[i - 1].right) : (i < figli.length ? r[i].top : r[i - 1].bottom);
-                posti.push({ zona, indice: i, rect: riga
-                    ? { left: bordo - 6, top: rif.top, width: 12, height: rif.height }
-                    : { left: rif.left, top: bordo - 6, width: rif.width, height: 12 } });
+            const riga = stile.flexDirection.startsWith('row');     // le righe di blocchi stanno affiancate (sono colonne)
+            zone.push({ zona, rect: zr, riga });
+            // le righe di blocchi della zona (senza quello che si trascina) con la loro misura sullo schermo
+            let indice = 0;
+            const righe = linee[zona].map(ids => {
+                const visti = ids.filter(mostrato);
+                const rect = visti.map(id => C.stato.blocchi[id].getBoundingClientRect());
+                const riquadro = rect.length ? {
+                    left: Math.min(...rect.map(r => r.left)), top: Math.min(...rect.map(r => r.top)),
+                    right: Math.max(...rect.map(r => r.right)), bottom: Math.max(...rect.map(r => r.bottom))
+                } : null;
+                const r = { ids, visti, rect, riquadro, inizio: indice };
+                indice += ids.length;
+                return r;
+            }).filter(r => r.riquadro);
+            if (!righe.length) { posti.push({ zona, indice: 0, modo: false, rect: { left: zr.left + 8, top: zr.top + 8, width: Math.max(zr.width - 16, 20), height: Math.max(zr.height - 16, 20) } }); continue; }
+
+            // tra una riga e l'altra (e prima della prima, dopo l'ultima): nell'altra direzione, per tutta la zona
+            for (let k = 0; k <= righe.length; k++) {
+                const prima = righe[k - 1], dopo = righe[k];
+                const inizio = dopo ? dopo.inizio : indice;
+                const bordo = riga
+                    ? (dopo ? (prima ? (prima.riquadro.right + dopo.riquadro.left) / 2 : dopo.riquadro.left) : prima.riquadro.right)
+                    : (dopo ? (prima ? (prima.riquadro.bottom + dopo.riquadro.top) / 2 : dopo.riquadro.top) : prima.riquadro.bottom);
+                posti.push({ zona, indice: inizio, modo: false, rect: riga
+                    ? { left: bordo - 6, top: zr.top, width: 12, height: zr.height }
+                    : { left: zr.left, top: bordo - 6, width: zr.width, height: 12 } });
+            }
+
+            // di fianco ai blocchi di una riga: all'inizio ('testa'), tra due blocchi e in fondo (affiancati al precedente)
+            if (!affiancabile) continue;
+            for (const r of righe) {
+                const q = r.riquadro;
+                const taglio = (pos, modo, indiceSlot) => posti.push({ zona, indice: indiceSlot, modo, rect: riga
+                    ? { left: q.left, top: pos - 6, width: q.right - q.left, height: 12 }
+                    : { left: pos - 6, top: q.top, width: 12, height: q.bottom - q.top } });
+                taglio(riga ? q.top : q.left, 'testa', r.inizio);
+                r.visti.forEach((id, j) => {
+                    const rc = r.rect[j];
+                    const fine = riga ? rc.bottom : rc.right;
+                    const succ = r.rect[j + 1];
+                    const pos = succ ? (fine + (riga ? succ.top : succ.left)) / 2 : fine;
+                    taglio(pos, true, r.inizio + r.ids.indexOf(id) + 1);
+                });
             }
         }
         return { posti, zone };
@@ -501,16 +543,13 @@
                 mostra();
             }
             el.style.translate = `${dx / scala}px ${dy / scala}px`;
-            // Sopra una zona: vale il posto più vicino di quella zona, in qualunque punto della zona (misurando solo
-            // lungo la direzione in cui stanno i blocchi). Fuori da tutte le zone: il posto più vicino, se non è lontano.
+            // Sopra una zona: vale il posto più vicino di quella zona (tra i suoi bordi e quelli dei blocchi: vicino a un bordo
+            // orizzontale = riga nuova, vicino a uno verticale = di fianco). Fuori da tutte le zone: il posto più vicino, se non è lontano.
             const zonaSotto = zone.find(z => ev.clientX >= z.rect.left && ev.clientX <= z.rect.right && ev.clientY >= z.rect.top && ev.clientY <= z.rect.bottom);
             let migliore = null, distanza = Infinity;
             posti.forEach((p, i) => {
                 if (zonaSotto && p.zona !== zonaSotto.zona) return;
-                const lungoAsse = zonaSotto && posti.filter(q => q.zona === p.zona).length > 1;
-                const d = lungoAsse
-                    ? (zonaSotto.riga ? Math.abs(ev.clientX - (p.rect.left + p.rect.width / 2)) : Math.abs(ev.clientY - (p.rect.top + p.rect.height / 2)))
-                    : sopra(p.rect, ev.clientX, ev.clientY);
+                const d = sopra(p.rect, ev.clientX, ev.clientY);
                 if (d < distanza) { distanza = d; migliore = i; }
             });
             if (!zonaSotto && distanza > DISTANZA_MAX) migliore = null;
@@ -534,7 +573,7 @@
             el.style.translate = '';
             if (attivo) ultimoTrascinamento = Date.now();
             if (scelto) {
-                const spostata = P.sposta(cfg(), id, scelto.zona, scelto.indice);
+                const spostata = P.sposta(cfg(), id, scelto.zona, scelto.indice, scelto.modo);
                 if (!P.uguali(spostata.blocchi, cfg().blocchi)) cambia(() => spostata);   // lasciato dov'era: niente da fare
             }
         };
@@ -618,7 +657,7 @@
     // tutto il resto resta com'è. Ogni passo si prova sul serio (public-card.js, provaMisure) e vale solo se
     //   - nessuno scende sotto la sua misura minima (MINIMI, per le larghezze, e un minimo per le altezze);
     //   - i blocchi ci stanno ancora alla scala di adesso (se no la tela si dovrebbe rimpicciolire);
-    //   - il palco resta il blocco più grande (P.griglia, e la misura vera sullo schermo).
+    //   - il palco resta il blocco più grande (la pagina lo ingrandisce da sola; si misura sullo schermo).
     // Se non vale si ferma all'ultimo punto buono. Si può anche usare la tastiera (frecce) e il doppio clic
     // riporta i due elementi ai pesi del layout.
 
@@ -659,17 +698,30 @@
         for (const [j, v] of colonne) elenco.push({ chiave: `c${j}`, tipo: 'colonne', quale: j, asse: 'x', x: v.x / v.n, top: v.top, bottom: v.bottom, nome: 'the panels' });
         for (const [i, v] of righe) elenco.push({ chiave: `r${i}`, tipo: 'righe', quale: i, asse: 'y', y: v.y / v.n, left: v.left, right: v.right, nome: 'the rows' });
 
-        // tra due blocchi vicini della stessa zona
+        // dentro una zona: tra due righe di blocchi, e tra due blocchi vicini della stessa riga
+        const riquadro = ids => {
+            const rect = ids.map(id => C.stato.blocchi[id].getBoundingClientRect());
+            return { left: Math.min(...rect.map(r => r.left)), top: Math.min(...rect.map(r => r.top)), right: Math.max(...rect.map(r => r.right)), bottom: Math.max(...rect.map(r => r.bottom)) };
+        };
         for (const { z, p, r } of zone) {
-            const ids = Array.from(C.stato.zone[z].children)
-                .filter(e => e.classList.contains('pp-blocco') && p.ids.includes(e.dataset.blocco) && !e.classList.contains('pp-spento') && !e.classList.contains('pp-vuoto'))
-                .map(e => e.dataset.blocco);
-            for (let i = 0; i + 1 < ids.length; i++) {
-                const ra = C.stato.blocchi[ids[i]].getBoundingClientRect(), rb = C.stato.blocchi[ids[i + 1]].getBoundingClientRect();
-                const nome = `${P.BLOCCHI[ids[i]].nome} and ${P.BLOCCHI[ids[i + 1]].nome}`;
-                elenco.push(p.dir === 'riga'
-                    ? { chiave: `b${ids[i]}-${ids[i + 1]}`, tipo: 'blocchi', quale: [ids[i], ids[i + 1]], asse: 'x', x: (ra.right + rb.left) / 2, top: r.top, bottom: r.bottom, nome }
-                    : { chiave: `b${ids[i]}-${ids[i + 1]}`, tipo: 'blocchi', quale: [ids[i], ids[i + 1]], asse: 'y', y: (ra.bottom + rb.top) / 2, left: r.left, right: r.right, nome });
+            const righe = p.linee.filter(l => l.length);
+            const aRiga = p.dir === 'riga';     // le righe di blocchi sono colonne
+            for (let i = 0; i + 1 < righe.length; i++) {
+                const a = riquadro(righe[i]), b = riquadro(righe[i + 1]);
+                const nome = `${righe[i].map(id => P.BLOCCHI[id].nome).join(' + ')} and ${righe[i + 1].map(id => P.BLOCCHI[id].nome).join(' + ')}`;
+                elenco.push(aRiga
+                    ? { chiave: `l${z}${i}`, tipo: 'linee', quale: [z, i], asse: 'x', x: (a.right + b.left) / 2, top: r.top, bottom: r.bottom, nome }
+                    : { chiave: `l${z}${i}`, tipo: 'linee', quale: [z, i], asse: 'y', y: (a.bottom + b.top) / 2, left: r.left, right: r.right, nome });
+            }
+            for (const linea of righe) {
+                for (let j = 0; j + 1 < linea.length; j++) {
+                    const ra = C.stato.blocchi[linea[j]].getBoundingClientRect(), rb = C.stato.blocchi[linea[j + 1]].getBoundingClientRect();
+                    const q = riquadro(linea);
+                    const nome = `${P.BLOCCHI[linea[j]].nome} and ${P.BLOCCHI[linea[j + 1]].nome}`;
+                    elenco.push(aRiga
+                        ? { chiave: `b${linea[j]}-${linea[j + 1]}`, tipo: 'blocchi', quale: [linea[j], linea[j + 1]], asse: 'y', y: (ra.bottom + rb.top) / 2, left: q.left, right: q.right, nome }
+                        : { chiave: `b${linea[j]}-${linea[j + 1]}`, tipo: 'blocchi', quale: [linea[j], linea[j + 1]], asse: 'x', x: (ra.right + rb.left) / 2, top: q.top, bottom: q.bottom, nome });
+                }
             }
         }
         return elenco;
@@ -742,6 +794,19 @@
                 minimi: c.tipo === 'colonne' ? [minimoColonna(c.quale), minimoColonna(c.quale + 1)] : [ALTEZZA_MIN, ALTEZZA_MIN]
             };
         }
+        if (c.tipo === 'linee') {
+            // due righe di blocchi: le loro misure sono quelle dei blocchi che le formano
+            const righe = g.zone[c.quale[0]].linee;
+            const [la, lb] = [righe[c.quale[1]], righe[c.quale[1] + 1]];
+            const misura = ids => {
+                const rect = ids.map(id => C.stato.blocchi[id].getBoundingClientRect());
+                return c.asse === 'x' ? (Math.max(...rect.map(r => r.right)) - Math.min(...rect.map(r => r.left))) / k
+                    : (Math.max(...rect.map(r => r.bottom)) - Math.min(...rect.map(r => r.top))) / k;
+            };
+            const peso = ids => Math.max(...ids.map(id => g.blocchi[id]));
+            const minimo = ids => (c.asse === 'x' ? Math.max(...ids.map(id => P.MINIMI[id][0])) : ALTEZZA_MIN);
+            return { px: [misura(la), misura(lb)], pesi: [peso(la), peso(lb)], minimi: [minimo(la), minimo(lb)] };
+        }
         const [a, b] = c.quale;
         const ra = C.stato.blocchi[a].getBoundingClientRect(), rb = C.stato.blocchi[b].getBoundingClientRect();
         const larghezza = c.asse === 'x';
@@ -756,13 +821,15 @@
      * Prova a spostare il confine di `delta` pixel di progetto. Restituisce la configurazione che ne viene e se
      * vale (i blocchi ci stanno e il palco è il più grande).
      */
+    // Quanto era più grande il palco prima di toccare niente: se in questa disposizione non arrivava già alla misura
+    // voluta (finestra piccola, zona piccola) non si chiede di più di così, ma nemmeno di meno
+    let rapportoBase = Infinity;
+
     function provaConfine(c, coppia, delta) {
         const m = P.muoviConfine(coppia, delta);
         const candidata = P.impostaPesi(cfg(), C.stato.griglia, c.tipo, c.quale, m.pesi);
-        C.provaMisure(candidata);
-        const ok = !C.sfora()
-            && C.rapportoPalco() >= C.RAPPORTO_PALCO_MIN
-            && P.griglia(candidata, visibiliOra(), { garantisciPalco: false }).palcoOk;
+        C.provaMisure(candidata);      // come la disegnerebbe la pagina, palco ingrandito se serve
+        const ok = !C.sfora() && C.rapportoPalco() >= Math.min(C.RAPPORTO_PALCO_MIN, rapportoBase - 0.02);
         return { m, candidata, ok };
     }
 
@@ -797,6 +864,7 @@
         const asse = c.asse;
         const partenza = asse === 'x' ? e.clientX : e.clientY;
         const coppia = misuraCoppia(c);
+        rapportoBase = C.rapportoPalco();
         const iniziale = { m: { delta: 0, pesi: coppia.pesi }, candidata: P.copia(cfg()), ok: true, spostamento: 0 };
         let buono = iniziale, voluto = 0, attesa = 0;
         ridimensiona = { chiave: c.chiave };
@@ -807,7 +875,9 @@
         const aggiorna = ev => {
             attesa = 0;
             buono = cercaSpostamento(c, coppia, voluto, buono);
-            const limitato = Math.abs(buono.spostamento - voluto) > 1.5 || Math.abs(buono.m.delta - buono.spostamento) > 1.5;
+            // quanto si è mosso davvero il confine (il palco ingrandito o i minimi possono averlo tenuto fermo)
+            const ora = misuraCoppia(c).px[0] - coppia.px[0];
+            const limitato = Math.abs(ora - voluto) > 1.5;
             el.classList.toggle('is-limite', limitato);
             const [a, b] = percentuali(buono.m.pesi);
             mostraEtichetta(`${a}% | ${b}%${limitato ? ' · limit' : ''}`, ev.clientX, ev.clientY);
@@ -853,6 +923,7 @@
         ev.preventDefault();
         ev.stopPropagation();
         const coppia = misuraCoppia(c);
+        rapportoBase = C.rapportoPalco();
         const voluto = verso * (coppia.px[0] + coppia.px[1]) * PASSO_TASTO * (ev.shiftKey ? 5 : 1);
         const base = { m: { delta: 0, pesi: coppia.pesi }, candidata: P.copia(cfg()), ok: true, spostamento: 0 };
         const r = cercaSpostamento(c, coppia, voluto, base);

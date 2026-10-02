@@ -48,7 +48,8 @@
         adesivoScelto: -1,
         dopoApplica: null,     // l'editor si aggancia qui
         dopoAdatta: null,      // e qui: la tela è stata ridimensionata
-        griglia: null          // la griglia dello schermo intero in uso (P.griglia)
+        griglia: null,         // la griglia dello schermo intero in uso (P.griglia)
+        lineeIntero: null      // com'è costruita la pagina: con i blocchi affiancati raggruppati (schermo intero) o tutti in fila
     };
 
     // ---- Utilità ------------------------------------------------------------------------------
@@ -466,6 +467,9 @@
         riempiParty();
 
         const per = P.blocchiPerZona(c);
+        const intero = schermoIntero();
+        stato.lineeIntero = intero;
+        const lineePerZona = P.lineeDiZona(c);
         for (const z of ZONE) {
             const zona = stato.zone[z];
             let visibili = 0;
@@ -483,9 +487,19 @@
                     : `${NOMI_BLOCCHI[b.id].nome} · nothing to show yet`;
                 return el;
             });
-            // si spostano solo i blocchi che non sono già al loro posto (le GIF non ripartono per niente)
-            const attuali = Array.from(zona.children);
-            if (attuali.length !== desiderati.length || attuali.some((e, i) => e !== desiderati[i])) zona.replaceChildren(...desiderati);
+            // Si ricostruisce la zona solo se cambia come sono messi i blocchi (le GIF non ripartono per niente). A schermo
+            // intero i blocchi affiancati stanno dentro una .pp-linea; sugli schermi stretti tutto è in fila, una riga per blocco.
+            const righe = lineePerZona[z];
+            const firma = `${intero ? 'I' : 'S'}|${righe.map(r => r.join(',')).join('/')}`;
+            if (zona.dataset.firma !== firma) {
+                const nodi = [];
+                for (const riga of righe) {
+                    const elementi = riga.map(id => stato.blocchi[id]);
+                    if (intero && elementi.length > 1) nodi.push(h('div', { class: 'pp-linea' }, elementi)); else nodi.push(...elementi);
+                }
+                zona.replaceChildren(...nodi);
+                zona.dataset.firma = firma;
+            }
             zona.dataset.vuota = String(visibili === 0);
         }
 
@@ -520,6 +534,16 @@
             if (p) { zona.dataset.c0 = String(p.c0); zona.dataset.r0 = String(p.r0); } else { delete zona.dataset.c0; delete zona.dataset.r0; }
         }
         for (const [id, el] of Object.entries(stato.blocchi)) el.style.setProperty('--pp-peso', String(g.blocchi[id] != null ? Math.round(g.blocchi[id] * 1000) / 1000 : 1));
+        // le righe di blocchi affiancati: pesano come il blocco più pesante; senza blocchi in vista sparisce (in modifica resta
+        // solo se ci sono segnaposto da mostrare)
+        for (const zona of Object.values(stato.zone)) {
+            for (const linea of zona.querySelectorAll(':scope > .pp-linea')) {
+                const ids = Array.from(linea.children).map(e => e.dataset.blocco).filter(id => g.blocchi[id] != null);
+                linea.classList.toggle('pp-linea-fantasma', !ids.length);
+                linea.hidden = !ids.length && !stato.modifica;
+                linea.style.setProperty('--pp-peso-linea', String(ids.length ? Math.round(Math.max(...ids.map(id => g.blocchi[id])) * 1000) / 1000 : 1));
+            }
+        }
         return g;
     }
 
@@ -557,9 +581,13 @@
         return altro ? area(stato.blocchi.palco) / altro : Infinity;
     }
 
+    const schermoIntero = () => window.innerWidth >= PC_MIN_W && window.innerHeight >= PC_MIN_H;
+
     function adattaSchermo() {
         const radice = document.documentElement;
-        const pc = window.innerWidth >= PC_MIN_W && window.innerHeight >= PC_MIN_H;
+        const pc = schermoIntero();
+        // passando da schermo intero a schermo stretto (o al contrario) i blocchi affiancati vanno rimessi in fila (o raggruppati)
+        if (stato.lineeIntero != null && stato.lineeIntero !== pc) { applica(); return; }
         document.body.classList.toggle('pp-fisso', pc);
         if (!pc) {
             for (const v of ['--pp-k', '--pp-w', '--pp-h']) radice.style.removeProperty(v);
@@ -749,7 +777,10 @@
 
         riempiCornice(d);
         applica();
-        document.getElementById('pp-carta').classList.add('pp-entra');
+        const carta = document.getElementById('pp-carta');
+        carta.classList.add('pp-entra');
+        // l'entrata dura meno di un secondo e mezzo: dopo, un blocco rimesso in un'altra riga non deve rifarla (ricomparirebbe da vuoto)
+        setTimeout(() => carta.classList.remove('pp-entra'), 1800);
         attivaInclinazione();
         controllaProprietario();
         window.addEventListener('load', adattaSubito);
@@ -787,8 +818,8 @@
             applica();
         },
         scegliAdesivo(i) { stato.adesivoScelto = i; disegnaAdesivi(); },
-        /** Per chi ridimensiona: prova le misure di una configurazione senza ridisegnare né adattare la tela */
-        provaMisure(config) { return scriviGriglia(P.normalizza(config), false); },
+        /** Per chi ridimensiona: prova le misure di una configurazione (con il palco ingrandito se serve, come la pagina) senza ridisegnare né adattare la tela */
+        provaMisure(config) { return scriviGriglia(P.normalizza(config), true); },
         /** La carta sfora (i blocchi non ci stanno alla scala di adesso)? */
         sfora() { return sfora(document.getElementById('pp-carta')); },
         rapportoPalco, RAPPORTO_PALCO_MIN,

@@ -235,7 +235,8 @@
      *      aree: matrice di zone (senza zone vuote né righe/colonne vuote),
      *      colonne, righe: pesi di ogni colonna e riga di aree, idxColonne, idxRighe: a quale colonna/riga della
      *        geometria originale corrispondono (servono a salvare i pesi),
-     *      zone: { a: { c0, c1, r0, r1, ids: [id], dir } } solo per le zone in vista,
+     *      zone: { a: { c0, c1, r0, r1, ids: [id], linee: [[id]], dir } } solo per le zone in vista (linee: le righe
+     *        di blocchi, vedi lineeDiZona; con `accanto` due blocchi dividono la stessa riga),
      *      blocchi: { id: peso } il peso di ogni blocco in vista,
      *      area: { id: quota dell'area totale } (senza spazi e bordi),
      *      palcoOk: il palco, prima dell'ingrandimento, era già il più grande (vero anche se non c'è),
@@ -247,6 +248,7 @@
         const vis = new Set(visibili || []);
         const ids = { a: [], b: [], c: [] };
         for (const b of config.blocchi) if (vis.has(b.id)) ids[b.zona].push(b.id);
+        const lineeZona = lineeDiZona(config, visibili || []);
         const piene = opzioni.zoneVuote ? ZONE.slice() : ZONE.filter(z => ids[z].length);
 
         const misure = config.misure || misureDiPartenza();
@@ -288,7 +290,7 @@
             let r0 = Infinity, r1 = -1, c0 = Infinity, c1 = -1;
             celle.forEach((riga, r) => riga.forEach((x, c) => { if (x === z) { r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); } }));
             if (r1 < 0) continue;
-            zone[z] = { c0, c1, r0, r1, ids: ids[z], dir: G.dir[z] };
+            zone[z] = { c0, c1, r0, r1, ids: ids[z], linee: lineeZona[z], dir: G.dir[z] };
         }
 
         // in modifica una zona vuota è solo un bersaglio: le colonne e le righe che occupa da sola si stringono,
@@ -328,14 +330,21 @@
         return g;
     }
 
+    // Il peso di una riga di blocchi è quello del suo blocco più pesante: a una riga di piccoli ne spetta poco
+    const pesoLinea = (g, linea) => Math.max(...linea.map(id => g.blocchi[id]));
+
     function calcolaAree(g) {
         const totC = somma(g.colonne), totR = somma(g.righe);
         g.area = {};
         for (const z of Object.values(g.zone)) {
             const larghezza = somma(g.colonne.slice(z.c0, z.c1 + 1)) / totC;
             const altezza = somma(g.righe.slice(z.r0, z.r1 + 1)) / totR;
-            const peso = somma(z.ids.map(id => g.blocchi[id]));
-            for (const id of z.ids) g.area[id] = larghezza * altezza * g.blocchi[id] / peso;
+            const pesi = z.linee.map(l => pesoLinea(g, l));
+            const totale = somma(pesi);
+            z.linee.forEach((linea, i) => {
+                const dentro = somma(linea.map(id => g.blocchi[id]));
+                for (const id of linea) g.area[id] = larghezza * altezza * (pesi[i] / totale) * (g.blocchi[id] / dentro);
+            });
         }
     }
 
@@ -371,7 +380,8 @@
 
     /**
      * La configurazione con nuovi pesi per i due elementi vicini a un confine, dato lo stato g (quello di griglia()).
-     *   tipo: 'colonne' | 'righe' (quale = indice della prima delle due tracce di g) oppure 'blocchi' (quale = [id, id])
+     *   tipo: 'colonne' | 'righe' (quale = indice della prima delle due tracce di g), 'blocchi' (quale = [id, id], due
+     *   blocchi vicini sulla stessa riga) oppure 'linee' (quale = [zona, indice della prima delle due righe di blocchi])
      *   pesi: i due nuovi pesi (da muoviConfine). Le altre misure restano come sono.
      */
     function impostaPesi(config, g, tipo, quale, pesi) {
@@ -380,6 +390,16 @@
         const m = nuova.misure || (nuova.misure = misureDiPartenza());
         if (tipo === 'blocchi') {
             m.blocchi = { ...m.blocchi, [quale[0]]: pesi[0], [quale[1]]: pesi[1] };
+        } else if (tipo === 'linee') {
+            // due righe di blocchi di una zona: ogni blocco di una riga cresce o cala dello stesso fattore, così le
+            // proporzioni dentro la riga restano
+            const linee = g.zone[quale[0]].linee;
+            m.blocchi = { ...m.blocchi };
+            [0, 1].forEach(k => {
+                const linea = linee[quale[1] + k];
+                const fattore = pesi[k] / pesoLinea(g, linea);
+                for (const id of linea) m.blocchi[id] = Math.round(Math.min(PESO_MAX, Math.max(PESO_MIN, g.blocchi[id] * fattore)) * 1000) / 1000;
+            });
         } else {
             const idx = tipo === 'colonne' ? g.idxColonne : g.idxRighe;
             const lista = (m[tipo] && m[tipo].length === G[tipo].length ? m[tipo] : G[tipo]).slice();
@@ -395,9 +415,10 @@
         const nuova = copia(config);
         const G = GEOMETRIA[nuova.layout] || GEOMETRIA.carta;
         const m = nuova.misure || (nuova.misure = misureDiPartenza());
-        if (tipo === 'blocchi') {
+        if (tipo === 'blocchi' || tipo === 'linee') {
             m.blocchi = { ...m.blocchi };
-            for (const id of quale) delete m.blocchi[id];
+            const ids = tipo === 'blocchi' ? quale : [...g.zone[quale[0]].linee[quale[1]], ...g.zone[quale[0]].linee[quale[1] + 1]];
+            for (const id of ids) delete m.blocchi[id];
         } else if (m[tipo] && m[tipo].length === G[tipo].length) {
             const idx = tipo === 'colonne' ? g.idxColonne : g.idxRighe;
             const lista = m[tipo].slice();
@@ -475,7 +496,9 @@
         for (const b of comeElenco(grezza.blocchi)) {
             if (!b || typeof b !== 'object' || !BLOCCHI[b.id] || visti.has(b.id)) continue;
             visti.add(b.id);
-            blocchi.push({ id: b.id, zona: unOf(b.zona, ZONE, ZONA_DEFAULT[b.id]), on: b.on !== false });
+            const voce = { id: b.id, zona: unOf(b.zona, ZONE, ZONA_DEFAULT[b.id]), on: b.on !== false };
+            if (b.accanto === true) voce.accanto = true;      // sta sulla stessa riga del blocco prima di lui (se c'è)
+            blocchi.push(voce);
         }
         for (const d of D.blocchi) if (!visti.has(d.id)) blocchi.push(d);
 
@@ -540,26 +563,90 @@
     }
 
     /**
+     * I blocchi di ogni zona raggruppati in righe: dentro una zona i blocchi stanno uno sotto l'altro (o affiancati,
+     * secondo il layout) e un blocco con `accanto` sta sulla stessa riga di quello prima di lui. "Riga" è sempre la
+     * fila di blocchi che si dividono lo spazio nell'altra direzione: in una zona a colonna sono righe vere, in una zona
+     * a riga sono colonne. Si ragiona su tutti i blocchi (anche spenti) così lo stato di uno non sposta gli altri;
+     * `visibili` (facoltativo) toglie dopo i blocchi che non si vedono e le righe rimaste vuote.
+     * -> { a: [[id, id], [id]], b: [...], c: [...] }
+     */
+    function lineeDiZona(config, visibili) {
+        const vis = visibili ? new Set(visibili) : null;
+        const per = blocchiPerZona(config);
+        const fuori = { a: [], b: [], c: [] };
+        for (const z of ZONE) {
+            const righe = [];
+            per[z].forEach(b => {
+                if (b.accanto && righe.length) righe[righe.length - 1].push(b.id); else righe.push([b.id]);
+            });
+            fuori[z] = righe.map(r => (vis ? r.filter(id => vis.has(id)) : r)).filter(r => r.length);
+        }
+        return fuori;
+    }
+
+    // Toglie dall'elenco il blocco in posizione `da` (lo restituisce in un array); se apriva una riga, il blocco che la
+    // continuava ora la apre lui
+    function togliDalleRighe(config, da) {
+        const vecchiaZona = config.blocchi[da].zona;
+        const tolto = config.blocchi.splice(da, 1);
+        if (!tolto[0].accanto) {
+            const dopo = config.blocchi.slice(da).find(b => b.zona === vecchiaZona);
+            if (dopo && dopo.accanto) delete dopo.accanto;
+        }
+        return tolto;
+    }
+
+    /** La configurazione senza un blocco (per vedere dove può andare): come sposta() la toglie dalla sua riga. */
+    function senzaBlocco(config, id) {
+        const nuova = copia(config);
+        const da = nuova.blocchi.findIndex(b => b.id === id);
+        if (da >= 0) togliDalleRighe(nuova, da);
+        return nuova;
+    }
+
+    /**
      * Sposta un blocco in una zona, in una certa posizione tra i blocchi di quella zona
      * (0 = in cima; un indice troppo grande = in fondo). Restituisce una configurazione nuova.
+     *   accanto: false = su una riga tutta sua (se cade in mezzo a una riga, la divide);
+     *            true = affiancato al blocco che lo precede, sulla sua riga;
+     *            'testa' = affiancato al blocco che lo segue, prima di lui, sulla sua riga.
      */
-    function sposta(config, id, zona, indice) {
+    function sposta(config, id, zona, indice, accanto = false) {
         const nuova = copia(config);
         if (!ZONE.includes(zona)) return nuova;
         const da = nuova.blocchi.findIndex(b => b.id === id);
         if (da < 0) return nuova;
-        const [blocco] = nuova.blocchi.splice(da, 1);
+        const [blocco] = togliDalleRighe(nuova, da);
         // il peso era relativo ai blocchi della zona di prima: in una zona nuova si riparte da quello di partenza
         if (blocco.zona !== zona && nuova.misure && nuova.misure.blocchi) delete nuova.misure.blocchi[id];
         blocco.zona = zona;
+        delete blocco.accanto;
 
         const dellaZona = nuova.blocchi.map((b, i) => ({ b, i })).filter(x => x.b.zona === zona);
         const k = Math.min(Math.max(0, indice | 0), dellaZona.length);
+        const precedente = k > 0 ? dellaZona[k - 1].b : null;
+        const seguente = k < dellaZona.length ? dellaZona[k].b : null;
+        if (accanto === true && precedente) blocco.accanto = true;
+        else if (accanto === 'testa' && seguente) {
+            if (seguente.accanto) blocco.accanto = true;
+            seguente.accanto = true;
+        } else if (seguente && seguente.accanto) delete seguente.accanto;   // in mezzo a una riga: la divide
+
         let posto;
         if (k < dellaZona.length) posto = dellaZona[k].i;
         else if (dellaZona.length) posto = dellaZona[dellaZona.length - 1].i + 1;
         else posto = nuova.blocchi.length;
         nuova.blocchi.splice(posto, 0, blocco);
+        return nuova;
+    }
+
+    /** Mette un blocco sulla riga di quello che lo precede (on) o su una riga tutta sua (off). Il primo di una zona non può. */
+    function affianca(config, id, on) {
+        const nuova = copia(config);
+        const b = nuova.blocchi.find(x => x.id === id);
+        if (!b) return nuova;
+        const primo = nuova.blocchi.find(x => x.zona === b.zona);
+        if (on && primo !== b) b.accanto = true; else delete b.accanto;
         return nuova;
     }
 
@@ -918,7 +1005,7 @@
         VERSIONE, ZONE, MAX_ADESIVI,
         LAYOUT, BLOCCHI, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
         predefinita, normalizza, copia, uguali,
-        blocchiPerZona, sposta, accendi,
+        blocchiPerZona, lineeDiZona, sposta, senzaBlocco, affianca, accendi,
         PESO_MIN, PESO_MAX, MARGINE_PALCO, PESO_BLOCCO, MINIMI, GEOMETRIA,
         griglia, muoviConfine, impostaPesi, ripristinaPesi, impostaLayout, azzeraMisure,
         esadecimale, luminanza, inchiostroSu, mescola, sfondoCss, temaCarta, variabiliCss,
