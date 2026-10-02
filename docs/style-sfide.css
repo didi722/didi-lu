@@ -392,6 +392,63 @@
 .live-chip.gioca .live-vai { background: #09ca49; }
 .live-chip:hover .live-vai { background: #000; color: #fff; }
 
+/* Più showdown in corso: un chip alla volta in una finestra alta quanto lui.
+   I chip sono impilati in una traccia che sale di un passo (--h-slide) ogni pochi secondi:
+   quello in vista esce verso l'alto, quello dopo entra dal basso, come un rullo di slot machine.
+   sfide.js ne aggiunge una copia del primo in fondo, così il giro si chiude senza scatti. */
+.live-list {
+    --h-slide: 54px;
+    --rollio: 0.6s;          /* = DURATA_ROLLIO in sfide.js */
+}
+.live-list:has(.live-scorri) { align-items: center; }
+.live-scorri {
+    flex: 1;
+    min-width: 0;
+    height: var(--h-slide);
+    overflow: hidden;
+}
+.live-traccia {
+    display: flex;
+    flex-direction: column;
+    /* parte con un piccolo strappo all'indietro, poi sale veloce e si ferma morbida */
+    transition: transform var(--rollio) cubic-bezier(0.5, -0.2, 0.2, 1);
+    will-change: transform;
+}
+.live-slide {
+    flex: 0 0 var(--h-slide);
+    height: var(--h-slide);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 10px 0 4px;   /* spazio per l'ombra del chip, che la finestra altrimenti taglia */
+}
+.live-slide[inert] { pointer-events: none; }
+.live-slide .live-chip { min-width: 0; }
+
+/* Quale showdown si vede, e per saltare a un altro: tra "Live" e il chip, a colonna, poi a più colonne se sono tanti */
+.live-punti {
+    flex-shrink: 0;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 4px;
+    max-height: var(--h-slide);
+}
+.live-pallino {
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    background: #fff;
+    border: 2px solid #000;
+    cursor: pointer;
+}
+.live-pallino[aria-current="true"] { background: #000; }
+.live-pallino:hover { background: #ffbd44; }
+.live-pallino:focus-visible { outline: 3px solid #ffbd44; outline-offset: 2px; }
+
 
 /* ---------- Avviso a comparsa ---------- */
 .sfide-toast {
