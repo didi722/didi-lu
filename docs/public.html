@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
             <title>Sant'Alvise Pkmn League</title>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&family=Bungee&family=Rubik+Mono+One&family=Orbitron:wght@500;700;900&family=Righteous&family=Fredoka:wght@500;700&family=Permanent+Marker&family=Lobster&family=Playfair+Display:wght@700;900&family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-public.css">
     <link rel="stylesheet" href="style-public-card.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
@@ -26,12 +26,6 @@
 </div>
     
     <audio id="bg-music-home" loop preload="auto"></audio>
-
-    <div id="music-control" class="music-btn" onclick="toggleMusic()">
-        <svg id="music-svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
-            <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        </svg>
-    </div>
 
     <div id="login-modal" class="modal">
         <div class="modal-content glass-card">
@@ -83,7 +77,7 @@
     <div id="pp-scritta" class="pp-scritta" aria-hidden="true"></div>
 
     <main id="pp-pagina" class="pp-pagina" data-layout="carta">
-        <nav class="pp-nav">
+        <nav id="pp-nav" class="pp-nav">
             <a class="pp-indietro" href="players.html"><span aria-hidden="true">&larr;</span> TRAINERS</a>
         </nav>
 
@@ -306,35 +300,6 @@ firebase.auth().onAuthStateChanged(async (currentUser) => {
     }
 });
 
-function caricaMusicaSottoBio(canzone) {
-    const musicBtn = document.getElementById('music-control');
-    
-    if (!musicBtn) {
-        console.error("❌ Missing #music-control element in HTML!");
-        return;
-    }
-
-    let tooltip = document.getElementById('music-tooltip');
-
-    // Se non c'è una canzone, rimuove il tooltip se presente
-    if (!canzone) {
-        if (tooltip) tooltip.remove();
-        return;
-    }
-
-    // Se il tooltip non esiste ancora, lo crea
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'music-tooltip';
-        tooltip.className = 'music-tooltip';
-        musicBtn.appendChild(tooltip);
-    }
-
-    // Imposta il testo del brano
-    tooltip.innerHTML = `<span>${canzone}</span>`;
-}
-
-
 // 1. Recupero il nome dall'URL (?name=Didi)
 const urlParams = new URLSearchParams(window.location.search);
 const playerNameFromURL = urlParams.get('name'); 
@@ -418,8 +383,8 @@ async function initPublicProfile() {
             tutti: tutti || {}
         });
 
-        caricaMusicaSottoBio(info.musicName);
-        if (info.musicaPreferita) avviaMusicaGiocatore(info.musicaPreferita);
+        // la musica parte (se l'utente non l'ha tolta nel resto del sito) solo se il widget della canzone è in vista
+        if (info.musicaPreferita && PublicCard.musicaAttiva()) avviaMusicaGiocatore(info.musicaPreferita);
 
         inizializzaChiusuraModali();
     } catch (e) {
@@ -1463,114 +1428,55 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         });
 });
 
+// ---- Musica ----
+// La musica del giocatore si accende e si spegne dal widget "NOW PLAYING" della carta. La preferenza
+// (userMusicPref: 'on' | 'off') è quella di tutto il sito: se il volume è stato tolto altrove, qui la
+// musica resta spenta, e se la si accende qui vale anche nel resto del sito.
+const preferenzaMusica = () => localStorage.getItem('userMusicPref') || 'on';
+
 function avviaMusicaGiocatore(urlMusica) {
     const player = document.getElementById('bg-music-home');
     if (!player || !urlMusica) return;
 
-    // Recuperiamo la preferenza salvata (on/off)
-    const savedPref = localStorage.getItem('userMusicPref') || 'on';
-
     if (player.src !== urlMusica) {
         player.src = urlMusica;
         player.volume = 1;
-        player.loop = true; // Assicuriamoci che vada in loop
-        
-        // Se l'utente non ha silenziato il sito precedentemente, proviamo l'autoplay
-        if (savedPref === 'on') {
-            player.play()
-                .then(() => console.log("Musica del giocatore partita!"))
-                .catch(() => {
-                    console.log("Autoplay bloccato, attendo interazione.");
-                    const musicBtn = document.getElementById('music-control');
-                    if (musicBtn) musicBtn.classList.add('muted');
-                });
-        } else {
-            player.pause();
-            const musicBtn = document.getElementById('music-control');
-            if (musicBtn) musicBtn.classList.add('muted');
-        }
+        player.loop = true;
+    }
+
+    if (preferenzaMusica() === 'on') {
+        player.muted = false;
+        player.play().catch(() => console.log("Autoplay bloccato, attendo un clic."));
+    } else {
+        player.pause();
     }
 }
 
-// SECONDO COLPO: Sbloccatore al primo click ovunque sulla pagina
-// --- 1. SBLOCCO INIZIALE (RISPETTA IL LOCALSTORAGE) ---
+// Il browser spesso blocca l'autoplay: al primo clic ovunque sulla pagina la musica parte, se la preferenza lo permette
 document.addEventListener('click', () => {
-    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
-    // Controlliamo la preferenza PRIMA di fare play
-    const musicPref = localStorage.getItem('userMusicPref') || 'on';
-
-    if (player && player.paused && musicPref === 'on') {
-        player.play()
-            .then(() => console.log("🔊 Musica sbloccata dal click (Preferenza: ON)"))
-            .catch(err => console.warn("Autoplay bloccato dal browser:", err));
-    } else {
-        console.log("🔇 Musica rimane spenta al click (Preferenza: OFF)");
-    }
+    const player = document.getElementById('bg-music-home');
+    if (!player || !player.getAttribute('src') || !player.paused) return;
+    if (preferenzaMusica() !== 'on' || !(window.PublicCard && PublicCard.musicaAttiva())) return;
+    player.muted = false;
+    player.play().catch(err => console.warn("Autoplay bloccato dal browser:", err));
 }, { once: true });
 
-// --- 2. FUNZIONE TOGGLE AGGIORNATA ---
 function toggleMusic() {
-    const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
-    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
-
-    if (!player || !musicBtn) return;
+    const player = document.getElementById('bg-music-home');
+    if (!player || !player.getAttribute('src')) return;
 
     if (player.paused || player.muted) {
-        // RESET E ACCENSIONE
-        player.muted = false; 
-        player.volume = 1; 
-
-        player.play().then(() => {
-            musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on'); // SALVA ON
-            console.log("🔊 Musica ripresa");
-        }).catch(error => {
-            console.warn("Autoplay bloccato:", error);
-            musicBtn.classList.add('muted');
-        });
-        
+        player.muted = false;
+        player.volume = 1;
+        player.play()
+            .then(() => localStorage.setItem('userMusicPref', 'on'))
+            .catch(error => console.warn("Autoplay bloccato:", error));
     } else {
-        // SPEGNIMENTO TOTALE
         player.pause();
-        player.muted = true; 
-        
-        musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off'); // SALVA OFF
-        console.log("🔇 Musica fermata");
+        player.muted = true;
+        localStorage.setItem('userMusicPref', 'off');
     }
 }
-
-// --- 3. SINCRONIZZAZIONE ALL'AVVIO ---
-// Questo serve per far sì che il bottone mostri la sbarra corretta appena carichi la pagina
-window.addEventListener('DOMContentLoaded', () => {
-    const musicPref = localStorage.getItem('userMusicPref') || 'on';
-    const musicBtn = document.getElementById('music-control') || document.getElementById('music-toggle');
-    if (musicPref === 'off' && musicBtn) {
-        musicBtn.classList.add('muted');
-    }
-});
-/** * AGGIUNTA FONDAMENTALE: 
- * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
- * silenziato la musica in un'altra parte del sito.
- */
-window.addEventListener('DOMContentLoaded', () => {
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
-    const savedPref = localStorage.getItem('userMusicPref');
-
-    if (player && musicBtn) {
-        if (savedPref === 'off') {
-            // Se l'utente ha scelto 'off' altrove, non far partire nulla
-            player.pause();
-            musicBtn.classList.add('muted');
-        } else {
-            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
-            player.play().catch(() => {
-                musicBtn.classList.add('muted');
-            });
-        }
-    }
-});
 
 // Funzione Logout
 function logout() {

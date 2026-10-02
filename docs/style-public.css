@@ -95,55 +95,7 @@
 
 /* --- TITOLO (Sticker Nero) --- */
 
-.music-btn {
-    position: fixed;
-    top: 100px;
-    right: 40px;
-    width: 45px;
-    height: 45px;
-    background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    outline: none;
-    z-index: 100;
-}
-
-.music-btn:hover {
-    background-color: black;
-    transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
-    border: #000;
-    box-shadow: 0 0 0;
-}
-
-#music-control svg path {
-    transition: stroke 0.3s ease; /* Transizione fluida */
-}
-
-#music-control:hover svg {
-    stroke: white; /* Usa il tuo --yellow o un altro colore */
-}
-
-#music-control {
-    cursor: pointer;
-}
-
-.music-btn:active {
-    color: black;
-    background-color: white;
-    transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
-    box-shadow: 0 0 0;
-}
-
 /* Opzionale: rendiamo l'icona sotto un po' più chiara quando è mutata */
-.music-btn.muted svg {
-    opacity: 0.1;
-}
 
 .btn-login { width: 100%; padding: 12px; background: #2ecc71; border: none; color: white; cursor: pointer; font-family: 'Josefin Sans', sans-serif;}
 .error-msg { color: #ff4d4d; margin-top: 10px; font-size: 14px; }
@@ -2259,51 +2211,7 @@ color:#eeeeee;
 /* 4. Sistemiamo il testo "x1" accanto al trofeo */
 
 /* Tooltip posizionato SOTTO il pulsante e spostato a SINISTRA */
-.music-tooltip {
-    visibility: hidden;
-    opacity: 0;
-    position: absolute;
-    
-    /* Con il parent ruotato di 90deg:
-       - 'left' sposta in VERTICALE (sotto al pulsante)
-       - 'top' sposta in ORIZZONTALE (verso sinistra) */
-    right: calc(100% - 60px);
-    top: -5px;              
-
-    background: var(--yellow);    
-    color: #000000;
-    border: 2px solid #000000;
-    padding: 6px 12px;
-    box-shadow: 3px 3px 0 #000000;
-    font-weight: 800;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    white-space: nowrap;
-    z-index: 10000;
-    pointer-events: none;
-
-    /* Ancoraggio in alto a destra per mantenere la rotazione dritta */
-    transform-origin: top right;
-    transform: rotate(-80deg) translateY(-5px);
-    transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
-}
 
 /* Freccetta sul bordo superiore del tooltip (punta verso il pulsante) */
-.music-tooltip::before {
-    position: absolute;
-    top: -6px;            /* Bordo superiore del tooltip */
-    right: 12px;          /* Allineata al pulsante */
-    width: 8px;
-    height: 8px;
-    background: #ffffff;
-    border-top: 2px solid #000000;
-    border-left: 2px solid #000000;
-    transform: rotate(45deg);
-}
 
 /* Hover: comparsa con leggero scorrimento */
-.music-btn:hover .music-tooltip {
-    visibility: visible;
-    opacity: 1;
-    transform: rotate(-80deg) translateY(0);
-}

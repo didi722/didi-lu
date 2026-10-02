@@ -269,3 +269,183 @@ test('il nome sulla carta è bianco quando la carta ha già il colore dell\'alle
     assert.equal(P.variabiliCss(P.normalizza({ carta: { tema: 'colore' } }), '#31c489')['--pp-nome'], '#ffffff');
     assert.equal(P.variabiliCss(P.normalizza({ carta: { tema: 'bianco' } }), '#31c489')['--pp-nome'], '#31c489');
 });
+
+// ---- Il palco: allenatore e Pokémon in scala ------------------------------------------------
+
+test('palco: un Pokémon normale ha la sua altezza vera, in scala con l\'allenatore di 1,70 m', () => {
+    // 1,7 m come l'allenatore: alto uguale; 2,2 m: più alto di lui
+    assert.deepEqual(P.scalaScena(1.7), { allenatore: 170, pokemon: 170, scala: 1, compresso: false });
+    assert.deepEqual(P.scalaScena(2.2), { allenatore: 170, pokemon: 220, scala: 1, compresso: false });
+});
+
+test('palco: i piccoli si ingrandiscono come prima, ma mai sotto il minimo', () => {
+    assert.equal(P.scalaScena(0.59).pokemon, Math.round(0.59 * 100 * 1.6));  // < 0,6 m: x1,6
+    assert.equal(P.scalaScena(1.0).pokemon, Math.round(1.0 * 100 * 1.35));   // < 1,3 m: x1,35
+    assert.equal(P.scalaScena(0.4).pokemon, P.SCENA.POKEMON_MIN);            // 40 x 1,6 = 64: sotto il minimo
+    assert.equal(P.scalaScena(0.1).pokemon, P.SCENA.POKEMON_MIN);
+    assert.equal(P.scalaScena(0.1).allenatore, 170);
+});
+
+test('palco: le correzioni su misura (Kyogre, Wailord, Charizard) restano quelle di prima', () => {
+    assert.equal(P.scalaScena(4.5, { regola: 'rimpicciolisci' }).pokemon, 225);   // 450 / 2
+    assert.equal(P.scalaScena(1.7, { regola: 'ingrandisci' }).pokemon, 255);      // 170 x 1,5: sta giusto giusto
+});
+
+test('palco: se un Pokémon è troppo grande si rimpicciolisce tutta la scena, allenatore compreso, e la proporzione resta vera', () => {
+    // 4 m = 400 pixel di progetto: il palco ne concede 255, quindi tutto in scala 255/400
+    const s = P.scalaScena(4);
+    assert.equal(s.pokemon, 255);
+    assert.equal(s.compresso, false);
+    assert.ok(s.allenatore < 170, 'l\'allenatore deve rimpicciolirsi');
+    assert.ok(Math.abs(s.pokemon / s.allenatore - 400 / 170) < 0.03, `rapporto ${s.pokemon / s.allenatore}`);
+});
+
+test('palco: chi vola ha meno spazio sopra, perché è sollevato da terra', () => {
+    const terra = P.scalaScena(4), aria = P.scalaScena(4, { vola: true });
+    assert.equal(aria.pokemon, P.SCENA.POKEMON_MAX_IN_VOLO);
+    assert.ok(aria.pokemon < terra.pokemon && aria.allenatore <= terra.allenatore);
+});
+
+test('palco: un gigante assurdo non fa sparire l\'allenatore: al 55% si ferma e la proporzione si comprime', () => {
+    const s = P.scalaScena(14.5, { regola: 'rimpicciolisci' });   // Wailord
+    assert.equal(s.allenatore, Math.round(170 * P.SCENA.ALLENATORE_MIN));
+    assert.equal(s.pokemon, P.SCENA.POKEMON_MAX);
+    assert.equal(s.compresso, true);
+    assert.equal(P.scalaScena(70, { vola: true }).pokemon, P.SCENA.POKEMON_MAX_IN_VOLO);
+});
+
+test('palco: mai fuori dal palco, e più è grande il Pokémon più è piccolo (o uguale) l\'allenatore', () => {
+    let prima = Infinity;
+    for (const m of [0.1, 0.5, 1, 1.7, 2.5, 4, 6, 10, 20, 100]) {
+        for (const vola of [false, true]) {
+            const s = P.scalaScena(m, { vola });
+            assert.ok(s.pokemon <= (vola ? P.SCENA.POKEMON_MAX_IN_VOLO : P.SCENA.POKEMON_MAX), `${m} m`);
+            assert.ok(s.allenatore >= Math.round(170 * P.SCENA.ALLENATORE_MIN) && s.allenatore <= 170);
+        }
+        const a = P.scalaScena(m).allenatore;
+        assert.ok(a <= prima, `${m} m`);
+        prima = a;
+    }
+    // dati mancanti: una taglia media
+    assert.deepEqual(P.scalaScena(undefined), P.scalaScena(1.2));
+    assert.deepEqual(P.scalaScena('boh'), P.scalaScena(1.2));
+});
+
+// ---- Scelte che non si possono condividere ---------------------------------------------------
+
+const altri = {
+    didi: { info: { color: '#31C489', avatar: 'https://sito.test/immagini/profile/3.png', pkmPreferito: 'Calyrex-Shadow', musicName: 'Tema', musicaPreferita: 'https://m.test/a.mp3' } },
+    tom: { info: { color: '#ff7b6b', avatar: 'immagini/profile/7.png', pkmPreferito: 'pikachu', musicName: 'Route 1', musicaPreferita: 'https://m.test/b.mp3' } },
+    anna: { info: { name: 'Anna' } },
+    zed: {}
+};
+
+test('unici: l\'avatar si confronta sulle ultime due parti del percorso, qualunque sia il dominio', () => {
+    assert.equal(P.chiaveAvatar('https://sito.test/immagini/profile/3.png?v=2#x'), 'profile/3.png');
+    assert.equal(P.chiaveAvatar('immagini/profile/3.PNG'), 'profile/3.png');
+    assert.equal(P.chiaveAvatar(''), '');
+    assert.equal(P.chiaveAvatar(null), '');
+});
+
+test('unici: quello che hanno scelto gli altri non conta se è il tuo', () => {
+    const presi = P.scelteDegliAltri('didi', altri);
+    assert.deepEqual([...presi.colori], ['#FF7B6B']);
+    assert.deepEqual([...presi.avatar], ['profile/7.png']);
+    assert.deepEqual([...presi.pokemon], ['pikachu']);
+    assert.deepEqual([...presi.canzoniUrl], ['https://m.test/b.mp3']);
+    assert.deepEqual([...presi.canzoniNomi], ['route 1']);
+    // la chiave si trova anche con un'altra maiuscola, e dati mancanti non rompono niente
+    assert.deepEqual([...P.scelteDegliAltri('DIDI', altri).colori], ['#FF7B6B']);
+    for (const male of [null, undefined, 5, []]) assert.equal(P.scelteDegliAltri('didi', male).colori.size, 0);
+});
+
+test('unici: i conflitti (colore, avatar, Pokémon, canzone) con maiuscole e domini diversi', () => {
+    assert.deepEqual(P.conflitti('didi', { color: '#FF7B6B' }, altri), ['color']);
+    assert.deepEqual(P.conflitti('didi', { color: '#ff7b6b' }, altri), ['color']);
+    assert.deepEqual(P.conflitti('didi', { avatar: 'https://altro.test/x/immagini/profile/7.png' }, altri), ['avatar']);
+    assert.deepEqual(P.conflitti('didi', { pkmPreferito: 'Pikachu' }, altri), ['pkmPreferito']);
+    assert.deepEqual(P.conflitti('didi', { musicaPreferita: 'https://m.test/b.mp3' }, altri), ['musica']);
+    assert.deepEqual(P.conflitti('didi', { musicName: ' route 1 ' }, altri), ['musica']);       // stesso nome, altro file
+    assert.deepEqual(P.conflitti('didi', { color: '#FF7B6B', pkmPreferito: 'pikachu' }, altri), ['color', 'pkmPreferito']);
+    // il proprio valore o uno libero non è un conflitto; vuoto neppure
+    assert.deepEqual(P.conflitti('didi', { color: '#31C489', pkmPreferito: 'Calyrex-Shadow', musicName: 'Tema' }, altri), []);
+    assert.deepEqual(P.conflitti('didi', { color: '#123456', avatar: 'immagini/profile/9.png', musicName: '', musicaPreferita: '' }, altri), []);
+    assert.deepEqual(P.conflitti('tom', { color: '#31c489' }, altri), ['color']);
+});
+
+test('avatar disponibili: da 1 a 292 senza i due che mancano', () => {
+    const a = P.elencoAvatar();
+    assert.equal(a.length, 290);
+    assert.ok(a.includes('1.png') && a.includes('292.png'));
+    assert.ok(!a.includes('162.png') && !a.includes('168.png'));
+    const fs = require('node:fs'), path = require('node:path');
+    for (const f of a) assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'profile', f)), `manca ${f}`);
+});
+
+test('la playlist (CSV) si legge anche con le virgole tra virgolette e con le righe vuote', () => {
+    const csv = 'Nome,Url\r\n"Boss, Finale",https://a.test/1.mp3\r\nRoute 1,https://a.test/2.mp3\r\n,https://x\r\nSenza url,\r\n"Con ""virgolette""",https://a.test/3.mp3\r\n';
+    assert.deepEqual(P.leggiCsvCanzoni(csv), [
+        { nome: 'Boss, Finale', url: 'https://a.test/1.mp3' },
+        { nome: 'Route 1', url: 'https://a.test/2.mp3' },
+        { nome: 'Con "virgolette"', url: 'https://a.test/3.mp3' }
+    ]);
+    assert.deepEqual(P.leggiCsvCanzoni(''), []);
+    assert.deepEqual(P.leggiCsvCanzoni(null), []);
+});
+
+// ---- Colori e caratteri -----------------------------------------------------------------------
+
+test('colori: la palette del profilo c\'è tutta, nello stesso ordine, e gli extra non la duplicano', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const profilo = fs.readFileSync(path.join(__dirname, '..', 'docs', 'profile.html'), 'utf8');
+    const blocco = /const HONEYCOMB_COLORS = \[([\s\S]*?)\];/.exec(profilo)[1];
+    const nelProfilo = [...blocco.matchAll(/"(#[0-9a-fA-F]{6})"/g)].map(m => m[1].toUpperCase());
+    assert.equal(nelProfilo.length, 40);
+    assert.deepEqual(P.PALETTE_PROFILO.map(c => c.toUpperCase()), nelProfilo);
+
+    const tutti = P.PALETTE_SFONDO.map(c => c.toLowerCase());
+    assert.equal(new Set(tutti).size, tutti.length, 'colori doppi');
+    for (const c of tutti) assert.match(c, /^#[0-9a-f]{6}$/);
+    assert.deepEqual(P.PALETTE_FIRMA, [...P.PALETTE_PROFILO, ...P.PALETTE_EXTRA]);
+    assert.ok(P.PALETTE_SFONDO.length > P.PALETTE_PROFILO.length + 16);
+    // il colore firma non ha i neutri (bianco, nero...): sono solo per sfondi e carte
+    for (const n of P.PALETTE_NEUTRI) assert.ok(!P.PALETTE_FIRMA.map(c => c.toLowerCase()).includes(n.toLowerCase()), n);
+});
+
+test('caratteri: ognuno ha nome, pila e larghezza, e la pagina li scarica tutti da Google Fonts', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public.html'), 'utf8');
+    const link = /fonts\.googleapis\.com\/css2\?([^"]+)"/.exec(html)[1];
+    assert.ok(Object.keys(P.FONT).length >= 12, 'servono più caratteri');
+    for (const [id, f] of Object.entries(P.FONT)) {
+        assert.ok(f.nome && f.pila.includes(f.nome) && f.larghezza >= 0.7 && f.larghezza <= 2, id);
+        assert.ok(link.includes(`family=${f.nome.replace(/ /g, '+')}`), `${f.nome} non è nel link dei font`);
+    }
+    // la larghezza arriva agli stili
+    assert.equal(P.variabiliCss(P.normalizza({ carta: { font: 'pixel' } }), '#31c489')['--pp-font-w'], String(P.FONT.pixel.larghezza));
+});
+
+test('il colore della carta può essere un tema o un colore qualunque della palette', () => {
+    assert.equal(P.normalizza({ carta: { tema: '#FF3333' } }).carta.tema, '#ff3333');
+    assert.equal(P.normalizza({ carta: { tema: 'giallo' } }).carta.tema, 'giallo');
+    assert.equal(P.normalizza({ carta: { tema: 'red' } }).carta.tema, 'bianco');
+    assert.equal(P.normalizza({ carta: { tema: 'url(x)' } }).carta.tema, 'bianco');
+    const v = P.variabiliCss(P.normalizza({ carta: { tema: '#17171c' } }), '#31c489');
+    assert.equal(v['--pp-sup'], '#17171c');
+    assert.equal(v['--pp-ink'], '#ffffff');
+});
+
+test('a sorpresa: anche con colori e caratteri nuovi la configurazione resta valida, senza scroll possibile da layout', () => {
+    // un generatore di numeri a caso ripetibile (mulberry32)
+    let seme = 12345;
+    const finto = () => { seme = (seme + 0x6D2B79F5) | 0; let t = Math.imul(seme ^ (seme >>> 15), 1 | seme); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const visti = new Set(), caratteri = new Set(), temi = new Set();
+    for (let i = 0; i < 300; i++) {
+        const c = P.casuale(P.predefinita(), finto);
+        assert.deepEqual(P.normalizza(c), c);
+        visti.add(c.layout); caratteri.add(c.carta.font); temi.add(c.carta.tema);
+    }
+    assert.equal(visti.size, Object.keys(P.LAYOUT).length);
+    assert.ok(caratteri.size >= 8, `pochi caratteri: ${caratteri.size}`);
+    assert.ok([...temi].some(t => t.startsWith('#')), 'mai un colore della palette');
+});

@@ -79,12 +79,45 @@
         scuro:   { nome: 'Night',  colore: '#17171c' }
     };
 
+    // larghezza: quanto è largo il carattere rispetto a Josefin Sans (serve a far stare il nome nello spazio)
     const FONT = {
-        josefin: { nome: 'Josefin Sans', pila: "'Josefin Sans', 'Montserrat', sans-serif" },
-        archivo: { nome: 'Archivo Black', pila: "'Archivo Black', 'Arial Black', Impact, sans-serif" },
-        mono:    { nome: 'Space Mono',   pila: "'Space Mono', 'Courier New', monospace" },
-        comic:   { nome: 'Bangers',      pila: "'Bangers', 'Comic Sans MS', 'Marker Felt', cursive" }
+        josefin:   { nome: 'Josefin Sans',     pila: "'Josefin Sans', 'Montserrat', sans-serif",          larghezza: 1 },
+        archivo:   { nome: 'Archivo Black',    pila: "'Archivo Black', 'Arial Black', Impact, sans-serif", larghezza: 1.12 },
+        bungee:    { nome: 'Bungee',           pila: "'Bungee', 'Arial Black', Impact, sans-serif",        larghezza: 1.22 },
+        rubik:     { nome: 'Rubik Mono One',   pila: "'Rubik Mono One', 'Arial Black', sans-serif",        larghezza: 1.32 },
+        orbitron:  { nome: 'Orbitron',         pila: "'Orbitron', 'Arial Black', sans-serif",              larghezza: 1.2 },
+        righteous: { nome: 'Righteous',        pila: "'Righteous', 'Arial Black', sans-serif",             larghezza: 0.98 },
+        fredoka:   { nome: 'Fredoka',          pila: "'Fredoka', 'Comic Sans MS', sans-serif",             larghezza: 0.98 },
+        comic:     { nome: 'Bangers',          pila: "'Bangers', 'Comic Sans MS', 'Marker Felt', cursive", larghezza: 0.86 },
+        marker:    { nome: 'Permanent Marker', pila: "'Permanent Marker', 'Marker Felt', cursive",         larghezza: 1.02 },
+        lobster:   { nome: 'Lobster',          pila: "'Lobster', 'Brush Script MT', cursive",              larghezza: 0.92 },
+        playfair:  { nome: 'Playfair Display', pila: "'Playfair Display', Georgia, serif",                 larghezza: 1.02 },
+        mono:      { nome: 'Space Mono',       pila: "'Space Mono', 'Courier New', monospace",             larghezza: 1.08 },
+        silk:      { nome: 'Silkscreen',       pila: "'Silkscreen', 'Courier New', monospace",             larghezza: 1.22 },
+        pixel:     { nome: 'Press Start 2P',   pila: "'Press Start 2P', 'Courier New', monospace",         larghezza: 1.55 }
     };
+
+    // I colori della pagina del profilo, nello stesso ordine (HONEYCOMB_COLORS in profile.html)
+    const PALETTE_PROFILO = [
+        '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAFFF0', '#BAE1FF', '#D6CAFF', '#E8CAFF', '#FFCAFF', '#FFC2D1',
+        '#C25959', '#D48C5F', '#D9B462', '#8F9E6C', '#699E98', '#6B93B0', '#7A89A8', '#9582A3', '#B07D9A', '#C7889B',
+        '#FF3333', '#FF8800', '#FFDD00', '#33CC66', '#00BFA5', '#3399FF', '#0055FF', '#7A29FF', '#D11A7A', '#FF4D8D',
+        '#FF1744', '#FF5E00', '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099'
+    ];
+
+    // Qualcuno in più: terre e scuri profondi (la riga di sotto è per sfondi e carte, non per il colore firma)
+    const PALETTE_EXTRA = [
+        '#FF7B6B', '#F28C28', '#F4C430', '#A7C957', '#2A9D8F', '#1D7874', '#118AB2', '#264653',
+        '#5E60CE', '#6A0572', '#AB4E68', '#8D5524', '#5B3A29', '#0B3D2E', '#1B2A49', '#4A1942'
+    ];
+
+    // Neutri, solo per sfondi e carte
+    const PALETTE_NEUTRI = ['#FFFFFF', '#FFF4D6', '#E8F7FF', '#EDEDED', '#BDBDBD', '#7A7A7A', '#3A3A40', '#17171C', '#000000'];
+
+    // Il colore firma di un allenatore (info.color): il suo, unico, scelto tra questi
+    const PALETTE_FIRMA = [...PALETTE_PROFILO, ...PALETTE_EXTRA];
+    // Sfondi e carte: tutti, neutri compresi
+    const PALETTE_SFONDO = [...PALETTE_FIRMA, ...PALETTE_NEUTRI];
 
     const OMBRE = [0, 6, 10, 16];
     const BORDI = [3, 4, 6];
@@ -199,7 +232,7 @@
                 animato: booleano(s.animato, D.sfondo.animato)
             },
             carta: {
-                tema: unOf(c.tema, Object.keys(TEMI), D.carta.tema),
+                tema: Object.keys(TEMI).includes(c.tema) ? c.tema : esadecimale(c.tema, D.carta.tema),
                 ombra: unOf(c.ombra, OMBRE, D.carta.ombra),
                 bordo: unOf(c.bordo, BORDI, D.carta.bordo),
                 angoli: unOf(c.angoli, ANGOLI, D.carta.angoli),
@@ -321,9 +354,10 @@
         }
     }
 
+    // `tema` è il nome di un tema pronto (TEMI) oppure un colore qualunque (#rrggbb)
     function temaCarta(tema, coloreGiocatore) {
-        const t = TEMI[tema] || TEMI.bianco;
-        const superficie = t.colore || esadecimale(coloreGiocatore, '#31c489');
+        const t = TEMI[tema];
+        const superficie = t ? (t.colore || esadecimale(coloreGiocatore, '#31c489')) : esadecimale(tema, '#ffffff');
         return { superficie, inchiostro: inchiostroSu(superficie) };
     }
 
@@ -347,12 +381,13 @@
             '--pp-giocatore-scuro': mescola(giocatore, -0.35),
             '--pp-giocatore-chiaro': mescola(giocatore, 0.55),
             // sulla carta che ha già il colore dell'allenatore il nome sarebbe invisibile: diventa bianco
-            '--pp-nome': config.carta.tema === 'colore' ? '#ffffff' : giocatore,
+            '--pp-nome': tema.superficie === giocatore ? '#ffffff' : giocatore,
             '--pp-bordo': `${config.carta.bordo}px`,
             '--pp-ombra': `${config.carta.ombra}px`,
             '--pp-raggio': config.carta.angoli === 'tondi' ? '20px' : '0px',
             '--pp-inclina': `${INCLINAZIONI[config.carta.inclinazione]}deg`,
-            '--pp-font': FONT[config.carta.font].pila
+            '--pp-font': FONT[config.carta.font].pila,
+            '--pp-font-w': String(FONT[config.carta.font].larghezza)
         };
     }
 
@@ -436,24 +471,148 @@
         };
     }
 
+    // ---- Il palco -----------------------------------------------------------------------------
+
+    // Misure in "pixel di progetto" di un palco largo 400 e alto 320 (vedi style-public-card.css)
+    const SCENA = {
+        ALTEZZA_ALLENATORE: 170,       // l'allenatore, alto 1,70 m
+        ALTEZZA_ALLENATORE_M: 1.7,
+        POKEMON_MIN: 90,
+        POKEMON_MAX: 255,              // quanto può essere alto il Pokémon, sopra al pavimento
+        POKEMON_MAX_IN_VOLO: 215,      // chi vola è sollevato da terra: ha meno spazio sopra
+        ALLENATORE_MIN: 0.55           // quanto si può rimpicciolire l'allenatore, in proporzione
+    };
+
+    /**
+     * Quanto sono alti allenatore e Pokémon sul palco. Il Pokémon è in scala con l'allenatore (1,70 m): più
+     * alto di lui se lo è davvero. Se è troppo alto per il palco non sfora e non si deforma: si rimpicciolisce
+     * tutta la scena, allenatore compreso, così la proporzione resta quella vera. Solo se l'allenatore dovrebbe
+     * diventare minuscolo (oltre il 55%) il Pokémon resta al massimo consentito e la proporzione si comprime.
+     * @param {number} altezzaM  altezza reale in metri
+     * @param {{regola?: 'rimpicciolisci'|'ingrandisci', vola?: boolean}} opzioni
+     *        regola: correzioni su misura per certi Pokémon (Kyogre, Wailord, Charizard...)
+     * @returns {{allenatore: number, pokemon: number, scala: number, compresso: boolean}}
+     */
+    function scalaScena(altezzaM, opzioni = {}) {
+        const { regola, vola = false } = opzioni;
+        const altezza = Number(altezzaM) > 0 ? Number(altezzaM) : 1.2;
+        let px = altezza * SCENA.ALTEZZA_ALLENATORE / SCENA.ALTEZZA_ALLENATORE_M;
+        if (regola === 'rimpicciolisci') px *= 0.5;
+        else if (regola === 'ingrandisci') px *= 1.5;
+        else if (altezza < 0.6) px *= 1.6;
+        else if (altezza < 1.3) px *= 1.35;
+        px = Math.max(px, SCENA.POKEMON_MIN);
+
+        const spazio = vola ? SCENA.POKEMON_MAX_IN_VOLO : SCENA.POKEMON_MAX;
+        const scala = Math.max(Math.min(1, spazio / px), SCENA.ALLENATORE_MIN);
+        const pokemon = Math.min(px * scala, spazio);
+        return {
+            allenatore: Math.round(SCENA.ALTEZZA_ALLENATORE * scala),
+            pokemon: Math.round(pokemon),
+            scala: Math.round(scala * 1000) / 1000,
+            compresso: px * scala > spazio + 0.5
+        };
+    }
+
+    // ---- Cosa si sceglie nel profilo e non si può condividere ----------------------------------
+
+    // Questi campi di players/{id}/info stanno nell'editor della pagina (prima erano in profile.html)
+    const CAMPI_PROFILO = ['avatar', 'color', 'bio', 'pkmPreferito', 'title', 'musicName', 'musicaPreferita'];
+    const BIO_MAX = 100;
+
+    /** "https://x.io/immagini/profile/3.png?v=2" -> "profile/3.png": le ultime due parti, in minuscolo */
+    function chiaveAvatar(testo) {
+        if (!testo) return '';
+        const percorso = String(testo).split('?')[0].split('#')[0].replace(/^[a-z]+:\/\/[^/]*/i, '');
+        return percorso.split('/').filter(Boolean).slice(-2).join('/').toLowerCase().trim();
+    }
+
+    /** I numeri dei Pokémon preferiti, delle canzoni... confrontabili: stesse regole di sempre, in minuscolo o senza spazi */
+    const chiaveColore = c => String(c || '').trim().toUpperCase();
+    const chiavePokemon = n => String(n || '').trim().toLowerCase();
+    const chiaveCanzoneNome = n => String(n || '').trim().toLowerCase();
+    const chiaveCanzoneUrl = u => String(u || '').trim();
+
+    /**
+     * Quello che gli ALTRI allenatori hanno già scelto, e quindi non si può scegliere.
+     * @param {string} chiave   l'allenatore che sta scegliendo (i suoi valori non contano)
+     * @param {object} giocatori il nodo `players` di Firebase
+     */
+    function scelteDegliAltri(chiave, giocatori) {
+        const presi = { colori: new Set(), avatar: new Set(), pokemon: new Set(), canzoniUrl: new Set(), canzoniNomi: new Set() };
+        const io = String(chiave || '').toLowerCase();
+        for (const [id, g] of Object.entries(giocatori && typeof giocatori === 'object' ? giocatori : {})) {
+            if (String(id).toLowerCase() === io) continue;
+            const info = g && g.info;
+            if (!info) continue;
+            if (info.color) presi.colori.add(chiaveColore(info.color));
+            if (info.avatar) presi.avatar.add(chiaveAvatar(info.avatar));
+            if (info.pkmPreferito) presi.pokemon.add(chiavePokemon(info.pkmPreferito));
+            if (info.musicaPreferita) presi.canzoniUrl.add(chiaveCanzoneUrl(info.musicaPreferita));
+            if (info.musicName && String(info.musicName).trim()) presi.canzoniNomi.add(chiaveCanzoneNome(info.musicName));
+        }
+        return presi;
+    }
+
+    /** Quali di queste scelte coincidono con quelle di un altro? (nomi dei campi: color, avatar, pkmPreferito, musica) */
+    function conflitti(chiave, scelte, giocatori) {
+        const presi = scelteDegliAltri(chiave, giocatori);
+        const trovati = [];
+        if (scelte.color && presi.colori.has(chiaveColore(scelte.color))) trovati.push('color');
+        if (scelte.avatar && presi.avatar.has(chiaveAvatar(scelte.avatar))) trovati.push('avatar');
+        if (scelte.pkmPreferito && presi.pokemon.has(chiavePokemon(scelte.pkmPreferito))) trovati.push('pkmPreferito');
+        const stessoUrl = scelte.musicaPreferita && presi.canzoniUrl.has(chiaveCanzoneUrl(scelte.musicaPreferita));
+        const stessoNome = scelte.musicName && String(scelte.musicName).trim() && presi.canzoniNomi.has(chiaveCanzoneNome(scelte.musicName));
+        if (stessoUrl || stessoNome) trovati.push('musica');
+        return trovati;
+    }
+
+    /** I numeri di avatar disponibili (profile/1.png ... 292, tranne i due che mancano) */
+    function elencoAvatar() {
+        const lista = [];
+        for (let n = 1; n <= 292; n++) if (n !== 162 && n !== 168) lista.push(`${n}.png`);
+        return lista;
+    }
+
+    /** Un CSV con virgolette ("Nome, con virgola",url) letto come si deve; la prima riga (intestazione) si salta */
+    function leggiCsvCanzoni(testo) {
+        const righe = String(testo || '').split(/\r?\n/);
+        const campi = riga => {
+            const fuori = [];
+            let corrente = '', virgolette = false;
+            for (let i = 0; i < riga.length; i++) {
+                const ch = riga[i];
+                if (virgolette) {
+                    if (ch === '"' && riga[i + 1] === '"') { corrente += '"'; i++; }
+                    else if (ch === '"') virgolette = false;
+                    else corrente += ch;
+                } else if (ch === '"') virgolette = true;
+                else if (ch === ',') { fuori.push(corrente); corrente = ''; }
+                else corrente += ch;
+            }
+            fuori.push(corrente);
+            return fuori.map(x => x.trim());
+        };
+        return righe.slice(1).map(campi).filter(c => c[0] && c[1]).map(c => ({ nome: c[0], url: c[1] }));
+    }
+
     // ---- A sorpresa ---------------------------------------------------------------------------
 
     /** Una configurazione di stile a caso; i blocchi, le statistiche e il team restano come sono. */
     function casuale(config, rnd = Math.random) {
         const scegli = lista => lista[Math.floor(rnd() * lista.length) % lista.length];
         const nuova = copia(config);
-        const palette = ['#ff6b9d', '#ffde4d', '#7cf29a', '#8fd3ff', '#c4a3ff', '#ff9a4d', '#31c489', '#ff5a3c'];
 
         nuova.layout = scegli(Object.keys(LAYOUT));
         nuova.sfondo = {
-            colore: rnd() < 0.4 ? 'giocatore' : scegli(palette),
+            colore: rnd() < 0.4 ? 'giocatore' : scegli(PALETTE_SFONDO).toLowerCase(),
             motivo: scegli(Object.keys(MOTIVI).filter(m => m !== 'nessuno')),
             forza: scegli([1, 2, 3]),
             scritta: rnd() < 0.7,
             animato: rnd() < 0.3
         };
         nuova.carta = {
-            tema: scegli(Object.keys(TEMI)),
+            tema: rnd() < 0.6 ? scegli(Object.keys(TEMI)) : scegli(PALETTE_SFONDO),
             ombra: scegli(OMBRE.filter(o => o > 0)),
             bordo: scegli(BORDI),
             angoli: scegli(ANGOLI),
@@ -474,10 +633,11 @@
 
     return {
         VERSIONE, ZONE, MAX_ADESIVI,
-        LAYOUT, BLOCCHI, STAT, MOTIVI, TEMI, FONT, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
+        LAYOUT, BLOCCHI, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
         predefinita, normalizza, copia, uguali,
         blocchiPerZona, sposta, accendi,
         esadecimale, luminanza, inchiostroSu, mescola, sfondoCss, temaCarta, variabiliCss,
-        codiceBarre, numeroTessera, riepilogoStat, casuale
+        CAMPI_PROFILO, BIO_MAX, chiaveAvatar, scelteDegliAltri, conflitti, elencoAvatar, leggiCsvCanzoni,
+        SCENA, scalaScena, codiceBarre, numeroTessera, riepilogoStat, casuale
     };
 });
