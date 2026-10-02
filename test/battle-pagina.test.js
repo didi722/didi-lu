@@ -27,8 +27,8 @@ function idCercati(sorgente) {
     return trovati;
 }
 
-// Creati dagli script stessi, non scritti in battle.html
-const CREATI_DAGLI_SCRIPT = new Set(['condizioni-p1', 'condizioni-p2']);
+// Creati dagli script stessi (o da Showdown: il suo tooltip), non scritti in battle.html
+const CREATI_DAGLI_SCRIPT = new Set(['condizioni-p1', 'condizioni-p2', 'tooltipwrapper']);
 
 test('ogni id che gli script cercano esiste in battle.html', () => {
     for (const file of ['battle-ui.js', 'battle-extra.js', 'battle-layout.js']) {
@@ -111,4 +111,69 @@ test('il CSS ha le parentesi graffe in pari', () => {
         assert.ok(livello >= 0, 'una } di troppo');
     }
     assert.equal(livello, 0);
+});
+
+// ---------- modifiche al simulatore: layout, comandi, pausa tra set ----------
+const ui = leggi('battle-ui.js');
+
+test('chi gioca sta sempre a sinistra: battle-ui.js scrive body.vista-p2 e il CSS scambia le colonne', () => {
+    assert.match(ui, /classList\.toggle\('vista-p2', mioLato === 'p2'\)/);
+    assert.match(css, /body\.vista-p2 \.lato\.p1\s*\{[^}]*grid-area:\s*p2/);
+    assert.match(css, /body\.vista-p2 \.lato\.p2\s*\{[^}]*grid-area:\s*p1/);
+    // la direzione delle colonne non deve battere quella del layout "una schermata" (colonna)
+    assert.match(css, /:where\(body\.vista-p2\) \.lato\.p1\s*\{\s*flex-direction:\s*row-reverse/);
+});
+
+test('il pulsante "Undo this turn" è sempre nel layout (nascosto, non assente): il testo non si sposta alla seconda mossa', () => {
+    assert.match(ui, /class: 'btn secondario piccolo' \+ \(p\.bozza\.some\(s => s !== 'pass'\) \? '' : ' nascosto'\)/);
+    assert.match(css, /\.btn\.nascosto\s*\{\s*visibility:\s*hidden/);
+});
+
+test('con un solo player la barra col nome sparisce e lo stato dell\'avversario è un adesivo staccato', () => {
+    assert.match(css, /\.comandi:not\(\.doppio\) \.pannello-testa\s*\{[^}]*position:\s*absolute/);
+    assert.match(css, /\.comandi \{[^}]*position:\s*relative/);
+    assert.match(ui, /stato\.dataset\.stato = /);
+});
+
+test('schermo intero: il bottone è in battle.html e lo gestisce battle-layout.js', () => {
+    assert.ok(idInHtml.has('btn-schermo-intero'));
+    assert.match(layout, /requestFullscreen/);
+    assert.match(layout, /fullscreenchange/);
+    assert.match(layout, /SCALA_MAX_INTERO/);
+    assert.match(css, /\.btn-schermo-intero\[aria-pressed="true"\] \.ico-entra/);
+});
+
+test('l\'insegna sopra lo schermo scrive formato, match e tabellone dei set', () => {
+    for (const classe of ['ins-formato', 'ins-match', 'ins-tabellone', 'ins-punti', 'ins-set']) {
+        assert.ok(ui.includes(classe), `battle-ui.js non scrive .${classe}`);
+        assert.ok(css.includes(`.${classe}`), `style-battle.css non conosce .${classe}`);
+    }
+});
+
+test('tra un set e l\'altro il cartello ha il conto alla rovescia e il tasto per proseguire', () => {
+    assert.match(ui, /const PAUSA_TRA_SET = \d+/);
+    assert.ok(!/setTimeout\(avviaProssimaScena, 2500\)/.test(ui), 'la pausa fissa da 2,5 s non deve tornare');
+    assert.match(ui, /`Set \$\{prossimoSet\} starts in \$\{pausaSet\.secondi\} s\.`/);
+    assert.match(ui, /onclick: avviaProssimaScena/);
+});
+
+test('i tooltip stanno dentro la finestra e quello della colonna si apre accanto alla colonna', () => {
+    const extra = leggi('battle-extra.js');
+    assert.match(extra, /P\.placeTooltip = function/);
+    assert.match(extra, /tooltipAccanto\(li\)/);
+    assert.match(extra, /tt-compatto/);
+    assert.match(css, /#tooltipwrapper \.tooltip:has\(\.tt-compatto\)/);
+});
+
+test('sfide: il blocco è per formato (sfida in attesa o showdown in corso), non per coppia di giocatori', () => {
+    const sfide = leggi('sfide.js');
+    assert.match(sfide, /function formatiOccupati\(D, a, b\)/);
+    assert.match(sfide, /formatiOccupati\(D, D\.io, nome\)\.occupati\.has\(formato\)/);
+    assert.ok(!/sfideInAttesaTra\(D, D\.io, nome\)\[0\]/.test(sfide), 'apriSfida non deve più fermarsi alla prima sfida in attesa della coppia');
+    assert.ok(!/sfideInAttesaTra\(D, D\.io, nome\)\.length/.test(sfide), 'lancia non deve più bloccare tutta la coppia');
+});
+
+test('nomi-log.js è caricato da battle-ui.js e il log gli passa prima di arrivare a Showdown', () => {
+    assert.match(ui, /import '\.\/nomi-log\.js'/);
+    assert.match(ui, /righe = riscrittoreLog\.riscrivi\(righe\)/);
 });

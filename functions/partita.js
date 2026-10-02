@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const PS = require('pokemon-showdown');
 const { creaReplayHtml } = require('./replay-sito');
 const { analizzaSet } = require('./statistiche-set');
+const { nomiUnici } = require('./nomi-unici');
 
 class ErroreUtente extends Error {}
 
@@ -93,8 +94,9 @@ function testoShowdownDaTeam(team, livello) {
 // 2. TEAM: IMPORTAZIONE E CONTROLLI
 // -----------------------------------------------------
 // Teams.import ufficiale non legge la riga "Dynamax Level": la leggiamo noi.
+// I soprannomi doppi (Calyrex-Ice e Calyrex-Shadow, entrambi "Calyrex") si distinguono: vedi nomi-unici.js
 function importaTeam(testo) {
-    const sets = PS.Teams.import(testo) || [];
+    const sets = nomiUnici(PS.Teams.import(testo) || [], specie => PS.Dex.species.get(specie).baseSpecies);
     const blocchi = String(testo).trim().split(/\n\s*\n/)
         .map(b => b.split('\n').map(r => r.trim()).filter(Boolean))
         .filter(righe => righe.length >= 2);

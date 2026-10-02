@@ -109,6 +109,19 @@
         return Math.max(0, massimo(D) - showdownTra(D, a, b, formato).length - inAttesa);
     }
 
+    // Formati su cui due giocatori hanno già qualcosa di attivo: una sfida in attesa o uno showdown non
+    // concluso. Su un formato occupato non se ne può lanciare un'altra; sugli altri formati sì.
+    // -> { inAttesa: [[id, sfida]], inCorso: [[id, showdown]], occupati: Set<formato> }
+    function formatiOccupati(D, a, b) {
+        const inAttesa = sfideInAttesaTra(D, a, b);
+        const inCorso = showdownTra(D, a, b).filter(([, sd]) => !completato(sd));
+        const occupati = new Set([
+            ...inAttesa.map(([, s]) => s.categoria),
+            ...inCorso.map(([, sd]) => sd.info.categoria)
+        ]);
+        return { inAttesa, inCorso, occupati };
+    }
+
     const chiusa = info => String(info?.status || '').toUpperCase().trim() === 'CLOSED';
     const formatiStagione = D => Object.values(D.info.selected_formats || {});
     const bestOf = D => parseInt(D.info.best_of, 10) === 5 ? 5 : 3;
@@ -497,34 +510,43 @@
         const messaggio = testo => corpo.append(Object.assign(document.createElement('p'),
             { className: 'sfida-messaggio', textContent: testo }));
 
-        // Uno showdown già in corso tra voi due: si riprende quello
-        const inCorso = showdownTra(D, D.io, nome).find(([, sd]) => !completato(sd));
-        if (inCorso) {
-            const [sdId, sd] = inCorso;
-            messaggio(`You already have a showdown in progress against ${nome}.`);
-            invia.textContent = 'Resume showdown';
-            invia.disabled = false;
-            invia.addEventListener('click', () => { location.href = linkBattaglia(D.id, sdId, prossimoMatch(sd)); });
-            return;
-        }
+        // Per ogni coppia una sola cosa attiva per formato (sfida in attesa o showdown in corso):
+        // si possono avere più sfide attive contro lo stesso giocatore, ma in formati diversi.
+        const { inAttesa, inCorso, occupati } = formatiOccupati(D, D.io, nome);
 
-        // Una sola sfida in attesa per coppia
-        const pendente = sfideInAttesaTra(D, D.io, nome)[0];
-        if (pendente) {
-            const s = pendente[1];
+        for (const [sdId, sd] of inCorso) {
+            const p = document.createElement('p');
+            p.className = 'sfida-messaggio';
+            p.append(`You already have a showdown in progress against ${nome} (${sd.info.categoria}). `);
+            const riprendi = document.createElement('a');
+            riprendi.className = 'sfida-riprendi';
+            riprendi.href = linkBattaglia(D.id, sdId, prossimoMatch(sd));
+            riprendi.textContent = 'Resume';
+            p.append(riprendi);
+            corpo.append(p);
+        }
+        for (const [, s] of inAttesa) {
             messaggio(s.daId === S.ioId
                 ? `Your ${s.categoria} challenge is still waiting for ${nome}.`
                 : `${nome} already challenged you in ${s.categoria}. Answer from the bell.`);
+        }
+
+        // Solo i formati liberi e con showdown ancora da giocare
+        const formati = formatiStagione(D)
+            .filter(f => !occupati.has(f))
+            .map(f => [f, rimasti(D, D.io, nome, f)])
+            .filter(([, r]) => r > 0);
+        if (!formati.length) {
+            if (!occupati.size) messaggio(`You have played every showdown against ${nome} this season.`);
+            else messaggio(`No other format is free to challenge ${nome} right now.`);
             invia.hidden = true;
             return;
         }
-
-        // Solo i formati con showdown ancora da giocare
-        const formati = formatiStagione(D).map(f => [f, rimasti(D, D.io, nome, f)]).filter(([, r]) => r > 0);
-        if (!formati.length) {
-            messaggio(`You have played every showdown against ${nome} this season.`);
-            invia.hidden = true;
-            return;
+        if (occupati.size) {
+            const p = document.createElement('p');
+            p.className = 'sfida-sotto';
+            p.textContent = 'You can still challenge in another format:';
+            corpo.append(p);
         }
 
         let scelto = null;
@@ -554,9 +576,9 @@
     async function lancia(D, nome, formato, bottone) {
         bottone.disabled = true;
         // Ricontrollo con i dati più freschi
-        if (sfideInAttesaTra(D, D.io, nome).length) {
+        if (formatiOccupati(D, D.io, nome).occupati.has(formato)) {
             chiudiModale();
-            return mostraAvviso(`There is already a pending challenge with ${nome}`);
+            return mostraAvviso(`There is already an active ${formato} challenge or showdown with ${nome}`);
         }
         if (rimasti(D, D.io, nome, formato) <= 0) {
             chiudiModale();
@@ -888,51 +910,170 @@
     // 9. Showdown in corso in matches.html (solo la stagione della pagina)
     // -----------------------------------------------------
     // Una sola riga bassa: l'etichetta "Live" e un chip per ogni showdown in corso
-    // (formato, nomi e punteggio, match, azione). Con tanti showdown la riga scorre di lato:
-    // non cresce mai in altezza, così lo spazio resta agli showdown.
+    // (formato, nomi e punteggio, match, azione). Non cresce mai in altezza, così lo
+    // spazio resta agli showdown: con più di uno i chip scorrono in verticale, come i
+    // rulli di una slot machine. Ogni chip resta TEMPO_LIVE ms, poi sale e sparisce
+    // mentre entra quello dopo dal basso. Il mouse (o la tastiera) sopra la riga trattiene
+    // la rotazione, così il chip non scappa mentre lo si clicca.
+    // Con "riduci movimento" nessuna animazione: i chip stanno uno accanto all'altro.
+    const TEMPO_LIVE = 4000;        // quanto resta fermo un chip
+    const DURATA_ROLLIO = 600;      // la salita da un chip all'altro (= --rollio in style-sfide.css)
+
+    const riduciMovimento = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    // Stato della rotazione: sopravvive ai ridisegni (Firebase ne chiede uno a ogni dato)
+    // timer = prossimo scorrimento; riavvolgi = ritorno dalla copia in fondo al vero primo chip
+    const rotazione = { firma: '', chiave: '', timer: null, riavvolgi: null };
+
+    function fermaRotazione() {
+        clearTimeout(rotazione.timer);
+        clearTimeout(rotazione.riavvolgi);
+        rotazione.timer = rotazione.riavvolgi = null;
+    }
+
+    function chipLive(b, interattivo) {
+        const chip = el('a', `live-chip${b.gioco ? ' gioca' : ''}`);
+        const azione = !S.utente ? 'Log in' : b.gioco ? 'Play' : 'Watch';
+        chip.setAttribute('aria-label', `${azione}: ${b.i.player1} ${b.v1} - ${b.v2} ${b.i.player2}, ${b.i.categoria}, match ${b.n} of ${MATCH_PER_SHOWDOWN}`);
+        chip.title = `${b.i.player1} vs ${b.i.player2} · ${b.i.categoria} · Match ${b.n} of ${MATCH_PER_SHOWDOWN}`;
+        chip.innerHTML = `
+            <span class="live-fmt">${esc(b.i.categoria)}</span>
+            <span class="live-vs">
+                <span class="live-n">${esc(b.i.player1)}</span>
+                <b>${b.v1}-${b.v2}</b>
+                <span class="live-n">${esc(b.i.player2)}</span>
+            </span>
+            <span class="live-m">M${b.n}/${MATCH_PER_SHOWDOWN}</span>
+            <span class="live-vai">${azione}</span>`;
+        if (!S.utente) {
+            chip.href = '#';
+            chip.addEventListener('click', e => {
+                e.preventDefault();
+                if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
+            });
+        } else {
+            chip.href = linkBattaglia(b.stagione, b.id, b.n);
+        }
+        if (!interattivo) chip.tabIndex = -1;
+        return chip;
+    }
+
     function disegnaLive() {
         const box = $('liveList');
         if (!box) return;
 
         const live = battaglieInCorso(pagina()).sort(dalPiuRecente);
         if (!live.length) {
+            fermaRotazione();
+            rotazione.firma = '';
             box.hidden = true;
             box.replaceChildren();
             return;
         }
         box.hidden = false;
 
-        const testa = el('div', 'live-testa', `<span class="live-punto" aria-hidden="true"></span>Live<b>${live.length}</b>`);
-        const riga = el('div', 'live-riga');
-        riga.setAttribute('role', 'list');
+        // Niente da ridisegnare se non è cambiato nulla di visibile: la rotazione non riparte da capo
+        const chiave = b => `${b.stagione}/${b.id}`;
+        const firma = JSON.stringify([!!S.utente, live.map(b => [chiave(b), b.n, b.v1, b.v2, b.gioco, b.i.player1, b.i.player2, b.i.categoria])]);
+        if (firma === rotazione.firma && box.firstChild) return;
+        rotazione.firma = firma;
 
-        for (const b of live) {
-            const chip = el('a', `live-chip${b.gioco ? ' gioca' : ''}`);
-            chip.setAttribute('role', 'listitem');
-            const azione = !S.utente ? 'Log in' : b.gioco ? 'Play' : 'Watch';
-            chip.setAttribute('aria-label', `${azione}: ${b.i.player1} ${b.v1} - ${b.v2} ${b.i.player2}, ${b.i.categoria}, match ${b.n} of ${MATCH_PER_SHOWDOWN}`);
-            chip.title = `${b.i.player1} vs ${b.i.player2} · ${b.i.categoria} · Match ${b.n} of ${MATCH_PER_SHOWDOWN}`;
-            chip.innerHTML = `
-                <span class="live-fmt">${esc(b.i.categoria)}</span>
-                <span class="live-vs">
-                    <span class="live-n">${esc(b.i.player1)}</span>
-                    <b>${b.v1}-${b.v2}</b>
-                    <span class="live-n">${esc(b.i.player2)}</span>
-                </span>
-                <span class="live-m">M${b.n}/${MATCH_PER_SHOWDOWN}</span>
-                <span class="live-vai">${azione}</span>`;
-            if (!S.utente) {
-                chip.href = '#';
-                chip.addEventListener('click', e => {
-                    e.preventDefault();
-                    if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
-                });
-            } else {
-                chip.href = linkBattaglia(b.stagione, b.id, b.n);
+        const testa = el('div', 'live-testa', `<span class="live-punto" aria-hidden="true"></span>Live<b>${live.length}</b>`);
+
+        // Un solo showdown, o "riduci movimento": tutti i chip fermi, a capo se serve
+        if (live.length < 2 || riduciMovimento()) {
+            fermaRotazione();
+            const riga = el('div', 'live-riga');
+            riga.setAttribute('role', 'list');
+            for (const b of live) {
+                const chip = chipLive(b, true);
+                chip.setAttribute('role', 'listitem');
+                riga.append(chip);
             }
-            riga.append(chip);
+            box.replaceChildren(testa, riga);
+            return;
         }
-        box.replaceChildren(testa, riga);
+
+        // Dopo un ridisegno resta sullo stesso showdown, se c'è ancora
+        fermaRotazione();
+        const mostrato = rotazione.chiave;
+        const rimasto = live.findIndex(b => chiave(b) === mostrato);
+        let indice = rimasto >= 0 ? rimasto : 0;
+        rotazione.chiave = chiave(live[indice]);
+
+        // I chip uno sotto l'altro; in fondo una copia del primo, per il giro che si chiude
+        const traccia = el('div', 'live-traccia');
+        traccia.setAttribute('role', 'list');
+        const slide = [...live, live[0]].map((b, i) => {
+            const copia = i === live.length;
+            const s = el('div', 'live-slide');
+            s.append(chipLive(b, false));
+            if (copia) s.setAttribute('aria-hidden', 'true');
+            else s.firstChild.setAttribute('role', 'listitem');
+            traccia.append(s);
+            return s;
+        });
+        const finestra = el('div', 'live-scorri');
+        finestra.append(traccia);
+
+        // Pallini accanto all'etichetta: quale showdown si vede, e per saltare a un altro
+        const punti = el('div', 'live-punti');
+        const pallini = live.map((b, i) => {
+            const p = el('button', 'live-pallino');
+            p.type = 'button';
+            p.setAttribute('aria-label', `Show ${b.i.player1} vs ${b.i.player2}`);
+            p.addEventListener('click', () => vai(i));
+            punti.append(p);
+            return p;
+        });
+
+        function mostra(animato) {
+            traccia.style.transition = animato ? '' : 'none';
+            // in percentuale della traccia: regge anche se l'altezza dei chip cambia (finestra stretta)
+            traccia.style.transform = `translateY(${(-indice / slide.length * 100).toFixed(4)}%)`;
+            const attuale = indice % live.length;
+            rotazione.chiave = chiave(live[attuale]);
+            slide.forEach((s, i) => {
+                // solo il chip in vista si può raggiungere con la tastiera o leggere
+                const visibile = i === indice;
+                s.inert = !visibile;
+                s.firstChild.tabIndex = visibile ? 0 : -1;
+            });
+            pallini.forEach((p, i) => p.setAttribute('aria-current', i === attuale ? 'true' : 'false'));
+            if (!animato) void traccia.offsetHeight;    // applica subito, senza animare il salto
+        }
+
+        function vai(prossimo) {
+            clearTimeout(rotazione.timer);
+            clearTimeout(rotazione.riavvolgi);
+            // dalla copia in fondo si riparte dal vero primo, senza che si veda
+            if (indice === live.length) { indice = 0; mostra(false); }
+            indice = prossimo;
+            mostra(true);
+            // arrivati alla copia del primo: finita la salita si torna al vero primo
+            if (indice === live.length) {
+                rotazione.riavvolgi = setTimeout(() => { indice = 0; mostra(false); }, DURATA_ROLLIO + 40);
+            }
+            programma();
+        }
+
+        // Il mouse sulla riga (o il fuoco della tastiera, arrivato con Tab) trattiene la rotazione: chi sta per
+        // cliccare un chip non lo vede scappare. Si guarda lo stato vero (:hover, :focus-visible) a ogni
+        // scatto, invece di contare gli eventi: un ridisegno di Firebase sotto il mouse non fa ripartire nulla.
+        // Col tocco non c'è hover (e dopo un tocco resterebbe "attaccato"): lì la rotazione non si ferma.
+        const puoHover = !!(window.matchMedia && matchMedia('(hover: hover)').matches);
+        const trattenuta = () =>
+            (puoHover && (finestra.matches(':hover') || punti.matches(':hover'))) ||
+            (box.contains(document.activeElement) && document.activeElement.matches(':focus-visible'));
+
+        function programma() {
+            clearTimeout(rotazione.timer);
+            rotazione.timer = setTimeout(() => (trattenuta() ? programma() : vai(indice + 1)), TEMPO_LIVE);
+        }
+
+        box.replaceChildren(testa, punti, finestra);
+        mostra(false);
+        programma();
     }
 
 

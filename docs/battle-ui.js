@@ -13,12 +13,14 @@
 
 import {
     BattagliaLocale, StatoCampo, leggiRichiesta, richiedeBersaglio,
-    bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale
+    bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale, setDaTeam
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch } from './team-sito.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
+import './nomi-unici.js';       // self.NomiUnici
+import './nomi-log.js';         // self.NomiLog
    import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
 const CONFIG_PROVA = {
     formato: 'gen8vgc2022',
@@ -27,6 +29,16 @@ const CONFIG_PROVA = {
     p2: { nome: 'Luca', team: TEAM_PROVA_2 }
 };
 const MATCH_PER_SHOWDOWN = 3;
+
+// Pokémon identici nello stesso team (due Calyrex-Shadow): il client di Showdown non li distingue.
+// Le righe del log passano di qui prima di arrivargli: i doppioni prendono nomi diversi. Se il server
+// manda già nomi unici (functions/nomi-unici.js, dopo il deploy) non cambia nulla. Vedi nomi-log.js.
+const riscrittoreLog = self.NomiLog.creaRiscrittore({
+    baseDi: specie => DexSim.species.get(specie).baseSpecies,
+    nomeForma: self.NomiUnici.nomeForma,
+    conNumero: self.NomiUnici.conNumero
+});
+const PAUSA_TRA_SET = 10;   // secondi di pausa tra un set e il successivo (si può saltare col tasto)
 
 // Classi del client di Showdown, raccolte in battle.html
 const PS = window.PSClient || null;
@@ -45,6 +57,9 @@ let scena = null;           // { battle, tooltips, righe, turnoVisto }
 let prossimaScena = null;   // righe di un nuovo set arrivato mentre il set precedente si sta ancora animando
 const attesaScena = [];     // cose da fare quando le animazioni arrivano in fondo
 let setVisti = 0;
+let titoloFineSet = '';     // "Didi wins set 1": il titolo del cartello a fine set
+let prossimoSet = 0;        // numero del set che aspetta in prossimaScena
+let pausaSet = null;        // { secondi, timer } mentre il cartello conta alla rovescia verso il set successivo
 let squadraTooltip = null;  // ultima squadra (dalla richiesta) del lato che i tooltip conoscono
 
 
@@ -168,6 +183,7 @@ async function preparaOnline(chiavi) {
     const { id, lato, info, giaSalvato } = aperta;
     mioLato = lato;
     document.body.classList.toggle('spettatore', !mioLato);
+    document.body.classList.toggle('vista-p2', mioLato === 'p2');   // chi gioca sta sempre a sinistra
     $('badge-live').hidden = !!mioLato;
     $('link-hub').href = `matches.html?id=${encodeURIComponent(info.stagione)}`;
     online = { id, info, funzioni, giaSalvato, stato: null, pronti: {}, risultati: {}, sceltaAvversario: null, datiMatch: null };
@@ -219,6 +235,8 @@ function aggiornaFase() {
     } else {
         nascondiLobby();
         nascondiMessaggio();
+        // a match finito il conto alla rovescia verso un nuovo set non ha più senso (e non deve coprire l'esito)
+        if (s !== 'in_corso') fermaPausaSet();
         if (s === 'da_salvare' || s === 'salvataggio') {
             quandoScenaFerma(() => mostraEsito('Match over', { sotto: 'Saving the result…' }));
         } else if (s === 'salvata') {
@@ -468,10 +486,45 @@ function quandoScenaFerma(fn) {
 function avviaProssimaScena() {
     const righe = prossimaScena || [];
     prossimaScena = null;
+    fermaPausaSet();
+    titoloFineSet = '';
     nascondiEsito();
     creaScena();
     if (righe.length) aggiungiAScena(righe);
     ridisegnaComandi();
+}
+
+
+// Tra un set e l'altro: il risultato resta in vista col conto alla rovescia e il tasto per proseguire,
+// come a fine match. La logica del set successivo è già partita sul server; qui si decide solo
+// quando mostrarlo (chi sceglie il team preview aspetta che questo cartello se ne vada).
+function avviaPausaSet() {
+    if (!prossimaScena) return;                 // nel frattempo il set è già partito
+    fermaPausaSet();
+    pausaSet = { secondi: PAUSA_TRA_SET, timer: null };
+    mostraFineSet();
+    pausaSet.timer = setInterval(() => {
+        if (--pausaSet.secondi <= 0) return avviaProssimaScena();
+        $('sotto-vittoria').textContent = testoPausaSet();
+    }, 1000);
+    ridisegnaComandi();
+}
+
+function fermaPausaSet() {
+    if (pausaSet) clearInterval(pausaSet.timer);
+    pausaSet = null;
+}
+
+const testoPausaSet = () => `Set ${prossimoSet} starts in ${pausaSet.secondi} s.`;
+
+// Cartello di fine set: col conto alla rovescia se il set successivo è già arrivato
+function mostraFineSet() {
+    const titolo = titoloFineSet || 'Set over';
+    if (!pausaSet) return mostraEsito(titolo);
+    mostraEsito(titolo, {
+        sotto: testoPausaSet(),
+        azioni: [el('button', { type: 'button', class: 'btn primario', onclick: avviaProssimaScena }, `Set ${prossimoSet} ➜`)]
+    });
 }
 
 
@@ -498,13 +551,14 @@ function nuovoSet(numero) {
     if (!PS) return;
 
     const recupera = !!numero && setVisti++ === 0;
-    if (numero && scena && scena.righe && !scena.battle.atQueueEnd) {
+    if (numero && scena && scena.righe) {
+        // Il set precedente resta in vista (finché non ha finito di animarsi, poi per PAUSA_TRA_SET secondi
+        // o finché non si preme il tasto); intanto le righe del nuovo set si accumulano in prossimaScena
+        const animando = !scena.battle.atQueueEnd;
         prossimaScena = [];
-        quandoScenaFerma(() => setTimeout(avviaProssimaScena, 2500));
-    } else if (numero && scena && scena.righe) {
-        // il set precedente è già fermo: si lascia il risultato in vista un momento
-        prossimaScena = [];
-        setTimeout(avviaProssimaScena, 2500);
+        prossimoSet = numero;
+        if (animando) quandoScenaFerma(avviaPausaSet);
+        else avviaPausaSet();
     } else {
         nascondiEsito();
         creaScena({ recupera });
@@ -514,6 +568,7 @@ function nuovoSet(numero) {
 // Eventi comuni a battaglia locale e online
 function collegaEventi(b) {
     b.on('log', righe => {
+        righe = riscrittoreLog.riscrivi(righe);
         stato.aggiorna(righe);
         aggiungiAScena(righe);
         disegnaInfo();
@@ -545,10 +600,14 @@ function collegaEventi(b) {
         finita = true;
         ridisegnaComandi();
         const numeroSet = online && battaglia.set;
+        if (online) {
+            // il set successivo parte da solo, dopo la pausa: basta un cartello
+            titoloFineSet = vincitore ? `${vincitore} wins set ${numeroSet}` : `Set ${numeroSet} is a tie`;
+            if (pausaSet) mostraFineSet();     // il set dopo era già arrivato: il cartello c'è, si aggiorna il titolo
+        }
         quandoScenaFerma(() => {
             if (online) {
-                // il set successivo parte da solo: basta un cartello
-                mostraEsito(vincitore ? `${vincitore} wins set ${numeroSet}` : `Set ${numeroSet} is a tie`);
+                if (!pausaSet) mostraFineSet();
             } else {
                 mostraEsito(vincitore ? `${vincitore} wins!` : "It's a tie!", {
                     azioni: [el('button', { type: 'button', class: 'btn primario', onclick: avviaBattaglia }, 'New battle')]
@@ -718,16 +777,15 @@ function aggiornaStati() {
         return;
     }
     const avv = nomeDi(avversarioDi(mioLato));
-    let testo = '';
+    let testo = '', scelto = false;
     if (online.stato === 'in_corso' && !finita) {
         const mio = pannelli[mioLato];
-        if (mio && mio.grezza && !mio.grezza.wait && online.sceltaAvversario && battaglia && online.sceltaAvversario === battaglia.passo) {
-            testo = `${avv} has chosen ✓`;
-        } else {
-            testo = `${avv} is choosing…`;
-        }
+        scelto = !!(mio && mio.grezza && !mio.grezza.wait && online.sceltaAvversario && battaglia && online.sceltaAvversario === battaglia.passo);
+        testo = scelto ? `${avv} has chosen ✓` : `${avv} is choosing…`;
     }
-    $(`stato-${mioLato}`).textContent = testo;
+    const stato = $(`stato-${mioLato}`);
+    stato.textContent = testo;
+    stato.dataset.stato = testo ? (scelto ? 'scelto' : 'attesa') : '';   // giallo mentre sceglie, verde quando ha scelto
 }
 
 function disegnaPannello(lato) {
@@ -745,6 +803,7 @@ function disegnaPannello(lato) {
     if (!p.r || p.r.tipo === 'attesa') return corpo.append(messaggio(`Waiting for ${avv}…`));
     if (p.inviata) return corpo.append(messaggio(`Choice sent. Waiting for ${avv}…`));
     if (scenaInCorsa()) {
+        if (pausaSet) return corpo.append(messaggio('Set over. Get ready for the next one.'));
         return corpo.append(messaggio('The turn is playing out.',
             prossimaScena ? null : el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => scena && scena.battle.seekTurn(Infinity) }, 'Skip animation')));
     }
@@ -815,9 +874,13 @@ function disegnaMosse(lato, corpo) {
         el('p', { class: 'domanda' },
             `What will ${attivo.pokemon.nome} do?`,
             doppio ? el('small', { testo: ` ${p.bozza.length + 1} of ${p.r.attivi.length}` }) : null),
-        p.bozza.some(s => s !== 'pass')
-            ? el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => ricomincia(lato) }, 'Undo this turn')
-            : null));
+        // Sempre nel layout, anche quando non c'è nulla da annullare: se comparisse solo dopo
+        // la prima mossa di un doppio, la riga si alzerebbe e il testo "What will … do?" scenderebbe un poco
+        el('button', {
+            type: 'button',
+            class: 'btn secondario piccolo' + (p.bozza.some(s => s !== 'pass') ? '' : ' nascosto'),
+            onclick: () => ricomincia(lato)
+        }, 'Undo this turn')));
 
     corpo.append(el('div', { class: 'mosse' }, attivo.mosse.map(m => {
         const eff = mossaEffettiva(attivo, m, p.potenziamento);
@@ -974,17 +1037,28 @@ function sprite(specie, retro) {
     return img;
 }
 
+// Insegna sopra lo schermo: formato, match e tabellone dei set (stile in style-battle.css)
 function disegnaInfo() {
     if (!config) return;
-    const chip = [el('span', { testo: config.etichetta })];
+    const voci = [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
     if (online) {
-        chip.push(el('span', { testo: `Match ${online.info.match} of ${MATCH_PER_SHOWDOWN}` }));
+        voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
         if (battaglia && battaglia.set) {
             const { s1, s2 } = punteggio();
-            chip.push(el('span', { testo: `Set ${battaglia.set} of ${online.info.bestOf} · ${s1}–${s2}` }));
+            const punti = { p1: s1, p2: s2 };
+            // chi gioca sta a sinistra, come nelle colonne e nello schermo
+            const [sx, dx] = mioLato === 'p2' ? ['p2', 'p1'] : ['p1', 'p2'];
+            const cella = lato => el('b', { class: `ins-punti ${lato}`, testo: String(punti[lato]), title: nomeDi(lato) });
+            voci.push(el('span', {
+                class: 'ins-tabellone', role: 'img',
+                'aria-label': `Set ${battaglia.set} of ${online.info.bestOf}. ${nomeDi(sx)} ${punti[sx]}, ${nomeDi(dx)} ${punti[dx]}`
+            },
+            cella(sx),
+            el('span', { class: 'ins-set', testo: `Set ${battaglia.set}/${online.info.bestOf}` }),
+            cella(dx)));
         }
     }
-    $('info-turno').replaceChildren(...chip);
+    $('info-turno').replaceChildren(...voci);
 }
 
    // -----------------------------------------------------
@@ -995,7 +1069,7 @@ function disegnaInfo() {
        const lato = l => ({
            nome: config[l].nome,
                       avatar: config[l].avatar || '',
-           candidati: [{ nome: config[l].nomeTeam || 'Test team', set: Teams.import(config[l].team || '') || [] }]
+           candidati: [{ nome: config[l].nomeTeam || 'Test team', set: setDaTeam(config[l].team || '') }]
        });
        impostaPartita({ openSheet: true, latiNoti: ['p1', 'p2'], p1: lato('p1'), p2: lato('p2') });
    }
@@ -1012,7 +1086,7 @@ function disegnaInfo() {
                nome: d.giocatori[l].nome,
                               avatar: d.giocatori[l].avatar || '',
                candidati: d.giocatori[l].teams.map(t => {
-                   const sets = Teams.import(t.testo) || [];
+                   const sets = setDaTeam(t.testo);
                    return { nome: t.nome, set: vedo ? sets : sets.map(x => ({ species: x.species, name: x.name })) };
                })
            };

@@ -14,6 +14,11 @@
 //    di Showdown. Fuori dallo schermo, con i turni rimasti: meteo, terreni e
 //    Trick Room nella riga sotto lo schermo (#cab-campo); le condizioni di
 //    ciascun lato (Stealth Rock, Tailwind…) nella colonna del suo player.
+// 6. Posizione dei tooltip: tutti restano dentro la finestra; quelli dei Pokémon
+//    in campo sono la versione compatta (.tt-compatto); quello di una carta della
+//    colonna laterale si apre accanto alla colonna, mai sul Pokémon che si guarda.
+//    Le carte si abbinano ai Pokémon di Showdown per forma e soprannome (abbina()),
+//    non per specie base: due forme dello stesso Pokémon nel team non si confondono.
 //
 // Si appoggia ai file di Showdown già caricati dalla pagina
 // (BattleTooltips, Dex, BattleNatures). Non tocca il motore della battaglia.
@@ -134,6 +139,18 @@ export function installa({ ritardoMosse, BattleTooltips } = {}) {
     };
     document.addEventListener('mouseover', e => { if (interno(e)) e.stopPropagation(); }, true);
 
+    // --- 0. Tutti i tooltip restano dentro la finestra ---
+    // Showdown li piazza sopra l'elemento senza sapere che la pagina è rimpicciolita e può scorrere:
+    // un Pokémon vicino al bordo, o un tooltip alto, uscirebbe dalla finestra.
+    const piazzaOriginale = P.placeTooltip;
+    if (typeof piazzaOriginale === 'function') {
+        P.placeTooltip = function () {
+            const ris = piazzaOriginale.apply(this, arguments);
+            try { dentroFinestra(); } catch (e) { console.warn('battle-extra: tooltip non riposizionato', e); }
+            return ris;
+        };
+    }
+
     // --- 1. Ritardo sui tooltip delle mosse ---
     // Un clic tenuto premuto (blocco del tooltip) o il tocco li mostrano subito.
     let attesa = null;
@@ -197,6 +214,70 @@ export function installa({ ritardoMosse, BattleTooltips } = {}) {
 
 
 // -----------------------------------------------------
+// Posizione dei tooltip
+// -----------------------------------------------------
+const MARGINE_TOOLTIP = 8;
+
+function tooltipVisibile() {
+    const w = document.getElementById('tooltipwrapper');
+    const tt = w?.querySelector('.tooltip');
+    return tt ? { w, tt } : null;
+}
+
+// Sposta il tooltip (con una translate sul suo contenitore) in modo che il suo angolo
+// in alto a sinistra arrivi a (x, y), in coordinate della finestra
+function portaTooltipIn(w, tt, x, y) {
+    w.style.transform = '';
+    const r = tt.getBoundingClientRect();
+    w.style.transform = `translate(${(x - r.left).toFixed(1)}px, ${(y - r.top).toFixed(1)}px)`;
+}
+
+// Tiene il tooltip dentro la finestra, spostandolo il minimo
+function dentroFinestra() {
+    const a = tooltipVisibile();
+    if (!a) return;
+    const { w, tt } = a;
+    w.style.transform = '';
+    const r = tt.getBoundingClientRect();
+    const L = document.documentElement.clientWidth, A = window.innerHeight, m = MARGINE_TOOLTIP;
+    let x = r.left, y = r.top;
+    if (x + r.width > L - m) x = L - m - r.width;
+    if (x < m) x = m;
+    if (y + r.height > A - m) y = A - m - r.height;
+    if (y < m) y = m;
+    if (x !== r.left || y !== r.top) portaTooltipIn(w, tt, x, y);
+}
+
+// Tooltip di una carta della colonna laterale: mai sopra il Pokémon che si sta guardando né sugli altri
+// della colonna. Nel layout "una schermata" (colonne ai lati dello schermo) sta accanto alla colonna,
+// dalla parte dello schermo; nel layout a colonna (carte in riga sotto lo schermo) sopra la carta, o sotto se non c'è posto.
+function tooltipAccanto(li) {
+    const a = tooltipVisibile();
+    if (!a) return;
+    const { w, tt } = a;
+    w.style.transform = '';
+    const c = li.getBoundingClientRect();
+    const r = tt.getBoundingClientRect();
+    const L = document.documentElement.clientWidth, A = window.innerHeight, m = MARGINE_TOOLTIP;
+    const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
+    let x, y;
+    if (document.documentElement.getAttribute('data-modo') === 'fit') {
+        const colonna = (li.closest('.lato') || li).getBoundingClientRect();
+        const aSinistra = colonna.left + colonna.width / 2 < L / 2;
+        x = aSinistra ? colonna.right + 12 : colonna.left - 12 - r.width;
+        y = c.top;
+    } else {
+        x = c.left + c.width / 2 - r.width / 2;
+        y = c.top - 10 - r.height;
+        if (y < m) y = c.bottom + 10;
+    }
+    x = clamp(x, m, Math.max(m, L - m - r.width));
+    y = clamp(y, m, Math.max(m, A - m - r.height));
+    portaTooltipIn(w, tt, x, y);
+}
+
+
+// -----------------------------------------------------
 // Open sheet: dal set alle stat esatte
 // -----------------------------------------------------
 function latoDi(battle, side) {
@@ -205,14 +286,21 @@ function latoDi(battle, side) {
     return side.n === 1 ? 'p2' : 'p1';
 }
 
-// Il set del team che corrisponde a un Pokémon in campo (nickname, poi specie)
+// Il set del team che corrisponde a un Pokémon in campo: lo stesso abbinamento delle carte della colonna
+// (abbina), così carta, tooltip e suggerimenti di efficacia parlano sempre dello stesso set. Se il Pokémon
+// non è tra quelli di Showdown (o il lato non ha ancora un battle) si ripiega sulla forma e sul soprannome.
 function setDi(lato, pokemon, dex) {
     const squadra = S.squadre[lato] || [];
     if (!squadra.length || !pokemon) return null;
-    const nome = idDi(pokemon.name);
-    const base = idDi(dex.species.get(pokemon.speciesForme).baseSpecies);
-    return squadra.find(s => idDi(s.name || s.species) === nome)
-        || squadra.find(s => idDi(dex.species.get(s.species).baseSpecies) === base)
+    const battle = S.battle || { dex };
+    const trovati = abbinaLato(lato, elencoLato(lato), battle);
+    const i = trovati.indexOf(pokemon);
+    if (i >= 0 && squadra[i]) return squadra[i];
+    const forma = idDi(pokemon.speciesForme), nome = idDi(pokemon.name);
+    const nomeDi = x => idDi(x.name || x.species);
+    return squadra.find(x => idDi(x.species) === forma && nomeDi(x) === nome)
+        || squadra.find(x => idDi(x.species) === forma)
+        || squadra.find(x => nomeDi(x) === nome)
         || null;
 }
 
@@ -428,6 +516,19 @@ function sezioneEfficacia(tt, move, isZOrMax, pokemon, serverPokemon, gmaxMove) 
     </div>`;
 }
 
+// Il Pokémon in campo nella richiesta del simulatore (stesso soprannome e stessa forma:
+// due Pokémon dello stesso team possono avere lo stesso soprannome)
+function pokemonDellaRichiesta(battle, pokemon) {
+    const nome = idDi(pokemon.name);
+    const forma = idDi(pokemon.speciesForme);
+    const formaDi = p => idDi(p.speciesForme || String(p.details || '').split(',')[0]);
+    const tutti = (battle.myPokemon || []).filter(p => p.ident);
+    // il nome nel log può essere stato reso unico (nomi-log.js) e non coincidere più con quello della richiesta
+    const trovati = tutti.filter(p => idDi(p.ident.slice(4)) === nome);
+    const candidati = trovati.length ? trovati : tutti;
+    return candidati.find(p => formaDi(p) === forma) || trovati[0] || null;
+}
+
 /**
  * Per i bottoni dei bersagli in battle-ui.js.
  *  battle:     scena.battle
@@ -441,8 +542,7 @@ export function efficaciaBersaglio(battle, nomeMossa, attaccante, bersaglio) {
     if (!tt || !attaccante || !bersaglio) return null;
     const move = battle.dex.moves.get(nomeMossa);
     if (!move?.exists) return null;
-    const mio = attaccante.side === battle.mySide && battle.myPokemon
-        ? battle.myPokemon.find(p => p.ident && idDi(p.ident.slice(4)) === idDi(attaccante.name)) : null;
+    const mio = attaccante.side === battle.mySide ? pokemonDellaRichiesta(battle, attaccante) : null;
     const serverAtt = mio || serverDaSheet(battle, attaccante);
     const potenziamento = move.isMax ? 'maxmove' : move.isZ ? 'zmove' : '';
     const { tipo, categoria } = tipoEffettivo(tt, move, potenziamento, attaccante, serverAtt, undefined);
@@ -550,7 +650,9 @@ function htmlPokemon(tt, clientPokemon, serverPokemon, { attivo, daSheet, lato: 
     // --- Mosse ---
     html += sezioneMosse(tt, clientPokemon, serverPokemon, attivo, daSheet);
 
-    return html + '</div>';
+    html += '</div>';
+    // Dentro lo schermo di gioco (Pokémon in campo) il tooltip è la versione compatta
+    return attivo ? `<div class="tt-compatto">${html}</div>` : html;
 }
 
 function sezioneStat(tt, clientPokemon, serverPokemon, daSheet) {
@@ -576,7 +678,7 @@ function sezioneStat(tt, clientPokemon, serverPokemon, daSheet) {
             <div class="tt-titolo">${etichettaStat}</div>
             <div class="tt-griglia-stat">${celle}</div>
             ${testoEv ? `<div class="tt-sub">EVs ${esc(testoEv)}</div>` : ''}
-            ${clientPokemon ? '<div class="tt-sub">Big numbers already include boosts, items, abilities and field.</div>' : ''}
+            ${clientPokemon ? '<div class="tt-sub tt-nota-lunga">Big numbers already include boosts, items, abilities and field.</div>' : ''}
         </div>`;
     }
 
@@ -696,12 +798,45 @@ function disegnaLati() {
 // Stato di ciascun Pokémon: in campo, KO, HP (da quello che Showdown sa)
 const visti = new WeakSet();   // Pokémon che sono già scesi in campo
 
-function pokemonDelLato(side, specie, dex, esclusi = new Set()) {
-    const base = idDi(dex.species.get(specie).baseSpecies);
-    return side?.pokemon?.find(p => !esclusi.has(p) && idDi(dex.species.get(p.speciesForme).baseSpecies) === base) || null;
+const baseDi = (battle, specie) => idDi(battle.dex.species.get(specie).baseSpecies);
+
+// A ogni carta il Pokémon che le corrisponde tra i candidati (o null). I candidati sono Pokémon
+// di Showdown ({ speciesForme, name }) o voci della richiesta del simulatore, già normalizzate.
+// Showdown rimescola side.pokemon a ogni cambio e due Pokémon dello stesso team possono avere
+// la stessa specie base e lo stesso soprannome (Calyrex-Ice e Calyrex-Shadow, entrambi "Calyrex"):
+// perciò si abbina per gradi, dal più preciso al più largo, e ogni candidato serve una carta sola.
+//   1. stessa forma e stesso soprannome   2. stessa forma
+//   3. stessa specie base e stesso soprannome   4. stessa specie base (forme cambiate: Mega, ecc.)
+function abbina(battle, carte, candidati) {
+    const abbinati = carte.map(() => null);
+    // forma, specie base e soprannome di ognuno, calcolati una volta sola (il Dex costa)
+    const dati = x => {
+        const forma = idDi(x.speciesForme ?? x.specie);
+        return { forma, base: baseDi(battle, x.speciesForme ?? x.specie), nome: idDi(x.name ?? x.nome) };
+    };
+    const delleCarte = carte.map(dati);
+    const liberi = candidati.map(p => ({ p, ...dati(p) }));
+    const gradi = [
+        (c, p) => p.forma === c.forma && p.nome === c.nome,
+        (c, p) => p.forma === c.forma,
+        (c, p) => p.base === c.base && p.nome === c.nome,
+        (c, p) => p.base === c.base,
+    ];
+    for (const combacia of gradi) {
+        delleCarte.forEach((carta, i) => {
+            if (abbinati[i]) return;
+            const k = liberi.findIndex(p => combacia(carta, p));
+            if (k >= 0) abbinati[i] = liberi.splice(k, 1)[0].p;
+        });
+    }
+    return abbinati;
 }
 
-const baseDi = (battle, specie) => idDi(battle.dex.species.get(specie).baseSpecies);
+// I Pokémon di Showdown che corrispondono alle carte di un lato
+function abbinaLato(lato, elenco, battle = S.battle) {
+    const side = battle?.[lato];
+    return abbina(battle, elenco, side?.pokemon || []);
+}
 
 // Si portano meno Pokémon di quelli mostrati nel team preview (es. 4 su 6)?
 function sceltaRidotta(battle, side) {
@@ -712,7 +847,7 @@ function sceltaRidotta(battle, side) {
 function portatiNoti(battle, side) {
     if (side !== battle.mySide || !battle.myPokemon?.length) return null;
     if (!sceltaRidotta(battle, side) || battle.myPokemon.length >= side.pokemon.length) return null;
-    return new Set(battle.myPokemon.map(p => baseDi(battle, p.speciesForme || p.details?.split(',')[0] || '')));
+    return battle.myPokemon.map(p => ({ speciesForme: p.speciesForme || String(p.details || '').split(',')[0], name: String(p.ident || '').slice(4) }));
 }
 
 // L'avatar scelto per il player (Showdown altrimenti ne tira uno a caso a ogni set)
@@ -783,20 +918,21 @@ function aggiornaLati() {
         // Nessun set passato: appena Showdown riceve il team preview disegno i 6
         if (!box.querySelector('.membro') && side.pokemon?.length) { box.dataset.firma = ''; disegnaLati(); return; }
         for (const p of side.active) if (p) visti.add(p);
-        const usati = new Set();
+        const elenco = elencoLato(lato);
+        const abbinati = abbinaLato(lato, elenco);
+        // Bring 6 pick 4: del proprio team si sa già chi è stato portato, dalla richiesta
+        const portati = portatiNoti(battle, side);
+        const sonoPortati = portati && abbina(battle, elenco, portati);
         for (const li of box.querySelectorAll('.membro')) {
-            const p = pokemonDelLato(side, li.dataset.specie, battle.dex, usati);
-            if (p) usati.add(p);
+            const p = abbinati[+li.dataset.indice] || null;
             // ident vuoto = visto solo nel team preview, mai sceso in campo
             const sceso = !!p && (visti.has(p) || !!p.ident || !!p.fainted);
             const ko = !!p?.fainted;
             li.classList.toggle('in-campo', sceso && side.active.includes(p) && !ko);
             li.classList.toggle('ko', ko);
-            // Bring 6 pick 4: finché non scende in campo non si sa se è tra i 4 portati.
-            // Del proprio team lo si sa già dalla richiesta.
-            const portato = portatiNoti(battle, side);
-            li.classList.toggle('non-portato', !!portato && !sceso && !portato.has(baseDi(battle, li.dataset.specie)));
-            li.classList.toggle('incerto', !portato && !sceso && sceltaRidotta(battle, side));
+            // Finché non scende in campo non si sa se è tra i 4 portati (a meno che non sia del proprio team)
+            li.classList.toggle('non-portato', !!sonoPortati && !sceso && !sonoPortati[+li.dataset.indice]);
+            li.classList.toggle('incerto', !sonoPortati && !sceso && sceltaRidotta(battle, side));
             const perc = sceso && p.maxhp ? Math.max(0, Math.min(100, (p.hp / p.maxhp) * 100)) : 100;
             const barra = li.querySelector('.membro-hp');
             barra.classList.toggle('visibile', sceso);
@@ -816,12 +952,13 @@ function tooltipMembro(e, lato) {
     if (!tt || !setCompleto(set) || !BT || BT.isLocked) return;
 
     // Se il Pokémon è già sceso in campo uso i suoi dati veri (boost, HP, mosse usate)
-    const trovato = pokemonDelLato(S.battle[lato], set.species, S.battle.dex);
+    const trovato = abbinaLato(lato, elencoLato(lato))[+li.dataset.indice];
     const clientPokemon = trovato && (visti.has(trovato) || trovato.ident) ? trovato : null;
     const server = serverDaSet(S.battle, set, clientPokemon);
     const html = htmlPokemon(tt, clientPokemon, server, { attivo: false, daSheet: true, lato });
     tooltipAperto = li;
     BT.prototype.placeTooltip.call(tt, html, li, true, 'membro');
+    tooltipAccanto(li);
 }
 function nascondiTooltip() {
     tooltipAperto = null;
