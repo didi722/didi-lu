@@ -3170,6 +3170,7 @@ color:#eeeeee;
 .hub-title-badge.tipo-steel { background-color: #aaaabb !important; border: 2px solid #505053; box-shadow: 4px 4px 0 #505053;}
 .hub-title-badge.tipo-fairy { background-color: #ee99ee !important; border: 2px solid #812181; box-shadow: 4px 4px 0 #812181; }
 .hub-title-badge.tipo-normal { background-color: #aaaa99 !important; border: 2px solid #383834; box-shadow: 4px 4px 0 #383834;}
+.hub-title-badge.tipo-pokemon { background-color: #fff !important; color: #000; border: 2px solid #000; box-shadow: 4px 4px 0 #000;}
 
 .player-active-title-badge {
     z-index: 100;

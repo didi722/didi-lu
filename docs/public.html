@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="titoli.js"></script>
 </head>
 <!DOCTYPE html>
 <html lang="it">
@@ -424,9 +425,14 @@ async function initPublicProfile() {
             const statsData = statsSnap.val() || {};
 
             let typeUsageData = {};
+            let pokemonUsageData = {};
             try {
-                const typeUsageSnap = await db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value');
+                const [typeUsageSnap, pokemonUsageSnap] = await Promise.all([
+                    db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value'),
+                    db.ref(`players/${playerKey}/stats/team-stats/pokemonusage`).once('value')
+                ]);
                 typeUsageData = typeUsageSnap.val() || {};
+                pokemonUsageData = pokemonUsageSnap.val() || {};
             } catch(err) {
                 console.error("Error occurred while fetching typeusage:", err);
             }
@@ -437,7 +443,8 @@ async function initPublicProfile() {
                     palette, 
                     info.title || "", 
                     typeUsageData, 
-                    statsData.history || {}
+                    statsData.history || {},
+                    pokemonUsageData
                 );
             }
 
@@ -1798,7 +1805,7 @@ async function caricaBestTeamDallAlto(playerKey) {
     }
 }
 
-function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, seasonsHistory = {}) {
+function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, seasonsHistory = {}, pokemonUsageData = {}) {
     const container = document.getElementById('trophy-list');
     const titleContainer = document.getElementById('player-title-container');
     
@@ -1811,58 +1818,25 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
     const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
     const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
 
-    const TITOLI_MAP = {
-        "Bug Catcher": "bug", "Punk Guy": "dark", "Dragon Tamer": "dragon",
-        "Guitarist": "electric", "Fairy Tale Girl": "fairy", "Black Belt": "fighting",
-        "Kindler": "fire", "Bird Keeper": "flying", "Hex Maniac": "ghost",
-        "Aroma Lady": "grass", "Ruin Maniac": "ground", "Skier": "ice",
-        "Rich Boy": "normal", "Ninja Boy": "poison", "Psychic": "psychic",
-        "Hiker": "rock", "Working Man": "steel", "Fisherman": "water"
-    };
-
     // --- 1. SEZIONE TITLE BADGE ---
+    // Nome, soglie e avanzamento del titolo vengono da titoli.js (tipi e Pokémon, dai set realmente giocati)
     if (titoloSalvato && titoloSalvato !== "" && titoloSalvato !== "No Title" && titleContainer) {
-        const tipoAtteso = TITOLI_MAP[titoloSalvato] || titoloSalvato.split(" ")[0].toLowerCase();
+        const aperto = x => {
+            if (x && typeof x.val === 'function') x = x.val();
+            return x || {};
+        };
+        let tipiUso = aperto(typeUsageData);
+        if (tipiUso.stats) tipiUso = tipiUso.stats;
+        if (tipiUso['team-stats']) tipiUso = tipiUso['team-stats'];
+        if (tipiUso.typeusage) tipiUso = tipiUso.typeusage;
 
-        let targetData = typeUsageData;
-        if (targetData && typeof targetData.val === 'function') targetData = targetData.val();
-        if (targetData?.stats) targetData = targetData.stats;
-        if (targetData?.['team-stats']) targetData = targetData['team-stats'];
-        if (targetData?.typeusage) targetData = targetData.typeusage;
-
-        let stats = { played: 0, won: 0 };
-        if (targetData) {
-            const keys = Object.keys(targetData);
-            const match = keys.find(k => k.toLowerCase() === tipoAtteso.toLowerCase());
-            if (match) stats = targetData[match];
-        }
-
-        const played = Number(stats.played) || 0;
-        const won = Number(stats.won) || 0;
-
-        let nextPlayedTarget = 50;
-        let nextWonTarget = 0;
-
-        if (played >= 250 && won >= 50) {
-            nextPlayedTarget = 250;
-            nextWonTarget = 50;
-        } else if (played >= 150 && won >= 25) {
-            nextPlayedTarget = 250;
-            nextWonTarget = 50;
-        } else if (played >= 50) {
-            nextPlayedTarget = 150;
-            nextWonTarget = 25;
-        } else {
-            nextPlayedTarget = 50;
-            nextWonTarget = 0;
-        }
-
-        const progPlayed = nextPlayedTarget > 0 ? Math.min((played / nextPlayedTarget) * 100, 100) : 100;
-        const progWon = nextWonTarget > 0 ? Math.min((won / nextWonTarget) * 100, 100) : 100;
+        const desc = Titoli.descriviTitolo(titoloSalvato, tipiUso, aperto(pokemonUsageData));
+        const classeTipo = desc && desc.tipo ? desc.tipo : (desc ? 'pokemon' : titoloSalvato.split(" ")[0].toLowerCase());
+        const prog = desc ? desc.progresso : null;
 
         const titleBadge = document.createElement('div');
         titleBadge.id = "player-active-title-badge";
-        titleBadge.className = `hub-title-badge tipo-${tipoAtteso}`;
+        titleBadge.className = `hub-title-badge tipo-${classeTipo}`;
         titleBadge.style.cssText = "position: relative; display: inline-block;";
         titleBadge.innerText = titoloSalvato;
 
@@ -1873,33 +1847,30 @@ function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, sea
         tooltip.className = "neubrutal-tooltip";
         tooltip.style.cssText = "position: absolute; z-index: 99999; min-width: 220px; box-sizing: border-box; transform: rotate(3deg);";
 
-        const grayWonText = nextWonTarget > 0 ? `<span style="color: #888; font-size: 11px; white-space: nowrap;">${nextWonTarget}</span>` : '';
-        const tipoNomeFormattato = tipoAtteso.toUpperCase();
+        const ETICHETTE = { played: 'Played', won: 'Won', ko: 'KOs' };
+        // Con un prossimo scaglione: una barra per ogni cosa richiesta; al massimo: i numeri raggiunti
+        const righe = !prog ? [] : prog.prossimo
+            ? prog.barre.map(b => ({ et: ETICHETTE[b.c], valore: b.valore, obiettivo: b.obiettivo, pct: b.pct * 100 }))
+            : ['played', 'won', 'ko'].map(c => ({ et: ETICHETTE[c], valore: prog.uso[c], obiettivo: 0, pct: 100 }));
 
+        const nomeEtichetta = (desc ? desc.nome : titoloSalvato).toUpperCase();
         tooltip.innerHTML = `
             <div style="margin-bottom: 10px; text-align: left;">
                 <span style="background: #000; color: #fff; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 8px; display: inline-block; box-shadow: 3.5px 3.5px 0px rgba(0,0,0,0.25);">
-                    ${tipoNomeFormattato} 
+                    ${nomeEtichetta}
                 </span>
             </div>
-
-            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%;">
-                <span style="white-space: nowrap;">Played: ${played}</span>
-                <span style="color: #888; font-size: 11px; white-space: nowrap;">${nextPlayedTarget}</span>
+            ${prog && prog.prossimo ? `<div style="font-size: 11px; font-weight: 700; margin-bottom: 6px; text-align: left;">Next: ${prog.prossimo.nome(desc.categoria === 'tipo' ? desc.chiave : desc.nome)}</div>` : ''}
+            ${righe.map((r, i) => `
+            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%; ${i ? 'margin-top: 4px;' : ''}">
+                <span style="white-space: nowrap;">${r.et}: ${r.valore}</span>
+                ${r.obiettivo ? `<span style="color: #888; font-size: 11px; white-space: nowrap;">${r.obiettivo}</span>` : ''}
             </div>
             <div class="progress-bar-bg" ${bgStyle}>
-                <div class="progress-bar-fill" ${fillStyle(progPlayed)}></div>
-            </div>
-            
-            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%; margin-top: 4px;">
-                <span style="white-space: nowrap;">Won: ${won}</span>
-                ${grayWonText}
-            </div>
-            <div class="progress-bar-bg" ${bgStyle}>
-                <div class="progress-bar-fill" ${fillStyle(progWon)}></div>
-            </div>
+                <div class="progress-bar-fill" ${fillStyle(r.pct)}></div>
+            </div>`).join('')}
         `;
-        
+
         titleBadge.appendChild(tooltip);
         titleContainer.appendChild(titleBadge);
     }

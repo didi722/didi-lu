@@ -218,6 +218,107 @@ async function registraRisultatoMatch(r) {
 //   async function aggiornaLeaderboard(stagione) { ... }
 // =====================================================
 
+// =====================================================
+// USO REALE DI TIPI E POKÉMON (per i titoli: vedi titoli.js)
+//
+// Dai set giocati sul sito si sa chi è sceso davvero in campo (statistiche-set.js, campo "sceso"),
+// quanti KO ha fatto e chi ha vinto il set. Da lì:
+//   - presenze: ogni Pokémon sceso in campo in un set conta una presenza per ciascuno dei suoi tipi
+//     (due Pokémon spettro nello stesso set sono 2 presenze spettro);
+//   - vittorie: il set vinto conta UNA vittoria per ogni tipo (o specie) che ha partecipato, anche se
+//     i Pokémon di quel tipo erano due;
+//   - KO: quelli fatti dai Pokémon di quel tipo (o di quella specie).
+// I match senza dati di set (inseriti a mano, o giocati prima del simulatore) non dicono chi è sceso in
+// campo: per loro si usa la composizione del team, una volta per match (presenza = i Pokémon del team
+// di quel tipo, vittoria = il match vinto, nessun KO), così i titoli già guadagnati non spariscono.
+// =====================================================
+const idSpecieUso = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]+/g, '');
+// Nel Box un Pokémon con soprannome è salvato come "Soprannome (Specie)"
+const specieDaNomeBox = nome => {
+    const m = /^(.*\S)\s*\(([^()]+)\)\s*$/.exec(String(nome || '').trim());
+    return m ? m[2].trim() : String(nome || '').trim();
+};
+const valoriUso = x => (x && typeof x === 'object' ? Object.values(x) : []);
+
+// Chi è sceso davvero in campo. I set salvati prima del campo "sceso" non lo dicono: si riconosce chi
+// ha lasciato un segno (titolare, KO fatti, svenuto, ultimo rimasto), il resto è un minimo.
+function pokemonSceso(p) {
+    if (!p) return false;
+    if (p.sceso !== undefined) return p.sceso === true;
+    return !!p.portato && !!(p.titolare || p.svenuto || p.ultimo || Number(p.koFatti) > 0);
+}
+
+// I set di un match che si possono usare: con il lato richiesto e i suoi Pokémon
+function setUtilizzabili(partita) {
+    return valoriUso(partita && partita.setStats).filter(st => st && st[partita.lato] && valoriUso(st[partita.lato].pokemon).length);
+}
+
+// Specie scese in campo in tutti i set: servono per cercarne i tipi prima del calcolo
+function specieSceseInCampo(partite) {
+    const specie = new Set();
+    for (const m of partite) {
+        for (const st of setUtilizzabili(m)) {
+            valoriUso(st[m.lato].pokemon).filter(pokemonSceso).forEach(p => p.specie && specie.add(p.specie));
+        }
+    }
+    return [...specie];
+}
+
+/**
+ * @param {Array} partite  i match del player: { vittoria, team, lato: 'p1'|'p2', setStats }
+ * @param {(specie: string) => string[]} tipiDi   tipi (minuscoli) di una specie
+ * @param {(team: string) => { specie: string[], tipi: string[][] }} teamDi   composizione del team (match senza set)
+ * @returns {{ tipi: Object<string, {played, won, ko}>, specie: Object<string, {nome, played, won, ko}> }}
+ */
+function calcolaUsoPokemon(partite, tipiDi, teamDi) {
+    const tipi = {}, specie = {};
+    const t = nome => (tipi[nome] ||= { played: 0, won: 0, ko: 0 });
+    const s = (id, nome) => (specie[id] ||= { nome, played: 0, won: 0, ko: 0 });
+
+    for (const m of partite) {
+        const sets = setUtilizzabili(m);
+
+        if (sets.length) {
+            for (const st of sets) {
+                const vinto = st.vincitore === m.lato;
+                const tipiNelSet = new Set(), specieNelSet = new Map();
+                for (const p of valoriUso(st[m.lato].pokemon).filter(pokemonSceso)) {
+                    const ko = Number(p.koFatti) || 0;
+                    for (const tipo of new Set(tipiDi(p.specie) || [])) {
+                        t(tipo).played++;
+                        t(tipo).ko += ko;
+                        tipiNelSet.add(tipo);
+                    }
+                    const id = idSpecieUso(p.specie);
+                    if (!id) continue;
+                    s(id, p.specie).played++;
+                    s(id, p.specie).ko += ko;
+                    specieNelSet.set(id, p.specie);
+                }
+                if (vinto) {
+                    tipiNelSet.forEach(tipo => t(tipo).won++);
+                    specieNelSet.forEach((nome, id) => s(id, nome).won++);
+                }
+            }
+            continue;
+        }
+
+        // niente dati di set: la composizione del team, una volta per match
+        const team = teamDi(m.team) || { specie: [], tipi: [] };
+        const conteggio = {};
+        (team.tipi || []).forEach(tipiPokemon => new Set(tipiPokemon).forEach(tipo => { conteggio[tipo] = (conteggio[tipo] || 0) + 1; }));
+        for (const [tipo, n] of Object.entries(conteggio)) {
+            t(tipo).played += n;
+            if (m.vittoria) t(tipo).won++;
+        }
+        const viste = new Map();
+        (team.specie || []).forEach(nome => { const sp = specieDaNomeBox(nome); const id = idSpecieUso(sp); if (id) viste.set(id, sp); });
+        viste.forEach((nome, id) => { s(id, nome).played++; if (m.vittoria) s(id, nome).won++; });
+    }
+    return { tipi, specie };
+}
+
+
 async function ricalcolaStatisticheGlobali(pId) {
     try {
         const seasonsSnap = await db.ref(`seasons`).once('value');
@@ -355,7 +456,9 @@ async function ricalcolaStatisticheGlobali(pId) {
                             deltaElo: isP1 ? Number(mData.p1DeltaElo || 0) : Number(mData.p2DeltaElo || 0),
                             points: matchPoints,
                             setW: isP1 ? Number(mData.p1score || 0) : Number(mData.p2score || 0),
-                            setL: isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0)
+                            setL: isP1 ? Number(mData.p2score || 0) : Number(mData.p1score || 0),
+                            lato: isP1 ? 'p1' : 'p2',
+                            setStats: mData.setStats || null
                         });
 
                         if (!statsLeaderboard.formats[categoria]) {
@@ -510,29 +613,19 @@ async function ricalcolaStatisticheGlobali(pId) {
             }
         }
 
-        // --- 5B. ANALISI E CONTEGGIO TYPEUSAGE ---
-        const typeUsage = {};
-
-        cronologiaMatchPiatta.forEach(m => {
-            const listaTipiDelTeam = teamTypesMap[m.team] || []; 
-            const countTipiInMatch = {};
-            
-            listaTipiDelTeam.forEach(tipiPokemon => {
-                tipiPokemon.forEach(tipo => {
-                    countTipiInMatch[tipo] = (countTipiInMatch[tipo] || 0) + 1;
-                });
-            });
-
-            Object.entries(countTipiInMatch).forEach(([tipo, numeroPresenze]) => {
-                if (!typeUsage[tipo]) {
-                    typeUsage[tipo] = { played: 0, won: 0 };
-                }
-                typeUsage[tipo].played += numeroPresenze;
-                if (m.vittoria && numeroPresenze >= 2) {
-                    typeUsage[tipo].won++;
-                }
-            });
-        });
+        // --- 5B. USO REALE DI TIPI E POKÉMON (per i titoli) ---
+        // Tipi delle specie scese in campo nei set giocati sul sito (una ricerca per specie, poi in cache)
+        const tipiSpecie = {};
+        await Promise.all(specieSceseInCampo(cronologiaMatchPiatta).map(async specie => {
+            tipiSpecie[specie] = await ottieniTipiDaPokeAPI(specie);
+        }));
+        const uso = calcolaUsoPokemon(
+            cronologiaMatchPiatta,
+            specie => tipiSpecie[specie] || [],
+            team => ({ specie: teamCompositionMap[team] || [], tipi: teamTypesMap[team] || [] })
+        );
+        const typeUsage = uso.tipi;
+        const pokemonUsage = uso.specie;
 
         // --- AGGREGAZIONE PARAMETRI PER SINGOLO FORMATO ---
         const formatsStats = {};
@@ -622,7 +715,8 @@ async function ricalcolaStatisticheGlobali(pId) {
             'team-stats': {
                 bestteam: bestTeamData,
                 mostusedteam: mostUsedData,
-                typeusage: typeUsage
+                typeusage: typeUsage,
+                pokemonusage: pokemonUsage
             },
             'badges': badgeGlobali
         });
