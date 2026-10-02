@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stats</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- l'ossatura (loader, menu, login, banner) è quella di tutte le pagine -->
     <link rel="stylesheet" href="style-schermata-base-vuota.css">
@@ -132,9 +132,12 @@
 
     <div id="stats-riepilogo" class="stats-riepilogo" aria-live="polite"></div>
 
-    <section class="stats-tabella-card">
-        <div class="stats-scorri" id="stats-tabella"></div>
-    </section>
+    <!-- Ordinamento: una chip per ogni statistica (sostituisce le intestazioni della vecchia tabella) -->
+    <div id="stats-ordina" class="stats-ordina" role="group" aria-label="Sort by"></div>
+
+    <!-- Le card -->
+    <section id="stats-griglia" class="stats-griglia vista-players" aria-label="Results"></section>
+    <div id="stats-altri" class="stats-altri"></div>
 
     <details class="stats-note">
         <summary>How are these numbers calculated?</summary>

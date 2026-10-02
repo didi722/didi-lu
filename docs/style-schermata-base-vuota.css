@@ -476,7 +476,6 @@ body {
     margin: 0;
     white-space: nowrap;
 }
-
 #login-modal.modal {
     backdrop-filter: blur(4px); /* Leggero blur per focus */
     z-index: 10000;

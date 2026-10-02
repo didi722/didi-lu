@@ -2,8 +2,8 @@
 // STATS — interfaccia della pagina delle statistiche
 //
 // I numeri li calcola statistiche.js (funzione pura); qui ci sono solo
-// Firebase, i controlli (categoria, stagione, formato, ricerca), la tabella
-// ordinabile e la scheda di dettaglio.
+// Firebase, i controlli (categoria, stagione, formato, ricerca, ordinamento),
+// la griglia di card e la scheda di dettaglio.
 //
 // Richiede, dalla pagina: la variabile `db` (Firebase Realtime Database) e `auth`.
 // =====================================================
@@ -17,6 +17,11 @@
     const fmt = (n, dec = 0) => (n == null ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }));
     const pct = n => (n == null ? '—' : `${fmt(n, Number.isInteger(n) ? 0 : 1)}%`);
     const segno = n => (n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '0');
+    const ND = '<span class="nd">—</span>';
+    const numero = (n, f = fmt) => (n == null ? ND : f(n));
+
+    const PASSO = 36;                       // card mostrate per volta
+    const COLORE_BASE = { players: '#31c489', teams: '#ffbd44', pokemon: '#6fa8ff' };
 
     const STATO = {
         tab: 'players',
@@ -24,6 +29,7 @@
         formato: 'all',
         cerca: '',
         ordine: {},          // tab -> { id, dir }
+        limite: PASSO,
         dati: null,          // { seasons, players }
         r: null,             // ultimo risultato di Statistiche.calcola
         ultimoUid: undefined,
@@ -32,61 +38,147 @@
 
 
     // -----------------------------------------------------
+    // Colori e inclinazione delle card
+    // -----------------------------------------------------
+    // Testo nero o bianco a seconda di quanto è scuro il colore del player
+    function testoSu(colore) {
+        let h = String(colore || '').replace('#', '');
+        if (h.length === 3 || h.length === 4) h = h.slice(0, 3).split('').map(c => c + c).join('');
+        h = h.slice(0, 6);
+        if (!/^[0-9a-f]{6}$/i.test(h)) return '#000';
+        const [r, g, b] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255)
+            .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.179 ? '#fff' : '#000';
+    }
+    const stileColore = (colore, base) => {
+        const c = coloreSicuro(colore) || base;
+        return `--c:${c};--t:${testoSu(c)}`;
+    };
+    // Sempre la stessa inclinazione per la stessa card (non "balla" quando si riordina)
+    function inclinazione(chiave) {
+        let h = 7;
+        for (const ch of String(chiave)) h = (h * 31 + ch.charCodeAt(0)) | 0;
+        return ((Math.abs(h) % 201) / 100 - 1).toFixed(2);
+    }
+
+
+    // -----------------------------------------------------
+    // Sprite dei Pokémon
+    //   GIF animate di Showdown; se mancano (Pokémon nuovi, forme alternative)
+    //   si prova la GIF in stile Gen 5, poi i PNG, poi la forma base, poi
+    //   Pokémon Database, e solo alla fine la Poké Ball.
+    // -----------------------------------------------------
+    const SD = 'https://play.pokemonshowdown.com/sprites';
+    const POKEBALL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+    // specie il cui nome base contiene già un trattino
+    const BASI_CON_TRATTINO = ['ho-oh', 'porygon-z', 'jangmo-o', 'hakamo-o', 'kommo-o',
+        'wo-chien', 'chien-pao', 'ting-lu', 'chi-yu', 'nidoran-f', 'nidoran-m'];
+
+    const senzaAccenti = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const toId = t => senzaAccenti(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    function pulisciSpecie(specie) {
+        let s = String(specie || '').trim().replace(/\s*\((?:m|f)\)\s*$/i, '');   // "Garchomp (M)"
+        const m = s.match(/\(([^()]+)\)\s*$/);                                     // "Soprannome (Garchomp)"
+        if (m) s = m[1].trim();
+        return s;
+    }
+
+    function idSprite(specie) {
+        const s = senzaAccenti(pulisciSpecie(specie)).toLowerCase();
+        let base = s, forma = '';
+        const conTrattino = BASI_CON_TRATTINO.find(b => s === b || s.startsWith(b + '-'));
+        if (conTrattino) { base = conTrattino; forma = s.slice(conTrattino.length + 1); }
+        else if (s.includes('-')) { base = s.slice(0, s.indexOf('-')); forma = s.slice(s.indexOf('-') + 1); }
+        const idBase = toId(base);
+        return {
+            completo: forma ? `${idBase}-${toId(forma)}` : idBase,   // stesso schema di Showdown: "urshifu-rapidstrike"
+            base: idBase,
+            db: base.replace(/[.'’:]/g, '').trim().replace(/\s+/g, '-')   // Pokémon Database: "mr-mime", "great-tusk"
+        };
+    }
+
+    const CATENE = new Map();      // chiave -> lista di indirizzi da provare
+    const RIUSCITO = new Map();    // chiave -> indice dell'indirizzo che ha funzionato
+
+    function catenaSprite(specie, animato) {
+        const chiave = (animato ? 'a:' : 's:') + specie;
+        if (CATENE.has(chiave)) return chiave;
+        const { completo, base, db } = idSprite(specie);
+        const per = id => (animato
+            ? [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`, `${SD}/gen5/${id}.png`]
+            : [`${SD}/dex/${id}.png`, `${SD}/gen5/${id}.png`, `${SD}/gen5ani/${id}.gif`, `${SD}/ani/${id}.gif`]);
+        const lista = [...per(completo)];
+        if (base && base !== completo) lista.push(...per(base));
+        if (db) lista.push(`https://img.pokemondb.net/sprites/home/normal/${db}.png`);
+        lista.push(POKEBALL);
+        CATENE.set(chiave, [...new Set(lista)]);
+        return chiave;
+    }
+
+    function sprite(specie, classe, animato = true) {
+        const chiave = catenaSprite(specie, animato);
+        const i = RIUSCITO.get(chiave) || 0;
+        return `<img class="${classe}" src="${esc(CATENE.get(chiave)[i])}" data-sprite="${esc(chiave)}" data-i="${i}" alt="" loading="lazy">`;
+    }
+
+    // Un'immagine che non si carica passa all'indirizzo successivo; quella che funziona viene ricordata
+    document.addEventListener('error', e => {
+        const img = e.target;
+        if (!img || img.tagName !== 'IMG' || !img.dataset.sprite) return;
+        const lista = CATENE.get(img.dataset.sprite);
+        const i = Number(img.dataset.i || 0) + 1;
+        if (!lista || i >= lista.length) return;
+        img.dataset.i = String(i);
+        img.src = lista[i];
+    }, true);
+    document.addEventListener('load', e => {
+        const img = e.target;
+        if (!img || img.tagName !== 'IMG' || !img.dataset.sprite) return;
+        const lista = CATENE.get(img.dataset.sprite);
+        const i = Number(img.dataset.i || 0);
+        RIUSCITO.set(img.dataset.sprite, i);
+        img.classList.toggle('e-pokeball', !!lista && lista[i] === POKEBALL);
+    }, true);
+
+
+    // -----------------------------------------------------
     // Pezzi di HTML
     // -----------------------------------------------------
     const wl = o => (!o || !o.giocati
-        ? '<span class="nd">—</span>'
+        ? ND
         : `<span class="wl"><b class="v">${fmt(o.vinti)}</b><i>–</i><b class="p">${fmt(o.persi)}</b></span>`);
 
-    const barra = (n, colore) => (n == null ? '' :
-        `<span class="barra"><span style="width:${Math.max(0, Math.min(100, n))}%${colore ? `;background:${colore}` : ''}"></span></span>`);
+    const barra = n => (n == null ? '' :
+        `<span class="barra"><span style="width:${Math.max(0, Math.min(100, n))}%"></span></span>`);
 
-    const koCella = ko => (!ko || !ko.setConDati
-        ? '<span class="nd" title="No KO data yet: only sets played on the site have it">—</span>'
-        : `<span class="wl" title="${fmt(ko.setConDati)} sets with data"><b class="v">${fmt(ko.fatti)}</b><i>–</i><b class="p">${fmt(ko.subiti)}</b></span><small class="sub ${ko.differenza >= 0 ? 'v' : 'p'}">${segno(ko.differenza)}</small>`);
+    const koWl = ko => (!ko || !ko.setConDati ? ND
+        : `<span class="wl"><b class="v">${fmt(ko.fatti)}</b><i>–</i><b class="p">${fmt(ko.subiti)}</b></span>`);
+    const koDiff = ko => (!ko || !ko.setConDati ? '' : `<small class="sub ${ko.differenza >= 0 ? 'v' : 'p'}">${segno(ko.differenza)}</small>`);
 
-    const trofei = (vinti, giocate) => `<span class="trofei${vinti ? ' ha' : ''}"><img src="immagini/season-winner-color.png" alt="" width="20" height="20"><b>${fmt(vinti)}</b>${giocate != null ? `<small>/ ${fmt(giocate)}</small>` : ''}</span>`;
+    const trofei = (vinti, giocate) => `<span class="trofei${vinti ? ' ha' : ''}"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"><b>${fmt(vinti)}</b>${giocate != null ? `<small>/ ${fmt(giocate)}</small>` : ''}</span>`;
 
-    // Sprite dei Pokémon: GIF animate di Showdown come nel resto del sito; se manca, il PNG del Pokédex, poi la Poké Ball
-    const BASI_CON_TRATTINO = [['ho-oh', 'hooh'], ['porygon-z', 'porygonz'], ['jangmo-o', 'jangmoo'], ['hakamo-o', 'hakamoo'], ['kommo-o', 'kommoo'],
-        ['wo-chien', 'wochien'], ['chien-pao', 'chienpao'], ['ting-lu', 'tinglu'], ['chi-yu', 'chiyu'], ['nidoran-f', 'nidoranf'], ['nidoran-m', 'nidoranm']];
-    function slugSprite(specie) {
-        let s = String(specie || '').toLowerCase().trim().replace(/[.'’:%é]/g, '').replace(/\s+/g, '');
-        for (const [da, a] of BASI_CON_TRATTINO) if (s === da || s.startsWith(da + '-')) { s = a + s.slice(da.length); break; }
-        const [base, ...forma] = s.split('-');
-        return (base + (forma.length ? '-' + forma.join('') : '')).replace(/[^a-z0-9-]/g, '');
-    }
-    const POKEBALL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
-    function sprite(specie, classe = 'pkm-sprite', statico = false) {
-        const slug = slugSprite(specie);
-        const src = statico ? `https://play.pokemonshowdown.com/sprites/dex/${slug}.png` : `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`;
-        return `<img class="${classe}" src="${esc(src)}" data-slug="${esc(slug)}" data-fase="${statico ? 1 : 0}" alt="" loading="lazy">`;
-    }
-    function spriteDiRiserva(img) {
-        const fase = Number(img.dataset.fase || 0);
-        img.dataset.fase = String(fase + 1);
-        if (fase === 0) img.src = `https://play.pokemonshowdown.com/sprites/dex/${img.dataset.slug}.png`;
-        else if (fase === 1) img.src = POKEBALL;
-    }
+    const avatar = (p, classe) => `<img class="${classe}" src="${esc(p.avatar || 'immagini/magikarp.png')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'">`;
 
-    const avatar = (p, classe = 'av') => `<img class="${classe}" src="${esc(p.avatar || 'immagini/magikarp.png')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'">`;
-
-    const chipPlayer = (nome, colore) => `<span class="chip-player" style="--c:${coloreSicuro(colore) || '#e4e4e4'}">${esc(nome)}</span>`;
+    const chipPlayer = nome => `<span class="chip-player">${esc(nome)}</span>`;
+    const tagFormato = f => `<span class="tag-formato">${esc(f || '—')}</span>`;
+    const chipStagione = () => `<span class="chip chip-nero">${esc(nomeStagione())}</span>`;
+    const chipVinte = n => (n ? `<span class="chip chip-oro"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"> ${fmt(n)} season${n === 1 ? '' : 's'} won</span>` : '');
 
 
     // -----------------------------------------------------
-    // Colonne delle tre tabelle
-    //   id, titolo, tip (suggerimento), val (valore per ordinare), html (cella), dir (verso di partenza), classe
+    // Statistiche di ogni categoria
+    //   id, titolo, tip, val (per ordinare), dir (verso di partenza),
+    //   html (il numero), sotto (riga piccola sotto il numero), testo (solo per ordinare, non è un numero)
     // -----------------------------------------------------
-    const COLONNE = {
+    const STAT = {
         players: () => [
-            { id: 'nome', titolo: 'Trainer', val: p => p.nome.toLowerCase(), dir: 1, classe: 'col-nome',
-                html: p => `<span class="cella-nome">${avatar(p)}<b>${esc(p.nome)}</b></span>` },
             { id: 'elo', titolo: 'Elo', val: p => p.elo, dir: -1,
-                tip: STATO.stagione === 'all' ? "The trainer's ranking" : 'Rating at the end of the season (change in brackets)',
-                html: p => `<b class="grande">${fmt(p.elo)}</b>${STATO.stagione === 'all' || !p.eloDelta ? '' : `<small class="sub ${p.eloDelta >= 0 ? 'v' : 'p'}">${segno(p.eloDelta)}</small>`}` },
+                tip: STATO.stagione === 'all' ? "The trainer's ranking" : 'Rating at the end of the season (change below)',
+                html: p => numero(p.elo),
+                sotto: p => (STATO.stagione === 'all' || !p.eloDelta ? '' : `<small class="sub ${p.eloDelta >= 0 ? 'v' : 'p'}">${segno(p.eloDelta)}</small>`) },
             { id: 'punti', titolo: 'Points', val: p => p.punti, dir: -1, tip: 'Match points + 1 for every showdown won',
-                html: p => `<b>${fmt(p.punti)}</b>` },
+                html: p => numero(p.punti) },
             { id: 'stagioni', titolo: 'Seasons won', val: p => p.stagioniVinte * 1000 + p.stagioniGiocate, dir: -1, tip: 'Seasons won / seasons played',
                 html: p => trofei(p.stagioniVinte, p.stagioniGiocate) },
             { id: 'showdown', titolo: 'Showdowns', val: p => p.showdown.vinti * 1000 - p.showdown.persi, dir: -1, tip: 'Won – lost',
@@ -96,54 +188,59 @@
             { id: 'set', titolo: 'Sets', val: p => p.set.vinti * 1000 - p.set.persi, dir: -1, tip: 'Won – lost',
                 html: p => wl(p.set) },
             { id: 'perc', titolo: 'Win %', val: p => p.percMatch, dir: -1, tip: 'Matches won',
-                html: p => `<b>${pct(p.percMatch)}</b>${barra(p.percMatch)}` },
+                html: p => numero(p.percMatch, pct), sotto: p => barra(p.percMatch) },
             { id: 'serie', titolo: 'Best streak', val: p => p.serie.vittorieMax, dir: -1, tip: 'Most matches won in a row',
-                html: p => `<b>${fmt(p.serie.vittorieMax)}</b>` },
-            { id: 'ko', titolo: 'KOs', val: p => (p.ko.setConDati ? p.ko.differenza : null), dir: -1, tip: 'Opponents KO\'d – own Pokémon KO\'d (difference below)',
-                html: p => koCella(p.ko) }
+                html: p => numero(p.serie.vittorieMax) },
+            { id: 'ko', titolo: 'KOs', val: p => (p.ko.setConDati ? p.ko.differenza : null), dir: -1, tip: "Opponents KO'd – own Pokémon KO'd (difference below)",
+                html: p => koWl(p.ko), sotto: p => koDiff(p.ko) },
+            { id: 'nome', titolo: 'Name', val: p => p.nome.toLowerCase(), dir: 1, testo: true }
         ],
         teams: () => [
-            { id: 'nome', titolo: 'Team', val: t => t.nome.toLowerCase(), dir: 1, classe: 'col-nome',
-                html: t => `<span class="cella-team"><b>${esc(t.nome)}</b><span class="mini-roster">${t.specie.slice(0, 6).map(s => sprite(s, 'mini', true)).join('')}</span></span>` },
-            { id: 'player', titolo: 'Trainer', val: t => t.playerNome.toLowerCase(), dir: 1,
-                html: t => chipPlayer(t.playerNome, t.colore) },
-            { id: 'formato', titolo: 'Format', val: t => t.formato.toLowerCase(), dir: 1,
-                html: t => `<span class="tag-formato">${esc(t.formato || '—')}</span>` },
-            { id: 'stagioni', titolo: 'Seasons won', val: t => t.stagioniVinte * 1000 + t.stagioniGiocate, dir: -1, tip: 'Seasons won by its trainer in which the team played / seasons played',
-                html: t => trofei(t.stagioniVinte, t.stagioniGiocate) },
-            { id: 'showdown', titolo: 'Showdowns', val: t => t.showdown.vinti * 1000 - t.showdown.persi, dir: -1, tip: 'Won – lost, in the showdowns where the team was used',
-                html: t => wl(t.showdown) },
             { id: 'match', titolo: 'Matches', val: t => t.match.vinti * 1000 - t.match.persi, dir: -1, tip: 'Won – lost',
                 html: t => wl(t.match) },
+            { id: 'perc', titolo: 'Win %', val: t => t.percMatch, dir: -1, tip: 'Matches won',
+                html: t => numero(t.percMatch, pct), sotto: t => barra(t.percMatch) },
+            { id: 'showdown', titolo: 'Showdowns', val: t => t.showdown.vinti * 1000 - t.showdown.persi, dir: -1, tip: 'Won – lost, in the showdowns where the team was used',
+                html: t => wl(t.showdown) },
             { id: 'set', titolo: 'Sets', val: t => t.set.vinti * 1000 - t.set.persi, dir: -1, tip: 'Won – lost',
                 html: t => wl(t.set) },
-            { id: 'perc', titolo: 'Win %', val: t => t.percMatch, dir: -1, tip: 'Matches won',
-                html: t => `<b>${pct(t.percMatch)}</b>${barra(t.percMatch)}` },
+            { id: 'stagioni', titolo: 'Seasons won', val: t => t.stagioniVinte * 1000 + t.stagioniGiocate, dir: -1, tip: 'Seasons won by its trainer in which the team played / seasons played',
+                html: t => trofei(t.stagioniVinte, t.stagioniGiocate) },
             { id: 'ko', titolo: 'KOs', val: t => (t.ko.setConDati ? t.ko.differenza : null), dir: -1, tip: "Opponents KO'd – own Pokémon KO'd (difference below)",
-                html: t => koCella(t.ko) }
+                html: t => koWl(t.ko), sotto: t => koDiff(t.ko) },
+            { id: 'nome', titolo: 'Name', val: t => t.nome.toLowerCase(), dir: 1, testo: true },
+            { id: 'player', titolo: 'Trainer', val: t => t.playerNome.toLowerCase(), dir: 1, testo: true },
+            { id: 'formato', titolo: 'Format', val: t => String(t.formato || '').toLowerCase(), dir: 1, testo: true }
         ],
         pokemon: () => [
-            { id: 'nome', titolo: 'Pokémon', val: m => m.specie.toLowerCase(), dir: 1, classe: 'col-nome',
-                html: m => `<span class="cella-pkm">${sprite(m.specie)}<span><b>${esc(m.specie)}</b><small class="sub">${esc(m.team)}</small></span></span>` },
-            { id: 'player', titolo: 'Trainer', val: m => m.playerNome.toLowerCase(), dir: 1,
-                html: m => chipPlayer(m.playerNome, m.colore) },
-            { id: 'stagioni', titolo: 'Seasons won', val: m => m.stagioniVinte, dir: -1, tip: 'Seasons won by its trainer in which its team played',
-                html: m => trofei(m.stagioniVinte) },
-            { id: 'showdown', titolo: 'Showdowns', val: m => m.showdown.vinti * 1000 - m.showdown.persi, dir: -1, tip: 'Won – lost, with its team',
-                html: m => wl(m.showdown) },
+            { id: 'ko', titolo: 'KOs', val: m => (m.setConDati ? m.koFatti : null), dir: -1, tip: "Opponents it KO'd (direct moves + indirect)",
+                html: m => (m.setConDati ? fmt(m.koFatti) : ND),
+                sotto: m => (m.setConDati && m.koFatti ? `<small class="sub">${fmt(m.koDiretti)} direct</small>` : '') },
+            { id: 'quota', titolo: 'KO share', val: m => m.quotaKo, dir: -1, tip: "Part of its team's KOs scored by this Pokémon",
+                html: m => numero(m.quotaKo, pct), sotto: m => barra(m.quotaKo) },
+            { id: 'portato', titolo: 'Used', val: m => (m.setConDati ? m.portato : null), dir: -1, tip: 'Sets it was brought to / sets of its team with data',
+                html: m => (m.setConDati ? `${fmt(m.portato)}<small>/${fmt(m.setConDati)}</small>` : ND) },
+            { id: 'svenuto', titolo: 'Fainted', val: m => (m.portato ? m.svenuto : null), dir: -1, tip: "Times it was KO'd",
+                html: m => (m.portato ? fmt(m.svenuto) : ND) },
+            { id: 'ultimo', titolo: 'Last standing', val: m => (m.setConDati ? m.ultimo : null), dir: -1, tip: 'Times it was the only Pokémon left on its team (and how many of those sets were won)',
+                html: m => (m.setConDati ? fmt(m.ultimo) : ND),
+                sotto: m => (m.setConDati && m.ultimo ? `<small class="sub v">${fmt(m.ultimoVinto)} won</small>` : '') },
             { id: 'match', titolo: 'Matches', val: m => m.match.vinti * 1000 - m.match.persi, dir: -1, tip: 'Won – lost, with its team',
                 html: m => wl(m.match) },
-            { id: 'portato', titolo: 'Used', val: m => (m.setConDati ? m.portato : null), dir: -1, tip: 'Sets it was brought to / sets of its team with data',
-                html: m => (m.setConDati ? `<b>${fmt(m.portato)}</b><small>/ ${fmt(m.setConDati)}</small>` : '<span class="nd">—</span>') },
-            { id: 'ko', titolo: 'KOs', val: m => (m.setConDati ? m.koFatti : null), dir: -1, tip: 'Opponents it KO\'d (direct moves + indirect)',
-                html: m => (m.setConDati ? `<b class="grande">${fmt(m.koFatti)}</b>${m.koFatti ? `<small class="sub">${fmt(m.koDiretti)} direct</small>` : ''}` : '<span class="nd">—</span>') },
-            { id: 'quota', titolo: 'KO share', val: m => m.quotaKo, dir: -1, tip: "Part of its team's KOs scored by this Pokémon: how decisive it is",
-                html: m => (m.quotaKo == null ? '<span class="nd">—</span>' : `<b>${pct(m.quotaKo)}</b>${barra(m.quotaKo)}`) },
-            { id: 'svenuto', titolo: 'Fainted', val: m => (m.portato ? m.svenuto : null), dir: -1, tip: 'Times it was KO\'d',
-                html: m => (m.portato ? `<b>${fmt(m.svenuto)}</b>` : '<span class="nd">—</span>') },
-            { id: 'ultimo', titolo: 'Last standing', val: m => (m.setConDati ? m.ultimo : null), dir: -1, tip: 'Times it was the only Pokémon left on its team (and how many of those sets were won)',
-                html: m => (m.setConDati ? `<b>${fmt(m.ultimo)}</b>${m.ultimo ? `<small class="sub v">${fmt(m.ultimoVinto)} won</small>` : ''}` : '<span class="nd">—</span>') }
+            { id: 'showdown', titolo: 'Showdowns', val: m => m.showdown.vinti * 1000 - m.showdown.persi, dir: -1, tip: 'Won – lost, with its team',
+                html: m => wl(m.showdown) },
+            { id: 'stagioni', titolo: 'Seasons won', val: m => m.stagioniVinte, dir: -1, tip: 'Seasons won by its trainer in which its team played',
+                html: m => trofei(m.stagioniVinte) },
+            { id: 'nome', titolo: 'Name', val: m => m.specie.toLowerCase(), dir: 1, testo: true },
+            { id: 'player', titolo: 'Trainer', val: m => m.playerNome.toLowerCase(), dir: 1, testo: true }
         ]
+    };
+
+    // le statistiche che compaiono nelle caselle della card (quella dell'ordinamento va nel box grande)
+    const TESSERE = {
+        players: ['elo', 'punti', 'stagioni', 'showdown', 'match', 'set', 'perc', 'serie', 'ko'],
+        teams: ['match', 'perc', 'showdown', 'set', 'stagioni', 'ko'],
+        pokemon: ['ko', 'quota', 'portato', 'svenuto', 'ultimo', 'match']
     };
 
     const CHIAVE = { players: 'id', teams: 'chiave', pokemon: 'chiave' };
@@ -155,12 +252,13 @@
         if (tab === 'teams') return { id: 'match', dir: -1 };
         return { id: 'ko', dir: -1 };
     }
+    const ordineAttuale = tab => STATO.ordine[tab] || ordinePredefinito(tab);
 
     function righeOrdinate(tab) {
         const lista = STATO.r[tab];
-        const cols = COLONNE[tab]();
-        const ord = STATO.ordine[tab] || ordinePredefinito(tab);
-        const col = cols.find(c => c.id === ord.id) || cols[0];
+        const stats = STAT[tab]();
+        const ord = ordineAttuale(tab);
+        const stat = stats.find(s => s.id === ord.id) || stats[0];
         const q = STATO.cerca.trim().toLowerCase();
         const filtrate = !q ? lista : lista.filter(x => {
             const testo = tab === 'players' ? [x.nome]
@@ -169,7 +267,7 @@
             return testo.some(t => String(t).toLowerCase().includes(q));
         });
         const confronta = (a, b) => {
-            const va = col.val(a), vb = col.val(b);
+            const va = stat.val(a), vb = stat.val(b);
             if (va == null && vb == null) return 0;
             if (va == null) return 1;                 // i dati mancanti stanno sempre in fondo
             if (vb == null) return -1;
@@ -182,48 +280,99 @@
 
 
     // -----------------------------------------------------
-    // Tabella
+    // Card
     // -----------------------------------------------------
-    function disegnaTabella() {
-        const tab = STATO.tab;
-        const cols = COLONNE[tab]();
-        const ord = STATO.ordine[tab] || ordinePredefinito(tab);
-        const righe = righeOrdinate(tab);
-        const contenitore = $('stats-tabella');
+    const casella = (s, x) => `<div class="dato"${s.tip ? ` title="${esc(s.tip)}"` : ''}>
+            <span class="dato-et">${esc(s.titolo)}</span>
+            <span class="dato-va">${s.html(x)}</span>${s.sotto ? s.sotto(x) : ''}
+        </div>`;
 
+    const punteggio = (s, x) => `<div class="carta-punteggio"${s.tip ? ` title="${esc(s.tip)}"` : ''}>
+            <span class="carta-punteggio-et">${esc(s.titolo)}</span>
+            <span class="carta-punteggio-va">${s.html(x)}</span>${s.sotto ? s.sotto(x) : ''}
+        </div>`;
+
+    function testaCarta(tab, x) {
+        if (tab === 'players') {
+            return `<span class="carta-av-box">${avatar(x, 'carta-av')}</span>
+                <div class="carta-id"><h3 class="carta-nome">${esc(x.nome)}</h3></div>`;
+        }
+        if (tab === 'teams') {
+            return `<div class="carta-id">
+                    <h3 class="carta-nome">${esc(x.nome)}</h3>
+                    <div class="carta-chip">${chipPlayer(x.playerNome)}${tagFormato(x.formato)}</div>
+                    <div class="carta-roster">${x.specie.slice(0, 6).map(s => sprite(s, 'carta-mini', false)).join('')}</div>
+                </div>`;
+        }
+        return `<span class="carta-sprite-box">${sprite(x.specie, 'carta-sprite')}</span>
+            <div class="carta-id">
+                <h3 class="carta-nome">${esc(x.specie)}</h3>
+                <span class="carta-sotto">${esc(x.team)}</span>
+                <div class="carta-chip">${chipPlayer(x.playerNome)}</div>
+            </div>`;
+    }
+
+    function carta(tab, x, i, grande, tessere) {
+        const chiave = x[CHIAVE[tab]];
+        const nome = tab === 'pokemon' ? x.specie : x.nome;
+        return `<article class="carta carta-${tab}" role="button" tabindex="0" data-chiave="${esc(chiave)}"
+                style="${stileColore(x.colore, COLORE_BASE[tab])};--tilt:${inclinazione(chiave)}deg"
+                aria-label="#${i + 1} ${esc(nome)}: open details">
+            <span class="carta-pos pos-${i < 3 ? i + 1 : 'x'}" aria-hidden="true">#${i + 1}</span>
+            <div class="carta-testa">${testaCarta(tab, x)}${punteggio(grande, x)}</div>
+            <div class="carta-dati">${tessere.map(s => casella(s, x)).join('')}</div>
+        </article>`;
+    }
+
+    function disegnaOrdina() {
+        const tab = STATO.tab;
+        const ord = ordineAttuale(tab);
+        $('stats-ordina').innerHTML = '<span class="stats-ordina-et" aria-hidden="true">Sort by</span>' + STAT[tab]().map(s => {
+            const attivo = s.id === ord.id;
+            return `<button type="button" class="ordina-chip" data-ordina="${esc(s.id)}" aria-pressed="${attivo}"${s.tip ? ` title="${esc(s.tip)}"` : ''}>${esc(s.titolo)}${attivo
+                ? `<span class="freccia" aria-hidden="true">${ord.dir < 0 ? '▼' : '▲'}</span><span class="solo-lettori">${ord.dir < 0 ? ', descending' : ', ascending'}</span>`
+                : ''}</button>`;
+        }).join('');
+    }
+
+    function disegnaGriglia() {
+        const tab = STATO.tab;
+        const stats = STAT[tab]();
+        const ord = ordineAttuale(tab);
+        const griglia = $('stats-griglia');
+        const altri = $('stats-altri');
+
+        disegnaOrdina();
+        griglia.className = `stats-griglia vista-${tab}`;
+        griglia.setAttribute('aria-label', `${TITOLO_TAB[tab]}, ${nomeStagione()}`);
+
+        const righe = righeOrdinate(tab);
         if (!righe.length) {
-            contenitore.innerHTML = messaggioVuoto();
+            griglia.innerHTML = messaggioVuoto();
+            altri.innerHTML = '';
             return;
         }
 
-        const testa = cols.map(c => {
-            const attiva = c.id === ord.id;
-            return `<th scope="col" class="${c.classe || ''}${attiva ? ' ordinata' : ''}" aria-sort="${attiva ? (ord.dir < 0 ? 'descending' : 'ascending') : 'none'}">
-                <button type="button" class="ordina" data-ordina="${esc(c.id)}"${c.tip ? ` title="${esc(c.tip)}"` : ''}>${esc(c.titolo)}<span class="freccia" aria-hidden="true">${attiva ? (ord.dir < 0 ? '▼' : '▲') : ''}</span></button>
-            </th>`;
-        }).join('');
+        // Il box grande mostra la statistica con cui si ordina (o quella di partenza, se si ordina per nome)
+        const attiva = stats.find(s => s.id === ord.id);
+        const grande = attiva && !attiva.testo ? attiva : stats.find(s => s.id === ordinePredefinito(tab).id);
+        const tessere = TESSERE[tab].filter(id => id !== grande.id).map(id => stats.find(s => s.id === id)).filter(Boolean);
 
-        const corpo = righe.map((x, i) => {
-            const colore = coloreSicuro(x.colore);
-            return `<tr class="riga" tabindex="0" data-chiave="${esc(x[CHIAVE[tab]])}"${colore ? ` style="--c:${colore}"` : ''}>
-                <td class="col-pos"><span class="pos pos-${i < 3 ? i + 1 : 'x'}">${i + 1}</span></td>
-                ${cols.map(c => `<td class="${c.classe || ''}">${c.html(x)}</td>`).join('')}
-            </tr>`;
-        }).join('');
+        const visibili = righe.slice(0, STATO.limite);
+        griglia.innerHTML = visibili.map((x, i) => carta(tab, x, i, grande, tessere)).join('');
 
-        contenitore.innerHTML = `<table class="stats-tabella">
-            <caption class="solo-lettori">${esc(TITOLO_TAB[tab])} — ${esc(nomeStagione())}</caption>
-            <thead><tr><th scope="col" class="col-pos"><span class="solo-lettori">Position</span></th>${testa}</tr></thead>
-            <tbody>${corpo}</tbody>
-        </table>`;
+        const resto = righe.length - visibili.length;
+        altri.innerHTML = resto > 0
+            ? `<button type="button" class="btn-altri" id="btn-altri">Show ${fmt(Math.min(PASSO, resto))} more<small>${fmt(visibili.length)} of ${fmt(righe.length)}</small></button>`
+            : '';
     }
 
     function messaggioVuoto() {
         const q = STATO.cerca.trim();
-        if (q) return `<p class="vuoto">Nothing matches “${esc(q)}”.</p>`;
+        if (q) return `<p class="vuoto">Nothing matches “${esc(q)}”.<small>Try a trainer, team or Pokémon name.</small></p>`;
         const beta = STATO.r.stagioni.find(s => s.beta && s.partite > 0);
         if (STATO.stagione === 'all' && beta) {
-            return `<p class="vuoto">No matches in the global stats yet.<br><small>The Beta season is not counted here: pick <b>${esc(beta.nome)}</b> from the Season list to see its numbers.</small></p>`;
+            return `<p class="vuoto">No matches in the global stats yet.<small>The Beta season is not counted here: pick <b>${esc(beta.nome)}</b> from the Season list to see its numbers.</small></p>`;
         }
         return '<p class="vuoto">No matches recorded here yet.</p>';
     }
@@ -296,10 +445,11 @@
         if (STATO.stagione !== 'all' && !r.stagioni.some(s => s.id === STATO.stagione)) { STATO.stagione = 'all'; r = calcola(); }
         if (STATO.formato !== 'all' && !r.formati.includes(STATO.formato)) { STATO.formato = 'all'; r = calcola(); }
         STATO.r = r;
+        STATO.limite = PASSO;
         riempiSelettori();
         disegnaTag();
         disegnaRiepilogo();
-        disegnaTabella();
+        disegnaGriglia();
         aggiornaUrl();
     }
 
@@ -309,8 +459,12 @@
     // -----------------------------------------------------
     const tessera = (etichetta, valore, sotto = '', classe = '') =>
         `<div class="tessera ${classe}"><span class="et">${esc(etichetta)}</span><b class="va">${valore}</b>${sotto ? `<small class="so">${sotto}</small>` : ''}</div>`;
-    const sezione = (titolo, corpo, classe = '') => `<section class="scheda-sezione ${classe}"><h3 class="scheda-titolo">${esc(titolo)}</h3>${corpo}</section>`;
+    const sezione = (titolo, corpo) => `<section class="scheda-sezione"><h3 class="scheda-titolo">${esc(titolo)}</h3>${corpo}</section>`;
     const griglia = tessere => `<div class="tessere">${tessere.join('')}</div>`;
+    const testaScheda = (titolo, figura, chip) => `<header class="scheda-testa">
+            <h2 class="scheda-nome" id="stats-modal-titolo">${esc(titolo)}</h2>
+            <div class="scheda-riga">${figura}<div class="scheda-tag">${chip}</div></div>
+        </header>`;
 
     function tessereKo(ko) {
         if (!ko.setConDati) return '<p class="vuoto piccolo">No KO data yet: only sets played on the site have it.</p>';
@@ -331,17 +485,17 @@
         tessera('Sets', wl(o.set), o.percSet == null ? '' : `${pct(o.percSet)} won`)
     ]);
 
+    const voceTeam = t => `<button type="button" class="voce" data-apri="teams" data-chiave="${esc(t.chiave)}">
+            <span class="voce-nome"><b>${esc(t.nome)}</b>${tagFormato(t.formato)}</span>
+            <span class="voce-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'mini', false)).join('')}</span>
+            <span class="voce-dati">${wl(t.match)}<span class="voce-perc">${pct(t.percMatch)}</span></span>
+        </button>`;
+
     function schedaPlayer(p) {
-        const s = STATO.r;
-        const suoiTeam = s.teams.filter(t => t.player === p.id).sort((a, b) => b.match.giocati - a.match.giocati);
+        const suoiTeam = STATO.r.teams.filter(t => t.player === p.id).sort((a, b) => b.match.giocati - a.match.giocati);
         const preferito = p.preferiti.team;
         const formato = p.preferiti.formato;
-        const colore = coloreSicuro(p.colore) || '#31c489';
-        return `<header class="scheda-testa" style="--c:${colore}">
-                ${avatar(p, 'scheda-avatar')}
-                <div><h2 id="stats-modal-titolo">${esc(p.nome)}</h2>
-                <div class="scheda-tag"><span class="chip chip-nero">${esc(nomeStagione())}</span>${p.stagioniVinte ? `<span class="chip chip-oro"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"> ${fmt(p.stagioniVinte)} season${p.stagioniVinte === 1 ? '' : 's'} won</span>` : ''}</div></div>
-            </header>
+        return `${testaScheda(p.nome, avatar(p, 'scheda-avatar'), chipStagione() + chipVinte(p.stagioniVinte))}
             ${sezione('Ranking', griglia([
                 tessera(STATO.stagione === 'all' ? 'Elo' : 'Elo (end of season)', fmt(p.elo), STATO.stagione === 'all' || !p.eloDelta ? '' : `${segno(p.eloDelta)} in the season`),
                 tessera('Peak Elo', p.eloPicco == null ? '—' : fmt(p.eloPicco)),
@@ -360,23 +514,14 @@
                 tessera('Team', preferito ? esc(preferito.nome) : '—', preferito ? `${fmt(preferito.n)} matches · ${pct(Math.round(preferito.vinti / preferito.n * 1000) / 10)} won` : ''),
                 tessera('Top scorer', p.mvp ? esc(p.mvp.specie) : '—', p.mvp ? `${fmt(p.mvp.koFatti)} KOs · ${esc(p.mvp.team)}` : 'needs KO data')
             ]))}
-            ${suoiTeam.length ? sezione('Teams', `<div class="scheda-lista">${suoiTeam.map(t => `
-                <button type="button" class="voce" data-apri="teams" data-chiave="${esc(t.chiave)}">
-                    <b>${esc(t.nome)}</b><span class="tag-formato">${esc(t.formato || '—')}</span>
-                    <span class="mini-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'mini', true)).join('')}</span>
-                    ${wl(t.match)}<span class="voce-perc">${pct(t.percMatch)}</span>
-                </button>`).join('')}</div>`) : ''}`;
+            ${suoiTeam.length ? sezione('Teams', `<div class="scheda-lista">${suoiTeam.map(voceTeam).join('')}</div>`) : ''}`;
     }
 
     function schedaTeam(t) {
         const suoi = STATO.r.pokemon.filter(m => m.squadra === t.chiave);
         const ordine = [...suoi].sort((a, b) => b.koFatti - a.koFatti || b.portato - a.portato);
-        const colore = coloreSicuro(t.colore) || '#ffbd44';
-        return `<header class="scheda-testa" style="--c:${colore}">
-                <div class="scheda-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'scheda-mini')).join('')}</div>
-                <div><h2 id="stats-modal-titolo">${esc(t.nome)}</h2>
-                <div class="scheda-tag">${chipPlayer(t.playerNome, t.colore)}<span class="tag-formato">${esc(t.formato || '—')}</span><span class="chip chip-nero">${esc(nomeStagione())}</span>${t.stagioniVinte ? `<span class="chip chip-oro"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"> ${fmt(t.stagioniVinte)} season${t.stagioniVinte === 1 ? '' : 's'} won</span>` : ''}</div></div>
-            </header>
+        const roster = `<div class="scheda-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'scheda-mini')).join('')}</div>`;
+        return `${testaScheda(t.nome, roster, chipPlayer(t.playerNome) + tagFormato(t.formato) + chipStagione() + chipVinte(t.stagioniVinte))}
             ${sezione('Results', tessereRisultati(t) + griglia([
                 tessera('Points', fmt(t.punti), 'from its matches'),
                 tessera('Seasons', `${fmt(t.stagioniVinte)} <small>won of ${fmt(t.stagioniGiocate)}</small>`),
@@ -384,21 +529,21 @@
             ]))}
             ${sezione('KOs', tessereKo(t.ko))}
             ${ordine.length ? sezione('Roster', `<div class="scheda-lista">${ordine.map(m => `
-                <button type="button" class="voce voce-pkm" data-apri="pokemon" data-chiave="${esc(m.chiave)}">
-                    ${sprite(m.specie, 'scheda-mini')}<b>${esc(m.specie)}</b>
-                    ${m.setConDati ? `<span class="voce-dato"><b>${fmt(m.koFatti)}</b> KOs</span><span class="voce-dato">used <b>${fmt(m.portato)}</b>/${fmt(m.setConDati)}</span>${m.quotaKo == null ? '' : `<span class="voce-dato">${pct(m.quotaKo)} ${barra(m.quotaKo)}</span>`}` : '<span class="voce-dato nd">no KO data</span>'}
+                <button type="button" class="voce" data-apri="pokemon" data-chiave="${esc(m.chiave)}">
+                    <span class="voce-nome">${sprite(m.specie, 'voce-sprite')}<b>${esc(m.specie)}</b></span>
+                    <span class="voce-dati">${m.setConDati
+                        ? `<span><b>${fmt(m.koFatti)}</b> KOs</span><span>used <b>${fmt(m.portato)}</b>/${fmt(m.setConDati)}</span>${m.quotaKo == null ? '' : `<span>${pct(m.quotaKo)} ${barra(m.quotaKo)}</span>`}`
+                        : '<span class="nd">no KO data</span>'}</span>
                 </button>`).join('')}</div>`) : ''}`;
     }
 
     function schedaPokemon(m) {
         const t = STATO.r.teams.find(x => x.chiave === m.squadra);
-        const colore = coloreSicuro(m.colore) || '#6fa8ff';
         const dati = m.setConDati > 0;
-        return `<header class="scheda-testa" style="--c:${colore}">
-                ${sprite(m.specie, 'scheda-grande')}
-                <div><h2 id="stats-modal-titolo">${esc(m.specie)}</h2>
-                <div class="scheda-tag">${chipPlayer(m.playerNome, m.colore)}<button type="button" class="chip chip-bottone" data-apri="teams" data-chiave="${esc(m.squadra)}">${esc(m.team)}</button><span class="tag-formato">${esc(m.formato || '—')}</span><span class="chip chip-nero">${esc(nomeStagione())}</span></div></div>
-            </header>
+        const chip = chipPlayer(m.playerNome)
+            + `<button type="button" class="chip chip-bottone" data-apri="teams" data-chiave="${esc(m.squadra)}">${esc(m.team)}</button>`
+            + tagFormato(m.formato) + chipStagione();
+        return `${testaScheda(m.specie, sprite(m.specie, 'scheda-grande'), chip)}
             ${sezione('With its team', griglia([
                 tessera('Seasons won', trofei(m.stagioniVinte)),
                 tessera('Showdowns', wl(m.showdown)),
@@ -415,7 +560,7 @@
                 tessera('Last standing', fmt(m.ultimo), m.ultimo ? `${fmt(m.ultimoVinto)} of them won` : 'only one left on its team'),
                 tessera('Sets when brought', wl({ giocati: m.setPortatoVinti + m.setPortatoPersi, vinti: m.setPortatoVinti, persi: m.setPortatoPersi }), m.percVintiPortato == null ? '' : `${pct(m.percVintiPortato)} won`)
             ]) : '<p class="vuoto piccolo">No KO data yet: only sets played on the site have it.</p>')}
-            ${t ? sezione('Its team', `<div class="scheda-lista"><button type="button" class="voce" data-apri="teams" data-chiave="${esc(t.chiave)}"><b>${esc(t.nome)}</b><span class="mini-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'mini', true)).join('')}</span>${wl(t.match)}<span class="voce-perc">${pct(t.percMatch)}</span></button></div>`) : ''}`;
+            ${t ? sezione('Its team', `<div class="scheda-lista">${voceTeam(t)}</div>`) : ''}`;
     }
 
     let ultimoFocus = null;
@@ -424,13 +569,17 @@
         const oggetto = lista && lista.find(x => x[CHIAVE[tipo]] === chiave);
         if (!oggetto) return;
         STATO.aperta = { tipo, chiave };
-        $('stats-modal-corpo').innerHTML = tipo === 'players' ? schedaPlayer(oggetto) : tipo === 'teams' ? schedaTeam(oggetto) : schedaPokemon(oggetto);
         const modale = $('stats-modal');
+        const card = modale.querySelector('.stats-modal-card');
+        const colore = coloreSicuro(oggetto.colore) || COLORE_BASE[tipo];
+        card.style.setProperty('--c', colore);
+        card.style.setProperty('--t', testoSu(colore));
+        $('stats-modal-corpo').innerHTML = tipo === 'players' ? schedaPlayer(oggetto) : tipo === 'teams' ? schedaTeam(oggetto) : schedaPokemon(oggetto);
         if (modale.hidden) ultimoFocus = document.activeElement;
         modale.hidden = false;
         document.body.classList.add('modale-aperta');
+        modale.scrollTop = 0;
         $('stats-modal-chiudi').focus();
-        modale.querySelector('.stats-modal-card').scrollTop = 0;
     }
 
     function chiudiScheda() {
@@ -439,7 +588,7 @@
         modale.hidden = true;
         STATO.aperta = null;
         document.body.classList.remove('modale-aperta');
-        if (ultimoFocus && ultimoFocus.focus) ultimoFocus.focus();
+        if (ultimoFocus && ultimoFocus.isConnected && ultimoFocus.focus) ultimoFocus.focus();
     }
 
 
@@ -450,8 +599,9 @@
         document.querySelectorAll('.stats-tag .tag').forEach(b => b.addEventListener('click', () => {
             if (STATO.tab === b.dataset.tab) return;
             STATO.tab = b.dataset.tab;
+            STATO.limite = PASSO;
             disegnaTag();
-            disegnaTabella();
+            disegnaGriglia();
             aggiornaUrl();
         }));
         $('sel-stagione').addEventListener('change', e => {
@@ -460,28 +610,41 @@
             disegna();
         });
         $('sel-formato').addEventListener('change', e => { STATO.formato = e.target.value; disegna(); });
-        $('cerca').addEventListener('input', e => { STATO.cerca = e.target.value; disegnaTabella(); });
+        $('cerca').addEventListener('input', e => { STATO.cerca = e.target.value; STATO.limite = PASSO; disegnaGriglia(); });
 
-        const tabella = $('stats-tabella');
-        tabella.addEventListener('click', e => {
-            const ordina = e.target.closest('[data-ordina]');
-            if (ordina) {
-                const tab = STATO.tab;
-                const id = ordina.dataset.ordina;
-                const attuale = STATO.ordine[tab] || ordinePredefinito(tab);
-                const col = COLONNE[tab]().find(c => c.id === id);
-                STATO.ordine[tab] = attuale.id === id ? { id, dir: -attuale.dir } : { id, dir: col ? col.dir : -1 };
-                disegnaTabella();
-                return;
-            }
-            const riga = e.target.closest('tr.riga');
-            if (riga) apriScheda(STATO.tab, riga.dataset.chiave);
+        $('stats-ordina').addEventListener('click', e => {
+            const chip = e.target.closest('[data-ordina]');
+            if (!chip) return;
+            const tab = STATO.tab;
+            const id = chip.dataset.ordina;
+            const attuale = ordineAttuale(tab);
+            const stat = STAT[tab]().find(s => s.id === id);
+            STATO.ordine[tab] = attuale.id === id ? { id, dir: -attuale.dir } : { id, dir: stat ? stat.dir : -1 };
+            STATO.limite = PASSO;
+            disegnaGriglia();
+            const stessa = $('stats-ordina').querySelector(`[data-ordina="${id}"]`);
+            if (stessa) stessa.focus();
         });
-        tabella.addEventListener('keydown', e => {
-            if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.riga')) {
+
+        const grigliaEl = $('stats-griglia');
+        grigliaEl.addEventListener('click', e => {
+            const c = e.target.closest('.carta');
+            if (c) apriScheda(STATO.tab, c.dataset.chiave);
+        });
+        grigliaEl.addEventListener('keydown', e => {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.carta')) {
                 e.preventDefault();
                 apriScheda(STATO.tab, e.target.dataset.chiave);
             }
+        });
+
+        $('stats-altri').addEventListener('click', e => {
+            if (!e.target.closest('#btn-altri')) return;
+            const prima = STATO.limite;
+            STATO.limite += PASSO;
+            disegnaGriglia();
+            const nuova = $('stats-griglia').children[prima];
+            if (nuova) nuova.focus();
         });
 
         const modale = $('stats-modal');
@@ -493,11 +656,6 @@
         });
         $('stats-modal-chiudi').addEventListener('click', chiudiScheda);
         document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiScheda(); });
-
-        // Un'immagine che non si carica non manda in errore il suo contenitore: si prende in cattura
-        for (const id of ['stats-tabella', 'stats-modal']) {
-            $(id).addEventListener('error', e => { if (e.target.tagName === 'IMG' && e.target.dataset.slug) spriteDiRiserva(e.target); }, true);
-        }
     }
 
 
@@ -514,7 +672,9 @@
 
     function messaggio(html) {
         $('stats-riepilogo').innerHTML = '';
-        $('stats-tabella').innerHTML = `<p class="vuoto">${html}</p>`;
+        $('stats-ordina').innerHTML = '';
+        $('stats-altri').innerHTML = '';
+        $('stats-griglia').innerHTML = `<p class="vuoto">${html}</p>`;
     }
 
     async function carica() {
@@ -526,8 +686,8 @@
             console.error('Statistics not loaded', errore);
             const nonAutorizzato = errore && (errore.code === 'PERMISSION_DENIED' || /permission/i.test(errore.message || ''));
             messaggio(nonAutorizzato && !auth.currentUser
-                ? 'Log in to see the statistics. <br><button type="button" class="btn-accedi" onclick="toggleLoginModal()">Login</button>'
-                : "The statistics couldn't be loaded. Check your connection and reload the page.");
+                ? 'Log in to see the statistics.<button type="button" class="btn-accedi" onclick="toggleLoginModal()">Login</button>'
+                : "The statistics couldn't be loaded.<small>Check your connection and reload the page.</small>");
         } finally {
             nascondiLoader();
         }
