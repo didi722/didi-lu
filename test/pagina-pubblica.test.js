@@ -396,12 +396,18 @@ test('la playlist (CSV) si legge anche con le virgole tra virgolette e con le ri
 // ---- Colori e caratteri -----------------------------------------------------------------------
 
 test('colori: la palette del profilo c\'è tutta, nello stesso ordine, e gli extra non la duplicano', () => {
-    const fs = require('node:fs'), path = require('node:path');
-    const profilo = fs.readFileSync(path.join(__dirname, '..', 'docs', 'profile.html'), 'utf8');
-    const blocco = /const HONEYCOMB_COLORS = \[([\s\S]*?)\];/.exec(profilo)[1];
-    const nelProfilo = [...blocco.matchAll(/"(#[0-9a-fA-F]{6})"/g)].map(m => m[1].toUpperCase());
-    assert.equal(nelProfilo.length, 40);
-    assert.deepEqual(P.PALETTE_PROFILO.map(c => c.toUpperCase()), nelProfilo);
+    // I 40 colori che i giocatori hanno già scelto (prima stavano in profile.html, ora si scelgono dall'editor
+    // della Trainer Card): cambiarli o spostarli cambierebbe il colore di qualcuno.
+    const colori = [
+        '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAFFF0', '#BAE1FF', '#D6CAFF', '#E8CAFF',
+        '#FFCAFF', '#FFC2D1', '#C25959', '#D48C5F', '#D9B462', '#8F9E6C', '#699E98', '#6B93B0',
+        '#7A89A8', '#9582A3', '#B07D9A', '#C7889B', '#FF3333', '#FF8800', '#FFDD00', '#33CC66',
+        '#00BFA5', '#3399FF', '#0055FF', '#7A29FF', '#D11A7A', '#FF4D8D', '#FF1744', '#FF5E00',
+        '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099'
+    ];
+    assert.equal(colori.length, 40);
+    assert.equal(new Set(colori).size, 40);
+    assert.deepEqual(P.PALETTE_PROFILO.map(c => c.toUpperCase()), colori);
 
     const tutti = P.PALETTE_SFONDO.map(c => c.toLowerCase());
     assert.equal(new Set(tutti).size, tutti.length, 'colori doppi');
@@ -448,4 +454,241 @@ test('a sorpresa: anche con colori e caratteri nuovi la configurazione resta val
     assert.equal(visti.size, Object.keys(P.LAYOUT).length);
     assert.ok(caratteri.size >= 8, `pochi caratteri: ${caratteri.size}`);
     assert.ok([...temi].some(t => t.startsWith('#')), 'mai un colore della palette');
+});
+
+
+// ---- Misure: griglia dei layout, ridimensionamento, palco sempre il più grande -------------------
+
+const TUTTI = Object.keys(P.BLOCCHI);
+const conZone = (layout, zone) => {
+    const c = P.impostaLayout(P.predefinita(), layout);
+    c.blocchi = TUTTI.map((id, i) => ({ id, zona: zone[i], on: true }));
+    return c;
+};
+
+test('layout: ci sono quelli di prima e due nuovi, ognuno con la sua geometria e i nomi delle zone', () => {
+    assert.deepEqual(Object.keys(P.LAYOUT), ['carta', 'poster', 'dossier', 'collage', 'cinema', 'podio']);
+    for (const [id, l] of Object.entries(P.LAYOUT)) {
+        assert.deepEqual(Object.keys(l.zone), ['a', 'b', 'c'], id);
+        const G = P.GEOMETRIA[id];
+        assert.ok(G, `${id} non ha la geometria`);
+        assert.equal(G.colonne.length, G.aree[0].length, id);
+        assert.equal(G.righe.length, G.aree.length, id);
+        assert.deepEqual([...new Set(G.aree.flat())].sort(), ['a', 'b', 'c'], `${id}: ogni zona deve comparire`);
+        assert.deepEqual(Object.keys(G.dir).sort(), ['a', 'b', 'c']);
+        for (const p of [...G.colonne, ...G.righe]) assert.ok(p >= P.PESO_MIN && p <= P.PESO_MAX, id);
+    }
+});
+
+test('misure: qualunque cosa nel database diventa pesi validi, e valgono solo per il layout in uso', () => {
+    const base = P.normalizza({});
+    assert.deepEqual(base.misure, { colonne: null, righe: null, blocchi: {} });
+    assert.deepEqual(P.normalizza({ layout: 'carta', misure: { colonne: [8, 4], righe: [3, 1], blocchi: { palco: 9, party: 2 } } }).misure,
+        { colonne: [8, 4], righe: [3, 1], blocchi: { palco: 9, party: 2 } });
+    // numero sbagliato di colonne per il layout (poster ne ha una): niente
+    assert.equal(P.normalizza({ layout: 'poster', misure: { colonne: [8, 4], righe: [3, 1, 1] } }).misure.colonne, null);
+    assert.deepEqual(P.normalizza({ layout: 'poster', misure: { righe: [3, 1, 1] } }).misure.righe, [3, 1, 1]);
+    // fuori intervallo: si porta ai limiti; non numeri, testo, id sconosciuti: via
+    const sporco = P.normalizza({ layout: 'carta', misure: { colonne: [0, 99], righe: [1, 'x'], blocchi: { palco: -3, party: 'molto', evil: 5, __proto__: { x: 1 } } } }).misure;
+    assert.deepEqual(sporco.colonne, [P.PESO_MIN, P.PESO_MAX]);
+    assert.equal(sporco.righe, null);
+    assert.deepEqual(sporco.blocchi, { palco: P.PESO_MIN });
+    for (const brutto of [null, 7, 'x', [], [1, 2]]) assert.deepEqual(P.normalizza({ misure: brutto }).misure, base.misure);
+    // un array di Firebase con indici mancanti è un oggetto
+    assert.deepEqual(P.normalizza({ layout: 'carta', misure: { colonne: { 0: 6, 1: 6 } } }).misure.colonne, [6, 6]);
+    // cambiare layout azzera le misure; lasciare lo stesso no
+    const mie = P.normalizza({ layout: 'carta', misure: { colonne: [8, 4], righe: null, blocchi: { palco: 9 } } });
+    assert.deepEqual(P.impostaLayout(mie, 'poster').misure, base.misure);
+    assert.equal(P.impostaLayout(mie, 'poster').layout, 'poster');
+    assert.deepEqual(P.impostaLayout(mie, 'carta'), mie);
+    assert.deepEqual(P.impostaLayout(mie, 'inesistente'), mie);
+    assert.deepEqual(P.azzeraMisure(mie).misure, base.misure);
+    // la configurazione di partenza non ha misure da salvare
+    assert.ok(P.uguali(P.normalizza(P.predefinita()), P.predefinita()));
+    assert.ok(P.uguali(P.normalizza(JSON.parse(JSON.stringify(mie))), mie));
+});
+
+test('spostare un blocco in un\'altra zona gli toglie il peso scelto (era relativo agli altri della vecchia zona)', () => {
+    let c = P.predefinita();
+    c.misure.blocchi = { party: 9, palco: 7 };
+    const dopo = P.sposta(c, 'party', 'b', 0);
+    assert.deepEqual(dopo.misure.blocchi, { palco: 7 });
+    assert.deepEqual(P.sposta(c, 'party', 'c', 0).misure.blocchi, { party: 9, palco: 7 });   // stessa zona: resta
+});
+
+test('griglia: i layout standard hanno il palco molto più grande di ogni altro blocco', () => {
+    for (const layout of Object.keys(P.LAYOUT)) {
+        const g = P.griglia(P.impostaLayout(P.predefinita(), layout), TUTTI);
+        assert.equal(g.ingrandito, false, `${layout}: i pesi di partenza bastano`);
+        assert.ok(g.palcoOk);
+        const altri = Object.entries(g.area).filter(([id]) => id !== 'palco').map(([, a]) => a);
+        assert.ok(g.area.palco >= Math.max(...altri) * P.MARGINE_PALCO, `${layout}: palco ${g.area.palco}, altro ${Math.max(...altri)}`);
+        // tutta la tela è assegnata: le quote dei blocchi fanno 1
+        assert.ok(Math.abs(Object.values(g.area).reduce((s, x) => s + x, 0) - 1) < 1e-9, layout);
+    }
+});
+
+test('griglia: zone vuote spariscono e una zona vicina prende il loro posto, sempre con zone rettangolari', () => {
+    const sottoinsiemi = [['a'], ['b'], ['c'], ['a', 'b'], ['a', 'c'], ['b', 'c'], ['a', 'b', 'c']];
+    for (const layout of Object.keys(P.LAYOUT)) for (const zone of sottoinsiemi) {
+        const c = P.impostaLayout(P.predefinita(), layout);
+        c.blocchi = [{ id: 'palco', zona: zone[0], on: true }, ...zone.slice(1).map((z, i) => ({ id: ['musica', 'identita'][i], zona: z, on: true }))];
+        const g = P.griglia(c, c.blocchi.map(b => b.id));
+        const nome = `${layout} ${zone.join('')}`;
+        assert.ok(g.aree.length > 0 && g.aree.every(r => r.length === g.aree[0].length), nome);
+        assert.ok(g.aree.flat().every(Boolean), `${nome}: celle vuote rimaste`);
+        assert.deepEqual([...new Set(g.aree.flat())].sort(), [...zone].sort(), nome);
+        assert.equal(g.colonne.length, g.aree[0].length);
+        assert.equal(g.righe.length, g.aree.length);
+        for (const [z, p] of Object.entries(g.zone)) {
+            const celle = g.aree.flatMap((r, ri) => r.map((x, ci) => (x === z ? [ri, ci] : null)).filter(Boolean));
+            assert.equal(celle.length, (p.r1 - p.r0 + 1) * (p.c1 - p.c0 + 1), `${nome}: zona ${z} non rettangolare`);
+        }
+    }
+    // carta senza il pannello sinistro: il destro prende tutta la larghezza
+    const c = conZone('carta', ['b', 'b', 'b', 'b', 'c', 'c', 'c']);
+    assert.deepEqual(P.griglia(c, TUTTI).aree, [['b', 'b'], ['c', 'c']]);
+    // dossier senza la fascia sotto: la colonna principale si allunga
+    assert.deepEqual(P.griglia(conZone('dossier', ['a', 'a', 'b', 'b', 'b', 'b', 'b']), TUTTI).aree, [['a', 'b'], ['a', 'b']]);
+    // cinema senza banner: due colonne a tutta altezza
+    assert.deepEqual(P.griglia(conZone('cinema', ['b', 'b', 'b', 'b', 'c', 'c', 'c']), TUTTI).aree, [['b', 'c']]);
+    // le colonne tolte non lasciano i loro pesi: la mappa dice a quale originale corrisponde
+    const g = P.griglia(conZone('podio', ['a', 'a', 'c', 'c', 'c', 'c', 'c']), TUTTI);
+    assert.deepEqual(g.aree, [['a', 'c']]);
+    assert.deepEqual(g.idxColonne, [1, 2]);
+    assert.deepEqual(g.colonne, [5, 3]);
+});
+
+test('griglia: i pesi scelti si usano, e i blocchi spenti o vuoti non contano', () => {
+    const c = P.predefinita();
+    c.misure = { colonne: [4, 8], righe: [2, 2], blocchi: { palco: 20, musica: 5 } };
+    const g = P.griglia(c, TUTTI, { garantisciPalco: false });
+    assert.deepEqual(g.colonne, [4, 8]);
+    assert.deepEqual(g.righe, [2, 2]);
+    assert.equal(g.blocchi.palco, 20);
+    assert.equal(g.blocchi.musica, 5);
+    assert.equal(g.blocchi.party, P.PESO_BLOCCO.party);
+    const senzaMusica = P.griglia(c, TUTTI.filter(id => id !== 'musica'), { garantisciPalco: false });
+    assert.equal(senzaMusica.blocchi.musica, undefined);
+    assert.equal(senzaMusica.area.palco > g.area.palco, true);
+    // con i pesi scelti il palco (pannello stretto da 4 su 12) non sarebbe il più grande: la griglia normale lo ingrandisce
+    assert.equal(g.palcoOk, false);
+    const garantita = P.griglia(c, TUTTI);
+    assert.equal(garantita.ingrandito, true);
+    assert.ok(garantita.colonne[0] > 4);
+    assert.deepEqual(P.griglia(c, []).aree, []);
+});
+
+test('palco: in qualunque zona lo si metta, e con qualunque combinazione di blocchi spenti, resta il più grande', () => {
+    // tutte le 3^7 assegnazioni dei blocchi alle zone, in ogni layout
+    let provate = 0, ingranditi = 0;
+    for (const layout of Object.keys(P.LAYOUT)) {
+        for (let n = 0; n < 3 ** TUTTI.length; n++) {
+            const zone = TUTTI.map((_, i) => 'abc'[Math.floor(n / 3 ** i) % 3]);
+            const g = P.griglia(conZone(layout, zone), TUTTI);
+            provate++;
+            if (g.ingrandito) ingranditi++;
+            const altri = Object.entries(g.area).filter(([id]) => id !== 'palco').map(([, a]) => a);
+            assert.ok(g.area.palco >= Math.max(...altri) * P.MARGINE_PALCO - 1e-9, `${layout} ${zone.join('')}: palco ${g.area.palco.toFixed(3)} contro ${Math.max(...altri).toFixed(3)}`);
+        }
+    }
+    assert.equal(provate, 6 * 2187);
+    assert.ok(ingranditi > 0 && ingranditi < provate, 'in certe disposizioni il palco va ingrandito, in altre no');
+
+    // a caso: blocchi in vista, pesi scelti dall'utente e zone, con un generatore con seme
+    let seme = 12345;
+    const rnd = () => ((seme = (seme * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < 4000; i++) {
+        const layout = Object.keys(P.LAYOUT)[Math.floor(rnd() * 6)];
+        const c = conZone(layout, TUTTI.map(() => 'abc'[Math.floor(rnd() * 3)]));
+        const G = P.GEOMETRIA[layout];
+        c.misure = {
+            colonne: rnd() < 0.5 ? G.colonne.map(() => P.PESO_MIN + rnd() * 11) : null,
+            righe: rnd() < 0.5 ? G.righe.map(() => P.PESO_MIN + rnd() * 11) : null,
+            blocchi: Object.fromEntries(TUTTI.filter(() => rnd() < 0.5).map(id => [id, P.PESO_MIN + rnd() * 11]))
+        };
+        const visibili = TUTTI.filter(id => id === 'palco' || rnd() < 0.7);
+        const g = P.griglia(P.normalizza(c), visibili);
+        const altri = Object.entries(g.area).filter(([id]) => id !== 'palco').map(([, a]) => a);
+        assert.ok(!altri.length || g.area.palco >= Math.max(...altri) * P.MARGINE_PALCO - 1e-9, `caso ${i} (${layout})`);
+    }
+    // senza il palco in vista non c'è niente da garantire
+    const senza = P.griglia(P.predefinita(), TUTTI.filter(id => id !== 'palco'));
+    assert.equal(senza.palcoOk, true);
+    assert.equal(senza.ingrandito, false);
+});
+
+test('palco ingrandito: lo si vede dalla griglia, e senza garanzia i pesi restano quelli scelti', () => {
+    const c = conZone('poster', ['b', 'c', 'a', 'a', 'a', 'a', 'a']);   // palco in b, musica in c: due righe da 1,1
+    const con = P.griglia(c, TUTTI);
+    const senza = P.griglia(c, TUTTI, { garantisciPalco: false });
+    assert.equal(senza.ingrandito, false);
+    assert.deepEqual(senza.righe, P.GEOMETRIA.poster.righe);
+    assert.equal(senza.blocchi.palco, P.PESO_BLOCCO.palco);
+    assert.equal(con.ingrandito, true);
+    assert.ok(con.area.palco > senza.area.palco);
+    // l'ingrandimento non modifica la configurazione data
+    assert.deepEqual(c.misure, { colonne: null, righe: null, blocchi: {} });
+});
+
+test('muoviConfine: i due si dividono lo spazio, la somma dei pesi non cambia, i minimi si rispettano', () => {
+    const r = P.muoviConfine({ px: [600, 400], pesi: [6, 4], minimi: [100, 100] }, 100);
+    assert.equal(Math.round(r.delta), 100);
+    assert.deepEqual(r.pesi, [7, 3]);
+    assert.equal(r.pesi[0] + r.pesi[1], 10);
+    // verso sinistra
+    assert.deepEqual(P.muoviConfine({ px: [600, 400], pesi: [6, 4], minimi: [100, 100] }, -300).pesi, [3, 7]);
+    // si ferma al minimo del più piccolo
+    const fermo = P.muoviConfine({ px: [600, 400], pesi: [6, 4], minimi: [100, 250] }, 500);
+    assert.equal(Math.round(fermo.delta), 150);
+    assert.deepEqual(fermo.pesi, [7.5, 2.5]);
+    const fermo2 = P.muoviConfine({ px: [600, 400], pesi: [6, 4], minimi: [450, 100] }, -500);
+    assert.equal(Math.round(fermo2.delta), -150);
+    assert.deepEqual(fermo2.pesi, [4.5, 5.5]);
+    // già sotto il minimo (finestra stretta): non si muove
+    assert.equal(P.muoviConfine({ px: [200, 200], pesi: [1, 1], minimi: [300, 300] }, 50).delta, 0);
+    assert.deepEqual(P.muoviConfine({ px: [200, 200], pesi: [1, 1], minimi: [300, 300] }, 50).pesi, [1, 1]);
+    // i pesi non scendono sotto il minimo né salgono sopra il massimo
+    const estremo = P.muoviConfine({ px: [1000, 10], pesi: [11.9, 0.3], minimi: [0, 0] }, -2000);
+    assert.ok(estremo.pesi[0] >= P.PESO_MIN && estremo.pesi[1] <= P.PESO_MAX);
+    for (const p of [[0, 0], [NaN, 5]]) assert.deepEqual(P.muoviConfine({ px: p, pesi: [1, 1] }, 10).pesi, [1, 1]);
+});
+
+test('i minimi dei blocchi coincidono con quelli dello stile (min-width a schermo intero, e min-height del palco)', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
+    for (const [id, [w, h]] of Object.entries(P.MINIMI)) {
+        assert.match(css, new RegExp(`body\\.pp-fisso \\.pp-zona > \\.pp-${id}\\s*\\{[^}]*min-width:\\s*${w}px`), `${id}: larghezza ${w}`);
+        if (id === 'palco') assert.match(css, new RegExp(`body\\.pp-fisso \\.pp-zona > \\.pp-palco\\s*\\{[^}]*min-height:\\s*${h}px`), `${id}: altezza ${h}`);
+    }
+    assert.deepEqual(Object.keys(P.MINIMI).sort(), Object.keys(P.BLOCCHI).sort());
+});
+
+test('impostaPesi e ripristinaPesi: cambiano solo i due elementi al confine, e si torna ai pesi di partenza', () => {
+    const c = P.predefinita();
+    const g = P.griglia(c, TUTTI);
+    // confine tra le due colonne della Trainer Card
+    const largo = P.impostaPesi(c, g, 'colonne', 0, [8, 4]);
+    assert.deepEqual(largo.misure, { colonne: [8, 4], righe: null, blocchi: {} });
+    assert.deepEqual(P.ripristinaPesi(largo, g, 'colonne', 0).misure.colonne, null);
+    // confine tra la griglia e la fascia sotto
+    assert.deepEqual(P.impostaPesi(c, g, 'righe', 0, [3.5, 0.8]).misure.righe, [3.5, 0.8]);
+    // due blocchi vicini della stessa zona
+    const bl = P.impostaPesi(c, g, 'blocchi', ['palco', 'musica'], [6.5, 0.7]);
+    assert.deepEqual(bl.misure.blocchi, { palco: 6.5, musica: 0.7 });
+    assert.deepEqual(P.ripristinaPesi(bl, g, 'blocchi', ['palco', 'musica']).misure.blocchi, {});
+    // la configurazione data non cambia
+    assert.deepEqual(c.misure, { colonne: null, righe: null, blocchi: {} });
+    // con una colonna tolta (zona vuota) i pesi vanno alle colonne giuste della geometria originale
+    const podio = conZone('podio', ['a', 'a', 'c', 'c', 'c', 'c', 'c']);
+    const gp = P.griglia(podio, TUTTI);
+    assert.deepEqual(gp.idxColonne, [1, 2]);
+    assert.deepEqual(P.impostaPesi(podio, gp, 'colonne', 0, [6, 2]).misure.colonne, [3, 6, 2]);
+    // un peso fuori limite viene riportato dentro
+    assert.deepEqual(P.impostaPesi(c, g, 'colonne', 0, [50, 0.01]).misure.colonne, [P.PESO_MAX, P.PESO_MIN]);
+    // tornare a mano ai pesi di partenza di tutte le tracce lascia di nuovo "niente di scelto"
+    const meta = P.impostaPesi(P.impostaPesi(c, g, 'colonne', 0, [8, 4]), g, 'righe', 0, [3, 1]);
+    const dopo = P.ripristinaPesi(meta, g, 'colonne', 0);
+    assert.equal(dopo.misure.colonne, null);
+    assert.deepEqual(dopo.misure.righe, [3, 1]);
 });

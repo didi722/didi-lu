@@ -8,17 +8,16 @@
         <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style-profile.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="style-sfide.css">
 <script src="sfide.js"></script>
 <script src="titoli.js"></script>
+<script src="profilo-personale.js"></script>
     </head>
     <body>
-        
+
 <div id="security-alert-banner" class="neubrutal-alert-banner" style="display: none;">
     <div class="alert-banner-content">
         <span>⚠️ <strong>ACCOUNT SECURITY:</strong> Stai ancora usando la password predefinita! Per favore, cambiala per proteggere il tuo profilo.</span>
@@ -26,137 +25,46 @@
     </div>
 </div>
 
-<audio id="bg-music" loop></audio>
-
 <!-- Loader iniziale (Visibile di default) -->
 <div id="poke-loader" class="poke-loader-overlay">
     <div class="pokeball-spinner"></div>
     <div class="loading-text">Loading...</div>
 </div>
 
+<section class="hub-hero">
+    <button type="button" class="ach-open-btn" onclick="apriModaleAchievements()" title="Badges & titles progress">
+        <i class="fas fa-medal"></i><span class="ach-btn-label">Achievements</span>
+    </button>
+    <div class="hub-hero-content">
+        <h1 class="hub-title-display">
+            <span id="player-name-placeholder"></span> &middot; PROFILE
+        </h1>
+        <!-- Avatar, colore, titolo, motto, Pokémon e canzone si cambiano direttamente dalla Trainer Card -->
+        <div class="pf-hero-link">
+            <a id="customize-public-link" class="customize-public-btn" href="players.html">
+                <span aria-hidden="true">&#9998;</span> EDIT YOUR TRAINER CARD
+            </a>
+            <a id="view-public-link" class="pf-link-secondario" href="players.html">View my public page</a>
+        </div>
+    </div>
+</section>
 
-      <section class="hub-hero">
-        <button type="button" class="ach-open-btn" onclick="apriModaleAchievements()" title="Badges & titles progress">
-            <i class="fas fa-medal"></i><span class="ach-btn-label">Achievements</span>
-        </button>
-        <div class="hub-hero-content">
-            <h1 class="hub-title-display">
-                <span id="player-name-placeholder"></span>YOUR PROFILE
-            </h1>
-            <div id="badge-container" class="player-badges"></div>
+<main class="pf-main">
+
+    <section class="pf-sezione pf-todo" id="pf-todo" aria-labelledby="pf-todo-titolo">
+        <h2 class="section-title" id="pf-todo-titolo">WHAT TO DO</h2>
+        <div id="pf-todo-corpo" class="pf-corpo" aria-live="polite">
+            <p class="pf-caricamento">Checking the seasons&hellip;</p>
         </div>
     </section>
 
-    <main class="hub-main-container">
-    
-    <div class="hub-column appearance-section">
-        <h2 class="section-title">Edit Appearance</h2>
-        
-        <div class="appearance-grid-container">
-    <div class="appearance-flex-row">
-        
-        <div class="setting-item">
-            <label>Trainer Avatar</label>
-            <div class="custom-tooltip-wrapper">
-                <div class="avatar-current-preview" onclick="toggleTooltip('avatar-tooltip')">
-                    <img id="current-avatar-preview" src="immagini/profile/1.png" alt="Avatar">
-                    <div class="edit-badge"></div>
-                </div>
-                <div id="avatar-tooltip" class="custom-tooltip-content">
-                    <div class="tooltip-header">Select Icon</div>
-                    <div class="avatar-selector-grid" id="avatar-grid-list"></div>
-                </div>
-            </div>
+    <section class="pf-sezione pf-rivali" id="pf-rivali" aria-labelledby="pf-rivali-titolo">
+        <h2 class="section-title" id="pf-rivali-titolo">RIVALS</h2>
+        <div id="pf-rivali-corpo" class="pf-corpo">
+            <p class="pf-caricamento">Counting the battles&hellip;</p>
         </div>
+    </section>
 
-        <div class="setting-item">
-            <label>Signature Color</label>
-            <div class="custom-tooltip-wrapper">
-                <div class="color-current-preview" onclick="toggleTooltip('color-tooltip')">
-                    <div id="current-color-bg" class="color-preview-rect"></div>
-                    <div class="edit-badge"></div>
-                </div>
-
-                <div id="color-tooltip" class="custom-tooltip-content honeycomb-modal">
-                    <div class="tooltip-header">Color Palette</div>
-                    <div class="honeycomb-main" id="honeycomb-picker"></div>
-                    <div class="honeycomb-gray-scale" id="honeycomb-grays"></div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="appearance-grid-container" style="margin-top: 15px;">
-    <div class="appearance-flex-row">
-        <div class="setting-item" style="width: 100%;">
-            <label for="select-titoli">Trainer Title</label>
-            <div class="select-titolo-wrapper">
-                <select id="select-titoli" class="custom-title-select">
-                    <option value="">Loading titles...</option>
-                </select>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="setting-item showcase-section">
-    <button onclick="salvaModificheProfilo()" class="save-btn-hub">
-        SAVE ALL CHANGES
-    </button>
-    <!-- La pagina pubblica ha un editor tutto suo (layout, sfondo, adesivi...): si apre direttamente da qui -->
-    <a id="customize-public-link" class="customize-public-btn" href="players.html">
-        <span aria-hidden="true">&#9998;</span> EDIT YOUR TRAINER CARD
-        <small>avatar, colour, title, motto, favourite Pok&eacute;mon, song, layout, background&hellip;</small>
-    </a>
-</div>
-
-        <div id="pokemon-circle-container" class="trainer-section mini-preview">
-            </div>
-    </div>
-
-    <div class="hub-column settings-section">
-        <h2 class="section-title">Edit Profile</h2>
-
-        <div class="setting-item">
-            <label for="bio-input">Personal Bio</label>
-            <textarea id="bio-input" maxlength="100" placeholder="Write your trainer bio here..."></textarea>
-        </div>
-
-        <div class="setting-item">
-    <label>Favorite Pokémon</label>
-    <div class="custom-dropdown" id="pkm-dropdown-container">
-        <div id="pkm-dropdown-header" class="dropdown-header" onclick="togglePkmDropdown()">
-            <span id="selected-pkm-name">Choose your Pokémon...</span>
-            <span class="arrow">▲</span>
-        </div>
-        <div id="pkm-dropdown-content" class="dropdown-content">
-            <div class="dropdown-search-wrapper">
-                <input type="text" id="pkm-search" placeholder="Search Pokémon..." onkeyup="filtraPokemon()" onclick="event.stopPropagation()">
-            </div>
-            <ul id="pkm-list-admin" class="custom-music-list"></ul>
-        </div>
-        <input type="hidden" id="team-selector-fav">
-    </div>
-</div>
-
-        <div class="setting-item">
-            <label>Profile Soundtrack</label>
-            <div class="custom-dropdown" id="music-dropdown-container">
-                <div id="dropdown-header" class="dropdown-header" onclick="toggleDropdown()">
-                    <span id="selected-song-name">Choose your soundtrack...</span>
-                    <span class="arrow">▲</span>
-                </div>
-                <div id="dropdown-content" class="dropdown-content">
-                    <div class="dropdown-search-wrapper">
-                        <input type="text" id="music-search" placeholder="Search track..." onkeyup="filtraMusica()" onclick="event.stopPropagation()">
-                    </div>
-                    <ul id="music-list-admin" class="custom-music-list"></ul>
-                </div>
-                <input type="hidden" id="selected-music-url">
-            </div>
-        </div>
-    </div>
 </main>
 
 <div id="login-modal" class="modal">
@@ -172,7 +80,7 @@
                 <label>Password</label>
                 <input type="password" id="login-password" required placeholder="••••••••">
             </div>
-            
+
             <div style="text-align: right; margin-bottom: 20px;">
                 <a href="javascript:void(0)" onclick="resetPasswordDalLogin()" class="forgot-pwd-link">
                     Forgot password?
@@ -188,7 +96,7 @@
 
 
 <div class="top-auth-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 0 15px;">
-    
+
     <button onclick="richiediResetPasswordEmail()" class="bar-reset-pw-btn">
         <i class="fas fa-shield-alt"></i> CHANGE PASSWORD
     </button>
@@ -235,52 +143,46 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 const auth = firebase.auth();
 let playerID = ""; 
-let tuttiITeam = [];
 
-// --- 1. LISTENER DI AUTENTICAZIONE ---
-// Listener unico per lo stato autenticazione in profile.html
+// --- LISTENER DI AUTENTICAZIONE ---
 auth.onAuthStateChanged(async (user) => {
     const authIcon = document.getElementById('auth-icon');
     const authText = document.getElementById('auth-text');
-    
+
     if (user) {
         try {
-            // 1. Recupero il nome dell'utente dal DB
             const snapshot = await db.ref(`users/${user.uid}/name`).once('value');
             const userName = snapshot.val();
 
             if (userName) {
-                // 2. Impostiamo il playerID globale (necessario per caricare i dati del profilo)
                 playerID = userName.toLowerCase().trim();
-                console.log("Accesso confermato per:", playerID);
 
-                const linkPubblica = document.getElementById('customize-public-link');
-                if (linkPubblica) linkPubblica.href = `public.html?player=${encodeURIComponent(playerID)}&edit=1`;
+                // Avatar, colore, titolo, motto, Pokémon e canzone si cambiano dalla Trainer Card
+                const linkEditor = document.getElementById('customize-public-link');
+                if (linkEditor) linkEditor.href = `public.html?player=${encodeURIComponent(playerID)}&edit=1`;
+                const linkPubblica = document.getElementById('view-public-link');
+                if (linkPubblica) linkPubblica.href = `public.html?player=${encodeURIComponent(playerID)}`;
 
-                // 3. Aggiorniamo l'interfaccia dell'header (Icona e Nome)
-                if (authIcon) authIcon.className = "fas fa-user-circle"; 
+                if (authIcon) authIcon.className = "fas fa-user-circle";
                 if (authText) authText.innerText = userName;
 
-                // 4. AVVIAMO IL CARICAMENTO DEI DATI DEL PROFILO
-                // In profile.html questa è la funzione principale che avvia tutto
-                caricaDatiProfilo(playerID);
-                
-                // Se hai funzioni per l'aspetto (colori personalizzati del profilo), mettile qui
-                // inizializzaAppearance(); 
-
+                mostraNome();
+                avviaProfilo();
             } else {
                 console.error("User name not found in the database.");
                 if (authText) authText.innerText = "Profile Error";
+                nascondiLoader();
             }
         } catch (error) {
             console.error("Error occurred while fetching user data:", error);
             if (authText) authText.innerText = "Logged In";
+            nascondiLoader();
         }
     } else {
-        // Gestione utente non loggato: reindirizzamento
+        // Utente non loggato: si torna alla home
         if (authIcon) authIcon.className = "fas fa-lock";
         if (authText) authText.innerText = "";
-        
+
         if (!window.location.pathname.includes("index.html")) {
             window.location.href = "index.html";
         }
@@ -377,1158 +279,469 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
         });
 });
 
-// Dizionario per personalizzare il livello base in inglese (Classi Allenatore storiche)
-const TITOLI_BASE_TIPI = {
-    bug: "Bug Catcher",
-    dark: "Punk Guy",
-    dragon: "Dragon Tamer",
-    electric: "Guitarist",
-    fairy: "Fairy Tale Girl",
-    fighting: "Black Belt",
-    fire: "Kindler",
-    flying: "Bird Keeper",
-    ghost: "Hex Maniac",
-    grass: "Aroma Lady",
-    ground: "Ruin Maniac",
-    ice: "Skier",
-    normal: "Rich Boy",
-    poison: "Ninja Boy",
-    psychic: "Psychic",
-    rock: "Hiker",
-    steel: "Working Man",
-    water: "Fisherman"
+// =====================================================
+// RIVALI E "COSA DEVO FARE"
+// I calcoli sono in profilo-personale.js (testato a parte): qui si leggono i dati e si disegna.
+// Il testo che viene dal database entra nella pagina solo come testo (h() → nodi di testo), mai come HTML.
+// =====================================================
+const PP = window.ProfiloPersonale;
+const AVATAR_PREDEFINITO = 'immagini/profile/1.png';
+
+const stato = {
+    stagioni: {},     // id → { info, iscritti, teams_iscritti, showdowns }
+    sfide: {},        // id → { idSfida: { da, daId, a, aId, categoria, stato, … } }
+    giocatori: {},    // id → { avatar, color, name }   (solo gli avversari che servono)
+    filtro: '',       // '' = tutte le stagioni, altrimenti l'id di una stagione
+    pronto: false
+};
+
+const $ = id => document.getElementById(id);
+
+// h('div', { class: 'x', onclick: fn }, 'testo', altroNodo, …)
+function h(tag, attributi, ...figli) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attributi || {})) {
+        if (v == null || v === false) continue;
+        if (k === 'class') e.className = v;
+        else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+        else e.setAttribute(k, v === true ? '' : String(v));
+    }
+    for (const f of figli.flat()) {
+        if (f != null && f !== false) e.append(f instanceof Node ? f : document.createTextNode(String(f)));
+    }
+    return e;
+}
+
+const colorePulito = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '');
+const avatarPulito = a => (/^immagini\/[\w\-./]+$/.test(String(a || '')) ? a : AVATAR_PREDEFINITO);
+const linkPubblico = id => `public.html?player=${encodeURIComponent(id)}`;
+const percentuale = (v, p) => (v + p ? Math.round((v / (v + p)) * 100) : 0);
+
+function nomeStagione(id) {
+    return (stato.stagioni[id] && stato.stagioni[id].info && stato.stagioni[id].info.name) || id;
+}
+
+// sbeta, poi s1, s2, … in ordine numerico
+function ordineStagioni(ids) {
+    const n = id => (id === 'sbeta' ? 0 : parseInt(String(id).replace(/\D/g, ''), 10) || 1e6);
+    return [...ids].sort((a, b) => n(a) - n(b) || String(a).localeCompare(String(b)));
+}
+
+function quandoFa(ts) {
+    if (!ts) return '';
+    const min = Math.round((Date.now() - ts) / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return `${min} min ago`;
+    const ore = Math.round(min / 60);
+    return ore < 24 ? `${ore} h ago` : new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function dataBreve(ts) {
+    return ts ? new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+}
+
+
+// ---------- lettura dei dati ----------
+const leggi = percorso => db.ref(percorso).once('value').then(s => s.val()).catch(() => null);
+
+// Tutte le stagioni (anche chiuse): sbeta, s1, s2, … + settings/currentSeason
+async function trovaStagioni() {
+    const trovate = new Map();
+    const aggiungi = (id, info) => { if (info) trovate.set(id, info); };
+    aggiungi('sbeta', await leggi('seasons/sbeta/info'));
+    for (let da = 1; da < 500; da += 10) {
+        const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`seasons/s${da + i}/info`)));
+        blocco.forEach((info, i) => aggiungi(`s${da + i}`, info));
+        if (!blocco[blocco.length - 1]) break;   // l'ultima del blocco non esiste: finito
+    }
+    const corrente = await leggi('settings/currentSeason');
+    if (corrente && !trovate.has(corrente)) aggiungi(corrente, await leggi(`seasons/${corrente}/info`));
+    return trovate;
+}
+
+// Ascolta un percorso: la promessa si risolve alla prima lettura, poi ogni cambiamento ridisegna
+function ascolta(percorso, applica) {
+    return new Promise(ok => {
+        let primo = true;
+        db.ref(percorso).on('value', snap => {
+            applica(snap.val());
+            if (primo) { primo = false; ok(); } else pianificaDisegno();
+        }, err => {
+            console.warn(`${percorso} non leggibile: controlla le regole del database`, err);
+            if (primo) { primo = false; ok(); }
+        });
+    });
+}
+
+async function caricaStagione(id, info) {
+    const S = stato.stagioni[id] = { info, iscritti: {}, teams_iscritti: {}, showdowns: {} };
+    const chiusa = PP.stato(info) === 'CLOSED';
+    if (chiusa) {
+        const [iscritti, teams, showdowns] = await Promise.all([
+            leggi(`seasons/${id}/iscritti`), leggi(`seasons/${id}/teams_iscritti`), leggi(`seasons/${id}/showdowns`)
+        ]);
+        Object.assign(S, { iscritti: iscritti || {}, teams_iscritti: teams || {}, showdowns: showdowns || {} });
+        return;
+    }
+    // Stagione in corso: si segue dal vivo (sfide, showdown, iscrizioni e stato cambiano mentre la pagina è aperta)
+    await Promise.all([
+        ascolta(`seasons/${id}/info`, v => { S.info = v || {}; }),
+        ascolta(`seasons/${id}/iscritti`, v => { S.iscritti = v || {}; }),
+        ascolta(`seasons/${id}/teams_iscritti`, v => { S.teams_iscritti = v || {}; }),
+        ascolta(`seasons/${id}/showdowns`, v => { S.showdowns = v || {}; }),
+        ascolta(`sfide/${id}`, v => { stato.sfide[id] = v || {}; })
+    ]);
+}
+
+// Avatar e colore degli avversari (una lettura a testa, una volta sola)
+async function caricaGiocatori(ids) {
+    const mancano = ids.filter(id => !(id in stato.giocatori));
+    await Promise.all(mancano.map(async id => {
+        const info = await leggi(`players/${id}/info`);
+        stato.giocatori[id] = info || {};
+    }));
+}
+
+let disegnoPianificato = false;
+function pianificaDisegno() {
+    if (disegnoPianificato || !stato.pronto) return;
+    disegnoPianificato = true;
+    setTimeout(async () => {
+        disegnoPianificato = false;
+        await disegna();
+    }, 50);
+}
+
+// Chi serve disegnare, per leggerne avatar e colore prima di costruire le carte
+function avversariVisibili() {
+    const d = PP.daFare(playerID, stato.stagioni, stato.sfide);
+    return [
+        ...PP.rivali(playerID, stato.stagioni).map(r => r.id),
+        ...[d.sfideRicevute, d.sfideInviate, d.inCorso, d.mancanti].flat().map(x => x.avversario)
+    ];
+}
+
+async function disegna() {
+    await caricaGiocatori(avversariVisibili());
+    // dopo l'attesa si calcola di nuovo: i dati potrebbero essere cambiati nel frattempo
+    disegnaDaFare(PP.daFare(playerID, stato.stagioni, stato.sfide));
+    disegnaRivali(PP.rivali(playerID, stato.stagioni));
+}
+
+
+// ---------- pezzi comuni ----------
+function avatarDi(id, classe = 'pf-avatar') {
+    const info = stato.giocatori[id] || {};
+    const colore = colorePulito(info.color);
+    const img = h('img', { class: classe, src: avatarPulito(info.avatar), alt: '', loading: 'lazy' });
+    if (colore) img.style.setProperty('--pf-colore', colore);
+    return img;
+}
+
+function bottone(testo, classe, fn) {
+    const b = h('button', { type: 'button', class: `pf-btn ${classe}` }, testo);
+    b.addEventListener('click', async () => {
+        b.disabled = true;
+        try { await fn(); } finally { b.disabled = false; }
+    });
+    return b;
+}
+
+function collegamento(testo, classe, href) {
+    return h('a', { class: `pf-btn ${classe}`, href }, testo);
+}
+
+function etichetta(testo, classe = '') {
+    return h('span', { class: `pf-etichetta ${classe}` }, testo);
+}
+
+const conSfide = (fn) => (...args) => {
+    if (!window.Sfide) return alert('Challenges are still loading, try again in a moment.');
+    return fn(...args);
 };
 
 
-let badgeSelezionati = []; // Array globale che contiene gli ID dei badge scelti
-
-function toggleBadge(badgeId, element) {
-    const index = badgeSelezionati.indexOf(badgeId);
-
-    if (index > -1) {
-        // Se è già selezionato, lo rimuoviamo (togliamo il tick)
-        badgeSelezionati.splice(index, 1);
-        element.classList.remove('selected');
-    } else {
-        // Se non è selezionato, lo aggiungiamo (limite massimo 3 per estetica)
-        if (badgeSelezionati.length >= 3) {
-            alert("You can display a maximum of 3 badges!");
-            return;
-        }
-        badgeSelezionati.push(badgeId);
-        element.classList.add('selected');
-    }
-
-    // AGGIORNAMENTO ISTANTANEO DELLO SHOWCASE
-    aggiornaTrophyShowcase();
+// =====================================================
+// WHAT TO DO
+// =====================================================
+function sezioneDaFare(titolo, voci, classe = '') {
+    if (!voci.length) return null;
+    return h('div', { class: `pf-gruppo ${classe}` }, h('h3', { class: 'pf-sottotitolo' }, titolo), h('div', { class: 'pf-voci' }, voci));
 }
 
-function aggiornaTrophyShowcase() {
-    const container = document.getElementById('showcase-container');
-    if (!container) return;
+function voceSfidaRicevuta(s) {
+    return h('div', { class: 'pf-voce pf-voce-sfida' },
+        avatarDi(s.avversario),
+        h('div', { class: 'pf-testo' },
+            h('p', { class: 'pf-riga' }, h('strong', null, s.nome), ' challenges you'),
+            h('p', { class: 'pf-dettagli' },
+                etichetta(s.categoria), `${PP.MATCH_PER_SHOWDOWN} matches, best of ${s.bestOf} · ${nomeStagione(s.stagione)} · ${quandoFa(s.creata)}`)),
+        h('div', { class: 'pf-azioni' },
+            bottone('Accept', 'pf-si', conSfide(() => Sfide.rispondi(s.stagione, s.id, 'accetta'))),
+            bottone('Decline', 'pf-no', conSfide(() => Sfide.rispondi(s.stagione, s.id, 'rifiuta')))));
+}
 
-    // Se non ci sono badge, rimettiamo il placeholder
-    if (badgeSelezionati.length === 0) {
-        container.innerHTML = '<div class="badges-placeholder">Selected badges will appear here</div>';
+function voceInCorso(s) {
+    return h('div', { class: 'pf-voce pf-voce-corso' },
+        avatarDi(s.avversario),
+        h('div', { class: 'pf-testo' },
+            h('p', { class: 'pf-riga' }, 'You vs ', h('strong', null, s.nome)),
+            h('p', { class: 'pf-dettagli' },
+                etichetta(s.categoria), `match ${s.match} of ${PP.MATCH_PER_SHOWDOWN} · you ${s.mioPunteggio}`,
+                s.aggiornato ? ` · ${quandoFa(s.aggiornato)}` : '')),
+        h('div', { class: 'pf-azioni' },
+            collegamento('Resume', 'pf-primario',
+                `battle.html?stagione=${encodeURIComponent(s.stagione)}&showdown=${encodeURIComponent(s.id)}&match=${s.match}`)));
+}
+
+function voceSfidaInviata(s) {
+    return h('div', { class: 'pf-voce pf-voce-attesa' },
+        avatarDi(s.avversario),
+        h('div', { class: 'pf-testo' },
+            h('p', { class: 'pf-riga' }, 'Waiting for ', h('strong', null, s.nome), ' to answer'),
+            h('p', { class: 'pf-dettagli' }, etichetta(s.categoria), `${nomeStagione(s.stagione)} · ${quandoFa(s.creata)}`)),
+        h('div', { class: 'pf-azioni' },
+            bottone('Withdraw', 'pf-no', conSfide(() => Sfide.rispondi(s.stagione, s.id, 'ritira')))));
+}
+
+function voceIscrizione(i) {
+    const resto = PP.tempoRimasto(i.scadenza);
+    const scadenza = resto === '' ? '' : (resto === null ? 'registration deadline passed' : `closes in ${resto}`);
+    const hub = `hub.html?id=${encodeURIComponent(i.stagione)}`;
+    return i.tipo === 'iscriviti'
+        ? h('div', { class: 'pf-voce pf-voce-iscrizione' },
+            h('div', { class: 'pf-icona', 'aria-hidden': 'true' }, '★'),
+            h('div', { class: 'pf-testo' },
+                h('p', { class: 'pf-riga' }, h('strong', null, i.nome), ' is open for sign-up'),
+                h('p', { class: 'pf-dettagli' }, scadenza || 'You are not registered yet')),
+            h('div', { class: 'pf-azioni' }, collegamento('Sign up', 'pf-primario', hub)))
+        : h('div', { class: 'pf-voce pf-voce-iscrizione' },
+            h('div', { class: 'pf-icona', 'aria-hidden': 'true' }, '!'),
+            h('div', { class: 'pf-testo' },
+                h('p', { class: 'pf-riga' }, 'Pick a team for ', h('strong', null, i.formati.join(', ')), ' in ', h('strong', null, i.nome)),
+                h('p', { class: 'pf-dettagli' }, scadenza || 'You are registered but have no team in these formats')),
+            h('div', { class: 'pf-azioni' }, collegamento('Choose teams', 'pf-primario', hub)));
+}
+
+function voceDaGiocare(m) {
+    const liberi = m.formati.filter(f => !f.occupato);
+    return h('div', { class: 'pf-voce pf-voce-giocare' },
+        avatarDi(m.avversario),
+        h('div', { class: 'pf-testo' },
+            h('p', { class: 'pf-riga' }, h('strong', null, m.nome)),
+            h('p', { class: 'pf-formati' }, m.formati.map(f => h('span', {
+                class: `pf-formato${f.occupato ? ' pf-occupato' : ''}`,
+                title: f.occupato ? 'A challenge or a showdown is already active in this format' : `${f.rimasti} left to play`
+            }, f.formato, h('b', null, `×${f.rimasti}`))))),
+        h('div', { class: 'pf-azioni' }, liberi.length
+            ? bottone('Challenge', 'pf-primario', conSfide(() => Sfide.apriSfida(m.nome, m.stagione)))
+            : h('span', { class: 'pf-nota' }, 'in progress')));
+}
+
+function schedaStagione(s, mancanti) {
+    const pct = s.richiesti ? Math.min(100, Math.round((s.giocati / s.richiesti) * 100)) : 0;
+    const resto = s.stato === 'OPEN' ? PP.tempoRimasto(s.scadenza) : '';
+    return h('div', { class: 'pf-gruppo pf-stagione' },
+        h('div', { class: 'pf-stagione-testa' },
+            h('h3', { class: 'pf-sottotitolo' }, 'STILL TO PLAY'),
+            h('a', { class: 'pf-stagione-nome', href: `hub.html?id=${encodeURIComponent(s.id)}` }, s.nome),
+            etichetta(s.stato, `pf-stato-${s.stato.toLowerCase()}`),
+            resto ? h('span', { class: 'pf-nota' }, `${resto} left`) : null),
+        s.richiesti
+            ? h('div', { class: 'pf-progresso' },
+                h('div', { class: 'pf-barra', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': s.richiesti, 'aria-valuenow': s.giocati },
+                    h('span', { style: `width:${pct}%` })),
+                h('span', { class: 'pf-progresso-testo' }, `${s.giocati} / ${s.richiesti} showdowns played`))
+            : null,
+        !s.richiesti
+            ? h('p', { class: 'pf-vuoto' }, 'This season has no showdown limit: challenge anyone from the rankings.',
+                ' ', h('a', { class: 'pf-link-testo', href: `matches.html?id=${encodeURIComponent(s.id)}` }, 'Open the rankings'))
+            : (mancanti.length
+                ? h('div', { class: 'pf-voci' }, mancanti.map(voceDaGiocare))
+                : h('p', { class: 'pf-vuoto' }, 'Nothing left to start: every showdown is played or already running.')));
+}
+
+function disegnaDaFare(d) {
+    const box = $('pf-todo-corpo');
+    const daGiocare = d.mancanti.reduce((n, m) => n + m.totale, 0);
+
+    const contatori = [
+        [d.sfideRicevute.length, 'challenges waiting', 'pf-c-rosso'],
+        [d.iscrizioni.length, 'sign-ups open', 'pf-c-blu'],
+        [d.inCorso.length, 'in progress', 'pf-c-giallo'],
+        [daGiocare, 'showdowns to play', 'pf-c-bianco']
+    ].filter(([n]) => n > 0);
+
+    const iscritte = d.stagioni.filter(s => s.iscritto);
+    const inGioco = iscritte.filter(s => s.stato !== 'OPEN');
+    const parti = [];
+
+    if (!d.stagioni.length) {
+        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'No season is running right now. When the next one opens, the sign-up will show up here.'));
+    } else if (!iscritte.length && !d.iscrizioni.length) {
+        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'You are not in any running season, so there is nothing to do for now.'));
+    } else if (!contatori.length) {
+        parti.push(h('p', { class: 'pf-tutto-fatto' }, 'All clear: nothing is waiting for you right now.'));
+    } else {
+        parti.push(h('div', { class: 'pf-contatori' }, contatori.map(([n, t, c]) =>
+            h('div', { class: `pf-contatore ${c}` }, h('b', null, n), h('span', null, t)))));
+    }
+
+    parti.push(
+        sezioneDaFare('SIGN UP', d.iscrizioni.map(voceIscrizione), 'pf-g-iscrizioni'),
+        sezioneDaFare('CHALLENGES FOR YOU', d.sfideRicevute.map(voceSfidaRicevuta), 'pf-g-ricevute'),
+        sezioneDaFare('SHOWDOWNS IN PROGRESS', d.inCorso.map(voceInCorso), 'pf-g-corso'),
+        sezioneDaFare('WAITING FOR AN ANSWER', d.sfideInviate.map(voceSfidaInviata), 'pf-g-inviate')
+    );
+
+    // Una scheda per ogni stagione in corso a cui sono iscritto, con i progressi e chi devo ancora affrontare
+    for (const s of inGioco) parti.push(schedaStagione(s, d.mancanti.filter(m => m.stagione === s.id)));
+
+    box.replaceChildren(...parti.filter(Boolean));
+}
+
+
+// =====================================================
+// RIVALS
+// =====================================================
+function tessera(titolo, valore, sotto, classe = '') {
+    return h('div', { class: `pf-tessera ${classe}` }, h('span', { class: 'pf-tessera-titolo' }, titolo), h('b', null, valore), sotto ? h('small', null, sotto) : null);
+}
+
+function richiamo(titolo, r, dettaglio, classe) {
+    if (!r) return null;
+    return h('a', { class: `pf-richiamo ${classe}`, href: linkPubblico(r.id) },
+        avatarDi(r.id, 'pf-avatar pf-avatar-piccolo'),
+        h('div', null, h('span', { class: 'pf-tessera-titolo' }, titolo), h('b', null, r.nome), h('small', null, dettaglio)));
+}
+
+function filtroStagioni(rivaliTutti) {
+    const giocate = new Set(rivaliTutti.flatMap(r => r.stagioni));
+    const ids = ordineStagioni(giocate);
+    if (ids.length < 2) return null;
+    const voce = (id, testo) => h('button', {
+        type: 'button', class: `pf-filtro${stato.filtro === id ? ' attivo' : ''}`, 'aria-pressed': String(stato.filtro === id),
+        onclick: () => { stato.filtro = id; pianificaDisegno(); }
+    }, testo);
+    return h('div', { class: 'pf-filtri', role: 'group', 'aria-label': 'Season' },
+        voce('', 'All time'), ids.map(id => voce(id, nomeStagione(id))));
+}
+
+function carta(r) {
+    const tot = r.matchV + r.matchP;
+    const pct = percentuale(r.matchV, r.matchP);
+    const info = stato.giocatori[r.id] || {};
+    const colore = colorePulito(info.color);
+    const a = h('a', { class: 'pf-rivale', href: linkPubblico(r.id), title: `Open ${r.nome}'s Trainer Card` },
+        h('div', { class: 'pf-rivale-testa' },
+            avatarDi(r.id),
+            h('div', { class: 'pf-rivale-nome' },
+                h('strong', null, r.nome),
+                h('small', null, `${tot} ${tot === 1 ? 'match' : 'matches'}${r.stagioni.length > 1 ? ` · ${r.stagioni.length} seasons` : ''}`)),
+            r.sdInCorso ? h('span', { class: 'pf-live' }, 'LIVE') : null),
+        h('div', { class: 'pf-record' },
+            h('b', { class: r.matchV >= r.matchP ? 'pf-in-vantaggio' : '' }, r.matchV),
+            h('span', null, '–'),
+            h('b', { class: r.matchP > r.matchV ? 'pf-in-svantaggio' : '' }, r.matchP),
+            h('small', null, 'MATCHES')),
+        h('div', { class: 'pf-barra pf-barra-record', 'aria-label': `${pct}% match wins` },
+            h('span', { class: 'pf-v', style: `width:${tot ? pct : 50}%` }),
+            h('span', { class: 'pf-p', style: `width:${tot ? 100 - pct : 50}%` })),
+        h('p', { class: 'pf-mini' },
+            h('span', null, h('b', null, 'SETS '), `${r.setV}–${r.setP}`),
+            h('span', null, h('b', null, 'SHOWDOWNS '), `${r.sdV}–${r.sdP}`)),
+        r.forma.length
+            ? h('p', { class: 'pf-forma', 'aria-label': 'Latest results, oldest first' },
+                r.forma.map(x => h('span', { class: x === 'V' ? 'pf-v' : 'pf-p' }, x === 'V' ? 'W' : 'L')))
+            : null,
+        Object.keys(r.formati).length > 1
+            ? h('p', { class: 'pf-formati' }, Object.entries(r.formati).filter(([f]) => f).map(([f, x]) =>
+                h('span', { class: 'pf-formato' }, f, h('b', null, `${x.matchV}–${x.matchP}`))))
+            : null,
+        r.ultimo ? h('p', { class: 'pf-ultimo' }, `Last match ${dataBreve(r.ultimo)}`) : null);
+    if (colore) a.style.setProperty('--pf-colore', colore);
+    return a;
+}
+
+function disegnaRivali(rivaliTutti) {
+    const box = $('pf-rivali-corpo');
+    const filtro = stato.filtro && stato.stagioni[stato.filtro] ? stato.filtro : '';
+    if (filtro !== stato.filtro) stato.filtro = filtro;
+    const elenco = filtro ? PP.rivali(playerID, { [filtro]: stato.stagioni[filtro] }) : rivaliTutti;
+    const r = PP.riepilogoRivali(elenco);
+
+    const parti = [filtroStagioni(rivaliTutti)];
+    if (!elenco.length) {
+        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' },
+            filtro ? 'No showdowns against anyone in this season.'
+                : 'No showdowns played yet. Challenge someone and your head-to-head record will show up here.'));
+        box.replaceChildren(...parti.filter(Boolean));
         return;
     }
 
-    // Se ci sono badge, svuotiamo e iniettiamo le immagini
-    container.innerHTML = ""; 
-    badgeSelezionati.forEach(id => {
-        const img = document.createElement('img');
-        img.src = `immagini/badges/${id}.png`; // Assicurati che il percorso sia corretto
-        img.className = "showcase-badge-img";
-        img.title = id;
-        container.appendChild(img);
-    });
-}
-
-// FIX: Funzione selezionaCanzone
-function selezionaCanzone(elementoSpan, url) {
-    const nomeCanzone = elementoSpan.innerText;
-    document.getElementById('selected-song-name').innerText = nomeCanzone;
-    document.getElementById('selected-music-url').value = url;
-    
-    // Chiudi il dropdown dopo la selezione
-    document.getElementById('dropdown-content').classList.remove('show');
-    
-    console.log("Canzone selezionata:", nomeCanzone);
-}
-
-// Configurazione icone (Aggiungi qui i nomi dei file che hai in cartella)
-
-const LISTA_AVATAR = [
-    "1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png", "9.png", "10.png",
-    "11.png", "12.png", "13.png", "14.png", "15.png", "16.png", "17.png", "18.png", "19.png", "20.png",
-    "21.png", "22.png", "23.png", "24.png", "25.png", "26.png", "27.png", "28.png", "29.png", "30.png",
-    "31.png", "32.png", "33.png", "34.png", "35.png", "36.png", "37.png", "38.png", "39.png", "40.png",
-    "41.png", "42.png", "43.png", "44.png", "45.png", "46.png", "47.png", "48.png", "49.png", "50.png",
-    "51.png", "52.png", "53.png", "54.png", "55.png", "56.png", "57.png", "58.png", "59.png", "60.png",
-    "61.png", "62.png", "63.png", "64.png", "65.png", "66.png", "67.png", "68.png", "69.png", "70.png",
-    "71.png", "72.png", "73.png", "74.png", "75.png", "76.png", "77.png", "78.png", "79.png", "80.png",
-    "81.png", "82.png", "83.png", "84.png", "85.png", "86.png", "87.png", "88.png", "89.png", "90.png",
-    "91.png", "92.png", "93.png", "94.png", "95.png", "96.png", "97.png", "98.png", "99.png", "100.png",
-    "101.png", "102.png", "103.png", "104.png", "105.png", "106.png", "107.png", "108.png", "109.png", "110.png",
-    "111.png", "112.png", "113.png", "114.png", "115.png", "116.png", "117.png", "118.png", "119.png", "120.png",
-    "121.png", "122.png", "123.png", "124.png", "125.png", "126.png", "127.png", "128.png", "129.png", "130.png",
-    "131.png", "132.png", "133.png", "134.png", "135.png", "136.png", "137.png", "138.png", "139.png", "140.png",
-    "141.png", "142.png", "143.png", "144.png", "145.png", "146.png", "147.png", "148.png", "149.png", "150.png",
-    "151.png", "152.png", "153.png", "154.png", "155.png", "156.png", "157.png", "158.png", "159.png", "160.png",
-    "161.png", "163.png", "164.png", "165.png", "166.png", "167.png", "169.png", "170.png",
-    "171.png", "172.png", "173.png", "174.png", "175.png", "176.png", "177.png", "178.png", "179.png", "180.png",
-    "181.png", "182.png", "183.png", "184.png", "185.png", "186.png", "187.png", "188.png", "189.png", "190.png",
-    "191.png", "192.png", "193.png", "194.png", "195.png", "196.png", "197.png", "198.png", "199.png", "200.png",
-    "201.png", "202.png", "203.png", "204.png", "205.png", "206.png", "207.png", "208.png", "209.png", "210.png",
-    "211.png", "212.png", "213.png", "214.png", "215.png", "216.png", "217.png", "218.png", "219.png", "220.png",
-    "221.png", "222.png", "223.png", "224.png", "225.png", "226.png", "227.png", "228.png", "229.png", "230.png",
-    "231.png", "232.png", "233.png", "234.png", "235.png", "236.png", "237.png", "238.png", "239.png", "240.png",
-    "241.png", "242.png", "243.png", "244.png", "245.png", "246.png", "247.png", "248.png", "249.png", "250.png",
-    "251.png", "252.png", "253.png", "254.png", "255.png", "256.png", "257.png", "258.png", "259.png", "260.png",
-    "261.png", "262.png", "263.png", "264.png", "265.png", "266.png", "267.png", "268.png", "269.png", "270.png",
-    "271.png", "272.png", "273.png", "274.png", "275.png", "276.png", "277.png", "278.png", "279.png", "280.png",
-    "281.png", "282.png", "283.png", "284.png", "285.png", "286.png", "287.png", "288.png", "289.png", "290.png",
-    "291.png", "292.png"
-];
-
-const HONEYCOMB_COLORS = [
-    // 🌸 RIGA 1: PASTEL RAINBOW (Toni pastello morbidi e chiarissimi)
-    "#FFB3BA", // Col 1: Soft Red/Pink
-    "#FFDFBA", // Col 2: Soft Peach
-    "#FFFFBA", // Col 3: Soft Yellow
-    "#BAFFC9", // Col 4: Soft Mint
-    "#BAFFF0", // Col 5: Soft Teal
-    "#BAE1FF", // Col 6: Soft Sky Blue
-    "#D6CAFF", // Col 7: Soft Periwinkle
-    "#E8CAFF", // Col 8: Soft Lavender
-    "#FFCAFF", // Col 9: Soft Lilac
-    "#FFC2D1", // Col 10: Soft Rose (Allineato!)
-
-
-    // 🍂 RIGA 2: RETRO DESERT / DUSTY CHIC (Muted saturi, caldi e ultra-leggibili con testo nero)
-    "#C25959", // Col 1: Muted Terracotta
-    "#D48C5F", // Col 2: Muted Apricot
-    "#D9B462", // Col 3: Muted Mustard
-    "#8F9E6C", // Col 4: Sage Green
-    "#699E98", // Col 5: Eucalyptus Teal
-    "#6B93B0", // Col 6: Dusty Sky Blue
-    "#7A89A8", // Col 7: Slate Blue
-    "#9582A3", // Col 8: Dusty Grape
-    "#B07D9A", // Col 9: Dusty Plum (Allineato!)
-    "#C7889B",  // Col 10: Dusty Rose (Allineato!)
-
-
-    // 🎨 RIGA 3: RETRO POP / NEUBRUTALIST (Colori fumettistici pieni e decisi)
-    "#FF3333", // Col 1: Bold Red
-    "#FF8800", // Col 2: Retro Orange
-    "#FFDD00", // Col 3: Sunny Yellow
-    "#33CC66", // Col 4: Kelly Green
-    "#00BFA5", // Col 5: Deep Mint
-    "#3399FF", // Col 6: Dodger Blue
-    "#0055FF", // Col 7: Royal Blue
-    "#7A29FF", // Col 8: Comic Purple
-    "#D11A7A", // Col 9: Retro Magenta (Corretto!)
-    "#FF4D8D", // Col 10: Retro Pink (Corretto!)
-
-
-    // ⚡ RIGA 4: NEON / FLUO RAINBOW (Colori elettrici ad alto impatto)
-    "#FF1744", // Col 1: Neon Red
-    "#FF5E00", // Col 2: Neon Orange
-    "#FFEA00", // Col 3: Neon Yellow
-    "#00FF66", // Col 4: Neon Green
-    "#00FFCC", // Col 5: Neon Teal
-    "#00F0FF", // Col 6: Neon Cyan
-    "#0066FF", // Col 7: Neon Blue
-    "#7B00FF", // Col 8: Neon Violet
-    "#CC00FF", // Col 9: Neon Purple
-    "#FF0099" // Col 10: Neon Pink (Allineato!)
-
-    
-];
-
-function inizializzaAppearance() {
-    console.log("🎨 Inizializzazione Appearance (Avatar + Colori)...");
-
-    // 1. POPOLAMENTO AVATAR (Griglia immagini)
-    const avatarGrid = document.getElementById('avatar-grid-list');
-    if (avatarGrid && typeof LISTA_AVATAR !== 'undefined') {
-        avatarGrid.innerHTML = ""; // Pulisce rimasugli
-        LISTA_AVATAR.forEach(imgName => {
-            const img = document.createElement('img');
-            img.src = `immagini/profile/${imgName}`;
-            img.className = "avatar-selection-item";
-            // Al click chiama la funzione selezionaAvatar
-            img.onclick = function() { selezionaAvatar(this.src); };
-            avatarGrid.appendChild(img);
-        });
-    }
-
-    // 2. POPOLAMENTO COLORI (Griglia principale)
-    const picker = document.getElementById('honeycomb-picker');
-    if (picker && typeof HONEYCOMB_COLORS !== 'undefined') {
-        picker.className = "modern-color-grid"; 
-        picker.innerHTML = "";
-        HONEYCOMB_COLORS.forEach(color => {
-            const dot = document.createElement('div');
-            dot.className = "color-dot";
-            dot.style.backgroundColor = color;
-            dot.onclick = function() { selezionaColore(color); };
-            picker.appendChild(dot);
-        });
-    }
-
+    const t = r.totali;
+    parti.push(
+        h('div', { class: 'pf-tessere' },
+            tessera('MATCHES', `${t.matchV}–${t.matchP}`, `${percentuale(t.matchV, t.matchP)}% won`, 'pf-t-verde'),
+            tessera('SETS', `${t.setV}–${t.setP}`, `${percentuale(t.setV, t.setP)}% won`),
+            tessera('SHOWDOWNS', `${t.sdV}–${t.sdP}`, t.sdInCorso ? `${t.sdInCorso} in progress` : `${percentuale(t.sdV, t.sdP)}% won`),
+            tessera('RIVALS', t.avversari, t.avversari === 1 ? 'opponent faced' : 'opponents faced')),
+        h('div', { class: 'pf-richiami' },
+            richiamo('NEMESIS', r.nemesi, r.nemesi && `${r.nemesi.matchV}–${r.nemesi.matchP} in matches`, 'pf-r-nemesi'),
+            richiamo('FAVOURITE PREY', r.preda, r.preda && `${r.preda.matchV}–${r.preda.matchP} in matches`, 'pf-r-preda'),
+            richiamo('MOST PLAYED', r.piuGiocato, r.piuGiocato && `${r.piuGiocato.matchV + r.piuGiocato.matchP} matches`, 'pf-r-piu')),
+        h('div', { class: 'pf-griglia' }, elenco.map(carta)));
+    box.replaceChildren(...parti.filter(Boolean));
 }
 
 
-let listaCompletaPokemon = []; // Buffer per la ricerca
+// =====================================================
+// AVVIO
+// =====================================================
+let profiloAvviato = false;
 
-async function inizializzaPkmSelector() {
-    const pkmListUl = document.getElementById('pkm-list-admin');
-    if (!pkmListUl) return;
-
+async function avviaProfilo() {
+    if (profiloAvviato) return;
+    profiloAvviato = true;
     try {
-        // Recuperiamo i primi 1025 Pokémon (fino a Scarlatto/Violetto)
-        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
-        const data = await response.json();
-        listaCompletaPokemon = data.results;
+        const [mie, stagioni] = await Promise.all([leggi(`players/${playerID}/info`), trovaStagioni()]);
 
-        renderPkmList(listaCompletaPokemon);
+        if (mie && colorePulito(mie.color)) {
+            const hero = document.querySelector('.hub-hero');
+            if (hero) hero.style.backgroundColor = mie.color;
+        }
+        stato.giocatori[playerID] = mie || {};
+
+        await Promise.all([...stagioni].map(([id, info]) => caricaStagione(id, info)));
+        stato.pronto = true;
+        await disegna();
     } catch (e) {
-        console.error("Error fetching Pokémon:", e);
-    }
-}
-
-function renderPkmList(lista) {
-    const pkmListUl = document.getElementById('pkm-list-admin');
-    pkmListUl.innerHTML = lista.map((pkm, index) => {
-        // Calcoliamo l'ID reale per la mini-icona (PokeAPI è 1-based)
-        const pkmId = pkm.url.split('/').filter(Boolean).pop();
-        return `
-            <li onclick="selezionaPkm('${pkm.name}')">
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pkmId}.png" 
-                     style="width:30px; height:30px; image-rendering: pixelated; margin-right:10px;">
-                ${pkm.name.toUpperCase()}
-            </li>
-        `;
-    }).join('');
-}
-
-// Funzione di ricerca (gemella di filtraMusica)
-function filtraPokemon() {
-    const input = document.getElementById('pkm-search');
-    const filter = input.value.toLowerCase();
-    const filtrati = listaCompletaPokemon.filter(p => p.name.includes(filter));
-    renderPkmList(filtrati);
-}
-
-// Funzione apertura/chiusura dropdown
-function togglePkmDropdown() {
-    const content = document.getElementById('pkm-dropdown-content');
-    content.classList.toggle('show'); // Assicurati di avere la classe .show nel CSS
-}
-
-// Selezione effettiva
-function selezionaPkm(nome) {
-    document.getElementById('selected-pkm-name').innerText = nome.toUpperCase();
-    document.getElementById('team-selector-fav').value = nome;
-    document.getElementById('pkm-dropdown-content').classList.remove('show');
-}
-// --- LOGICA SELEZIONE ---
-
-function selezionaAvatar(url) {
-    // 1. Aggiorna l'anteprima circolare a sinistra
-    const preview = document.getElementById('current-avatar-preview');
-    if (preview) {
-        preview.src = url;
-    }
-    
-    // 2. Chiude il tooltip degli avatar
-    const tooltip = document.getElementById('avatar-tooltip');
-    if (tooltip) {
-        tooltip.classList.remove('show');
-    }
-    
-    console.log("📸 Avatar selezionato:", url);
-}
-
-function selezionaColore(color) {
-    const colorBg = document.getElementById('current-color-bg');
-    const hexText = document.getElementById('color-hex-display');
-    
-    // Aggiorna solo l'anteprima del colore e il testo HEX
-    if (colorBg) colorBg.style.backgroundColor = color;
-    if (hexText) hexText.innerText = color.toUpperCase();
-    
-    // Chiude il tooltip
-    document.getElementById('color-tooltip').classList.remove('show');
-}
-
-
-function toggleTooltip(id) {
-    const target = document.getElementById(id);
-    if (!target) return;
-    const isVisible = target.classList.contains('show');
-    document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
-    if (!isVisible) target.classList.add('show');
-}
-
-
-
-async function caricaDatiProfilo() {
-    try {
-        // 1. Se manca playerID, avvisa invece di fare un return silenzioso
-        if (!playerID) {
-            console.warn("⚠️ playerID non ancora disponibile al momento della chiamata.");
-            return;
-        }
-
-        // Inizializza i componenti grafici (palette colori, selettore avatar base)
-        inizializzaAppearance();
-
-        const [snapMatches, snapPlayer] = await Promise.all([
-            db.ref('matches').once('value'),
-            db.ref(`players/${playerID}`).once('value')
-        ]);
-
-        const playerData = snapPlayer.val() || {};
-        const info = playerData.info || {};
-
-        // A. SINCRONIZZAZIONE APPEARANCE & AVATAR
-        if (info.avatar) {
-            const avatarPreview = document.getElementById('current-avatar-preview');
-            if (avatarPreview) {
-                avatarPreview.src = info.avatar;
-                // 🔥 Aspetta che l'immagine dell'avatar sia scaricata e pronta
-                await avatarPreview.decode().catch(err => console.warn("Impossibile decodificare avatar subito:", err));
-            }
-        }
-
-        if (info.color) {
-            const colorePlayer = info.color;
-            const heroSection = document.querySelector('.hub-hero');
-            if (heroSection) heroSection.style.backgroundColor = colorePlayer;
-
-            const titoloDisplay = document.querySelector('.hub-title-display');
-            if (titoloDisplay) {
-                titoloDisplay.style.backgroundColor = "#000";
-                titoloDisplay.style.color = "#fff";
-                titoloDisplay.style.borderColor = "#000";
-            }
-
-            const colorBg = document.getElementById('current-color-bg');
-            if (colorBg) colorBg.style.backgroundColor = colorePlayer;
-        }
-
-        // B. BADGE E TROPHY SHOWCASE
-        if (info.badgeShowcase) {
-            window.badgeSelezionati = info.badgeShowcase;
-            if (typeof aggiornaTrophyShowcase === "function") {
-                await aggiornaTrophyShowcase(); // 🔥 Aggiunto await
-            }
-        } else {
-            window.badgeSelezionati = [];
-        }
-
-        // C. SINCRONIZZAZIONE BIO
-        if (document.getElementById('bio-input')) {
-            document.getElementById('bio-input').value = info.bio || "";
-        }
-        
-        // D. MUSICA
-        const audio = document.getElementById('bg-music');
-        const songNameDisplay = document.getElementById('selected-song-name');
-        const songUrlInput = document.getElementById('selected-music-url');
-        
-        if (info.musicaPreferita) {
-            if (audio && audio.src !== info.musicaPreferita) audio.src = info.musicaPreferita;
-            if (songUrlInput) songUrlInput.value = info.musicaPreferita;
-            if (songNameDisplay) songNameDisplay.innerText = info.musicName || "Musica Salvata";
-        }
-
-        // E. SINCRONIZZAZIONE POKÉMON PREFERITO
-        if (info.pkmPreferito) {
-            const pkmNome = info.pkmPreferito.toLowerCase();
-            const pkmDisplay = document.getElementById('selected-pkm-name');
-            const pkmHidden = document.getElementById('team-selector-fav');
-            
-            if (pkmDisplay) pkmDisplay.innerText = pkmNome.toUpperCase();
-            if (pkmHidden) pkmHidden.value = pkmNome;
-        }
-        
-        // Inizializza la lista dei Pokémon nel dropdown
-        if (typeof inizializzaPkmSelector === "function") {
-            await inizializzaPkmSelector(); // 🔥 Aggiunto await
-        }
-
-        // F. INIEZIONE TITOLI TRAINER
-        await integraTitoliNelloSnapshot(playerID, playerData);
-
-        console.log("✅ Profile reloaded with favorite Pokémon and Titles.");
-
-    } catch (e) {
-        console.error("❌ Error occurred while loading profile:", e);
-    }
-}
-
-async function integraTitoliNelloSnapshot(pId, playerData) {
-    const selectTitoli = document.getElementById('select-titoli');
-    if (!selectTitoli) return;
-
-    try {
-        console.log(`=== 📑 CARICAMENTO TITOLI PER: ${pId} ===`);
-
-        const stats = playerData.stats || {};
-        const teamStats = stats['team-stats'] || {};
-        const info = playerData.info || {};
-
-        // Recupera il titolo salvato o imposta "No Title"
-        const titoloEquipaggiato = info.title || "No Title";
-
-        // Soglie e nomi dei titoli: titoli.js (tipi e Pokémon, calcolati dai set realmente giocati)
-        const titoliSbloccati = [{ id: "none", testo: "No Title" }]
-            .concat(Titoli.titoliSbloccati(teamStats.typeusage, teamStats.pokemonusage).map(t => ({ id: `${t.categoria}_${t.chiave}_${t.livello}`, testo: t.testo })));
-
-        // Ripopolamento pulito del menu a tendina
-        selectTitoli.innerHTML = "";
-
-        titoliSbloccati.forEach(titolo => {
-            const option = document.createElement('option');
-            option.value = titolo.testo; 
-            option.textContent = titolo.testo;
-            
-            if (titolo.testo === titoloEquipaggiato) {
-                option.selected = true;
-            }
-            
-            selectTitoli.appendChild(option);
-        });
-
-    } catch (err) {
-        console.error("❌ Error occurred while loading titles:", err);
-        selectTitoli.innerHTML = '<option value="">Error loading titles</option>';
-    }
-}
-
-    // --- 5. GESTIONE CLICK ESTERNI ---
-    window.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-tooltip-wrapper')) {
-            document.querySelectorAll('.custom-tooltip-content').forEach(t => t.classList.remove('show'));
-        }
-    });
-
-// --- 6. AGGIORNAMENTO UI PROFILO ---
-function aggiornaUIProfilo(gen, best, bestCat) {
-    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-
-    setTxt('global-win', gen.win);
-    setTxt('global-loss', gen.loss);
-    setTxt('global-setv', gen.sW);
-    setTxt('global-setp', gen.sL);
-    setTxt('global-punti', gen.pts);
-    setTxt('global-pct-win', getPct(gen.win, gen.loss));
-    setTxt('global-pct-set', getPct(gen.sW, gen.sL));
-    setTxt('best-category-name', bestCat);
-
-    if (best) {
-        setTxt('best-team-name-new', best.nome || "Senza Nome");
-        setTxt('team-win', best.win);
-        setTxt('team-loss', best.loss);
-        setTxt('team-setv', best.sW);
-        setTxt('team-setp', best.sL);
-        setTxt('team-punti', best.pts);
-        setTxt('team-pct-win', getPct(best.win, best.loss));
+        console.error('Error occurred while loading the profile:', e);
+        const errore = h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Could not load your data. Reload the page to try again.');
+        $('pf-todo-corpo').replaceChildren(errore.cloneNode(true));
+        $('pf-rivali-corpo').replaceChildren(errore);
+    } finally {
+        nascondiLoader();
     }
 }
 
 function nascondiLoader() {
-    const loader = document.getElementById('poke-loader');
+    const loader = $('poke-loader');
     if (!loader) return;
-
     loader.style.opacity = '0';
     loader.classList.add('hidden');
-    
-    setTimeout(() => {
-        loader.style.display = 'none';
-    }, 500);
+    setTimeout(() => { loader.style.display = 'none'; }, 500);
 }
 
-// Helper per il timeout delle Promise
-const creaTimeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout caricamento")), ms));
-
-async function inizializzaPaginaDinamica() {
-    const loader = document.getElementById('poke-loader');
-
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-        loader.classList.remove('hidden');
-    }
-
-    try {
-        console.log("🚀 Avvio Dashboard...");
-
-        const namePlaceholder = document.getElementById('player-name-placeholder');
-        if (namePlaceholder && typeof playerID !== 'undefined' && playerID) {
-            namePlaceholder.innerText = playerID.toUpperCase();
-        }
-
-        // Aspetta che i dati del profilo e la musica vengano scaricati (max 7 secondi)
-        await Promise.race([
-            Promise.all([
-                caricaDatiProfilo().catch(err => console.error("❌ Error occurred while loading profile:", err)),
-                popolaSelettoreMusica().catch(err => console.error("❌ Error occurred while loading music:", err))
-            ]),
-            creaTimeout(7000)
-        ]);
-
-        // Aspetta che l'immagine dell'avatar sia completamente renderizzata nel browser
-        const avatarPreview = document.getElementById('current-avatar-preview');
-        if (avatarPreview && avatarPreview.src && avatarPreview.complete === false) {
-            await avatarPreview.decode().catch(() => {});
-        }
-
-        if (typeof attivaContatoreBio === "function") attivaContatoreBio();
-
-    } catch (e) {
-        console.warn("⚠️ Caricamento completato con warning/timeout:", e.message);
-    } finally {
-        console.log("🏁 Chiusura loader in corso...");
-        if (loader) {
-            loader.style.opacity = '0';
-            loader.classList.add('hidden');
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
-        }
-    }
+// Il nome del giocatore nel titolo
+function mostraNome() {
+    const nome = $('player-name-placeholder');
+    if (nome && playerID) nome.innerText = playerID.toUpperCase();
 }
 
-// Funzione di supporto per il conteggio caratteri
-function attivaContatoreBio() {
-    const bioInput = document.getElementById('bio-input');
-    // Creiamo il contatore se non esiste già nell'HTML
-    let bioCounter = document.getElementById('bio-counter');
-    
-    if (bioInput) {
-        // Se il contatore non c'è nell'HTML, lo aggiungiamo dinamicamente sotto la textarea
-        if (!bioCounter) {
-            bioCounter = document.createElement('div');
-            bioCounter.id = 'bio-counter';
-            bioCounter.style = "font-size: 0.75em; text-align: right; opacity: 0.7; margin-top: 5px; font-weight: 800;";
-            bioInput.parentNode.appendChild(bioCounter);
-        }
-
-        // Funzione per aggiornare il numero
-        const updateCount = () => {
-            const length = bioInput.value.length;
-            bioCounter.textContent = `${length} / 100`;
-            bioCounter.style.color = length >= 100 ? "#f05252" : "inherit";
-        };
-
-        // Ascolta la digitazione
-        bioInput.addEventListener('input', updateCount);
-        
-        // Eseguiamo un primo aggiornamento (nel caso ci sia già testo caricato dal DB)
-        updateCount();
-    }
-}
-
-document.addEventListener('DOMContentLoaded', inizializzaPaginaDinamica);
-
-    const clean = (cell) => cell ? cell.replace(/^"(.*)"$/, '$1').trim() : "";
-
-    const formatPct = (val) => {
-        if (!val || val === "" || val.toLowerCase().includes("nan")) return "0%";
-        let cleanVal = val.replace(/[^\d.,]/g, '').trim().replace(',', '.');
-        let num = parseFloat(cleanVal);
-        if (isNaN(num)) return "0%";
-        if (num > 0 && num <= 1) num = num * 100;
-        return Math.round(num) + "%";
-    };
-
-    // Funzione universale per aprire il modale
-
-function creaMappaDati(header, riga) {
-    let mappa = {};
-    header.forEach((nome, indice) => {
-        if (nome) {
-            // Rimuove spazi, ritorni a capo e rende maiuscolo
-            const nomePulito = nome.trim().replace(/\n/g, " ").toUpperCase();
-            // Associa il valore pulito, se la riga è più corta mette stringa vuota
-            mappa[nomePulito] = riga[indice] ? riga[indice].trim() : "";
-        }
-    });
-    return mappa;
-}
-
-
-function ascoltaDatiProfilo() {
-    if (!playerID) return;
-
-    // ID corretti come da tuo HTML (controllali!)
-    const bioDisplay = document.getElementById('trainer-bio-display'); 
-    const player = document.getElementById('bg-music');
-    const icon = document.getElementById('music-icon');
-    const avatarImg = document.getElementById('profile-pic');
-
-    db.ref(`players/${playerID}/info`).on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-
-        console.log("Dati real-time ricevuti:", data);
-
-        // 1. Aggiorna Bio (usa l'ID trainer-bio-display)
-        if (bioDisplay) {
-            bioDisplay.innerText = data.bio || "Nessuna biografia impostata.";
-        }
-
-        // 2. Aggiorna Avatar
-        if (avatarImg && data.avatar) {
-            avatarImg.src = data.avatar;
-        }
-
-        // 3. Team Preferito
-        window.idTeamPreferito = data.idTeamPreferito || "auto";
-
-        // 4. Gestione Musica (Campo esatto: musicaPreferita)
-        if (data.musicaPreferita) {
-            if (player && player.src !== data.musicaPreferita) {
-                player.src = data.musicaPreferita;
-                player.load();
-                player.volume = 0.3;
-                player.play().catch(() => console.log("Play bloccato: clicca sulla pagina"));
-            }
-        }
-    });
-}
-
-function aggiornaUIProfilo(gen, best, bestCat) {
-    // Funzione interna per scrivere in sicurezza
-    const setTxt = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.innerText = val;
-    };
-
-    // Stats Globali
-    setTxt('global-win', gen.win);
-    setTxt('global-loss', gen.loss);
-    setTxt('global-setv', gen.sW);
-    setTxt('global-setp', gen.sL);
-    setTxt('global-punti', gen.pts);
-    setTxt('global-pct-win', getPct(gen.win, gen.loss));
-    setTxt('global-pct-set', getPct(gen.sW, gen.sL));
-    
-    // Best Category
-    setTxt('best-category-name', bestCat);
-
-    // Box Best Team
-    if (best) {
-        setTxt('best-team-name-new', best.nome || "Senza Nome");
-        setTxt('team-win', best.win);
-        setTxt('team-loss', best.loss);
-        setTxt('team-setv', best.sW);
-        setTxt('team-setp', best.sL);
-        setTxt('team-punti', best.pts);
-        setTxt('team-pct-win', getPct(best.win, best.loss));
-        setTxt('team-pct-set', getPct(best.sW, best.sL));
-    }
-}
-
-
-function popolaSelettoreTeam() {
-    const select = document.getElementById('team-selector-fav');
-    if (!select || !window.tuttiITeam) return;
-    select.innerHTML = '<option value="auto">-- Miglior Team (Automatico) --</option>';
-    window.tuttiITeam.forEach(t => {
-        let opt = document.createElement('option');
-        opt.value = t.id; opt.innerText = t.nome;
-        if (window.idTeamPreferito === t.id) opt.selected = true;
-        select.appendChild(opt);
-    });
-}
-
-
-function getPct(v, l) {
-    const tot = Number(v) + Number(l);
-    // Usiamo Math.round per arrotondare all'intero più vicino
-    return tot > 0 ? Math.round((v / tot) * 100) + "%" : "0%";
-}
-
-
-function calcolaProgressioneBadge(currentVal, maxRecord, listaBadge) {
-    const soglie = [...listaBadge].sort((a, b) => a.n - b.n);
-    
-    const badgeAttuale = [...listaBadge].find(b => maxRecord >= b.n) || listaBadge[listaBadge.length - 1];
-    
-    const prossimoBadge = soglie.find(b => b.n > maxRecord);
-    const obiettivo = prossimoBadge ? prossimoBadge.n : soglie[soglie.length - 1].n;
-    
-    let percentuale = (currentVal / obiettivo) * 100;
-    if (percentuale > 100) percentuale = 100;
-
-    return {
-        img: badgeAttuale.e,
-        obiettivo: obiettivo,
-        percentuale: percentuale
-    };
-}
-
-
-function toggleMusic() {
-    // 1. Identifica il player (usa l'ID presente in questa pagina, es. bg-music-home)
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
-
-    if (!player || !musicBtn) {
-        console.error("Elements not found in this page.");
-        return;
-    }
-
-    if (player.paused) {
-        player.play().then(() => {
-            // Se parte, rimuoviamo la sbarra e salviamo la preferenza 'on'
-            musicBtn.classList.remove('muted');
-            localStorage.setItem('userMusicPref', 'on');
-        }).catch(error => {
-            console.warn("Autoplay blocked or playback error:", error);
-        });
-        
-    } else {
-        player.pause();
-        // Aggiungiamo la sbarra e salviamo la preferenza 'off'
-        musicBtn.classList.add('muted');
-        localStorage.setItem('userMusicPref', 'off');
-    }
-}
-
-/** * AGGIUNTA FONDAMENTALE: 
- * Al caricamento della pagina, controlla se l'utente aveva precedentemente 
- * silenziato la musica in un'altra parte del sito.
- */
-window.addEventListener('DOMContentLoaded', () => {
-    const player = document.getElementById('bg-music-home');
-    const musicBtn = document.getElementById('music-control');
-    const savedPref = localStorage.getItem('userMusicPref');
-
-    if (player && musicBtn) {
-        if (savedPref === 'off') {
-            // Se l'utente ha scelto 'off' altrove, non far partire nulla
-            player.pause();
-            musicBtn.classList.add('muted');
-        } else {
-            // Altrimenti prova a farla partire (rispettando i blocchi del browser)
-            player.play().catch(() => {
-                musicBtn.classList.add('muted');
-            });
-        }
-    }
-});
-
-
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('user-menu');
-    const authBtn = document.getElementById('auth-content');
-
-    // Se il menu è visibile (display flex o block)
-    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
-        
-        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
-        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
-            menu.style.display = 'none';
-            console.log("Stato: Menu chiuso (click esterno)");
-        }
-    }
-});
-
-async function salvaModificheProfilo() {
-    if (!playerID) return alert("Error: User not identified.");
-
-    const btn = document.querySelector('.save-btn-hub');
-    
-    // 🔥 Normalizzatore avatar: estrae solo le ultime 2 parti del percorso (es: "profile/3.png")
-    const normalizzaAvatar = (str) => {
-        if (!str) return "";
-        try {
-            // Rimuove eventuale dominio/protocollo e pulisce query string o hash
-            const path = str.includes('://') ? new URL(str, window.location.href).pathname : str;
-            const parts = path.split('?')[0].split('#')[0].split('/').filter(Boolean);
-            // Prende le ultime due sezioni (es. ["profile", "3.png"] -> "profile/3.png")
-            return parts.slice(-2).join('/').toLowerCase().trim();
-        } catch (e) {
-            return str.toLowerCase().trim();
-        }
-    };
-
-    // 1. Recupero dati dai campi Input
-    const nuovaBio = document.getElementById('bio-input').value;
-    const pkmScelto = document.getElementById('team-selector-fav').value; 
-    
-    // Recuperiamo il titolo selezionato
-    const selectTitoli = document.getElementById('select-titoli');
-    const titoloScelto = selectTitoli ? selectTitoli.value : "No Title";
-    
-    // 2. Recupero Avatar e Colore
-    const avatarImg = document.getElementById('current-avatar-preview');
-    const avatarSrc = avatarImg ? (avatarImg.getAttribute('src') || avatarImg.src) : "";
-    const colorRect = document.getElementById('current-color-bg');
-    
-    // 3. Recupero Musica
-    const musicInput = document.getElementById('selected-music-url');
-    const musicNameSpan = document.getElementById('selected-song-name');
-
-    // Feedback visivo iniziale (Stile Neubrutalist)
-    const originalText = btn ? btn.innerHTML : "SAVE ALL CHANGES";
-    if(btn) {
-        btn.disabled = true;
-        btn.innerText = "CHECKING...";
-        btn.style.transform = "translate(2px, 2px)";
-        btn.style.boxShadow = "none";
-    }
-
-    // 4. Costruzione dell'oggetto dati da inviare a Firebase
-    const datiDaSalvare = {
-        bio: nuovaBio,
-        pkmPreferito: pkmScelto || "", 
-        title: titoloScelto === "No Title" ? "" : titoloScelto,
-        color: colorRect ? rgbToHex(colorRect.style.backgroundColor) : "#31C489",
-        avatar: avatarSrc, 
-        musicName: musicNameSpan ? musicNameSpan.innerText : "",
-        badgeShowcase: typeof badgeSelezionati !== 'undefined' ? badgeSelezionati : []
-    };
-
-    if (musicInput && musicInput.value.trim() !== "") {
-        datiDaSalvare.musicaPreferita = musicInput.value;
-    }
-
-    // =========================================================
-    // 🔥 CONTROLLO UNICITÀ RISPETTO AGLI ALTRI GIOCATORI
-    // =========================================================
-    try {
-        const snapshot = await db.ref('players').once('value');
-        const playersData = snapshot.val() || {};
-
-        let duplicati = [];
-
-        for (const otherID in playersData) {
-            // Saltiamo il controllo se è lo stesso giocatore
-            if (otherID.toLowerCase() === playerID.toLowerCase()) continue;
-
-            const otherInfo = playersData[otherID].info;
-            if (!otherInfo) continue;
-
-            // 1. Controllo Colore (confronto HEX)
-            if (datiDaSalvare.color && otherInfo.color && 
-                datiDaSalvare.color.toUpperCase() === otherInfo.color.toUpperCase()) {
-                duplicati.push("Colore");
-            }
-
-            // 2. Controllo Pokémon Preferito
-            if (datiDaSalvare.pkmPreferito && otherInfo.pkmPreferito && 
-                datiDaSalvare.pkmPreferito.toLowerCase() === otherInfo.pkmPreferito.toLowerCase()) {
-                duplicati.push("Pokémon preferito");
-            }
-
-            // 3. Controllo Avatar (normalizzato sulle ultime componenti del path)
-            const currentAvatarClean = normalizzaAvatar(datiDaSalvare.avatar);
-            const otherAvatarClean = normalizzaAvatar(otherInfo.avatar);
-
-            if (currentAvatarClean && otherAvatarClean && currentAvatarClean === otherAvatarClean) {
-                duplicati.push("Avatar");
-            }
-
-            // 4. Controllo Canzone (URL o Nome)
-            const stessoUrl = datiDaSalvare.musicaPreferita && otherInfo.musicaPreferita && 
-                              datiDaSalvare.musicaPreferita.trim() === otherInfo.musicaPreferita.trim();
-            const stessoNome = datiDaSalvare.musicName && otherInfo.musicName && 
-                               datiDaSalvare.musicName.trim() !== "" && 
-                               datiDaSalvare.musicName.toLowerCase() === otherInfo.musicName.toLowerCase();
-
-            if (stessoUrl || stessoNome) {
-                duplicati.push("Canzone preferita");
-            }
-        }
-
-        // Se sono stati trovati duplicati, interrompiamo il salvataggio
-        if (duplicati.length > 0) {
-            const campiUnici = [...new Set(duplicati)];
-            alert(`❌ Saving cancelled!\n\nThe following items have already been chosen by another player:\n• ${campiUnici.join('\n• ')}`);
-
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                btn.style.transform = "";
-                btn.style.boxShadow = "";
-            }
-            return;
-        }
-
-    } catch (errorCheck) {
-        console.error("❌ Error during duplicate verification:", errorCheck);
-        alert("Network error during uniqueness check: " + errorCheck.message);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            btn.style.transform = "";
-            btn.style.boxShadow = "";
-        }
-        return;
-    }
-
-    // 5. Update su Firebase
-    if(btn) btn.innerText = "SAVING...";
-
-    db.ref(`players/${playerID}/info`).update(datiDaSalvare)
-    .then(() => {
-        if(btn) {
-            btn.innerText = "UPDATED!";
-            btn.style.backgroundColor = "#16a445";
-            btn.style.color = "#000";
-        }
-        
-        console.log("✅ Profilo aggiornato con successo:", datiDaSalvare);
-
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
-    })
-    .catch(e => {
-        console.error("❌ Error during saving:", e);
-        alert("Error during saving: " + e.message);
-        if(btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            btn.style.transform = ""; 
-            btn.style.boxShadow = ""; 
-        }
-    });
-}
-
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('user-menu');
-    const authBtn = document.getElementById('auth-content');
-
-    // Se il menu è visibile (display flex o block)
-    if (menu && (menu.style.display === 'flex' || menu.style.display === 'block')) {
-        
-        // Controlla se il click NON è dentro il menu E NON è sul pulsante di apertura
-        if (!menu.contains(event.target) && !authBtn.contains(event.target)) {
-            menu.style.display = 'none';
-            console.log("Stato: Menu chiuso (click esterno)");
-        }
-    }
-});
-
-// Funzione indispensabile per trasformare il colore del quadratino in stringa HEX per il DB
-function rgbToHex(rgb) {
-    if (!rgb) return "#31C489";
-    if (rgb.startsWith('#')) return rgb;
-    const rgbValues = rgb.match(/\d+/g);
-    if (!rgbValues || rgbValues.length < 3) return "#31C489";
-    const r = parseInt(rgbValues[0]);
-    const g = parseInt(rgbValues[1]);
-    const b = parseInt(rgbValues[2]);
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
-
-function popolaSelettoreTeam() {
-    const select = document.getElementById('team-selector-fav');
-    // Verifichiamo che esista il selettore e che i team siano stati caricati
-    if (!select || !window.tuttiITeam) return;
-
-    // 1. Reset: Mantieni l'opzione "Miglior Team (Automatico)" come default
-    select.innerHTML = '<option value="auto">-- Best Team (Auto) --</option>';
-
-    window.tuttiITeam.forEach(team => {
-        let opt = document.createElement('option');
-        
-        // Usiamo l'ID come valore per precisione, ma il nome per il testo
-        opt.value = team.id; 
-        opt.innerText = team.nome;
-
-        // 3. Pre-selezione
-        // Se window.idTeamPreferito corrisponde all'ID di questo team, lo selezioniamo
-        if (window.idTeamPreferito === team.id) {
-            opt.selected = true;
-        }
-        
-        select.appendChild(opt);
-    });
-}
-
-let anteprimaAudio = null;
-
-// Funzione che popola la nuova lista (chiamala dove prima popolavi la select)
-function popolaListaMusica(canzoni) {
-    const listaUI = document.getElementById('music-list-admin');
-    listaUI.innerHTML = ""; // Svuota
-
-    canzoni.forEach(canzone => {
-        const li = document.createElement('li');
-        li.className = "music-item";
-        li.dataset.url = canzone.url;
-        li.dataset.nome = canzone.nome.toLowerCase();
-
-        li.innerHTML = `
-            <span class="music-name" onclick="selezionaCanzone(this, '${canzone.url}')">${canzone.nome}</span>
-            <button class="preview-btn" onclick="riproduciAnteprima(event, '${canzone.url}')">▶</button>
-        `;
-        listaUI.appendChild(li);
-    });
-}
-
-// Funzione per cercare le canzoni scrivendo
-function filtraMusica() {
-    const query = document.getElementById('music-search').value.toLowerCase();
-    const items = document.querySelectorAll('.music-item');
-
-    items.forEach(item => {
-        const nome = item.dataset.nome;
-        item.style.display = nome.includes(query) ? "flex" : "none";
-    });
-}
-
-// Funzione per gestire l'anteprima
-function riproduciAnteprima(event, url) {
-    event.stopPropagation(); // Evita di selezionare la canzone se clicchi solo il tasto play
-
-    if (anteprimaAudio) {
-        anteprimaAudio.pause();
-        if (anteprimaAudio.src === url) {
-            anteprimaAudio = null;
-            return;
-        }
-    }
-
-    anteprimaAudio = new Audio(url);
-    anteprimaAudio.volume = 0.4;
-    anteprimaAudio.play();
-}
-
-function toggleDropdown() {
-    const content = document.getElementById('dropdown-content');
-    const isOpening = !content.classList.contains('show');
-    
-    content.classList.toggle('show');
-
-    // Se stiamo aprendo, resettiamo il filtro per mostrare tutte le canzoni
-    if (isOpening) {
-        document.getElementById('music-search').value = "";
-        filtraMusica(); 
-    }
-}
-
-// Quando scegli una canzone: aggiorna il nome, chiude il menu e ferma l'anteprima
-function selezionaCanzone(elementoSpan, url) {
-    // 1. Ferma l'anteprima immediatamente (se esiste)
-    if (typeof anteprimaAudio !== 'undefined' && anteprimaAudio) {
-        anteprimaAudio.pause();
-        anteprimaAudio.currentTime = 0; // Resetta la traccia
-        anteprimaAudio = null;
-    }
-
-    // 2. Recupera il nome in modo sicuro
-    const nomeCanzone = elementoSpan.innerText.trim();
-    
-    // 3. Aggiorna l'interfaccia (Header e Input Nascosto)
-    const labelHeader = document.getElementById('selected-song-name');
-    const inputNascosto = document.getElementById('selected-music-url');
-    
-    if (labelHeader) labelHeader.innerText = nomeCanzone;
-    if (inputNascosto) inputNascosto.value = url;
-
-    // 4. Gestione classi visive (rimuovi 'selected' da tutti e mettilo al nuovo)
-    document.querySelectorAll('.music-item').forEach(item => {
-        item.classList.remove('selected');
-    });
-    
-    // Usiamo closest per essere sicuri di colpire il contenitore <li>
-    const rigaSelezionata = elementoSpan.closest('.music-item');
-    if (rigaSelezionata) {
-        rigaSelezionata.classList.add('selected');
-    }
-
-    // 5. Chiudi il menu (Rimuoviamo la classe 'show' invece di fare il toggle)
-    const content = document.getElementById('dropdown-content');
-    if (content) {
-        content.classList.remove('show');
-    }
-
-    // 6. Log di verifica in console
-    console.log("Canzone selezionata con successo:", nomeCanzone);
-}
-// 1. Inserisci qui l'URL del foglio "Playlist" pubblicato come CSV
-const URL_PLAYLIST = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv";
-
-// 2. Funzione per leggere il CSV della musica e popolare il menu
-async function popolaSelettoreMusica() {
-    const listaUI = document.getElementById('music-list-admin');
-    if (!listaUI) return;
-
-    try {
-        const response = await fetch(URL_PLAYLIST + '&t=' + Date.now());
-        const csvText = await response.text();
-        const righe = csvText.split(/\r?\n/).map(r => r.split(','));
-
-        listaUI.innerHTML = ""; // Puliamo la lista
-
-        righe.forEach((colonne, index) => {
-            // Saltiamo l'intestazione
-            if (index === 0) return; 
-
-            if (colonne[0] && colonne[1]) {
-                const nomeCanzone = colonne[0].trim();
-                const urlCanzone = colonne[1].trim();
-                
-                const li = document.createElement('li');
-                li.className = "music-item";
-                // Se è quella già salvata, aggiungiamo la classe selected
-                if (window.musicaCorrente === urlCanzone) {
-                    li.classList.add('selected');
-                    // Inizializziamo il campo nascosto con la musica attuale
-                    document.getElementById('selected-music-url').value = urlCanzone;
-                }
-
-                li.dataset.url = urlCanzone;
-                li.dataset.nome = nomeCanzone.toLowerCase();
-
-                li.innerHTML = `
-                    <span class="music-name" onclick="selezionaCanzone(this, '${urlCanzone}')">${nomeCanzone}</span>
-                    <button class="preview-btn" onclick="riproduciAnteprima(event, '${urlCanzone}')">▶</button>
-                `;
-                listaUI.appendChild(li);
-            }
-        });
-    } catch (e) {
-        console.error("Error loading playlist:", e);
-        listaUI.innerHTML = '<li style="padding:10px; color:red;">Error occurred while loading</li>';
-    }
-}
-
-// Chiudi modale se clicchi fuori dal rettangolo centrale
-window.addEventListener('click', (e) => {
-    const modal = document.getElementById('admin-modal');
-    if (e.target === modal) chiudiAdminModal();
-});
-
-function formattaTitolo(url) {
-    if (!url) return "";
-    let nome = url.substring(url.lastIndexOf('/') + 1);
-    nome = nome.replace('.mp3', '');
-    nome = decodeURIComponent(nome);
-    nome = nome.replace(/^\d+\s*-\s*/, '');
-    return nome;
-}
-
-
-// Gestione tasto ESC per chiudere i modali
-document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        if (typeof chiudiTeamModal === "function") chiudiTeamModal();
-        const adminModal = document.getElementById('admin-modal');
-        if (adminModal) adminModal.style.display = "none";
-    }
-});
-
+// =====================================================
+// PASSWORD
+// =====================================================
 async function richiediResetPasswordEmail() {
     // 1. Recupera l'utente correntemente autenticato su Firebase Auth
     const user = firebase.auth().currentUser;
@@ -1636,6 +849,9 @@ firebase.auth().onAuthStateChanged(async (currentUser) => {
     }
 });
 
+// =====================================================
+// ACHIEVEMENTS
+// =====================================================
 const ACH_LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
 
 const ACH_BADGES = [
@@ -1939,5 +1155,4 @@ function renderPokemonAchievements(pokemonUsage, titoloEquipaggiato, lista, summ
 }
 
     </script>
-    </body>
     </html>

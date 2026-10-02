@@ -217,3 +217,89 @@ test('tooltip: si aprono verso l\'alto quando in basso non c\'è posto, e a ripo
     assert.match(regola, /display: none/);
     assert.doesNotMatch(regola, /visibility: hidden/);
 });
+
+test('le card dei Pokémon del party non scrivono il nome (resta nel suggerimento e per chi legge lo schermo)', () => {
+    assert.doesNotMatch(card, /pp-slot-nome/);
+    assert.doesNotMatch(cssCard, /pp-slot-nome/);
+    assert.match(card, /title: nomePkm, 'aria-label': nomePkm/);
+});
+
+test('l\'editor non rimanda più alla pagina del profilo: tutte le scelte sono nella scheda Trainer', () => {
+    assert.doesNotMatch(editor, /href: 'profile\.html'/);
+    assert.doesNotMatch(editor + trainer, /are in |PROFILE/);
+});
+
+
+// ---- Ridimensionare i blocchi, layout nuovi, nitidezza, nome del Pokémon -----------------------
+
+test('ridimensionamento: public-card.js scrive la griglia nel CSS e l\'editor prova ogni passo sul serio', () => {
+    // la carta passa da P.griglia e mette aree, colonne, righe e il peso di ogni blocco
+    assert.match(card, /P\.griglia\(c, visibiliDi\(c\), \{ garantisciPalco: garantisci, zoneVuote: stato\.modifica \}\)/);
+    for (const v of ['--pp-aree', '--pp-colonne', '--pp-righe', '--pp-peso']) assert.match(card, new RegExp(`'${v}'`), v);
+    assert.match(card, /zona\.dataset\.dir = /);
+    // lo schermo intero usa quelle variabili e le zone sono flex con data-dir
+    assert.match(cssCard, /grid-template-areas: var\(--pp-aree/);
+    assert.match(cssCard, /grid-template-columns: var\(--pp-colonne/);
+    assert.match(cssCard, /grid-template-rows: var\(--pp-righe/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-zona > \.pp-blocco \{[^}]*flex: var\(--pp-peso, 1\) 1 0 !important/);
+    // senza min-height: 0 sul corpo la griglia pretenderebbe righe proporzionali e la tela si ridurrebbe all'infinito
+    assert.match(cssCard, /body\.pp-fisso \.pp-corpo \{[^}]*min-height: 0;[^}]*display: grid/);
+    // l'editor: maniglie con ruolo separator, prova di ogni passo (misure minime, la carta non sfora, palco il più grande)
+    assert.match(editor, /role: 'separator'/);
+    assert.match(editor, /C\.provaMisure\(candidata\)/);
+    assert.match(editor, /!C\.sfora\(\)/);
+    assert.match(editor, /C\.rapportoPalco\(\) >= C\.RAPPORTO_PALCO_MIN/);
+    assert.match(editor, /P\.griglia\(candidata, visibiliOra\(\), \{ garantisciPalco: false \}\)\.palcoOk/);
+    assert.match(editor, /P\.muoviConfine\(coppia, delta\)/);
+    // un solo passo di undo per trascinamento, Esc annulla, frecce e doppio clic
+    assert.match(editor, /cambia\(\(\) => buono\.candidata\)/);
+    assert.match(editor, /el\.addEventListener\('dblclick'/);
+    for (const tasto of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) assert.match(editor, new RegExp(tasto));
+    // le maniglie si riposizionano dopo ogni applicazione e quando la tela cambia scala, e spariscono alla chiusura
+    assert.match(editor, /C\.stato\.dopoApplica = \(\) => \{ installaBarre\(\); aggiornaManiglie\(\); aggiornaNotaPalco\(\); \}/);
+    assert.match(editor, /C\.stato\.dopoAdatta = \(\) => \{ aggiornaManiglie\(\); aggiornaNotaPalco\(\); \}/);
+    assert.match(editor, /togliManiglie\(\);/);
+    assert.match(card, /dopoAdatta\(\)/);
+    // sul telefono non ci sono (la pagina scorre e i blocchi si adattano)
+    assert.match(cssEditor, /@media \(max-width: 1099px\), \(max-height: 559px\) \{ \.pp-maniglie \{ display: none; \} \}/);
+    assert.match(card, /PC_MIN_W = 1100/);
+    // cambiare layout azzera le misure; c'è un tasto per azzerarle
+    assert.match(editor, /cambia\(c => P\.impostaLayout\(c, id\)\)/);
+    assert.match(editor, /P\.azzeraMisure\(c\)/);
+    // il palco viene tenuto il più grande anche con la misura vera sullo schermo
+    assert.match(card, /rapportoPalco\(\) < RAPPORTO_PALCO_MIN/);
+    assert.match(card, /RAPPORTO_PALCO_MIN = 1\.25/);
+    assert.ok(P.MARGINE_PALCO > 1.25, 'il modello deve chiedere più della misura sullo schermo');
+});
+
+test('layout nuovi (Cinema, Podium): hanno regole per tutti gli schermi e il disegnino nell\'editor', () => {
+    for (const id of ['cinema', 'podio']) {
+        assert.ok(P.LAYOUT[id], id);
+        assert.match(cssCard, new RegExp(`\\[data-layout="${id}"\\]`));
+        assert.match(editor, new RegExp(`\\b${id}: \\[\\[`));
+    }
+    // a schermo stretto sono righe a tutta larghezza come il poster
+    assert.match(cssCard, /:is\(\[data-layout="poster"\], \[data-layout="collage"\], \[data-layout="cinema"\], \[data-layout="podio"\]\) \.pp-zona \{/);
+    // il pannello Layout dice che il palco resta il più grande e ci sono le istruzioni per ridimensionare
+    assert.match(editor, /Stage stays the biggest block/);
+    assert.match(editor, /drag the handles between blocks/);
+});
+
+test('nitidezza: a riposo la carta usa la stessa trasformazione 3D di quando ci si passa sopra', () => {
+    const riposo = /\[data-layout="carta"\] \.pp-carta \{[^}]*transform: (perspective\(1400px\) rotateX\(0deg\) rotateY\(0deg\) rotate\(var\(--pp-inclina\)\));/.exec(cssCard);
+    assert.ok(riposo, 'la carta a riposo deve avere perspective + rotateX/rotateY');
+    const sopra = /\.pp-carta\.is-sopra \{[^}]*transform: perspective\(1400px\) rotateX\([^)]*\)[^}]*rotateY\([^)]*\)[^}]*rotate\(var\(--pp-inclina\)\)/.exec(cssCard);
+    assert.ok(sopra, 'in hover la stessa lista di funzioni, così la transizione è fluida');
+    // le tessere storte del collage hanno lo stesso trattamento
+    assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: perspective\(1400px\) rotate\(var\(--rot, 0deg\)\)/);
+});
+
+test('il Pokémon preferito non ha il nome scritto sul palco (si riconosce a vista), solo nell\'alt', () => {
+    assert.doesNotMatch(card, /pp-pkm-nome/);
+    assert.doesNotMatch(cssCard, /pp-pkm-nome/);
+    assert.match(card, /h\('img', \{ src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' \}\)/);
+});
+
+test('il nome dell\'allenatore non cresce con la tela: se la tela si ingrandisce per far stare tutto non si innesca una rincorsa', () => {
+    assert.match(cssCard, /min\(80px, calc\(var\(--pp-h\) \* 0\.1\)\)/);
+});

@@ -9,7 +9,10 @@
 // Cosa si può fare:
 //   - la scheda "Trainer" (public-editor-trainer.js): avatar, colore firma, titolo, motto, Pokémon
 //     preferito e canzone, con le scelte che gli altri hanno già fatto nascoste;
-//   - scegliere il layout (Trainer Card, Poster, Dossier, Collage), e tornare a quello standard;
+//   - scegliere il layout (Trainer Card, Poster, Dossier, Collage, Cinema, Podium), e tornare a quello standard;
+//   - cambiare le dimensioni: sui confini tra le zone e tra i blocchi (a schermo intero, su PC) ci sono delle
+//     maniglie: trascinandole un blocco si allarga e i vicini si stringono, fino alla misura minima in cui si
+//     leggono ancora. Il palco resta sempre il blocco più grande;
 //   - spegnere, accendere e spostare i blocchi: coi pulsanti del pannello, oppure afferrandoli sulla
 //     carta e trascinandoli: si agganciano ai posti dove possono stare;
 //   - sfondo (colore, motivo, nome gigante, movimento), stile della carta (colore, ombra, bordi,
@@ -116,10 +119,12 @@
 
     // Disegnini dei layout: [x, y, larghezza, altezza, tipo (k nero, p palco, b blocco), rotazione] su 100x70
     const DISEGNI = {
-        carta: [[0, 0, 100, 9, 'k'], [0, 9, 38, 36, 'p'], [0, 45, 38, 12, 'k'], [38, 9, 62, 17, 'b'], [38, 26, 62, 31, 'b'], [0, 57, 52, 13, 'b'], [52, 57, 24, 13, 'b'], [76, 57, 24, 13, 'b']],
-        poster: [[0, 0, 100, 8, 'k'], [0, 11, 66, 26, 'p'], [69, 11, 31, 12, 'k'], [0, 41, 40, 14, 'b'], [43, 41, 57, 14, 'b'], [0, 58, 58, 12, 'b'], [61, 58, 18, 12, 'b'], [82, 58, 18, 12, 'b']],
-        dossier: [[0, 0, 100, 8, 'k'], [0, 11, 30, 28, 'p'], [0, 42, 30, 9, 'k'], [33, 11, 67, 17, 'b'], [33, 31, 67, 19, 'b'], [33, 53, 67, 17, 'b']],
-        collage: [[2, 9, 48, 28, 'p', -3], [54, 7, 44, 14, 'k', 2], [8, 42, 42, 16, 'b', 2], [54, 26, 44, 22, 'b', -2], [6, 60, 32, 10, 'b', -1], [42, 56, 56, 13, 'b', 1]]
+        carta: [[0, 0, 100, 9, 'k'], [0, 9, 56, 36, 'p'], [0, 45, 56, 12, 'k'], [56, 9, 44, 17, 'b'], [56, 26, 44, 31, 'b'], [0, 57, 52, 13, 'b'], [52, 57, 24, 13, 'b'], [76, 57, 24, 13, 'b']],
+        poster: [[0, 0, 100, 8, 'k'], [0, 11, 80, 26, 'p'], [83, 11, 17, 26, 'k'], [0, 40, 40, 14, 'b'], [43, 40, 57, 14, 'b'], [0, 57, 58, 13, 'b'], [61, 57, 18, 13, 'b'], [82, 57, 18, 13, 'b']],
+        dossier: [[0, 0, 100, 8, 'k'], [0, 11, 42, 44, 'p'], [0, 58, 42, 12, 'k'], [45, 11, 55, 16, 'b'], [45, 30, 55, 20, 'b'], [45, 53, 55, 17, 'b']],
+        collage: [[2, 9, 56, 30, 'p', -2], [62, 7, 36, 62, 'b', 2], [6, 42, 50, 12, 'k', 1], [6, 57, 54, 12, 'b', -2]],
+        cinema: [[0, 0, 100, 8, 'k'], [0, 11, 100, 32, 'p'], [0, 46, 30, 24, 'b'], [33, 46, 38, 24, 'b'], [74, 46, 26, 24, 'b']],
+        podio: [[0, 0, 100, 8, 'k'], [0, 11, 26, 30, 'b'], [0, 44, 26, 26, 'b'], [29, 11, 42, 48, 'p'], [29, 62, 42, 8, 'k'], [74, 11, 26, 28, 'b'], [74, 42, 26, 28, 'b']]
     };
 
     function disegno(id) {
@@ -130,9 +135,13 @@
     function schedaLayout() {
         return [sezione('Pick a layout', h('div', { class: 'pe-layout-griglia' }, Object.entries(P.LAYOUT).map(([id, l]) =>
             h('button', { type: 'button', class: `pe-layout${cfg().layout === id ? ' is-on' : ''}`, 'aria-pressed': String(cfg().layout === id),
-                onclick: () => cambia(c => { c.layout = id; return c; }) },
+                onclick: () => cambia(c => P.impostaLayout(c, id)) },
             disegno(id), h('b', { testo: l.nome }), h('small', { testo: l.desc }))))),
-        h('p', { class: 'pe-nota', testo: 'The blocks stay where you put them: switching layout only changes how the three zones are drawn.' }),
+        h('p', { class: 'pe-nota', testo: 'The blocks stay where you put them: switching layout only changes how the three zones are drawn (and brings the sizes back to the layout\'s own). Whatever you pick, the Stage stays the biggest block.' }),
+        sezione('Sizes',
+            h('p', { class: 'pe-nota', testo: 'On a computer, drag the handles between blocks on the card to resize them: one grows, its neighbours shrink, down to the smallest size where everything is still readable. Double-click a handle to reset that pair. On a phone the blocks fit themselves.' }),
+            h('button', { type: 'button', class: 'pe-bottone', id: 'pe-azzera-misure', disabled: P.uguali(cfg().misure, P.predefinita().misure),
+                onclick: () => { cambia(c => P.azzeraMisure(c)); avvisa('Sizes back to the layout\'s own.'); }, testo: '↺ Reset sizes' })),
         sezione('Start over',
             h('button', { type: 'button', class: 'pe-bottone pe-grande', onclick: tornaAllaTrainerCard, testo: '↺ RESET TO THE STANDARD TRAINER CARD' }),
             h('p', { class: 'pe-nota', testo: 'Back to the Trainer Card layout with every block in its usual place and the default look (stickers included). Your trainer details are not touched, and you can still undo.' }))];
@@ -150,7 +159,7 @@
         const per = P.blocchiPerZona(cfg());
         const zone = P.LAYOUT[cfg().layout].zone;
         return [
-            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up.' }),
+            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up. To make a block bigger or smaller, drag the handles on the card between blocks (Layout tab › Sizes).' }),
             ...P.ZONE.map(z => h('section', { class: 'pe-zona', 'data-zona': z },
                 h('h3', {}, h('span', { class: 'pe-zona-lettera', testo: z.toUpperCase() }), zone[z]),
                 h('ul', { class: 'pe-lista', 'data-zona': z }, per[z].length
@@ -292,8 +301,7 @@
                     h('button', { type: 'button', class: `pe-team${cfg().team === 'auto' || !squadre.some(t => t.id === cfg().team) ? ' is-on' : ''}`, onclick: () => cambia(c => { c.team = 'auto'; return c; }) },
                         h('b', { testo: 'Automatic' }), h('small', { testo: automatico ? `Best record: ${automatico.nome || automatico.name}` : 'No team has played yet' })),
                     squadre.map(t => riga(t, cfg().team === t.id)))
-                    : h('p', { class: 'pe-nota', testo: 'You have no teams yet. Build one in your BOX and it will show up here.' })),
-            h('p', { class: 'pe-nota' }, 'Name, colour, favourite Pokémon, song, title and motto are in ', h('a', { href: 'profile.html', testo: 'PROFILE' }), '.')
+                    : h('p', { class: 'pe-nota', testo: 'You have no teams yet. Build one in your BOX and it will show up here.' }))
         ];
     }
 
@@ -322,6 +330,8 @@
                 h('div', { class: 'pe-piede-sopra' },
                     h('button', { type: 'button', class: 'pe-bottone', onclick: () => cambia(c => P.casuale(c)), title: 'Random look, keeps your blocks', testo: '🎲 Surprise me' }),
                     h('button', { type: 'button', class: 'pe-bottone', onclick: tornaAllaTrainerCard, title: 'Back to the standard Trainer Card', testo: '↺ Reset' })),
+                h('p', { class: 'pe-palco-nota', id: 'pe-palco-nota', hidden: true, role: 'status',
+                    testo: 'Heads up: another block ends up bigger than the Stage here. Try putting the Stage in a bigger zone.' }),
                 h('div', { class: 'pe-piede-sotto' },
                     h('span', { class: 'pe-stato', id: 'pe-stato', 'aria-live': 'polite' }),
                     h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }),
@@ -351,6 +361,14 @@
         stato.textContent = dirty ? '● Unsaved changes' : '✓ Saved';
         stato.classList.toggle('is-sporco', dirty);
         pannello.querySelector('#pe-annulla').disabled = storia.length === 0;
+        aggiornaNotaPalco();
+    }
+
+    // Il palco deve essere il blocco più grande: se in questa disposizione non ci riesce (a schermo intero) lo si dice
+    function aggiornaNotaPalco() {
+        const nota = pannello && pannello.querySelector('#pe-palco-nota');
+        if (!nota) return;
+        nota.hidden = !(inSchermoIntero() && C.rapportoPalco() < C.RAPPORTO_PALCO_MIN - 0.01);
     }
 
     function avvisa(testo, errore) {
@@ -592,6 +610,264 @@
         }
     }
 
+    // ---- Ridimensionare i blocchi -------------------------------------------------------------
+    // A schermo intero (PC) sui confini della carta compaiono delle maniglie: tra due zone vicine (le colonne e le
+    // righe della griglia del layout) e tra due blocchi vicini della stessa zona. Trascinarne una sposta il confine:
+    // chi sta da una parte si allarga, chi sta dall'altra si stringe, e la somma dei loro pesi non cambia, quindi
+    // tutto il resto resta com'è. Ogni passo si prova sul serio (public-card.js, provaMisure) e vale solo se
+    //   - nessuno scende sotto la sua misura minima (MINIMI, per le larghezze, e un minimo per le altezze);
+    //   - i blocchi ci stanno ancora alla scala di adesso (se no la tela si dovrebbe rimpicciolire);
+    //   - il palco resta il blocco più grande (P.griglia, e la misura vera sullo schermo).
+    // Se non vale si ferma all'ultimo punto buono. Si può anche usare la tastiera (frecce) e il doppio clic
+    // riporta i due elementi ai pesi del layout.
+
+    const ALTEZZA_MIN = 60;          // altezza minima che il trascinamento permette a una riga o a un blocco (px di progetto)
+    const PASSO_TASTO = 0.02;        // frazione dello spazio dei due elementi per ogni pressione di freccia
+    let stratoManiglie = null;
+    let ridimensiona = null;         // { chiave } mentre se ne trascina una
+    const maniglieAttive = new Map();   // chiave -> elemento
+
+    const inSchermoIntero = () => document.body.classList.contains('pp-fisso') && !!C.stato.griglia && !!C.stato.scala;
+    const visibiliOra = () => cfg().blocchi.filter(b => b.on && !C.stato.vuoti[b.id]).map(b => b.id);
+
+    // I confini che si possono spostare, in pixel dello schermo
+    function calcolaConfini() {
+        const g = C.stato.griglia;
+        if (!g || !inSchermoIntero()) return [];
+        const elenco = [];
+        const zone = Object.entries(g.zone).map(([z, p]) => ({ z, p, r: C.stato.zone[z].getBoundingClientRect() }));
+        const unisci = (mappa, i, seg) => {
+            const v = mappa.get(i);
+            if (!v) return mappa.set(i, { ...seg, n: 1 });
+            for (const [k, x] of Object.entries(seg)) v[k] = k === 'top' || k === 'left' ? Math.min(v[k], x) : k === 'bottom' || k === 'right' ? Math.max(v[k], x) : v[k] + x;
+            v.n++;
+        };
+
+        // tra due zone: colonne (confine verticale) e righe (orizzontale)
+        const colonne = new Map(), righe = new Map();
+        for (const a of zone) for (const b of zone) {
+            // una zona vuota (in modifica è solo un bersaglio) non ha niente da ridimensionare
+            if (a === b || !a.p.ids.length || !b.p.ids.length) continue;
+            if (a.p.c1 + 1 === b.p.c0 && a.p.r0 <= b.p.r1 && b.p.r0 <= a.p.r1) {
+                unisci(colonne, a.p.c1, { x: (a.r.right + b.r.left) / 2, top: Math.max(a.r.top, b.r.top), bottom: Math.min(a.r.bottom, b.r.bottom) });
+            }
+            if (a.p.r1 + 1 === b.p.r0 && a.p.c0 <= b.p.c1 && b.p.c0 <= a.p.c1) {
+                unisci(righe, a.p.r1, { y: (a.r.bottom + b.r.top) / 2, left: Math.max(a.r.left, b.r.left), right: Math.min(a.r.right, b.r.right) });
+            }
+        }
+        for (const [j, v] of colonne) elenco.push({ chiave: `c${j}`, tipo: 'colonne', quale: j, asse: 'x', x: v.x / v.n, top: v.top, bottom: v.bottom, nome: 'the panels' });
+        for (const [i, v] of righe) elenco.push({ chiave: `r${i}`, tipo: 'righe', quale: i, asse: 'y', y: v.y / v.n, left: v.left, right: v.right, nome: 'the rows' });
+
+        // tra due blocchi vicini della stessa zona
+        for (const { z, p, r } of zone) {
+            const ids = Array.from(C.stato.zone[z].children)
+                .filter(e => e.classList.contains('pp-blocco') && p.ids.includes(e.dataset.blocco) && !e.classList.contains('pp-spento') && !e.classList.contains('pp-vuoto'))
+                .map(e => e.dataset.blocco);
+            for (let i = 0; i + 1 < ids.length; i++) {
+                const ra = C.stato.blocchi[ids[i]].getBoundingClientRect(), rb = C.stato.blocchi[ids[i + 1]].getBoundingClientRect();
+                const nome = `${P.BLOCCHI[ids[i]].nome} and ${P.BLOCCHI[ids[i + 1]].nome}`;
+                elenco.push(p.dir === 'riga'
+                    ? { chiave: `b${ids[i]}-${ids[i + 1]}`, tipo: 'blocchi', quale: [ids[i], ids[i + 1]], asse: 'x', x: (ra.right + rb.left) / 2, top: r.top, bottom: r.bottom, nome }
+                    : { chiave: `b${ids[i]}-${ids[i + 1]}`, tipo: 'blocchi', quale: [ids[i], ids[i + 1]], asse: 'y', y: (ra.bottom + rb.top) / 2, left: r.left, right: r.right, nome });
+            }
+        }
+        return elenco;
+    }
+
+    const SPESSORE_PRESA = 16;
+
+    function posizionaManiglia(el, c) {
+        const v = c.asse === 'x';
+        el.style.left = `${v ? c.x - SPESSORE_PRESA / 2 : c.left}px`;
+        el.style.top = `${v ? c.top : c.y - SPESSORE_PRESA / 2}px`;
+        el.style.width = `${v ? SPESSORE_PRESA : c.right - c.left}px`;
+        el.style.height = `${v ? c.bottom - c.top : SPESSORE_PRESA}px`;
+    }
+
+    function aggiornaManiglie() {
+        if (!pannello) return;
+        if (!stratoManiglie) {
+            stratoManiglie = h('div', { id: 'pp-maniglie', class: 'pp-maniglie' });
+            document.body.append(stratoManiglie);
+        }
+        const confini = document.body.classList.contains('pp-trascina') ? [] : calcolaConfini();
+        const tenere = new Set(confini.map(c => c.chiave));
+        for (const [chiave, el] of maniglieAttive) {
+            // quella che si sta trascinando resta (ha il puntatore catturato) anche se il confine si sposta
+            if (!tenere.has(chiave) && !(ridimensiona && ridimensiona.chiave === chiave)) { el.remove(); maniglieAttive.delete(chiave); }
+        }
+        for (const c of confini) {
+            let el = maniglieAttive.get(c.chiave);
+            if (!el) {
+                el = h('div', { class: `pp-maniglia-misura pp-m-${c.asse}`, role: 'separator', tabindex: '0', 'data-chiave': c.chiave,
+                    'aria-orientation': c.asse === 'x' ? 'vertical' : 'horizontal',
+                    'aria-label': `Resize ${c.nome}. Arrow keys move the edge, double-click resets.`,
+                    title: `Drag to resize ${c.nome} · double-click to reset` },
+                h('span', { class: 'pp-m-presa', 'aria-hidden': 'true' }));
+                el.addEventListener('pointerdown', ev => { if (ev.button === 0) { ev.preventDefault(); ev.stopPropagation(); avviaRidimensionamento(ev, el); } });
+                el.addEventListener('dblclick', () => ripristinaConfine(el._confine));
+                el.addEventListener('keydown', ev => tastoSuManiglia(ev, el));
+                stratoManiglie.append(el);
+                maniglieAttive.set(c.chiave, el);
+            }
+            el._confine = c;
+            posizionaManiglia(el, c);
+        }
+    }
+
+    function togliManiglie() {
+        stratoManiglie?.remove();
+        stratoManiglie = null;
+        maniglieAttive.clear();
+        ridimensiona = null;
+        document.getElementById('pp-misura-etichetta')?.remove();
+    }
+
+    // Quanto sono grandi (pixel di progetto) i due elementi di un confine, quanto pesano e sotto cosa non devono scendere
+    function misuraCoppia(c) {
+        const g = C.stato.griglia, k = C.stato.scala || 1;
+        const corpo = document.querySelector('.pp-corpo');
+        if (c.tipo === 'colonne' || c.tipo === 'righe') {
+            const proprieta = c.tipo === 'colonne' ? 'gridTemplateColumns' : 'gridTemplateRows';
+            const tracce = getComputedStyle(corpo)[proprieta].split(/\s+/).map(parseFloat);
+            const lista = c.tipo === 'colonne' ? g.colonne : g.righe;
+            const minimoColonna = j => Math.max(0, ...Object.values(g.zone).filter(z => z.c0 === j && z.c1 === j).map(z => {
+                const larghezze = z.ids.map(id => P.MINIMI[id][0]);
+                return z.dir === 'riga' ? larghezze.reduce((a, b) => a + b, 0) : Math.max(...larghezze);
+            }));
+            return {
+                px: [tracce[c.quale], tracce[c.quale + 1]],
+                pesi: [lista[c.quale], lista[c.quale + 1]],
+                minimi: c.tipo === 'colonne' ? [minimoColonna(c.quale), minimoColonna(c.quale + 1)] : [ALTEZZA_MIN, ALTEZZA_MIN]
+            };
+        }
+        const [a, b] = c.quale;
+        const ra = C.stato.blocchi[a].getBoundingClientRect(), rb = C.stato.blocchi[b].getBoundingClientRect();
+        const larghezza = c.asse === 'x';
+        return {
+            px: larghezza ? [ra.width / k, rb.width / k] : [ra.height / k, rb.height / k],
+            pesi: [g.blocchi[a], g.blocchi[b]],
+            minimi: larghezza ? [P.MINIMI[a][0], P.MINIMI[b][0]] : [ALTEZZA_MIN, ALTEZZA_MIN]
+        };
+    }
+
+    /**
+     * Prova a spostare il confine di `delta` pixel di progetto. Restituisce la configurazione che ne viene e se
+     * vale (i blocchi ci stanno e il palco è il più grande).
+     */
+    function provaConfine(c, coppia, delta) {
+        const m = P.muoviConfine(coppia, delta);
+        const candidata = P.impostaPesi(cfg(), C.stato.griglia, c.tipo, c.quale, m.pesi);
+        C.provaMisure(candidata);
+        const ok = !C.sfora()
+            && C.rapportoPalco() >= C.RAPPORTO_PALCO_MIN
+            && P.griglia(candidata, visibiliOra(), { garantisciPalco: false }).palcoOk;
+        return { m, candidata, ok };
+    }
+
+    // Il massimo spostamento valido tra `buono` (già provato) e `voluto`
+    function cercaSpostamento(c, coppia, voluto, buono) {
+        let r = provaConfine(c, coppia, voluto);
+        if (r.ok) return { ...r, spostamento: voluto };
+        let lo = buono.spostamento, hi = voluto, migliore = buono;
+        for (let i = 0; i < 7 && Math.abs(hi - lo) > 0.75; i++) {
+            const mezzo = (lo + hi) / 2;
+            const t = provaConfine(c, coppia, mezzo);
+            if (t.ok) { lo = mezzo; migliore = { ...t, spostamento: mezzo }; } else hi = mezzo;
+        }
+        // lascia nel CSS l'ultimo punto buono
+        C.provaMisure(migliore.candidata);
+        return migliore;
+    }
+
+    function mostraEtichetta(testo, x, y) {
+        let e = document.getElementById('pp-misura-etichetta');
+        if (!e) { e = h('div', { id: 'pp-misura-etichetta', class: 'pp-misura-etichetta', 'aria-hidden': 'true' }); document.body.append(e); }
+        e.textContent = testo;
+        e.style.left = `${x + 16}px`;
+        e.style.top = `${y + 16}px`;
+    }
+
+    const percentuali = pesi => { const p = Math.round(pesi[0] / (pesi[0] + pesi[1]) * 100); return [p, 100 - p]; };
+
+    function avviaRidimensionamento(e, el) {
+        const c = el._confine;
+        const k = C.stato.scala || 1;
+        const asse = c.asse;
+        const partenza = asse === 'x' ? e.clientX : e.clientY;
+        const coppia = misuraCoppia(c);
+        const iniziale = { m: { delta: 0, pesi: coppia.pesi }, candidata: P.copia(cfg()), ok: true, spostamento: 0 };
+        let buono = iniziale, voluto = 0, attesa = 0;
+        ridimensiona = { chiave: c.chiave };
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('is-attiva');
+        document.body.classList.add('pp-ridimensiona');
+
+        const aggiorna = ev => {
+            attesa = 0;
+            buono = cercaSpostamento(c, coppia, voluto, buono);
+            const limitato = Math.abs(buono.spostamento - voluto) > 1.5 || Math.abs(buono.m.delta - buono.spostamento) > 1.5;
+            el.classList.toggle('is-limite', limitato);
+            const [a, b] = percentuali(buono.m.pesi);
+            mostraEtichetta(`${a}% | ${b}%${limitato ? ' · limit' : ''}`, ev.clientX, ev.clientY);
+            aggiornaManiglie();
+        };
+        const muovi = ev => {
+            voluto = ((asse === 'x' ? ev.clientX : ev.clientY) - partenza) / k;
+            if (!attesa) attesa = requestAnimationFrame(() => aggiorna(ev));
+        };
+        const finisci = conferma => {
+            cancelAnimationFrame(attesa);
+            el.removeEventListener('pointermove', muovi);
+            el.removeEventListener('pointerup', alRilascio);
+            el.removeEventListener('pointercancel', alRilascio);
+            document.removeEventListener('keydown', alTasto, true);
+            el.classList.remove('is-attiva', 'is-limite');
+            document.body.classList.remove('pp-ridimensiona');
+            document.getElementById('pp-misura-etichetta')?.remove();
+            ridimensiona = null;
+            if (conferma && !P.uguali(buono.candidata.misure, cfg().misure)) {
+                ultimoTrascinamento = Date.now();
+                cambia(() => buono.candidata);
+            } else {
+                C.imposta(cfg());        // rimette le misure di prima
+            }
+            aggiornaManiglie();
+        };
+        const alRilascio = ev => finisci(ev.type === 'pointerup');
+        const alTasto = ev => { if (ev.key === 'Escape') { ev.stopPropagation(); finisci(false); } };
+        el.addEventListener('pointermove', muovi);
+        el.addEventListener('pointerup', alRilascio);
+        el.addEventListener('pointercancel', alRilascio);
+        document.addEventListener('keydown', alTasto, true);
+    }
+
+    // Frecce: sinistra/su = il primo elemento si stringe, destra/giù = si allarga; Maiuscole = passo grande
+    function tastoSuManiglia(ev, el) {
+        const c = el._confine;
+        const versi = c.asse === 'x' ? { ArrowLeft: -1, ArrowRight: 1 } : { ArrowUp: -1, ArrowDown: 1 };
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); ripristinaConfine(c); return; }
+        const verso = versi[ev.key];
+        if (!verso) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const coppia = misuraCoppia(c);
+        const voluto = verso * (coppia.px[0] + coppia.px[1]) * PASSO_TASTO * (ev.shiftKey ? 5 : 1);
+        const base = { m: { delta: 0, pesi: coppia.pesi }, candidata: P.copia(cfg()), ok: true, spostamento: 0 };
+        const r = cercaSpostamento(c, coppia, voluto, base);
+        if (!P.uguali(r.candidata.misure, cfg().misure)) cambia(() => r.candidata, { chiave: `misura-${c.chiave}` });
+        else C.imposta(cfg());
+        // dopo il ridisegno la maniglia è un'altra: il fuoco torna a lei
+        requestAnimationFrame(() => maniglieAttive.get(c.chiave)?.focus());
+    }
+
+    function ripristinaConfine(c) {
+        const nuova = P.ripristinaPesi(cfg(), C.stato.griglia, c.tipo, c.quale);
+        if (P.uguali(nuova.misure, cfg().misure)) return avvisa('Already at the layout\'s own sizes.');
+        cambia(() => nuova);
+        avvisa('Back to the layout\'s own sizes for these two.');
+    }
+
     // ---- Trascinare gli adesivi ---------------------------------------------------------------
 
     function installaAdesivi() {
@@ -662,11 +938,13 @@
         if (pannello) return;
         storia = [];
         scheda = estensioni.length ? estensioni[0].id : 'layout';
-        C.stato.dopoApplica = () => { installaBarre(); };
+        C.stato.dopoApplica = () => { installaBarre(); aggiornaManiglie(); aggiornaNotaPalco(); };
+        C.stato.dopoAdatta = () => { aggiornaManiglie(); aggiornaNotaPalco(); };
         C.modifica(true);
         installaBarre();
         costruisciPannello();
         disegnaPannello();
+        aggiornaManiglie();
         installaTrascinamentoBlocchi();
         installaAdesivi();
         ascolta(window, 'beforeunload', avvertiSeNonSalvato);
@@ -685,9 +963,11 @@
         C.impostaProfilo(C.stato.infoSalvata);
         C.imposta(C.stato.salvata);
         C.stato.dopoApplica = null;
+        C.stato.dopoAdatta = null;
         for (const [bersaglio, evento, funzione, opzioni] of ascoltatori) bersaglio.removeEventListener(evento, funzione, opzioni);
         ascoltatori = [];
         togliBarre();
+        togliManiglie();
         pannello.remove();
         pannello = null;
         C.modifica(false);

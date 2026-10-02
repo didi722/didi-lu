@@ -2,7 +2,7 @@
 // TITOLI E BADGE — Poké-Tournament
 //
 // Un'unica fonte per i titoli del giocatore ("Hex Maniac", "Ghost Gym Leader", "Scizor Fan"...)
-// e per i badge delle serie, usata da profile.html (scelta del titolo, Achievements), public.html
+// e per i badge delle serie, usata da profile.html (Achievements), public.html
 // (titolo sotto il nome) e stats.html (scheda del giocatore). Nessun riferimento al DOM.
 //
 // Da dove vengono i numeri (li scrive risultati-match.js a ogni match salvato):

@@ -474,9 +474,10 @@
         if (e.key === 'Escape') chiudiModale();
     }
 
-    function apriSfida(nome) {
-        const D = pagina();
-        if (!D) return;
+    // `stagione`: per le pagine che non sono una stagione (profile.html); da matches.html si lascia vuota
+    function apriSfida(nome, stagione) {
+        const D = stagione ? S.stagioni[stagione] : pagina();
+        if (!D) return stagione ? mostraAvviso('Still loading, try again in a moment') : undefined;
         nome = nomeIscritto(D, nome);
         if (!S.utente) {
             if (typeof window.toggleLoginModal === 'function') window.toggleLoginModal();
@@ -1095,5 +1096,16 @@
     }
 
 
-    window.Sfide = { avvia, bottoneRanking, apriSfida, completato };
+    // Risposte alle sfide da fuori dalla campanella (profile.html): 'accetta' | 'rifiuta' | 'ritira'
+    async function rispondi(stagione, id, risposta) {
+        const D = S.stagioni[stagione];
+        if (!D || !D.sfide[id]) return mostraAvviso('Still loading, try again in a moment');
+        if (risposta === 'accetta') return accetta(D, id);
+        const sf = D.sfide[id];
+        const mia = risposta === 'ritira' ? sf.daId === S.ioId : sf.aId === S.ioId;
+        if (!mia) return;
+        return cambiaStato(D, id, risposta === 'ritira' ? 'annullata' : 'rifiutata');
+    }
+
+    window.Sfide = { avvia, bottoneRanking, apriSfida, rispondi, completato };
 })();
