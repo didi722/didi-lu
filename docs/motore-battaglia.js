@@ -7,7 +7,10 @@
 // La partita online usa BattagliaOnline (motore-online.js), stessa interfaccia.
 // =====================================================
 
-import { BattleStreams, Teams, TeamValidator } from './pkmn-sim.js';
+import { BattleStreams, Dex, Teams, TeamValidator } from './pkmn-sim.js';
+import './nomi-unici.js';        // lo mette in self.NomiUnici (è lo stesso file delle Cloud Functions)
+
+const baseDi = specie => Dex.species.get(specie).baseSpecies;
 
 
 // -----------------------------------------------------
@@ -89,9 +92,15 @@ export class BattagliaLocale {
 // -----------------------------------------------------
 // 2. TEAM
 // -----------------------------------------------------
-export function impacchettaTeam(team) {
+// Due Pokémon con lo stesso soprannome (Calyrex-Ice e Calyrex-Shadow, entrambi "Calyrex")
+// confondono lo schermo di Showdown: si distinguono prima di impacchettare (vedi nomi-unici.js)
+export function setDaTeam(team) {
     const sets = typeof team === 'string' ? Teams.import(team) : team;
-    return Teams.pack(sets);
+    return self.NomiUnici.nomiUnici(sets || [], baseDi);
+}
+
+export function impacchettaTeam(team) {
+    return Teams.pack(setDaTeam(team));
 }
 
 // Restituisce null se il team è valido, altrimenti l'elenco dei problemi.
