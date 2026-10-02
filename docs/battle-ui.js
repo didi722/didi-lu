@@ -259,9 +259,9 @@ function aggiornaFase() {
     ridisegnaComandi();
 }
 
-function punteggio() {
+function punteggio(risultati = online.risultati) {
     let s1 = 0, s2 = 0;
-    for (const r of Object.values(online.risultati || {})) {
+    for (const r of Object.values(risultati || {})) {
         if (r.vincitore === 'p1') s1++;
         if (r.vincitore === 'p2') s2++;
     }
@@ -418,6 +418,7 @@ function creaScena({ recupera = false } = {}) {
     battle.subscribe(evento => {
         if (evento === 'atqueueend') {
             while (attesaScena.length) attesaScena.shift()();
+            disegnaInfo();
             ridisegnaComandi();
         }
     });
@@ -471,6 +472,13 @@ function aggiungiAScena(righe) {
 // Il campo sta ancora animando qualcosa?
 function scenaInCorsa() {
     return !!prossimaScena || (!!scena && !scena.battle.atQueueEnd);
+}
+
+// Le animazioni di Showdown stanno ancora girando? (a differenza di scenaInCorsa non conta la pausa tra i set)
+// Finché girano, nulla di ciò che sta fuori dallo schermo deve dire come è andata a finire: un turno
+// che chiude il set o il match deve essere indistinguibile da uno qualsiasi (vedi disegnaPannello e disegnaInfo).
+function animazioneInCorso() {
+    return !!scena && !scena.battle.atQueueEnd;
 }
 
 // Esegue fn quando le animazioni sono arrivate in fondo (mai oltre 30 s)
@@ -769,6 +777,8 @@ function ridisegnaComandi() {
 // Riga di stato: cosa sta facendo l'avversario (o i due giocatori, per chi guarda)
 function aggiornaStati() {
     if (!online) return;
+    // a campo che anima il testo resta quello di prima: aggiornarlo direbbe come è finito il turno
+    if (animazioneInCorso() && online.stato !== 'lobby') return;
     if (!mioLato) {
         const testo = online.stato === 'lobby'
             ? `${nomeDi('p1')}: ${online.pronti.p1 ? 'ready ✓' : 'picking a team…'} · ${nomeDi('p2')}: ${online.pronti.p2 ? 'ready ✓' : 'picking a team…'}`
@@ -797,16 +807,20 @@ function disegnaPannello(lato) {
     const avv = nomeDi(avversarioDi(lato));
 
     if (online && online.stato === 'lobby') return corpo.append(messaggio('Pick your team above.'));
+    // Finché il campo anima il pannello è sempre lo stesso, col tasto per saltare l'animazione, anche se è
+    // l'ultimo turno del set o del match (senza una nuova richiesta, con "Set over" o "The match is over"
+    // si capirebbe in anticipo che sta per finire)
+    if (animazioneInCorso()) {
+        return corpo.append(messaggio('The turn is playing out.',
+            el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => scena && scena.battle.seekTurn(Infinity) }, 'Skip animation')));
+    }
     if (online && online.stato && online.stato !== 'in_corso') return corpo.append(messaggio('The match is over.'));
+    if (pausaSet) return corpo.append(messaggio('Set over. Get ready for the next one.'));
     if (p.errore) corpo.append(el('p', { class: 'errore', testo: p.errore }));
     if (finita) return corpo.append(messaggio(online ? 'Set over. The next one starts by itself.' : 'Battle over.'));
     if (!p.r || p.r.tipo === 'attesa') return corpo.append(messaggio(`Waiting for ${avv}…`));
     if (p.inviata) return corpo.append(messaggio(`Choice sent. Waiting for ${avv}…`));
-    if (scenaInCorsa()) {
-        if (pausaSet) return corpo.append(messaggio('Set over. Get ready for the next one.'));
-        return corpo.append(messaggio('The turn is playing out.',
-            prossimaScena ? null : el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => scena && scena.battle.seekTurn(Infinity) }, 'Skip animation')));
-    }
+    if (scenaInCorsa()) return corpo.append(messaggio('The next set is about to start.'));
 
     if (p.r.tipo === 'anteprima') return disegnaAnteprima(lato, corpo);
     if (p.attesaBersaglio) return disegnaBersagli(lato, corpo);
@@ -1037,24 +1051,33 @@ function sprite(specie, retro) {
     return img;
 }
 
+// Quello che l'insegna sa del match: numero del set e punteggio. Si aggiorna solo a campo fermo, altrimenti
+// il tabellone anticiperebbe come è finito il set che si sta ancora guardando.
+let vistoInsegna = { set: 0, risultati: {} };
+function aggiornaVistoInsegna() {
+    if (!online || animazioneInCorso()) return;
+    vistoInsegna = { set: battaglia ? battaglia.set : 0, risultati: online.risultati || {} };
+}
+
 // Insegna sopra lo schermo: formato, match e tabellone dei set (stile in style-battle.css)
 function disegnaInfo() {
     if (!config) return;
+    aggiornaVistoInsegna();
     const voci = [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
     if (online) {
         voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
-        if (battaglia && battaglia.set) {
-            const { s1, s2 } = punteggio();
+        if (vistoInsegna.set) {
+            const { s1, s2 } = punteggio(vistoInsegna.risultati);
             const punti = { p1: s1, p2: s2 };
             // chi gioca sta a sinistra, come nelle colonne e nello schermo
             const [sx, dx] = mioLato === 'p2' ? ['p2', 'p1'] : ['p1', 'p2'];
             const cella = lato => el('b', { class: `ins-punti ${lato}`, testo: String(punti[lato]), title: nomeDi(lato) });
             voci.push(el('span', {
                 class: 'ins-tabellone', role: 'img',
-                'aria-label': `Set ${battaglia.set} of ${online.info.bestOf}. ${nomeDi(sx)} ${punti[sx]}, ${nomeDi(dx)} ${punti[dx]}`
+                'aria-label': `Set ${vistoInsegna.set} of ${online.info.bestOf}. ${nomeDi(sx)} ${punti[sx]}, ${nomeDi(dx)} ${punti[dx]}`
             },
             cella(sx),
-            el('span', { class: 'ins-set', testo: `Set ${battaglia.set}/${online.info.bestOf}` }),
+            el('span', { class: 'ins-set', testo: `Set ${vistoInsegna.set}/${online.info.bestOf}` }),
             cella(dx)));
         }
     }
