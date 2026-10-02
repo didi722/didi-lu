@@ -36,6 +36,12 @@
         return radice.slice(0, MAX - suffisso.length) + suffisso;
     }
 
+    // "Calyrex-Shadow" (base "Calyrex") -> "Shadow Calyrex"; vuoto se non è una forma
+    function nomeForma(species, base) {
+        const sp = String(species || '');
+        return base && sp.startsWith(base + '-') ? `${sp.slice(base.length + 1).replace(/-/g, ' ')} ${base}` : '';
+    }
+
     function nomiUnici(sets, baseDi) {
         if (!Array.isArray(sets)) return sets;
         const base = s => (typeof baseDi === 'function' && baseDi(s.species)) || String(s.species || '');
@@ -43,11 +49,7 @@
         // Calyrex-Ice), il team impacchettato lo perde e il simulatore usa la specie base
         const perso = s => !s.name || chiave(s.name) === chiave(s.species);
         const predefinito = s => perso(s) || chiave(s.name) === chiave(base(s));
-        // "Calyrex-Shadow" (base "Calyrex") -> "Shadow Calyrex"; vuoto se non è una forma
-        const forma = s => {
-            const b = base(s), sp = String(s.species || '');
-            return b && sp.startsWith(b + '-') ? `${sp.slice(b.length + 1).replace(/-/g, ' ')} ${b}` : '';
-        };
+        const forma = s => nomeForma(s.species, base(s));
         const effettivo = s => (perso(s) ? base(s) : String(s.name));
 
         const quanti = new Map();
@@ -67,5 +69,5 @@
         return sets;
     }
 
-    return { nomiUnici };
+    return { nomiUnici, nomeForma, conNumero, chiave };
 });
