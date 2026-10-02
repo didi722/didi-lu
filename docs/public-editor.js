@@ -2,13 +2,16 @@
 // PUBLIC EDITOR — l'allenatore personalizza la sua pagina pubblica (docs/public.html)
 //
 // Si carica solo quando chi guarda è il proprietario della pagina (lo fa public-card.js).
-// Cambia la configurazione "in diretta": ogni scelta si vede subito sulla carta, e solo "SAVE"
-// la scrive su Firebase (players/{id}/info/pagina). "Cancel" torna a come era.
+// Cambia tutto "in diretta": ogni scelta si vede subito sulla carta, e solo "SAVE" la scrive su Firebase
+// (players/{id}/info/pagina per la pagina, gli altri campi di players/{id}/info per il profilo).
+// "Cancel" torna a come era.
 //
 // Cosa si può fare:
-//   - scegliere il layout (Trainer Card, Poster, Dossier, Collage);
-//   - spegnere, accendere e spostare i blocchi tra le zone: coi pulsanti del pannello, oppure
-//     trascinandoli direttamente sulla carta dalla loro maniglia;
+//   - la scheda "Trainer" (public-editor-trainer.js): avatar, colore firma, titolo, motto, Pokémon
+//     preferito e canzone, con le scelte che gli altri hanno già fatto nascoste;
+//   - scegliere il layout (Trainer Card, Poster, Dossier, Collage), e tornare a quello standard;
+//   - spegnere, accendere e spostare i blocchi: coi pulsanti del pannello, oppure afferrandoli sulla
+//     carta e trascinandoli: si agganciano ai posti dove possono stare;
 //   - sfondo (colore, motivo, nome gigante, movimento), stile della carta (colore, ombra, bordi,
 //     angoli, inclinazione, carattere, effetto olografico);
 //   - adesivi da trascinare dove si vuole;
@@ -23,7 +26,7 @@
     let h = null;
     let pannello = null;
     let scheda = 'layout';
-    let storia = [];              // configurazioni precedenti, per "undo"
+    let storia = [];              // com'era prima di ogni modifica (configurazione e profilo), per "undo"
     let ultimaChiave = '';
     let ultimoTempo = 0;
     let trascinato = null;        // id del blocco che si sta trascinando
@@ -31,38 +34,56 @@
     let avviso = null;
 
     const SCHEDE = [['layout', 'Layout'], ['blocchi', 'Blocks'], ['sfondo', 'Background'], ['carta', 'Card'], ['adesivi', 'Stickers'], ['contenuto', 'Content']];
-    const COLORI_SFONDO = ['#ff6b9d', '#ff5a3c', '#ff9a4d', '#ffde4d', '#7cf29a', '#31c489', '#00bfa5', '#8fd3ff', '#3399ff', '#c4a3ff', '#ffffff', '#17171c'];
+    const estensioni = [];        // schede aggiunte da altri file (la scheda Trainer): { id, nome, disegna(contesto) }
     const cfg = () => C.stato.config;
     const colore = () => C.stato.dati.colore;
 
     // ---- Cambiare la configurazione -----------------------------------------------------------
 
-    /**
-     * Applica una modifica alla configurazione in vista.
-     * opzioni.chiave: le modifiche di fila con la stessa chiave (uno slider) contano come un solo "undo"
-     * opzioni.senzaPannello: non ridisegnare il pannello (si sta ancora trascinando uno slider)
-     */
-    function cambia(modifica, opzioni = {}) {
-        const prima = P.copia(cfg());
-        const dopo = modifica(P.copia(cfg())) || null;
-        if (!dopo) return;
+    const foto = () => ({ config: P.copia(cfg()), profilo: { ...C.profilo() } });
+
+    // Ogni modifica registra com'era prima (per "undo"). Più modifiche di fila con la stessa chiave
+    // (uno slider che si trascina) contano come una sola.
+    function registra(prima, opzioni) {
         const adesso = Date.now();
         const accorpa = opzioni.chiave && opzioni.chiave === ultimaChiave && adesso - ultimoTempo < 1200;
         if (!accorpa) { storia.push(prima); if (storia.length > 40) storia.shift(); }
         ultimaChiave = opzioni.chiave || '';
         ultimoTempo = adesso;
+    }
+
+    /**
+     * Applica una modifica alla configurazione della pagina.
+     * opzioni.chiave: le modifiche di fila con la stessa chiave contano come un solo "undo"
+     * opzioni.senzaPannello: non ridisegnare il pannello (si sta ancora trascinando uno slider)
+     */
+    function cambia(modifica, opzioni = {}) {
+        const prima = foto();
+        const dopo = modifica(P.copia(cfg())) || null;
+        if (!dopo) return;
+        registra(prima, opzioni);
         C.imposta(dopo);
+        if (opzioni.senzaPannello) aggiornaPiede(); else disegnaPannello();
+    }
+
+    /** Come cambia(), per i campi del profilo (avatar, color, bio, pkmPreferito, title, musicName, musicaPreferita) */
+    function cambiaProfilo(nuovi, opzioni = {}) {
+        registra(foto(), opzioni);
+        C.impostaProfilo(nuovi);
         if (opzioni.senzaPannello) aggiornaPiede(); else disegnaPannello();
     }
 
     function annulla() {
         if (!storia.length) return;
         ultimaChiave = '';
-        C.imposta(storia.pop());
+        const f = storia.pop();
+        C.impostaProfilo(f.profilo);
+        C.imposta(f.config);
         disegnaPannello();
     }
 
-    const sporco = () => !P.uguali(cfg(), C.stato.salvata);
+    const profiloSporco = () => { const ora = C.profilo(), salvato = C.stato.infoSalvata; return P.CAMPI_PROFILO.some(k => ora[k] !== salvato[k]); };
+    const sporco = () => !P.uguali(cfg(), C.stato.salvata) || profiloSporco();
 
     // ---- Piccoli componenti -------------------------------------------------------------------
 
@@ -111,7 +132,16 @@
             h('button', { type: 'button', class: `pe-layout${cfg().layout === id ? ' is-on' : ''}`, 'aria-pressed': String(cfg().layout === id),
                 onclick: () => cambia(c => { c.layout = id; return c; }) },
             disegno(id), h('b', { testo: l.nome }), h('small', { testo: l.desc }))))),
-        h('p', { class: 'pe-nota', testo: 'The blocks stay where you put them: switching layout only changes how the three zones are drawn.' })];
+        h('p', { class: 'pe-nota', testo: 'The blocks stay where you put them: switching layout only changes how the three zones are drawn.' }),
+        sezione('Start over',
+            h('button', { type: 'button', class: 'pe-bottone pe-grande', onclick: tornaAllaTrainerCard, testo: '↺ RESET TO THE STANDARD TRAINER CARD' }),
+            h('p', { class: 'pe-nota', testo: 'Back to the Trainer Card layout with every block in its usual place and the default look (stickers included). Your trainer details are not touched, and you can still undo.' }))];
+    }
+
+    function tornaAllaTrainerCard() {
+        C.scegliAdesivo(-1);
+        cambia(() => P.predefinita());
+        avvisa('Back to the standard Trainer Card. Press SAVE to keep it, or Undo.');
     }
 
     // ---- Scheda: blocchi ----------------------------------------------------------------------
@@ -120,7 +150,7 @@
         const per = P.blocchiPerZona(cfg());
         const zone = P.LAYOUT[cfg().layout].zone;
         return [
-            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also drag them straight on the card by their handle.' }),
+            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up.' }),
             ...P.ZONE.map(z => h('section', { class: 'pe-zona', 'data-zona': z },
                 h('h3', {}, h('span', { class: 'pe-zona-lettera', testo: z.toUpperCase() }), zone[z]),
                 h('ul', { class: 'pe-lista', 'data-zona': z }, per[z].length
@@ -152,7 +182,8 @@
             return { 'background-color': css.colore, 'background-image': css.immagine, 'background-size': css.dimensione === 'auto' ? 'auto' : css.dimensione, 'background-position': css.posizione };
         };
         const proprio = P.esadecimale(colore(), '#31c489');
-        const personalizzato = s.colore !== 'giocatore' && !COLORI_SFONDO.includes(s.colore);
+        const nellaPalette = s.colore !== 'giocatore' && P.PALETTE_SFONDO.some(x => x.toLowerCase() === s.colore);
+        const personalizzato = s.colore !== 'giocatore' && !nellaPalette;
         const campoColore = h('input', { type: 'color', class: 'pe-colore-libero', value: s.colore === 'giocatore' ? proprio : s.colore, title: 'Pick any colour', 'aria-label': 'Custom colour',
             oninput: e => cambia(c => { c.sfondo.colore = e.target.value; return c; }, { chiave: 'sfondo-colore', senzaPannello: true }),
             onchange: () => disegnaPannello() });
@@ -160,9 +191,9 @@
             sezione('Pattern', h('div', { class: 'pe-motivi' }, Object.entries(P.MOTIVI).map(([id, nome]) =>
                 h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}`, 'aria-pressed': String(s.motivo === id), onclick: () => cambia(c => { c.sfondo.motivo = id; return c; }) },
                     h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: nome }))))),
-            sezione('Colour', h('div', { class: 'pe-campioni' },
-                campione(proprio, s.colore === 'giocatore', 'My colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
-                COLORI_SFONDO.map(x => campione(x, s.colore === x, x, () => cambia(c => { c.sfondo.colore = x; return c; }))),
+            sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
+                campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
+                P.PALETTE_SFONDO.map(x => campione(x, s.colore === x.toLowerCase(), x, () => cambia(c => { c.sfondo.colore = x.toLowerCase(); return c; }))),
                 h('span', { class: `pe-campione pe-campione-libero${personalizzato ? ' is-on' : ''}`, stile: { '--c': personalizzato ? s.colore : '#fff' } }, campoColore, h('span', { class: 'pe-campione-etichetta', testo: '+' })))),
             sezione('Pattern strength', segmentato([[1, 'Soft'], [2, 'Medium'], [3, 'Bold']], s.forza, v => cambia(c => { c.sfondo.forza = v; return c; }))),
             sezione('Extras',
@@ -179,13 +210,16 @@
         const proprio = P.esadecimale(colore(), '#31c489');
         const nuovo = (campo, valore) => cambia(c => { c.carta[campo] = valore; return c; });
         return [
-            sezione('Card colour', h('div', { class: 'pe-campioni' }, Object.entries(P.TEMI).map(([id, t]) =>
-                campione(t.colore || proprio, k.tema === id, t.nome, () => nuovo('tema', id), id === 'colore' ? h('span', { class: 'pe-campione-etichetta', testo: 'ME' }) : null)))),
+            sezione('Card colour',
+                h('div', { class: 'pe-campioni' }, Object.entries(P.TEMI).map(([id, t]) =>
+                    campione(t.colore || proprio, k.tema === id, t.nome, () => nuovo('tema', id), id === 'colore' ? h('span', { class: 'pe-campione-etichetta', testo: 'ME' }) : null))),
+                h('div', { class: 'pe-campioni pe-campioni-fitti pe-sotto' }, P.PALETTE_SFONDO.map(x =>
+                    campione(x, k.tema === x.toLowerCase(), x, () => nuovo('tema', x.toLowerCase()))))),
             sezione('Hard shadow', segmentato(P.OMBRE.map(o => [o, o === 0 ? 'None' : o === 6 ? 'S' : o === 10 ? 'M' : 'L']), k.ombra, v => nuovo('ombra', v))),
             sezione('Borders', segmentato(P.BORDI.map(b => [b, b === 3 ? 'Thin' : b === 4 ? 'Normal' : 'Thick']), k.bordo, v => nuovo('bordo', v))),
             sezione('Corners', segmentato([['netti', 'Square'], ['tondi', 'Round']], k.angoli, v => nuovo('angoli', v))),
             sezione('Tilt', segmentato([['nessuna', 'Straight'], ['lieve', 'Slight'], ['forte', 'Wild']], k.inclinazione, v => nuovo('inclinazione', v))),
-            sezione('Lettering', h('div', { class: 'pe-caratteri' }, Object.entries(P.FONT).map(([id, f]) =>
+            sezione('Lettering (name, titles, numbers)', h('div', { class: 'pe-caratteri' }, Object.entries(P.FONT).map(([id, f]) =>
                 h('button', { type: 'button', class: `pe-carattere${k.font === id ? ' is-on' : ''}`, 'aria-pressed': String(k.font === id), stile: { 'font-family': f.pila }, onclick: () => nuovo('font', id) },
                     h('b', { testo: 'Aa' }), h('small', { testo: f.nome }))))),
             sezione('Effects', interruttore('Holographic shine (Trainer Card layout)', k.holo, v => nuovo('holo', v)))
@@ -267,19 +301,27 @@
 
     const CONTENUTI = { layout: schedaLayout, blocchi: schedaBlocchi, sfondo: schedaSfondo, carta: schedaCarta, adesivi: schedaAdesivi, contenuto: schedaContenuto };
 
+    // Le schede aggiunte da altri file (Trainer) vengono prima delle altre
+    const esciDallaScheda = () => estensioni.forEach(x => { if (x.esci) x.esci(); });
+    const tutteLeSchede = () => [...estensioni.map(e => [e.id, e.nome]), ...SCHEDE];
+    const contenutoScheda = id => {
+        const e = estensioni.find(x => x.id === id);
+        return e ? e.disegna(contesto()) : CONTENUTI[id]();
+    };
+
     function costruisciPannello() {
         pannello = h('aside', { id: 'pe-pannello', class: 'pe-pannello', role: 'dialog', 'aria-label': 'Customize your card' },
             h('header', { class: 'pe-testa' },
                 h('h2', {}, h('span', { 'aria-hidden': 'true', testo: '✎ ' }), 'CUSTOMIZE'),
                 h('button', { type: 'button', id: 'pe-annulla', class: 'pe-icona pe-testa-btn', title: 'Undo (Ctrl+Z)', 'aria-label': 'Undo', onclick: annulla, testo: '↶' }),
                 h('button', { type: 'button', class: 'pe-icona pe-testa-btn', title: 'Close', 'aria-label': 'Close', onclick: chiudi, testo: '×' })),
-            h('nav', { class: 'pe-schede', role: 'tablist' }, SCHEDE.map(([id, nome]) =>
-                h('button', { type: 'button', role: 'tab', 'data-scheda': id, onclick: () => { scheda = id; disegnaPannello(); }, testo: nome }))),
+            h('nav', { class: 'pe-schede', role: 'tablist' }, tutteLeSchede().map(([id, nome]) =>
+                h('button', { type: 'button', role: 'tab', 'data-scheda': id, onclick: () => { esciDallaScheda(); scheda = id; disegnaPannello(); }, testo: nome }))),
             h('div', { class: 'pe-corpo', id: 'pe-corpo' }),
             h('footer', { class: 'pe-piede' },
                 h('div', { class: 'pe-piede-sopra' },
                     h('button', { type: 'button', class: 'pe-bottone', onclick: () => cambia(c => P.casuale(c)), title: 'Random look, keeps your blocks', testo: '🎲 Surprise me' }),
-                    h('button', { type: 'button', class: 'pe-bottone', onclick: () => cambia(() => P.predefinita()), title: 'Back to the default look', testo: '↺ Reset' })),
+                    h('button', { type: 'button', class: 'pe-bottone', onclick: tornaAllaTrainerCard, title: 'Back to the standard Trainer Card', testo: '↺ Reset' })),
                 h('div', { class: 'pe-piede-sotto' },
                     h('span', { class: 'pe-stato', id: 'pe-stato', 'aria-live': 'polite' }),
                     h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }),
@@ -291,7 +333,7 @@
         if (!pannello) return;
         const corpo = pannello.querySelector('#pe-corpo');
         const scorri = corpo.scrollTop;
-        corpo.replaceChildren(...CONTENUTI[scheda]().flat().filter(Boolean));
+        corpo.replaceChildren(...contenutoScheda(scheda).flat().filter(Boolean));
         corpo.scrollTop = scorri;
         for (const t of pannello.querySelectorAll('[role="tab"]')) {
             const attiva = t.dataset.scheda === scheda;
@@ -321,22 +363,50 @@
 
     // ---- Salvare ------------------------------------------------------------------------------
 
+    // Le scelte che non si possono condividere con un altro allenatore
+    const CAMPI_UNICI = ['color', 'avatar', 'pkmPreferito', 'musicName', 'musicaPreferita'];
+    const NOMI_CONFLITTO = { color: 'colour', avatar: 'avatar', pkmPreferito: 'favourite Pokémon', musica: 'song' };
+
     async function salva() {
         const bottone = pannello.querySelector('#pe-salva');
         bottone.disabled = true;
         bottone.textContent = 'SAVING…';
         const daSalvare = P.copia(cfg());
+        const profilo = C.profilo();
+        const salvato = C.stato.infoSalvata;
+        const cambiati = P.CAMPI_PROFILO.filter(k => profilo[k] !== salvato[k]);
         try {
             const database = typeof db !== 'undefined' ? db : firebase.database();
-            // la configurazione di partenza non si scrive: se un giorno cambia, chi non ha scelto niente la segue
-            await database.ref(`players/${C.stato.dati.chiave}/info/pagina`).set(P.uguali(daSalvare, P.predefinita()) ? null : daSalvare);
+            const chiave = C.stato.dati.chiave;
+
+            // colore, avatar, Pokémon preferito e canzone sono unici: si ricontrolla sui dati di adesso, perché
+            // qualcuno può aver scelto la stessa cosa mentre si modificava
+            const unici = {};
+            for (const k of CAMPI_UNICI) if (cambiati.includes(k)) unici[k] = profilo[k];
+            if (Object.keys(unici).length) {
+                const tutti = (await database.ref('players').once('value')).val() || {};
+                C.stato.dati.tutti = tutti;
+                const presi = P.conflitti(chiave, unici, tutti);
+                if (presi.length) {
+                    avvisa(`Someone else already has this ${presi.map(n => NOMI_CONFLITTO[n]).join(' and ')}: pick another one. Nothing was saved.`, true);
+                    return;
+                }
+            }
+
+            // un'unica scrittura: o passa tutto o niente. La configurazione di partenza non si scrive: se un giorno
+            // cambia, chi non ha scelto niente la segue
+            const aggiornamenti = { pagina: P.uguali(daSalvare, P.predefinita()) ? null : daSalvare };
+            for (const k of cambiati) aggiornamenti[k] = k === 'title' && profilo.title === 'No Title' ? '' : profilo[k];
+            await database.ref(`players/${chiave}/info`).update(aggiornamenti);
+
             C.salvata(daSalvare);
+            C.profiloSalvato(profilo);
             storia = [];
             avvisa('Saved! Your card is live.');
         } catch (e) {
             console.error('Saving the card failed:', e);
             avvisa(e && e.code === 'PERMISSION_DENIED'
-                ? 'The database refused to save this (permissions). Ask the admin to allow players/<you>/info/pagina.'
+                ? 'The database refused to save this (permissions). Ask the admin to allow writing players/<you>/info.'
                 : `Could not save: ${e && e.message ? e.message : 'unknown error'}`, true);
         } finally {
             bottone.disabled = false;
@@ -346,63 +416,146 @@
     }
 
     // ---- Trascinare i blocchi -----------------------------------------------------------------
+    // Un blocco si afferra (dalla maniglia o da qualunque punto) e segue il puntatore. Intanto compaiono i posti
+    // dove può stare (prima, tra e dopo gli altri blocchi di ogni zona, o dentro una zona vuota): quello più
+    // vicino si evidenzia e, quando si lascia, il blocco si aggancia lì. Lasciandolo fuori dalla carta non succede niente.
 
-    /** In quale posizione della zona cade il puntatore, tra i blocchi che ci sono già (escluso quello trascinato) */
-    function indiceNellaZona(zona, x, y) {
-        const figli = Array.from(zona.children).filter(e => e.classList.contains('pp-blocco') && e.dataset.blocco !== trascinato);
-        if (!figli.length) return 0;
-        const riga = getComputedStyle(zona).flexDirection.startsWith('row');
-        let migliore = 0, distanza = Infinity, prima = true;
-        figli.forEach((e, i) => {
-            const r = e.getBoundingClientRect();
-            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-            const d = Math.hypot(x - cx, y - cy);
-            if (d < distanza) { distanza = d; migliore = i; prima = riga ? x < cx : y < cy; }
-        });
-        return prima ? migliore : migliore + 1;
-    }
+    const SOGLIA_TRASCINA = 6;       // pixel da muovere prima che sia un trascinamento e non un clic
+    const DISTANZA_MAX = 90;         // oltre questa distanza dai posti possibili, lasciare annulla
 
     function ascolta(bersaglio, evento, funzione, opzioni) {
         bersaglio.addEventListener(evento, funzione, opzioni);
         ascoltatori.push([bersaglio, evento, funzione, opzioni]);
     }
 
-    function sulla(zonaEl) {
-        const evidenzia = su => zonaEl.classList.toggle('pp-sopra', su);
-        ascolta(zonaEl, 'dragover', e => { if (!trascinato) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; evidenzia(true); });
-        ascolta(zonaEl, 'dragleave', e => { if (!zonaEl.contains(e.relatedTarget)) evidenzia(false); });
-        ascolta(zonaEl, 'drop', e => {
-            if (!trascinato) return;
-            e.preventDefault();
-            evidenzia(false);
-            const id = trascinato, zona = zonaEl.dataset.zona;
-            const indice = indiceNellaZona(zonaEl, e.clientX, e.clientY);
-            trascinato = null;
-            cambia(c => P.sposta(c, id, zona, indice));
-        });
+    const sopra = (r, x, y) => Math.hypot(Math.max(r.left - x, 0, x - (r.left + r.width)), Math.max(r.top - y, 0, y - (r.top + r.height)));
+
+    /**
+     * I posti dove può stare un blocco: posti = [{ zona, indice, rect }] con la misura dello "slot" sullo schermo,
+     * e zone = [{ zona, rect, riga }] (la zona e se i suoi blocchi stanno in riga o in colonna)
+     */
+    function postiPossibili(idEscluso) {
+        const posti = [], zone = [];
+        for (const zonaEl of Object.values(C.stato.zone)) {
+            const stile = getComputedStyle(zonaEl);
+            if (stile.display === 'none') continue;
+            const zona = zonaEl.dataset.zona;
+            const figli = Array.from(zonaEl.children).filter(e => e.classList.contains('pp-blocco') && e.dataset.blocco !== idEscluso && getComputedStyle(e).display !== 'none');
+            const zr = zonaEl.getBoundingClientRect();
+            zone.push({ zona, rect: zr, riga: stile.flexDirection.startsWith('row') });
+            if (!figli.length) { posti.push({ zona, indice: 0, rect: { left: zr.left + 8, top: zr.top + 8, width: Math.max(zr.width - 16, 20), height: Math.max(zr.height - 16, 20) } }); continue; }
+            const riga = stile.flexDirection.startsWith('row');
+            const r = figli.map(e => e.getBoundingClientRect());
+            for (let i = 0; i <= figli.length; i++) {
+                const rif = r[Math.min(i, figli.length - 1)];
+                const bordo = riga ? (i < figli.length ? r[i].left : r[i - 1].right) : (i < figli.length ? r[i].top : r[i - 1].bottom);
+                posti.push({ zona, indice: i, rect: riga
+                    ? { left: bordo - 6, top: rif.top, width: 12, height: rif.height }
+                    : { left: rif.left, top: bordo - 6, width: rif.width, height: 12 } });
+            }
+        }
+        return { posti, zone };
+    }
+
+    let ultimoTrascinamento = 0;
+
+    function avviaTrascinamento(e, id, el) {
+        const scala = document.body.classList.contains('pp-fisso') && C.stato.scala ? C.stato.scala : 1;
+        const partenza = { x: e.clientX, y: e.clientY };
+        let attivo = false, posti = [], zone = [], vicino = null, strato = null;
+        el.setPointerCapture(e.pointerId);
+
+        const mostra = () => {
+            attivo = true;
+            ({ posti, zone } = postiPossibili(id));
+            strato = h('div', { id: 'pp-ancore', class: 'pp-ancore', 'aria-hidden': 'true' }, posti.map(p =>
+                h('i', { class: 'pp-ancora', stile: { left: `${p.rect.left}px`, top: `${p.rect.top}px`, width: `${p.rect.width}px`, height: `${p.rect.height}px` } })));
+            document.body.append(strato);
+            document.body.classList.add('pp-trascina');
+            el.classList.add('pp-in-volo');
+        };
+
+        const muovi = ev => {
+            const dx = ev.clientX - partenza.x, dy = ev.clientY - partenza.y;
+            if (!attivo) {
+                if (Math.hypot(dx, dy) < SOGLIA_TRASCINA) return;
+                mostra();
+            }
+            el.style.translate = `${dx / scala}px ${dy / scala}px`;
+            // Sopra una zona: vale il posto più vicino di quella zona, in qualunque punto della zona (misurando solo
+            // lungo la direzione in cui stanno i blocchi). Fuori da tutte le zone: il posto più vicino, se non è lontano.
+            const zonaSotto = zone.find(z => ev.clientX >= z.rect.left && ev.clientX <= z.rect.right && ev.clientY >= z.rect.top && ev.clientY <= z.rect.bottom);
+            let migliore = null, distanza = Infinity;
+            posti.forEach((p, i) => {
+                if (zonaSotto && p.zona !== zonaSotto.zona) return;
+                const lungoAsse = zonaSotto && posti.filter(q => q.zona === p.zona).length > 1;
+                const d = lungoAsse
+                    ? (zonaSotto.riga ? Math.abs(ev.clientX - (p.rect.left + p.rect.width / 2)) : Math.abs(ev.clientY - (p.rect.top + p.rect.height / 2)))
+                    : sopra(p.rect, ev.clientX, ev.clientY);
+                if (d < distanza) { distanza = d; migliore = i; }
+            });
+            if (!zonaSotto && distanza > DISTANZA_MAX) migliore = null;
+            if (migliore !== vicino) {
+                const marcati = strato.children;
+                if (vicino !== null) marcati[vicino].classList.remove('is-vicina');
+                if (migliore !== null) marcati[migliore].classList.add('is-vicina');
+                vicino = migliore;
+            }
+        };
+
+        const finisci = (conferma) => {
+            el.removeEventListener('pointermove', muovi);
+            el.removeEventListener('pointerup', alRilascio);
+            el.removeEventListener('pointercancel', alRilascio);
+            document.removeEventListener('keydown', alTasto, true);
+            const scelto = conferma && vicino !== null ? posti[vicino] : null;
+            strato?.remove();
+            document.body.classList.remove('pp-trascina');
+            el.classList.remove('pp-in-volo');
+            el.style.translate = '';
+            if (attivo) ultimoTrascinamento = Date.now();
+            if (scelto) {
+                const spostata = P.sposta(cfg(), id, scelto.zona, scelto.indice);
+                if (!P.uguali(spostata.blocchi, cfg().blocchi)) cambia(() => spostata);   // lasciato dov'era: niente da fare
+            }
+        };
+        const alRilascio = ev => finisci(ev.type === 'pointerup');
+        const alTasto = ev => { if (ev.key === 'Escape') { ev.stopPropagation(); finisci(false); } };
+
+        el.addEventListener('pointermove', muovi);
+        el.addEventListener('pointerup', alRilascio);
+        el.addEventListener('pointercancel', alRilascio);
+        document.addEventListener('keydown', alTasto, true);
     }
 
     function fineTrascinamento() {
         trascinato = null;
-        document.querySelectorAll('.pp-sopra, .pp-in-volo, .pe-sopra').forEach(e => e.classList.remove('pp-sopra', 'pp-in-volo', 'pe-sopra'));
+        document.querySelectorAll('.pp-sopra, .pp-in-volo, .pe-sopra, .pe-in-volo').forEach(e => e.classList.remove('pp-sopra', 'pp-in-volo', 'pe-sopra', 'pe-in-volo'));
+        document.getElementById('pp-ancore')?.remove();
+        document.body.classList.remove('pp-trascina');
     }
 
-    // La barra di ogni blocco sulla carta: maniglia per trascinarlo e occhio per nasconderlo
+    // La barra di ogni blocco sulla carta: maniglia e occhio per nasconderlo. Il blocco si afferra da dove si vuole.
     function installaBarre() {
         for (const [id, el] of Object.entries(C.stato.blocchi)) {
             if (el.querySelector(':scope > .pp-barra-blocco')) continue;
-            const maniglia = h('span', { class: 'pp-maniglia', draggable: 'true', title: 'Drag to move this block', 'aria-label': `Drag ${P.BLOCCHI[id].nome}`, testo: '⠇' });
-            maniglia.addEventListener('dragstart', e => {
-                trascinato = id;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', id);
-                try { e.dataTransfer.setDragImage(el, 24, 24); } catch (_) { /* il browser usa l'immagine di default */ }
-                setTimeout(() => el.classList.add('pp-in-volo'), 0);
-            });
-            maniglia.addEventListener('dragend', fineTrascinamento);
+            const maniglia = h('span', { class: 'pp-maniglia', title: 'Drag to move this block', 'aria-label': `Drag ${P.BLOCCHI[id].nome}`, testo: '⠇' });
             const occhio = h('button', { type: 'button', class: 'pp-occhio', title: 'Hide this block', 'aria-label': `Hide ${P.BLOCCHI[id].nome}`, onclick: ev => { ev.stopPropagation(); cambia(c => P.accendi(c, id, false)); }, testo: '◉' });
             el.prepend(h('div', { class: 'pp-barra-blocco' }, maniglia, h('span', { class: 'pp-barra-nome', testo: P.BLOCCHI[id].nome }), occhio));
         }
+    }
+
+    function installaTrascinamentoBlocchi() {
+        const corpo = document.querySelector('.pp-corpo');
+        ascolta(corpo, 'pointerdown', e => {
+            if (e.button !== 0 || e.target.closest('.pp-occhio')) return;
+            const el = e.target.closest('.pp-blocco');
+            if (!el || !corpo.contains(el)) return;
+            e.preventDefault();
+            avviaTrascinamento(e, el.dataset.blocco, el);
+        });
+        // dopo un trascinamento non deve partire anche il clic (che riaccenderebbe un blocco spento)
+        ascolta(corpo, 'click', e => { if (Date.now() - ultimoTrascinamento < 80) { e.stopPropagation(); e.preventDefault(); } }, true);
     }
 
     function togliBarre() {
@@ -476,7 +629,7 @@
         ascolta(document, 'keydown', e => {
             const bersaglio = e.target;
             const inCampo = bersaglio && /^(INPUT|TEXTAREA|SELECT)$/.test(bersaglio.tagName) && bersaglio.type !== 'range';
-            if (e.key === 'Escape') { chiudi(); return; }
+            if (e.key === 'Escape') { if (!inCampo) chiudi(); return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !inCampo) { e.preventDefault(); annulla(); return; }
             const i = C.stato.adesivoScelto;
             if (i < 0 || inCampo || !cfg().adesivi[i]) return;
@@ -498,18 +651,23 @@
         e.returnValue = '';
     }
 
+    /** Quello che serve alle schede aggiunte da altri file */
+    function contesto() {
+        return { P, C, h, sezione, segmentato, interruttore, campione, cursore, cambiaProfilo, avvisa, ridisegna: disegnaPannello };
+    }
+
     function apri(card) {
         C = card;
         h = card.h;
         if (pannello) return;
         storia = [];
-        scheda = 'layout';
+        scheda = estensioni.length ? estensioni[0].id : 'layout';
         C.stato.dopoApplica = () => { installaBarre(); };
         C.modifica(true);
         installaBarre();
         costruisciPannello();
         disegnaPannello();
-        for (const zonaEl of Object.values(C.stato.zone)) sulla(zonaEl);
+        installaTrascinamentoBlocchi();
         installaAdesivi();
         ascolta(window, 'beforeunload', avvertiSeNonSalvato);
         // un clic su un punto vuoto della carta toglie la selezione dell'adesivo
@@ -523,6 +681,8 @@
     function chiudi() {
         if (!pannello) return;
         if (sporco() && !confirm('Discard your changes?')) return;
+        esciDallaScheda();
+        C.impostaProfilo(C.stato.infoSalvata);
         C.imposta(C.stato.salvata);
         C.stato.dopoApplica = null;
         for (const [bersaglio, evento, funzione, opzioni] of ascoltatori) bersaglio.removeEventListener(evento, funzione, opzioni);
@@ -536,6 +696,8 @@
 
     window.PublicEditor = {
         apri,
+        /** Aggiunge una scheda al pannello: { id, nome, disegna(contesto) -> elementi, esci?() } */
+        estendi(scheda) { if (!estensioni.some(e => e.id === scheda.id)) estensioni.push(scheda); },
         accendi(id) { cambia(c => P.accendi(c, id, true)); },
         get aperto() { return !!pannello; }
     };

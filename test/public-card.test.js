@@ -118,9 +118,102 @@ test('profile.html porta all\'editor della pagina pubblica e public-card.js lo a
     assert.match(card, /get\('edit'\) === '1'/);
 });
 
-test('l\'editor salva in players/{id}/info/pagina e non scrive la configurazione di partenza', () => {
-    assert.match(editor, /players\/\$\{C\.stato\.dati\.chiave\}\/info\/pagina/);
-    assert.match(editor, /P\.uguali\(daSalvare, P\.predefinita\(\)\) \? null/);
+test('l\'editor salva in players/{id}/info (campo pagina compreso) e non scrive la configurazione di partenza', () => {
+    assert.match(editor, /players\/\$\{chiave\}\/info`\)\.update\(aggiornamenti\)/);
+    assert.match(editor, /pagina: P\.uguali\(daSalvare, P\.predefinita\(\)\) \? null : daSalvare/);
     // la pagina legge la stessa configurazione, passando da normalizza
     assert.match(card, /P\.normalizza\(d\.info && d\.info\.pagina\)/);
+});
+
+
+// ---- Schermo intero, musica, scheda Trainer ---------------------------------------------------
+
+const trainer = docs('public-editor-trainer.js');
+
+test('schermo intero su PC: ogni layout ha le sue regole a tela, e i numeri della tela sono gli stessi nel JS e nel CSS', () => {
+    for (const id of Object.keys(P.LAYOUT)) {
+        assert.match(cssCard, new RegExp(`body\\.pp-fisso[^{]*\\[data-layout="${id}"\\]|body\\.pp-fisso :is\\([^)]*"${id}"`), `layout ${id}`);
+    }
+    assert.match(cssCard, /body\.pp-fisso \.pp-pagina \{[^}]*position: fixed[^}]*transform: scale\(var\(--pp-k\)\)/);
+    // la finestra "da PC" e la larghezza del pannello: JS, stile della carta e dell'editor devono dire lo stesso
+    assert.match(card, /PC_MIN_W = 1100/);
+    assert.match(cssEditor, /@media \(max-width: 1099px\)/);
+    assert.match(card, /PANNELLO_PX = 400/);
+    assert.match(cssEditor, /\.pe-pannello \{[^}]*width: 400px/);
+    // senza min-height: 0 sui blocchi non ci si accorge che qualcosa non ci sta (solo il palco può)
+    assert.doesNotMatch(cssCard.slice(cssCard.indexOf('Schermo intero su PC')), /\.pp-(identita|statistiche|party|trofei|medaglie|musica)[^{]*\{[^}]*min-height: 0/);
+});
+
+test('le sagome di ogni layout dell\'editor ci sono per tutti i layout e la scena usa pixel di progetto, non misure fisse', () => {
+    const palco = cssCard.slice(cssCard.indexOf('/* ---------- Palco'), cssCard.indexOf('/* ---------- Nome, titolo, motto'));
+    assert.doesNotMatch(palco.replace(/--d: min\([^)]*\);/, ''), /\d(cqw)\b/, 'misure in cqw dentro il palco: devono essere in pixel di progetto (--d)');
+    assert.match(palco, /--d: min\(0\.25cqw, 0\.3125cqh\)/);
+    assert.match(card, /P\.scalaScena\(/);
+    assert.doesNotMatch(card, /Math\.min\(Math\.max\(px, 90\), 255\)/, 'il vecchio tetto che sfora la proporzione');
+});
+
+test('musica: il tasto del volume in alto non c\'è più; la musica va dal widget e rispetta la preferenza di tutto il sito', () => {
+    assert.doesNotMatch(html, /music-control|class="music-btn"|caricaMusicaSottoBio/);
+    assert.doesNotMatch(cssVecchio, /\.music-btn|\.music-tooltip|#music-control/);
+    assert.match(html, /userMusicPref/);
+    // parte da sola solo se la preferenza è 'on' e il widget è in vista
+    assert.match(html, /preferenzaMusica\(\) === 'on'/);
+    assert.match(html, /info\.musicaPreferita && PublicCard\.musicaAttiva\(\)/);
+    // toggleMusic non dipende più da un pulsante (prima usciva subito se non c'era)
+    const toggle = /function toggleMusic\(\) \{([\s\S]*?)\n\}/.exec(html)[1];
+    assert.doesNotMatch(toggle, /getElementById\('music-(control|toggle)'\)/);
+    assert.match(toggle, /localStorage\.setItem\('userMusicPref', 'on'\)/);
+    assert.match(toggle, /localStorage\.setItem\('userMusicPref', 'off'\)/);
+    // senza il widget in vista la musica si ferma
+    assert.match(card, /if \(audio && !musicaAttiva\(\)\) audio\.pause\(\)/);
+    // il widget della carta chiama toggleMusic
+    assert.match(card, /window\.toggleMusic\(\)/);
+});
+
+test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo e nasconde le scelte degli altri', () => {
+    assert.match(card, /public-editor\.js'\)\.then\(\(\) => caricaScript\('public-editor-trainer\.js'\)/);
+    assert.match(trainer, /PublicEditor\.estendi\(\{ id: 'trainer'/);
+    assert.doesNotMatch(trainer, /innerHTML|insertAdjacentHTML|outerHTML/);
+    for (const campo of P.CAMPI_PROFILO) assert.match(trainer + card + editor, new RegExp(`\\b${campo}\\b`), campo);
+    // le liste partono da quello che hanno già gli altri
+    assert.match(trainer, /P\.scelteDegliAltri\(/);
+    for (const insieme of ['presi.avatar', 'presi.colori', 'presi.pokemon', 'presi.canzoniUrl', 'presi.canzoniNomi']) assert.ok(trainer.includes(insieme), insieme);
+    // il colore di chi sceglie resta sempre tra le scelte
+    assert.match(trainer, /colori\.unshift\(attuale\)/);
+    // e la palette del colore firma è quella senza neutri
+    assert.match(trainer, /P\.PALETTE_FIRMA/);
+});
+
+test('salvataggio: un\'unica scrittura su info, e le scelte uniche si ricontrollano sui dati di adesso', () => {
+    assert.match(editor, /database\.ref\(`players\/\$\{chiave\}\/info`\)\.update\(aggiornamenti\)/);
+    assert.match(editor, /database\.ref\('players'\)\.once\('value'\)/);
+    assert.match(editor, /P\.conflitti\(chiave, unici, tutti\)/);
+    // ogni campo unico è controllato, e ogni nome di conflitto ha il suo messaggio
+    assert.match(editor, /CAMPI_UNICI = \['color', 'avatar', 'pkmPreferito', 'musicName', 'musicaPreferita'\]/);
+    for (const nome of ['color', 'avatar', 'pkmPreferito', 'musica']) assert.match(editor, new RegExp(`NOMI_CONFLITTO = \\{[^}]*\\b${nome}:`), nome);
+    // "No Title" si salva come stringa vuota, come faceva profile.html
+    assert.match(editor, /k === 'title' && profilo\.title === 'No Title' \? ''/);
+});
+
+test('trascinare un blocco: pointer events con posti di aggancio, non più il trascinamento nativo del browser', () => {
+    assert.match(editor, /function postiPossibili\(/);
+    assert.match(editor, /class: 'pp-ancora'/);
+    assert.doesNotMatch(editor, /setDragImage/);
+    assert.match(cssEditor, /\.pp-ancora\.is-vicina/);
+    assert.match(cssCard, /body\.pp-modifica \.pp-blocco \{ cursor: grab; touch-action: none; \}/);
+});
+
+test('reset: un tasto nel pannello e uno nella scheda Layout riportano alla Trainer Card standard', () => {
+    assert.match(editor, /function tornaAllaTrainerCard\(\)/);
+    assert.equal((editor.match(/onclick: tornaAllaTrainerCard/g) || []).length, 2);
+    assert.match(editor, /cambia\(\(\) => P\.predefinita\(\)\)/);
+});
+
+test('tooltip: si aprono verso l\'alto quando in basso non c\'è posto, e a riposo non occupano spazio nella pagina', () => {
+    assert.match(card, /host\.classList\.add\('pp-tip-su'\)/);
+    assert.match(cssCard, /\.pp-pagina \.pp-tip-su > \.neubrutal-tooltip \{ top: auto; bottom:/);
+    // display: none a riposo: un tooltip nascosto con visibility continuerebbe a contare nell'overflow della tela
+    const regola = /\.pp-pagina \.neubrutal-tooltip \{([^}]*)\}/.exec(cssCard)[1];
+    assert.match(regola, /display: none/);
+    assert.doesNotMatch(regola, /visibility: hidden/);
 });

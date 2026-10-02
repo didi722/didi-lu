@@ -24,10 +24,6 @@
         ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
     };
 
-    // Altezza dell'allenatore sul palco, in pixel di un palco largo 400: i Pokémon sono in scala con lui
-    const ALTEZZA_ALLENATORE_PX = 170;
-    const ALTEZZA_ALLENATORE_M = 1.70;
-
     const FORME_SPECIALI = {
         mimikyu: 'mimikyu-disguised', giratina: 'giratina-altered', deoxys: 'deoxys-normal',
         shaymin: 'shaymin-land', aegislash: 'aegislash-shield'
@@ -93,21 +89,26 @@
     // ---- Palco: l'allenatore e il suo Pokémon preferito ---------------------------------------
 
     function costruisciPalco(d) {
-        const quadro = h('div', { class: 'pp-quadro' },
-            h('div', { class: 'pp-raggi' }),
-            h('div', { class: 'pp-puntini' }),
-            h('div', { class: 'pp-pavimento' }));
-        quadro.append(d.info.avatar
+        const set = h('div', { class: 'pp-set' });
+        set.append(d.info.avatar
             ? h('div', { class: 'pp-allenatore' }, h('img', { src: d.info.avatar, alt: '' }))
             : h('div', { class: 'pp-allenatore pp-allenatore-vuoto', testo: '?' }));
         const posto = h('div', { class: 'pp-pkm' });
-        quadro.append(posto);
-        if (d.info.pkmPreferito) montaPokemonPreferito(posto, quadro, d.info.pkmPreferito);
-        return blocco('palco', 'pp-palco', quadro);
+        set.append(posto);
+        if (d.info.pkmPreferito) montaPokemonPreferito(set, posto, d.info.pkmPreferito);
+        return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro' },
+            h('div', { class: 'pp-raggi' }),
+            h('div', { class: 'pp-puntini' }),
+            h('div', { class: 'pp-pavimento' }),
+            set));
     }
 
-    // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo
-    async function montaPokemonPreferito(posto, quadro, nomeGrezzo) {
+    // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo.
+    // Le misure (e cosa succede se è troppo grande) sono in scalaScena, pagina-pubblica.js.
+    let giri = 0;
+    async function montaPokemonPreferito(set, posto, nomeGrezzo) {
+        const mio = ++giri;
+        posto.dataset.giro = String(mio);
         let nome = String(nomeGrezzo).toLowerCase().trim();
         if (FORME_SPECIALI[nome]) nome = FORME_SPECIALI[nome];
 
@@ -128,24 +129,23 @@
             // PokeAPI non lo conosce o non risponde: si usa lo sprite di Showdown e una taglia media
             vola = GALLEGGIANO.includes(nome);
         }
+        if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
         if (!gif) gif = gifShowdown(nomeGrezzo);
 
-        let px = altezzaM * ALTEZZA_ALLENATORE_PX / ALTEZZA_ALLENATORE_M;
-        if (RIMPICCIOLISCI.includes(nome)) px *= 0.5;
-        else if (INGRANDISCI.includes(nome)) px *= 1.5;
-        else if (altezzaM < 0.6) px *= 1.6;
-        else if (altezzaM < 1.3) px *= 1.35;
-        px = Math.min(Math.max(px, 90), 255);
+        const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
+        const misure = P.scalaScena(altezzaM, { regola, vola });
 
         let dietro;
         if (SEMPRE_DIETRO.includes(nome)) dietro = true;
         else if (SEMPRE_DAVANTI.includes(nome)) dietro = false;
-        else dietro = vola || altezzaM >= ALTEZZA_ALLENATORE_M * 1.2;
+        else dietro = vola || altezzaM >= P.SCENA.ALTEZZA_ALLENATORE_M * 1.2;
 
+        set.style.setProperty('--ht', String(misure.allenatore));
         posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}`;
-        posto.style.setProperty('--h', String(Math.round(px)));
+        posto.style.setProperty('--h', String(misure.pokemon));
         posto.replaceChildren(h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' }));
-        quadro.append(h('span', { class: 'pp-pkm-nome', testo: nomeGrezzo }));
+        set.querySelector(':scope > .pp-pkm-nome')?.remove();
+        set.append(h('span', { class: 'pp-pkm-nome', testo: nomeGrezzo }));
     }
 
     // ---- Nome, titolo, motto ------------------------------------------------------------------
@@ -227,6 +227,9 @@
     function riempiStatistiche() {
         const griglia = stato.blocchi.statistiche.querySelector('.pp-stat-griglia');
         griglia.replaceChildren();
+        // 1-3 statistiche in una riga, 4 in due da due, 5-6 in due righe da tre: mai una riga con un solo riquadro
+        const quante = stato.config.statistiche.length;
+        griglia.style.setProperty('--col', String(quante <= 3 ? quante : quante === 4 ? 2 : 3));
         stato.config.statistiche.forEach((id, i) => {
             const v = stato.riepilogo[id];
             if (!v) return;
@@ -386,8 +389,11 @@
         h('span', { class: 'pp-eq', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'))));
         const audio = document.getElementById('bg-music-home');
         if (audio) {
+            const EVENTI = ['play', 'pause', 'volumechange', 'ended'];
+            if (stato.sincMusica) EVENTI.forEach(ev => audio.removeEventListener(ev, stato.sincMusica));
             const sync = () => el.classList.toggle('is-playing', !audio.paused && !audio.muted);
-            ['play', 'pause', 'volumechange', 'ended'].forEach(ev => audio.addEventListener(ev, sync));
+            stato.sincMusica = sync;
+            EVENTI.forEach(ev => audio.addEventListener(ev, sync));
             sync();
         }
         return el;
@@ -430,6 +436,12 @@
     }
 
     // ---- Applicare la configurazione ----------------------------------------------------------
+
+    /** Il widget della canzone è in vista (acceso dall'allenatore e c'è una canzone)? */
+    function musicaAttiva() {
+        const b = stato.config.blocchi.find(x => x.id === 'musica');
+        return !!(b && b.on) && !stato.vuoti.musica;
+    }
 
     const NOMI_BLOCCHI = P.BLOCCHI;
 
@@ -478,8 +490,61 @@
         }
 
         disegnaAdesivi();
+        adattaSchermo();
+        // senza il widget della canzone in vista la musica non resta accesa: non ci sarebbe modo di spegnerla
+        const audio = document.getElementById('bg-music-home');
+        if (audio && !musicaAttiva()) audio.pause();
         if (typeof stato.dopoApplica === 'function') stato.dopoApplica();
     }
+
+    // ---- Tutto a schermo intero, senza scroll (su PC) ------------------------------------------
+
+    // Su un monitor la pagina è una "tela" che riempie esattamente la finestra: ha almeno 1280 x 640 pixel di
+    // progetto e viene ingrandita (transform: scale) quanto serve per arrivare ai bordi. Quindi non scorre mai
+    // e ogni layout, anche quelli a sorpresa, si vede intero. Se i blocchi scelti non ci stanno (per esempio
+    // tutti nella stessa colonna) la tela viene rimpicciolita finché ci stanno: più testo sta in meno spazio.
+    // Su telefono e finestre piccole la pagina resta a scorrimento normale.
+    const PANNELLO_PX = 400;            // larghezza del pannello dell'editor (style-public-editor.css)
+    const TELA_MIN_W = 1280, TELA_MIN_H = 640;
+    const PC_MIN_W = 1100, PC_MIN_H = 560;
+
+    function sfora(carta) {
+        const tolleranza = 12;
+        return carta.scrollHeight > carta.clientHeight + tolleranza || carta.scrollWidth > carta.clientWidth + tolleranza;
+    }
+
+    function adattaSchermo() {
+        const radice = document.documentElement;
+        const pc = window.innerWidth >= PC_MIN_W && window.innerHeight >= PC_MIN_H;
+        document.body.classList.toggle('pp-fisso', pc);
+        if (!pc) {
+            for (const v of ['--pp-k', '--pp-w', '--pp-h']) radice.style.removeProperty(v);
+            return;
+        }
+        const larghezza = window.innerWidth - (stato.modifica ? PANNELLO_PX : 0);
+        const altezza = window.innerHeight;
+        const imposta = k => {
+            radice.style.setProperty('--pp-k', k.toFixed(4));
+            radice.style.setProperty('--pp-w', `${(larghezza / k).toFixed(1)}px`);
+            radice.style.setProperty('--pp-h', `${(altezza / k).toFixed(1)}px`);
+        };
+        let k = Math.min(larghezza / TELA_MIN_W, altezza / TELA_MIN_H);
+        imposta(k);
+        const carta = document.getElementById('pp-carta');
+        for (let i = 0; carta && i < 40 && k > 0.3 && sfora(carta); i++) {
+            k *= 0.97;
+            imposta(k);
+        }
+        stato.scala = k;
+    }
+
+    let attesaAdatta = 0;
+    function adattaSubito() {
+        cancelAnimationFrame(attesaAdatta);
+        attesaAdatta = requestAnimationFrame(adattaSchermo);
+    }
+    window.addEventListener('resize', adattaSubito);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(adattaSubito);
 
     // ---- Effetto "carta olografica" -----------------------------------------------------------
 
@@ -510,9 +575,15 @@
         const host = e.target.closest && e.target.closest('.pp-tip-host');
         const tip = host && host.querySelector(':scope > .neubrutal-tooltip');
         if (!tip) return;
+        host.classList.remove('pp-tip-su');
         tip.style.setProperty('--dx', '0px');
-        const r = tip.getBoundingClientRect();
-        const margine = 10, larghezza = document.documentElement.clientWidth;
+        let r = tip.getBoundingClientRect();
+        const margine = 10, larghezza = document.documentElement.clientWidth, altezza = document.documentElement.clientHeight;
+        // in basso non c'è posto (la tela arriva al bordo della finestra): si apre verso l'alto
+        if (r.bottom > altezza - margine && host.getBoundingClientRect().top > r.height + margine) {
+            host.classList.add('pp-tip-su');
+            r = tip.getBoundingClientRect();
+        }
         let dx = 0;
         if (r.left < margine) dx = margine - r.left;
         else if (r.right > larghezza - margine) dx = larghezza - margine - r.right;
@@ -532,17 +603,21 @@
         // dal profilo si arriva con ?edit=1: l'editor si apre da solo, una volta
         const daProfilo = new URLSearchParams(window.location.search).get('edit') === '1';
         if (daProfilo) setTimeout(apriEditor, 300);
-        document.body.append(h('button', { id: 'pp-modifica-btn', class: 'pp-modifica-btn', type: 'button', onclick: apriEditor },
+        (document.getElementById('pp-nav') || document.body).append(h('button', { id: 'pp-modifica-btn', class: 'pp-modifica-btn', type: 'button', onclick: apriEditor },
             h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '✎' }), ' CUSTOMIZE'));
+        adattaSubito();
     }
 
+    // L'editor (con la scheda Trainer) si scarica solo quando serve, solo al proprietario
     let caricamentoEditor = null;
+    function caricaScript(src) {
+        return new Promise((ok, no) => document.head.append(h('script', { src, onload: ok, onerror: () => no(new Error(src)) })));
+    }
     function apriEditor() {
         if (!caricamentoEditor) {
-            caricamentoEditor = new Promise((ok, no) => {
-                document.head.append(h('link', { rel: 'stylesheet', href: 'style-public-editor.css' }));
-                document.head.append(h('script', { src: 'public-editor.js', onload: ok, onerror: () => { caricamentoEditor = null; no(new Error('editor')); } }));
-            });
+            document.head.append(h('link', { rel: 'stylesheet', href: 'style-public-editor.css' }));
+            caricamentoEditor = caricaScript('public-editor.js').then(() => caricaScript('public-editor-trainer.js'))
+                .catch(err => { caricamentoEditor = null; throw err; });
         }
         caricamentoEditor.then(() => window.PublicEditor.apri(window.PublicCard)).catch(() => alert('Could not load the editor. Try again.'));
     }
@@ -552,29 +627,78 @@
     /**
      * @param {object} d  chiave, nome, colore, info, badges, stagioni, tipi, pokemon, teams, tutti (il nodo players)
      */
+    const COSTRUTTORI = {
+        palco: d => costruisciPalco(d),
+        identita: d => costruisciIdentita(d),
+        statistiche: () => costruisciStatistiche(),
+        party: () => costruisciParty(),
+        trofei: d => costruisciTrofei(d),
+        medaglie: d => costruisciMedaglie(d),
+        musica: d => costruisciMusica(d)
+    };
+
+    function preparaBlocco(id, el) {
+        el.style.setProperty('--b', Object.keys(COSTRUTTORI).indexOf(id));
+        // in modifica un blocco spento si riaccende toccandolo
+        el.addEventListener('click', () => {
+            if (stato.modifica && el.classList.contains('pp-spento') && window.PublicEditor) window.PublicEditor.accendi(id);
+        });
+    }
+
+    /** Rifà un blocco da capo (cambiati i dati da cui dipende) e lo rimette dov'era */
+    function ricostruisci(id) {
+        const vecchio = stato.blocchi[id];
+        const nuovo = COSTRUTTORI[id](stato.dati);
+        nuovo.classList.add('pp-ricostruito');      // non rifà l'animazione d'entrata
+        preparaBlocco(id, nuovo);
+        stato.blocchi[id] = nuovo;
+        if (vecchio && vecchio.parentNode) vecchio.replaceWith(nuovo);
+    }
+
+    // ---- Profilo: i campi di players/{id}/info che si scelgono nell'editor --------------------------
+
+    // quali blocchi cambiano quando cambia un campo
+    const DIPENDE = { avatar: ['palco'], pkmPreferito: ['palco'], bio: ['identita'], title: ['identita'], musicName: ['musica'], musicaPreferita: ['musica'], color: [] };
+
+    function profiloAttuale() {
+        const info = stato.dati.info || {};
+        return Object.fromEntries(P.CAMPI_PROFILO.map(k => [k, info[k] == null ? '' : String(info[k])]));
+    }
+
+    /** Applica subito (anteprima) nuovi valori dei campi del profilo */
+    function impostaProfilo(nuovi) {
+        const info = stato.dati.info, daFare = new Set();
+        for (const k of P.CAMPI_PROFILO) {
+            if (!(k in nuovi)) continue;
+            const valore = nuovi[k] == null ? '' : String(nuovi[k]);
+            if ((info[k] == null ? '' : String(info[k])) === valore) continue;
+            info[k] = valore;
+            for (const id of DIPENDE[k]) daFare.add(id);
+            if (k === 'color') {
+                stato.dati.colore = valore || '#31c489';
+                if (typeof window.getPlayerPalette === 'function') {
+                    const pal = window.getPlayerPalette(stato.dati.colore);
+                    for (const [v, c] of [['--accent-color', pal.base], ['--bright-color', pal.bright], ['--dark-color', pal.dark]]) document.documentElement.style.setProperty(v, c);
+                }
+            }
+        }
+        for (const id of daFare) ricostruisci(id);
+        applica();
+    }
+
     function monta(d) {
         stato.dati = d;
         stato.salvata = P.normalizza(d.info && d.info.pagina);
         stato.config = P.copia(stato.salvata);
         stato.riepilogo = P.riepilogoStat(d.chiave, d.tutti);
         stato.vuoti = {};
+        stato.infoSalvata = profiloAttuale();
         stato.zone = Object.fromEntries(ZONE.map(z => [z, document.querySelector(`.pp-zona[data-zona="${z}"]`)]));
 
-        stato.blocchi = {
-            palco: costruisciPalco(d),
-            identita: costruisciIdentita(d),
-            statistiche: costruisciStatistiche(),
-            party: costruisciParty(),
-            trofei: costruisciTrofei(d),
-            medaglie: costruisciMedaglie(d),
-            musica: costruisciMusica(d)
-        };
-        Object.values(stato.blocchi).forEach((el, i) => el.style.setProperty('--b', i));
-        for (const el of Object.values(stato.blocchi)) {
-            el.addEventListener('click', e => {
-                // in modifica un blocco spento si riaccende toccandolo
-                if (stato.modifica && el.classList.contains('pp-spento') && window.PublicEditor) window.PublicEditor.accendi(el.dataset.blocco);
-            });
+        stato.blocchi = {};
+        for (const id of Object.keys(COSTRUTTORI)) {
+            stato.blocchi[id] = COSTRUTTORI[id](d);
+            preparaBlocco(id, stato.blocchi[id]);
         }
 
         riempiCornice(d);
@@ -582,6 +706,8 @@
         document.getElementById('pp-carta').classList.add('pp-entra');
         attivaInclinazione();
         controllaProprietario();
+        window.addEventListener('load', adattaSubito);
+        setTimeout(adattaSubito, 900);
     }
 
     function mostraMessaggio(testo) {
@@ -592,12 +718,22 @@
     }
 
     window.PublicCard = {
-        h, monta, mostraMessaggio, controllaProprietario,
+        h, monta, mostraMessaggio, controllaProprietario, musicaAttiva,
         get stato() { return stato; },
         /** Applica una configurazione (anteprima mentre si modifica o ritorno al salvato) */
         imposta(config) { stato.config = P.normalizza(config); applica(); },
         /** Dopo un salvataggio riuscito: quella in vista diventa la salvata */
         salvata(config) { stato.salvata = P.normalizza(config); },
+        /** I campi del profilo di adesso (avatar, color, bio, pkmPreferito, title, musicName, musicaPreferita) */
+        profilo: profiloAttuale,
+        impostaProfilo,
+        /** Dopo un salvataggio riuscito: questi valori diventano quelli salvati (e la nuova canzone parte, se può) */
+        profiloSalvato(valori) {
+            const prima = stato.infoSalvata;
+            stato.infoSalvata = { ...profiloAttuale(), ...valori };
+            if (prima && prima.musicaPreferita !== stato.infoSalvata.musicaPreferita && stato.infoSalvata.musicaPreferita
+                && musicaAttiva() && typeof window.avviaMusicaGiocatore === 'function') window.avviaMusicaGiocatore(stato.infoSalvata.musicaPreferita);
+        },
         modifica(on) {
             stato.modifica = !!on;
             document.body.classList.toggle('pp-modifica', stato.modifica);

@@ -337,8 +337,8 @@
 .pp-blocco.pp-spento .pp-occhio { display: none; }
 
 /* i blocchi lasciano un po' di posto alla loro barra */
-body.pp-modifica .pp-blocco:not(.pp-palco):not(.pp-musica) { padding-top: 40px; }
-body.pp-modifica .pp-musica { padding-top: 40px !important; }
+body.pp-modifica:not(.pp-fisso) .pp-blocco:not(.pp-palco):not(.pp-musica) { padding-top: 40px; }
+body.pp-modifica:not(.pp-fisso) .pp-musica { padding-top: 40px !important; }
 
 /* ---------- Schermi stretti: il pannello diventa un foglio in basso ---------- */
 
@@ -366,3 +366,101 @@ body.pp-modifica .pp-musica { padding-top: 40px !important; }
 @media (prefers-reduced-motion: reduce) {
     .pe-pannello, .pe-avviso { animation: none; }
 }
+
+
+/* ---------- Colori: tanti, quindi piccoli ---------- */
+
+.pe-campioni-fitti { gap: 6px; }
+.pe-campioni-fitti .pe-campione { width: 28px; height: 28px; border-width: 2px; box-shadow: 1px 1px 0 #000; }
+.pe-campioni-fitti .pe-campione.is-on { outline-width: 3px; outline-offset: 2px; }
+.pe-campioni-fitti .pe-campione-etichetta { font-size: 0.5rem; }
+.pe-sotto { margin-top: 10px; }
+.pe-grande { width: 100%; padding: 12px 14px; white-space: normal; background: #ffde4d; }
+
+.pe-caratteri { max-height: 260px; overflow-y: auto; padding: 2px 4px 6px 2px; }
+
+/* ---------- Scheda Trainer ---------- */
+
+.pe-avatar-riga { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pe-avatar-grande { flex: none; width: 76px; height: 76px; display: grid; place-items: center; background: #8fd3ff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
+.pe-avatar-grande img { width: 64px; height: 64px; image-rendering: pixelated; object-fit: contain; }
+
+.pe-avatar-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; max-height: 230px; overflow-y: auto; padding: 6px; background: #f1f1f1; border: 3px solid #000; }
+.pe-avatar-item { padding: 0; cursor: pointer; background: #fff; border: 2px solid #000; aspect-ratio: 1; display: grid; place-items: center; }
+.pe-avatar-item img { width: 40px; height: 40px; image-rendering: pixelated; object-fit: contain; }
+.pe-avatar-item:hover { background: #ffde4d; }
+.pe-avatar-item.is-on { background: #7cf29a; outline: 3px solid #000; outline-offset: 1px; }
+
+.pe-select, .pe-ricerca, .pe-testo {
+    width: 100%;
+    padding: 9px 10px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #000;
+}
+
+.pe-testo { resize: vertical; min-height: 64px; }
+.pe-select:focus, .pe-ricerca:focus, .pe-testo:focus { outline: none; background: #fffbeb; }
+.pe-conto { display: block; margin-top: 6px; text-align: right; font-size: 0.7rem; font-weight: 800; opacity: 0.6; }
+
+.pe-attuale { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; font-weight: 700; }
+.pe-attuale b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
+.pe-piccolo { padding: 4px 9px; font-size: 0.7rem; box-shadow: 2px 2px 0 #000; }
+
+.pe-ricerca { margin-bottom: 8px; }
+.pe-scorri { max-height: 230px; overflow-y: auto; padding: 6px; background: #f1f1f1; border: 3px solid #000; display: flex; flex-direction: column; gap: 5px; }
+
+.pe-scelta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 8px;
+    cursor: pointer;
+    text-align: left;
+    background: #fff;
+    border: 2px solid #000;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.pe-scelta img { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
+.pe-scelta:hover { background: #ffde4d; }
+.pe-scelta.is-on { background: #7cf29a; }
+.pe-canzone { display: flex; gap: 6px; align-items: center; }
+.pe-canzone .pe-scelta { flex: 1; min-width: 0; }
+.pe-canzone .pe-scelta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Trascinare i blocchi: i posti dove può stare ---------- */
+
+.pp-ancore { position: fixed; inset: 0; z-index: 2400; pointer-events: none; }
+
+.pp-ancora {
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    background: rgba(255, 222, 77, 0.35);
+    border: 2px dashed #000;
+    border-radius: 4px;
+    transition: background 0.08s, transform 0.08s;
+}
+
+.pp-ancora.is-vicina { background: #ffde4d; border: 3px solid #000; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.85), 3px 3px 0 4px #000; transform: scale(1.04); }
+
+body.pp-modifica .pp-blocco.pp-in-volo {
+    z-index: 300;
+    opacity: 0.93;
+    cursor: grabbing;
+    transition: none;
+    background: var(--pp-sup);
+    color: var(--pp-ink);
+    outline: 4px solid #000;
+    outline-offset: -4px;
+    box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.55);
+}
+
+body.pp-trascina, body.pp-trascina * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }

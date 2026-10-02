@@ -322,6 +322,15 @@ body {
     transition: all 0.1s;
 }
 
+.customize-public-btn small {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: none;
+    font-weight: 700;
+}
+
 .customize-public-btn:hover {
     transform: translate(-4px, -4px);
     box-shadow: 12px 12px 0px var(--black);
