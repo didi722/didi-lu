@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="risultati-match.js"></script>
 </head>
 <body class="admin-page">
 
@@ -42,6 +43,14 @@
             </table>
         </section>
     </main>
+
+    <!-- Avanzamento cancellazione stagione (il ricalcolo delle stats può richiedere diversi secondi) -->
+    <div id="delete-progress" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+        <div class="glass-card" style="padding:30px 40px; text-align:center; color:white; max-width:90%;">
+            <h3 style="margin-top:0;">Deleting season...</h3>
+            <p id="delete-progress-text" style="margin-bottom:0;"></p>
+        </div>
+    </div>
 
    <section class="admin-main-container" style="margin-top: 40px;">
     <div class="glass-card admin-table-section">
@@ -566,25 +575,145 @@ async function salvaModificheStagione() {
     }
 }
 
-async function eliminaStagioneCorrente(idDaEliminare) {
-    if (!idDaEliminare) return;
+let eliminazioneInCorso = false;
 
-    // Piccola chicca: cerchiamo di recuperare il nome della stagione per la conferma
-    // Assumendo che nella tua tabella la riga abbia un riferimento o il testo
-    const rigaStagione = document.querySelector(`tr[data-id="${idDaEliminare}"]`);
-    const nomeStagione = rigaStagione ? rigaStagione.querySelector('.nome-cella').innerText : idDaEliminare;
+function mostraProgressoEliminazione(testo) {
+    const overlay = document.getElementById('delete-progress');
+    document.getElementById('delete-progress-text').innerText = testo || '';
+    overlay.style.display = testo ? 'flex' : 'none';
+}
 
-    if (confirm(`Are you sure you want to permanently delete the season "${nomeStagione}"? This action is irreversible.`)) {
-        try {
-            // Riferimento preciso al nodo da cancellare
-            await db.ref(`seasons/${idDaEliminare}`).remove();
-            
-            alert("Season deleted successfully!");
-            location.reload();
-        } catch (e) {
-            console.error("Error during deletion:", e);
-            alert("Technical error: Unable to delete the season.");
+// Giocatori toccati dalla stagione: chi è in classifica, chi ha giocato un match
+// o ha lo storico della stagione nel profilo. Solo quelli con un profilo esistente
+// (ricalcolare un player cancellato ricreerebbe un profilo fantasma).
+function giocatoriDellaStagione(idStagione, season, players) {
+    const ids = new Set(Object.keys(season.leaderboard || {}).map(n => n.toLowerCase()));
+
+    Object.values(season.showdowns || {}).forEach(sd => {
+        Object.values(sd.matches || {}).forEach(m => {
+            if (m.player1Id) ids.add(m.player1Id);
+            if (m.player2Id) ids.add(m.player2Id);
+        });
+    });
+
+    Object.entries(players).forEach(([pid, p]) => {
+        if (p && p.stats && p.stats.seasons && p.stats.seasons.history && p.stats.seasons.history[idStagione]) {
+            ids.add(pid);
         }
+    });
+
+    return [...ids].filter(pid => players[pid]);
+}
+
+// Dati legati alla stagione che stanno fuori da seasons/{id}: sfide e notifiche.
+// Vanno tolti perché il prossimo ID stagione viene calcolato come "massimo + 1",
+// quindi dopo aver cancellato l'ultima stagione il suo ID viene riutilizzato.
+// Best-effort: se le regole del database vietano la scrittura non blocchiamo nulla.
+async function pulisciSfideENotifiche(idStagione) {
+    const avvisi = [];
+
+    try {
+        await db.ref(`sfide/${idStagione}`).remove();
+    } catch (e) {
+        console.warn("Impossibile rimuovere le sfide della stagione:", e);
+        avvisi.push(`challenges (sfide/${idStagione})`);
+    }
+
+    try {
+        const notificheSnap = await db.ref('notifiche').once('value');
+        const updates = {};
+        Object.entries(notificheSnap.val() || {}).forEach(([uid, perStagione]) => {
+            if (perStagione && perStagione[idStagione] !== undefined) {
+                updates[`notifiche/${uid}/${idStagione}`] = null;
+            }
+        });
+        if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    } catch (e) {
+        console.warn("Impossibile rimuovere le notifiche della stagione:", e);
+        avvisi.push(`notifications (notifiche/*/${idStagione})`);
+    }
+
+    return avvisi;
+}
+
+async function eliminaStagioneCorrente(idDaEliminare) {
+    if (!idDaEliminare || eliminazioneInCorso) return;
+    eliminazioneInCorso = true;
+
+    try {
+        const infoSnap = await db.ref(`seasons/${idDaEliminare}/info`).once('value');
+        const nomeStagione = (infoSnap.val() && infoSnap.val().name) || idDaEliminare;
+
+        // --- DOPPIA CONFERMA ---
+        if (!confirm(`Are you sure you want to permanently delete the season "${nomeStagione}" (${idDaEliminare})?\n\nAll its showdowns, matches and leaderboard will be deleted, and every player will lose the wins, showdowns, team stats and ELO obtained in this season. This action is irreversible.`)) return;
+
+        if (!confirm(`⚠️ FINAL CONFIRMATION ⚠️\n\nPress OK to DEFINITIVELY delete "${nomeStagione}" (${idDaEliminare}) together with all its statistics.\n\nThere is no way back.`)) return;
+
+        // --- 1. LETTURA DI QUELLO CHE STIAMO PER CANCELLARE ---
+        mostraProgressoEliminazione("Reading season data...");
+        const [seasonSnap, playersSnap] = await Promise.all([
+            db.ref(`seasons/${idDaEliminare}`).once('value'),
+            db.ref('players').once('value')
+        ]);
+        const season = seasonSnap.val();
+        const players = playersSnap.val() || {};
+
+        if (!season) {
+            alert("Season not found!");
+            return;
+        }
+
+        const giocatori = giocatoriDellaStagione(idDaEliminare, season, players);
+        const idVincitore = String((season.info && season.info.winner) || '').toLowerCase();
+
+        // --- 2. CANCELLAZIONE ATOMICA: stagione + palmarès dei giocatori ---
+        // Una sola scrittura multi-percorso: o va tutto o non cambia niente.
+        const updates = {};
+        updates[`seasons/${idDaEliminare}`] = null;
+
+        giocatori.forEach(pid => {
+            const statsStagioni = (players[pid].stats && players[pid].stats.seasons) || {};
+            const storico = statsStagioni.history && statsStagioni.history[idDaEliminare];
+            if (!storico) return;
+
+            updates[`players/${pid}/stats/seasons/history/${idDaEliminare}`] = null;
+
+            // La vittoria di stagione viene contata in salvaVincitoreStagione solo se il
+            // giocatore era 1° con punti > 0, cioè se è il "winner" salvato nella stagione.
+            if (Number(storico.rank) === 1 && idVincitore === pid) {
+                updates[`players/${pid}/stats/seasons/won`] = Math.max(0, (statsStagioni.won || 0) - 1);
+            }
+        });
+
+        mostraProgressoEliminazione("Deleting season...");
+        await db.ref().update(updates);
+
+        // --- 3. SFIDE E NOTIFICHE DELLA STAGIONE ---
+        mostraProgressoEliminazione("Cleaning challenges and notifications...");
+        const avvisi = await pulisciSfideENotifiche(idDaEliminare);
+
+        // --- 4. RICALCOLO STATISTICHE ---
+        // ricalcolaStatisticheGlobali ricostruisce da zero ELO (1000 + somma dei delta),
+        // vittorie/sconfitte, showdown, statistiche dei team, badge e uso dei tipi
+        // sommando solo le stagioni rimaste: quella appena cancellata non conta più.
+        for (let i = 0; i < giocatori.length; i++) {
+            mostraProgressoEliminazione(`Recalculating statistics (${i + 1}/${giocatori.length}): ${giocatori[i]}...`);
+            await ricalcolaStatisticheGlobali(giocatori[i]);
+        }
+
+        mostraProgressoEliminazione("");
+        let messaggio = `Season "${nomeStagione}" deleted successfully!\nStatistics recalculated for ${giocatori.length} player(s).`;
+        if (avvisi.length > 0) {
+            messaggio += `\n\n⚠️ Could not remove: ${avvisi.join(', ')}.`;
+        }
+        alert(messaggio);
+        caricaStagioni();
+    } catch (e) {
+        console.error("Error during deletion:", e);
+        alert("Technical error: Unable to delete the season completely. Check the console, then run the global recalculation from matches.html if the statistics look wrong.");
+    } finally {
+        mostraProgressoEliminazione("");
+        eliminazioneInCorso = false;
     }
 }
 
