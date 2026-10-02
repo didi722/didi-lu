@@ -15,7 +15,7 @@
 //
 // Risultato (solo valori semplici: niente undefined, Firebase non li accetta):
 //   {
-//     v: 1,
+//     v: 2,
 //     turni: 9,                    // ultimo turno
 //     vincitore: 'p1' | 'p2' | '', // '' = pareggio o log incompleto
 //     p1: {
@@ -26,6 +26,7 @@
 //         specie: 'Calyrex-Shadow',// come scritta nel team preview
 //         nome: '',                // soprannome, solo se diverso dalla specie
 //         portato: true,           // sceso in campo (o dichiarato portato)
+//         sceso: true,             // è sceso davvero in campo (portato = anche solo scelto prima del set)
 //         titolare: true,          // tra i primi a scendere in campo
 //         koFatti: 2,              // avversari mandati KO da lui (diretti + indiretti)
 //         koDiretti: 1,            // ...di cui con una mossa
@@ -43,7 +44,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
-    const VERSIONE = 1;
+    const VERSIONE = 2;      // 2: aggiunto "sceso" (chi è entrato davvero in campo)
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]+/g, '');
     // "move: Stealth Rock" -> "stealthrock"
@@ -425,6 +426,7 @@
                     specie: e.specie,
                     nome: e.nome,
                     portato: e.portato,
+                    sceso: e.apparso,
                     titolare: e.titolare,
                     koFatti: e.koFatti,
                     koDiretti: e.koDiretti,

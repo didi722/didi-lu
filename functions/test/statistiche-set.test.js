@@ -16,7 +16,7 @@ let RandomPlayerAI = null;
 try { ({ RandomPlayerAI } = require('pokemon-showdown/dist/sim/tools/random-player-ai')); } catch (e) { /* test casuali saltati */ }
 
 // ---------- scenari scriptati ----------
-function gioca({ formato = 'gen9customgame', t1, t2, s1 = [], s2 = [], turni = 4 }) {
+function gioca({ formato = 'gen9customgame', t1, t2, s1 = [], s2 = [], turni = 4, portati }) {
     const b = new PS.Battle({ formatid: formato, seed: [1, 2, 3, 4] });
     b.setPlayer('p1', { name: 'Didi', team: PS.Teams.pack(PS.Teams.import(t1)) });
     b.setPlayer('p2', { name: 'Lu', team: PS.Teams.pack(PS.Teams.import(t2)) });
@@ -38,7 +38,7 @@ function gioca({ formato = 'gen9customgame', t1, t2, s1 = [], s2 = [], turni = 4
         if (!anteprima) fatti++;
         for (const [l, s] of Object.entries(scelte)) assert.ok(b.choose(l, s), `scelta rifiutata ${l}: ${s}`);
     }
-    return analizzaSet(righePubbliche(b.log), { debug: true });
+    return analizzaSet(righePubbliche(b.log), { debug: true, portati });
 }
 
 const set = (nome, ab, mosse, { item = 'Leftovers', livello = 50 } = {}) =>
@@ -266,6 +266,21 @@ test('Ultimo rimasto: chi resta solo, vinca o perda', () => {
     // Golem esplode (KO), resta solo Blissey
     assert.equal(trova(st, 'p1', 'Blissey').ultimo, true);
     assert.equal(trova(st, 'p1', 'Golem').ultimo, false);
+});
+
+test('Sceso in campo: chi è stato solo portato non conta come presenza', () => {
+    const st = gioca({
+        t1: set('Golem', 'Sturdy', ['Explosion']) + '\n\n' + set('Blissey', 'Natural Cure', ['Splash']) + '\n\n' + set('Shuckle', 'Sturdy', ['Splash']),
+        t2: set('Garchomp', 'Rough Skin', ['Earthquake']),
+        s1: ['move explosion'], s2: ['move earthquake'], turni: 2,
+        portati: { p1: ['Golem', 'Blissey', 'Shuckle'] }
+    });
+    for (const specie of ['Golem', 'Blissey']) assert.equal(trova(st, 'p1', specie).sceso, true, specie);
+    const shuckle = trova(st, 'p1', 'Shuckle');
+    assert.equal(shuckle.portato, true);       // dichiarato portato dal server...
+    assert.equal(shuckle.sceso, false);        // ...ma non è mai entrato
+    assert.equal(trova(st, 'p2', 'Garchomp').sceso, true);
+    assert.equal(st.v, 2);
 });
 
 // ---------- partite casuali: i numeri devono coincidere con quelli del motore ----------
