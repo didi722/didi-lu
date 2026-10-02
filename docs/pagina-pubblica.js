@@ -97,7 +97,7 @@
         pixel:     { nome: 'Press Start 2P',   pila: "'Press Start 2P', 'Courier New', monospace",         larghezza: 1.55 }
     };
 
-    // I colori della pagina del profilo, nello stesso ordine (HONEYCOMB_COLORS in profile.html)
+    // I colori che i giocatori hanno già scelto (la palette di quando si sceglieva da profile.html), nello stesso ordine: il test li blocca
     const PALETTE_PROFILO = [
         '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAFFF0', '#BAE1FF', '#D6CAFF', '#E8CAFF', '#FFCAFF', '#FFC2D1',
         '#C25959', '#D48C5F', '#D9B462', '#8F9E6C', '#699E98', '#6B93B0', '#7A89A8', '#9582A3', '#B07D9A', '#C7889B',

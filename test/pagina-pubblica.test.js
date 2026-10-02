@@ -396,12 +396,18 @@ test('la playlist (CSV) si legge anche con le virgole tra virgolette e con le ri
 // ---- Colori e caratteri -----------------------------------------------------------------------
 
 test('colori: la palette del profilo c\'è tutta, nello stesso ordine, e gli extra non la duplicano', () => {
-    const fs = require('node:fs'), path = require('node:path');
-    const profilo = fs.readFileSync(path.join(__dirname, '..', 'docs', 'profile.html'), 'utf8');
-    const blocco = /const HONEYCOMB_COLORS = \[([\s\S]*?)\];/.exec(profilo)[1];
-    const nelProfilo = [...blocco.matchAll(/"(#[0-9a-fA-F]{6})"/g)].map(m => m[1].toUpperCase());
-    assert.equal(nelProfilo.length, 40);
-    assert.deepEqual(P.PALETTE_PROFILO.map(c => c.toUpperCase()), nelProfilo);
+    // I 40 colori che i giocatori hanno già scelto (prima stavano in profile.html, ora si scelgono dall'editor
+    // della Trainer Card): cambiarli o spostarli cambierebbe il colore di qualcuno.
+    const colori = [
+        '#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAFFF0', '#BAE1FF', '#D6CAFF', '#E8CAFF',
+        '#FFCAFF', '#FFC2D1', '#C25959', '#D48C5F', '#D9B462', '#8F9E6C', '#699E98', '#6B93B0',
+        '#7A89A8', '#9582A3', '#B07D9A', '#C7889B', '#FF3333', '#FF8800', '#FFDD00', '#33CC66',
+        '#00BFA5', '#3399FF', '#0055FF', '#7A29FF', '#D11A7A', '#FF4D8D', '#FF1744', '#FF5E00',
+        '#FFEA00', '#00FF66', '#00FFCC', '#00F0FF', '#0066FF', '#7B00FF', '#CC00FF', '#FF0099'
+    ];
+    assert.equal(colori.length, 40);
+    assert.equal(new Set(colori).size, 40);
+    assert.deepEqual(P.PALETTE_PROFILO.map(c => c.toUpperCase()), colori);
 
     const tutti = P.PALETTE_SFONDO.map(c => c.toLowerCase());
     assert.equal(new Set(tutti).size, tutti.length, 'colori doppi');

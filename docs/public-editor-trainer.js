@@ -14,7 +14,7 @@
 
     const P = window.PaginaPubblica;
 
-    // La playlist del sito: un foglio Google pubblicato come CSV (nome, url), lo stesso di profile.html
+    // La playlist del sito: un foglio Google pubblicato come CSV (nome, url)
     const URL_PLAYLIST = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv';
     const MAX_RIGHE = 150;           // le righe mostrate in una lista; per il resto si scrive nella ricerca
 
