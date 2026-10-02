@@ -109,6 +109,19 @@
         return Math.max(0, massimo(D) - showdownTra(D, a, b, formato).length - inAttesa);
     }
 
+    // Formati su cui due giocatori hanno già qualcosa di attivo: una sfida in attesa o uno showdown non
+    // concluso. Su un formato occupato non se ne può lanciare un'altra; sugli altri formati sì.
+    // -> { inAttesa: [[id, sfida]], inCorso: [[id, showdown]], occupati: Set<formato> }
+    function formatiOccupati(D, a, b) {
+        const inAttesa = sfideInAttesaTra(D, a, b);
+        const inCorso = showdownTra(D, a, b).filter(([, sd]) => !completato(sd));
+        const occupati = new Set([
+            ...inAttesa.map(([, s]) => s.categoria),
+            ...inCorso.map(([, sd]) => sd.info.categoria)
+        ]);
+        return { inAttesa, inCorso, occupati };
+    }
+
     const chiusa = info => String(info?.status || '').toUpperCase().trim() === 'CLOSED';
     const formatiStagione = D => Object.values(D.info.selected_formats || {});
     const bestOf = D => parseInt(D.info.best_of, 10) === 5 ? 5 : 3;
@@ -497,34 +510,43 @@
         const messaggio = testo => corpo.append(Object.assign(document.createElement('p'),
             { className: 'sfida-messaggio', textContent: testo }));
 
-        // Uno showdown già in corso tra voi due: si riprende quello
-        const inCorso = showdownTra(D, D.io, nome).find(([, sd]) => !completato(sd));
-        if (inCorso) {
-            const [sdId, sd] = inCorso;
-            messaggio(`You already have a showdown in progress against ${nome}.`);
-            invia.textContent = 'Resume showdown';
-            invia.disabled = false;
-            invia.addEventListener('click', () => { location.href = linkBattaglia(D.id, sdId, prossimoMatch(sd)); });
-            return;
-        }
+        // Per ogni coppia una sola cosa attiva per formato (sfida in attesa o showdown in corso):
+        // si possono avere più sfide attive contro lo stesso giocatore, ma in formati diversi.
+        const { inAttesa, inCorso, occupati } = formatiOccupati(D, D.io, nome);
 
-        // Una sola sfida in attesa per coppia
-        const pendente = sfideInAttesaTra(D, D.io, nome)[0];
-        if (pendente) {
-            const s = pendente[1];
+        for (const [sdId, sd] of inCorso) {
+            const p = document.createElement('p');
+            p.className = 'sfida-messaggio';
+            p.append(`You already have a showdown in progress against ${nome} (${sd.info.categoria}). `);
+            const riprendi = document.createElement('a');
+            riprendi.className = 'sfida-riprendi';
+            riprendi.href = linkBattaglia(D.id, sdId, prossimoMatch(sd));
+            riprendi.textContent = 'Resume';
+            p.append(riprendi);
+            corpo.append(p);
+        }
+        for (const [, s] of inAttesa) {
             messaggio(s.daId === S.ioId
                 ? `Your ${s.categoria} challenge is still waiting for ${nome}.`
                 : `${nome} already challenged you in ${s.categoria}. Answer from the bell.`);
+        }
+
+        // Solo i formati liberi e con showdown ancora da giocare
+        const formati = formatiStagione(D)
+            .filter(f => !occupati.has(f))
+            .map(f => [f, rimasti(D, D.io, nome, f)])
+            .filter(([, r]) => r > 0);
+        if (!formati.length) {
+            if (!occupati.size) messaggio(`You have played every showdown against ${nome} this season.`);
+            else messaggio(`No other format is free to challenge ${nome} right now.`);
             invia.hidden = true;
             return;
         }
-
-        // Solo i formati con showdown ancora da giocare
-        const formati = formatiStagione(D).map(f => [f, rimasti(D, D.io, nome, f)]).filter(([, r]) => r > 0);
-        if (!formati.length) {
-            messaggio(`You have played every showdown against ${nome} this season.`);
-            invia.hidden = true;
-            return;
+        if (occupati.size) {
+            const p = document.createElement('p');
+            p.className = 'sfida-sotto';
+            p.textContent = 'You can still challenge in another format:';
+            corpo.append(p);
         }
 
         let scelto = null;
@@ -554,9 +576,9 @@
     async function lancia(D, nome, formato, bottone) {
         bottone.disabled = true;
         // Ricontrollo con i dati più freschi
-        if (sfideInAttesaTra(D, D.io, nome).length) {
+        if (formatiOccupati(D, D.io, nome).occupati.has(formato)) {
             chiudiModale();
-            return mostraAvviso(`There is already a pending challenge with ${nome}`);
+            return mostraAvviso(`There is already an active ${formato} challenge or showdown with ${nome}`);
         }
         if (rimasti(D, D.io, nome, formato) <= 0) {
             chiudiModale();
