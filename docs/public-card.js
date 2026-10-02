@@ -563,7 +563,30 @@
     function sfora(carta) {
         // il collage è fatto di tessere storte: il loro ingombro sporge di qualche pixel
         const tolleranza = carta.closest('[data-layout="collage"]') ? 30 : 4;
-        return carta.scrollHeight > carta.clientHeight + tolleranza || carta.scrollWidth > carta.clientWidth + tolleranza;
+        if (carta.scrollHeight > carta.clientHeight + tolleranza || carta.scrollWidth > carta.clientWidth + tolleranza) return true;
+        // Anche dentro il corpo: se i blocchi non ci stanno sporgono sul codice a barre e sulla firma (il piede), che stanno
+        // ancora dentro la carta e quindi il controllo qui sopra non se ne accorge. Si guardano le misure vere delle righe
+        // e delle colonne della griglia (non scrollHeight: conterebbe anche le animazioni d'entrata e le tessere storte)
+        const corpo = carta.querySelector('.pp-corpo');
+        if (!corpo) return false;
+        const stile = getComputedStyle(corpo);
+        const totale = (tracce, spazio) => {
+            const v = tracce.split(/\s+/).map(parseFloat).filter(Number.isFinite);
+            return v.reduce((a, b) => a + b, 0) + (parseFloat(spazio) || 0) * Math.max(0, v.length - 1);
+        };
+        if (totale(stile.gridTemplateRows, stile.rowGap) > corpo.clientHeight + 4
+            || totale(stile.gridTemplateColumns, stile.columnGap) > corpo.clientWidth + 4) return true;
+        // e i blocchi dentro una zona che occupa più righe o colonne della griglia: la griglia non le allarga per loro
+        // (offsetTop e simili, come sopra, non contano le trasformazioni)
+        for (const zona of corpo.querySelectorAll('.pp-zona')) {
+            if (zona.offsetParent === null) continue;
+            const fondo = zona.offsetTop + zona.offsetHeight, destra = zona.offsetLeft + zona.offsetWidth;
+            for (const f of zona.children) {
+                if (f.offsetParent === null) continue;
+                if (f.offsetTop + f.offsetHeight > fondo + 4 || f.offsetLeft + f.offsetWidth > destra + 4) return true;
+            }
+        }
+        return false;
     }
 
     // Quanto è più grande il palco (l'area che occupa davvero) del blocco più grande tra gli altri; Infinity se non
