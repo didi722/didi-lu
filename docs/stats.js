@@ -301,7 +301,7 @@
             return `<div class="carta-id">
                     <h3 class="carta-nome">${esc(x.nome)}</h3>
                     <div class="carta-chip">${chipPlayer(x.playerNome)}${tagFormato(x.formato)}</div>
-                    <div class="carta-roster">${x.specie.slice(0, 6).map(s => sprite(s, 'carta-mini', false)).join('')}</div>
+                    <div class="carta-roster">${x.specie.slice(0, 6).map(s => sprite(s, 'carta-mini')).join('')}</div>
                 </div>`;
         }
         return `<span class="carta-sprite-box">${sprite(x.specie, 'carta-sprite')}</span>
@@ -464,10 +464,50 @@
         `<div class="tessera ${classe}"><span class="et">${esc(etichetta)}</span><b class="va">${valore}</b>${sotto ? `<small class="so">${sotto}</small>` : ''}</div>`;
     const sezione = (titolo, corpo) => `<section class="scheda-sezione"><h3 class="scheda-titolo">${esc(titolo)}</h3>${corpo}</section>`;
     const griglia = tessere => `<div class="tessere">${tessere.join('')}</div>`;
-    const testaScheda = (titolo, figura, chip) => `<header class="scheda-testa">
+    const testaScheda = (titolo, figura, chip, premi = '') => `<header class="scheda-testa">
             <h2 class="scheda-nome" id="stats-modal-titolo">${esc(titolo)}</h2>
             <div class="scheda-riga">${figura}<div class="scheda-tag">${chip}</div></div>
+            ${premi}
         </header>`;
+
+    // Titolo e badge del giocatore, come nella sua pagina pubblica (titoli.js): al passaggio del mouse
+    // (o col fuoco della tastiera) compare la descrizione, con l'avanzamento verso il prossimo livello
+    const barraPremio = (pct) => `<span class="premio-barra"><span style="width:${Math.max(0, Math.min(100, pct))}%"></span></span>`;
+    const ETICHETTA_USO = { played: 'Played', won: 'Won', ko: 'KOs' };
+
+    function premiPlayer(p) {
+        if (!window.Titoli) return '';
+        const d = (STATO.dati && STATO.dati.players && STATO.dati.players[p.id]) || {};
+        const stats = d.stats || {};
+        const team = stats['team-stats'] || {};
+        const titolo = String((d.info && d.info.title) || '').trim();
+        const pezzi = [];
+
+        if (titolo && titolo !== 'No Title') {
+            const desc = Titoli.descriviTitolo(titolo, team.typeusage, team.pokemonusage);
+            const colore = desc && desc.tipo ? Titoli.TIPI[desc.tipo].colore : '#fff';
+            const prog = desc ? desc.progresso : null;
+            const righe = !prog ? '' : prog.prossimo
+                ? prog.barre.map(b => `<span class="premio-riga"><span>${ETICHETTA_USO[b.c]}: <b>${fmt(b.valore)}</b></span><i>${fmt(b.obiettivo)}</i></span>${barraPremio(b.pct * 100)}`).join('')
+                : ['played', 'won', 'ko'].map(c => `<span class="premio-riga"><span>${ETICHETTA_USO[c]}: <b>${fmt(prog.uso[c])}</b></span></span>`).join('');
+            const prossimo = prog && prog.prossimo ? `<span class="premio-desc">Next: <b>${esc(prog.prossimo.nome(desc.categoria === 'tipo' ? desc.chiave : desc.nome))}</b></span>`
+                : prog ? '<span class="premio-desc">Highest level reached</span>' : '';
+            pezzi.push(`<span class="premio premio-titolo" tabindex="0" style="--pc:${esc(colore)};--pt:${esc(testoSu(colore))}">
+                <span class="premio-titolo-testo">${esc(titolo)}</span>
+                <span class="premio-tip"><span class="premio-nome">${esc(desc ? desc.nome : titolo)}</span>${prossimo}${righe}</span>
+            </span>`);
+        }
+
+        for (const b of Titoli.badgeSbloccati(stats.badges, p.id)) {
+            const avanzamento = b.livello === 'founder' ? '' : `<span class="premio-barra-et">${barraPremio(b.pct)}<small>Current: ${fmt(b.attuale)} / ${fmt(b.obiettivo)}</small></span>`;
+            pezzi.push(`<span class="premio premio-badge" tabindex="0">
+                <img src="${esc(b.img)}" alt="${esc(b.label)} ${esc(b.livello)}" width="44" height="44">
+                <span class="premio-tip"><span class="premio-testa"><span class="premio-nome">${esc(b.label)}</span>${b.data ? `<small>${esc(b.data)}</small>` : ''}</span>
+                    <span class="premio-desc">${esc(b.descrizione)}</span>${avanzamento}</span>
+            </span>`);
+        }
+        return pezzi.length ? `<div class="scheda-premi">${pezzi.join('')}</div>` : '';
+    }
 
     function tessereKo(ko) {
         if (!ko.setConDati) return '<p class="vuoto piccolo">No KO data yet: only sets played on the site have it.</p>';
@@ -490,7 +530,7 @@
 
     const voceTeam = t => `<button type="button" class="voce" data-apri="teams" data-chiave="${esc(t.chiave)}">
             <span class="voce-nome"><b>${esc(t.nome)}</b>${tagFormato(t.formato)}</span>
-            <span class="voce-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'mini', false)).join('')}</span>
+            <span class="voce-roster">${t.specie.slice(0, 6).map(x => sprite(x, 'mini')).join('')}</span>
             <span class="voce-dati">${wl(t.match)}<span class="voce-perc">${pct(t.percMatch)}</span></span>
         </button>`;
 
@@ -498,7 +538,7 @@
         const suoiTeam = STATO.r.teams.filter(t => t.player === p.id).sort((a, b) => b.match.giocati - a.match.giocati);
         const preferito = p.preferiti.team;
         const formato = p.preferiti.formato;
-        return `${testaScheda(p.nome, avatar(p, 'scheda-avatar'), chipStagione() + chipVinte(p.stagioniVinte))}
+        return `${testaScheda(p.nome, avatar(p, 'scheda-avatar'), chipStagione() + chipVinte(p.stagioniVinte), premiPlayer(p))}
             ${sezione('Ranking', griglia([
                 tessera(STATO.stagione === 'all' ? 'Elo' : 'Elo (end of season)', fmt(p.elo), STATO.stagione === 'all' || !p.eloDelta ? '' : `${segno(p.eloDelta)} in the season`),
                 tessera('Peak Elo', p.eloPicco == null ? '—' : fmt(p.eloPicco)),

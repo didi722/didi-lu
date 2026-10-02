@@ -177,3 +177,27 @@ test('nomi-log.js è caricato da battle-ui.js e il log gli passa prima di arriva
     assert.match(ui, /import '\.\/nomi-log\.js'/);
     assert.match(ui, /righe = riscrittoreLog\.riscrivi\(righe\)/);
 });
+
+test('l\'ultimo turno non anticipa l\'esito: finché il campo anima il pannello è sempre "turn playing out" + Skip', () => {
+    const i = ui.indexOf('function disegnaPannello(lato)');
+    const corpo = ui.slice(i, ui.indexOf('function messaggio(', i));
+    const posAnimazione = corpo.indexOf('if (animazioneInCorso())');
+    assert.ok(posAnimazione > 0, 'manca il controllo sull\'animazione');
+    // viene prima di tutto ciò che direbbe come è finita (match finito, set finito, nessuna richiesta nuova, scelta inviata)
+    for (const dopo of ["stato !== 'in_corso'", 'if (finita)', 'p.inviata', "tipo === 'attesa'"]) {
+        assert.ok(corpo.indexOf(dopo) > posAnimazione, `"${dopo}" deve stare dopo il controllo sull'animazione`);
+    }
+    assert.match(corpo, /Skip animation/);
+    assert.ok(!/prossimaScena \? null/.test(corpo), 'il tasto Skip non deve sparire quando il set successivo è già arrivato');
+    // punteggio e numero del set (insegna) e stato dell'avversario si aggiornano solo a campo fermo
+    assert.match(ui, /function aggiornaVistoInsegna\(\)[\s\S]*animazioneInCorso\(\)/);
+    assert.match(ui, /if \(animazioneInCorso\(\) && online\.stato !== 'lobby'\) return;/);
+});
+
+test('titoli.js è caricato da profile, public e stats (le soglie dei titoli stanno in un posto solo)', () => {
+    for (const pagina of ['profile.html', 'public.html', 'stats.html']) {
+        assert.match(leggi(pagina), /<script src="titoli\.js"><\/script>/, pagina);
+    }
+    assert.ok(!/played >= 150 && won >= 25/.test(leggi('profile.html')), 'profile.html ha ancora le vecchie soglie');
+    assert.ok(!/nextPlayedTarget/.test(leggi('public.html')), 'public.html ha ancora le vecchie soglie');
+});
