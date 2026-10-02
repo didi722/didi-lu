@@ -227,7 +227,8 @@
             sezione('Hard shadow', segmentato(P.OMBRE.map(o => [o, o === 0 ? 'None' : o === 6 ? 'S' : o === 10 ? 'M' : 'L']), k.ombra, v => nuovo('ombra', v))),
             sezione('Borders', segmentato(P.BORDI.map(b => [b, b === 3 ? 'Thin' : b === 4 ? 'Normal' : 'Thick']), k.bordo, v => nuovo('bordo', v))),
             sezione('Corners', segmentato([['netti', 'Square'], ['tondi', 'Round']], k.angoli, v => nuovo('angoli', v))),
-            sezione('Tilt', segmentato([['nessuna', 'Straight'], ['lieve', 'Slight'], ['forte', 'Wild']], k.inclinazione, v => nuovo('inclinazione', v))),
+            sezione('Tilt', segmentato([['nessuna', 'Straight'], ['lieve', 'Slight'], ['forte', 'Wild']], k.inclinazione, v => nuovo('inclinazione', v)),
+                k.inclinazione !== 'nessuna' ? h('p', { class: 'pe-nota', testo: 'Tilted text is drawn a little less sharp than straight text. Straight keeps it razor-sharp.' }) : null),
             sezione('Lettering (name, titles, numbers)', h('div', { class: 'pe-caratteri' }, Object.entries(P.FONT).map(([id, f]) =>
                 h('button', { type: 'button', class: `pe-carattere${k.font === id ? ' is-on' : ''}`, 'aria-pressed': String(k.font === id), stile: { 'font-family': f.pila }, onclick: () => nuovo('font', id) },
                     h('b', { testo: 'Aa' }), h('small', { testo: f.nome }))))),

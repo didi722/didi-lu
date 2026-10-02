@@ -285,13 +285,16 @@ test('layout nuovi (Cinema, Podium): hanno regole per tutti gli schermi e il dis
     assert.match(editor, /drag the handles between blocks/);
 });
 
-test('nitidezza: a riposo la carta usa la stessa trasformazione 3D di quando ci si passa sopra', () => {
-    const riposo = /\[data-layout="carta"\] \.pp-carta \{[^}]*transform: (perspective\(1400px\) rotateX\(0deg\) rotateY\(0deg\) rotate\(var\(--pp-inclina\)\));/.exec(cssCard);
-    assert.ok(riposo, 'la carta a riposo deve avere perspective + rotateX/rotateY');
-    const sopra = /\.pp-carta\.is-sopra \{[^}]*transform: perspective\(1400px\) rotateX\([^)]*\)[^}]*rotateY\([^)]*\)[^}]*rotate\(var\(--pp-inclina\)\)/.exec(cssCard);
-    assert.ok(sopra, 'in hover la stessa lista di funzioni, così la transizione è fluida');
-    // le tessere storte del collage hanno lo stesso trattamento
-    assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: perspective\(1400px\) rotate\(var\(--rot, 0deg\)\)/);
+test('nitidezza: a riposo la carta è dritta e piatta (niente 3D né will-change), solo in hover si inclina', () => {
+    const riposo = /\[data-layout="carta"\] \.pp-carta \{[^}]*transform: rotate\(var\(--pp-inclina\)\);/.exec(cssCard);
+    assert.ok(riposo, 'a riposo solo rotate(var(--pp-inclina)): con "Straight" è 0 e il testo resta nitido');
+    const bloccoCarta = /\[data-layout="carta"\] \.pp-carta \{[^}]*\}/.exec(cssCard)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(bloccoCarta, /perspective|will-change|translateZ/);
+    assert.match(cssCard, /--pp-inclina: 0deg;/);
+    assert.match(cssCard, /\.pp-carta\.is-sopra \{[^}]*transform: perspective\(1400px\) rotateX\([^)]*\)[^}]*rotateY\([^)]*\)[^}]*rotate\(var\(--pp-inclina\)\)/);
+    // le tessere del collage: rotazione semplice, senza strato composto a parte
+    assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: rotate\(var\(--rot, 0deg\)\)/);
+    assert.match(editor, /Tilted text is drawn a little less sharp/);
 });
 
 test('il Pokémon preferito non ha il nome scritto sul palco (si riconosce a vista), solo nell\'alt', () => {

@@ -26,7 +26,7 @@
     --pp-bordo: 4px;
     --pp-ombra: 10px;
     --pp-raggio: 0px;
-    --pp-inclina: -0.8deg;
+    --pp-inclina: 0deg;
     --pp-font: 'Josefin Sans', 'Montserrat', sans-serif;
     --pp-adesivo-font: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     /* il contorno bianco + ombra nera che fa sembrare gli sprite degli adesivi */
@@ -161,10 +161,10 @@ body {
     border: var(--pp-bordo) solid #000;
     box-shadow: var(--pp-ombra) var(--pp-ombra) 0 #000;
     border-radius: var(--pp-raggio);
-    /* Anche a riposo la carta ha la stessa trasformazione 3D di quando ci si passa sopra (con il mouse fuori e
-       un rotate() 2D semplice il browser disegna il testo ruotato, con i bordi a scalino; con la 3D lo disegna
-       dritto e poi ruota lo strato, e resta nitido come in hover). Stessa lista di funzioni: la transizione è fluida. */
-    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotate(var(--pp-inclina));
+    /* A riposo la carta ha solo l'eventuale inclinazione scelta (con "Straight" nessuna trasformazione che conti: il
+       testo è disegnato dritto e resta nitido). Niente 3D né will-change a riposo: uno strato composto a parte può
+       tenersi una rasterizzazione a risoluzione più bassa e mostrare il testo sgranato finché non cambia qualcosa. */
+    transform: rotate(var(--pp-inclina));
     transform-origin: 50% 30%;
     transition: transform 0.35s ease;
 }
@@ -336,9 +336,8 @@ body.pp-modifica .pp-holo { display: none; }
 [data-layout="collage"] .pp-zona { gap: 30px 26px; }
 [data-layout="collage"] .pp-zona[data-zona="b"] { margin: -10px 0 0 5%; }
 [data-layout="collage"] .pp-zona[data-zona="c"] { margin: -6px 4% 0 0; justify-content: flex-end; }
-/* (perspective() anche qui: vedi la carta, il testo ruotato resta nitido) */
-[data-layout="collage"] .pp-blocco { transform: perspective(1400px) rotate(var(--rot, 0deg)); transition: transform 0.15s; }
-[data-layout="collage"] .pp-blocco:hover { transform: perspective(1400px) rotate(0deg) scale(1.01); z-index: 5; }
+[data-layout="collage"] .pp-blocco { transform: rotate(var(--rot, 0deg)); transition: transform 0.15s; }
+[data-layout="collage"] .pp-blocco:hover { transform: rotate(0deg) scale(1.01); z-index: 5; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 1) { --rot: -1.6deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 2) { --rot: 1.3deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n) { --rot: -0.7deg; }

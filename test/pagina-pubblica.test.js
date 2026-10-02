@@ -692,3 +692,20 @@ test('impostaPesi e ripristinaPesi: cambiano solo i due elementi al confine, e s
     assert.equal(dopo.misure.colonne, null);
     assert.deepEqual(dopo.misure.righe, [3, 1]);
 });
+
+test('inclinazione: la carta parte dritta; la vecchia inclinazione di partenza (versione 1) torna dritta, una scelta nuova resta', () => {
+    assert.equal(P.VERSIONE, 2);
+    assert.equal(P.predefinita().carta.inclinazione, 'nessuna');
+    assert.equal(P.predefinita().v, 2);
+    // salvata con la versione 1 (o senza versione) con "lieve": era il valore di partenza, non una scelta
+    assert.equal(P.normalizza({ v: 1, carta: { inclinazione: 'lieve' } }).carta.inclinazione, 'nessuna');
+    assert.equal(P.normalizza({ carta: { inclinazione: 'lieve' } }).carta.inclinazione, 'nessuna');
+    // "forte" non era il valore di partenza: era una scelta, e resta
+    assert.equal(P.normalizza({ v: 1, carta: { inclinazione: 'forte' } }).carta.inclinazione, 'forte');
+    // dalla versione 2 "lieve" è una scelta vera
+    assert.equal(P.normalizza({ v: 2, carta: { inclinazione: 'lieve' } }).carta.inclinazione, 'lieve');
+    // rileggendo una pagina già normalizzata non cambia niente
+    const scelta = P.normalizza({ v: 2, carta: { inclinazione: 'lieve' } });
+    assert.deepEqual(P.normalizza(scelta), scelta);
+    assert.equal(scelta.v, 2);
+});

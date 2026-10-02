@@ -22,7 +22,10 @@
 })(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
-    const VERSIONE = 1;
+    // 2: la carta parte dritta (nitida). Le pagine salvate con la versione 1 che avevano la vecchia inclinazione di
+    // partenza ("lieve", che nessuno aveva scelto davvero) tornano dritte quando le si legge; chi la vuole la sceglie
+    // di nuovo e la sua scelta resta.
+    const VERSIONE = 2;
     const ZONE = ['a', 'b', 'c'];
     const MAX_ADESIVI = 12;
 
@@ -124,6 +127,8 @@
     const OMBRE = [0, 6, 10, 16];
     const BORDI = [3, 4, 6];
     const ANGOLI = ['netti', 'tondi'];
+    // Un testo ruotato si disegna meno nitido di uno dritto (bordi a scalino, perfino a un quarto di grado): per questo
+    // la carta parte dritta, e chi vuole la sua inclinazione la sceglie.
     const INCLINAZIONI = { nessuna: 0, lieve: -0.8, forte: -2.2 };
 
     // glifo: quello che si vede; tinta: lo sfondo dell'adesivo
@@ -425,7 +430,7 @@
             blocchi: ['palco', 'musica', 'identita', 'statistiche', 'party', 'trofei', 'medaglie']
                 .map(id => ({ id, zona: ZONA_DEFAULT[id], on: true })),
             sfondo: { colore: 'giocatore', motivo: 'punti', forza: 2, scritta: true, animato: false },
-            carta: { tema: 'bianco', ombra: 10, bordo: 4, angoli: 'netti', inclinazione: 'lieve', font: 'josefin', holo: true },
+            carta: { tema: 'bianco', ombra: 10, bordo: 4, angoli: 'netti', inclinazione: 'nessuna', font: 'josefin', holo: true },
             statistiche: Object.keys(STAT),
             team: 'auto',
             adesivi: [],
@@ -476,6 +481,7 @@
 
         const s = grezza.sfondo && typeof grezza.sfondo === 'object' ? grezza.sfondo : {};
         const c = grezza.carta && typeof grezza.carta === 'object' ? grezza.carta : {};
+        const inclinazioneGrezza = grezza.v >= 2 || c.inclinazione !== 'lieve' ? c.inclinazione : 'nessuna';
 
         const statistiche = [];
         for (const id of comeElenco(grezza.statistiche)) if (STAT[id] && !statistiche.includes(id)) statistiche.push(id);
@@ -509,7 +515,7 @@
                 ombra: unOf(c.ombra, OMBRE, D.carta.ombra),
                 bordo: unOf(c.bordo, BORDI, D.carta.bordo),
                 angoli: unOf(c.angoli, ANGOLI, D.carta.angoli),
-                inclinazione: unOf(c.inclinazione, Object.keys(INCLINAZIONI), D.carta.inclinazione),
+                inclinazione: unOf(inclinazioneGrezza, Object.keys(INCLINAZIONI), D.carta.inclinazione),
                 font: unOf(c.font, Object.keys(FONT), D.carta.font),
                 holo: booleano(c.holo, D.carta.holo)
             },
