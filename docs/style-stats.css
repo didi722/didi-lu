@@ -171,12 +171,14 @@ body.modale-aperta { overflow: hidden; }
 /* ---------- Griglia di card ---------- */
 .stats-griglia {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+    /* mai più di 3 card per riga, anche su schermi larghissimi: con 4 i nomi (Calyrex-Shadow) vanno a capo.
+       La colonna è larga almeno 330px e almeno un terzo della riga (meno i due spazi tra le card). */
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, max(330px, calc((100% - 64px) / 3))), 1fr));
     gap: 42px 32px;
     padding: 18px 10px 10px 14px;          /* spazio per i tag di posizione che escono dal bordo */
     align-items: start;
 }
-.stats-griglia.vista-players { grid-template-columns: repeat(auto-fill, minmax(min(100%, 500px), 1fr)); }
+.stats-griglia.vista-players { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(500px, calc((100% - 64px) / 3))), 1fr)); }
 
 .carta {
     --c: #e4e4e4; --t: #000; --tilt: 0deg;
@@ -209,12 +211,12 @@ body.modale-aperta { overflow: hidden; }
 .carta-pos.pos-2 { background: #e6e6e6; color: var(--nero); }
 .carta-pos.pos-3 { background: #e0a46c; color: var(--nero); }
 
-.carta-testa { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.carta-testa { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .carta-id { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .carta-nome {
     margin: 0;
-    font: 800 1.4rem/1.05 'Josefin Sans', sans-serif; letter-spacing: .02em; text-transform: uppercase;
-    overflow-wrap: anywhere;
+    font: 800 1.3rem/1.05 'Josefin Sans', sans-serif; letter-spacing: .01em; text-transform: uppercase;
+    overflow-wrap: break-word; text-wrap: balance;     /* se deve andare a capo, dopo il trattino e in modo bilanciato */
 }
 .carta-players .carta-nome { font-size: 1.7rem; }
 .carta-sotto { font: 700 .8rem 'Montserrat', sans-serif; line-height: 1.2; overflow-wrap: anywhere; }
@@ -226,7 +228,7 @@ body.modale-aperta { overflow: hidden; }
     filter: drop-shadow(2px 2px 0 #000);
     animation: stats-saltello .8s steps(1) infinite;
 }
-.carta-sprite-box { width: 92px; height: 80px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: center; }
+.carta-sprite-box { width: 80px; height: 76px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: center; }
 .carta-sprite { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(3px 3px 0 #000); }
 .carta-roster { display: flex; flex-wrap: wrap; margin-top: 2px; }
 .carta-mini { width: 42px; height: 38px; object-fit: contain; margin-right: -2px; filter: drop-shadow(2px 2px 0 #000); }
@@ -236,7 +238,7 @@ img.e-pokeball { padding: 18%; box-sizing: border-box; opacity: .7; }
 .carta-punteggio {
     flex-shrink: 0; align-self: flex-start;
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    min-width: 70px; padding: 6px 12px 6px;
+    min-width: 62px; padding: 6px 9px 6px;
     background: var(--carta); color: var(--nero);
     border: 3px solid var(--nero);
     box-shadow: 4px 4px 0 var(--nero);
