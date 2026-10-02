@@ -340,6 +340,12 @@
     
     <div class="gba-container">
         <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
+        <!-- Barra dei turni del replay: sta sotto la scocca, fuori dallo schermo (la riempie il replay via postMessage) -->
+        <div class="replay-barra" id="replayBarra" onclick="event.stopPropagation()" hidden>
+            <div class="replay-barra-traccia" id="replayBarraTraccia" role="slider" tabindex="0" aria-label="Turn"
+                 aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><span id="replayBarraAvanzamento"></span></div>
+            <span class="replay-barra-testo" id="replayBarraTesto" aria-live="polite"></span>
+        </div>
         <div class="gba-screen-area" onclick="event.stopPropagation()">
              <div class="replay-content">
                 <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
@@ -2502,6 +2508,9 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         return;
     }
 
+    // La barra dei turni del replay precedente non vale più: riappare quando il nuovo replay si fa vivo
+    if (window.nascondiBarraReplay) window.nascondiBarraReplay();
+
     // 3. Logica di caricamento URL
     if (urlFile && (urlFile.startsWith('http') || urlFile.startsWith('https'))) {
         // Caso A: Link diretto da Firebase Cloud Storage
@@ -2536,6 +2545,52 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     }
 };
 
+// --- Barra dei turni del replay, sotto la scocca ---
+// Il replay (nell'iframe, spesso su un altro dominio: Storage) manda "replay-turni" a ogni cambio di turno;
+// la barra compare solo se arriva (i replay vecchi non lo mandano e hanno la barra dentro lo schermo) e
+// risponde "barra-fuori", così il replay toglie la sua. I clic tornano al replay come "replay-vai" / "replay-passo".
+(function () {
+    const frame = () => document.getElementById('replayFrame');
+    const barra = () => document.getElementById('replayBarra');
+
+    window.nascondiBarraReplay = function () {
+        const b = barra();
+        if (b) b.hidden = true;
+    };
+
+    window.addEventListener('message', e => {
+        const f = frame();
+        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-turni') return;
+        const b = barra();
+        if (!b) return;
+        if (b.hidden) {
+            b.hidden = false;
+            try { e.source.postMessage({ tipo: 'replay-barra-fuori' }, '*'); } catch (err) { /* iframe già chiuso */ }
+        }
+        const { turno, totale, finito, fatto } = e.data;
+        document.getElementById('replayBarraAvanzamento').style.width = (Math.min(1, Math.max(0, +fatto || 0)) * 100) + '%';
+        const traccia = document.getElementById('replayBarraTraccia');
+        traccia.setAttribute('aria-valuemax', String(totale || 0));
+        traccia.setAttribute('aria-valuenow', String(turno || 0));
+        traccia.setAttribute('aria-valuetext', `Turn ${turno || 0} of ${totale || 0}`);
+        document.getElementById('replayBarraTesto').textContent = finito ? `End · ${totale} turns` : (turno ? `Turn ${turno} / ${totale}` : 'Start');
+    });
+
+    const invia = messaggio => { const f = frame(); if (f && f.contentWindow) f.contentWindow.postMessage(messaggio, '*'); };
+    document.addEventListener('DOMContentLoaded', () => {
+        const traccia = document.getElementById('replayBarraTraccia');
+        if (!traccia) return;
+        traccia.addEventListener('click', e => {
+            const r = traccia.getBoundingClientRect();
+            invia({ tipo: 'replay-vai', frazione: (e.clientX - r.left) / r.width });
+        });
+        traccia.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); invia({ tipo: 'replay-passo', delta: -1 }); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); invia({ tipo: 'replay-passo', delta: 1 }); }
+        });
+    });
+})();
+
 window.chiudiReplay = function() {
     const modal = document.getElementById('replayModal');
     const iframe = document.getElementById('replayFrame');
@@ -2551,6 +2606,7 @@ window.chiudiReplay = function() {
     if (iframe) {
         iframe.src = ""; 
     }
+    if (window.nascondiBarraReplay) window.nascondiBarraReplay();
 
     // 3. GESTIONE RIPRESA MUSICA (rispettando il Mute)
     if (player) {

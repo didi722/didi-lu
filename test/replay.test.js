@@ -121,3 +121,19 @@ test('matches.html carica replay-sito.js e adatta i replay che si caricano', () 
     assert.equal((html.match(/await replayAdattato\(file\)/g) || []).length, 2);     // i due punti di upload
     assert.match(html, /adattaReplayShowdown/);
 });
+
+
+test('replay dentro la scocca del Game Boy: la barra dei turni sta fuori dallo schermo (postMessage con matches.html)', () => {
+    const html = replay();
+    // il replay dice a che turno è, e sa togliere la sua barra e ricevere i clic dalla pagina
+    assert.match(html, /replay-turni/);
+    assert.match(html, /replay-barra-fuori/);
+    assert.match(html, /replay-vai/);
+    assert.match(html, /\.barra-fuori \.barra-turni \{ display: none; \}/);
+    // la pagina ha la barra sotto la scocca e risponde al replay
+    const matches = leggi('docs/matches.html');
+    assert.match(matches, /id="replayBarra"/);
+    assert.match(matches, /e\.data\.tipo !== 'replay-turni'/);
+    assert.match(matches, /tipo: 'replay-barra-fuori'/);
+    assert.match(matches, /tipo: 'replay-vai'/);
+});

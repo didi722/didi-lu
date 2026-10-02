@@ -411,6 +411,8 @@ ${barreSalute('.palco')}
 }
 .barra-turni > span { display: block; height: 100%; width: 0; background: var(--ambra); border-right: 2px solid var(--inchiostro); box-sizing: border-box; }
 .barra-turni:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
+/* la pagina che contiene il replay ha già la sua barra (fuori dallo schermo): quella interna non serve */
+.barra-fuori .barra-turni { display: none; }
 
 .riga-comandi { display: flex; align-items: center; gap: 7px; }
 .tasto {
@@ -641,6 +643,21 @@ ${barreSalute('.palco')}
 
             palco.classList.toggle('in-pausa', !!inPausa);
             mostraComandi();
+            avvisaGenitore(turno, finito, fatto);
+        }
+
+        // Dentro la scocca del Game Boy (matches.html) la barra dei turni sta fuori dallo schermo: il replay
+        // dice alla pagina a che turno è e la pagina gli manda i clic. La pagina, appena sente il replay,
+        // risponde "barra-fuori": solo allora la barra interna sparisce (con una pagina che non sa
+        // nulla di tutto questo, per esempio un replay aperto da solo, resta quella interna).
+        let ultimoAvviso = '';
+        function avvisaGenitore(turno, finito, fatto) {
+            if (window.parent === window) return;
+            const messaggio = { tipo: 'replay-turni', turno, totale: totaleTurni, finito, fatto: Math.round(fatto * 1000) / 1000 };
+            const chiave = JSON.stringify(messaggio);
+            if (chiave === ultimoAvviso) return;
+            ultimoAvviso = chiave;
+            try { window.parent.postMessage(messaggio, '*'); } catch (e) { /* la pagina non ascolta */ }
         }
 
         let timerComandi = null;
@@ -714,13 +731,26 @@ ${barreSalute('.palco')}
 
         // Barra dei turni: un clic porta lì (in fondo = fine del set)
         const barra = $('barra-turni');
-        barra.addEventListener('click', e => {
+        function vaiAFrazione(frazione) {
             if (!totaleTurni) return;
-            const r = barra.getBoundingClientRect();
-            const conclusi = Math.round(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * totaleTurni);
+            const conclusi = Math.round(Math.min(1, Math.max(0, frazione)) * totaleTurni);
             $('velo-avvio').hidden = true;
             battle.seekTurn(conclusi >= totaleTurni ? Infinity : conclusi === 0 ? 0 : conclusi + 1);
+        }
+        barra.addEventListener('click', e => {
+            const r = barra.getBoundingClientRect();
+            vaiAFrazione((e.clientX - r.left) / r.width);
         });
+
+        // La pagina che contiene il replay (matches.html) può avere la sua barra dei turni
+        window.addEventListener('message', e => {
+            if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
+            if (e.data.tipo === 'replay-barra-fuori') document.documentElement.classList.add('barra-fuori');
+            else if (e.data.tipo === 'replay-vai' && typeof e.data.frazione === 'number') vaiAFrazione(e.data.frazione);
+            else if (e.data.tipo === 'replay-passo' && (e.data.delta === 1 || e.data.delta === -1)) spostaTurno(e.data.delta);
+        });
+        ultimoAvviso = '';
+        aggiornaComandi();
         barra.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft') { e.preventDefault(); spostaTurno(-1); }
             if (e.key === 'ArrowRight') { e.preventDefault(); spostaTurno(1); }

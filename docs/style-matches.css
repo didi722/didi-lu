@@ -285,6 +285,37 @@ body {
     margin: 0;
 }
 
+/* Barra dei turni del replay: appena sotto la scocca (il bordo basso dell'immagine sta al 92% dell'altezza) */
+.replay-barra {
+    position: absolute;
+    top: 93.6%; left: 49.8%;
+    transform: translateX(-50%);
+    z-index: 6;
+    width: 440px;
+    display: flex; align-items: center; gap: 12px;
+}
+.replay-barra[hidden] { display: none; }
+.replay-barra-traccia {
+    flex: 1;
+    height: 14px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    cursor: pointer;
+}
+.replay-barra-traccia > span { display: block; height: 100%; width: 0; background: #ffbd44; border-right: 3px solid #000; box-sizing: border-box; }
+.replay-barra-traccia:focus-visible { outline: 3px dashed #000; outline-offset: 4px; }
+.replay-barra-testo {
+    min-width: 96px;
+    padding: 3px 8px 1px;
+    background: #000;
+    color: #fff;
+    font: 700 0.8rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+}
+
 .gba-screen-area {
     position: absolute;
     top: 50.5%;                /* Centratura verticale sullo schermo viola */
