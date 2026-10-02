@@ -283,94 +283,114 @@
 .sfida-azioni .btn-save:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 
-/* ---------- Showdown in corso ---------- */
-.live-list { margin: 25px 0 10px; }
+/* ---------- Showdown in corso ----------
+   "Live" + un chip basso per showdown (una riga di ~50px, che va a capo solo se i
+   chip sono tanti): non più card alte, così in matches.html resta spazio per gli showdown. */
+.live-list {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin: 18px 0 6px;
+    min-width: 0;
+}
 .live-testa {
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 18px;
-    padding: 6px 14px;
+    gap: 8px;
+    padding: 6px 12px 4px;
     background: #ea1818;
     color: #fff;
     border: 3px solid #000;
     box-shadow: 4px 4px 0 #000;
-    font: 700 1.1rem 'Josefin Sans', sans-serif;
+    font: 700 0.95rem 'Josefin Sans', sans-serif;
     text-transform: uppercase;
     transform: rotate(-2deg);
 }
+.live-testa b {
+    padding: 0 6px;
+    background: #fff;
+    color: #000;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
 .live-punto {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     background: #fff;
     border: 2px solid #000;
     border-radius: 50%;
     animation: live-pulsa 1.2s ease-in-out infinite;
 }
 @keyframes live-pulsa { 50% { opacity: 0.2; } }
-.live-griglia {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-}
-.live-card {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 15px;
-    background: #fff;
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0 #000;
-}
-.live-card-testa { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.live-match {
-    padding: 2px 8px;
-    background: #ffbd44;
-    border: 2.5px solid #000;
-    font: 700 0.8rem 'Josefin Sans', sans-serif;
-    text-transform: uppercase;
-}
-.live-nomi {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    font: 700 1.05rem 'Josefin Sans', sans-serif;
-    text-transform: uppercase;
-}
-.live-nomi span { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-nomi b {
-    flex-shrink: 0;
-    padding: 4px 10px;
-    background: #000;
-    color: #fff;
-    transform: rotate(-2deg);
-}
-.live-azioni { display: flex; gap: 10px; }
-.live-btn {
+
+.live-riga {
     flex: 1;
-    padding: 10px;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    padding: 1px 8px 6px 2px;
+}
+.live-chip {
+    max-width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 6px 5px 10px;
     background: #fff;
     color: #000;
     border: 3px solid #000;
     box-shadow: 4px 4px 0 #000;
-    font: 700 0.95rem 'Josefin Sans', sans-serif;
-    text-transform: uppercase;
-    text-align: center;
     text-decoration: none;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
-.live-btn.gioca { background: #09ca49; }
-.live-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
-.live-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
-.live-btn:focus-visible { outline: 3px solid #ffbd44; outline-offset: 3px; }
-.live-elimina {
-    padding: 0 12px;
+.live-chip:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.live-chip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.live-chip:focus-visible { outline: 3px solid #ffbd44; outline-offset: 3px; }
+.live-fmt {
+    max-width: 90px;
+    padding: 2px 7px 0;
+    background: #000;
+    color: #fff;
+    font: 700 0.72rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;     /* il nome intero sta nel suggerimento del chip */
+}
+.live-vs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: 700 0.95rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+}
+.live-n { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-vs b {
+    padding: 1px 8px 0;
+    background: #000;
+    color: #fff;
+    transform: rotate(-2deg);
+}
+.live-m {
+    padding: 1px 6px 0;
+    background: #ffbd44;
+    border: 2px solid #000;
+    font: 700 0.72rem 'Josefin Sans', sans-serif;
+    white-space: nowrap;
+}
+.live-vai {
+    padding: 4px 11px 2px;
     background: #fff;
     border: 2px solid #000;
-    box-shadow: 3px 3px 0 #000;
-    cursor: pointer;
+    font: 700 0.8rem 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
 }
+.live-vai::before { content: '\25B6\FE0E\00a0'; font-size: 0.65rem; }
+.live-chip.gioca .live-vai { background: #09ca49; }
+.live-chip:hover .live-vai { background: #000; color: #fff; }
 
 
 /* ---------- Avviso a comparsa ---------- */

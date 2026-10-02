@@ -863,6 +863,7 @@ function disegnaMosse(lato, corpo) {
                 condizione: pkm.condizione,
                 spento: !liberi.includes(pkm.indice),
                 attrTooltip: tooltip(lato, `switchpokemon|${pkm.indice - 1}`),
+                compatto: true,
                 onclick: () => scegliSlot(lato, `switch ${pkm.indice}`)
             }))));
     }
@@ -870,29 +871,32 @@ function disegnaMosse(lato, corpo) {
 }
 
 function disegnaBersagli(lato, corpo) {
-    
     const p = pannelli[lato];
-         const { base, suffisso, validi, nomeMossa, slot } = p.attesaBersaglio;    const lato2 = avversarioDi(lato);
+    const { base, suffisso, validi, nomeMossa, slot } = p.attesaBersaglio;
+    const lato2 = avversarioDi(lato);
 
-    // Come sul campo: gli avversari sopra (specchiati), i tuoi sotto
-    const riga = (chi, lista) => el('div', { class: 'bersagli-riga' }, lista.map(b => bottonePokemon({
-        specie: b.pkm ? b.pkm.specie : '',
-        nome: b.pkm ? b.pkm.nome : 'Empty spot',
-        condizione: b.pkm ? `${b.pkm.hp}/${b.pkm.hpMax}${b.pkm.stato ? ' ' + b.pkm.stato : ''}` : '',
-        nota: b.se ? 'you' : null,
-                     efficacia: chi === 1 ? efficaciaSu(lato, slot, nomeMossa, b) : null,
-        attrTooltip: b.pkm ? tooltip(lato, `activepokemon|${chi}|${b.slot}`) : {},
-        grande: true,
-        onclick: () => scegliSlot(lato, `${base} ${b.valore}${suffisso}`)
-    })));
+    // Come sul campo: gli avversari (specchiati) e i tuoi, due gruppi sulla stessa riga
+    const gruppo = (nome, chi, lista) => el('div', { class: 'bersagli-gruppo' },
+        el('p', { class: 'etichetta', testo: nome }),
+        el('div', { class: 'bersagli-riga' }, lista.map(b => bottonePokemon({
+            specie: b.pkm ? b.pkm.specie : '',
+            nome: b.pkm ? b.pkm.nome : 'Empty spot',
+            condizione: b.pkm ? `${b.pkm.hp}/${b.pkm.hpMax}${b.pkm.stato ? ' ' + b.pkm.stato : ''}` : '',
+            nota: b.se ? 'you' : null,
+            efficacia: chi === 1 ? efficaciaSu(lato, slot, nomeMossa, b) : null,
+            attrTooltip: b.pkm ? tooltip(lato, `activepokemon|${chi}|${b.slot}`) : {},
+            grande: true,
+            onclick: () => scegliSlot(lato, `${base} ${b.valore}${suffisso}`)
+        }))));
     const avversari = validi.filter(b => b.lato === 'avversario').sort((a, b) => b.slot - a.slot);
     const miei = validi.filter(b => b.lato === 'mio').sort((a, b) => a.slot - b.slot);
 
     corpo.append(el('div', { class: 'testa-scelta' },
         el('p', { class: 'domanda', testo: `${nomeMossa}: pick a target` }),
         el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => { p.attesaBersaglio = null; disegnaPannello(lato); } }, 'Back')));
-    if (avversari.length) corpo.append(el('p', { class: 'etichetta', testo: nomeDi(lato2) }), riga(1, avversari));
-    if (miei.length) corpo.append(el('p', { class: 'etichetta', testo: nomeDi(lato) }), riga(0, miei));
+    corpo.append(el('div', { class: 'bersagli' },
+        avversari.length ? gruppo(nomeDi(lato2), 1, avversari) : null,
+        miei.length ? gruppo(nomeDi(lato), 0, miei) : null));
 }
 
 function disegnaCambio(lato, corpo) {
@@ -914,25 +918,32 @@ function disegnaCambio(lato, corpo) {
     }))));
 }
 
-// Bottone con icona, nome, salute e stato (cambi e bersagli)
-function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, efficacia, grande, onclick }) {
+// Bottone con icona, nome, salute e stato (cambi e bersagli).
+// "compatto": solo icona e barra della salute (il nome sta nel tooltip e nell'etichetta per i lettori di schermo)
+function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, efficacia, grande, compatto, onclick }) {
     const c = leggiCondizione(condizione);
+    const chiamato = nome || specie;
+    const barra = classe => el('span', { class: classe, role: 'img', 'aria-label': `${c.pct}% HP` },
+        el('span', { class: 'hp-' + (c.pct > 50 ? 'g' : c.pct > 20 ? 'y' : 'r'), style: `width:${c.pct}%` }));
     return el('button', {
         type: 'button',
-        class: 'btn-pkm' + (attrTooltip['data-tooltip'] ? ' has-tooltip' : '') + (spento ? ' spento' : '') + (grande ? ' grande' : ''),
+        class: 'btn-pkm' + (attrTooltip['data-tooltip'] ? ' has-tooltip' : '') + (spento ? ' spento' : '') + (grande ? ' grande' : '') + (compatto ? ' compatto' : ''),
         'aria-disabled': spento ? 'true' : 'false',
+        title: compatto && !attrTooltip['data-tooltip'] ? chiamato : null,
+        'aria-label': compatto ? chiamato : null,
         ...attrTooltip,
         onclick: () => { if (!spento) onclick(); }
     },
     specie ? icona(specie) : null,
-    el('span', { class: 'btn-pkm-testo' },
-        el('span', { class: 'btn-pkm-nome', testo: nome || specie }),
-        c.ko ? el('span', { class: 'btn-pkm-ko', testo: 'Fainted' })
-            : condizione ? el('span', { class: 'btn-pkm-hp', role: 'img', 'aria-label': `${c.pct}% HP` },
-                el('span', { class: 'hp-' + (c.pct > 50 ? 'g' : c.pct > 20 ? 'y' : 'r'), style: `width:${c.pct}%` })) : null),
+    compatto
+        ? (c.ko ? el('span', { class: 'btn-pkm-ko', testo: 'KO' }) : condizione ? barra('btn-pkm-hp') : null)
+        : el('span', { class: 'btn-pkm-testo' },
+            el('span', { class: 'btn-pkm-nome', testo: chiamato }),
+            c.ko ? el('span', { class: 'btn-pkm-ko', testo: 'Fainted' }) : condizione ? barra('btn-pkm-hp') : null),
     c.stato ? el('span', { class: `tag-stato ${c.stato}`, testo: c.stato.toUpperCase() }) : null,
-         nota ? el('span', { class: 'btn-pkm-nota', testo: nota }) : null,
-         efficacia ? el('span', { class: `eff ${efficacia.classe}`, testo: `${efficacia.segno} ${efficacia.testo}` }) : null);}
+    nota ? el('span', { class: 'btn-pkm-nota', testo: nota }) : null,
+    efficacia ? el('span', { class: `eff ${efficacia.classe}`, testo: `${efficacia.segno} ${efficacia.testo}` }) : null);
+}
 
 // "123/175 par" -> { pct: 70, stato: 'par' }; "0 fnt" -> { ko: true }
 function leggiCondizione(condizione) {

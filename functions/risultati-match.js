@@ -33,7 +33,9 @@ function calcolaPuntiMatch(setVinti, isBO3) {
  *   team1, team2,              // nomi dei team
  *   score,                     // es. "3-2" oppure "2-1"
  *   data, categoria,
- *   replays                    // { set1: { url, vincitore: "1"|"2" }, ... }
+ *   replays,                   // { set1: { url, vincitore: "1"|"2" }, ... }
+ *   setStats                   // (facoltativo) { set1: <analizzaSet() di statistiche-set.js>, ... }
+ *                              // dei set giocati sul sito; se manca si tengono quelli già salvati
  * }
  *
  * Restituisce { stagioneChiusa, vincitoreStagione, totalDays }
@@ -107,6 +109,13 @@ async function registraRisultatoMatch(r) {
         p1DeltaElo: delta1,
         p2DeltaElo: delta2
     };
+
+    // Statistiche per set (KO, ultimo rimasto...): le calcola il server a fine set.
+    // Una modifica fatta a mano non le ha: in quel caso restano quelle già salvate.
+    const setStats = (r.setStats && Object.keys(r.setStats).length)
+        ? r.setStats
+        : (matchEsistente && matchEsistente.setStats) || null;
+    if (setStats) datiMatch.setStats = setStats;
 
     await db.ref(pathMatch).set(datiMatch);
 

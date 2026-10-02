@@ -13,6 +13,7 @@
 const crypto = require('crypto');
 const PS = require('pokemon-showdown');
 const { creaReplayHtml } = require('./replay-sito');
+const { analizzaSet } = require('./statistiche-set');
 
 class ErroreUtente extends Error {}
 
@@ -420,6 +421,17 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
     // --- fine di un set ---
     async function fineSet(id, info, stato, b) {
         const vincitore = b.winner === b.p1.name ? 'p1' : (b.winner === b.p2.name ? 'p2' : '');
+        const righe = righePubbliche(b.log);
+
+        // Statistiche del set (KO, ultimo rimasto...). Se qualcosa va storto il set si salva lo stesso.
+        let stats = null;
+        try {
+            const portati = lato => b[lato].pokemon.map(p => p.set && p.set.species).filter(Boolean);
+            stats = analizzaSet(righe, { portati: { p1: portati('p1'), p2: portati('p2') } });
+        } catch (e) {
+            console.error('Statistiche del set non calcolate', id, stato.set, e);
+        }
+
         let url = '';
         try {
             // Colore e avatar come nel resto del sito: players/{id}/info
@@ -429,7 +441,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
             ]);
             const giocatore = (g, anag) => ({ nome: g.nome, colore: anag?.color || '', avatar: anag?.avatar || '' });
             const html = creaReplayHtml({
-                log: righePubbliche(b.log),
+                log: righe,
                 p1: giocatore(info.p1, anag1),
                 p2: giocatore(info.p2, anag2),
                 etichetta: info.categoria,
@@ -441,7 +453,9 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         } catch (e) {
             console.error('Replay non salvato', id, stato.set, e);
         }
-        await db.ref(`partite/${id}/risultati/set${stato.set}`).set({ vincitore, url, turni: b.turn });
+        const risultato = { vincitore, url, turni: b.turn };
+        if (stats) risultato.stats = stats;
+        await db.ref(`partite/${id}/risultati/set${stato.set}`).set(risultato);
 
         if (stato.set < info.bestOf) await avviaSet(id, info, stato.set + 1);
         else await db.ref(`partite/${id}/stato`).set('da_salvare');
@@ -459,11 +473,13 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
             ]);
             let s1 = 0, s2 = 0;
             const replays = {};
+            const setStats = {};
             for (let n = 1; n <= info.bestOf; n++) {
                 const r = (risultati || {})[`set${n}`] || {};
                 if (r.vincitore === 'p1') s1++;
                 if (r.vincitore === 'p2') s2++;
                 replays[`set${n}`] = { url: r.url || '', vincitore: r.vincitore === 'p1' ? '1' : (r.vincitore === 'p2' ? '2' : '') };
+                if (r.stats) setStats[`set${n}`] = r.stats;
             }
             await registraRisultato({
                 stagione: info.stagione,
@@ -476,7 +492,8 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
                 score: `${s1}-${s2}`,
                 data: info.data,
                 categoria: info.categoria,
-                replays
+                replays,
+                setStats
             });
             await db.ref(`partite/${id}`).update({ stato: 'salvata', errore: null });
         } catch (e) {
