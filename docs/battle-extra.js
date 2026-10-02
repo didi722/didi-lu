@@ -520,9 +520,13 @@ function sezioneEfficacia(tt, move, isZOrMax, pokemon, serverPokemon, gmaxMove) 
 // due Pokémon dello stesso team possono avere lo stesso soprannome)
 function pokemonDellaRichiesta(battle, pokemon) {
     const nome = idDi(pokemon.name);
-    const trovati = (battle.myPokemon || []).filter(p => p.ident && idDi(p.ident.slice(4)) === nome);
     const forma = idDi(pokemon.speciesForme);
-    return trovati.find(p => idDi(p.speciesForme || String(p.details || '').split(',')[0]) === forma) || trovati[0] || null;
+    const formaDi = p => idDi(p.speciesForme || String(p.details || '').split(',')[0]);
+    const tutti = (battle.myPokemon || []).filter(p => p.ident);
+    // il nome nel log può essere stato reso unico (nomi-log.js) e non coincidere più con quello della richiesta
+    const trovati = tutti.filter(p => idDi(p.ident.slice(4)) === nome);
+    const candidati = trovati.length ? trovati : tutti;
+    return candidati.find(p => formaDi(p) === forma) || trovati[0] || null;
 }
 
 /**

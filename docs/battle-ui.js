@@ -19,6 +19,8 @@ import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch } from './team-sito.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
+import './nomi-unici.js';       // self.NomiUnici
+import './nomi-log.js';         // self.NomiLog
    import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
 const CONFIG_PROVA = {
     formato: 'gen8vgc2022',
@@ -27,6 +29,15 @@ const CONFIG_PROVA = {
     p2: { nome: 'Luca', team: TEAM_PROVA_2 }
 };
 const MATCH_PER_SHOWDOWN = 3;
+
+// Pokémon identici nello stesso team (due Calyrex-Shadow): il client di Showdown non li distingue.
+// Le righe del log passano di qui prima di arrivargli: i doppioni prendono nomi diversi. Se il server
+// manda già nomi unici (functions/nomi-unici.js, dopo il deploy) non cambia nulla. Vedi nomi-log.js.
+const riscrittoreLog = self.NomiLog.creaRiscrittore({
+    baseDi: specie => DexSim.species.get(specie).baseSpecies,
+    nomeForma: self.NomiUnici.nomeForma,
+    conNumero: self.NomiUnici.conNumero
+});
 const PAUSA_TRA_SET = 10;   // secondi di pausa tra un set e il successivo (si può saltare col tasto)
 
 // Classi del client di Showdown, raccolte in battle.html
@@ -557,6 +568,7 @@ function nuovoSet(numero) {
 // Eventi comuni a battaglia locale e online
 function collegaEventi(b) {
     b.on('log', righe => {
+        righe = riscrittoreLog.riscrivi(righe);
         stato.aggiorna(righe);
         aggiungiAScena(righe);
         disegnaInfo();

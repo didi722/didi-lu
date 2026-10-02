@@ -164,3 +164,16 @@ test('i tooltip stanno dentro la finestra e quello della colonna si apre accanto
     assert.match(extra, /tt-compatto/);
     assert.match(css, /#tooltipwrapper \.tooltip:has\(\.tt-compatto\)/);
 });
+
+test('sfide: il blocco è per formato (sfida in attesa o showdown in corso), non per coppia di giocatori', () => {
+    const sfide = leggi('sfide.js');
+    assert.match(sfide, /function formatiOccupati\(D, a, b\)/);
+    assert.match(sfide, /formatiOccupati\(D, D\.io, nome\)\.occupati\.has\(formato\)/);
+    assert.ok(!/sfideInAttesaTra\(D, D\.io, nome\)\[0\]/.test(sfide), 'apriSfida non deve più fermarsi alla prima sfida in attesa della coppia');
+    assert.ok(!/sfideInAttesaTra\(D, D\.io, nome\)\.length/.test(sfide), 'lancia non deve più bloccare tutta la coppia');
+});
+
+test('nomi-log.js è caricato da battle-ui.js e il log gli passa prima di arrivare a Showdown', () => {
+    assert.match(ui, /import '\.\/nomi-log\.js'/);
+    assert.match(ui, /righe = riscrittoreLog\.riscrivi\(righe\)/);
+});
