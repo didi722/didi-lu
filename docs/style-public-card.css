@@ -26,7 +26,7 @@
     --pp-bordo: 4px;
     --pp-ombra: 10px;
     --pp-raggio: 0px;
-    --pp-inclina: -0.8deg;
+    --pp-inclina: 0deg;
     --pp-font: 'Josefin Sans', 'Montserrat', sans-serif;
     --pp-adesivo-font: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
     /* il contorno bianco + ombra nera che fa sembrare gli sprite degli adesivi */
@@ -161,10 +161,10 @@ body {
     border: var(--pp-bordo) solid #000;
     box-shadow: var(--pp-ombra) var(--pp-ombra) 0 #000;
     border-radius: var(--pp-raggio);
-    /* Anche a riposo la carta ha la stessa trasformazione 3D di quando ci si passa sopra (con il mouse fuori e
-       un rotate() 2D semplice il browser disegna il testo ruotato, con i bordi a scalino; con la 3D lo disegna
-       dritto e poi ruota lo strato, e resta nitido come in hover). Stessa lista di funzioni: la transizione è fluida. */
-    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotate(var(--pp-inclina));
+    /* A riposo la carta ha solo l'eventuale inclinazione scelta (con "Straight" nessuna trasformazione che conti: il
+       testo è disegnato dritto e resta nitido). Niente 3D né will-change a riposo: uno strato composto a parte può
+       tenersi una rasterizzazione a risoluzione più bassa e mostrare il testo sgranato finché non cambia qualcosa. */
+    transform: rotate(var(--pp-inclina));
     transform-origin: 50% 30%;
     transition: transform 0.35s ease;
 }
@@ -336,9 +336,8 @@ body.pp-modifica .pp-holo { display: none; }
 [data-layout="collage"] .pp-zona { gap: 30px 26px; }
 [data-layout="collage"] .pp-zona[data-zona="b"] { margin: -10px 0 0 5%; }
 [data-layout="collage"] .pp-zona[data-zona="c"] { margin: -6px 4% 0 0; justify-content: flex-end; }
-/* (perspective() anche qui: vedi la carta, il testo ruotato resta nitido) */
-[data-layout="collage"] .pp-blocco { transform: perspective(1400px) rotate(var(--rot, 0deg)); transition: transform 0.15s; }
-[data-layout="collage"] .pp-blocco:hover { transform: perspective(1400px) rotate(0deg) scale(1.01); z-index: 5; }
+[data-layout="collage"] .pp-blocco { transform: rotate(var(--rot, 0deg)); transition: transform 0.15s; }
+[data-layout="collage"] .pp-blocco:hover { transform: rotate(0deg) scale(1.01); z-index: 5; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 1) { --rot: -1.6deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 2) { --rot: 1.3deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n) { --rot: -0.7deg; }
@@ -1174,36 +1173,54 @@ body.pp-fisso .pp-zona[data-zona="a"] { grid-area: a !important; }
 body.pp-fisso .pp-zona[data-zona="b"] { grid-area: b !important; }
 body.pp-fisso .pp-zona[data-zona="c"] { grid-area: c !important; }
 
-body.pp-fisso .pp-zona > .pp-blocco {
+body.pp-fisso .pp-zona > .pp-blocco,
+body.pp-fisso .pp-linea > .pp-blocco {
     flex: var(--pp-peso, 1) 1 0 !important;
     justify-content: flex-start;
 }
 
+/* una riga di blocchi affiancati (due o più blocchi con "accanto"): dentro la zona è un blocco solo, che pesa quanto il
+   suo blocco più pesante e dentro cui i blocchi stanno nell'altra direzione (in una zona a colonna: affiancati) */
+body.pp-fisso .pp-linea {
+    display: flex;
+    flex-direction: row;
+    flex: var(--pp-peso-linea, 1) 1 0;
+    min-width: 0;
+    align-items: stretch;
+}
+
+body.pp-fisso .pp-zona[data-dir="riga"] > .pp-linea { flex-direction: column; }
+body.pp-fisso .pp-linea[hidden] { display: none; }
+body.pp-fisso .pp-linea.pp-linea-fantasma { flex: 0 0 auto; }
+
 /* in modifica un blocco spento o vuoto è solo un segnaposto: prende il posto che gli serve e non toglie spazio agli altri */
-body.pp-fisso .pp-zona > .pp-blocco:is(.pp-spento, .pp-vuoto) { flex: 0 0 auto !important; min-width: 0 !important; min-height: 0 !important; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-blocco:is(.pp-spento, .pp-vuoto) { flex: 0 0 auto !important; min-width: 0 !important; min-height: 0 !important; }
 
 /* le larghezze minime dei blocchi (pixel di progetto, MINIMI in pagina-pubblica.js); l'altezza minima è quella che
    serve al loro contenuto, tranne il palco che da solo non ne ha */
-body.pp-fisso .pp-zona > .pp-palco { min-width: 260px; min-height: 200px; }
-body.pp-fisso .pp-zona > .pp-musica { min-width: 180px; }
-body.pp-fisso .pp-zona > .pp-identita { min-width: 220px; }
-body.pp-fisso .pp-zona > .pp-statistiche { min-width: 260px; }
-body.pp-fisso .pp-zona > .pp-party { min-width: 300px; }
-body.pp-fisso .pp-zona > .pp-trofei { min-width: 110px; }
-body.pp-fisso .pp-zona > .pp-medaglie { min-width: 130px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-palco { min-width: 260px; min-height: 200px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-musica { min-width: 180px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-identita { min-width: 220px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-statistiche { min-width: 260px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-party { min-width: 300px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-trofei { min-width: 110px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-medaglie { min-width: 130px; }
 
 /* ---- Trainer Card: una sola scheda, le zone si dividono con i bordi ---- */
 body.pp-fisso [data-layout="carta"] .pp-zona { border-width: 0 !important; }
 body.pp-fisso [data-layout="carta"] .pp-zona:not([data-c0="0"]) { border-left: var(--pp-bordo) solid #000 !important; }
 body.pp-fisso [data-layout="carta"] .pp-zona:not([data-r0="0"]) { border-top: var(--pp-bordo) solid #000 !important; }
-body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="riga"] > .pp-blocco + .pp-blocco { border-top-width: 0; border-left: var(--pp-bordo) solid #000; }
-body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="colonna"] > .pp-blocco + .pp-blocco { border-left-width: 0; border-top: var(--pp-bordo) solid #000; }
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="riga"] > :is(.pp-blocco, .pp-linea) + :is(.pp-blocco, .pp-linea) { border-top-width: 0; border-left: var(--pp-bordo) solid #000; }
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="colonna"] > :is(.pp-blocco, .pp-linea) + :is(.pp-blocco, .pp-linea) { border-left-width: 0; border-top: var(--pp-bordo) solid #000; }
+/* dentro una riga di blocchi affiancati: il divisore è nell'altra direzione */
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="colonna"] > .pp-linea > .pp-blocco + .pp-blocco { border-top-width: 0; border-left: var(--pp-bordo) solid #000; }
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="riga"] > .pp-linea > .pp-blocco + .pp-blocco { border-left-width: 0; border-top: var(--pp-bordo) solid #000; }
 body.pp-fisso [data-layout="carta"] .pp-blocco { padding: 12px 18px; }
 body.pp-fisso [data-layout="carta"] .pp-palco { padding: 0; }
 body.pp-fisso [data-layout="carta"] .pp-musica { padding: 10px 14px !important; }
 
 /* ---- Tutti gli altri: ogni blocco è una piastrella con il suo spazio intorno ---- */
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-corpo, .pp-zona) { gap: 14px; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-corpo, .pp-zona, .pp-linea) { gap: 14px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-testata { margin-bottom: 14px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-piede { margin-top: 14px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco { padding: 12px 16px; }

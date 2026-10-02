@@ -241,15 +241,14 @@ test('ridimensionamento: public-card.js scrive la griglia nel CSS e l\'editor pr
     assert.match(cssCard, /grid-template-areas: var\(--pp-aree/);
     assert.match(cssCard, /grid-template-columns: var\(--pp-colonne/);
     assert.match(cssCard, /grid-template-rows: var\(--pp-righe/);
-    assert.match(cssCard, /body\.pp-fisso \.pp-zona > \.pp-blocco \{[^}]*flex: var\(--pp-peso, 1\) 1 0 !important/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-zona > \.pp-blocco,\s*body\.pp-fisso \.pp-linea > \.pp-blocco \{[^}]*flex: var\(--pp-peso, 1\) 1 0 !important/);
     // senza min-height: 0 sul corpo la griglia pretenderebbe righe proporzionali e la tela si ridurrebbe all'infinito
     assert.match(cssCard, /body\.pp-fisso \.pp-corpo \{[^}]*min-height: 0;[^}]*display: grid/);
     // l'editor: maniglie con ruolo separator, prova di ogni passo (misure minime, la carta non sfora, palco il più grande)
     assert.match(editor, /role: 'separator'/);
     assert.match(editor, /C\.provaMisure\(candidata\)/);
     assert.match(editor, /!C\.sfora\(\)/);
-    assert.match(editor, /C\.rapportoPalco\(\) >= C\.RAPPORTO_PALCO_MIN/);
-    assert.match(editor, /P\.griglia\(candidata, visibiliOra\(\), \{ garantisciPalco: false \}\)\.palcoOk/);
+    assert.match(editor, /C\.rapportoPalco\(\) >= Math\.min\(C\.RAPPORTO_PALCO_MIN, rapportoBase - 0\.02\)/);
     assert.match(editor, /P\.muoviConfine\(coppia, delta\)/);
     // un solo passo di undo per trascinamento, Esc annulla, frecce e doppio clic
     assert.match(editor, /cambia\(\(\) => buono\.candidata\)/);
@@ -285,13 +284,16 @@ test('layout nuovi (Cinema, Podium): hanno regole per tutti gli schermi e il dis
     assert.match(editor, /drag the handles between blocks/);
 });
 
-test('nitidezza: a riposo la carta usa la stessa trasformazione 3D di quando ci si passa sopra', () => {
-    const riposo = /\[data-layout="carta"\] \.pp-carta \{[^}]*transform: (perspective\(1400px\) rotateX\(0deg\) rotateY\(0deg\) rotate\(var\(--pp-inclina\)\));/.exec(cssCard);
-    assert.ok(riposo, 'la carta a riposo deve avere perspective + rotateX/rotateY');
-    const sopra = /\.pp-carta\.is-sopra \{[^}]*transform: perspective\(1400px\) rotateX\([^)]*\)[^}]*rotateY\([^)]*\)[^}]*rotate\(var\(--pp-inclina\)\)/.exec(cssCard);
-    assert.ok(sopra, 'in hover la stessa lista di funzioni, così la transizione è fluida');
-    // le tessere storte del collage hanno lo stesso trattamento
-    assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: perspective\(1400px\) rotate\(var\(--rot, 0deg\)\)/);
+test('nitidezza: a riposo la carta è dritta e piatta (niente 3D né will-change), solo in hover si inclina', () => {
+    const riposo = /\[data-layout="carta"\] \.pp-carta \{[^}]*transform: rotate\(var\(--pp-inclina\)\);/.exec(cssCard);
+    assert.ok(riposo, 'a riposo solo rotate(var(--pp-inclina)): con "Straight" è 0 e il testo resta nitido');
+    const bloccoCarta = /\[data-layout="carta"\] \.pp-carta \{[^}]*\}/.exec(cssCard)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(bloccoCarta, /perspective|will-change|translateZ/);
+    assert.match(cssCard, /--pp-inclina: 0deg;/);
+    assert.match(cssCard, /\.pp-carta\.is-sopra \{[^}]*transform: perspective\(1400px\) rotateX\([^)]*\)[^}]*rotateY\([^)]*\)[^}]*rotate\(var\(--pp-inclina\)\)/);
+    // le tessere del collage: rotazione semplice, senza strato composto a parte
+    assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: rotate\(var\(--rot, 0deg\)\)/);
+    assert.match(editor, /Tilted text is drawn a little less sharp/);
 });
 
 test('il Pokémon preferito non ha il nome scritto sul palco (si riconosce a vista), solo nell\'alt', () => {
@@ -302,4 +304,44 @@ test('il Pokémon preferito non ha il nome scritto sul palco (si riconosce a vis
 
 test('il nome dell\'allenatore non cresce con la tela: se la tela si ingrandisce per far stare tutto non si innesca una rincorsa', () => {
     assert.match(cssCard, /min\(80px, calc\(var\(--pp-h\) \* 0\.1\)\)/);
+});
+
+
+// ---- Blocchi affiancati ------------------------------------------------------------------------
+
+test('blocchi affiancati: la carta li raggruppa in una .pp-linea solo a schermo intero, e li rimette in fila sugli schermi stretti', () => {
+    assert.match(card, /P\.lineeDiZona\(c\)/);
+    assert.match(card, /h\('div', \{ class: 'pp-linea' \}, elementi\)/);
+    assert.match(card, /intero && elementi\.length > 1/);
+    // la zona si ricostruisce solo se cambia la sua struttura (le GIF non ripartono per niente)
+    assert.match(card, /zona\.dataset\.firma !== firma/);
+    // passando da schermo intero a schermo stretto si ricostruisce
+    assert.match(card, /stato\.lineeIntero !== pc\) \{ applica\(\); return; \}/);
+    // il peso di una riga di blocchi affiancati e la riga senza blocchi in vista
+    assert.match(card, /--pp-peso-linea/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-linea \{[^}]*flex: var\(--pp-peso-linea, 1\) 1 0/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-zona\[data-dir="riga"\] > \.pp-linea \{ flex-direction: column; \}/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-linea\[hidden\] \{ display: none; \}/);
+    // l'entrata dura poco: dopo non si rifà quando un blocco cambia riga
+    assert.match(card, /classList\.remove\('pp-entra'\)/);
+});
+
+test('blocchi affiancati: l\'editor li propone (ancore di fianco), ha il tasto ⇄ e le maniglie tra le righe e dentro la riga', () => {
+    // gli slot hanno indice e modo, e il rilascio li passa a sposta
+    assert.match(editor, /posti\.push\(\{ zona, indice: inizio, modo: false/);
+    assert.match(editor, /taglio\(riga \? q\.top : q\.left, 'testa', r\.inizio\)/);
+    assert.match(editor, /taglio\(pos, true, r\.inizio \+ r\.ids\.indexOf\(id\) \+ 1\)/);
+    assert.match(editor, /P\.sposta\(cfg\(\), id, scelto\.zona, scelto\.indice, scelto\.modo\)/);
+    assert.match(editor, /P\.senzaBlocco\(cfg\(\), idEscluso\)/);
+    // di fianco solo a schermo intero
+    assert.match(editor, /const affiancabile = !!C\.stato\.lineeIntero/);
+    // il tasto nel pannello
+    assert.match(editor, /P\.affianca\(c, b\.id, !b\.accanto\)/);
+    assert.match(editor, /'Beside the previous block'/);
+    // le maniglie: tra due righe di blocchi ('linee') e tra due blocchi della stessa riga ('blocchi')
+    assert.match(editor, /tipo: 'linee', quale: \[z, i\]/);
+    assert.match(editor, /tipo: 'blocchi', quale: \[linea\[j\], linea\[j \+ 1\]\]/);
+    // il palco: si chiede quanto serve ma non meno di com'era (disposizioni già strette)
+    assert.match(editor, /rapportoBase = C\.rapportoPalco\(\)/);
+    assert.match(card, /provaMisure\(config\) \{ return scriviGriglia\(P\.normalizza\(config\), true\); \}/);
 });
