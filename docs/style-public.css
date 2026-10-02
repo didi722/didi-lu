@@ -6,14 +6,7 @@
     --borders: #025534;
 }
 
-body {
-    font-family: 'Montserrat', sans-serif;
-    background: linear-gradient(135deg, var(--bg-body-index) -50%, var(--bg-gradient-end-index) 100%) !important;
-    margin: 0;
-    min-height: 100vh; 
-    display: block;    
-    overflow-y: auto; 
-}
+/* lo sfondo, lo scorrimento e il carattere della pagina sono in style-public-card.css */
 
 /* Overlay che copre tutto lo schermo */
 .poke-loader-overlay {
@@ -99,65 +92,8 @@ body {
 }
 
 /* Il Wrapper limita la larghezza del contenuto */
-.site-wrapper {
-    max-width: 1440px;      /* Larghezza ideale per desktop */
-    margin: 0 auto;         /* Centra il sito orizzontalmente */
-    width: 100%;            /* Importante per schermi piccoli */
-    padding: 0 20px;        /* Evita che il contenuto tocchi i bordi laterali */
-    box-sizing: border-box; /* Include il padding nella larghezza totale */
-    position: relative;     /* Utile se hai elementi position: absolute all'interno */
-}
-
-.hub-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    margin-left: 18%;
-    font-family: 'Josefin Sans', sans-serif;
-    padding-left: 20px;
-    box-sizing: border-box;
-    position:relative;
-}
-
-.top-bar {
-    width: 100%;
-    padding: 50px 0; 
-    border-bottom: 5px solid #000;
-    display: flex;
-    justify-content: center; /* Centra il contenuto interno */
-    align-items: center;
-}
-
-.top-bar-inner {
-    /* Occupa tutta la larghezza disponibile con un po' di margine ai lati */
-    width: 100%;
-    max-width: 1400px; 
-    display: flex;
-    justify-content: space-between; /* Titolo a sx, Filtri a dx */
-    padding: 0 30px;
-    justify-content: center;
-    align-items: center;
-}
 
 /* --- TITOLO (Sticker Nero) --- */
-.hub-hero {
-    background: transparent !important;
-    padding: 0;
-}
-
-.hub-title-display {
-    background: #000;
-    color: #fff;
-    padding: 10px 25px; 
-    display: inline-block;
-    transform: rotate(-2deg); 
-    border: 4px solid #000;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
-    font-size: 2.5rem; /* Dimensione bilanciata */
-    font-weight: 900;
-    text-transform: uppercase;
-    margin: 0;
-    white-space: nowrap;
-}
 
 .music-btn {
     position: fixed;
@@ -350,7 +286,6 @@ body {
 }
 
 
-
 .close-modal {
     display:none;
 }
@@ -370,126 +305,15 @@ body {
 }
 
 /* --- GRANDE CARD DEL TEAM --- */
-.main-profile-content {
-    flex: 0 1 800px; /* Prende lo spazio centrale */
-    margin: 0; /* Rimuoviamo i margini che avevamo prima */
-    padding: 0;
-}
 
 /* Area Orbita */
-.orbit-zone {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
 /* Avatar Centrale */
-.neubrutal-avatar-v2 {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    z-index: 5;
-    display: none; /* Mostrato solo se l'immagine carica */
-}
 
 /* Pokemon Orbitanti (NUDI) */
-.pkmn-orbit-sprite {
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    z-index: 2;
-    /* Niente bordi o sfondi qui */
-}
-
-.pkmn-orbit-sprite:hover {
-    z-index: 10;
-    transform: scale(1.4) !important; /* Effetto zoom al passaggio */
-}
-
-.pkmn-gif-no-border {
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
-    object-fit: contain;
-}
-
-.profile-layout-container {
-    display: flex;
-    justify-content: center; /* Centra il gruppo nel sito */
-    align-items: flex-start; /* Allinea gli elementi in alto */
-    gap: 30px; /* Spazio tra bacheca e card */
-    max-width: 1400px;
-    margin: 40px auto;
-    padding: 0 20px;
-}
-
-
-
-.trophy-card {
-    padding: 15px !important;
-    background: #fff;
-    border: 4px solid #000;
-    box-shadow: 8px 8px 0px #000;
-    overflow: visible !important;
-}
-
-.badge-title {
-    background: var(--accent-color, #000);
-    color: #000; /* Testo nero su fondo colorato per contrasto neubrutal */
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px black;
-    font-size: 1rem;
-    padding: 5px;
-    text-align: center;
-    transform: rotate(-2deg);
-    font-weight: 1000;
-    margin-bottom: 20px;
-    font-family: 'Josefin Sans', sans-serif;
-}
-
 
 
 /* Singolo Badge */
-.badge-item {
-    position: relative;
-    width: 80px;  /* Spazio riservato al badge */
-    height: 80px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: help;
-}
-
-.badge-img {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-    /* Effetto neubrutalist: ombra nera netta sul PNG */
-    filter: drop-shadow(5px 5px 0px #000);
-    transition: all 0.2s ease;
-}
-
-
-.badge-item {
-    position: relative;
-    cursor: help;
-    transition: all 0.2s ease;
-}
-
-
-
-.badge-img {
-    width: 60px;
-    height: 60px;
-    filter: drop-shadow(4px 4px 0px #000);
-}
 
 
 .tooltip-title {
@@ -506,79 +330,19 @@ body {
 }
 
 /* Barra di progresso nel tooltip */
-.progress-container {
-    height: 10px;
-    background: #eee;
-    border: 2px solid #000;
-    margin: 5px 0;
-}
-
-.progress-bar {
-    height: 100%;
-    transition: width 0.5s ease-in-out;
-}
-
-.progress-text {
-    font-size: 0.65rem;
-    text-align: right;
-    margin: 0;
-}
 
 
 /* 1. Forza la colonna dei badge a stare sopra la card centrale */
-.trophy-case {
-    position: relative; 
-    z-index: 100; /* Valore più alto rispetto alla main-profile-content */
-}
 
 /* 2. Assicurati che il contenitore dei badge NON tagli il contenuto */
-.trophy-card {
-    overflow: visible !important; /* Fondamentale per far uscire il tooltip */
-    position: relative;
-}
 
 /* 3. Il contenitore del singolo badge */
-.badge-item {
-    position: relative;
-    display: inline-block;
-    cursor: help;
-}
 
 /* 4. Il Tooltip aggiornato */
-.neubrutal-tooltip {
-    visibility: hidden;
-    position: absolute;
-    left: 70%; /* Lo sposta a destra dell'icona del badge */
-    top: 180%;
-    transform: translateY(-50%); /* Lo centra verticalmente rispetto al badge */
-    width: 180px;
-    background: #fff;
-    border: 4px solid #000; /* Un po' più spesso per stile punk */
-    box-shadow: 6px 6px 0px #000;
-    padding: 10px;
-    z-index: 10002 !important; /* Valore altissimo */
-    font-size: 0.75rem;
-    color: #000;
-    margin-left: 15px; /* Distanza dall'icona */
-    pointer-events: none; /* Evita che il mouse "inciampi" nel tooltip */
-}
-
-.hub-title-badge:hover .neubrutal-tooltip {
-    visibility: visible;
-    opacity: 1;
-}
 
 /* Mostra il tooltip */
-.badge-item:hover .neubrutal-tooltip {
-    visibility: visible;
-}
 
 /* --- GRANDE CARD DEL TEAM (Aggiunta per sicurezza) --- */
-.main-profile-content {
-    flex: 0 1 800px;
-    position: relative;
-    z-index: 1; /* Z-index basso per stare sotto ai tooltip di sinistra */
-}
 
 
 .modal-content.glass-card {
@@ -724,693 +488,62 @@ body {
     color: #ff4545; /* Rosso errore al passaggio */
 }
 
-/* Layout della sezione hero per allineare badge e nome */
-/* Il contenitore principale della barra gialla */
-.top-bar-inner {
-    position: relative; /* Necessario per il posizionamento dei figli */
-    display: flex;
-    justify-content: center; /* Centra il contenuto principale (il nome) */
-    align-items: center;
-    height: 100%;
-    padding: 0 20px;
-}
 
 /* Il nome resta al centro senza interferenze */
-.hub-hero {
-    flex-grow: 0; 
-}
 
 /* Contenitore Badge: ancorato a sinistra */
-.badges-top-left {
-    position: absolute;
-    left: 50px; /* Distanza dal bordo sinistro */
-    display: flex;
-    gap: 15px;
-    pointer-events: auto; /* Permette di cliccarli se serve */
-    z-index: 20;
-}
 
-/* Stile Neubrutalist per i badge (sparpagliati) */
-/* Applica la rotazione al contenitore del badge, non all'immagine interna */
-.badges-top-left .badge-item {
-    position: relative;
-    display: inline-block;
-    transition: all 0.1s ease;
-}
 
 /* Rotazioni alternate sui contenitori */
-.badges-top-left .badge-item:nth-child(1) {
-    transform: rotate(-8deg) translateY(-15px);
-}
-
-.badges-top-left .badge-item:nth-child(2) {
-    transform: rotate(7deg) translateY(20px);
-}
-
-.badges-top-left .badge-item:nth-child(3) {
-    transform: rotate(-9deg) translateY(-10px);
-}
-
-.badges-top-left .badge-item:nth-child(4) {
-    transform: rotate(12deg) translateY(0px);
-}
 
 /* Stile immagine e ombra */
-.badges-top-left .badge-img {
-    width: 80px;
-    height: auto;
-    filter: drop-shadow(3px 3px 0px #000);
-    display: block; /* Evita spazi bianchi sotto l'img */
-}
 
 /* Effetto hover sul contenitore */
-.badges-top-left .badge-item:hover {
-    transform: scale(1.2) rotate(0deg) translateY(0px);
-    z-index: 10;
-    filter: drop-shadow(8px 8px 0 black);
-}
 
-
-/* Reset per evitare scroll indesiderati */
-html, body {
-    height: 100%;
-    overflow: hidden; /* Blocca lo scroll di pagina se vuoi un'app a schermo fisso */
-}
-
-.main-profile-content {
-    height: calc(100vh - 150px); /* Sottrai l'altezza del tuo header giallo */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.profile-display-wrapper {
-    display: block;
-    width: 100%;
-    height: 450px; /* Altezza fissa del palco */
-    position: relative;
-    padding-left: 20px; /* Spazio dal bordo sinistro dello schermo */
-}
 
 /* Colonna Allenatore: fissa a sinistra */
-.trainer-column {
-    position: absolute;
-    bottom: 100px; 
-    z-index: 10;
-}
-
-.trainer-sprite {
-    height: 150px; 
-    width: auto;
-    filter: drop-shadow(4px 4px 0px #000);
-}
 
 /* Colonna Pokémon: si espande a destra */
-.pokemon-column {
-    position: absolute;
-    bottom: 90px;
-    display: grid; /* Usiamo grid per sovrapporre facilmente */
-    place-items: end; /* Allinea in basso a destra */
-    width: auto; 
-    height: auto;
-} 
-
-.pokemon-sprite-container {
-    position: relative;
-    display: grid;
-    place-items: end;
-}
-
-.pokemon-sprite {
-    grid-area: 1 / 1; /* Entrambe le immagini nella stessa cella */
-    height: auto;
-    display: block;
-    /* Rende i pixel più netti, aiutando l'estetica Neubrutalist */
-    image-rendering: pixelated; 
-    image-rendering: crisp-edges;
-}
 
 /* LIVELLO 1: L'Ombra Finta (Sotto) */
-.pokemon-shadow-sprite {
-    z-index: 1;
-    /* Spostiamo l'ombra di 6px in basso e 6px a destra */
-    transform: translate(6px, 6px);
-    
-    /* Il segreto: tingiamo l'intera immagine di nero solido */
-    filter: brightness(0) saturate(100%); 
-    
-    /* Leggera opacità se vuoi un'ombra meno aggressiva (opzionale) */
-    /* opacity: 0.8; */
-}
 
 /* LIVELLO 2: Il Pokémon Reale (Sopra) */
-.pokemon-real-sprite {
-    z-index: 2;
-    position: relative;
-}
 
 /* Gestione z-index esistente per il back/front */
-.pokemon-back { z-index: 5 !important; }
-.pokemon-front { z-index: 15 !important; }
-
-.pokemon-sprite-container {
-    position: relative;
-    display: grid;
-    place-items: end; /* Allinea entrambi i layer in basso */
-}
-
-.pokemon-sprite {
-    grid-area: 1 / 1; /* Sovrappone le due immagini */
-    display: block;
-    image-rendering: pixelated;
-}
-
-.pokemon-shadow-layer {
-    z-index: 1;
-    transform: translate(6px, 6px); /* Spostamento dell'ombra */
-    filter: brightness(0) saturate(100%); /* Trasforma lo sprite in nero pieno */
-    pointer-events: none;
-    user-select: none;
-}
-
-#active-pkm-sprite {
-    z-index: 2;
-    position: relative;
-}
 
 /* Per i volanti usiamo margin per non rompere l'allineamento */
-.floating-pkm {
-    margin-bottom: 50px;
-}
 
 /* Il contenitore deve essere una riga invisibile che non occupa spazio verticale */
-#info-display-area {
-    position: absolute; /* Fondamentale: non sposta gli elementi sottostanti */
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    top: 140px; /* Regola questo valore in base all'altezza della tua top-bar gialla */
-    z-index: 100;
-    pointer-events: none;
-    z-index:0;
-}
-
-#trainer-motto {
-    background: white; /* Verde neubrutalist come richiesto */
-    border: 3px solid #000;
-    padding: 8px 15px;
-    box-shadow: 5px 5px 0px #000;
-    transform: rotate(-1.5deg);
-    pointer-events: auto;
-    font-family: 'Josefin Sans', sans-serif !important;
-    font-weight: 900;
-    font-size: 0.85rem;
-}
-
-#trainer-motto span {
-    display: block;
-    font-size: 0.85rem;
-    line-height: 1.2;
-}
 
 /* Layout Generale della Bacheca */
-#trophy-shelf-container {
-    position: absolute;
-    top: 190px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    max-width: 400px;
-    z-index: 10;
-    pointer-events: auto;
-}
 
 /* Griglia per contenere più trofei */
-.trophy-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 60px;
-    justify-content: center; /* Centra orizzontalmente i trofei */
-    align-items: center;     /* Allinea verticalmente */
-    width: 100%;             /* Occupa tutta la larghezza disponibile */
-    margin: 0 auto;
-}
 
-/* Struttura del Singolo Trofeo sul Ripiano */
-/* Struttura del Singolo Trofeo */
-.compact-palmares {
-    display: flex;
-    flex-direction: row-reverse; /* Sposta il primo elemento (numero) a destra del secondo (trofeo) */
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 5px;
-}
 
 /* Stile del contatore (x1) */
-.trophy-count {
-    font-family: 'Arial Black', sans-serif;
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: #000;
-    line-height: 1;
-    text-shadow: white 1px 1px 0;
-    margin-left: 0; 
-}
 
-/* Wrapper con Ombra Neubrutalist */
-/* Wrapper con Ombra Neubrutalist */
-.trophy-recolor-wrapper {
-    position: relative;
-    width: 90px;
-    height: 90px;
-    display: grid;
-    place-items: center;
-    /* Applichiamo l'ombra solo qui per evitare sdoppiamenti */
-    filter: drop-shadow(2px 2px 0px #000);
-    z-index: -1;
-}
 
 /* LIVELLO 1: Il Colore (SOTTO) */
-.trophy-color-base {
-    grid-area: 1 / 1;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    background-color: var(--accent-color);
-    
-    /* 1. Usiamo l'immagine PIENA come maschera */
-    -webkit-mask-image: url("immagini/season-winner-color.png");
-    mask-image: url("immagini/season-winner-color.png");
-    -webkit-mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-
-    /* 2. IL TRUCCO: Stringiamo l'area di disegno del colore di 1.5px per lato */
-    /* Questo impedisce al verde di toccare i bordi esterni sfocati */
-    padding: 1.5px; 
-    -webkit-mask-origin: content-box;
-    mask-origin: content-box;
-    -webkit-mask-clip: content-box;
-    mask-clip: content-box;
-}
-
-.trophy-icon-top {
-    grid-area: 1 / 1;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    z-index: 2; 
-    pointer-events: none;
-    /* Mantiene i bordi dell'immagine superiore più nitidi possibili */
-    image-rendering: -webkit-optimize-contrast;
-}
-
-#stats-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* Aumentato leggermente per non far sovrapporre le punte inclinate */
-    margin-top: 70px;
-    margin-left: -100px;
-    width: 350px;
-    align-items: center; /* Centra le barre rispetto al trofeo sopra */
-}
-
-.stat-bar {
-    background: var(--accent-color);
-    border: 3px solid #000;
-    padding: 10px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    box-shadow: 4px 4px 0px #000;
-    font-weight: 800;
-    font-family: 'Josefin Sans', sans-serif;
-    /* APPLICHIAMO L'INCLINAZIONE CASUALE */
-    transform: rotate(var(--rand-deg, 0deg));
-    
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
 
 /* Effetto al passaggio del mouse: si raddrizza e si alza */
-.stat-bar:hover {
-    transform: rotate(0deg) scale(1.05);
-    box-shadow: 6px 6px 0px #000;
-    z-index: 10;
-    background-color: var(--accent-color); /* Prende il colore del player al volo! */
-}
-
-
 
 
 /* Colore alternato neutro per non appesantire */
-.stat-bar:nth-child(even) {
-    background: var(--dark-color);
-}
-
-.card { 
-    background: var(--accent-color);
-    border: 2px solid var(--border-color);
-    box-shadow: 5px 5px 0px var(--border-color);
-    padding: 20px; 
-    position: relative;
-    overflow: hidden;
-    color: #1a1a1a; 
-    z-index: 1;
-    cursor: pointer;
-    overflow: visible !important;
-    
-}
-
-.card-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 10px;
-    color: #1a1a1a; 
-
-}
-
-.card { 
-    background: var(--accent-color); /* Colore dinamico del team */
-    border: 4px solid #000; /* Bordo nero spesso */
-    box-shadow: 10px 10px 0px #000; /* Ombra dura */
-    padding: 20px; 
-    position: relative;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    margin-top:-50px;
-}
 
 /* Header della Card */
-.card-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 15px;
-}
-
-.category, .stats { 
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 0.75rem; 
-    font-weight: 900;
-    text-transform: uppercase;
-    background: #fff; /* Sfondo bianco per staccare */
-    color: #000;
-    border: 3px solid #000;
-    padding: 4px 10px;
-    box-shadow: 3px 3px 0px #000;
-}
-
-.card h3 { 
-    font-family: 'Josefin Sans', sans-serif;
-    background: #000;
-    color: #fff;
-    margin: 10px 0; 
-    font-size: 1.6rem; /* Leggermente ridotto per nomi lunghi */
-    font-weight: 900;
-    padding: 5px 12px;
-    display: inline-block; 
-    transform: rotate(-1deg);
-    
-    /* CORREZIONE PER NOMI LUNGHI */
-    white-space: normal;      /* Permette di andare a capo */
-    max-width: 90%;           /* Impedisce di toccare i bordi della card */
-    line-height: 1.3;         /* Gestisce lo spazio tra le righe se va a capo */
-    box-decoration-break: clone; /* Opzionale: mantiene il padding su ogni riga */
-    -webkit-box-decoration-break: clone;
-}
-
-.grid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
-    gap: 20px; 
-    max-width: 1300px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.pkm-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 10px; 
-    margin-top: 15px;
-}
-
-.pkm-box {
-    background: white;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    height: 60px;
-    box-sizing: border-box;
-    position: relative;
-    border: none;
-    flex: 1;          /* Occupa tutto lo spazio rimasto dopo lo sprite */
-    min-width: 0;     /* FONDAMENTALE: permette al contenitore di restringersi */
-    color: #1a1a1a !important;
-    position: relative;
-    color: #1a1a1a;
-    font-family: 'Josefin Sans', sans-serif;
-    border: 1.5px solid black;
-    box-shadow: 3px 3px 0 black;
-}
-
-.pkm-box::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 5px;         /* Spessore del bordo */
-    height: 100%;
-    background: var(--accent-dark); /* Colore di base */
-    color: #1a1a1a;
-}
-
-.clickable-card {
-    position: relative !important;
-    z-index: 10 !important; /* Spinge la card sopra eventuali elementi trasparenti sovrapposti */
-}
 
 /* Card in hover */
-.pkm-hover-card {
-    display: none;
-    position: absolute;
-    bottom: 110%; 
-    width: 260px; 
-    background: black;
-    border: 2px solid white;
-    box-shadow: 4px 4px 0px white;
-    color: white;
-    padding: 12px;
-    pointer-events: none;
-    z-index: 1000;
-}
-
-.pkm-hover-card.left-side {
-    left: 0;
-    right: auto;
-    transform: translateX(0);
-}
-
-.pkm-hover-card.right-side {
-    right: 0;
-    left: auto;
-    transform: translateX(0); 
-}
-
-.pkm-hover-card strong {
-    display: block;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--didi-color);
-    padding-bottom: 4px;
-    margin-bottom: 6px;
-    z-index: 1000;
-}
-
-.pkm-hover-card p {
-    font-size: 0.6rem !important; /* Testo piccolissimo */
-    margin: 0 !important;
-    line-height: 1.2;
-    color: white !important;
-    z-index: 1000;
-}
 
 /* Stile per le mosse dentro l'hover */
-.hover-moves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-top: 10px; /* Spazio netto dalle info sopra */
-    z-index: 1000;
-}
-
-.hover-moves span {
-    background: var(--accent-color);
-    border: 2px solid var(--border-color);
-    box-shadow: 3px 3px 0px var(--border-color);
-    color: #1a1a1a;
-    font-size: 0.65rem; /* Testo leggibile ma piccolo */
-    padding: 7px 2px;   /* Rettangolo più alto e "cicciotto" */
-    text-align: center;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 30px;   /* Forza la grandezza del rettangolo */
-    white-space: normal; 
-    line-height: 1;
-    z-index: 1000;
-}
 /* Animazione comparsa */
 @keyframes popIn {
     from { opacity: 0; margin-bottom: -10px; }
     to { opacity: 1; margin-bottom: 0; }
 }
 
-
-.pkm-sprite-container {
-    width: 45px;  /* Contenitore più piccolo e fisso */
-    height: 45px;
-    flex-shrink: 0;
-    display: flex;
-    justify-content: center; 
-    align-items: center;
-}
-
-.pkm-sprite {
-    max-width: 45px;
-    max-height: 45px;
-    object-fit: contain;
-    filter: drop-shadow(1.5px 1.5px 0 black);
-}
-
-.pkm-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex-grow: 1;
-    min-width: 0; /* Necessario per il troncamento del testo */
-}
-
-.pkm-name { 
-    color: #1a1a1a;
-    font-family: 'Josefin Sans', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem; /* Font leggermente ridotto per stare su una riga */
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block !important;             /* Necessario per applicare l'overflow */
-    white-space: nowrap !important;        /* Impedisce al testo di andare a capo */
-    overflow: hidden !important;           /* Nasconde la parte di testo in eccesso */
-    text-overflow: ellipsis !important;    /* Aggiunge i tre puntini (...) alla fine */
-    max-width: 100 !important;            /* Assicura che non superi la larghezza del box genitore */
-}
-
-.item-container {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.item-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-}
-
-.pkm-item { 
-    color: var(--text-dim);
-    font-size: 0.65rem; 
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.hover-moves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-    border-top: 2px solid #000; /* Separatore netto */
-    padding-top: 10px;
-    z-index: 1000;
-}
-
-.hover-moves span {
-    background: #fff; /* Sfondo neutro */
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0px #000;
-    color: #000;
-    font-size: 0.65rem;
-    padding: 6px 4px;
-    text-align: center;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    min-height: 35px;
-    text-transform: uppercase;
-    transition: none; /* Stile brutale, niente sfumature */
-}
-
-.pkm-hover-card {
-    display: none;
-    position: absolute;
-    bottom: 115%; /* Leggermente più alto per non coprire il bordo */
-    width: 240px; 
-    background: #fff; /* Sfondo bianco per contrasto neubrutalist */
-    border: 3px solid #000; /* Bordo nero spesso */
-    box-shadow: 8px 8px 0px #000; /* Ombra netta */
-    color: #000;
-    padding: 15px;
-    z-index: 1000 !important;
-    pointer-events: none;
-    transform-origin: bottom center;
-}
-
 /* Titolo dentro l'hover (Nome Pokémon) */
-.pkm-hover-card strong {
-    display: table; /* Adattamento al testo */
-    background: #000;
-    color: #fff;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    margin-bottom: 10px;
-    transform: rotate(-2deg); /* Effetto sticker */
-    border: 2px solid #000;
-    z-index: 1000;
-}
 
 /* Info Testuali (Abilità, Item, etc) */
-.pkm-hover-card p {
-    font-size: 0.75rem !important; /* Leggermente più grande per leggibilità */
-    font-weight: 700;
-    margin: 4px 0 !important;
-    line-height: 1.3;
-    color: #000 !important;
-    text-transform: uppercase;
-    z-index: 1000;
-}
-
-.pkm-hover-card.left-side {
-    left: 0;
-    transform: rotate(1deg); /* Leggera inclinazione opposta al titolo */
-    z-index: 1000;
-}
-
-.pkm-hover-card.right-side {
-    right: 0;
-    transform: rotate(-1deg);
-    z-index: 1000;
-}
 
 .modal {
     display: none;
@@ -1652,8 +785,7 @@ html, body {
     visibility: visible !important;
 }
 
-/* 6. FIX POSIZIONAMENTO (Evita che il fumetto esca dal modale in alto) */
-/* Se il Pokémon è nella prima riga, mostra il fumetto SOTTO invece che SOPRA */
+
 /* --- BADGE DEI TIPI (Effetto Etichetta Adesiva) --- */
 .type-badge {
     font-size: 0.55rem;
@@ -2029,7 +1161,6 @@ html, body {
     color: #eeeeee;
     padding: 8px 10px !important; /* Meno spazio interno */
 }
-
 
 
 /* Sezioni Specifiche */
@@ -2728,81 +1859,13 @@ color:#eeeeee;
     color: black !important;
 }
 
-.pkm-hover-card {
-    display: none;
-    position: absolute;
-    bottom: 115%; /* Leggermente più alto per non coprire il bordo */
-    width: 240px; 
-    background: #fff; /* Sfondo bianco per contrasto neubrutalist */
-    border: 3px solid #000; /* Bordo nero spesso */
-    box-shadow: 8px 8px 0px #000; /* Ombra netta */
-    color: #000;
-    padding: 15px;
-    z-index: 999;
-    pointer-events: none;
-    transform-origin: bottom center;
-}
-
 /* Titolo dentro l'hover (Nome Pokémon) */
-.pkm-hover-card strong {
-    display: table; /* Adattamento al testo */
-    background: #000;
-    color: #fff;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    margin-bottom: 10px;
-    transform: rotate(-2deg); /* Effetto sticker */
-    border: 2px solid #000;
-}
 
 /* Info Testuali (Abilità, Item, etc) */
-.pkm-hover-card p {
-    font-size: 0.75rem !important; /* Leggermente più grande per leggibilità */
-    font-weight: 700;
-    margin: 4px 0 !important;
-    line-height: 1.3;
-    color: #000 !important;
-    text-transform: uppercase;
-}
 
 /* --- LE MOSSE (I 4 Rettangoli) --- */
-.hover-moves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-    border-top: 2px solid #000; /* Separatore netto */
-    padding-top: 10px;
-}
-
-.hover-moves span {
-    background: #fff; /* Sfondo neutro */
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0px #000;
-    color: #000;
-    font-size: 0.65rem;
-    padding: 6px 4px;
-    text-align: center;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 35px;
-    text-transform: uppercase;
-    transition: none; /* Stile brutale, niente sfumature */
-}
 
 /* Varianti di posizione */
-.pkm-hover-card.left-side {
-    left: 0;
-    transform: rotate(1deg); /* Leggera inclinazione opposta al titolo */
-}
-
-.pkm-hover-card.right-side {
-    right: 0;
-    transform: rotate(-1deg);
-}
 
 
 @keyframes popIn {
@@ -2919,11 +1982,6 @@ color:#eeeeee;
 
 .stat-bar-fill {
     border-right: 2px solid #000;
-}
-
-.stat-bar:active {
-    transform: rotate(0deg) scale(1);
-    box-shadow: 0px 0px 0px #000 !important;
 }
 
 .evs-footer {
@@ -3197,49 +2255,8 @@ color:#eeeeee;
     opacity: 1;
 }
 
-#trophy-list {
-    position: absolute !important;
-    
-    /* Lo posizioniamo a destra del nome DIDI */
-    top: -30%;
-    left: 100%;
-    transform: translateY(-50%); /* Lo centra perfettamente in verticale rispetto al nome */
-    
-    /* Spazio tra il nome e il trofeo */
-    margin-left: 40px !important; 
-    
-    /* Forziamo le dimensioni corrette e pulite senza rimpicciolire con funzioni distruttive */
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 10px !important;
-    
-    width: max-content !important; /* Impedisce al blocco di andare a capo */
-    z-index: 999;
-}
-
-
 
 /* 4. Sistemiamo il testo "x1" accanto al trofeo */
-#trophy-list span, 
-#trophy-list text {
-    font-size: 1.1rem !important;
-    font-weight: bold !important;
-    background-color: white;
-    padding: 4px 6px;
-    border: 2px solid black;
-    box-shadow: 3px 3px 0px black;
-    font-family: 'Josefin Sans', sans-serif;
-    transform: rotate(4deg) !important;
-}
-
-#player-title-container {
-    padding: 12px 20px 0 20px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    margin-left: 120px;
-}
 
 /* Tooltip posizionato SOTTO il pulsante e spostato a SINISTRA */
 .music-tooltip {

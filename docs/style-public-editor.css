@@ -1,0 +1,368 @@
+/* =====================================================================
+   PUBLIC EDITOR — il pannello con cui l'allenatore personalizza la sua pagina
+   (public-editor.js; si carica solo per il proprietario). Stesso stile neubrutalist della carta.
+   ===================================================================== */
+
+.pe-pannello {
+    position: fixed;
+    top: 82px;             /* sotto il pulsante di login, che sta in alto a destra */
+    right: 0;
+    bottom: 0;
+    z-index: 2600;
+    width: 400px;
+    max-width: 100vw;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background: #fff;
+    color: #000;
+    border-left: 4px solid #000;
+    border-top: 4px solid #000;
+    box-shadow: -8px 8px 0 rgba(0, 0, 0, 0.25);
+    font-family: 'Josefin Sans', 'Montserrat', sans-serif;
+    animation: pe-entra 0.25s ease-out;
+}
+
+@keyframes pe-entra { from { transform: translateX(40px); opacity: 0; } }
+
+.pe-pannello * { box-sizing: border-box; }
+.pe-pannello button { font-family: inherit; color: #000; }
+.pe-pannello button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ---------- Testata e schede ---------- */
+
+.pe-testa {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 10px 16px;
+    background: #ffde4d;
+    border-bottom: 4px solid #000;
+}
+
+.pe-testa h2 { margin: 0 auto 0 0; font-size: 1.15rem; font-weight: 900; letter-spacing: 0.14em; }
+.pe-testa-btn { width: 34px; height: 34px; font-size: 1.3rem; }
+
+.pe-schede {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    background: #f1f1f1;
+    border-bottom: 3px solid #000;
+}
+
+.pe-schede button {
+    flex: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    background: #fff;
+    border: 3px solid #000;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pe-schede button.is-on { background: #000; color: #fff; box-shadow: 3px 3px 0 #31c489; }
+
+.pe-corpo { flex: 1; overflow-y: auto; padding: 14px 16px 26px; }
+
+/* ---------- Piede ---------- */
+
+.pe-piede { padding: 10px 14px 12px; background: #f1f1f1; border-top: 4px solid #000; display: flex; flex-direction: column; gap: 10px; }
+.pe-piede-sopra, .pe-piede-sotto { display: flex; align-items: center; gap: 8px; }
+.pe-piede-sotto { justify-content: flex-end; }
+.pe-stato { margin-right: auto; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.06em; color: #1f7f59; text-transform: uppercase; }
+.pe-stato.is-sporco { color: #c2410c; }
+
+/* ---------- Pulsanti ---------- */
+
+.pe-bottone {
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 8px 13px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.pe-bottone:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #000; }
+.pe-bottone:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 0 0 0 #000; }
+.pe-primario { background: #7cf29a; min-width: 96px; }
+.pe-pericolo { background: #ff8a73; }
+
+.pe-icona {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+    background: #fff;
+    border: 2px solid #000;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.pe-icona:hover:not(:disabled) { background: #ffde4d; }
+.pe-icona[aria-pressed="false"] { opacity: 0.55; }
+
+/* ---------- Sezioni e componenti ---------- */
+
+.pe-sezione { margin: 0 0 18px; }
+
+.pe-sezione h3, .pe-zona h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 3px 9px;
+    background: #000;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transform: rotate(-1.2deg);
+}
+
+.pe-nota { margin: 0 0 14px; font-size: 0.8rem; font-weight: 700; line-height: 1.35; opacity: 0.75; }
+.pe-nota a { color: #000; font-weight: 900; }
+
+.pe-seg { display: flex; border: 3px solid #000; box-shadow: 3px 3px 0 #000; background: #fff; }
+.pe-seg button { flex: 1; cursor: pointer; padding: 8px 6px; background: #fff; border: 0; border-right: 2px solid #000; font-size: 0.78rem; font-weight: 900; }
+.pe-seg button:last-child { border-right: 0; }
+.pe-seg button.is-on { background: #000; color: #fff; }
+
+.pe-toggle { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 8px; padding: 6px 0; background: none; border: 0; text-align: left; cursor: pointer; font-size: 0.86rem; font-weight: 800; }
+.pe-toggle-casella { flex: none; width: 24px; height: 24px; display: grid; place-items: center; background: #fff; border: 3px solid #000; box-shadow: 2px 2px 0 #000; }
+.pe-toggle.is-on .pe-toggle-casella { background: #7cf29a; }
+.pe-toggle.is-on .pe-toggle-casella::after { content: '\2713'; font-size: 0.9rem; font-weight: 900; }
+
+.pe-campioni { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.pe-campione {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    background: var(--c, #fff);
+    border: 3px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    display: grid;
+    place-items: center;
+}
+
+.pe-campione.is-on { outline: 3px solid #000; outline-offset: 3px; }
+.pe-campione-etichetta { font-size: 0.62rem; font-weight: 900; color: #000; background: rgba(255, 255, 255, 0.85); padding: 1px 3px; pointer-events: none; }
+.pe-campione-libero { cursor: pointer; }
+.pe-colore-libero { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+
+.pe-cursore { display: grid; grid-template-columns: 74px 1fr 46px; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 0.8rem; font-weight: 800; }
+.pe-cursore input { width: 100%; accent-color: #000; }
+.pe-cursore output { text-align: right; font-weight: 900; }
+
+.pe-azioni { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* ---------- Layout ---------- */
+
+.pe-layout-griglia { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.pe-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: left;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.pe-layout:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #000; }
+.pe-layout.is-on { background: #ffde4d; box-shadow: 5px 5px 0 #000; }
+.pe-layout b { font-size: 0.9rem; font-weight: 900; }
+.pe-layout small { font-size: 0.68rem; font-weight: 700; line-height: 1.25; opacity: 0.75; }
+
+.pe-disegno { position: relative; display: block; aspect-ratio: 10 / 7; background: #31c489; border: 2px solid #000; overflow: hidden; }
+.pe-disegno i { position: absolute; display: block; border: 1.5px solid #000; }
+.pe-d-k { background: #000; }
+.pe-d-p { background: #8fd3ff; }
+.pe-d-b { background: #fff; }
+
+/* ---------- Sfondo e carta ---------- */
+
+.pe-motivi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.pe-motivo { padding: 0; cursor: pointer; background: #fff; border: 3px solid #000; box-shadow: 2px 2px 0 #000; display: flex; flex-direction: column; text-align: center; }
+.pe-motivo.is-on { background: #ffde4d; outline: 3px solid #000; outline-offset: 2px; }
+.pe-motivo-prova { display: block; height: 44px; border-bottom: 3px solid #000; }
+.pe-motivo small { padding: 4px 2px; font-size: 0.66rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.pe-caratteri { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pe-carattere { display: flex; align-items: baseline; gap: 8px; padding: 8px 10px; cursor: pointer; background: #fff; border: 3px solid #000; box-shadow: 2px 2px 0 #000; text-align: left; }
+.pe-carattere b { font-size: 1.5rem; font-weight: 400; line-height: 1; }
+.pe-carattere small { font-size: 0.68rem; font-weight: 700; opacity: 0.8; }
+.pe-carattere.is-on { background: #ffde4d; outline: 3px solid #000; outline-offset: 2px; }
+
+/* ---------- Adesivi ---------- */
+
+.pe-adesivi { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 9px; }
+
+.pe-adesivo {
+    height: 46px;
+    padding: 0 4px;
+    cursor: pointer;
+    background: var(--tinta, #fff);
+    border: 3px solid #000;
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 #000;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: transform 0.1s;
+}
+
+.pe-adesivo-testo { border-radius: 8px; font-family: 'Josefin Sans', sans-serif; font-size: 0.8rem; font-weight: 900; }
+.pe-adesivo:hover { transform: rotate(-6deg) scale(1.08); }
+
+/* ---------- Blocchi e statistiche ---------- */
+
+.pe-zona { margin-bottom: 14px; }
+.pe-zona-lettera { display: inline-grid; place-items: center; width: 18px; height: 18px; background: #ffde4d; color: #000; font-size: 0.68rem; }
+.pe-lista { list-style: none; margin: 0; padding: 0; min-height: 40px; }
+.pe-lista.pe-sopra { outline: 3px dashed #000; outline-offset: 3px; background: rgba(255, 222, 77, 0.3); }
+.pe-vuota { padding: 14px; text-align: center; font-size: 0.78rem; font-weight: 800; border: 3px dashed #999; color: #666; }
+
+.pe-riga {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    padding: 7px 8px;
+    background: #fff;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+}
+
+.pe-riga.is-spento { opacity: 0.55; background: #eee; }
+.pe-riga.pe-in-volo { opacity: 0.3; }
+.pe-riga[draggable="true"] { cursor: grab; }
+.pe-presa { flex: none; width: 14px; text-align: center; font-size: 1.1rem; font-weight: 900; color: #555; }
+.pe-riga-nome { flex: 1; min-width: 0; }
+.pe-riga-nome b { display: block; font-size: 0.86rem; font-weight: 900; }
+.pe-riga-nome small { display: block; font-size: 0.66rem; font-weight: 700; opacity: 0.65; line-height: 1.2; }
+
+.pe-zone { display: inline-flex; border: 2px solid #000; flex: none; }
+.pe-zone button { width: 22px; height: 26px; padding: 0; cursor: pointer; background: #fff; border: 0; border-right: 2px solid #000; font-size: 0.68rem; font-weight: 900; }
+.pe-zone button:last-child { border-right: 0; }
+.pe-zone button.is-on { background: #000; color: #fff; cursor: default; }
+
+.pe-squadre { display: flex; flex-direction: column; gap: 8px; }
+.pe-team { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 8px 12px; cursor: pointer; text-align: left; background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
+.pe-team b { font-size: 0.9rem; font-weight: 900; }
+.pe-team small { font-size: 0.7rem; font-weight: 700; opacity: 0.7; }
+.pe-team.is-on { background: #ffde4d; }
+
+/* ---------- Avviso ---------- */
+
+.pe-avviso {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    z-index: 2700;
+    max-width: min(90vw, 460px);
+    padding: 12px 18px;
+    transform: translateX(-50%) rotate(-1deg);
+    background: #000;
+    color: #fff;
+    border: 3px solid #fff;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.5);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    animation: pe-avviso 0.2s ease-out;
+}
+
+.pe-avviso.is-errore { background: #ff5a3c; color: #000; border-color: #000; }
+@keyframes pe-avviso { from { transform: translate(-50%, 16px) rotate(-1deg); opacity: 0; } }
+
+/* ---------- Sulla carta: la barra di ogni blocco ---------- */
+
+.pp-barra-blocco {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 40;
+    display: flex;
+    align-items: stretch;
+    background: #000;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
+    font: 900 0.62rem/1 'Josefin Sans', sans-serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: auto;
+    transform: none !important;
+}
+
+.pp-maniglia { display: grid; place-items: center; padding: 6px 7px; font-size: 0.95rem; cursor: grab; user-select: none; }
+.pp-maniglia:active { cursor: grabbing; }
+.pp-barra-nome { display: grid; place-items: center; padding: 0 9px 0 2px; }
+
+.pp-occhio {
+    appearance: none;
+    padding: 5px 8px;
+    cursor: pointer;
+    background: transparent;
+    color: #fff;
+    border: 0;
+    border-left: 2px solid #555;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+.pp-occhio:hover { background: #ffde4d; color: #000; }
+.pp-blocco.pp-spento .pp-occhio { display: none; }
+
+/* i blocchi lasciano un po' di posto alla loro barra */
+body.pp-modifica .pp-blocco:not(.pp-palco):not(.pp-musica) { padding-top: 40px; }
+body.pp-modifica .pp-musica { padding-top: 40px !important; }
+
+/* ---------- Schermi stretti: il pannello diventa un foglio in basso ---------- */
+
+@media (max-width: 1099px) {
+    .pe-pannello {
+        top: auto;
+        left: 0;
+        width: 100%;
+        height: 52vh;
+        border-left: 0;
+        box-shadow: 0 -8px 0 rgba(0, 0, 0, 0.25);
+        animation-name: pe-sale;
+    }
+
+    @keyframes pe-sale { from { transform: translateY(40px); opacity: 0; } }
+
+    body.pp-modifica .pp-pagina { padding-bottom: 60vh; }
+}
+
+@media (max-width: 480px) {
+    .pe-layout-griglia { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .pe-piede-sopra { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pe-pannello, .pe-avviso { animation: none; }
+}

@@ -301,6 +301,37 @@ body {
     box-shadow: none;
 }
 
+/* --- LINK ALL'EDITOR DELLA PAGINA PUBBLICA --- */
+.customize-public-btn {
+    display: block;
+    margin-top: 28px;
+    padding: 16px 20px;
+    box-sizing: border-box;
+    text-align: center;
+    text-decoration: none;
+    color: #000;
+    background: #ffde4d;
+    border: 4px solid var(--black);
+    box-shadow: var(--shadow);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    transform: rotate(-1deg);
+    transition: all 0.1s;
+}
+
+.customize-public-btn:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 12px 12px 0px var(--black);
+}
+
+.customize-public-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+
 /* --- BADGES --- */
 .player-badges {
     display: flex;

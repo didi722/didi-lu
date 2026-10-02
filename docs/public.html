@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
             <title>Sant'Alvise Pkmn League</title>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-public.css">
+    <link rel="stylesheet" href="style-public-card.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -13,20 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="titoli.js"></script>
-</head>
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <link rel="icon" type="image/png" href="immagini/magikarp.png">
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-public.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="pagina-pubblica.js"></script>
+    <script src="public-card.js"></script>
 </head>
 <body>
 
@@ -89,51 +78,48 @@
     </div>
 <div id="menu-overlay" class="menu-backdrop" onclick="chiudiMenuConOverlay()"></div>
 
-    <header class="top-bar">
-        <div class="top-bar-inner">
-            <div id="badges-container" class="badges-top-left"></div>
+    <!-- Sfondo scelto dall'allenatore: motivo + nome gigante, entrambi dietro tutto -->
+    <div id="pp-sfondo" class="pp-sfondo" aria-hidden="true"></div>
+    <div id="pp-scritta" class="pp-scritta" aria-hidden="true"></div>
 
-            <section class="hub-hero">
-                <h1 class="hub-title-display">
-                    <span id="player-name-display"></span>
-                </h1>
-            </section>
-        </div>
-    </header>
+    <main id="pp-pagina" class="pp-pagina" data-layout="carta">
+        <nav class="pp-nav">
+            <a class="pp-indietro" href="players.html"><span aria-hidden="true">&larr;</span> TRAINERS</a>
+        </nav>
 
-    <div id="player-title-container"></div>
+        <p id="pp-messaggio" class="pp-messaggio" hidden></p>
 
-    <div id="player-favorite-song-container"></div>
+        <div id="pp-tela" class="pp-tela">
+            <article id="pp-carta" class="pp-carta">
+                <header class="pp-testata">
+                    <span class="pp-semafori" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="pp-lega">SANT'ALVISE PKMN LEAGUE</span>
+                    <span class="pp-tipo-carta">TRAINER CARD</span>
+                    <span id="pp-numero" class="pp-numero"></span>
+                </header>
 
-    <div id="info-display-area"></div>
-
-    <div id="trophy-shelf-container">
-        <div class="trophy-badge-wrapper">
-            <div id="trophy-list" class="trophy-grid"></div>
-        </div>
-        
-        <!-- Elemento canzone preferita sopra le statistiche, spostato a destra -->
-        <div id="player-music-container" style="display: none; align-items: center; justify-content: flex-end; margin: 0 15px 10px auto; gap: 8px; font-weight: bold; font-family: 'Josefin Sans', sans-serif;">
-            <i class="fas fa-headphones" style="font-size: 1.1rem;"></i>
-            <span id="player-music-title"></span>
-        </div>
-
-        <div id="stats-container"></div>
-    </div>
-
-    <div class="profile-layout-container">
-        <main class="main-profile-content">
-            <div class="profile-display-wrapper">
-                <div class="trainer-column">
-                    <img id="player-avatar" src="URL_AVATAR" class="trainer-sprite" alt="Trainer">
+                <!-- I blocchi (palco, nome, statistiche, party, trofei, medaglie, musica) li mette public-card.js
+                     in queste tre zone, come ha scelto l'allenatore -->
+                <div class="pp-corpo">
+                    <div class="pp-fila">
+                        <div class="pp-zona" data-zona="a"></div>
+                        <div class="pp-zona" data-zona="b"></div>
+                    </div>
+                    <div class="pp-zona" data-zona="c"></div>
                 </div>
-                <div id="pokemon-display-area" class="pokemon-column"></div>
-            </div>
-        </main>
 
-        <div id="best-team-container" class="grid" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
-            </div>
-    </div>
+                <footer class="pp-piede">
+                    <div class="pp-codice">
+                        <div id="pp-barre" class="pp-barre" aria-hidden="true"></div>
+                        <span id="pp-id" class="pp-id"></span>
+                    </div>
+                    <span id="pp-firma" class="pp-firma"></span>
+                </footer>
+                <div class="pp-holo" aria-hidden="true"></div>
+            </article>
+            <div id="pp-adesivi" class="pp-adesivi"></div>
+        </div>
+    </main>
 
     <div id="teamModal" class="modal" onclick="closeTeamModal()">
         <div class="modal-content">
@@ -355,7 +341,7 @@ const playerNameFromURL = urlParams.get('name');
 
 async function initPublicProfile() {
     const loader = document.getElementById('poke-loader');
-    
+
     // Assicuriamoci che il loader sia visibile all'avvio
     if (loader) {
         loader.style.display = 'flex';
@@ -364,14 +350,12 @@ async function initPublicProfile() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    let playerKey = urlParams.get('player')?.trim(); 
+    let playerKey = urlParams.get('player')?.trim();
 
     // CASO 1: Nessun parametro nell'URL -> Chiudiamo il loader ed usciamo
     if (!playerKey) {
         console.error("No player specified in URL");
-        const nameSpan = document.querySelector('.hub-title-display span') || document.getElementById('player-name-display');
-        if (nameSpan) nameSpan.innerText = "PLAYER MISSING";
-        
+        PublicCard.mostraMessaggio("PLAYER MISSING");
         nascondiLoader(loader);
         return;
     }
@@ -386,93 +370,60 @@ async function initPublicProfile() {
             info = snapshot.val();
         }
 
-        if (info) {
-            // --- CARICAMENTO BIO E MUSICA ---
-            caricaBioAllenatore(info.bio);
-            
-            if (typeof caricaMusicaSottoBio === 'function') {
-                caricaMusicaSottoBio(info.musicName);
-            }
-
-            const finalName = info.name || playerKey;
-            const nameSpan = document.getElementById('player-name-display');
-            if (nameSpan) nameSpan.innerText = finalName.toUpperCase();
-            
-            const baseColor = info.color || '#31c489';
-            const palette = getPlayerPalette(baseColor); 
-            
-            const topBar = document.querySelector('.top-bar');
-            if (topBar) topBar.style.backgroundColor = palette.base;
-            
-            document.documentElement.style.setProperty('--accent-color', palette.base);
-            document.documentElement.style.setProperty('--bright-color', palette.bright);
-            document.documentElement.style.setProperty('--dark-color', palette.dark);
-
-            const av = document.getElementById('player-avatar');
-            if (av && info.avatar) {
-                av.src = info.avatar;
-                av.style.display = 'block';
-            }
-
-            const badgeSnap = await db.ref(`players/${playerKey}/stats/badges`).once('value');
-            caricaBadge(badgeSnap.val() || {}, info.name); 
-
-            if (info.pkmPreferito) caricaPokemonPreferito(info.pkmPreferito, info.avatar);
-            if (info.musicaPreferita && typeof avviaMusicaGiocatore === 'function') avviaMusicaGiocatore(info.musicaPreferita);
-
-            // --- CARICAMENTO PALMARÈS CORRETTO ASINCRONO ---
-            const statsSnap = await db.ref(`players/${playerKey}/stats/seasons`).once('value');
-            const statsData = statsSnap.val() || {};
-
-            let typeUsageData = {};
-            let pokemonUsageData = {};
-            try {
-                const [typeUsageSnap, pokemonUsageSnap] = await Promise.all([
-                    db.ref(`players/${playerKey}/stats/team-stats/typeusage`).once('value'),
-                    db.ref(`players/${playerKey}/stats/team-stats/pokemonusage`).once('value')
-                ]);
-                typeUsageData = typeUsageSnap.val() || {};
-                pokemonUsageData = pokemonUsageSnap.val() || {};
-            } catch(err) {
-                console.error("Error occurred while fetching typeusage:", err);
-            }
-
-            if (typeof renderPalmares === 'function') {
-                renderPalmares(
-                    statsData.won || 0, 
-                    palette, 
-                    info.title || "", 
-                    typeUsageData, 
-                    statsData.history || {},
-                    pokemonUsageData
-                );
-            }
-
-            // --- STATISTICHE E TEAM ---
-            if (typeof renderPlayerStats === 'function') await renderPlayerStats(playerKey);
-
-            try {
-                const teamsSnap = await db.ref(`players/${playerKey}/teams`).once('value');
-                const allTeams = teamsSnap.val();
-                if (allTeams) {
-                    let teamsArray = Object.keys(allTeams).map(key => ({
-                        ...allTeams[key], id: key, vittorie: Number(allTeams[key].stats?.won || 0)
-                    }));
-                    window.tuttiITeam = teamsArray;
-                    teamsArray.sort((a, b) => b.vittorie - a.vittorie);
-                    if (typeof renderizzaBestTeam === 'function') renderizzaBestTeam(teamsArray[0]);
-                }
-            } catch (error) { console.error("Error occurred while fetching teams:", error); }
-
-            if (typeof inizializzaChiusuraModali === 'function') inizializzaChiusuraModali();
-            
-        } else {
+        if (!info) {
             // CASO 2: Giocatore non trovato nel database
-            const nameSpan = document.getElementById('player-name-display');
-            if (nameSpan) nameSpan.innerText = "PLAYER NOT FOUND";
+            PublicCard.mostraMessaggio("PLAYER NOT FOUND");
+            return;
         }
-    } catch (e) { 
-        console.error("Error occurred while fetching player data:", e); 
+
+        // Tutto quello che serve alla carta, in parallelo
+        const leggi = percorso => db.ref(percorso).once('value').then(snap => snap.val()).catch(err => {
+            console.error(`Error occurred while fetching ${percorso}:`, err);
+            return null;
+        });
+        const [badges, stagioni, tipi, pokemon, teamsGrezzi, tutti] = await Promise.all([
+            leggi(`players/${playerKey}/stats/badges`),
+            leggi(`players/${playerKey}/stats/seasons`),
+            leggi(`players/${playerKey}/stats/team-stats/typeusage`),
+            leggi(`players/${playerKey}/stats/team-stats/pokemonusage`),
+            leggi(`players/${playerKey}/teams`),
+            leggi(`players`)
+        ]);
+
+        // I team come elenco; window.tuttiITeam serve al modale che mostra il team intero (apriDettagli)
+        const teams = Object.keys(teamsGrezzi || {}).map(key => ({
+            ...teamsGrezzi[key], id: key, vittorie: Number(teamsGrezzi[key]?.stats?.won || 0)
+        }));
+        window.tuttiITeam = teams;
+
+        const colore = info.color || '#31c489';
+        const palette = getPlayerPalette(colore);
+        document.documentElement.style.setProperty('--accent-color', palette.base);
+        document.documentElement.style.setProperty('--bright-color', palette.bright);
+        document.documentElement.style.setProperty('--dark-color', palette.dark);
+
+        const nome = info.name || playerKey;
+        document.title = `${nome} \u00b7 Trainer Card \u00b7 Sant'Alvise Pkmn League`;
+
+        PublicCard.monta({
+            chiave: playerKey,
+            nome,
+            colore,
+            info,
+            badges: badges || {},
+            stagioni: stagioni || {},
+            tipi: tipi || {},
+            pokemon: pokemon || {},
+            teams,
+            tutti: tutti || {}
+        });
+
+        caricaMusicaSottoBio(info.musicName);
+        if (info.musicaPreferita) avviaMusicaGiocatore(info.musicaPreferita);
+
+        inizializzaChiusuraModali();
+    } catch (e) {
+        console.error("Error occurred while fetching player data:", e);
     } finally {
         // --- CHIUSURA LOADER GARANTITA ---
         nascondiLoader(loader);
@@ -509,42 +460,7 @@ function chiudiPkmModal() {
     }
 }
 
-    async function applicaColoreBordo(pkmName, elementId) {
-    const box = document.getElementById(elementId);
-    if (!box) return;
-    try {
-        const cleanName = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
-        const data = await res.json();
-        
-        const colori = {
-            fire: '#ff4422', water: '#3399ff', grass: '#77cc55', electric: '#ffcc33', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22', rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
-        };
-
-        const types = data.types.map(t => colori[t.type.name]);
-
-        // Applichiamo il colore allo pseudo-elemento ::before
-        if (types.length === 1) {
-            box.style.setProperty('--bordo-colore', types[0]);
-            box.style.styleSheet ? "" : box.setAttribute('style', `background-left: none;`); // cleanup
-            // Usiamo il background diretto sullo pseudo-elemento tramite una variabile o stile iniettato
-            box.style.setProperty('--bg-bordo', types[0]);
-        } else {
-            box.style.setProperty('--bg-bordo', `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`);
-        }
-        
-        // Applichiamo lo stile finale
-        const bgEffettivo = types.length === 1 ? types[0] : `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`;
-        
-        // Creiamo una piccola regola stile al volo per colpire il ::before di quel box specifico
-        const stileDinamico = document.createElement('style');
-        stileDinamico.innerHTML = `#${elementId}::before { background: ${bgEffettivo} !important; }`;
-        document.head.appendChild(stileDinamico);
-
-    } catch (e) {
-        console.error("Error:", e);
-    }
-}
+    
 
 function applicaPaletteUtente(baseColor) {
     // Generiamo le sfumature usando la tua funzione pSBC già esistente
@@ -580,73 +496,7 @@ function applicaPaletteUtente(baseColor) {
 
 
 
-async function renderizzaBestTeam(team) {
-    const container = document.getElementById('best-team-container');
-    if (!container) return;
 
-    // Se non c'è alcun team passato, svuota il contenitore ed esci
-    if (!team) {
-        container.innerHTML = '';
-        return;
-    }
-
-    const s = team.stats || {};
-    const teamPlayed = typeof s.played !== 'undefined' ? Number(s.played) : (Number(team.partite) || 0);
-
-    // 🎯 REQUISITO PRESENZE: Se il team ha meno di 1 presenza (0 presenze), nasconde il componente
-    if (teamPlayed < 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    const teamName = team.nome || team.name || "No best team yet";
-    const teamPoints = typeof s.points !== 'undefined' ? s.points : 0;
-    const teamWon    = typeof s.won !== 'undefined' ? s.won : (team.vittorie || 0);
-    const teamLose   = typeof s.lose !== 'undefined' ? s.lose : 0;
-    const category   = team.categoria || team.category || 'VGC';
-
-    container.innerHTML = `
-    <div class="card" style="cursor: default;">
-        <div class="card-header">
-            <span class="category">${category}</span>
-            <span class="stats">
-                PTS: ${teamPoints} | P: ${teamPlayed} | W: ${teamWon} / L: ${teamLose}
-            </span>
-        </div>
-        <h3>${teamName}</h3>
-        <div class="pkm-grid">
-            ${(team.pokemon || []).map((p, index) => {
-                const pkmName = p.nome || p.name || "Unknown";
-                const pkmNameUrl = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
-                const pkmBoxId = `best-pkm-${index}`;
-
-                setTimeout(() => {
-                    if (typeof applicaColoreBordo === 'function') {
-                        applicaColoreBordo(pkmName, pkmBoxId);
-                    }
-                }, 100);
-
-                return `
-                    <div class="pkm-box" 
-                         id="${pkmBoxId}" 
-                         style="cursor: default;">
-                        
-                        <div class="pkm-sprite-container">
-                            <img src="${pkmSprite}" class="pkm-sprite" 
-                                 onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'">
-                        </div>
-
-                        <div class="pkm-info" style="text-align: center; width: 100%;">
-                            <span class="pkm-name" style="display: block; margin: 0 auto;">${pkmName}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    </div>
-    `;
-}
 
 async function apriDettagli(id) {
     const listaTeam = (typeof tuttiITeam !== 'undefined') ? tuttiITeam : window.tuttiITeam;
@@ -951,42 +801,7 @@ function chiudiModale() {
         document.getElementById('teamModal').style.display = "none";
 }
 
-    async function applicaColoreBordo(pkmName, elementId) {
-    const box = document.getElementById(elementId);
-    if (!box) return;
-    try {
-        const cleanName = pkmName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
-        const data = await res.json();
-        
-        const colori = {
-            fire: '#ff4422', water: '#3399ff', grass: '#77cc55', electric: '#ffcc33', ice: '#66ccff', fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22', rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee', normal: '#aaaa99'
-        };
-
-        const types = data.types.map(t => colori[t.type.name]);
-
-        // Applichiamo il colore allo pseudo-elemento ::before
-        if (types.length === 1) {
-            box.style.setProperty('--bordo-colore', types[0]);
-            box.style.styleSheet ? "" : box.setAttribute('style', `background-left: none;`); // cleanup
-            // Usiamo il background diretto sullo pseudo-elemento tramite una variabile o stile iniettato
-            box.style.setProperty('--bg-bordo', types[0]);
-        } else {
-            box.style.setProperty('--bg-bordo', `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`);
-        }
-        
-        // Applichiamo lo stile finale
-        const bgEffettivo = types.length === 1 ? types[0] : `linear-gradient(to bottom, ${types[0]} 50%, ${types[1]} 50%)`;
-        
-        // Creiamo una piccola regola stile al volo per colpire il ::before di quel box specifico
-        const stileDinamico = document.createElement('style');
-        stileDinamico.innerHTML = `#${elementId}::before { background: ${bgEffettivo} !important; }`;
-        document.head.appendChild(stileDinamico);
-
-    } catch (e) {
-        console.error("Error:", e);
-    }
-}
+    
 
 async function caricaDebolezzeStatiche(pkmName, elementId) {
     const container = document.getElementById(elementId);
@@ -1375,128 +1190,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
 // Variabile globale per distruggere l'istanza precedente del grafico se si cambia giocatore
 let eloChartInstance = null;
 
-async function renderPlayerStats(playerName) {
-    // 1. Recupero TUTTI i players dal DB
-    const playersRef = db.ref(`players`);
-    const playersSnapshot = await playersRef.once('value');
-    const allPlayers = playersSnapshot.val() || {};
 
-    // 2. Recupero le stats specifiche del player selezionato
-    const stats = allPlayers[playerName]?.stats?.['individual-stats'] || {};
-
-    const won = stats.won || 0;
-    const lost = stats.lost || 0;
-    const currentElo = stats.ranking || 1000;
-    
-    // Dati recuperati dal DB per i punti e gli Showdown globali
-    const globalPoints = stats.points || 0;
-    const sdWon = stats.showdownsWon || 0;
-    const sdPlayed = stats.showdownsPlayed || 0;
-    const sdLost = sdPlayed - sdWon;
-
-    // --- CALCOLO POSIZIONE RANKING ---
-    // Consideriamo nella classifica stilata solo chi ha giocato almeno 3 showdown
-    const rankedPlayersArray = Object.keys(allPlayers)
-        .filter(id => (allPlayers[id].stats?.['individual-stats']?.showdownsPlayed || 0) >= 3)
-        .map(id => ({
-            id: id,
-            ranking: allPlayers[id].stats?.['individual-stats']?.ranking || 1000
-        }));
-
-    // Ordiniamo l'array dal ranking più alto al più basso
-    rankedPlayersArray.sort((a, b) => b.ranking - a.ranking);
-
-    // Troviamo la posizione nella classifica (1-based index)
-    const position = rankedPlayersArray.findIndex(p => p.id === playerName) + 1;
-
-    // --- DETERMINAZIONE VALORE DEL RANKING ---
-    const rankingDisplay = sdPlayed >= 3 
-        ? `#${position} (${currentElo})` 
-        : "Unranked";
-
-    // --- ACCESSO CHIAVI BEST FORMAT ---
-    const bestFormatData = stats.format || {};
-    const formatName = bestFormatData['format-name'] || "-";
-    const formatSdWon = bestFormatData['format-showdownsWon'] || 0;
-    const formatSdLost = bestFormatData['format-showdownsLost'] || 0; 
-
-    // --- CALCOLO DELLE PERCENTUALI ---
-    const sdWinRate = sdPlayed > 0 ? ((sdWon / sdPlayed) * 100).toFixed(1) : 0;
-    const matchWinRate = (won + lost) > 0 ? ((won / (won + lost)) * 100).toFixed(1) : 0;
-    
-    const setW = stats.setW || 0;
-    const setL = stats.setL || 0;
-    const setRate = (setW + setL) > 0 ? ((setW / (setW + setL)) * 100).toFixed(1) : 0;
-
-    const container = document.getElementById('stats-container');
-    if (!container) return;
-
-    // 3. Definizione della lista di stats
-    const items = [
-        { 
-            label: "RANKING", 
-            value: rankingDisplay,
-            clickable: true // Flag per identificare la card cliccabile
-        },
-        { 
-            label: "GLOBAL POINTS", 
-            value: globalPoints 
-        },
-        { 
-            label: "SD RATE", 
-            value: sdPlayed > 0 ? `${sdWon}/${sdLost} (${sdWinRate}%)` : "0/0 (0%)"
-        },
-        { 
-            label: "MATCH RATE", 
-            value: (won + lost) > 0 ? `${won}/${lost} (${matchWinRate}%)` : "0/0 (0%)"
-        },
-        { 
-            label: "SET RATE", 
-            value: (setW + setL) > 0 ? `${setW}/${setL} (${setRate}%)` : "0/0 (0%)"
-        },
-        { 
-            label: "BEST FORMAT", 
-            value: formatName !== "-" ? `${formatName} (${formatSdWon}/${formatSdLost})` : "-" 
-        }
-    ];
-
-    container.innerHTML = ""; 
-
-    items.forEach(item => {
-        const randomDeg = (Math.random() * 4 - 2).toFixed(2);
-        
-        const bar = document.createElement('div');
-        bar.className = 'stat-bar';
-        
-        // Configurazione delle proprietà grafiche se l'elemento è cliccabile
-        if (item.clickable) {
-            bar.classList.add('clickable-card');
-            bar.style.cursor = 'pointer';
-            bar.style.userSelect = 'none'; // Evita la selezione blu del testo al doppio click rapido
-        }
-        
-        bar.style.setProperty('--rand-deg', `${randomDeg}deg`); 
-        
-        bar.innerHTML = `
-            <span class="stat-label" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.label}</span>
-            <span class="stat-value" style="${item.clickable ? 'pointer-events: none;' : ''}">${item.value}</span>
-        `;
-
-        // Aggiungiamo l'evento click solo sulla card RANKING
-        if (item.clickable) {
-            bar.addEventListener('click', function(e) {
-                console.log("-> Click fisico registrato sulla card RANKING per il player:", playerName);
-                if (typeof mostraGraficoElo === "function") {
-                    mostraGraficoElo(playerName);
-                } else {
-                    console.error("Error: The function 'mostraGraficoElo' is not defined!");
-                }
-            });
-        }
-
-        container.appendChild(bar);
-    });
-}
 
 async function mostraGraficoElo(playerName) {
     if (!playerName) return;
@@ -1623,433 +1317,16 @@ async function mostraGraficoElo(playerName) {
     }
 }
 
-async function caricaPokemonPreferito(pkmNome) {
-    const pkmArea = document.getElementById('pokemon-display-area');
-    if (!pkmArea) return;
-
-    try {
-        let pkmNomePulito = pkmNome.toLowerCase().trim();
-
-        // 1. GESTIONE FORME
-        const formeSpeciali = {
-            'mimikyu': 'mimikyu-disguised',
-            'giratina': 'giratina-altered',
-            'deoxys': 'deoxys-normal',
-            'shaymin': 'shaymin-land',
-            'aegislash': 'aegislash-shield'
-        };
-        if (formeSpeciali[pkmNomePulito]) pkmNomePulito = formeSpeciali[pkmNomePulito];
-
-        // 2. FETCH DATI
-        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNomePulito}`);
-        if (!response.ok) throw new Error("Pokémon not found");
-        const pkmData = await response.json();
-
-        const gifUrl = pkmData.sprites.other['showdown'].front_default 
-                        || pkmData.sprites.other['official-artwork'].front_default;
-
-        // 3. CALCOLO ALTEZZA (SCALA)
-        const pkmAltezzaM = pkmData.height / 10;
-        const trainerAltezzaM = 1.70;
-        const trainerPx = 150; 
-        let pkmPx = (pkmAltezzaM * trainerPx) / trainerAltezzaM;
-
-        // --- GESTIONE SCALE SPECIALI ---
-        const rimpicciolisciBlacklist = ['kyogre', 'wailord']; 
-        const ingrandisciBlacklist = ['charizard'];
-        
-        if (rimpicciolisciBlacklist.includes(pkmNomePulito)) {
-            pkmPx *= 0.5; 
-        } else if (ingrandisciBlacklist.includes(pkmNomePulito)) {
-            pkmPx *= 1.5; 
-        } else if (pkmAltezzaM < 0.6) {
-            pkmPx *= 1.6; 
-        } else if (pkmAltezzaM < 1.3) {
-            pkmPx *= 1.35; 
-        }
-        
-        pkmPx = Math.min(Math.max(pkmPx, 85), 350);
-
-        // 4. LOGICA VOLO
-        const aTerraBlacklist = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'lunala', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'gyarados', 'porygon', 'porygon-2', 'porygon-z', 'dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
-        const floatingBlacklist = ['yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter'];
-
-        const isFloating = (
-            pkmData.types.some(t => t.type.name === 'flying') || 
-            pkmData.abilities.some(a => a.ability.name === 'levitate') ||
-            floatingBlacklist.includes(pkmNomePulito) ||
-            pkmNomePulito.includes('rayquaza')
-        ) && !aTerraBlacklist.includes(pkmNomePulito);
-
-        // 5. GESTIONE PROFONDITÀ (Z-INDEX)
-        const sempreDavantiBlacklist = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'porygon', 'porygon-2', 'porygon-z', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'mew', 'celebi', 'darkrai', 'haunter', 'magnezone', 'magnemite', 'magneton', 'misdreavus', 'salamence', 'rapidash', 'mew', 'butterfree', 'scyther', 'charizard', 'honchkrow'];
-        const sempreDietroBlacklist = ['lunala', 'metagross'];
-        const sogliaDietro = trainerAltezzaM * 1.2; 
-        
-        if (sempreDietroBlacklist.includes(pkmNomePulito)) {
-            pkmArea.className = "pokemon-column pokemon-back";
-        } else if (sempreDavantiBlacklist.includes(pkmNomePulito)) {
-            pkmArea.className = "pokemon-column pokemon-front";
-        } else if (isFloating || pkmAltezzaM >= sogliaDietro) {
-            pkmArea.className = "pokemon-column pokemon-back";
-        } else {
-            pkmArea.className = "pokemon-column pokemon-front";
-        }
-
-        // 6. INIEZIONE HTML
-        pkmArea.innerHTML = `
-            <div class="pokemon-sprite-container ${isFloating ? 'floating-pkm' : ''}" 
-                 style="height: ${pkmPx}px; opacity: 0; transition: opacity 0.3s;">
-                
-                <img src="${gifUrl}" 
-                     class="pokemon-sprite pokemon-shadow-layer" 
-                     style="height: 100%;" alt="">
-                
-                <img src="${gifUrl}" 
-                     id="active-pkm-sprite"
-                     class="pokemon-sprite" 
-                     style="height: 100%;" 
-                     alt="${pkmNome}">
-            </div>
-        `;
-
-        const container = pkmArea.querySelector('.pokemon-sprite-container');
-        const imgElement = document.getElementById('active-pkm-sprite');
-
-        imgElement.onload = function() {
-            const larghezzaEffettiva = imgElement.clientWidth;
-            let posLeft = 130; 
-            
-            if (larghezzaEffettiva > 250) {
-                posLeft = 240 - (larghezzaEffettiva / 1.8);
-            } else if (pkmAltezzaM < 1.0) {
-                posLeft = 145;
-            }
-
-            pkmArea.style.left = `${posLeft}px`;
-            container.style.opacity = "1";
-        };
-
-    } catch (err) {
-        console.error("Error:", err);
-    }
-}
-
-async function caricaBestTeamDallAlto(playerKey) {
-    try {
-        // 1. Recuperiamo i dati aggregati del Best Team
-        // Ora il database contiene già: name, won, lose, played, setsW, setsL
-        const bestTeamSnapshot = await db.ref(`players/${playerKey}/stats/team-stats/bestteam`).once('value');
-        const bestData = bestTeamSnapshot.val();
-
-        if (!bestData || !bestData.name || bestData.name === "-") {
-            console.warn("Nessun Best Team calcolato per questo giocatore.");
-            return;
-        }
-
-        // 2. Recuperiamo il team completo per ottenere la lista dei Pokémon (necessaria per le immagini)
-        const allTeamsSnapshot = await db.ref(`players/${playerKey}/teams`).once('value');
-        const allTeams = allTeamsSnapshot.val() || {};
-
-        const teamKey = Object.keys(allTeams).find(key => allTeams[key].nome === bestData.name);
-        const teamCompleto = allTeams[teamKey];
-
-        // 3. RENDER NELLA SIDEBAR (Usiamo i dati di bestData per le statistiche)
-        const nameEl = document.getElementById('best-team-name');
-        if (nameEl) nameEl.innerText = bestData.name.toUpperCase();
-        
-        // Calcolo WinRate dai dati aggregati
-        const v = bestData.won || 0;
-        const p = bestData.played || 0;
-        const wr = p > 0 ? ((v / p) * 100).toFixed(1) : "0.0";
-        
-        // Calcolo Punti (Vinte * 10 + Set Vinti) - Esempio di logica più complessa ora possibile
-        const setsW = bestData.setsW || 0;
-        const score = (v * 10) + setsW;
-
-        if (document.getElementById('best-team-winrate')) 
-            document.getElementById('best-team-winrate').innerText = `WR: ${wr}%`;
-        
-        if (document.getElementById('best-team-score')) 
-            document.getElementById('best-team-score').innerText = `PTS: ${score}`;
-            
-        if (document.getElementById('best-team-usage')) 
-            document.getElementById('best-team-usage').innerText = `PLAYED: ${p}`;
-
-        // 4. Ciclo sui Pokemon (Griglia) utilizzando teamCompleto
-        if (teamCompleto && teamCompleto.pokemon) {
-            teamCompleto.pokemon.forEach((pkm, index) => {
-                const i = index + 1;
-                const pkmNameUrl = pkm.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                
-                const imgEl = document.getElementById(`team-pkm-${i}`);
-                const pkmNameEl = document.getElementById(`team-pkm-${i}-name`);
-
-                if (imgEl) {
-                    imgEl.src = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
-                    imgEl.onerror = () => { imgEl.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`; };
-                    
-                    // Applica bordo se la funzione esiste
-                    const slotBox = imgEl.closest('.pkm-slot');
-                    if (slotBox && typeof applicaColoreBordo === 'function') {
-                        applicaColoreBordo(pkm.nome, slotBox); 
-                    }
-                }
-                
-                if (pkmNameEl) pkmNameEl.innerText = pkm.nome.toUpperCase();
-            });
-        }
-
-    } catch (error) {
-        console.error("Error occurred while loading the Best Team:", error);
-    }
-}
-
-function renderPalmares(count, baseColor, titoloSalvato, typeUsageData = {}, seasonsHistory = {}, pokemonUsageData = {}) {
-    const container = document.getElementById('trophy-list');
-    const titleContainer = document.getElementById('player-title-container');
-    
-    if (container) container.innerHTML = "";
-    if (titleContainer) titleContainer.innerHTML = "";
-
-    const playerColor = typeof baseColor === 'object' ? (baseColor.base || baseColor) : baseColor;
-    const hasTrophies = count > 0;
-    const displayCount = hasTrophies ? count : 0;
-    const trophyImg = hasTrophies ? "immagini/season-winner.png" : "immagini/season-no-winner.png";
-    const colorMask = hasTrophies ? "url('immagini/season-winner-color.png')" : "url('immagini/season-no-winner-color.png')";
-
-    // --- 1. SEZIONE TITLE BADGE ---
-    // Nome, soglie e avanzamento del titolo vengono da titoli.js (tipi e Pokémon, dai set realmente giocati)
-    if (titoloSalvato && titoloSalvato !== "" && titoloSalvato !== "No Title" && titleContainer) {
-        const aperto = x => {
-            if (x && typeof x.val === 'function') x = x.val();
-            return x || {};
-        };
-        let tipiUso = aperto(typeUsageData);
-        if (tipiUso.stats) tipiUso = tipiUso.stats;
-        if (tipiUso['team-stats']) tipiUso = tipiUso['team-stats'];
-        if (tipiUso.typeusage) tipiUso = tipiUso.typeusage;
-
-        const desc = Titoli.descriviTitolo(titoloSalvato, tipiUso, aperto(pokemonUsageData));
-        const classeTipo = desc && desc.tipo ? desc.tipo : (desc ? 'pokemon' : titoloSalvato.split(" ")[0].toLowerCase());
-        const prog = desc ? desc.progresso : null;
-
-        const titleBadge = document.createElement('div');
-        titleBadge.id = "player-active-title-badge";
-        titleBadge.className = `hub-title-badge tipo-${classeTipo}`;
-        titleBadge.style.cssText = "position: relative; display: inline-block;";
-        titleBadge.innerText = titoloSalvato;
-
-        const bgStyle = `style="background: #e0e0e0; border: 2px solid #000; height: 12px; margin: 4px 0 8px 0; overflow: hidden; position: relative; width: 100%; text-align: left;"`;
-        const fillStyle = (percent) => `style="background: ${playerColor}; height: 100%; width: ${percent}%; border-right: ${percent > 0 ? '2px solid #000' : 'none'}; transition: width 0.3s ease;"`;
-
-        const tooltip = document.createElement('span');
-        tooltip.className = "neubrutal-tooltip";
-        tooltip.style.cssText = "position: absolute; z-index: 99999; min-width: 220px; box-sizing: border-box; transform: rotate(3deg);";
-
-        const ETICHETTE = { played: 'Played', won: 'Won', ko: 'KOs' };
-        // Con un prossimo scaglione: una barra per ogni cosa richiesta; al massimo: i numeri raggiunti
-        const righe = !prog ? [] : prog.prossimo
-            ? prog.barre.map(b => ({ et: ETICHETTE[b.c], valore: b.valore, obiettivo: b.obiettivo, pct: b.pct * 100 }))
-            : ['played', 'won', 'ko'].map(c => ({ et: ETICHETTE[c], valore: prog.uso[c], obiettivo: 0, pct: 100 }));
-
-        const nomeEtichetta = (desc ? desc.nome : titoloSalvato).toUpperCase();
-        tooltip.innerHTML = `
-            <div style="margin-bottom: 10px; text-align: left;">
-                <span style="background: #000; color: #fff; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; padding: 3px 8px; display: inline-block; box-shadow: 3.5px 3.5px 0px rgba(0,0,0,0.25);">
-                    ${nomeEtichetta}
-                </span>
-            </div>
-            ${prog && prog.prossimo ? `<div style="font-size: 11px; font-weight: 700; margin-bottom: 6px; text-align: left;">Next: ${prog.prossimo.nome(desc.categoria === 'tipo' ? desc.chiave : desc.nome)}</div>` : ''}
-            ${righe.map((r, i) => `
-            <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; width: 100%; ${i ? 'margin-top: 4px;' : ''}">
-                <span style="white-space: nowrap;">${r.et}: ${r.valore}</span>
-                ${r.obiettivo ? `<span style="color: #888; font-size: 11px; white-space: nowrap;">${r.obiettivo}</span>` : ''}
-            </div>
-            <div class="progress-bar-bg" ${bgStyle}>
-                <div class="progress-bar-fill" ${fillStyle(r.pct)}></div>
-            </div>`).join('')}
-        `;
-
-        titleBadge.appendChild(tooltip);
-        titleContainer.appendChild(titleBadge);
-    }
-
-    // --- 2. SEZIONE TROFEO / PALMARES ---
-    if (!container) return;
-    const fragment = document.createDocumentFragment();
-
-    let rawHistory = seasonsHistory;
-    if (rawHistory && typeof rawHistory.val === 'function') rawHistory = rawHistory.val();
-    const wonSeasons = Object.values(rawHistory || {}).filter(s => s && (s.rank === 1 || s.rank === "1"));
-
-    let trophyTooltipHTML = "";
-    if (wonSeasons.length > 0) {
-        const rows = wonSeasons.map(s => {
-            let formattedDate = s.enddate || 'N/D';
-            if (s.enddate?.includes('-')) {
-                const parts = s.enddate.split('-');
-                if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-            }
-            return `
-                <div class="tooltip-row" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: bold; width: 100%;">
-                    <span style="white-space: nowrap;">🏆 ${s.name || 'Season'}</span>
-                    <span style="color: #888; font-size: 11px; white-space: nowrap;">${formattedDate}</span>
-                </div>
-            `;
-        }).join('');
-
-        trophyTooltipHTML = `
-            <span class="neubrutal-tooltip" style="position: absolute; z-index: 99999; min-width: 180px; box-sizing: border-box; transform: rotate(-3deg);">
-                ${rows}
-            </span>
-        `;
-    }
-
-    const trophyWrapper = document.createElement('div');
-    trophyWrapper.className = 'compact-palmares';
-    trophyWrapper.style.setProperty('--player-color', playerColor);
-    trophyWrapper.style.cssText += "; position: relative; z-index: 1;";
-
-    trophyWrapper.innerHTML = `
-        <span class="trophy-count">x${displayCount}</span>
-        <div class="trophy-recolor-wrapper">
-            <div class="trophy-color-base" style="-webkit-mask-image: ${colorMask}; mask-image: ${colorMask};"></div>
-            <img src="${trophyImg}" class="trophy-icon-top" decoding="async">
-            ${trophyTooltipHTML}
-        </div>
-    `;
-    
-    fragment.appendChild(trophyWrapper);
-    container.appendChild(fragment);
-}
 
 
-function caricaBioAllenatore(testo) {
-    const infoArea = document.getElementById('info-display-area');
-    if (!infoArea) return;
 
-    infoArea.innerHTML = `
-        <div id="trainer-motto">
-            <span>${testo.toUpperCase()}</span>
-        </div>
-    `;
-}
 
-function caricaBadge(stats, playerKey) {
-    const container = document.getElementById('badges-container');
-    if (!container) return;
 
-    const formattaData = (dataRaw) => {
-        if (!dataRaw || dataRaw === '--/--/--' || dataRaw === 'Data N.D.') return '--/--/----';
-        try {
-            const d = new Date(dataRaw);
-            if (isNaN(d.getTime())) return dataRaw; 
-            const giorno = String(d.getDate()).padStart(2, '0');
-            const mese = String(d.getMonth() + 1).padStart(2, '0');
-            const anno = d.getFullYear();
-            return `${giorno}/${mese}/${anno}`;
-        } catch (e) { return dataRaw; }
-    };
 
-    const badgeConfig = [
-        {
-            id: 'clean',
-            label: 'Clean Streak',
-            descTemplate: (n) => `${n} matches undefeated`,
-            max: parseInt(stats.maxcleanstrike) || 0,
-            current: parseInt(stats.cleanstrike) || 0,
-            date: formattaData(stats.maxcleanstrikedate),
-            steps: [3, 5, 7]
-        },
-        {
-            id: 'won',
-            label: 'Win Streak',
-            descTemplate: (n) => `${n} matches in a row`,
-            max: parseInt(stats.maxwonstrike) || 0,
-            current: parseInt(stats.wonstrike) || 0,
-            date: formattaData(stats.maxwonstrikedate),
-            steps: [5, 7, 10]
-        },
-        {
-            id: 'sd',
-            label: 'SD Streak',
-            descTemplate: (n) => `${n} showdowns in a row`,
-            max: parseInt(stats.maxsdstrike) || 0,
-            current: parseInt(stats.sdstrike) || 0,
-            date: formattaData(stats.sdwonstrikedate),
-            steps: [3, 5, 7]
-        }
-    ];
 
-    container.innerHTML = '';
 
-    // --- 1. FOUNDER BADGE ---
-    const pKeyLower = playerKey ? playerKey.trim().toLowerCase() : "";
-    if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
-        const founderHTML = `
-            <div class="badge-item">
-                <img src="immagini/badge_founder.png" class="badge-img" alt="Founder">
-                <div class="neubrutal-tooltip">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <p class="tooltip-title">League Founder</p>
-                        <span style="font-size: 0.7rem; color: #666; font-weight: bold;"></span>
-                    </div>
-                    <p style="margin-top: 5px; font-size: 0.85rem;">Hail to the kings</p>
-                </div>
-            </div>`;
-        container.insertAdjacentHTML('beforeend', founderHTML);
-    }
 
-    // --- 2. DYNAMIC BADGES ---
-    badgeConfig.forEach(b => {
-        let level = ""; 
-        let milestone = 0;
-        let nextGoal = b.steps[0];
 
-        // Determiniamo il livello e la milestone raggiunta
-        if (b.max >= b.steps[2]) {
-            level = "gold";
-            milestone = b.steps[2];
-            nextGoal = b.steps[2]; // Max raggiunto
-        } else if (b.max >= b.steps[1]) {
-            level = "silver";
-            milestone = b.steps[1];
-            nextGoal = b.steps[2];
-        } else if (b.max >= b.steps[0]) {
-            level = "bronze";
-            milestone = b.steps[0];
-            nextGoal = b.steps[1];
-        }
-
-        if (level !== "") {
-            const progress = Math.min((b.current / nextGoal) * 100, 100);
-            // Generiamo la descrizione dinamica usando la milestone raggiunta
-            const dynamicDesc = b.descTemplate(milestone);
-            
-            const badgeHTML = `
-                <div class="badge-item">
-                    <img src="immagini/badge_${b.id}_${level}.png" class="badge-img" alt="${b.label} ${level}">
-                    <div class="neubrutal-tooltip">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
-                            <p class="tooltip-title">${b.label}</p>
-                            <span style="font-size: 0.6rem; color: #777; white-space: nowrap;">${b.date}</span>
-                        </div>
-                        
-                        <p style="font-size: 0.85rem; margin: 5px 0 10px 0; line-height: 1.2;">
-                            ${dynamicDesc}
-                        </p>
-
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: ${progress}%; background-color: var(--accent-color)"></div>
-                        </div>
-                        <p class="progress-text">CURRENT: ${b.current} / ${nextGoal}</p>
-                    </div>
-                </div>`;
-            container.insertAdjacentHTML('beforeend', badgeHTML);
-        }
-    });
-}
 
 
 // Cerca questa riga alla fine del file HTML:
@@ -2156,6 +1433,9 @@ auth.onAuthStateChanged(async (user) => {
             const userName = snapshot.val() || "User";
             authIcon.className = "fas fa-user-circle"; 
             authText.innerText = userName;
+            // chi è il proprietario di questa pagina può personalizzarla
+            window.__nomeUtente = snapshot.val() || '';
+            if (window.PublicCard) PublicCard.controllaProprietario();
         } catch (error) {
             authText.innerText = "Logged In";
         }

@@ -201,3 +201,10 @@ test('titoli.js è caricato da profile, public e stats (le soglie dei titoli sta
     assert.ok(!/played >= 150 && won >= 25/.test(leggi('profile.html')), 'profile.html ha ancora le vecchie soglie');
     assert.ok(!/nextPlayedTarget/.test(leggi('public.html')), 'public.html ha ancora le vecchie soglie');
 });
+
+test('stats: la griglia delle card non supera mai le 3 colonne (con 4 i nomi vanno a capo)', () => {
+    const statsCss = leggi('style-stats.css');
+    const regola = statsCss.match(/\.stats-griglia \{[^}]*\}/)[0];
+    assert.match(regola, /max\(330px, calc\(\(100% - 64px\) \/ 3\)\)/);
+    assert.match(statsCss, /\.stats-griglia\.vista-players \{[^}]*calc\(\(100% - 64px\) \/ 3\)/);
+});
