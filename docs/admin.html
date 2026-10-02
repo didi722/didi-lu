@@ -320,7 +320,7 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
     const stati = ['open', 'playing', 'closed', 'coming soon'];
     let indiceAttuale = stati.indexOf(statoCorrente);
     let prossimoIndice = (indiceAttuale + 1) % stati.length;
-    const nuovoStato = stati[prossidoIndice];
+    const nuovoStato = stati[prossimoIndice];
 
     try {
         // 1. Aggiorna lo stato nel database
