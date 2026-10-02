@@ -7,6 +7,9 @@
 // rimpicciolisce il tavolo quanto basta perché ci stia, con transform: scale
 // (mai ingrandito: lo schermo di Showdown è 640×360).
 //
+// A schermo intero (bottone nei servizi, o F11) il tavolo si ingrandisce fino a riempire lo
+// schermo, ma al massimo di SCALA_MAX_INTERO volte: oltre, gli sprite di Showdown si impastano.
+//
 // Se anche così il testo diventerebbe troppo piccolo (finestra molto bassa, telefono) o la
 // finestra è in verticale, niente scala: layout a colonna e la pagina scorre (html[data-modo="scorri"]).
 // In quel caso lo schermo si adatta alla larghezza (--scala-campo).
@@ -19,6 +22,7 @@
 
     var MIN_LARGHEZZA = 1000;   // sotto: layout a colonna
     var MIN_SCALA = 0.65;       // sotto: si scorre invece di rimpicciolire ancora
+    var SCALA_MAX_INTERO = 2;   // a schermo intero il tavolo non si ingrandisce oltre
 
     var radice = document.documentElement;
     var scala = document.getElementById('scala');
@@ -26,6 +30,11 @@
     if (!scala) return;
 
     var inFit = () => radice.getAttribute('data-modo') === 'fit';
+
+    // Schermo intero: quello chiesto dal bottone (Fullscreen API) o dal browser con F11
+    var schermoInteroApi = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+    var aSchermoIntero = () => !!schermoInteroApi() ||
+        !!(window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
 
     function adatta() {
         var W = radice.clientWidth;
@@ -39,7 +48,7 @@
             radice.setAttribute('data-modo', 'fit');
             var w = scala.offsetWidth;      // misure a scala 1: offsetWidth/Height ignorano le transform
             var h = scala.offsetHeight;
-            var s = Math.min(1, W / w, H / h);
+            var s = Math.min(aSchermoIntero() ? SCALA_MAX_INTERO : 1, W / w, H / h);
             if (s >= MIN_SCALA) {
                 scala.style.setProperty('--scala', s.toFixed(4));
                 scala.style.top = Math.max(0, (H - h * s) / 2).toFixed(1) + 'px';
@@ -61,6 +70,7 @@
             palcoBox.style.setProperty('--scala-campo', f.toFixed(4));
         }
         radice.setAttribute('data-pronto', '');
+        statoBottone();
     }
 
     var inAttesa = false;
@@ -68,6 +78,42 @@
         if (inAttesa) return;
         inAttesa = true;
         requestAnimationFrame(function () { inAttesa = false; adatta(); });
+    }
+
+    // Bottone "schermo intero": sparisce dove il browser non lo permette (es. iPhone)
+    var bottone = document.getElementById('btn-schermo-intero');
+    var richiedi = radice.requestFullscreen || radice.webkitRequestFullscreen;
+    var esci = document.exitFullscreen || document.webkitExitFullscreen;
+    // Lo stato del bottone segue lo schermo intero vero, anche quello di F11 (che non manda
+    // fullscreenchange: lo si vede dal resize e dalla media query display-mode)
+    function statoBottone() {
+        var acceso = aSchermoIntero();
+        radice.toggleAttribute('data-schermo-intero', acceso);
+        if (!bottone) return;
+        bottone.setAttribute('aria-pressed', acceso ? 'true' : 'false');
+        bottone.setAttribute('aria-label', acceso ? 'Exit full screen' : 'Full screen');
+        bottone.title = acceso ? 'Exit full screen' : 'Full screen';
+    }
+    function aggiornaBottone() {
+        statoBottone();
+        programma();
+    }
+    if (bottone && richiedi && document.fullscreenEnabled !== false) {
+        bottone.hidden = false;
+        bottone.addEventListener('click', function () {
+            // se lo schermo intero è quello di F11 il bottone ne chiede uno suo, che si chiude con Esc
+            var risposta = schermoInteroApi()
+                ? esci && esci.call(document)
+                : richiedi.call(radice);
+            if (risposta && risposta.catch) risposta.catch(function () {});
+        });
+        aggiornaBottone();
+    }
+    document.addEventListener('fullscreenchange', aggiornaBottone);
+    document.addEventListener('webkitfullscreenchange', aggiornaBottone);
+    if (window.matchMedia) {
+        var modo = window.matchMedia('(display-mode: fullscreen)');
+        if (modo.addEventListener) modo.addEventListener('change', aggiornaBottone);
     }
 
     window.addEventListener('resize', programma);

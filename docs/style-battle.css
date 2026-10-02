@@ -138,6 +138,10 @@ html[data-modo="fit"]:not([data-pronto]) .scala { visibility: hidden; animation:
 .btn-audio:hover svg { stroke: var(--carta); }
 .btn-audio:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 4px; }
 .btn-audio.muted svg { opacity: .15; }
+/* Schermo intero: le frecce verso fuori per entrare, verso dentro per uscire */
+.btn-schermo-intero .ico-esci { display: none; }
+.btn-schermo-intero[aria-pressed="true"] .ico-entra { display: none; }
+.btn-schermo-intero[aria-pressed="true"] .ico-esci { display: inline; }
 
 
 /* ---------- Tavolo: player 1 | console | player 2 | cronaca ---------- */
@@ -168,6 +172,13 @@ html[data-modo="fit"] .colonna-log { align-self: stretch; }
 /* Layout a colonna: nome e team sulla stessa riga, poi i 6 Pokémon */
 .lato { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; min-width: 0; }
 .lato.p2 { flex-direction: row-reverse; }
+/* Chi gioca sta sempre a sinistra, come nello schermo di Showdown (lì il suo lato è quello in basso a sinistra):
+   se è il player 2 (body.vista-p2, scritto da battle-ui.js) le due colonne si scambiano di posto e di verso. */
+body.vista-p2 .lato.p1 { grid-area: p2; --verso: 1; }
+body.vista-p2 .lato.p2 { grid-area: p1; --verso: -1; }
+/* (:where non pesa: nel layout "una schermata" la direzione in colonna sta sopra) */
+:where(body.vista-p2) .lato.p1 { flex-direction: row-reverse; }
+:where(body.vista-p2) .lato.p2 { flex-direction: row; }
 /* Tutto in una schermata: la colonna è alta quanto la console (contain: size = il suo contenuto non allunga la riga) */
 html[data-modo="fit"] .lato { flex-direction: column; flex-wrap: nowrap; align-items: stretch; align-self: stretch; contain: size; gap: 18px; padding-top: 6px; }
 html[data-modo="fit"] .lato > * { flex-shrink: 0; }
@@ -202,6 +213,8 @@ html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
 }
 html[data-modo="fit"] .lato-team { align-self: flex-start; }
 html[data-modo="fit"] .lato.p2 .lato-team { align-self: flex-end; }
+html[data-modo="fit"] body.vista-p2 .lato.p1 .lato-team { align-self: flex-end; }
+html[data-modo="fit"] body.vista-p2 .lato.p2 .lato-team { align-self: flex-start; }
 
 .lato-pkm {
     flex: 0 0 100%;
@@ -279,32 +292,55 @@ html[data-modo="fit"] .membro img { width: 64px; max-width: none; height: 64px; 
     box-shadow: 12px 12px 0 var(--inchiostro);
 }
 
-/* Insegna: la riga info del match. Il primo dato (il formato) diventa
-   l'adesivo nero grande; match, set e punteggio restano etichette piatte. */
+/* Insegna: formato del torneo, a che match si è e il tabellone dei set. Fondo ambra a punti
+   (come una stampa a retino), il formato è l'adesivo nero inclinato e il punteggio un tabellone
+   a tre celle: i set vinti del player a sinistra, "Set 2/3" in mezzo, quelli dell'altro a destra.
+   Le celle prendono il colore del loro player. battle-ui.js scrive tutto in #info-turno. */
 .cab-insegna {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 9px 14px 7px;
-    background: var(--ambra);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap;
+    padding: 11px 14px 11px;
+    background-color: var(--ambra);
+    background-image: radial-gradient(rgba(0, 0, 0, .16) 1.3px, transparent 1.7px);
+    background-size: 8px 8px;
     border-bottom: var(--bordo-forte);
-    /* righe diagonali leggere, come la luce dietro l'insegna */
-    background-image: repeating-linear-gradient(-45deg, transparent 0 14px, rgba(255, 255, 255, .28) 14px 22px);
 }
-.info-turno { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-height: 30px; }
-.info-turno span {
-    padding: 5px 9px 3px;
-    background: var(--crema); border: 2px solid var(--inchiostro);
-    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-}
-.cab-insegna .info-turno span:first-child {
-    max-width: 55%;
-    margin-right: auto;
-    padding: 7px 12px 4px;
+.info-turno { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-height: 36px; }
+.ins-formato {
+    max-width: 100%;
+    padding: 8px 14px 5px;
     background: var(--inchiostro); color: var(--carta);
-    border: 0;
-    font-size: 1.3rem; line-height: 1;
+    font: 700 1.3rem 'Josefin Sans', sans-serif; line-height: 1; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transform: rotate(-2deg);
     box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+}
+.ins-match {
+    padding: 5px 9px 3px;
+    background: var(--crema); border: 2px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
+    font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
+    transform: rotate(1.5deg);
+}
+.ins-match b { font-size: .9rem; }
+.ins-tabellone {
+    margin-left: auto;
+    display: flex; align-items: stretch;
+    background: var(--crema); border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    transform: rotate(1deg);
+}
+.ins-punti {
+    min-width: 34px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 6px 2px;
+    font: 700 1.5rem 'Josefin Sans', sans-serif; line-height: 1;
+}
+.ins-punti.p1 { background: var(--colore-p1); }
+.ins-punti.p2 { background: var(--colore-p2); }
+.ins-punti:first-child { border-right: var(--bordo); }
+.ins-punti:last-child { border-left: var(--bordo); }
+.ins-set {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 10px 2px;
+    font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase; white-space: nowrap;
 }
 .cab-insegna .badge-live { flex: none; }
 
@@ -570,7 +606,7 @@ html[data-modo="fit"] .cronaca.battle-log { position: absolute; inset: 0 8px 8px
 
 
 /* ---------- Comandi: la fascia sotto lo schermo ---------- */
-.comandi { display: grid; min-width: 0; background: var(--crema); border-top: var(--bordo-forte); }
+.comandi { position: relative; display: grid; min-width: 0; background: var(--crema); border-top: var(--bordo-forte); }
 .comandi.doppio { grid-template-columns: 1fr 1fr; }
 .comandi.doppio .pannello + .pannello { border-left: var(--bordo-forte); }
 /* Altezza fissa: lo schermo non cambia misura (né scala) da una fase all'altra del turno */
@@ -597,6 +633,26 @@ html[data-modo="fit"] body.spettatore .comandi { height: auto; }
     font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase;
 }
 .stato-avversario:empty { display: none; }
+
+/* Un solo player (online): niente barra col suo nome, che sa già chi è. Resta lo stato dell'avversario,
+   un adesivo staccato che sta a cavallo tra la cornice dello schermo e i comandi. Giallo mentre
+   sceglie, verde quando ha scelto. Con due pannelli (prove in locale) la barra col nome resta. */
+.comandi:not(.doppio) .pannello-testa {
+    position: absolute; top: -18px; right: 16px; z-index: 3;
+    padding: 0; background: none; border: 0;
+}
+.comandi:not(.doppio) .pannello-testa h2 {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.comandi:not(.doppio) .stato-avversario {
+    padding: 5px 10px 3px;
+    border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro);
+    font-size: .78rem;
+    background: var(--ambra);
+    transform: rotate(2deg);
+}
+.comandi:not(.doppio) .stato-avversario[data-stato="scelto"] { background: var(--conferma); }
 .corpo {
     box-sizing: border-box;
     flex: 1 1 auto; min-height: 118px;
@@ -643,6 +699,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .btn.primario { background: var(--conferma); }
 .btn.primario:hover:not(:disabled) { background: var(--conferma-scuro); color: var(--carta); }
 .btn.scelto { background: var(--colore-mio, var(--ambra)); }
+.btn.nascosto { visibility: hidden; }
 .btn.piccolo { padding: 6px 10px 4px; font-size: .72rem; border-width: 2px; box-shadow: 3px 3px 0 var(--inchiostro); }
 .btn.piccolo:hover:not(:disabled) { box-shadow: 5px 5px 0 var(--inchiostro); }
 .btn.meccanica[aria-pressed="true"] { background: var(--pericolo); color: var(--carta); }
@@ -815,7 +872,8 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 #tooltipwrapper { z-index: 1000; }
 #tooltipwrapper .tooltip {
     box-sizing: border-box;
-    width: 320px;
+    width: 280px;
+    max-width: calc(100vw - 16px);
     border: var(--bordo);
     border-radius: 0;
     background: var(--crema);
@@ -841,6 +899,27 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 #tooltipwrapper .tooltip p { padding: 4px 10px; font-size: .78rem; line-height: 1.35; }
 #tooltipwrapper .tooltip p small { font-size: .68rem; font-weight: 700; }
 #tooltipwrapper .tooltip p.tooltip-section { margin-top: 2px; padding-top: 7px; border-top: 2px dashed var(--inchiostro); }
+
+/* Tooltip dei Pokémon dentro lo schermo di gioco (battle-extra.js li segna con .tt-compatto):
+   più stretti e fitti, perché lo schermo è alto 360px e il tooltip non deve coprirlo tutto */
+#tooltipwrapper .tooltip:has(.tt-compatto) { width: 232px; }
+.tt-compatto .tt-testa { padding: 5px 8px 5px; }
+.tt-compatto .tt-nome { font-size: .86rem; }
+.tt-compatto .tt-tipi { margin-top: 4px; gap: 4px; }
+.tt-compatto .tt-tipo { padding: 1px 5px 0; font-size: .56rem; }
+.tt-compatto .tt-corpo { padding: 5px 8px 7px; font-size: .7rem; }
+.tt-compatto .tt-sezione { margin-top: 5px; padding-top: 5px; border-top-width: 1px; }
+.tt-compatto .tt-titolo { margin-bottom: 3px; font-size: .6rem; }
+.tt-compatto .tt-riga { padding: 1px 0; }
+.tt-compatto .tt-etichetta { font-size: .58rem; }
+.tt-compatto .tt-barra { height: 6px; }
+.tt-compatto .tt-griglia-stat { gap: 3px; }
+.tt-compatto .tt-cella b { font-size: .8rem; }
+.tt-compatto .tt-cella span { font-size: .52rem; }
+.tt-compatto .tt-grande { font-size: 1.25rem; }
+.tt-compatto .tt-mossa { padding: 1px 0; }
+.tt-compatto .tt-mossa .tt-tipo { min-width: 44px; }
+.tt-compatto .tt-nota-lunga { display: none; }
 
 /* Testata dei nostri tooltip: colore del player a cui appartiene il Pokémon */
 .tt-testa {
@@ -956,10 +1035,10 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 @media (max-width: 699px) {
     .pagina { padding: 14px 12px 28px; gap: 16px; }
     .tavolo { grid-template-areas: "hub servizi" "cons cons" "p1 p1" "p2 p2" "log log"; }
-    .lato.p2 { flex-direction: row; }
+    .lato.p2, :where(body.vista-p2) .lato.p1 { flex-direction: row; }
     .console { box-shadow: 8px 8px 0 var(--inchiostro); }
     .cab-insegna { padding: 8px 10px 6px; }
-    .cab-insegna .info-turno span:first-child { max-width: 100%; font-size: 1.1rem; }
+    .ins-formato { font-size: 1.1rem; }
     .cab-schermo { padding: 8px 8px 6px; }
     .comandi.doppio, .lobby-colonne { grid-template-columns: 1fr; }
     .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
