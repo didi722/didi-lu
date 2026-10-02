@@ -406,14 +406,17 @@
     // -----------------------------------------------------
     function riempiSelettori() {
         const r = STATO.r;
+        const stagioni = r.stagioni.filter(s => !s.beta);
         const selS = $('sel-stagione');
-        if (!selS.dataset.pronto || selS.dataset.n !== String(r.stagioni.length)) {
-            selS.innerHTML = '<option value="all">Global (all seasons, no Beta)</option>' + r.stagioni.map(s => {
-                const stato = s.beta ? 'Beta' : s.stato;
-                return `<option value="${esc(s.id)}">${esc(s.nome)}${stato ? ` · ${esc(stato)}` : ''}</option>`;
-            }).join('');
+        if (!selS.dataset.pronto || selS.dataset.n !== String(stagioni.length)) {
+            selS.innerHTML = '<option value="all">Global (all seasons)</option>' + stagioni.map(s =>
+                `<option value="${esc(s.id)}">${esc(s.nome)}${s.stato ? ` · ${esc(s.stato)}` : ''}</option>`
+            ).join('');
             selS.dataset.pronto = '1';
-            selS.dataset.n = String(r.stagioni.length);
+            selS.dataset.n = String(stagioni.length);
+        }
+        if (STATO.stagione !== 'all' && !stagioni.some(s => String(s.id) === String(STATO.stagione))) {
+            STATO.stagione = 'all';
         }
         selS.value = STATO.stagione;
 
