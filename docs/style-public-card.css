@@ -5,7 +5,7 @@
    Tutto dipende da poche variabili impostate da public-card.js dalla configurazione dell'allenatore
    (vedi variabiliCss in pagina-pubblica.js): sfondo, colori della carta, spessore dei bordi, ombra,
    angoli, inclinazione, carattere. Il layout è scelto da data-layout su #pp-pagina:
-   carta | poster | dossier | collage.
+   carta | poster | dossier | collage | cinema | podio.
    ===================================================================== */
 
 :root {
@@ -161,7 +161,10 @@ body {
     border: var(--pp-bordo) solid #000;
     box-shadow: var(--pp-ombra) var(--pp-ombra) 0 #000;
     border-radius: var(--pp-raggio);
-    transform: rotate(var(--pp-inclina));
+    /* Anche a riposo la carta ha la stessa trasformazione 3D di quando ci si passa sopra (con il mouse fuori e
+       un rotate() 2D semplice il browser disegna il testo ruotato, con i bordi a scalino; con la 3D lo disegna
+       dritto e poi ruota lo strato, e resta nitido come in hover). Stessa lista di funzioni: la transizione è fluida. */
+    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) rotate(var(--pp-inclina));
     transform-origin: 50% 30%;
     transition: transform 0.35s ease;
 }
@@ -282,10 +285,10 @@ body.pp-modifica .pp-holo { display: none; }
 [data-layout="carta"] .pp-zona[data-zona="b"] > .pp-identita { flex: 1 1 auto; justify-content: center; }
 
 /* tutti gli altri layout: ogni blocco è una piastrella */
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-fila { display: contents; }
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-corpo { display: flex; flex-direction: column; gap: 26px; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-fila { display: contents; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-corpo { display: flex; flex-direction: column; gap: 26px; }
 
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-blocco {
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco {
     background: var(--pp-sup);
     color: var(--pp-ink);
     border: var(--pp-bordo) solid #000;
@@ -294,28 +297,28 @@ body.pp-modifica .pp-holo { display: none; }
     padding: 20px 22px;
 }
 
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-palco { padding: 0; overflow: hidden; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-palco { padding: 0; overflow: hidden; }
 
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) :is(.pp-testata, .pp-piede) {
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-testata, .pp-piede) {
     border: var(--pp-bordo) solid #000;
     box-shadow: var(--pp-ombra) var(--pp-ombra) 0 #000;
     border-radius: var(--pp-raggio);
 }
 
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-testata { margin-bottom: 26px; }
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-piede { margin-top: 26px; }
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-holo { display: none; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-testata { margin-bottom: 26px; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-piede { margin-top: 26px; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-holo { display: none; }
 
 /* poster: righe a tutta larghezza */
-:is([data-layout="poster"], [data-layout="collage"]) .pp-zona { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-start; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-zona[data-vuota="true"] { display: none; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-blocco { flex: 1 1 320px; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-palco { flex: 0 1 540px; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-musica { flex: 1 1 260px; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-identita { flex: 2 1 340px; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-statistiche { flex: 3 1 400px; }
-:is([data-layout="poster"], [data-layout="collage"]) .pp-party { flex: 4 1 460px; }
-:is([data-layout="poster"], [data-layout="collage"]) :is(.pp-trofei, .pp-medaglie) { flex: 0 1 auto; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-zona { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-start; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-zona[data-vuota="true"] { display: none; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco { flex: 1 1 320px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-palco { flex: 0 1 540px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-musica { flex: 1 1 260px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-identita { flex: 2 1 340px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-statistiche { flex: 3 1 400px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-party { flex: 4 1 460px; }
+:is([data-layout="poster"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-trofei, .pp-medaglie) { flex: 0 1 auto; }
 
 /* dossier: una colonna laterale e una principale */
 [data-layout="dossier"] .pp-corpo { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 26px 28px; align-items: start; }
@@ -333,8 +336,9 @@ body.pp-modifica .pp-holo { display: none; }
 [data-layout="collage"] .pp-zona { gap: 30px 26px; }
 [data-layout="collage"] .pp-zona[data-zona="b"] { margin: -10px 0 0 5%; }
 [data-layout="collage"] .pp-zona[data-zona="c"] { margin: -6px 4% 0 0; justify-content: flex-end; }
-[data-layout="collage"] .pp-blocco { transform: rotate(var(--rot, 0deg)); transition: transform 0.15s; }
-[data-layout="collage"] .pp-blocco:hover { transform: rotate(0deg) scale(1.01); z-index: 5; }
+/* (perspective() anche qui: vedi la carta, il testo ruotato resta nitido) */
+[data-layout="collage"] .pp-blocco { transform: perspective(1400px) rotate(var(--rot, 0deg)); transition: transform 0.15s; }
+[data-layout="collage"] .pp-blocco:hover { transform: perspective(1400px) rotate(0deg) scale(1.01); z-index: 5; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 1) { --rot: -1.6deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n + 2) { --rot: 1.3deg; }
 [data-layout="collage"] .pp-blocco:nth-child(3n) { --rot: -0.7deg; }
@@ -513,29 +517,6 @@ body.pp-modifica .pp-holo { display: none; }
 
 .pp-vola .pp-pkm-img { transform: translateY(calc(-32 * var(--d))); animation: pp-fluttua 2.6s ease-in-out infinite; }
 @keyframes pp-fluttua { 50% { transform: translateY(calc(-40 * var(--d))); } }
-
-.pp-pkm-nome {
-    position: absolute;
-    right: calc(13.6 * var(--d));
-    bottom: calc(13.6 * var(--d));
-    z-index: 20;
-    max-width: calc(208 * var(--d));
-    padding: calc(3.2 * var(--d)) calc(9.6 * var(--d));
-    background: #fff;
-    color: #000;
-    border: calc(3.2 * var(--d)) solid #000;
-    box-shadow: calc(4 * var(--d)) calc(4 * var(--d)) 0 #000;
-    font-size: calc(14 * var(--d));
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transform: rotate(-2.5deg);
-}
-
-.pp-pkm-nome::before { content: '\2665\00a0'; color: #ff3b6b; }
 
 /* ---------- Nome, titolo, motto ---------- */
 
@@ -890,7 +871,7 @@ body.pp-modifica .pp-holo { display: none; }
     transition: transform 0.12s, box-shadow 0.12s;
 }
 
-:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-musica-btn { margin: 20px 22px; width: calc(100% - 44px); }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-musica-btn { margin: 20px 22px; width: calc(100% - 44px); }
 .pp-musica-btn:hover { transform: rotate(0deg) translate(-2px, -2px); box-shadow: 8px 8px 0 var(--pp-giocatore); }
 
 .pp-disco {
@@ -1046,7 +1027,7 @@ body.pp-modifica .pp-blocco { cursor: grab; touch-action: none; }
 body.pp-modifica .pp-blocco > :not(.pp-fantasma):not(.pp-barra-blocco) { pointer-events: none; }
 body.pp-modifica .pp-zona[data-vuota="true"] { display: flex; align-items: center; justify-content: center; outline: 3px dashed rgba(0, 0, 0, 0.45); outline-offset: -6px; min-height: 90px; }
 body.pp-modifica .pp-zona[data-vuota="true"]::before { content: 'Drop a block here'; font-weight: 900; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6; padding: 12px; }
-body.pp-modifica [data-layout="carta"] .pp-fila { display: flex !important; }
+body.pp-modifica:not(.pp-fisso) [data-layout="carta"] .pp-fila { display: flex !important; }
 body.pp-modifica .pp-zona.pp-sopra { outline: 4px solid #000; outline-offset: -6px; background: rgba(255, 222, 77, 0.35); }
 
 body.pp-modifica .pp-blocco.pp-spento > :not(.pp-fantasma):not(.pp-barra-blocco),
@@ -1090,6 +1071,8 @@ body.pp-modifica .pp-adesivo.is-scelto { outline: 3px dashed #000; outline-offse
 }
 
 @media (max-width: 700px) {
+    /* sul telefono tutto è a tutta larghezza: il palco è quadrato, così resta il blocco più grande */
+    .pp-pagina .pp-palco .pp-quadro { aspect-ratio: 1 / 1 !important; height: auto !important; min-height: 0 !important; }
     .pp-pagina { padding: 18px 14px 130px; }
     .pp-codice { flex-wrap: wrap; row-gap: 6px; }
     .pp-barre { max-width: 100%; overflow: hidden; }
@@ -1100,7 +1083,7 @@ body.pp-modifica .pp-adesivo.is-scelto { outline: 3px dashed #000; outline-offse
     .pp-adesivo { min-width: 40px; height: 40px; font-size: 22px; }
     .pp-adesivo-testo { height: auto; font-size: 17px; }
     .pp-stat-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
-    :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-blocco { padding: 16px 16px; }
+    :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco { padding: 16px 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1146,66 +1129,108 @@ body.pp-fisso .pp-barre { height: 28px; }
 
 /* il palco prende lo spazio che resta (ha un minimo, il resto si adatta) */
 body.pp-fisso .pp-quadro { flex: 1 1 0; aspect-ratio: auto; height: auto; min-height: 150px; }
+body.pp-fisso .pp-palco .pp-quadro { min-height: 150px !important; height: auto !important; aspect-ratio: auto !important; }
 body.pp-fisso .pp-palco { display: flex; flex-direction: column; }
 
-/* ---- Trainer Card: pannello sinistro | pannello destro, fascia sotto ---- */
-body.pp-fisso [data-layout="carta"] .pp-corpo { display: flex; flex-direction: column; }
-body.pp-fisso [data-layout="carta"] .pp-fila { flex: 1 1 0; }
-body.pp-fisso [data-layout="carta"] .pp-zona { min-width: 0; }
-body.pp-fisso [data-layout="carta"] .pp-zona[data-zona="c"] { flex: 0 0 auto; flex-wrap: nowrap; }
+/* ---- Tutti i layout: una griglia di zone ----
+   Le aree, le colonne e le righe le imposta public-card.js (variabili --pp-aree, --pp-colonne, --pp-righe) dalla
+   geometria del layout e dai pesi scelti dall'allenatore (griglia() in pagina-pubblica.js); le zone vuote spariscono
+   e una vicina prende il loro posto. Ogni zona è un contenitore flex (data-dir: i blocchi stanno affiancati o uno
+   sotto l'altro) e i suoi blocchi si dividono lo spazio in base a --pp-peso. Colonne e righe sono "Nfr" senza
+   minmax(0, ...): una traccia non scende sotto quello che serve al suo contenuto, e se non ci sta la tela si
+   rimpicciolisce (adattaSchermo). I !important servono a battere le regole degli schermi stretti, più specifiche.
+   I numeri minimi dei blocchi sono quelli di MINIMI in pagina-pubblica.js (c'è un test che li confronta). */
+/* min-height: 0: con l'altezza data dalla carta (definita) la griglia rispetta le righe minime senza gonfiarsi;
+   se i blocchi non ci stanno sfora e adattaSchermo rimpicciolisce la tela. Con "auto" la griglia pretenderebbe
+   righe proporzionali tra loro (la più esigente le decide tutte) e la tela si ridurrebbe all'infinito. */
+body.pp-fisso .pp-corpo {
+    flex: 1 1 0;
+    min-height: 0;
+    display: grid !important;
+    grid-template-areas: var(--pp-aree, "a b" "c c") !important;
+    grid-template-columns: var(--pp-colonne, 7fr 5fr) !important;
+    grid-template-rows: var(--pp-righe, 3.2fr 1.1fr) !important;
+    align-items: stretch !important;
+    align-content: stretch !important;
+    gap: 0;
+}
+
+body.pp-fisso .pp-fila { display: contents !important; }
+
+body.pp-fisso .pp-zona {
+    display: flex !important;
+    flex-direction: column;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    min-width: auto;
+    margin: 0 !important;
+    gap: 0;
+}
+
+body.pp-fisso .pp-zona[data-dir="riga"] { flex-direction: row; }
+/* una zona senza blocchi sparisce (la sua cella passa a una vicina); in modifica resta come bersaglio dove lasciare un blocco */
+body.pp-fisso:not(.pp-modifica) .pp-zona[data-vuota="true"] { display: none !important; }
+body.pp-fisso .pp-zona[data-zona="a"] { grid-area: a !important; }
+body.pp-fisso .pp-zona[data-zona="b"] { grid-area: b !important; }
+body.pp-fisso .pp-zona[data-zona="c"] { grid-area: c !important; }
+
+body.pp-fisso .pp-zona > .pp-blocco {
+    flex: var(--pp-peso, 1) 1 0 !important;
+    justify-content: flex-start;
+}
+
+/* in modifica un blocco spento o vuoto è solo un segnaposto: prende il posto che gli serve e non toglie spazio agli altri */
+body.pp-fisso .pp-zona > .pp-blocco:is(.pp-spento, .pp-vuoto) { flex: 0 0 auto !important; min-width: 0 !important; min-height: 0 !important; }
+
+/* le larghezze minime dei blocchi (pixel di progetto, MINIMI in pagina-pubblica.js); l'altezza minima è quella che
+   serve al loro contenuto, tranne il palco che da solo non ne ha */
+body.pp-fisso .pp-zona > .pp-palco { min-width: 260px; min-height: 200px; }
+body.pp-fisso .pp-zona > .pp-musica { min-width: 180px; }
+body.pp-fisso .pp-zona > .pp-identita { min-width: 220px; }
+body.pp-fisso .pp-zona > .pp-statistiche { min-width: 260px; }
+body.pp-fisso .pp-zona > .pp-party { min-width: 300px; }
+body.pp-fisso .pp-zona > .pp-trofei { min-width: 110px; }
+body.pp-fisso .pp-zona > .pp-medaglie { min-width: 130px; }
+
+/* ---- Trainer Card: una sola scheda, le zone si dividono con i bordi ---- */
+body.pp-fisso [data-layout="carta"] .pp-zona { border-width: 0 !important; }
+body.pp-fisso [data-layout="carta"] .pp-zona:not([data-c0="0"]) { border-left: var(--pp-bordo) solid #000 !important; }
+body.pp-fisso [data-layout="carta"] .pp-zona:not([data-r0="0"]) { border-top: var(--pp-bordo) solid #000 !important; }
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="riga"] > .pp-blocco + .pp-blocco { border-top-width: 0; border-left: var(--pp-bordo) solid #000; }
+body.pp-fisso [data-layout="carta"] .pp-zona[data-dir="colonna"] > .pp-blocco + .pp-blocco { border-left-width: 0; border-top: var(--pp-bordo) solid #000; }
 body.pp-fisso [data-layout="carta"] .pp-blocco { padding: 12px 18px; }
-body.pp-fisso [data-layout="carta"] .pp-palco { padding: 0; flex: 1 1 0; }
-body.pp-fisso [data-layout="carta"] .pp-zona[data-zona="a"] > .pp-palco .pp-quadro { min-height: 150px; height: auto; }
-body.pp-fisso [data-layout="carta"] .pp-musica { padding: 10px 14px !important; flex: none; }
-body.pp-fisso [data-layout="carta"] .pp-zona[data-zona="b"] > .pp-statistiche { flex: 1 1 auto; }
+body.pp-fisso [data-layout="carta"] .pp-palco { padding: 0; }
+body.pp-fisso [data-layout="carta"] .pp-musica { padding: 10px 14px !important; }
 
-/* ---- Poster, Dossier, Collage: ogni blocco è una piastrella che si allunga ---- */
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-corpo { gap: 14px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-testata { margin-bottom: 14px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-piede { margin-top: 14px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-blocco { padding: 12px 16px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-palco { padding: 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-musica { padding: 0 !important; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-musica-btn { margin: 10px 12px; width: calc(100% - 24px); }
-
-/* poster e collage: tre righe, i blocchi di una riga si dividono la larghezza */
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-zona { flex-wrap: nowrap; align-items: stretch; margin: 0; gap: 14px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-zona[data-zona="a"] { flex: 3 1 auto; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-zona[data-zona="b"] { flex: 1 1 auto; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-zona[data-zona="c"] { flex: 1 1 auto; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-blocco { flex: 1 1 0; min-width: 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-palco { flex: 3 1 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-musica { flex: 1 1 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-identita { flex: 2 1 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-statistiche { flex: 3 1 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-party { flex: 4 1 0; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) :is(.pp-trofei, .pp-medaglie) { flex: 1 1 0; }
-
-/* dossier: colonna laterale + colonna principale */
-body.pp-fisso [data-layout="dossier"] .pp-corpo { display: grid; grid-template-columns: minmax(300px, 27%) minmax(0, 1fr); grid-template-rows: auto auto; align-content: stretch; align-items: stretch; gap: 14px 18px; }
-body.pp-fisso [data-layout="dossier"] .pp-zona { gap: 14px; }
-body.pp-fisso [data-layout="dossier"] .pp-zona[data-zona="a"] > .pp-palco { flex: 1 1 0; }
-body.pp-fisso [data-layout="dossier"] .pp-zona[data-zona="b"] > .pp-statistiche { flex: 1 1 auto; }
-body.pp-fisso [data-layout="dossier"] .pp-zona[data-zona="c"] { flex-wrap: nowrap; align-items: stretch; }
-body.pp-fisso [data-layout="dossier"] .pp-zona[data-zona="c"] > .pp-party { flex: 4 1 0; }
-body.pp-fisso [data-layout="dossier"] .pp-zona[data-zona="c"] > :is(.pp-trofei, .pp-medaglie) { flex: 1 1 0; }
-body.pp-fisso [data-layout="dossier"] .pp-corpo:has(> .pp-fila > .pp-zona[data-zona="a"][data-vuota="true"]) { grid-template-columns: minmax(0, 1fr); }
-
-/* il collage resta storto ma non esce dalla tela */
-body.pp-fisso [data-layout="collage"] .pp-zona[data-zona="b"] { margin: 0; }
-body.pp-fisso [data-layout="collage"] .pp-zona[data-zona="c"] { margin: 0; justify-content: stretch; }
+/* ---- Tutti gli altri: ogni blocco è una piastrella con il suo spazio intorno ---- */
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-corpo, .pp-zona) { gap: 14px; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-testata { margin-bottom: 14px; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-piede { margin-top: 14px; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco { padding: 12px 16px; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-palco { padding: 0; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-musica { padding: 0 !important; display: flex; align-items: center; }
+body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-musica-btn { margin: 10px 12px; width: calc(100% - 24px); }
 
 /* ---- Dentro i blocchi, più compatti e che riempiono l'altezza ---- */
 body.pp-fisso .pp-identita { flex-direction: row; flex-wrap: wrap; align-items: center; align-content: center; gap: 6px 14px; }
 body.pp-fisso .pp-nome {
     flex: 0 0 100%;
-    font-size: clamp(2rem, calc(132cqw / max(var(--len, 6), 6) / var(--pp-font-w, 1)), calc(var(--pp-h) * 0.1));
+    /* il tetto non cresce con la tela (--pp-h): se la tela si ingrandisce per far stare tutto, il nome non deve ingrandirsi con lei */
+    font-size: clamp(2rem, calc(132cqw / max(var(--len, 6), 6) / var(--pp-font-w, 1)), min(80px, calc(var(--pp-h) * 0.1)));
 }
 body.pp-fisso .pp-titolo-riga { flex: 0 0 auto; }
 body.pp-fisso .pp-motto { flex: 1 1 220px; margin: 0 0 0 12px; padding: 8px 12px 8px 20px; font-size: 0.85rem; max-width: none; }
 body.pp-fisso .pp-sigillo { top: 2px; right: 10px; width: clamp(64px, 14cqw, 100px); }
+/* in un blocco stretto il motto è più compatto: meno altezza serve, più ne resta al palco */
+@container (max-width: 300px) {
+    body.pp-fisso .pp-motto { flex-basis: 100%; margin-left: 0; padding: 5px 8px 5px 14px; font-size: 0.72rem; }
+    body.pp-fisso .pp-sigillo { width: 56px; }
+}
 
-body.pp-fisso .pp-statistiche { display: flex; flex-direction: column; }
+body.pp-fisso .pp-statistiche { display: flex; flex-direction: column; container-type: inline-size; }
+/* poche colonne se il blocco è stretto (i numeri non vanno a capo), tutte in fila se è largo (meno altezza) */
+@container (max-width: 400px) { body.pp-fisso .pp-stat-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 720px) { body.pp-fisso .pp-stat-griglia { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); } }
 body.pp-fisso .pp-stat-griglia { flex: 1 1 auto; grid-auto-rows: minmax(min-content, 1fr); gap: 16px 12px; padding: 6px 4px 4px 0; }
 body.pp-fisso .pp-stat { padding: 20px 12px 8px; justify-content: center; }
 body.pp-fisso .pp-stat-val { font-size: clamp(1rem, calc((1.9rem - var(--n, 4) * 0.06rem) / var(--pp-font-w, 1)), 1.9rem); }
@@ -1231,7 +1256,4 @@ body.pp-fisso .pp-musica-btn { padding: 8px 14px 8px 10px; }
 body.pp-fisso .pp-disco { width: 44px; height: 44px; }
 body.pp-fisso .pp-eq { height: 22px; }
 
-/* poster e collage: la riga del palco ha un'altezza decente, e la canzone sta al centro della sua piastrella */
-body.pp-fisso :is([data-layout="poster"], [data-layout="collage"]) .pp-palco .pp-quadro { min-height: 200px; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-musica { display: flex; align-items: center; }
-body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"]) .pp-musica-btn { margin: 10px 12px; }
+

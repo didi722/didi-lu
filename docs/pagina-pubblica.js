@@ -31,10 +31,12 @@
     // Le zone hanno un significato diverso in ogni layout; i blocchi invece vanno in una zona e basta,
     // così cambiando layout la disposizione resta sensata.
     const LAYOUT = {
-        carta:   { nome: 'Trainer Card', desc: 'One big card, like a real ID',        zone: { a: 'Left panel',  b: 'Right panel',      c: 'Bottom strip' } },
-        poster:  { nome: 'Poster',       desc: 'Stacked rows, full width',            zone: { a: 'Top row',     b: 'Middle row',       c: 'Bottom row' } },
-        dossier: { nome: 'Dossier',      desc: 'A side column and a main column',     zone: { a: 'Side column', b: 'Main column',      c: 'Under the main column' } },
-        collage: { nome: 'Collage',      desc: 'Loose tiles, a bit crooked',          zone: { a: 'First row',   b: 'Second row',       c: 'Third row' } }
+        carta:   { nome: 'Trainer Card', desc: 'One big card, like a real ID',            zone: { a: 'Left panel',   b: 'Right panel',      c: 'Bottom strip' } },
+        poster:  { nome: 'Poster',       desc: 'Stacked rows, full width',                zone: { a: 'Top row',      b: 'Middle row',       c: 'Bottom row' } },
+        dossier: { nome: 'Dossier',      desc: 'A wide side column and a main column',    zone: { a: 'Side column',  b: 'Main column',      c: 'Under the main column' } },
+        collage: { nome: 'Collage',      desc: 'Loose tiles, a bit crooked',              zone: { a: 'Big tile',     b: 'Tall column',      c: 'Wide strip' } },
+        cinema:  { nome: 'Cinema',       desc: 'The stage as a wide banner on top',       zone: { a: 'Banner',       b: 'Bottom left',      c: 'Bottom right' } },
+        podio:   { nome: 'Podium',       desc: 'The stage in the middle, a column each side', zone: { a: 'Middle column', b: 'Left column',   c: 'Right column' } }
     };
 
     const BLOCCHI = {
@@ -146,6 +148,276 @@
 
     const ZONA_DEFAULT = { palco: 'a', musica: 'a', identita: 'b', statistiche: 'b', party: 'c', trofei: 'c', medaglie: 'c' };
 
+    // ---- Misure: come ogni layout divide lo schermo intero -------------------------------------
+    //
+    // Sul PC la pagina è una tela che riempie la finestra (public-card.js, adattaSchermo) e ogni layout la divide
+    // con una griglia di zone:
+    //   aree     una matrice con il nome della zona (a, b, c) in ogni cella: una zona può occupare più celle;
+    //   colonne  il peso di ogni colonna (la larghezza che si dividono), righe il peso di ogni riga;
+    //   dir      come stanno i blocchi dentro la zona: 'riga' = affiancati, 'colonna' = uno sotto l'altro.
+    // I blocchi di una zona si dividono lo spazio in base al loro peso (PESO_BLOCCO). Tutti questi numeri si
+    // possono cambiare trascinando i confini sulla carta (config.misure) e valgono solo per il layout in uso.
+    //
+    // Una zona senza blocchi in vista sparisce e la sua cella passa a una zona vicina (righe e colonne vuote si
+    // tolgono): con griglia() si ha sempre una griglia piena e rettangolare.
+    //
+    // IL PALCO È SEMPRE IL PIÙ GRANDE. Il palco (allenatore + Pokémon preferito) deve avere un'area maggiore di quella
+    // di ogni altro blocco, in qualunque layout e in qualunque zona lo si metta: i pesi di partenza lo garantiscono
+    // nei layout standard; se uno spostamento o una zona vuota lo fanno diventare troppo piccolo, griglia() lo
+    // ingrandisce (sua zona e suo peso) quanto serve, e chi ridimensiona dalla carta non può superare il limite.
+
+    const PESO_MIN = 0.25, PESO_MAX = 12;
+    const MARGINE_PALCO = 1.3;           // il palco è almeno il 30% più grande del secondo blocco
+    const PESO_PALCO_MAX = 80;           // tetto dell'ingrandimento automatico
+
+    const PESO_BLOCCO = { palco: 6, musica: 1.2, identita: 2.4, statistiche: 4, party: 5, trofei: 1.4, medaglie: 1.4 };
+
+    // Sotto questa misura (pixel di progetto: larghezza, altezza) un blocco non si legge più. È anche il minimo
+    // che il ridimensionamento rispetta, e coincide con i min-width / min-height di style-public-card.css.
+    const MINIMI = {
+        palco: [260, 200], musica: [180, 64], identita: [220, 120], statistiche: [260, 150],
+        party: [300, 120], trofei: [110, 100], medaglie: [130, 100]
+    };
+
+    const GEOMETRIA = {
+        carta:   { aree: [['a', 'b'], ['c', 'c']], colonne: [7, 5],    righe: [3.2, 1.1],     dir: { a: 'colonna', b: 'colonna', c: 'riga' } },
+        poster:  { aree: [['a'], ['b'], ['c']],    colonne: [1],      righe: [3, 1.1, 1.1],   dir: { a: 'riga',    b: 'riga',    c: 'riga' } },
+        dossier: { aree: [['a', 'b'], ['a', 'c']], colonne: [5, 7],    righe: [1.15, 1],      dir: { a: 'colonna', b: 'colonna', c: 'riga' } },
+        collage: { aree: [['a', 'b'], ['c', 'b']], colonne: [5, 3],    righe: [3, 1.2],       dir: { a: 'colonna', b: 'colonna', c: 'riga' } },
+        cinema:  { aree: [['a', 'a'], ['b', 'c']], colonne: [1, 1],    righe: [2.2, 1.2],     dir: { a: 'riga',    b: 'riga',    c: 'riga' } },
+        podio:   { aree: [['b', 'a', 'c']],        colonne: [3, 5, 3], righe: [1],            dir: { a: 'colonna', b: 'colonna', c: 'colonna' } }
+    };
+
+    function misureDiPartenza() { return { colonne: null, righe: null, blocchi: {} }; }
+
+    function normalizzaMisure(grezze, layout) {
+        const D = misureDiPartenza();
+        if (!grezze || typeof grezze !== 'object' || Array.isArray(grezze)) return D;
+        const G = GEOMETRIA[layout] || GEOMETRIA.carta;
+        const pesi = (x, quanti) => {
+            const lista = comeElenco(x);
+            if (lista.length !== quanti) return null;
+            const v = lista.map(p => numero(p, PESO_MIN, PESO_MAX, NaN, 3));
+            return v.some(Number.isNaN) ? null : v;
+        };
+        const blocchi = {};
+        const grezzi = grezze.blocchi && typeof grezze.blocchi === 'object' && !Array.isArray(grezze.blocchi) ? grezze.blocchi : {};
+        for (const id of Object.keys(BLOCCHI)) {
+            const p = numero(grezzi[id], PESO_MIN, PESO_MAX, NaN, 3);
+            if (!Number.isNaN(p)) blocchi[id] = p;
+        }
+        return { colonne: pesi(grezze.colonne, G.colonne.length), righe: pesi(grezze.righe, G.righe.length), blocchi };
+    }
+
+    const somma = lista => lista.reduce((s, x) => s + x, 0);
+
+    // true se le celle di una zona formano un rettangolo pieno
+    function eRettangolo(celle, zona) {
+        let r0 = Infinity, r1 = -1, c0 = Infinity, c1 = -1, n = 0;
+        celle.forEach((riga, r) => riga.forEach((z, c) => {
+            if (z !== zona) return;
+            n++; r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c);
+        }));
+        return n > 0 && n === (r1 - r0 + 1) * (c1 - c0 + 1);
+    }
+
+    /**
+     * La griglia dello schermo intero per una configurazione, dati i blocchi che si vedono.
+     *   visibili: id dei blocchi in vista (accesi e con qualcosa da mostrare)
+     *   opzioni.garantisciPalco (true): ingrandisce il palco se non è il blocco più grande
+     *   opzioni.zoneVuote (false): tiene anche le zone senza blocchi (in modifica servono da bersaglio dove lasciare un blocco)
+     * -> {
+     *      aree: matrice di zone (senza zone vuote né righe/colonne vuote),
+     *      colonne, righe: pesi di ogni colonna e riga di aree, idxColonne, idxRighe: a quale colonna/riga della
+     *        geometria originale corrispondono (servono a salvare i pesi),
+     *      zone: { a: { c0, c1, r0, r1, ids: [id], dir } } solo per le zone in vista,
+     *      blocchi: { id: peso } il peso di ogni blocco in vista,
+     *      area: { id: quota dell'area totale } (senza spazi e bordi),
+     *      palcoOk: il palco, prima dell'ingrandimento, era già il più grande (vero anche se non c'è),
+     *      ingrandito: il palco è stato ingrandito per diventarlo
+     *    }
+     */
+    function griglia(config, visibili, opzioni = {}) {
+        const G = GEOMETRIA[config.layout] || GEOMETRIA.carta;
+        const vis = new Set(visibili || []);
+        const ids = { a: [], b: [], c: [] };
+        for (const b of config.blocchi) if (vis.has(b.id)) ids[b.zona].push(b.id);
+        const piene = opzioni.zoneVuote ? ZONE.slice() : ZONE.filter(z => ids[z].length);
+
+        const misure = config.misure || misureDiPartenza();
+        const colonneBase = misure.colonne && misure.colonne.length === G.colonne.length ? misure.colonne : G.colonne;
+        const righeBase = misure.righe && misure.righe.length === G.righe.length ? misure.righe : G.righe;
+
+        // 1. fuori le zone vuote, e le righe e colonne in cui non è rimasto niente
+        let celle = G.aree.map(riga => riga.map(z => (piene.includes(z) ? z : null)));
+        let idxRighe = G.righe.map((_, i) => i), idxColonne = G.colonne.map((_, i) => i);
+        const righeTenute = celle.map((riga, r) => riga.some(Boolean) ? r : -1).filter(r => r >= 0);
+        celle = righeTenute.map(r => celle[r]);
+        idxRighe = righeTenute.map(r => idxRighe[r]);
+        const colonneTenute = (celle[0] || []).map((_, c) => celle.some(riga => riga[c]) ? c : -1).filter(c => c >= 0);
+        celle = celle.map(riga => colonneTenute.map(c => riga[c]));
+        idxColonne = colonneTenute.map(c => idxColonne[c]);
+
+        // 2. le celle rimaste vuote vengono assorbite da una zona vicina, se resta un rettangolo
+        for (let giro = 0; giro < 8; giro++) {
+            let cambiato = false;
+            celle.forEach((riga, r) => riga.forEach((z, c) => {
+                if (z) return;
+                for (const [dr, dc] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+                    const vicina = celle[r + dr] && celle[r + dr][c + dc];
+                    if (!vicina) continue;
+                    celle[r][c] = vicina;
+                    if (eRettangolo(celle, vicina)) { cambiato = true; return; }
+                    celle[r][c] = null;
+                }
+            }));
+            if (!cambiato) break;
+        }
+
+        const colonne = idxColonne.map(i => colonneBase[i]);
+        const righe = idxRighe.map(i => righeBase[i]);
+
+        // 3. dove sta ogni zona
+        const zone = {};
+        for (const z of piene) {
+            let r0 = Infinity, r1 = -1, c0 = Infinity, c1 = -1;
+            celle.forEach((riga, r) => riga.forEach((x, c) => { if (x === z) { r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); } }));
+            if (r1 < 0) continue;
+            zone[z] = { c0, c1, r0, r1, ids: ids[z], dir: G.dir[z] };
+        }
+
+        // in modifica una zona vuota è solo un bersaglio: le colonne e le righe che occupa da sola si stringono,
+        // così non toglie spazio a quello che c'è davvero
+        if (opzioni.zoneVuote) {
+            for (const p of Object.values(zone)) {
+                if (p.ids.length) continue;
+                const altre = Object.values(zone).filter(q => q !== p && q.ids.length);
+                const sola = (da, a, asse) => !altre.some(q => q[`${asse}0`] >= da && q[`${asse}1`] <= a);
+                if (sola(p.c0, p.c1, 'c')) for (let c = p.c0; c <= p.c1; c++) colonne[c] *= 0.3;
+                if (sola(p.r0, p.r1, 'r')) for (let r = p.r0; r <= p.r1; r++) righe[r] *= 0.3;
+            }
+        }
+
+        const blocchi = {};
+        for (const z of Object.keys(zone)) for (const id of zone[z].ids) {
+            blocchi[id] = misure.blocchi && misure.blocchi[id] != null ? misure.blocchi[id] : PESO_BLOCCO[id];
+        }
+
+        const g = { aree: celle, colonne, righe, idxColonne, idxRighe, zone, blocchi, area: {}, palcoOk: true, ingrandito: false };
+        calcolaAree(g);
+        g.palcoOk = palcoPiuGrande(g);
+
+        // 4. il palco è sempre il blocco più grande
+        if (opzioni.garantisciPalco !== false && !g.palcoOk) {
+            const zp = Object.values(zone).find(x => x.ids.includes('palco'));
+            for (let i = 0; i < 120 && !palcoPiuGrande(g); i++) {
+                const prima = JSON.stringify([g.colonne, g.righe, g.blocchi.palco]);
+                if (zp.ids.length > 1 && g.blocchi.palco < PESO_PALCO_MAX) g.blocchi.palco *= 1.12;
+                if (zp.c1 - zp.c0 + 1 < g.colonne.length) for (let c = zp.c0; c <= zp.c1; c++) g.colonne[c] *= 1.12;
+                if (zp.r1 - zp.r0 + 1 < g.righe.length) for (let r = zp.r0; r <= zp.r1; r++) g.righe[r] *= 1.12;
+                calcolaAree(g);
+                if (JSON.stringify([g.colonne, g.righe, g.blocchi.palco]) === prima) break;
+            }
+            g.ingrandito = true;
+        }
+        return g;
+    }
+
+    function calcolaAree(g) {
+        const totC = somma(g.colonne), totR = somma(g.righe);
+        g.area = {};
+        for (const z of Object.values(g.zone)) {
+            const larghezza = somma(g.colonne.slice(z.c0, z.c1 + 1)) / totC;
+            const altezza = somma(g.righe.slice(z.r0, z.r1 + 1)) / totR;
+            const peso = somma(z.ids.map(id => g.blocchi[id]));
+            for (const id of z.ids) g.area[id] = larghezza * altezza * g.blocchi[id] / peso;
+        }
+    }
+
+    function palcoPiuGrande(g) {
+        if (g.area.palco == null) return true;
+        const altri = Object.entries(g.area).filter(([id]) => id !== 'palco').map(([, a]) => a);
+        return !altri.length || g.area.palco >= Math.max(...altri) * MARGINE_PALCO - 1e-9;
+    }
+
+    /**
+     * Sposta il confine tra due elementi che si dividono lo spazio (due colonne, due righe o due blocchi vicini).
+     *   px: quanto sono grandi ora, pesi: il loro peso, minimi: sotto quanto non devono scendere (tutto in pixel
+     *   di progetto tranne i pesi), delta: di quanti pixel si vuole spostare il confine (positivo = il primo si allarga).
+     * -> { delta (quello che si è potuto fare), pesi: [nuovo primo, nuovo secondo] }: la somma dei pesi non cambia,
+     *    quindi tutti gli altri elementi restano dove sono.
+     */
+    function muoviConfine({ px, pesi, minimi }, delta) {
+        const [s1, s2] = px, [w1, w2] = pesi, [m1, m2] = minimi || [0, 0];
+        const totale = s1 + s2, peso = w1 + w2;
+        if (!(totale > 0) || !(peso > 0)) return { delta: 0, pesi: [w1, w2] };
+        const piu = Math.max(0, s2 - m2), meno = Math.max(0, s1 - m1);      // quanto può crescere / ridursi il primo
+        let d = Math.min(piu, Math.max(-meno, delta));
+        // anche i pesi hanno un minimo e un massimo
+        const pesoDa = nuovo => Math.min(peso - PESO_MIN, Math.max(PESO_MIN, peso * nuovo / totale));
+        let n1 = pesoDa(s1 + d);
+        n1 = Math.min(PESO_MAX, Math.max(PESO_MIN, n1));
+        let n2 = peso - n1;
+        if (n2 > PESO_MAX) { n2 = PESO_MAX; n1 = peso - n2; }
+        d = (n1 / peso) * totale - s1;
+        const arrotonda = x => Math.round(x * 1000) / 1000;
+        return { delta: d, pesi: [arrotonda(n1), arrotonda(peso - arrotonda(n1))] };
+    }
+
+    /**
+     * La configurazione con nuovi pesi per i due elementi vicini a un confine, dato lo stato g (quello di griglia()).
+     *   tipo: 'colonne' | 'righe' (quale = indice della prima delle due tracce di g) oppure 'blocchi' (quale = [id, id])
+     *   pesi: i due nuovi pesi (da muoviConfine). Le altre misure restano come sono.
+     */
+    function impostaPesi(config, g, tipo, quale, pesi) {
+        const nuova = copia(config);
+        const G = GEOMETRIA[nuova.layout] || GEOMETRIA.carta;
+        const m = nuova.misure || (nuova.misure = misureDiPartenza());
+        if (tipo === 'blocchi') {
+            m.blocchi = { ...m.blocchi, [quale[0]]: pesi[0], [quale[1]]: pesi[1] };
+        } else {
+            const idx = tipo === 'colonne' ? g.idxColonne : g.idxRighe;
+            const lista = (m[tipo] && m[tipo].length === G[tipo].length ? m[tipo] : G[tipo]).slice();
+            lista[idx[quale]] = pesi[0];
+            lista[idx[quale + 1]] = pesi[1];
+            m[tipo] = lista;
+        }
+        return normalizza(nuova);
+    }
+
+    /** Come impostaPesi, ma riporta i due elementi ai pesi di partenza del layout. */
+    function ripristinaPesi(config, g, tipo, quale) {
+        const nuova = copia(config);
+        const G = GEOMETRIA[nuova.layout] || GEOMETRIA.carta;
+        const m = nuova.misure || (nuova.misure = misureDiPartenza());
+        if (tipo === 'blocchi') {
+            m.blocchi = { ...m.blocchi };
+            for (const id of quale) delete m.blocchi[id];
+        } else if (m[tipo] && m[tipo].length === G[tipo].length) {
+            const idx = tipo === 'colonne' ? g.idxColonne : g.idxRighe;
+            const lista = m[tipo].slice();
+            lista[idx[quale]] = G[tipo][idx[quale]];
+            lista[idx[quale + 1]] = G[tipo][idx[quale + 1]];
+            m[tipo] = lista.every((p, i) => p === G[tipo][i]) ? null : lista;
+        }
+        return normalizza(nuova);
+    }
+
+    /** Cambia layout: le misure erano di quello di prima e si azzerano. */
+    function impostaLayout(config, layout) {
+        const nuova = copia(config);
+        if (!LAYOUT[layout] || nuova.layout === layout) return nuova;
+        nuova.layout = layout;
+        nuova.misure = misureDiPartenza();
+        return nuova;
+    }
+
+    function azzeraMisure(config) {
+        const nuova = copia(config);
+        nuova.misure = misureDiPartenza();
+        return nuova;
+    }
+
     function predefinita() {
         return {
             v: VERSIONE,
@@ -156,7 +428,8 @@
             carta: { tema: 'bianco', ombra: 10, bordo: 4, angoli: 'netti', inclinazione: 'lieve', font: 'josefin', holo: true },
             statistiche: Object.keys(STAT),
             team: 'auto',
-            adesivi: []
+            adesivi: [],
+            misure: misureDiPartenza()
         };
     }
 
@@ -243,7 +516,8 @@
             statistiche: statistiche.length ? statistiche : D.statistiche,
             // l'id di un team è una chiave di Firebase: solo caratteri innocui
             team: typeof grezza.team === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(grezza.team) ? grezza.team : 'auto',
-            adesivi
+            adesivi,
+            misure: normalizzaMisure(grezza.misure, unOf(grezza.layout, Object.keys(LAYOUT), D.layout))
         };
     }
 
@@ -269,6 +543,8 @@
         const da = nuova.blocchi.findIndex(b => b.id === id);
         if (da < 0) return nuova;
         const [blocco] = nuova.blocchi.splice(da, 1);
+        // il peso era relativo ai blocchi della zona di prima: in una zona nuova si riparte da quello di partenza
+        if (blocco.zona !== zona && nuova.misure && nuova.misure.blocchi) delete nuova.misure.blocchi[id];
         blocco.zona = zona;
 
         const dellaZona = nuova.blocchi.map((b, i) => ({ b, i })).filter(x => x.b.zona === zona);
@@ -604,6 +880,7 @@
         const nuova = copia(config);
 
         nuova.layout = scegli(Object.keys(LAYOUT));
+        nuova.misure = misureDiPartenza();
         nuova.sfondo = {
             colore: rnd() < 0.4 ? 'giocatore' : scegli(PALETTE_SFONDO).toLowerCase(),
             motivo: scegli(Object.keys(MOTIVI).filter(m => m !== 'nessuno')),
@@ -636,6 +913,8 @@
         LAYOUT, BLOCCHI, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
         predefinita, normalizza, copia, uguali,
         blocchiPerZona, sposta, accendi,
+        PESO_MIN, PESO_MAX, MARGINE_PALCO, PESO_BLOCCO, MINIMI, GEOMETRIA,
+        griglia, muoviConfine, impostaPesi, ripristinaPesi, impostaLayout, azzeraMisure,
         esadecimale, luminanza, inchiostroSu, mescola, sfondoCss, temaCarta, variabiliCss,
         CAMPI_PROFILO, BIO_MAX, chiaveAvatar, scelteDegliAltri, conflitti, elencoAvatar, leggiCsvCanzoni,
         SCENA, scalaScena, codiceBarre, numeroTessera, riepilogoStat, casuale

@@ -46,7 +46,9 @@
         modifica: false,
         proprietario: false,
         adesivoScelto: -1,
-        dopoApplica: null      // l'editor si aggancia qui
+        dopoApplica: null,     // l'editor si aggancia qui
+        dopoAdatta: null,      // e qui: la tela è stata ridimensionata
+        griglia: null          // la griglia dello schermo intero in uso (P.griglia)
     };
 
     // ---- Utilità ------------------------------------------------------------------------------
@@ -143,9 +145,8 @@
         set.style.setProperty('--ht', String(misure.allenatore));
         posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}`;
         posto.style.setProperty('--h', String(misure.pokemon));
+        // Il nome non è scritto sul palco (lo si riconosce a vista): resta solo nell'alt per chi legge lo schermo
         posto.replaceChildren(h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' }));
-        set.querySelector(':scope > .pp-pkm-nome')?.remove();
-        set.append(h('span', { class: 'pp-pkm-nome', testo: nomeGrezzo }));
     }
 
     // ---- Nome, titolo, motto ------------------------------------------------------------------
@@ -488,6 +489,7 @@
             zona.dataset.vuota = String(visibili === 0);
         }
 
+        applicaGriglia();
         disegnaAdesivi();
         adattaSchermo();
         // senza il widget della canzone in vista la musica non resta accesa: non ci sarebbe modo di spegnerla
@@ -495,6 +497,33 @@
         if (audio && !musicaAttiva()) audio.pause();
         if (typeof stato.dopoApplica === 'function') stato.dopoApplica();
     }
+
+    // La griglia dello schermo intero (aree, colonne e righe, pesi dei blocchi): la calcola pagina-pubblica.js
+    // (griglia), qui si passa al CSS. Vale solo con body.pp-fisso, altrove le variabili non servono a niente.
+    const visibiliDi = c => c.blocchi.filter(b => b.on && !stato.vuoti[b.id]).map(b => b.id);
+
+    /**
+     * Scrive nel CSS la griglia di una configurazione e la restituisce.
+     * garantisci: false = senza ingrandire il palco (l'editor prova così misure che il palco deve rispettare da solo)
+     */
+    function scriviGriglia(c, garantisci = true) {
+        // in modifica anche le zone vuote hanno il loro posto: sono i bersagli dove lasciare un blocco
+        const g = P.griglia(c, visibiliDi(c), { garantisciPalco: garantisci, zoneVuote: stato.modifica });
+        const corpo = document.querySelector('.pp-corpo');
+        const fr = pesi => pesi.map(x => `${Math.round(x * 1000) / 1000}fr`).join(' ');
+        corpo.style.setProperty('--pp-aree', g.aree.map(riga => `"${riga.join(' ')}"`).join(' '));
+        corpo.style.setProperty('--pp-colonne', fr(g.colonne));
+        corpo.style.setProperty('--pp-righe', fr(g.righe));
+        for (const z of ZONE) {
+            const zona = stato.zone[z], p = g.zone[z];
+            zona.dataset.dir = p ? p.dir : P.GEOMETRIA[c.layout].dir[z];
+            if (p) { zona.dataset.c0 = String(p.c0); zona.dataset.r0 = String(p.r0); } else { delete zona.dataset.c0; delete zona.dataset.r0; }
+        }
+        for (const [id, el] of Object.entries(stato.blocchi)) el.style.setProperty('--pp-peso', String(g.blocchi[id] != null ? Math.round(g.blocchi[id] * 1000) / 1000 : 1));
+        return g;
+    }
+
+    function applicaGriglia() { stato.griglia = scriviGriglia(stato.config); }
 
     // ---- Tutto a schermo intero, senza scroll (su PC) ------------------------------------------
 
@@ -508,8 +537,24 @@
     const PC_MIN_W = 1100, PC_MIN_H = 560;
 
     function sfora(carta) {
-        const tolleranza = 12;
+        // il collage è fatto di tessere storte: il loro ingombro sporge di qualche pixel
+        const tolleranza = carta.closest('[data-layout="collage"]') ? 30 : 4;
         return carta.scrollHeight > carta.clientHeight + tolleranza || carta.scrollWidth > carta.clientWidth + tolleranza;
+    }
+
+    // Quanto è più grande il palco (l'area che occupa davvero) del blocco più grande tra gli altri; Infinity se non
+    // c'è niente da confrontare. A schermo piccolo gli altri blocchi hanno già la loro misura minima e il palco
+    // prende solo quello che resta: se non basta a farlo il più grande, la tela si rimpicciolisce (più spazio, a
+    // parità di misure minime) fino a RAPPORTO_PALCO_MIN, ma non sotto K_MIN_PALCO per non rendere tutto minuscolo.
+    const RAPPORTO_PALCO_MIN = 1.25, K_MIN_PALCO = 0.68;
+
+    function rapportoPalco() {
+        const visibile = e => e && !e.hidden && e.offsetParent !== null && !e.classList.contains('pp-spento') && !e.classList.contains('pp-vuoto');
+        const area = e => { const r = e.getBoundingClientRect(); return r.width * r.height; };
+        if (!visibile(stato.blocchi.palco)) return Infinity;
+        let altro = 0;
+        for (const [id, el] of Object.entries(stato.blocchi)) if (id !== 'palco' && visibile(el)) altro = Math.max(altro, area(el));
+        return altro ? area(stato.blocchi.palco) / altro : Infinity;
     }
 
     function adattaSchermo() {
@@ -518,6 +563,7 @@
         document.body.classList.toggle('pp-fisso', pc);
         if (!pc) {
             for (const v of ['--pp-k', '--pp-w', '--pp-h']) radice.style.removeProperty(v);
+            if (typeof stato.dopoAdatta === 'function') stato.dopoAdatta();
             return;
         }
         const larghezza = window.innerWidth - (stato.modifica ? PANNELLO_PX : 0);
@@ -530,11 +576,12 @@
         let k = Math.min(larghezza / TELA_MIN_W, altezza / TELA_MIN_H);
         imposta(k);
         const carta = document.getElementById('pp-carta');
-        for (let i = 0; carta && i < 40 && k > 0.3 && sfora(carta); i++) {
+        for (let i = 0; carta && i < 40 && k > 0.3 && (sfora(carta) || (k > K_MIN_PALCO && rapportoPalco() < RAPPORTO_PALCO_MIN)); i++) {
             k *= 0.97;
             imposta(k);
         }
         stato.scala = k;
+        if (typeof stato.dopoAdatta === 'function') stato.dopoAdatta();
     }
 
     let attesaAdatta = 0;
@@ -740,6 +787,12 @@
             applica();
         },
         scegliAdesivo(i) { stato.adesivoScelto = i; disegnaAdesivi(); },
+        /** Per chi ridimensiona: prova le misure di una configurazione senza ridisegnare né adattare la tela */
+        provaMisure(config) { return scriviGriglia(P.normalizza(config), false); },
+        /** La carta sfora (i blocchi non ci stanno alla scala di adesso)? */
+        sfora() { return sfora(document.getElementById('pp-carta')); },
+        rapportoPalco, RAPPORTO_PALCO_MIN,
+        adatta: adattaSchermo,
         disegnaAdesivi,
         sceltaTeam
     };
