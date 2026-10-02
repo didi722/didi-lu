@@ -292,13 +292,12 @@
             h('div', { class: 'pp-party-slots', stile: { '--quanti': Math.max(pokemon.length, 1) } }, pokemon.map((p, i) => {
                 const nomePkm = p.nome || p.name;
                 const slot = h('button', { class: 'pp-slot', type: 'button', stile: { '--i': i, '--t1': '#e8e8e8', '--t2': '#e8e8e8' },
-                    title: nomePkm,
+                    title: nomePkm, 'aria-label': nomePkm,   // il nome non è scritto sulla card: resta nel suggerimento e per chi legge lo schermo
                     onclick: () => {
                         if (typeof window.apriPkmDettaglio === 'function' && Array.isArray(p.mosse)) window.apriPkmDettaglio(p, pulisci(nomePkm));
                     } },
                     h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
-                        onerror: e => { e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'; } }),
-                    h('span', { class: 'pp-slot-nome', testo: nomePkm }));
+                        onerror: e => { e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'; } }));
                 tipiDi(nomePkm).then(tipi => {
                     const c = tipi.map(t => COLORI_TIPO[t]).filter(Boolean);
                     if (c.length) { slot.style.setProperty('--t1', c[0]); slot.style.setProperty('--t2', c[1] || c[0]); }

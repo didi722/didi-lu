@@ -217,3 +217,14 @@ test('tooltip: si aprono verso l\'alto quando in basso non c\'è posto, e a ripo
     assert.match(regola, /display: none/);
     assert.doesNotMatch(regola, /visibility: hidden/);
 });
+
+test('le card dei Pokémon del party non scrivono il nome (resta nel suggerimento e per chi legge lo schermo)', () => {
+    assert.doesNotMatch(card, /pp-slot-nome/);
+    assert.doesNotMatch(cssCard, /pp-slot-nome/);
+    assert.match(card, /title: nomePkm, 'aria-label': nomePkm/);
+});
+
+test('l\'editor non rimanda più alla pagina del profilo: tutte le scelte sono nella scheda Trainer', () => {
+    assert.doesNotMatch(editor, /href: 'profile\.html'/);
+    assert.doesNotMatch(editor + trainer, /are in |PROFILE/);
+});

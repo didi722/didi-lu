@@ -765,7 +765,7 @@ body.pp-modifica .pp-holo { display: none; }
     align-items: flex-end;
     justify-content: center;
     aspect-ratio: 1 / 1.08;
-    padding: 6px 4px 36px;
+    padding: 6px 4px;
     overflow: hidden;
     background-color: #fff;
     background-image: radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--t1) 35%, #fff) 0, #fff 70%);
@@ -791,27 +791,9 @@ body.pp-modifica .pp-holo { display: none; }
     left: 4px;
     top: 6px;
     width: calc(100% - 8px);
-    height: calc(100% - 32px);
+    height: calc(100% - 22px);
     object-fit: contain;
     filter: var(--pp-adesivo-sprite);
-}
-
-.pp-slot-nome {
-    position: absolute;
-    left: 2px;
-    right: 2px;
-    bottom: 13px;
-    text-align: center;
-    font-size: 0.6rem;
-    font-weight: 900;
-    line-height: 1.05;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
 }
 
 .pp-slot:hover, .pp-slot:focus-visible { transform: translate(-2px, -3px) rotate(-1.5deg); box-shadow: 7px 7px 0 #000; outline: none; z-index: 2; }

@@ -292,8 +292,7 @@
                     h('button', { type: 'button', class: `pe-team${cfg().team === 'auto' || !squadre.some(t => t.id === cfg().team) ? ' is-on' : ''}`, onclick: () => cambia(c => { c.team = 'auto'; return c; }) },
                         h('b', { testo: 'Automatic' }), h('small', { testo: automatico ? `Best record: ${automatico.nome || automatico.name}` : 'No team has played yet' })),
                     squadre.map(t => riga(t, cfg().team === t.id)))
-                    : h('p', { class: 'pe-nota', testo: 'You have no teams yet. Build one in your BOX and it will show up here.' })),
-            h('p', { class: 'pe-nota' }, 'Name, colour, favourite Pokémon, song, title and motto are in ', h('a', { href: 'profile.html', testo: 'PROFILE' }), '.')
+                    : h('p', { class: 'pe-nota', testo: 'You have no teams yet. Build one in your BOX and it will show up here.' }))
         ];
     }
 
