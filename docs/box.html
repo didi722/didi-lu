@@ -12,6 +12,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="temi.css">
+<link rel="stylesheet" href="finestre.css">
+<link rel="stylesheet" href="dettagli.css">
+<script src="dettagli.js" defer></script>
+<script src="statistiche.js"></script>
+<script src="fiocchi.js"></script>
+<link rel="stylesheet" href="tooltip.css">
+<script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js"></script>
 <script src="temi.js"></script>
@@ -1019,9 +1026,9 @@ async function caricaInfoAbilita(nomeAbilita, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeAbilita}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoStrumento(nomeStrumento, elementoId) {
@@ -1034,9 +1041,9 @@ async function caricaInfoStrumento(nomeStrumento, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeStrumento}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoMossa(nomeMossa, elementoId) {
@@ -1168,6 +1175,7 @@ async function apriDettagli(id) {
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
+                    <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
 <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
@@ -1206,6 +1214,12 @@ async function apriDettagli(id) {
     `;
     modal.style.display = "flex";
         tbPreparaDettaglio(team);
+
+    // le medagliette dei fiocchi sulle card arrivano appena sono pronte le statistiche reali
+    window.squadraAperta = team;
+    if (typeof Fiocchi !== 'undefined') {
+        Fiocchi.riempiMini(db, content, { giocatore: playerID, team, valido: () => window.squadraAperta === team });
+    }
 }
 
 // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
@@ -1538,10 +1552,23 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                     }).join('')}
                 </div>
             </div>
+            <div class="area-ribbons pkm-panel fiocchi-panel" id="pkm-fiocchi">
+                <h4 class="panel-title">RIBBONS</h4>
+                <div class="fiocchi-caricamento">Loading ribbons…</div>
+            </div>
         </div>
     `;
 
     modal.style.display = "flex";
+
+    // i fiocchi: arrivano appena sono pronte le statistiche reali
+    if (typeof Fiocchi !== 'undefined') {
+        const casella = document.getElementById('pkm-fiocchi');
+        Fiocchi.montaScaffale(db, casella, {
+            giocatore: playerID, team: window.squadraAperta, pokemon: pokemonData,
+            valido: () => document.getElementById('pkm-fiocchi') === casella
+        });
+    }
 
     fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
         .then(res => res.json())
@@ -1581,6 +1608,7 @@ function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
     const team = tuttiITeam.find(t => t.id === teamId);
     
     if (team && team.pokemon && team.pokemon[pkmIndex]) {
+        window.squadraAperta = team;   // serve ai fiocchi: sono del Pokémon DI QUEL team
         apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
     } else {
         console.error("Error: Impossible to find the Pokémon for the team", teamId);

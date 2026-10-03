@@ -20,6 +20,8 @@
 //
 // Un "Pokémon" è QUEL Pokémon di QUEL team (non la specie): la chiave è
 // giocatore + nome del team + specie (+ numero, se la specie compare due volte).
+// Le serie di un Pokémon (serie.vittorieMax, serie.pulitaMax) contano solo i match in cui è DAVVERO sceso in
+// campo (almeno un set con "portato"): i match in cui è rimasto in panchina non le allungano né le spezzano.
 // =====================================================
 (function (radice, fabbrica) {
     if (typeof module === 'object' && module.exports) module.exports = fabbrica();
@@ -259,7 +261,10 @@
                     chiave, squadra: team.chiave, player: team.player, team: team.nome, formato: team.formato,
                     specie: nomeSpecie, specieId: chiaveSpecie.split('#')[0],
                     apparsoInSet: 0, portato: 0, titolare: 0, koFatti: 0, koDiretti: 0, svenuto: 0,
-                    ultimo: 0, ultimoVinto: 0, setPortatoVinti: 0, setPortatoPersi: 0, setStats: 0
+                    ultimo: 0, ultimoVinto: 0, setPortatoVinti: 0, setPortatoPersi: 0, setStats: 0,
+                    // serie di match "veri": contano solo i match in cui è sceso in campo almeno una volta
+                    matchPortato: 0, matchVinti: 0, serieAttuale: 0, serieMax: 0, pulitaAttuale: 0, pulitaMax: 0,
+                    stagioniInCampo: new Set()
                 };
             }
             return mostri[chiave];
@@ -307,6 +312,7 @@
                 }
 
                 // set con statistiche (KO, Pokémon portati...)
+                const scesiNelMatch = new Set();
                 for (const { st } of setConStatistiche(p)) {
                     if (!aggiungiKoSet(g.ko, st, lato)) continue;
                     if (!team) continue;
@@ -319,6 +325,7 @@
                         const m = mostro(team, chiavi[i], x.specie);
                         m.setStats++;
                         if (x.portato) {
+                            scesiNelMatch.add(m);
                             m.portato++;
                             if (vintoSet) m.setPortatoVinti++; else if (st.vincitore) m.setPortatoPersi++;
                         }
@@ -328,6 +335,22 @@
                         if (x.svenuto) m.svenuto++;
                         if (x.ultimo) { m.ultimo++; if (vintoSet) m.ultimoVinto++; }
                     });
+                }
+
+                // serie del match: chi non è mai sceso in campo non la allunga e non la spezza
+                const pulito = vinto && setP === 0;
+                for (const m of scesiNelMatch) {
+                    m.matchPortato++;
+                    m.stagioniInCampo.add(p.stagione);
+                    if (vinto) {
+                        m.matchVinti++;
+                        m.serieAttuale++;
+                        if (m.serieAttuale > m.serieMax) m.serieMax = m.serieAttuale;
+                        if (pulito) {
+                            m.pulitaAttuale++;
+                            if (m.pulitaAttuale > m.pulitaMax) m.pulitaMax = m.pulitaAttuale;
+                        } else m.pulitaAttuale = 0;
+                    } else { m.serieAttuale = 0; m.pulitaAttuale = 0; }
                 }
             }
         }
@@ -432,6 +455,10 @@
                 team: m.team, formato: m.formato,
                 specie: m.specie, specieId: m.specieId,
                 stagioniVinte: t ? t.stagioniVinte : 0,
+                stagioniGiocate: t ? t.stagioniGiocate : 0,
+                // a differenza dei due numeri qui sopra (del team), contano solo le stagioni in cui è sceso in campo
+                stagioniInCampo: m.stagioniInCampo.size,
+                stagioniVinteInCampo: [...m.stagioniInCampo].filter(id => vincitoreStagione[id] === m.player).length,
                 showdown: t ? t.showdown : { giocati: 0, vinti: 0, persi: 0 },
                 match: t ? t.match : { giocati: 0, vinti: 0, persi: 0 },
                 set: t ? t.set : { giocati: 0, vinti: 0, persi: 0 },
@@ -444,6 +471,11 @@
                 quotaKo: perc(m.koFatti, totaleTeam),
                 sopravvivenza: portato ? perc(portato - m.svenuto, portato) : null,
                 ultimo: m.ultimo, ultimoVinto: m.ultimoVinto,
+                serie: {
+                    matchPortato: m.matchPortato, matchVinti: m.matchVinti,
+                    vittorieMax: m.serieMax, vittorieAttuale: m.serieAttuale,
+                    pulitaMax: m.pulitaMax, pulitaAttuale: m.pulitaAttuale
+                },
                 setPortatoVinti: m.setPortatoVinti, setPortatoPersi: m.setPortatoPersi,
                 percVintiPortato: perc(m.setPortatoVinti, m.setPortatoVinti + m.setPortatoPersi)
             };

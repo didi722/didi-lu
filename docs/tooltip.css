@@ -1,0 +1,147 @@
+/* =====================================================================
+   TOOLTIP "COACH" PER TUTTO IL SITO
+   ---------------------------------------------------------------------
+   Il tooltip del Team Builder (speed tier, debolezze del team, copertura) è il modello: carta calda, bordo e ombra del
+   tema, titoletto in maiuscolo, sezioni separate da una riga tratteggiata, un filo di rotazione. Qui lo stesso aspetto
+   si applica agli altri fumetti del sito, tranne quelli colorati di proposito (mosse, tipi, anteprima squadra del
+   giocatore): il fumetto delle statistiche, dell'abilità, dello strumento e delle debolezze nelle schede squadra, il
+   fumetto dei fiocchi, l'anteprima squadra dell'Hub, le regole del formato, il Pokémon del Box, il premio delle Stats
+   e i suggerimenti dei pulsanti (attributo "title", vedi tooltip.js).
+   Va caricato dopo il foglio della pagina. Usa le variabili --nb-* del tema attivo (con i valori classici come ripiego,
+   perché la pagina pubblica non carica temi.css).
+   ===================================================================== */
+
+/* ---------- 1. La superficie ---------- */
+:is(
+    #teamModal .generic-tooltip,
+    #teamModal .stats-tooltip,
+    #teamModal .type-effectiveness-tooltip,
+    #pkmDetailModal .generic-tooltip,
+    .team-preview-tooltip,
+    .format-rules-tooltip,
+    .pkm-hover-card,
+    .premio-tip,
+    .tb-bubble,
+    .custom-badge-tooltip,
+    .tip-coach
+) {
+    box-sizing: border-box;
+    background: var(--nb-tip-bg, #fffdf6) !important;
+    color: var(--nb-tip-fg, #000) !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0) !important;
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000) !important;
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+    font-size: .74rem;
+    font-style: normal;
+    line-height: 1.35;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    rotate: calc(var(--nb-rot, 1) * -1deg);
+}
+
+/* ---------- 2. Titoletto e testo ---------- */
+:is(#teamModal .generic-tooltip, #pkmDetailModal .generic-tooltip, .custom-badge-tooltip) :is(h3, h4, .tooltip-title, strong) {
+    display: block;
+    margin: 0 0 4px;
+    padding: 0 0 4px !important;
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 2px dashed var(--nb-ink, #000) !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    transform: none !important;
+}
+:is(#teamModal .generic-tooltip, #pkmDetailModal .generic-tooltip, .custom-badge-tooltip) p {
+    margin: 0;
+    padding: 0;
+    color: inherit;
+    font-size: .74rem;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+/* ---------- 3. Statistiche base (nelle schede il fumetto delle statistiche è un .generic-tooltip) ---------- */
+#teamModal :is(.stats-tooltip, .generic-tooltip) :is(.panel-title, h3, h4) {
+    display: block;
+    margin: 0 0 6px !important;
+    padding: 0 0 4px !important;
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 2px dashed var(--nb-ink, #000) !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    transform: none !important;
+}
+#teamModal :is(.stats-tooltip, .generic-tooltip) .stat-row { gap: 6px; margin-bottom: 4px; font-size: .74rem; font-weight: 700; color: inherit; }
+#teamModal :is(.stats-tooltip, .generic-tooltip) .stat-row > span { color: inherit !important; }
+#teamModal :is(.stats-tooltip, .generic-tooltip) .stat-bar-bg {
+    height: 10px;
+    margin-left: 4px;
+    background: #fff !important;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0);
+    box-sizing: border-box;
+}
+#teamModal :is(.stats-tooltip, .generic-tooltip) .stat-bar-fill { background: var(--accent-color, var(--nb-accento, #00ff66)); }
+
+/* ---------- 4. Debolezze e resistenze ---------- */
+#teamModal .type-effectiveness-tooltip .eff-section { margin: 0; }
+#teamModal .type-effectiveness-tooltip .eff-section + .eff-section {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 2px dashed var(--nb-ink, #000);
+}
+#teamModal .type-effectiveness-tooltip .eff-title {
+    display: inline-block;
+    margin: 0 0 4px;
+    padding: 0 6px;
+    background: var(--nb-ink, #000);
+    border: 0;
+    color: #fff;
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+#teamModal .type-effectiveness-tooltip .eff-badge-container { margin-top: 0; }
+#teamModal .type-effectiveness-tooltip .mini-type-badge { border: 2px solid var(--nb-ink, #000); padding: 0 4px; border-radius: var(--nb-raggio, 0); }
+
+/* ---------- 5. Anteprima squadra (Hub), regole del formato (Index/Hub), Pokémon del Box, premio (Stats) ---------- */
+.team-preview-tooltip { padding: 12px !important; }
+.format-rules-tooltip { padding: 16px !important; }
+.pkm-hover-card { padding: 12px !important; }
+.pkm-hover-card strong { color: inherit; }
+.premio-tip { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important; }
+.tb-bubble { font-weight: 700; }
+
+/* ---------- 6. Suggerimenti dei pulsanti (attributo "title"): tooltip.js ---------- */
+.tip-coach.tip-globale {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 2147483000;
+    max-width: min(280px, calc(100vw - 20px));
+    padding: 6px 10px;
+    font-size: .74rem;
+    font-weight: 700;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .1s ease;
+}
+.tip-coach.tip-globale.tip-visibile { opacity: 1; }
+
+/* ---------- 7. Telefono: i fumetti non escono dallo schermo ---------- */
+@media (max-width: 900px) {
+    .team-preview-tooltip { min-width: 0 !important; max-width: calc(100vw - 20px); }
+    .pkm-hover-card { max-width: calc(100vw - 24px); }
+}

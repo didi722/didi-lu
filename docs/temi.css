@@ -250,26 +250,73 @@ body.pg-box .music-btn,
 body.pg-box .btn-floating-admin,
 body.pg-box .btn-floating-helper { z-index: 2; }
 
-/* ---------- Menu a tendina dell'utente ---------- */
+/* ---------- Menu a tendina dell'utente ----------
+   Ogni voce è una linguetta con l'icona in un quadratino colorato; al passaggio prende il suo colore, scivola e
+   mostra la freccia; la voce della pagina in cui si è (temi.js la segna con aria-current) è nera. */
 body.nb .user-dropdown .menu-item,
 body.nb .user-dropdown .logout-btn {
-    border-color: var(--nb-ink);
+    --mi: var(--nb-giallo);
+    box-sizing: border-box;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    padding: 7px 14px 7px 7px !important;
+    background: var(--nb-carta) !important;
+    color: var(--nb-ink) !important;
+    border: 3px solid var(--nb-ink) !important;
     border-radius: var(--nb-raggio);
     box-shadow: var(--nb-sh-s);
+    font: 800 .88rem/1.2 var(--nb-font-titoli) !important;
+    letter-spacing: .08em;
+    text-align: left;
+    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, color .12s ease;
 }
-body.nb .user-dropdown .menu-item:nth-child(1) { transform: rotate(calc(var(--nb-rot) * -2deg)); }
-body.nb .user-dropdown .menu-item:nth-child(2) { transform: rotate(calc(var(--nb-rot) * 1.5deg)); }
-body.nb .user-dropdown .menu-item:nth-child(3) { transform: rotate(calc(var(--nb-rot) * -1deg)); }
-body.nb .user-dropdown .menu-item:nth-child(4) { transform: rotate(calc(var(--nb-rot) * -1.5deg)); }
-body.nb .user-dropdown .menu-item:nth-child(5) { transform: rotate(calc(var(--nb-rot) * 1deg)); }
-body.nb .user-dropdown .menu-item:nth-child(6) { transform: rotate(calc(var(--nb-rot) * -1deg)); }
-body.nb .user-dropdown .menu-item:nth-child(7) { transform: rotate(calc(var(--nb-rot) * 1.5deg)); }
-body.nb .user-dropdown .logout-btn { transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .menu-item > i,
+body.nb .user-dropdown .logout-btn > i {
+    display: inline-flex;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    background: var(--mi);
+    color: #000;
+    border: 2px solid #000;
+    border-radius: var(--nb-raggio);
+    font-size: .95rem;
+    transition: transform .12s ease;
+}
+body.nb .user-dropdown .menu-item::after {
+    content: "→";
+    margin-left: auto;
+    font-weight: 900;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity .12s ease, transform .12s ease;
+}
+body.nb .user-dropdown .menu-item:nth-child(1) { --mi: var(--nb-giallo); transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+body.nb .user-dropdown .menu-item:nth-child(2) { --mi: #6ec3ff; transform: rotate(calc(var(--nb-rot) * 1deg)); }
+body.nb .user-dropdown .menu-item:nth-child(3) { --mi: #ff93c8; transform: rotate(calc(var(--nb-rot) * -.8deg)); }
+body.nb .user-dropdown .menu-item:nth-child(4) { --mi: var(--nb-verde); transform: rotate(calc(var(--nb-rot) * 1.2deg)); }
+body.nb .user-dropdown .menu-item:nth-child(5) { --mi: #ffa24d; transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .menu-item:nth-child(6) { --mi: #b88cff; transform: rotate(calc(var(--nb-rot) * .8deg)); }
+body.nb .user-dropdown .menu-item:nth-child(7) { --mi: #52d6c3; transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+body.nb .user-dropdown .menu-item:nth-child(8) { --mi: var(--nb-rosso); transform: rotate(calc(var(--nb-rot) * 1deg)); }
 body.nb .user-dropdown .menu-item:hover,
-body.nb .user-dropdown .logout-btn:hover {
-    transform: translate(-3px, -3px) rotate(0deg);
+body.nb .user-dropdown .menu-item:focus-visible {
+    background: var(--mi) !important;
+    transform: translate(-4px, -2px) rotate(0deg);
     box-shadow: var(--nb-sh-m);
+    outline: none;
 }
+body.nb .user-dropdown .menu-item:hover > i,
+body.nb .user-dropdown .menu-item:focus-visible > i { background: #fff; transform: rotate(calc(var(--nb-rot) * -8deg)) scale(1.06); }
+body.nb .user-dropdown .menu-item:hover::after,
+body.nb .user-dropdown .menu-item:focus-visible::after { opacity: 1; transform: none; }
+/* la pagina in cui si è */
+body.nb .user-dropdown .menu-item[aria-current="page"] { background: var(--nb-ink) !important; color: #fff !important; }
+body.nb .user-dropdown .menu-item[aria-current="page"]::after { content: "●"; opacity: 1; transform: none; font-size: .7rem; color: var(--mi); }
+/* uscita */
+body.nb .user-dropdown .logout-btn { --mi: #fff; background: var(--nb-rosso) !important; color: #fff !important; margin-top: 16px; transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .logout-btn:hover { transform: translate(-4px, -2px) rotate(0deg); box-shadow: var(--nb-sh-m); filter: brightness(1.08); }
 body.nb .user-dropdown .menu-item:active,
 body.nb .user-dropdown .logout-btn:active {
     transform: translate(3px, 3px) !important;

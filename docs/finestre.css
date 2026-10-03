@@ -1,0 +1,149 @@
+/* =====================================================================
+   FINESTRE DEL SITO: login, scelta delle squadre (Hub), nuova stagione (Index e Admin), lancia la sfida
+   ---------------------------------------------------------------------
+   Stessa famiglia delle schede squadra e Pokémon (dettagli.css): finestra con la striscia nera e i tre pallini,
+   bordo e ombra del tema, carta calda con la mezzatinta. Prima ognuna aveva bordi neri e ombre nere scritti a mano e non
+   cambiava con i temi: ora segue --nb-* (angoli, ombre, caratteri, colori), con i valori classici come ripiego perché
+   Admin e la pagina pubblica non caricano temi.css.
+   Ogni finestra dà il nome alla sua striscia con --fin-etichetta. Va caricato dopo il foglio della pagina.
+   ===================================================================== */
+
+/* ---------- La striscia nera in alto ---------- */
+:is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card)::before {
+    content: var(--fin-etichetta, "SANT'ALVISE PKMN LEAGUE");
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 2;
+    height: 36px;
+    box-sizing: border-box;
+    padding: 0 56px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink, #000);
+    color: #fff;
+    font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* ---------- La finestra: carta calda, bordo e ombra del tema ---------- */
+#login-modal .modal-content,
+.modal-neubrutal,
+.sfida-card {
+    box-sizing: border-box;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6) !important;
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0px) !important;
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000) !important;
+}
+/* la striscia è posizionata dentro la finestra: la finestra è il suo riferimento (Hub la centra già con position: fixed) */
+#login-modal .modal-content,
+.sfida-card { position: relative; }
+
+/* ---------- Login ---------- */
+#login-modal .modal-content { --fin-etichetta: "LOGIN"; height: auto !important; padding: 66px 36px 34px !important; overflow: visible; }
+#login-modal h2 {
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    border-bottom: 4px solid var(--nb-ink, #000) !important;
+    color: var(--nb-ink, #000) !important;
+}
+#login-modal .input-group label { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; color: var(--nb-ink, #000) !important; }
+#login-modal .input-group input {
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    background: #fff;
+    color: #000;
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+#login-modal .input-group input:focus { box-shadow: var(--nb-sh-s, 4px 4px 0 #000); }
+#login-modal .modal-content :is(button, .btn-login, input[type="submit"]) { border-radius: var(--nb-raggio, 0px); }
+/* la X: bollino giallo nella striscia (finora si chiudeva solo toccando fuori) */
+#login-modal .close-modal {
+    visibility: visible !important;
+    position: absolute !important;
+    top: 5px !important;
+    right: 12px !important;
+    left: auto !important;
+    z-index: 5;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    background: var(--nb-giallo, #ffbd44) !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * 3deg));
+}
+#login-modal .close-modal:hover { background: var(--nb-rosso, #ff4444) !important; color: #fff !important; transform: none; }
+
+/* ---------- Scelta delle squadre (Hub) ---------- */
+.modal-neubrutal { --fin-etichetta: "PICK A TEAM"; padding: 60px 26px 24px !important; overflow: hidden; }
+.modal-neubrutal :is(h2, h3, h4) { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: var(--nb-ink, #000); }
+
+/* ---------- Lancia la sfida (Matches, Players, Profile...) ---------- */
+.sfida-card { --fin-etichetta: "CHALLENGE"; padding: 58px 26px 26px !important; overflow: visible; }
+.sfida-card .sfida-formato { border-color: var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 4px 4px 0 #000); }
+.sfida-card .sfida-messaggio { border-color: var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); }
+
+/* ---------- Nuova stagione (Index e Admin): resta blu, con la cornice della famiglia ---------- */
+#modalCreazione.admin-panel-modern {
+    --fin-etichetta: "NEW SEASON · SANT'ALVISE PKMN LEAGUE";
+    padding: 64px 30px 28px !important;
+    background: radial-gradient(rgba(255, 255, 255, .12) 1.3px, transparent 1.6px) 0 0 / 14px 14px, #2e53cd !important;
+    border: 4px solid var(--nb-ink, #092377) !important;
+    border-radius: var(--nb-raggio, 0px) !important;
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #092377) !important;
+    overflow: hidden;
+}
+#modalCreazione.admin-panel-modern > h3 {
+    display: table;
+    margin: 0 auto 30px;
+    padding: 5px 20px 3px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid #000;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 4px 4px 0 #000;
+    font: 900 1.15rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .12em;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+#modalCreazione .col-title {
+    border-bottom: 3px dashed rgba(255, 255, 255, .6);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+#modalCreazione :is(input, select) {
+    border: 3px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0px) !important;
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+#modalCreazione :is(button, .btn-save, .btn-cancel, .btn-confirm) { border-radius: var(--nb-raggio, 0px); }
+
+/* ---------- Telefono ---------- */
+@media (max-width: 900px) {
+    :is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card)::before {
+        height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em;
+    }
+    #login-modal .modal-content { padding: 56px 20px 24px !important; box-shadow: 6px 6px 0 var(--nb-ink, #000) !important; }
+    #login-modal .close-modal { top: 3px !important; right: 8px !important; }
+    .modal-neubrutal { padding: 54px 14px 18px !important; }
+    .sfida-card { padding: 52px 16px 22px !important; }
+    #modalCreazione.admin-panel-modern { padding: 54px 14px 18px !important; }
+    #modalCreazione.admin-panel-modern > h3 { margin-bottom: 22px; font-size: 1rem; }
+}

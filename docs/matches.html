@@ -17,6 +17,11 @@
        <script src="replay-sito.js"></script>
           <script src="sfide.js"></script>
 <link rel="stylesheet" href="temi.css">
+<link rel="stylesheet" href="finestre.css">
+<link rel="stylesheet" href="dettagli.css">
+<script src="dettagli.js" defer></script>
+<link rel="stylesheet" href="tooltip.css">
+<script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js"></script>
 <script src="temi.js"></script>
@@ -2830,9 +2835,9 @@ async function caricaInfoAbilita(nomeAbilita, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeAbilita}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoStrumento(nomeStrumento, elementoId) {
@@ -2845,9 +2850,9 @@ async function caricaInfoStrumento(nomeStrumento, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeStrumento}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoMossa(nomeMossa, elementoId) {

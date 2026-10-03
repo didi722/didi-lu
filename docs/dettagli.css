@@ -1,0 +1,862 @@
+/* =====================================================================
+   SCHEDE DI DETTAGLIO: SQUADRA E POKÉMON (Matches, Box, Hub, pagina pubblica)
+   ---------------------------------------------------------------------
+   Le quattro pagine costruiscono la stessa scheda squadra (titolo, riepilogo W/L, sei card con mosse) e due la scheda
+   di un Pokémon: ognuna con il suo foglio. Qui sta il loro aspetto comune, con lo stile della trainer card:
+   finestra con la striscia nera e i tre pallini, bordi spessi, ombre piene, etichette a "tab" nere, adesivi gialli,
+   mezzatinta. Usa le variabili --nb-* del tema attivo (i valori classici come ripiego: la pagina pubblica non carica
+   temi.css), quindi cambia da sola con i quattro temi.
+   Va caricato dopo il foglio della pagina e prima di mobile.css. Le parti per telefono stanno in fondo.
+   ===================================================================== */
+
+#teamModal,
+#pkmDetailModal {
+    --dt-ink: var(--nb-ink, #000);
+    --dt-carta: var(--nb-carta, #fff);
+    --dt-calda: var(--nb-tip-bg, #fffdf6);
+    --dt-giallo: var(--nb-giallo, #ffbd44);
+    --dt-rosso: var(--nb-rosso, #ff4444);
+    --dt-verde: var(--nb-verde, #47ea6a);
+    --dt-sh-s: var(--nb-sh-s, 3px 3px 0 #000);
+    --dt-sh-m: var(--nb-sh-m, 6px 6px 0 #000);
+    --dt-sh-l: var(--nb-sh-l, 9px 9px 0 #000);
+    --dt-sh-titolo: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    --dt-raggio: var(--nb-raggio, 0px);
+    --dt-rot: var(--nb-rot, 1);
+    --dt-font: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    --dt-testo: var(--nb-font-testo, 'Montserrat', sans-serif);
+    --dt-motivo: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px));
+    --dt-motivo-dim: var(--nb-motivo-dim, 14px 14px);
+    --dt-accento: var(--bright-color, var(--nb-accento, #31c489));
+}
+
+/* ---------- La finestra: velo scuro con mezzatinta, pannello con la striscia nera in alto ---------- */
+#teamModal,
+#pkmDetailModal {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 28px 22px 48px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: rgba(0, 0, 0, .46) !important;
+    background-image: radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px) !important;
+    background-size: 14px 14px !important;
+    -webkit-backdrop-filter: blur(7px) !important;
+    backdrop-filter: blur(7px) !important;
+    -webkit-overflow-scrolling: touch;
+}
+#teamModal .modal-content,
+#pkmDetailModal .modal-content {
+    position: relative !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    width: min(1220px, 100%) !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 64px 30px 34px !important;
+    overflow: visible !important;
+    background: var(--dt-motivo) 0 0 / var(--dt-motivo-dim), var(--dt-calda) !important;
+    border: 4px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio) !important;
+    box-shadow: var(--dt-sh-l) !important;
+    color: var(--dt-ink) !important;
+    font-family: var(--dt-font);
+}
+#teamModal .modal-content::before,
+#pkmDetailModal .modal-content::before {
+    content: "TEAM · SANT'ALVISE PKMN LEAGUE";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 36px;
+    box-sizing: border-box;
+    padding: 0 56px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--dt-ink);
+    color: #fff;
+    font: 800 11px/36px var(--dt-font);
+    letter-spacing: .2em;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+#pkmDetailModal .modal-content::before { content: "POKÉMON · SANT'ALVISE PKMN LEAGUE"; }
+
+/* la X (a PC finora nascosta: si chiudeva toccando fuori) è un bollino giallo nella striscia */
+#teamModal :is(.close-replay, .close-modal, .close),
+#pkmDetailModal :is(.close-replay, .close-modal, .close) {
+    visibility: visible !important;
+    position: absolute !important;
+    top: 5px !important;
+    right: 12px !important;
+    left: auto !important;
+    z-index: 30;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    background: var(--dt-giallo) !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 18px/1 var(--dt-font) !important;
+    cursor: pointer;
+    transform: rotate(calc(var(--dt-rot) * 3deg));
+    transition: transform .1s ease, background-color .1s ease;
+}
+#teamModal :is(.close-replay, .close-modal, .close):hover,
+#pkmDetailModal :is(.close-replay, .close-modal, .close):hover {
+    background: var(--dt-rosso) !important;
+    color: #fff !important;
+    transform: rotate(0deg) scale(1.08);
+}
+
+/* =====================================================================
+   SCHEDA SQUADRA
+   ===================================================================== */
+
+/* ---------- Titolo e riepilogo ---------- */
+#teamModal .modal-header-container {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px 26px;
+    margin: 0 0 24px !important;
+    padding: 0 0 20px !important;
+    border: 0 !important;
+    border-bottom: 4px solid var(--dt-ink) !important;
+    background: none !important;
+}
+#teamModal .modal-header-container h2 {
+    justify-self: start;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 10px 28px 8px !important;
+    background: var(--dt-ink) !important;
+    color: #fff !important;
+    border: 4px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio) !important;
+    box-shadow: var(--dt-sh-titolo) !important;
+    font: 900 clamp(1.5rem, 3vw, 2.3rem)/1.1 var(--dt-font) !important;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    transform: rotate(calc(var(--dt-rot) * -1.8deg));
+}
+/* nella pagina pubblica i fiocchi della squadra stanno accanto al riepilogo */
+#teamModal .header-right-area { display: flex; align-items: center; gap: 16px !important; flex-wrap: wrap; justify-content: flex-end; }
+#teamModal .team-badges-container { gap: 8px !important; }
+
+#teamModal .team-score-banner {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(74px, auto);
+    gap: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: var(--dt-carta) !important;
+    border: 3px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-m) !important;
+}
+#teamModal .score-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 0 7px;
+    color: var(--dt-ink);
+    text-align: center;
+}
+#teamModal .score-item + .score-item { border-left: 3px solid var(--dt-ink); }
+#teamModal .score-item > span {
+    display: block;
+    padding: 2px 10px 1px;
+    margin: 0 0 6px;
+    background: var(--dt-ink);
+    color: #fff !important;
+    font: 800 .6rem/1.5 var(--dt-font);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+#teamModal .score-item strong {
+    padding: 0 12px;
+    color: var(--dt-ink) !important;
+    font: 900 1.55rem/1.05 var(--dt-font) !important;
+    white-space: nowrap;
+}
+/* vittorie e sconfitte: i colori del tema; si accendono dallo script (dettagli.js) */
+#teamModal .score-item strong :is(.td-v, .td-p, .td-sep) { font: inherit !important; letter-spacing: normal; text-transform: none; }
+#teamModal .score-item strong .td-v { color: #14903a !important; }
+#teamModal .score-item strong .td-p { color: #d02c2c !important; }
+#teamModal .score-item strong .td-sep { color: inherit !important; opacity: .4; padding: 0 3px; }
+
+/* Box: i tre tag del coach (debolezze, copertura, ruoli) in riga sotto il titolo */
+#teamModal .box-coach-tags {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px 16px;
+    margin: 0 !important;
+}
+#teamModal .tb-cov-wrap { position: relative !important; width: auto !important; }
+#teamModal .tb-cov-tag {
+    background: var(--dt-carta);
+    border-color: var(--dt-ink) !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-s) !important;
+    font-family: var(--dt-font);
+    letter-spacing: .06em;
+}
+
+/* barra della percentuale di vittorie (la inserisce dettagli.js) */
+#teamModal .td-winrate {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+#teamModal .td-winrate-etichetta {
+    flex-shrink: 0;
+    padding: 1px 8px;
+    background: var(--dt-giallo);
+    color: #000;
+    border: 2px solid #000;
+    font: 800 .66rem/1.4 var(--dt-font);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--dt-rot) * -1.5deg));
+}
+#teamModal .td-winrate-barra {
+    position: relative;
+    flex: 1;
+    height: 16px;
+    box-sizing: border-box;
+    background: var(--dt-carta);
+    border: 3px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    overflow: hidden;
+}
+#teamModal .td-winrate-barra > span {
+    display: block;
+    height: 100%;
+    background: var(--dt-verde);
+    border-right: 3px solid var(--dt-ink);
+    box-sizing: border-box;
+}
+#teamModal .td-winrate-barra > span[style*="width: 0%"], #teamModal .td-winrate-barra > span[style*="width:0%"] { border-right: 0; }
+
+/* ---------- Le sei card ---------- */
+#teamModal .modal-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: none !important;
+    gap: 24px 22px !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+#teamModal .modal-pkm-card {
+    --tipo: var(--dt-accento);
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 86px minmax(0, 1fr);
+    align-items: start !important;
+    gap: 6px 12px !important;
+    height: auto !important;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 16px 14px 14px 20px !important;
+    background: var(--dt-carta) !important;
+    color: var(--dt-ink) !important;
+    border: 3px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio) !important;
+    box-shadow: var(--dt-sh-m) !important;
+    overflow: visible !important;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+/* costola colorata (il colore del giocatore) con la mezzatinta */
+#teamModal .modal-pkm-card::before {
+    content: "";
+    position: absolute;
+    top: -3px; bottom: -3px; left: -3px;
+    width: 12px;
+    background: radial-gradient(rgba(0, 0, 0, .28) 1.2px, transparent 1.5px) 0 0 / 6px 6px, var(--dt-accento);
+    border: 3px solid var(--dt-ink);
+    border-radius: var(--dt-raggio) 0 0 var(--dt-raggio);
+    box-sizing: border-box;
+}
+#teamModal .modal-pkm-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--dt-sh-l) !important;
+}
+
+/* colonna di sinistra: medaglione con lo sprite sul colore del tipo, poi i tipi */
+#teamModal .modal-left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 86px !important;
+    padding: 0 !important;
+    gap: 8px;
+}
+#teamModal .modal-sprite {
+    order: 1;
+    box-sizing: border-box;
+    width: 78px !important;
+    height: 78px !important;
+    margin: 0 !important;
+    padding: 6px;
+    object-fit: contain;
+    background: radial-gradient(rgba(0, 0, 0, .18) 1.1px, transparent 1.4px) 0 0 / 7px 7px, var(--tipo);
+    border: 3px solid var(--dt-ink);
+    border-radius: 50%;
+    box-shadow: 3px 3px 0 var(--dt-ink);
+}
+#teamModal .modal-types {
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px !important;
+    margin: 0 !important;
+}
+#teamModal .modal-types .type-badge {
+    box-sizing: border-box;
+    width: 66px !important;
+    padding: 1px 4px !important;
+    border: 2px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 var(--dt-ink);
+    font: 800 .56rem/1.5 var(--dt-font) !important;
+    letter-spacing: .08em;
+    transform: rotate(calc(var(--dt-rot) * -2deg));
+}
+#teamModal .modal-types .type-badge:nth-child(2) { transform: rotate(calc(var(--dt-rot) * 2deg)); }
+
+/* colonna di destra: nome, abilità, strumento, allenamento, natura, mosse */
+#teamModal .modal-pkm-info { gap: 4px; min-width: 0; }
+#teamModal .modal-pkm-info > .info-container { position: relative; }
+#teamModal .modal-pkm-info strong {
+    display: table !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 3px !important;
+    padding: 2px 9px 1px !important;
+    background: var(--dt-ink) !important;
+    color: #fff !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font: 900 .95rem/1.25 var(--dt-font) !important;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--dt-rot) * -1.5deg));
+}
+/* abilità: pillola gialla */
+#teamModal .modal-pkm-info .info-container > p {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    margin: 2px 0 0 !important;
+    padding: 0 8px !important;
+    background: var(--dt-giallo);
+    color: #000 !important;
+    border: 2px solid #000;
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 #000;
+    font: 800 .68rem/1.5 var(--dt-font) !important;
+}
+#teamModal .modal-pkm-info .info-container > p em { font-style: normal; }
+/* strumento: icona + nome */
+#teamModal .modal-item {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px !important;
+    max-width: 100%;
+    margin: 2px 0 0 !important;
+    padding: 0 8px 0 2px;
+    background: var(--dt-carta);
+    border: 2px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 var(--dt-ink);
+    color: var(--dt-ink) !important;
+    font: 800 .68rem/1.5 var(--dt-font) !important;
+}
+#teamModal .modal-item img { width: 22px !important; height: 22px !important; }
+/* allenamento (EV) e natura: righe piccole con l'icona */
+#teamModal .modal-pkm-info > p {
+    margin: 2px 0 0 !important;
+    color: var(--dt-ink) !important;
+    font: 800 .66rem/1.35 var(--dt-font) !important;
+    letter-spacing: .01em;
+    overflow-wrap: anywhere;
+}
+#teamModal .modal-pkm-info > p:last-of-type { margin-bottom: 6px !important; }
+
+/* mosse: quattro bottoni */
+#teamModal .modal-moves {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    margin-top: 6px !important;
+}
+#teamModal .modal-moves .move-span {
+    margin: 0 !important;
+    padding: 5px 4px 4px !important;
+    box-sizing: border-box;
+    background-color: var(--dt-carta);
+    color: var(--dt-ink) !important;
+    border: 2px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: 3px 3px 0 var(--dt-ink) !important;
+    font: 800 .66rem/1.2 var(--dt-font) !important;
+    letter-spacing: .02em;
+    text-align: center;
+    text-transform: uppercase;
+    overflow: visible;
+    transition: transform .1s ease, box-shadow .1s ease;
+}
+#teamModal .modal-moves .move-span:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--dt-ink) !important;
+}
+
+/* =====================================================================
+   SCHEDA POKÉMON
+   ===================================================================== */
+#pkmDetailModal .pkm-modal-container { position: relative; width: 100%; }
+#pkmDetailModal .pkm-modal-grid {
+    --tipo: var(--dt-accento);
+    display: grid !important;
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 340px) !important;
+    grid-template-areas:
+        "weakness header info-strips"
+        "moves    moves  stats"
+        "ribbons  ribbons ribbons" !important;
+    grid-template-rows: auto !important;
+    gap: 38px 26px !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 10px 0 0 !important;
+    overflow: visible !important;
+    box-sizing: border-box;
+}
+#pkmDetailModal .area-header { grid-area: header; }
+#pkmDetailModal .area-weakness { grid-area: weakness; }
+#pkmDetailModal .area-info-strips { grid-area: info-strips; }
+#pkmDetailModal .area-moves { grid-area: moves; }
+#pkmDetailModal .area-stats { grid-area: stats; }
+#pkmDetailModal .area-ribbons { grid-area: ribbons; }
+#pkmDetailModal .area-stats,
+#pkmDetailModal .area-moves { margin-top: 0 !important; height: auto !important; max-height: none !important; }
+
+/* i pannelli: carta con il titolo appeso al bordo come un'etichetta */
+#pkmDetailModal .pkm-panel {
+    position: relative !important;
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 24px 16px 14px !important;
+    background: var(--dt-carta) !important;
+    color: var(--dt-ink) !important;
+    border: 3px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio) !important;
+    box-shadow: var(--dt-sh-m) !important;
+    overflow: visible !important;
+    font-family: var(--dt-font);
+}
+#pkmDetailModal .panel-title {
+    position: absolute !important;
+    top: -16px !important;
+    left: 14px !important;
+    right: auto !important;
+    margin: 0 !important;
+    padding: 3px 14px 1px !important;
+    background: var(--dt-ink) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font: 800 .8rem/1.5 var(--dt-font) !important;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--dt-rot) * -1.8deg));
+}
+#pkmDetailModal .panel-title small { margin-left: 6px; color: var(--dt-giallo); font-size: .72rem; letter-spacing: .06em; }
+
+/* eroe: sprite sul disco del colore del tipo, nome adesivo e tipi */
+#pkmDetailModal .area-header {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 330px;
+}
+#pkmDetailModal .area-header::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    width: min(228px, 84%);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    background: radial-gradient(rgba(0, 0, 0, .17) 1.4px, transparent 1.7px) 0 0 / 9px 9px, var(--tipo);
+    border: 4px solid var(--dt-ink);
+    border-radius: 50%;
+    box-shadow: var(--dt-sh-m);
+}
+#pkmDetailModal .pkm-sprite-hero {
+    position: relative;
+    z-index: 1;
+    order: 1;
+    box-sizing: content-box;
+    height: 150px !important;
+    width: auto !important;
+    max-width: 190px !important;
+    margin: 38px 0 0 !important;
+    padding: 0 !important;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(3px 4px 0 rgba(0, 0, 0, .35));
+}
+#pkmDetailModal .pkm-name-banner {
+    position: relative;
+    z-index: 1;
+    order: 2;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 28px 0 0 !important;
+    padding: 6px 24px 4px !important;
+    background: var(--dt-ink) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-titolo);
+    font: 900 1.5rem/1.15 var(--dt-font) !important;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-align: center;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    transform: rotate(calc(var(--dt-rot) * -1.5deg));
+}
+#pkmDetailModal .types-centered {
+    position: relative;
+    z-index: 1;
+    order: 3;
+    display: flex;
+    justify-content: center;
+    gap: 10px !important;
+}
+#pkmDetailModal .types-centered .type-container { display: inline-block; }
+#pkmDetailModal .types-centered .type-badge {
+    box-sizing: border-box;
+    width: 84px !important;
+    padding: 3px 6px !important;
+    border: 3px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: 3px 3px 0 var(--dt-ink);
+    font: 800 .7rem/1.4 var(--dt-font) !important;
+    letter-spacing: .1em;
+    transform: rotate(calc(var(--dt-rot) * -2deg));
+}
+#pkmDetailModal .types-centered .type-container:nth-child(2) .type-badge { transform: rotate(calc(var(--dt-rot) * 2deg)); }
+
+/* abilità e strumento */
+#pkmDetailModal .area-info-strips { display: flex; flex-direction: column; gap: 34px !important; }
+#pkmDetailModal .info-box-compact { padding-top: 26px !important; }
+#pkmDetailModal .info-box-compact::before {
+    position: absolute;
+    top: -16px; left: 14px;
+    padding: 3px 14px 1px;
+    background: var(--dt-ink);
+    color: #fff;
+    box-shadow: 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font: 800 .8rem/1.5 var(--dt-font);
+    letter-spacing: .12em;
+    transform: rotate(calc(var(--dt-rot) * -1.8deg));
+}
+#pkmDetailModal .area-info-strips > .info-box-compact:nth-child(1)::before { content: "ABILITY"; }
+#pkmDetailModal .area-info-strips > .info-box-compact:nth-child(2)::before { content: "ITEM"; }
+#pkmDetailModal .info-name {
+    display: inline-block;
+    padding: 0 8px;
+    background: var(--dt-giallo);
+    color: #000 !important;
+    border: 2px solid #000;
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 #000;
+    font: 900 .85rem/1.5 var(--dt-font) !important;
+    text-decoration: none !important;
+    text-transform: uppercase;
+}
+#pkmDetailModal .info-desc-tiny { margin-top: 8px; color: var(--dt-ink) !important; font: 600 .76rem/1.4 var(--dt-testo) !important; }
+#pkmDetailModal .item-title-row-new { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#pkmDetailModal .item-icon-right { width: 34px; height: 34px; object-fit: contain; }
+
+/* difese: una riga per moltiplicatore, con i tipi come adesivi */
+#pkmDetailModal .weakness-container { display: flex; flex-direction: column; gap: 9px; }
+#pkmDetailModal .w-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 0 !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--dt-ink);
+}
+#pkmDetailModal .w-row .mult {
+    flex: 0 0 auto;
+    min-width: 46px;
+    box-sizing: border-box;
+    padding: 1px 8px;
+    background: var(--dt-giallo) !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 #000;
+    font: 900 .78rem/1.5 var(--dt-font);
+    text-align: center;
+    transform: rotate(calc(var(--dt-rot) * -2deg));
+}
+#pkmDetailModal .w-row .mult.x4 { background: var(--dt-rosso) !important; color: #fff !important; }
+#pkmDetailModal .w-row .mult.x05 { background: var(--dt-verde) !important; }
+#pkmDetailModal .w-row .mult.x025 { background: color-mix(in srgb, var(--dt-verde) 55%, #fff) !important; }
+#pkmDetailModal .w-row .mult.x0 { background: #c9c9c9 !important; }
+#pkmDetailModal .w-row .types-wrapper { display: flex; flex-wrap: wrap; gap: 5px; }
+#pkmDetailModal .w-row .mini-type-badge {
+    padding: 1px 6px;
+    border: 2px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: 2px 2px 0 var(--dt-ink);
+    font: 800 .6rem/1.4 var(--dt-font);
+    letter-spacing: .06em;
+}
+
+/* statistiche base: barre che cambiano colore con il valore (--v la mette dettagli.js) */
+#pkmDetailModal .area-stats .stat-row { gap: 8px; margin-bottom: 6px; font: 800 .8rem/1.2 var(--dt-font); color: var(--dt-ink); }
+#pkmDetailModal .area-stats .stat-row > span { color: inherit; }
+#pkmDetailModal .area-stats .stat-bar-bg {
+    height: 14px;
+    box-sizing: border-box;
+    background: var(--dt-carta) !important;
+    border: 3px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    overflow: hidden;
+}
+#pkmDetailModal .area-stats .stat-bar-fill { background: hsl(calc(min(var(--v, 75), 150) * .8), 78%, 52%); border-right: 3px solid var(--dt-ink); box-sizing: border-box; }
+#pkmDetailModal .stat-total { margin-top: 8px; padding-top: 6px; border-top: 3px solid var(--dt-ink); display: flex; justify-content: space-between; font: 900 .85rem/1.2 var(--dt-font); letter-spacing: .06em; text-transform: uppercase; }
+#pkmDetailModal .evs-footer { margin-top: 10px; padding-top: 8px; border-top: 2px dashed var(--dt-ink); color: var(--dt-ink); font: 800 .72rem/1.35 var(--dt-font); letter-spacing: .02em; }
+
+/* mosse: righe colorate dal tipo, con bordo e ombra */
+#pkmDetailModal .moves-list-compact { display: flex; flex-direction: column; gap: 10px; }
+#pkmDetailModal .move-row-mini {
+    box-sizing: border-box;
+    border: 3px solid var(--dt-ink) !important;
+    border-radius: var(--dt-raggio) !important;
+    box-shadow: 3px 3px 0 var(--dt-ink) !important;
+}
+#pkmDetailModal .move-name-mini { font-family: var(--dt-font); font-weight: 900; letter-spacing: .04em; }
+
+/* =====================================================================
+   FIOCCHI (scaffale nella scheda del Pokémon, medagliette sulle card)
+   ===================================================================== */
+#pkmDetailModal .fiocchi-panel { --f-bronzo: #d98a3d; --f-argento: #cfd6de; --f-oro: #ffd23f; }
+.fiocchi-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 18px 14px; padding-top: 4px; }
+.fiocchi-caricamento, .fiocchi-nota { margin: 6px 0 0; color: var(--dt-ink, #000); font: 700 .78rem/1.4 var(--dt-font, 'Josefin Sans', sans-serif); }
+.fiocchi-nota { margin-top: 14px; padding-top: 8px; border-top: 2px dashed var(--dt-ink, #000); opacity: .75; }
+.fiocchi-conto { opacity: .9; }
+
+.fiocco {
+    --livello: #999;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    box-sizing: border-box;
+    padding: 12px 6px 9px;
+    background: var(--dt-calda, #fffdf6);
+    border: 3px solid var(--dt-ink, #000);
+    border-top-width: 7px;
+    border-top-color: var(--livello);
+    border-radius: var(--dt-raggio, 0);
+    box-shadow: 3px 3px 0 var(--dt-ink, #000);
+    color: var(--dt-ink, #000);
+    text-align: center;
+    cursor: help;
+    outline: none;
+}
+.fiocco-bronze { --livello: var(--f-bronzo, #d98a3d); }
+.fiocco-silver { --livello: var(--f-argento, #cfd6de); }
+.fiocco-gold { --livello: var(--f-oro, #ffd23f); }
+.fiocco-bloccato { background: color-mix(in srgb, var(--dt-calda, #fffdf6) 70%, #888); box-shadow: 2px 2px 0 var(--dt-ink, #000); }
+.fiocco:focus-visible { outline: 3px solid var(--dt-giallo, #ffbd44); outline-offset: 3px; }
+
+.fiocco-medaglia { position: relative; display: flex; align-items: center; justify-content: center; width: 66px; height: 66px; }
+.fiocco-img { max-width: 66px; max-height: 66px; object-fit: contain; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .55)); }
+.fiocco-bloccato .fiocco-img { filter: grayscale(1) brightness(.5) contrast(.9) drop-shadow(2px 3px 0 rgba(0, 0, 0, .25)); opacity: .55; }
+.fiocco-livello {
+    position: absolute;
+    right: -10px; bottom: -4px;
+    min-width: 22px;
+    box-sizing: border-box;
+    padding: 0 5px;
+    background: var(--livello);
+    color: #000;
+    border: 2px solid #000;
+    font: 900 .68rem/1.5 var(--dt-font, 'Josefin Sans', sans-serif);
+    transform: rotate(calc(var(--dt-rot, 1) * 4deg));
+}
+/* medaglia disegnata (quando la PNG non c'è ancora) */
+.fiocco-finto {
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+    width: 58px; height: 58px;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .75), transparent 55%), var(--livello, #999);
+    border: 4px solid var(--dt-ink, #000);
+    border-radius: 50%;
+    box-shadow: 3px 3px 0 var(--dt-ink, #000), inset 0 0 0 3px rgba(255, 255, 255, .45);
+    font-size: 1.6rem; line-height: 1;
+}
+.fiocco-bloccato .fiocco-finto { filter: grayscale(1); opacity: .5; }
+.fiocco-nome { margin-top: 7px; font: 900 .76rem/1.15 var(--dt-font, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; }
+.fiocco-barra { width: 100%; height: 9px; box-sizing: border-box; background: var(--dt-carta, #fff); border: 2px solid var(--dt-ink, #000); border-radius: var(--dt-raggio, 0); overflow: hidden; }
+.fiocco-barra > span { display: block; height: 100%; background: var(--livello); }
+.fiocco-bloccato .fiocco-barra > span { background: #8c8c8c; }
+.fiocco-valore { font: 800 .68rem/1.25 var(--dt-font, 'Josefin Sans', sans-serif); }
+.fiocco-valore i { font-style: normal; opacity: .55; }
+
+/* il fumetto (stile coach, vedi tooltip.css) */
+.fiocco-tip {
+    position: absolute;
+    left: 50%; bottom: calc(100% + 12px);
+    z-index: 60;
+    width: 212px;
+    padding: 9px 12px !important;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: opacity .12s ease;
+    cursor: default;
+}
+.fiocco-tip strong { display: block; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px dashed var(--dt-ink, #000); font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
+.fiocco-tip p { margin: 0; font-size: .74rem; font-weight: 600; line-height: 1.35; }
+.fiocco-tip .fiocco-tip-nota { margin-top: 5px; font-size: .68rem; font-weight: 800; opacity: .75; }
+.fiocco:hover .fiocco-tip, .fiocco:focus .fiocco-tip, .fiocco:focus-within .fiocco-tip { visibility: visible; opacity: 1; }
+.fiocchi-lista .fiocco:nth-child(-n+2) .fiocco-tip { left: 0; transform: none; }
+.fiocchi-lista .fiocco:nth-last-child(-n+2) .fiocco-tip { left: auto; right: 0; transform: none; }
+
+/* le medagliette sulla card della squadra, in alto a destra */
+.pkm-badges-overlay {
+    position: absolute;
+    top: -20px; right: 12px;
+    z-index: 6;
+    display: flex;
+    gap: 5px;
+}
+.pkm-badges-overlay:empty { display: none; }
+.fiocco-mini {
+    --livello: #999;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+    width: 32px; height: 32px;
+    background: var(--livello);
+    border: 3px solid var(--dt-ink, #000);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--dt-ink, #000);
+    cursor: help;
+}
+.fiocco-mini.fiocco-bronze { --livello: #d98a3d; }
+.fiocco-mini.fiocco-silver { --livello: #cfd6de; }
+.fiocco-mini.fiocco-gold { --livello: #ffd23f; }
+.fiocco-mini-img { width: 22px; height: 22px; object-fit: contain; }
+.fiocco-mini .fiocco-finto { width: 100%; height: 100%; border: 0; box-shadow: none; background: none; font-size: .9rem; }
+.fiocco-mini.fiocco-altri { width: auto; min-width: 32px; padding: 0 7px; border-radius: 16px; background: var(--dt-carta, #fff); font: 900 .7rem/1 var(--dt-font, 'Josefin Sans', sans-serif); color: var(--dt-ink, #000); }
+
+/* =====================================================================
+   TELEFONO E TABLET
+   ===================================================================== */
+@media (max-width: 1100px) {
+    #teamModal .modal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    #pkmDetailModal .pkm-modal-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-areas:
+            "header   header"
+            "weakness info-strips"
+            "moves    stats"
+            "ribbons  ribbons" !important;
+    }
+}
+@media (max-width: 900px) {
+    #teamModal,
+    #pkmDetailModal { padding: 12px 8px 28px !important; }
+    #teamModal .modal-content,
+    #pkmDetailModal .modal-content { padding: 54px 14px 22px !important; box-shadow: 6px 6px 0 var(--dt-ink) !important; }
+    #teamModal .modal-content::before,
+    #pkmDetailModal .modal-content::before { height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em; }
+    #teamModal :is(.close-replay, .close-modal, .close),
+    #pkmDetailModal :is(.close-replay, .close-modal, .close) { top: 3px !important; right: 8px !important; width: 26px !important; height: 26px !important; }
+
+    #teamModal .modal-header-container { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-bottom: 16px !important; margin-bottom: 18px !important; }
+    #teamModal .modal-header-container h2 { padding: 8px 18px 6px !important; box-shadow: 5px 5px 0 rgba(0, 0, 0, .3) !important; }
+    #teamModal .header-right-area { justify-content: flex-start; }
+    #teamModal .team-score-banner { justify-self: start; max-width: 100%; grid-auto-columns: minmax(0, auto); }
+    #teamModal .score-item strong { padding: 0 9px; font-size: 1.3rem !important; }
+    #teamModal .score-item span { padding: 2px 6px 1px; letter-spacing: .08em; }
+    #teamModal .modal-grid { gap: 20px 16px !important; }
+}
+@media (max-width: 900px) {
+    #pkmDetailModal .pkm-modal-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-areas:
+            "header"
+            "ribbons"
+            "info-strips"
+            "weakness"
+            "stats"
+            "moves" !important;
+        gap: 36px !important;
+    }
+    #pkmDetailModal .area-header { min-height: 300px; }
+    #pkmDetailModal .pkm-name-banner { font-size: 1.25rem !important; padding: 5px 18px 3px !important; }
+    #pkmDetailModal .fiocchi-lista { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 16px 12px; }
+    /* il fumetto di un fiocco si apre dal bordo della sua colonna verso l'interno (a due colonne: sinistra → destra, destra → sinistra) */
+    .fiocchi-lista .fiocco .fiocco-tip { width: min(212px, calc(100vw - 44px)); }
+    .fiocchi-lista .fiocco:nth-child(odd) .fiocco-tip { left: 0; right: auto; transform: none; }
+    .fiocchi-lista .fiocco:nth-child(even) .fiocco-tip { left: auto; right: 0; transform: none; }
+    .pkm-badges-overlay { right: 8px; }
+    /* le righe delle mosse: il nome e i valori sopra, la descrizione sotto a tutta larghezza */
+    #pkmDetailModal .move-row-mini { height: auto !important; min-height: 30px; flex-wrap: wrap; row-gap: 4px; padding: 6px 8px !important; }
+    #pkmDetailModal .move-left-part { flex: 1 1 auto; min-width: 0; }
+    #pkmDetailModal .move-desc-inline { order: 3; flex: 1 1 100%; padding-left: 0; font-size: .72rem !important; line-height: 1.2; -webkit-line-clamp: 3; line-clamp: 3; }
+}
+@media (max-width: 640px) {
+    #teamModal .modal-grid { grid-template-columns: minmax(0, 1fr) !important; }
+    /* il nome della mossa va a capo invece di uscire dal bottone */
+    #teamModal .modal-moves .move-span { white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+}
+@media (max-width: 380px) {
+    #teamModal .modal-pkm-card { grid-template-columns: 74px minmax(0, 1fr); padding-left: 18px !important; gap: 6px 8px !important; }
+    #teamModal .modal-left-column { width: 74px !important; }
+    #teamModal .modal-sprite { width: 68px !important; height: 68px !important; }
+    #teamModal .modal-types .type-badge { width: 58px !important; }
+    #teamModal .modal-moves { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    #teamModal .modal-moves .move-span { padding: 5px 3px 4px !important; }
+}

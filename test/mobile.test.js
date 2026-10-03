@@ -69,26 +69,21 @@ function blocchiEsterni(testo) {
 
 test('mobile.css: ogni regola sta dentro una media query per schermi stretti o senza "passaggio del mouse"', () => {
     const blocchi = blocchiEsterni(mobileCss);
-    assert.ok(blocchi.length >= 7, 'blocchi trovati: ' + blocchi.length);
+    assert.ok(blocchi.length >= 3, 'blocchi trovati: ' + blocchi.length);
     for (const b of blocchi) assert.match(b, /^@media \((max-width: \d+px|hover: none)\)$/, `regola fuori da una media query: "${b}"`);
 });
 
-test('mobile.css: la scheda squadra, la scheda Pokémon, il selettore squadre e il login hanno il loro blocco', () => {
-    for (const sel of ['#teamModal', '#pkmDetailModal .pkm-modal-grid', '.modal-neubrutal', '#login-modal .modal-content']) assert.ok(mobileCss.includes(sel), `manca ${sel}`);
-    // la scheda scorre invece di essere tagliata, e le sezioni della scheda Pokémon vanno in pila
-    assert.match(mobileCss, /#teamModal \{[^}]*overflow-y: auto !important/);
-    assert.match(mobileCss, /#pkmDetailModal \.pkm-modal-grid \{\s*grid-template-areas:\s*"header"\s*"info-strips"\s*"weakness"\s*"stats"\s*"moves" !important/);
+test('mobile.css: i fumetti della scheda squadra, il selettore squadre e il login hanno il loro blocco', () => {
+    for (const sel of ['#teamModal .move-tooltip', '#teamModal .generic-tooltip', '#teamModal .type-effectiveness-tooltip', '.modal-neubrutal', '#login-modal .modal-content']) assert.ok(mobileCss.includes(sel), `manca ${sel}`);
     // i fumetti restano dentro lo schermo
     assert.match(mobileCss, /max-width: calc\(100vw - 44px\)/);
 });
 
-test('mobile.css: la X delle schede compare solo sui dispositivi touch', () => {
-    const m = /@media \(hover: none\)\s*\{([\s\S]*?)\n\}/.exec(mobileCss);
-    assert.ok(m, 'blocco (hover: none) mancante');
-    assert.match(m[1], /#teamModal \.close-replay/);
-    assert.match(m[1], /#pkmDetailModal \.close/);
-    assert.match(m[1], /visibility: visible/);
-    assert.match(m[1], /width: 40px;\s*height: 40px/, 'bersaglio da toccare almeno 40px');
+test('mobile.css non ridefinisce la scheda: layout della scheda squadra e della scheda Pokémon stanno solo in dettagli.css', () => {
+    // due fogli che disegnano la stessa griglia si pestano i piedi (l'ultimo vince: la scheda Pokémon si rompeva)
+    for (const sel of ['pkm-modal-grid', 'grid-template-areas', '.modal-grid', '.modal-pkm-card', '.team-score-banner']) {
+        assert.ok(!mobileCss.includes(sel), `mobile.css non deve toccare ${sel}`);
+    }
 });
 
 test('formats: sotto i 1120px il contenitore da 1100px fissi si adatta alla finestra (la pagina non scorre di lato)', () => {

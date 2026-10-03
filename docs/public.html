@@ -8,6 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&family=Bungee&family=Rubik+Mono+One&family=Orbitron:wght@500;700;900&family=Righteous&family=Fredoka:wght@500;700&family=Permanent+Marker&family=Lobster&family=Playfair+Display:wght@700;900&family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-public.css">
     <link rel="stylesheet" href="style-public-card.css">
+    <link rel="stylesheet" href="finestre.css">
+    <link rel="stylesheet" href="dettagli.css">
+    <script src="dettagli.js" defer></script>
+    <link rel="stylesheet" href="tooltip.css">
+    <script src="tooltip.js" defer></script>
     <link rel="stylesheet" href="mobile.css">
     <script src="mobile.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
@@ -17,6 +22,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="titoli.js"></script>
+    <script src="statistiche.js"></script>
+    <script src="fiocchi.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="public-card.js"></script>
 </head>
@@ -565,36 +572,13 @@ async function apriDettagli(id) {
                 const itemId = `item-${pIndex}`;
                 const classePosizione = ((pIndex + 1) % 3 === 0) ? 'tooltip-left' : '';
                 
-                // Badge Pokémon: filtrati anch'essi per le nuove soglie
-                const pkmBadgesHtml = Object.keys(p.badges || {})
-                    .filter(bKey => {
-                        const config = badgeConfig[bKey];
-                        return config && parseInt(p.badges[bKey] || 0) >= config.min;
-                    })
-                    .map(bKey => {
-                        const config = badgeConfig[bKey];
-                        const dataBadgePkm = p.badges[`${bKey}date`] || "--/--/----";
-                        return `
-                        <div class="info-container" style="position: relative;">
-                            <img src="${config.path}" class="pkm-badge-mini" 
-                                 style="width: 22px; height: 22px; object-fit: contain; cursor: help; filter: drop-shadow(1px 1px 0px #000);">
-                            <div class="mini-generic-tooltip ${classePosizione}" style="bottom: 125%; min-width: 200px; padding: 12px;">
-                                <span class="badge-date" style="position: absolute; top: 5px; right: 8px; font-size: 0.55rem; font-weight: bold; color: #666; font-family: monospace;">${dataBadgePkm}</span>
-                                <strong style="display: inline-block; background: black; color: white; padding: 2px 6px; transform: rotate(-1deg); margin-bottom: 5px;">${config.label}</strong>
-                                <br><span style="font-size: 0.75rem;">${config.desc}</span>
-                            </div>
-                        </div>`;
-                    }).join('');
-
                 setTimeout(() => {
                     if (typeof caricaTipi === 'function') caricaTipi(pkmNameUrl, mIdPrefix, pIndex < 3 ? 'v-down' : '');
                 }, 100);
                 
                 return `
                 <div class="modal-pkm-card" style="position: relative;">
-                    <div class="pkm-badges-overlay" style="position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 5;">
-                        ${pkmBadgesHtml}
-                    </div>
+                    <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
 
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
@@ -636,6 +620,21 @@ async function apriDettagli(id) {
         </div>
     `;
     modal.style.display = "flex";
+
+    // le medagliette dei fiocchi sulle card arrivano appena sono pronte le statistiche reali
+    window.squadraAperta = team;
+    if (typeof Fiocchi !== 'undefined') {
+        Fiocchi.riempiMini(db, content, {
+            giocatore: giocatoreDellaPagina(), team,
+            valido: () => window.squadraAperta === team,
+            amicizia: p => !!(p.badges && (p.badges.loyaltybadge === true || p.badges.loyaltyBadge === true))
+        });
+    }
+}
+
+// Il giocatore di cui si sta guardando la pagina (parametro ?player=)
+function giocatoreDellaPagina() {
+    return (new URLSearchParams(window.location.search).get('player') || '').trim();
 }
 
 // Rendo la funzione globale
@@ -837,9 +836,9 @@ async function caricaInfoAbilita(nomeAbilita, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeAbilita}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoStrumento(nomeStrumento, elementoId) {
@@ -852,9 +851,9 @@ async function caricaInfoStrumento(nomeStrumento, elementoId) {
         const data = await res.json();
         const effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
         
-        tooltip.innerHTML = `<p>${effect}</p>`;
+        tooltip.innerHTML = `${tooltip.classList.contains('generic-tooltip') ? `<h3>${nomeStrumento}</h3>` : ''}<p>${effect}</p>`;
         tooltip.dataset.loaded = "true";
-    } catch (e) { tooltip.innerHTML = `</h3><p>Info non trovate.</p>`; }
+    } catch (e) { tooltip.innerHTML = `<p>Info non trovate.</p>`; }
 }
 
 async function caricaInfoMossa(nomeMossa, elementoId) {
@@ -1008,61 +1007,13 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     const pkmSnap = await db.ref(`players/${playerName}/pokemon-badges/${nomePkm}`).once('value');
     const badgesData = pkmSnap.val() || {};
 
-    // 3. Definizione logica Fiocchi (Ribbons)
-    const ribbons = [
-        { 
-            img: 'immagini/victory-ribbon.png', 
-            title: 'Win streak', 
-            desc: '8+ matches won in a row.', 
-            active: (parseInt(badgesData.maxwonstrike || 0) >= 8),
-            date: badgesData.maxwonstrikedate || "--/--/----"
-        },
-        { 
-            img: 'immagini/strike-ribbon.png', 
-            title: 'clean streak', 
-            desc: '5+ undefeated matches in a row.', 
-            active: (parseInt(badgesData.maxcleanstrike || 0) >= 5),
-            date: badgesData.maxcleanstrikedate || "--/--/----"
-        },
-        { 
-            img: 'immagini/friend-ribbon.png', 
-            title: 'Friendship Ribbon', 
-            desc: 'Un legame indissolubile con il proprio allenatore.', 
-            active: (badgesData.loyaltybadge === true || badgesData.loyaltyBadge === true),
-            date: badgesData.loyaltybadgedate || "--/--/----"
-        }
-    ];
-
-    const activeRibbonsHtml = ribbons
-        .filter(r => r.active)
-        .map(r => `
-            <div class="badge-wrapper" style="position: relative;">
-                <img src="${r.img}" 
-                     style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(3px 3px 0px #000); cursor: help;">
-                
-                <div class="custom-badge-tooltip" style="right: 110%; left: auto; transform: translateY(-50%) rotate(-1deg); top: 50%; bottom: auto;">
-                    <span class="badge-date">${r.date}</span>
-                    <strong class="tooltip-title">${r.title}</strong>
-                    <p class="tooltip-desc">${r.desc}</p>
-                </div>
-            </div>
-        `).join('');
+    // 3. I fiocchi si calcolano dai numeri reali (fiocchi.js); dai dati salvati si legge solo l'amicizia assegnata a mano
+    const amicizia = badgesData.loyaltybadge === true || badgesData.loyaltyBadge === true;
 
     // 4. Generazione HTML (Descrizioni riportate in linea)
     content.innerHTML = `
         <div class="pkm-modal-container" style="position: relative; width: 100%;">
             
-            <div class="ribbons-floating-sidebar" style="
-                position: absolute; 
-                right: 15px; 
-                top: 50px; 
-                display: flex; 
-                flex-direction: column; 
-                gap: 20px; 
-                z-index: 10005;">
-                ${activeRibbonsHtml}
-            </div>
-
             <div class="pkm-modal-grid">
                 <div class="area-header">
                     <div id="single-types" class="types-centered"></div>
@@ -1118,11 +1069,25 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
                         }).join('')}
                     </div>
                 </div>
+
+                <div class="area-ribbons pkm-panel fiocchi-panel" id="pkm-fiocchi">
+                    <h4 class="panel-title">RIBBONS</h4>
+                    <div class="fiocchi-caricamento">Loading ribbons…</div>
+                </div>
             </div>
         </div>
     `;
 
     modal.style.display = "flex";
+
+    // i fiocchi: arrivano appena sono pronte le statistiche reali
+    if (typeof Fiocchi !== 'undefined') {
+        const casella = document.getElementById('pkm-fiocchi');
+        Fiocchi.montaScaffale(db, casella, {
+            giocatore: playerName, team: window.squadraAperta, pokemon: pokemonData, amicizia,
+            valido: () => document.getElementById('pkm-fiocchi') === casella
+        });
+    }
 
     // 5. Chiamate asincrone (Rimaste invariate)
     fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)

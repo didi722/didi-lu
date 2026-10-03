@@ -186,6 +186,25 @@
         });
     }
 
+    /** "index.html", "/box.html?x=1", "/sito/" → nome del file della pagina (una cartella senza file è index.html). */
+    function paginaDi(percorso) {
+        const p = String(percorso == null ? '' : percorso).split('?')[0].split('#')[0];
+        const nome = p.slice(p.lastIndexOf('/') + 1);
+        return nome ? nome.toLowerCase() : 'index.html';
+    }
+
+    /** Nel menu dell'utente segna la voce della pagina in cui si è (aria-current="page", la colora temi.css). Ritorna quante voci ha segnato. */
+    function segnaPagina(doc, percorso) {
+        if (!doc || typeof doc.querySelectorAll !== 'function') return 0;
+        const qui = paginaDi(percorso);
+        let n = 0;
+        for (const voce of doc.querySelectorAll('.user-dropdown .menu-item[href]')) {
+            if (paginaDi(voce.getAttribute('href')) === qui) { voce.setAttribute('aria-current', 'page'); n++; }
+            else if (voce.getAttribute('aria-current')) voce.removeAttribute('aria-current');
+        }
+        return n;
+    }
+
     /** All'apertura della pagina: subito il tema e il colore ricordati, poi la sincronizzazione col profilo. */
     function avvia(root) {
         // ogni apertura di pagina riparte da zero
@@ -195,7 +214,7 @@
         const col = coloreValido(legge(mem, CHIAVE_COLORE));
         stato.colore = col;
         applicaColore(root, col || COLORE_OSPITE);
-        const parti = () => sincronizza(root);
+        const parti = () => { segnaPagina(root.document, root.location && root.location.pathname); sincronizza(root); };
         if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', parti);
         else parti();
     }
@@ -291,5 +310,5 @@
         return { lista, nota, segna };
     }
 
-    return { PREDEFINITO, TEMI, ELENCO, CHIAVE_TEMA, CHIAVE_COLORE, COLORE_OSPITE, normalizza, coloreValido, cssCaratteri, applica, applicaColore, scegli, sincronizza, avvia, ascolta, montaSelettore, stato };
+    return { PREDEFINITO, TEMI, ELENCO, CHIAVE_TEMA, CHIAVE_COLORE, COLORE_OSPITE, normalizza, coloreValido, cssCaratteri, applica, applicaColore, scegli, sincronizza, avvia, ascolta, montaSelettore, paginaDi, segnaPagina, stato };
 });
