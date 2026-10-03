@@ -1,0 +1,25 @@
+/* Tema arcade: Chakra Petch + Inconsolata al posto di Josefin Sans (titoli) e Montserrat (testo).
+   Generato da calibra-font: size-adjust e metriche di riga tengono gli ingombri del carattere originale.
+   Caratteri da Google Fonts, licenza SIL OFL (vedi README.txt). */
+@font-face {
+  font-family: 'Josefin Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(chakra-petch.woff2) format('woff2');
+  size-adjust: 108.8%;
+  ascent-override: 68.94%;
+  descent-override: 22.98%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(inconsolata.woff2) format('woff2');
+  size-adjust: 106.3%;
+  ascent-override: 91.24%;
+  descent-override: 23.52%;
+  line-gap-override: 0%;
+}

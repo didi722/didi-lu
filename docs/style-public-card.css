@@ -47,6 +47,10 @@ body {
     color: #000;
 }
 
+/* I modali (team, Pokémon, ELO, login) hanno il loro carattere: quello scelto per la card (--pp-font, che arriva dal body)
+   non deve entrarci. Un carattere largo mandava a capo i numeri degli EV ("4 HP / 252 SpA / 252 Spe"). */
+#teamModal, #pkmDetailModal, #elo-modal, #login-modal { font-family: 'Josefin Sans', 'Montserrat', sans-serif; }
+
 /* ---------- Sfondo ---------- */
 
 .pp-sfondo {
@@ -1223,6 +1227,8 @@ body.pp-fisso [data-layout="carta"] .pp-musica { padding: 10px 14px !important; 
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-corpo, .pp-zona, .pp-linea) { gap: 14px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-testata { margin-bottom: 14px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-piede { margin-top: 14px; }
+/* le tessere storte del collage sporgono di qualche pixel sotto il corpo: più aria sopra il codice a barre, così non lo toccano */
+body.pp-fisso [data-layout="collage"] .pp-piede { margin-top: 30px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-blocco { padding: 12px 16px; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-palco { padding: 0; }
 body.pp-fisso :is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) .pp-musica { padding: 0 !important; display: flex; align-items: center; }

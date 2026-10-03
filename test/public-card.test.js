@@ -345,3 +345,26 @@ test('blocchi affiancati: l\'editor li propone (ancore di fianco), ha il tasto �
     assert.match(editor, /rapportoBase = C\.rapportoPalco\(\)/);
     assert.match(card, /provaMisure\(config\) \{ return scriviGriglia\(P\.normalizza\(config\), true\); \}/);
 });
+
+test('i modali hanno il loro carattere e non quello scelto per la card (gli EV del team andavano a capo)', () => {
+    for (const id of ['teamModal', 'pkmDetailModal', 'elo-modal', 'login-modal']) {
+        assert.match(html, new RegExp(`id="${id}"`), `${id} non è più in public.html`);
+        assert.match(cssCard, new RegExp(`#${id}[,\\s{]`), `${id} senza il suo carattere`);
+    }
+    assert.match(cssCard, /#teamModal, #pkmDetailModal, #elo-modal, #login-modal \{ font-family: 'Josefin Sans'/);
+    // l'unica cosa che usa --pp-font è il corpo della pagina e i blocchi, mai un modale
+    assert.doesNotMatch(cssVecchio, /#teamModal[^{]*\{[^}]*--pp-font/);
+});
+
+test('il controllo "i blocchi non ci stanno" guarda anche dentro il corpo: se no sporgono sul codice a barre e sulla firma', () => {
+    const sfora = /function sfora\(carta\) \{([\s\S]*?)\n    \}\n/.exec(card)[1];
+    // le misure vere di righe e colonne della griglia, non scrollHeight (conterebbe l'animazione d'entrata e le tessere storte)
+    assert.match(sfora, /carta\.querySelector\('\.pp-corpo'\)/);
+    assert.match(sfora, /stile\.gridTemplateRows, stile\.rowGap/);
+    assert.match(sfora, /stile\.gridTemplateColumns, stile\.columnGap/);
+    assert.doesNotMatch(sfora.slice(sfora.indexOf('querySelector')), /corpo\.scrollHeight/);
+    // e i blocchi che escono da una zona che occupa più righe o colonne (la griglia non le allarga per loro)
+    assert.match(sfora, /f\.offsetTop \+ f\.offsetHeight > fondo \+ 4/);
+    // il collage ha le tessere storte: più aria sopra il piede
+    assert.match(cssCard, /body\.pp-fisso \[data-layout="collage"\] \.pp-piede \{ margin-top: 30px; \}/);
+});

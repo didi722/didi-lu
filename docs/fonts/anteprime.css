@@ -1,0 +1,9 @@
+/* Anteprime del selettore dei temi (profilo): ogni tema col proprio carattere, con nomi propri,
+   così "Neubrutal" mostra il vero Josefin Sans/Montserrat anche quando il tema attivo li sostituisce. */
+@font-face { font-family: 'NB Josefin'; font-weight: 100 900; font-display: swap; src: url(josefin-sans.woff2) format('woff2'); }
+@font-face { font-family: 'NB Montserrat'; font-weight: 100 900; font-display: swap; src: url(montserrat.woff2) format('woff2'); }
+@font-face { font-family: 'NB Titan One'; font-weight: 100 900; font-display: swap; src: url(titan-one.woff2) format('woff2'); }
+@font-face { font-family: 'NB Fredoka'; font-weight: 100 900; font-display: swap; src: url(fredoka.woff2) format('woff2'); }
+@font-face { font-family: 'NB Nunito'; font-weight: 100 1000; font-display: swap; src: url(nunito.woff2) format('woff2'); }
+@font-face { font-family: 'NB Chakra'; font-weight: 100 900; font-display: swap; src: url(chakra-petch.woff2) format('woff2'); }
+@font-face { font-family: 'NB Inconsolata'; font-weight: 100 900; font-display: swap; src: url(inconsolata.woff2) format('woff2'); }

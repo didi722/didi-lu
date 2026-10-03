@@ -15,8 +15,10 @@
 <script src="sfide.js"></script>
 <script src="titoli.js"></script>
 <script src="profilo-personale.js"></script>
+    <link rel="stylesheet" href="temi.css">
+    <script src="temi.js"></script>
     </head>
-    <body>
+    <body class="nb pg-profile senza-ads">
 
 <div id="security-alert-banner" class="neubrutal-alert-banner" style="display: none;">
     <div class="alert-banner-content">
@@ -45,6 +47,7 @@
                 <span aria-hidden="true">&#9998;</span> EDIT YOUR TRAINER CARD
             </a>
             <a id="view-public-link" class="pf-link-secondario" href="players.html">View my public page</a>
+            <a class="pf-link-secondario" href="#pf-tema">Site theme</a>
         </div>
     </div>
 </section>
@@ -65,7 +68,14 @@
         </div>
     </section>
 
+    <section class="pf-sezione pf-tema" id="pf-tema" aria-labelledby="pf-tema-titolo">
+        <h2 class="section-title" id="pf-tema-titolo">SITE THEME</h2>
+        <p class="pf-tema-intro">Pick how the whole site looks <strong>for you</strong>: type, shadows, tilt. Sizes never change.</p>
+        <div id="pf-tema-corpo" class="pf-corpo"></div>
+    </section>
+
 </main>
+<script>if (window.TemiSito) TemiSito.montaSelettore(window, document.getElementById('pf-tema-corpo'));</script>
 
 <div id="login-modal" class="modal">
     <div class="modal-content glass-card">
