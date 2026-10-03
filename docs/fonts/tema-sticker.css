@@ -1,0 +1,25 @@
+/* Tema sticker: Titan One + Fredoka al posto di Josefin Sans (titoli) e Montserrat (testo).
+   Generato da calibra-font: size-adjust e metriche di riga tengono gli ingombri del carattere originale.
+   Caratteri da Google Fonts, licenza SIL OFL (vedi README.txt). */
+@font-face {
+  font-family: 'Josefin Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(titan-one.woff2) format('woff2');
+  size-adjust: 103.8%;
+  ascent-override: 72.23%;
+  descent-override: 24.08%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(fredoka.woff2) format('woff2');
+  size-adjust: 115%;
+  ascent-override: 84.36%;
+  descent-override: 21.74%;
+  line-gap-override: 0%;
+}

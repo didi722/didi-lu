@@ -1,0 +1,521 @@
+/* =====================================================================
+   NEUBRUTALISMO · contenuto di INDEX, HUB e PLAYERS
+   Va caricato dopo il CSS della pagina e dopo temi.css: usa le variabili --nb-* del tema
+   attivo, quindi cambia aspetto da solo con i temi (vedi temi.css / temi.js).
+   Stessa falsariga della trainer card: bordi spessi, ombre piene, etichette a "tab" nere,
+   adesivi gialli, pallini mezzatinta, tutto un po' storto.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   Etichetta a "tab" nera (come RANKING / TROPHIES sulla trainer card)
+   --------------------------------------------------------------------- */
+body.nb {
+    --nb-tab-bg: var(--nb-ink);
+    --nb-tab-fg: #fff;
+}
+
+/* =====================================================================
+   INDEX · le tre stagioni
+   ===================================================================== */
+body.pg-index {
+    --nb-sezione: "SEASON HUB";
+    --nb-fantasma-testo: "SEASONS";
+}
+
+/* Le card stanno al centro dell'area a destra delle pubblicità, in mezzo alla pagina */
+body.pg-index .main-wrapper { width: 100%; }
+body.pg-index .home-seasons-container {
+    --nb-gap-card: clamp(26px, 3.6vw, 56px);
+    box-sizing: border-box;
+    width: calc(100% - var(--nb-ads));
+    min-height: calc(100vh - 190px);
+    margin: 0 0 0 var(--nb-ads);
+    padding: 20px 30px 40px;
+    gap: var(--nb-gap-card);
+    align-items: center;
+}
+/* tre card nella larghezza che c'è: 300px quando c'è spazio, fino a 236px sui portatili piccoli */
+body.pg-index .season-card {
+    width: clamp(236px, calc((100vw - var(--nb-ads) - 60px - 2 * var(--nb-gap-card)) / 3), 300px);
+    min-width: 0;
+}
+
+body.pg-index .season-card {
+    position: relative;
+    overflow: visible;
+    border: 4px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-l);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+}
+body.pg-index .season-card h3 {
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+}
+
+/* La tab con lo stato della stagione, a cavallo del bordo in alto a sinistra */
+body.pg-index .season-card::before {
+    content: "SEASON";
+    position: absolute;
+    top: -17px;
+    left: 14px;
+    z-index: 3;
+    padding: 3px 12px;
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font: 800 .72rem/1.2 var(--nb-font-titoli);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+    box-shadow: var(--nb-sh-s);
+}
+body.pg-index .season-card.status-playing::before { content: "● LIVE NOW"; background: #ea1818; color: #fff; }
+body.pg-index .season-card.status-closed::before,
+body.pg-index .season-card.status-terminata::before { content: "FINISHED"; }
+body.pg-index .season-card.status-open::before { content: "SIGN-UPS OPEN"; background: var(--nb-giallo); color: #000; }
+body.pg-index .season-card.status-empty::before { content: "COMING SOON"; background: var(--nb-carta); color: #000; }
+
+/* Stagione ancora da annunciare: carta tratteggiata */
+body.pg-index .season-card.status-empty {
+    opacity: .75 !important;
+    border-style: dashed;
+    box-shadow: none;
+    background-color: var(--nb-carta) !important;
+}
+
+/* Si può aprire: bianco e giallo "carta" al posto del bianco piatto */
+body.pg-index .season-card.status-open { background-color: var(--nb-giallo) !important; }
+
+/* Avatar del vincitore dentro un tondo con bordo, come una foto-profilo */
+body.pg-index .winner-avatar-home {
+    box-sizing: content-box;
+    padding: 9px;
+    border: 4px solid var(--nb-ink);
+    border-radius: 50%;
+    background: var(--nb-carta);
+    box-shadow: var(--nb-sh-s);
+    margin-bottom: 0;
+}
+/* il trofeo e il pallino LIVE restano accanto al tondo, che è più largo dello sprite */
+body.pg-index .winner-content-wrapper > div > img[alt="Winner"] { right: -72px !important; }
+body.pg-index .winner-content-wrapper > div > .live-dot { right: -48px !important; }
+body.pg-index .winner-display-box {
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    transform: rotate(calc(var(--nb-rot) * -1.5deg));
+}
+
+/* Conto alla rovescia: tabellone nero con cifre gialle */
+body.pg-index .countdown-box {
+    border-radius: var(--nb-raggio);
+    background: var(--nb-carta);
+    box-shadow: var(--nb-sh-s);
+    transform: rotate(calc(var(--nb-rot) * 2deg));
+}
+body.pg-index .timer-display {
+    background: var(--nb-ink);
+    color: var(--nb-giallo);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+}
+
+/* Rotazioni e "pressione" al passaggio: tutte guidate dal tema */
+body.pg-index #card-last { transform: rotate(calc(var(--nb-rot) * -2.2deg)) scale(.92); }
+body.pg-index #card-current { transform: rotate(calc(var(--nb-rot) * .8deg)) scale(1.12); }
+body.pg-index #card-next { transform: rotate(calc(var(--nb-rot) * 2.4deg)) scale(.92); }
+body.pg-index #card-last:hover { transform: rotate(calc(var(--nb-rot) * -1deg)) scale(.95) translate(-3px, -4px); box-shadow: var(--nb-sh-l); }
+body.pg-index #card-current:hover { transform: rotate(0deg) scale(1.14) translate(-3px, -4px); box-shadow: var(--nb-sh-l); }
+body.pg-index #card-next:hover { transform: rotate(calc(var(--nb-rot) * 1deg)) scale(.95) translate(-3px, -4px); box-shadow: var(--nb-sh-l); }
+body.pg-index .season-card:active { transform: scale(.94) translate(4px, 5px) !important; box-shadow: none !important; }
+
+/* =====================================================================
+   HUB · iscrizione alla stagione
+   ===================================================================== */
+body.pg-hub {
+    --nb-sezione: "SEASON HUB";
+    --nb-fantasma-testo: "SIGN UP";
+}
+
+/* L'insieme sta in mezzo alla pagina, in verticale (la geometria a colonne resta quella di style-hub.css) */
+body.pg-hub .hub-container {
+    min-height: calc(100vh - 190px);
+    display: flex;
+    align-items: center;
+}
+
+/* Etichetta a "tab" sopra ogni colonna */
+body.pg-hub .registration-column,
+body.pg-hub .hub-column-right { position: relative; }
+body.pg-hub .hub-column-right { overflow: visible; }
+body.pg-hub #registration-column::before,
+body.pg-hub .hub-column-right::before {
+    position: absolute;
+    top: -36px;
+    left: 4px;
+    padding: 3px 12px;
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font: 800 .72rem/1.2 var(--nb-font-titoli);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    box-shadow: var(--nb-sh-s);
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+    white-space: nowrap;
+}
+body.pg-hub #registration-column { padding-top: 18px; }
+body.pg-hub #registration-column::before { content: "PICK A FORMAT"; top: -22px; }
+body.pg-hub .hub-column-right::before { content: "PLAYERS IN"; left: 0; }
+
+/* Bottoni dei formati */
+body.pg-hub .btn-team {
+    position: relative;
+    border-radius: var(--nb-raggio);
+    background-color: var(--nb-giallo);
+    box-shadow: var(--nb-sh-m);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+    transform: rotate(calc(var(--nb-rot) * 1deg));
+}
+body.pg-hub .btn-team:nth-child(even) { transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+body.pg-hub .btn-team:hover { transform: rotate(0deg) translate(-3px, -3px); box-shadow: var(--nb-sh-l); }
+body.pg-hub .btn-team:active { transform: translate(3px, 3px); box-shadow: none; }
+body.pg-hub .btn-team.registered { background-color: var(--nb-verde); }
+body.pg-hub .btn-team.overlimit { background-color: var(--nb-rosso); }
+body.pg-hub .btn-team-counter {
+    padding: 1px 12px;
+    background: var(--nb-carta);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    font-size: 1.05rem;
+    transform: rotate(calc(var(--nb-rot) * -2deg));
+}
+/* Spunta/avviso a cavallo del bordo: sei dentro, o hai troppe squadre */
+body.pg-hub .btn-team.registered::before,
+body.pg-hub .btn-team.overlimit::before {
+    content: "✓ IN";
+    position: absolute;
+    top: -14px;
+    left: 12px;
+    padding: 1px 9px;
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font: 800 .66rem/1.3 var(--nb-font-titoli);
+    letter-spacing: .14em;
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+}
+body.pg-hub .btn-team.overlimit::before { content: "TOO MANY"; background: #fff; color: #000; }
+
+/* Conto alla rovescia: etichetta a tab nera, tabellone nero con cifre gialle */
+body.pg-hub .countdown-label {
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-m);
+    transform: translateY(-5px) rotate(calc(var(--nb-rot) * -2deg));
+}
+body.pg-hub .countdown-digits {
+    background-color: var(--nb-ink);
+    color: var(--nb-giallo);
+    border: 4px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-m);
+    transform: rotate(calc(var(--nb-rot) * 1deg));
+    outline: 3px dashed var(--nb-giallo);
+    outline-offset: -11px;
+}
+
+/* Le due caselle bianche: la scritta piccola diventa la tab nera sul bordo */
+body.pg-hub .neubru-badge-white {
+    position: relative;
+    margin-top: 12px;
+    border-radius: var(--nb-raggio) !important;
+    border-color: var(--nb-ink) !important;
+    box-shadow: var(--nb-sh-m) !important;
+    background-color: var(--nb-carta) !important;
+    background-image: radial-gradient(rgba(0, 0, 0, .1) 1.4px, transparent 1.7px) !important;
+    background-size: 11px 11px !important;
+    padding-top: 16px !important;
+}
+body.pg-hub .neubru-badge-white:nth-child(odd) { transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+body.pg-hub .neubru-badge-white:nth-child(even) { transform: rotate(calc(var(--nb-rot) * 1.4deg)); }
+body.pg-hub .neubru-badge-white .badge-title {
+    position: absolute;
+    top: -13px;
+    left: 10px;
+    margin: 0;
+    padding: 2px 10px;
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font-size: .56rem;
+    letter-spacing: .08em;
+    white-space: nowrap;
+    text-align: left;
+}
+body.pg-hub .neubru-badge-white .badge-title br { display: none; }
+body.pg-hub .neubru-badge-white .badge-value { font-size: 1.7rem; line-height: 1.1; }
+
+/* I giocatori già dentro: cartellini con puntini, un po' storti */
+body.pg-hub .player-tag {
+    position: relative;
+    border-radius: var(--nb-raggio);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+    transform: rotate(calc(var(--nb-rot) * -1.5deg));
+}
+body.pg-hub .player-tag:nth-child(even) { transform: rotate(calc(var(--nb-rot) * 1.2deg)); }
+body.pg-hub .player-tag:hover { transform: rotate(0deg) translate(-2px, -2px); }
+body.pg-hub .player-label { text-shadow: none; letter-spacing: var(--nb-spaziatura); }
+
+/* =====================================================================
+   PLAYERS · classifica degli allenatori
+   ===================================================================== */
+body.pg-players {
+    --nb-sezione: "TRAINERS";
+    --nb-fantasma-testo: "TRAINERS";
+}
+
+/* La lista sta in mezzo all'area a destra delle pubblicità */
+body.pg-players .wrapper {
+    margin-left: var(--nb-ads);
+    width: calc(100% - var(--nb-ads));
+    padding: 0 24px 60px;
+}
+body.pg-players .trainers-grid {
+    position: relative;
+    max-width: 760px;
+    margin: 54px 0 0;
+    gap: 22px;
+    padding-top: 26px;
+    counter-reset: posto;
+}
+/* Testata della classifica: tab nera sopra la prima riga */
+body.pg-players .trainers-grid::before {
+    content: "ELO RANKING · ALL TRAINERS";
+    position: absolute;
+    top: -4px;
+    left: 8px;
+    z-index: 2;
+    padding: 4px 14px;
+    background: var(--nb-tab-bg);
+    color: var(--nb-tab-fg);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font: 800 .78rem/1.2 var(--nb-font-titoli);
+    letter-spacing: .18em;
+    box-shadow: var(--nb-sh-s);
+    transform: rotate(calc(var(--nb-rot) * -2deg));
+}
+
+/* Ogni riga è un tesserino */
+body.pg-players .trainer-card {
+    min-height: 74px;
+    padding: 9px 18px 9px 14px;
+    border: 4px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-m);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+    transform: rotate(clamp(-1.4deg, calc(var(--random-deg, 0deg) * var(--nb-rot)), 1.4deg));
+}
+body.pg-players .trainer-card:hover {
+    transform: rotate(0deg) translate(-3px, -4px);
+    box-shadow: var(--nb-sh-l);
+}
+body.pg-players .trainer-card:active { transform: translate(3px, 4px); box-shadow: none; }
+
+/* Posizione: quadrato nero con cifra bianca (oro / argento / bronzo sul podio) */
+body.pg-players .trainer-left-group { gap: 14px; }
+body.pg-players .trainer-rank-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    height: 46px;
+    box-sizing: border-box;
+    padding: 0 6px;
+    background: var(--nb-ink);
+    color: #fff;
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    font-size: 1.15rem;
+    font-weight: 900;
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+}
+body.pg-players .trainer-card:nth-child(1) .trainer-rank-text { background: #ffd23f; color: #000; }
+body.pg-players .trainer-card:nth-child(2) .trainer-rank-text { background: #d8dde6; color: #000; }
+body.pg-players .trainer-card:nth-child(3) .trainer-rank-text { background: #f0a060; color: #000; }
+
+/* Avatar in una cornice quadrata, sopra un cartellino bianco */
+body.pg-players .trainer-avatar-box {
+    width: 58px;
+    height: 58px;
+    padding: 3px;
+    box-sizing: border-box;
+    background: var(--nb-carta);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+}
+body.pg-players .trainer-name { font-size: 1.5rem; letter-spacing: var(--nb-spaziatura); }
+
+/* Punti Elo: tabellone nero con cifre gialle e la tab "ELO" sul bordo */
+body.pg-players .trainer-points-box {
+    position: relative;
+    min-width: 76px;
+    padding: 6px 14px 4px;
+    background: var(--nb-ink);
+    color: var(--nb-giallo);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    font-size: 1.45rem;
+    transform: rotate(calc(var(--nb-rot) * 2deg));
+}
+body.pg-players .trainer-points-box::before {
+    content: "ELO";
+    position: absolute;
+    top: -12px;
+    right: 8px;
+    padding: 0 7px;
+    background: var(--nb-carta);
+    color: #000;
+    border: 2px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    font: 800 .56rem/1.5 var(--nb-font-titoli);
+    letter-spacing: .14em;
+}
+
+/* Trofei e badge */
+body.pg-players .trainer-card-trophy .trophy-count {
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+}
+
+/* Sotto i 1050px le tre card non ci stanno più in fila: in colonna, al centro dell'area a destra delle pubblicità */
+@media (max-width: 1050px) {
+    body.pg-index { overflow-y: auto !important; display: block !important; }
+    body.pg-index .home-seasons-container { flex-direction: column; min-height: 0; padding: 56px 24px 80px; gap: 58px; }
+    body.pg-index .card-link-wrapper { width: 100%; display: flex; justify-content: center; }
+    body.pg-index .season-card { width: 300px; flex: none; }
+    body.pg-index #card-current { transform: rotate(calc(var(--nb-rot) * .8deg)) scale(1.04); }
+    body.pg-index #card-last { transform: rotate(calc(var(--nb-rot) * -1.8deg)); }
+    body.pg-index #card-next { transform: rotate(calc(var(--nb-rot) * 1.8deg)); }
+}
+
+/* Stagione ancora da annunciare: niente pezzetto blu vuoto in fondo */
+body.pg-index .card-footer:empty { display: none; }
+
+/* =====================================================================
+   SCHERMI STRETTI (telefono, tablet in verticale)
+   Le pagine nascono per il desktop: qui le card si mettono in colonna e la pagina scorre.
+   ===================================================================== */
+@media (max-width: 900px) {
+    body.pg-index, body.pg-hub, body.pg-players { overflow-x: hidden; }
+    body.pg-index .top-bar, body.pg-hub .top-bar, body.pg-players .top-bar { padding: 30px 0; }
+    body.pg-index .hub-title-display, body.pg-hub .hub-title-display, body.pg-players .hub-title-display { font-size: 1.8rem !important; }
+
+    /* index: le tre stagioni una sotto l'altra, e la pagina scorre */
+    body.pg-index { overflow-y: auto !important; display: block !important; }
+    body.pg-index .main-wrapper { width: 100%; }
+    body.pg-index .home-seasons-container { width: 100%; margin: 0; padding: 56px 18px 80px; }
+    body.pg-index .season-card { width: min(300px, calc(100vw - 64px)); }
+
+    /* hub: formati, conto alla rovescia e giocatori in colonna */
+    body.pg-hub .hub-container { display: block; min-height: 0; padding: 40px 14px 70px !important; width: 100%; }
+    body.pg-hub .hub-new-layout { grid-template-columns: minmax(0, 1fr) !important; gap: 46px; max-width: none; padding-top: 0; }
+    body.pg-hub #registration-buttons-container { display: none; }
+    body.pg-hub .registration-column { width: 100%; margin-left: 0; }
+    body.pg-hub .hub-column-right { width: 100%; max-width: none; margin-left: 0; }
+    body.pg-hub .hub-column-right #participants-section { width: 100%; }
+    body.pg-hub #participants-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; }
+    body.pg-hub .countdown-main-container { max-width: none; padding: 20px 0; aspect-ratio: auto; }
+    body.pg-hub .countdown-digits { width: min(350px, 100%); box-sizing: border-box; font-size: 2rem; }
+    body.pg-hub .countdown-label { margin: 6px 0 26px; }
+    body.pg-hub .hub-stats-row { margin-top: 10px; }
+
+    /* players: la riga va a capo, trofei e badge sotto il nome */
+    body.pg-players .wrapper { margin-left: 0; width: 100%; padding: 0 14px 60px; }
+    body.pg-players .trainers-grid { max-width: none; margin-top: 46px; }
+    body.pg-players .trainer-card { flex-wrap: wrap; row-gap: 8px; padding: 10px 12px; }
+    body.pg-players .trainer-left-group { gap: 10px; flex: 1 1 auto; min-width: 0; }
+    body.pg-players .trainer-rank-text { min-width: 40px; height: 40px; font-size: 1rem; }
+    body.pg-players .trainer-avatar-box { width: 50px; height: 50px; }
+    body.pg-players .trainer-name { font-size: 1.25rem; overflow-wrap: anywhere; }
+    body.pg-players .trainer-points-box { min-width: 64px; font-size: 1.2rem; padding: 6px 10px 4px; }
+    body.pg-players .trainer-achievements-group { order: 3; flex: 1 0 100%; margin: 0; justify-content: flex-start; gap: 10px; min-height: 0; }
+    body.pg-players .trainer-card-trophy { position: static; transform: none; }
+    body.pg-players .trainer-achievements-group:empty { display: none; }
+    body.pg-players .trainer-badges-container { justify-content: flex-start; }
+}
+
+/* Telefono: il titolo si sposta a sinistra e si rimpicciolisce, così non finisce sotto il tasto dell'utente */
+@media (max-width: 520px) {
+    body.nb .top-bar::before { font-size: 10px; letter-spacing: .08em; padding-left: calc(var(--nb-ads) + 84px); }
+    body.pg-index .top-bar-inner, body.pg-hub .top-bar-inner, body.pg-players .top-bar-inner { justify-content: flex-start; padding: 0 14px; }
+    body.pg-index .hub-title-display, body.pg-hub .hub-title-display, body.pg-players .hub-title-display {
+        font-size: 1.3rem !important;
+        padding: 8px 14px;
+        white-space: normal;
+        max-width: calc(100vw - 168px);
+    }
+}
+
+/* Hub: la schermata "Please wait" dell'annullamento iscrizione (la accende lo script) ha il suo aspetto */
+body.pg-hub #loading-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--nb-sfondo-pagina);
+}
+body.pg-hub #loading-screen .pokeball-loader {
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--nb-ink);
+    border-radius: 50%;
+    background: linear-gradient(#ff3e3e calc(50% - 3px), var(--nb-ink) calc(50% - 3px) calc(50% + 3px), #fff calc(50% + 3px));
+    box-shadow: var(--nb-sh-s);
+    animation: nb-gira 1.1s linear infinite;
+}
+body.pg-hub #loading-screen p {
+    margin: 0;
+    font: 900 1.1rem var(--nb-font-titoli);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--nb-testo);
+}
+@keyframes nb-gira { to { transform: rotate(360deg); } }
+
+/* =====================================================================
+   HUB su finestre medie (901–1250px): la colonna vuota di sinistra (che serve solo a stare lontano
+   dalle pubblicità) sparisce e il padding fa il suo lavoro; così la pagina non scorre di lato.
+   A 1280px e oltre resta il disegno di sempre.
+   ===================================================================== */
+@media (min-width: 901px) and (max-width: 1250px) {
+    body.pg-hub .hub-container { padding-left: calc(var(--nb-ads) + 28px) !important; padding-right: 24px; }
+    body.pg-hub .hub-container > .hub-new-layout { grid-template-columns: minmax(0, 1fr) max-content !important; max-width: none; }
+    body.pg-hub .hub-container > .hub-new-layout > #registration-buttons-container { display: none; }
+    body.pg-hub .hub-container > .hub-new-layout > .hub-column-right { margin-left: 0; }
+    body.pg-hub .hub-center-zone { min-width: 0; }
+    body.pg-hub .hub-center-zone .hub-new-layout { grid-template-columns: 200px minmax(0, 1fr) !important; gap: 20px; }
+    body.pg-hub .registration-column { width: 200px; margin-left: 0; }
+    body.pg-hub .countdown-main-container { max-width: none; padding: 30px 0; aspect-ratio: auto; }
+    body.pg-hub .countdown-digits { width: min(350px, 100%); box-sizing: border-box; font-size: clamp(1.6rem, 3.4vw, 2.5rem); }
+}

@@ -6,11 +6,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">      
     <link rel="stylesheet" href="style-hub.css">
+    <link rel="stylesheet" href="temi.css">
+    <link rel="stylesheet" href="nb-pagine.css">
+<script src="temi.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </header>
-
+<body class="nb pg-hub">
 
 <header class="top-bar">
         <div class="top-bar-inner">
@@ -2245,7 +2248,9 @@ function closeTeamModal() {
 }
 
 function updatePageStatus(status) {
-    document.body.className = `status-${status.toLowerCase()}`;
+    // cambia solo la classe dello stato: le altre (nb, pg-hub...) servono allo stile
+    [...document.body.classList].filter(c => c.startsWith('status-')).forEach(c => document.body.classList.remove(c));
+    document.body.classList.add(`status-${status.toLowerCase()}`);
     const badge = document.getElementById('hub-status-badge');
     if(badge) badge.innerText = status.toUpperCase();
 }

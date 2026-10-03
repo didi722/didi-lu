@@ -1,0 +1,25 @@
+/* Tema morbido: Nunito al posto di Josefin Sans (titoli) e Montserrat (testo).
+   Generato da calibra-font: size-adjust e metriche di riga tengono gli ingombri del carattere originale.
+   Caratteri da Google Fonts, licenza SIL OFL (vedi README.txt). */
+@font-face {
+  font-family: 'Josefin Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(nunito.woff2) format('woff2');
+  size-adjust: 101.5%;
+  ascent-override: 73.91%;
+  descent-override: 24.64%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(nunito.woff2) format('woff2');
+  size-adjust: 111.4%;
+  ascent-override: 87.05%;
+  descent-override: 22.43%;
+  line-gap-override: 0%;
+}

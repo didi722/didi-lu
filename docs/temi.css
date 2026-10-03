@@ -1,0 +1,435 @@
+/* =====================================================================
+   TEMI DEL SITO + "guscio" neubrutalista comune a tutte le pagine
+   ---------------------------------------------------------------------
+   - Le variabili --nb-* descrivono un tema (colori, ombre, rotazioni, angoli, caratteri).
+     Il tema attivo è l'attributo data-tema su <html> (lo imposta temi.js); senza attributo
+     vale "neubrutal", cioè il look classico del sito.
+   - Ogni giocatore sceglie il suo tema dal profilo; temi.js lo salva in players/<nome>/info/temaSito.
+   - Tenere uguali le dimensioni: i temi cambiano colori, ombre, rotazioni, angoli e caratteri,
+     mai larghezze, altezze, margini o spessori dei bordi.
+   - Qui sta anche il "guscio" comune (sfondo, barra in alto, bottoni fissi, menu): per le
+     pagine con <body class="nb">. Il contenuto delle pagine sta in nb-pagine.css.
+   ===================================================================== */
+
+/* ---------- Tema 1 · NEUBRUTAL (predefinito) ---------- */
+:root,
+[data-tema="neubrutal"] {
+    --nb-ink: #000;                    /* bordi, ombre, testo forte */
+    --nb-testo: #000;                  /* testo scritto direttamente sulla pagina */
+    --nb-carta: #fff;                  /* superficie delle card */
+    --nb-sfondo: #efe9da;              /* carta della pagina */
+    --nb-tinta: 14%;                   /* quanto il colore del giocatore tinge la pagina */
+    --nb-punti: rgba(0, 0, 0, .13);    /* puntini mezzatinta / linee della griglia */
+    --nb-fantasma: rgba(0, 0, 0, .075);/* scritta gigante dietro la pagina */
+    --nb-giallo: #ffbd44;
+    --nb-rosso: #ff4444;
+    --nb-verde: #47ea6a;
+
+    --nb-raggio: 0px;                  /* angoli */
+    /* Ombre: spostamento in orizzontale (kx) e verticale (ky), sfumatura (bk: 0 = ombra piena), colore.
+       Le ombre vere (--nb-sh-*) si ricavano da questi numeri in fondo alle definizioni dei temi. */
+    --nb-kx: 1;
+    --nb-ky: 1;
+    --nb-bk: 0;
+    --nb-shcol: var(--nb-ink);
+    --nb-shcol-titolo: rgba(0, 0, 0, .3);          /* ombra dell'adesivo del titolo */
+    --nb-rot: 1;                       /* moltiplicatore di tutte le rotazioni (0 = dritto) */
+
+    --nb-font-titoli: 'Josefin Sans', sans-serif;
+    --nb-font-testo: 'Montserrat', sans-serif;
+    --nb-spaziatura: .04em;
+
+    --nb-motivo: radial-gradient(var(--nb-punti) 1.3px, transparent 1.6px);
+    --nb-motivo-dim: 14px 14px;
+}
+
+/* ---------- Tema 2 · STICKER (più storto, colori pieni, ombre grosse) ---------- */
+[data-tema="sticker"] {
+    --nb-sfondo: #ffe7a6;
+    --nb-tinta: 0%;
+    --nb-punti: rgba(255, 255, 255, .9);
+    --nb-fantasma: rgba(0, 0, 0, .06);
+    --nb-giallo: #ffe14d;
+    --nb-kx: 1.35;
+    --nb-ky: 1.35;
+    --nb-shcol-titolo: rgba(0, 0, 0, .35);
+    --nb-rot: 2.6;
+    --nb-font-titoli: 'Titan One', 'Josefin Sans', sans-serif;
+    --nb-font-testo: 'Fredoka', 'Montserrat', sans-serif;
+    --nb-spaziatura: .07em;
+    --nb-motivo: radial-gradient(var(--nb-punti) 4px, transparent 4.6px);
+    --nb-motivo-dim: 30px 30px;
+}
+
+/* ---------- Tema 3 · SOFT (angoli tondi, ombre leggere, quasi dritto) ---------- */
+[data-tema="morbido"] {
+    --nb-ink: #2b2a4c;
+    --nb-testo: #2b2a4c;
+    --nb-sfondo: #eceffd;
+    --nb-tinta: 9%;
+    --nb-punti: rgba(43, 42, 76, .055);
+    --nb-fantasma: rgba(43, 42, 76, .05);
+    --nb-giallo: #ffd88a;
+    --nb-rosso: #ff7d8d;
+    --nb-verde: #7fe3ac;
+    --nb-raggio: 16px;
+    --nb-kx: 0;                        /* solo verso il basso, e sfumata */
+    --nb-ky: .9;
+    --nb-bk: 1;
+    --nb-shcol: rgba(43, 42, 76, .2);
+    --nb-shcol-titolo: rgba(43, 42, 76, .26);
+    --nb-rot: .2;
+    --nb-font-titoli: 'Nunito', 'Josefin Sans', sans-serif;
+    --nb-font-testo: 'Nunito', 'Montserrat', sans-serif;
+    --nb-spaziatura: .02em;
+    --nb-motivo: radial-gradient(var(--nb-punti) 1.2px, transparent 1.5px);
+    --nb-motivo-dim: 22px 22px;
+}
+
+/* ---------- Tema 4 · ARCADE (scuro, dritto, neon, caratteri da terminale) ---------- */
+[data-tema="arcade"] {
+    --nb-ink: #05060f;
+    --nb-testo: #dff9ee;
+    --nb-sfondo: #0b0d1e;
+    --nb-tinta: 7%;
+    --nb-punti: rgba(80, 255, 196, .11);
+    --nb-fantasma: rgba(80, 255, 196, .06);
+    --nb-neon: color-mix(in srgb, var(--nb-accento, #31c489) 62%, #fff);
+    --nb-giallo: #ffe45c;
+    --nb-shcol: var(--nb-neon);
+    --nb-shcol-titolo: var(--nb-neon);
+    --nb-rot: 0;
+    --nb-font-titoli: 'Chakra Petch', 'Josefin Sans', sans-serif;
+    --nb-font-testo: 'Inconsolata', 'Montserrat', monospace;
+    --nb-spaziatura: .06em;
+    --nb-motivo: linear-gradient(var(--nb-punti) 1px, transparent 1px), linear-gradient(90deg, var(--nb-punti) 1px, transparent 1px);
+    --nb-motivo-dim: 30px 30px;
+}
+
+/* Ombre ricavate dai numeri del tema. Stanno dopo i temi e valgono per <html> e per ogni elemento
+   con data-tema (le anteprime del selettore), così ognuno usa le proprie variabili. */
+:root,
+[data-tema] {
+    --nb-sh-s: calc(3px * var(--nb-kx)) calc(3px * var(--nb-ky)) calc(8px * var(--nb-bk)) var(--nb-shcol);
+    --nb-sh-4: calc(4px * var(--nb-kx)) calc(4px * var(--nb-ky)) calc(10px * var(--nb-bk)) var(--nb-shcol);
+    --nb-sh-m: calc(6px * var(--nb-kx)) calc(6px * var(--nb-ky)) calc(16px * var(--nb-bk)) var(--nb-shcol);
+    --nb-sh-8: calc(8px * var(--nb-kx)) calc(8px * var(--nb-ky)) calc(22px * var(--nb-bk)) var(--nb-shcol);
+    --nb-sh-l: calc(9px * var(--nb-kx)) calc(9px * var(--nb-ky)) calc(26px * var(--nb-bk)) var(--nb-shcol);
+    --nb-sh-titolo: calc(8px * var(--nb-kx)) calc(8px * var(--nb-ky)) calc(18px * var(--nb-bk)) var(--nb-shcol-titolo);
+}
+
+/* =====================================================================
+   GUSCIO COMUNE (pagine con <body class="nb">)
+   ===================================================================== */
+body.nb {
+    --nb-ads: 220px;                   /* larghezza della colonna delle pubblicità, se c'è */
+}
+/* Lo sfondo tinto col colore del giocatore ha bisogno di color-mix; senza, resta lo sfondo originale della pagina */
+@supports (background: color-mix(in srgb, red 10%, white)) {
+    body.nb {
+        --nb-sfondo-pagina: color-mix(in srgb, var(--nb-accento, #31c489) var(--nb-tinta), var(--nb-sfondo));
+        background: var(--nb-motivo) 0 0 / var(--nb-motivo-dim) fixed, var(--nb-sfondo-pagina) !important;
+    }
+}
+body.nb.senza-ads { --nb-ads: 0px; }
+
+/* Scritta gigante dietro la pagina (come le lettere sul fondo della trainer card) */
+body.nb::before {
+    content: var(--nb-fantasma-testo, none);
+    position: fixed;
+    left: calc(var(--nb-ads) + 4vw);
+    bottom: -4vw;
+    z-index: -1;
+    font: 900 24vw/1 var(--nb-font-titoli);
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: transparent;
+    -webkit-text-stroke: 3px var(--nb-fantasma);
+    transform: rotate(calc(var(--nb-rot) * -4deg));
+    transform-origin: left bottom;
+    pointer-events: none;
+}
+
+/* ---------- Barra in alto: finestra nera come la trainer card ---------- */
+body.nb .top-bar {
+    position: relative;
+    border-bottom: 5px solid var(--nb-ink);
+    background-image: radial-gradient(rgba(0, 0, 0, .15) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+}
+body.nb .top-bar-inner { position: relative; z-index: 1; }
+/* La striscia nera con i tre pallini e il nome della lega... */
+body.nb .top-bar::before {
+    content: "SANT'ALVISE PKMN LEAGUE";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 30px;
+    box-sizing: border-box;
+    padding: 0 20px 0 calc(var(--nb-ads) + 86px);
+    background:
+        radial-gradient(circle at calc(var(--nb-ads) + 24px) 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at calc(var(--nb-ads) + 44px) 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at calc(var(--nb-ads) + 64px) 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink);
+    color: #fff;
+    font: 800 11px/30px var(--nb-font-titoli);
+    letter-spacing: .2em;
+    white-space: nowrap;
+    overflow: hidden;
+    z-index: 0;
+}
+/* ...e il bollino giallo con il nome della sezione */
+body.nb .top-bar::after {
+    content: var(--nb-sezione, none);
+    position: absolute;
+    top: 4px;
+    right: 24px;
+    height: 22px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    background: var(--nb-giallo);
+    color: #000;
+    border: 2px solid #000;
+    font: 800 11px/18px var(--nb-font-titoli);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot) * 1.5deg));
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    z-index: 0;
+}
+/* Il tasto con il nome dell'utente scende un po': la striscia nera lo lascia libero */
+body.nb:has(.top-bar) .top-auth-bar { top: 42px; }
+
+/* ---------- Adesivo del titolo ---------- */
+body.nb .hub-title-display {
+    background: var(--nb-ink);
+    color: #fff;
+    border: 4px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-titolo) !important;
+    transform: rotate(calc(var(--nb-rot) * -2deg));
+    letter-spacing: var(--nb-spaziatura);
+}
+
+/* ---------- Pubblicità a sinistra: stessa fascia, con il suo bollino ---------- */
+body.nb .ads-sidebar { border-right: 4px solid var(--nb-ink); box-shadow: 6px 0 0 rgba(0, 0, 0, .18); }
+body.nb .ads-sidebar::after {
+    content: "AD";
+    position: absolute;
+    top: 38px;
+    right: 8px;
+    padding: 1px 8px;
+    background: var(--nb-giallo);
+    color: #000;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0 #000;
+    font: 800 11px/16px var(--nb-font-titoli);
+    letter-spacing: .12em;
+    transform: rotate(calc(var(--nb-rot) * 6deg));
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* ---------- Bottoni fissi e tasto utente ---------- */
+body.nb .auth-interaction,
+body.nb .music-btn,
+body.nb .sfide-btn {
+    border-color: var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+}
+body.nb .auth-interaction { border-width: 3px; box-shadow: var(--nb-sh-m); }
+body.nb .auth-interaction:hover { box-shadow: var(--nb-sh-l); }
+body.nb .auth-interaction:active { box-shadow: var(--nb-sh-s); }
+body.nb .music-btn:hover,
+body.nb .sfide-btn:hover { box-shadow: none; }
+
+/* ---------- Menu a tendina dell'utente ---------- */
+body.nb .user-dropdown .menu-item,
+body.nb .user-dropdown .logout-btn {
+    border-color: var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+}
+body.nb .user-dropdown .menu-item:nth-child(1) { transform: rotate(calc(var(--nb-rot) * -2deg)); }
+body.nb .user-dropdown .menu-item:nth-child(2) { transform: rotate(calc(var(--nb-rot) * 1.5deg)); }
+body.nb .user-dropdown .menu-item:nth-child(3) { transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .menu-item:nth-child(4) { transform: rotate(calc(var(--nb-rot) * -1.5deg)); }
+body.nb .user-dropdown .menu-item:nth-child(5) { transform: rotate(calc(var(--nb-rot) * 1deg)); }
+body.nb .user-dropdown .menu-item:nth-child(6) { transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .menu-item:nth-child(7) { transform: rotate(calc(var(--nb-rot) * 1.5deg)); }
+body.nb .user-dropdown .logout-btn { transform: rotate(calc(var(--nb-rot) * -1deg)); }
+body.nb .user-dropdown .menu-item:hover,
+body.nb .user-dropdown .logout-btn:hover {
+    transform: translate(-3px, -3px) rotate(0deg);
+    box-shadow: var(--nb-sh-m);
+}
+body.nb .user-dropdown .menu-item:active,
+body.nb .user-dropdown .logout-btn:active {
+    transform: translate(3px, 3px) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Profilo: le sue variabili di ombra e di nero passano dal tema ---------- */
+body.pg-profile {
+    --shadow: var(--nb-sh-8);
+    --shadow-small: var(--nb-sh-4);
+    --black: var(--nb-ink);
+}
+body.pg-profile :is(.pf-sezione, .pf-contatore, .pf-voce, .pf-tessera, .pf-richiamo, .pf-rivale, .pf-btn, .pf-filtro,
+                    .pf-tutto-fatto, .customize-public-btn, .ach-open-btn, .bar-reset-pw-btn, .ach-column, .ach-card) {
+    border-radius: var(--nb-raggio);
+}
+
+/* ---------- Nome della sezione nel bollino giallo della barra (index, hub e players lo impostano in nb-pagine.css) ---------- */
+body.pg-stats { --nb-sezione: "STATS"; }
+body.pg-rules { --nb-sezione: "RULEBOOK"; }
+body.pg-formats { --nb-sezione: "FORMATS"; }
+body.pg-matches { --nb-sezione: "SEASON"; }
+body.pg-box { --nb-sezione: "BOX"; }
+
+/* ---------- Schermi stretti: via la colonna delle pubblicità ---------- */
+@media (max-width: 900px) {
+    body.nb { --nb-ads: 0px; }
+    body.nb .ads-sidebar { display: none; }
+}
+
+/* =====================================================================
+   SELETTORE DEI TEMI (pagina del profilo)
+   Ogni opzione porta data-tema="<id>": le sue variabili --nb-* sono quelle di quel tema,
+   quindi l'anteprima (titolo, card, bollino) è disegnata proprio con ombre, angoli,
+   rotazioni e carattere del tema, qualunque sia quello attivo.
+   ===================================================================== */
+.pf-tema-intro { margin: 0 0 18px; font-weight: 600; opacity: .85; }
+
+.tm-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 30px 24px;
+    padding: 12px 6px 4px;
+}
+.tm-opzione {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 5px 5px 0 #000;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    transition: transform .12s ease, box-shadow .12s ease;
+    --pv-titoli: 'NB Josefin', sans-serif;
+    --pv-testo: 'NB Montserrat', sans-serif;
+}
+.tm-opzione[data-tema="sticker"] { --pv-titoli: 'NB Titan One', sans-serif; --pv-testo: 'NB Fredoka', sans-serif; }
+.tm-opzione[data-tema="morbido"] { --pv-titoli: 'NB Nunito', sans-serif; --pv-testo: 'NB Nunito', sans-serif; }
+.tm-opzione[data-tema="arcade"] { --pv-titoli: 'NB Chakra', sans-serif; --pv-testo: 'NB Inconsolata', monospace; }
+.tm-opzione:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 #000; }
+.tm-opzione:active { transform: translate(3px, 3px); box-shadow: none; }
+.tm-opzione:focus-visible { outline: 4px solid #ffbd44; outline-offset: 4px; }
+.tm-opzione.attivo { box-shadow: 8px 8px 0 #09ca49; }
+
+.tm-anteprima {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    min-height: 140px;
+    box-sizing: border-box;
+    padding: 20px 14px 16px;
+    border-bottom: 3px solid #000;
+    overflow: hidden;
+    background:
+        var(--nb-motivo) 0 0 / var(--nb-motivo-dim),
+        color-mix(in srgb, var(--nb-accento, #31c489) var(--nb-tinta), var(--nb-sfondo));
+}
+.tm-titolo {
+    padding: 4px 12px;
+    background: var(--nb-ink);
+    color: #fff;
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-titolo);
+    font: 900 1.05rem/1.2 var(--pv-titoli);
+    letter-spacing: var(--nb-spaziatura);
+    transform: rotate(calc(var(--nb-rot) * -2deg));
+}
+.tm-card {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--nb-carta);
+    color: #000;
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-m);
+    transform: rotate(calc(var(--nb-rot) * 1.4deg));
+}
+.tm-card-nome { font: 800 .95rem/1 var(--pv-titoli); letter-spacing: var(--nb-spaziatura); }
+.tm-card-punti {
+    padding: 2px 9px;
+    background: var(--nb-ink);
+    color: var(--nb-giallo);
+    border-radius: var(--nb-raggio);
+    font: 800 .88rem/1.25 var(--pv-testo);
+}
+.tm-chip {
+    padding: 1px 10px;
+    background: var(--nb-giallo);
+    color: #000;
+    border: 2px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    font: 800 .66rem/1.5 var(--pv-titoli);
+    letter-spacing: .14em;
+    transform: rotate(calc(var(--nb-rot) * -3deg));
+}
+.tm-nome {
+    padding: 12px 14px 0;
+    font: 900 1.1rem/1.1 'Josefin Sans', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.tm-frase { padding: 4px 14px 14px; font: 600 .8rem/1.35 'Montserrat', sans-serif; opacity: .8; }
+.tm-attivo {
+    display: none;
+    position: absolute;
+    top: -15px;
+    right: 12px;
+    z-index: 2;
+    padding: 2px 10px;
+    background: #09ca49;
+    color: #000;
+    border: 3px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    font: 800 .68rem/1.4 'Josefin Sans', sans-serif;
+    letter-spacing: .14em;
+    transform: rotate(3deg);
+}
+.tm-opzione.attivo .tm-attivo { display: block; }
+.tm-nota { min-height: 1.4em; margin: 18px 2px 0; font-weight: 700; font-size: .85rem; }
+.tm-nota.problema { color: #b01212; }
+
+/* =====================================================================
+   TEMA SCURO (arcade): il testo scritto direttamente sulla pagina, fuori dalle card,
+   diventa chiaro. (Le card restano chiare, con il loro testo nero.)
+   ===================================================================== */
+[data-tema="arcade"] body.nb :is(.stats-ordina-et, .toc-link:not(.active)) { color: var(--nb-testo); }
+[data-tema="arcade"] body.nb .toc-link:not(.active):hover { color: #000; }
+
+/* Soft: la barra in alto prende il colore del giocatore più chiaro (un velo bianco sopra) */
+[data-tema="morbido"] body.nb .top-bar {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, .32), rgba(255, 255, 255, .32)),
+        radial-gradient(rgba(43, 42, 76, .1) 1.4px, transparent 1.7px);
+    background-size: auto, 11px 11px;
+}
