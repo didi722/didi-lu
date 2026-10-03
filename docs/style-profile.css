@@ -1416,4 +1416,8 @@ body.has-alert-banner .top-auth-bar {
     .ach-open-btn { position: static; order: 2; }
     .hub-title-display { font-size: 1.6rem; padding: 8px 16px; }
     .pf-progresso { flex-wrap: wrap; }
+    /* i link di testo sono alti 16-19px: da toccare con il dito si allargano senza cambiare l'aspetto */
+    .pf-link-secondario { display: inline-block; padding: 9px 6px; }
+    .pf-stagione-nome { display: inline-block; padding: 7px 0; }
+    .pf-hero-link { flex-wrap: wrap; justify-content: center; gap: 4px 14px; }
 }

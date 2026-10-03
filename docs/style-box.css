@@ -5017,3 +5017,58 @@ color:#eeeeee;
 .tb-dropdown-content .tb-select { width: 104px; flex-shrink: 0; padding: 4px 6px; font-size: .85rem; box-shadow: 2px 2px 0 #000; }
 .tb-dropdown-content label.tb-input { width: auto; }
 .tb-dropdown-content input[type="checkbox"] { accent-color: #000; }
+
+/* =====================================================================
+   TELEFONO (≤ 900px): ricerca e filtri vanno sotto il titolo, a tutta larghezza.
+   Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    .top-bar { padding: 46px 0 22px !important; }
+    .top-bar-inner { flex-direction: column; align-items: flex-start; gap: 0; padding: 0 14px; }
+    /* sotto la fila dei bottoni tondi (che sta a 114px dall'alto) */
+    .controls {
+        min-width: 0;
+        width: 100%;
+        max-width: none;
+        margin: 56px 0 0;
+        padding: 0;
+        box-shadow: none;
+    }
+    .controls input,
+    .controls select { box-sizing: border-box; }
+    .select-group > select { min-width: 0; }
+    .grid { margin: 18px auto; padding: 0 12px 24px; grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    /* matita e cestino sulle card: emoji da 12px, da toccare con il dito servono più grandi (i pulsanti hanno stile in linea) */
+    .card-actions { gap: 6px !important; }
+    .card-actions button { font-size: 20px !important; padding: 8px 10px !important; }
+    /* importatore Showdown (solo admin): con il telefono in orizzontale è più alto dello schermo, quindi scorre */
+    .admin-panel { max-height: 100vh; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* =====================================================================
+   TELEFONO (≤ 900px): l'assistente del team builder. A PC è a due colonne (filtri · Pokémon da 700px fissi) con il titolo
+   che fluttua sopra; su telefono le colonne vanno in pila, il titolo sta nel flusso e la finestra scorre.
+   Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    .format-modal-backdrop {
+        height: 100%;
+        align-items: flex-start;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px 10px 28px;
+    }
+    .format-modal-wrapper { top: 0; gap: 14px; }
+    .format-modal-header { position: static; width: 100%; padding: 0 !important; }
+    .format-modal-header h2 { font-size: 1.3rem; padding: 6px 14px; }
+    .format-modal-container { flex-direction: column; max-height: none; gap: 16px; }
+    .format-modal-card-left { flex: none; padding: 18px 8px 8px; overflow: visible; }
+    .format-modal-card-right { width: 100%; overflow: visible; }
+    .explorer-pkm-scroll-container { max-height: 55vh; padding: 16px 8px; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+}
+
+/* Sui dispositivi touch l'assistente si chiude anche con la X (a PC resta nascosta e si chiude cliccando fuori:
+   su telefono il bordo da toccare è troppo sottile). Il gestore c'è già: inizializzaChiusuraHelper(). */
+@media (hover: none) {
+    .format-modal-header .format-close-btn { display: flex !important; flex-shrink: 0; margin-left: 10px; }
+}

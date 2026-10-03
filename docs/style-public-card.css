@@ -1077,6 +1077,9 @@ body.pp-modifica .pp-adesivo.is-scelto { outline: 3px dashed #000; outline-offse
     /* sul telefono tutto è a tutta larghezza: il palco è quadrato, così resta il blocco più grande */
     .pp-pagina .pp-palco .pp-quadro { aspect-ratio: 1 / 1 !important; height: auto !important; min-height: 0 !important; }
     .pp-pagina { padding: 18px 14px 130px; }
+    /* il tasto dell'utente (fisso in alto a destra) non deve coprire "CUSTOMIZE": la fila lascia il suo posto e va a capo */
+    .pp-nav { flex-wrap: wrap; gap: 10px 12px; padding-right: 128px; }
+    .pp-modifica-btn { margin-left: 0; }
     .pp-codice { flex-wrap: wrap; row-gap: 6px; }
     .pp-barre { max-width: 100%; overflow: hidden; }
     .pp-lega { display: none; }

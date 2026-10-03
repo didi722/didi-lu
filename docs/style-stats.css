@@ -552,6 +552,9 @@ img.e-pokeball { padding: 18%; box-sizing: border-box; opacity: .7; }
     .scheda-nome { font-size: 1.7rem; margin-left: -4px; }
     .scheda-sezione { padding: 26px 18px 0; }
     .tessere { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    /* da toccare con il dito: i chip dell'ordinamento sono alti 28px, qui 38; le etichette delle caselle non scendono sotto i 10px */
+    .ordina-chip { min-height: 38px; padding-left: 14px; padding-right: 14px; }
+    .dato-et, .carta-punteggio-et { font-size: 0.66rem; }
 }
 @media (prefers-reduced-motion: reduce) {
     .tag, .carta, .voce, .ordina-chip, .btn-altri, .chip-bottone, .stats-modal-chiudi,

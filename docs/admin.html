@@ -1368,6 +1368,35 @@ input, select, textarea {
 
     .btn-small:hover { background: rgba(255,255,255,0.3); }
     .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:1000; }
+
+    /* TELEFONO (≤ 900px): intestazione che va a capo, tabelle che scorrono di lato dentro la propria scheda,
+       modulo "nuovo giocatore" a campi impilati, pannello nuova stagione in colonna. Il desktop non cambia. */
+    @media (max-width: 900px) {
+        .hub-header { padding: 14px; }
+        .header-content { flex-wrap: wrap; gap: 12px; }
+        .header-content h1 { font-size: 1.35rem; margin: 0; }
+        .header-buttons { gap: 8px; }
+        .admin-main-container { padding: 12px; }
+        .admin-table-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .admin-custom-table { table-layout: auto; }
+        .admin-custom-table th, .admin-custom-table td { padding: 10px 8px; overflow-wrap: anywhere; }
+        /* le colonne meno importanti si nascondono, così i bottoni d'azione restano in vista */
+        .admin-custom-table:has(#lista-stagioni-admin) :is(th, td):nth-child(4),
+        .admin-custom-table:has(#lista-players-admin) :is(th, td):nth-child(2) { display: none; }
+        .admin-custom-table th:nth-child(1) { width: 44px; }
+        .admin-custom-table th:nth-child(3), .admin-custom-table th:nth-child(5) { width: auto; }
+        .status-badge { min-width: 0; padding: 4px 6px; font-size: 0.68rem; white-space: nowrap; }
+        .btn-small { margin: 0 4px 4px 0; }
+        .btn-small { padding: 8px 12px; min-height: 36px; }
+        .admin-add-player-form { flex-wrap: wrap; }
+        .admin-add-player-form .form-group { flex: 1 1 150px !important; }
+        .admin-add-player-form .btn-save { flex: 1 1 100%; width: 100%; }
+        .admin-panel-modern.wide { box-sizing: border-box; width: calc(100vw - 16px); max-height: 92vh; overflow-y: auto; padding: 18px 14px; }
+        .admin-three-columns { flex-direction: column; gap: 6px; align-items: stretch; }
+        .form-grid { grid-template-columns: 1fr; }
+        .full-width, .btn-confirm { grid-column: auto; }
+        input, select, textarea { font-size: 16px; }
+    }
 </style>
 
 </body>

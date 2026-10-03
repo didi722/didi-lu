@@ -487,3 +487,27 @@
     .sfide-btn.squilla, .live-punto { animation: none; }
     .sfide-toast { transition: none; }
 }
+
+/* =====================================================================
+   TELEFONO (≤ 600px): la fila "Live" va a capo (etichetta sopra, chip a tutta larghezza)
+   e il chip si comprime: nomi con i puntini, "PLAY" ridotto alla freccia.
+   ≤ 900px: i menu a comparsa si allineano al bordo. Il desktop non cambia.
+   ===================================================================== */
+@media (max-width: 900px) {
+    .sfide-dropdown { right: 12px; top: 164px; width: calc(100vw - 24px); max-width: 400px; box-sizing: border-box; max-height: calc(100vh - 180px); }
+    /* finestra "lancia la sfida": il padding sta dentro la larghezza, i due bottoni vanno a capo se non ci stanno, e su
+       schermi bassi (telefono in orizzontale) la scheda scorre invece di uscire */
+    .sfida-card { box-sizing: border-box; width: 100%; max-width: 480px; max-height: 100%; overflow-y: auto; padding: 20px 16px 22px; }
+    .sfida-card h2 { font-size: 1.7rem; overflow-wrap: anywhere; }
+    .sfida-azioni { flex-wrap: wrap; gap: 12px; }
+    .sfida-azioni .btn-save, .sfida-azioni .btn-cancel { flex: 1 1 130px; min-width: 0; font-size: 1.05rem; }
+}
+@media (max-width: 600px) {
+    .live-list { flex-wrap: wrap; gap: 10px 12px; }
+    .live-riga, .live-scorri { flex: 1 1 100%; }
+    .live-chip { gap: 8px; padding: 5px 6px 5px 8px; }
+    .live-fmt { max-width: 58px; }
+    .live-n { max-width: 70px; }
+    .live-vai { font-size: 0; padding: 4px 9px 2px; }
+    .live-vai::before { font-size: 0.8rem; }
+}

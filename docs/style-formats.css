@@ -1386,3 +1386,62 @@ body {
     display: block;
     opacity: 1;
 }
+
+/* =====================================================================
+   FINESTRE STRETTE (≤ 1120px, tablet in orizzontale compresi): il contenitore è largo 1100px fissi e centrato, quindi
+   sotto quella larghezza usciva dallo schermo a sinistra. Prende la larghezza della finestra e la griglia parte dopo la
+   colonna delle pubblicità (220px). Il desktop non cambia.
+   ===================================================================== */
+@media (max-width: 1120px) {
+    .main-wrapper,
+    .home-seasons-container { width: 100%; max-width: 100%; }
+    .formats-neubrutalist-grid { width: calc(100% - 250px) !important; margin-left: 235px !important; }
+}
+
+/* =====================================================================
+   TELEFONO (≤ 900px): il contenitore (1100px fissi, centrato) prende la larghezza dello schermo e la griglia
+   non lascia più il 20% a sinistra per le pubblicità. Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    body { align-items: stretch; }
+    .main-wrapper,
+    .home-seasons-container { width: 100%; max-width: 100%; }
+    .formats-neubrutalist-grid {
+        width: 100% !important;
+        margin: 22px 0 0 !important;
+        padding: 0 16px 40px;
+        gap: 26px !important;
+    }
+    /* matita e cestino (solo admin) sono emoji da 12px: da toccare con il dito servono più grandi */
+    .format-card-nb button[title="Edit format"],
+    .format-card-nb button[title="Delete format"] { font-size: 18px !important; padding: 8px 10px !important; }
+}
+
+/* =====================================================================
+   TELEFONO (≤ 900px): la scheda di un formato. A PC regole e classifica stanno affiancate (stili in linea nello script);
+   su telefono vanno in pila e la finestra scorre. Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    #format-modal-overlay {
+        align-items: flex-start !important;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px 12px 30px !important;
+    }
+    #format-modal-overlay .format-modal-wrapper { gap: 20px !important; }
+    #format-modal-overlay .format-modal-title-tag h2 { font-size: 1.4rem !important; overflow-wrap: anywhere; }
+    #format-modal-overlay .format-modal-container { flex-direction: column; gap: 26px !important; max-height: none; }
+    #format-modal-overlay .format-modal-card-left,
+    #format-modal-overlay .format-modal-card-right { flex: none !important; width: 100% !important; }
+}
+
+/* Telefono: le caselle della scheda di un formato (tipo, generazione, formato Showdown...) una per riga, a tutta larghezza:
+   a due per riga le etichette e i valori lunghi (es. "gen9vgc2024regg") uscivano dal riquadro. */
+@media (max-width: 900px) {
+    #format-modal-overlay .neubrutal-grid-block { flex: 1 1 100% !important; min-width: 0 !important; overflow-wrap: anywhere; }
+
+    /* "Add new format": i campi in colonna invece che affiancati */
+    #format-modal .format-input-row { flex-direction: column; gap: 22px; }
+    #format-modal .format-input-row > .format-input-group { flex: none; width: 100%; }
+    #format-modal .format-modal-body { padding: 34px 14px 18px; }
+}

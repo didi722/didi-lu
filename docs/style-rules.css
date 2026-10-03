@@ -1134,3 +1134,45 @@ body {
     border: 2px solid #000000;
     box-shadow: 1px 1px 0px #000000;
 }
+/* =====================================================================
+   TELEFONO (≤ 900px): l'indice diventa una striscia scorrevole in cima e il testo prende tutta la larghezza.
+   Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    .rules-wrapper {
+        flex-direction: column;
+        margin-left: 0;
+        width: 100%;
+        padding: 14px 12px 40px;
+        gap: 16px;
+    }
+    .rules-content { width: 100%; max-width: none; }
+    .rules-sidebar {
+        order: -1;
+        position: static !important;
+        width: 100%;
+    }
+    .toc-container { padding: 10px 12px; }
+    .toc-title { margin-bottom: 8px; padding-bottom: 6px; font-size: 1rem; }
+    .toc-nav {
+        flex-direction: row;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 4px 4px 10px;
+        margin: 0 -4px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+    }
+    .toc-link {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 10px 14px;
+        border: 2px solid #000;
+        background: #fff;
+        scroll-snap-align: start;
+    }
+    .rule-card { padding: 18px 16px; scroll-margin-top: 16px; }
+    .rule-card h2 { font-size: 1.25rem; margin-bottom: 18px; }
+    .rule-card h3 { font-size: 1.05rem; }
+    .rule-card p { text-align: left; hyphens: manual; overflow-wrap: anywhere; }
+}

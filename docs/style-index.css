@@ -2138,3 +2138,40 @@ input, select {
         @media (max-width: 520px) {
             .frt-grid { grid-template-columns: 1fr; }
         }
+
+
+/* =====================================================================
+   TELEFONO (≤ 900px): i modali dell'index (iscrizione alla stagione, nuova stagione) entrano nello schermo e scorrono.
+   Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    #modal-iscrizione {
+        box-sizing: border-box;
+        top: 0;
+        left: 0;
+        transform: none;
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        /* il tasto dell'utente resta fisso in alto a destra, sopra la finestra: il titolo parte sotto di lui */
+        padding: 96px 14px 30px;
+    }
+    .modal-grid-layout { flex-direction: column; gap: 14px; }
+    .modal-info-box-2 { margin-left: 14px; }
+    .modal-info-box-3 { margin-left: 28px; }
+    .modal-format-list li { margin-top: 12px; }
+
+    .admin-panel-modern.wide {
+        box-sizing: border-box;
+        width: calc(100vw - 16px);
+        max-height: 94vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 18px 14px;
+    }
+    .admin-three-columns { flex-direction: column; gap: 6px; align-items: stretch; }
+    .admin-panel-modern h3 { margin-bottom: 16px; }
+    .button-group-modern { margin-top: 16px; }
+}

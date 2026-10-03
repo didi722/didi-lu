@@ -5197,3 +5197,94 @@ transform: translate(-4px, -4px);
     cursor: pointer;
 }
 .btn-gioca:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 black; }
+/* =====================================================================
+   TELEFONO (≤ 900px): le colonne vanno in pila e la griglia dei showdown scende a una (o due) colonne.
+   Il desktop non cambia: tutto sta dentro le media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    .hub-container { margin-left: 0; padding: 14px 12px 40px; max-width: none; }
+    .hub-main-layout { flex-direction: column; align-items: stretch; gap: 24px; }
+    .hub-left-column { margin-right: 0 !important; width: 100%; gap: 22px; }
+    .hub-right-column {
+        position: static;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    #matchList.showdown-grid-double,
+    .showdown-grid-double {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-right: 0 !important;
+        padding: 0;
+        gap: 16px;
+    }
+}
+@media (max-width: 560px) {
+    #matchList.showdown-grid-double,
+    .showdown-grid-double { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* classifica: il pulsante VS sta fuori dalla riga, a sinistra: si lascia il posto per vederlo */
+@media (max-width: 900px) {
+    .participants-card #participants-list { padding-left: 58px; }
+}
+
+/* =====================================================================
+   TELEFONO (≤ 900px): i modali (squadre iscritte, classifica, dettaglio showdown) entrano nello schermo e scorrono.
+   Il desktop non cambia: tutto sta dentro la media query.
+   ===================================================================== */
+@media (max-width: 900px) {
+    /* squadre iscritte */
+    #modal-registered-teams.custom-modal-backdrop { padding: 18px 10px 0; box-sizing: border-box; }
+    .neubrutal-badge-title { font-size: 1.5rem; padding: 8px 16px; white-space: normal; }
+    .modal-custom-header h2 { font-size: 1.6rem; }
+    .modal-custom-header { padding-bottom: 8px; margin-bottom: 14px; }
+
+    /* classifica: il titolo è fisso in alto, la tabella (12 colonne) scorre di lato dentro la sua scheda */
+    #modal-rank-details { align-items: flex-start !important; padding: 74px 10px 20px !important; overflow-y: auto; box-sizing: border-box; }
+    .rank-modal-card { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; }
+    .rank-modal-title { font-size: 1.7rem; padding: 10px 18px; top: 16px; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3); }
+    .rank-modal-close { top: 16px; right: 12px; padding: 8px 14px; }
+    .rank-modal-body { margin-bottom: 20px; }
+    /* la tabella ha 12 colonne (posizione, nome, 3 gruppi da totale/vinte/perse, punti): su telefono i totali si tolgono
+       (sono vinte + perse) e le altre colonne si stringono, così sta tutta senza scorrere di lato */
+    .rank-grid-system { grid-template-columns: 30px minmax(0, 1fr) repeat(6, 26px) 44px; gap: 3px; padding: 8px 8px; min-width: 0; }
+    .rank-grid-system .val-tot { display: none; }
+    .rank-header-row .group-main-label { grid-column: span 2; font-size: 0.55rem; letter-spacing: 0; }
+    .rank-header-row > div[style*="grid-column: 12"] { grid-column: 9 !important; }
+    .stack-pos { font-size: 0.9rem; }
+    .stack-identity-wrapper { gap: 8px; min-width: 0; }
+    .stack-avatar-inline { width: 34px; height: 34px; }
+    .stack-name { font-size: 1.05rem; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; }
+    .stack-val { font-size: 0.8rem; }
+    .stack-points-badge { font-size: 1rem !important; padding: 3px 2px !important; min-width: 0 !important; box-shadow: 2px 2px 0 #000 !important; }
+    .player-stack-card { padding: 10px 8px; }
+
+    /* dettaglio showdown: le tre partite una sotto l'altra, la finestra scorre */
+    #sd-modal-overlay { align-items: flex-start; height: 100%; }
+    .sd-modal-container { width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .sd-modal-header { padding: 14px 8px 4px !important; transform: none; justify-content: center; }
+    .sd-modal-title { margin-top: 0; max-width: calc(100% - 24px); box-sizing: border-box; padding: 14px 18px !important; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3) !important; }
+    .sd-modal-title h2 { font-size: 1.35rem !important; overflow-wrap: anywhere; }
+    .sd-modal-title p { font-size: 0.85rem !important; }
+    .sd-modal-body { padding: 10px 12px 32px; gap: 20px; }
+    .match-card,
+    .match-card:nth-child(3n+1),
+    .match-card:nth-child(3n+2),
+    .match-card:nth-child(3n+3) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px 12px;
+        transform: none;
+        margin-bottom: 4px;
+        box-shadow: 5px 5px 0 #000;
+    }
+    .match-meta { height: auto; align-items: center; padding-right: 0; }
+    .match-category { transform: none; width: auto; min-height: 0; }
+    .score-container { margin: 0 auto; width: fit-content; padding: 6px 20px; }
+    .match-card .team-badge { min-width: 0; width: 100%; box-sizing: border-box; transform: none; }
+    .pokemon-lineup { flex-wrap: wrap; justify-content: center; }
+    .match-actions { display: flex; justify-content: center; }
+    .btn-replay-icon { margin: 4px auto 0; transform: rotate(-3deg); }
+}

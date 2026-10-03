@@ -1,0 +1,208 @@
+/* =====================================================================
+   REGOLE PER TELEFONO COMUNI A PIÙ PAGINE
+   ---------------------------------------------------------------------
+   Va caricato per ultimo, dopo il foglio della pagina. Le regole specifiche di una pagina stanno in fondo al suo
+   foglio (style-<pagina>.css); qui c'è solo ciò che serve a più pagine insieme:
+     - la scheda di dettaglio squadra (Matches, Box, Hub, pagina pubblica), che ognuno dei quattro fogli duplica;
+     - il selettore delle squadre dell'Hub;
+     - il modale di login;
+     - i controlli per i dispositivi touch (X visibile, niente "passaggio del mouse").
+   Il desktop non cambia: ogni regola sta dentro una media query.
+   ===================================================================== */
+
+/* ---------- Scheda di dettaglio squadra ---------- */
+@media (max-width: 900px) {
+    /* la finestra scorre (in Box e nella pagina pubblica era "overflow: hidden", in Matches/Hub centrata) */
+    #teamModal {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+        padding: 12px 8px 28px !important;
+        box-sizing: border-box !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    #teamModal .modal-content,
+    #teamModal .modal-inner {
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        margin: 0 auto !important;
+        padding: 16px 12px 22px !important;
+        flex: none;
+        overflow: visible !important;
+    }
+
+    /* titolo e punteggi: uno sopra l'altro invece che affiancati */
+    #teamModal .modal-header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+    }
+    #teamModal .modal-header-container h2 {
+        font-size: 1.5rem;
+        padding: 8px 18px;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-wrap: anywhere;
+        box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+    }
+    #teamModal .team-score-banner {
+        flex-wrap: wrap;
+        gap: 10px 22px;
+        padding: 10px 14px;
+        max-width: 100%;
+        box-sizing: border-box;
+        box-shadow: 4px 4px 0 #000;
+    }
+
+    /* i sei Pokémon: due colonne su tablet, una su telefono */
+    #teamModal .modal-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: none;
+        gap: 14px;
+    }
+    #teamModal .modal-pkm-card { height: auto; min-width: 0; }
+
+    /* i fumetti (mosse, abilità, strumento, statistiche, tipi) si aprono allineati al bordo di ciò che si tocca, mai
+       centrati o a lato: così restano dentro lo schermo qualunque sia la posizione (a PC si aprono di lato) */
+    #teamModal .move-tooltip,
+    #teamModal .generic-tooltip,
+    #teamModal .stats-tooltip,
+    #teamModal .type-effectiveness-tooltip {
+        box-sizing: border-box;
+        width: min(200px, calc(100vw - 44px));
+        max-width: calc(100vw - 44px);
+        transform: none !important;
+    }
+    #teamModal .generic-tooltip,
+    #teamModal .stats-tooltip,
+    #teamModal .generic-tooltip.tooltip-left,
+    #teamModal .stats-tooltip.stats-left { left: auto !important; right: 0 !important; top: 100% !important; margin-top: 6px; }
+    #teamModal .modal-moves .move-span .move-tooltip { left: 0 !important; right: auto !important; }
+    #teamModal .modal-moves .move-span:nth-child(even) .move-tooltip { left: auto !important; right: 0 !important; }
+    #teamModal .type-effectiveness-tooltip { left: 0 !important; right: auto !important; }
+}
+@media (max-width: 640px) {
+    #teamModal .modal-grid { grid-template-columns: minmax(0, 1fr); }
+}
+/* telefoni stretti (320-380px): le quattro mosse stanno a due per riga, quindi il nome può andare a capo invece di uscire dalla scheda */
+@media (max-width: 380px) {
+    #teamModal .modal-moves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #teamModal .modal-moves .move-span { white-space: normal; padding: 6px 4px; line-height: 1.15; overflow-wrap: anywhere; }
+}
+
+/* ---------- Scheda di un Pokémon (Box, Hub, pagina pubblica) ---------- */
+@media (max-width: 900px) {
+    #pkmDetailModal {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+        padding: 12px 8px 28px !important;
+        box-sizing: border-box !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    #pkmDetailModal .modal-content {
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        margin: 0 auto !important;
+        flex: none;
+    }
+}
+
+/* La griglia della scheda Pokémon ha tre colonne fisse (280px · resto · 320px): su telefono le sezioni vanno in pila,
+   nell'ordine in cui si leggono (nome e tipi, strumenti, difese, statistiche, mosse). */
+@media (max-width: 900px) {
+    #pkmDetailModal .pkm-modal-grid {
+        grid-template-areas:
+            "header"
+            "info-strips"
+            "weakness"
+            "stats"
+            "moves" !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: none !important;
+        gap: 34px !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 16px 6px 22px !important;
+        box-sizing: border-box;
+    }
+    #pkmDetailModal .pkm-panel { min-width: 0; box-sizing: border-box; }
+    /* a PC statistiche e mosse sono tirate in su con margini negativi e altezze fisse: in pila si sovrapporrebbero */
+    #pkmDetailModal .area-stats,
+    #pkmDetailModal .area-moves { margin-top: 0 !important; height: auto !important; max-height: none !important; }
+    /* ogni mossa: nome e valori sulla prima riga, la descrizione sotto a tutta larghezza */
+    #pkmDetailModal .move-row-mini { height: auto !important; min-height: 30px; flex-wrap: wrap; row-gap: 4px; padding: 6px 8px !important; }
+    #pkmDetailModal .move-left-part { flex: 1 1 auto; min-width: 0; }
+    #pkmDetailModal .move-desc-inline {
+        order: 3;
+        flex: 1 1 100%;
+        padding-left: 0;
+        font-size: 0.72rem !important;
+        line-height: 1.2;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+    #pkmDetailModal .pkm-name-banner { font-size: 1.25rem !important; padding: 8px 18px; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+    #pkmDetailModal .pkm-sprite-hero { max-width: 60%; height: auto; }
+}
+
+/* ---------- Selettore delle squadre (Hub) ---------- */
+@media (max-width: 900px) {
+    .modal-neubrutal {
+        box-sizing: border-box;
+        width: calc(100vw - 20px);
+        max-width: 500px;
+        padding: 18px 14px;
+    }
+    #user-teams-list { padding: 12px; }
+}
+
+/* ---------- Login (ogni pagina) ---------- */
+@media (max-width: 900px) {
+    #login-modal .modal-content {
+        box-sizing: border-box;
+        width: calc(100vw - 28px);
+        max-width: 420px;
+        max-height: calc(100vh - 28px);
+        overflow-y: auto;
+        padding: 28px 20px 22px;
+        box-shadow: 8px 8px 0 var(--nb-ink, #000);
+    }
+    #login-modal h2 { font-size: 1.9rem; margin-bottom: 18px; }
+    #login-modal .close-modal { top: 6px; right: 12px; }
+}
+
+/* ---------- Dispositivi touch (nessun "passaggio del mouse") ----------
+   Le schede si chiudono toccando fuori (mobile.js) o con una X che a PC resta nascosta. */
+@media (hover: none) {
+    #teamModal .close-replay,
+    #teamModal .close-modal,
+    #pkmDetailModal .close {
+        visibility: visible;
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        z-index: 20;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        background: #fff;
+        color: #000;
+        border: 3px solid #000;
+        box-shadow: 3px 3px 0 #000;
+        font: 900 1.6rem/1 'Josefin Sans', sans-serif;
+        cursor: pointer;
+    }
+    #teamModal .modal-content,
+    #pkmDetailModal .modal-content { position: relative; }
+}

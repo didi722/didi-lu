@@ -518,5 +518,6 @@ test('le card dell\'index si adattano alla larghezza (da 236 a 300px) e sotto i 
     assert.match(pagineCss, /width:\s*clamp\(236px, calc\(\(100vw - var\(--nb-ads\) - 60px - 2 \* var\(--nb-gap-card\)\) \/ 3\), 300px\)/);
     assert.match(pagineCss, /@media \(max-width: 1050px\)\s*\{[^}]*body\.pg-index[^}]*overflow-y: auto/s);
     assert.match(pagineCss, /@media \(max-width: 900px\)/);
-    assert.match(pagineCss, /@media \(max-width: 520px\)/);
+    // la barra del titolo su telefono (scritta accorciata sotto i 520px) è un blocco unico in temi.css, per tutte le pagine
+    assert.match(css, /@media \(max-width: 520px\)/);
 });
