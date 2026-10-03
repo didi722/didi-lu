@@ -59,6 +59,8 @@ test('le pagine usano i fiocchi calcolati: lo scaffale nella scheda Pokémon, le
         assert.match(html, /data-fiocchi-pkm="\$\{pIndex\}"/, `${p}: manca la casella delle medagliette`);
         assert.match(html, /window\.squadraAperta = team/, `${p}: i fiocchi sono del Pokémon DI QUEL team`);
     }
+    // la card dell'allenatore apre la scheda di un Pokémon senza passare dalla scheda squadra: deve dire di che team è
+    assert.match(docs('public-card.js'), /window\.squadraAperta = team;[\s\S]{0,160}window\.apriPkmDettaglio\(/, 'public-card.js: i fiocchi del Pokémon sono quelli del suo team');
     const pub = docs('public.html');
     assert.ok(!/maxwonstrike[^\n]*>= 8|maxcleanstrike[^\n]*>= 5/.test(pub), 'le vecchie soglie sui badge salvati non ci sono più');
     assert.ok(!pub.includes('ribbons-floating-sidebar'), 'la vecchia barra dei fiocchi è sparita');
