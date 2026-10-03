@@ -521,3 +521,11 @@ test('le card dell\'index si adattano alla larghezza (da 236 a 300px) e sotto i 
     // la barra del titolo su telefono (scritta accorciata sotto i 520px) è un blocco unico in temi.css, per tutte le pagine
     assert.match(css, /@media \(max-width: 520px\)/);
 });
+
+test('box: i pulsanti tondi (musica, importa, Team Builder) stanno sopra al blocco del titolo che il tema alza, altrimenti non ricevono i clic', () => {
+    const m = /body\.nb \.top-bar-inner \{[^}]*z-index:\s*(\d+)/.exec(css);
+    assert.ok(m, 'blocco del titolo con z-index');
+    const r = /body\.pg-box \.music-btn,\s*body\.pg-box \.btn-floating-admin,\s*body\.pg-box \.btn-floating-helper \{\s*z-index:\s*(\d+)/.exec(css);
+    assert.ok(r, 'regola per i pulsanti del box mancante');
+    assert.ok(Number(r[1]) > Number(m[1]), `z-index dei pulsanti (${r[1]}) deve superare quello del titolo (${m[1]})`);
+});

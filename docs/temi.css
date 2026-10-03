@@ -244,6 +244,11 @@ body.nb .auth-interaction:hover { box-shadow: var(--nb-sh-l); }
 body.nb .auth-interaction:active { box-shadow: var(--nb-sh-s); }
 body.nb .music-btn:hover,
 body.nb .sfide-btn:hover { box-shadow: none; }
+/* Box: i pulsanti tondi (musica, importa, Team Builder) stanno dentro la barra, prima del blocco del titolo; il tema alza
+   quel blocco (z-index 1) e senza questa riga lo mette sopra, così i pulsanti non ricevono più i clic. */
+body.pg-box .music-btn,
+body.pg-box .btn-floating-admin,
+body.pg-box .btn-floating-helper { z-index: 2; }
 
 /* ---------- Menu a tendina dell'utente ---------- */
 body.nb .user-dropdown .menu-item,
