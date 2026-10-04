@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="temi.css">
+<link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="box-team.css">
@@ -149,32 +150,8 @@
     </div>
 </div>
 
-<!-- Sfondo scuro e sfocato -->
-<div id="admin-backdrop" class="admin-backdrop" onclick="chiudiAdminProtetto()"></div>
-
-<!-- Admin Panel (Ora si comporta da vero Modale) -->
-<div id="admin-panel" class="admin-panel">
-    <h3 class="admin-panel.h3">Showdown Importer</h3>
-    <input type="text" id="admin-team-name" class="admin-team-name" placeholder="Team Name">
-    
-    <select id="admin-team-cat" class="admin-team-cat">
-        <option value="">Loading categories...</option>
-    </select>
-
-    <textarea id="showdown-input" rows="8" class="showdown-input" placeholder="Paste Showdown team here..."></textarea>
-<button onclick="salvaTeamSuFirebase()" class="showdown-save">Upload</button>
-<button type="button" id="btn-edit-builder" onclick="modificaTeamNelBuilder()" class="showdown-save showdown-builder" style="display: none;">
-    <i class="fas fa-tools"></i> Edit in Team Builder
-</button>    
-    <!-- Modificato per chiudere correttamente il modale e il backdrop -->
-</div>
-
-<button onclick="apriNuovoTeam()" class="btn-floating-admin" title="Add Team">
-    <span class="plus-icon">+</span>
-</button>
-
-<button onclick="toggleTeambuilderHelper()" class="btn-floating-helper" title="Teambuilder Explorer">
-    <i class="fas fa-tools"></i>
+<button onclick="toggleTeambuilderHelper()" class="btn-floating-helper" title="Open the Team Builder">
+    <i class="fas fa-tools tasto-icona"></i><span class="tasto-testo">Team builder</span>
 </button>
 
 <div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
@@ -697,64 +674,6 @@ document.addEventListener('click', () => {
     }
 }, { once: true });
 
-// 6. Funzione Admin
-function apriAdminProtetto() {
-    const adminPanel = document.getElementById('admin-panel');
-    const backdrop = document.getElementById('admin-backdrop');
-
-    // 🆕 1. Azzera l'ID del team in modifica per indicare che si tratta di un NUOVO team
-    currentTeamId = null; // Se la tua variabile globale ha un altro nome (es. editingTeamId), usa quello
-
-    // 🆕 2. Svuota i campi di testo del form
-    const inputNome = document.getElementById('nome-team'); // Sostituisci con l'ID del tuo campo nome
-    if (inputNome) inputNome.value = '';
-
-    // 🆕 3. Ripristina la grafica vuota per gli slot dei Pokémon
-    if (typeof aggiornaGraficaBoxVuoto === 'function') {
-        aggiornaGraficaBoxVuoto(); // O la tua funzione per svuotare la griglia/card
-    }
-
-    if (adminPanel && backdrop) {
-        // Mostra sia il modale che lo sfondo sfocato
-        backdrop.style.display = 'block';
-        adminPanel.style.display = 'block';
-    } else {
-        console.error("Error: Modal elements not found in the DOM.");
-    }
-}
-
-// Apre il pannello per un team NUOVO: azzera la modalità modifica e svuota il form
-function apriNuovoTeam() {
-    const adminPanel = document.getElementById('admin-panel');
-    if (adminPanel) delete adminPanel.dataset.editingId;
-        if (adminPanel) delete adminPanel.dataset.daBuilder;
-
-    const btnBuilder = document.getElementById('btn-edit-builder');
-    if (btnBuilder) btnBuilder.style.display = 'none';
-
-    const elName = document.getElementById('admin-team-name');
-    const elCat = document.getElementById('admin-team-cat');
-    const elInput = document.getElementById('showdown-input');
-    if (elName) elName.value = '';
-    if (elCat) elCat.value = '';
-    if (elInput) elInput.value = '';
-
-    apriAdminProtetto();
-}
-
-function chiudiAdminProtetto() {
-    const adminPanel = document.getElementById('admin-panel');
-    const backdrop = document.getElementById('admin-backdrop');
-
-    if (adminPanel && backdrop) {
-        // Nasconde entrambi
-        backdrop.style.display = 'none';
-        adminPanel.style.display = 'none';
-    }
-    // Nell'editor del simulatore chiudere il pannello (fuori dal Team Builder) vuol dire uscire dall'editor
-    if (INCORPORATO && !tbModifica && !salvataggioTeamInCorso) notificaSimulatore('chiuso');
-}
-
 // 7. Gestione Play/Pause Manuale
 function toggleMusic() {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
@@ -915,13 +834,9 @@ async function avviaEditorIncorporato() {
     // la stessa regola del tasto con la matita: un team già iscritto a una stagione iniziata non si modifica
     await caricaTeamBloccati();
     if (TeamBloccati.eBloccato(window.nomiTeamBloccati, team.nome)) return notificaSimulatore('bloccato', { id });
-    // la lista dei formati del pannello si riempie quando Firebase risponde: senza, il formato del team non si potrebbe selezionare
-    const selectFormato = document.getElementById('admin-team-cat');
-    for (let i = 0; selectFormato && selectFormato.options.length < 2 && i < 30; i++) await new Promise(ok => setTimeout(ok, 100));
-    caricaTeamPerModifica(id);          // il pannello, con il team scritto in formato Showdown
     notificaSimulatore('pronto', { id });
-    // e subito il Team Builder; se per qualche motivo non parte, resta il pannello (si può modificare anche da lì)
-    modificaTeamNelBuilder().catch(e => console.warn('Team Builder not opened, the panel stays', e));
+    // si apre subito il Team Builder, con il team (e da lì si può importare/esportare in Showdown)
+    caricaTeamPerModifica(id).catch(e => console.warn('Team Builder not opened', e));
 }
 
 // Il simulatore chiede di chiudere (il suo "Back"): si passa dalle chiusure di sempre, che chiedono conferma se ci sono modifiche
@@ -929,8 +844,6 @@ function chiudiEditorIncorporato() {
     if (salvataggioTeamInCorso) return;     // sta scrivendo su Firebase: chiudere ora lo interromperebbe, a salvataggio finito si chiude da solo
     const builder = document.getElementById('tb-overlay');
     if (builder && builder.classList.contains('open')) return tbChiediChiusura();
-    const pannello = document.getElementById('admin-panel');
-    if (pannello && pannello.style.display === 'block') return chiudiAdminProtetto();
     notificaSimulatore('chiuso');
 }
 window.addEventListener('message', e => {
@@ -1704,6 +1617,7 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
         card.style.backgroundColor = colorePieno;
         card.style.borderLeft = "none";
         card.classList.add('move-full-color');
+        card.dataset.tipo = tipo;
 
         document.getElementById(`m-pow-${index}`).innerText = data.power || '--';
         document.getElementById(`m-acc-${index}`).innerText = data.accuracy ? data.accuracy : '--';
@@ -2952,43 +2866,35 @@ async function mostraSuccessoSalvataggio(messaggio) {
 
 let salvataggioTeamInCorso = false; // evita doppi salvataggi (es. Invio premuto sul bottone durante l'attesa)
 
-async function salvaTeamSuFirebase() {
+// Salva (o aggiorna) un team dal Team Builder: { nome, categoria (il formato), testo (in formato Showdown), editingId (null se è nuovo) }
+async function salvaTeamSuFirebase({ nome, categoria, testo, editingId = null } = {}) {
     if (salvataggioTeamInCorso) return;
 
     const databaseRef = typeof db !== 'undefined' ? db.ref() : firebase.database().ref();
-    const inputNome = document.getElementById('admin-team-name'); 
-    const selectFormato = document.getElementById('admin-team-cat'); 
-    const textareaShowdown = document.getElementById('showdown-input'); 
-    const adminPanel = document.getElementById('admin-panel'); 
 
     // 🆕 RECUPERO DINAMICO DELL'UTENTE LOGGATO
     // Opzione A: Da Firebase Auth (es. UID o displayName)
     const currentUser = firebase.auth ? firebase.auth().currentUser : null;
     
-    // Opzione B: Da data-attribute del pannello admin o variabile globale (fallback)
-    const currentPlayerId = currentUser ? currentUser.uid : (adminPanel?.dataset.playerId || window.activePlayerId);
+    // Opzione B: variabile globale (fallback)
+    const currentPlayerId = currentUser ? currentUser.uid : window.activePlayerId;
 
     if (!currentPlayerId) {
         alert("Error: No logged-in user or identified. Unable to save the team.");
         return;
     }
 
-    if (!inputNome || !selectFormato || !textareaShowdown) return;
-
-    const nomeTeamScelto = inputNome.value.trim();
-    const idRegolamentoScelto = selectFormato.value;
-    const testoShowdown = textareaShowdown.value.trim();
-    const editingId = adminPanel ? adminPanel.dataset.editingId : null;
+    const nomeTeamScelto = String(nome || '').trim();
+    const idRegolamentoScelto = String(categoria || '');
+    const testoShowdown = String(testo || '').trim();
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
         alert("Error: Please fill in all fields.");
         return;
     }
 
-    // Salvataggio partito dal Team Builder: copia SUBITO il testo per Showdown.
-    // Va fatto prima di qualsiasi await, finché il browser considera valido il click dell'utente.
-    const daBuilder = adminPanel?.dataset.daBuilder === '1';
-    const copiaRiuscita = daBuilder ? tbCopiaNegliAppunti(testoShowdown) : Promise.resolve(false);
+    // Copia SUBITO il testo per Showdown. Va fatto prima di qualsiasi await, finché il browser considera valido il click dell'utente.
+    const copiaRiuscita = tbCopiaNegliAppunti(testoShowdown);
 
     // ⏳ Da qui in poi parte l'attesa (Firebase + PokeAPI): il loader compare subito
     salvataggioTeamInCorso = true;
@@ -3068,21 +2974,15 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         }
 
         // Messaggio finale, mostrato dentro il loader (niente popup del browser)
-        let messaggio = editingId ? "Team updated!" : "Team created!";
-        if (daBuilder) {
-            const azione = editingId ? "Team updated" : "Team saved";
-            messaggio = (await copiaRiuscita)
-                ? `${azione} and Showdown text copied to clipboard!`
-                : `${azione}, but the Showdown text could not be copied.`;
-        }
+        const azione = editingId ? "Team updated" : "Team saved";
+        const messaggio = (await copiaRiuscita)
+            ? `${azione} and Showdown text copied to clipboard!`
+            : `${azione}, but the Showdown text could not be copied.`;
 
         staRicaricando = true;
         await mostraSuccessoSalvataggio(messaggio);
 
-        // Ora lo schermo è coperto dal grigio del loader: si può ripulire e ricaricare senza che si veda
-        textareaShowdown.value = "";
-        inputNome.value = "";
-        if (adminPanel) delete adminPanel.dataset.editingId;
+        // Ora lo schermo è coperto dal grigio del loader: si può ricaricare senza che si veda
 
         // Con il builder ancora aperto il browser chiederebbe "Leave site?"
         const overlayBuilder = document.getElementById('tb-overlay');
@@ -3130,57 +3030,16 @@ function cancellaTeamDaFirebase(teamId) {
     }
 }
 
-// MODIFICA uno specifico team
-function caricaTeamPerModifica(teamId) {
+// MODIFICA uno specifico team: si apre direttamente il Team Builder, con il team dentro
+// (da lì si può importare ed esportare il testo di Showdown)
+async function caricaTeamPerModifica(teamId) {
     const team = tuttiITeam.find(t => t.id === teamId);
     if (!team) return;
-
-    const elName = document.getElementById('admin-team-name');
-    const elCat = document.getElementById('admin-team-cat');
-    const elInput = document.getElementById('showdown-input');
-    const adminPanel = document.getElementById('admin-panel');
-
-    // 1. Popola i campi del form
-    if (elName) elName.value = team.nome || '';
-    if (elCat) elCat.value = team.categoria || team.category || 'VGC';
-
-        // 2. Ricostruisce il testo in formato Showdown (con natura, tera e IVs)
-    let testoShowdown = "";
-    if (Array.isArray(team.pokemon)) {
-        team.pokemon.forEach(p => {
-            testoShowdown += p.strumento && p.strumento !== 'None'
-                ? `${p.nome || ''} @ ${p.strumento}\n`
-                : `${p.nome || ''}\n`;
-            if (p.abilita) testoShowdown += `Ability: ${p.abilita}\n`;
-            if (p.tera) testoShowdown += `Tera Type: ${p.tera}\n`;
-            if (p.evs) testoShowdown += `EVs: ${p.evs}\n`;
-            if (p.natura) testoShowdown += `${p.natura} Nature\n`;
-            if (p.ivs) testoShowdown += `IVs: ${p.ivs}\n`;
-            if (Array.isArray(p.mosse)) {
-                p.mosse.forEach(m => { if (m && m !== "-") testoShowdown += `- ${m}\n`; });
-            }
-            testoShowdown += `\n`;
-        });
-    }
-
-   if (elInput) elInput.value = (team.testoShowdown || testoShowdown).trim();
-        // 3. Salva l'ID in modalità modifica
-    if (adminPanel) {
-        adminPanel.dataset.editingId = teamId;
-        delete adminPanel.dataset.daBuilder;
-    }
-
-    // Mostra il bottone per aprire il team nel Team Builder
-    const btnBuilder = document.getElementById('btn-edit-builder');
-    if (btnBuilder) btnBuilder.style.display = 'block';
-
-    // 4. Apre il modale mostrando anche lo sfondo sfocato (backdrop)
-    apriAdminProtetto();
+    await modificaTeamNelBuilder(teamId);
 }
 
 // Forza la funzione a riconoscere il database
 function sincronizzaCategorie() {
-    const selectCat = document.getElementById('admin-team-cat'); 
     const selectFilter = document.getElementById('categoryFilter'); 
     
     console.log("Sincronizzazione categorie in corso...");
@@ -3190,15 +3049,11 @@ function sincronizzaCategorie() {
         
         // Prepariamo le opzioni per il filtro (con "Tutte")
         let filterHtml = '<option value="">Category...</option>';
-        // Prepariamo le opzioni per l'admin (senza "Tutte")
-        let adminHtml = '<option value="">-- Choose Category --</option>';
 
         if (data) {
             Object.keys(data).forEach(key => {
                 const nomeCat = data[key].categoria;
-                const opt = `<option value="${nomeCat}">${nomeCat}</option>`;
-                filterHtml += opt;
-                adminHtml += opt;
+                filterHtml += `<option value="${nomeCat}">${nomeCat}</option>`;
             });
         }
 
@@ -3206,12 +3061,6 @@ function sincronizzaCategorie() {
             const currentFilterVal = selectFilter.value;
             selectFilter.innerHTML = filterHtml;
             selectFilter.value = currentFilterVal; // Mantieni la selezione se l'utente stava filtrando
-        }
-
-        if (selectCat) {
-            const currentCatVal = selectCat.value;
-            selectCat.innerHTML = adminHtml;
-            selectCat.value = currentCatVal; // Mantieni la selezione se il pannello è già aperto su un team
         }
 
         console.log("Categorie sincronizzate da Firebase.");
@@ -3511,7 +3360,7 @@ async function gestisciCambioFormatoHelper() {
 
                 const selectInitial = document.createElement('select');
                 selectInitial.id = "helper-player-initial-select";
-                selectInitial.style.cssText = "padding: 6px; border: 3px solid black; box-shadow: 4px 4px 0 solid black; font-size: 0.9rem; background: #fff;";
+                selectInitial.style.cssText = "padding: 6px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 4px 4px 0 solid black; font-size: 0.9rem; background: #fff;";
 
                 selectInitial.innerHTML = `<option value="">-- Choose Initial --</option>`;
 
@@ -3682,7 +3531,7 @@ async function gestisciCambioFormatoHelper() {
                 label.textContent = `Each Pokémon in the Team must have the same ${configConfigurata.label}:`;
 
                 const customSelect = document.createElement('select');
-                customSelect.style.cssText = "padding: 6px; border: 3px solid black; box-shadow: 5px 5px 0 solid black; font-size: 0.9rem; background: #fff;";
+                customSelect.style.cssText = "padding: 6px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 5px 5px 0 solid black; font-size: 0.9rem; background: #fff;";
                 customSelect.innerHTML = `<option value="">Select ${configConfigurata.label}...</option>`;
 
                 valoriOrdinati.forEach(val => {
@@ -3797,7 +3646,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     width: 60px;
                     height: 60px;
                     background: linear-gradient(to bottom, #ff3e3e 50%, #ffffff 50%);
-                    border: 5px solid #000000;
+                    border: 5px solid var(--nb-ink, #000);
                     border-radius: 50%;
                     position: relative;
                     animation: spinPokeball 1.1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
@@ -3818,7 +3667,7 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
                     width: 16px;
                     height: 16px;
                     background: #ffffff;
-                    border: 5px solid #000000;
+                    border: 5px solid var(--nb-ink, #000);
                     border-radius: 50%;
                     top: 50%;
                     left: 50%;
@@ -3963,21 +3812,21 @@ function renderizzaListaPiatta(pokemonList) {
                 flex: 1;
                 min-width: 130px;
                 padding: 6px 12px;
-                border: 3px solid #000;
+                border: 3px solid var(--nb-ink, #000);
                 border-radius: 0;
                 font-family: inherit;
                 font-size: 0.9rem;
-                box-shadow: 3px 3px 0px #000;
+                box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                 outline: none;
                 background: white;
             ">
             <select id="helper-sort-select" style="
                 padding: 6px 10px;
-                border: 3px solid #000;
+                border: 3px solid var(--nb-ink, #000);
                 border-radius: 0;
                 font-family: inherit;
                 font-size: 0.9rem;
-                box-shadow: 3px 3px 0px #000;
+                box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                 background: white;
                 cursor: pointer;
                 outline: none;
@@ -6437,7 +6286,8 @@ async function tbPreparaDettaglio(team) {
 function tbHtmlAzioni(variante) {
     return `
         <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}">
-            <button type="button" id="tb-btn-copy" class="tb-btn tb-btn-copy" onclick="tbCopiaShowdown()">Copy Showdown</button>
+            <button type="button" id="tb-btn-import" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('import')">Import</button>
+            <button type="button" id="tb-btn-export" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('export')">Export</button>
             <div class="tb-save-wrap" id="tb-save-wrap">
                 <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">${tbModifica ? 'Update team' : 'Save to box'}</button>
                 <div class="tb-bubble" id="tb-save-bubble"></div>
@@ -7379,9 +7229,11 @@ function tbCreaOverlay() {
     overlay.id = 'tb-overlay';
     overlay.className = 'tb-overlay';
     overlay.innerHTML = `
-        <div class="tb-wrapper" role="dialog" aria-modal="true" aria-labelledby="tb-title">
+        <div class="tb-wrapper" role="dialog" aria-modal="true" aria-label="Team Builder">
             <div class="tb-header">
-                <h2 id="tb-title" class="tb-title">Build Team</h2>
+                <input type="text" id="tb-title" class="tb-title" maxlength="40" autocomplete="off" spellcheck="false"
+                       placeholder="Name your team" aria-label="Team name" title="Click to rename the team"
+                       oninput="tbRenderRiepilogo()">
                 <span id="tb-format-badge" class="tb-format-badge"></span>
                 <button type="button" class="tb-close" onclick="tbChiediChiusura()" aria-label="Close">&times;</button>
             </div>
@@ -7431,13 +7283,19 @@ function tbQuantiNellaLista(lista, specie) {
     return specie.filter(id => ids.has(id)).length;
 }
 
-// Apre il builder mostrando solo il caricamento (titolo e badge già ripuliti)
-function tbApriOverlayCaricamento(titolo, testo) {
+// Il nome che si è dato al team (il titolo del Team Builder è un campo)
+function tbNomeTeam() {
+    const el = document.getElementById('tb-title');
+    return el ? el.value.trim() : '';
+}
+
+// Apre il builder mostrando solo il caricamento (titolo e badge già ripuliti). `nome`: il nome del team (vuoto se è nuovo)
+function tbApriOverlayCaricamento(nome, testo) {
     const overlay = tbCreaOverlay();
     overlay.classList.add('open');
 
     const elTitolo = document.getElementById('tb-title');
-    if (elTitolo) elTitolo.textContent = titolo;
+    if (elTitolo) elTitolo.value = nome || '';
     const badge = document.getElementById('tb-format-badge');
     if (badge) badge.textContent = '';
 
@@ -7468,12 +7326,9 @@ async function tbAttendiBuilderPronto() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 }
 
-// Dal pannello Showdown: apre nel Team Builder il team che si sta modificando.
-// Il loader sfocato copre subito tutto; sotto si prepara il builder, invisibile (la lista del formato
-// la calcola l'helper, anche lui nascosto) e il loader svanisce solo quando il team è pronto.
-async function modificaTeamNelBuilder() {
-    const adminPanel = document.getElementById('admin-panel');
-    const teamId = adminPanel ? adminPanel.dataset.editingId : null;
+// Apre nel Team Builder un team del Box. Il loader sfocato copre subito tutto; sotto si prepara il builder, invisibile
+// (la lista del formato la calcola l'helper, anche lui nascosto) e il loader svanisce solo quando il team è pronto.
+async function modificaTeamNelBuilder(teamId) {
     const team = teamId ? tuttiITeam.find(t => t.id === teamId) : null;
     if (!team) {
         alert("Error: Team not found.");
@@ -7485,19 +7340,15 @@ async function modificaTeamNelBuilder() {
     const grid = document.getElementById('helper-pkm-grid');
     if (!helper || !select || !grid) return;
 
-    // Il team da aprire è quello scritto nel pannello (comprese le modifiche inline non salvate);
-    // se il pannello è vuoto si usano i Pokémon salvati nel box, array o oggetto che siano
-    const textarea = document.getElementById('showdown-input');
-    const testo = textarea ? textarea.value.trim() : '';
+    // I Pokémon sono quelli salvati nel team: si rileggono dal testo di Showdown (c'è tutto), se manca dall'elenco salvato nel box
+    const testo = String(team.testoShowdown || '').trim();
     let pokemon = testo ? parseShowdown(testo) : [];
     if (!pokemon.length) {
         pokemon = Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon || {});
     }
+    const nome = team.nome || '';
 
-    const inputNome = document.getElementById('admin-team-name');
-    const nome = (inputNome && inputNome.value.trim()) || team.nome || '';
-
-    // Loader sfocato sopra il pannello, che resta aperto (e sfocato) finché il builder non è pronto
+    // Loader sfocato sopra la pagina finché il builder non è pronto
     mostraLoaderSalvataggio('Loading...');
     const sessione = tbModifica = { teamId, nome, pokemon };
     tbStato.firma = '';
@@ -7512,7 +7363,7 @@ async function modificaTeamNelBuilder() {
     // I dati di Showdown intanto si scaricano in parallelo (apriTeamBuilder riusa la stessa richiesta)
     tbCaricaTuttiDati().catch(() => {});
 
-    // Se qualcosa va storto si resta sul pannello di modifica e compare l'avviso
+    // Se qualcosa va storto si resta nel Box e compare l'avviso
     const annulla = async (messaggio) => {
         if (tbModifica !== sessione) return;
         tbModifica = null;
@@ -7522,9 +7373,8 @@ async function modificaTeamNelBuilder() {
     };
 
     try {
-        // Formato: quello scelto nel pannello, poi quello salvato nel team (nome o id del regolamento)
-        const selectCat = document.getElementById('admin-team-cat');
-        const candidati = [selectCat && selectCat.value, team.categoria, team.category]
+        // Formato: quello salvato nel team (nome o id del regolamento)
+        const candidati = [team.categoria, team.category]
             .map(v => String(v || '').toLowerCase().trim())
             .filter(Boolean);
 
@@ -7543,7 +7393,7 @@ async function modificaTeamNelBuilder() {
         }
         if (tbModifica !== sessione) return;
         if (!formatId) {
-            await annulla("Error: The format of this team was not found. Choose the format in the panel and try again.");
+            await annulla("Error: The format of this team was not found.");
             return;
         }
         sessione.formatId = formatId;
@@ -7565,8 +7415,6 @@ async function modificaTeamNelBuilder() {
             helper.style.display = 'flex';
         }
 
-        // Solo ora, sotto il loader, il pannello lascia il posto al builder
-        if (tbModifica === sessione) chiudiAdminProtetto();
     } finally {
         overlay.style.visibility = '';
         await sfumaLoaderSalvataggio(); // svanisce e scopre il builder già completo
@@ -7592,7 +7440,7 @@ async function apriTeamBuilder() {
     if (daHelper) mostraLoaderSalvataggio('Loading...');
 
     const overlay = tbApriOverlayCaricamento(
-        tbModifica ? `Edit Team · ${tbModifica.nome}` : 'Build Team',
+        tbModifica ? tbModifica.nome : '',
         tbModifica ? 'Loading team...' : 'Loading moves, abilities and items...'
     );
     if (daHelper) overlay.style.visibility = 'hidden';
@@ -7728,11 +7576,9 @@ function tbInizializzaStato(firma, regolamento, lista) {
     }).sort((a, b) => (b.bst - a.bst) || a.nome.localeCompare(b.nome)); // dal BST più alto
 }
 
-// Riempie gli slot con un team salvato nel box (stesso formato prodotto da parseShowdown)
-function tbCaricaTeamEsistente(pokemonSalvati) {
-    const lista = (Array.isArray(pokemonSalvati) ? pokemonSalvati : Object.values(pokemonSalvati || {}))
-        .filter(p => p && p.nome);
-
+// Da un Pokémon "salvato" (il formato prodotto da parseShowdown) allo slot del Team Builder.
+// Ritorna { slot } oppure, se non si può usare, { motivo }. Con `soloDelFormato` la specie deve essere tra quelle del formato.
+function tbSlotDaSalvato(p, soloDelFormato) {
     // "252 Atk / 4 SpD / 252 Spe" → { hp: 0, atk: 252, def: 0, spa: 0, spd: 4, spe: 252 }
     const leggiStat = (testo, predefinito) => {
         const valori = {};
@@ -7746,56 +7592,177 @@ function tbCaricaTeamEsistente(pokemonSalvati) {
     };
     const intero = (v, predefinito) => Number.isInteger(v) ? v : predefinito;
 
+    // "Soprannome (Garchomp) (M)" → "garchomp"; se la forma non esiste si ripiega sulla specie base
+    let specieId = tbSpecieDaNome(p.nome);
+    if (!tbSpecie(specieId)) {
+        const pulito = String(p.nome).replace(/\s*\([MF]\)\s*$/i, '').replace(/^.*\(([^()]+)\)\s*$/, '$1');
+        const parti = pulito.split('-');
+        while (parti.length > 1 && !tbSpecie(specieId)) {
+            parti.pop();
+            specieId = tbToID(parti.join('-'));
+        }
+    }
+    const sp = tbSpecie(specieId);
+    if (!sp) {
+        console.warn('[Team Builder] Species not found:', p.nome);
+        return { motivo: `${p.nome} was not recognized.` };
+    }
+    if (soloDelFormato && !tbStato.pool.some(v => v.specieId === specieId)) {
+        return { motivo: `${tbNomeBello(sp)} is not allowed in this format.` };
+    }
+
+    const natura = Object.prototype.hasOwnProperty.call(TB_NATURE, p.natura) ? p.natura : 'Serious';
+    const effetto = TB_NATURE[natura];
+    const oggetto = p.strumento && p.strumento !== 'None' ? tbToID(p.strumento) : '';
+    const mosseSalvate = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
+    const mosse = mosseSalvate.map(m => tbToID(m))
+        .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name))
+        .slice(0, 4);
+    while (mosse.length < 4) mosse.push('');
+
+    return { slot: {
+        specieId,
+        oggetto: tbDex.items[oggetto] ? oggetto : '',
+        abilita: (p.abilita && !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', p.abilita))
+            ? p.abilita
+            : (tbAbilitaLegali(tbSpecieBase(sp))[0] || ''),
+        natura,
+        natPlus: effetto ? effetto[0] : '',
+        natMinus: effetto ? effetto[1] : '',
+        tera: p.tera || (sp.types && sp.types[0]) || 'Normal',
+        mosse,
+        evs: leggiStat(p.evs, 0),
+        ivs: leggiStat(p.ivs, 31),
+        sesso: p.sesso === 'M' || p.sesso === 'F' ? p.sesso : '',
+        felicita: intero(p.felicita, 255),
+        shiny: !!p.shiny,
+        gigantamax: !!p.gigantamax,
+        livelloDynamax: intero(p.livelloDynamax, 10)
+    } };
+}
+
+// Riempie gli slot con un team salvato nel box (stesso formato prodotto da parseShowdown)
+function tbCaricaTeamEsistente(pokemonSalvati) {
+    const lista = (Array.isArray(pokemonSalvati) ? pokemonSalvati : Object.values(pokemonSalvati || {}))
+        .filter(p => p && p.nome);
+
     tbStato.slot = [null, null, null, null, null, null];
     lista.slice(0, 6).forEach((p, i) => {
-        // "Soprannome (Garchomp) (M)" → "garchomp"; se la forma non esiste si ripiega sulla specie base
-        let specieId = tbSpecieDaNome(p.nome);
-        if (!tbSpecie(specieId)) {
-            const pulito = String(p.nome).replace(/\s*\([MF]\)\s*$/i, '').replace(/^.*\(([^()]+)\)\s*$/, '$1');
-            const parti = pulito.split('-');
-            while (parti.length > 1 && !tbSpecie(specieId)) {
-                parti.pop();
-                specieId = tbToID(parti.join('-'));
-            }
-        }
-        const sp = tbSpecie(specieId);
-        if (!sp) {
-            console.warn('[Team Builder] Species not found:', p.nome);
-            return;
-        }
-
-        const natura = Object.prototype.hasOwnProperty.call(TB_NATURE, p.natura) ? p.natura : 'Serious';
-        const effetto = TB_NATURE[natura];
-        const oggetto = p.strumento && p.strumento !== 'None' ? tbToID(p.strumento) : '';
-        const mosseSalvate = Array.isArray(p.mosse) ? p.mosse : Object.values(p.mosse || {});
-        const mosse = mosseSalvate.map(m => tbToID(m))
-            .filter(id => id && tbDex.moves[id] && !voceBannata(tbStato.regolamento?.restrizioni, 'mosse', tbDex.moves[id].name))
-            .slice(0, 4);
-        while (mosse.length < 4) mosse.push('');
-
-        tbStato.slot[i] = {
-            specieId,
-            oggetto: tbDex.items[oggetto] ? oggetto : '',
-            abilita: (p.abilita && !voceBannata(tbStato.regolamento?.restrizioni, 'abilita', p.abilita))
-                ? p.abilita
-                : (tbAbilitaLegali(tbSpecieBase(sp))[0] || ''),
-            natura,
-            natPlus: effetto ? effetto[0] : '',
-            natMinus: effetto ? effetto[1] : '',
-            tera: p.tera || (sp.types && sp.types[0]) || 'Normal',
-            mosse,
-            evs: leggiStat(p.evs, 0),
-            ivs: leggiStat(p.ivs, 31),
-            sesso: p.sesso === 'M' || p.sesso === 'F' ? p.sesso : '',
-            felicita: intero(p.felicita, 255),
-            shiny: !!p.shiny,
-            gigantamax: !!p.gigantamax,
-            livelloDynamax: intero(p.livelloDynamax, 10)
-        };
+        const r = tbSlotDaSalvato(p, false);
+        if (r.slot) tbStato.slot[i] = r.slot;
     });
     tbStato.attivo = 0;
 }
 
+// --- IMPORT ED EXPORT DI SHOWDOWN ------------------------------------
+// Il testo di un team intero (si sostituisce il team) o di un solo Pokémon (va nello slot scelto, o nel primo vuoto)
+function tbImportaTesto(testo) {
+    // le righe "=== [gen9ou] Cartella/Nome ===" dell'esportazione di Showdown non sono Pokémon
+    const pulito = String(testo || '').split(/\r?\n/).filter(r => !/^\s*===.*===\s*$/.test(r)).join('\n');
+    const lista = parseShowdown(pulito);
+    if (!lista.length) {
+        return { ok: false, messaggio: 'No Pokémon found. Each Pokémon needs its name line and at least one more line (ability, moves...).' };
+    }
+
+    const nuovi = [], saltati = [];
+    lista.forEach(p => {
+        const r = tbSlotDaSalvato(p, true);
+        if (r.slot) nuovi.push(r.slot);
+        else saltati.push(r.motivo);
+    });
+    if (!nuovi.length) return { ok: false, messaggio: saltati.join(' ') };
+
+    let esito;
+    if (lista.length === 1) {
+        const vuoto = tbStato.slot.findIndex(x => !x);
+        const dove = !tbStato.slot[tbStato.attivo] ? tbStato.attivo : (vuoto >= 0 ? vuoto : tbStato.attivo);
+        tbStato.slot[dove] = nuovi[0];
+        tbStato.attivo = dove;
+        esito = `Imported ${tbNomeBello(tbSpecie(nuovi[0].specieId))} in slot ${dove + 1}.`;
+    } else {
+        const primi = nuovi.slice(0, 6);
+        tbStato.slot = primi.concat(Array(6 - primi.length).fill(null));
+        tbStato.attivo = 0;
+        esito = `Imported ${primi.length} Pokémon.`;
+        if (nuovi.length > 6) saltati.push('A team has at most 6 Pokémon: the others were left out.');
+    }
+    tbRender();
+    return { ok: true, messaggio: [esito, ...saltati].join(' '), parziale: saltati.length > 0 };
+}
+
+function tbApriShowdown(modo) {
+    const overlay = document.getElementById('tb-overlay');
+    if (!overlay) return;
+    tbChiudiShowdown();
+    const esporta = modo === 'export';
+    const dialogo = document.createElement('div');
+    dialogo.id = 'tb-sd';
+    dialogo.className = 'tb-sd';
+    dialogo.setAttribute('role', 'dialog');
+    dialogo.setAttribute('aria-modal', 'true');
+    dialogo.setAttribute('aria-labelledby', 'tb-sd-titolo');
+    dialogo.innerHTML = `
+        <div class="tb-sd-scheda">
+            <div class="tb-sd-testa">
+                <h3 id="tb-sd-titolo">${esporta ? 'Export to Showdown' : 'Import from Showdown'}</h3>
+                <button type="button" class="tb-sd-x" aria-label="Close" onclick="tbChiudiShowdown()">&times;</button>
+            </div>
+            <p class="tb-sd-aiuto">${esporta
+                ? 'Your team in Showdown format: paste it in the Showdown teambuilder or in a battle.'
+                : 'Paste a whole team, or a single Pokémon, in Showdown format. A whole team replaces the current one; a single Pokémon goes in the selected slot (or in the first empty one).'}</p>
+            <textarea id="tb-sd-testo" class="tb-sd-testo" rows="12" spellcheck="false" autocomplete="off"
+                      ${esporta ? 'readonly' : 'placeholder="Garchomp @ Rocky Helmet&#10;Ability: Rough Skin&#10;EVs: 252 HP / 252 Atk / 4 Spe&#10;Jolly Nature&#10;- Earthquake&#10;- Dragon Claw&#10;..."'}></textarea>
+            <p id="tb-sd-esito" class="tb-sd-esito" role="status" aria-live="polite"></p>
+            <div class="tb-sd-azioni">
+                ${esporta ? `
+                <button type="button" class="tb-btn" onclick="tbCopiaDaDialogo('team')">Copy team</button>
+                <button type="button" class="tb-btn" id="tb-sd-copia-uno" onclick="tbCopiaDaDialogo('uno')">Copy selected Pokémon</button>
+                <button type="button" class="tb-btn tb-btn-secondario" onclick="tbChiudiShowdown()">Close</button>` : `
+                <button type="button" class="tb-btn tb-btn-save" onclick="tbEseguiImport()">Import</button>
+                <button type="button" class="tb-btn tb-btn-secondario" onclick="tbChiudiShowdown()">Cancel</button>`}
+            </div>
+        </div>`;
+    overlay.appendChild(dialogo);
+    dialogo.addEventListener('mousedown', e => { if (e.target === dialogo) tbChiudiShowdown(); });
+    dialogo.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); tbChiudiShowdown(); } });
+    const area = document.getElementById('tb-sd-testo');
+    if (esporta) {
+        area.value = tbTestoShowdown();
+        const uno = document.getElementById('tb-sd-copia-uno');
+        if (uno) uno.disabled = !tbStato.slot[tbStato.attivo];
+        document.querySelector('#tb-sd .tb-sd-azioni .tb-btn').disabled = !area.value;
+    }
+    area.focus();
+    if (esporta) area.select();
+}
+
+function tbChiudiShowdown() {
+    const d = document.getElementById('tb-sd');
+    if (d) d.remove();
+}
+
+function tbEseguiImport() {
+    const area = document.getElementById('tb-sd-testo');
+    const esito = document.getElementById('tb-sd-esito');
+    if (!area || !esito) return;
+    const r = tbImportaTesto(area.value);
+    esito.textContent = r.messaggio;
+    esito.classList.toggle('tb-sd-errore', !r.ok);
+    // tutto importato: si torna al Team Builder; con qualcosa lasciato fuori resta aperto, così si legge cosa
+    if (r.ok && !r.parziale) tbChiudiShowdown();
+}
+
+async function tbCopiaDaDialogo(cosa) {
+    const s = tbStato.slot[tbStato.attivo];
+    const testo = cosa === 'uno' ? (s ? tbTestoSlot(s) : '') : tbTestoShowdown();
+    if (!testo) return;
+    const ok = await tbCopiaNegliAppunti(testo);
+    const esito = document.getElementById('tb-sd-esito');
+    if (esito) {
+        esito.textContent = ok ? (cosa === 'uno' ? 'Pokémon copied!' : 'Team copied!') : 'Could not copy: select the text and copy it by hand.';
+        esito.classList.toggle('tb-sd-errore', !ok);
+    }
+}
 
 // --- RENDER ----------------------------------------------------------
 function tbRender() {
@@ -8564,8 +8531,8 @@ function tbRenderRiepilogo() {
             : '';
     }
 
-    const btnCopia = document.getElementById('tb-btn-copy');
-    if (btnCopia) btnCopia.disabled = !tbStato.slot.some(Boolean);
+    const btnEsporta = document.getElementById('tb-btn-export');
+    if (btnEsporta) btnEsporta.disabled = !tbStato.slot.some(Boolean);
 }
 
 // --- MENÙ A TENDINA DI MOSSE E STRUMENTI -----------------------------
@@ -8948,6 +8915,7 @@ function tbControllaTeam() {
     const errori = [];
     const pieni = tbStato.slot.filter(Boolean);
 
+    if (!tbNomeTeam()) errori.push('Give the team a name (the title above).');
     if (pieni.length < 6) errori.push(`The team has ${pieni.length}/6 Pokémon.`);
 
     if (tbStato.clausole) {
@@ -9008,19 +8976,6 @@ async function tbCopiaNegliAppunti(testo) {
     }
 }
 
-async function tbCopiaShowdown() {
-    const testo = tbTestoShowdown();
-    if (!testo) return;
-
-    await tbCopiaNegliAppunti(testo);
-
-    const btn = document.getElementById('tb-btn-copy');
-    if (btn) {
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy Showdown'; }, 1500);
-    }
-}
-
 async function tbSalvaNelBox() {
     if (tbControllaTeam().length) {
         // Team non valido: il bottone resta grigio e il fumetto spiega perché
@@ -9033,40 +8988,17 @@ async function tbSalvaNelBox() {
         return;
     }
 
-    const testo = tbTestoShowdown();
-    const categoria = tbStato.regolamento.categoria || '';
-    const adminPanel = document.getElementById('admin-panel');
-    const selectFormato = document.getElementById('admin-team-cat');
-    const textarea = document.getElementById('showdown-input');
-    const inputNome = document.getElementById('admin-team-name');
-
-    // MODIFICA di un team del box: si aggiorna subito, senza passare dal pannello
-    if (tbModifica) {
-        if (inputNome) inputNome.value = tbModifica.nome;
-        if (selectFormato) selectFormato.value = categoria;
-        if (textarea) textarea.value = testo;
-        if (adminPanel) {
-            adminPanel.dataset.editingId = tbModifica.teamId;
-            adminPanel.dataset.daBuilder = '1';
-        }
-
-        const btn = document.getElementById('tb-btn-save');
-        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-        await salvaTeamSuFirebase(); // copia il testo, valida, aggiorna e ricarica la pagina
-        if (btn) { btn.disabled = false; btn.textContent = 'Update team'; } // se il salvataggio fallisce si può riprovare
-        return;
-    }
-
-    // TEAM NUOVO: pannello Showdown già compilato, manca solo il nome
-    chiudiTeamBuilder();
-    if (typeof chiudiTuttoHelper === 'function') chiudiTuttoHelper();
-
-    apriNuovoTeam();
-    if (adminPanel) adminPanel.dataset.daBuilder = '1'; // dopo apriNuovoTeam, che lo azzera
-
-    if (selectFormato) selectFormato.value = categoria;
-    if (textarea) textarea.value = testo;
-    if (inputNome) setTimeout(() => inputNome.focus(), 50);
+    const btn = document.getElementById('tb-btn-save');
+    const testoBottone = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+    // salva (o aggiorna): copia il testo, valida, scrive e ricarica la pagina
+    await salvaTeamSuFirebase({
+        nome: tbNomeTeam(),
+        categoria: tbStato.regolamento.categoria || '',
+        testo: tbTestoShowdown(),
+        editingId: tbModifica ? tbModifica.teamId : null
+    });
+    if (btn) { btn.disabled = false; btn.textContent = testoBottone; } // se il salvataggio fallisce si può riprovare
 }
 
 function normalizzaRicerca(testo) {
@@ -9182,5 +9114,6 @@ function tbCambiaFiltroTipo(tipo) {
 }
 
     </script>
+<script src="controlli.js"></script>
 </body>
 </html>

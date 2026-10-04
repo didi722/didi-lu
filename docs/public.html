@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&family=Bungee&family=Rubik+Mono+One&family=Orbitron:wght@500;700;900&family=Righteous&family=Fredoka:wght@500;700&family=Permanent+Marker&family=Lobster&family=Playfair+Display:wght@700;900&family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-public.css">
     <link rel="stylesheet" href="style-public-card.css">
+    <link rel="stylesheet" href="temi.css">
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
     <script src="dettagli.js" defer></script>
@@ -21,13 +22,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="temi.js"></script>
     <script src="titoli.js"></script>
     <script src="statistiche.js"></script>
     <script src="fiocchi.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="public-card.js"></script>
 </head>
-<body>
+<body class="pg-public">
 
     <!-- Loader iniziale (Visibile di default) -->
 <div id="poke-loader" class="poke-loader-overlay">
@@ -143,13 +145,13 @@
    <div id="elo-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.2); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="width: 90%; max-width: 600px; position: relative; padding: 20px 10px 10px 10px;">
         
-        <span id="close-elo-modal" style="position: absolute; top: -10px; right: 0px; font-size: 24px; font-weight: bold; font-family: Josefin Sans, sans-serif; cursor: pointer; user-select: none; background: #fff; border: 3px solid #000; width: 35px; height: 35px; display: none; align-items: center; justify-content: center; box-shadow: 3px 3px 0px #000; z-index: 10;">&times;</span>
+        <span id="close-elo-modal" style="position: absolute; top: -10px; right: 0px; font-size: 24px; font-weight: bold; font-family: Josefin Sans, sans-serif; cursor: pointer; user-select: none; background: #fff; border: 3px solid var(--nb-ink, #000); width: 35px; height: 35px; display: none; align-items: center; justify-content: center; box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); z-index: 10;">&times;</span>
         
-        <div id="elo-badge-title" style="display: inline-block; color: white; background: black; border: 3px solid #000; box-shadow: 8px 8px 0px rgba(0,0,0,0.7); padding: 12px 36px; font-family: 'Josefin Sans', sans-serif; font-size: 2rem; font-weight: bold; text-transform: uppercase; position: absolute; top: -40px; left: 25px; z-index: 5; transform: rotate(-1.5deg);">
+        <div id="elo-badge-title" style="display: inline-block; color: white; background: black; border: 3px solid var(--nb-ink, #000); box-shadow: 8px 8px 0px rgba(0,0,0,0.7); padding: 12px 36px; font-family: 'Josefin Sans', sans-serif; font-size: 2rem; font-weight: bold; text-transform: uppercase; position: absolute; top: -40px; left: 25px; z-index: 5; transform: rotate(-1.5deg);">
             <span id="elo-modal-title">Progressione ELO</span>
         </div>
         
-        <div style="width: 100%; height: 320px; position: relative; background-color: #fff; border: 4px solid #000; box-shadow: 8px 8px 0px #000; padding: 25px 15px 15px 15px; box-sizing: border-box;">
+        <div style="width: 100%; height: 320px; position: relative; background-color: #fff; border: 4px solid var(--nb-ink, #000); box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 15px 15px 15px; box-sizing: border-box;">
             <canvas id="realEloChartInstance"></canvas>
         </div>
     </div>
@@ -955,6 +957,7 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
         card.style.backgroundColor = colorePieno;
         card.style.borderLeft = "none";
         card.classList.add('move-full-color');
+        card.dataset.tipo = tipo;
 
         document.getElementById(`m-pow-${index}`).innerText = data.power || '--';
         document.getElementById(`m-acc-${index}`).innerText = data.accuracy ? data.accuracy : '--';

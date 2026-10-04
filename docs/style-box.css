@@ -49,10 +49,10 @@ body {
 .pokeball-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     position: relative;
-    box-shadow: 4px 4px 0px #000000; /* L'ombra rimane ora statica */
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'ombra rimane ora statica */
     overflow: hidden; /* Mantiene la rotazione interna entro i bordi */
 }
 
@@ -81,7 +81,7 @@ body {
     width: 16px;
     height: 16px;
     background: #ffffff;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -120,8 +120,8 @@ input, select {
     font-family: 'Josefin Sans', sans-serif;
     font-weight: 600;
     padding: 10px 15px; 
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black; 
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); 
     background: white; 
     color: black;
     transition: all 0.3s ease;
@@ -172,8 +172,8 @@ input:focus {
     letter-spacing: 1px;
     background: var(--yellow);
     color: black;
-    border: 1.5px solid black;
-    box-shadow: 2px 2px 0 black;
+    border: 1.5px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 12px; 
     text-transform: uppercase;
 }
@@ -204,8 +204,8 @@ input:focus {
     cursor: help; /* Cambia cursore per far capire che c'è un info */
     color: #1a1a1a;
     font-family: 'Josefin Sans', sans-serif;
-    border: 1.5px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 1.5px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .pkm-box::before {
@@ -227,7 +227,7 @@ input:focus {
     position: absolute;
     bottom: 110%; 
     width: 260px; 
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid white;
     box-shadow: 4px 4px 0px white;
     color: white;
@@ -304,7 +304,7 @@ input:focus {
 
 .pkm-box:hover {
     transform: translateY(-5px);
-    box-shadow: 3px 7px 0 black;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .pkm-sprite-container {
@@ -431,8 +431,8 @@ input:focus {
 .modal-pkm-card {
     /* Manteniamo var(--accent-color) per lo sfondo dinamico del team */
     background: var(--accent-color); 
-    border: 3px solid black; 
-    box-shadow: 5px 5px 0px black; 
+    border: 3px solid var(--nb-ink, #000); 
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); 
     padding: 12px;
     display: flex;
     flex-direction: row;
@@ -476,7 +476,7 @@ input:focus {
 .modal-pkm-info strong {
     font-size: 0.95rem; 
     color: #fff !important; /* Testo bianco su sfondo nero */
-    background: #000;
+    background: var(--nb-ink, #000);
     text-transform: uppercase;
     display: table; /* Si stringe attorno al testo senza occupare tutto il rigo */
     padding: 1px 6px; /* Padding minimo per mantenere l'altezza originale */
@@ -519,8 +519,8 @@ input:focus {
     position: relative;
     cursor: help;
     color: #000 !important; 
-    border: 1.5px solid black !important;
-    box-shadow: 3px 3px 0px black !important; 
+    border: 1.5px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important; 
     font-size: 0.7rem;
     padding: 6px 8px;
     font-weight: 800; /* Più spessore al testo per il neubrutalism */
@@ -626,7 +626,7 @@ input:focus {
     width: 50px; /* Mantengo la tua larghezza */
     
     /* STILE STICKER */
-    border: 1.5px solid #000; /* Bordo nero che "contiene" l'adesivo */
+    border: 1.5px solid var(--nb-ink, #000); /* Bordo nero che "contiene" l'adesivo */
     border-radius: 0;         /* Taglio netto, niente curve */
     color: white;
     font-weight: 900;
@@ -634,7 +634,7 @@ input:focus {
     text-transform: uppercase;
     
     /* Ombra dura e vicina per l'effetto spessore carta */
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     cursor: help;
     font-family: 'Josefin Sans', sans-serif;
@@ -669,7 +669,7 @@ input:focus {
 .type-badge:hover {
     transform: scale(1.1) rotate(0deg) !important;
     z-index: 10;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 
@@ -715,8 +715,8 @@ input:focus {
 
     /* STILE NEUBRUTALIST: Via il nero/grigio, passiamo al "fumetto" */
     background: #fff !important;
-    border: 3px solid #000 !important;
-    box-shadow: 5px 5px 0px #000 !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     color: #000 !important;
     
     font-family: 'Josefin Sans', sans-serif;
@@ -773,8 +773,8 @@ input:focus {
     font-weight: bold;
     text-transform: uppercase;
     text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
-    border: 1px solid black;
-    box-shadow: 1.5px 1.5px 0 black;
+    border: 1px solid var(--nb-ink, #000);
+    box-shadow: calc(1.5px * var(--nb-kx, 1)) calc(1.5px * var(--nb-ky, 1)) calc(4px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
 }
 
@@ -822,7 +822,7 @@ input:focus {
     margin-left: 10px;
     
     /* STILE NEUBRUTALIST */
-    border: 2px solid #000; /* Bordo nero netto */
+    border: 2px solid var(--nb-ink, #000); /* Bordo nero netto */
     border-radius: 0 !important; /* VIA LE CURVE (anche se avevi 3px) */
     overflow: hidden;
     box-shadow: 2px 2px 0px rgba(0,0,0,0.1); /* Ombra interna minima */
@@ -835,15 +835,15 @@ input:focus {
     background-color: var(--accent-color); 
     
     /* Separatore netto alla fine del riempimento */
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--nb-ink, #000);
 }
 
 /* --- TOOLTIP DELLE STATISTICHE (Quello che spunta al passaggio) --- */
 .stats-tooltip {
     /* ... mantieni le tue posizioni left/top ... */
     background: #fff !important;
-    border: 3px solid #000 !important;
-    box-shadow: 6px 6px 0px #000 !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     color: #000 !important;
     padding: 12px;
     z-index: 10000;
@@ -867,7 +867,7 @@ input:focus {
     font-size: 0.7rem;
     line-height: 1.3;
     pointer-events: none;
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid #dadada;
     box-shadow: 4px 4px 0px #dadada;
     color: #dadada;
@@ -884,7 +884,7 @@ input:focus {
     padding-top: 10px !important;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid black; /* RIGHA BIANCA SOTTILE */
+    border-bottom: 1px solid var(--nb-ink, #000); /* RIGHA BIANCA SOTTILE */
 }
 
 .generic-tooltip p {
@@ -924,8 +924,8 @@ input:focus {
     
     /* CAMBIO STILE: Sfondo bianco e bordo nero netto */
     background: #fff; 
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #000 !important;
     
     font-family: 'Josefin Sans', sans-serif;
@@ -939,7 +939,7 @@ input:focus {
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #000; /* Linea di separazione nera */
+    border-bottom: 2px solid var(--nb-ink, #000); /* Linea di separazione nera */
     padding-bottom: 4px !important;
     margin-bottom: 6px;
 }
@@ -1574,13 +1574,13 @@ color:#eeeeee;
 }
 
 #single-stats .stat-bar-fill {
-    background: black;
+    background: var(--nb-ink, #000);
     height: 100%;
     /* Usa il colore del tipo/accento ma SENZA trasparenze */
     background-color: var(--accent-color); 
     
     /* Separatore netto alla fine del riempimento */
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--nb-ink, #000);
 }
 
 #single-stats .stat-label {
@@ -1613,7 +1613,7 @@ color:#eeeeee;
     justify-content: space-between;
     align-items: center;
     /* Bordo sotto nero netto e spesso */
-    border-bottom: 4px solid #000; 
+    border-bottom: 4px solid var(--nb-ink, #000); 
     padding-bottom: 20px;
     margin-bottom: 30px;
     gap: 20px;
@@ -1629,10 +1629,10 @@ color:#eeeeee;
     
     /* Colori: Testo Bianco su Sfondo Nero */
     color: #fff;
-    background: #000;
+    background: var(--nb-ink, #000);
     
     /* Bordo e Ombra Neubrutalist */
-    border: 4px solid #000; 
+    border: 4px solid var(--nb-ink, #000); 
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
     
     /* Rimosso border-radius (niente curve!) */
@@ -1649,8 +1649,8 @@ color:#eeeeee;
     gap: 30px;
     padding: 12px 25px;
     background-color: #fff; /* O var(--yellow) se vuoi che spicchi */
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(1deg); /* Contro-rotazione per dinamismo */
 }
 
@@ -1880,8 +1880,8 @@ color:#eeeeee;
     width: 45px;
     height: 45px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     align-items: center;
     justify-content: center;
@@ -1890,7 +1890,7 @@ color:#eeeeee;
 }
 
 .music-btn:hover {
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
@@ -1913,8 +1913,8 @@ color:#eeeeee;
     color: black;
     background-color: white;
     transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     box-shadow: 0 0 0;
 }
 
@@ -1929,8 +1929,8 @@ color:#eeeeee;
     justify-content: center;
     background-color: var(--yellow);
     padding: 5px;
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 
 }
 
@@ -1984,11 +1984,11 @@ color:#eeeeee;
     font-size: 1.7rem;
     font-weight: 900;
     color: #ffffff;
-    background: #000000; /* Sfondo nero solido */
+    background: var(--nb-ink, #000); /* Sfondo nero solido */
     padding: 10px 20px;
     
     /* Stile Etichetta Neubrutalist Spessa e Flottante */
-    border: 3px solid black; /* Bordo bianco di contrasto se lo sfondo generale è scuro */
+    border: 3px solid var(--nb-ink, #000); /* Bordo bianco di contrasto se lo sfondo generale è scuro */
     box-shadow: 6px 6px 0px rgba(0,0,0,0.3); /* Ombra nera netta senza sfocatura */
     transform: rotate(-1.5deg); /* Rotazione asimmetrica in stile fumetto */
     
@@ -2029,8 +2029,8 @@ color:#eeeeee;
     display: block; /* 1. Lo rende un elemento di blocco per permettere il centraggio */
     margin: 25px auto 0 auto;
     background: var(--save);
-    border: 3px solid black !important;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: background 0.3s;
     font-family: 'Josefin Sans', sans-serif;
     color: black;
@@ -2047,7 +2047,7 @@ color:#eeeeee;
 
 .showdown-save:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 black;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .showdown-save:active {
@@ -2081,50 +2081,6 @@ color:#eeeeee;
     transform: translate(-2px, -2px);
 }
 
-.btn-floating-admin {
-    position: absolute;
-    top: 100px;
-    right: 120px;
-    width: 50px;
-    height: 50px;
-    background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    outline: none;
-}
-
-/* Il simbolo + */
-.plus-icon {
-    font-size: 30px;
-    font-weight: 300; /* Lo rende sottile e moderno */
-    align-items: center;
-    justify-content: center;
-}
-
-/* Effetto al passaggio del mouse */
-.btn-floating-admin:hover {
-    color: white;
-    background-color: black;
-    transform: scale(1.2) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
-    border: #000;
-    box-shadow: 0 0 0;
-}
-
-.btn-floating-admin:active {
-    color: black;
-    background-color: white;
-    transform: scale(1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
-    box-shadow: 0 0 0;
-}
-
-
 /* Layout Generale */
 .grid { 
     display: grid; 
@@ -2137,8 +2093,8 @@ color:#eeeeee;
 /* La Card Neubrutalist */
 .card { 
     background: var(--accent-color); /* Colore dinamico del team */
-    border: 4px solid #000; /* Bordo nero spesso */
-    box-shadow: 10px 10px 0px #000; /* Ombra dura */
+    border: 4px solid var(--nb-ink, #000); /* Bordo nero spesso */
+    box-shadow: calc(10px * var(--nb-kx, 1)) calc(10px * var(--nb-ky, 1)) calc(25px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra dura */
     padding: 20px; 
     position: relative;
     transition: all 0.2s ease;
@@ -2148,13 +2104,13 @@ color:#eeeeee;
 .card:hover {
     /* Effetto "sollevamento" */
     transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px #000;
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .card:active {
     /* Effetto "pressione" */
     transform: translate(4px, 4px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Header della Card */
@@ -2172,14 +2128,14 @@ color:#eeeeee;
     text-transform: uppercase;
     background: #fff; /* Sfondo bianco per staccare */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 4px 10px;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .card h3 { 
     font-family: 'Josefin Sans', sans-serif;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     margin: 10px 0; 
     font-size: 1.6rem; /* Leggermente ridotto per nomi lunghi */
@@ -2202,7 +2158,7 @@ color:#eeeeee;
     width: 100%;
     /* Ridotto drasticamente il padding per renderla più corta */
     padding: 20px 0; 
-    border-bottom: 5px solid #000;
+    border-bottom: 5px solid var(--nb-ink, #000);
     display: flex;
     justify-content: center; /* Centra il contenuto interno */
     align-items: center;
@@ -2225,13 +2181,13 @@ color:#eeeeee;
 }
 
 .hub-title-display {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     /* Padding ridotto per rendere l'etichetta meno ingombrante */
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
     font-size: 2.2rem; /* Dimensione bilanciata */
     font-weight: 900;
@@ -2256,12 +2212,12 @@ color:#eeeeee;
 .controls input, 
 .controls select {
     background: #fff;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 8px 12px;
     font-family: 'Josefin Sans', sans-serif;
     font-weight: 700;
     font-size: 0.9rem;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     width: 100%;
     outline: none;
 }
@@ -2284,8 +2240,8 @@ color:#eeeeee;
     bottom: 115%; /* Leggermente più alto per non coprire il bordo */
     width: 240px; 
     background: #fff; /* Sfondo bianco per contrasto neubrutalist */
-    border: 3px solid #000; /* Bordo nero spesso */
-    box-shadow: 8px 8px 0px #000; /* Ombra netta */
+    border: 3px solid var(--nb-ink, #000); /* Bordo nero spesso */
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta */
     color: #000;
     padding: 15px;
     z-index: 999;
@@ -2296,14 +2252,14 @@ color:#eeeeee;
 /* Titolo dentro l'hover (Nome Pokémon) */
 .pkm-hover-card strong {
     display: table; /* Adattamento al testo */
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     font-size: 0.9rem;
     text-transform: uppercase;
     padding: 4px 12px;
     margin-bottom: 10px;
     transform: rotate(-2deg); /* Effetto sticker */
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
 }
 
 /* Info Testuali (Abilità, Item, etc) */
@@ -2322,14 +2278,14 @@ color:#eeeeee;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-top: 12px;
-    border-top: 2px solid #000; /* Separatore netto */
+    border-top: 2px solid var(--nb-ink, #000); /* Separatore netto */
     padding-top: 10px;
 }
 
 .hover-moves span {
     background: #fff; /* Sfondo neutro */
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #000;
     font-size: 0.65rem;
     padding: 6px 4px;
@@ -2386,8 +2342,8 @@ color:#eeeeee;
 /* --- IL PANNELLO (Il contenitore base di ogni sezione) --- */
 .pkm-panel {
     background: #fff !important; /* Sfondo bianco puro per contrasto */
-    border: 3px solid #000 !important; /* Bordo nero spesso */
-    box-shadow: 6px 6px 0px #000 !important; /* Ombra netta e dura */
+    border: 3px solid var(--nb-ink, #000) !important; /* Bordo nero spesso */
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important; /* Ombra netta e dura */
     color: #000 !important;
     padding: 12px !important;
     position: relative;
@@ -2400,24 +2356,24 @@ color:#eeeeee;
     font-weight: 900;
     text-transform: uppercase;
     color: #fff !important;
-    background: #000; /* Titolo "sticker" nero */
+    background: var(--nb-ink, #000); /* Titolo "sticker" nero */
     display: inline-block;
     padding: 2px 10px;
     margin: -25px 0 15px 0; /* Lo fa "uscire" leggermente dal bordo */
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     transform: rotate(-1deg);
 }
 
 /* --- SEZIONE DEBOLEZZE (Weakness) --- */
 .w-row {
     background: #f0f0f0;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     padding: 4px;
     margin-bottom: 5px;
 }
 
 .mult {
-    background: #000 !important;
+    background: var(--nb-ink, #000) !important;
     color: #fff !important;
     border-radius: 0; /* Via le curve */
     font-weight: 900;
@@ -2430,14 +2386,14 @@ color:#eeeeee;
     margin-bottom: 6px !important;
     background: #fff; /* Verrà sovrascritto dal colore del tipo, ma deve essere solido */
     transition: transform 0.1s;
-    box-shadow: 3px 3px 0 black;
-    border: 1.5px solid black;
-    border-left: 1.5px solid black !important;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    border: 1.5px solid var(--nb-ink, #000);
+    border-left: 1.5px solid var(--nb-ink, #000) !important;
 }
 
 .move-row-mini:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 5px 5px 0px #000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .move-name-mini {
@@ -2456,8 +2412,8 @@ color:#eeeeee;
 /* --- INFO STRIPS (Abilità e Strumento) --- */
 .info-box-compact {
     background: #fff !important;
-    border: 3px solid #000 !important;
-    box-shadow: 4px 4px 0px #000 !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     margin-bottom: 10px;
     color: black !important;
 }
@@ -2471,16 +2427,16 @@ color:#eeeeee;
 /* --- STATISTICHE --- */
 .stat-bar-bg {
     background: #fff !important;
-    border: 2px solid #000 !important;
+    border: 2px solid var(--nb-ink, #000) !important;
     border-radius: 0 !important;
 }
 
 .stat-bar-fill {
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--nb-ink, #000);
 }
 
 .evs-footer {
-    border-top: 2px solid #000 !important;
+    border-top: 2px solid var(--nb-ink, #000) !important;
     color: #000 !important;
     font-weight: 900;
     margin-top: 15px;
@@ -2488,13 +2444,13 @@ color:#eeeeee;
 
 /* --- HEADER CENTRALE (Nome Pokémon) --- */
 .pkm-name-banner {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff !important;
     padding: 10px 30px;
     font-size: 1.5rem !important;
     font-weight: 900;
     transform: rotate(1deg);
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2); /* Ombra colorata col tipo del pkm */
 }
 
@@ -2510,7 +2466,7 @@ color:#eeeeee;
     background: white; /* Colore giallo vivace tipico del neubrutalism */
     
     /* Bordi neri spessi e netti */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     
     
     /* Colore testo nero per contrasto massimo */
@@ -2523,7 +2479,7 @@ color:#eeeeee;
     gap: 10px;
     
     /* Ombra netta (senza sfocatura) */
-    box-shadow: 5px 5px 0px #000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     /* Transizione rapida per l'effetto pressione */
     transition: all 0.1s;
@@ -2533,13 +2489,13 @@ color:#eeeeee;
     /* Effetto "spostamento" quando ci passi sopra */
     background: white; /* Mantieni il colore o cambialo leggermente */
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .auth-interaction:active {
     /* Effetto "bottone premuto" */
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 #auth-icon {
@@ -2582,8 +2538,8 @@ color:#eeeeee;
     font-weight: 800;
     text-transform: uppercase;
     background: var(--yellow);
-    border: 3px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: 0.2s;
     cursor: pointer;
     width: 100%;
@@ -2601,7 +2557,7 @@ color:#eeeeee;
 .user-dropdown .logout-btn:hover {
     background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
     transform: translate(-3px, -3px) rotate(0deg);
-    box-shadow: 7px 7px 0px black;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .user-dropdown .menu-item:active{
@@ -2651,8 +2607,8 @@ color:#eeeeee;
 /* Il contenitore principale (La card) */
 #login-modal .modal-content {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta classica */
     padding: 40px;
     max-width: 400px;
     width: 90%;
@@ -2667,7 +2623,7 @@ color:#eeeeee;
     text-transform: uppercase;
     font-size: 2.5rem;
     margin-bottom: 25px;
-    border-bottom: 4px solid #000;
+    border-bottom: 4px solid var(--nb-ink, #000);
     display: inline-block;
     padding-bottom: 5px;
     color: black !important;
@@ -2692,7 +2648,7 @@ color:#eeeeee;
 .input-group input {
     width: 100%;
     padding: 12px 15px;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-family: inherit;
     font-weight: 600;
     background: #f0f0f0;
@@ -2704,7 +2660,7 @@ color:#eeeeee;
 
 .input-group input:focus {
     background: #fff;
-    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'input "esce" fuori quando scrivi */
     transform: translate(-2px, -2px);
 }
 
@@ -2714,11 +2670,11 @@ color:#eeeeee;
     padding: 15px;
     background: #31c489; /* Il verde che usi altrove */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 6px 6px 0px #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.1s;
     margin-top: 10px;
     transform: rotate(-2deg);
@@ -2726,12 +2682,12 @@ color:#eeeeee;
 
 .btn-login:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px #000;
+    box-shadow: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(23px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-login:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Tasto Chiudi (X) */
@@ -2788,8 +2744,8 @@ color:#eeeeee;
     width: 50px;
     height: 50px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -2801,7 +2757,7 @@ color:#eeeeee;
 
 .btn-floating-helper:hover {
     color: white;
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.2) rotate(90deg); /* Rotazione contraria al tasto + per contrasto */
     box-shadow: 0 0 0;
 }
@@ -2877,8 +2833,8 @@ color:#eeeeee;
     font-weight: 900;
     font-size: 2.2rem;
     color: #ffffff;
-    background-color: #000000;
-    border: 4px solid #000000;
+    background-color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
     padding: 8px 20px;
     text-transform: uppercase;
     transform: rotate(-2.5deg);
@@ -2894,13 +2850,13 @@ color:#eeeeee;
     cursor: pointer;
     color: #000000;
     background-color: #ffffff;
-    border: 4px solid #000000;
+    border: 4px solid var(--nb-ink, #000);
     width: 34px;
     height: 34px;
     display: none !important;
     justify-content: center;
     align-items: center;
-    box-shadow: 4px 4px 0px #000000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(3deg) translateY(-4px);
     pointer-events: auto;
     transition: transform 0.05s, box-shadow 0.05s, background-color 0.1s;
@@ -2940,11 +2896,11 @@ color:#eeeeee;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background-color: #ffde4d;
-    border: 3px solid #000000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 2px 8px;
     width: fit-content;
     transform: rotate(-1.5deg) translateX(-2px);
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     margin-bottom: 4px;
 }
 
@@ -2952,19 +2908,19 @@ color:#eeeeee;
 .format-input-group select {
     width: 100%;
     padding: 11px 14px;
-    border: 4px solid #000000;
+    border: 4px solid var(--nb-ink, #000);
     background-color: #ffffff;
     font-weight: 700;
     font-size: 0.95rem;
     outline: none;
     border-radius: 0px;
-    box-shadow: 4px 4px 0px #000000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: transform 0.05s, box-shadow 0.05s;
 }
 
 .format-input-group select:focus {
     transform: translate(-1px, -1px);
-    box-shadow: 5px 5px 0px #000000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Box Regole Attive (Stile parametro tratteggiato) */
@@ -2980,10 +2936,10 @@ color:#eeeeee;
     font-weight: 900;
     color: black;
     background-color: #4ade80;
-    border: 3px solid black;
+    border: 3px solid var(--nb-ink, #000);
     padding: 3px 10px;
     transform: rotate(-1deg);
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     position: absolute;
     top: -16px;
     left: 14px;
@@ -3017,11 +2973,11 @@ color:#eeeeee;
     font-size: 1.05rem;
     color: #000000;
     background-color: #ffffff;
-    border: 4px solid #000000;
+    border: 4px solid var(--nb-ink, #000);
     display: inline-block;
     padding: 4px 12px;
     transform: rotate(-1deg);
-    box-shadow: 4px 4px 0px #000000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     text-transform: uppercase;
 }
 
@@ -3030,12 +2986,12 @@ color:#eeeeee;
     font-weight: 900;
     font-size: 0.75rem;
     padding: 5px 12px;
-    border: 4px solid #000000;
+    border: 4px solid var(--nb-ink, #000);
     background-color: #4ade80;
     color: #000000;
     text-transform: uppercase;
     transform: rotate(1.5deg);
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Area di Scorrimento dei Pokémon Legali */
@@ -3053,9 +3009,9 @@ color:#eeeeee;
 /* Righe Pokémon dinamiche (Generate via JS, stile player-rank-row fluttuante) */
 .explorer-pkm-row {
     background: #ffffff;
-    border: 4px solid #000000;
+    border: 4px solid var(--nb-ink, #000);
     padding: 10px 16px;
-    box-shadow: 4px 4px 0px #000000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -3080,13 +3036,13 @@ color:#eeeeee;
 /* Effetto Scivolamento Asimmetrico a Sinistra con accensione Gialla */
 .explorer-pkm-row:hover {
     transform: translate(-15px) !important;
-    box-shadow: 5px 5px 0px #000000 !important;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     background-color: #ffde4d !important;
 }
 
 .explorer-pkm-row:active {
     transform: translate(0px) rotate(-1deg) !important;
-    box-shadow: 0px 0px 0px #000000 !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 /* Schermata di attesa interna alla colonna destra */
@@ -3109,8 +3065,8 @@ color:#eeeeee;
     position: relative;
     cursor: pointer;
     background: #f9f9f9;
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3209,8 +3165,8 @@ color:#eeeeee;
     top: 0;
     width: 245px;
     background: #FFFDF6; 
-    border: 3px solid #000000;
-    box-shadow: 6px 6px 0px #000000; 
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000); 
     z-index: 999999999 !important; /* 🌟 Superiore a qualsiasi modale esistente sulla pagina */
     padding: 10px;
     font-family: 'Josefin Sans', sans-serif;
@@ -3235,7 +3191,7 @@ color:#eeeeee;
 
 /* Header del Tooltip */
 .neubrutalist-tooltip-header {
-    border-bottom: 3px solid #000000;
+    border-bottom: 3px solid var(--nb-ink, #000);
     padding-bottom: 6px;
     margin-bottom: 8px;
 }
@@ -3259,8 +3215,8 @@ color:#eeeeee;
     font-weight: bold;
     color: white;
     padding: 2px 7px;
-    border: 2px solid #000000;
-    box-shadow: 2px 2px 0px #000000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Righe delle Statistiche */
@@ -3283,13 +3239,13 @@ color:#eeeeee;
     flex-grow: 1;
     height: 7px;
     background: #FFF;
-    border: 2px solid #000000;
+    border: 2px solid var(--nb-ink, #000);
 }
 
 .neubrutalist-stat-bar-fill {
     height: 100%;
     background: #00FF66; 
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--nb-ink, #000);
 }
 
 .neubrutalist-stat-value {
@@ -3318,9 +3274,9 @@ color:#eeeeee;
     background: #AEE2FF; 
     color: #000;
     padding: 2px 5px;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     font-weight: bold;
-    box-shadow: 1px 1px 0px #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* =========================================================
@@ -3338,8 +3294,8 @@ color:#eeeeee;
     padding: 14px 18px;
     background: #4ade80;
     color: #000;
-    border: 4px solid #000;
-    box-shadow: 5px 5px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 900;
     font-size: 1.05rem;
     text-transform: uppercase;
@@ -3352,12 +3308,12 @@ color:#eeeeee;
 .tb-open-btn:hover {
     background: var(--accent-color, #ffde4d);
     transform: translate(-2px, -2px) rotate(-1deg);
-    box-shadow: 7px 7px 0 #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-open-btn:active {
     transform: translate(3px, 3px) rotate(-1deg);
-    box-shadow: 1px 1px 0 #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* --- Overlay e struttura --- */
@@ -3407,9 +3363,9 @@ color:#eeeeee;
 
 .tb-title {
     margin: 0;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     padding: 8px 20px;
     font-size: 2rem;
     font-weight: 900;
@@ -3421,8 +3377,8 @@ color:#eeeeee;
 
 .tb-format-badge {
     background: #4ade80;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 10px;
     font-weight: 900;
     font-size: 0.78rem;
@@ -3436,8 +3392,8 @@ color:#eeeeee;
     width: 44px;
     height: 44px;
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 1.5rem;
     font-weight: 900;
     line-height: 1;
@@ -3471,15 +3427,15 @@ color:#eeeeee;
     width: 70px;
     padding: 10px 6px;
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     transition: transform 0.08s, box-shadow 0.08s;
 }
 
 .tb-slot:hover {
     transform: translate(2px, -2px);
-    box-shadow: 6px 6px 0 #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-slot.empty:hover {
@@ -3490,7 +3446,7 @@ color:#eeeeee;
 .tb-slot.active {
     background: var(--accent-color, #4ade80);
     transform: rotate(-1.5deg) translateY(-3px);
-    box-shadow: 6px 6px 0 #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-slot.empty {
@@ -3502,7 +3458,7 @@ color:#eeeeee;
 .tb-slot.empty.active {
     background: var(--accent-color, #4ade80);
     border-style: solid;
-    box-shadow: 6px 6px 0 #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-slot img {
@@ -3515,7 +3471,7 @@ color:#eeeeee;
     position: absolute;
     bottom: -12px;
     right: -10px;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 2px 7px;
     font-weight: 900;
@@ -3549,8 +3505,8 @@ color:#eeeeee;
     min-height: 280px;
     padding: 24px 22px 22px;
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 8px 8px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-label {
@@ -3558,8 +3514,8 @@ color:#eeeeee;
     width: fit-content;
     margin-bottom: 8px;
     background: #ffde4d;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 2px 8px;
     font-weight: 900;
     font-size: 0.72rem;
@@ -3572,9 +3528,9 @@ color:#eeeeee;
     width: 100%;
     padding: 8px 10px;
     background: #fff;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     border-radius: 0;
-    box-shadow: 3px 3px 0 #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 700;
     font-size: 0.9rem;
     outline: none;
@@ -3583,7 +3539,7 @@ color:#eeeeee;
 .tb-input:focus,
 .tb-select:focus {
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0 #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-input.invalid {
@@ -3659,8 +3615,8 @@ color:#eeeeee;
     gap: 2px;
     padding: 6px 4px;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
 }
 
@@ -3756,7 +3712,7 @@ color:#eeeeee;
 }
 
 .tb-side-name {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 4px 12px;
     font-weight: 900;
@@ -3804,7 +3760,7 @@ color:#eeeeee;
 .tb-base-bar {
     height: 8px;
     background: #fff;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
 }
 
 .tb-base-bar div {
@@ -3823,8 +3779,8 @@ color:#eeeeee;
     width: 100%;
     padding: 8px 10px;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 900;
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -3867,8 +3823,8 @@ color:#eeeeee;
 
 /* --- Tabella EV / IV / Natura --- */
 .tb-evs {
-    border: 3px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 12px;
 }
 
@@ -3920,7 +3876,7 @@ color:#eeeeee;
 .tb-num {
     padding: 4px 6px;
     font-size: 0.85rem;
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-ev-stat {
@@ -3959,8 +3915,8 @@ color:#eeeeee;
     height: 24px;
     padding: 0;
     background: #fff;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0 #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 900;
     font-size: 0.9rem;
     line-height: 1;
@@ -3996,8 +3952,8 @@ color:#eeeeee;
 
 .tb-panel {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 6px 6px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 16px;
 }
 
@@ -4014,8 +3970,8 @@ color:#eeeeee;
 }
 
 .tb-info-card {
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 12px;
 }
 
@@ -4054,8 +4010,8 @@ color:#eeeeee;
     margin-bottom: 12px;
     padding: 10px 12px;
     background: #fef9c3;
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-cov-suggest-title {
@@ -4110,8 +4066,8 @@ color:#eeeeee;
     gap: 5px;
     padding: 6px 8px;
     background: #fff;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0 #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-cov-cell .mini-type-badge {
@@ -4175,8 +4131,8 @@ color:#eeeeee;
     overflow-y: auto;
     padding: 8px;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 5px 5px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     flex-direction: column;
     gap: 6px;
 }
@@ -4190,8 +4146,8 @@ color:#eeeeee;
     align-items: center;
     gap: 8px;
     padding: 6px 8px;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0 #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     transition: transform 0.05s;
 }
@@ -4199,8 +4155,8 @@ color:#eeeeee;
 .tb-opt:hover,
 .tb-opt.hl {
     transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0 #000;
-    outline: 3px solid #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    outline: 3px solid var(--nb-ink, #000);
 }
 
 .tb-opt-move {
@@ -4259,8 +4215,8 @@ color:#eeeeee;
 
 .tb-avvisi {
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 12px;
     font-size: 0.78rem;
     font-weight: 700;
@@ -4276,8 +4232,8 @@ color:#eeeeee;
 .tb-btn {
     width: 100%;
     padding: 7px 14px;
-    border: 4px solid #000;
-    box-shadow: 5px 5px 0 #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 900;
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -4287,12 +4243,12 @@ color:#eeeeee;
 
 .tb-btn:hover:not(:disabled) {
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-btn:active:not(:disabled) {
     transform: translate(3px, 3px);
-    box-shadow: 1px 1px 0 #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .tb-btn:disabled {
@@ -4309,6 +4265,12 @@ color:#eeeeee;
     .tb-editor  { grid-template-columns: 1fr; }
     .tb-footer  { grid-template-columns: 1fr; }
     .tb-title   { font-size: 1.5rem; }
+    /* l'intestazione non ha più la colonna dei team a sinistra: parte dal bordo, il nome occupa lo spazio che c'è
+       e il tasto di chiusura resta sempre nello schermo (il formato va a capo sotto) */
+    .tb-header { margin: 0; gap: 10px 14px; flex-wrap: wrap; }
+    input.tb-title { flex: 1 1 0; width: auto; min-width: 0; }
+    .tb-close { order: 2; margin-left: 0; }
+    .tb-format-badge { order: 3; flex-basis: 100%; flex-shrink: 1; white-space: normal; text-align: center; }
 }
 
 @media (max-width: 560px) {
@@ -4384,7 +4346,7 @@ color:#eeeeee;
 .tb-btn-save.blocked:hover {
     background: #d4d4d4;
     color: #6b6b6b;
-    box-shadow: 3px 3px 0 #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: none;
     cursor: not-allowed;
 }
@@ -4400,8 +4362,8 @@ color:#eeeeee;
     pointer-events: none; /* non blocca i click sotto al fumetto */
     padding: 10px 12px;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 0.78rem;
     font-weight: 700;
     color: #b51e1e;
@@ -4413,7 +4375,7 @@ color:#eeeeee;
     top: 12px;
     right: 100%;
     border: 10px solid transparent;
-    border-right-color: #000;
+    border-right-color: var(--nb-ink, #000);
 }
 
 .tb-bubble ul {
@@ -4451,7 +4413,7 @@ color:#eeeeee;
     bottom: 100%;
     right: 22px;
     border-right-color: transparent;
-    border-bottom-color: #000;
+    border-bottom-color: var(--nb-ink, #000);
 }
 
 /* In colonna il tooltip parte dal bordo destro della colonna, in riga dal tag */
@@ -4468,8 +4430,8 @@ color:#eeeeee;
 .tb-cov-tag {
     display: inline-block;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 10px;
     font-weight: 900;
     font-size: 0.75rem;
@@ -4508,8 +4470,8 @@ color:#eeeeee;
 
 .tb-cov-box {
     background: #e9e9e9;
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 14px;
 }
 
@@ -4530,7 +4492,7 @@ color:#eeeeee;
         left: 22px;
         right: auto;
         border-color: transparent;
-        border-top-color: #000;
+        border-top-color: var(--nb-ink, #000);
     }
     .tb-cov-tooltip,
     .tb-actions-row .tb-cov-tooltip {
@@ -4698,8 +4660,8 @@ color:#eeeeee;
     box-sizing: border-box;
     padding: 7px 14px;
     background: #ffffff;
-    border: 3px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 1.1rem;
     font-weight: 900;
     text-transform: uppercase;
@@ -4778,8 +4740,8 @@ color:#eeeeee;
 
 .tb-guess-title {
     background: #ffde4d;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0 #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 1px 6px;
     font-size: 0.65rem;
     font-weight: 900;
@@ -4802,8 +4764,8 @@ color:#eeeeee;
     padding: 6px 10px;
     background: #fff;
     color: #000;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 0.78rem;
     font-weight: 700;
     text-align: left;
@@ -4816,7 +4778,7 @@ color:#eeeeee;
 
 .tb-guess-btn:active {
     transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0 #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Layout affiancato per il contenuto dell'overlay */
@@ -4856,8 +4818,8 @@ color:#eeeeee;
     width: 22px;
     height: 22px;
     background: #fff; /* Giallo o colore a scelta */
-    border: 2px solid #000000;
-    box-shadow: 2px 2px 0px #000000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4872,7 +4834,7 @@ color:#eeeeee;
     background: #ff4757; /* Cambia in rosso al passaggio del mouse */
     color: #ffffff;
     transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Animazione di rotazione delle freccette all'hover */
@@ -4886,7 +4848,7 @@ color:#eeeeee;
 
 .tb-btn-change-pkmn:active {
     transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px #000000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Fai girare l'icona Font Awesome solo all'hover sul pulsante */
@@ -4910,7 +4872,7 @@ color:#eeeeee;
 
 .tb-tip-big { font-size: 1.8rem; font-weight: 800; line-height: 1; }
 .tb-tip-sub { font-size: 0.75rem; font-weight: 700; }
-.tb-tip-bar { height: 10px; border: 2px solid #000; background: #fff; margin: 6px 0 4px; }
+.tb-tip-bar { height: 10px; border: 2px solid var(--nb-ink, #000); background: #fff; margin: 6px 0 4px; }
 .tb-tip-bar > div { height: 100%; background: var(--accent-color, #00FF66); }
 .tb-tip-section { margin-top: 8px; padding-top: 6px; border-top: 2px dashed #000; }
 .tb-tip-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
@@ -4921,22 +4883,22 @@ color:#eeeeee;
     font-size: 0.78rem; font-weight: 600; padding: 2px 4px; margin: 0 -4px;
 }
 .tb-tip-row b { white-space: nowrap; }
-.tb-tip-row.on { background: #fff3b0; outline: 2px solid #000; }
+.tb-tip-row.on { background: #fff3b0; outline: 2px solid var(--nb-ink, #000); }
 .tb-tip-row.critical { border-left: 4px solid #ff4d4d; }
 .tb-tip-row.warning  { border-left: 4px solid #ff9f1c; }
 .tb-tip-row.tb-click { cursor: pointer; }
-.tb-tip-row.tb-click:hover { background: #000; color: #fff; }
+.tb-tip-row.tb-click:hover { background: var(--nb-ink, #000); color: #fff; }
 
 .tb-tip-names { flex: 1 1 90px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tb-tip-names.wrap { white-space: normal; }
 .tb-tip-types { display: inline-flex; gap: 2px; flex-shrink: 0; }
 .tb-tip-examples { font-size: 0.72rem; margin: 0 0 4px 4px; opacity: 0.85; }
 .tb-tip-link { text-decoration: underline; cursor: pointer; font-weight: 700; }
-.tb-tip-link:hover { background: #000; color: #fff; }
+.tb-tip-link:hover { background: var(--nb-ink, #000); color: #fff; }
 
 .tb-tip-badge {
     margin-left: auto; flex-shrink: 0; font-size: 0.68rem; font-weight: 700; color: #000;
-    padding: 0 4px; border: 2px solid #000; background: #d9ffe6; white-space: nowrap;
+    padding: 0 4px; border: 2px solid var(--nb-ink, #000); background: #d9ffe6; white-space: nowrap;
 }
 .tb-tip-badge.warn { background: #ffd9a8; }
 .tb-tip-badge.nat  { background: #fff3b0; }
@@ -4946,7 +4908,7 @@ color:#eeeeee;
 .tb-tip-chip { display: inline-flex; align-items: center; gap: 2px; font-size: 0.68rem; font-weight: 700; }
 
 .tb-tip-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.tb-tip-cell { border: 2px solid #000; padding: 2px; text-align: center; background: #fff; min-width: 0; }
+.tb-tip-cell { border: 2px solid var(--nb-ink, #000); padding: 2px; text-align: center; background: #fff; min-width: 0; }
 .tb-tip-cell .mini-type-badge { display: block; overflow: hidden; text-overflow: ellipsis; }
 .tb-tip-cell small { display: block; font-size: 0.62rem; font-weight: 700; }
 .tb-tip-cell.critical { background: #ffd6d6; }
@@ -4958,10 +4920,10 @@ color:#eeeeee;
 .tb-tip-chip-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; align-self: center; }
 .tb-tip-chip-btn {
     font-size: 0.68rem; font-weight: 700; padding: 1px 6px; cursor: pointer; user-select: none;
-    border: 2px solid #000; background: #fff; color: #000;
+    border: 2px solid var(--nb-ink, #000); background: #fff; color: #000;
 }
-.tb-tip-chip-btn:hover { background: #000; color: #fff; }
-.tb-tip-chip-btn.on { background: var(--accent-color, #00FF66); box-shadow: 2px 2px 0 #000; }
+.tb-tip-chip-btn:hover { background: var(--nb-ink, #000); color: #fff; }
+.tb-tip-chip-btn.on { background: var(--accent-color, #00FF66); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); }
 
 /* Team roles */
 .tb-tip-role { flex-shrink: 0; min-width: 118px; font-weight: 800; }
@@ -4982,7 +4944,7 @@ color:#eeeeee;
 .tb-dropdown-trigger {
     display: flex; align-items: center; justify-content: center; gap: 5px;
     padding: 6px 12px; background: #fff; color: #000;
-    border: 3px solid #000; border-radius: 0; box-shadow: 3px 3px 0 #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: 0; box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-weight: 900; cursor: pointer; user-select: none;
     transition: transform .1s ease, box-shadow .1s ease, background-color .1s ease;
 }
@@ -4990,7 +4952,7 @@ color:#eeeeee;
 .tb-dropdown-trigger i { transition: transform .3s ease; }
 .tb-dropdown-wrapper:hover .tb-dropdown-trigger,
 .tb-dropdown-wrapper:focus-within .tb-dropdown-trigger {
-    background: #000; color: #fff; transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000;
+    background: var(--nb-ink, #000); color: #fff; transform: translate(-1px, -1px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 .tb-dropdown-wrapper:hover .tb-dropdown-trigger i,
 .tb-dropdown-wrapper:focus-within .tb-dropdown-trigger i { transform: rotate(90deg); }
@@ -5003,7 +4965,7 @@ color:#eeeeee;
 .tb-dropdown-wrapper:focus-within .tb-dropdown-tooltip { visibility: visible; opacity: 1; transition-delay: 0s; }
 .tb-dropdown-content {
     width: 250px; max-width: calc(100vw - 20px); padding: 10px;
-    background: #FFFDF6; border: 3px solid #000; box-shadow: 6px 6px 0 #000;
+    background: #FFFDF6; border: 3px solid var(--nb-ink, #000); box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-1deg); display: flex; flex-direction: column;
 }
 .tb-dropdown-content .tb-field { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
@@ -5014,7 +4976,7 @@ color:#eeeeee;
     font-size: .72rem; font-weight: 800; letter-spacing: .03em;
 }
 .tb-dropdown-content .tb-input,
-.tb-dropdown-content .tb-select { width: 104px; flex-shrink: 0; padding: 4px 6px; font-size: .85rem; box-shadow: 2px 2px 0 #000; }
+.tb-dropdown-content .tb-select { width: 104px; flex-shrink: 0; padding: 4px 6px; font-size: .85rem; box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); }
 .tb-dropdown-content label.tb-input { width: auto; }
 .tb-dropdown-content input[type="checkbox"] { accent-color: #000; }
 
@@ -5070,4 +5032,104 @@ color:#eeeeee;
    su telefono il bordo da toccare è troppo sottile). Il gestore c'è già: inizializzaChiusuraHelper(). */
 @media (hover: none) {
     .format-modal-header .format-close-btn { display: flex !important; flex-shrink: 0; margin-left: 10px; }
+}
+
+
+/* =====================================================================
+   TEAM BUILDER E HELPER NEL TEMA
+   Angoli del tema per ogni scatola, il titolo che è il nome del team, il dialogo per importare ed esportare Showdown.
+   Ombre, bordi e colori sono già sulle variabili --nb-* (vedi temi.css).
+   ===================================================================== */
+:is(.tb-wrapper, .tb-format-badge, .tb-close, .tb-slot, .tb-btn-change-pkmn, .tb-body, .tb-btn, .tb-cov-tag, .tb-dropdown-trigger,
+    .tb-evs, .tb-nat-btn, .tb-guess-title, .tb-guess-btn, .tb-pick, .tb-label, .tb-input, .tb-select, .tb-bubble, .tb-btn-small) {
+    border-radius: var(--nb-raggio, 0px);
+}
+.format-modal-backdrop :is(.format-modal-wrapper, .format-modal-header h2, .format-input-group label, .mandatory-title, .clause-badge,
+                           .format-optional-box, .format-modal-card-left, .format-modal-card-right, .format-close-btn) {
+    border-radius: var(--nb-raggio, 0px);
+}
+
+/* Il titolo del Team Builder è il campo con il nome del team */
+input.tb-title {
+    width: min(440px, 52vw);
+    box-sizing: border-box;
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    line-height: 1.2;
+    text-align: left;
+    cursor: text;
+    border-radius: var(--nb-raggio, 0px);
+}
+input.tb-title::placeholder { color: rgba(255, 255, 255, .5); text-transform: none; }
+input.tb-title:focus { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 3px; }
+
+/* Dialogo "Import from / Export to Showdown": sopra il Team Builder */
+.tb-sd {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, .45);
+}
+.tb-sd-scheda {
+    width: min(640px, 100%);
+    max-height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 18px 20px 20px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+}
+.tb-sd-testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.tb-sd-testa h3 {
+    margin: 0;
+    padding: 6px 16px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 1.15rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+.tb-sd-x {
+    width: 36px; height: 36px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    font: 900 1.3rem/1 var(--nb-font-titoli, sans-serif);
+    cursor: pointer;
+}
+.tb-sd-x:hover { background: var(--nb-giallo, #ffbd44); }
+.tb-sd-aiuto { margin: 0 0 10px; font: 600 .86rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.tb-sd-testo {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    background: #fff;
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    font: 600 .82rem/1.45 ui-monospace, 'Courier New', monospace;
+    resize: vertical;
+    min-height: 180px;
+}
+.tb-sd-testo:focus { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
+.tb-sd-esito { min-height: 1.3em; margin: 10px 0 0; font: 800 .82rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); color: #15803d; }
+.tb-sd-esito.tb-sd-errore { color: #b51e1e; }
+.tb-sd-azioni { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.tb-sd-azioni .tb-btn { width: auto; flex: 0 0 auto; padding: 9px 16px; }
+.tb-btn-secondario { background: var(--nb-carta, #fff); }
+@media (max-width: 520px) {
+    .tb-sd { padding: 10px; }
+    .tb-sd-azioni .tb-btn { flex: 1 1 auto; }
 }

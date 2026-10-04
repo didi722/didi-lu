@@ -83,7 +83,7 @@
     padding: 1px 9px 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
     box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
     font: 800 .64rem/1.7 var(--nb-font-titoli, 'Josefin Sans', sans-serif);

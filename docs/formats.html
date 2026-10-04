@@ -15,6 +15,9 @@
 
 
 <link rel="stylesheet" href="temi.css">
+
+
+<link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
@@ -86,7 +89,7 @@
 </div>
 
 <button id="admin-plus-btn" class="btn-floating-admin" onclick="apriCreazioneFormato()" title="New Format">
-    <span class="plus-icon">+</span>
+    <span class="plus-icon">+</span><span class="tasto-testo">New format</span>
 </button>
 
 <div id="format-modal" class="format-modal-backdrop" style="display: none;">
@@ -482,7 +485,7 @@ function aggiungiChipBanlist(id, voceId, nome) {
     chip.dataset.nome = nome;
     chip.title = 'Click to remove';
     chip.textContent = `${nome} ✕`;
-    chip.style.cssText = "background:#ef4444; color:#fff; border:2px solid #000; box-shadow:2px 2px 0 #000; font-weight:900; font-size:0.75rem; padding:2px 8px; text-transform:uppercase; cursor:pointer;";
+    chip.style.cssText = "background:#ef4444; color:#fff; border:2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); font-weight:900; font-size:0.75rem; padding:2px 8px; text-transform:uppercase; cursor:pointer;";
     chip.onclick = () => { chip.remove(); eseguiControlloConflitti(); };
     box.appendChild(chip);
 }
@@ -580,8 +583,8 @@ function gestisciCambioTipoFormato(tipo) {
                 transform: translateX(-80%); 
                 background: #ffffff !important;
                 color: #000000 !important;
-                border: 3px solid #000000 !important;
-                box-shadow: 4px 4px 0px #000000 !important;
+                border: 3px solid var(--nb-ink, #000) !important;
+                box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
                 padding: 10px 14px;
                 min-width: 190px;
                 white-space: nowrap;
@@ -942,11 +945,11 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
             <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="banlist-search-${id}" list="banlist-dl-${id}" placeholder="Loading list..." disabled
-                           style="flex: 1; border: 2px solid #000; font-weight: bold; padding: 4px 8px;"
+                           style="flex: 1; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 4px 8px;"
                            oninput="if (!event.inputType || event.inputType === 'insertReplacementText') aggiungiVoceBanlist(${id});"
                            onkeydown="if (event.key === 'Enter') { event.preventDefault(); aggiungiVoceBanlist(${id}); }">
                     <button type="button" onclick="aggiungiVoceBanlist(${id})"
-                            style="border: 2px solid #000; background: #ffde00; font-weight: 900; padding: 2px 10px; cursor: pointer;">BAN</button>
+                            style="border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: #ffde00; font-weight: 900; padding: 2px 10px; cursor: pointer;">BAN</button>
                 </div>
                 <datalist id="banlist-dl-${id}"></datalist>
                 <div id="banlist-chips-${id}" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
@@ -994,15 +997,15 @@ function renderizzaInputNumerici(id, categoria, campo) {
         if (infoCampo.type === "tier") {
             // Doppia tendina selettiva per il range di Tier (Es: da NU a OU)
             html = `
-                <select class="input-value range-min" style="margin-left: 10px; max-width: 90px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+                <select class="input-value range-min" style="margin-left: 10px; max-width: 90px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
                 <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
-                <select class="input-value range-max" style="max-width: 90px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+                <select class="input-value range-max" style="max-width: 90px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
             `;
         } else {
             html = `
-                <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+                <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">
                 <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
-                <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">
+                <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">
             `;
         }
     } else {
@@ -1013,7 +1016,7 @@ function renderizzaInputNumerici(id, categoria, campo) {
         } 
         else if (infoCampo.type === "tier") {
             // Singola tendina selettiva per operatori singoli (< OU, = UU)
-            html = `<select class="input-value" style="margin-left: 10px; max-width: 120px; border: 2px solid #000; font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>`;
+            html = `<select class="input-value" style="margin-left: 10px; max-width: 120px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>`;
         }
     }
     
@@ -1231,7 +1234,7 @@ function eseguiControlloConflitti() {
     if (!boxErrore) {
         boxErrore = document.createElement('div');
         boxErrore.id = 'rules-error-summary';
-        boxErrore.style.cssText = "margin: 15px 0; padding: 10px; border: 3px solid #000; background: #fca5a5; font-weight: bold; font-family: inherit; display: none; box-shadow: 4px 4px 0px #000;";
+        boxErrore.style.cssText = "margin: 15px 0; padding: 10px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: #fca5a5; font-weight: bold; font-family: inherit; display: none; box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);";
         const container = document.getElementById('dynamic-rules-container');
         if (container) container.parentNode.insertBefore(boxErrore, container);
     }
@@ -1981,8 +1984,8 @@ async function caricaEVisualizzaFormati() {
                          width: 50px;
                          height: 50px;
                          background-color: ${format.color} !important;
-                         border: 3px solid #000;
-                         box-shadow: 4px 4px 0px #000;
+                         border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+                         box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                          transform: rotate(6deg);
                          display: flex;
                          align-items: center;
@@ -2251,8 +2254,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         }
 
         blocksHtml += `
-            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 5px 5px 0px #000; padding: 25px 20px 20px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                <div style="background: #ffde00; border: 3px solid #000; box-shadow: 2px 2px 0px #000; padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-1.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
+            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px 20px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
+                <div style="background: #ffde00; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-1.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
                     Description / Tournament Rules
                 </div>
                 ${descContent}
@@ -2264,8 +2267,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         // --- 4b. FORMAT TYPE BLOCK ---
         const tipoStrutturaUmano = umanizza(formatoDati.strutturaSito || 'custom').toUpperCase();
         blocksHtml += `
-            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                     Format Type
                 </div>
                 <span style="color: #000; padding: 2px 8px; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; display: inline-block;">${tipoStrutturaUmano}</span>
@@ -2275,8 +2278,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         if (formatoDati.strutturaSito === 'vgc') {
             if (formatoDati.vgcGen) {
                 blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                             Generation
                         </div>
                         <span style="font-weight: 900; font-size: 0.95rem; color: #000;">GEN ${formatoDati.vgcGen}</span>
@@ -2285,8 +2288,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             }
             if (formatoDati.vgcFormat) {
                 blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 2; min-width: 180px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 2; min-width: 180px; box-sizing: border-box; overflow: visible;">
+                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                             VGC Regulation
                         </div>
                         <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">${formatoDati.vgcFormat}</span>
@@ -2298,8 +2301,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             if (formatoDati.battleStyle) {
                 const stileUmano = umanizza(formatoDati.battleStyle).toUpperCase();
                 blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                             Battle Style
                         </div>
                         <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">${stileUmano}</span>
@@ -2311,8 +2314,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             if (formatoDati.genRuleValue) {
                 const genTypeLabel = formatoDati.genRuleType ? ` (${umanizza(formatoDati.genRuleType)})` : '';
                 blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                             Pokémon Origin
                         </div>
                         <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">GEN ${formatoDati.genRuleValue}${genTypeLabel}</span>
@@ -2324,8 +2327,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         // 🆕 4e. SHOWDOWN FORMAT BLOCK (Se presente)
         if (formatoDati.showdownFormat && formatoDati.showdownFormat.trim() !== "") {
             blocksHtml += `
-                <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                    <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+                <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                    <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                         Showdown Format
                     </div>
                     <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: lowercase;">${formatoDati.showdownFormat.trim()}</span>
@@ -2337,8 +2340,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         const genMechText = formatoDati.generationalMechanics ? 'ENABLED' : 'DISABLED';
         const genMechColor = formatoDati.generationalMechanics ? '#15803d' : '#b91c1c'; // Verde o Rosso scuro
         blocksHtml += `
-            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
+            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
+                <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
                     Gen Mechanics
                 </div>
                 <span style="font-weight: 900; font-size: 0.95rem; color: ${genMechColor}; text-transform: uppercase;">${genMechText}</span>
@@ -2350,8 +2353,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         // --- 4g. TIER BLOCK ---
         if (formatoDati.strutturaSito !== 'vgc' && formatoDati.baseTier) {
             blocksHtml += `
-                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 5px 5px 0px #000; padding: 22px 20px 16px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                    <div style="background: #ffde00; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.2deg); position: absolute; top: -13px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
+                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 20px 16px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
+                    <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.2deg); position: absolute; top: -13px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
                         Max. Tier
                     </div>
                     <span style="text-transform: uppercase; font-weight: 900; color: #000; font-size: 1rem; letter-spacing: 0.5px;">${formatoDati.baseTier}</span>
@@ -2368,16 +2371,16 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                     let badgeStato = '';
 
                     if (regola.mode === 'BANNED') {
-                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">BANNED</span>`;
+                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">BANNED</span>`;
                     } else if (regola.mode === 'ALLOWED') {
-                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">ALLOWED</span>`;
+                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">ALLOWED</span>`;
                     } else if (regola.mode === 'PLAYER_INITIAL') {
-                        badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">PLAYER INITIAL</span>`;
+                        badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">PLAYER INITIAL</span>`;
                     } else if (regola.mode === 'SAME_ACROSS_TEAM') {
-                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">SAME ACROSS TEAM</span>`;
+                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">SAME ACROSS TEAM</span>`;
                                         } else if (regola.mode === 'BANLIST') {
                         const nomi = Object.values(regola.value || {}).sort();
-                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid #000; font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000; max-width: 65%; text-align: right; white-space: normal;">${nomi.join(' · ')}</span>`;
+                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000); max-width: 65%; text-align: right; white-space: normal;">${nomi.join(' · ')}</span>`;
                     } else if (regola.mode === 'SPECIFIC') {
                         let dettagliOp = '';
                         if (regola.operator === 'between') {
@@ -2388,7 +2391,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                             
                             dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
                         }
-                        badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid #000; font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: 1px 1px 0px #000;">${dettagliOp.toUpperCase()}</span>`;
+                        badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">${dettagliOp.toUpperCase()}</span>`;
                     }
                     
                     const categoriaUmana = umanizza(categoria).toUpperCase();
@@ -2407,8 +2410,8 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             });
 
             blocksHtml += `
-                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 5px 5px 0px #000; padding: 25px 20px 15px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                    <div style="background: #ffde00; border: 3px solid #000; box-shadow: 2px 2px 0px #000; padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-0.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
+                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px 15px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
+                    <div style="background: #ffde00; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-0.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
                         Clauses & Restrictions Active
                     </div>
                     <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 5px;">
@@ -2419,7 +2422,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         }
     } else {
         blocksHtml = `
-            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid #000; box-shadow: 5px 5px 0px #000; padding: 25px 20px; width: 100%; overflow: visible; margin-top: 15px;">
+            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px; width: 100%; overflow: visible; margin-top: 15px;">
                 <p style="margin: 0; font-style: italic; color: #475569;">No configurations found for this format.</p>
             </div>
         `;
@@ -2430,7 +2433,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         <div class="format-modal-wrapper" style="font-family: 'Josefin Sans', sans-serif; display: flex; flex-direction: column; gap: 25px; max-width: 1100px; width: 100%; margin: 0 auto; overflow: visible; box-sizing: border-box;">
             
             <div class="format-modal-title-tag" 
-                 style="background: #000; color: #fff; border: 3px solid #000; box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5); padding: 10px 24px; display: inline-block; align-self: flex-start; transform: rotate(-1deg); overflow: visible;">
+                 style="background: #000; color: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5); padding: 10px 24px; display: inline-block; align-self: flex-start; transform: rotate(-1deg); overflow: visible;">
                 <h2 style="font-family: 'Josefin Sans', sans-serif; margin: 0; text-transform: uppercase; font-size: 1.8rem; font-weight: 900; letter-spacing: 1px;">${formatName}</h2>
             </div>
             
@@ -2531,8 +2534,8 @@ async function renderRankingsDelFormato(formatName, players) {
                     margin-bottom: 12px; 
                     padding: 10px; 
                     background: ${player.color}; 
-                    border: 3px solid #000;
-                    box-shadow: 4px 4px 0px #000;
+                    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+                    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                     transition: transform 0.1s ease, box-shadow 0.1s ease;
                     transform: rotate(-1deg);
                     cursor: pointer;
@@ -2551,7 +2554,7 @@ async function renderRankingsDelFormato(formatName, players) {
                     </div>
                 </div>
 
-                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; transform: rotate(1deg);">
+                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); transform: rotate(1deg);">
                     ${player.points}
                 </div>
             </div>
@@ -2563,3 +2566,4 @@ async function renderRankingsDelFormato(formatName, players) {
 
 
 </script>
+<script src="controlli.js"></script>

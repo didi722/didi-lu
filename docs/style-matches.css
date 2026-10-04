@@ -34,8 +34,8 @@ body {
     padding: 3px 6px;
     margin-bottom: 8px;       /* Distacca l'etichetta dalla lineup dei pokemon */
     display: inline-block;    /* Permette il corretto calcolo del padding e dei margini */
-    border: 2px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-family: 'Josefin Sans', sans-serif;
     font-size: 0.8rem;
     font-weight: 700 !important;
@@ -59,7 +59,7 @@ body {
 .replay-content {
     width: 314px;  /* Larghezza esatta della zona video */
     height: 300px; /* Altezza esatta della zona video */
-    background: #000;
+    background: var(--nb-ink, #000);
     position: relative;
     overflow: hidden; /* Fondamentale: taglia tutto ciò che esce */
     box-shadow: 0 0 30px rgba(0,0,0,1);
@@ -154,16 +154,16 @@ body {
     flex: 1;
     height: 14px;
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 4px 4px 0 #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
 }
-.replay-barra-traccia > span { display: block; height: 100%; width: 0; background: #ffbd44; border-right: 3px solid #000; box-sizing: border-box; }
+.replay-barra-traccia > span { display: block; height: 100%; width: 0; background: #ffbd44; border-right: 3px solid var(--nb-ink, #000); box-sizing: border-box; }
 .replay-barra-traccia:focus-visible { outline: 3px dashed #000; outline-offset: 4px; }
 .replay-barra-testo {
     min-width: 96px;
     padding: 3px 8px 1px;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     font: 700 0.8rem 'Josefin Sans', sans-serif;
     text-transform: uppercase;
@@ -178,7 +178,7 @@ body {
     transform: translate(-50%, -50%);
     width: 34%;              /* Proporzioni calibrate sulla tua immagine */
     height: 40%;
-    background: #000;
+    background: var(--nb-ink, #000);
     border-radius: 4px;
     z-index: 5;
     overflow: hidden !important;
@@ -224,17 +224,17 @@ body {
 
 .btn-set:hover {
     transform: translate(-2px, -2px) rotate(2deg) !important;
-    box-shadow: 7px 7px 0px black !important;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 .btn-set:active {
-    box-shadow: 0px 0px 0px #000000 !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     transform: rotate(-2deg) !important;
 }
 
 /* Usa un selettore combinato per dare più forza */
 button.btn-set.is-selected {
-    box-shadow: 0px 0px 0px #000000 !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     transform: rotate(-2deg) translate(2px, 2px) !important;
     filter: brightness(1.2) !important;
     border-style: dashed !important;
@@ -243,7 +243,7 @@ button.btn-set.is-selected {
 /* Blocca l'hover quando è selezionato */
 button.btn-set.is-selected:hover {
     transform: rotate(-2deg) translate(2px, 2px) !important;
-    box-shadow: 0px 0px 0px #000000 !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 
@@ -356,7 +356,7 @@ button.btn-set.is-selected:hover {
 
 .btn-set.is-selected {
     transform: rotate(0deg) scale(1.1) !important;
-    box-shadow: 2px 2px 0px black !important;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     opacity: 1;
 }
 
@@ -373,8 +373,8 @@ button.btn-set.is-selected:hover {
 .mini-score-box {
     background: white;
     color: black;
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 7px 12px !important;
     font-weight: 900;
     font-size: 1rem;
@@ -546,8 +546,8 @@ button.btn-set.is-selected:hover {
     max-width: 500px;
     padding: 10px;
     background: var(--yellow);
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #1a1a1a;
     font-family: inherit;
     box-sizing: border-box; /* Importante per non far uscire l'input dai bordi */
@@ -570,8 +570,8 @@ button.btn-set.is-selected:hover {
     font-weight: bold;
     font-family: Josefin Sans, sans-serif;
     text-transform: uppercase;
-    border: 4px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.2s ease;
     transform: rotate(-0.5deg);
     font-size: 1.5rem;
@@ -598,8 +598,8 @@ button.btn-set.is-selected:hover {
     font-family: Josefin Sans, sans-serif;
     font-weight: bold;
     text-transform: uppercase;
-    border: 4px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.2s ease;
     transform: rotate(1deg);
     font-size: 1.5rem;
@@ -666,8 +666,8 @@ button.btn-set.is-selected:hover {
     width: 50px;
     height: 50px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     z-index: 999;
     display: flex;
@@ -687,7 +687,7 @@ button.btn-set.is-selected:hover {
 
 .btn-floating-admin:hover {
     color: white;
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.2) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
@@ -697,8 +697,8 @@ button.btn-set.is-selected:hover {
     color: black;
     background-color: white;
     transform: scale(1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     box-shadow: 0 0 0;
 }
 
@@ -716,8 +716,8 @@ button.btn-set.is-selected:hover {
     width: 45px;
     height: 45px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     z-index: 999;
     align-items: center;
@@ -727,7 +727,7 @@ button.btn-set.is-selected:hover {
 }
 
 .music-btn:hover {
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
@@ -749,8 +749,8 @@ button.btn-set.is-selected:hover {
     color: black;
     background-color: white;
     transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     box-shadow: 0 0 0;
 }
 
@@ -767,7 +767,7 @@ button.btn-set.is-selected:hover {
 }
 .winner-selector button {
     padding: 5px 10px;
-    border: 1px solid black;
+    border: 1px solid var(--nb-ink, #000);
     background: white;
     color: white;
     cursor: pointer;
@@ -840,13 +840,13 @@ button.btn-set.is-selected:hover {
 /* --- TITOLO (Già ridimensionato) --- */
 #sd-panel-title {
     display: inline-block;
-    background: black;
+    background: var(--nb-ink, #000);
     color: white;
     font-size: 1.1rem;
     padding: 6px 15px;
     font-weight: 900;
     text-transform: uppercase;
-    border: 3px solid black;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 4px 4px 0px var(--yellow);
     transform: rotate(-1.5deg);
     margin-bottom: 35px;
@@ -862,13 +862,13 @@ button.btn-set.is-selected:hover {
 
 /* --- TITOLO --- */
 #sd-panel-title {
-    background: black;
+    background: var(--nb-ink, #000);
     color: white;
     font-size: 1.1rem;
     padding: 6px 15px;
     font-weight: 900;
     text-transform: uppercase;
-    border: 3px solid black;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 4px 4px 0px var(--yellow);
     transform: rotate(-1.5deg);
     margin-bottom: 40px;
@@ -886,13 +886,13 @@ button.btn-set.is-selected:hover {
 
 /* --- TITOLO --- */
 #sd-panel-title {
-    background: black;
+    background: var(--nb-ink, #000);
     color: white;
     font-size: 1.1rem;
     padding: 6px 15px;
     font-weight: 900;
     text-transform: uppercase;
-    border: 3px solid black;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 4px 4px 0px var(--yellow);
     transform: rotate(-1.5deg);
     margin-bottom: 40px;
@@ -939,8 +939,8 @@ button.btn-set.is-selected:hover {
     max-width: 500px;
     padding: 10px;
     background: var(--yellow);
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #1a1a1a;
     font-family: inherit;
     box-sizing: border-box; /* Importante per non far uscire l'input dai bordi */
@@ -969,8 +969,8 @@ button.btn-set.is-selected:hover {
     background: var(--yellow);
     padding: 4px 8px;
     text-transform: uppercase;
-    border: 2px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-2deg);
 }
 
@@ -984,8 +984,8 @@ button.btn-set.is-selected:hover {
     text-transform: uppercase;
     background: white !important;
     color: black;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     outline: none;
     font-family: inherit;
     text-align: center; /* Testo centrato dentro la barra */
@@ -1009,7 +1009,7 @@ button.btn-set.is-selected:hover {
 
 .form-group-player input:focus, 
 .form-group-player select:focus {
-    box-shadow: 2px 2px 0px black;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: translate(3px, 3px);
 }
 
@@ -1034,8 +1034,8 @@ button.btn-set.is-selected:hover {
     background: var(--yellow);
     padding: 4px 8px;
     text-transform: uppercase;
-    border: 2px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-2deg);
 }
 
@@ -1049,8 +1049,8 @@ button.btn-set.is-selected:hover {
     text-transform: uppercase;
     background: white !important;
     color: black;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     outline: none;
     font-family: inherit;
     text-align: center; /* Testo centrato dentro la barra */
@@ -1074,7 +1074,7 @@ button.btn-set.is-selected:hover {
 
 .form-group input:focus, 
 .form-group select:focus {
-    box-shadow: 2px 2px 0px black;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: translate(3px, 3px);
 }
 
@@ -1126,13 +1126,13 @@ button.btn-set.is-selected:hover {
     width: 28px;
     height: 28px;
     font-size: 0.7rem;
-    border: 1px solid black;
-    box-shadow: 2px 2px 0 black;
+    border: 1px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     font-weight: bold;
 }
 
-.btn-win.active-D { background: #22ff22 !important; border-color: black !important; color: black; }
+.btn-win.active-D { background: #22ff22 !important; border-color: var(--nb-ink, #000) !important; color: black; }
 .btn-win.active-L { background: hsl(313, 100%, 61%) !important; border-color: #6c026c !important; color: black; }
 
 
@@ -1142,7 +1142,7 @@ button.btn-set.is-selected:hover {
 
 .panel-header #sd-panel-title{
     display: inline-block;
-    background: black;
+    background: var(--nb-ink, #000);
     padding: 25px 35px;
     box-shadow: 7px 7px rgba(0, 0, 0, 0.3);
     transform: rotate(-2deg);
@@ -1180,8 +1180,8 @@ button.btn-set.is-selected:hover {
     font-weight: bold;
     font-size: 0.8rem;
     color: black;
-    border: 2px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 5px;
 }
 
@@ -1201,7 +1201,7 @@ button.btn-set.is-selected:hover {
 .btn-browse{
     border-radius: 0px;
     padding: 5px;
-    box-shadow: 3px 3px 0 black;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     background: blue;
     cursor:pointer;
     transition: all 0.2s ease;
@@ -1239,7 +1239,7 @@ button.btn-set.is-selected:hover {
 }
 
 .sd-score-box {
-    background: #000;
+    background: var(--nb-ink, #000);
     padding: 10px 25px;
     border: 1px solid #555;
 }
@@ -1264,7 +1264,7 @@ button.btn-set.is-selected:hover {
 .news-ticker {
     width: 100%;
     /* Cornice fisica: Colore scuro profondo */
-    background: #000; 
+    background: var(--nb-ink, #000); 
     height: 45px;
     position: fixed;
     top: 0;
@@ -1352,8 +1352,8 @@ button.btn-set.is-selected:hover {
     left: 0;
     top: 0;
     z-index: 999;
-    background: #000;
-    border-right: 4px solid #000;
+    background: var(--nb-ink, #000);
+    border-right: 4px solid var(--nb-ink, #000);
 }
 
 .ad-banner {
@@ -1421,7 +1421,7 @@ button.btn-set.is-selected:hover {
     background: white; /* Colore giallo vivace tipico del neubrutalism */
     
     /* Bordi neri spessi e netti */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     
     
     /* Colore testo nero per contrasto massimo */
@@ -1434,7 +1434,7 @@ button.btn-set.is-selected:hover {
     gap: 10px;
     
     /* Ombra netta (senza sfocatura) */
-    box-shadow: 5px 5px 0px #000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     /* Transizione rapida per l'effetto pressione */
     transition: all 0.1s;
@@ -1444,13 +1444,13 @@ button.btn-set.is-selected:hover {
     /* Effetto "spostamento" quando ci passi sopra */
     background: white; /* Mantieni il colore o cambialo leggermente */
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .auth-interaction:active {
     /* Effetto "bottone premuto" */
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 #auth-icon {
@@ -1493,8 +1493,8 @@ button.btn-set.is-selected:hover {
     font-weight: 800;
     text-transform: uppercase;
     background: var(--yellow);
-    border: 3px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: 0.2s;
     cursor: pointer;
     width: 100%;
@@ -1512,7 +1512,7 @@ button.btn-set.is-selected:hover {
 .user-dropdown .logout-btn:hover {
     background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
     transform: translate(-3px, -3px) rotate(0deg);
-    box-shadow: 7px 7px 0px black;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .user-dropdown .menu-item:active{
@@ -1631,8 +1631,8 @@ button.btn-set.is-selected:hover {
 .showdown-summary-card {
     background: white;
     /* Bordo nero netto invece del dinamico per un contrasto più cattivo */
-    border: 3px solid #000; 
-    box-shadow: 6px 6px 0px #000;
+    border: 3px solid var(--nb-ink, #000); 
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 15px;
     position: relative;
     cursor: pointer;
@@ -1645,12 +1645,12 @@ button.btn-set.is-selected:hover {
 /* Effetto pressione Neubrutalist: si schiaccia verso l'ombra */
 .showdown-summary-card:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px #000;
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .showdown-summary-card:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* HEADER: Manteniamo le tue posizioni */
@@ -1667,8 +1667,8 @@ button.btn-set.is-selected:hover {
 }
 
 .sd-category-tag {
-    background: #000; 
-    border: 2px solid #000;
+    background: var(--nb-ink, #000); 
+    border: 2px solid var(--nb-ink, #000);
     color: white;
     padding: 2px 8px;
     font-weight: 900; /* Più pesante per lo stile */
@@ -1730,8 +1730,8 @@ max-width: 100%;
     color: black;
     padding: 5px 5px;
     border-radius: 0px; /* Squadrato */
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-2deg);
     flex-shrink: 0; white-space: nowrap;
 }
@@ -1748,14 +1748,14 @@ max-width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 3px solid #000; /* Più spesso */
+    border-top: 3px solid var(--nb-ink, #000); /* Più spesso */
     padding-top: 10px;
     position: relative;
 }
 
 .sd-date-text {
     font-size: 0.85rem;
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     color: white;
     font-weight: 800;
     transform: rotate(2deg);
@@ -1777,8 +1777,8 @@ max-width: 100%;
 
 /* --- LOGICA VINCITORE: COLORA IL BORDO DELLA CARD --- */
 /* Puoi aggiungere queste classi dinamicamente */
-.winner-left { border-left: 10px solid #000 !important; }
-.winner-right { border-right: 10px solid #000 !important; }
+.winner-left { border-left: 10px solid var(--nb-ink, #000) !important; }
+.winner-right { border-right: 10px solid var(--nb-ink, #000) !important; }
 /* OVERLAY ADMIN (Pulsanti modifica/elimina) */
 .sd-admin-overlay {
     position: absolute;
@@ -1844,7 +1844,7 @@ max-width: 100%;
 }
 
 .right-hub-title{
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     color: white;
     padding: 8px;
     padding-left: 12px;
@@ -1913,8 +1913,8 @@ max-width: 100%;
 }
 .modal-pkm-card {
     background: var(--accent-color);
-    border: 3px solid black !important;
-    box-shadow: 5px 5px 0px black !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     padding: 12px;
     display: flex;
     flex-direction: row;
@@ -2176,7 +2176,7 @@ max-width: 100%;
     transition: opacity 0.3s;
     font-size: 0.7rem;
     pointer-events: none;
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid #dadada;
     box-shadow: 4px 4px 0px #dadada;
     color: #dadada;
@@ -2288,7 +2288,7 @@ max-width: 100%;
     font-size: 0.7rem;
     line-height: 1.3;
     pointer-events: none;
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid #dadada;
     box-shadow: 4px 4px 0px #dadada;
     color: #dadada;
@@ -2302,7 +2302,7 @@ max-width: 100%;
     padding-top: 10px !important;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid black; /* RIGHA BIANCA SOTTILE */
+    border-bottom: 1px solid var(--nb-ink, #000); /* RIGHA BIANCA SOTTILE */
 }
 
 .generic-tooltip p {
@@ -2371,8 +2371,8 @@ max-width: 100%;
     gap: 35px;
     padding: 8px 15px;
     background-color: var(--yellow);
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 
@@ -2393,7 +2393,7 @@ max-width: 100%;
 .top-bar {
     width: 100%;
     padding: 50px 0; 
-    border-bottom: 5px solid #000;
+    border-bottom: 5px solid var(--nb-ink, #000);
     display: flex;
     justify-content: center; /* Centra il contenuto interno */
     align-items: center;
@@ -2421,12 +2421,12 @@ max-width: 100%;
 }
 
 .hub-title-display {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
     font-size: 2.5rem; /* Dimensione bilanciata */
     font-weight: 900;
@@ -2463,7 +2463,7 @@ max-width: 100%;
     margin: 0;
     line-height: 0.9;
     transform: rotate(-2deg); /* Rotazione stilistica */
-    background: black;
+    background: var(--nb-ink, #000);
     padding: 20px 40px;
     box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.3);
     position:fixed;
@@ -2475,8 +2475,8 @@ max-width: 100%;
 .rank-modal-close {
     background: white;
     color: black;
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 25px;
     font-weight: 800;
     text-transform: uppercase;
@@ -2510,8 +2510,8 @@ transform: translate(-4px, -4px);
     display: flex;
     align-items: center;
     background: var(--player-color);
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 15px 25px;
     transition: all 0.2s ease;
     position: relative;
@@ -2519,13 +2519,13 @@ transform: translate(-4px, -4px);
 
 .player-stack-card:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px #000 !important;
+    box-shadow: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(23px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 /* Effetto al tocco/click */
 .player-stack-card:active {
     transform: translate(3px, 3px);
-    box-shadow: 0px 0px 0px #000 !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 /* Il wrapper che contiene l'avatar e il nome, impedendo di toccare il layout grid dei numeri */
@@ -2615,8 +2615,8 @@ transform: translate(-4px, -4px);
 /* Il badge dei punti (il rettangolo bianco nello screen) */
 .stack-points-badge {
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 5px 20px;
     font-size: 2rem;
     font-weight: 900;
@@ -2644,7 +2644,7 @@ transform: translate(-4px, -4px);
 /* Etichette (Labels) in alto */
 .header-label {
     background: #fff;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     padding: 4px 8px;
     font-size: 0.7rem;
     font-weight: 900;
@@ -2652,7 +2652,7 @@ transform: translate(-4px, -4px);
     text-align: center;
     width: fit-content;
     transform: rotate(-2deg);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Stili testi interni */
@@ -2663,8 +2663,8 @@ transform: translate(-4px, -4px);
 /* Badge Punti (Rettangolo bianco come screen 5) */
 .stack-points-badge {
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 5px;
     font-size: 1.5rem;
     font-weight: 900;
@@ -2694,10 +2694,10 @@ transform: translate(-4px, -4px);
     font-weight: 900;
     text-transform: uppercase;
     padding: 2px 6px;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     width: 100%;
     text-align: center;
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .label-sub {
@@ -2742,10 +2742,10 @@ transform: translate(-4px, -4px);
     font-weight: 900;
     text-transform: uppercase;
     padding: 2px 4px;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     width: 100%;
     text-align: center;
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     margin-bottom: 4px;
 }
 
@@ -2789,8 +2789,8 @@ transform: translate(-4px, -4px);
     font-size: 0.7rem;
     font-weight: 900;
     text-transform: uppercase;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 2px 0;
     margin-bottom: 4px;
     transform: rotate(1.5deg);
@@ -2891,7 +2891,7 @@ transform: translate(-4px, -4px);
 .modal-pkm-info strong {
     font-size: 0.95rem; 
     color: #fff !important; /* Testo bianco su sfondo nero */
-    background: #000;
+    background: var(--nb-ink, #000);
     text-transform: uppercase;
     display: table; /* Si stringe attorno al testo senza occupare tutto il rigo */
     padding: 1px 6px; /* Padding minimo per mantenere l'altezza originale */
@@ -2934,8 +2934,8 @@ transform: translate(-4px, -4px);
     position: relative;
     cursor: help;
     color: #000 !important; 
-    border: 1.5px solid black !important;
-    box-shadow: 3px 3px 0px black !important; 
+    border: 1.5px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important; 
     font-size: 0.7rem;
     padding: 6px 8px;
     font-weight: 800; /* Più spessore al testo per il neubrutalism */
@@ -3043,7 +3043,7 @@ transform: translate(-4px, -4px);
     width: 50px; /* Mantengo la tua larghezza */
     
     /* STILE STICKER */
-    border: 1.5px solid #000; /* Bordo nero che "contiene" l'adesivo */
+    border: 1.5px solid var(--nb-ink, #000); /* Bordo nero che "contiene" l'adesivo */
     border-radius: 0;         /* Taglio netto, niente curve */
     color: white;
     font-weight: 900;
@@ -3051,7 +3051,7 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
     
     /* Ombra dura e vicina per l'effetto spessore carta */
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     cursor: help;
     font-family: 'Josefin Sans', sans-serif;
@@ -3079,7 +3079,7 @@ transform: translate(-4px, -4px);
 .type-badge:hover {
     transform: scale(1.1) rotate(0deg) !important;
     z-index: 10;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* --- FIX COLORI PER ADESIVI --- */
@@ -3130,8 +3130,8 @@ transform: translate(-4px, -4px);
 
     /* STILE NEUBRUTALIST: Via il nero/grigio, passiamo al "fumetto" */
     background: #fff !important;
-    border: 3px solid #000 !important;
-    box-shadow: 5px 5px 0px #000 !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     color: #000 !important;
     
     font-family: 'Josefin Sans', sans-serif;
@@ -3187,8 +3187,8 @@ transform: translate(-4px, -4px);
     font-weight: bold;
     text-transform: uppercase;
     text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
-    border: 1.5px solid black;
-    box-shadow: 2px 2px 0 black;
+    border: 1.5px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
 }
 
@@ -3236,7 +3236,7 @@ transform: translate(-4px, -4px);
     margin-left: 10px;
     
     /* STILE NEUBRUTALIST */
-    border: 2px solid #000; /* Bordo nero netto */
+    border: 2px solid var(--nb-ink, #000); /* Bordo nero netto */
     border-radius: 0 !important; /* VIA LE CURVE (anche se avevi 3px) */
     overflow: hidden;
     box-shadow: 2px 2px 0px rgba(0,0,0,0.1); /* Ombra interna minima */
@@ -3249,15 +3249,15 @@ transform: translate(-4px, -4px);
     background-color: var(--accent-color); 
     
     /* Separatore netto alla fine del riempimento */
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--nb-ink, #000);
 }
 
 /* --- TOOLTIP DELLE STATISTICHE (Quello che spunta al passaggio) --- */
 .stats-tooltip {
     /* ... mantieni le tue posizioni left/top ... */
     background: #fff !important;
-    border: 3px solid #000 !important;
-    box-shadow: 6px 6px 0px #000 !important;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
     color: #000 !important;
     padding: 12px;
     z-index: 10000;
@@ -3281,7 +3281,7 @@ transform: translate(-4px, -4px);
     font-size: 0.7rem;
     line-height: 1.3;
     pointer-events: none;
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid #dadada;
     box-shadow: 4px 4px 0px #dadada;
     color: #dadada;
@@ -3298,7 +3298,7 @@ transform: translate(-4px, -4px);
     padding-top: 10px !important;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid black; /* RIGHA BIANCA SOTTILE */
+    border-bottom: 1px solid var(--nb-ink, #000); /* RIGHA BIANCA SOTTILE */
 }
 
 .generic-tooltip p {
@@ -3331,8 +3331,8 @@ transform: translate(-4px, -4px);
     
     /* CAMBIO STILE: Sfondo bianco e bordo nero netto */
     background: #fff; 
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #000 !important;
     
     font-family: 'Josefin Sans', sans-serif;
@@ -3346,7 +3346,7 @@ transform: translate(-4px, -4px);
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #000; /* Linea di separazione nera */
+    border-bottom: 2px solid var(--nb-ink, #000); /* Linea di separazione nera */
     padding-bottom: 4px !important;
     margin-bottom: 6px;
 }
@@ -3367,7 +3367,7 @@ transform: translate(-4px, -4px);
     justify-content: space-between;
     align-items: center;
     /* Bordo sotto nero netto e spesso */
-    border-bottom: 4px solid #000; 
+    border-bottom: 4px solid var(--nb-ink, #000); 
     padding-bottom: 20px;
     margin-bottom: 30px;
     gap: 20px;
@@ -3383,10 +3383,10 @@ transform: translate(-4px, -4px);
     
     /* Colori: Testo Bianco su Sfondo Nero */
     color: #fff;
-    background: #000;
+    background: var(--nb-ink, #000);
     
     /* Bordo e Ombra Neubrutalist */
-    border: 4px solid #000; 
+    border: 4px solid var(--nb-ink, #000); 
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
     
     /* Rimosso border-radius (niente curve!) */
@@ -3403,8 +3403,8 @@ transform: translate(-4px, -4px);
     gap: 30px;
     padding: 12px 25px;
     background-color: #fff; /* O var(--yellow) se vuoi che spicchi */
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(1deg); /* Contro-rotazione per dinamismo */
 }
 
@@ -3482,8 +3482,8 @@ transform: translate(-4px, -4px);
 /* Il contenitore principale (La card) */
 #login-modal .modal-content {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta classica */
     padding: 40px;
     max-width: 400px;
     width: 90%;
@@ -3498,7 +3498,7 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
     font-size: 2.5rem;
     margin-bottom: 25px;
-    border-bottom: 4px solid #000;
+    border-bottom: 4px solid var(--nb-ink, #000);
     display: inline-block;
     padding-bottom: 5px;
     color: black !important;
@@ -3523,7 +3523,7 @@ transform: translate(-4px, -4px);
 .input-group input {
     width: 100%;
     padding: 12px 15px;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-family: inherit;
     font-weight: 600;
     background: #f0f0f0;
@@ -3534,7 +3534,7 @@ transform: translate(-4px, -4px);
 
 .input-group input:focus {
     background: #fff;
-    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'input "esce" fuori quando scrivi */
     transform: translate(-2px, -2px);
 }
 
@@ -3544,11 +3544,11 @@ transform: translate(-4px, -4px);
     padding: 15px;
     background: #31c489; /* Il verde che usi altrove */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 6px 6px 0px #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.1s;
     margin-top: 10px;
     transform: rotate(-2deg);
@@ -3556,12 +3556,12 @@ transform: translate(-4px, -4px);
 
 .btn-login:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px #000;
+    box-shadow: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(23px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-login:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Tasto Chiudi (X) */
@@ -3598,9 +3598,9 @@ transform: translate(-4px, -4px);
 
 .admin-col {
     background: #f0f0f0; /* Grigio chiarissimo per differenziare le zone */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 15px;
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     margin-bottom: 0;
 }
 
@@ -3609,8 +3609,8 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
     font-weight: 900;
     font-size: 1rem;
-    background: black;
-    border: 2px solid black;
+    background: var(--nb-ink, #000);
+    border: 2px solid var(--nb-ink, #000);
     box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
     padding: 5px 10px;
     margin-top: -25px; /* Effetto "badge" che esce dal bordo */
@@ -3622,14 +3622,14 @@ transform: translate(-4px, -4px);
 
 #match-panel-title {
     display: inline-block;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 10px 25px;
     font-family: 'Josefin Sans', sans-serif;
     font-size: 1.5rem;
     font-weight: 900;
     text-transform: uppercase;
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.3);
     transform: rotate(-1deg);
     margin-bottom: 30px;
@@ -3649,8 +3649,8 @@ transform: translate(-4px, -4px);
     color: black;
     padding: 5px 15px;
     font-weight: 900;
-    border: 3px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-1deg);
     margin-bottom: 15px;
     font-size: 1rem;
@@ -3663,7 +3663,7 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
     margin: 10px 0;
     letter-spacing: -1px;
-    background: black;
+    background: var(--nb-ink, #000);
     padding: 15px 25px;
     box-shadow: 7px 7px 0px rgba(0, 0, 0, 0.3);
 }
@@ -3680,7 +3680,7 @@ transform: translate(-4px, -4px);
 /* Singolo Slot del Match */
 .match-slot {
     background: white;
-    border: 4px solid black;
+    border: 4px solid var(--nb-ink, #000);
     width: 200px;
     height: 180px;
     display: flex;
@@ -3688,7 +3688,7 @@ transform: translate(-4px, -4px);
     align-items: center;
     justify-content: center;
     position: relative;
-    box-shadow: 8px 8px 0px black;
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -3721,18 +3721,18 @@ transform: translate(-4px, -4px);
     height: 60px;
     border-radius: 50%;
     background: white;
-    border: 4px solid black;
+    border: 4px solid var(--nb-ink, #000);
     font-size: 2rem;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 4px 4px 0px black;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.1s;
 }
 
 .btn-add-match-circle:hover {
     background: var(--yellow);
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px black;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Dettagli quando il match è pieno */
@@ -3747,16 +3747,16 @@ transform: translate(-4px, -4px);
 /* Bottone Modifica (Matitina) */
 .btn-edit-match {
     background: #3498db;
-    border: 3px solid black;
+    border: 3px solid var(--nb-ink, #000);
     padding: 5px 10px;
     cursor: pointer;
-    box-shadow: 3px 3px 0px black;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 1rem;
 }
 
 .btn-edit-match:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 5px 5px 0px black;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 
@@ -3765,7 +3765,7 @@ transform: translate(-4px, -4px);
     padding: 10px 20px;
     font-size: 1.8rem;
     font-weight: 900;
-    box-shadow: 6px 6px 0px black;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-2deg);
     min-width: 100px;
     text-align: center; 
@@ -3815,18 +3815,18 @@ transform: translate(-4px, -4px);
 /* Stile del bottone nella barra gialla */
 .btn-topbar-custom {
     background: #00e676; /* Verde simile al tuo bottone Login */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 8px 16px;
     font-weight: bold;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: transform 0.1s, box-shadow 0.1s;
     margin-right: 12px;
 }
 .btn-topbar-custom:active {
     transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0px #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Sfondo Modale */
@@ -3841,8 +3841,8 @@ transform: translate(-4px, -4px);
 /* Finestra Interna Modale */
 .pokemon-theme-modal {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 8px 8px 0px #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     width: 90%; max-width: 650px;
     max-height: 85vh;
     padding: 24px;
@@ -3852,7 +3852,7 @@ transform: translate(-4px, -4px);
 
 .modal-custom-header {
     display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 3px solid #000; padding-bottom: 12px;
+    border-bottom: 3px solid var(--nb-ink, #000); padding-bottom: 12px;
 }
 .modal-custom-header h2 { margin: 0; font-weight: 900; letter-spacing: 1px; }
 
@@ -3868,16 +3868,16 @@ transform: translate(-4px, -4px);
 /* Bottoni/Schede dei Giocatori */
 .player-tab-btn {
     background: #fff;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     padding: 8px 16px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 .player-tab-btn.active {
     background: #ffeb3b; /* Giallo Evidenziato quando selezionato */
     transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     border: 2px solid #f0f0f0 !important;
 }
 
@@ -3888,8 +3888,8 @@ transform: translate(-4px, -4px);
 .modal-team-cards-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 
 .modal-team-card {
-    border: 2px solid #000;
-    box-shadow: 4px 4px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     background: #f9f9f9;
     padding: 12px;
 }
@@ -3907,25 +3907,25 @@ transform: translate(-4px, -4px);
 /* Stile Neubrutalism coerente con la tua UI (Bordi spessi neri e ombra netta) */
 .btn-topbar-custom {
     background: #00e676; /* Verde acceso simile al bottone di conferma del login */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 6px 14px;
     font-size: 14px;
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: transform 0.1s, box-shadow 0.1s;
     font-family: inherit;
 }
 
 .btn-topbar-custom:hover {
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-topbar-custom:active {
     transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0px #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Stili strutturali per il modale */
@@ -3938,8 +3938,8 @@ transform: translate(-4px, -4px);
 }
 .pokemon-theme-modal {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 8px 8px 0px #000;
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     width: 90%; max-width: 650px;
     max-height: 80vh;
     padding: 20px;
@@ -3949,22 +3949,22 @@ transform: translate(-4px, -4px);
 }
 .modal-custom-header {
     display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 3px solid #000; padding-bottom: 8px;
+    border-bottom: 3px solid var(--nb-ink, #000); padding-bottom: 8px;
 }
 .modal-custom-header h2 { margin:0; font-weight: 900; }
 .close-modal-btn { background: none; border: none; font-size: 22px; cursor: pointer; font-weight: bold; }
 .players-tabs-container { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
 .player-tab-btn {
-    background: #fff; border: 3px solid #000; padding: 6px 12px;
-    font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0px #000;
+    background: #fff; border: 3px solid var(--nb-ink, #000); padding: 6px 12px;
+    font-weight: 900; cursor: pointer; box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
-.player-tab-btn.active { background: #ffbd44; border: 2px solid black; transform: translate(1px, 1px); box-shadow: 0px 0px 0px #000; }
+.player-tab-btn.active { background: #ffbd44; border: 2px solid var(--nb-ink, #000); transform: translate(1px, 1px); box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000); }
 .modal-separator { border: 0; border-top: 3px #000; margin: 15px 0; }
 .category-title-modal { text-transform: uppercase; font-weight: 900; margin-bottom: 8px; font-size: 16px; color: #000; }
 .modal-team-cards-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 @media (max-width: 600px) { .modal-team-cards-wrapper { grid-template-columns: 1fr; } }
-.modal-team-card { border: 3px solid #000; box-shadow: 3px 3px 0px #000; background: #fff; padding: 10px; }
-.modal-team-card-header { font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px; }
+.modal-team-card { border: 3px solid var(--nb-ink, #000); box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); background: #fff; padding: 10px; }
+.modal-team-card-header { font-weight: 900; border-bottom: 2px solid var(--nb-ink, #000); padding-bottom: 4px; margin-bottom: 6px; }
 .placeholder-text { text-align: center; color: #555; font-style: italic; padding: 10px; }
 
 /* Griglia per le card compatte */
@@ -3979,9 +3979,9 @@ transform: translate(-4px, -4px);
 /* Stile della Card Compatta (Pulita) */
 .compact-team-card {
     position: relative; /* Fondamentale per ancorare il tooltip fluttuante */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     background: #fff;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px;
     cursor: pointer;
     transition: transform 0.1s;
@@ -3989,7 +3989,7 @@ transform: translate(-4px, -4px);
 
 .compact-team-card:hover {
     transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     background: #fdfdfd;
 }
 
@@ -4013,7 +4013,7 @@ transform: translate(-4px, -4px);
     font-size: 12px;
     font-weight: 800;
     background: #eee;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     padding: 1px 6px;
 }
 
@@ -4036,8 +4036,8 @@ transform: translate(-4px, -4px);
     cursor: default;
     
     /* Manteniamo le proprietà stilistiche esatte delle tue card originali */
-    border: 3px solid #000;
-    box-shadow: 6px 6px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 15px;
 }
 
@@ -4079,8 +4079,8 @@ transform: translate(-4px, -4px);
 
 .card { 
     background: var(--accent-color); /* Colore dinamico del team */
-    border: 4px solid #000; /* Bordo nero spesso */
-    box-shadow: 10px 10px 0px #000; /* Ombra dura */
+    border: 4px solid var(--nb-ink, #000); /* Bordo nero spesso */
+    box-shadow: calc(10px * var(--nb-kx, 1)) calc(10px * var(--nb-ky, 1)) calc(25px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra dura */
     padding: 20px; 
     position: relative;
     transition: all 0.2s ease;
@@ -4090,13 +4090,13 @@ transform: translate(-4px, -4px);
 .card:hover {
     /* Effetto "sollevamento" */
     transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px #000;
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .card:active {
     /* Effetto "pressione" */
     transform: translate(4px, 4px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Header della Card */
@@ -4114,14 +4114,14 @@ transform: translate(-4px, -4px);
     text-transform: uppercase;
     background: #fff; /* Sfondo bianco per staccare */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     padding: 4px 10px;
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .card h3 { 
     font-family: 'Josefin Sans', sans-serif;
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     margin: 10px 0; 
     font-size: 1.6rem; /* Leggermente ridotto per nomi lunghi */
@@ -4172,8 +4172,8 @@ transform: translate(-4px, -4px);
     cursor: help; /* Cambia cursore per far capire che c'è un info */
     color: #1a1a1a;
     font-family: 'Josefin Sans', sans-serif;
-    border: 1.5px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 1.5px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .pkm-box::before {
@@ -4195,7 +4195,7 @@ transform: translate(-4px, -4px);
     position: absolute;
     bottom: 110%; 
     width: 260px; 
-    background: black;
+    background: var(--nb-ink, #000);
     border: 2px solid white;
     box-shadow: 4px 4px 0px white;
     color: white;
@@ -4334,15 +4334,15 @@ transform: translate(-4px, -4px);
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     margin-top: 12px;
-    border-top: 2px solid #000; /* Separatore netto */
+    border-top: 2px solid var(--nb-ink, #000); /* Separatore netto */
     padding-top: 10px;
     z-index: 1000;
 }
 
 .hover-moves span {
     background: #fff; /* Sfondo neutro */
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: #000;
     font-size: 0.65rem;
     padding: 6px 4px;
@@ -4363,8 +4363,8 @@ transform: translate(-4px, -4px);
     bottom: 115%; /* Leggermente più alto per non coprire il bordo */
     width: 240px; 
     background: #fff; /* Sfondo bianco per contrasto neubrutalist */
-    border: 3px solid #000; /* Bordo nero spesso */
-    box-shadow: 8px 8px 0px #000; /* Ombra netta */
+    border: 3px solid var(--nb-ink, #000); /* Bordo nero spesso */
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta */
     color: #000;
     padding: 15px;
     z-index: 1000 !important;
@@ -4375,14 +4375,14 @@ transform: translate(-4px, -4px);
 /* Titolo dentro l'hover (Nome Pokémon) */
 .pkm-hover-card strong {
     display: table; /* Adattamento al testo */
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     font-size: 0.9rem;
     text-transform: uppercase;
     padding: 4px 12px;
     margin-bottom: 10px;
     transform: rotate(-2deg); /* Effetto sticker */
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     z-index: 1000;
 }
 
@@ -4461,12 +4461,12 @@ transform: translate(-4px, -4px);
 
 /* IL NUOVO ADESIVO COMPATTO: Applica l'effetto stile fumetto solo al testo */
 .neubrutal-badge-title {
-    background: #000 !important;
+    background: var(--nb-ink, #000) !important;
     color: #fff !important;
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4) !important;
     font-size: 2.2rem; 
     font-weight: 900;
@@ -4483,8 +4483,8 @@ transform: translate(-4px, -4px);
 .close-modal-btn {
     background: #ff5252;
     color: #000;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 18px;
     cursor: pointer;
     font-weight: bold;
@@ -4494,7 +4494,7 @@ transform: translate(-4px, -4px);
 
 .close-modal-btn:active {
     transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0px #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 .modal-custom-header h2 {
     color: #fff; /* Testo bianco */
@@ -4584,12 +4584,12 @@ transform: translate(-4px, -4px);
     font-family: "Josefin Sans", sans-serif;
     font-size: 1.1rem;
     text-transform: uppercase;
-    background: #000000;
+    background: var(--nb-ink, #000);
     color: #ffffff;
     padding: 6px 12px;
     display: inline-block;
     align-self: flex-start;
-    border: 3px solid #000000;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
     transform: rotate(1deg);
 }
@@ -4605,8 +4605,8 @@ transform: translate(-4px, -4px);
 .neu-compact-team-tag {
     position: relative;
     background: #ffffff;
-    border: 3px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 14px;
     display: flex;
     align-items: center;
@@ -4618,7 +4618,7 @@ transform: translate(-4px, -4px);
 /* Effetto focus/hover sul Tag */
 .neu-compact-team-tag:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px #000000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Testo del nome del Team */
@@ -4637,11 +4637,11 @@ transform: translate(-4px, -4px);
 .neu-tag-stats-badge {
     font-family: monospace; 
     font-weight: bold; 
-    background: #000000; 
+    background: var(--nb-ink, #000); 
     color: #ffffff; 
     padding: 2px 6px; 
     font-size: 0.75rem;
-    border: 2px solid #000000;
+    border: 2px solid var(--nb-ink, #000);
     flex-shrink: 0;
 }
 
@@ -4665,8 +4665,8 @@ transform: translate(-4px, -4px);
 .neu-compact-team-tag {
     position: relative;
     background: #ffffff;
-    border: 3px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px 14px;
     display: flex;
     align-items: center;
@@ -4677,7 +4677,7 @@ transform: translate(-4px, -4px);
 
 .neu-compact-team-tag:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px #000000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* IL TOOLTIP: Esce dal flusso del tag, diventa un blocco fluttuante autonomo */
@@ -4691,8 +4691,8 @@ transform: translate(-4px, -4px);
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.15s ease, visibility 0.15s ease;
-    box-shadow: 5px 5px 0px #000000;
-    border: 3px solid #000000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    border: 3px solid var(--nb-ink, #000);
     padding: 10px;
     width: max-content; /* Impedisce al tooltip di stringersi o deformarsi */
 }
@@ -4765,12 +4765,12 @@ transform: translate(-4px, -4px);
 
 /* IL NUOVO ADESIVO COMPATTO: Applica l'effetto stile fumetto solo al testo */
 .neubrutal-badge-title {
-    background: #000 !important;
+    background: var(--nb-ink, #000) !important;
     color: #fff !important;
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4) !important;
     font-size: 2.2rem; 
     font-weight: 900;
@@ -4785,8 +4785,8 @@ transform: translate(-4px, -4px);
 .close-modal-btn {
     background: #ff5252;
     color: #000;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 18px;
     cursor: pointer;
     font-weight: bold;
@@ -4797,7 +4797,7 @@ transform: translate(-4px, -4px);
 
 .close-modal-btn:active {
     transform: translate(2px, 2px);
-    box-shadow: 1px 1px 0px #000;
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .modal-custom-header h2 {
@@ -4857,10 +4857,10 @@ transform: translate(-4px, -4px);
 .pokeball-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     position: relative;
-    box-shadow: 4px 4px 0px #000000; /* L'ombra rimane ora statica */
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'ombra rimane ora statica */
     overflow: hidden; /* Mantiene la rotazione interna entro i bordi */
 }
 
@@ -4889,7 +4889,7 @@ transform: translate(-4px, -4px);
     width: 16px;
     height: 16px;
     background: #ffffff;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -4915,14 +4915,14 @@ transform: translate(-4px, -4px);
     margin-top: 12px;
     padding: 6px 14px;
     background: #09ca49;
-    border: 3px solid black;
-    box-shadow: 3px 3px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-family: 'Josefin Sans', sans-serif;
     font-weight: bold;
     text-transform: uppercase;
     cursor: pointer;
 }
-.btn-gioca:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 black; }
+.btn-gioca:active { transform: translate(2px, 2px); box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000); }
 /* =====================================================================
    TELEFONO (≤ 900px): le colonne vanno in pila e la griglia dei showdown scende a una (o due) colonne.
    Il desktop non cambia: tutto sta dentro le media query.
@@ -4984,7 +4984,7 @@ transform: translate(-4px, -4px);
     .stack-avatar-inline { width: 34px; height: 34px; }
     .stack-name { font-size: 1.05rem; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; }
     .stack-val { font-size: 0.8rem; }
-    .stack-points-badge { font-size: 1rem !important; padding: 3px 2px !important; min-width: 0 !important; box-shadow: 2px 2px 0 #000 !important; }
+    .stack-points-badge { font-size: 1rem !important; padding: 3px 2px !important; min-width: 0 !important; box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important; }
     .player-stack-card { padding: 10px 8px; }
 
 }

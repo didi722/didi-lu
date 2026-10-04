@@ -522,10 +522,52 @@ test('le card dell\'index si adattano alla larghezza (da 236 a 300px) e sotto i 
     assert.match(css, /@media \(max-width: 520px\)/);
 });
 
-test('box: i pulsanti tondi (musica, importa, Team Builder) stanno sopra al blocco del titolo che il tema alza, altrimenti non ricevono i clic', () => {
+test('i tasti in più (sfide, admin, Team Builder) stanno in un dock sopra al blocco del titolo che il tema alza, altrimenti non ricevono i clic', () => {
     const m = /body\.nb \.top-bar-inner \{[^}]*z-index:\s*(\d+)/.exec(css);
     assert.ok(m, 'blocco del titolo con z-index');
-    const r = /body\.pg-box \.music-btn,\s*body\.pg-box \.btn-floating-admin,\s*body\.pg-box \.btn-floating-helper \{\s*z-index:\s*(\d+)/.exec(css);
-    assert.ok(r, 'regola per i pulsanti del box mancante');
-    assert.ok(Number(r[1]) > Number(m[1]), `z-index dei pulsanti (${r[1]}) deve superare quello del titolo (${m[1]})`);
+    const r = /\.tasti-alto \{[^}]*z-index:\s*(\d+)/.exec(css);
+    assert.ok(r, 'regola del dock dei tasti mancante');
+    assert.ok(Number(r[1]) > Number(m[1]), `z-index del dock (${r[1]}) deve superare quello del titolo (${m[1]})`);
+    // il suono vive nella barra del titolo come "chip", non come tasto tondo fisso
+    assert.match(css, /body\.nb \.top-bar > \.music-btn/);
+});
+
+test('il dock dei tasti in alto sta sopra la barra del titolo di ogni pagina (z-index della barra, altrimenti i tasti non ricevono i clic)', () => {
+    const dock = /\.tasti-alto \{[^}]*z-index:\s*(\d+)/.exec(css);
+    assert.ok(dock, 'z-index del dock');
+    const zBarra = [];
+    for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => /^style-.*\.css$/.test(n) || n === 'nb-pagine.css')) {
+        for (const m of docs(f).matchAll(/(?:^|\n)\.top-bar\s*\{[^}]*?z-index:\s*(\d+)/g)) zBarra.push({ f, z: Number(m[1]) });
+    }
+    assert.ok(zBarra.length > 0, 'trovata almeno una barra con z-index');
+    for (const { f, z } of zBarra) assert.ok(Number(dock[1]) > z, `${f}: la barra (${z}) copre il dock (${dock[1]})`);
+});
+
+test('pagina pubblica: il menu a tendina è quello nuovo del sito (stesse regole di temi.css), non le linguette gialle', () => {
+    const pub = docs('public.html');
+    assert.match(pub, /<body class="pg-public">/);
+    assert.match(pub, /href="temi\.css"/);
+    assert.match(pub, /<script src="temi\.js"><\/script>/);
+    assert.match(css, /:is\(body\.nb, body\.pg-public\) \.user-dropdown \.menu-item,/);
+    assert.match(css, /:is\(body\.nb, body\.pg-public\) \.auth-interaction \{/);
+});
+
+test('replay di una partita: intestazione e scelta del set sono finestre del tema, i colori dei giocatori solo filetti (--vinc)', () => {
+    const fin = docs('finestre.css');
+    assert.match(fin, /#replayModal \.replay-mini-header \{/);
+    assert.match(fin, /#replayModal \.set-lista \{/);
+    assert.match(fin, /#replayModal \.gba-shell \{ filter: drop-shadow\(var\(--nb-sh-l/);
+    assert.match(fin, /linear-gradient\(to top, var\(--vinc, #555\) 0 9px, var\(--nb-carta/);
+    const m = docs('matches.html');
+    assert.doesNotMatch(m, /miniHeader\.style\.(backgroundColor|boxShadow|border)/, 'niente stili fissi scritti nel JS');
+    assert.doesNotMatch(m, /class="btn-set[^"]*"[^>]*style="background-color/, 'il tasto del set non ha lo sfondo pieno');
+    assert.match(m, /setProperty\('--vinc'/);
+});
+
+test('hub: la finestra PICK A TEAM e il fumetto della "i" seguono il tema (nessun verde/rosso pieno, nessun cerchio nero)', () => {
+    const fin = docs('finestre.css');
+    assert.match(fin, /\.modal-neubrutal \.team-option\.selected \{[^}]*var\(--nb-verde/);
+    assert.match(fin, /\.modal-neubrutal \.info-icon \{[^}]*var\(--nb-giallo/);
+    assert.match(fin, /\.team-preview-tooltip \.tp-pkm \{/);
+    assert.match(docs('hub.html'), /class="tp-titolo"/);
 });

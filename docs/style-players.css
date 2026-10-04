@@ -62,10 +62,10 @@ body {
 .pokeball-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     position: relative;
-    box-shadow: 4px 4px 0px #000000; /* L'ombra rimane ora statica */
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'ombra rimane ora statica */
     overflow: hidden; /* Mantiene la rotazione interna entro i bordi */
 }
 
@@ -94,7 +94,7 @@ body {
     width: 16px;
     height: 16px;
     background: #ffffff;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -205,8 +205,8 @@ body {
     width: 45px;
     height: 45px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     z-index: 999;
     align-items: center;
@@ -216,7 +216,7 @@ body {
 }
 
 .music-btn:hover {
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
@@ -239,8 +239,8 @@ body {
     color: black;
     background-color: white;
     transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     box-shadow: 0 0 0;
 }
 
@@ -255,8 +255,8 @@ body {
     right: 0;
     top: 100%;
     background: white; /* O rgba(255,255,255,0.1) se vuoi l'effetto glass */
-    border: 2px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px;
     min-width: 150px;
     flex-direction: column;
@@ -286,7 +286,7 @@ body {
 .user-dropdown .logout-btn:hover {
     background-color: #f0f0f0;
     transform: translate(-2px, -2px);
-    box-shadow: 2px 2px 0px black;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .menu-divider {
@@ -328,8 +328,8 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     background: var(--yellow);
-    border: 3px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: 0.2s;
     cursor: pointer;
     width: 100%;
@@ -347,7 +347,7 @@ body {
 .user-dropdown .logout-btn:hover {
     background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
     transform: translate(-3px, -3px) rotate(0deg);
-    box-shadow: 7px 7px 0px black;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .user-dropdown .menu-item:active{
@@ -384,8 +384,8 @@ body {
     left: 0;
     top: 0;
     z-index: 999;
-    background: #000;
-    border-right: 4px solid #000;
+    background: var(--nb-ink, #000);
+    border-right: 4px solid var(--nb-ink, #000);
 }
 
 .ad-banner {
@@ -441,7 +441,7 @@ body {
 .top-bar {
     width: 100%;
     padding: 50px 0; 
-    border-bottom: 5px solid #000;
+    border-bottom: 5px solid var(--nb-ink, #000);
     display: flex;
     justify-content: center; /* Centra il contenuto interno */
     align-items: center;
@@ -469,12 +469,12 @@ body {
 }
 
 .hub-title-display {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
     font-size: 2.5rem; /* Dimensione bilanciata */
     font-weight: 900;
@@ -491,8 +491,8 @@ body {
 /* Il contenitore principale (La card) */
 #login-modal .modal-content {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta classica */
     padding: 40px;
     max-width: 400px;
     width: 90%;
@@ -507,7 +507,7 @@ body {
     text-transform: uppercase;
     font-size: 2.5rem;
     margin-bottom: 25px;
-    border-bottom: 4px solid #000;
+    border-bottom: 4px solid var(--nb-ink, #000);
     display: inline-block;
     padding-bottom: 5px;
     color: black !important;
@@ -532,7 +532,7 @@ body {
 .input-group input {
     width: 100%;
     padding: 12px 15px;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-family: inherit;
     font-weight: 600;
     background: #f0f0f0;
@@ -543,7 +543,7 @@ body {
 
 .input-group input:focus {
     background: #fff;
-    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'input "esce" fuori quando scrivi */
     transform: translate(-2px, -2px);
 }
 
@@ -553,11 +553,11 @@ body {
     padding: 15px;
     background: #31c489; /* Il verde che usi altrove */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 6px 6px 0px #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.1s;
     margin-top: 10px;
     transform: rotate(-2deg);
@@ -565,12 +565,12 @@ body {
 
 .btn-login:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px #000;
+    box-shadow: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(23px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-login:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Tasto Chiudi (X) */
@@ -600,7 +600,7 @@ body {
     background: white; /* Colore giallo vivace tipico del neubrutalism */
     
     /* Bordi neri spessi e netti */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     
     
     /* Colore testo nero per contrasto massimo */
@@ -613,7 +613,7 @@ body {
     gap: 10px;
     
     /* Ombra netta (senza sfocatura) */
-    box-shadow: 5px 5px 0px #000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     /* Transizione rapida per l'effetto pressione */
     transition: all 0.1s;
@@ -623,13 +623,13 @@ body {
     /* Effetto "spostamento" quando ci passi sopra */
     background: white; /* Mantieni il colore o cambialo leggermente */
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .auth-interaction:active {
     /* Effetto "bottone premuto" */
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 #auth-icon {
@@ -721,8 +721,8 @@ body {
 /* Il contenitore principale (La card) */
 #login-modal .modal-content {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta classica */
     padding: 40px;
     max-width: 400px;
     width: 90%;
@@ -820,8 +820,8 @@ body {
 
 /* Card bassa e allungata */
 .trainer-card {
-    border: 3px solid #000;
-    box-shadow: 5px 5px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -840,11 +840,11 @@ body {
 
 .trainer-card:hover {
     transform: rotate(var(--random-deg, 0deg)) translate(-2px, -3px);
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .trainer-card:active {
-    box-shadow: 0px 0px 0px #000;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: translate(2px, 3px);
 }
 
@@ -896,8 +896,8 @@ body {
 /* Box Bianco a Destra con i Punti */
 .trainer-points-box {
     background: #fff;
-    border: 3px solid #000;
-    box-shadow: 3px 3px 0px #000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 14px;
     font-family: 'Josefin Sans', sans-serif;
     font-size: 20px;
@@ -970,8 +970,8 @@ body {
 /* Badge bianco con bordo solo per il numero */
 .trophy-count {
     background: #fff;
-    border: 2px solid #000;
-    box-shadow: 2px 2px 0px #000;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-size: 0.75rem;
     font-weight: 800;
     padding: 2px 6px;

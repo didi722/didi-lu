@@ -18,6 +18,7 @@
        <script src="replay-sito.js"></script>
           <script src="sfide.js"></script>
 <link rel="stylesheet" href="temi.css">
+<link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <script src="dettagli.js" defer></script>
@@ -86,8 +87,8 @@
             background: #ffbd44; 
             color: #000; 
             padding: 6px 14px; 
-            border: 3px solid #000; 
-            box-shadow: 4px 4px 0px #000; 
+            border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); 
+            box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); 
             font-family: 'Josefin Sans', sans-serif; 
             font-weight: 900; 
             text-transform: uppercase; 
@@ -167,8 +168,8 @@
                     <h3 class="right-hub-title" style="margin:0;">RANKINGS:</h3>
                     <button class="rank-btn" onclick="document.getElementById('modal-rank-details').style.display='flex'; renderClassificaDettagliata(stagioneAttiva)" style="
                 background: #ffbd44; 
-                border: 3px solid #000;
-                box-shadow: 2px 2px 0px #000;
+                border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+                box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                 cursor: pointer;
                 font-weight: 900;
                 padding: 2px 8px;
@@ -892,8 +893,8 @@ async function renderRankings(leaderboardData) {
                     margin-bottom: 10px; 
                     padding: 10px; 
                     background: ${color}; 
-                    border: 3px solid #000;
-                    box-shadow: 4px 4px 0px #000;
+                    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+                    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
                     --hover-color: #000;
                     transition: transform 0.1s ease, box-shadow 0.1s ease;
                     transform: rotate(-1deg);
@@ -914,7 +915,7 @@ async function renderRankings(leaderboardData) {
                         P: ${totalShowdowns}, S: ${sdWon}/${sdLost}, W/L: ${player.won || 0}/${player.lost || 0}
                     </div>
                 </div>
-                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid #000; box-shadow: 3px 3px 0 #000; transform: rotate(1deg);">
+                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); transform: rotate(1deg);">
                     ${player.points}
                 </div>
             </div>
@@ -2318,7 +2319,7 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
             if (isOpenSheet === false) {
                 content.innerHTML = `
                     <div style="color:white; text-align:center; padding:40px 20px;">
-                        <p style="color: black; font-weight: 900; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; background: white; padding: 15px; box-shadow: 8px 8px 0 black; border: 3px solid black;">
+                        <p style="color: black; font-weight: 900; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; background: white; padding: 15px; box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);">
                             🔒 This is a closed sheet season
                         </p>
                     
@@ -2637,6 +2638,15 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     });
 })();
 
+// La console del replay è larga 1150px: su schermi più stretti si rimpicciolisce (CSS zoom, --gba-scala) per starci tutta
+function adattaReplayAlloSchermo() {
+    const modal = document.getElementById('replayModal');
+    if (!modal) return;
+    const scala = Math.min(1, (document.documentElement.clientWidth - 16) / 1150);
+    modal.style.setProperty('--gba-scala', scala.toFixed(3));
+}
+window.addEventListener('resize', adattaReplayAlloSchermo);
+
 window.chiudiReplay = function() {
     const modal = document.getElementById('replayModal');
     const iframe = document.getElementById('replayFrame');
@@ -2699,8 +2709,9 @@ selector.style.height = 'auto';
     const vecchiaHeader = document.querySelector('.replay-mini-header');
     if (vecchiaHeader) vecchiaHeader.remove();
 
-    selector.innerHTML = '<span style="color: white;">Caricamento replay...</span>';
+    selector.innerHTML = '<span class="set-messaggio">Caricamento replay...</span>';
     modal.style.display = 'flex';
+    adattaReplayAlloSchermo();
     
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -2723,29 +2734,20 @@ selector.style.height = 'auto';
         // --- 2. CREAZIONE DINAMICA HEADER ---
         const miniHeader = document.createElement('div');
         miniHeader.className = "replay-mini-header";
-        miniHeader.style.fontFamily = "'Josefin Sans', sans-serif";
-        miniHeader.style.backgroundColor = vincitoreMatch;
-        miniHeader.style.border = `3px solid black`;
-        miniHeader.style.boxShadow = `8px 8px 0px black`;
-        miniHeader.style.display = "flex"; 
-        miniHeader.style.alignItems = "center";
-        miniHeader.style.justifyContent = "space-between";
-        miniHeader.style.padding = "10px 20px";
-        miniHeader.style.marginBottom = "15px";
+        // il colore di chi ha vinto il match è solo un filetto della finestra (--vinc), lo stile lo decide il tema
+        miniHeader.style.setProperty('--vinc', vincitoreMatch);
 
         miniHeader.innerHTML = `
-            <div class="mini-team-info side-didi" style="display: flex; align-items: center; gap: 12px;">
-                <div id="header-gifs-didi" class="mini-gifs-row" style="display: flex; align-items: center;"></div>
-                <span class="badge-label" style="margin: 0; display: inline-block; vertical-align: middle;">${teamDidi}</span>
+            <div class="mini-team-info side-didi">
+                <div id="header-gifs-didi" class="mini-gifs-row"></div>
+                <span class="badge-label">${teamDidi}</span>
             </div>
-            
-            <div class="mini-score-box" style="color: black; background: white; padding: 4px 12px; font-weight: bold; border: 2px solid #000; box-shadow: 2px 2px 0px #000; flex-shrink: 0;">
-                ${scoreDidi} - ${scoreLu}
-            </div>
-            
-            <div class="mini-team-info side-lu" style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
-                <span class="badge-label" style="margin: 0; display: inline-block; vertical-align: middle;">${teamLu}</span>
-                <div id="header-gifs-lu" class="mini-gifs-row" style="display: flex; align-items: center;"></div>
+
+            <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
+
+            <div class="mini-team-info side-lu">
+                <span class="badge-label">${teamLu}</span>
+                <div id="header-gifs-lu" class="mini-gifs-row"></div>
             </div>
         `;
         modal.prepend(miniHeader);
@@ -2767,7 +2769,7 @@ selector.style.height = 'auto';
         const matchObj = sdData.matches ? sdData.matches[matchKey] : null;
 
         if (matchObj && matchObj.replays) {
-            let buttonsHtml = '<div style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px;">';
+            let buttonsHtml = '<div class="set-lista">';
             const setKeys = Object.keys(matchObj.replays).sort((a, b) => 
                 (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0)
             );
@@ -2780,13 +2782,12 @@ selector.style.height = 'auto';
                 const numSet = key.replace(/\D/g, '');
 
                 if (infoSet.url) {
+                    // il colore di chi ha vinto il set è un filetto sul tasto (--vinc), non il suo sfondo
                     buttonsHtml += `
-                        <div style="display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center;">
-                            <div style="background: white; color: black; padding: 5px 12px; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; font-family: 'Josefin Sans', sans-serif; font-size: 14px;">
-                                SET ${numSet}
-                            </div>
-                            <button class="btn-set vincitore-${vincId}" 
-                                    style="background-color: ${colorSfondo}; border: 3px solid #000; color: white; font-weight: bold; cursor: pointer; box-shadow: 5px 5px 0px #000; transition: all 0.2s ease; width: 50px; height: 50px; transform: rotate(-1deg); font-size: 18px;"
+                        <div class="set-riga">
+                            <div class="set-etichetta">SET ${numSet}</div>
+                            <button class="btn-set vincitore-${vincId}" style="--vinc: ${colorSfondo};"
+                                    title="Set ${numSet}: won by ${winInitial}"
                                     onclick="gestisciClickReplay(this, '${infoSet.url}')">
                                 ${winInitial}
                             </button>
@@ -2802,7 +2803,7 @@ selector.style.height = 'auto';
                 if (firstBtn) firstBtn.click(); 
             }, 200);
         } else {
-            selector.innerHTML = '<span style="color: white;">Replay non disponibili.</span>';
+            selector.innerHTML = '<span class="set-messaggio">Replay non disponibili.</span>';
         }
 
         renderGifs(teamDidi, 'header-gifs-didi', categoriaMatch);
@@ -2810,7 +2811,7 @@ selector.style.height = 'auto';
 
     } catch (error) {
         console.error("Error opening match:", error);
-        selector.innerHTML = `<span style="color: #ff4444;">Error: ${error.message}</span>`;
+        selector.innerHTML = `<span class="set-messaggio set-errore">Error: ${error.message}</span>`;
     }
 }
 
@@ -3271,7 +3272,7 @@ async function aggiornaGraficaShowdown() {
 
                 detailsDiv.style.display = 'flex';
                 detailsDiv.innerHTML = `
-                    <span class="match-score-summary" style="background-color: ${winnerColor} !important; color: white; border: 3px solid black; box-shadow: 4px 4px 0px black;">
+                    <span class="match-score-summary" style="background-color: ${winnerColor} !important; color: white; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);">
                         ${s1} - ${s2}
                     </span>
                 `;
@@ -4054,5 +4055,6 @@ function apriBattaglia(num) {
 }
 
     </script>
+<script src="controlli.js"></script>
 </body>
 </html>

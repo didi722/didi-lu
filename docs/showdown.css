@@ -85,7 +85,7 @@
     padding: 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
     box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
     font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
@@ -141,7 +141,7 @@
     padding: 1px 9px 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
     font-size: .46em;
     letter-spacing: .12em;
@@ -274,9 +274,9 @@
     padding: 1px 10px 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 900 .7rem/1.6 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     letter-spacing: .14em;
     rotate: calc(var(--nb-rot, 1) * 6deg);
@@ -287,9 +287,9 @@
     padding: 3px 11px 1px;
     background: #fff;
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
-    box-shadow: 3px 3px 0 #000;
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 800 .82rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     letter-spacing: .04em;
     text-transform: uppercase;

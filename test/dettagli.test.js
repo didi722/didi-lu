@@ -389,9 +389,9 @@ test('temi.js segnaPagina: solo la voce del menu di questa pagina riceve aria-cu
 
 test('temi.css: su PC il menu si adatta all\'altezza dello schermo (le nove voci stanno sempre tutte), sotto i 470px scorre', () => {
     const temiCss = docs('temi.css');
-    assert.match(temiCss, /@media \(min-width: 901px\) \{\s*body\.nb \.user-dropdown \{\s*--mn-h: clamp\([^;]*100vh[^;]*\);\s*--mn-gap: clamp\([^;]*100vh[^;]*\);/);
-    assert.match(temiCss, /body\.nb \.user-dropdown > :first-child \{ margin-top: 0 !important; \}/);
-    assert.match(temiCss, /@media \(min-width: 901px\) and \(max-height: 470px\) \{\s*body\.nb \.user-dropdown \{[^}]*max-height: calc\(100vh - 100px\); overflow-y: auto/);
+    assert.match(temiCss, /@media \(min-width: 901px\) \{\s*:is\(body\.nb, body\.pg-public\) \.user-dropdown \{\s*--mn-h: clamp\([^;]*100vh[^;]*\);\s*--mn-gap: clamp\([^;]*100vh[^;]*\);/);
+    assert.match(temiCss, /:is\(body\.nb, body\.pg-public\) \.user-dropdown > :first-child \{ margin-top: 0 !important; \}/);
+    assert.match(temiCss, /@media \(min-width: 901px\) and \(max-height: 470px\) \{\s*:is\(body\.nb, body\.pg-public\) \.user-dropdown \{[^}]*max-height: calc\(100vh - 100px\); overflow-y: auto/);
 });
 
 test('temi.css: la voce del menu della pagina corrente è nera e le voci hanno il loro colore', () => {

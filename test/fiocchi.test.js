@@ -78,8 +78,14 @@ test('calcola: i livelli dai numeri reali, con progresso verso il successivo', (
 test('percentuale di sopravvivenza: sotto i 15 set in campo non conta, e dice quanto manca', () => {
     const poco = perId(F.calcola({ portato: 8, sopravvivenza: 100 }), 'survivor');
     assert.equal(poco.livello, 0);
-    assert.equal(poco.progresso, 0);
+    assert.equal(poco.progresso, 8 / 15, 'la barra mostra quanto manca ai 15 set');
+    assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 8, s: 15 });
     assert.match(poco.nota, /needs 15 sets fielded \(now 8\)/);
+    // sulla scheda il valore è "8 / 15" come per gli altri fiocchi, la spiegazione sta solo nel tooltip
+    const html = F.htmlFiocco(poco);
+    assert.match(html, /<div class="fiocco-valore">8 <i>\/ 15<\/i><\/div>/);
+    assert.doesNotMatch(html.replace(/<div class="fiocco-tip[\s\S]*$/, ''), /needs/);
+    assert.match(html, /fiocco-tip-nota">needs 15 sets fielded \(now 8\)/);
     const abbastanza = perId(F.calcola({ portato: 15, sopravvivenza: 100 }), 'survivor');
     assert.equal(abbastanza.livello, 3);
     assert.equal(abbastanza.nota, '');

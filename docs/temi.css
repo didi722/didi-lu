@@ -231,30 +231,130 @@ body.nb .ads-sidebar::after {
     pointer-events: none;
 }
 
-/* ---------- Bottoni fissi e tasto utente ---------- */
-body.nb .auth-interaction,
-body.nb .music-btn,
-body.nb .sfide-btn {
+/* ---------- Tasto utente ---------- */
+:is(body.nb, body.pg-public) .auth-interaction {
     border-color: var(--nb-ink);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-s);
+    border-width: 3px;
+    box-shadow: var(--nb-sh-m);
 }
-body.nb .auth-interaction { border-width: 3px; box-shadow: var(--nb-sh-m); }
-body.nb .auth-interaction:hover { box-shadow: var(--nb-sh-l); }
-body.nb .auth-interaction:active { box-shadow: var(--nb-sh-s); }
-body.nb .music-btn:hover,
-body.nb .sfide-btn:hover { box-shadow: none; }
-/* Box: i pulsanti tondi (musica, importa, Team Builder) stanno dentro la barra, prima del blocco del titolo; il tema alza
-   quel blocco (z-index 1) e senza questa riga lo mette sopra, così i pulsanti non ricevono più i clic. */
-body.pg-box .music-btn,
-body.pg-box .btn-floating-admin,
-body.pg-box .btn-floating-helper { z-index: 2; }
+:is(body.nb, body.pg-public) .auth-interaction:hover { box-shadow: var(--nb-sh-l); }
+:is(body.nb, body.pg-public) .auth-interaction:active { box-shadow: var(--nb-sh-s); }
+
+/* ---------- Tasti in alto (campanella, battaglie, azioni della pagina) ----------
+   controlli.js li raccoglie tutti in #tasti-alto, una fila sotto il tasto utente: così non si sovrappongono mai, qualunque
+   tasto ci sia (la campanella e le battaglie compaiono solo a chi è iscritto, "New format" solo all'admin...).
+   Stesso linguaggio per tutti: cartellino con bordo, ombra, angoli e carattere del tema. */
+.tasti-alto {
+    position: absolute;
+    top: 100px;
+    right: 40px;
+    z-index: 150;                      /* sopra la barra del titolo (z-index 100 in Players, Matches, Stats, Rules) */
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 16px;
+}
+body.nb .tasti-alto > * {
+    position: relative !important;
+    top: auto !important; right: auto !important; left: auto !important; bottom: auto !important;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    min-width: 46px;
+    width: auto !important;
+    height: 46px !important;
+    margin: 0;
+    padding: 0 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--nb-carta);
+    color: var(--nb-ink);
+    border: 3px solid var(--nb-ink);
+    border-radius: var(--nb-raggio);
+    box-shadow: var(--nb-sh-s);
+    font: 800 .76rem/1 var(--nb-font-titoli);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    outline: none;
+    transform: rotate(calc(var(--nb-rot) * -1.2deg));
+    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+body.nb .tasti-alto > *:nth-child(even) { transform: rotate(calc(var(--nb-rot) * 1deg)); }
+body.nb .tasti-alto > .sfide-btn:not(.sfide-live-btn) { order: 1; }
+body.nb .tasti-alto > .sfide-live-btn { order: 2; }
+body.nb .tasti-alto > :not(.sfide-btn) { order: 3; }
+body.nb .tasti-alto > [hidden] { display: none !important; }
+body.nb .tasti-alto > *:hover,
+body.nb .tasti-alto > *:focus-visible {
+    background: var(--nb-giallo);
+    color: #000;
+    transform: translate(-2px, -3px) rotate(0deg);
+    box-shadow: var(--nb-sh-m);
+}
+body.nb .tasti-alto > *:active { transform: translate(2px, 2px); box-shadow: none; }
+body.nb .tasti-alto > .sfide-live-btn.mia { background: var(--nb-giallo); color: #000; }
+body.nb .tasti-alto > .sfide-live-btn.mia:hover { background: var(--nb-carta); }
+body.nb .tasti-alto > .sfide-btn svg { flex: 0 0 auto; width: 24px; height: 24px; }
+body.nb .tasti-alto .tasto-icona { font-size: 1.15rem; line-height: 1; }
+body.nb .tasti-alto .tasto-testo { line-height: 1; }
+body.nb .tasti-alto .sfide-badge { border-radius: var(--nb-raggio); }
+body.nb .tasti-alto > .btn-floating-admin .plus-icon { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+
+/* ---------- Suono: un interruttore nella striscia nera della barra, come i comandi di una finestra ----------
+   controlli.js sposta #music-control dentro .top-bar. Acceso: lucina verde; spento: vuoto e barrato. */
+body.nb .top-bar > .music-btn {
+    position: absolute !important;
+    top: 4px !important;
+    left: calc(var(--nb-ads) + 86px + 292px) !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 2;
+    box-sizing: border-box;
+    width: auto !important;
+    height: 22px !important;
+    margin: 0;
+    padding: 0 10px 0 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--nb-verde);
+    color: #000;
+    border: 2px solid var(--nb-verde);
+    border-radius: var(--nb-raggio);
+    box-shadow: none;
+    font: 800 10px/18px var(--nb-font-titoli);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    outline: none;
+    transform: none;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+body.nb .top-bar > .music-btn::after { content: "SOUND ON"; }
+body.nb .top-bar > .music-btn.muted { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .5); }
+body.nb .top-bar > .music-btn.muted::after { content: "SOUND OFF"; }
+body.nb .top-bar > .music-btn:hover,
+body.nb .top-bar > .music-btn:focus-visible { background: var(--nb-giallo); color: #000; border-color: var(--nb-giallo); transform: none; box-shadow: none; }
+body.nb .top-bar > .music-btn:active { transform: none; box-shadow: none; }
+body.nb .top-bar > .music-btn svg { flex: 0 0 auto; display: block; width: 13px; height: 13px; stroke: currentColor; opacity: 1; }
+body.nb .top-bar > .music-btn.muted svg { opacity: 1; }
+body.nb .top-bar > .music-btn .taglio { display: none; }
+body.nb .top-bar > .music-btn.muted .taglio { display: inline; }
+body.nb .top-bar > .music-btn.muted .onda { display: none; }
+[data-tema="arcade"] body.nb .top-bar > .music-btn { background: transparent; color: var(--nb-neon); border-color: var(--nb-neon); }
+[data-tema="arcade"] body.nb .top-bar > .music-btn.muted { color: rgba(223, 249, 238, .6); border-color: rgba(223, 249, 238, .35); }
+[data-tema="arcade"] body.nb .top-bar > .music-btn:hover { background: var(--nb-neon); color: #000; border-color: var(--nb-neon); }
 
 /* ---------- Menu a tendina dell'utente ----------
    Ogni voce è una linguetta con l'icona in un quadratino colorato; al passaggio prende il suo colore, scivola e
    mostra la freccia; la voce della pagina in cui si è (temi.js la segna con aria-current) è nera. */
-body.nb .user-dropdown .menu-item,
-body.nb .user-dropdown .logout-btn {
+:is(body.nb, body.pg-public) .user-dropdown .menu-item,
+:is(body.nb, body.pg-public) .user-dropdown .logout-btn {
     --mi: var(--nb-giallo);
     box-sizing: border-box;
     justify-content: flex-start !important;
@@ -270,8 +370,8 @@ body.nb .user-dropdown .logout-btn {
     text-align: left;
     transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, color .12s ease;
 }
-body.nb .user-dropdown .menu-item > i,
-body.nb .user-dropdown .logout-btn > i {
+:is(body.nb, body.pg-public) .user-dropdown .menu-item > i,
+:is(body.nb, body.pg-public) .user-dropdown .logout-btn > i {
     display: inline-flex;
     flex: 0 0 32px;
     align-items: center;
@@ -284,7 +384,7 @@ body.nb .user-dropdown .logout-btn > i {
     font-size: .95rem;
     transition: transform .12s ease;
 }
-body.nb .user-dropdown .menu-item::after {
+:is(body.nb, body.pg-public) .user-dropdown .menu-item::after {
     content: "→";
     margin-left: auto;
     font-weight: 900;
@@ -292,33 +392,33 @@ body.nb .user-dropdown .menu-item::after {
     transform: translateX(-8px);
     transition: opacity .12s ease, transform .12s ease;
 }
-body.nb .user-dropdown .menu-item:nth-child(1) { --mi: var(--nb-giallo); transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
-body.nb .user-dropdown .menu-item:nth-child(2) { --mi: #6ec3ff; transform: rotate(calc(var(--nb-rot) * 1deg)); }
-body.nb .user-dropdown .menu-item:nth-child(3) { --mi: #ff93c8; transform: rotate(calc(var(--nb-rot) * -.8deg)); }
-body.nb .user-dropdown .menu-item:nth-child(4) { --mi: var(--nb-verde); transform: rotate(calc(var(--nb-rot) * 1.2deg)); }
-body.nb .user-dropdown .menu-item:nth-child(5) { --mi: #ffa24d; transform: rotate(calc(var(--nb-rot) * -1deg)); }
-body.nb .user-dropdown .menu-item:nth-child(6) { --mi: #b88cff; transform: rotate(calc(var(--nb-rot) * .8deg)); }
-body.nb .user-dropdown .menu-item:nth-child(7) { --mi: #52d6c3; transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
-body.nb .user-dropdown .menu-item:nth-child(8) { --mi: var(--nb-rosso); transform: rotate(calc(var(--nb-rot) * 1deg)); }
-body.nb .user-dropdown .menu-item:hover,
-body.nb .user-dropdown .menu-item:focus-visible {
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(1) { --mi: var(--nb-giallo); transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(2) { --mi: #6ec3ff; transform: rotate(calc(var(--nb-rot) * 1deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(3) { --mi: #ff93c8; transform: rotate(calc(var(--nb-rot) * -.8deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(4) { --mi: var(--nb-verde); transform: rotate(calc(var(--nb-rot) * 1.2deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(5) { --mi: #ffa24d; transform: rotate(calc(var(--nb-rot) * -1deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(6) { --mi: #b88cff; transform: rotate(calc(var(--nb-rot) * .8deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(7) { --mi: #52d6c3; transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(8) { --mi: var(--nb-rosso); transform: rotate(calc(var(--nb-rot) * 1deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:hover,
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:focus-visible {
     background: var(--mi) !important;
     transform: translate(-4px, -2px) rotate(0deg);
     box-shadow: var(--nb-sh-m);
     outline: none;
 }
-body.nb .user-dropdown .menu-item:hover > i,
-body.nb .user-dropdown .menu-item:focus-visible > i { background: #fff; transform: rotate(calc(var(--nb-rot) * -8deg)) scale(1.06); }
-body.nb .user-dropdown .menu-item:hover::after,
-body.nb .user-dropdown .menu-item:focus-visible::after { opacity: 1; transform: none; }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:hover > i,
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:focus-visible > i { background: #fff; transform: rotate(calc(var(--nb-rot) * -8deg)) scale(1.06); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:hover::after,
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:focus-visible::after { opacity: 1; transform: none; }
 /* la pagina in cui si è */
-body.nb .user-dropdown .menu-item[aria-current="page"] { background: var(--nb-ink) !important; color: #fff !important; }
-body.nb .user-dropdown .menu-item[aria-current="page"]::after { content: "●"; opacity: 1; transform: none; font-size: .7rem; color: var(--mi); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item[aria-current="page"] { background: var(--nb-ink) !important; color: #fff !important; }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item[aria-current="page"]::after { content: "●"; opacity: 1; transform: none; font-size: .7rem; color: var(--mi); }
 /* uscita */
-body.nb .user-dropdown .logout-btn { --mi: #fff; background: var(--nb-rosso) !important; color: #fff !important; margin-top: 16px; transform: rotate(calc(var(--nb-rot) * -1deg)); }
-body.nb .user-dropdown .logout-btn:hover { transform: translate(-4px, -2px) rotate(0deg); box-shadow: var(--nb-sh-m); filter: brightness(1.08); }
-body.nb .user-dropdown .menu-item:active,
-body.nb .user-dropdown .logout-btn:active {
+:is(body.nb, body.pg-public) .user-dropdown .logout-btn { --mi: #fff; background: var(--nb-rosso) !important; color: #fff !important; margin-top: 16px; transform: rotate(calc(var(--nb-rot) * -1deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .logout-btn:hover { transform: translate(-4px, -2px) rotate(0deg); box-shadow: var(--nb-sh-m); filter: brightness(1.08); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:active,
+:is(body.nb, body.pg-public) .user-dropdown .logout-btn:active {
     transform: translate(3px, 3px) !important;
     box-shadow: none !important;
 }
@@ -326,22 +426,22 @@ body.nb .user-dropdown .logout-btn:active {
    entrambe calcolate sui vh, così le nove voci (con Admin e Logout) stanno sempre tutte in vista, anche su un portatile
    con la finestra bassa. Sotto i 470px di altezza il menu, in ultima istanza, scorre. */
 @media (min-width: 901px) {
-    body.nb .user-dropdown {
+    :is(body.nb, body.pg-public) .user-dropdown {
         --mn-h: clamp(32px, calc((100vh - 150px) / 9 - 8px), 54px);
         --mn-gap: clamp(4px, calc((100vh - 150px) / 9 * .16), 14px);
     }
-    body.nb .user-dropdown .menu-item,
-    body.nb .user-dropdown .logout-btn {
+    :is(body.nb, body.pg-public) .user-dropdown .menu-item,
+    :is(body.nb, body.pg-public) .user-dropdown .logout-btn {
         height: var(--mn-h);
         margin-top: var(--mn-gap) !important;
         padding: 0 calc(var(--mn-h) * .3) 0 5px !important;
         gap: calc(var(--mn-h) * .22) !important;
         font-size: clamp(11px, calc(var(--mn-h) * .28), 14px) !important;
     }
-    body.nb .user-dropdown > :first-child { margin-top: 0 !important; }
-    body.nb .user-dropdown .logout-btn { margin-top: calc(var(--mn-gap) * 1.6) !important; }
-    body.nb .user-dropdown .menu-item > i,
-    body.nb .user-dropdown .logout-btn > i {
+    :is(body.nb, body.pg-public) .user-dropdown > :first-child { margin-top: 0 !important; }
+    :is(body.nb, body.pg-public) .user-dropdown .logout-btn { margin-top: calc(var(--mn-gap) * 1.6) !important; }
+    :is(body.nb, body.pg-public) .user-dropdown .menu-item > i,
+    :is(body.nb, body.pg-public) .user-dropdown .logout-btn > i {
         box-sizing: border-box;
         flex: 0 0 calc(var(--mn-h) - 12px);
         width: calc(var(--mn-h) - 12px);
@@ -350,7 +450,7 @@ body.nb .user-dropdown .logout-btn:active {
     }
 }
 @media (min-width: 901px) and (max-height: 470px) {
-    body.nb .user-dropdown { box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; padding: 4px 12px 10px 6px; scrollbar-width: thin; }
+    :is(body.nb, body.pg-public) .user-dropdown { box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; padding: 4px 12px 10px 6px; scrollbar-width: thin; }
 }
 
 /* ---------- Profilo: le sue variabili di ombra e di nero passano dal tema ---------- */
@@ -555,7 +655,7 @@ body.pg-box { --nb-sezione: "BOX"; }
     body.nb .auth-interaction { padding: 8px 12px; gap: 8px; }
     body.nb #auth-icon { font-size: 18px; }
     body.nb #auth-text { font-size: 13px; letter-spacing: .5px; }
-    body.nb:not(.pg-profile) .user-dropdown {
+    :is(body.nb:not(.pg-profile), body.pg-public) .user-dropdown {
         position: fixed;
         top: 92px;
         right: 12px;
@@ -568,25 +668,13 @@ body.pg-box { --nb-sezione: "BOX"; }
         gap: 0 !important;
         z-index: 3001;
     }
-    body.nb:not(.pg-profile) .user-dropdown .menu-item,
-    body.nb:not(.pg-profile) .user-dropdown .logout-btn { margin-top: 12px !important; padding: 10px 14px; }
+    :is(body.nb:not(.pg-profile), body.pg-public) .user-dropdown .menu-item,
+    :is(body.nb:not(.pg-profile), body.pg-public) .user-dropdown .logout-btn { margin-top: 12px !important; padding: 10px 14px; }
 
-    /* la fila dei bottoni tondi, sotto il titolo */
-    body.nb .music-btn,
-    body.nb .sfide-btn,
-    body.nb .btn-floating-admin,
-    body.nb .btn-floating-helper {
-        position: absolute !important;
-        top: 114px !important;
-        box-sizing: border-box;
-        width: 42px;
-        height: 42px;
-        z-index: 120;
-    }
-    body.nb .music-btn { right: 12px !important; }
-    body.nb .sfide-btn, body.nb .btn-floating-admin { right: 62px !important; }
-    body.nb .sfide-live-btn, body.nb .btn-floating-helper { right: 112px !important; }
-    body.nb .sfide-live-btn.senza-campanella { right: 62px !important; }
+    /* la fila dei tasti in alto, sotto il titolo */
+    .tasti-alto { top: 114px; right: 12px; gap: 12px; z-index: 150; }
+    body.nb .tasti-alto > * { min-width: 42px; height: 42px !important; padding: 0 9px; font-size: .7rem; }
+    body.nb .tasti-alto > .sfide-btn svg { width: 22px; height: 22px; }
     body.nb .sfide-badge { top: -9px; right: -9px; }
 
     /* i bottoni extra della barra, a sinistra nella stessa fila */
@@ -611,15 +699,15 @@ body.pg-box { --nb-sezione: "BOX"; }
     body.nb textarea { font-size: 16px; }
 }
 @media (max-width: 520px) {
-    body.nb .top-bar::before { content: "SANT'ALVISE LEAGUE"; font-size: 10px; letter-spacing: .1em; padding-left: calc(var(--nb-ads) + 84px); }
+    body.nb .top-bar::before { content: ""; }
+    body.nb .top-bar > .music-btn { left: calc(var(--nb-ads) + 86px) !important; }
 }
 
 /* Telefono e tablet (si tocca, non si passa sopra): il "passaggio" non deve restare appiccicato dopo un tocco */
 @media (hover: none) {
-    body.nb .music-btn:hover, body.nb .sfide-btn:hover,
-    body.nb .sfide-btn.mia:hover { transform: none; box-shadow: var(--nb-sh-s); }
-    body.nb .music-btn:hover { background-color: #fff; }
-    body.nb .music-btn:hover svg { stroke: #000; }
-    body.nb .sfide-btn:hover { background: #fff; color: #000; }
-    body.nb .sfide-live-btn.mia:hover { background: #ffbd44; }
+    body.nb .tasti-alto > *:hover { transform: rotate(calc(var(--nb-rot) * -1.2deg)); box-shadow: var(--nb-sh-s); background: var(--nb-carta); color: var(--nb-ink); }
+    body.nb .tasti-alto > *:nth-child(even):hover { transform: rotate(calc(var(--nb-rot) * 1deg)); }
+    body.nb .tasti-alto > .sfide-live-btn.mia:hover { background: var(--nb-giallo); color: #000; }
+    body.nb .top-bar > .music-btn:hover { background: var(--nb-verde); color: #000; border-color: var(--nb-verde); }
+    body.nb .top-bar > .music-btn.muted:hover { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .5); }
 }

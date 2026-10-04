@@ -9,7 +9,7 @@
    ===================================================================== */
 
 /* ---------- La striscia nera in alto ---------- */
-:is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card)::before {
+:is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card, #replayModal .replay-mini-header, #replayModal .set-lista)::before {
     content: var(--fin-etichetta, "SANT'ALVISE PKMN LEAGUE");
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -81,7 +81,7 @@
     padding: 0 !important;
     background: var(--nb-giallo, #ffbd44) !important;
     color: #000 !important;
-    border: 2px solid #000 !important;
+    border: 2px solid var(--nb-ink, #000) !important;
     border-radius: var(--nb-raggio, 0px);
     box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
     font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important;
@@ -93,6 +93,118 @@
 /* ---------- Scelta delle squadre (Hub) ---------- */
 .modal-neubrutal { --fin-etichetta: "PICK A TEAM"; padding: 60px 26px 24px !important; overflow: hidden; }
 .modal-neubrutal :is(h2, h3, h4) { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: var(--nb-ink, #000); }
+/* il titolo con il conto delle squadre scelte: un cartellino, come i titoli delle altre finestre */
+.modal-neubrutal #modal-format-title { margin: 0 0 18px; }
+.modal-neubrutal .neubrutal-badge {
+    display: inline-block;
+    padding: 5px 16px 3px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 1.02rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .06em);
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+/* la lista: niente riquadro bianco dentro la finestra, ogni squadra è un cartellino */
+.modal-neubrutal #user-teams-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 8px 16px;
+    background: transparent;
+}
+.modal-neubrutal .team-option {
+    margin: 0;
+    padding: 11px 14px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font-weight: 800;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    transform: rotate(calc(var(--nb-rot, 1) * -.6deg));
+}
+.modal-neubrutal .team-option:nth-child(even) { transform: rotate(calc(var(--nb-rot, 1) * .6deg)); }
+.modal-neubrutal .team-option:hover {
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border-color: var(--nb-ink, #000);
+    box-shadow: var(--nb-sh-4, 4px 4px 0 #000);
+    transform: translate(-2px, -2px);
+}
+.modal-neubrutal .team-option.selected {
+    background: var(--nb-verde, #47ea6a);
+    color: #000 !important;
+    border: 3px solid var(--nb-ink, #000);
+    transform: translate(-2px, -2px);
+}
+.modal-neubrutal .team-option.selected strong::before { content: "\2713\00a0"; }
+.modal-neubrutal .team-option.selected:hover { background: var(--nb-rosso, #ff4444); color: #000 !important; }
+/* la "i": un bollino del tema (giallo, angoli del tema) invece del cerchio nero */
+.modal-neubrutal .info-icon {
+    box-sizing: border-box;
+    width: 26px;
+    height: 26px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: max(var(--nb-raggio, 0px), 0px);
+    box-shadow: 2px 2px 0 var(--nb-ink, #000);
+    font: italic 900 14px/1 Georgia, serif;
+}
+.modal-neubrutal .info-icon:hover { background: var(--nb-carta, #fff); }
+/* i due tasti in fondo: salva (colore del tema) e chiudi (neutro, diventa rosso solo al passaggio) */
+.modal-neubrutal .modal-footer-controls {
+    gap: 12px;
+    padding: 16px 8px 0;
+    background: transparent;
+    border-top: 3px dashed var(--nb-ink, #000);
+}
+.modal-neubrutal .modal-footer-controls button {
+    padding: 12px;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font-weight: 900;
+    letter-spacing: var(--nb-spaziatura, .08em);
+    color: #000;
+}
+.modal-neubrutal .modal-footer-controls .btn-confirm { background: var(--nb-verde, #47ea6a); }
+.modal-neubrutal .modal-footer-controls .btn-confirm:hover { background: var(--nb-giallo, #ffbd44); }
+.modal-neubrutal .modal-footer-controls .btn-confirm:disabled { background: var(--nb-carta, #fff); color: #000; opacity: .55; box-shadow: none; }
+.modal-neubrutal .modal-footer-controls .btn-cancel { background: var(--nb-carta, #fff); }
+.modal-neubrutal .modal-footer-controls .btn-cancel:hover { background: var(--nb-rosso, #ff4444); }
+.modal-neubrutal .modal-footer-controls button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* anteprima della squadra (passando sopra la "i"): titolo, e i sei Pokémon in una griglia di cartellini col nome */
+.team-preview-tooltip { width: max-content; max-width: min(420px, calc(100vw - 24px)); }
+.team-preview-tooltip .tp-titolo {
+    margin: 0 0 8px;
+    padding: 0 0 5px;
+    border-bottom: 2px dashed var(--nb-ink, #000);
+    font: 800 .74rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.team-preview-tooltip .tp-sprites { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.team-preview-tooltip .tp-pkm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: 4px 4px 3px;
+    background: var(--nb-carta, #fff);
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .6);
+}
+.team-preview-tooltip .tp-pkm .preview-pkmn-img { width: 44px; height: 44px; filter: none; }
+.team-preview-tooltip .tp-pkm figcaption { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 .6rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
 
 /* ---------- Lancia la sfida (Matches, Players, Profile...) ---------- */
 .sfida-card { --fin-etichetta: "CHALLENGE"; padding: 58px 26px 26px !important; overflow: visible; }
@@ -115,9 +227,9 @@
     padding: 5px 20px 3px;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
-    box-shadow: 4px 4px 0 #000;
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 900 1.15rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     letter-spacing: .12em;
     transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
@@ -135,15 +247,140 @@
 }
 #modalCreazione :is(button, .btn-save, .btn-cancel, .btn-confirm) { border-radius: var(--nb-raggio, 0px); }
 
+/* ---------- Replay di una partita (Matches): intestazione, scelta del set, ombra della console ---------- */
+#replayModal {
+    background: rgba(0, 0, 0, .35);
+    background: color-mix(in srgb, var(--nb-ink, #000) 38%, transparent);
+}
+/* l'ombra del tema segue la sagoma della console, come quella delle altre finestre */
+#replayModal .gba-shell { filter: drop-shadow(var(--nb-sh-l, 9px 9px 0 #000)); }
+
+/* intestazione: una finestra con i due team e il punteggio; il colore di chi ha vinto è il filetto in basso (--vinc) */
+#replayModal .replay-mini-header {
+    --fin-etichetta: "REPLAY · SANT'ALVISE PKMN LEAGUE";
+    box-sizing: border-box;
+    padding: 50px 22px 18px !important;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6) !important;
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000) !important;
+    overflow: hidden;
+    transform: rotate(calc(var(--nb-rot, 1) * 1.2deg));
+    backdrop-filter: none;
+}
+#replayModal .replay-mini-header::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 9px;
+    background: var(--vinc, var(--nb-giallo, #ffbd44));
+    border-top: 3px solid var(--nb-ink, #000);
+}
+#replayModal .replay-mini-header .mini-team-info { display: flex; align-items: center; gap: 12px; }
+#replayModal .replay-mini-header .mini-score-box,
+#replayModal .replay-mini-header .badge-label {
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+}
+#replayModal .replay-mini-header .badge-label { margin: 0; }
+#replayModal .replay-mini-header .mini-score-box { flex-shrink: 0; font-weight: 900; }
+
+/* scelta del set: una finestrina con un tasto per set (la lettera di chi lo ha vinto, il suo colore come filetto in basso) */
+#replayModal .set-selector { padding: 0; transform: none; }
+#replayModal .set-lista {
+    --fin-etichetta: "SETS";
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 200px;
+    padding: 50px 18px 18px;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    overflow: hidden;
+    transform: rotate(calc(var(--nb-rot, 1) * -1deg));
+}
+#replayModal .set-riga { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+#replayModal .set-etichetta {
+    padding: 5px 12px 3px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .85rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .06em);
+}
+#replayModal button.btn-set {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    margin: 0;
+    padding: 0 0 6px;
+    background: linear-gradient(to top, var(--vinc, #555) 0 9px, var(--nb-carta, #fff) 9px);
+    color: var(--nb-ink, #000) !important;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000) !important;
+    font: 900 1.15rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    transform: rotate(calc(var(--nb-rot, 1) * -1deg)) !important;
+    transition: transform .12s, box-shadow .12s;
+}
+#replayModal button.btn-set:hover { transform: translate(-2px, -2px) rotate(calc(var(--nb-rot, 1) * 1.2deg)) !important; box-shadow: var(--nb-sh-4, 4px 4px 0 #000) !important; }
+#replayModal button.btn-set:active { transform: translate(2px, 2px) !important; box-shadow: none !important; }
+#replayModal button.btn-set.is-selected,
+#replayModal button.btn-set.is-selected:hover {
+    background: linear-gradient(to top, var(--vinc, #555) 0 9px, var(--nb-giallo, #ffbd44) 9px);
+    border-style: solid !important;
+    filter: none !important;
+    box-shadow: none !important;
+    transform: translate(2px, 2px) !important;
+}
+#replayModal .set-messaggio {
+    display: inline-block;
+    padding: 7px 14px 5px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .6);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 800 .85rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+}
+#replayModal .set-messaggio.set-errore { background: var(--nb-rosso, #ff4444); }
+/* la console misura 1150px: sotto questa larghezza la rimpicciolisce matches.html (--gba-scala), che dimezza anche
+   lo spazio che occupa, perché il replay stia tutto nello schermo */
+#replayModal .gba-container { zoom: var(--gba-scala, 1); }
+
 /* ---------- Telefono ---------- */
 @media (max-width: 900px) {
-    :is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card)::before {
+    :is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card, #replayModal .replay-mini-header, #replayModal .set-lista)::before {
         height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em;
     }
     #login-modal .modal-content { padding: 56px 20px 24px !important; box-shadow: 6px 6px 0 var(--nb-ink, #000) !important; }
     #login-modal .close-modal { top: 3px !important; right: 8px !important; }
     .modal-neubrutal { padding: 54px 14px 18px !important; }
     .sfida-card { padding: 52px 16px 22px !important; }
+    /* replay: intestazione in alto, console al centro, set sotto (in riga), tutto nel flusso invece che sopra la console */
+    #replayModal.replay-modal { flex-direction: column; justify-content: flex-start; gap: 14px; padding: 12px 8px 20px; overflow-y: auto; }
+    #replayModal .replay-mini-header { position: relative; top: auto; order: 1; width: 100%; min-width: 0; padding: 44px 12px 16px !important; gap: 8px; transform: none; }
+    #replayModal .replay-mini-header .mini-team-info { gap: 6px; flex-wrap: wrap; }
+    #replayModal .replay-mini-header .badge-label { font-size: .7rem; padding: 3px 6px; }
+    #replayModal .gba-container { order: 2; margin-top: 0; }
+    #replayModal .set-selector { position: static !important; top: auto !important; right: auto !important; order: 3; width: 100%; }
+    #replayModal .set-lista { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 12px 18px; min-width: 0; padding: 44px 14px 16px; transform: none; }
+    #replayModal .set-riga { gap: 10px; }
     #modalCreazione.admin-panel-modern { padding: 54px 14px 18px !important; }
     #modalCreazione.admin-panel-modern > h3 { margin-bottom: 22px; font-size: 1rem; }
 }

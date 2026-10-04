@@ -117,21 +117,28 @@
             let valore = def.valore(p);
             let nota = '';
             let conta = true;
+            // finché il Pokémon non ha giocato abbastanza, il fiocco non conta: la scheda mostra quanto manca (es. 8 / 15)
+            let sblocco = null;
             if (def.minimo) {
                 const base = num(p[def.minimo.campo]);
-                if (base < def.minimo.valore) { conta = false; nota = `needs ${def.minimo.valore} ${def.minimo.etichetta} (now ${base})`; }
+                if (base < def.minimo.valore) {
+                    conta = false;
+                    nota = `needs ${def.minimo.valore} ${def.minimo.etichetta} (now ${base})`;
+                    sblocco = { valore: base, serve: def.minimo.valore, etichetta: def.minimo.etichetta };
+                }
             }
             let livello = conta ? livelloDi(valore, def.soglie) : 0;
             if (def.id === 'friendship' && extra && extra.amicizia && livello < 1) livello = 1;
             const prossima = livello >= def.soglie.length ? null : def.soglie[livello];
             const precedente = livello === 0 ? 0 : def.soglie[livello - 1];
-            const progresso = prossima == null ? 1 : conta ? Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente))) : 0;
+            const progresso = sblocco ? Math.max(0, Math.min(1, sblocco.valore / sblocco.serve))
+                : prossima == null ? 1 : Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente)));
             return {
                 id: def.id, nome: def.nome, icona: def.icona, descrizione: def.descrizione, unita: def.unita,
                 soglie: def.soglie.slice(), valore, livello,
                 livelloNome: livello ? NOMI_LIVELLO[livello - 1] : '',
                 classeLivello: livello ? LIVELLI[livello - 1] : 'locked',
-                prossima, progresso, nota,
+                prossima, progresso, nota, sblocco,
                 immagine: immagineDi(def, livello)
             };
         });
@@ -180,7 +187,7 @@
         const stato = f.livello ? `fiocco-${f.classeLivello}` : 'fiocco-bloccato';
         const fino = f.prossima == null ? f.soglie[f.soglie.length - 1] : f.prossima;
         // al livello massimo il traguardo è già passato: "7 MAX" invece di "7 / 6"
-        const valore = f.nota ? esc(f.nota) : f.prossima == null ? `${esc(f.valore)} <i>MAX</i>` : `${esc(f.valore)} <i>/ ${esc(fino)}</i>`;
+        const valore = f.sblocco ? `${esc(f.sblocco.valore)} <i>/ ${esc(f.sblocco.serve)}</i>` : f.prossima == null ? `${esc(f.valore)} <i>MAX</i>` : `${esc(f.valore)} <i>/ ${esc(fino)}</i>`;
         const titolo = f.livello ? `${esc(f.nome)} · ${esc(f.livelloNome)}` : `${esc(f.nome)} · locked`;
         const prossima = f.prossima == null ? 'Top level reached.' : `Next level: ${esc(f.prossima)} ${esc(f.unita)}.`;
         return `<div class="fiocco ${stato}" tabindex="0" data-fiocco="${esc(f.id)}">` +

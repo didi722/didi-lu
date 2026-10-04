@@ -61,10 +61,10 @@ body {
 .pokeball-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     position: relative;
-    box-shadow: 4px 4px 0px #000000; /* L'ombra rimane ora statica */
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'ombra rimane ora statica */
     overflow: hidden; /* Mantiene la rotazione interna entro i bordi */
 }
 
@@ -93,7 +93,7 @@ body {
     width: 16px;
     height: 16px;
     background: #ffffff;
-    border: 5px solid #000000;
+    border: 5px solid var(--nb-ink, #000);
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -305,8 +305,8 @@ body {
     left: 0;
     top: 0;
     z-index: 999;
-    background: #000;
-    border-right: 4px solid #000;
+    background: var(--nb-ink, #000);
+    border-right: 4px solid var(--nb-ink, #000);
 }
 
 .ad-banner {
@@ -362,7 +362,7 @@ body {
 .top-bar {
     width: 100%;
     padding: 50px 0; 
-    border-bottom: 5px solid #000;
+    border-bottom: 5px solid var(--nb-ink, #000);
     display: flex;
     justify-content: center; /* Centra il contenuto interno */
     align-items: center;
@@ -386,12 +386,12 @@ body {
 }
 
 .hub-title-display {
-    background: #000;
+    background: var(--nb-ink, #000);
     color: #fff;
     padding: 10px 25px; 
     display: inline-block;
     transform: rotate(-2deg); 
-    border: 4px solid #000;
+    border: 4px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3) !important;
     font-size: 2.5rem; /* Dimensione bilanciata */
     font-weight: 900;
@@ -757,8 +757,8 @@ input, select {
     border: none;
     cursor: pointer;
     text-transform: uppercase;
-    border: 3px solid black !important;
-    box-shadow: 6px 6px 0 black;
+    border: 3px solid var(--nb-ink, #000) !important;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-save {
@@ -777,12 +777,12 @@ input, select {
 
 .btn-save:hover {
     transform: translateY(-3px);
-    box-shadow: 8px 8px 0 black;
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-save:active {
     transform: translateY(3px);
-    box-shadow: 0px 0px 0 black;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Bottone Cancella */
@@ -801,12 +801,12 @@ input, select {
 
 .btn-cancel:hover {
     transform: translateY(-3px);
-    box-shadow: 8px 8px 0 black;
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-cancel:active {
     transform: translateY(3px);
-    box-shadow: 0px 0px 0 black;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-save {
@@ -849,8 +849,8 @@ input, select {
     flex: 1;
     min-width: 300px;
     background: white;
-    border: 3px solid black;
-    box-shadow: 8px 8px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: black !important;
     text-align: center;
     position: relative;
@@ -1067,7 +1067,7 @@ input, select {
 
 .season-card:not(#card-current):hover {
     transform: scale(0.98);
-    box-shadow: 10px 10px 0 black;
+    box-shadow: calc(10px * var(--nb-kx, 1)) calc(10px * var(--nb-ky, 1)) calc(25px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 
@@ -1079,18 +1079,18 @@ input, select {
 
 #card-current:hover {
     transform:  scale(1.1) translate(-5px, -5px);
-    box-shadow: 12px 12px 0px black;
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 
 }
 
 #card-current:active {
     transform: scale(1.1) translate(5px, 5px) !important;
-    box-shadow: 0px 0px 0px black !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 .season-card:not(#card-current):active {
     transform: scale(0.98) translate(5px, 5px) !important;
-    box-shadow: 0px 0px 0px black !important;
+    box-shadow: calc(0px * var(--nb-kx, 1)) calc(0px * var(--nb-ky, 1)) calc(0px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
 }
 
 .card-link-wrapper {
@@ -1157,7 +1157,7 @@ input, select {
     background: white; /* Colore giallo vivace tipico del neubrutalism */
     
     /* Bordi neri spessi e netti */
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     
     
     /* Colore testo nero per contrasto massimo */
@@ -1170,7 +1170,7 @@ input, select {
     gap: 10px;
     
     /* Ombra netta (senza sfocatura) */
-    box-shadow: 5px 5px 0px #000;
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     
     /* Transizione rapida per l'effetto pressione */
     transition: all 0.1s;
@@ -1180,13 +1180,13 @@ input, select {
     /* Effetto "spostamento" quando ci passi sopra */
     background: white; /* Mantieni il colore o cambialo leggermente */
     transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0px #000;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .auth-interaction:active {
     /* Effetto "bottone premuto" */
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 #auth-icon {
@@ -1222,8 +1222,8 @@ input, select {
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-size: 0.8rem;
-    border: 2.5px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2.5px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 8px;
     transform: rotate(-2deg);
     font-weight: 800;
@@ -1236,8 +1236,8 @@ input, select {
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-size: 0.8rem;
-    border: 2.5px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2.5px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 8px;
     font-weight: 800;
     transform: rotate(2deg);
@@ -1249,8 +1249,8 @@ input, select {
     text-transform: uppercase;
     letter-spacing: 1.5px;
     font-size: 1.2rem;
-    border: 2.5px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2.5px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 4px 12px;
     font-weight: 800;
     transform: rotate(5deg);
@@ -1265,7 +1265,7 @@ input, select {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    background: black;
+    background: var(--nb-ink, #000);
     color: white;
     padding: 8px 12px;
     font-size: 1.2rem;
@@ -1281,8 +1281,8 @@ input, select {
     padding: 5px 10px;
     padding-top: 0;
     transform: rotate(1.5deg);
-    border: 2px solid black;
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     color: white;
 }
 
@@ -1292,8 +1292,8 @@ input, select {
     text-transform: uppercase;
     background: var(--yellow);
     padding: 10px 4px;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .leader-name p{
@@ -1387,8 +1387,8 @@ input, select {
     letter-spacing: 1px;
     padding: 8px 16px;
     background:white;
-    border: 2px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transform: rotate(-1deg);
 }
 
@@ -1437,8 +1437,8 @@ input, select {
     color:black;
     text-transform: uppercase;
     margin-top: 20px;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* COLONNA DESTRA: Structure */
@@ -1451,8 +1451,8 @@ input, select {
 
 .modal-info-box {
     background: #2e53cd;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 12px 15px; /* Padding uguale a sinistra */
     font-size: 0.95rem;
     color: #eeeeee;
@@ -1466,8 +1466,8 @@ input, select {
 
 .modal-info-box-2 {
     background: #2e53cd;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 12px 15px; /* Padding uguale a sinistra */
     font-size: 0.95rem;
     color: #eeeeee;
@@ -1482,8 +1482,8 @@ input, select {
 
 .modal-info-box-3 {
     background: #2e53cd;
-    border: 3px solid black;
-    box-shadow: 5px 5px 0 black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 12px 15px; /* Padding uguale a sinistra */
     font-size: 0.95rem;
     color: #eeeeee;
@@ -1504,8 +1504,8 @@ input, select {
 /* Il contenitore principale (La card) */
 #login-modal .modal-content {
     background: #fff;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000; /* Ombra netta classica */
+    border: 4px solid var(--nb-ink, #000);
+    box-shadow: calc(12px * var(--nb-kx, 1)) calc(12px * var(--nb-ky, 1)) calc(30px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* Ombra netta classica */
     padding: 40px;
     max-width: 400px;
     width: 90%;
@@ -1520,7 +1520,7 @@ input, select {
     text-transform: uppercase;
     font-size: 2.5rem;
     margin-bottom: 25px;
-    border-bottom: 4px solid #000;
+    border-bottom: 4px solid var(--nb-ink, #000);
     display: inline-block;
     padding-bottom: 5px;
     color: black !important;
@@ -1545,7 +1545,7 @@ input, select {
 .input-group input {
     width: 100%;
     padding: 12px 15px;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-family: inherit;
     font-weight: 600;
     background: #f0f0f0;
@@ -1556,7 +1556,7 @@ input, select {
 
 .input-group input:focus {
     background: #fff;
-    box-shadow: 5px 5px 0px #000; /* L'input "esce" fuori quando scrivi */
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); /* L'input "esce" fuori quando scrivi */
     transform: translate(-2px, -2px);
 }
 
@@ -1566,11 +1566,11 @@ input, select {
     padding: 15px;
     background: #31c489; /* Il verde che usi altrove */
     color: #000;
-    border: 3px solid #000;
+    border: 3px solid var(--nb-ink, #000);
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 6px 6px 0px #000;
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: all 0.1s;
     margin-top: 10px;
     transform: rotate(-2deg);
@@ -1578,12 +1578,12 @@ input, select {
 
 .btn-login:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px #000;
+    box-shadow: calc(9px * var(--nb-kx, 1)) calc(9px * var(--nb-ky, 1)) calc(23px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .btn-login:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 /* Tasto Chiudi (X) */
@@ -1608,8 +1608,8 @@ input, select {
     width: 45px;
     height: 45px;
     background: white; 
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     z-index: 999;
     align-items: center;
@@ -1619,7 +1619,7 @@ input, select {
 }
 
 .music-btn:hover {
-    background-color: black;
+    background-color: var(--nb-ink, #000);
     transform: scale(1.3) rotate(90deg); /* Ruota leggermente per un tocco dinamico */
     border: #000;
     box-shadow: 0 0 0;
@@ -1642,8 +1642,8 @@ input, select {
     color: black;
     background-color: white;
     transform: scale(1.1); /* Ruota leggermente per un tocco dinamico */
-    border: 2px solid black; 
-    box-shadow: 4px 4px 0 black;
+    border: 2px solid var(--nb-ink, #000); 
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     box-shadow: 0 0 0;
 }
 
@@ -1658,8 +1658,8 @@ input, select {
     right: 0;
     top: 100%;
     background: white; /* O rgba(255,255,255,0.1) se vuoi l'effetto glass */
-    border: 2px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 2px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     padding: 10px;
     min-width: 150px;
     flex-direction: column;
@@ -1689,7 +1689,7 @@ input, select {
 .user-dropdown .logout-btn:hover {
     background-color: #f0f0f0;
     transform: translate(-2px, -2px);
-    box-shadow: 2px 2px 0px black;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .menu-divider {
@@ -1731,8 +1731,8 @@ input, select {
     font-weight: 800;
     text-transform: uppercase;
     background: var(--yellow);
-    border: 3px solid black;
-    box-shadow: 4px 4px 0px black;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     transition: 0.2s;
     cursor: pointer;
     width: 100%;
@@ -1750,7 +1750,7 @@ input, select {
 .user-dropdown .logout-btn:hover {
     background-color: var(--yellow, #ffff00); /* Un giallo acceso tipico neubrutalist */
     transform: translate(-3px, -3px) rotate(0deg);
-    box-shadow: 7px 7px 0px black;
+    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
 
 .user-dropdown .menu-item:active{
@@ -1813,8 +1813,8 @@ input, select {
     background-color: white; /* Il colore arancione/giallo originale dello screenshot */
     color: #000000;            /* Testo nero come nello screenshot originale */
     padding: 6px 20px;
-    border: 3px solid #000000;
-    box-shadow: 4px 4px 0px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font-family: 'Montserrat', sans-serif;
     font-weight: 800;
     text-transform: uppercase;
@@ -1910,10 +1910,10 @@ input, select {
 /* Titolo Principale (Nero con testo bianco) */
 .neubru-title-badge {
     display: inline-block;
-    background: #000000;
+    background: var(--nb-ink, #000);
     color: #ffffff;
     padding: 10px 22px;
-    border: 3px solid #000000;
+    border: 3px solid var(--nb-ink, #000);
     box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
     font-weight: 900;
     font-size: 1.4rem;
@@ -1936,8 +1936,8 @@ input, select {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 4px 12px;
-    border: 3px solid #000000;
-    box-shadow: 3px 3px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     z-index: 10;
 }
 
@@ -1950,8 +1950,8 @@ input, select {
 .neubru-content-card {
     position: relative;                          /* Necessario per ancorare l'etichetta flottante */
     background: #ffffff;
-    border: 3.5px solid #000000;
-    box-shadow: 6px 6px 0px #000000;             /* Ombra piatta prontamente visibile */
+    border: 3.5px solid var(--nb-ink, #000);
+    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);             /* Ombra piatta prontamente visibile */
     padding: 25px 20px 20px 20px;
     margin-top: 10px;
     margin-bottom: 15px;
@@ -2013,8 +2013,8 @@ input, select {
     font-size: 1.1rem;
     text-transform: uppercase;
     padding: 12px 28px;
-    border: 3px solid #000000;
-    box-shadow: 5px 5px 0px #000000;
+    border: 3px solid var(--nb-ink, #000);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     cursor: pointer;
     transition: transform 0.05s ease, box-shadow 0.05s ease;
     margin-top: 10px;
@@ -2023,7 +2023,7 @@ input, select {
 /* Effetto di pressione fisica del tasto */
 .neubru-btn-confirm:active {
     transform: translate(3px, 3px);
-    box-shadow: 2px 2px 0px #000000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
 }
       
 /* --- TOOLTIP RIEPILOGO REGOLE FORMATO (modale iscrizione) --- */
@@ -2032,112 +2032,7 @@ input, select {
             text-decoration: underline dotted 2px;
             text-underline-offset: 3px;
         }
-        .format-rules-tooltip {
-            position: fixed;
-            z-index: 100000;
-            display: none;
-            width: 460px;
-            max-width: calc(100vw - 20px);
-            max-height: calc(100vh - 20px);
-            overflow-y: auto;
-            box-sizing: border-box;
-            background: #7ea9ff;
-            color: #000;
-            border: 3px solid #000;
-            box-shadow: 6px 6px 0 #000;
-            padding: 18px;
-            font-family: 'Josefin Sans', sans-serif;
-            text-align: left;
-        }
-        .frt-title {
-            display: table;
-            background: #000;
-            color: #fff;
-            padding: 5px 14px;
-            font-weight: 900;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            transform: rotate(-1deg);
-            margin-bottom: 14px;
-        }
-        .frt-label {
-            display: inline-block;
-            background: #ffde00;
-            border: 2px solid #000;
-            box-shadow: 2px 2px 0 #000;
-            padding: 1px 7px;
-            font-weight: 900;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        .frt-desc {
-            margin: 0 0 16px;
-            font-size: 0.92rem;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-        .frt-desc.frt-empty {
-            color: #000;
-            font-weight: 400;
-            font-style: italic;
-        }
-        .frt-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .frt-cell {
-            border: 2px solid #000;
-            box-shadow: 3px 3px 0 #000;
-            padding: 7px 9px;
-            min-width: 0;
-            background: white;
-        }
-        .frt-value {
-            display: block;
-            font-weight: 900;
-            font-size: 0.88rem;
-            text-transform: uppercase;
-            overflow-wrap: anywhere;
-        }
-        .frt-value.frt-lower { text-transform: lowercase; }
-        .frt-rules {
-            display: flex;
-            flex-direction: column;
-        }
-        .frt-rule {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 0;
-            border-bottom: 2px dashed #000;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .frt-rule:last-child { border-bottom: none; }
-        .frt-rule b { text-transform: uppercase; color: #000; }
-        .frt-badge {
-            flex-shrink: 0;
-            max-width: 55%;
-            border: 2px solid #000;
-            box-shadow: 1px 1px 0 #000;
-            padding: 2px 6px;
-            font-weight: 900;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-        .frt-badge.banned   { background: #ef4444; color: #fff; }
-        .frt-badge.allowed  { background: #22c55e; color: #fff; }
-        .frt-badge.initial  { background: #3b82f6; color: #fff; }
-        .frt-badge.specific { background: #fbbf24; color: #000; }
-        @media (max-width: 520px) {
-            .frt-grid { grid-template-columns: 1fr; }
-        }
+        /* il fumetto con le regole (.format-rules-tooltip, .frt-*) è in formato-tooltip.css, lo stesso dell'Hub */
 
 
 /* =====================================================================

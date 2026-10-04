@@ -105,7 +105,7 @@
     padding: 0 !important;
     background: var(--dt-giallo) !important;
     color: #000 !important;
-    border: 2px solid #000 !important;
+    border: 2px solid var(--nb-ink, #000) !important;
     border-radius: var(--dt-raggio);
     box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
     font: 900 18px/1 var(--dt-font) !important;
@@ -253,7 +253,7 @@
     padding: 1px 8px;
     background: var(--dt-giallo);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     font: 800 .66rem/1.4 var(--dt-font);
     letter-spacing: .1em;
     text-transform: uppercase;
@@ -395,9 +395,9 @@
     padding: 0 8px !important;
     background: var(--dt-giallo);
     color: #000 !important;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--dt-raggio);
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 800 .68rem/1.5 var(--dt-font) !important;
 }
 #teamModal .modal-pkm-info .info-container > p em { font-style: normal; }
@@ -616,9 +616,9 @@
     padding: 0 8px;
     background: var(--dt-giallo);
     color: #000 !important;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     border-radius: var(--dt-raggio);
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 900 .85rem/1.5 var(--dt-font) !important;
     text-decoration: none !important;
     text-transform: uppercase;
@@ -647,9 +647,9 @@
     padding: 1px 8px;
     background: var(--dt-giallo) !important;
     color: #000 !important;
-    border: 2px solid #000 !important;
+    border: 2px solid var(--nb-ink, #000) !important;
     border-radius: var(--dt-raggio);
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     font: 900 .78rem/1.5 var(--dt-font);
     text-align: center;
     transform: rotate(calc(var(--dt-rot) * -2deg));
@@ -683,15 +683,45 @@
 #pkmDetailModal .stat-total { margin-top: 8px; padding-top: 6px; border-top: 3px solid var(--dt-ink); display: flex; justify-content: space-between; font: 900 .85rem/1.2 var(--dt-font); letter-spacing: .06em; text-transform: uppercase; }
 #pkmDetailModal .evs-footer { margin-top: 10px; padding-top: 8px; border-top: 2px dashed var(--dt-ink); color: var(--dt-ink); font: 800 .72rem/1.35 var(--dt-font); letter-spacing: .02em; }
 
-/* mosse: righe colorate dal tipo, con bordo e ombra */
-#pkmDetailModal .moves-list-compact { display: flex; flex-direction: column; gap: 10px; }
+/* mosse: schede a due colonne. Nome e valori stanno sulla striscia colorata dal tipo, la descrizione sotto su carta
+   (testo nero su fondo chiaro, leggibile qualunque sia il tipo) invece di una riga alta venti pixel */
+#pkmDetailModal .moves-list-compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 14px; transform: none !important; }
 #pkmDetailModal .move-row-mini {
     box-sizing: border-box;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "nome valori" "desc desc";
+    align-items: center;
+    column-gap: 8px;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
     border: 3px solid var(--dt-ink) !important;
     border-radius: var(--dt-raggio) !important;
     box-shadow: 3px 3px 0 var(--dt-ink) !important;
 }
-#pkmDetailModal .move-name-mini { font-family: var(--dt-font); font-weight: 900; letter-spacing: .04em; }
+#pkmDetailModal .move-left-part { grid-area: nome; width: auto; min-width: 0; padding: 4px 0 4px 9px; gap: 7px; }
+#pkmDetailModal .move-right-part { grid-area: valori; padding: 4px 9px 4px 0; }
+#pkmDetailModal .move-name-mini { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--dt-font); font-size: .84rem; font-weight: 900; letter-spacing: .04em; }
+#pkmDetailModal .m-val { min-width: 0; font-size: .7rem; font-weight: 700; }
+#pkmDetailModal .move-desc-inline {
+    grid-area: desc;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 5px 9px 6px !important;
+    background: var(--dt-carta);
+    border-top: 3px solid var(--dt-ink);
+    color: var(--dt-ink) !important;
+    font: 700 .74rem/1.3 var(--dt-font) !important;
+    font-style: normal;
+    letter-spacing: .01em;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+#pkmDetailModal .move-desc-inline:empty { display: none; }
+/* sui tipi scuri il nome e i valori passano al bianco, sul colore pieno restano leggibili */
+#pkmDetailModal .move-row-mini:is([data-tipo="ghost"], [data-tipo="dark"], [data-tipo="fighting"], [data-tipo="poison"], [data-tipo="dragon"]) :is(.move-name-mini, .m-val, .m-val b) { color: #fff !important; }
 
 /* =====================================================================
    FIOCCHI (scaffale nella scheda del Pokémon, medagliette sulle card)
@@ -739,7 +769,7 @@
     padding: 0 5px;
     background: var(--livello);
     color: #000;
-    border: 2px solid #000;
+    border: 2px solid var(--nb-ink, #000);
     font: 900 .68rem/1.5 var(--dt-font, 'Josefin Sans', sans-serif);
     transform: rotate(calc(var(--dt-rot, 1) * 4deg));
 }
@@ -884,7 +914,7 @@
     #pkmDetailModal .area-stats .stat-bar-bg { height: 12px; }
     #pkmDetailModal .stat-total { margin-top: 5px; padding-top: 4px; }
     #pkmDetailModal .evs-footer { margin-top: 6px; padding-top: 5px; }
-    #pkmDetailModal .moves-list-compact { gap: 7px; }
+    #pkmDetailModal .moves-list-compact { gap: 9px 12px; }
 
     /* fiocchi: una riga per fiocco (medaglia, nome, barra del progresso e valore), tutti e nove in colonna */
     #pkmDetailModal .area-ribbons { display: flex; flex-direction: column; }
@@ -969,10 +999,6 @@
     .fiocchi-lista .fiocco:nth-child(odd) .fiocco-tip { left: 0; right: auto; transform: none; }
     .fiocchi-lista .fiocco:nth-child(even) .fiocco-tip { left: auto; right: 0; transform: none; }
     .pkm-badges-overlay { right: 8px; }
-    /* le righe delle mosse: il nome e i valori sopra, la descrizione sotto a tutta larghezza */
-    #pkmDetailModal .move-row-mini { height: auto !important; min-height: 30px; flex-wrap: wrap; row-gap: 4px; padding: 6px 8px !important; }
-    #pkmDetailModal .move-left-part { flex: 1 1 auto; min-width: 0; }
-    #pkmDetailModal .move-desc-inline { order: 3; flex: 1 1 100%; padding-left: 0; font-size: .72rem !important; line-height: 1.2; -webkit-line-clamp: 3; line-clamp: 3; }
 }
 @media (max-width: 640px) {
     #teamModal .modal-grid { grid-template-columns: minmax(0, 1fr) !important; }

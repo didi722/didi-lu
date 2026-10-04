@@ -7,11 +7,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">      
     <link rel="stylesheet" href="style-hub.css">
     <link rel="stylesheet" href="temi.css">
+    <link rel="stylesheet" href="controlli.css">
     <link rel="stylesheet" href="nb-pagine.css">
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
     <script src="dettagli.js" defer></script>
     <link rel="stylesheet" href="tooltip.css">
+<link rel="stylesheet" href="formato-tooltip.css">
+<script src="formato-tooltip.js"></script>
     <script src="tooltip.js" defer></script>
     <link rel="stylesheet" href="mobile.css">
     <script src="mobile.js"></script>
@@ -515,7 +518,7 @@ function renderClosedHub(data) {
 
     // 1. Box di riepilogo (Header della Classifica)
     summaryBox.innerHTML = `
-        <div style="background: #ffbd03; border: 3px solid #000; padding: 15px; text-align: center; box-shadow: 5px 5px 0px #000;">
+        <div style="background: #ffbd03; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); padding: 15px; text-align: center; box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);">
             <h2 style="margin: 0; font-family: 'Josefin Sans'; font-size: 1.5rem; text-transform: uppercase;">🏆 Season Results</h2>
             <p style="margin: 5px 0 0 0; font-family: 'Montserrat'; font-weight: 600; font-size: 0.9rem;">The showdown has ended. Here are the final standings.</p>
         </div>
@@ -539,17 +542,17 @@ function renderClosedHub(data) {
             const textColor = isTop1 ? '#fff' : '#000';
 
             return `
-                <tr style="background: ${rowBg}; color: ${textColor}; border-bottom: 3px solid #000;">
-                    <td style="padding: 15px; font-weight: 900; border-right: 3px solid #000;">#${index + 1}</td>
-                    <td style="padding: 15px; font-weight: 700; text-transform: uppercase; border-right: 3px solid #000;">${name}</td>
-                    <td style="padding: 15px; font-weight: 900; text-align: center; border-right: 3px solid #000;">${stats.points || 0}</td>
+                <tr style="background: ${rowBg}; color: ${textColor}; border-bottom: 3px solid var(--nb-ink, #000);">
+                    <td style="padding: 15px; font-weight: 900; border-right: 3px solid var(--nb-ink, #000);">#${index + 1}</td>
+                    <td style="padding: 15px; font-weight: 700; text-transform: uppercase; border-right: 3px solid var(--nb-ink, #000);">${name}</td>
+                    <td style="padding: 15px; font-weight: 900; text-align: center; border-right: 3px solid var(--nb-ink, #000);">${stats.points || 0}</td>
                     <td style="padding: 15px; text-align: center; font-weight: 600;">${stats.wins || 0}W - ${stats.losses || 0}L</td>
                 </tr>
             `;
         }).join('');
 
         btnContainer.innerHTML = `
-            <div style="border: 3px solid #000; box-shadow: 8px 8px 0px #000; background: #fff; width: 100%;">
+            <div style="border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); background: #fff; width: 100%;">
                 <table style="width: 100%; border-collapse: collapse; font-family: 'Montserrat';">
                     <thead>
                         <tr style="background: #000; color: #fff; text-align: left; text-transform: uppercase; font-size: 0.8rem;">
@@ -618,181 +621,15 @@ function checkOverlimitWarning(data, nomeUtenteClean) {
 }
 
 // ============================================================
-// TOOLTIP RIEPILOGO REGOLE FORMATO (stessa logica di formats.html)
+// REGOLAMENTI DEI FORMATI (il tooltip con il riepilogo è in formato-tooltip.js, lo stesso dell'Index)
 // ============================================================
-function iniettaStiliTooltipFormato() {
-    if (document.getElementById('format-tooltip-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'format-tooltip-styles';
-    style.innerHTML = `
-        #registration-column .btn-team { position: relative; overflow: visible; }
-        #registration-column .btn-team-info {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 24px;
-            height: 24px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: #ffde00;
-            color: #000;
-            border: 2px solid #000;
-            box-shadow: 2px 2px 0 #000;
-            font-family: Georgia, serif;
-            font-style: italic;
-            font-weight: 900;
-            font-size: 0.85rem;
-            cursor: pointer;
-            z-index: 2;
-        }
-        /* L'icona "i" serve solo su touch: col mouse basta passare sopra al rettangolo */
-        @media (hover: none) {
-            #registration-column .btn-team-info { display: flex; }
-        }
-        /* Stesso stile del tooltip "coach" del box */
-        .format-rules-tooltip {
-            position: fixed;
-            z-index: 100000;
-            display: none;
-            width: 366px; /* 340px di contenuto + padding + bordi, come nel box */
-            max-width: calc(100vw - 20px);
-            max-height: 80vh;
-            overflow-y: auto;
-            box-sizing: border-box;
-            background: #FFFDF6;
-            color: #000;
-            border: 3px solid #000;
-            box-shadow: 6px 6px 0 #000;
-            padding: 10px;
-            font-family: 'Josefin Sans', sans-serif;
-            text-align: left;
-            transition: opacity 0.1s ease-in-out;
-        }
-        .frt-header {
-            border-bottom: 3px solid #000;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
-        }
-        .frt-title {
-            font-weight: 900;
-            font-size: 1.2rem;
-            letter-spacing: -0.5px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            margin-top: 3px;
-        }
-        .frt-section { margin-top: 8px; padding-top: 6px; border-top: 2px dashed #000; }
-        .frt-section-title {
-            font-size: 0.9rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-bottom: 3px;
-        }
-        .frt-desc { margin: 0; font-size: 0.78rem; font-weight: 600; line-height: 1.35; }
-        .frt-empty { font-size: 0.68rem; font-weight: 400; opacity: 0.7; margin: 0; }
-        .frt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-        .frt-cell { border: 2px solid #000; padding: 2px 4px; background: #fff; min-width: 0; }
-        .frt-cell.strong   { background: #d9ffe6; }
-        .frt-cell.critical { background: #ffd6d6; }
-        .frt-cell small {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            opacity: 0.75;
-            padding: 6px 6px;
-        }
-        .frt-value {
-            display: block;
-            font-weight: 800;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            overflow-wrap: anywhere;
-            padding: 0 6px;
-        }
-        .frt-value.frt-lower { text-transform: lowercase; }
-        .frt-rule {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 4px 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 2px 4px;
-            margin: 0 -4px;
-        }
-        .frt-rule b { white-space: nowrap; }
-        .frt-sep { font-weight: 800; opacity: 0.5; margin: 0 2px; }
-        .frt-badge {
-            margin-left: auto;
-            flex-shrink: 0;
-            max-width: 60%;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #000;
-            padding: 0 4px;
-            border: 2px solid #000;
-            background: #d9ffe6;
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-        .frt-badge.allowed  { background: #d9ffe6; }
-        .frt-badge.banned   { background: #ffd6d6; }
-        .frt-badge.specific { background: #fff3b0; }
-        .frt-badge.initial  { background: #ffd9a8; }
-        @media (max-width: 400px) {
-            .frt-grid { grid-template-columns: 1fr; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-const DIZIONARIO_TERMINI_FORMATO = {
-    'custom': 'Custom', 'vgc': 'Official VGC', 'singles': 'Singles', 'doubles': 'Doubles',
-    'anything_goes': 'Goose',
-    'pokemon': 'Pokémon', 'items': 'Items', 'abilities': 'Abilities', 'moves': 'Moves',
-    'species': 'Specific Pokémon', 'duplicates': 'Duplicate Clause', 'total_allowed': 'Total Allowed',
-    'same_across_team': 'Same Across Team', 'uber_limit': 'Uber / Legendary Limit',
-    'specific_item': 'Specific Item', 'specific_name': 'Specific Name', 'color': 'Color',
-    'bst': 'BST', 'type': 'Type', 'is_mega': 'Mega evolutions', 'player_initial': "Player's Initial",
-    'equals': '=', 'is': 'Is', 'up_to': 'Max', 'at_least': 'Min', 'exact': 'Exact',
-    'unique': 'Unique (No Duplicates)', 'between': 'Between', 'lt': '<', 'gt': '>',
-    'lte': '≤', 'gte': '≥',
-    'is_legendary': 'Legendary', 'is_mythical': 'Mythical', 'true': 'Allowed',
-    'name_starts': 'Name starts with:'
-};
-
-function umanizzaTermineFormato(valore) {
-    if (valore === undefined || valore === null || valore === '') return '';
-    if (Array.isArray(valore)) return valore.map(umanizzaTermineFormato).join(', ');
-    const chiave = valore.toString().toLowerCase().trim();
-    return DIZIONARIO_TERMINI_FORMATO[chiave] || valore.toString();
-}
-
-function escapeHtmlFormato(testo) {
-    return String(testo ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
 // Scarica i regolamenti una sola volta e li tiene in cache (nome formato / id → dati)
 let promessaMappaRegolamenti = null;
 
 function caricaMappaRegolamenti() {
     if (!promessaMappaRegolamenti) {
         promessaMappaRegolamenti = db.ref('regolamenti').once('value')
-            .then(snap => {
-                const mappa = {};
-                Object.entries(snap.val() || {}).forEach(([idReg, datiReg]) => {
-                    if (!datiReg) return;
-                    mappa[String(idReg).toLowerCase().trim()] = datiReg;
-                    if (datiReg.categoria) mappa[String(datiReg.categoria).toLowerCase().trim()] = datiReg;
-                });
-                return mappa;
-            })
+            .then(snap => costruisciMappaRegolamenti(snap.val()))
             .catch(err => {
                 console.error("Errore caricamento regolamenti:", err);
                 promessaMappaRegolamenti = null; // riprova al prossimo render
@@ -800,218 +637,6 @@ function caricaMappaRegolamenti() {
             });
     }
     return promessaMappaRegolamenti;
-}
-
-// Costruisce l'HTML del riepilogo a partire dal nodo regolamenti/<id>
-function generaRiepilogoFormatoHtml(nomeFormato, dati) {
-    const cella = (label, valore, extraClass = '', classeCella = '') => `
-        <div class="frt-cell ${classeCella}">
-            <small>${label}</small>
-            <span class="frt-value ${extraClass}">${escapeHtmlFormato(valore)}</span>
-        </div>`;
-
-    let html = `<div class="frt-header"><div class="frt-title">${escapeHtmlFormato(nomeFormato)}</div></div>`;
-
-    if (!dati) {
-        return html + `<p class="frt-empty">No configurations found for this format.</p>`;
-    }
-
-    // Descrizione
-    const descr = (dati.descrizioneBreve || '').trim();
-    html += `<div class="frt-section-title">Description / Rules</div>`;
-    html += descr
-        ? `<p class="frt-desc">${escapeHtmlFormato(descr)}</p>`
-        : `<p class="frt-empty">No description provided for this format.</p>`;
-
-    // Griglia dati principali
-    let celle = cella('Format Type', umanizzaTermineFormato(dati.strutturaSito || 'custom'));
-
-    if (dati.strutturaSito === 'vgc') {
-        if (dati.vgcGen) celle += cella('Generation', `GEN ${dati.vgcGen}`);
-        if (dati.vgcFormat) celle += cella('VGC Regulation', dati.vgcFormat);
-    } else {
-        if (dati.battleStyle) celle += cella('Battle Style', umanizzaTermineFormato(dati.battleStyle));
-        if (dati.genRuleValue) {
-            const tipoGen = dati.genRuleType ? ` (${umanizzaTermineFormato(dati.genRuleType)})` : '';
-            celle += cella('Pokémon Origin', `GEN ${dati.genRuleValue}${tipoGen}`);
-        }
-        if (dati.baseTier) celle += cella('Max. Tier', dati.baseTier);
-    }
-
-    if (dati.showdownFormat && dati.showdownFormat.trim() !== '') {
-        celle += cella('Showdown Format', dati.showdownFormat.trim(), 'frt-lower');
-    }
-
-    celle += cella(
-        'Gen Mechanics',
-        dati.generationalMechanics ? 'Enabled' : 'Disabled',
-        '',
-        dati.generationalMechanics ? 'strong' : 'critical'
-    );
-
-    html += `<div class="frt-section"><div class="frt-section-title">Format</div><div class="frt-grid">${celle}</div></div>`;
-
-    // Clausole e restrizioni
-    if (dati.restrizioni && Object.keys(dati.restrizioni).length > 0) {
-        let righe = '';
-
-        Object.entries(dati.restrizioni).forEach(([categoria, campi]) => {
-            Object.entries(campi || {}).forEach(([campo, regola]) => {
-                regola = regola || {};
-                let badge = '';
-
-                if (regola.mode === 'BANNED') {
-                    badge = `<span class="frt-badge banned">Banned</span>`;
-                } else if (regola.mode === 'ALLOWED') {
-                    badge = `<span class="frt-badge allowed">Allowed</span>`;
-                } else if (regola.mode === 'PLAYER_INITIAL') {
-                    badge = `<span class="frt-badge initial">Player initial</span>`;
-                } else if (regola.mode === 'SAME_ACROSS_TEAM') {
-                    badge = `<span class="frt-badge allowed">Same across team</span>`;
-                } else if (regola.mode === 'SPECIFIC') {
-                    let dettaglio;
-                    if (regola.operator === 'between') {
-                        dettaglio = `${regola.min} - ${regola.max}`;
-                    } else {
-                        const op = umanizzaTermineFormato(regola.operator);
-                        const val = umanizzaTermineFormato(regola.value);
-                        dettaglio = (op === '=' || !op) ? val : `${op} ${val}`;
-                    }
-                    badge = `<span class="frt-badge specific">${escapeHtmlFormato(dettaglio)}</span>`;
-                }
-
-                righe += `
-                    <div class="frt-rule">
-                        <span>
-                            <b>${escapeHtmlFormato(umanizzaTermineFormato(categoria))}</b>
-                            <span class="frt-sep">›</span>
-                            ${escapeHtmlFormato(umanizzaTermineFormato(campo))}
-                        </span>
-                        ${badge}
-                    </div>`;
-            });
-        });
-
-        html += `<div class="frt-section"><div class="frt-section-title">Clauses & Restrictions</div><div class="frt-rules">${righe}</div></div>`;
-    }
-
-    return html;
-}
-
-let timerMostraTooltipFormato = null;
-let timerNascondiTooltipFormato = null;
-
-function getTooltipFormato() {
-    iniettaStiliTooltipFormato();
-    let tip = document.getElementById('format-rules-tooltip');
-    if (!tip) {
-        tip = document.createElement('div');
-        tip.id = 'format-rules-tooltip';
-        tip.className = 'format-rules-tooltip';
-        document.body.appendChild(tip);
-
-        // Il mouse può entrare nel tooltip (per scorrere le regole) senza farlo sparire
-        tip.addEventListener('mouseenter', () => clearTimeout(timerNascondiTooltipFormato));
-        tip.addEventListener('mouseleave', () => programmaNascondiTooltipFormato());
-        tip.addEventListener('click', (e) => e.stopPropagation());
-
-        // Tap fuori dal tooltip (touch) → chiude
-        document.addEventListener('click', () => nascondiTooltipFormato());
-
-        // Scroll della pagina → chiude (ma non lo scroll interno al tooltip)
-        window.addEventListener('scroll', (e) => {
-            if (e.target !== tip) nascondiTooltipFormato();
-        }, true);
-    }
-    return tip;
-}
-
-function posizionaTooltipFormato(ancora, tip) {
-    const r = ancora.getBoundingClientRect();
-    const w = tip.offsetWidth;
-    const h = tip.offsetHeight;
-    const margine = 14;
-    const bordo = 10;
-
-    let left, top;
-
-    if (r.right + margine + w <= window.innerWidth - bordo) {
-        left = r.right + margine;                 // a destra
-        top = r.top + r.height / 2 - h / 2;
-    } else if (r.left - margine - w >= bordo) {
-        left = r.left - margine - w;              // a sinistra
-        top = r.top + r.height / 2 - h / 2;
-    } else {
-        left = r.left + r.width / 2 - w / 2;      // schermo stretto: sotto o sopra
-        top = (window.innerHeight - r.bottom >= h + margine) ? r.bottom + margine : r.top - margine - h;
-    }
-
-    left = Math.max(bordo, Math.min(left, window.innerWidth - w - bordo));
-    top = Math.max(bordo, Math.min(top, window.innerHeight - h - bordo));
-
-    tip.style.left = `${left}px`;
-    tip.style.top = `${top}px`;
-}
-
-function mostraTooltipFormato(ancora, html, chiave) {
-    clearTimeout(timerNascondiTooltipFormato);
-    const tip = getTooltipFormato();
-    const giaAperto = tip.style.display === 'block' && tip.dataset.ancora === chiave;
-    if (!giaAperto) {
-        // Leggera inclinazione casuale, come il tooltip coach del box
-        tip.style.transform = `rotate(${(Math.random() * 3 - 1.5).toFixed(2)}deg)`;
-    }
-    tip.innerHTML = html;
-    tip.scrollTop = 0;
-    tip.style.display = 'block';
-    tip.dataset.ancora = chiave;
-    posizionaTooltipFormato(ancora, tip);
-}
-
-function programmaNascondiTooltipFormato() {
-    clearTimeout(timerNascondiTooltipFormato);
-    timerNascondiTooltipFormato = setTimeout(nascondiTooltipFormato, 180);
-}
-
-function nascondiTooltipFormato() {
-    clearTimeout(timerMostraTooltipFormato);
-    clearTimeout(timerNascondiTooltipFormato);
-    const tip = document.getElementById('format-rules-tooltip');
-    if (tip) {
-        tip.style.display = 'none';
-        tip.dataset.ancora = '';
-    }
-}
-
-// Collega il tooltip a un elemento: hover col mouse, oppure tap sull'icona "i" (touch)
-function collegaTooltipFormato(elemento, html, chiave, iconaInfo = null) {
-    iniettaStiliTooltipFormato();
-
-    elemento.addEventListener('pointerenter', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        clearTimeout(timerMostraTooltipFormato);
-        clearTimeout(timerNascondiTooltipFormato);
-        // Piccolo ritardo: se passi col mouse solo per cliccare, il tooltip non ti copre la pagina
-        timerMostraTooltipFormato = setTimeout(() => mostraTooltipFormato(elemento, html, chiave), 300);
-    });
-
-    elemento.addEventListener('pointerleave', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        clearTimeout(timerMostraTooltipFormato);
-        programmaNascondiTooltipFormato();
-    });
-
-    // Click sul rettangolo (apre il team picker) → chiude il tooltip
-    elemento.addEventListener('click', () => nascondiTooltipFormato());
-
-    if (iconaInfo) {
-        iconaInfo.addEventListener('click', (e) => {
-            e.stopPropagation(); // non apre il team picker
-            const tip = document.getElementById('format-rules-tooltip');
-            const giaAperto = tip && tip.style.display === 'block' && tip.dataset.ancora === chiave;
-            giaAperto ? nascondiTooltipFormato() : mostraTooltipFormato(elemento, html, chiave);
-        });
-    }
 }
 
 // 4. Rendering dell'Hub
@@ -1053,8 +678,8 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
             }
             .neubru-badge-white {
                 background: #ffffff !important;
-                border: 3px solid #000000 !important;
-                box-shadow: 4px 4px 0px #000000 !important;
+                border: 3px solid var(--nb-ink, #000) !important;
+                box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
                 padding: 10px 16px;
                 display: flex;
                 flex-direction: column;
@@ -1333,9 +958,9 @@ async function openTeamPicker(format, nomeUtenteClean) {
                 const pkmNameUrl = pkmnName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                 const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
 
-                return `<img src="${pkmSprite}" alt="${pkmnName}" title="${pkmnName}"
+                return `<figure class="tp-pkm"><img src="${pkmSprite}" alt="${escapeHtmlFormato(pkmnName)}"
                         class="preview-pkmn-img"
-                        onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">`;
+                        onerror="gestisciErroreSprite(this, '${pkmNameUrl}')"><figcaption>${escapeHtmlFormato(pkmnName)}</figcaption></figure>`;
             }).join('');
 
             div.innerHTML = `
@@ -1351,8 +976,8 @@ async function openTeamPicker(format, nomeUtenteClean) {
             
             // Eventi Tooltip (Ora usa l'elemento globale)
             infoIcon.onmouseenter = (e) => {
-                globalTooltip.innerHTML = pokemonImages;
-                globalTooltip.style.display = 'flex';
+                globalTooltip.innerHTML = `<div class="tp-titolo">${escapeHtmlFormato(data.nome)}</div><div class="tp-sprites">${pokemonImages}</div>`;
+                globalTooltip.style.display = 'block';
                 globalTooltip.style.opacity = '1';
                 globalTooltip.style.visibility = 'visible';
             };
@@ -2311,3 +1936,4 @@ async function resetPasswordDalLogin() {
 
 
 </script>
+<script src="controlli.js"></script>

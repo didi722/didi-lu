@@ -1,0 +1,104 @@
+/* =====================================================================
+   TOOLTIP DELLE REGOLE DI UN FORMATO (Hub e Index, vedi formato-tooltip.js)
+   ---------------------------------------------------------------------
+   La superficie (carta calda, bordo, ombra, angoli, carattere, rotazione) viene da tooltip.css, come per ogni fumetto
+   "coach" del sito; qui ci sono le dimensioni e l'interno. Segue le variabili --nb-* del tema attivo.
+   Va caricato dopo il foglio della pagina e dopo tooltip.css.
+   ===================================================================== */
+.format-rules-tooltip {
+    position: fixed;
+    z-index: 100000;
+    display: none;
+    width: 366px;
+    max-width: calc(100vw - 20px);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 10px;
+    text-align: left;
+    scrollbar-width: thin;
+    scrollbar-color: var(--nb-ink, #000) transparent;
+}
+
+.frt-header {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 3px solid var(--nb-ink, #000);
+}
+.frt-title {
+    margin: 3px 0 4px;
+    font-weight: 900;
+    font-size: 1.2rem;
+    letter-spacing: -.5px;
+    text-transform: uppercase;
+}
+.frt-section { margin-top: 8px; padding-top: 6px; border-top: 2px dashed var(--nb-ink, #000); }
+.frt-section-title {
+    margin-bottom: 3px;
+    font-size: .9rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+.frt-desc { margin: 0; font-size: .78rem; font-weight: 600; line-height: 1.35; }
+.frt-empty { margin: 0; font-size: .68rem; font-weight: 400; opacity: .7; }
+.frt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.frt-cell {
+    min-width: 0;
+    padding: 2px 4px;
+    background: var(--nb-carta, #fff);
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+}
+.frt-cell.strong { background: #d9ffe6; }
+.frt-cell.critical { background: #ffd6d6; }
+.frt-cell small {
+    display: block;
+    padding: 6px;
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: .75;
+}
+.frt-value {
+    display: block;
+    padding: 0 6px;
+    font-weight: 800;
+    font-size: .9rem;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+.frt-value.frt-lower { text-transform: lowercase; }
+.frt-rule {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    margin: 0 -4px;
+    padding: 2px 4px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+.frt-rule b { white-space: nowrap; }
+.frt-sep { margin: 0 2px; font-weight: 800; opacity: .5; }
+.frt-badge {
+    flex-shrink: 0;
+    max-width: 60%;
+    margin-left: auto;
+    padding: 0 4px;
+    background: #d9ffe6;
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .4);
+    font-size: .75rem;
+    font-weight: 700;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+.frt-badge.allowed { background: #d9ffe6; }
+.frt-badge.banned { background: #ffd6d6; }
+.frt-badge.specific { background: #fff3b0; }
+.frt-badge.initial { background: #ffd9a8; }
+@media (max-width: 400px) {
+    .frt-grid { grid-template-columns: 1fr; }
+}

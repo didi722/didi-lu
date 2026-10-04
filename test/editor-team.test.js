@@ -108,36 +108,33 @@ test('box.html: salvato nell\'editor non ricarica la pagina ma avvisa il simulat
 });
 
 test('box.html: ogni modo di chiudere l\'editor avvisa il simulatore; "Back" non interrompe un salvataggio', () => {
-    // pannello, Team Builder, helper
-    assert.match(estrai(box, 'function chiudiAdminProtetto', '// 7.'), /INCORPORATO && !tbModifica && !salvataggioTeamInCorso\) notificaSimulatore\('chiuso'\)/);
+    // Team Builder, helper (il vecchio pannello Showdown non c'è più: si importa ed esporta dal Team Builder)
+    assert.ok(!/id="admin-panel"|apriAdminProtetto|chiudiAdminProtetto/.test(box), 'niente pannello Showdown');
     assert.match(estrai(box, 'function chiudiTeamBuilder', '// Il builder è aperto'), /INCORPORATO && !tbModifica\) notificaSimulatore\('chiuso'\)/);
     assert.equal(estrai(box, 'function inizializzaChiusuraHelper', 'function chiudiTuttoHelper').match(/notificaSimulatore\('chiuso'\)/g).length, 2);
     assert.match(estrai(box, 'function chiudiEditorIncorporato', 'window.addEventListener(\'message\''), /if \(salvataggioTeamInCorso\) return;/);
 });
 
-test('box.html: in modalità editor niente musica; la lista dei formati non perde la selezione del pannello', () => {
+test('box.html: in modalità editor niente musica; la lista dei formati del filtro non perde la selezione', () => {
     assert.match(box, /typeof ascoltaMusicaFirebase === "function" && !INCORPORATO/);
-    assert.match(estrai(box, 'function sincronizzaCategorie', "document.addEventListener('DOMContentLoaded', sincronizzaCategorie)"), /const currentCatVal = selectCat\.value;[\s\S]*selectCat\.value = currentCatVal;/);
+    assert.match(estrai(box, 'function sincronizzaCategorie', "document.addEventListener('DOMContentLoaded', sincronizzaCategorie)"), /const currentFilterVal = selectFilter\.value;[\s\S]*selectFilter\.value = currentFilterVal;/);
 });
 
 // Il pezzo "editor incorporato" di box.html fatto girare con una finestra e un documento finti
-function boxEditor({ team, bloccati = new Set(), incorporato = true, opzioniFormato = 3, ricerca = '?modifica=t1&incorporato=1' }) {
+function boxEditor({ team, bloccati = new Set(), incorporato = true, ricerca = '?modifica=t1&incorporato=1' }) {
     const chiamate = [];
     const posta = [];
     const finestraPadre = { postMessage: (m, origine) => posta.push({ m, origine }) };
-    const selectFormato = { options: { length: opzioniFormato } };
     const finestra = { parent: incorporato ? finestraPadre : null, addEventListener: (t, f) => { finestra.ascoltatori.push([t, f]); }, ascoltatori: [], nomiTeamBloccati: bloccati };
     if (!incorporato) finestra.parent = finestra;
     const contesto = {
         window: finestra, location: { search: ricerca, origin: 'https://sito.test' },
-        document: { getElementById: id => id === 'admin-team-cat' ? selectFormato : null },
+        document: { getElementById: () => null },
         tuttiITeam: team ? [team] : [],
         EditorTeam: ET, TeamBloccati: require('../docs/team-bloccati.js'),
         caricaTeamBloccati: async () => chiamate.push('caricaTeamBloccati'),
-        caricaTeamPerModifica: id => chiamate.push('pannello:' + id),
-        modificaTeamNelBuilder: async () => { chiamate.push('builder'); },
+        caricaTeamPerModifica: async id => { chiamate.push('builder:' + id); },
         tbChiediChiusura: () => chiamate.push('tbChiediChiusura'),
-        chiudiAdminProtetto: () => chiamate.push('chiudiAdminProtetto'),
         salvataggioTeamInCorso: false,
         setTimeout, console
     };
@@ -146,20 +143,20 @@ function boxEditor({ team, bloccati = new Set(), incorporato = true, opzioniForm
     const codice = estrai(box, 'const INCORPORATO', '// Effetto delle nature').replace(/\bconst INCORPORATO\b/, 'var INCORPORATO');
     vm.runInContext(codice, contesto);
     contesto.window.location = contesto.location;
-    return { contesto, chiamate, posta, finestra, finestraPadre, selectFormato };
+    return { contesto, chiamate, posta, finestra, finestraPadre };
 }
 const eventi = posta => posta.map(p => p.m.evento);
 
-test('Box editor: team presente e modificabile → pannello, "pronto" e subito il Team Builder', async () => {
+test('Box editor: team presente e modificabile → "pronto" e subito il Team Builder con quel team', async () => {
     const t = boxEditor({ team: { id: 't1', nome: 'Il mio OU' } });
     await t.contesto.avviaEditorIncorporato();
-    assert.deepEqual(t.chiamate, ['caricaTeamBloccati', 'pannello:t1', 'builder']);
+    assert.deepEqual(t.chiamate, ['caricaTeamBloccati', 'builder:t1']);
     assert.deepEqual(eventi(t.posta), ['pronto']);
     assert.equal(t.posta[0].origine, 'https://sito.test', 'il messaggio va solo alla propria origine');
     assert.equal(t.posta[0].m.id, 't1');
 });
 
-test('Box editor: team bloccato → "bloccato" e il pannello non si apre mai', async () => {
+test('Box editor: team bloccato → "bloccato" e il Team Builder non si apre mai', async () => {
     const t = boxEditor({ team: { id: 't1', nome: 'Rain Dance' }, bloccati: new Set(['rain dance']) });
     await t.contesto.avviaEditorIncorporato();
     assert.deepEqual(t.chiamate, ['caricaTeamBloccati']);
@@ -172,16 +169,6 @@ test('Box editor: team non più nel Box → "errore" con una frase leggibile', a
     assert.deepEqual(t.chiamate, []);
     assert.deepEqual(eventi(t.posta), ['errore']);
     assert.match(t.posta[0].m.messaggio, /not in your Box/);
-});
-
-test('Box editor: aspetta che la lista dei formati del pannello sia pronta, poi apre', async () => {
-    const t = boxEditor({ team: { id: 't1', nome: 'Il mio OU' }, opzioniFormato: 1 });
-    const fine = t.contesto.avviaEditorIncorporato();
-    await new Promise(ok => setTimeout(ok, 250));
-    assert.ok(!t.chiamate.includes('pannello:t1'), 'senza formati nel pannello non apre ancora');
-    t.selectFormato.options.length = 5;          // arriva la risposta di Firebase
-    await fine;
-    assert.deepEqual(t.chiamate, ['caricaTeamBloccati', 'pannello:t1', 'builder']);
 });
 
 test('Box editor: non incorporato (Box normale) → nessun messaggio, mai', () => {
@@ -205,7 +192,7 @@ test('Box editor: il comando "chiudi" si ascolta solo dalla finestra che ha aper
     ascolta({ source: t.finestraPadre, origin: 'https://sito.test', data: null });
     assert.deepEqual(t.chiamate, [], 'nessuna chiusura da chi non è il simulatore');
     ascolta({ source: t.finestraPadre, origin: 'https://sito.test', data: chiudi });
-    assert.equal(eventi(t.posta).at(-1), 'chiuso', 'nessun Team Builder né pannello aperti: si chiude subito');
+    assert.equal(eventi(t.posta).at(-1), 'chiuso', 'nessun Team Builder aperto: si chiude subito');
 });
 
 test('Box editor: "chiudi" con il Team Builder aperto passa dalla sua conferma; durante un salvataggio non fa nulla', () => {
@@ -222,25 +209,16 @@ test('Box editor: "chiudi" con il Team Builder aperto passa dalla sua conferma; 
     assert.deepEqual(t.posta, []);
 });
 
-test('Box editor: con solo il pannello aperto "chiudi" passa dalla sua chiusura (che avvisa il simulatore)', () => {
-    const t = boxEditor({ team: { id: 't1', nome: 'X' } });
-    const [, ascolta] = t.finestra.ascoltatori.find(([tipo]) => tipo === 'message');
-    t.contesto.document.getElementById = id => id === 'admin-panel' ? { style: { display: 'block' } } : null;
-    ascolta({ source: t.finestraPadre, origin: 'https://sito.test', data: { sito: 'editor-team', comando: 'chiudi' } });
-    assert.deepEqual(t.chiamate, ['chiudiAdminProtetto']);
-});
-
 // ---------- il foglio dell'editor ----------
 test('box-incorporato.css: nell\'editor si vede solo l\'editor (niente pagina del Box, niente musica, niente velo)', () => {
     const css = leggi('box-incorporato.css');
     const nascosti = css.match(/html\.incorporato :is\(([^)]*)\)\s*\{[^}]*display:\s*none\s*!important/);
     assert.ok(nascosti, 'regola che nasconde la pagina');
-    for (const sel of ['main', '#teamsGrid', '.btn-floating-admin', '#music-control', '#menu-overlay', '#teamModal', '#pkmDetailModal', '#login-modal']) {
+    for (const sel of ['main', '#teamsGrid', '.btn-floating-helper', '#tasti-alto', '#music-control', '#menu-overlay', '#teamModal', '#pkmDetailModal', '#login-modal']) {
         assert.ok(nascosti[1].split(',').map(s => s.trim()).includes(sel), sel);
     }
-    // il pannello e il Team Builder (e l'helper del fallback) non sono tra i nascosti
-    for (const sel of ['#admin-panel', '#tb-overlay', '#helper-modal-overlay']) assert.ok(!nascosti[1].includes(sel), sel);
-    assert.match(css, /html\.incorporato #admin-backdrop\s*\{[^}]*background:\s*transparent/);
+    // il Team Builder (e l'helper del fallback) non sono tra i nascosti
+    for (const sel of ['#tb-overlay', '#helper-modal-overlay']) assert.ok(!nascosti[1].includes(sel), sel);
 });
 
 // ---------- il simulatore ----------
