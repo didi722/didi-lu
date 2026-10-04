@@ -407,3 +407,41 @@ test('il risultato è serializzabile (nessuna funzione, nessun Set)', () => {
     const r = calcola(dati, { stagione: 's1' });
     assert.deepEqual(JSON.parse(JSON.stringify(r)), r);
 });
+
+// ---------- le scelte nei set (per la personalità) ----------
+test('azioni: le scelte dei set si sommano per giocatore, i set senza azioni (più vecchi) non contano', () => {
+    const az = (extra = {}) => ({ decisioni: 20, mosse: 18, cambi: 2, attacco: 12, protezione: 3, recupero: 1, potenziamento: 1, campo: 1, supporto: 0, disturbo: 0, altro: 0, ...extra });
+    const conAzioni = (stile1, stile2) => ({
+        v: 3, turni: 6, vincitore: 'p1',
+        p1: { ...lato('Didi', 4, 1, [['Garchomp']]), azioni: stile1 },
+        p2: { ...lato('Lu', 4, 4, [['Dragonite']]), azioni: stile2 }
+    });
+    const vecchio = { v: 2, turni: 6, vincitore: 'p1', p1: lato('Didi', 4, 1, [['Garchomp']]), p2: lato('Lu', 4, 4, [['Dragonite']]) };
+    const mm = (n, setStats) => ({
+        player1: 'didi', player1Id: 'didi', player2: 'lu', player2Id: 'lu', winnerId: 'didi', team1: 'ALPHA', team2: 'GAMMA',
+        score: '2-0', p1score: 2, p2score: 0, p1points: 2, p2points: 0, data: `2026-04-0${n}`, categoria: 'VGC',
+        p1EloAtMatch: 1000, p2EloAtMatch: 1000, p1DeltaElo: 16, p2DeltaElo: -16, setStats
+    });
+    const dd = {
+        players,
+        seasons: { s9: { info: { name: 'Nine', status: 'playing' }, showdowns: { z: { info: { categoria: 'VGC', data: '2026-04-01' }, matches: {
+            match1: mm(1, { set1: conAzioni(az(), az({ attacco: 18, protezione: 0, recupero: 0, potenziamento: 0, campo: 0, cambi: 2, mosse: 18 })), set2: conAzioni(az({ protezione: 5, attacco: 10 }), az()) }),
+            match2: mm(2, { set1: vecchio })
+        } } } } }
+    };
+    const r = calcola(dd, { stagione: 's9' });
+    const didi = r.players.find(x => x.id === 'didi'), lu = r.players.find(x => x.id === 'lu');
+    assert.equal(didi.azioni.setConDati, 2, 'il set v2 senza azioni non conta');
+    assert.equal(didi.azioni.decisioni, 40);
+    assert.equal(didi.azioni.attacco, 12 + 10);
+    assert.equal(didi.azioni.protezione, 3 + 5);
+    assert.equal(didi.azioni.cambi, 4);
+    assert.equal(lu.azioni.setConDati, 2);
+    assert.equal(lu.azioni.attacco, 18 + 12);
+    assert.equal(lu.azioni.protezione, 0 + 3);
+    // chi non ha nessun dato ha tutto a zero (e il risultato resta serializzabile)
+    const senza = calcola(dati, { stagione: 's1' }).players.find(x => x.id === 'tom');
+    assert.equal(senza.azioni.setConDati, 0);
+    assert.equal(senza.azioni.decisioni, 0);
+    assert.doesNotThrow(() => JSON.stringify(r));
+});

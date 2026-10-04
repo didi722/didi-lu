@@ -577,6 +577,19 @@
                     <span class="premio-desc">${esc(b.descrizione)}</span>${avanzamento}</span>
             </span>`);
         }
+        // i badge dell'allenatore (badge-allenatore.js): sui numeri di tutte le stagioni, qualunque filtro ci sia nella pagina
+        if (window.BadgeAllenatore && window.Statistiche) {
+            STATO.globale = STATO.globale || Statistiche.calcola(STATO.dati, { stagione: 'all' });
+            for (const b of BadgeAllenatore.guadagnati(BadgeAllenatore.calcola(STATO.globale, p.id))) {
+                const prossimo = b.prossima == null ? 'Top level reached' : `Next: ${fmt(b.valore)} / ${fmt(b.prossima)} ${esc(b.unita)}`;
+                pezzi.push(`<span class="premio premio-badge" tabindex="0">
+                    <img src="${esc(b.immagine)}" alt="${esc(b.nome)} ${esc(b.livelloNome)}" width="44" height="44" onerror="BadgeTeam.immagineMancante(this,'${esc(b.icona)}')">
+                    <span class="premio-tip"><span class="premio-testa"><span class="premio-nome">${esc(b.nome)}</span><small>${esc(b.livelloNome)}</small></span>
+                        <span class="premio-desc">${esc(b.descrizione)}</span>
+                        <span class="premio-barra-et">${barraPremio(b.progresso * 100)}<small>${prossimo}</small></span></span>
+                </span>`);
+            }
+        }
         return pezzi.length ? `<div class="scheda-premi">${pezzi.join('')}</div>` : '';
     }
 
@@ -840,6 +853,7 @@
         try {
             const [seasons, players] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
             STATO.dati = { seasons: seasons.val() || {}, players: players.val() || {} };
+            STATO.globale = null;
             disegna();
         } catch (errore) {
             console.error('Statistics not loaded', errore);

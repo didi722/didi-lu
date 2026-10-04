@@ -347,6 +347,8 @@
         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     };
 
+    const MEDAGLIE_ALLENATORE = 4;     // badge dell'allenatore sulla carta (oltre alle serie)
+
     function costruisciMedaglie(d) {
         const st = d.badges || {};
         const serie = [
@@ -354,7 +356,9 @@
             { id: 'won', etichetta: 'Win Streak', desc: n => `${n} matches in a row`, max: parseInt(st.maxwonstrike) || 0, corrente: parseInt(st.wonstrike) || 0, data: formattaData(st.maxwonstrikedate), passi: [5, 7, 10] },
             { id: 'sd', etichetta: 'SD Streak', desc: n => `${n} showdowns in a row`, max: parseInt(st.maxsdstrike) || 0, corrente: parseInt(st.sdstrike) || 0, data: formattaData(st.sdwonstrikedate), passi: [3, 5, 7] }
         ];
-        const medaglia = (img, alt, tip) => h('div', { class: 'pp-medaglia pp-tip-host', tabindex: '0' }, h('img', { src: img, alt }), tip);
+        // `icona`: se la PNG non c'è ancora (badge nuovi) al suo posto compare una medaglia disegnata dal CSS (badge-team.js)
+        const medaglia = (img, alt, tip, icona) => h('div', { class: 'pp-medaglia pp-tip-host', tabindex: '0' },
+            h('img', { src: img, alt, onerror: icona && window.BadgeTeam ? ev => window.BadgeTeam.immagineMancante(ev.target, icona) : null }), tip);
         const lista = [];
 
         const chiavi = [d.chiave, d.nome].map(x => String(x || '').trim().toLowerCase());
@@ -374,6 +378,21 @@
                 h('span', { class: 'pp-tip-testo', testo: b.desc(raggiunto) }),
                 h('span', { class: 'pp-barra' }, h('i', { stile: { width: `${pct}%` } })),
                 h('span', { class: 'pp-tip-obiettivo', testo: `CURRENT: ${b.corrente} / ${prossimo}` }))));
+        }
+        // i badge dell'allenatore (badge-allenatore.js): i quattro più alti; gli altri in un "+N" (tutti si vedono nel profilo, Achievements).
+        // Il blocco deve starci anche negli schermi interi senza scroll: poche medaglie, mai una fila infinita.
+        const presi = d.badgeAllenatore || [];
+        for (const b of presi.slice(0, MEDAGLIE_ALLENATORE)) {
+            const prossimo = b.prossima == null ? 'TOP LEVEL' : `NEXT: ${b.valore} / ${b.prossima}`;
+            lista.push(medaglia(b.immagine, `${b.nome} ${b.livelloNome}`, h('div', { class: 'neubrutal-tooltip pp-tip' },
+                h('span', { class: 'pp-tip-riga' }, h('span', { class: 'pp-tip-nome', testo: b.nome.toUpperCase() }), h('span', { class: 'pp-tip-obiettivo', testo: b.livelloNome.toUpperCase() })),
+                h('span', { class: 'pp-tip-testo', testo: b.descrizione }),
+                h('span', { class: 'pp-barra' }, h('i', { stile: { width: `${Math.round(b.progresso * 100)}%` } })),
+                h('span', { class: 'pp-tip-obiettivo', testo: prossimo })), b.icona));
+        }
+        if (presi.length > MEDAGLIE_ALLENATORE) {
+            lista.push(h('div', { class: 'pp-medaglia pp-medaglia-altri', tabindex: '0', title: `${presi.length - MEDAGLIE_ALLENATORE} more trainer badge${presi.length - MEDAGLIE_ALLENATORE > 1 ? 's' : ''}: see them all in your profile (Achievements)`,
+                testo: `+${presi.length - MEDAGLIE_ALLENATORE}` }));
         }
         stato.vuoti.medaglie = lista.length === 0;
         return blocco('medaglie', 'pp-medaglie', h('span', { class: 'pp-chip', testo: 'MEDALS' }), h('div', { class: 'pp-medaglie-riga' }, lista));

@@ -15,13 +15,18 @@
 //
 // Risultato (solo valori semplici: niente undefined, Firebase non li accetta):
 //   {
-//     v: 2,
+//     v: 3,
 //     turni: 9,                    // ultimo turno
 //     vincitore: 'p1' | 'p2' | '', // '' = pareggio o log incompleto
 //     p1: {
 //       nome: 'Didi',
 //       portati: 4,                // Pokémon portati (4 su 6 nei formati con team preview)
 //       svenuti: 2,                // Pokémon di questo lato rimasti KO a fine set
+//       azioni: {                  // cosa ha scelto di fare, turno per turno (serve alla personalità dell'allenatore)
+//         decisioni: 31,           // mosse scelte + cambi volontari
+//         mosse: 28, cambi: 3,     // i cambi sono quelli scelti a inizio turno: non i Pokémon KO sostituiti, non U-turn né Roar
+//         attacco: 19, protezione: 3, recupero: 1, potenziamento: 2, campo: 1, supporto: 0, disturbo: 2, altro: 0   // somma = mosse
+//       },
 //       pokemon: [{
 //         specie: 'Calyrex-Shadow',// come scritta nel team preview
 //         nome: '',                // soprannome, solo se diverso dalla specie
@@ -39,12 +44,12 @@
 //   }
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica();
-    else radice.StatisticheSet = fabbrica();
-})(typeof self !== 'undefined' ? self : this, function () {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./azioni-mosse'));
+    else radice.StatisticheSet = fabbrica(radice.AzioniMosse);
+})(typeof self !== 'undefined' ? self : this, function (AzioniMosse) {
     'use strict';
 
-    const VERSIONE = 2;      // 2: aggiunto "sceso" (chi è entrato davvero in campo)
+    const VERSIONE = 3;      // 2: aggiunto "sceso" (chi è entrato davvero in campo); 3: aggiunte le "azioni" di ogni lato
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]+/g, '');
     // "move: Stealth Rock" -> "stealthrock"
@@ -53,6 +58,9 @@
     const baseDi = specie => idDi(String(specie || '').split('-')[0]);
 
     const LATI = ['p1', 'p2'];
+
+    // Le scelte di un lato: quante mosse di ogni tipo (azioni-mosse.js) e quanti cambi volontari
+    const nuoveAzioni = () => ({ mosse: 0, cambi: 0, attacco: 0, protezione: 0, recupero: 0, potenziamento: 0, campo: 0, supporto: 0, disturbo: 0, altro: 0 });
 
     // "p1a: Garchomp" | "p1: Garchomp" | "p1a" -> { lato, pos, nick }
     function leggiIdent(ident) {
@@ -91,6 +99,8 @@
             lati: { p1: { entries: [], porNick: new Map(), dim: 0 }, p2: { entries: [], porNick: new Map(), dim: 0 } },
             attivo: {},                 // 'p1a' -> entry in campo in quella posizione
             turno: 0, iniziata: false,
+            fase: '',                   // dentro un turno: 'scelte' (i cambi scelti), 'mosse', 'fine' (dopo |upkeep|: i sostituti dei KO)
+            azioni: { p1: nuoveAzioni(), p2: nuoveAzioni() },
             vincitoreNome: '', pareggio: false,
             // attribuzione dei KO
             ultimoMover: null,          // chi ha usato l'ultima mossa
@@ -182,14 +192,21 @@
 
                     case 'turn':
                         S.turno = parseInt(parti[2], 10) || S.turno;
+                        S.fase = 'scelte';
                         S.appenaEntrato = false;
                         S.fonteDiretta = null;
                         S.destinyBond = null;
                         break;
 
+                    case 'upkeep':
+                        S.fase = 'fine';
+                        break;
+
                     case 'switch': case 'drag': {   // |switch|p1a: Nick|Specie, L50, M|100/100
                         const id = leggiIdent(parti[2]);
                         if (!id || !S.lati[id.lato] || !id.pos) break;
+                        // un cambio scelto: a inizio turno, prima di qualunque mossa (dopo una mossa è U-turn o simili, dopo |upkeep| un KO sostituito)
+                        if (tipo === 'switch' && S.fase === 'scelte' && S.turno >= 1) S.azioni[id.lato].cambi++;
                         const specie = String(parti[3] || '').split(',')[0].trim();
                         const e = trovaOCrea(id.lato, specie, id.nick);
                         S.attivo[id.pos] = e;
@@ -247,6 +264,15 @@
                     }
 
                     case 'move': {      // |move|p1a: Golem|Rock Slide|p2b: Braviary|...
+                        S.fase = 'mosse';
+                        { // una mossa scelta (non quelle che partono da sole: [from] = mossa bloccata, Sleep Talk, Dancer, Magic Bounce...)
+                            const chi = leggiIdent(parti[2]);
+                            if (chi && S.azioni[chi.lato] && !parti.some(x => x.startsWith('[from]'))) {
+                                const a = S.azioni[chi.lato];
+                                a.mosse++;
+                                a[AzioniMosse ? AzioniMosse.classeDi(parti[3]) : 'attacco']++;
+                            }
+                        }
                         const mover = entryDa(parti[2]);
                         S.ultimoMover = mover;
                         S.ultimoBersaglio = entryDa(parti[4]);
@@ -422,6 +448,7 @@
                 nome: S.nomi[l],
                 portati: L.dim,
                 svenuti: L.entries.filter(e => e.svenuto).length,
+                azioni: { decisioni: S.azioni[l].mosse + S.azioni[l].cambi, ...S.azioni[l] },
                 pokemon: L.entries.map(e => ({
                     specie: e.specie,
                     nome: e.nome,

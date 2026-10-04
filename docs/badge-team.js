@@ -2,7 +2,7 @@
 // BADGE DEI TEAM — Poké-Tournament
 //
 // I badge sono i riconoscimenti di UN team (di un giocatore), come i fiocchi (fiocchi.js) lo sono di un Pokémon e i badge
-// delle serie (titoli.js) di un allenatore. Si calcolano sui numeri reali: Statistiche.calcola(...).teams, un elemento per team:
+// degli allenatori (badge-allenatore.js) di un allenatore. Si calcolano sui numeri reali: Statistiche.calcola(...).teams, un elemento per team:
 //   stagioniVinte / stagioniGiocate     stagioni vinte dal suo allenatore in cui il team ha giocato / stagioni giocate
 //   showdown.vinti                      showdown vinti con il team
 //   match.vinti, match.giocati, percMatch   match vinti e % di match vinti
@@ -20,6 +20,9 @@
 // compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI_DA_CARICARE elenca i file attesi.
 // Prima c'erano tre badge di serie solo nella pagina pubblica (7 vittorie di fila, 4 match puliti, 3 showdown): ora sono
 // qui, con tre livelli, e si vedono ovunque si apra un team.
+//
+// Il meccanismo (soglie, livelli, scaffale, medagliette) è generico: costruisci(catalogo, opzioni) lo applica a un altro catalogo.
+// Lo usa badge-allenatore.js per i badge degli allenatori, con gli stessi stili (badge-team.css).
 // =====================================================
 (function (radice, fabbrica) {
     if (typeof module === 'object' && module.exports) module.exports = fabbrica(null);
@@ -36,12 +39,131 @@
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const tre = base => LIVELLI.map(l => `${CARTELLA}${base.replace('{l}', l)}`);
 
-    // -----------------------------------------------------
-    // Catalogo
+    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro
+    function livelloDi(valore, soglie) {
+        let l = 0;
+        for (let i = 0; i < soglie.length; i++) if (valore >= soglie[i]) l = i + 1;
+        return l;
+    }
+
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Se la PNG non c'è (ancora), la sostituisce con una medaglia disegnata dal CSS con l'icona del badge
+    function immagineMancante(img, icona) {
+        if (!img || !img.parentNode || !img.ownerDocument) return;
+        img.onerror = null;
+        const span = img.ownerDocument.createElement('span');
+        span.className = 'bt-finto';
+        span.textContent = icona || '★';
+        span.setAttribute('aria-hidden', 'true');
+        img.parentNode.replaceChild(span, img);
+    }
+
+    // =====================================================
+    // Il meccanismo, per un catalogo qualunque
     //   soglie    valori per bronzo, argento, oro
     //   immagini  3 file (uno per livello) oppure 1 file per tutti
-    //   minimo    se presente, sotto questo numero di match il valore non conta ancora (serve per le percentuali)
-    // -----------------------------------------------------
+    //   minimo    se presente, sotto questo numero di base il valore non conta ancora (serve per le percentuali)
+    //   valore    funzione del "contesto" (un team, un allenatore...) che dà il numero da confrontare con le soglie
+    // opzioni: { giaNelSito: Set di nomi di file che esistono già (non sono da caricare), titolo: titolo dello scaffale, chiedi: testo del tasto }
+    // =====================================================
+    function costruisci(CATALOGO, opzioni = {}) {
+        const giaNelSito = opzioni.giaNelSito || new Set();
+        const titoloPredefinito = opzioni.titolo || 'BADGES';
+
+        // Le immagini ancora da caricare (quelle che il sito non ha già)
+        const IMMAGINI_DA_CARICARE = [...new Set(CATALOGO.flatMap(b => b.immagini).map(p => p.replace(CARTELLA, '')))]
+            .filter(nome => !giaNelSito.has(nome));
+
+        const immagineDi = (def, livello) => {
+            const l = Math.max(1, livello || 1);
+            return def.immagini.length === 1 ? def.immagini[0] : def.immagini[Math.min(l, def.immagini.length) - 1];
+        };
+
+        /**
+         * @param {object|null} contesto  quello che serve ai `valore` del catalogo (null: niente dati, tutto a zero)
+         * @returns {Array} un elemento per badge del catalogo, nell'ordine del catalogo
+         */
+        function calcola(contesto) {
+            const t = contesto || {};
+            return CATALOGO.map(def => {
+                const valore = def.valore(t);
+                let nota = '', conta = true, sblocco = null;
+                if (def.minimo) {
+                    const base = def.minimo.campo(t);
+                    if (base < def.minimo.valore) {
+                        conta = false;
+                        nota = `needs ${def.minimo.valore} ${def.minimo.etichetta} (now ${base})`;
+                        sblocco = { valore: base, serve: def.minimo.valore, etichetta: def.minimo.etichetta };
+                    }
+                }
+                const livello = conta ? livelloDi(valore, def.soglie) : 0;
+                const prossima = livello >= def.soglie.length ? null : def.soglie[livello];
+                const precedente = livello === 0 ? 0 : def.soglie[livello - 1];
+                const progresso = sblocco ? Math.max(0, Math.min(1, sblocco.valore / sblocco.serve))
+                    : prossima == null ? 1 : Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente)));
+                return {
+                    id: def.id, nome: def.nome, icona: def.icona, descrizione: def.descrizione, unita: def.unita,
+                    soglie: def.soglie.slice(), valore, livello,
+                    livelloNome: livello ? NOMI_LIVELLO[livello - 1] : '',
+                    classeLivello: livello ? LIVELLI[livello - 1] : 'locked',
+                    prossima, progresso, nota, sblocco,
+                    immagine: immagineDi(def, livello)
+                };
+            });
+        }
+
+        // I badge presi, dal più alto al più basso (a parità, l'ordine del catalogo)
+        function guadagnati(lista) {
+            return lista.map((b, i) => ({ b, i })).filter(x => x.b.livello > 0)
+                .sort((a, c) => c.b.livello - a.b.livello || a.i - c.i).map(x => x.b);
+        }
+
+        const htmlImmagine = (b, classe) =>
+            `<img class="${classe}" src="${esc(b.immagine)}" alt="" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(b.icona)}')">`;
+
+        function htmlBadge(b) {
+            const stato = b.livello ? `bt-${b.classeLivello}` : 'bt-bloccato';
+            const fino = b.prossima == null ? b.soglie[b.soglie.length - 1] : b.prossima;
+            // al livello massimo il traguardo è già passato: "7 MAX" invece di "7 / 6"
+            const valore = b.sblocco ? `${esc(b.sblocco.valore)} <i>/ ${esc(b.sblocco.serve)}</i>`
+                : b.prossima == null ? `${esc(b.valore)} <i>MAX</i>` : `${esc(b.valore)} <i>/ ${esc(fino)}</i>`;
+            const titolo = b.livello ? `${esc(b.nome)} · ${esc(b.livelloNome)}` : `${esc(b.nome)} · locked`;
+            const prossima = b.prossima == null ? 'Top level reached.' : `Next level: ${esc(b.prossima)} ${esc(b.unita)}.`;
+            return `<div class="bt ${stato}" tabindex="0" data-badge="${esc(b.id)}">` +
+                `<div class="bt-medaglia">${htmlImmagine(b, 'bt-img')}${b.livello ? `<span class="bt-livello">${ROMANI[b.livello - 1]}</span>` : ''}</div>` +
+                `<div class="bt-nome">${esc(b.nome)}</div>` +
+                `<div class="bt-barra"><span style="width:${Math.round(b.progresso * 100)}%"></span></div>` +
+                `<div class="bt-valore">${valore}</div>` +
+                `<div class="bt-tip" role="tooltip"><strong>${titolo}</strong><p>${esc(b.descrizione)}</p><p class="bt-tip-nota">${b.nota ? esc(b.nota) : prossima}</p></div>` +
+                `</div>`;
+        }
+
+        // Lo scaffale completo: tutti i badge, quelli non presi in grigio con la barra del progresso
+        function htmlScaffale(lista, opz = {}) {
+            const presi = lista.filter(b => b.livello > 0).length;
+            const titolo = opz.titolo === undefined ? titoloPredefinito : opz.titolo;
+            return (titolo ? `<h4 class="bt-titolo">${esc(titolo)} <small class="bt-conto">${presi}/${lista.length}</small></h4>` : '') +
+                `<div class="bt-lista">${lista.map(htmlBadge).join('')}</div>`;
+        }
+
+        // Le medagliette (sulla card e nella testata): i badge più alti, al massimo "max"
+        function htmlMini(lista, max = 4) {
+            const presi = guadagnati(lista);
+            if (!presi.length) return '';
+            const visibili = presi.slice(0, max);
+            const resto = presi.length - visibili.length;
+            return visibili.map(b =>
+                `<span class="bt-mini bt-${b.classeLivello}" title="${esc(b.nome)} · ${esc(b.livelloNome)}: ${esc(b.valore)} ${esc(b.unita)}">${htmlImmagine(b, 'bt-mini-img')}</span>`
+            ).join('') + (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
+        }
+
+        return { CATALOGO, IMMAGINI_DA_CARICARE, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini };
+    }
+
+    // =====================================================
+    // I badge dei team
+    // =====================================================
     const CATALOGO = [
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3],
           descrizione: 'Seasons won by its trainer while the team played in them.',
@@ -76,67 +198,13 @@
           valore: t => num(t.stagioniGiocate), immagini: tre('badge-team-veteran-{l}.png') }
     ];
 
-    // Le immagini ancora da caricare (quelle che il sito non ha già)
     const GIA_NEL_SITO = new Set([
         'champion-bronze.png', 'champion-silver.png', 'champion-gold.png',
         'team-sd.png', 'team-wins.png', 'team-clean.png'
     ]);
-    const IMMAGINI_DA_CARICARE = [...new Set(CATALOGO.flatMap(b => b.immagini).map(p => p.replace(CARTELLA, '')))]
-        .filter(nome => !GIA_NEL_SITO.has(nome));
 
-    // -----------------------------------------------------
-    // Calcolo
-    // -----------------------------------------------------
-    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro
-    function livelloDi(valore, soglie) {
-        let l = 0;
-        for (let i = 0; i < soglie.length; i++) if (valore >= soglie[i]) l = i + 1;
-        return l;
-    }
-
-    const immagineDi = (def, livello) => {
-        const l = Math.max(1, livello || 1);
-        return def.immagini.length === 1 ? def.immagini[0] : def.immagini[Math.min(l, def.immagini.length) - 1];
-    };
-
-    /**
-     * @param {object|null} team  un elemento di Statistiche.calcola(...).teams (null se il team non ha mai giocato)
-     * @returns {Array} un elemento per badge del catalogo, nell'ordine del catalogo
-     */
-    function calcola(team) {
-        const t = team || {};
-        return CATALOGO.map(def => {
-            const valore = def.valore(t);
-            let nota = '', conta = true, sblocco = null;
-            if (def.minimo) {
-                const base = def.minimo.campo(t);
-                if (base < def.minimo.valore) {
-                    conta = false;
-                    nota = `needs ${def.minimo.valore} ${def.minimo.etichetta} (now ${base})`;
-                    sblocco = { valore: base, serve: def.minimo.valore, etichetta: def.minimo.etichetta };
-                }
-            }
-            const livello = conta ? livelloDi(valore, def.soglie) : 0;
-            const prossima = livello >= def.soglie.length ? null : def.soglie[livello];
-            const precedente = livello === 0 ? 0 : def.soglie[livello - 1];
-            const progresso = sblocco ? Math.max(0, Math.min(1, sblocco.valore / sblocco.serve))
-                : prossima == null ? 1 : Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente)));
-            return {
-                id: def.id, nome: def.nome, icona: def.icona, descrizione: def.descrizione, unita: def.unita,
-                soglie: def.soglie.slice(), valore, livello,
-                livelloNome: livello ? NOMI_LIVELLO[livello - 1] : '',
-                classeLivello: livello ? LIVELLI[livello - 1] : 'locked',
-                prossima, progresso, nota, sblocco,
-                immagine: immagineDi(def, livello)
-            };
-        });
-    }
-
-    // I badge presi, dal più alto al più basso (a parità, l'ordine del catalogo)
-    function guadagnati(lista) {
-        return lista.map((b, i) => ({ b, i })).filter(x => x.b.livello > 0)
-            .sort((a, c) => c.b.livello - a.b.livello || a.i - c.i).map(x => x.b);
-    }
+    const squadra = costruisci(CATALOGO, { giaNelSito: GIA_NEL_SITO, titolo: 'TEAM BADGES' });
+    const { IMMAGINI_DA_CARICARE, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini } = squadra;
 
     // Il team di un giocatore tra quelli di Statistiche.calcola(...).teams
     function trova(risultato, { player, team } = {}) {
@@ -144,61 +212,6 @@
         const p = idDi(player), n = idDi(team);
         if (!p || !n) return null;
         return elenco.find(t => idDi(t.player) === p && idDi(t.nome) === n) || null;
-    }
-
-    // -----------------------------------------------------
-    // HTML (stringhe: le pagine le mettono in un contenitore)
-    // -----------------------------------------------------
-    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    const htmlImmagine = (b, classe) =>
-        `<img class="${classe}" src="${esc(b.immagine)}" alt="" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(b.icona)}')">`;
-
-    function htmlBadge(b) {
-        const stato = b.livello ? `bt-${b.classeLivello}` : 'bt-bloccato';
-        const fino = b.prossima == null ? b.soglie[b.soglie.length - 1] : b.prossima;
-        // al livello massimo il traguardo è già passato: "7 MAX" invece di "7 / 6"
-        const valore = b.sblocco ? `${esc(b.sblocco.valore)} <i>/ ${esc(b.sblocco.serve)}</i>`
-            : b.prossima == null ? `${esc(b.valore)} <i>MAX</i>` : `${esc(b.valore)} <i>/ ${esc(fino)}</i>`;
-        const titolo = b.livello ? `${esc(b.nome)} · ${esc(b.livelloNome)}` : `${esc(b.nome)} · locked`;
-        const prossima = b.prossima == null ? 'Top level reached.' : `Next level: ${esc(b.prossima)} ${esc(b.unita)}.`;
-        return `<div class="bt ${stato}" tabindex="0" data-badge="${esc(b.id)}">` +
-            `<div class="bt-medaglia">${htmlImmagine(b, 'bt-img')}${b.livello ? `<span class="bt-livello">${ROMANI[b.livello - 1]}</span>` : ''}</div>` +
-            `<div class="bt-nome">${esc(b.nome)}</div>` +
-            `<div class="bt-barra"><span style="width:${Math.round(b.progresso * 100)}%"></span></div>` +
-            `<div class="bt-valore">${valore}</div>` +
-            `<div class="bt-tip" role="tooltip"><strong>${titolo}</strong><p>${esc(b.descrizione)}</p><p class="bt-tip-nota">${b.nota ? esc(b.nota) : prossima}</p></div>` +
-            `</div>`;
-    }
-
-    // Lo scaffale completo: tutti i badge, quelli non presi in grigio con la barra del progresso
-    function htmlScaffale(lista, opzioni = {}) {
-        const presi = lista.filter(b => b.livello > 0).length;
-        const titolo = opzioni.titolo === undefined ? 'TEAM BADGES' : opzioni.titolo;
-        return (titolo ? `<h4 class="bt-titolo">${esc(titolo)} <small class="bt-conto">${presi}/${lista.length}</small></h4>` : '') +
-            `<div class="bt-lista">${lista.map(htmlBadge).join('')}</div>`;
-    }
-
-    // Le medagliette (sulla card del team e nella testata): i badge più alti, al massimo "max"
-    function htmlMini(lista, max = 4) {
-        const presi = guadagnati(lista);
-        if (!presi.length) return '';
-        const visibili = presi.slice(0, max);
-        const resto = presi.length - visibili.length;
-        return visibili.map(b =>
-            `<span class="bt-mini bt-${b.classeLivello}" title="${esc(b.nome)} · ${esc(b.livelloNome)}: ${esc(b.valore)} ${esc(b.unita)}">${htmlImmagine(b, 'bt-mini-img')}</span>`
-        ).join('') + (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
-    }
-
-    // Se la PNG non c'è (ancora), la sostituisce con una medaglia disegnata dal CSS con l'icona del badge
-    function immagineMancante(img, icona) {
-        if (!img || !img.parentNode || !img.ownerDocument) return;
-        img.onerror = null;
-        const span = img.ownerDocument.createElement('span');
-        span.className = 'bt-finto';
-        span.textContent = icona || '★';
-        span.setAttribute('aria-hidden', 'true');
-        img.parentNode.replaceChild(span, img);
     }
 
     // -----------------------------------------------------
@@ -252,6 +265,8 @@
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI_DA_CARICARE,
         livelloDi, calcola, guadagnati, trova,
         htmlBadge, htmlScaffale, htmlMini, immagineMancante,
-        montaBarra, riempiCard
+        montaBarra, riempiCard,
+        // per altri cataloghi (badge-allenatore.js)
+        costruisci, tre, CARTELLA, esc
     };
 });

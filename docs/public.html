@@ -28,6 +28,7 @@
     <script src="statistiche.js"></script>
     <script src="fiocchi.js"></script>
     <script src="badge-team.js"></script>
+    <script src="badge-allenatore.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="public-card.js"></script>
 </head>
@@ -384,12 +385,22 @@ async function initPublicProfile() {
         const nome = info.name || playerKey;
         document.title = `${nome} \u00b7 Trainer Card \u00b7 Sant'Alvise Pkmn League`;
 
+        // i badge dell'allenatore si calcolano sui numeri di tutto il sito (una lettura per pagina); senza, restano le medaglie delle serie
+        let badgeAllenatore = [];
+        try {
+            if (window.BadgeAllenatore && window.Fiocchi) {
+                const r = await BadgeAllenatore.carica(db, playerKey);
+                badgeAllenatore = BadgeAllenatore.guadagnati(r.lista);
+            }
+        } catch (e) { console.warn('Trainer badges not available:', e); }
+
         PublicCard.monta({
             chiave: playerKey,
             nome,
             colore,
             info,
             badges: badges || {},
+            badgeAllenatore,
             stagioni: stagioni || {},
             tipi: tipi || {},
             pokemon: pokemon || {},

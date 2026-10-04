@@ -1421,3 +1421,49 @@ body.has-alert-banner .top-auth-bar {
     .pf-stagione-nome { display: inline-block; padding: 7px 0; }
     .pf-hero-link { flex-wrap: wrap; justify-content: center; gap: 4px 14px; }
 }
+
+
+/* =====================================================
+   PERSONALITÀ: il diagramma a ragnatela e la sua spiegazione
+   ===================================================== */
+.pf-pers { display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); gap: 26px; align-items: center; }
+.pf-pers-grafico { position: relative; }
+.pf-radar { display: block; width: 100%; height: auto; overflow: visible; }
+.pf-radar-anello { fill: none; stroke: var(--black); stroke-width: 1; opacity: 0.22; }
+.pf-radar-media { fill: none; stroke: var(--black); stroke-width: 2; stroke-dasharray: 5 4; opacity: 0.7; }
+.pf-radar-asse { stroke: var(--black); stroke-width: 1; opacity: 0.25; }
+.pf-radar-area { fill: var(--pers-colore, #31c489); fill-opacity: 0.55; stroke: var(--black); stroke-width: 3; stroke-linejoin: round; }
+.pf-radar-punto { fill: var(--white); stroke: var(--black); stroke-width: 2.5; }
+.pf-radar-et { font: 900 11px 'Josefin Sans', sans-serif; letter-spacing: 0.08em; fill: var(--black); }
+.pf-radar-val { font: 900 14px 'Josefin Sans', sans-serif; letter-spacing: 0; }
+.pf-pers-bloccata .pf-radar { opacity: 0.45; filter: grayscale(1); }
+.pf-pers-lucchetto {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    display: grid; place-items: center; width: 64px; height: 64px;
+    background: var(--yellow); border: 3px solid var(--black); box-shadow: var(--shadow-small);
+    font-size: 1.9rem; border-radius: var(--nb-raggio, 0);
+}
+.pf-pers-testo { min-width: 0; }
+.pf-pers-testo p { margin: 0 0 10px; font-weight: 600; line-height: 1.45; }
+.pf-pers-titolo { font: 900 1.25rem 'Josefin Sans', sans-serif; letter-spacing: 0.04em; }
+.pf-pers-tipo {
+    display: inline-block; padding: 6px 14px 4px; background: var(--pers-colore, #31c489); color: #000; border: 3px solid var(--black); box-shadow: var(--shadow-small);
+    font: 900 1.5rem 'Josefin Sans', sans-serif !important; letter-spacing: 0.08em; transform: rotate(-1deg); border-radius: var(--nb-raggio, 0);
+}
+.pf-pers-frasi { margin: 0 0 12px; padding-left: 20px; font-weight: 700; font-size: 0.9rem; }
+.pf-pers-frasi li { margin-bottom: 4px; }
+.pf-pers-tabella { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 0.85rem; }
+.pf-pers-tabella th, .pf-pers-tabella td { padding: 5px 8px; text-align: right; border-bottom: 2px solid var(--black); font-weight: 700; }
+.pf-pers-tabella th:first-child { text-align: left; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
+.pf-pers-tabella thead th { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; border-bottom-width: 3px; }
+.pf-pers-delta { white-space: nowrap; }
+@media (max-width: 760px) {
+    .pf-pers { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .pf-pers-grafico { max-width: 360px; margin: 0 auto; width: 100%; }
+}
+
+/* I badge dell'allenatore (badge-allenatore.js) sotto quelli delle serie, nella colonna Badges */
+.ach-badge-extra { margin-top: 6px; }
+.ach-badge-extra .bt-titolo { font-size: 0.8rem; }
+.ach-badge-extra .bt-lista { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 10px; }
+.ach-badge-extra .bt-tip { width: 180px; }

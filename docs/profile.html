@@ -15,6 +15,12 @@
 <script src="sfide.js"></script>
 <script src="titoli.js"></script>
 <script src="profilo-personale.js"></script>
+<script src="statistiche.js"></script>
+<script src="fiocchi.js"></script>
+<script src="personalita.js"></script>
+<script src="badge-team.js"></script>
+<script src="badge-allenatore.js"></script>
+<link rel="stylesheet" href="badge-team.css">
     <link rel="stylesheet" href="temi.css">
     <link rel="stylesheet" href="controlli.css">
     <link rel="stylesheet" href="finestre.css">
@@ -70,6 +76,13 @@
         <h2 class="section-title" id="pf-rivali-titolo">RIVALS</h2>
         <div id="pf-rivali-corpo" class="pf-corpo">
             <p class="pf-caricamento">Counting the battles&hellip;</p>
+        </div>
+    </section>
+
+    <section class="pf-sezione pf-personalita" id="pf-personalita" aria-labelledby="pf-personalita-titolo">
+        <h2 class="section-title" id="pf-personalita-titolo">PERSONALITY</h2>
+        <div id="pf-personalita-corpo" class="pf-corpo" aria-live="polite">
+            <p class="pf-caricamento">Reading your battles&hellip;</p>
         </div>
     </section>
 
@@ -712,6 +725,101 @@ function disegnaRivali(rivaliTutti) {
 
 
 // =====================================================
+// PERSONALITÀ (personalita.js: scarti dalla media della lega, non numeri assoluti)
+// =====================================================
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attributi, ...figli) {
+    const e = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attributi || {})) if (v != null) e.setAttribute(k, String(v));
+    for (const f of figli.flat()) if (f != null) e.append(f instanceof Node ? f : document.createTextNode(String(f)));
+    return e;
+}
+
+// Il diagramma a ragnatela. `valori` = null: diagramma vuoto (personalità ancora bloccata)
+function radarPersonalita(assi, valori) {
+    const R = 104, C = 150, n = assi.length;
+    const PersonalitaVertici = lista => Personalita.vertici(lista, R, C, C);
+    const anello = pct => PersonalitaVertici(Array(n).fill(pct)).map(p => `${p.x},${p.y}`).join(' ');
+    const radice = svg('svg', { class: 'pf-radar', viewBox: '0 0 300 300', role: 'img',
+        'aria-label': valori ? `Personality diagram: ${assi.map((a, i) => `${a.nome} ${valori[i]}`).join(', ')}. 50 is the league average.` : 'Personality diagram, still locked.' });
+    for (const pct of [25, 75, 100]) radice.append(svg('polygon', { class: 'pf-radar-anello', points: anello(pct) }));
+    radice.append(svg('polygon', { class: 'pf-radar-media', points: anello(50) }));
+    PersonalitaVertici(Array(n).fill(100)).forEach(p => radice.append(svg('line', { class: 'pf-radar-asse', x1: C, y1: C, x2: p.x, y2: p.y })));
+    if (valori) {
+        const punti = PersonalitaVertici(valori);
+        radice.append(svg('polygon', { class: 'pf-radar-area', points: punti.map(p => `${p.x},${p.y}`).join(' ') }));
+        punti.forEach(p => radice.append(svg('circle', { class: 'pf-radar-punto', cx: p.x, cy: p.y, r: 4.5 })));
+    }
+    // le etichette, fuori dal diagramma
+    PersonalitaVertici(Array(n).fill(100)).forEach((p, i) => {
+        const dx = Math.cos(p.angolo), dy = Math.sin(p.angolo);
+        const x = C + (R + 16) * dx, y = C + (R + 16) * dy + (dy > 0.3 ? 8 : dy < -0.3 ? -2 : 4);
+        const ancora = dx > 0.3 ? 'start' : dx < -0.3 ? 'end' : 'middle';
+        radice.append(svg('text', { class: 'pf-radar-et', x: x.toFixed(1), y: y.toFixed(1), 'text-anchor': ancora },
+            svg('tspan', {}, assi[i].nome.toUpperCase()),
+            valori ? svg('tspan', { class: 'pf-radar-val', x: x.toFixed(1), dy: '1.15em' }, valori[i]) : null));
+    });
+    return radice;
+}
+
+function disegnaPersonalitaBloccata(p) {
+    const assi = Personalita.ASSI;
+    const quanti = Math.min(p.set, p.setServono);
+    return h('div', { class: 'pf-pers pf-pers-bloccata' },
+        h('div', { class: 'pf-pers-grafico' }, radarPersonalita(assi, null), h('span', { class: 'pf-pers-lucchetto', 'aria-hidden': 'true' }, '🔒')),
+        h('div', { class: 'pf-pers-testo' },
+            h('p', { class: 'pf-pers-titolo' }, 'Your personality is still a secret'),
+            h('p', {}, `It unlocks after ${p.setServono} sets analysed. The league watches what you choose every turn — attack, Protect, switch, setup, field control, tricks — and compares it with everyone else's average.`),
+            h('div', { class: 'pf-progresso' }, h('div', { class: 'pf-barra' }, h('span', { style: `width:${Math.round(quanti / p.setServono * 100)}%` })),
+                h('span', { class: 'pf-progresso-testo' }, `${quanti} / ${p.setServono} sets`)),
+            h('p', { class: 'pf-nota' }, 'Only sets played on the site count: matches typed in by hand have no turn-by-turn data.')));
+}
+
+function disegnaPersonalitaInAttesa(p) {
+    return h('div', { class: 'pf-pers pf-pers-bloccata' },
+        h('div', { class: 'pf-pers-grafico' }, radarPersonalita(Personalita.ASSI, null), h('span', { class: 'pf-pers-lucchetto', 'aria-hidden': 'true' }, '⏳')),
+        h('div', { class: 'pf-pers-testo' },
+            h('p', { class: 'pf-pers-titolo' }, 'Almost there'),
+            h('p', {}, `You have ${p.set} sets analysed, enough to unlock it. But your style is measured against the rest of the league, and so far only ${p.allenatoriConDati} trainer${p.allenatoriConDati === 1 ? '' : 's'} ${p.allenatoriConDati === 1 ? 'has' : 'have'} analysed sets: at least ${p.allenatoriServono} are needed.`)));
+}
+
+function disegnaPersonalitaPronta(p) {
+    const assi = p.assi;
+    const delta = a => (a.scartoPerc > 0 ? `▲ +${a.scartoPerc}%` : a.scartoPerc < 0 ? `▼ ${a.scartoPerc}%` : '= 0%');
+    const riga = a => h('tr', {},
+        h('th', { scope: 'row' }, a.nome),
+        h('td', {}, `${Math.round(a.quota * 100)}%`),
+        h('td', {}, `${Math.round(a.quotaLega * 100)}%`),
+        h('td', { class: `pf-pers-delta ${a.scartoPerc > 0 ? 'su' : a.scartoPerc < 0 ? 'giu' : ''}` }, delta(a)));
+    return h('div', { class: 'pf-pers' },
+        h('div', { class: 'pf-pers-grafico' }, radarPersonalita(Personalita.ASSI, assi.map(a => a.valore))),
+        h('div', { class: 'pf-pers-testo' },
+            h('p', { class: 'pf-pers-tipo' }, h('span', { 'aria-hidden': 'true' }, p.tipo.icona), ` ${p.tipo.nome.toUpperCase()}`),
+            h('p', {}, p.tipo.descrizione),
+            p.frasi.length ? h('ul', { class: 'pf-pers-frasi' }, p.frasi.map(f => h('li', {}, f))) : null,
+            h('table', { class: 'pf-pers-tabella' },
+                h('thead', {}, h('tr', {}, h('th', {}, 'Style'), h('th', {}, 'You'), h('th', {}, 'League'), h('th', {}, 'Gap'))),
+                h('tbody', {}, assi.map(riga))),
+            h('p', { class: 'pf-nota' }, `Based on ${p.set} sets and ${p.decisioni} choices. The ring at 50 is the league average (${p.allenatoriConDati} trainers): further out means you do it more than the others, closer in means less. Everyone attacks more than they Protect, so only the gap counts.`)));
+}
+
+async function disegnaPersonalita() {
+    const box = $('pf-personalita-corpo');
+    if (!box) return;
+    try {
+        const risultato = await Fiocchi.carica(db);
+        const p = Personalita.calcola(risultato.players, playerID);
+        const colore = colorePulito((stato.giocatori[playerID] || {}).color);
+        if (colore) box.style.setProperty('--pers-colore', colore);
+        box.replaceChildren(p.stato === 'pronta' ? disegnaPersonalitaPronta(p) : p.stato === 'in-attesa' ? disegnaPersonalitaInAttesa(p) : disegnaPersonalitaBloccata(p));
+    } catch (e) {
+        console.error('Personality not available:', e);
+        box.replaceChildren(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Could not read the league data. Reload the page to try again.'));
+    }
+}
+
+
+// =====================================================
 // AVVIO
 // =====================================================
 let profiloAvviato = false;
@@ -731,6 +839,7 @@ async function avviaProfilo() {
         await Promise.all([...stagioni].map(([id, info]) => caricaStagione(id, info)));
         stato.pronto = true;
         await disegna();
+        disegnaPersonalita();      // senza aspettarla: legge tutte le stagioni, la pagina intanto è già usabile
     } catch (e) {
         console.error('Error occurred while loading the profile:', e);
         const errore = h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Could not load your data. Reload the page to try again.');
@@ -999,6 +1108,7 @@ async function apriModaleAchievements() {
         }
 
         renderBadgeAchievements(stats.badges || {}, badgeList, badgeSummary);
+        aggiungiBadgeAllenatore(overlay, badgeList, badgeSummary);
         renderTitoliAchievements(stats['team-stats']?.typeusage || {}, info.title || '', titleList, titleSummary);
         renderPokemonAchievements(stats['team-stats']?.pokemonusage || {}, info.title || '', pokemonList, pokemonSummary);
 
@@ -1012,6 +1122,24 @@ function chiudiModaleAchievements() {
     const overlay = document.getElementById('ach-overlay');
     if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';
+}
+
+// I badge dell'allenatore calcolati sui numeri di tutta la lega (badge-allenatore.js), sotto quelli delle serie
+async function aggiungiBadgeAllenatore(overlay, lista, summary) {
+    if (!window.BadgeAllenatore) return;
+    const { lista: badge, dati } = await BadgeAllenatore.carica(db, playerID);
+    if (!overlay.classList.contains('open') || !lista.isConnected) return;
+    lista.querySelector('.ach-badge-extra')?.remove();
+    const extra = document.createElement('div');
+    extra.className = 'ach-badge-extra';
+    extra.innerHTML = BadgeAllenatore.htmlScaffale(badge, { titolo: 'MORE TRAINER BADGES' }) +
+        (dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>');
+    lista.append(extra);
+    const livelli = badge.reduce((n, b) => n + b.livello, 0);
+    const precedenti = /^(\d+) of (\d+)/.exec(summary.textContent || '');
+    const sbloccati = (precedenti ? +precedenti[1] : 0) + livelli;
+    const totali = (precedenti ? +precedenti[2] : 0) + badge.length * 3;
+    summary.textContent = `${sbloccati} of ${totali} badge levels unlocked`;
 }
 
 function renderBadgeAchievements(badges, lista, summary) {

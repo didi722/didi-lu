@@ -166,6 +166,16 @@
         };
     }
 
+    // Le scelte fatte nei set (mosse di ogni tipo, cambi): sommate, per la personalità dell'allenatore. I set più vecchi non le hanno.
+    const AZIONI_TIPI = ['attacco', 'protezione', 'recupero', 'potenziamento', 'campo', 'supporto', 'disturbo', 'altro'];
+    const vuotoAzioni = () => Object.fromEntries(['setConDati', 'decisioni', 'mosse', 'cambi', ...AZIONI_TIPI].map(k => [k, 0]));
+    function aggiungiAzioniSet(a, mioLato) {
+        const x = mioLato && mioLato.azioni;
+        if (!x || !num(x.decisioni)) return;
+        a.setConDati++;
+        for (const k of ['decisioni', 'mosse', 'cambi', ...AZIONI_TIPI]) a[k] += num(x[k]);
+    }
+
     // Set con statistiche di un match: [{ n, st }]
     function setConStatistiche(p) {
         if (!p.setStats) return [];
@@ -243,7 +253,7 @@
         const mostri = {};      // chiave -> scheda
 
         const giocatore = id => (giocatori[id] ||= {
-            id, ...nuovoRisultati(),
+            id, ...nuovoRisultati(), azioni: vuotoAzioni(),
             stagioni: new Set(), stagioniVinte: new Set(),
             formati: {}, teams: {}, elenco: [], eloDopo: [], delta: 0
         });
@@ -339,6 +349,7 @@
                 const scesiNelMatch = new Set();
                 for (const { st } of setConStatistiche(p)) {
                     if (!aggiungiKoSet(g.ko, st, lato)) continue;
+                    aggiungiAzioniSet(g.azioni, st[lato]);
                     if (!team) continue;
                     aggiungiKoSet(team.ko, st, lato);
 
@@ -437,6 +448,7 @@
                 percSet: perc(g.set.vinti, g.set.giocati),
                 serie,
                 ko: finisciKo(g.ko),
+                azioni: g.azioni,
                 preferiti: {
                     formato: piuUsatoFormato && piuUsatoFormato.nome ? piuUsatoFormato : null,
                     team: piuUsatoTeam

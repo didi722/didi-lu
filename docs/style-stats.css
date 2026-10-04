@@ -615,3 +615,6 @@ img.e-pokeball { padding: 18%; box-sizing: border-box; opacity: .7; }
 .carta-badge-team .bt-mini { width: 28px; height: 28px; }
 .carta-badge-team .bt-mini-img { width: 18px; height: 18px; }
 .scheda-sezione .bt-lista { padding-top: 6px; }
+
+/* badge dell'allenatore senza PNG (ancora): la medaglia disegnata ha la misura delle altre */
+.premio-badge .bt-finto { width: 44px; height: 48px; font-size: 1.2rem; border-width: 3px; box-shadow: 2px 2px 0 var(--nb-ink, #000); }

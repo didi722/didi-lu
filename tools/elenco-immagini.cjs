@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Elenca le immagini che il sito si aspetta e non trova ancora in docs/immagini/ (fiocchi dei Pokémon e badge dei team).
+/* Elenca le immagini che il sito si aspetta e non trova ancora in docs/immagini/ (fiocchi dei Pokémon, badge dei team e badge degli allenatori).
    Finché un file manca, il sito mostra una medaglia disegnata con il CSS al suo posto.
    Uso:  node tools/elenco-immagini.cjs            (stampa l'elenco)
          node tools/elenco-immagini.cjs --scrivi   (scrive anche IMMAGINI-DA-CARICARE.md nella cartella principale) */
@@ -8,12 +8,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Fiocchi = require('../docs/fiocchi.js');
 const BadgeTeam = require('../docs/badge-team.js');
+const BadgeAllenatore = require('../docs/badge-allenatore.js');
 
 const CARTELLA = path.join(__dirname, '..', 'docs', 'immagini');
 const manca = nome => !fs.existsSync(path.join(CARTELLA, nome));
 const gruppi = [
     { titolo: 'Fiocchi dei Pokémon (scheda Pokémon e medagliette sulla card del team)', file: Fiocchi.IMMAGINI_DA_CARICARE, catalogo: Fiocchi.CATALOGO, prefisso: 'ribbon-' },
-    { titolo: 'Badge dei team (scaffale, medagliette nella testata e sulla card del team)', file: BadgeTeam.IMMAGINI_DA_CARICARE, catalogo: BadgeTeam.CATALOGO, prefisso: 'badge-team-' }
+    { titolo: 'Badge dei team (scaffale, medagliette nella testata e sulla card del team)', file: BadgeTeam.IMMAGINI_DA_CARICARE, catalogo: BadgeTeam.CATALOGO, prefisso: 'badge-team-' },
+    { titolo: 'Badge degli allenatori (Achievements nel profilo, medaglie della pagina pubblica, scheda in Stats)', file: BadgeAllenatore.IMMAGINI_DA_CARICARE, catalogo: BadgeAllenatore.CATALOGO, prefisso: 'badge-allenatore-' }
 ];
 
 let righe = ['# Immagini da caricare', '',
