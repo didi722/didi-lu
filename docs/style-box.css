@@ -4184,9 +4184,10 @@ color:#eeeeee;
 }
 
 .tb-opt-item {
-    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-columns: 28px auto minmax(0, 1fr);
     background: #fff;
 }
+.tb-opt-desc-item { margin-left: 0; }
 
 .tb-opt-item:hover,
 .tb-opt-item.hl {
@@ -5133,3 +5134,21 @@ input.tb-title:focus { outline: 3px solid var(--nb-giallo, #ffbd44); outline-off
     .tb-sd { padding: 10px; }
     .tb-sd-azioni .tb-btn { flex: 1 1 auto; }
 }
+
+/* Team Builder · liste di scelta: consigliati in cima (come in Pokémon Showdown) e spiegazione in hover */
+.tb-opt-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 2px 0 0;
+    padding: 4px 8px 3px;
+    background: var(--nb-carta, #fff);
+    border-bottom: 2px dashed var(--nb-ink, #000);
+    font-size: .64rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+.tb-opt-header-rec { background: var(--nb-giallo, #ffbd44); border-bottom-style: solid; }
+.tb-opt-rec { margin-right: 5px; color: var(--nb-giallo, #ffbd44); text-shadow: 1px 1px 0 var(--nb-ink, #000); }
+.tb-combo-list .tb-opt-header { scroll-margin-top: 44px; }

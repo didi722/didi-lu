@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="temi.css">
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
+    <link rel="stylesheet" href="badge-team.css">
     <script src="dettagli.js" defer></script>
     <link rel="stylesheet" href="tooltip.css">
     <script src="tooltip.js" defer></script>
@@ -26,6 +27,7 @@
     <script src="titoli.js"></script>
     <script src="statistiche.js"></script>
     <script src="fiocchi.js"></script>
+    <script src="badge-team.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="public-card.js"></script>
 </head>
@@ -494,53 +496,7 @@ async function apriDettagli(id) {
     const content = document.getElementById('modalBody'); 
     if (!modal || !content) return;
 
-    // --- CONFIGURAZIONE BADGE E SOGLIE ---
     const stats = team.stats || {};
-    const teamBadges = team.badges || {}; 
-    
-    const badgeConfig = {
-        'maxwonstrike': {
-            path: 'immagini/team-wins.png',
-            label: 'Win Streak',
-            desc: '7+ matches won in a row.',
-            min: 7
-        },
-        'maxcleanstrike': {
-            path: 'immagini/team-clean.png',
-            label: 'Clean Streak',
-            desc: '4+ undefeated matches in a row.',
-            min: 4
-        },
-        'maxshowdownstrike': {
-            path: 'immagini/team-sd.png',
-            label: 'SD Streak',
-            desc: '3+ showdowns won in a row.',
-            min: 3
-        }
-    };
-
-    // Generazione HTML Badge per il Team con controllo soglia >=
-    const teamBadgesHtml = Object.keys(teamBadges)
-    .filter(bKey => {
-        const config = badgeConfig[bKey];
-        // Mostra solo se la chiave è in config E il valore è >= al minimo richiesto
-        return config && parseInt(teamBadges[bKey] || 0) >= config.min;
-    }) 
-    .map(bKey => {
-        const config = badgeConfig[bKey];
-        const dataBadge = teamBadges[`${bKey}date`] || "--/--/----";
-        return `
-            <div class="badge-wrapper" style="position: relative; display: inline-block; cursor: help;">
-                <img src="${config.path}" 
-                     style="width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(2px 2px 0px #000);">
-                
-                <div class="custom-badge-tooltip">
-                    <span class="badge-date" style="position: absolute; top: 8px; right: 10px; font-size: 0.6rem; color: #666; font-family: monospace;">${dataBadge}</span>
-                    <strong style="display: inline-block; margin-bottom: 8px; text-transform: uppercase; color: white; background: black; padding: 2px 8px; transform: rotate(-1.5deg); box-shadow: 3px 3px 0px rgba(0,0,0,0.3); max-width: 70%;">${config.label}</strong>
-                    <p style="margin: 0; line-height: 1.2;">${config.desc}</p>
-                </div>
-            </div>`;
-    }).join('');
 
     const w = Number(stats.won || 0);
     const l = Number(stats.lost || 0);
@@ -554,7 +510,7 @@ async function apriDettagli(id) {
             <h2>${team.nome}</h2>
             <div class="header-right-area" style="display: flex; align-items: center; gap: 15px;">
                 <div class="team-badges-container" style="display: flex; gap: 10px; align-items: center;">
-                    ${teamBadgesHtml}
+                    <span class="bt-barra-team" data-badge-team></span>
                 </div>
                 <div class="team-score-banner">
                     <div class="score-item"><span>W/L</span><strong>${w} - ${l}</strong></div>
@@ -626,6 +582,11 @@ async function apriDettagli(id) {
     // le medagliette dei fiocchi sulle card arrivano appena sono pronte le statistiche reali
     window.squadraAperta = team;
     if (typeof Fiocchi !== 'undefined') {
+        if (typeof BadgeTeam !== 'undefined') {
+            BadgeTeam.montaBarra(db, content.querySelector('[data-badge-team]'), {
+                giocatore: giocatoreDellaPagina(), team, valido: () => window.squadraAperta === team
+            });
+        }
         Fiocchi.riempiMini(db, content, {
             giocatore: giocatoreDellaPagina(), team,
             valido: () => window.squadraAperta === team,

@@ -83,6 +83,8 @@ body.modale-aperta { overflow: hidden; }
 .tag-players.attivo { background: var(--verde); }
 .tag-teams.attivo { background: var(--giallo); }
 .tag-pokemon.attivo { background: var(--blu); }
+.tag-usage.attivo { background: #ff93c8; }
+.tag:nth-child(4) { --tilt: 1.2deg; }
 
 .stats-filtri { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 22px; }
 .filtro { display: flex; flex-direction: column; }
@@ -562,3 +564,54 @@ img.e-pokeball { padding: 18%; box-sizing: border-box; opacity: .7; }
     .carta-av, .scheda-avatar { animation: none; }
 }
 
+
+
+/* =====================================================================
+   USAGE · i Pokémon più usati (uso-globale.js)
+   ===================================================================== */
+.uso-formati[hidden] { display: none; }
+.uso-formati-titolo { margin: 0 0 16px; font: 900 1.05rem 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.uso-formati-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 26px 20px; padding: 0 8px 6px 4px; }
+.uso-formato {
+    padding: 14px 12px 10px;
+    background: var(--carta);
+    border: 3px solid var(--nero);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+}
+.uso-formato:nth-child(odd) { transform: rotate(-.6deg); }
+.uso-formato:nth-child(even) { transform: rotate(.5deg); }
+.uso-formato h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 8px; padding: 0 0 6px; border-bottom: 3px solid var(--nero); font: 900 1.05rem 'Josefin Sans', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.uso-formato h3 small { font: 700 .66rem 'Montserrat', sans-serif; letter-spacing: 0; text-transform: none; color: #555; }
+.uso-formato ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.uso-voce {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "s n p" "s b b"; align-items: center; column-gap: 8px; row-gap: 2px;
+    width: 100%; padding: 3px 6px 4px; background: transparent; color: inherit; text-align: left; cursor: pointer;
+    border: 2px solid transparent; border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font-family: inherit;
+}
+.uso-voce:hover, .uso-voce:focus-visible { background: var(--giallo); border-color: var(--nero); outline: none; }
+.uso-mini { grid-area: s; width: 40px; height: 34px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); }
+.uso-voce .uso-nome { grid-area: n; font: 800 .86rem 'Josefin Sans', sans-serif; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uso-voce .uso-perc { grid-area: p; font: 900 .86rem 'Josefin Sans', sans-serif; }
+.uso-voce .barra { grid-area: b; display: block; width: auto; }
+
+/* elenchi con barra nella scheda del Pokémon: mosse, strumenti, abilità, nature, formati */
+.uso-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.uso-riga { display: grid; grid-template-columns: minmax(110px, 190px) minmax(0, 1fr) 56px; align-items: center; gap: 10px; }
+.uso-riga .uso-nome { font: 800 .9rem 'Josefin Sans', sans-serif; overflow-wrap: anywhere; }
+.uso-riga .barra { display: block; width: auto; }
+.uso-riga .uso-perc { font: 900 .9rem 'Josefin Sans', sans-serif; text-align: right; }
+.uso-riga .uso-n { grid-column: 2 / 4; margin-top: -4px; font: 700 .68rem 'Montserrat', sans-serif; color: #555; }
+@media (max-width: 560px) {
+    .uso-riga { grid-template-columns: minmax(0, 1fr) 52px; }
+    .uso-riga .barra { grid-column: 1 / 3; grid-row: 2; }
+    .uso-riga .uso-n { grid-column: 1 / 3; }
+    .uso-formato:nth-child(odd), .uso-formato:nth-child(even) { transform: none; }
+}
+
+/* i badge del team (badge-team.js) sulla card e nella sua scheda */
+.carta-badge-team { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.carta-badge-team .bt-mini { width: 28px; height: 28px; }
+.carta-badge-team .bt-mini-img { width: 18px; height: 18px; }
+.scheda-sezione .bt-lista { padding-top: 6px; }

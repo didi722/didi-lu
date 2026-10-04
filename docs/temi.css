@@ -613,7 +613,7 @@ body.pg-box { --nb-sezione: "BOX"; }
    TEMA SCURO (arcade): il testo scritto direttamente sulla pagina, fuori dalle card,
    diventa chiaro. (Le card restano chiare, con il loro testo nero.)
    ===================================================================== */
-[data-tema="arcade"] body.nb :is(.stats-ordina-et, .toc-link:not(.active)) { color: var(--nb-testo); }
+[data-tema="arcade"] body.nb :is(.stats-ordina-et, .uso-formati-titolo, .toc-link:not(.active)) { color: var(--nb-testo); }
 [data-tema="arcade"] body.nb .toc-link:not(.active):hover { color: #000; }
 
 /* Soft: la barra in alto prende il colore del giocatore più chiaro (un velo bianco sopra) */

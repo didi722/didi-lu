@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
+<link rel="stylesheet" href="badge-team.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
@@ -120,6 +121,7 @@
             <button type="button" class="tag tag-players" role="tab" data-tab="players" aria-selected="true">Players</button>
             <button type="button" class="tag tag-teams" role="tab" data-tab="teams" aria-selected="false">Teams</button>
             <button type="button" class="tag tag-pokemon" role="tab" data-tab="pokemon" aria-selected="false">Pokémon</button>
+            <button type="button" class="tag tag-usage" role="tab" data-tab="usage" aria-selected="false" title="Which Pokémon are used the most, and with which moves, items and abilities">Usage</button>
         </div>
         <div class="stats-filtri">
             <label class="filtro">
@@ -139,6 +141,9 @@
 
     <div id="stats-riepilogo" class="stats-riepilogo" aria-live="polite"></div>
 
+    <!-- Usage: i Pokémon più usati di ogni formato (solo con "All formats") -->
+    <section id="stats-uso-formati" class="uso-formati" aria-label="Most used Pokémon by format" hidden></section>
+
     <!-- Ordinamento: una chip per ogni statistica (sostituisce le intestazioni della vecchia tabella) -->
     <div id="stats-ordina" class="stats-ordina" role="group" aria-label="Sort by"></div>
 
@@ -153,6 +158,8 @@
             <li><b>Elo</b> in the global view is the trainer's ranking; in a season it is the rating at the end of that season. Players are ordered by Elo (global) or by season points.</li>
             <li><b>Seasons won</b>: the trainer with the most points when a season closes. A team or a Pokémon gets the credit if it played at least one match in that season.</li>
             <li><b>Showdowns</b>: won by whoever wins more matches. A team (or a Pokémon of that team) gets the result of every showdown it played in.</li>
+            <li><b>Usage</b> counts the species, not the single Pokémon: the share of the teams registered to the seasons that include it (the same team registered in two seasons counts twice).
+                Moves, items, abilities and natures are shares of the sets of that Pokémon. Teams that were never registered to a season do not count.</li>
             <li><b>Pokémon</b> are the individual ones of each team (not the species): the Garchomp of one team and the Garchomp of another are different entries.</li>
             <li><b>KOs</b> come from the sets played on the site. Matches entered by hand have no KO data, so they count for results but not for KOs.
                 A KO is credited to the Pokémon that caused it, also when it comes from poison, burn, entry hazards, weather, Leech Seed, Perish Song…; self-inflicted KOs (recoil, Life Orb) are credited to nobody.</li>
@@ -426,6 +433,8 @@ loginModal.addEventListener('click', (event) => {
 });
 </script>
 <script src="statistiche.js"></script>
+<script src="uso-globale.js"></script>
+<script src="badge-team.js"></script>
 <script src="titoli.js"></script>
 <script src="stats.js"></script>
 <script src="controlli.js"></script>

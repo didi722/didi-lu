@@ -101,3 +101,30 @@ body.nb :is(
     /* Profilo */
     .pf-gruppo, .pf-barra, .pf-formato, .pf-v, .pf-live, .pf-p, .pf-avatar, .pf-barra-record
 ) { border-radius: var(--nb-raggio, 0px); }
+
+/* ---------- Fumetto con la spiegazione della voce evidenziata (data-desc sulle <option>) ---------- */
+.ts-fumetto {
+    position: fixed;
+    z-index: 100001;
+    box-sizing: border-box;
+    max-width: min(320px, calc(100vw - 16px));
+    padding: 9px 12px 10px;
+    background: var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-tip-fg, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    text-align: left;
+    pointer-events: none;
+}
+.ts-fumetto strong {
+    display: block;
+    margin: 0 0 5px;
+    padding: 0 0 4px;
+    border-bottom: 2px dashed var(--nb-ink, #000);
+    font-size: .72rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.ts-fumetto p { margin: 0; font-size: .78rem; font-weight: 600; line-height: 1.35; }

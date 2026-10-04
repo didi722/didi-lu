@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
+<link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="box-team.css">
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
@@ -27,6 +28,7 @@
 <script src="editor-team.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
+<script src="badge-team.js"></script>
 <script src="formato-pool.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
@@ -914,6 +916,7 @@ async function renderizza(lista) {
 
                 ${htmlAzioni}
 
+                <span class="bt-card" data-team-badge="${team.id}"></span>
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
@@ -968,6 +971,11 @@ async function renderizza(lista) {
         </div>
         `;
     }).join('');
+
+    // le medagliette dei badge sulle card (arrivano appena sono pronte le statistiche reali)
+    if (typeof BadgeTeam !== 'undefined' && typeof Fiocchi !== 'undefined' && playerID) {
+        BadgeTeam.riempiCard(db, grid, { giocatore: playerID, squadre: lista, valido: () => grid.isConnected });
+    }
 }
 
 async function caricaInfoAbilita(nomeAbilita, elementoId) {
@@ -1178,6 +1186,10 @@ async function apriDettagli(id) {
     window.squadraAperta = team;
     if (typeof Fiocchi !== 'undefined') {
         Fiocchi.riempiMini(db, content, { giocatore: playerID, team, valido: () => window.squadraAperta === team });
+        // i badge del team: medagliette e scaffale nella testata
+        if (typeof BadgeTeam !== 'undefined') {
+            BadgeTeam.montaBarra(db, content.querySelector('[data-badge-team]'), { giocatore: playerID, team, valido: () => window.squadraAperta === team });
+        }
     }
 }
 
@@ -6178,6 +6190,7 @@ function tbHtmlTagDettaglio(idTeam) {
             ${tag(TB_ID_TAG_DETTAGLIO.difesa, 'cov-def', 'tbHtmlDifesa', 'Team weaknesses')}
             ${tag(TB_ID_TAG_DETTAGLIO.attacco, 'cov-off', 'tbHtmlAttacco', 'Team coverage')}
             ${tag(TB_ID_TAG_DETTAGLIO.ruoli, 'cov-roles', 'tbHtmlRuoli', 'Team roles')}
+            <span class="bt-barra-team" data-badge-team></span>
             ${idTeam ? `<button type="button" class="tb-prova-cpu" onclick="provaControCpu('${String(idTeam).replace(/'/g, '')}')"
                 title="Practice this team against the CPU in the battle simulator">🎮 Practice vs CPU</button>` : ''}
         </div>`;
@@ -7476,6 +7489,9 @@ async function apriTeamBuilder() {
             tbStato.cacheMosse = {}; // le regole del formato potrebbero essere cambiate
         }
 
+        // mosse, strumenti e abilità consigliati per la generazione del formato (se il file manca, resta l'ordine alfabetico)
+        tbStato.consigli = typeof Consigli !== 'undefined' ? await Consigli.carica(tbStato.gen).catch(() => null) : null;
+
         tbRender();
                 tbCaricaCalc().catch(() => {}); // precarica il damage calc in background
         if (daHelper) await tbAttendiBuilderPronto(); // font e sprite pronti prima di scoprirlo
@@ -8204,9 +8220,9 @@ function tbHtmlCampoMossa(s, j) {
     return `
         <div class="tb-combo ${d ? 'has-move' : ''}">
             <input type="text" class="tb-input tb-move" ${stile} value="${tbEsc(d ? d.name : '')}" placeholder="Move ${j + 1}"
-                   title="${tbEsc(descrizione)}"
                    autocomplete="off" data-tipo="mossa" data-indice="${j}"
-                   onfocus="tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
+                   ${id ? `onmouseenter="tbHintCampo(this, 'mossa', '${tbEsc(id)}', ${tbConsigliSlot(s).mosse.includes(id)})" onmouseleave="tbChiudiCoachPresto('hint-campo')"` : ''}
+                   onfocus="tbChiudiCoachPresto('hint-campo'); tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
             ${icona}
             ${descrizione ? `<span class="tb-move-desc">${tbEsc(descrizione)}</span>` : ''}
             <div class="tb-combo-list"></div>
@@ -8337,11 +8353,18 @@ function tbHtmlEditor(s) {
     const mosseLegali = tbMosseLegali(s.specieId);
     const nomeOggetto = s.oggetto ? (tbDex.items[s.oggetto]?.name || s.oggetto) : '';
 
-    // Aggiungo il tooltip direttamente accanto alla select dell'abilità
+    // Le abilità consigliate per questo Pokémon vanno prima; ogni voce porta la spiegazione (la mostra l'elenco, vedi controlli.js)
+    const consigliAbilita = tbConsigliSlot(s).abilita;
+    const abilitaOrdinate = typeof Consigli !== 'undefined'
+        ? (() => { const o = Consigli.ordina(abilita, consigliAbilita, a => tbToID(a)); return [...o.consigliate, ...o.altre]; })()
+        : abilita;
+    const abilitaConsigliata = a => consigliAbilita.includes(tbToID(a)) && abilita.length > 1;
     const campoAbilita = abilita.length
         ? `<div style="display: flex; align-items: center; gap: 8px; width: 100%;">
-             <select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();" style="flex-grow: 1;">
-                 ${abilita.map(a => `<option value="${tbEsc(a)}" ${a === s.abilita ? 'selected' : ''}>${tbEsc(a)}</option>`).join('')}
+             <select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();" style="flex-grow: 1;"
+                     ${s.abilita ? `onmouseenter="tbHintCampo(this, 'abilita', '${tbEsc(tbToID(s.abilita))}', ${abilitaConsigliata(s.abilita)})" onmouseleave="tbChiudiCoachPresto('hint-campo')"` : ''}
+                     onmousedown="tbChiudiCoachPresto('hint-campo')">
+                 ${abilitaOrdinate.map(a => `<option value="${tbEsc(a)}" data-desc="${tbEsc(tbTestoDesc(tbDex.abilities[tbToID(a)]))}" ${a === s.abilita ? 'selected' : ''}>${abilitaConsigliata(a) ? '★ ' : ''}${tbEsc(a)}</option>`).join('')}
              </select>
              ${tbHtmlAltriDati(s, sp)} 
            </div>`
@@ -8389,7 +8412,8 @@ function tbHtmlEditor(s) {
                             <input type="text" class="tb-input" value="${tbEsc(nomeOggetto)}" autocomplete="off"
                                    placeholder="${tbStato.gen < 2 ? 'No items in Gen 1' : 'No item'}"
                                    data-tipo="oggetto" ${oggettoFisso || tbStato.gen < 2 ? 'disabled' : ''}
-                                   onfocus="tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
+                                   ${s.oggetto ? `onmouseenter="tbHintCampo(this, 'oggetto', '${tbEsc(s.oggetto)}', ${tbConsigliSlot(s).oggetti.includes(s.oggetto)})" onmouseleave="tbChiudiCoachPresto('hint-campo')"` : ''}
+                                   onfocus="tbChiudiCoachPresto('hint-campo'); tbApriCombo(this)" oninput="tbFiltraCombo(this)" onkeydown="tbTastoCombo(event, this)" onblur="tbBlurCombo(this)">
                             <div class="tb-combo-list"></div>
                         </div>
                         <p class="tb-desc" id="tb-desc-oggetto"></p>
@@ -8554,6 +8578,8 @@ function tbVociCombo(tipo, indice) {
 }
 
 function tbApriCombo(input) {
+    // passando da un campo all'altro l'elenco del precedente si chiude (il suo blur non lo vedrebbe più come "attuale")
+    if (tbCombo.input && tbCombo.input !== input) tbChiudiCombo();
     tbCombo.input = input;
     tbCombo.tipo = input.dataset.tipo;
     tbCombo.indice = parseInt(input.dataset.indice || '0', 10);
@@ -8569,6 +8595,72 @@ function tbFiltraCombo(input) {
     tbAggiornaCombo();
 }
 
+// ---- Fumetto con la spiegazione di una mossa, di uno strumento o di un'abilità (liste di scelta e campi già scelti) ----
+function tbTestoDesc(d) {
+    if (!d) return '';
+    const lunga = String(d.desc || '').trim(), breve = String(d.shortDesc || '').trim();
+    return lunga && lunga.length <= 260 ? lunga : (breve || lunga);
+}
+
+function tbHtmlHint(tipo, dati, nome, consigliata) {
+    const testo = tbTestoDesc(dati);
+    let tag = '';
+    if (tipo === 'mossa' && dati) {
+        const potenza = dati.basePower ? `${dati.basePower} BP` : '— BP';
+        const precisione = dati.accuracy === true ? '— Acc' : `${dati.accuracy}% Acc`;
+        const priorita = dati.priority ? ` · Priority ${dati.priority > 0 ? '+' : ''}${dati.priority}` : '';
+        tag = `<div class="tb-tip-sub" style="margin-bottom:6px;">${tbBadgeTipoMini(dati.type)} ${tbEsc(dati.category)} · ${potenza} · ${precisione} · ${dati.pp ? dati.pp + ' PP' : ''}${priorita}</div>`;
+    }
+    const consigliato = consigliata ? '<div class="tb-tip-sub" style="margin-top:6px;">★ Recommended for this Pokémon</div>' : '';
+    return `${tbTestataCoach(tbEsc(nome))}<div class="neubrutalist-tooltip-body">${tag}<div class="tb-tip-sub">${tbEsc(testo || 'No description available.')}</div>${consigliato}</div>`;
+}
+
+function tbDatiPerHint(tipo, id) {
+    if (tipo === 'mossa') return tbDex.moves[id];
+    if (tipo === 'oggetto') return tbDex.items[id];
+    return tbDex.abilities[id];
+}
+
+function tbHintVoce(el, i) {
+    const v = tbCombo.voci[i];
+    if (!v) return;
+    const tipo = tbCombo.tipo === 'mossa' ? 'mossa' : 'oggetto';
+    tbApriCoach(el, 'hint-voce', () => tbHtmlHint(tipo, v.dati || tbDatiPerHint(tipo, v.id), v.nome || v.dati?.name || v.id, v.consigliata));
+}
+
+// Sui campi già scelti (strumento, abilità, mosse): passando sopra si legge cosa fa
+function tbHintCampo(el, tipo, id, consigliata) {
+    const dati = id ? tbDatiPerHint(tipo, id) : null;
+    if (!dati) return;
+    tbApriCoach(el, 'hint-campo', () => tbHtmlHint(tipo, dati, dati.name || id, consigliata));
+}
+
+// I consigli per il Pokémon dello slot: { mosse, oggetti, abilita } (id, dal più consigliato)
+function tbConsigliSlot(s) {
+    if (!s || typeof Consigli === 'undefined') return { mosse: [], oggetti: [], abilita: [] };
+    const sp = tbSpecie(s.specieId);
+    const base = sp ? tbSpecieBase(sp) : null;
+    return Consigli.per(tbStato.consigli, s.specieId, { doppio: tbDoppio(), baseId: base ? tbToID(base.name) : '' });
+}
+
+// Le voci da mostrare: prima le consigliate (come in Pokémon Showdown), poi tutte le altre; digitando, prima chi inizia così
+function tbOrdinaVociCombo(voci, tipo, query) {
+    const s = tbStato.slot[tbStato.attivo];
+    const c = tbConsigliSlot(s);
+    const ordinate = typeof Consigli === 'undefined'
+        ? { consigliate: [], altre: voci }
+        : Consigli.ordina(voci, tipo === 'mossa' ? c.mosse : c.oggetti, v => v.id, tipo === 'mossa' ? Consigli.MOSSE_POCO_UTILI : null);
+    ordinate.consigliate.forEach(v => { v.consigliata = true; });
+    ordinate.altre.forEach(v => { v.consigliata = false; });
+    const filtra = elenco => {
+        if (!query) return elenco;
+        const inizio = elenco.filter(v => v.id.startsWith(query));
+        return [...inizio, ...elenco.filter(v => !v.id.startsWith(query) && v.id.includes(query))];
+    };
+    const cons = filtra(ordinate.consigliate), altre = filtra(ordinate.altre);
+    return { voci: [...cons, ...altre], quanteConsigliate: query ? 0 : cons.length, daIntestare: !query && cons.length > 0 && altre.length > 0 };
+}
+
 function tbAggiornaCombo() {
     const input = tbCombo.input;
     if (!input) return;
@@ -8580,14 +8672,19 @@ function tbAggiornaCombo() {
     if (tbCombo.tipo === 'mossa') {
         voci = voci.filter(v => tbCombo.categorie[v.dati.category]); // filtro Physical / Special / Status
     }
-    if (query) {        const inizio = voci.filter(v => v.id.startsWith(query));
-        const dentro = voci.filter(v => !v.id.startsWith(query) && v.id.includes(query));
-        voci = [...inizio, ...dentro];
-    }
-    tbCombo.voci = voci.slice(0, 120);
+    const ordine = tbOrdinaVociCombo(voci, tbCombo.tipo, query);
+    tbCombo.voci = ordine.voci.slice(0, 120);
     if (tbCombo.evidenziata >= tbCombo.voci.length) tbCombo.evidenziata = 0;
 
     const filtro = tbCombo.tipo === 'mossa' ? tbHtmlFiltroCategorie() : '';
+    const nomeLista = tbCombo.tipo === 'mossa' ? 'All moves' : 'All items';
+    const intestazione = (i) => {
+        if (i === 0 && ordine.quanteConsigliate) return '<div class="tb-opt-header tb-opt-header-rec" onmousedown="event.preventDefault()">★ Recommended</div>';
+        if (ordine.daIntestare && i === ordine.quanteConsigliate) return `<div class="tb-opt-header" onmousedown="event.preventDefault()">${nomeLista}</div>`;
+        return '';
+    };
+    const stella = v => (v.consigliata ? '<span class="tb-opt-rec" title="Recommended">★</span>' : '');
+    const hint = i => `onmouseenter="tbHintVoce(this, ${i})" onmouseleave="tbChiudiCoachPresto('hint-voce')"`;
 
     if (!tbCombo.voci.length) {
         let vuoto = 'No item matches.';
@@ -8601,22 +8698,24 @@ function tbAggiornaCombo() {
             const potenza = d.basePower ? `${d.basePower} BP` : '— BP';
             const precisione = d.accuracy === true ? '—' : `${d.accuracy}%`;
             const descrizione = d.shortDesc || d.desc || '';
-            return `
+            return `${intestazione(i)}
                 <div class="tb-opt tb-opt-move ${i === tbCombo.evidenziata ? 'hl' : ''}" style="background: ${tbColoreTipo(d.type)};"
-                     title="${tbEsc(descrizione)}" onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
+                     ${hint(i)} onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
                     <img class="tb-opt-cat" alt="${d.category}" src="immagini/move-${d.category.toLowerCase()}.png"
                          onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/categories/${d.category}.png';">
-                    <span class="tb-opt-name">${tbEsc(d.name)}</span>
+                    <span class="tb-opt-name">${stella(v)}${tbEsc(d.name)}</span>
                     <span class="tb-opt-meta">${d.type} · ${potenza} · ${precisione}</span>
                     <span class="tb-opt-desc">${tbEsc(descrizione)}</span>
                 </div>`;
-        }).join('');    } else {
-        lista.innerHTML = tbCombo.voci.map((v, i) => `
+        }).join('');
+    } else {
+        lista.innerHTML = tbCombo.voci.map((v, i) => `${intestazione(i)}
             <div class="tb-opt tb-opt-item ${i === tbCombo.evidenziata ? 'hl' : ''}"
-                 title="${tbEsc(v.dati?.shortDesc || v.dati?.desc || '')}" onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
+                 ${hint(i)} onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
                 <img class="tb-opt-icon" alt="" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${tbSlugOggetto(v.nome)}.png"
                      onerror="this.style.visibility='hidden'">
-                <span class="tb-opt-name">${tbEsc(v.nome)}</span>
+                <span class="tb-opt-name">${stella(v)}${tbEsc(v.nome)}</span>
+                <span class="tb-opt-desc tb-opt-desc-item">${tbEsc(v.dati?.shortDesc || v.dati?.desc || '')}</span>
             </div>`).join('');
     }
 
@@ -8707,6 +8806,7 @@ function tbBlurCombo(input) {
 }
 
 function tbChiudiCombo() {
+    tbNascondiTooltip('hint-voce'); // la voce sotto il mouse sparisce con l'elenco: il fumetto non resta appeso
     if (tbCombo.input) {
         const lista = tbCombo.input.parentElement?.querySelector('.tb-combo-list');
         if (lista) {
@@ -9114,6 +9214,7 @@ function tbCambiaFiltroTipo(tipo) {
 }
 
     </script>
+<script src="consigli.js"></script>
 <script src="controlli.js"></script>
 </body>
 </html>

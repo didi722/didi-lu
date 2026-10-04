@@ -371,7 +371,7 @@ test('arcade è l\'unico scuro: testo chiaro sulla pagina e fuori dalle card, om
     assert.match(arcade['--nb-sfondo'], /^#0/);
     assert.equal(arcade['--nb-rot'], '0', 'tutto dritto');
     assert.match(arcade['--nb-neon'], /color-mix/);
-    assert.match(css, /\[data-tema="arcade"\] body\.nb :is\(\.stats-ordina-et, \.toc-link:not\(\.active\)\)\s*\{\s*color: var\(--nb-testo\)/);
+    assert.match(css, /\[data-tema="arcade"\] body\.nb :is\(\.stats-ordina-et, \.uso-formati-titolo, \.toc-link:not\(\.active\)\)\s*\{\s*color: var\(--nb-testo\)/);
 });
 
 test('la tinta della pagina col colore del giocatore c\'è solo dove color-mix esiste (altrimenti resta lo sfondo di prima)', () => {

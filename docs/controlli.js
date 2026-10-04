@@ -36,7 +36,9 @@
         return out;
     }
     function voce(select, option, gruppo) {
-        return { indice: option.index, testo: option.textContent.replace(/\s+/g, ' ').trim(), gruppo, disabilitata: !!option.disabled || !!(option.parentNode && option.parentNode.disabled) };
+        // data-desc: la spiegazione della voce (cosa fa un'abilità, uno strumento...), mostrata in un fumetto a fianco dell'elenco
+        const desc = String((option.dataset && option.dataset.desc) || '').trim();
+        return { indice: option.index, testo: option.textContent.replace(/\s+/g, ' ').trim(), gruppo, desc, disabilitata: !!option.disabled || !!(option.parentNode && option.parentNode.disabled) };
     }
 
     /** Scrivendo lettere si va alla prima voce che inizia così (dopo `da`, poi dall'inizio); -1 se non c'è. */
@@ -102,11 +104,35 @@
         const doc = root.document;
         if (typeof root.matchMedia === 'function' && !root.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
 
-        let elenco = null, select = null, voci = [], attiva = -1, scritto = '', timerScritto = null;
+        let elenco = null, select = null, voci = [], attiva = -1, scritto = '', timerScritto = null, fumetto = null;
 
         const idoneo = s => s && s.tagName === 'SELECT' && !s.multiple && !(s.size > 1) && !s.disabled && !s.hasAttribute('data-nativo');
 
+        // il fumetto con la spiegazione della voce evidenziata, a destra dell'elenco (o a sinistra se non c'è posto)
+        function mostraFumetto(riga, v) {
+            nascondiFumetto();
+            if (!elenco || !v || !v.desc) return;
+            fumetto = doc.createElement('div');
+            fumetto.className = 'ts-fumetto';
+            const titolo = doc.createElement('strong');
+            titolo.textContent = v.testo;
+            const testo = doc.createElement('p');
+            testo.textContent = v.desc;
+            fumetto.appendChild(titolo);
+            fumetto.appendChild(testo);
+            doc.body.appendChild(fumetto);
+            const re = elenco.getBoundingClientRect(), rr = riga.getBoundingClientRect();
+            const larg = root.innerWidth || doc.documentElement.clientWidth, alto = root.innerHeight || doc.documentElement.clientHeight;
+            const w = fumetto.offsetWidth, h = fumetto.offsetHeight;
+            const aDestra = re.right + 10, aSinistra = re.left - 10 - w;
+            const left = aDestra + w <= larg - 8 ? aDestra : (aSinistra >= 8 ? aSinistra : Math.max(8, larg - w - 8));
+            fumetto.style.left = Math.round(left) + 'px';
+            fumetto.style.top = Math.round(Math.max(8, Math.min(rr.top + rr.height / 2 - h / 2, alto - h - 8))) + 'px';
+        }
+        function nascondiFumetto() { if (fumetto) { fumetto.remove(); fumetto = null; } }
+
         function chiudi(riportaFuoco) {
+            nascondiFumetto();
             if (!elenco) return;
             elenco.remove();
             if (select) { select.classList.remove('ts-aperto'); select.removeAttribute('aria-expanded'); if (riportaFuoco) select.focus({ preventScroll: true }); }
@@ -125,6 +151,7 @@
             elenco.querySelectorAll('.ts-voce').forEach(v => v.classList.toggle('ts-attiva', Number(v.dataset.i) === i));
             const v = elenco.querySelector('.ts-voce.ts-attiva');
             if (v && scorri) v.scrollIntoView({ block: 'nearest' });
+            if (v) mostraFumetto(v, voci[i]); else nascondiFumetto();
         }
 
         function scegli(i) {

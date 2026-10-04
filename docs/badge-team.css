@@ -1,0 +1,138 @@
+/* =====================================================================
+   BADGE DEI TEAM (badge-team.js): scaffale con tutti i badge, medagliette e tasto nella testata del team
+   ---------------------------------------------------------------------
+   Come i fiocchi dei Pokémon (dettagli.css) ma indipendente dalle schede: segue le variabili --nb-* del tema attivo,
+   con i valori classici come ripiego. Bronzo, argento e oro sono i colori dei livelli; le misure non cambiano con il tema.
+   ===================================================================== */
+.bt, .bt-mini, .bt-pop { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
+
+/* ---------- Lo scaffale ---------- */
+.bt-titolo { margin: 0 0 12px; font: 900 .86rem 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: inherit; }
+.bt-conto { opacity: .8; }
+.bt-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 18px 12px; padding-top: 4px; }
+
+.bt {
+    --livello: #999;
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    box-sizing: border-box;
+    padding: 12px 6px 9px;
+    background: var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-top: 7px solid var(--livello);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    text-align: center;
+    cursor: help;
+    outline: none;
+}
+.bt-bronze { --livello: var(--bt-bronzo); }
+.bt-silver { --livello: var(--bt-argento); }
+.bt-gold { --livello: var(--bt-oro); }
+.bt-bloccato { background: color-mix(in srgb, var(--nb-tip-bg, #fffdf6) 70%, #888); box-shadow: none; }
+.bt:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 3px; }
+
+.bt-medaglia { position: relative; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; }
+.bt-img { max-width: 60px; max-height: 60px; object-fit: contain; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .55)); }
+.bt-bloccato .bt-img { filter: grayscale(1) brightness(.5) contrast(.9); opacity: .55; }
+.bt-livello {
+    position: absolute; right: -10px; bottom: -4px;
+    min-width: 22px; box-sizing: border-box; padding: 0 5px;
+    background: var(--livello); color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .4);
+    font: 900 .68rem/1.5 'Josefin Sans', sans-serif;
+    transform: rotate(calc(var(--nb-rot, 1) * 4deg));
+}
+/* medaglia disegnata (quando la PNG non c'è ancora): uno scudetto del colore del livello con l'icona */
+.bt-finto {
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box; width: 54px; height: 58px;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .75), transparent 55%), var(--livello, #999);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: 6px 6px 50% 50% / 6px 6px 40% 40%;
+    box-shadow: 3px 3px 0 var(--nb-ink, #000), inset 0 0 0 3px rgba(255, 255, 255, .45);
+    font-size: 1.55rem; line-height: 1;
+}
+.bt-bloccato .bt-finto { filter: grayscale(1); opacity: .5; }
+.bt-nome { margin-top: 6px; font: 900 .74rem/1.15 'Josefin Sans', sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+.bt-barra { width: 100%; height: 9px; box-sizing: border-box; background: var(--nb-carta, #fff); border: 2px solid var(--nb-ink, #000); border-radius: calc(var(--nb-raggio, 0px) * .4); overflow: hidden; }
+.bt-barra > span { display: block; height: 100%; background: var(--livello); }
+.bt-bloccato .bt-barra > span { background: #8c8c8c; }
+.bt-valore { font: 800 .68rem/1.25 'Josefin Sans', sans-serif; }
+.bt-valore i { font-style: normal; opacity: .55; }
+.bt-nota { margin: 10px 0 0; font: 700 .72rem/1.35 'Josefin Sans', sans-serif; opacity: .75; }
+
+/* il fumetto (stile coach) */
+.bt-tip {
+    position: absolute; left: 50%; bottom: calc(100% + 10px); z-index: 60;
+    box-sizing: border-box; width: 208px; padding: 9px 12px;
+    background: var(--nb-tip-bg, #fffdf6); color: var(--nb-tip-fg, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-align: left;
+    visibility: hidden; opacity: 0; pointer-events: none; transform: translateX(-50%);
+    transition: opacity .12s ease; cursor: default;
+}
+.bt-tip strong { display: block; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px dashed var(--nb-ink, #000); font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
+.bt-tip p { margin: 0; font-size: .74rem; font-weight: 600; line-height: 1.35; }
+.bt-tip .bt-tip-nota { margin-top: 5px; font-size: .68rem; font-weight: 800; opacity: .75; }
+.bt:hover .bt-tip, .bt:focus .bt-tip, .bt:focus-within .bt-tip { visibility: visible; opacity: 1; }
+.bt-lista .bt:nth-child(3n+1) .bt-tip { left: 0; transform: none; }
+.bt-lista .bt:nth-child(3n) .bt-tip { left: auto; right: 0; transform: none; }
+
+/* ---------- Le medagliette ---------- */
+.bt-mini {
+    --livello: #999;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-sizing: border-box; width: 32px; height: 32px;
+    background: var(--livello);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--nb-ink, #000);
+    cursor: help;
+}
+.bt-mini.bt-bronze { --livello: var(--bt-bronzo); }
+.bt-mini.bt-silver { --livello: var(--bt-argento); }
+.bt-mini.bt-gold { --livello: var(--bt-oro); }
+.bt-mini-img { width: 22px; height: 22px; object-fit: contain; }
+.bt-mini .bt-finto { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: none; font-size: .9rem; }
+.bt-mini.bt-altri { width: auto; min-width: 32px; padding: 0 7px; border-radius: 16px; background: var(--nb-carta, #fff); font: 900 .7rem/1 'Josefin Sans', sans-serif; color: var(--nb-ink, #000); }
+
+/* ---------- Nella testata del team (Box e pagina pubblica) ---------- */
+.bt-barra-team { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+.bt-barra-team:empty { display: none; }
+.bt-barra-mini { display: inline-flex; align-items: center; gap: 5px; }
+.bt-apri {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px 4px;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .72rem/1.2 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    cursor: pointer;
+}
+.bt-apri:hover, .bt-apri[aria-expanded="true"] { background: var(--nb-giallo, #ffbd44); }
+.bt-apri:active { transform: translate(2px, 2px); box-shadow: none; }
+.bt-pop {
+    position: absolute; top: calc(100% + 10px); left: 0; z-index: 70;
+    box-sizing: border-box; width: min(560px, calc(100vw - 40px)); padding: 16px 16px 14px;
+    background: var(--nb-tip-bg, #fffdf6); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    text-align: left;
+}
+.bt-pop[hidden] { display: none; }
+.bt-pop .bt-lista { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+
+/* ---------- Sulla card del team nel Box ---------- */
+.bt-card { display: inline-flex; align-items: center; gap: 4px; }
+.bt-card:empty { display: none; }
+.bt-card .bt-mini { width: 26px; height: 26px; border-width: 2px; box-shadow: 1px 1px 0 var(--nb-ink, #000); }
+.bt-card .bt-mini-img { width: 17px; height: 17px; }
+.bt-card .bt-mini .bt-finto { font-size: .72rem; }
+.bt-card .bt-mini.bt-altri { min-width: 26px; padding: 0 5px; font-size: .62rem; }
+
+@media (max-width: 560px) {
+    .bt-lista { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px 10px; }
+    .bt-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; max-height: calc(100vh - 100px); overflow-y: auto; }
+}

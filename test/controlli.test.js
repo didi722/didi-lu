@@ -67,3 +67,11 @@ test('il suono sta nella barra del titolo come "chip" e il tasto tondo fisso non
     assert.match(css, /content:\s*"SOUND OFF"/);
     assert.doesNotMatch(css, /body\.pg-box \.music-btn/);
 });
+
+test('vociDi: la spiegazione di una voce (data-desc) viaggia con la voce e viene mostrata nel fumetto', () => {
+    const select = { children: [opt(0, 'Rough Skin', { dataset: { desc: 'Chi la tocca perde 1/8 dei PS.' } }), opt(1, 'Sand Veil')] };
+    const v = C.vociDi(select);
+    assert.equal(v[0].desc, 'Chi la tocca perde 1/8 dei PS.');
+    assert.equal(v[1].desc, '');
+    assert.match(doc('controlli.css'), /\.ts-fumetto \{/);
+});

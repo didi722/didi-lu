@@ -21,7 +21,7 @@
     const numero = (n, f = fmt) => (n == null ? ND : f(n));
 
     const PASSO = 36;                       // card mostrate per volta
-    const COLORE_BASE = { players: '#31c489', teams: '#ffbd44', pokemon: '#6fa8ff' };
+    const COLORE_BASE = { players: '#31c489', teams: '#ffbd44', pokemon: '#6fa8ff', usage: '#ff93c8' };
 
     const STATO = {
         tab: 'players',
@@ -31,7 +31,8 @@
         ordine: {},          // tab -> { id, dir }
         limite: PASSO,
         dati: null,          // { seasons, players }
-        r: null,             // ultimo risultato di Statistiche.calcola
+        r: null,             // ultimo risultato di Statistiche.calcola (con r.usage: la lista di UsoGlobale)
+        uso: null,           // ultimo risultato di UsoGlobale.calcola
         ultimoUid: undefined,
         aperta: null         // scheda di dettaglio aperta { tipo, chiave }
     };
@@ -160,6 +161,13 @@
 
     const avatar = (p, classe) => `<img class="${classe}" src="${esc(p.avatar || 'immagini/magikarp.png')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'">`;
 
+    // le medagliette dei badge del team (badge-team.js) sulla sua card
+    const miniBadgeTeam = t => {
+        if (!window.BadgeTeam) return '';
+        const m = BadgeTeam.htmlMini(BadgeTeam.calcola(t), 4);
+        return m ? `<div class="carta-badge-team">${m}</div>` : '';
+    };
+
     const chipPlayer = nome => `<span class="chip-player">${esc(nome)}</span>`;
     const tagFormato = f => `<span class="tag-formato">${esc(f || '—')}</span>`;
     const chipStagione = () => `<span class="chip chip-nero">${esc(nomeStagione())}</span>`;
@@ -233,6 +241,22 @@
                 html: m => trofei(m.stagioniVinte) },
             { id: 'nome', titolo: 'Name', val: m => m.specie.toLowerCase(), dir: 1, testo: true },
             { id: 'player', titolo: 'Trainer', val: m => m.playerNome.toLowerCase(), dir: 1, testo: true }
+        ],
+        // uso globale delle specie: dai team iscritti alle stagioni (uso-globale.js)
+        usage: () => [
+            { id: 'uso', titolo: 'Usage', val: x => x.perc, dir: -1, tip: 'Share of the registered teams that include it',
+                html: x => numero(x.perc, pct), sotto: x => barra(x.perc) },
+            { id: 'team', titolo: 'Teams', val: x => x.team, dir: -1, tip: 'Registered teams that include it (the same team in two seasons counts twice)',
+                html: x => numero(x.team) },
+            { id: 'giocatori', titolo: 'Trainers', val: x => x.giocatori, dir: -1, tip: 'Different trainers who use it',
+                html: x => numero(x.giocatori) },
+            { id: 'portato', titolo: 'Brought', val: x => (x.battaglia ? x.battaglia.portato : null), dir: -1, tip: 'Sets it was brought to (only sets played on the site)',
+                html: x => (x.battaglia ? fmt(x.battaglia.portato) : ND) },
+            { id: 'vinti', titolo: 'Win %', val: x => (x.battaglia ? x.battaglia.percVinti : null), dir: -1, tip: 'Sets won when it was brought',
+                html: x => (x.battaglia ? numero(x.battaglia.percVinti, pct) : ND), sotto: x => (x.battaglia ? barra(x.battaglia.percVinti) : '') },
+            { id: 'ko', titolo: 'KOs per set', val: x => (x.battaglia ? x.battaglia.koPerSet : null), dir: -1, tip: "Opponents it KO'd per set when brought",
+                html: x => (x.battaglia ? fmt(x.battaglia.koPerSet, 1) : ND) },
+            { id: 'nome', titolo: 'Name', val: x => x.nome.toLowerCase(), dir: 1, testo: true }
         ]
     };
 
@@ -240,16 +264,18 @@
     const TESSERE = {
         players: ['elo', 'punti', 'stagioni', 'showdown', 'match', 'set', 'perc', 'serie', 'ko'],
         teams: ['match', 'perc', 'showdown', 'set', 'stagioni', 'ko'],
-        pokemon: ['ko', 'quota', 'portato', 'svenuto', 'ultimo', 'match']
+        pokemon: ['ko', 'quota', 'portato', 'svenuto', 'ultimo', 'match'],
+        usage: ['uso', 'team', 'giocatori', 'portato', 'vinti', 'ko']
     };
 
-    const CHIAVE = { players: 'id', teams: 'chiave', pokemon: 'chiave' };
-    const TITOLO_TAB = { players: 'Players', teams: 'Teams', pokemon: 'Pokémon' };
+    const CHIAVE = { players: 'id', teams: 'chiave', pokemon: 'chiave', usage: 'specieId' };
+    const TITOLO_TAB = { players: 'Players', teams: 'Teams', pokemon: 'Pokémon', usage: 'Usage' };
 
     // Ordine di partenza: Elo (globali) o punti (stagione) per i giocatori; KO per i Pokémon...
     function ordinePredefinito(tab) {
         if (tab === 'players') return { id: STATO.stagione === 'all' ? 'elo' : 'punti', dir: -1 };
         if (tab === 'teams') return { id: 'match', dir: -1 };
+        if (tab === 'usage') return { id: 'uso', dir: -1 };
         return { id: 'ko', dir: -1 };
     }
     const ordineAttuale = tab => STATO.ordine[tab] || ordinePredefinito(tab);
@@ -263,7 +289,8 @@
         const filtrate = !q ? lista : lista.filter(x => {
             const testo = tab === 'players' ? [x.nome]
                 : tab === 'teams' ? [x.nome, x.playerNome, ...x.specie]
-                    : [x.specie, x.team, x.playerNome];
+                    : tab === 'usage' ? [x.nome]
+                        : [x.specie, x.team, x.playerNome];
             return testo.some(t => String(t).toLowerCase().includes(q));
         });
         const confronta = (a, b) => {
@@ -302,6 +329,14 @@
                     <h3 class="carta-nome">${esc(x.nome)}</h3>
                     <div class="carta-chip">${chipPlayer(x.playerNome)}${tagFormato(x.formato)}</div>
                     <div class="carta-roster">${x.specie.slice(0, 6).map(s => sprite(s, 'carta-mini')).join('')}</div>
+                    ${miniBadgeTeam(x)}
+                </div>`;
+        }
+        if (tab === 'usage') {
+            return `<span class="carta-sprite-box">${sprite(x.nome, 'carta-sprite')}</span>
+                <div class="carta-id">
+                    <h3 class="carta-nome">${esc(x.nome)}</h3>
+                    <div class="carta-chip">${x.formati.slice(0, 2).map(f => tagFormato(`${f.formato} ${pct(f.perc)}`)).join('')}</div>
                 </div>`;
         }
         return `<span class="carta-sprite-box">${sprite(x.specie, 'carta-sprite')}</span>
@@ -314,7 +349,7 @@
 
     function carta(tab, x, i, grande, tessere) {
         const chiave = x[CHIAVE[tab]];
-        const nome = tab === 'pokemon' ? x.specie : x.nome;
+        const nome = tab === 'pokemon' ? x.specie : x.nome;   // (nelle schede Usage il nome è la specie)
         return `<article class="carta carta-${tab}" role="button" tabindex="0" data-chiave="${esc(chiave)}"
                 style="${stileColore(x.colore, COLORE_BASE[tab])};--tilt:${inclinazione(chiave)}deg"
                 aria-label="#${i + 1} ${esc(nome)}: open details">
@@ -335,7 +370,24 @@
         }).join('');
     }
 
+    // "Most used by format": con tutti i formati insieme, i primi cinque di ognuno (cliccando si apre la scheda del Pokémon)
+    function disegnaUsoFormati() {
+        const el = $('stats-uso-formati');
+        if (!el) return;
+        const f = STATO.uso && STATO.uso.perFormato ? Object.entries(STATO.uso.perFormato) : [];
+        if (STATO.tab !== 'usage' || STATO.formato !== 'all' || !f.length) { el.hidden = true; el.innerHTML = ''; return; }
+        el.hidden = false;
+        el.innerHTML = '<h2 class="uso-formati-titolo">Most used by format</h2><div class="uso-formati-lista">' + f
+            .sort((a, b) => b[1].team - a[1].team || a[0].localeCompare(b[0]))
+            .map(([nome, x]) => `<section class="uso-formato">
+                <h3>${esc(nome)}<small>${fmt(x.team)} team${x.team === 1 ? '' : 's'}</small></h3>
+                <ol>${x.specie.slice(0, 5).map(c => `<li><button type="button" class="uso-voce" data-apri="usage" data-chiave="${esc(c.specieId)}" data-formato="${esc(nome)}">
+                    ${sprite(c.nome, 'uso-mini')}<span class="uso-nome">${esc(c.nome)}</span><span class="uso-perc">${pct(c.perc)}</span>${barra(c.perc)}</button></li>`).join('')}</ol>
+            </section>`).join('') + '</div>';
+    }
+
     function disegnaGriglia() {
+        disegnaUsoFormati();
         const tab = STATO.tab;
         const stats = STAT[tab]();
         const ord = ordineAttuale(tab);
@@ -370,6 +422,7 @@
     function messaggioVuoto() {
         const q = STATO.cerca.trim();
         if (q) return `<p class="vuoto">Nothing matches “${esc(q)}”.<small>Try a trainer, team or Pokémon name.</small></p>`;
+        if (STATO.tab === 'usage') return '<p class="vuoto">No registered teams here yet.<small>Usage comes from the teams trainers register to the seasons.</small></p>';
         const beta = STATO.r.stagioni.find(s => s.beta && s.partite > 0);
         if (STATO.stagione === 'all' && beta) {
             return `<p class="vuoto">No matches in the global stats yet.<small>The Beta season is not counted here: pick <b>${esc(beta.nome)}</b> from the Season list to see its numbers.</small></p>`;
@@ -384,6 +437,16 @@
     };
 
     function disegnaRiepilogo() {
+        if (STATO.tab === 'usage' && STATO.uso) {
+            const u = STATO.uso.totali;
+            $('stats-riepilogo').innerHTML = [
+                `<span class="chip chip-nero">${esc(nomeStagione())}${STATO.formato !== 'all' ? ` · ${esc(STATO.formato)}` : ''}</span>`,
+                `<span class="chip">${fmt(u.team)} registered team${u.team === 1 ? '' : 's'}</span>`,
+                `<span class="chip">${fmt(u.giocatori)} trainer${u.giocatori === 1 ? '' : 's'}</span>`,
+                `<span class="chip">${fmt(u.specie)} different Pokémon</span>`
+            ].join('');
+            return;
+        }
         const t = STATO.r.totali;
         const chip = [
             `<span class="chip chip-nero">${esc(nomeStagione())}${STATO.formato !== 'all' ? ` · ${esc(STATO.formato)}` : ''}</span>`,
@@ -442,11 +505,19 @@
     }
 
     function disegna() {
-        const calcola = () => Statistiche.calcola(STATO.dati, { stagione: STATO.stagione, formato: STATO.formato });
+        const filtro = () => ({ stagione: STATO.stagione, formato: STATO.formato });
+        const calcola = () => Statistiche.calcola(STATO.dati, filtro());
+        const usoDi = r => UsoGlobale.calcola(STATO.dati, filtro(), r.pokemon);
         let r = calcola();
         // Un filtro che non esiste (indirizzo vecchio, formato sparito) torna a "tutto"
         if (STATO.stagione !== 'all' && !r.stagioni.some(s => s.id === STATO.stagione)) { STATO.stagione = 'all'; r = calcola(); }
-        if (STATO.formato !== 'all' && !r.formati.includes(STATO.formato)) { STATO.formato = 'all'; r = calcola(); }
+        let uso = usoDi(r);
+        // i formati: quelli con partite e quelli con team iscritti (per l'uso)
+        const formati = [...new Set([...r.formati, ...uso.formati])].sort((a, b) => a.localeCompare(b));
+        if (STATO.formato !== 'all' && !formati.includes(STATO.formato)) { STATO.formato = 'all'; r = calcola(); uso = usoDi(r); }
+        r.formati = formati;
+        r.usage = uso.specie;
+        STATO.uso = uso;
         STATO.r = r;
         STATO.limite = PASSO;
         riempiSelettori();
@@ -570,6 +641,7 @@
                 tessera('Seasons', `${fmt(t.stagioniVinte)} <small>won of ${fmt(t.stagioniGiocate)}</small>`),
                 tessera('Last used', t.ultimoUso ? esc(t.ultimoUso) : '—')
             ]))}
+            ${window.BadgeTeam ? sezione('Badges', BadgeTeam.htmlScaffale(BadgeTeam.calcola(t), { titolo: '' })) : ''}
             ${sezione('KOs', tessereKo(t.ko))}
             ${ordine.length ? sezione('Roster', `<div class="scheda-lista">${ordine.map(m => `
                 <button type="button" class="voce" data-apri="pokemon" data-chiave="${esc(m.chiave)}">
@@ -606,6 +678,41 @@
             ${t ? sezione('Its team', `<div class="scheda-lista">${voceTeam(t)}</div>`) : ''}`;
     }
 
+    // Un elenco di voci con la barra della percentuale (mosse, strumenti, abilità, nature...)
+    const righeUso = (voci, vuoto) => (voci.length
+        ? `<ul class="uso-lista">${voci.map(v => `<li class="uso-riga"><span class="uso-nome">${esc(v.nome)}</span>${barra(v.perc)}<b class="uso-perc">${pct(v.perc)}</b></li>`).join('')}</ul>`
+        : `<p class="vuoto piccolo">${esc(vuoto)}</p>`);
+
+    function schedaUso(x) {
+        const u = STATO.uso && STATO.uso.totali;
+        const chip = chipStagione() + (STATO.formato !== 'all' ? tagFormato(STATO.formato) : '')
+            + `<span class="chip">${fmt(x.team)} team${x.team === 1 ? '' : 's'}</span>`;
+        const b = x.battaglia;
+        return `${testaScheda(x.nome, sprite(x.nome, 'scheda-grande'), chip)}
+            ${sezione('Usage', griglia([
+                tessera('Usage', pct(x.perc), `of ${fmt(u ? u.team : 0)} registered teams`),
+                tessera('Teams', fmt(x.team), x.team === 1 ? 'registered team' : 'registered teams'),
+                tessera('Trainers', fmt(x.giocatori), x.giocatori === 1 ? 'trainer uses it' : 'different trainers'),
+                tessera('Sets', fmt(x.istanze), 'with its moves, item and ability')
+            ]))}
+            ${sezione('In battle', b ? griglia([
+                tessera('Brought', fmt(b.portato), `to ${fmt(b.portato)} of ${fmt(b.setConDati)} sets of its teams`),
+                tessera('Win %', pct(b.percVinti), `${fmt(b.vinti)} won · ${fmt(b.persi)} lost`),
+                tessera('KOs per set', fmt(b.koPerSet, 1), `${fmt(b.koFatti)} KOs in all`)
+            ]) : '<p class="vuoto piccolo">No battle data yet: only sets played on the site have it.</p>')}
+            ${sezione('Moves', righeUso(x.mosse, 'No moves recorded.'))}
+            ${sezione('Items', righeUso(x.strumenti, 'No items recorded.'))}
+            ${sezione('Abilities', righeUso(x.abilita, 'No abilities recorded.'))}
+            ${sezione('Natures', righeUso(x.nature, 'No natures recorded.'))}
+            ${x.tera.length ? sezione('Tera types', righeUso(x.tera, '')) : ''}
+            ${x.compagni.length ? sezione('Teammates', `<div class="scheda-lista">${x.compagni.map(c => `
+                <button type="button" class="voce" data-apri="usage" data-chiave="${esc(c.specieId)}">
+                    <span class="voce-nome">${sprite(c.nome, 'voce-sprite')}<b>${esc(c.nome)}</b></span>
+                    <span class="voce-dati"><span>together in <b>${fmt(c.n)}</b> team${c.n === 1 ? '' : 's'}</span><span>${pct(c.perc)} ${barra(c.perc)}</span></span>
+                </button>`).join('')}</div>`) : ''}
+            ${x.formati.length ? sezione('By format', `<ul class="uso-lista">${x.formati.map(f => `<li class="uso-riga"><span class="uso-nome">${esc(f.formato)}</span>${barra(f.perc)}<b class="uso-perc">${pct(f.perc)}</b><small class="uso-n">${fmt(f.team)} team${f.team === 1 ? '' : 's'}</small></li>`).join('')}</ul>`) : ''}`;
+    }
+
     let ultimoFocus = null;
     function apriScheda(tipo, chiave) {
         const lista = STATO.r[tipo];
@@ -617,7 +724,8 @@
         const colore = coloreSicuro(oggetto.colore) || COLORE_BASE[tipo];
         card.style.setProperty('--c', colore);
         card.style.setProperty('--t', testoSu(colore));
-        $('stats-modal-corpo').innerHTML = tipo === 'players' ? schedaPlayer(oggetto) : tipo === 'teams' ? schedaTeam(oggetto) : schedaPokemon(oggetto);
+        $('stats-modal-corpo').innerHTML = tipo === 'players' ? schedaPlayer(oggetto) : tipo === 'teams' ? schedaTeam(oggetto)
+            : tipo === 'usage' ? schedaUso(oggetto) : schedaPokemon(oggetto);
         if (modale.hidden) ultimoFocus = document.activeElement;
         modale.hidden = false;
         document.body.classList.add('modale-aperta');
@@ -644,6 +752,7 @@
             STATO.tab = b.dataset.tab;
             STATO.limite = PASSO;
             disegnaTag();
+            disegnaRiepilogo();
             disegnaGriglia();
             aggiornaUrl();
         }));
@@ -679,6 +788,13 @@
                 e.preventDefault();
                 apriScheda(STATO.tab, e.target.dataset.chiave);
             }
+        });
+
+        // "Most used by format": un clic sul Pokémon apre la sua scheda
+        const usoFormati = $('stats-uso-formati');
+        if (usoFormati) usoFormati.addEventListener('click', e => {
+            const v = e.target.closest('[data-apri]');
+            if (v) apriScheda(v.dataset.apri, v.dataset.chiave);
         });
 
         $('stats-altri').addEventListener('click', e => {
@@ -738,7 +854,7 @@
 
     function leggiUrl() {
         const p = new URLSearchParams(location.search);
-        if (['players', 'teams', 'pokemon'].includes(p.get('tab'))) STATO.tab = p.get('tab');
+        if (['players', 'teams', 'pokemon', 'usage'].includes(p.get('tab'))) STATO.tab = p.get('tab');
         if (p.get('season')) STATO.stagione = p.get('season');
         if (p.get('format')) STATO.formato = p.get('format');
     }

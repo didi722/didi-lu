@@ -175,6 +175,27 @@
             .sort((a, b) => a.n - b.n);
     }
 
+    // Le serie di un giocatore o di un team, dai suoi match in ordine di data [{ vinto, setP }]:
+    // vittorieMax/vittorieAttuale = match vinti di fila; cleanSweep = match vinti senza perdere set; pulitaMax = quelli di fila
+    function serieDi(elenco) {
+        const serie = { vittorieMax: 0, vittorieAttuale: 0, cleanSweep: 0, pulitaMax: 0, pulitaAttuale: 0 };
+        let corrente = 0, pulita = 0;
+        for (const m of elenco) {
+            if (m.vinto) {
+                corrente++;
+                serie.vittorieMax = Math.max(serie.vittorieMax, corrente);
+                if (m.setP === 0) {
+                    serie.cleanSweep++;
+                    pulita++;
+                    serie.pulitaMax = Math.max(serie.pulitaMax, pulita);
+                } else pulita = 0;
+            } else { corrente = 0; pulita = 0; }
+        }
+        serie.vittorieAttuale = corrente;
+        serie.pulitaAttuale = pulita;
+        return serie;
+    }
+
     // -----------------------------------------------------
     // 4. Il calcolo
     // -----------------------------------------------------
@@ -239,7 +260,9 @@
                     chiave, player: id, nome, formato: roster?.formato || formato,
                     roster: (roster?.specie || []).map(s => ({ nome: s })),
                     ...nuovoRisultati(),
-                    stagioni: new Set(), stagioniVinte: new Set(), sdVisti: new Set(), ultimoUso: ''
+                    stagioni: new Set(), stagioniVinte: new Set(), sdVisti: new Set(), ultimoUso: '',
+                    elenco: [],   // i suoi match in ordine di data: servono alle serie
+                    sdAttuale: 0, sdMax: 0   // showdown vinti di fila (solo quelli decisi)
                 };
             }
             if (formato && !squadre[chiave].formato) squadre[chiave].formato = formato;
@@ -303,6 +326,7 @@
                 if (nomeTeam) {
                     team = squadra(io, nomeTeam, p.categoria);
                     aggiungiMatch(team, vinto, setV, setP, punti);
+                    team.elenco.push({ vinto, setP });
                     team.stagioni.add(p.stagione);
                     if (vincitoreStagione[p.stagione] === io) team.stagioniVinte.add(p.stagione);
                     if (!team.ultimoUso || p.data > team.ultimoUso) team.ultimoUso = p.data;
@@ -365,7 +389,10 @@
             for (const nome of s.teams) {
                 const t = squadra(s.io, nome, '');
                 t.showdown.giocati++;
-                if (s.deciso) { if (s.vinto) t.showdown.vinti++; else t.showdown.persi++; }
+                if (s.deciso) {
+                    if (s.vinto) { t.showdown.vinti++; t.sdAttuale++; if (t.sdAttuale > t.sdMax) t.sdMax = t.sdAttuale; }
+                    else { t.showdown.persi++; t.sdAttuale = 0; }
+                }
             }
         }
         // Il bonus dello showdown vinto va anche ai punti del team che lo ha giocato?
@@ -394,16 +421,7 @@
             const elo = stagioneScelta === 'all'
                 ? (dbElo != null ? num(dbElo) : ELO_INIZIALE + g.delta)
                 : (eloStagione != null ? eloStagione : ELO_INIZIALE);
-            const serie = { vittorieMax: 0, vittorieAttuale: 0, cleanSweep: 0 };
-            let corrente = 0;
-            for (const m of g.elenco) {
-                if (m.vinto) {
-                    corrente++;
-                    serie.vittorieMax = Math.max(serie.vittorieMax, corrente);
-                    if (m.setP === 0) serie.cleanSweep++;
-                } else corrente = 0;
-            }
-            serie.vittorieAttuale = corrente;
+            const serie = serieDi(g.elenco);
             return {
                 id: g.id,
                 nome: info(g.id).name || g.id,
@@ -428,6 +446,7 @@
         });
 
         const elencoTeams = Object.values(squadre).map(t => ({
+            serie: { ...serieDi(t.elenco), showdownMax: t.sdMax, showdownAttuale: t.sdAttuale },
             chiave: t.chiave, player: t.player,
             playerNome: info(t.player).name || t.player,
             colore: info(t.player).color || '',
