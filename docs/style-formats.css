@@ -1395,7 +1395,7 @@ body {
 @media (max-width: 1120px) {
     .main-wrapper,
     .home-seasons-container { width: 100%; max-width: 100%; }
-    .formats-neubrutalist-grid { width: calc(100% - 250px) !important; margin-left: 235px !important; }
+    .formats-neubrutalist-grid { width: calc(100% - var(--nb-ads, 220px) - 30px) !important; margin-left: calc(var(--nb-ads, 220px) + 15px) !important; }
 }
 
 /* =====================================================================

@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <script src="dettagli.js" defer></script>
+<link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -1451,90 +1452,92 @@ async function apriModaleShowdown(sdId, sdData) {
     if (!modalOverlay) {
         modalOverlay = document.createElement('div');
         modalOverlay.id = 'sd-modal-overlay';
-        
-        // MODIFICA CENTRALE: Chiude SE NON stai cliccando esplicitamente dentro una delle card dei match
+
+        // si chiude toccando fuori dalla finestra, non dentro (le partite e i team hanno i loro pulsanti)
         modalOverlay.onclick = (e) => {
-            if (!e.target.closest('.match-card')) {
-                chiudiModaleShowdown();
-            }
+            if (!e.target.closest('.sd-finestra')) chiudiModaleShowdown();
         };
-        
+
         document.body.appendChild(modalOverlay);
     }
 
-    modalOverlay.innerHTML = `
-        <div class="sd-modal-container">
-            <div class="sd-modal-header" style="background: none; text-align: center;">
-                <div class="sd-modal-title" style="display: inline-block; padding: 15px 30px;">
-                    <h2 style="margin: 0; font-size: 2rem; font-family: 'Josefin Sans', sans-serif; color: white;">
-                        <span style="color: white">${info.player1}</span>
-                        <span style="color: white; font-size: 1.2rem;">vs</span>
-                        <span style="color: white">${info.player2}</span>
-                    </h2>
-                    <p style="margin: 5px 0 0 0; color: white; font-family: 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: 1px;">
-                        ${info.categoria} | ${formattaDataItaliana(info.data)}
-                    </p>
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // testo da mettere tra apici in un onclick="...": prima si protegge per il JavaScript, poi per l'HTML
+    const jsq = t => esc(String(t == null ? '' : t).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    const categoriaEscaped = jsq(info.categoria);
+
+    // le partite giocate (quelle senza punteggio non contano nella serie)
+    const elencoMatch = Object.keys(matches).filter(k => matches[k]);
+    const vittorie = { p1: 0, p2: 0 };
+    elencoMatch.forEach(k => {
+        const a = Number(matches[k].p1score), b = Number(matches[k].p2score);
+        if (a > b) vittorie.p1++; else if (b > a) vittorie.p2++;
+    });
+
+    const cartoline = elencoMatch.map((mKey, i) => {
+        const m = matches[mKey];
+        const team1Escaped = jsq(m.team1);
+        const team2Escaped = jsq(m.team2);
+        const a = Number(m.p1score), b = Number(m.p2score);
+        const vince1 = a > b, vince2 = b > a;
+        const blocco = (lato, giocatore, team, escaped, colore, vince, perde) => `
+                <button type="button" class="sd-team sd-team-${lato}${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}"
+                        style="--c: ${colore};"
+                        onclick="apriDettaglioTeam('${jsq(giocatore)}', '${escaped}', '${categoriaEscaped}')">
+                    ${vince ? '<span class="sd-win">WIN</span>' : ''}
+                    <span class="sd-team-nome">${esc(team)}</span>
+                    <span class="sd-lineup">${generaHtmlGifs(team, info.categoria)}</span>
+                </button>`;
+        return `
+            <article class="sd-match" style="--i: ${i};">
+                <span class="sd-numero">MATCH ${esc(String(mKey).replace('match', ''))}</span>
+                ${blocco(1, info.player1, m.team1, team1Escaped, p1.base, vince1, vince2)}
+                <div class="sd-punteggio">
+                    <b${vince1 ? ' class="sd-vince"' : ''}>${esc(m.p1score)}</b><i>:</i><b${vince2 ? ' class="sd-vince"' : ''}>${esc(m.p2score)}</b>
                 </div>
-            </div>
-            <div class="sd-modal-body" style="padding-top: 15px;">
-                ${Object.keys(matches).map(mKey => {
-                    const m = matches[mKey];
-                    if(!m) return '';
+                ${blocco(2, info.player2, m.team2, team2Escaped, p2.base, vince2, vince1)}
+                <button type="button" class="sd-replay"
+                        onclick="apriMatch('${jsq(sdId)}', '${jsq(mKey)}', '${team1Escaped}', '${team2Escaped}', '${jsq(m.p1score)}', '${jsq(m.p2score)}')">REPLAY</button>
+            </article>`;
+    }).join('');
 
-                    const team1Escaped = m.team1.replace(/'/g, "\\'");
-                    const team2Escaped = m.team2.replace(/'/g, "\\'");
-                    const categoriaEscaped = info.categoria.replace(/'/g, "\\'");
-
-                    return `
-                        <div class="match-card" onclick="event.stopPropagation();" style="border-top: 2px solid #000; border-bottom: 5px solid #000;">
-                            <div class="match-meta">
-                                <span class="match-category">MATCH ${mKey.replace('match','')}</span>
-                            </div>
-                            
-                            <div class="team-badge clickable-team"
-                                 onclick="apriDettaglioTeam('${info.player1}', '${team1Escaped}', '${categoriaEscaped}')"
-                                 style="cursor: pointer; background: ${p1.base}; border: 3px solid #000; box-shadow: 8px 8px 0px #000; transition: all 0.2s ease; --hover-color: ${p1.border};">
-                                 
-                                 <span class="badge-label">${m.team1}</span>
-                                 
-                                 <div class="pokemon-lineup">${generaHtmlGifs(m.team1, info.categoria)}</div>
-                            </div>
-
-                            <div class="score-container">
-                                <span class="score-digit" style="color: #eeeeee">${m.p1score}</span>
-                                <span class="score-divider">:</span>
-                                <span class="score-digit" style="color: #eeeeee">${m.p2score}</span>
-                            </div>
-
-                            <div class="team-badge clickable-team"
-                                 onclick="apriDettaglioTeam('${info.player2}', '${team2Escaped}', '${categoriaEscaped}')"
-                                 style="cursor: pointer; background: ${p2.base}; border: 3px solid #000; box-shadow: 8px 8px 0px #000; transition: all 0.2s ease; --hover-color: ${p2.border};">
-                                 
-                                 <span class="badge-label">${m.team2}</span>
-                                 
-                                 <div class="pokemon-lineup">${generaHtmlGifs(m.team2, info.categoria)}</div>
-                            </div>
-
-                            <div class="match-actions">
-                                <button class="btn-replay-icon"
-                                    onclick="apriMatch('${sdId}', '${mKey}', '${team1Escaped}', '${team2Escaped}', '${m.p1score}', '${m.p2score}')">
-                                    REPLAY
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
+    modalOverlay.innerHTML = `
+        <div class="sd-finestra" role="dialog" aria-modal="true" aria-label="${esc(info.player1)} vs ${esc(info.player2)}">
+            <button type="button" class="sd-chiudi" aria-label="Close" onclick="chiudiModaleShowdown()">×</button>
+            <header class="sd-testa">
+                <h2 class="sd-titolo">
+                    <span class="sd-nome" style="--c: ${p1.base};">${esc(info.player1)}</span>
+                    <span class="sd-vs">VS</span>
+                    <span class="sd-nome" style="--c: ${p2.base};">${esc(info.player2)}</span>
+                </h2>
+                <div class="sd-etichette">
+                    ${info.categoria ? `<span class="sd-chip sd-formato">${esc(info.categoria)}</span>` : ''}
+                    ${info.data ? `<span class="sd-chip sd-data">${esc(formattaDataItaliana(info.data))}</span>` : ''}
+                </div>
+                ${vittorie.p1 + vittorie.p2 ? `
+                <div class="sd-serie" title="Matches won">
+                    <b${vittorie.p1 > vittorie.p2 ? ' class="sd-avanti"' : ''}>${vittorie.p1}</b><i>:</i><b${vittorie.p2 > vittorie.p1 ? ' class="sd-avanti"' : ''}>${vittorie.p2}</b>
+                </div>` : ''}
+            </header>
+            <div class="sd-corpo">${cartoline || '<p class="sd-vuoto">No matches yet</p>'}</div>
         </div>
     `;
 
     modalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', chiudiShowdownConEsc);
+}
+function chiudiShowdownConEsc(e) {
+    if (e.key !== 'Escape') return;
+    // se sopra c'è un'altra finestra (team, replay) è lei a chiudersi per prima
+    const sopra = [...document.querySelectorAll('#teamModal, #pkmDetailModal, #replay-modal, .replay-modal')].some(f => getComputedStyle(f).display !== 'none');
+    if (!sopra) chiudiModaleShowdown();
 }
 function chiudiModaleShowdown() {
     const modal = document.getElementById('sd-modal-overlay');
     if (modal) modal.classList.remove('active');
     document.body.style.overflow = 'auto';
+    document.removeEventListener('keydown', chiudiShowdownConEsc);
 }
 
 // Funzione globale per il toggle

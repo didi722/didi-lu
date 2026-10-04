@@ -26,94 +26,8 @@ body {
 }
 
 
-/* CARD MATCH */
-.match-card {
-    background: white;
-    display: grid;
-    grid-template-columns: 160px 1fr 140px 1fr 110px; 
-    align-items: center; /* Centra tutto sulla linea mediana orizzontale */
-    padding: 15px 25px;
-    gap: 10px;
-    border: 4px solid black;
-    box-shadow: 7px 7px 0px black;
-    padding: 15px;
-    align-items: center;
-    font-weight: bold;
-    transform: rotate(-0.5deg);
-    margin-bottom: 15px;
-}
-
-.match-card:nth-child(3n+1) {
-        transform: translateX(-18px) rotate(-1deg);
-    }
-
     /* 2ª Card (e ogni 3 successive): Decisamente a DESTRA, rotazione oraria */
-    .match-card:nth-child(3n+2) {
-        transform: translateX(18px) rotate(1deg);
-    }
-
     /* 3ª Card (e ogni 3 successive): Quasi CENTRATA, rotazione minima */
-    .match-card:nth-child(3n+3) {
-        transform: translateX(3px) rotate(-0.3deg);
-    }
-
-.match-meta {
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centra il contenuto verticalmente */
-    align-items: flex-start; /* Allinea a sinistra */
-    position: relative;      /* Serve per gestire la data sotto */
-    padding-right: 20px;
-    height: 60px;            /* Altezza fissa simile al badge per stabilità */
-    margin-bottom: 0;
-}
-
-/* --- BADGE CATEGORIA --- */
-.match-category {
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 1rem;
-    font-weight: 1000;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    background: transparent;
-    color: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    width: 100px;
-    min-height: 42px; 
-    padding: 5px;
-    white-space: normal;
-    line-height: 1.1;
-    transform: rotate(-25deg);
-}
-
-/* --- DATA ALLINEATA A SINISTRA SOTTO IL BADGE --- */
-.match-date {
-    font-size: 0.65rem;
-    color: #eeeeee;
-    font-weight: 500;
-    text-transform: uppercase;
-    position: absolute;
-    bottom: -25px; /* Lo sposta sotto il badge senza spingerlo su */
-    left: 2px;
-}
-
-.team-badge {
-    display: flex;
-    align-items: center;      
-    justify-content: center;   
-    padding: 12px 15px;
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 1rem;
-    font-weight: 500 !important;
-    text-align: center;
-    min-height: 50px; 
-    white-space: normal; 
-    line-height: 1.2;
-}
-
 .badge-label {
     background-color: white;
     color: black;
@@ -127,65 +41,6 @@ body {
     font-weight: 700 !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-
-/* NOMI TEAM */
-.team-name {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-}
-
-/* SCOREBOARD CENTRALE */
-.score-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 7px;
-    background: #000;
-    padding: 8px;
-    border: 1px solid #333;
-    margin: 0 20px;
-    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
-}
-.score-digit {
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #fff;
-}
-
-.score-divider {
-    color: #444;
-    font-size: 1.5rem;
-    font-weight: 300;
-}
-/* BOTTONE REPLAY */
-.btn-replay-icon {
-    background: var(--yellow);
-    color: #1a1a1a;
-    border: 2.5px solid black;
-    box-shadow: 5px 5px 0px black;
-    padding: 10px 15px;
-    font-family: 'Josefin Sans';
-    font-size: 0.8rem;
-    font-weight: 1000;
-    cursor: pointer;
-    transition: 0.2s;
-    margin-left: 20px;
-    transform: rotate(-8deg);
-}
-
-.btn-replay-icon:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px black;
-}
-
-.btn-replay-icon:active {
-    transform: translate(2px, 2px) !important;
-    box-shadow: 0px 0px 0px #000000 !important;
 }
 
 
@@ -367,21 +222,6 @@ body {
 }
 
 
-.team-badge {
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.team-badge:hover {
-    transform: translate(-4px, -4px);
-    box-shadow: 10px 10px 0px black !important;
-}
-
-.team-badge:active {
-    transform: translate(4px, 4px);
-    box-shadow: 0px 0px 0px #000000 !important;
-}
-
 .btn-set:hover {
     transform: translate(-2px, -2px) rotate(2deg) !important;
     box-shadow: 7px 7px 0px black !important;
@@ -451,23 +291,6 @@ button.btn-set.is-selected:hover {
 
 
 /* Modifica dei badge esistenti */
-.team-badge {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 160px;
-    padding: 10px !important;
-    height: auto !important; /* Permette al badge di allungarsi */
-    gap: 8px;
-    transform: rotate(1deg);
-}
-
-.team-title {
-    font-size: 0.9rem;
-    letter-spacing: 1.5px;
-}
-
 /* Contenitore delle GIF */
 .mini-pkm-list {
     display: flex;
@@ -1430,83 +1253,6 @@ button.btn-set.is-selected:hover {
     border-top: none;
 }
 
-#sd-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100vh;
-    backdrop-filter: blur(8px);
-    z-index: 8000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-        padding: 0;
-
-}
-
-#sd-modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.sd-modal-container {
-    width: 95%;
-    max-width: 1050px;
-    background: none;
-    max-height: 100%;
-    overflow: hidden;
-    transform: translateY(20px);
-    transition: transform 0.3s ease;
-    padding: 0;
-}
-
-#sd-modal-overlay.active .sd-modal-container {
-    transform: translateY(0);
-}
-
-/* Forza lo stile dell'intestazione del modale */
-/* Assicurati di avere questo nell'HTML <head> se non l'hai già:
-<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&display=swap" rel="stylesheet"> 
-*/
-
-.sd-modal-header {
-    background:black;
-    padding: 20px 10px 5px 10px !important; /* Molto compatto */
-    display: flex;
-    justify-content: left;
-    color: white !important;
-    transform: rotate(-2deg);
-}
-
-.sd-modal-title {
-    text-align: left;
-    font-family: 'Josefin Sans', sans-serif;
-    margin-top: -10px;
-    background: black !important;
-    padding-top: 20px !important;
-    padding-bottom: 15px !important;
-    border: 2px solid black !important;
-    box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.3) !important;
-    color: white !important;
-    margin-bottom: 15px;
-}
-
-.sd-modal-title h2 {
-    color: #ffffff; /* Bianco puro */
-    font-size: 2.2rem; /* Leggermente più grande per il Josefin */
-    margin: 0;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.sd-modal-title p {
-    color: #aaaaaa;
-    font-size: 1rem;
-    margin: 5px 0 0 0;
-    text-transform: uppercase;
-}
-
 #admin-showdown-dashboard .dashboard-header {
     display: flex;
     flex-direction: column;
@@ -1514,26 +1260,6 @@ button.btn-set.is-selected:hover {
     gap: 5px; /* Spazio minimo tra badge e titolo */
     padding: 10px 0 !important;
 }
-
-/* 5. Se la "X" di chiusura è troppo grande o sposta il testo */
-.sd-modal-close {
-    font-size: 30px !important; /* Ridotto da 40px */
-    padding: 0 5px;
-}
-
-.sd-modal-close {
-    background: none; border: none; color: #fff;
-    font-size: 40px; cursor: pointer; line-height: 1;
-}
-
-.sd-modal-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-
 
 .news-ticker {
     width: 100%;
@@ -5261,30 +4987,4 @@ transform: translate(-4px, -4px);
     .stack-points-badge { font-size: 1rem !important; padding: 3px 2px !important; min-width: 0 !important; box-shadow: 2px 2px 0 #000 !important; }
     .player-stack-card { padding: 10px 8px; }
 
-    /* dettaglio showdown: le tre partite una sotto l'altra, la finestra scorre */
-    #sd-modal-overlay { align-items: flex-start; height: 100%; }
-    .sd-modal-container { width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .sd-modal-header { padding: 14px 8px 4px !important; transform: none; justify-content: center; }
-    .sd-modal-title { margin-top: 0; max-width: calc(100% - 24px); box-sizing: border-box; padding: 14px 18px !important; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3) !important; }
-    .sd-modal-title h2 { font-size: 1.35rem !important; overflow-wrap: anywhere; }
-    .sd-modal-title p { font-size: 0.85rem !important; }
-    .sd-modal-body { padding: 10px 12px 32px; gap: 20px; }
-    .match-card,
-    .match-card:nth-child(3n+1),
-    .match-card:nth-child(3n+2),
-    .match-card:nth-child(3n+3) {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 14px;
-        padding: 14px 12px;
-        transform: none;
-        margin-bottom: 4px;
-        box-shadow: 5px 5px 0 #000;
-    }
-    .match-meta { height: auto; align-items: center; padding-right: 0; }
-    .match-category { transform: none; width: auto; min-height: 0; }
-    .score-container { margin: 0 auto; width: fit-content; padding: 6px 20px; }
-    .match-card .team-badge { min-width: 0; width: 100%; box-sizing: border-box; transform: none; }
-    .pokemon-lineup { flex-wrap: wrap; justify-content: center; }
-    .match-actions { display: flex; justify-content: center; }
-    .btn-replay-icon { margin: 4px auto 0; transform: rotate(-3deg); }
 }

@@ -5038,15 +5038,6 @@ color:#eeeeee;
     .controls select { box-sizing: border-box; }
     .select-group > select { min-width: 0; }
     .grid { margin: 18px auto; padding: 0 12px 24px; grid-template-columns: minmax(0, 1fr); gap: 26px; }
-    /* matita e cestino sulle card: emoji da 12px, da toccare con il dito servono più grandi (i pulsanti hanno stile in linea) */
-    .card-actions { gap: 6px !important; }
-    .card-actions button { font-size: 20px !important; padding: 8px 10px !important; }
-}
-/* telefoni stretti: categoria, azioni (prova contro la CPU, modifica, cancella) e punteggio non stanno in una riga sola:
-   le azioni passano sotto, al centro */
-@media (max-width: 400px) {
-    .card-header { flex-wrap: wrap; row-gap: 8px; }
-    .card-header .card-actions { order: 3; flex-basis: 100%; justify-content: center; }
 }
 @media (max-width: 900px) {
     /* importatore Showdown (solo admin): con il telefono in orizzontale è più alto dello schermo, quindi scorre */

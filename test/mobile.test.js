@@ -91,8 +91,20 @@ test('formats: sotto i 1120px il contenitore da 1100px fissi si adatta alla fine
     const m = /@media \(max-width: 1120px\)\s*\{([\s\S]*?)\n\}/.exec(f);
     assert.ok(m, 'blocco per le finestre strette mancante');
     assert.match(m[1], /\.main-wrapper,\s*\.home-seasons-container \{ width: 100%; max-width: 100%; \}/);
-    // la griglia lascia libera la colonna delle pubblicità (220px)
-    assert.match(m[1], /\.formats-neubrutalist-grid \{ width: calc\(100% - 250px\) !important; margin-left: 235px !important; \}/);
+    // la griglia lascia libera la colonna delle pubblicità (220px, o 0 quando la colonna non c'è: --nb-ads)
+    assert.match(m[1], /\.formats-neubrutalist-grid \{ width: calc\(100% - var\(--nb-ads, 220px\) - 30px\) !important; margin-left: calc\(var\(--nb-ads, 220px\) \+ 15px\) !important; \}/);
+});
+
+test('la colonna delle pubblicità sparisce anche su telefono in orizzontale, tablet col dito e "sito desktop"; il contenuto non lascia il vuoto', () => {
+    const temiCss = docs('temi.css');
+    const m = /@media \(max-width: 900px\),\s*\(pointer: coarse\) and \(max-width: 1000px\),\s*\(max-height: 520px\) and \(max-width: 1100px\) \{([\s\S]*?)\n\}/.exec(temiCss);
+    assert.ok(m, 'media query della colonna mancante');
+    assert.match(m[1], /body\.nb \{ --nb-ads: 0px; \}/);
+    assert.match(m[1], /body\.nb \.ads-sidebar \{ display: none; \}/);
+    assert.match(m[1], /body\.pg-matches \.hub-container \{ margin-left: 0; \}/);
+    // gli spostamenti del contenuto che non stanno nei fogli delle pagine seguono la stessa variabile
+    assert.match(docs('style-rules.css'), /\.rules-wrapper \{[^}]*margin-left: var\(--nb-ads, 220px\);[^}]*width: calc\(100% - var\(--nb-ads, 220px\)\)/);
+    assert.match(docs('style-stats.css'), /\.stats-pagina \{[^}]*margin: 0 auto 0 calc\(var\(--nb-ads, 220px\) \+ 30px\)/);
 });
 
 // ---------- mobile.js ----------

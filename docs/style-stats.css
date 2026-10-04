@@ -46,7 +46,7 @@ body.modale-aperta { overflow: hidden; }
 .stats-pagina {
     box-sizing: border-box;
     max-width: 1560px;
-    margin: 0 auto 0 250px;               /* a destra del banner (220px) */
+    margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px);               /* a destra del banner (220px) */
     padding: 44px 44px 100px 26px;
     display: flex;
     flex-direction: column;

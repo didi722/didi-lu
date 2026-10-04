@@ -322,6 +322,36 @@ body.nb .user-dropdown .logout-btn:active {
     transform: translate(3px, 3px) !important;
     box-shadow: none !important;
 }
+/* Su PC il menu si adatta all'altezza dello schermo: --mn-h è l'altezza di una voce e --mn-gap lo spazio tra due voci,
+   entrambe calcolate sui vh, così le nove voci (con Admin e Logout) stanno sempre tutte in vista, anche su un portatile
+   con la finestra bassa. Sotto i 470px di altezza il menu, in ultima istanza, scorre. */
+@media (min-width: 901px) {
+    body.nb .user-dropdown {
+        --mn-h: clamp(32px, calc((100vh - 150px) / 9 - 8px), 54px);
+        --mn-gap: clamp(4px, calc((100vh - 150px) / 9 * .16), 14px);
+    }
+    body.nb .user-dropdown .menu-item,
+    body.nb .user-dropdown .logout-btn {
+        height: var(--mn-h);
+        margin-top: var(--mn-gap) !important;
+        padding: 0 calc(var(--mn-h) * .3) 0 5px !important;
+        gap: calc(var(--mn-h) * .22) !important;
+        font-size: clamp(11px, calc(var(--mn-h) * .28), 14px) !important;
+    }
+    body.nb .user-dropdown > :first-child { margin-top: 0 !important; }
+    body.nb .user-dropdown .logout-btn { margin-top: calc(var(--mn-gap) * 1.6) !important; }
+    body.nb .user-dropdown .menu-item > i,
+    body.nb .user-dropdown .logout-btn > i {
+        box-sizing: border-box;
+        flex: 0 0 calc(var(--mn-h) - 12px);
+        width: calc(var(--mn-h) - 12px);
+        height: calc(var(--mn-h) - 12px);
+        font-size: clamp(10px, calc(var(--mn-h) * .32), 16px);
+    }
+}
+@media (min-width: 901px) and (max-height: 470px) {
+    body.nb .user-dropdown { box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; padding: 4px 12px 10px 6px; scrollbar-width: thin; }
+}
 
 /* ---------- Profilo: le sue variabili di ombra e di nero passano dal tema ---------- */
 body.pg-profile {
@@ -341,10 +371,18 @@ body.pg-formats { --nb-sezione: "FORMATS"; }
 body.pg-matches { --nb-sezione: "SEASON"; }
 body.pg-box { --nb-sezione: "BOX"; }
 
-/* ---------- Schermi stretti: via la colonna delle pubblicità ---------- */
-@media (max-width: 900px) {
+/* ---------- Telefono e schermi stretti: via la colonna delle pubblicità ----------
+   Non basta la larghezza: un telefono in orizzontale è largo 930px ma alto 430, e con il "sito desktop" del browser
+   (o su un tablet) la pagina si presenta larga 980px. Quindi la colonna sparisce anche con il dito come puntatore
+   principale fino a 1000px, e sulle finestre basse (≤ 520px) fino a 1100px.
+   La stessa condizione azzera --nb-ads, la larghezza che le pagine usano per spostare il contenuto. */
+@media (max-width: 900px),
+       (pointer: coarse) and (max-width: 1000px),
+       (max-height: 520px) and (max-width: 1100px) {
     body.nb { --nb-ads: 0px; }
     body.nb .ads-sidebar { display: none; }
+    /* Matches lascia il 18% a sinistra per le pubblicità: senza colonna non serve */
+    body.pg-matches .hub-container { margin-left: 0; }
 }
 
 /* =====================================================================

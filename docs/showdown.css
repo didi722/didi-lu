@@ -1,0 +1,386 @@
+/* =====================================================================
+   FINESTRA DEL SHOWDOWN (Matches): le partite di uno scontro tra due allenatori
+   ---------------------------------------------------------------------
+   Stessa famiglia delle altre finestre del sito (finestre.css, dettagli.css): striscia nera con i tre pallini e la X gialla,
+   carta calda con la mezzatinta, bordo e ombra del tema. Dentro, ogni partita è una cartolina con la sua linguetta nera
+   (MATCH 1), i due team sul colore del loro allenatore (il vincitore si alza e porta l'adesivo WIN), il punteggio in nero
+   e il pulsante REPLAY. All'apertura la finestra "salta su" e le cartoline entrano una dopo l'altra (non se il sistema
+   chiede meno movimento).
+   Usa le variabili --nb-* del tema attivo (con i valori classici come ripiego). Va caricato dopo il foglio della pagina.
+   Il markup lo scrive apriModaleShowdown() in matches.html.
+   ===================================================================== */
+
+/* ---------- Il velo e la finestra ---------- */
+#sd-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 10px 18px 14px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, .46) radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px) 0 0 / 14px 14px;
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+    -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility .2s ease;
+}
+#sd-modal-overlay.active { opacity: 1; visibility: visible; }
+
+#sd-modal-overlay .sd-finestra {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: min(1040px, 100%);
+    max-height: calc(100vh - 24px);
+    margin: auto;
+    padding-top: 36px;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+#sd-modal-overlay.active .sd-finestra { animation: sd-salta .34s cubic-bezier(.2, .9, .3, 1.15) both; }
+
+/* la striscia nera con i tre pallini */
+#sd-modal-overlay .sd-finestra::before {
+    content: "SHOWDOWN · SANT'ALVISE PKMN LEAGUE";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 2;
+    height: 36px;
+    box-sizing: border-box;
+    padding: 0 56px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink, #000);
+    color: #fff;
+    font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .2em;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+#sd-modal-overlay .sd-chiudi {
+    position: absolute;
+    top: 5px;
+    right: 12px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid #000;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+    rotate: calc(var(--nb-rot, 1) * 3deg);
+    transition: rotate .1s ease, background-color .1s ease, scale .1s ease;
+}
+#sd-modal-overlay .sd-chiudi:hover,
+#sd-modal-overlay .sd-chiudi:focus-visible { background: var(--nb-rosso, #ff4444); color: #fff; rotate: 0deg; scale: 1.08; outline: none; }
+
+/* ---------- Testata: chi gioca, in che formato, quando, e come sta la serie ---------- */
+#sd-modal-overlay .sd-testa {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 18px 32px 6px;
+}
+#sd-modal-overlay .sd-titolo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 7px 24px 5px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    font: 900 clamp(1.4rem, 2.6vw, 2rem)/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    rotate: calc(var(--nb-rot, 1) * -1.6deg);
+}
+/* il pallino col colore dell'allenatore */
+#sd-modal-overlay .sd-nome::before {
+    content: "";
+    display: inline-block;
+    width: .5em;
+    height: .5em;
+    margin-right: .34em;
+    vertical-align: .06em;
+    background: var(--c, #999);
+    border: 3px solid #fff;
+    border-radius: 50%;
+}
+#sd-modal-overlay .sd-vs {
+    padding: 1px 9px 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid #000;
+    border-radius: var(--nb-raggio, 0px);
+    font-size: .46em;
+    letter-spacing: .12em;
+    rotate: calc(var(--nb-rot, 1) * 5deg);
+}
+#sd-modal-overlay .sd-etichette { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#sd-modal-overlay .sd-chip {
+    box-sizing: border-box;
+    padding: 4px 13px 2px;
+    background: var(--nb-carta, #fff);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 800 .8rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+#sd-modal-overlay .sd-formato { background: var(--nb-giallo, #ffbd44); rotate: calc(var(--nb-rot, 1) * -1.5deg); }
+#sd-modal-overlay .sd-data { rotate: calc(var(--nb-rot, 1) * 1.2deg); }
+
+/* come sta la serie: 2 : 1 */
+#sd-modal-overlay .sd-serie {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px 3px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 1.7rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    rotate: calc(var(--nb-rot, 1) * 1.4deg);
+}
+#sd-modal-overlay .sd-serie i { font-style: normal; font-weight: 400; opacity: .4; }
+#sd-modal-overlay .sd-serie b.sd-avanti,
+#sd-modal-overlay .sd-punteggio b.sd-vince { color: var(--nb-giallo, #ffbd44); }
+
+/* ---------- Le partite ---------- */
+#sd-modal-overlay .sd-corpo {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 38px 28px 32px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+#sd-modal-overlay .sd-vuoto {
+    margin: 0;
+    padding: 30px 10px;
+    text-align: center;
+    font: 800 .95rem/1.4 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .7;
+}
+
+#sd-modal-overlay .sd-match {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 10px 14px;
+    padding: 14px 16px 12px;
+    background: var(--nb-carta, #fff);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    rotate: calc(var(--nb-rot, 1) * -.5deg);
+}
+#sd-modal-overlay .sd-match:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .5deg); }
+#sd-modal-overlay.active .sd-match { animation: sd-entra .42s cubic-bezier(.2, .9, .3, 1.1) both; animation-delay: calc(var(--i, 0) * 85ms + 140ms); }
+
+/* la linguetta nera con il numero della partita */
+#sd-modal-overlay .sd-numero {
+    position: absolute;
+    top: -15px;
+    left: 18px;
+    padding: 3px 14px 1px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font: 800 .78rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    rotate: calc(var(--nb-rot, 1) * -1.8deg);
+}
+
+/* i due team, sul colore dell'allenatore */
+#sd-modal-overlay .sd-team {
+    --c: #999;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 10px 10px 8px;
+    background: radial-gradient(rgba(0, 0, 0, .16) 1.2px, transparent 1.5px) 0 0 / 7px 7px, var(--c);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 4px 4px 0 var(--nb-ink, #000);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    transition: translate .14s ease, rotate .14s ease, box-shadow .14s ease, filter .14s ease;
+}
+#sd-modal-overlay .sd-team:hover,
+#sd-modal-overlay .sd-team:focus-visible { translate: -2px -3px; rotate: calc(var(--nb-rot, 1) * .6deg); box-shadow: 7px 8px 0 var(--nb-ink, #000); outline: none; }
+#sd-modal-overlay .sd-team:active { translate: 2px 2px; rotate: 0deg; box-shadow: 1px 1px 0 var(--nb-ink, #000); }
+#sd-modal-overlay .sd-team:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 4px; }
+/* chi ha perso si spegne un po'; chi ha vinto si alza e porta l'adesivo */
+#sd-modal-overlay .sd-perde { filter: saturate(.6) brightness(.96); }
+#sd-modal-overlay .sd-vincitore { translate: 0 -3px; box-shadow: 6px 7px 0 var(--nb-ink, #000); }
+#sd-modal-overlay .sd-vincitore:hover,
+#sd-modal-overlay .sd-vincitore:focus-visible { translate: -2px -5px; }
+#sd-modal-overlay .sd-win {
+    position: absolute;
+    top: -14px;
+    right: -9px;
+    padding: 1px 10px 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid #000;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 #000;
+    font: 900 .7rem/1.6 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .14em;
+    rotate: calc(var(--nb-rot, 1) * 6deg);
+}
+#sd-modal-overlay .sd-team-nome {
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 3px 11px 1px;
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 3px 3px 0 #000;
+    font: 800 .82rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    rotate: calc(var(--nb-rot, 1) * -1deg);
+}
+#sd-modal-overlay .sd-lineup { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 5px; }
+#sd-modal-overlay .sd-lineup:empty { display: none; }
+#sd-modal-overlay .sd-lineup .mini-gif { width: auto; height: 38px; max-width: 52px; object-fit: contain; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .35)); }
+
+/* il punteggio */
+#sd-modal-overlay .sd-punteggio {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 18px 4px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 4px 4px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3));
+    font: 900 1.9rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+#sd-modal-overlay .sd-punteggio i { font-style: normal; font-weight: 400; opacity: .4; }
+
+/* REPLAY */
+#sd-modal-overlay .sd-replay {
+    align-self: center;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 10px 17px 8px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .86rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .1em;
+    cursor: pointer;
+    rotate: calc(var(--nb-rot, 1) * -3deg);
+    transition: translate .12s ease, rotate .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+#sd-modal-overlay .sd-replay::before { content: "▶"; margin-right: .55em; font-size: .8em; }
+#sd-modal-overlay .sd-replay:hover,
+#sd-modal-overlay .sd-replay:focus-visible { background: var(--nb-verde, #47ea6a); translate: -2px -2px; rotate: 0deg; box-shadow: var(--nb-sh-m, 6px 6px 0 #000); outline: none; }
+#sd-modal-overlay .sd-replay:active { translate: 3px 3px; box-shadow: none; }
+
+/* ---------- Movimento ---------- */
+@keyframes sd-salta {
+    from { opacity: 0; transform: translateY(20px) scale(.95) rotate(calc(var(--nb-rot, 1) * -1.5deg)); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes sd-entra {
+    from { opacity: 0; transform: translateY(18px) scale(.97); }
+    to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #sd-modal-overlay,
+    #sd-modal-overlay .sd-team,
+    #sd-modal-overlay .sd-replay,
+    #sd-modal-overlay .sd-chiudi { transition: none; }
+    #sd-modal-overlay.active .sd-finestra,
+    #sd-modal-overlay.active .sd-match { animation: none; }
+}
+
+/* ---------- Schermi non larghissimi: la serie passa sotto il titolo ---------- */
+@media (max-width: 1100px) {
+    #sd-modal-overlay .sd-serie { margin-left: 0; }
+}
+
+/* ---------- Schermi piccolissimi: l'etichetta della striscia si accorcia (la X non deve coprirla) ---------- */
+@media (max-width: 520px) {
+    #sd-modal-overlay .sd-finestra::before { content: "SHOWDOWN · SANT'ALVISE"; }
+}
+
+/* ---------- Telefono: la finestra scorre intera, le partite una sotto l'altra ---------- */
+@media (max-width: 900px) {
+    #sd-modal-overlay { padding: 10px 8px 18px; }
+    #sd-modal-overlay .sd-finestra { max-height: none; box-shadow: 6px 6px 0 var(--nb-ink, #000); }
+    #sd-modal-overlay .sd-finestra::before { height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em; }
+    #sd-modal-overlay .sd-finestra { padding-top: 32px; }
+    #sd-modal-overlay .sd-chiudi { top: 3px; right: 8px; }
+    #sd-modal-overlay .sd-testa { gap: 12px; padding: 18px 14px 6px; }
+    #sd-modal-overlay .sd-titolo { padding: 7px 16px 5px; font-size: 1.4rem; box-shadow: 5px 5px 0 rgba(0, 0, 0, .3); }
+    #sd-modal-overlay .sd-serie { font-size: 1.4rem; }
+    #sd-modal-overlay .sd-corpo { overflow: visible; gap: 24px; padding: 20px 14px 26px; }
+    #sd-modal-overlay .sd-match { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 22px 12px 14px; rotate: 0deg; box-shadow: 5px 5px 0 var(--nb-ink, #000); }
+    #sd-modal-overlay .sd-match:nth-child(even) { rotate: 0deg; }
+    #sd-modal-overlay .sd-punteggio { justify-self: center; z-index: 1; margin: -4px 0; font-size: 1.9rem; }
+    #sd-modal-overlay .sd-replay { justify-self: stretch; text-align: center; rotate: 0deg; }
+    #sd-modal-overlay .sd-lineup .mini-gif { height: 38px; }
+}

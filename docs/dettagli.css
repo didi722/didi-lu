@@ -811,10 +811,117 @@
 .fiocco-mini.fiocco-altri { width: auto; min-width: 32px; padding: 0 7px; border-radius: 16px; background: var(--dt-carta, #fff); font: 900 .7rem/1 var(--dt-font, 'Josefin Sans', sans-serif); color: var(--dt-ink, #000); }
 
 /* =====================================================================
+   PC: LE SCHEDE STANNO INTERE NELLO SCHERMO (niente scorrimento)
+   ---------------------------------------------------------------------
+   Su uno schermo largo (≥ 901px) la scheda si vede tutta: qui il disegno è più compatto (meno aria, abilità e strumento
+   sulla stessa riga, fiocchi in colonna di fianco). Se una finestra molto bassa non basta, dettagli.js riduce la scheda
+   con lo zoom fino a farla entrare (mai sotto il 62%: più piccola non si leggerebbe, e allora scorre). Il telefono no.
+   ===================================================================== */
+@media (min-width: 901px) {
+    #teamModal,
+    #pkmDetailModal { padding: 14px 18px 20px !important; }
+    /* dettagli.js segna "intera" la finestra quando la scheda ci sta tutta: allora non scorre (i fumetti nascosti non contano) */
+    #teamModal.dt-intera,
+    #pkmDetailModal.dt-intera { overflow: hidden !important; }
+    #teamModal .modal-content,
+    #pkmDetailModal .modal-content { margin: auto !important; padding: 48px 26px 22px !important; }
+
+    /* squadra · titolo e riepilogo: il titolo e i punteggi in alto, i tag del coach e la barra delle vittorie sotto, affiancati */
+    #teamModal .modal-header-container { gap: 10px 22px; margin: 0 0 14px !important; padding: 0 0 12px !important; }
+    #teamModal .modal-header-container h2 { padding: 7px 22px 5px !important; font-size: clamp(1.35rem, 2.3vw, 1.9rem) !important; }
+    #teamModal .score-item { padding-bottom: 5px; }
+    #teamModal .score-item > span { margin-bottom: 4px; }
+    #teamModal .score-item strong { padding: 0 10px; font-size: 1.3rem !important; }
+    #teamModal .box-coach-tags { grid-column: 1; }
+    #teamModal .box-coach-tags + .td-winrate { grid-column: 2; min-width: 330px; }
+
+    /* squadra · le card: le righe del nome, dell'abilità/strumento e di EV/natura si dividono lo spazio */
+    #teamModal .modal-grid { gap: 26px 20px !important; }
+    #teamModal .modal-pkm-card { grid-template-columns: 66px minmax(0, 1fr); gap: 4px 10px !important; padding: 10px 12px 10px 20px !important; }
+    #teamModal .modal-left-column { width: 66px !important; gap: 6px; }
+    #teamModal .modal-sprite { width: 62px !important; height: 62px !important; padding: 4px; }
+    #teamModal .modal-types .type-badge { width: 60px !important; }
+    #teamModal .modal-pkm-info { flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 2px 6px; }
+    #teamModal .modal-pkm-info > .info-container:first-child { flex: 1 1 100%; }
+    #teamModal .modal-pkm-info > .info-container:not(:first-child) { flex: 0 1 auto; min-width: 0; }
+    #teamModal .modal-pkm-info > p { flex: 0 1 auto; }
+    #teamModal .modal-pkm-info > p:last-of-type { margin-bottom: 0 !important; }
+    #teamModal .modal-pkm-info > .modal-moves { flex: 1 1 100%; }
+    #teamModal .modal-moves { gap: 6px !important; margin-top: 4px !important; }
+    #teamModal .modal-moves .move-span { padding: 4px 4px 3px !important; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+}
+
+/* scheda del Pokémon, schermo largo (≥ 1000px): quattro colonne, con i fiocchi in colonna a destra a tutta altezza */
+@media (min-width: 1000px) {
+    #pkmDetailModal .pkm-modal-grid {
+        grid-template-columns: minmax(190px, 250px) minmax(0, 1fr) minmax(200px, 262px) minmax(172px, 214px) !important;
+        grid-template-areas:
+            "weakness header info-strips ribbons"
+            "moves    moves  stats       ribbons" !important;
+        gap: 30px 20px !important;
+        padding-top: 4px !important;
+    }
+    #pkmDetailModal .pkm-panel { padding: 22px 14px 10px !important; }
+    #pkmDetailModal .panel-title { top: -15px !important; font-size: .76rem !important; }
+
+    /* eroe: disco, sprite, nome e tipi più raccolti */
+    #pkmDetailModal .area-header { min-height: 0; gap: 8px; padding-bottom: 2px; }
+    #pkmDetailModal .area-header::before { width: min(168px, 84%); }
+    #pkmDetailModal .pkm-sprite-hero { height: 112px !important; max-width: 160px !important; margin-top: 28px !important; }
+    #pkmDetailModal .pkm-name-banner { margin-top: 20px !important; padding: 4px 20px 3px !important; font-size: 1.3rem !important; }
+    #pkmDetailModal .types-centered .type-badge { width: 78px !important; padding: 2px 6px !important; }
+
+    /* abilità e strumento */
+    #pkmDetailModal .area-info-strips { gap: 28px !important; }
+    #pkmDetailModal .info-box-compact { padding-top: 20px !important; }
+    #pkmDetailModal .info-desc-tiny { margin-top: 5px; font-size: .72rem !important; line-height: 1.32; }
+    #pkmDetailModal .info-desc-tiny p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; }
+    #pkmDetailModal .item-icon-right { width: 28px; height: 28px; }
+
+    /* difese, statistiche e mosse con meno aria */
+    #pkmDetailModal .weakness-container { gap: 7px; }
+    #pkmDetailModal .area-stats .stat-row { margin-bottom: 3px; }
+    #pkmDetailModal .area-stats .stat-bar-bg { height: 12px; }
+    #pkmDetailModal .stat-total { margin-top: 5px; padding-top: 4px; }
+    #pkmDetailModal .evs-footer { margin-top: 6px; padding-top: 5px; }
+    #pkmDetailModal .moves-list-compact { gap: 7px; }
+
+    /* fiocchi: una riga per fiocco (medaglia, nome, barra del progresso e valore), tutti e nove in colonna */
+    #pkmDetailModal .area-ribbons { display: flex; flex-direction: column; }
+    #pkmDetailModal .fiocchi-lista { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 5px; padding-top: 2px; }
+    #pkmDetailModal .fiocco {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+        grid-template-areas: "medaglia nome nome" "medaglia barra valore";
+        align-items: center;
+        column-gap: 9px;
+        row-gap: 3px;
+        min-height: 44px;
+        padding: 2px 8px 2px 6px;
+        border-width: 3px 3px 3px 7px;
+        border-left-color: var(--livello);
+        border-top-color: var(--dt-ink, #000);
+        text-align: left;
+    }
+    #pkmDetailModal .fiocco-medaglia { grid-area: medaglia; width: 36px; height: 36px; }
+    #pkmDetailModal .fiocco-img { max-width: 34px; max-height: 34px; }
+    #pkmDetailModal .fiocco-finto { width: 32px; height: 32px; border-width: 3px; box-shadow: 2px 2px 0 var(--dt-ink, #000), inset 0 0 0 2px rgba(255, 255, 255, .45); font-size: 1.05rem; }
+    #pkmDetailModal .fiocco-livello { right: -7px; bottom: -5px; min-width: 18px; padding: 0 3px; border-width: 2px; font-size: .58rem; line-height: 1.35; }
+    #pkmDetailModal .fiocco-nome { grid-area: nome; margin: 0; font-size: .72rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #pkmDetailModal .fiocco-barra { grid-area: barra; height: 8px; }
+    #pkmDetailModal .fiocco-valore { grid-area: valore; max-width: 76px; font-size: .62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* il fumetto si apre a sinistra della riga (a destra non c'è spazio) */
+    #pkmDetailModal .fiocco .fiocco-tip { left: auto; right: calc(100% + 14px); bottom: auto; top: 50%; width: 224px; transform: translateY(-50%); }
+    #pkmDetailModal .fiocchi-nota { margin-top: 8px; padding-top: 6px; font-size: .66rem; }
+}
+
+/* =====================================================================
    TELEFONO E TABLET
    ===================================================================== */
 @media (max-width: 1100px) {
     #teamModal .modal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 999px) {
     #pkmDetailModal .pkm-modal-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         grid-template-areas:

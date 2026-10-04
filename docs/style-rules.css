@@ -788,8 +788,8 @@ body {
 .rules-wrapper {
     display: flex;                   /* Affianca contenuto e sidebar */
     align-items: flex-start;         /* FONDAMENTALE: permette lo scroll dello sticky */
-    margin-left: 220px;              /* Spazio per la sidebar di sinistra */
-    width: calc(100% - 220px);
+    margin-left: var(--nb-ads, 220px);   /* Spazio per la sidebar di sinistra (0 quando la colonna delle pubblicità non c'è) */
+    width: calc(100% - var(--nb-ads, 220px));
     padding-left: 25px;
     padding-right: 30px;             /* Margine destro standard */
     padding-top: 20px;

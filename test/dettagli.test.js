@@ -233,6 +233,70 @@ test('avvia: con il mouse il title passa nel fumetto coach e torna al suo posto'
     assert.equal(attributi['data-tip-titolo'], undefined);
 });
 
+// ---------- schede intere nello schermo (PC) ----------
+test('zoomPer: 1 se la scheda ci sta già, altrimenti il rapporto, mai sotto il minimo; dati non validi → 1', () => {
+    assert.equal(D.zoomPer(574, 597), 1);
+    assert.equal(D.zoomPer(700, 600), 0.857);
+    assert.equal(D.zoomPer(1243, 597), D.ZOOM_MINIMO, 'una finestra bassissima non rimpicciolisce oltre il minimo leggibile');
+    assert.equal(D.zoomPer(900, 300, 0.5), 0.5);
+    for (const [n, d] of [[0, 600], [600, 0], [NaN, 600], [600, -5], [undefined, undefined]]) assert.equal(D.zoomPer(n, d), 1);
+    assert.ok(D.ZOOM_MINIMO >= 0.7 && D.ZOOM_MINIMO < 1);
+});
+
+// finestra e documento finti: la scheda alta "alto" px a zoom 1, e un rettangolo che si riduce con lo zoom come nel browser
+function schedaFinta({ larghezza = 1279, altezza = 631, display = 'flex', alto = 574 } = {}) {
+    const classi = new Set();
+    const contenuto = { style: { zoom: '' }, getBoundingClientRect() { return { height: alto * Number(this.style.zoom || 1) }; } };
+    const finestra = {
+        classList: { contains: c => classi.has(c), toggle: (c, on) => { if (on) classi.add(c); else classi.delete(c); } },
+        querySelector: sel => (sel === '.modal-content' ? contenuto : null)
+    };
+    const win = { innerWidth: larghezza, innerHeight: altezza, getComputedStyle: () => ({ display, paddingTop: '14px', paddingBottom: '20px' }) };
+    return { win, finestra, contenuto, intera: () => classi.has('dt-intera') };
+}
+
+test('adatta: se la scheda ci sta nessuno zoom e la finestra è "intera" (non scorre)', () => {
+    const x = schedaFinta({ alto: 574 });
+    D.adatta(x.win, x.finestra);
+    assert.equal(x.contenuto.style.zoom, '');
+    assert.equal(x.intera(), true);
+});
+
+test('adatta: se è troppo alta la riduce quanto basta per farla entrare', () => {
+    const x = schedaFinta({ alto: 650 });          // disponibile: 631 - 14 - 20 = 597
+    D.adatta(x.win, x.finestra);
+    assert.equal(x.contenuto.style.zoom, '0.918');
+    assert.equal(x.intera(), true);
+});
+
+test('adatta: oltre il minimo non rimpicciolisce più: la scheda scorre (non è "intera")', () => {
+    const x = schedaFinta({ alto: 1243 });
+    D.adatta(x.win, x.finestra);
+    assert.equal(x.contenuto.style.zoom, String(D.ZOOM_MINIMO));
+    assert.equal(x.intera(), false);
+});
+
+test('adatta: telefono (≤ 900px) o finestra bassissima: niente zoom, la scheda scorre; finestra chiusa: non tocca nulla', () => {
+    for (const cfg of [{ larghezza: 390, altezza: 844 }, { larghezza: 932, altezza: 430 }, { larghezza: 1279, altezza: 500 }]) {
+        const x = schedaFinta({ ...cfg, alto: 1500 });
+        x.contenuto.style.zoom = '0.8';
+        D.adatta(x.win, x.finestra);
+        assert.equal(x.contenuto.style.zoom, '', `${cfg.larghezza}x${cfg.altezza}: lo zoom torna a 1`);
+        assert.equal(x.intera(), false);
+    }
+    const chiusa = schedaFinta({ display: 'none', alto: 1500 });
+    chiusa.contenuto.style.zoom = '0.9';
+    D.adatta(chiusa.win, chiusa.finestra);
+    assert.equal(chiusa.contenuto.style.zoom, '0.9');
+});
+
+test('avvia: due osservatori (contenuto e apertura), perché un secondo observe() sullo stesso nodo cancellerebbe il primo', () => {
+    const src = docs('dettagli.js');
+    assert.match(src, /contenuto\.observe\(f, \{ childList: true, subtree: true \}\)/);
+    assert.match(src, /apertura\.observe\(f, \{ attributes: true, attributeFilter: \['style', 'class'\] \}\)/);
+    assert.ok(!/attributes: true[^}]*subtree|subtree: true[^}]*attributes/.test(src), 'gli attributi vanno osservati solo sul contenitore: lo zoom è sull\'elemento interno e non deve rilanciare l\'osservatore');
+});
+
 // ---------- fogli ----------
 test('dettagli.css: ogni disposizione della scheda Pokémon ha l\'area dei fiocchi (senza, la griglia si rompe)', () => {
     const aree = [...dettagliCss.matchAll(/grid-template-areas:([^;]*?)!important;/g)].map(m => m[1]);
@@ -241,6 +305,20 @@ test('dettagli.css: ogni disposizione della scheda Pokémon ha l\'area dei fiocc
         assert.match(a, /ribbons/, 'manca "ribbons" in ' + a.replace(/\s+/g, ' '));
         for (const nome of ['header', 'weakness', 'info-strips', 'stats', 'moves']) assert.match(a, new RegExp(nome), `manca ${nome}`);
     }
+});
+
+test('dettagli.css: su PC le schede sono compatte e la scheda Pokémon ha i fiocchi in colonna a destra a tutta altezza', () => {
+    const pc = /@media \(min-width: 901px\) \{([\s\S]*?)\n\}\n/.exec(dettagliCss);
+    assert.ok(pc, 'sezione per PC mancante');
+    assert.match(pc[1], /#teamModal\.dt-intera,\s*#pkmDetailModal\.dt-intera \{ overflow: hidden !important; \}/);
+    assert.match(pc[1], /#teamModal \.modal-pkm-info \{ flex-direction: row; flex-wrap: wrap;/, 'abilità e strumento sulla stessa riga');
+    const largo = /@media \(min-width: 1000px\) \{([\s\S]*?)\n\}\n/.exec(dettagliCss);
+    assert.ok(largo, 'sezione per schermi larghi mancante');
+    assert.match(largo[1], /"weakness header info-strips ribbons"\s*"moves\s+moves\s+stats\s+ribbons"/, 'i fiocchi occupano la colonna di destra per tutte e due le righe');
+    assert.match(largo[1], /\.fiocco \{\s*display: grid;/, 'un fiocco è una riga compatta');
+    assert.match(largo[1], /\.fiocco \.fiocco-tip \{ left: auto; right: calc\(100% \+ 14px\)/, 'il fumetto si apre a sinistra: a destra non c\'è spazio');
+    // il telefono resta com'era: una colonna, i fiocchi subito dopo l'eroe
+    assert.match(dettagliCss, /@media \(max-width: 900px\) \{\s*#pkmDetailModal \.pkm-modal-grid \{\s*grid-template-columns: minmax\(0, 1fr\) !important;\s*grid-template-areas:\s*"header"\s*"ribbons"/);
 });
 
 test('dettagli.css: la X è sempre visibile (a PC si chiudeva toccando fuori), il colore del tipo viene dalla variabile --tipo', () => {
@@ -307,6 +385,13 @@ test('temi.js segnaPagina: solo la voce del menu di questa pagina riceve aria-cu
     assert.deepEqual(voci.map(v => v.attributi['aria-current']), ['page', undefined, undefined]);
     assert.equal(temi.segnaPagina({}, '/'), 0);
     assert.equal(temi.segnaPagina(null, '/'), 0);
+});
+
+test('temi.css: su PC il menu si adatta all\'altezza dello schermo (le nove voci stanno sempre tutte), sotto i 470px scorre', () => {
+    const temiCss = docs('temi.css');
+    assert.match(temiCss, /@media \(min-width: 901px\) \{\s*body\.nb \.user-dropdown \{\s*--mn-h: clamp\([^;]*100vh[^;]*\);\s*--mn-gap: clamp\([^;]*100vh[^;]*\);/);
+    assert.match(temiCss, /body\.nb \.user-dropdown > :first-child \{ margin-top: 0 !important; \}/);
+    assert.match(temiCss, /@media \(min-width: 901px\) and \(max-height: 470px\) \{\s*body\.nb \.user-dropdown \{[^}]*max-height: calc\(100vh - 100px\); overflow-y: auto/);
 });
 
 test('temi.css: la voce del menu della pagina corrente è nera e le voci hanno il loro colore', () => {

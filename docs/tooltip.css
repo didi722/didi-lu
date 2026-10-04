@@ -120,7 +120,21 @@
 .team-preview-tooltip { padding: 12px !important; }
 .format-rules-tooltip { padding: 16px !important; }
 .pkm-hover-card { padding: 12px !important; }
-.pkm-hover-card strong { color: inherit; }
+/* il nome del Pokémon: titoletto con la riga tratteggiata, come negli altri fumetti (prima restava un adesivo nero con il testo nero) */
+.pkm-hover-card strong {
+    display: block;
+    margin: 0 0 5px;
+    padding: 0 0 4px !important;
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 2px dashed var(--nb-ink, #000) !important;
+    color: inherit !important;
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    transform: none !important;
+}
 .premio-tip { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif) !important; }
 .tb-bubble { font-weight: 700; }
 

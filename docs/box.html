@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
+<link rel="stylesheet" href="box-team.css">
 <script src="dettagli.js" defer></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
@@ -931,7 +932,11 @@ async function renderizza(lista) {
 
     if (!Array.isArray(lista)) return;
 
-    grid.innerHTML = lista.map(team => {
+    // le card entrano una dopo l'altra solo la prima volta: cercando o filtrando non devono ripartire
+    grid.classList.toggle('intro', !grid.dataset.disegnata);
+    grid.dataset.disegnata = '1';
+
+    grid.innerHTML = lista.map((team, posizione) => {
         const pokemonList = team.pokemon || [];
 
         // Verifica se il team è bloccato da una stagione playing/closed
@@ -940,32 +945,29 @@ async function renderizza(lista) {
 
         // Prova contro la CPU: sempre disponibile (non modifica il team). Modifica e cancella solo se il team NON è bloccato
         const htmlProvaCpu = `
-                <button onclick="event.stopPropagation(); provaControCpu('${team.id}')"
-                        onmouseenter="this.style.backgroundColor='#86efac'; this.style.transform='scale(1.1)';"
-                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;"
+                <button type="button" class="card-azione azione-cpu" onclick="event.stopPropagation(); provaControCpu('${team.id}')"
                         title="Practice this team against the CPU">🎮</button>`;
         const htmlAzioni = `
-            <div class="card-actions" style="display: flex; gap: 2px;">
+            <div class="card-actions">
                 ${htmlProvaCpu}
                 ${!isBloccato ? `
-                <button onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')" 
-                        onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
-                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                <button type="button" class="card-azione azione-modifica" onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')"
                         title="Edit team">✏️</button>
-
-                <button onclick="event.stopPropagation(); cancellaTeamDaFirebase('${team.id}')" 
-                        onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
-                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
+                <button type="button" class="card-azione azione-elimina" onclick="event.stopPropagation(); cancellaTeamDaFirebase('${team.id}')"
                         title="Delete team">🗑️</button>` : ''}
             </div>
         `;
 
+        // la barra della percentuale di vittorie (solo se il team ha giocato)
+        const vittorieTeam = Number(team.vittorie) || 0, sconfitteTeam = Number(team.sconfitte) || 0;
+        const partiteTeam = vittorieTeam + sconfitteTeam;
+        const percentualeTeam = partiteTeam ? Math.round((vittorieTeam / partiteTeam) * 100) : null;
+        const htmlBarra = percentualeTeam == null ? '' :
+            `<div class="card-winrate" title="${percentualeTeam}% of matches won"><span style="width:${percentualeTeam}%"></span><b>${percentualeTeam}% wins</b></div>`;
+
         return `
-        <div class="card" onclick="apriDettagli('${team.id}')">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="card" style="--i: ${posizione};" onclick="apriDettagli('${team.id}')">
+            <div class="card-header">
                 <span class="category">${team.category || team.categoria || 'VGC'}</span>
 
                 ${htmlAzioni}
@@ -973,6 +975,7 @@ async function renderizza(lista) {
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
+            ${htmlBarra}
             <div class="pkm-grid">
                 ${pokemonList.map((p, index) => {
                     const nomePkm = p.nome || '';
@@ -994,7 +997,7 @@ async function renderizza(lista) {
                     }, 50);
 
                     return `
-                        <div class="pkm-box" id="${pkmBoxId}" 
+                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]};"` : ''}
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
                                 <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">
@@ -1467,10 +1470,15 @@ async function applicaColoreBordo(pokemonNome, elemento) {
         // 4. Parsing sicuro del JSON
         const data = await res.json();
 
-        // --- INSERISCI QUI LA TUA LOGICA DI APPLICAZIONE COLORE ---
-        // Esempio:
-        // const primoTipo = data.types[0].type.name;
-        // elemento.style.borderColor = ottieniColoreTipo(primoTipo);
+        // Il primo tipo dà il colore al disco dello sprite (variabile --tipo, vedi box-team.css)
+        const primoTipo = data.types && data.types[0] && data.types[0].type && data.types[0].type.name;
+        const colore = primoTipo && typeof Dettagli !== 'undefined' && Dettagli.coloreTipo ? Dettagli.coloreTipo(primoTipo) : null;
+        const tessera = typeof elemento === 'string' ? document.getElementById(elemento) : elemento;
+        if (colore) {
+            // si ricorda: al prossimo disegno (ricerca, filtri) la tessera nasce già colorata, senza lampeggiare
+            (window.coloriPokemonNoti = window.coloriPokemonNoti || {})[pokemonNome] = colore;
+            if (tessera) tessera.style.setProperty('--tipo', colore);
+        }
 
     } catch (err) {
         // Gestione silenziosa dell'errore per non bloccare mai la pagina

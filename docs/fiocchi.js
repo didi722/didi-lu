@@ -179,7 +179,8 @@
     function htmlFiocco(f) {
         const stato = f.livello ? `fiocco-${f.classeLivello}` : 'fiocco-bloccato';
         const fino = f.prossima == null ? f.soglie[f.soglie.length - 1] : f.prossima;
-        const valore = f.nota ? esc(f.nota) : `${esc(f.valore)} <i>/ ${esc(fino)}</i>`;
+        // al livello massimo il traguardo è già passato: "7 MAX" invece di "7 / 6"
+        const valore = f.nota ? esc(f.nota) : f.prossima == null ? `${esc(f.valore)} <i>MAX</i>` : `${esc(f.valore)} <i>/ ${esc(fino)}</i>`;
         const titolo = f.livello ? `${esc(f.nome)} · ${esc(f.livelloNome)}` : `${esc(f.nome)} · locked`;
         const prossima = f.prossima == null ? 'Top level reached.' : `Next level: ${esc(f.prossima)} ${esc(f.unita)}.`;
         return `<div class="fiocco ${stato}" tabindex="0" data-fiocco="${esc(f.id)}">` +

@@ -241,9 +241,13 @@ test('box.html: il pulsante per provare un team contro la CPU è sulla card (anc
     assert.match(box, /class="tb-prova-cpu"/, 'nel dettaglio');
     assert.match(box, /\$\{tbHtmlTagDettaglio\(team\.id\)\}/);
     // le azioni di modifica e cancellazione restano solo per i team non bloccati
-    assert.match(box, /\$\{!isBloccato \? `\s*<button onclick="event\.stopPropagation\(\); caricaTeamPerModifica/);
-    // sui telefoni stretti l'intestazione della card va a capo: tre azioni, categoria e punteggio non stanno in una riga
-    assert.match(leggi('style-box.css'), /@media \(max-width: 400px\) \{\s*\.card-header \{ flex-wrap: wrap;[\s\S]*?\.card-actions \{ order: 3; flex-basis: 100%;/);
+    assert.match(box, /\$\{!isBloccato \? `\s*<button type="button" class="card-azione azione-modifica" onclick="event\.stopPropagation\(\); caricaTeamPerModifica/);
+    // la striscia della card (box-team.css) tiene in una riga sola categoria, le tre azioni e il bilancio, anche sui telefoni stretti:
+    // niente più riga a capo (le regole di prima sono tolte da style-box.css) e sotto i 360px i pallini lasciano il posto alla categoria
+    assert.ok(!/\.card-actions \{ order: 3/.test(leggi('style-box.css')), 'la regola vecchia (azioni a capo) non c\'è più');
+    const striscia = leggi('box-team.css');
+    assert.match(striscia, /\.azione-cpu:hover/);
+    assert.match(striscia, /@media \(max-width: 360px\) \{[^}]*\.card-header \{ padding-left: 10px;/);
     const css = leggi('dettagli.css');
     assert.match(css, /#teamModal \.tb-prova-cpu \{/);
     assert.match(css, /#teamModal \.tb-prova-cpu:focus-visible/);
