@@ -13,11 +13,13 @@ import './cpu-conoscenza.js';    // self.CpuConoscenza
 import './cpu-calcolo.js';       // self.CpuCalcolo
 import './cpu-ia.js';            // self.CpuIa
 import './formato-pool.js';      // self.FormatoPool
+import './consigli.js';          // self.Consigli
 import './team-cpu.js';          // self.TeamCpu
 
 // Cambia quando cambia il modo di comporre i team: i team ricordati nei browser si rifanno
-// (2: ogni team ha una strategia vera, verificata sui set: chi la imposta e chi ne approfitta)
-export const VERSIONE_TEAM_CPU = 2;
+// (2: ogni team ha una strategia vera, verificata sui set: chi la imposta e chi ne approfitta;
+//  3: mosse, strumenti e abilità preferiti tra quelli che di solito si giocano su ogni Pokémon)
+export const VERSIONE_TEAM_CPU = 3;
 const memoria = new Map();
 
 function hash(testo) {

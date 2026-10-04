@@ -11,7 +11,9 @@
 //      velocità, Fake Out, deviatori, trappole, recupero), accoppiate meteo, velocità. Ogni team ha un
 //      "piano" diverso (Tailwind, Camerone, pioggia, sole, sabbia, neve, equilibrato, offensivo...).
 //   4. Ai Pokémon scelti si dà un set: abilità, strumento (mai due uguali), natura, EV e quattro mosse.
-//      Ogni mossa è controllata dal validatore del simulatore.
+//      Ogni mossa è controllata dal validatore del simulatore. Le scelte di ruolo (chi mette Tailwind, chi ha Fake Out...) vengono
+//      prima; per il resto si preferiscono mosse, strumento e abilità che di solito si giocano su quel Pokémon (i consigli di
+//      consigli.js, gli stessi che il Team Builder mette in cima alle liste), sempre dentro ciò che la CPU sa usare.
 //
 // Tutto è deterministico: stesso formato e stesso seme, stessi team. Mai due team troppo simili,
 // e nessun Pokémon in più di un terzo dei team.
@@ -21,9 +23,9 @@
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.TeamCpu) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./formato-pool.js'));
-    else radice.TeamCpu = fabbrica(radice.CpuConoscenza, radice.FormatoPool);
-})(typeof self !== 'undefined' ? self : this, function (K, Pool) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./cpu-conoscenza.js'), require('./formato-pool.js'), require('./consigli.js'));
+    else radice.TeamCpu = fabbrica(radice.CpuConoscenza, radice.FormatoPool, radice.Consigli);
+})(typeof self !== 'undefined' ? self : this, function (K, Pool, Consigli) {
     'use strict';
 
     const id = K.id;
@@ -221,6 +223,12 @@
         return v;
     }
 
+    // Ciò che di solito si gioca su un Pokémon (mosse, strumenti, abilità; id, dalla più consigliata) dai dati di consigli.js
+    function consigliDi(dati, cand, ctx) {
+        if (!dati || !Consigli) return { mosse: [], oggetti: [], abilita: [] };
+        return Consigli.per(dati, cand.id, { doppio: ctx.doppio, baseId: id(cand.base.baseSpecies || cand.base.name) });
+    }
+
     async function analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, pokedexBase) {
         const specie = dex.species.get(voce.id);
         if (!specie.exists || specie.isNonstandard === 'CAP') return null;
@@ -399,6 +407,10 @@
         const aggiungi = m => { if (m && !scelte.some(x => x.id === m.id) && scelte.length < 4) scelte.push(m); };
         const get = k => cand.mosseDa.get(k) || null;
         const o = cand.opz;
+        // le mosse consigliate che la CPU può davvero usare (legali, ammesse dal formato, che sa giocare), dalla più consigliata
+        const consigliate = ((cand.cons && cand.cons.mosse) || []).map(k => cand.mosseDa.get(k)).filter(Boolean);
+        const posCons = new Map(consigliate.map((m, k) => [m.id, k]));
+        const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0);
 
         if (ctx.doppio) {
             aggiungi(o.protezione);
@@ -430,7 +442,11 @@
         // STAB: il migliore per ogni tipo (il valore tiene già conto della categoria)
         for (const t of cand.tipiBase) {
             if (presi >= daFare || scelte.length >= 4) break;
-            const a = usabili.find(x => x.m.tipo === t && !scelte.some(s => s.id === x.m.id));
+            const dellTipo = usabili.filter(x => x.m.tipo === t && !scelte.some(s => s.id === x.m.id));
+            // tra gli attacchi di quel tipo vince quello consigliato, se non è molto più debole del migliore
+            const consigliato = dellTipo.filter(x => posCons.has(x.m.id) && dellTipo[0] && x.v >= dellTipo[0].v * 0.6)
+                .sort((x, y) => posCons.get(x.m.id) - posCons.get(y.m.id))[0];
+            const a = consigliato || dellTipo[0];
             if (a && a.v >= 55) { aggiungi(a.m); copre(a.m); presi++; }
         }
         // copertura: si cercano tipi nuovi; due mosse dello stesso tipo valgono molto meno
@@ -442,14 +458,18 @@
                 if (a.m.categoria !== preferita && cand.offesa > 0 && (a.m.categoria === 'Physical' ? cand.basi.atk : cand.basi.spa) < cand.offesa * 0.8) continue;
                 let nuovi = 0;
                 for (const t of K.TIPI) if (!coperti.has(t) && K.moltiplicatoreTipo(ruolo.dex, a.m.tipo, [t]) > 1) nuovi++;
-                let v = a.v * (1 + nuovi * 0.18);
+                let v = a.v * (1 + nuovi * 0.18) * (1 + bonusCons(a.m));
                 if (tipiScelti.has(a.m.tipo)) v *= 0.4;
                 if (v > mv) { mv = v; migliore = a; }
             }
             if (!migliore) break;
             aggiungi(migliore.m); copre(migliore.m); presi++;
         }
-        // se mancano mosse: qualunque attacco, poi qualunque mossa utile
+        // se mancano mosse: prima le consigliate che attaccano (o potenziano chi attacca), poi qualunque attacco, poi qualunque mossa utile
+        for (const m of consigliate) {
+            if (scelte.length >= 4) break;
+            if (m.categoria !== 'Status' && !m.perno) aggiungi(m);
+        }
         for (const a of cand.attacchi) { if (scelte.length >= 4) break; aggiungi(a.m); }
         for (const a of cand.perni) { if (scelte.length >= 4) break; aggiungi(a.m); }
         for (const m of cand.mosse) { if (scelte.length >= 4) break; if (m.categoria === 'Status') aggiungi(m); }
@@ -540,9 +560,15 @@
             const k = id(nome);
             const ab = ruolo.dex.abilities.get(nome);
             let v = ab.rating != null ? ab.rating : 0;
-            if (SETTER[piano.nome] && SETTER[piano.nome].some(x => k.includes(x))) v += 3;
-            if (SFRUTTATORI[piano.nome] && SFRUTTATORI[piano.nome].includes(k)) v += 2;
+            if (SETTER[piano.nome] && SETTER[piano.nome].some(x => k.includes(x))) v += 9;   // chi può mettere il meteo del piano lo mette: prima di tutto il resto
+            if (SFRUTTATORI[piano.nome] && SFRUTTATORI[piano.nome].includes(k)) v += 7;   // chi approfitta del meteo lo fa davvero: l'abilità del piano batte anche una più quotata
             if (k === 'intimidate' && ctx.doppio) v += 0.5;
+            // quella che di solito si gioca su questo Pokémon (la più consigliata vale di più). Vale meno di ciò che serve al piano
+            // (meteo: +3 chi lo mette, +2 chi ne approfitta) e, fino alla Gen 7, non si prende l'abilità nascosta: certe mosse delle
+            // generazioni vecchie non si possono avere con quella
+            const posizione = cand.cons ? cand.cons.abilita.indexOf(k) : -1;
+            const nascosta = cand.base.abilities && cand.base.abilities.H === nome;
+            if (posizione >= 0 && !(nascosta && ctx.gen < 8)) v += Math.max(0.5, 1.5 - posizione * 0.5);
             if (v > mv) { mv = v; migliore = nome; }
         }
         return migliore;
@@ -564,14 +590,24 @@
         if (cand.richiesto) return cand.richiesto;
         const attacchi = mosse.filter(m => m.categoria !== 'Status');
         const stato = mosse.some(m => m.categoria === 'Status' && !m.protezione);
+        const qualunqueStato = mosse.some(m => m.categoria === 'Status');          // il Gilet d'assalto vieta anche la Protezione
         const fragile = cand.basi.hp + cand.basi.def + cand.basi.spd < 230;
         const nomi = [];
         if (ruolo.schermi) nomi.push('Light Clay');
         if (ctx.doppio && ruolo.fakeout) nomi.push('Sitrus Berry', 'Safety Goggles', 'Mental Herb');
+        // gli strumenti consigliati per questo Pokémon, se vanno d'accordo con il suo set (e con ciò che la CPU sa fare)
+        for (const k of ((cand.cons && cand.cons.oggetti) || [])) {
+            const it = dex.items.get(k);
+            if (!it.exists) continue;
+            if (it.id === 'assaultvest' && qualunqueStato) continue;                        // con il Gilet d'assalto le mosse di stato non si usano
+            if (it.id === 'eviolite' && !(cand.base.evos && cand.base.evos.length)) continue;   // serve solo a chi può ancora evolversi
+            if (it.id === 'toxicorb' || it.id === 'flameorb') continue;                     // servono con un'abilità o una mossa che la CPU non pianifica
+            nomi.push(it.name);
+        }
         if (!attacchi.length) nomi.push('Leftovers', 'Sitrus Berry');
         const tipoMigliore = attacchi.slice().sort((a, b) => b.potenza - a.potenza)[0];
         const robusto = cand.robustezza >= 75;
-        if (robusto && !stato && cand.basi.spd >= cand.basi.def) nomi.push('Assault Vest');
+        if (robusto && !qualunqueStato && cand.basi.spd >= cand.basi.def) nomi.push('Assault Vest');
         if (ruolo.setup || ruolo.velocita === 'trickroom') nomi.push('Leftovers', 'Sitrus Berry');
         if (cand.offesa >= 100 && !robusto) {
             nomi.push(fragile && ctx.doppio ? 'Focus Sash' : 'Life Orb');
@@ -815,7 +851,7 @@
     const chiaveUso = c => id(c.base.baseSpecies || c.base.name);
 
     // Il cuore: dato un pool già calcolato, produce i team.
-    //   opzioni: { Dex, TeamValidator, pool, regolamento, quanti, seme, pokedexBase }
+    //   opzioni: { Dex, TeamValidator, pool, regolamento, quanti, seme, pokedexBase, consigli }   (consigli: i dati di consigli.js della generazione, se ci sono)
     // Restituisce { team: [{ nome, piano, testo, specie[] }], avvisi: [] }
     async function generaTeam(opzioni) {
         const { Dex, TeamValidator } = opzioni;
@@ -854,7 +890,7 @@
         const cand = [];
         for (const voce of voci) {
             const c = await analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, opzioni.pokedexBase);
-            if (c) cand.push(c);
+            if (c) { c.cons = consigliDi(opzioni.consigli, c, ctx); cand.push(c); }
         }
         if (cand.length < 6) return { team: [], avvisi: avvisi.concat(`Not enough Pokémon in this format for the CPU (${cand.length} usable)`) };
 
@@ -930,6 +966,9 @@
         const caricaJson = opzioni.caricaJson;
         let pokedexBase = opzioni.pokedexBase;
         if (!pokedexBase) pokedexBase = Pool.minuscole(await caricaJson('pkm-gens/pokedex_base.json'));
+        // i consigli (mosse, strumenti, abilità di solito giocati) della generazione: senza il file i team si fanno lo stesso
+        let consigli = opzioni.consigli;
+        if (consigli === undefined && Consigli) consigli = await Consigli.carica(generazioneFormato(regolamento), caricaJson);
 
         const rPoke = regolamento.restrizioni && regolamento.restrizioni.pokemon;
         const nameStarts = rPoke && rPoke.name_starts;
@@ -993,7 +1032,7 @@
             const quantiQui = Math.min(perVariante, quanti - out.length);
             const r = await generaTeam({
                 Dex: opzioni.Dex, TeamValidator: opzioni.TeamValidator, pool, regolamento: v.regolamento,
-                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase
+                quanti: quantiQui, seme: `${seme}|${i}|${v.etichetta}`, pokedexBase, consigli
             });
             r.avvisi.forEach(a => avvisi.push(a));
             r.team.forEach(t => out.push(Object.assign(t, v.etichetta ? { nome: `${t.nome} (${v.etichetta})` } : {})));

@@ -284,5 +284,5 @@ test('battle.html ha i pezzi che la modalità CPU usa e nessun file nuovo da car
     for (const id of ['opzione-bot', 'link-hub', 'azioni-vittoria', 'sotto-vittoria', 'testo-vittoria']) assert.match(html, new RegExp(`id="${id}"`));
     // i moduli della CPU si caricano da soli dagli import di battle-ui.js
     const partita = leggi('cpu-partita.js');
-    for (const f of ['cpu-conoscenza.js', 'cpu-calcolo.js', 'cpu-ia.js', 'formato-pool.js', 'team-cpu.js', 'pkmn-sim.js']) assert.match(partita, new RegExp(`import '?[^;]*\\./${f.replace('.', '\\.')}`), f);
+    for (const f of ['cpu-conoscenza.js', 'cpu-calcolo.js', 'cpu-ia.js', 'formato-pool.js', 'consigli.js', 'team-cpu.js', 'pkmn-sim.js']) assert.match(partita, new RegExp(`import '?[^;]*\\./${f.replace('.', '\\.')}`), f);
 });

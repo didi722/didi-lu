@@ -122,6 +122,25 @@ test('singolo: recupera quando sta per cadere e l\'avversario non lo mette KO su
     assert.equal(s, 'move 1', 'Soft-Boiled');
 });
 
+test('stile: con quasi tutta la salute non si cura, attacca (Corviknight all\'80% contro Garchomp); i parametri di prima lo facevano curare', async () => {
+    const squadra = [{ specie: 'Corviknight', item: 'Leftovers', hp: 80, mosse: ['Roost', 'Brave Bird', 'Body Press', 'U-turn'] }];
+    const gioca = async parametri => {
+        const { sim, ia } = await cervello({ parametri });
+        const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+        return scelta(ia, r, [...logAvversario([{ specie: 'Garchomp' }], false), ...logMiaSquadra(squadra, [0])]);
+    };
+    assert.equal(await gioca({}), 'move 2', 'Brave Bird');
+    assert.equal(await gioca({ sogliaRecupero: 0, aggressivita: 0 }), 'move 1', 'con la valutazione neutra di prima: Roost');
+});
+
+test('stile: i valori di base del singolo cambiano solo lo stile, nel doppio restano quelli di sempre', async () => {
+    const { ia } = await cervello();
+    assert.ok(ia.par.aggressivita > 0 && ia.par.sogliaRecupero > 0, 'nel singolo il danno pesa di più e curarsi con poco da curare no');
+    assert.equal(ia.par.aggressivitaDoppio, 0);
+    assert.equal(ia.par.costoCambioDoppio, 0.22);
+    assert.ok(ia.par.costoCambio > ia.par.costoCambioDoppio, 'nel singolo cambiare costa di più');
+});
+
 test('singolo: non usa una mossa di stato su chi è immune (Onda d\'Urto su un tipo Terra)', async () => {
     const { sim, ia } = await cervello();
     const squadra = [{ specie: 'Zapdos', item: 'Leftovers', mosse: ['Thunder Wave', 'Heat Wave', 'Roost', 'Hurricane'] }];

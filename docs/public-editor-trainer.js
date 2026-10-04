@@ -6,8 +6,8 @@
 // con SAVE (players/{id}/info, insieme alla configurazione della pagina).
 //
 // Colore, avatar, Pokémon preferito e canzone sono unici: quelli che un altro allenatore ha già
-// scelto non compaiono proprio tra le scelte (P.scelteDegliAltri). Per i colori restano a ognuno
-// quelli che aveva già. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
+// scelto restano nella lista ma in grigio e non si possono scegliere (P.scelteDegliAltri); quello che si ha
+// già resta sempre selezionabile. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
 // =====================================================
 (function () {
     'use strict';
@@ -49,6 +49,16 @@
         if (anteprima) { anteprima.pause(); anteprima = null; }
     }
 
+    // Una voce già scelta da un altro allenatore: grigia, non si clicca
+    const PRESA = 'Already taken by another trainer';
+    function comePresa(bottone, titolo) {
+        bottone.disabled = true;
+        bottone.classList.add('is-preso');
+        bottone.title = titolo ? `${titolo} · ${PRESA}` : PRESA;
+        bottone.setAttribute('aria-label', bottone.title);
+        return bottone;
+    }
+
     // ---- Disegno ------------------------------------------------------------------------------
 
     function disegna(ctx) {
@@ -64,19 +74,25 @@
 
         // ---- avatar
         const avatarAttuale = P.chiaveAvatar(profilo.avatar);
-        const avatarLiberi = P.elencoAvatar().filter(f => `profile/${f}`.toLowerCase() === avatarAttuale || !presi.avatar.has(`profile/${f}`.toLowerCase()));
-        const griglia = h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, avatarLiberi.map(f =>
-            h('button', { type: 'button', class: `pe-avatar-item${`profile/${f}`.toLowerCase() === avatarAttuale ? ' is-on' : ''}`, 'data-v': `profile/${f}`.toLowerCase(), title: `Avatar ${f.replace('.png', '')}`,
+        const tuttiAvatar = P.elencoAvatar();
+        const preso = f => `profile/${f}`.toLowerCase() !== avatarAttuale && presi.avatar.has(`profile/${f}`.toLowerCase());
+        const avatarLiberi = tuttiAvatar.filter(f => !preso(f));
+        const griglia = h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, tuttiAvatar.map(f => {
+            const b = h('button', { type: 'button', class: `pe-avatar-item${`profile/${f}`.toLowerCase() === avatarAttuale ? ' is-on' : ''}`, 'data-v': `profile/${f}`.toLowerCase(), title: `Avatar ${f.replace('.png', '')}`,
                 onclick: () => scegli({ avatar: new URL(`immagini/profile/${f}`, window.location.href).href }) },
-            h('img', { src: `immagini/profile/${f}`, alt: '', loading: 'lazy' }))));
+            h('img', { src: `immagini/profile/${f}`, alt: '', loading: 'lazy' }));
+            return preso(f) ? comePresa(b, `Avatar ${f.replace('.png', '')}`) : b;
+        }));
 
-        // ---- colore firma: quelli non presi da altri, più il tuo di adesso
+        // ---- colore firma: tutti, quelli di altri in grigio (il tuo di adesso resta sempre selezionabile)
         const attuale = String(profilo.color || '').toUpperCase();
-        const colori = P.PALETTE_FIRMA.filter(c => !presi.colori.has(c.toUpperCase()));
+        const colori = P.PALETTE_FIRMA.slice();
         if (attuale && !colori.some(c => c.toUpperCase() === attuale)) colori.unshift(attuale);
-        const swatch = h('div', { class: 'pe-campioni pe-campioni-fitti', id: 'pe-colori' }, colori.map(c =>
-            campione(c, c.toUpperCase() === attuale, c.toUpperCase(), () => scegli({ color: c.toUpperCase() }), null)));
-        for (const b of swatch.children) b.dataset.v = b.title;
+        const swatch = h('div', { class: 'pe-campioni pe-campioni-fitti', id: 'pe-colori' }, colori.map(c => {
+            const b = campione(c, c.toUpperCase() === attuale, c.toUpperCase(), () => scegli({ color: c.toUpperCase() }), null);
+            return c.toUpperCase() !== attuale && presi.colori.has(c.toUpperCase()) ? comePresa(b, c.toUpperCase()) : b;
+        }));
+        for (const b of swatch.children) b.dataset.v = b.title.split(' · ')[0];
 
         // ---- titolo: quelli sbloccati
         const titoli = ['No Title', ...Titoli.titoliSbloccati(dati.tipi, dati.pokemon).map(t => t.testo)];
@@ -93,14 +109,14 @@
         motto.value = profilo.bio;
 
         return [
-            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE. Colours, avatars, Pokémon and songs that another trainer already has are hidden.' }),
+            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE. Colours, avatars, Pokémon and songs that another trainer already has are greyed out: they cannot be picked.' }),
             sezione('Avatar',
                 h('div', { class: 'pe-avatar-riga' },
                     h('span', { class: 'pe-avatar-grande' }, h('img', { id: 'pe-avatar-attuale', src: profilo.avatar || 'immagini/profile/1.png', alt: 'Current avatar' })),
-                    h('span', { class: 'pe-nota', testo: `${avatarLiberi.length} avatars available` })),
+                    h('span', { class: 'pe-nota', testo: `${avatarLiberi.length} of ${tuttiAvatar.length} avatars available` })),
                 griglia),
             sezione('Signature colour', swatch,
-                h('p', { class: 'pe-nota', testo: 'It colours your name, stats and trophy. Yours is always kept.' })),
+                h('p', { class: 'pe-nota', testo: 'It colours your name, stats and trophy. Greyed out colours belong to other trainers; yours is always kept.' })),
             sezione('Title', selettore, h('p', { class: 'pe-nota', testo: 'Only the titles you have earned.' })),
             sezione('Motto', motto, conto),
             sezionePokemon(ctx, presi, scegli),
@@ -138,13 +154,15 @@
             if (!pokemon || pokemon === 'carico') { lista.append(h('p', { class: 'pe-nota', testo: 'Loading the Pokémon list…' })); return; }
             const q = ricerca.pokemon.trim().toLowerCase();
             const mio = String(profilo.pkmPreferito || '').toLowerCase();
-            const trovati = pokemon.filter(p => (p.name === mio || !presi.pokemon.has(p.name)) && (!q || p.name.includes(q)));
-            lista.append(...trovati.slice(0, MAX_RIGHE).map(p =>
-                h('button', { type: 'button', class: `pe-scelta${p.name === mio ? ' is-on' : ''}`, 'data-v': p.name, onclick: () => scegli({ pkmPreferito: p.name }) },
+            const trovati = pokemon.filter(p => !q || p.name.includes(q));
+            lista.append(...trovati.slice(0, MAX_RIGHE).map(p => {
+                const b = h('button', { type: 'button', class: `pe-scelta${p.name === mio ? ' is-on' : ''}`, 'data-v': p.name, onclick: () => scegli({ pkmPreferito: p.name }) },
                     h('img', { src: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`, alt: '', loading: 'lazy' }),
-                    h('span', { testo: p.name.toUpperCase() }))));
+                    h('span', { testo: p.name.toUpperCase() }));
+                return p.name !== mio && presi.pokemon.has(p.name) ? comePresa(b, p.name.toUpperCase()) : b;
+            }));
             if (trovati.length > MAX_RIGHE) lista.append(h('p', { class: 'pe-nota', testo: `${trovati.length - MAX_RIGHE} more: type in the search box to narrow it down.` }));
-            if (!trovati.length) lista.append(h('p', { class: 'pe-nota', testo: 'No Pokémon found (or the ones that match are already taken).' }));
+            if (!trovati.length) lista.append(h('p', { class: 'pe-nota', testo: 'No Pokémon found.' }));
         };
         riempi();
 
@@ -170,20 +188,24 @@
             if (!canzoni || canzoni === 'carico') { lista.append(h('p', { class: 'pe-nota', testo: 'Loading the playlist…' })); return; }
             const q = ricerca.canzoni.trim().toLowerCase();
             const mio = profilo.musicaPreferita;
-            const libere = canzoni.filter(c => (c.url === mio || (!presi.canzoniUrl.has(c.url.trim()) && !presi.canzoniNomi.has(c.nome.trim().toLowerCase()))) && (!q || c.nome.toLowerCase().includes(q)));
-            lista.append(...libere.map(c => h('div', { class: 'pe-canzone' },
-                h('button', { type: 'button', class: `pe-scelta${c.url === mio ? ' is-on' : ''}`, 'data-v': c.url, onclick: () => { fermaAnteprima(); scegli({ musicName: c.nome, musicaPreferita: c.url }); } },
-                    h('span', { testo: c.nome })),
-                h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${c.nome}`, onclick: ev => {
-                    ev.stopPropagation();
-                    const gia = anteprima && anteprima.src === c.url;
-                    fermaAnteprima();
-                    if (gia) return;
-                    anteprima = new Audio(c.url);
-                    anteprima.volume = 0.4;
-                    anteprima.play().catch(() => {});
-                }, testo: '▶' }))));
-            if (!libere.length) lista.append(h('p', { class: 'pe-nota', testo: 'No songs found (or the ones that match are already taken).' }));
+            const prese = c => c.url !== mio && (presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()));
+            const libere = canzoni.filter(c => !q || c.nome.toLowerCase().includes(q));
+            lista.append(...libere.map(c => {
+                const scelta = h('button', { type: 'button', class: `pe-scelta${c.url === mio ? ' is-on' : ''}`, 'data-v': c.url, onclick: () => { fermaAnteprima(); scegli({ musicName: c.nome, musicaPreferita: c.url }); } },
+                    h('span', { testo: c.nome }));
+                return h('div', { class: 'pe-canzone' },
+                    prese(c) ? comePresa(scelta, c.nome) : scelta,
+                    h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${c.nome}`, onclick: ev => {
+                        ev.stopPropagation();
+                        const gia = anteprima && anteprima.src === c.url;
+                        fermaAnteprima();
+                        if (gia) return;
+                        anteprima = new Audio(c.url);
+                        anteprima.volume = 0.4;
+                        anteprima.play().catch(() => {});
+                    }, testo: '▶' }));
+            }));
+            if (!libere.length) lista.append(h('p', { class: 'pe-nota', testo: 'No songs found.' }));
         };
         riempi();
 

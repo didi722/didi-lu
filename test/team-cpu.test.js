@@ -362,3 +362,66 @@ test('il formato che il sito dà al simulatore fa partire la partita in ogni gen
         assert.deepEqual(e.errori, []);
     }
 });
+
+// ===================================================
+// I consigli (docs/consigli.js): mosse, strumenti e abilità che di solito si giocano su un Pokémon
+// ===================================================
+const Consigli = require('../docs/consigli.js');
+
+// Quanto dei set è "consigliato": mosse, strumento e abilità che compaiono nei consigli della specie
+async function quantoConsigliato(regolamento, opz) {
+    const r = await genera(regolamento, opz);
+    const c = T.contestoDa(regolamento);
+    const dati = leggi(`consigli/gen${c.gen}.json`);
+    let mosse = 0, mosseCons = 0, pokemon = 0, strumentoCons = 0, abilitaCons = 0;
+    for (const t of r.team) for (const s of await importa(t.testo)) {
+        const cons = Consigli.per(dati, id(s.species), { doppio: c.doppio, baseId: id(s.species.split('-')[0]) });
+        pokemon++;
+        for (const m of s.moves) { mosse++; if (cons.mosse.includes(id(m))) mosseCons++; }
+        if (cons.oggetti.includes(id(s.item))) strumentoCons++;
+        if (cons.abilita.includes(id(s.ability))) abilitaCons++;
+    }
+    return { team: r.team, mosse: mosseCons / mosse, strumenti: strumentoCons / pokemon, abilita: abilitaCons / pokemon };
+}
+
+for (const [nome, regolamento] of [['singolo Gen 9', reg()], ['doppio Gen 9', reg({ battleStyle: 'doubles', generationalMechanics: true })]]) {
+    test(`consigli (${nome}): i set hanno molte più mosse, strumenti e abilità consigliati che senza`, { timeout: 120000 }, async () => {
+        const con = await quantoConsigliato(regolamento);
+        const senza = await quantoConsigliato(regolamento, { consigli: null });
+        assert.equal(con.team.length, 12);
+        assert.ok(con.mosse >= 0.6, `mosse consigliate: ${(con.mosse * 100).toFixed(0)}%`);
+        assert.ok(con.mosse > senza.mosse + 0.1, `con ${con.mosse.toFixed(2)} contro senza ${senza.mosse.toFixed(2)}`);
+        assert.ok(con.strumenti > senza.strumenti, `strumenti: con ${con.strumenti.toFixed(2)} contro senza ${senza.strumenti.toFixed(2)}`);
+        // l'abilità migliore di solito è già quella consigliata: qui basta che i consigli non la peggiorino di molto
+        assert.ok(con.abilita >= 0.8 && con.abilita >= senza.abilita - 0.08, `abilità: con ${con.abilita.toFixed(2)} contro senza ${senza.abilita.toFixed(2)}`);
+    });
+}
+
+test('consigli: senza i dati (file mancante) i team si fanno lo stesso, legali e con quattro mosse', async () => {
+    const regolamento = reg();
+    const r = await genera(regolamento, { consigli: null });
+    assert.equal(r.team.length, 12);
+    await controllaTeam(regolamento, r);
+    // anche se il file non si legge: Consigli.carica restituisce null e il resto va avanti
+    const r2 = await genera(regolamento, { consigli: await Consigli.carica(9, async () => { throw new Error('manca'); }) });
+    assert.equal(r2.team.length, 12);
+});
+
+test('consigli: il Gilet d\'assalto va solo a chi non ha nessuna mossa di stato (nemmeno la Protezione)', async () => {
+    for (const regolamento of [reg(), reg({ battleStyle: 'doubles', generationalMechanics: true })]) {
+        const r = await genera(regolamento);
+        const { sim } = await caricaSim();
+        for (const t of r.team) for (const s of await importa(t.testo)) {
+            if (id(s.item) !== 'assaultvest') continue;
+            const stato = s.moves.filter(m => sim.Dex.moves.get(m).category === 'Status');
+            assert.deepEqual(stato, [], `${t.nome}: ${s.species} con Gilet d'assalto e ${stato.join(', ')}`);
+        }
+    }
+});
+
+test('consigli: i team di sempre restano rispettosi delle regole con i consigli (monotype e iniziale del nome)', { timeout: 120000 }, async () => {
+    const regolamento = reg({ restrizioni: { ...permessi, pokemon: { ...permessi.pokemon, type: { mode: 'SAME_ACROSS_TEAM' } } } });
+    const r = await genera(regolamento);
+    assert.ok(r.team.length >= 6);
+    await controllaTeam(regolamento, r);
+});

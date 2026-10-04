@@ -329,7 +329,7 @@ function h(tag, attributi, ...figli) {
 }
 
 const colorePulito = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '');
-const avatarPulito = a => (/^immagini\/[\w\-./]+$/.test(String(a || '')) ? a : AVATAR_PREDEFINITO);
+const avatarPulito = a => PP.percorsoAvatar(a, AVATAR_PREDEFINITO);   // anche gli indirizzi completi che salva l'editor della pagina pubblica
 const linkPubblico = id => `public.html?player=${encodeURIComponent(id)}`;
 const percentuale = (v, p) => (v + p ? Math.round((v / (v + p)) * 100) : 0);
 

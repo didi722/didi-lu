@@ -26,6 +26,16 @@
     const MIN_MATCH_RIVALE = 2;  // sotto questa soglia nessuno è "nemesi" o "preda"
 
     const idDi = n => String(n == null ? '' : n).toLowerCase().trim();
+
+    /**
+     * Il percorso di un avatar dentro il sito ("immagini/profile/5.png"), qualunque forma abbia nel database: l'editor della pagina
+     * pubblica lo salva come indirizzo completo ("https://…/immagini/profile/5.png"), il profilo vecchio come percorso relativo.
+     * Qualsiasi cosa non punti a una immagine del sito diventa l'avatar predefinito.
+     */
+    function percorsoAvatar(testo, predefinito) {
+        const m = /(?:^|\/)(immagini\/[\w\-./]+?)(?:[?#].*)?$/.exec(String(testo == null ? '' : testo).trim());
+        return m ? m[1] : predefinito;
+    }
     const oggetti = x => (x && typeof x === 'object' ? x : {});
     const valori = x => Object.values(oggetti(x));
 
@@ -332,7 +342,7 @@
 
     return {
         MATCH_PER_SHOWDOWN, FORMA_MAX, MIN_MATCH_RIVALE,
-        idDi, matchValido, completato, prossimoMatch, vincitoreMatch, vincitoreShowdown,
+        idDi, percorsoAvatar, matchValido, completato, prossimoMatch, vincitoreMatch, vincitoreShowdown,
         stato, formatiStagione, nomiIscritti, tempoRimasto,
         rivali, riepilogoRivali, showdownRimasti, daFare
     };

@@ -327,7 +327,7 @@ test('profile.html: il testo che viene dal database entra solo come testo, mai c
     }
     // l'avatar e il colore di un altro giocatore passano da un controllo prima di arrivare agli stili
     assert.match(nuovo, /colorePulito = c => \(\/\^#\[0-9a-f\]\{3,8\}\$\/i\.test/);
-    assert.match(nuovo, /avatarPulito = a => \(\/\^immagini/);
+    assert.match(nuovo, /avatarPulito = a => PP\.percorsoAvatar\(a, AVATAR_PREDEFINITO\)/);
 });
 
 test('profile.html: usa le stesse risposte alle sfide della campanella (sfide.js le espone, non le copia)', () => {
@@ -352,4 +352,15 @@ test('style-profile.css: via gli stili dei vecchi form, ci sono quelli delle nuo
     for (const nuovo of ['.pf-rivale', '.pf-voce', '.pf-contatore', '.pf-tessera', '.ach-open-btn', '.bar-reset-pw-btn', '#login-modal .modal-content']) {
         assert.ok(css.includes(nuovo), `${nuovo} manca`);
     }
+});
+
+test('percorsoAvatar: legge sia il percorso relativo sia l\'indirizzo completo che salva l\'editor (il rivale non resta senza avatar)', () => {
+    const PP = require('../docs/profilo-personale.js');
+    const pre = 'immagini/profile/1.png';
+    assert.equal(PP.percorsoAvatar('immagini/profile/5.png', pre), 'immagini/profile/5.png');
+    assert.equal(PP.percorsoAvatar('https://didi722.github.io/didi-lu/immagini/profile/42.png', pre), 'immagini/profile/42.png');
+    assert.equal(PP.percorsoAvatar('http://localhost:5500/immagini/profile/7.png?v=3#x', pre), 'immagini/profile/7.png');
+    assert.equal(PP.percorsoAvatar('immagini/magikarp.png', pre), 'immagini/magikarp.png');
+    // quello che non è un'immagine del sito resta l'avatar predefinito
+    for (const x of ['', null, undefined, 'javascript:alert(1)', 'https://altro.example/foto.png', 'data:image/png;base64,AAAA', '/etc/passwd']) assert.equal(PP.percorsoAvatar(x, pre), pre, String(x));
 });

@@ -55,11 +55,22 @@
     //   utilPianoTailwind, scalaTailwind, maxTailwind, bonusPianoStanza, bonusPianoMeteo
     //                       quanto vale mettere Tailwind (per ogni sorpasso che crea, con un tetto; almeno utilPianoTailwind per il team costruito
     //                       su di esso), la Stanza Magica o rimettere il meteo del piano
+    //   aggressivita, aggressivitaDoppio
+    //                       il danno che faccio vale (1 + aggressivita) volte: contro tutto ciò che non colpisce (proteggersi, cambiare,
+    //                       curarsi, mosse di stato) un attacco pesa di più. 0 = la valutazione "neutra". Nel doppio conviene meno
+    //                       (le protezioni, i deviatori e la Stanza Magica sono parte del gioco): in prova non serve e perde partite
+    //   costoCambio, costoCambioDoppio, costoCambioSano
+    //                       cambiare costa un turno; se chi esce sta ancora bene costa di più (costoCambioSano, solo nel singolo): si cambia
+    //                       per scappare da un guaio, non per ripicca. Nel doppio il cambio è raro e vale com'era (provato: costare di più
+    //                       fa perdere partite)
+    //   costoProtezione     proteggersi non fa niente da solo: un piccolo costo fisso per ogni protezione
+    //   sogliaRecupero      curarsi vale solo per gli HP che mancano oltre questa frazione (con quasi tutta la salute non serve)
     const PARAMETRI_BASE = {
         penalitaProt: 1.5, bonusSE2: 0.4, bonusSE4: 0.6, malusRes05: 0.3, malusRes025: 0.5, pesoPosizione: 0.3,
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
-        utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5
+        utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
+        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -1031,6 +1042,7 @@
                 const a = x.a;
                 if (a.tipo === 'cambio') {
                     const s = a.squadraInfo;
+                    const uscente = mie[x.slot];
                     const nuovo = this._clona(Object.assign(this.vista(s.m, s.info), { indice: s.indice, slot: x.slot, moves: s.p.moves }));
                     mie[x.slot] = nuovo;   // chi esce perde i potenziamenti, chi entra parte pulito
                     peso.mie[x.slot] = this._pesoMon(nuovo);
@@ -1038,7 +1050,8 @@
                     // trappole all'ingresso
                     const dannoTrappole = this._dannoTrappole(nuovo, campoMio, ctx);
                     nuovo.hp = Math.max(0, nuovo.hp - dannoTrappole);
-                    bonus -= 0.22;                                          // cambiare costa un turno
+                    bonus -= doppio ? this.par.costoCambioDoppio : this.par.costoCambio;      // cambiare costa un turno
+                    if (!doppio && uscente && uscente.hpMax) bonus -= this.par.costoCambioSano * Math.max(0, uscente.hp / uscente.hpMax - 0.4) / 0.6;   // ...di più se chi esce sta bene
                     if (this.cambiRecenti[x.slot] === this.turno - 1) bonus -= 0.25;   // evita i va e vieni
                     if (this.ultimoUscito[x.slot] === s.nome) bonus -= 0.3;            // rientrare subito chi è appena uscito
                     bonus += this._abilitaIngresso(nuovo, ctx, avv);
@@ -1090,10 +1103,10 @@
                 if (m.protezione) {
                     // proteggersi non fa mai niente da solo: il valore sta nei danni evitati
                     if (lato !== 'mie' || (riesceProtezione || {})[x.slot] !== false) me.protetto = 1;
-                    bonus -= 0.08;
+                    bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08;
                     return;
                 }
-                if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= 0.08; return; }
+                if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= lato === 'mie' ? this.par.costoProtezione : 0.08; return; }
                 if (m.id === 'fakeout' || m.id === 'firstimpression') {
                     const primoTurno = lato === 'mie' ? (me.ref.turnoEntrata === this.turno || me.ref.ultimaMossa == null) : true;
                     if (!primoTurno) { bonus -= 0.4; return; }
@@ -1163,7 +1176,8 @@
                     // recupero/rinculo/drenaggio dell'attaccante
                     if (m.assorbe) me.hp = Math.min(me.hpMax, me.hp + preso * m.assorbe[0] / m.assorbe[1]);
                     if (m.rinculo && me.abilita !== 'rockhead' && me.abilita !== 'magicguard') me.hp = Math.max(0, me.hp - preso * m.rinculo[0] / m.rinculo[1]);
-                    const puntiColpo = this._puntiDanno(b, dif, Math.min(prima, colpo.atteso), peso);
+                    let puntiColpo = this._puntiDanno(b, dif, Math.min(prima, colpo.atteso), peso);
+                    if (lato === 'mie' && b.lato === 'avv') puntiColpo *= 1 + (doppio ? this.par.aggressivitaDoppio : this.par.aggressivita);
                     valore += puntiColpo;
                     if (lato === 'mie' && b.lato === 'avv') valore += this._bonusEfficacia(colpo.mult, puntiColpo);
                     if (colpo.pKO > 0) {
@@ -1446,7 +1460,7 @@
                 return v * segno;
             }
             if (m.recupero) {
-                const mancante = 1 - me.hp / me.hpMax;
+                const mancante = Math.max(0, 1 - me.hp / me.hpMax - (lato === 'mie' ? this.par.sogliaRecupero : 0));
                 v += Math.min(0.5, mancante) * 0.9 * this._pesoMon(me);
                 return v * segno;
             }
