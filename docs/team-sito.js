@@ -51,7 +51,12 @@ export function formatoSimulatore(regolamento) {
         : regolamento.battleStyle === 'doubles';
     if (gen < 3) doppio = false;   // il doppio esiste dalla Gen 3
 
-    const regole = ['Picked Team Size = 4', 'HP Percentage Mod'];
+    // "Scegli 4 su 6" richiede l'anteprima squadre: dalla quinta generazione c'è già, prima va chiesta a parte.
+    // "HP Percentage Mod" nelle prime tre generazioni è già nel formato (aggiungerlo di nuovo dà errore).
+    const regole = [];
+    if (gen < 5) regole.push('Team Preview');
+    regole.push('Picked Team Size = 4');
+    if (gen >= 4) regole.push('HP Percentage Mod');
     if (struttura === 'custom') regole.push('Sleep Clause Mod', 'Endless Battle Clause');
     if (!meccanicheAttive(regolamento)) {
         if (gen === 8) regole.push('Dynamax Clause');
@@ -177,4 +182,50 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
     const openSheet = (await db.ref(`seasons/${stagione}/info/open_sheet`).once('value')).val() === true;
 
     return { categoria, regolamento, formato: formatoSimulatore(regolamento), livello, giocatori, bloccati, openSheet };
+}
+
+// -----------------------------------------------------
+// 4. PROVA CONTRO LA CPU: IL TEAM DEL GIOCATORE DAL SUO BOX
+// -----------------------------------------------------
+// Restituisce:
+// { nome, id, colore, avatar, iniziali: ['m', 'r'], team: { nome, testo }, categoria, regolamento, formato, livello, problemi }
+// "problemi" è l'elenco di cosa impedisce di giocare con quel team (vuoto se va bene).
+export async function caricaPerProva(db, utente, chiaveTeam) {
+    const nome = (await db.ref(`users/${utente.uid}/name`).once('value')).val();
+    if (!nome) throw new Error('Your profile has no name on the site.');
+    const id = String(nome).toLowerCase().trim();
+
+    const [teamSnap, coloreSnap, avatarSnap, regolamentiSnap, utenteSnap, infoSnap] = await Promise.all([
+        db.ref(`players/${id}/teams/${chiaveTeam}`).once('value'),
+        db.ref(`players/${id}/info/color`).once('value'),
+        db.ref(`players/${id}/info/avatar`).once('value'),
+        db.ref('regolamenti').once('value'),
+        db.ref(`users/${utente.uid}`).once('value'),
+        db.ref(`players/${id}/info`).once('value')
+    ]);
+    const team = teamSnap.val();
+    if (!team) throw new Error('That team is not in your Box anymore.');
+
+    // Il formato del team: per categoria o per id del regolamento (come fa il Box)
+    const candidati = [team.categoria, team.category].map(v => String(v || '').toLowerCase().trim()).filter(Boolean);
+    const regolamenti = regolamentiSnap.val() || {};
+    let regolamento = null;
+    for (const cand of candidati) {
+        regolamento = Object.values(regolamenti).find(r => r && String(r.categoria || '').toLowerCase().trim() === cand) ||
+            (Object.keys(regolamenti).find(k => k.toLowerCase() === cand) ? regolamenti[Object.keys(regolamenti).find(k => k.toLowerCase() === cand)] : null);
+        if (regolamento) break;
+    }
+    if (!regolamento) throw new Error("This team's format was not found.");
+
+    const livello = livelloFormato(regolamento);
+    const testo = testoShowdownDaTeam(team, livello);
+    const u = utenteSnap.val() || {}, info = infoSnap.val() || {};
+    const iniziali = [u.real_name || info.real_name, u.last_name || info.last_name]
+        .map(x => String(x || '').trim().charAt(0).toLowerCase()).filter(Boolean);
+
+    return {
+        nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', iniziali,
+        team: { nome: nomeTeam(team), testo }, categoria: regolamento.categoria, regolamento,
+        formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento) : ['The team is empty']
+    };
 }

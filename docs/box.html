@@ -17,6 +17,7 @@
 <script src="dettagli.js" defer></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
+<script src="formato-pool.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -937,9 +938,17 @@ async function renderizza(lista) {
         const nomeTeam = (team.nome || '').trim().toLowerCase();
         const isBloccato = window.nomiTeamBloccati && window.nomiTeamBloccati.has(nomeTeam);
 
-        // Genera i pulsanti solo se il team NON è bloccato
-        const htmlAzioni = !isBloccato ? `
+        // Prova contro la CPU: sempre disponibile (non modifica il team). Modifica e cancella solo se il team NON è bloccato
+        const htmlProvaCpu = `
+                <button onclick="event.stopPropagation(); provaControCpu('${team.id}')"
+                        onmouseenter="this.style.backgroundColor='#86efac'; this.style.transform='scale(1.1)';"
+                        onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
+                        style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;"
+                        title="Practice this team against the CPU">🎮</button>`;
+        const htmlAzioni = `
             <div class="card-actions" style="display: flex; gap: 2px;">
+                ${htmlProvaCpu}
+                ${!isBloccato ? `
                 <button onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')" 
                         onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
                         onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
@@ -950,9 +959,9 @@ async function renderizza(lista) {
                         onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
                         onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
                         style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
-                        title="Delete team">🗑️</button>
+                        title="Delete team">🗑️</button>` : ''}
             </div>
-        ` : '';
+        `;
 
         return `
         <div class="card" onclick="apriDettagli('${team.id}')">
@@ -1123,6 +1132,11 @@ function inizializzaRotazioneTooltipMosse() {
     });
 }  
 
+// Prova del team contro la CPU: la battaglia sceglie da sola un team CPU dello stesso formato (battle-ui.js)
+function provaControCpu(id) {
+    window.location.href = 'battle.html?cpu=1&team=' + encodeURIComponent(id);
+}
+
 async function apriDettagli(id) {
     // Recupero il team dall'array globale
     const team = tuttiITeam.find(t => t.id === id);
@@ -1154,7 +1168,7 @@ async function apriDettagli(id) {
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
-            ${tbHtmlTagDettaglio()}
+            ${tbHtmlTagDettaglio(team.id)}
         </div>
         <div class="modal-grid">
             ${team.pokemon.map((p, pIndex) => {
@@ -3788,9 +3802,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
     }
 
     const genLimite = parseInt(regolamento.genRuleValue);
-    const poolFiltrato = [];
-    let contatoreOrdine = 0;
-
     const restrizioniPokemon = regolamento.restrizioni?.pokemon;
     let pokedexBase = window.pokedexBase || null;
 
@@ -3848,9 +3859,6 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
-    // 🛠️ DETERMINAZIONE PROPRIETÀ DINAMICA TIER
-    const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
-
     const deveCaricarePokedexBase = (restrizioniPokemon && Object.keys(restrizioniPokemon).length > 0) || (regolamento.strutturaSito === "custom");
 
     if (deveCaricarePokedexBase && !pokedexBase) {
@@ -3867,429 +3875,15 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
-    function valutaOperatore(valoreJson, operatore, regola) {
-        const op = operatore.toLowerCase().trim();
-
-        if (Array.isArray(valoreJson)) {
-            const arrLower = valoreJson.map(v => String(v).toLowerCase().trim());
-            const target = String(regola.value || '').toLowerCase().trim();
-            switch (op) {
-                case 'equals':
-                case 'contains':
-                    return arrLower.includes(target);
-                case 'neq':
-                    return !arrLower.includes(target);
-                default:
-                    return true;
-            }
-        }
-
-        if (op === 'between') {
-            const vMin = parseFloat(regola.min);
-            const vMax = parseFloat(regola.max);
-            if (isNaN(vMin) || isNaN(vMax)) return true;
-            return parseFloat(valoreJson) >= vMin && parseFloat(valoreJson) <= vMax;
-        }
-
-        if (['lt', 'gt', 'lte', 'gte'].includes(op)) {
-            const vFire = parseFloat(regola.value);
-            const vJson = parseFloat(valoreJson);
-            if (isNaN(vFire) || isNaN(vJson)) return true;
-            switch (op) {
-                case 'lt':  return vJson < vFire;
-                case 'gt':  return vJson > vFire;
-                case 'lte': return vJson <= vFire;
-                case 'gte': return vJson >= vFire;
-            }
-        }
-
-        const strJson = String(valoreJson).toLowerCase().trim();
-        const strFire = String(regola.value || '').toLowerCase().trim();
-        switch (op) {
-            case 'equals':      return strJson === strFire;
-            case 'neq':         return strJson !== strFire;
-            case 'prefix':
-            case 'starts_with': return strJson.startsWith(strFire);
-            default:            return true;
-        }
-    }
-
-    function controllaRestrizioniBiologiche(nomeChiave) {
-        if (!pokedexBase) return true;
-
-        const CHIAVI_BIOLOGICHE_VALIDE = [
-            'is_legendary', 'is_mythical', 'height', 'weight', 'bst', 
-            'types', 'highest_stat', 'num', 'type', 'color', 'egg_group',
-            'hp', 'attack', 'defense', 'sp. attack', 'sp. defense', 'speed', 'shape',
-            'base_friendship', 'habitat', 'name_length', 'name_starts', 
-            'evolutions_count', 'evolution_stage'
-        ];
-
-        const ruleLegendary = restrizioniPokemon?.is_legendary;
-        const ruleMythical = restrizioniPokemon?.is_mythical;
-        
-        const valLegendary = ruleLegendary?.value ? String(ruleLegendary.value).toLowerCase().trim() : '';
-        const valMythical = ruleMythical?.value ? String(ruleMythical.value).toLowerCase().trim() : '';
-
-        const onlyLegendaryActive = valLegendary === "only" || valLegendary === "only legendary";
-        const onlyMythicalActive = valMythical === "only" || valMythical === "only mythical";
-
-        let haFiltriAttivi = onlyLegendaryActive || onlyMythicalActive || (regolamento.strutturaSito === "custom");
-        const operatoriValidi = ['lt', 'gt', 'lte', 'gte', 'equals', 'neq', 'between', 'starts_with', 'prefix'];
-        
-        if (restrizioniPokemon) {
-            for (const chiave in restrizioniPokemon) {
-                if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiave)) continue;
-                const r = restrizioniPokemon[chiave];
-                if (r) {
-                    if (r.mode === "PLAYER_INITIAL" || r.value || r.operator || chiave === 'name_starts') haFiltriAttivi = true;
-                    if (r.operator && r.mode !== "SAME_ACROSS_TEAM") {
-                        const op = r.operator.toLowerCase().trim();
-                        if (operatoriValidi.includes(op)) haFiltriAttivi = true;
-                    }
-                }
-            }
-        }
-
-        if (!haFiltriAttivi) return true;
-
-        let pkmDettaglio = pokedexBase[nomeChiave.toLowerCase().trim()];
-        if (!pkmDettaglio) {
-            const spriteId = calcolaSpriteId(nomeChiave);
-            const radice = determinaRadice(nomeChiave, spriteId);
-            pkmDettaglio = pokedexBase[radice.toLowerCase().trim()];
-        }
-
-        if (!pkmDettaglio) return false; 
-
-        const isPkmLegendary = pkmDettaglio.is_legendary === true || pkmDettaglio.is_legendary === 1 || String(pkmDettaglio.is_legendary).trim() === "true";
-        const isPkmMythical = pkmDettaglio.is_mythical === true || pkmDettaglio.is_mythical === 1 || String(pkmDettaglio.is_mythical).trim() === "true";
-
-        if (regolamento.strutturaSito === "custom") {
-            const ammessoLegendary = valLegendary === "allowed" || valLegendary === "only" || valLegendary === "only legendary";
-            const ammessoMythical = valMythical === "allowed" || valMythical === "only" || valMythical === "only mythical";
-
-            if (isPkmLegendary && !ammessoLegendary) return false;
-            if (isPkmMythical && !ammessoMythical) return false;
-        }
-
-        if (onlyLegendaryActive || onlyMythicalActive) {
-            if (onlyLegendaryActive && onlyMythicalActive) {
-                if (!isPkmLegendary && !isPkmMythical) return false;
-            } else if (onlyLegendaryActive) {
-                if (!isPkmLegendary) return false;
-            } else if (onlyMythicalActive) {
-                if (!isPkmMythical) return false;
-            }
-        }
-
-        if (restrizioniPokemon) {
-            for (const chiaveRestrizione in restrizioniPokemon) {
-                if (!CHIAVI_BIOLOGICHE_VALIDE.includes(chiaveRestrizione)) continue;
-                if (chiaveRestrizione === 'is_legendary' || chiaveRestrizione === 'is_mythical') continue;
-
-                const regola = restrizioniPokemon[chiaveRestrizione];
-                if (!regola) continue;
-
-                // 🔤 FILTRO SUPPORTO INIZIALE NOME POKÉMON (VALORE SINGOLO O PLAYER_INITIAL)
-                if (chiaveRestrizione === 'name_starts') {
-                    let letteraTarget = "";
-                    if (regola.mode === "PLAYER_INITIAL") {
-                        letteraTarget = inizialeNomeUtente;
-                    } else if (regola.value) {
-                        letteraTarget = String(regola.value).toLowerCase().trim();
-                    }
-
-                    if (!letteraTarget) return false; 
-                    
-                    const nomePkm = (pkmDettaglio.name || nomeChiave).toLowerCase().trim();
-                    if (!nomePkm.startsWith(letteraTarget)) {
-                        return false;
-                    }
-                    continue; 
-                }
-
-                if (!regola.operator || regola.mode === "SAME_ACROSS_TEAM") continue;
-
-                const op = regola.operator.toLowerCase().trim();
-                if (!operatoriValidi.includes(op)) continue;
-
-                if (chiaveRestrizione === 'evolution_stage' && String(regola.value).toLowerCase().trim() === 'only') {
-                    let evCount = pkmDettaglio['evolutions_count'];
-                    if (evCount === undefined && pkmDettaglio.stats) evCount = pkmDettaglio.stats['evolutions_count'];
-                    
-                    let evStage = pkmDettaglio['evolution_stage'];
-                    if (evStage === undefined && pkmDettaglio.stats) evStage = pkmDettaglio.stats['evolution_stage'];
-
-                    if (Number(evCount) !== 1 || Number(evStage) !== 1) {
-                        return false;
-                    }
-                    continue; 
-                }
-
-                const chiaveProprietareale = (typeof normalizzaChiaveDatabase === 'function' ? normalizzaChiaveDatabase(chiaveRestrizione) : null) || chiaveRestrizione;
-                
-                let valoreJson = pkmDettaglio[chiaveProprietareale];
-                if (valoreJson === undefined && pkmDettaglio.stats) {
-                    valoreJson = pkmDettaglio.stats[chiaveProprietareale];
-                }
-                
-                if (valoreJson === undefined && chiaveProprietareale.includes('.')) {
-                    valoreJson = chiaveProprietareale.split('.').reduce((obj, key) => obj?.[key], pkmDettaglio);
-                }
-
-                if (valoreJson === undefined || valoreJson === null) continue;
-
-                if (chiaveProprietareale === 'height') {
-                    valoreJson = valoreJson * 100; 
-                }
-
-                if (!valutaOperatore(valoreJson, op, regola)) return false;
-            }
-        }
-
-        return true;
-    }
-
-    function escludeFormeInvalide(id) {
-        const idLower = id.toLowerCase().trim();
-        
-        if (idLower.includes('gmax') || idLower === 'pichuspikyeared' || idLower.includes('-partner')) return false;
-        if (idLower.includes('-cap-') || (idLower.startsWith('cap-') && idLower !== 'capsakid')) return false;
-
-        const isMega = idLower.endsWith('-mega') || idLower.endsWith('-megax') || idLower.endsWith('-megay');
-        const isFalsoMega = idLower === 'meganium' || idLower === 'yanmega';
-        if (isMega && !isFalsoMega) {
-            const rawValue = regolamento.restrizioni?.pokemon?.is_mega?.value;
-            const megaAllowed = [
-                true,
-                "true",
-                "yes",
-                "allowed"
-            ].includes(String(rawValue).toLowerCase().trim());
-
-            return megaAllowed;
-        }
-
-        return true; 
-    }
-
-    function calcolaSpriteId(id) {
-        const idLower = id.toLowerCase().trim();
-        if (idLower.includes('-')) return idLower;
-        const prefissiConTrattino = ['rotom', 'shaymin', 'kyurem', 'lycanroc', 'necrozma'];
-        for (const pref of prefissiConTrattino) {
-            if (idLower.startsWith(pref) && idLower !== pref) return pref + '-' + idLower.substring(pref.length);
-        }
-        const suffissiRegionali = ['alola', 'galar', 'hisui', 'paldea'];
-        for (const suf of suffissiRegionali) {
-            if (idLower.endsWith(suf) && idLower !== suf) return idLower.slice(0, -suf.length) + '-' + suf;
-        }
-        return idLower;
-    }
-
-    function determinaRadice(id, spriteId) {
-        const idLower = id.toLowerCase().trim();
-        const spriteLower = spriteId.toLowerCase().trim();
-        if (idLower.includes('-')) return idLower.split('-')[0];
-        if (spriteLower.includes('-')) return spriteLower.split('-')[0];
-        return idLower;
-    }
-
-    function ottieniTierDaOggetto(dato, proprietaDinamica, baseTier) {
-        if (!dato) return "";
-        if (typeof dato === 'string') return dato.toUpperCase().trim();
-
-        const isTargetLC = baseTier && baseTier.toUpperCase().trim() === "LC";
-
-        if (isTargetLC) {
-            const singleTier = dato.single_tier ? String(dato.single_tier).toUpperCase().trim() : "";
-            const doublesTier = dato.doubles_tier ? String(dato.doubles_tier).toUpperCase().trim() : "";
-            if (singleTier === "LC" || doublesTier === "LC") {
-                return "LC";
-            }
-        }
-
-        const tier = dato[proprietaDinamica] || "";
-        return String(tier).toUpperCase().trim();
-    }
-
-    function ottieniTierMaggiore(tierA, tierB) {
-        const gerarchia = {
-            "": 0, "ILLEGAL": 0, "PAST": 0, "UNTIERED": 1, "LC": 2, "NFE": 3,
-            "ZU": 4, "ZUBL": 5, "PU": 6, "PUBL": 7, "NU": 8, "NUBL": 9,
-            "RU": 10, "RUBL": 11, "UU": 12, "UUBL": 13, "OU": 14,
-            "STANDARD": 15, "UBER": 15, "UBERS": 15, "AG": 16
-        };
-        const tA = tierA ? tierA.toUpperCase().trim() : "";
-        const tB = tierB ? tierB.toUpperCase().trim() : "";
-        return (gerarchia[tA] || 0) >= (gerarchia[tB] || 0) ? tA : tB;
-    }
-
-    function controllaTierAmmessa(pkmTier, baseTier) {
-        if (!baseTier) return true;
-        const target = baseTier.toUpperCase().trim();
-        const current = pkmTier ? pkmTier.toUpperCase().trim() : "";
-        const blacklistPerTier = {
-            "AG": [],
-            "STANDARD": ["AG"],
-            "UBER": ["AG"],
-            "UBERS": ["AG"],
-            "OU": ["AG", "UBER", "UBERS"],
-            "UU": ["AG", "UBER", "UBERS", "OU", "UUBL"],
-            "RU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL"],
-            "NU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL"],
-            "PU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL"],
-            "ZU": ["AG", "UBER", "UBERS", "OU", "UUBL", "UU", "RUBL", "RU", "NUBL", "NU", "PUBL", "PU", "ZUBL"]
-        };
-        if (target === "LC") return current === "LC";
-        if (target === "NFE") return current === "NFE";
-        if (blacklistPerTier[target] !== undefined) return !blacklistPerTier[target].includes(current);
-        return true;
-    }
-
-    if (regolamento.genRuleType === "up_to") {
-        try {
-            let natdexTiers = {};
-            try {
-                const resNatDex = await fetch('pkm-gens/natdex-tiers.json');
-                natdexTiers = await resNatDex.json();
-            } catch (e) {
-                console.error("[Helper] Error loading pkm-gens/natdex-tiers.json:", e);
-            }
-
-            let tuttiIKnots = {};
-            let genLimiteJson = {};
-
-            for (let i = 1; i <= genLimite; i++) {
-                try {
-                    const resGen = await fetch(`pkm-gens/gen${i}.json`);
-                    const jsonGen = await resGen.json();
-                    Object.keys(jsonGen).forEach(key => {
-                        const lowKey = key.toLowerCase().trim();
-                        if (!tuttiIKnots[lowKey]) {
-                            tuttiIKnots[lowKey] = { originalKey: key, ...jsonGen[key] };
-                        } else {
-                            tuttiIKnots[lowKey] = { ...tuttiIKnots[lowKey], ...jsonGen[key] };
-                        }
-                        
-                        if (i === genLimite) {
-                            genLimiteJson[lowKey] = jsonGen[key];
-                        }
-                    });
-                } catch (errFetch) {
-                    console.error(`[Helper] Impossible to load gen${i}.json:`, errFetch);
-                }
-            }
-
-            Object.keys(tuttiIKnots).forEach(lowKey => {
-                const nomeChiave = tuttiIKnots[lowKey].originalKey;
-                if (!escludeFormeInvalide(nomeChiave)) return;
-
-                const datoGenX = genLimiteJson[lowKey];
-                let tierGenX = ottieniTierDaOggetto(datoGenX, proprietaTierDinamica, regolamento.baseTier);
-
-                let tierFinale = tierGenX;
-
-                if (!tierFinale || tierFinale === "PAST" || tierFinale === "ILLEGAL") {
-                    const datoNatDex = natdexTiers[lowKey];
-                    let tierNatDex = ottieniTierDaOggetto(datoNatDex, proprietaTierDinamica, regolamento.baseTier);
-
-                    const isMegaReale = (nomeChiave.toLowerCase().endsWith('-mega') || 
-                                         nomeChiave.toLowerCase().endsWith('-megax') || 
-                                         nomeChiave.toLowerCase().endsWith('-megay'));
-
-                    if (isMegaReale && (tierNatDex === "ILLEGAL" || !tierNatDex)) {
-                        const baseKey = nomeChiave.toLowerCase().replace(/-mega[xy]?$/, '').trim();
-                        const datoBaseNatDex = natdexTiers[baseKey];
-                        tierNatDex = ottieniTierDaOggetto(datoBaseNatDex, proprietaTierDinamica, regolamento.baseTier);
-                    }
-
-                    tierFinale = tierNatDex;
-                }
-
-                if (!tierFinale || tierFinale === "ILLEGAL" || tierFinale === "PAST") return;
-                
-                if (!controllaTierAmmessa(tierFinale, regolamento.baseTier)) return;
-                if (!controllaRestrizioniBiologiche(nomeChiave)) return;
-
-                const datoGrezzo = { ...tuttiIKnots[lowKey], tier: tierFinale };
-                const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
-                const spriteId = calcolaSpriteId(nomeChiave);
-                const radice = determinaRadice(nomeChiave, spriteId);
-                
-                poolFiltrato.push({ 
-                    id: nomeChiave, 
-                    name: nomeVisualizzato, 
-                    spriteId: spriteId, 
-                    radice: radice, 
-                    num: datoGrezzo.num || null, 
-                    ordineIniziale: contatoreOrdine++,
-                    stats: datoGrezzo.stats || null,
-                    type: datoGrezzo.type || datoGrezzo.types || [],
-                    abilities: datoGrezzo.abilities || []
-                });
-            });
-        } catch (err) {
-            console.error("General error in aggregating UP_TO lists:", err);
-        }
-    } 
-    else if (regolamento.genRuleType === "within") {
-        Object.keys(jsonDati).forEach(nomeChiave => {
-            if (!escludeFormeInvalide(nomeChiave)) return;
-            const datoGrezzo = jsonDati[nomeChiave];
-            if (!datoGrezzo) return;
-
-            let tierUpper = ottieniTierDaOggetto(datoGrezzo, proprietaTierDinamica, regolamento.baseTier);
-
-            if (nomeChiave.toLowerCase().includes('-mega')) {
-                const baseKey = nomeChiave.toLowerCase().split('-mega')[0];
-                const datoBase = jsonDati[baseKey];
-                const tierBase = ottieniTierDaOggetto(datoBase, proprietaTierDinamica, regolamento.baseTier);
-                tierUpper = ottieniTierMaggiore(tierUpper, tierBase);
-            }
-
-            if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
-            if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
-            if (!controllaRestrizioniBiologiche(nomeChiave)) return;
-
-            const nomeVisualizzato = datoGrezzo.name || (nomeChiave.charAt(0).toUpperCase() + nomeChiave.slice(1));
-            const spriteId = calcolaSpriteId(nomeChiave);
-            const radice = determinaRadice(nomeChiave, spriteId);
-
-            poolFiltrato.push({ 
-                id: nomeChiave, 
-                name: nomeVisualizzato, 
-                spriteId: spriteId, 
-                radice: radice, 
-                num: datoGrezzo.num || null, 
-                ordineIniziale: contatoreOrdine++,
-                stats: datoGrezzo.stats || null,
-                type: datoGrezzo.type || datoGrezzo.types || [],
-                abilities: datoGrezzo.abilities || []
-            });
-        });
-    }
-
-    const mappaAncoraggioRadici = {};
-    poolFiltrato.forEach(pkm => {
-        if (!mappaAncoraggioRadici[pkm.radice]) {
-            mappaAncoraggioRadici[pkm.radice] = { num: pkm.num, ordineIniziale: pkm.ordineIniziale };
-        } else {
-            if (!mappaAncoraggioRadici[pkm.radice].num && pkm.num) mappaAncoraggioRadici[pkm.radice].num = pkm.num;
-            if (pkm.ordineIniziale < mappaAncoraggioRadici[pkm.radice].ordineIniziale) mappaAncoraggioRadici[pkm.radice].ordineIniziale = pkm.ordineIniziale;
-        }
+    // Il calcolo vero e proprio sta in formato-pool.js: è lo stesso che usa la CPU per scegliere i suoi team.
+    // Il file già scaricato dal chiamante non si riscarica.
+    const cache = {};
+    cache[regolamento.genRuleType === "within" ? `pkm-gens/gen${genLimite}.json` : 'pkm-gens/natdex-tiers.json'] = jsonDati;
+    return FormatoPool.caricaPool(regolamento, percorso => fetch(percorso).then(r => r.json()), {
+        pokedexBase,
+        inizialeNome: inizialeNomeUtente,
+        cache
     });
-
-    poolFiltrato.sort((a, b) => {
-        if (a.radice === b.radice) return a.ordineIniziale - b.ordineIniziale;
-        const ancoraA = mappaAncoraggioRadici[a.radice];
-        const ancoraB = mappaAncoraggioRadici[b.radice];
-        if (ancoraA.num && ancoraB.num) return ancoraA.num - ancoraB.num;
-        return ancoraA.ordineIniziale - ancoraB.ordineIniziale;
-    });
-
-    return { tipoLayout: "FLAT", pokemon: poolFiltrato };
 }
 
 function renderizzaListaPiatta(pokemonList) {
@@ -6677,7 +6271,7 @@ function tbAggiornaTag(ids) {
 }
 
 // HTML dei tag nel dettaglio (all'apertura in caricamento)
-function tbHtmlTagDettaglio() {
+function tbHtmlTagDettaglio(idTeam) {
     const tag = (id, coach, costruttore, testo) => `
         <div class="tb-cov-wrap">
             <span class="tb-cov-tag" id="${id}"
@@ -6689,6 +6283,8 @@ function tbHtmlTagDettaglio() {
             ${tag(TB_ID_TAG_DETTAGLIO.difesa, 'cov-def', 'tbHtmlDifesa', 'Team weaknesses')}
             ${tag(TB_ID_TAG_DETTAGLIO.attacco, 'cov-off', 'tbHtmlAttacco', 'Team coverage')}
             ${tag(TB_ID_TAG_DETTAGLIO.ruoli, 'cov-roles', 'tbHtmlRuoli', 'Team roles')}
+            ${idTeam ? `<button type="button" class="tb-prova-cpu" onclick="provaControCpu('${String(idTeam).replace(/'/g, '')}')"
+                title="Practice this team against the CPU in the battle simulator">🎮 Practice vs CPU</button>` : ''}
         </div>`;
 }
 

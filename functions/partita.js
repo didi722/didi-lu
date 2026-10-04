@@ -46,7 +46,12 @@ function formatoSimulatore(reg) {
         : reg.battleStyle === 'doubles';
     if (gen < 3) doppio = false;
 
-    const regole = ['Picked Team Size = 4', 'HP Percentage Mod'];
+    // "Scegli 4 su 6" richiede l'anteprima squadre: dalla quinta generazione c'è già, prima va chiesta a parte.
+    // "HP Percentage Mod" nelle prime tre generazioni è già nel formato (aggiungerlo di nuovo dà errore).
+    const regole = [];
+    if (gen < 5) regole.push('Team Preview');
+    regole.push('Picked Team Size = 4');
+    if (gen >= 4) regole.push('HP Percentage Mod');
     if (struttura === 'custom') regole.push('Sleep Clause Mod', 'Endless Battle Clause');
     if (!meccanicheAttive(reg)) {
         if (gen === 8) regole.push('Dynamax Clause');

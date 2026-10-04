@@ -212,6 +212,26 @@
     margin: 0 !important;
 }
 #teamModal .tb-cov-wrap { position: relative !important; width: auto !important; }
+/* Provare il team contro la CPU: stessa famiglia dei tag, in verde per distinguersi */
+#teamModal .tb-prova-cpu {
+    box-sizing: border-box;
+    padding: 5px 12px 4px;
+    background: var(--nb-verde, #3ddc84);
+    color: #000;
+    border: 3px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-s);
+    font: 800 .74rem/1.4 var(--dt-font);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transform: rotate(calc(var(--dt-rot) * -1deg));
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+#teamModal .tb-prova-cpu:hover { transform: translate(-2px, -2px); box-shadow: var(--dt-sh-m); }
+#teamModal .tb-prova-cpu:active { transform: none; box-shadow: none; }
+#teamModal .tb-prova-cpu:focus-visible { outline: 3px dashed var(--dt-ink); outline-offset: 3px; }
 #teamModal .tb-cov-tag {
     background: var(--dt-carta);
     border-color: var(--dt-ink) !important;

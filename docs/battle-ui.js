@@ -5,9 +5,10 @@
 // Questo file aggiunge ciò che è del sito: lobby, comandi, set, salvataggio.
 // I testi visibili sono in inglese, come il resto del sito.
 //
-// Tre modi di aprire la pagina:
+// Quattro modi di aprire la pagina:
 //   battle.html?stagione=S&showdown=ID&match=N           -> match ONLINE (turni sul server)
 //   battle.html?stagione=S&showdown=ID&match=N&locale=1  -> stessi team, stesso schermo (prove)
+//   battle.html?cpu=1&team=ID                            -> prova del proprio team (dal Box) contro la CPU
 //   battle.html                                           -> team di prova (sviluppo)
 // =====================================================
 
@@ -16,7 +17,8 @@ import {
     bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale, setDaTeam
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
-import { caricaMatch } from './team-sito.js';
+import { caricaMatch, caricaPerProva } from './team-sito.js';
+import { squadreCpu, nuovoCervello, sceglieTeam } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './nomi-unici.js';       // self.NomiUnici
@@ -47,6 +49,9 @@ const jq = window.jQuery;
 const $ = id => document.getElementById(id);
 let config = null;          // { formato, etichetta, p1: { nome, team }, p2: { nome, team } }
 let battaglia, stato, pannelli, finita;
+
+// Solo nella prova contro la CPU: { cerebro, team[] (quelli della CPU), indice (quale sta giocando), giocatore, errori, rqid }
+let cpu = null;
 
 // Solo online
 let mioLato = null;         // 'p1' o 'p2'; null = locale (entrambi i lati) o spettatore
@@ -81,6 +86,8 @@ if (!PS || !PS.Battle || !jq) {
         };
         if (parametri.get('locale')) preparaDaSito(chiavi);
         else preparaOnline(chiavi);
+    } else if (parametri.get('cpu')) {
+        preparaCpu(parametri.get('team'));
     } else {
         config = CONFIG_PROVA;
                    schedeLocali();
@@ -156,6 +163,90 @@ async function preparaDaSito(chiavi) {
         mostraLobby(el('h2', { class: 'lobby-titolo', testo: 'Pick both teams' }), el('div', { class: 'lobby-colonne' }, colonne));
     };
     disegna();
+}
+
+
+// -----------------------------------------------------
+// Prova contro la CPU: il team del Box del giocatore contro uno della CPU, dello stesso formato
+// -----------------------------------------------------
+// I team della CPU li compone cpu-partita.js dal pool del formato, quindi esistono per ogni formato, anche nuovo.
+// La CPU sceglie le mosse con cpu-ia.js. A fine partita: stessa squadra della CPU, un'altra a caso, o ritorno al Box.
+async function preparaCpu(chiaveTeam) {
+    $('opzione-bot').hidden = true;
+    const ritorno = $('link-hub');
+    ritorno.href = 'box.html';
+    ritorno.textContent = '← Box';
+    mostraMessaggioCampo('Loading your team…');
+
+    let dati, squadre;
+    try {
+        if (!window.firebase) throw new Error('Firebase did not load: check the scripts in battle.html.');
+        await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
+        const utente = firebase.auth().currentUser;
+        if (!utente) throw new Error('Log in on the site to practice against the CPU.');
+        if (!chiaveTeam) throw new Error('No team selected: open this page from your Box.');
+        dati = await caricaPerProva(firebase.database(), utente, chiaveTeam);
+        if (!DexSim.formats.get(dati.formato).exists) {
+            throw new Error(`The simulator format "${dati.formato}" doesn't exist. Fix the formatoSimulatore field of the ${dati.categoria} ruleset.`);
+        }
+        if (dati.problemi.length) throw new Error(`This team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
+        mostraMessaggioCampo(`Building the CPU teams for ${dati.categoria}…`);
+        squadre = await squadreCpu(dati.regolamento, { iniziali: dati.iniziali });
+        if (!squadre.team.length) {
+            throw new Error(`The CPU couldn't build teams for ${dati.categoria}${squadre.avvisi.length ? ' (' + squadre.avvisi[0] + ')' : ''}.`);
+        }
+    } catch (errore) {
+        console.error(errore);
+        return mostraMessaggioCampo(`Couldn't start the practice: ${errore.message}`);
+    }
+
+    document.body.classList.add('prova-cpu');
+    cpu = { cerebro: null, team: squadre.team, indice: sceglieTeam(squadre.team), giocatore: dati, errori: 0, rqid: null };
+    config = {
+        formato: dati.formato,
+        etichetta: `Practice vs CPU · ${dati.categoria}`,
+        p1: { nome: dati.nome, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
+        p2: { nome: 'CPU', team: '', nomeTeam: '' }
+    };
+    if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
+    impostaPannelli();
+    iniziaContro(cpu.indice);
+}
+
+// Mette in campo il team della CPU indicato e fa partire la battaglia
+function iniziaContro(indice) {
+    cpu.indice = indice;
+    const t = cpu.team[indice];
+    config.p2.team = t.testo;
+    config.p2.nomeTeam = t.nome;
+    schedeCpu();
+    avviaBattaglia();
+}
+
+// Colonne dei player: il team del giocatore si vede, quello della CPU solo come in una partita vera (le specie)
+function schedeCpu() {
+    impostaPartita({
+        openSheet: false,
+        latiNoti: ['p1'],
+        p1: { nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
+        p2: { nome: 'CPU', avatar: '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
+    });
+}
+
+// I tre pulsanti di fine partita. Su schermi larghi stanno nel cartello sullo schermo,
+// sui telefoni (dove il cartello è piccolo) nel pannello sotto lo schermo: vedi style-battle.css
+function azioniCpu() {
+    return [
+        el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.indice) }, 'Rematch · same CPU team'),
+        el('button', { type: 'button', class: 'btn secondario', onclick: () => iniziaContro(sceglieTeam(cpu.team, cpu.indice)) }, 'Another random CPU team'),
+        el('a', { class: 'btn secondario', href: 'box.html' }, 'Back to Box')
+    ];
+}
+
+function mostraFineCpu(vincitore) {
+    const vinto = !!vincitore && vincitore === config.p1.nome;
+    const titolo = !vincitore ? "It's a tie!" : vinto ? 'You win!' : 'The CPU wins!';
+    mostraEsito(titolo, { sotto: `${config.p1.nomeTeam} vs ${cpu.team[cpu.indice].nome}`, azioni: azioniCpu() });
 }
 
 
@@ -545,6 +636,7 @@ function avviaBattaglia() {
     nascondiMessaggio();
     nuovoSet();
     disegnaInfo();
+    if (cpu) { cpu.cerebro = nuovoCervello('p2'); cpu.errori = 0; cpu.rqid = null; }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2 });
     collegaEventi(battaglia);
     battaglia.avvia();
@@ -576,6 +668,7 @@ function nuovoSet(numero) {
 // Eventi comuni a battaglia locale e online
 function collegaEventi(b) {
     b.on('log', righe => {
+        if (cpu && cpu.cerebro) cpu.cerebro.osserva(righe);     // la CPU legge il log com'è uscito dal simulatore
         righe = riscrittoreLog.riscrivi(righe);
         stato.aggiorna(righe);
         aggiungiAScena(righe);
@@ -584,6 +677,7 @@ function collegaEventi(b) {
     });
 
     b.on('richiesta', (lato, richiesta) => {
+        if (cpu && lato === 'p2' && richiesta.rqid !== cpu.rqid) { cpu.rqid = richiesta.rqid; cpu.errori = 0; }   // richiesta nuova: si riparte dalla scelta migliore
         const p = pannelli[lato];
         const errore = p.erroreInSospeso;   // es. "[Unavailable choice]": il simulatore manda subito una richiesta aggiornata
         Object.assign(p, nuovoPannello(), { grezza: richiesta, r: leggiRichiesta(richiesta), errore });
@@ -597,6 +691,7 @@ function collegaEventi(b) {
     });
 
     b.on('errore', (lato, messaggio) => {
+        if (cpu && lato === 'p2') cpu.errori++;                 // la CPU prova la scelta successiva
         const p = pannelli[lato];
         if (messaggio.startsWith('[Unavailable choice]')) { p.erroreInSospeso = messaggio; return; }
         Object.assign(p, nuovoPannello(), { grezza: p.grezza, r: p.r, errore: messaggio });
@@ -616,6 +711,8 @@ function collegaEventi(b) {
         quandoScenaFerma(() => {
             if (online) {
                 if (!pausaSet) mostraFineSet();
+            } else if (cpu) {
+                mostraFineCpu(vincitore);
             } else {
                 mostraEsito(vincitore ? `${vincitore} wins!` : "It's a tie!", {
                     azioni: [el('button', { type: 'button', class: 'btn primario', onclick: avviaBattaglia }, 'New battle')]
@@ -645,20 +742,27 @@ function nuovoPannello() {
 // Bot (solo per P2, solo in prova)
 // -----------------------------------------------------
 function botAttivo(lato) {
-    return !online && lato === 'p2' && $('bot-p2').checked;
+    return !online && lato === 'p2' && (!!cpu || $('bot-p2').checked);
 }
 
 function giocaBot(lato) {
     const p = pannelli[lato];
     if (!p.grezza || p.grezza.wait || finita) return ridisegnaComandi();
     setTimeout(() => {
-        const scelta = sceltaCasuale(p.grezza, stato, lato);
+        let scelta;
+        if (cpu && cpu.cerebro) {
+            // la CPU ragiona; se per qualche motivo non riesce, gioca una mossa valida a caso
+            try { scelta = cpu.cerebro.scegli(p.grezza, { errori: cpu.errori }); } catch (errore) {
+                console.error('CPU:', errore);
+                scelta = sceltaCasuale(p.grezza, stato, lato);
+            }
+        } else scelta = sceltaCasuale(p.grezza, stato, lato);
         if (scelta) {
             p.inviata = true;
             battaglia.scegli(lato, scelta);
         }
         ridisegnaComandi();
-    }, 400);
+    }, cpu ? 650 : 400);     // la CPU aspetta un attimo: il log del turno deve esserle arrivato, e sembra meno istantanea
 }
 
 function cambioBot() {
@@ -817,7 +921,11 @@ function disegnaPannello(lato) {
     if (online && online.stato && online.stato !== 'in_corso') return corpo.append(messaggio('The match is over.'));
     if (pausaSet) return corpo.append(messaggio('Set over. Get ready for the next one.'));
     if (p.errore) corpo.append(el('p', { class: 'errore', testo: p.errore }));
-    if (finita) return corpo.append(messaggio(online ? 'Set over. The next one starts by itself.' : 'Battle over.'));
+    if (finita) {
+        return corpo.append(cpu
+            ? messaggio('Battle over.', el('div', { class: 'riga-azioni centrata azioni-cpu' }, azioniCpu()))
+            : messaggio(online ? 'Set over. The next one starts by itself.' : 'Battle over.'));
+    }
     if (!p.r || p.r.tipo === 'attesa') return corpo.append(messaggio(`Waiting for ${avv}…`));
     if (p.inviata) return corpo.append(messaggio(`Choice sent. Waiting for ${avv}…`));
     if (scenaInCorsa()) return corpo.append(messaggio('The next set is about to start.'));

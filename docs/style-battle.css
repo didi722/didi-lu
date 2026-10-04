@@ -546,6 +546,9 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; ove
 .scheda-team-icone { display: flex; flex-wrap: wrap; }
 .picon { display: inline-block; flex-shrink: 0; width: 40px; height: 30px; }
 
+/* Prova contro la CPU: pulsanti di fine partita nel pannello (solo sui telefoni, vedi sotto) */
+.riga-azioni.azioni-cpu { display: none; margin-top: 12px; }
+
 /* Cartello di fine set / fine match */
 .esito {
     position: absolute; inset: 0; z-index: 30;
@@ -1044,6 +1047,15 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
     .mosse { grid-template-columns: 1fr 1fr; }
     .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    /* Prova contro la CPU: i tre pulsanti di fine partita stanno nel pannello sotto lo schermo, non nel cartello */
+    .riga-azioni.azioni-cpu { display: flex; }
+    body.prova-cpu #azioni-vittoria { display: none; }
+    /* Il cartello di fine partita deve stare nello schermo stretto */
+    .esito-card { max-width: calc(100% - 16px); padding: 10px 12px 12px; box-shadow: 5px 5px 0 var(--inchiostro); }
+    .esito-card h2 { padding: 4px 10px 2px; font-size: 1.05rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); }
+    .esito-card p { margin: 8px 0 0; font-size: .8rem; }
+    .esito-card .riga-azioni { margin-top: 10px; gap: 8px; }
+    .esito-card .riga-azioni .btn { padding: 6px 10px 4px; font-size: .72rem; }
 }
 @media (prefers-reduced-motion: reduce) {
     .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro { transition: none; }

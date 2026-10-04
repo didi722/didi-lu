@@ -1,0 +1,410 @@
+'use strict';
+// L'IA della CPU (docs/cpu-ia.js): scelte sensate, non a caso.
+// Le richieste del simulatore si costruiscono a mano (stesso formato di Showdown) e si guarda cosa sceglie:
+//   - mossa super efficace invece di una debole, e non una mossa che non fa niente (immunità);
+//   - cambio quando chi è in campo rischia troppo e in panchina c'è chi regge meglio (non a ogni turno);
+//   - nel doppio: Terremoto solo se l'alleato non lo subisce (vola, si protegge, esce); Fake Out il primo turno e non dopo;
+//     Tailwind se serve a superare gli avversari; Protezione non due volte di fila;
+//   - mai due Pokémon che cambiano con lo stesso compagno, una sola Mega per turno, una sola Teracristal per partita;
+//   - anteprima: sceglie quanti Pokémon servono; cambio forzato: il più adatto; Revival Blessing: un Pokémon caduto;
+//   - partite vere contro un bot casuale e CPU contro CPU: nessuna scelta rifiutata dal simulatore.
+//
+//   npm test        (dalla cartella principale)
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { caricaSim, giocaPartita, creaCasuale } = require('./ayuda-sim.js');
+const IA = require('../docs/cpu-ia.js');
+const K = require('../docs/cpu-conoscenza.js');
+
+// ---------- costruzione delle richieste ----------
+// squadra: [{ specie, item, abilita, mosse: [nomi], hp (0-100), stato, stats? }], attivi: indici degli attivi
+function creaRichiesta(Dex, { squadra, attivi, livello = 50, gen = 9, extra = {} }) {
+    const dex = Dex.forGen(gen);
+    const pokemon = squadra.map((s, i) => {
+        const sp = dex.species.get(s.specie);
+        const b = sp.baseStats;
+        const stat = k => Math.floor((2 * b[k] + 31 + 21) * livello / 100) + 5;
+        const hpMax = b.hp === 1 ? 1 : Math.floor((2 * b.hp + 31 + 21) * livello / 100) + livello + 10;
+        const hp = Math.round(hpMax * (s.hp == null ? 100 : s.hp) / 100);
+        const cond = hp <= 0 ? '0 fnt' : `${hp}/${hpMax}${s.stato ? ' ' + s.stato : ''}`;
+        return {
+            ident: `p2: ${sp.name}`, details: `${sp.name}, L${livello}`, condition: cond, active: attivi.includes(i),
+            stats: { atk: stat('atk'), def: stat('def'), spa: stat('spa'), spd: stat('spd'), spe: stat('spe') },
+            moves: s.mosse.map(m => dex.moves.get(m).id), baseAbility: K.id(s.abilita || Object.values(sp.abilities)[0]),
+            item: K.id(s.item || ''), ability: K.id(s.abilita || Object.values(sp.abilities)[0]), pokeball: 'pokeball', commanding: false, reviving: false
+        };
+    });
+    const active = attivi.map(i => ({
+        moves: squadra[i].mosse.map(m => {
+            const d = dex.moves.get(m);
+            return { move: d.name, id: d.id, pp: d.pp, maxpp: d.pp, target: d.target, disabled: false };
+        }),
+        ...(extra.active && extra.active[attivi.indexOf(i)] || {})
+    }));
+    return { active, side: { name: 'CPU', id: 'p2', pokemon }, rqid: 3, ...extra.richiesta };
+}
+
+// Righe del log: la squadra avversaria e chi è in campo (tutti a pieno HP)
+function logAvversario(avversari, doppio, turno = 1) {
+    const righe = ['|gen|9', `|gametype|${doppio ? 'doubles' : 'singles'}`];
+    avversari.forEach(a => righe.push(`|poke|p1|${a.specie}, L50|`));
+    avversari.slice(0, doppio ? 2 : 1).forEach((a, i) => righe.push(`|switch|p1${'ab'[i]}: ${a.specie}|${a.specie}, L50|${a.hp == null ? 100 : a.hp}/100`));
+    righe.push(`|turn|${turno}`);
+    return righe;
+}
+function logMiaSquadra(squadra, attivi) {
+    const righe = [];
+    squadra.forEach(s => righe.push(`|poke|p2|${s.specie}, L50|`));
+    attivi.forEach((i, k) => righe.push(`|switch|p2${'ab'[k]}: ${squadra[i].specie}|${squadra[i].specie}, L50|100/100`));
+    return righe;
+}
+
+async function cervello(opzioni = {}) {
+    const { sim } = await caricaSim();
+    return { sim, ia: IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, ...opzioni }) };
+}
+
+function scelta(ia, richiesta, righe) {
+    ia.osserva(righe);
+    return ia.scegli(richiesta);
+}
+
+// ===================================================
+// SINGOLO
+// ===================================================
+test('singolo: sceglie la mossa super efficace, non una neutra o inutile', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Charizard', item: 'Leftovers', mosse: ['Flamethrower', 'Air Slash', 'Earthquake', 'Roost'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    // contro Ferrothorn (Erba/Acciaio) il Lanciafiamme è 4x
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Ferrothorn' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'move 1', 'Flamethrower è 4x su Ferrothorn');
+});
+
+test('singolo: non usa una mossa a cui l\'avversario è immune', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Outrage', 'Swords Dance'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    // Corviknight vola: Terremoto non fa nulla
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Corviknight' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.notEqual(s, 'move 1', 'Terremoto non colpisce un Pokémon volante');
+});
+
+test('singolo: cambia se chi è in campo ha una debolezza 4x e in panchina c\'è chi resiste', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Charizard', item: 'Leftovers', mosse: ['Flamethrower', 'Air Slash', 'Roost', 'Dragon Pulse'] },
+        { specie: 'Excadrill', item: 'Leftovers', mosse: ['Earthquake', 'Iron Head', 'Rock Slide', 'Swords Dance'] },
+        { specie: 'Venusaur', item: 'Leftovers', mosse: ['Giga Drain', 'Sludge Bomb', 'Synthesis', 'Sleep Powder'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    // Tyranitar: i suoi attacchi Roccia colpiscono Charizard 4x; Excadrill (Terra/Acciaio) li regge
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Tyranitar' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'switch 2', 'meglio mandare Excadrill che resiste alla Roccia');
+});
+
+test('singolo: non cambia quando il Pokémon in campo sta bene', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Outrage', 'Swords Dance'] },
+        { specie: 'Gengar', item: 'Leftovers', mosse: ['Shadow Ball', 'Sludge Bomb', 'Focus Blast', 'Thunderbolt'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Heatran' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.match(s, /^move /, 'Terremoto è 4x su Heatran: si attacca');
+});
+
+test('singolo: recupera quando sta per cadere e l\'avversario non lo mette KO subito', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Blissey', item: 'Leftovers', hp: 30, mosse: ['Soft-Boiled', 'Seismic Toss', 'Toxic', 'Flamethrower'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragonite' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'move 1', 'Soft-Boiled');
+});
+
+test('singolo: non usa una mossa di stato su chi è immune (Onda d\'Urto su un tipo Terra)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Zapdos', item: 'Leftovers', mosse: ['Thunder Wave', 'Heat Wave', 'Roost', 'Hurricane'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Garchomp' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.notEqual(s, 'move 1', 'Thunder Wave non ha effetto su un tipo Terra');
+});
+
+test('singolo: dopo un KO manda il Pokémon più adatto (cambio forzato)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Charizard', hp: 0, mosse: ['Flamethrower', 'Air Slash', 'Roost', 'Dragon Pulse'] },
+        { specie: 'Venusaur', item: 'Leftovers', mosse: ['Giga Drain', 'Sludge Bomb', 'Synthesis', 'Sleep Powder'] },
+        { specie: 'Starmie', item: 'Leftovers', mosse: ['Surf', 'Ice Beam', 'Rapid Spin', 'Recover'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], extra: { richiesta: { forceSwitch: [true], active: undefined } } });
+    delete r.active;
+    // contro Gyarados (Acqua/Volante) un Pokémon d'Acqua soffre, quello di Erba/Veleno... conta soprattutto chi lo colpisce 4x o regge
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Swampert' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'switch 2', 'Venusaur colpisce 4x Swampert (Acqua/Terra) con Erba');
+});
+
+// ===================================================
+// DOPPIO
+// ===================================================
+const nemiciRocciosi = [{ specie: 'Heatran' }, { specie: 'Magnezone' }, { specie: 'Kingambit' }, { specie: 'Amoonguss' }];
+
+test('doppio: Terremoto se l\'alleato vola', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Life Orb', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Togekiss', item: 'Leftovers', mosse: ['Air Slash', 'Dazzling Gleam', 'Follow Me', 'Protect'] },
+        { specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'Fake Out', 'Grassy Glide', 'Protect'] },
+        { specie: 'Incineroar', item: 'Leftovers', mosse: ['Flare Blitz', 'Fake Out', 'Parting Shot', 'Knock Off'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    const s = scelta(ia, r, [...logAvversario(nemiciRocciosi, true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.match(s.split(', ')[0], /^move 1\b/, 'Terremoto con Garchomp: Togekiss vola');
+});
+
+test('doppio: non usa Terremoto se l\'alleato lo subirebbe e non si protegge', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Life Orb', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Tyranitar', item: 'Leftovers', mosse: ['Crunch', 'Stone Edge', 'Low Kick', 'Protect'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Protect'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    // avversari non particolarmente deboli a Terra: Terremoto farebbe più male all'alleato (Roccia/Buio, debole a Terra)
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragonite' }, { specie: 'Gyarados' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    const [a, b] = s.split(', ');
+    const terremoto = /^move 1\b/.test(a);
+    if (terremoto) {
+        // se lo usa, deve avere messo al sicuro l'alleato: Protezione o cambio verso chi vola
+        assert.ok(/^move 4\b/.test(b) || /^switch 3\b/.test(b), `Terremoto con alleato esposto: ${s}`);
+    }
+});
+
+test('doppio: Terremoto molto utile + alleato che si protegge o esce per chi vola', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Life Orb', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Tyranitar', item: 'Leftovers', mosse: ['Crunch', 'Stone Edge', 'Low Kick', 'Protect'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Protect'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    // Heatran e Magnezone sono 4x deboli a Terra: Terremoto è devastante, ma Tyranitar lo subirebbe
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Heatran' }, { specie: 'Magnezone' }, { specie: 'Kingambit' }, { specie: 'Amoonguss' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    const [a, b] = s.split(', ');
+    assert.match(a, /^move 1\b/, `Terremoto: ${s}`);
+    assert.ok(/^move 4\b/.test(b) || /^switch 3\b/.test(b), `l'alleato deve proteggersi o uscire per Corviknight: ${s}`);
+});
+
+test('doppio: Fake Out il primo turno, non il secondo', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Incineroar', item: 'Sitrus Berry', mosse: ['Fake Out', 'Parting Shot', 'Taunt', 'Protect'] },
+        { specie: 'Rillaboom', item: 'Miracle Seed', mosse: ['Grassy Glide', 'Protect', 'Wood Hammer', 'High Horsepower'] },
+        { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Trick'] }
+    ];
+    const avv = [{ specie: 'Dragapult' }, { specie: 'Gholdengo' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    const s1 = scelta(ia, r, [...logAvversario(avv, true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.match(s1.split(', ')[0], /^move 1\b/, `turno 1: ${s1}`);
+    // secondo turno: Incineroar ha già agito in campo, Fake Out non funziona più
+    ia.osserva(['|move|p2a: Incineroar|Fake Out|p1a: Dragapult', '|turn|2']);
+    const s2 = ia.scegli(r);
+    assert.ok(!/^move 1\b/.test(s2.split(', ')[0]), `turno 2: ${s2}`);
+});
+
+test('doppio: Tailwind se la squadra è più lenta, non se è già più veloce', async () => {
+    const { sim } = await cervello();
+    const squadra = [
+        { specie: 'Tornadus', item: 'Leftovers', abilita: 'Prankster', mosse: ['Tailwind', 'Bleakwind Storm', 'Heat Wave', 'Protect'] },
+        { specie: 'Torkoal', item: 'Leftovers', mosse: ['Eruption', 'Heat Wave', 'Protect', 'Earth Power'] },
+        { specie: 'Amoonguss', item: 'Sitrus Berry', mosse: ['Pollen Puff', 'Rage Powder', 'Protect', 'Clear Smog'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+
+    const lenta = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const contro = [{ specie: 'Dragapult' }, { specie: 'Cyclizar' }, { specie: 'Iron Bundle' }, { specie: 'Cyclizar' }];
+    const s = scelta(lenta, r, [...logAvversario(contro, true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.match(s.split(', ')[0], /^move 1\b/, `squadra più lenta: ${s}`);
+
+    const veloce = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const piano = [{ specie: 'Snorlax' }, { specie: 'Torkoal' }, { specie: 'Ursaluna' }, { specie: 'Dondozo' }];
+    const s2 = scelta(veloce, r, [...logAvversario(piano, true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.ok(!/^move 1\b/.test(s2.split(', ')[0]), `già più veloce: Tailwind inutile: ${s2}`);
+});
+
+test('doppio: non usa la Protezione due volte di fila quando può attaccare', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Rillaboom', item: 'Miracle Seed', mosse: ['Wood Hammer', 'Grassy Glide', 'Protect', 'Fake Out'] },
+        { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Trick'] }
+    ];
+    const avv = [{ specie: 'Dragapult' }, { specie: 'Kingambit' }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    ia.osserva([...logAvversario(avv, true), ...logMiaSquadra(squadra, [0, 1])]);
+    ia.protezioniDiFila[0] = 1;
+    ia.protezioniDiFila[1] = 1;
+    const s = ia.scegli(r);
+    const protezioni = s.split(', ').filter(x => /^move 3\b/.test(x)).length;
+    assert.ok(protezioni < 2, `due Protezioni di fila fallirebbero spesso: ${s}`);
+});
+
+test('doppio: due Pokémon non cambiano con lo stesso compagno e c\'è al massimo una Mega e una Teracristal per turno', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Charizard', item: 'Charizardite X', mosse: ['Flamethrower', 'Dragon Claw', 'Roost', 'Protect'] },
+        { specie: 'Gengar', item: 'Gengarite', mosse: ['Shadow Ball', 'Sludge Bomb', 'Protect', 'Focus Blast'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Protect'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], extra: { active: [{ canMegaEvo: true, canTerastallize: 'Fire' }, { canMegaEvo: true, canTerastallize: 'Ghost' }] } });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragapult' }, { specie: 'Kingambit' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    const parti = s.split(', ');
+    assert.equal(parti.length, 2);
+    assert.ok(parti.filter(x => /mega/.test(x)).length <= 1, `una sola Mega per turno: ${s}`);
+    assert.ok(parti.filter(x => /terastallize/.test(x)).length <= 1, `una sola Teracristal per turno: ${s}`);
+    const cambi = parti.filter(x => x.startsWith('switch')).map(x => x.split(' ')[1]);
+    assert.equal(new Set(cambi).size, cambi.length);
+});
+
+// ===================================================
+// ANTEPRIMA, CAMBI FORZATI, CASI PARTICOLARI
+// ===================================================
+test('anteprima: sceglie quanti Pokémon servono e li ordina come "team 1234"', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Gholdengo', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Trick'] },
+        { specie: 'Rillaboom', mosse: ['Wood Hammer', 'Fake Out', 'Grassy Glide', 'Protect'] },
+        { specie: 'Incineroar', mosse: ['Flare Blitz', 'Fake Out', 'Parting Shot', 'Knock Off'] },
+        { specie: 'Amoonguss', mosse: ['Spore', 'Pollen Puff', 'Rage Powder', 'Protect'] },
+        { specie: 'Tornadus', mosse: ['Tailwind', 'Bleakwind Storm', 'Heat Wave', 'Protect'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [], extra: { richiesta: { teamPreview: true, maxChosenTeamSize: 4 } } });
+    delete r.active;
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragapult' }, { specie: 'Kingambit' }, { specie: 'Primarina' }, { specie: 'Amoonguss' }, { specie: 'Landorus-Therian' }, { specie: 'Hatterene' }], true).slice(0, 8), ...logMiaSquadra(squadra, [])]);
+    assert.match(s, /^team [1-6]{4}$/);
+    assert.equal(new Set(s.slice(5).split('')).size, 4, 'quattro Pokémon diversi');
+});
+
+test('Revival Blessing: rianima un Pokémon caduto', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Pelipper', mosse: ['Revival Blessing', 'Surf', 'Protect', 'Tailwind'] },
+        { specie: 'Garchomp', hp: 0, mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Tornadus', hp: 0, mosse: ['Tailwind', 'Heat Wave', 'Protect', 'Taunt'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    delete r.active;
+    r.forceSwitch = [true];
+    r.side.pokemon[0].reviving = true;
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragapult' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.match(s, /^switch [23]$/, `deve scegliere un Pokémon caduto: ${s}`);
+});
+
+test('dopo un rifiuto del simulatore propone un\'altra scelta, senza ripetere la stessa', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Life Orb', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] },
+        { specie: 'Gengar', item: 'Leftovers', mosse: ['Shadow Ball', 'Sludge Bomb', 'Focus Blast', 'Thunderbolt'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    ia.osserva([...logAvversario([{ specie: 'Heatran' }], false), ...logMiaSquadra(squadra, [0])]);
+    const viste = new Set();
+    for (let errori = 0; errori < 5; errori++) viste.add(ia.scegli(r, { errori }));
+    assert.ok(viste.size >= 3, `dopo i rifiuti si provano scelte diverse: ${[...viste].join(' | ')}`);
+});
+
+test('tiene traccia del campo dal log: meteo, Tailwind, Camera Magica, stati e potenziamenti', async () => {
+    const { ia } = await cervello();
+    ia.osserva([
+        '|gen|9', '|gametype|doubles', '|poke|p1|Garchomp, L50|', '|switch|p1a: Garchomp|Garchomp, L50|100/100', '|turn|1',
+        '|-weather|RainDance', '|-fieldstart|move: Trick Room', '|-sidestart|p1: A|move: Tailwind',
+        '|-boost|p1a: Garchomp|atk|2', '|-status|p1a: Garchomp|par', '|-damage|p1a: Garchomp|40/100 par',
+        '|move|p1a: Garchomp|Earthquake|p2a: X', '|-terastallize|p1a: Garchomp|Fire'
+    ]);
+    assert.equal(ia.meteo, 'rain');
+    assert.equal(ia.stanzaMagica, true);
+    assert.ok(ia.lati.p1.campo.tailwind > 0);
+    const g = ia.lati.p1.mons.Garchomp;
+    assert.equal(g.boost.atk, 2);
+    assert.equal(g.stato, 'par');
+    assert.equal(Math.round(g.pct), 40);
+    assert.ok(g.mosseViste.has('earthquake'));
+    assert.equal(g.tera, 'Fire');
+    ia.osserva(['|-weather|none', '|-fieldend|move: Trick Room', '|-sideend|p1: A|move: Tailwind', '|switch|p1a: Garchomp|Garchomp, L50|100/100']);
+    assert.equal(ia.meteo, null);
+    assert.equal(ia.stanzaMagica, false);
+    assert.equal(ia.lati.p1.campo.tailwind, 0);
+    assert.equal(ia.lati.p1.mons.Garchomp.boost.atk, 0, 'chi rientra perde i potenziamenti');
+});
+
+// ===================================================
+// PARTITE VERE
+// ===================================================
+async function squadreDi(sim, regolamento) {
+    const T = require('../docs/team-cpu.js');
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const leggi = p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8'));
+    return T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento, caricaJson: async p => leggi(p), quanti: 6 });
+}
+
+const permessi = { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } };
+const FORMATI = [
+    { nome: 'singolo Gen 9', reg: { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } },
+    { nome: 'doppio Gen 9 con Teracristal', reg: { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi } },
+    { nome: 'VGC Gen 8', reg: { genRuleType: 'within', genRuleValue: '8', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen8', vgcFormat: 'doubles', restrizioni: permessi } },
+    { nome: 'doppio Gen 6 con Mega', reg: { genRuleType: 'within', genRuleValue: '6', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: { pokemon: { ...permessi.pokemon, is_mega: { mode: 'SPECIFIC', value: true } } } } },
+    { nome: 'singolo Gen 4', reg: { genRuleType: 'within', genRuleValue: '4', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } },
+    { nome: 'singolo Gen 1', reg: { genRuleType: 'within', genRuleValue: '1', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } },
+    { nome: 'Little Cup', reg: { genRuleType: 'within', genRuleValue: '9', baseTier: 'LC', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } }
+];
+
+// il formato che il sito dà al simulatore (docs/team-sito.js), calcolato qui senza importarlo
+function formatoSito(reg) {
+    const T = require('../docs/team-cpu.js');
+    const c = T.contestoDa(reg);
+    const regole = [];
+    if (c.gen < 5) regole.push('Team Preview');
+    regole.push('Picked Team Size = 4');
+    if (c.gen >= 4) regole.push('HP Percentage Mod');
+    if (c.struttura === 'custom') regole.push('Sleep Clause Mod', 'Endless Battle Clause');
+    if (!c.meccaniche) { if (c.gen === 8) regole.push('Dynamax Clause'); if (c.gen === 9) regole.push('Terastal Clause'); }
+    return `gen${c.gen}${c.doppio ? 'doubles' : ''}customgame@@@${regole.join(',')}`;
+}
+
+for (const f of FORMATI) {
+    test(`partite vere (${f.nome}): la CPU gioca senza che il simulatore rifiuti nessuna scelta`, { timeout: 180000 }, async () => {
+        const { sim } = await caricaSim();
+        const r = await squadreDi(sim, f.reg);
+        assert.ok(r.team.length >= 4, 'servono team per giocare');
+        const formato = formatoSito(f.reg);
+        for (let i = 0; i < 4; i++) {
+            const t1 = r.team[i % r.team.length], t2 = r.team[(i + 2) % r.team.length];
+            const cpu = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 1) });
+            const contro = i % 2 === 0 ? { tipo: 'casuale' } : { tipo: 'cpu', cerebro: IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 50) }) };
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu }, agente2: contro, casuale: creaCasuale(i + 9), seme: [i + 1, 7, 11, 13] });
+            assert.deepEqual(e.errori.map(x => `${x.lato} ${x.scelta} => ${x.messaggio}`), [], 'nessuna scelta rifiutata');
+            assert.ok(!e.bloccata && !e.scaduta, `la partita deve finire (turni ${e.turni})`);
+            assert.ok(e.vincitore === 'p1' || e.vincitore === 'p2' || e.vincitore === null);
+        }
+    });
+}
+
+test('partite vere: la CPU batte il bot casuale la gran parte delle volte (singolo e doppio)', { timeout: 300000 }, async () => {
+    const { sim } = await caricaSim();
+    for (const f of [FORMATI[0], FORMATI[1]]) {
+        const r = await squadreDi(sim, f.reg);
+        const formato = formatoSito(f.reg);
+        let vinte = 0;
+        const N = 16;
+        for (let i = 0; i < N; i++) {
+            const t1 = r.team[i % r.team.length], t2 = r.team[(i * 5 + 3) % r.team.length];
+            const cpu = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 7) });
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu }, agente2: { tipo: 'casuale' }, casuale: creaCasuale(100 + i), seme: [i + 3, 5, 8, 21] });
+            if (e.vincitore === 'p1') vinte++;
+        }
+        // partite con semi fissi: il risultato è sempre lo stesso; la soglia lascia margine ai cambi di valutazione
+        assert.ok(vinte >= Math.ceil(N * 0.7), `${f.nome}: ${vinte}/${N}`);
+    }
+});
