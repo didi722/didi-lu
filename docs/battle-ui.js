@@ -761,7 +761,8 @@ function avviaBattaglia() {
     nascondiMessaggio();
     nuovoSet();
     disegnaInfo();
-    if (cpu) { cpu.cerebro = nuovoCervello('p2'); cpu.errori = 0; cpu.rqid = null; }
+    // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
+    if (cpu) { cpu.cerebro = nuovoCervello('p2', { piano: cpu.team[cpu.indice] && cpu.team[cpu.indice].piano }); cpu.errori = 0; cpu.rqid = null; }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2 });
     collegaEventi(battaglia);
     battaglia.avvia();

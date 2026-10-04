@@ -45,17 +45,17 @@ function creaRichiesta(Dex, { squadra, attivi, livello = 50, gen = 9, extra = {}
 }
 
 // Righe del log: la squadra avversaria e chi è in campo (tutti a pieno HP)
-function logAvversario(avversari, doppio, turno = 1) {
+function logAvversario(avversari, doppio, turno = 1, livello = 50) {
     const righe = ['|gen|9', `|gametype|${doppio ? 'doubles' : 'singles'}`];
-    avversari.forEach(a => righe.push(`|poke|p1|${a.specie}, L50|`));
-    avversari.slice(0, doppio ? 2 : 1).forEach((a, i) => righe.push(`|switch|p1${'ab'[i]}: ${a.specie}|${a.specie}, L50|${a.hp == null ? 100 : a.hp}/100`));
+    avversari.forEach(a => righe.push(`|poke|p1|${a.specie}, L${livello}|`));
+    avversari.slice(0, doppio ? 2 : 1).forEach((a, i) => righe.push(`|switch|p1${'ab'[i]}: ${a.specie}|${a.specie}, L${livello}|${a.hp == null ? 100 : a.hp}/100`));
     righe.push(`|turn|${turno}`);
     return righe;
 }
-function logMiaSquadra(squadra, attivi) {
+function logMiaSquadra(squadra, attivi, livello = 50) {
     const righe = [];
-    squadra.forEach(s => righe.push(`|poke|p2|${s.specie}, L50|`));
-    attivi.forEach((i, k) => righe.push(`|switch|p2${'ab'[k]}: ${squadra[i].specie}|${squadra[i].specie}, L50|100/100`));
+    squadra.forEach(s => righe.push(`|poke|p2|${s.specie}, L${livello}|`));
+    attivi.forEach((i, k) => righe.push(`|switch|p2${'ab'[k]}: ${squadra[i].specie}|${squadra[i].specie}, L${livello}|${squadra[i].hp == null ? 100 : squadra[i].hp}/100`));
     return righe;
 }
 
@@ -216,19 +216,26 @@ test('doppio: Tailwind se la squadra è più lenta, non se è già più veloce',
     const { sim } = await cervello();
     const squadra = [
         { specie: 'Tornadus', item: 'Leftovers', abilita: 'Prankster', mosse: ['Tailwind', 'Bleakwind Storm', 'Heat Wave', 'Protect'] },
-        { specie: 'Torkoal', item: 'Leftovers', mosse: ['Eruption', 'Heat Wave', 'Protect', 'Earth Power'] },
+        { specie: 'Ursaluna', item: 'Flame Orb', mosse: ['Facade', 'Earthquake', 'Protect', 'Headlong Rush'] },
         { specie: 'Amoonguss', item: 'Sitrus Berry', mosse: ['Pollen Puff', 'Rage Powder', 'Protect', 'Clear Smog'] }
     ];
     const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
 
     const lenta = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
-    const contro = [{ specie: 'Dragapult' }, { specie: 'Cyclizar' }, { specie: 'Iron Bundle' }, { specie: 'Cyclizar' }];
+    const contro = [{ specie: 'Greninja' }, { specie: 'Weavile' }, { specie: 'Starmie' }, { specie: 'Alakazam' }];
     const s = scelta(lenta, r, [...logAvversario(contro, true), ...logMiaSquadra(squadra, [0, 1])]);
     assert.match(s.split(', ')[0], /^move 1\b/, `squadra più lenta: ${s}`);
 
+    // stessa mossa, ma qui in campo ci sono due Pokémon più veloci di tutti i loro: Tailwind non serve
+    const squadraVeloce = [
+        { specie: 'Tornadus', item: 'Leftovers', abilita: 'Prankster', mosse: ['Tailwind', 'Bleakwind Storm', 'Heat Wave', 'Protect'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Amoonguss', item: 'Sitrus Berry', mosse: ['Pollen Puff', 'Rage Powder', 'Protect', 'Clear Smog'] }
+    ];
+    const rVeloce = creaRichiesta(sim.Dex, { squadra: squadraVeloce, attivi: [0, 1] });
     const veloce = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
     const piano = [{ specie: 'Snorlax' }, { specie: 'Torkoal' }, { specie: 'Ursaluna' }, { specie: 'Dondozo' }];
-    const s2 = scelta(veloce, r, [...logAvversario(piano, true), ...logMiaSquadra(squadra, [0, 1])]);
+    const s2 = scelta(veloce, rVeloce, [...logAvversario(piano, true), ...logMiaSquadra(squadraVeloce, [0, 1])]);
     assert.ok(!/^move 1\b/.test(s2.split(', ')[0]), `già più veloce: Tailwind inutile: ${s2}`);
 });
 
@@ -241,8 +248,8 @@ test('doppio: non usa la Protezione due volte di fila quando può attaccare', as
     const avv = [{ specie: 'Dragapult' }, { specie: 'Kingambit' }];
     const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
     ia.osserva([...logAvversario(avv, true), ...logMiaSquadra(squadra, [0, 1])]);
-    ia.protezioniDiFila[0] = 1;
-    ia.protezioniDiFila[1] = 1;
+    // al turno scorso tutti e due si sono protetti: ora la Protezione riuscirebbe una volta su tre
+    ia.osserva(['|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|move|p2b: Gholdengo|Protect|p2b: Gholdengo', '|turn|2']);
     const s = ia.scegli(r);
     const protezioni = s.split(', ').filter(x => /^move 3\b/.test(x)).length;
     assert.ok(protezioni < 2, `due Protezioni di fila fallirebbero spesso: ${s}`);
@@ -336,6 +343,327 @@ test('tiene traccia del campo dal log: meteo, Tailwind, Camera Magica, stati e p
     assert.equal(ia.stanzaMagica, false);
     assert.equal(ia.lati.p1.campo.tailwind, 0);
     assert.equal(ia.lati.p1.mons.Garchomp.boost.atk, 0, 'chi rientra perde i potenziamenti');
+});
+
+// ===================================================
+// SUPER EFFICACE, PROTEZIONI, CAMBIO SICURO
+// ===================================================
+test('singolo: un tentennamento del 30% non fa preferire una mossa resistita a una 4x (Iron Treads contro Pelipper)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Iron Treads', item: 'Sitrus Berry', mosse: ['Stealth Rock', 'Volt Switch', 'Earthquake', 'Iron Head'] },
+        { specie: 'Primarina', item: 'Leftovers', mosse: ['Moonblast', 'Surf', 'Psychic', 'Energy Ball'] },
+        { specie: 'Kyurem', item: 'Leftovers', mosse: ['Ice Beam', 'Draco Meteor', 'Earth Power', 'Freeze-Dry'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Pelipper' }, { specie: 'Garchomp' }], false), ...logMiaSquadra(squadra, [0]), '|-weather|RainDance']);
+    assert.notEqual(s, 'move 4', 'Iron Head è resistita: Volt Switch fa 4x');
+});
+
+test('singolo: preferisce la mossa super efficace a una neutra con STAB quasi pari (Rillaboom contro Iron Hands)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'High Horsepower', 'Grassy Glide', 'Knock Off'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Iron Hands' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'move 2', 'High Horsepower è super efficace su Iron Hands (Elettro)');
+});
+
+test('doppio: tra due bersagli sceglie quello su cui la mossa è super efficace', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Primarina', item: 'Leftovers', mosse: ['Moonblast', 'Surf', 'Protect', 'Icy Wind'] },
+        { specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'Grassy Glide', 'Protect', 'Fake Out'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    // Heatran (Fuoco/Acciaio) e Garchomp (Drago/Terra): Surf è 2x su Heatran... e 2x su Garchomp è Terra; Moonblast è 2x su Garchomp (Drago)
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Heatran' }, { specie: 'Garchomp' }, { specie: 'Amoonguss' }, { specie: 'Kingambit' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    const [a] = s.split(', ');
+    assert.ok(!/^move 1 1\b/.test(a), `Moonblast su Heatran (Fuoco/Acciaio) è 0,25x: ${s}`);
+});
+
+test('il conto delle protezioni: si legge dal log, per Pokémon, e si azzera con un fallimento, un\'altra mossa o un cambio', async () => {
+    const { ia } = await cervello();
+    ia.osserva(['|gen|9', '|gametype|doubles', '|switch|p2a: Rillaboom|Rillaboom, L50|100/100', '|switch|p2b: Gholdengo|Gholdengo, L50|100/100', '|turn|1']);
+    const ril = () => ia.lati.p2.mons.Rillaboom, gho = () => ia.lati.p2.mons.Gholdengo;
+    ia.osserva(['|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|move|p2b: Gholdengo|Make It Rain|p1a: X', '|turn|2']);
+    assert.equal(ia._protezioniDiFila(ril()), 1, 'ha protetto il turno scorso');
+    assert.equal(ia._protezioniDiFila(gho()), 0, 'Gholdengo no');
+    // la seconda di fila, riuscita: il conto sale
+    ia.osserva(['|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|-singleturn|p2a: Rillaboom|Protect', '|turn|3']);
+    assert.equal(ia._protezioniDiFila(ril()), 2);
+    // un turno senza protezione: si riparte
+    ia.osserva(['|move|p2a: Rillaboom|Wood Hammer|p1a: X', '|turn|4']);
+    assert.equal(ia._protezioniDiFila(ril()), 0);
+    // una protezione fallita azzera il conto (la prossima riuscirà sempre)
+    ia.osserva(['|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|turn|5', '|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|-fail|p2a: Rillaboom']);
+    ia.osserva(['|turn|6']);
+    assert.equal(ia._protezioniDiFila(ril()), 0, 'una protezione che fallisce azzera il conto');
+    // chi esce e rientra riparte da zero
+    ia.osserva(['|move|p2a: Rillaboom|Protect|p2a: Rillaboom', '|switch|p2a: Rillaboom|Rillaboom, L50|100/100', '|turn|7']);
+    assert.equal(ia._protezioniDiFila(ril()), 0);
+});
+
+test('singolo: la seconda Protezione di fila non si gioca nemmeno contro un attacco micidiale se si può fare altro', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Recover'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    ia.osserva([...logAvversario([{ specie: 'Kingambit' }], false), ...logMiaSquadra(squadra, [0])]);
+    ia.osserva(['|move|p2a: Gholdengo|Protect|p2a: Gholdengo', '|turn|2']);
+    const s = ia.scegli(r);
+    assert.notEqual(s, 'move 3', `la seconda Protezione riuscirebbe una volta su tre: ${s}`);
+});
+
+test('la prima Protezione si usa ancora quando serve (Pokémon quasi esausto, nessun altro modo di salvarlo)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Gholdengo', item: 'Leftovers', hp: 20, mosse: ['Protect', 'Shadow Ball', 'Make It Rain', 'Trick'] },
+        { specie: 'Garchomp', item: 'Leftovers', hp: 0, mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Flutter Mane' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(s, 'move 1', `Protezione al primo turno: ${s}`);
+});
+
+test('doppio: la prima Protezione si usa ancora quando serve (Pokémon quasi esausto contro due attaccanti)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Gholdengo', item: 'Leftovers', hp: 20, mosse: ['Protect', 'Shadow Ball', 'Make It Rain', 'Trick'] },
+        { specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'Grassy Glide', 'High Horsepower', 'Protect'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Dragapult' }, { specie: 'Flutter Mane' }, { specie: 'Kingambit' }, { specie: 'Amoonguss' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.match(s.split(', ')[0], /^move 1$/, `Protezione al primo turno: ${s}`);
+});
+
+test('singolo: con una minaccia 2x e in panchina chi la regge, cambia invece di curarsi (Zapdos contro Tyranitar)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Zapdos', item: 'Leftovers', hp: 46, mosse: ['Roost', 'Thunderbolt', 'Heat Wave', 'Hurricane'] },
+        { specie: 'Hatterene', item: 'Leftovers', mosse: ['Psychic', 'Dazzling Gleam', 'Calm Mind', 'Mystical Fire'] },
+        { specie: 'Heatran', item: 'Leftovers', mosse: ['Magma Storm', 'Earth Power', 'Flash Cannon', 'Stealth Rock'] },
+        { specie: 'Ogerpon', item: 'Leftovers', mosse: ['Ivy Cudgel', 'Knock Off', 'Swords Dance', 'Horn Leech'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Tyranitar' }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    assert.equal(s, 'switch 3', 'Heatran (Acciaio) resiste alla Roccia: cambio sicuro');
+});
+
+test('singolo: non cambia se può mettere KO prima che l\'avversario muova', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Defog'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    // Heatran al 25%, più lento di Garchomp: Terremoto è 4x e lo manda KO
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Heatran', hp: 25 }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    assert.equal(s, 'move 1', `si attacca: ${s}`);
+});
+
+test('singolo: non cambia verso un Pokémon che la minaccia colpirebbe ancora più forte', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Charizard', item: 'Leftovers', mosse: ['Flamethrower', 'Air Slash', 'Roost', 'Dragon Pulse'] },
+        { specie: 'Ho-Oh', item: 'Leftovers', mosse: ['Sacred Fire', 'Brave Bird', 'Recover', 'Earthquake'] },
+        { specie: 'Moltres', item: 'Leftovers', mosse: ['Flamethrower', 'Hurricane', 'Roost', 'U-turn'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    // Tyranitar colpisce 4x Charizard, Ho-Oh e Moltres altrettanto (Fuoco/Volante): nessun cambio sicuro, meglio attaccare
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Tyranitar' }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    assert.match(s, /^move /, `nessuno regge la Roccia: ${s}`);
+});
+
+test('singolo: un U-turn/Volt Switch è il cambio sicuro per eccellenza: si colpisce e poi entra chi regge', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Iron Treads', item: 'Sitrus Berry', mosse: ['Stealth Rock', 'Volt Switch', 'Earthquake', 'Iron Head'] },
+        { specie: 'Primarina', item: 'Leftovers', mosse: ['Moonblast', 'Surf', 'Psychic', 'Energy Ball'] },
+        { specie: 'Kyurem', item: 'Leftovers', mosse: ['Ice Beam', 'Draco Meteor', 'Earth Power', 'Freeze-Dry'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Pelipper' }, { specie: 'Garchomp' }], false), ...logMiaSquadra(squadra, [0]), '|-weather|RainDance']);
+    assert.equal(s, 'move 2', 'Volt Switch: 4x su Pelipper, e poi entra chi regge la sua risposta');
+});
+
+test('singolo: il cambio sicuro regge anche la risposta dell\'avversario (non solo la mossa che si aspetta)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Heatran', item: 'Leftovers', hp: 40, mosse: ['Magma Storm', 'Earth Power', 'Flash Cannon', 'Protect'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Outrage', 'Extreme Speed', 'Earthquake', 'Roost'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Defog'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    // Garchomp colpisce Heatran 4x con Terremoto: Dragonite è immune alla Terra ma subirebbe Outrage (Drago) 2x; Corviknight regge entrambe
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Garchomp', hp: 60 }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    assert.equal(s, 'switch 3', 'Corviknight: immune a Terremoto e resiste a Outrage');
+});
+
+test('singolo: non cambia verso un Pokémon che regge la mossa prevista ma è debole all\'altro attacco dell\'avversario', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Heatran', item: 'Leftovers', hp: 50, mosse: ['Magma Storm', 'Earth Power', 'Flash Cannon', 'Protect'] },
+        { specie: 'Dragonite', item: 'Leftovers', mosse: ['Outrage', 'Extreme Speed', 'Earthquake', 'Roost'] },
+        { specie: 'Zapdos', item: 'Leftovers', mosse: ['Thunderbolt', 'Heat Wave', 'Roost', 'Hurricane'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    // sia Dragonite sia Zapdos sono immuni a Terremoto, ma Dragonite è 2x debole al Drago (Outrage, l'altro attacco di Garchomp)
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Garchomp' }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    assert.notEqual(s, 'switch 2', `Dragonite subirebbe Outrage 2x: ${s}`);
+});
+
+test('le mosse che l\'avversario non ha ancora mostrato si presumono dal Dex (la sua mossa più forte per tipo), non a potenza fissa', async () => {
+    const { ia } = await cervello();
+    ia.osserva(['|gen|9', '|gametype|singles', '|switch|p1a: Iron Moth|Iron Moth, L50|100/100', '|turn|1']);
+    const moth = ia.vista(ia.lati.p1.mons['Iron Moth']);
+    const presunte = ia.mosseAvversario(moth);
+    const fuoco = presunte.find(m => m.tipo === 'Fire');
+    assert.ok(fuoco && fuoco.potenza > 95, `una mossa di fuoco forte (Overheat), non 85 fissi: ${fuoco && fuoco.nome} ${fuoco && fuoco.potenza}`);
+    assert.ok(presunte.every(m => m.categoria !== 'Status'), 'solo attacchi');
+    // una mossa vista resta quella vera
+    ia.osserva(['|move|p1a: Iron Moth|Sludge Wave|p2a: X']);
+    assert.ok(ia.mosseAvversario(ia.vista(ia.lati.p1.mons['Iron Moth'])).some(m => m.id === 'sludgewave'));
+});
+
+test('un avversario quasi esausto non si prevede che usi una mossa che lo metterebbe KO da sola (Steel Beam)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] },
+        { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Defog'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], livello: 100 });
+    ia.osserva([...logAvversario([{ specie: 'Heatran', hp: 25 }], false, 1, 100), ...logMiaSquadra(squadra, [0], 100)]);
+    const s = ia.scegli(r);
+    assert.equal(s, 'move 1', `Terremoto mette KO Heatran prima che muova: ${s}`);
+});
+
+// ===================================================
+// STRATEGIA DEL TEAM
+// ===================================================
+const squadraPioggia = [
+    { specie: 'Garchomp', hp: 0, mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+    { specie: 'Pelipper', item: 'Leftovers', abilita: 'Drizzle', mosse: ['Hurricane', 'Surf', 'U-turn', 'Protect'] },
+    { specie: 'Excadrill', item: 'Leftovers', mosse: ['Earthquake', 'Iron Head', 'Rock Slide', 'Protect'] },
+    { specie: 'Corviknight', item: 'Leftovers', mosse: ['Brave Bird', 'Iron Head', 'Roost', 'Protect'] }
+];
+
+test('strategia: il piano si legge dai set (setter e chi ne approfitta) e si deduce se quello dato non è realizzabile', async () => {
+    const { sim } = await cervello();
+    const squadra = [
+        { specie: 'Pelipper', item: 'Leftovers', abilita: 'Drizzle', mosse: ['Hurricane', 'Surf', 'Tailwind', 'Protect'] },
+        { specie: 'Kingdra', item: 'Leftovers', abilita: 'Swift Swim', mosse: ['Waterfall', 'Draco Meteor', 'Protect', 'Rain Dance'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Torkoal', item: 'Leftovers', mosse: ['Eruption', 'Heat Wave', 'Protect', 'Earth Power'] }
+    ];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1], livello: 100 });
+    const deduce = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5 });
+    const s1 = deduce._leggiStrategia(deduce._squadra(r));
+    assert.equal(s1.piano, 'pioggia', 'Drizzle e Swift Swim: pioggia');
+    assert.equal(s1.meteo, 'rain');
+    assert.deepEqual(s1.meteoSetter.rain, [1]);
+    assert.ok(s1.vento.includes(1), 'Pelipper ha anche Tailwind');
+    // un piano che il team non può realizzare (nessuno ha la Stanza Magica) si ignora
+    const finto = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, piano: 'trickroom' });
+    assert.equal(finto._leggiStrategia(finto._squadra(r)).piano, 'pioggia');
+    // un piano dato e coerente si conferma
+    const dato = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, piano: 'pioggia' });
+    assert.equal(dato._leggiStrategia(dato._squadra(r)).piano, 'pioggia');
+});
+
+test('strategia: dopo un KO, con il piano della pioggia manda chi mette la pioggia; senza piano, chi risponde meglio', async () => {
+    const { sim } = await cervello();
+    const scegliPer = async piano => {
+        const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, piano });
+        const r = creaRichiesta(sim.Dex, { squadra: squadraPioggia, attivi: [0], livello: 100 });
+        delete r.active;
+        r.forceSwitch = [true];
+        return scelta(ia, r, [...logAvversario([{ specie: 'Kingambit' }], false, 1, 100), ...logMiaSquadra(squadraPioggia, [0], 100)]);
+    };
+    assert.equal(await scegliPer('pioggia'), 'switch 2', 'Pelipper rimette la pioggia');
+    assert.equal(await scegliPer(undefined), 'switch 3', 'senza piano: Excadrill risponde meglio a Kingambit');
+});
+
+test('strategia: il team del piano della pioggia in anteprima porta e manda in campo chi mette la pioggia anche contro avversari che lo minacciano', async () => {
+    const mia = [
+        { specie: 'Pelipper', item: 'Leftovers', abilita: 'Drizzle', mosse: ['Hurricane', 'Surf', 'Tailwind', 'Protect'] },
+        { specie: 'Kingdra', item: 'Leftovers', abilita: 'Swift Swim', mosse: ['Waterfall', 'Draco Meteor', 'Protect', 'Rain Dance'] },
+        { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] },
+        { specie: 'Rillaboom', item: 'Leftovers', mosse: ['Wood Hammer', 'Grassy Glide', 'Fake Out', 'Protect'] },
+        { specie: 'Gholdengo', item: 'Leftovers', mosse: ['Make It Rain', 'Shadow Ball', 'Protect', 'Trick'] },
+        { specie: 'Kingambit', item: 'Leftovers', mosse: ['Kowtow Cleave', 'Sucker Punch', 'Iron Head', 'Protect'] }
+    ];
+    const lenti = ['Clefable', 'Blissey', 'Corviknight', 'Toxapex', 'Slowbro', 'Skarmory'];
+    const { sim } = await cervello();
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, piano: 'pioggia' });
+    const r = creaRichiesta(sim.Dex, { squadra: mia, attivi: [], livello: 100, extra: { richiesta: { teamPreview: true, maxChosenTeamSize: 4 } } });
+    delete r.active;
+    const s = scelta(ia, r, [...logAvversario(lenti.map(specie => ({ specie })), true, 1, 100).slice(0, 2 + lenti.length), ...logMiaSquadra(mia, [], 100)]);
+    const idx = s.slice(5).split('').map(Number);
+    assert.ok(idx.slice(0, 2).includes(1), `Pelipper (Drizzle) tra i due in campo: ${s}`);
+    assert.ok(idx.includes(2), `Kingdra (Swift Swim), che ne approfitta, viene portato: ${s}`);
+});
+
+test('strategia: il team della Stanza Magica la mette al primo turno quando gli avversari sono più veloci', async () => {
+    const { sim } = await cervello();
+    const squadra = [
+        { specie: 'Porygon2', item: 'Eviolite', mosse: ['Trick Room', 'Tri Attack', 'Recover', 'Protect'] },
+        { specie: 'Torkoal', item: 'Leftovers', mosse: ['Eruption', 'Heat Wave', 'Protect', 'Earth Power'] },
+        { specie: 'Dusclops', item: 'Eviolite', mosse: ['Night Shade', 'Pain Split', 'Protect', 'Will-O-Wisp'] }
+    ];
+    const ia = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: () => 0.5, piano: 'trickroom' });
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0, 1] });
+    const s = scelta(ia, r, [...logAvversario([{ specie: 'Rillaboom' }, { specie: 'Kingambit' }, { specie: 'Amoonguss' }, { specie: 'Gholdengo' }], true), ...logMiaSquadra(squadra, [0, 1])]);
+    assert.match(s.split(', ')[0], /^move 1$/, `Trick Room: ${s}`);
+});
+
+// ===================================================
+// ANTEPRIMA SULLA SQUADRA AVVERSARIA
+// ===================================================
+const miaSquadraAnteprima = [
+    { specie: 'Gyarados', item: 'Leftovers', mosse: ['Waterfall', 'Ice Fang', 'Earthquake', 'Dragon Dance'] },
+    { specie: 'Starmie', item: 'Leftovers', mosse: ['Surf', 'Ice Beam', 'Psychic', 'Recover'] },
+    { specie: 'Venusaur', item: 'Leftovers', mosse: ['Giga Drain', 'Sludge Bomb', 'Earthquake', 'Synthesis'] },
+    { specie: 'Ferrothorn', item: 'Leftovers', mosse: ['Power Whip', 'Gyro Ball', 'Knock Off', 'Leech Seed'] },
+    { specie: 'Garchomp', item: 'Leftovers', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Swords Dance'] },
+    { specie: 'Blissey', item: 'Leftovers', mosse: ['Seismic Toss', 'Soft-Boiled', 'Toxic', 'Flamethrower'] }
+];
+const avversariAnteprima = {
+    fuoco: ['Charizard', 'Heatran', 'Arcanine', 'Talonflame', 'Torkoal', 'Volcarona'],
+    acqua: ['Swampert', 'Vaporeon', 'Milotic', 'Kingdra', 'Gastrodon', 'Slowbro'],
+    volante: ['Dragonite', 'Zapdos', 'Corviknight', 'Salamence', 'Togekiss', 'Landorus'],
+    misto: ['Gengar', 'Tyranitar', 'Clefable', 'Excadrill', 'Rotom-Wash', 'Hippowdon']
+};
+async function anteprimaContro(avv, opzioni = {}, squadra = miaSquadraAnteprima, doppio = false) {
+    const { sim, ia } = await cervello(opzioni);
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [], livello: 100, extra: { richiesta: { teamPreview: true, maxChosenTeamSize: 4 } } });
+    delete r.active;
+    const log = logAvversario(avv.map(specie => ({ specie })), doppio, 1, 100).slice(0, 2 + avv.length);
+    const s = scelta(ia, r, [...log, ...logMiaSquadra(squadra, [], 100)]);
+    assert.match(s, /^team [1-6]{4}$/);
+    const idx = s.slice(5).split('').map(Number);
+    assert.equal(new Set(idx).size, 4);
+    return idx.map(i => squadra[i - 1].specie);
+}
+
+test('anteprima: i quattro dipendono dai sei avversari (contro il fuoco porta l\'acqua e non l\'erba; contro l\'acqua l\'erba)', async () => {
+    const fuoco = await anteprimaContro(avversariAnteprima.fuoco);
+    assert.ok(fuoco.includes('Gyarados') || fuoco.includes('Starmie'), `contro il fuoco: ${fuoco}`);
+    assert.ok(!fuoco.includes('Venusaur'), `l'erba soffre il fuoco: ${fuoco}`);
+    const acqua = await anteprimaContro(avversariAnteprima.acqua);
+    assert.ok(acqua.includes('Venusaur') || acqua.includes('Ferrothorn'), `contro l'acqua: ${acqua}`);
+    const tutti = [];
+    for (const avv of Object.values(avversariAnteprima)) tutti.push((await anteprimaContro(avv)).slice().sort().join(','));
+    assert.ok(new Set(tutti).size >= 3, `quattro avversari diversi, almeno tre scelte diverse: ${tutti.join(' | ')}`);
+});
+
+test('anteprima: senza vedere i sei avversari sceglie comunque quattro Pokémon (i più forti)', async () => {
+    const { sim, ia } = await cervello();
+    const r = creaRichiesta(sim.Dex, { squadra: miaSquadraAnteprima, attivi: [], livello: 100, extra: { richiesta: { teamPreview: true, maxChosenTeamSize: 4 } } });
+    delete r.active;
+    const s = scelta(ia, r, logMiaSquadra(miaSquadraAnteprima, [], 100));
+    assert.match(s, /^team [1-6]{4}$/);
 });
 
 // ===================================================

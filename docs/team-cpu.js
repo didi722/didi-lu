@@ -297,14 +297,13 @@
     // =================================================
     // SINERGIE DI SQUADRA
     // =================================================
-    const SETTER = { pioggia: ['drizzle'], sole: ['drought', 'orichalcumpulse'], sabbia: ['sandstream'], neve: ['snowwarning'] };
-    const SFRUTTATORI = {
-        pioggia: ['swiftswim', 'raindish', 'dryskin', 'hydration'],
-        sole: ['chlorophyll', 'solarpower', 'protosynthesis', 'leafguard', 'flowergift'],
-        sabbia: ['sandrush', 'sandforce', 'sandveil'],
-        neve: ['slushrush', 'snowcloak', 'icebody', 'iceface']
-    };
-    const TIPO_METEO = { pioggia: 'Water', sole: 'Fire', sabbia: 'Rock', neve: 'Ice' };
+    // Chi mette il meteo, chi ne approfitta e il tipo rafforzato: la conoscenza è condivisa con l'IA (cpu-conoscenza.js),
+    // qui con i nomi dei piani (pioggia, sole, sabbia, neve)
+    const SETTER = {}, SFRUTTATORI = {}, TIPO_METEO = {};
+    Object.keys(K.PIANO_METEO).forEach(piano => {
+        const w = K.PIANO_METEO[piano];
+        SETTER[piano] = K.METEO_SETTER[w]; SFRUTTATORI[piano] = K.METEO_SFRUTTATORI[w]; TIPO_METEO[piano] = K.METEO_TIPO[w];
+    });
 
     function abilitaPossibili(cand) { return cand.abilita.map(id); }
 
@@ -377,7 +376,8 @@
                 membri.filter(c => c.tipiBase.includes(TIPO_METEO[p])).length * 0.5;
             if (setter) s += 1.6 + Math.min(sfrutt, 3) * 0.7; else s -= 1.5;
         } else if (p === 'trickroom') {
-            if (ha(c => c.opz.trickroom)) s += 1.6; else s -= 1.8;
+            // chi mette la Stanza Magica conta: uno lento (che ci resta dentro) vale molto più di uno veloce che la sfrutterebbe male
+            if (ha(c => c.opz.trickroom)) s += 1.0 + (ha(c => c.opz.trickroom && c.basi.spe <= 80) ? 0.8 : 0); else s -= 1.8;
             s += membri.filter(c => c.lento && c.offesa >= 95).length * 0.8;
             s -= membri.filter(c => c.veloce).length * 0.7;
         } else if (p === 'tailwind') {
@@ -406,7 +406,7 @@
             if (ruolo.velocita === 'tailwind') aggiungi(get('tailwind'));
             if (ruolo.velocita === 'trickroom') aggiungi(get('trickroom'));
             if (ruolo.redirezione) aggiungi(o.redirezione);
-            if (ruolo.schermi) { aggiungi(get('auroraveil')); aggiungi(get('reflect')); aggiungi(get('lightscreen')); }
+            if (ruolo.schermi) { if (piano.nome === 'neve') aggiungi(get('auroraveil')); aggiungi(get('reflect')); aggiungi(get('lightscreen')); }
             if (ruolo.aiuto) aggiungi(get('helpinghand'));
             if (ruolo.rallenta) aggiungi(get(o.rallenta));
             if (ruolo.stato) aggiungi(get(o.paralisi) || get(o.sonno) || get('willowisp'));
@@ -497,7 +497,9 @@
             if (fo) a.fakeout = fo.id;
             const red = per(membri.filter(c => c.opz.redirezione && c.id !== (fo && fo.id)), c => c.robustezza)[0];
             if (red) a.redirezione = red.id;
-            const sch = membri.find(c => c.opz.schermi && ![fo, red].some(x => x && x.id === c.id) && c.supporto);
+            // gli schermi (due mosse su quattro, più Protezione) li mette chi ha poco da attaccare, o chi li mette in priorità (Prankster)
+            const sch = membri.find(c => c.opz.schermi && ![fo, red].some(x => x && x.id === c.id) && c.supporto &&
+                (c.offesa < 105 || abilitaPossibili(c).includes('prankster')));
             if (sch) a.schermi = sch.id;
             for (const c of membri) {
                 const preso = c.id === a.fakeout || a.velocita[c.id] || c.id === a.redirezione || c.id === a.schermi;
@@ -680,11 +682,72 @@
         });
     }
 
+    // Chi può impostare il piano del team: Tailwind, Stanza Magica (meglio se non troppo veloce), il meteo (abilità)
+    function impostaIlPiano(piano, c) {
+        if (piano.nome === 'tailwind') return !!c.opz.tailwind;
+        if (piano.nome === 'trickroom') return !!c.opz.trickroom;
+        if (SETTER[piano.nome]) return abilitaPossibili(c).some(a => SETTER[piano.nome].includes(a));
+        return false;
+    }
+    const pianoConSetter = piano => piano.nome === 'tailwind' || piano.nome === 'trickroom' || !!SETTER[piano.nome];
+    // Chi ne approfitta (e quanti ne servono): attaccanti lenti per la Stanza Magica, chi ama il meteo (abilità o tipo) per il meteo
+    function sfruttaIlPiano(piano, c) {
+        if (piano.nome === 'trickroom') return c.lento && c.offesa >= 95;
+        if (SETTER[piano.nome]) {
+            return abilitaPossibili(c).some(a => SFRUTTATORI[piano.nome].includes(a)) ||
+                (c.tipiAttacco.includes(TIPO_METEO[piano.nome]) && c.offesa >= 80);
+        }
+        return false;
+    }
+    const abusatoriNecessari = piano => piano.nome === 'trickroom' ? 2 : (SETTER[piano.nome] ? 1 : 0);
+
     function compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo) {
         const membri = [asso];
         const usate = new Set([id(asso.base.baseSpecies || asso.base.name)]);
         let uber = ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(asso.tier).replace(/[()]/g, '')) ? 1 : 0;
         let guardia = 0;
+        // Un team con un piano parte da chi lo imposta: se l'asso non può farlo, il secondo membro è il miglior setter disponibile
+        // (altrimenti il piano resterebbe un'etichetta senza nessuno che lo faccia)
+        if (pianoConSetter(piano) && !impostaIlPiano(piano, asso)) {
+            let scelto = null, mv = -1e9;
+            for (const c of cand) {
+                if (membri.includes(c) || !impostaIlPiano(piano, c)) continue;
+                if (usate.has(id(c.base.baseSpecies || c.base.name))) continue;
+                const eUber = /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
+                if (ctx.baseTier === 'STANDARD' && eUber && uber >= 2) continue;
+                const uso = usoGlobale.get(chiaveUso(c)) || 0;
+                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25);
+                if (piano.nome === 'trickroom' && c.basi.spe <= 80) v += 0.6;
+                if (v > mv) { mv = v; scelto = c; }
+            }
+            if (scelto) {
+                membri.push(scelto);
+                usate.add(id(scelto.base.baseSpecies || scelto.base.name));
+                if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
+            }
+        }
+        // ...e da chi ne approfitta: senza, il setter metterebbe un meteo (o una Stanza Magica) che non serve a nessuno
+        const aggiungi = scelto => {
+            membri.push(scelto);
+            usate.add(id(scelto.base.baseSpecies || scelto.base.name));
+            if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
+        };
+        // (per il meteo il setter non conta: ci vuole qualcun altro che ne approfitti)
+        const abusatoriPresenti = () => membri.filter(c => sfruttaIlPiano(piano, c) && !(SETTER[piano.nome] && impostaIlPiano(piano, c))).length;
+        while (abusatoriNecessari(piano) && abusatoriPresenti() < abusatoriNecessari(piano) && membri.length < 5 && guardia++ < 100) {
+            let scelto = null, mv = -1e9;
+            for (const c of cand) {
+                if (membri.includes(c) || !sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c))) continue;
+                if (usate.has(id(c.base.baseSpecies || c.base.name))) continue;
+                const eUber = /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
+                if (ctx.baseTier === 'STANDARD' && eUber && uber >= 2) continue;
+                const uso = usoGlobale.get(chiaveUso(c)) || 0;
+                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25);
+                if (v > mv) { mv = v; scelto = c; }
+            }
+            if (!scelto) break;
+            aggiungi(scelto);
+        }
         while (membri.length < 6 && guardia++ < 400) {
             const attuale = punteggio(dex, membri, piano, ctx, tipi);
             let migliori = [];
@@ -708,6 +771,44 @@
             if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
         }
         return membri;
+    }
+
+    // =================================================
+    // LA STRATEGIA DEL TEAM
+    // =================================================
+    // Un team ha un piano solo se i suoi set lo realizzano davvero: chi lo imposta (Tailwind, Stanza Magica, meteo) e chi ne
+    // approfitta. Si guarda quello che c'è nei set finali (mosse e abilità scelte), non quello che i Pokémon potrebbero fare.
+    // `info`: [{ cand, mosse (descritte), abilita }]. Restituisce { piano, richiesto, coerente, setter[], abusatori[], nucleo[] }:
+    // `piano` è quello realizzato (se il richiesto non regge diventa "bilanciato": meglio un team onesto che un'etichetta falsa).
+    function strategiaDelTeam(richiesto, info) {
+        const mosseDi = i => i.mosse.map(m => m.id);
+        const attacca = i => i.mosse.some(m => m.categoria !== 'Status');
+        const abil = i => id(i.abilita || '');
+        const nomi = lista => lista.map(i => i.cand.nome);
+        let setter = [], abusatori = [], coerente = true;
+        if (richiesto === 'tailwind') {
+            setter = info.filter(i => mosseDi(i).includes('tailwind'));
+            abusatori = info.filter(i => !setter.includes(i) && attacca(i) && i.cand.basi.spe >= 40);
+            coerente = setter.length >= 1 && abusatori.length >= 2;
+        } else if (richiesto === 'trickroom') {
+            setter = info.filter(i => mosseDi(i).includes('trickroom'));
+            abusatori = info.filter(i => attacca(i) && i.cand.lento && i.cand.offesa >= 95);
+            coerente = setter.length >= 1 && abusatori.length >= 2;
+        } else if (SETTER[richiesto]) {
+            setter = info.filter(i => SETTER[richiesto].includes(abil(i)));
+            abusatori = info.filter(i => !setter.includes(i) && attacca(i) && (SFRUTTATORI[richiesto].includes(abil(i)) ||
+                (i.mosse.some(m => m.categoria !== 'Status' && m.tipo === TIPO_METEO[richiesto]) && i.cand.offesa >= 80)));
+            coerente = setter.length >= 1 && abusatori.length >= 1;
+        } else {
+            // bilanciato, offensivo, bulky: il nucleo sono i due Pokémon di maggior valore
+            abusatori = info.slice().sort((a, b) => b.cand.valore - a.cand.valore).slice(0, 2);
+        }
+        const piano = coerente ? richiesto : 'bilanciato';
+        return {
+            piano, richiesto, coerente, trovati: { setter: setter.length, abusatori: abusatori.length },
+            setter: coerente ? nomi(setter) : [], abusatori: coerente ? nomi(abusatori).slice(0, 3) : [],
+            nucleo: coerente ? Array.from(new Set(nomi(setter).concat(nomi(abusatori)))).slice(0, 4) : []
+        };
     }
 
     function sovrapposizione(a, b) { return a.filter(x => b.includes(x)).length; }
@@ -785,6 +886,7 @@
             const assegnati = assegnaRuoli(dex, membri, ctx, piano);
             const usati = new Set();
             const testi = [];
+            const infoMembri = [];
             let ok = true;
             for (const c of membri) {
                 const ruolo = ruoloDi(c, ctx, piano, assegnati);
@@ -793,12 +895,16 @@
                 const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura);
                 if (s.mosse.length < 1) { ok = false; break; }
                 testi.push(s.testo);
+                infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita });
             }
             if (!ok) continue;
             const nomeAsso = asso.nome;
+            // il piano vale solo se i set lo realizzano (altrimenti il team è "bilanciato" e basta)
+            const strategia = strategiaDelTeam(nomePiano, infoMembri);
             team.push({
-                nome: `CPU ${ETICHETTE[nomePiano] || nomePiano} · ${nomeAsso}`,
-                piano: nomePiano,
+                nome: `CPU ${ETICHETTE[strategia.piano] || strategia.piano} · ${nomeAsso}`,
+                piano: strategia.piano,
+                strategia,
                 testo: testi.join('\n\n'),
                 specie: membri.map(m => m.nome)
             });
@@ -899,6 +1005,6 @@
 
     return {
         generaTeam, squadrePerFormato, contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche,
-        voceBannata, creaCasuale, puntiTier, datiStrumento
+        voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam
     };
 });

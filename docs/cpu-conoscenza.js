@@ -90,6 +90,20 @@
     // Abilità che alzano una statistica quando vengono colpite: da non colpire a vuoto
     const ABILITA_PERICOLOSE = insieme('stormdrain', 'lightningrod', 'sapsipper', 'motordrive', 'eartheater', 'wellbakedbody', 'flashfire', 'voltabsorb', 'waterabsorb', 'dryskin', 'levitate');
 
+    // ---------- meteo di squadra ----------
+    // Chi mette il meteo (abilità), chi ne approfitta (abilità) e il tipo di mossa che ne esce rafforzata.
+    // Le chiavi sono quelle del log di Showdown: rain, sun, sand, snow.
+    const METEO_SETTER = { rain: ['drizzle'], sun: ['drought', 'orichalcumpulse'], sand: ['sandstream'], snow: ['snowwarning'] };
+    const METEO_SFRUTTATORI = {
+        rain: ['swiftswim', 'raindish', 'dryskin', 'hydration'],
+        sun: ['chlorophyll', 'solarpower', 'protosynthesis', 'leafguard', 'flowergift'],
+        sand: ['sandrush', 'sandforce', 'sandveil'],
+        snow: ['slushrush', 'snowcloak', 'icebody', 'iceface']
+    };
+    const METEO_TIPO = { rain: 'Water', sun: 'Fire', sand: 'Rock', snow: 'Ice' };
+    // I nomi dei piani di team (team-cpu.js) e il meteo che li caratterizza
+    const PIANO_METEO = { pioggia: 'rain', sole: 'sun', sabbia: 'sand', neve: 'snow' };
+
     // Abilità da evitare nei team della CPU
     const ABILITA_SCARTATE = insieme('truant', 'slowstart', 'defeatist', 'stall', 'klutz', 'normalize', 'zenmode', 'schooling', 'shieldsdown', 'powerconstruct', 'hungerswitch', 'gulpmissile', 'disguise', 'iceface', 'commander', 'zerotohero', 'imposter', 'trace', 'receiver', 'powerofalchemy', 'illusion', 'wonderguard', 'minds', 'multitype', 'rkssystem', 'battlebond', 'stancechange', 'neutralizinggas', 'asone', 'asoneglastrier', 'asonespectrier');
 
@@ -173,6 +187,7 @@
         id, TIPI, PROTEZIONI, PROTEZIONI_DI_AREA, POTENZIAMENTI, RECUPERO, STATI, VELOCITA_DI_SQUADRA, SCHERMI, TRAPPOLE,
         REDIREZIONE, PERNO, ESCLUSE, DUE_TURNI, MOSSE_TERRA, IMMUNITA_ABILITA, ABILITA_PERICOLOSE, ABILITA_SCARTATE,
         STRUMENTI_OFFENSIVI, STRUMENTI_TIPO, STRUMENTI_SCELTA, POTENZA_STIMATA,
+        METEO_SETTER, METEO_SFRUTTATORI, METEO_TIPO, PIANO_METEO,
         moltiplicatoreTipo, tipiDellaGenerazione, descriviMossa, mossaUsabile
     };
 });

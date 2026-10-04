@@ -16,7 +16,8 @@ import './formato-pool.js';      // self.FormatoPool
 import './team-cpu.js';          // self.TeamCpu
 
 // Cambia quando cambia il modo di comporre i team: i team ricordati nei browser si rifanno
-export const VERSIONE_TEAM_CPU = 1;
+// (2: ogni team ha una strategia vera, verificata sui set: chi la imposta e chi ne approfitta)
+export const VERSIONE_TEAM_CPU = 2;
 const memoria = new Map();
 
 function hash(testo) {
@@ -75,9 +76,10 @@ export async function squadreCpu(regolamento, { iniziali = [] } = {}) {
     return risultato;
 }
 
-// Chi sceglie le mosse della CPU (uno per battaglia: tiene a mente com'è andata)
-export function nuovoCervello(lato = 'p2') {
-    return self.CpuIa.crea({ Dex, lato });
+// Chi sceglie le mosse della CPU (uno per battaglia: tiene a mente com'è andata).
+// `piano`: la strategia del team che gioca (team.piano di squadreCpu): l'IA la applica in anteprima e in battaglia.
+export function nuovoCervello(lato = 'p2', { piano = null } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano });
 }
 
 // Il nome con cui un team della CPU si presenta a chi gioca: "Team 7". Mai il nome vero (il piano di gioco, il Pokémon

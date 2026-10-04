@@ -122,6 +122,84 @@ test('ogni team ha un piano diverso (Tailwind, Trick Room, meteo...) e un nome l
     if (tw) assert.match(tw.testo, /- Tailwind/);
 });
 
+// La strategia di un team deve essere vera: chi la imposta e chi ne approfitta stanno davvero nei set (non è solo un nome).
+function controllaStrategia(t, sets, dex) {
+    const s = t.strategia;
+    assert.ok(s && typeof s === 'object', `${t.nome}: manca la strategia`);
+    assert.equal(s.piano, t.piano);
+    assert.equal(s.coerente, true, `${t.nome}: piano ${s.richiesto} non realizzato (${JSON.stringify(s.trovati)})`);
+    const ha = (set, m) => (set.moves || []).map(id).includes(m);
+    const attacca = set => (set.moves || []).some(m => dex.moves.get(m).category !== 'Status');
+    const specie = set => dex.species.get(set.species);
+    const meteoDelPiano = K.PIANO_METEO[t.piano];
+    if (t.piano === 'tailwind') {
+        assert.ok(sets.some(x => ha(x, 'tailwind')), `${t.nome}: nessuno con Tailwind`);
+    } else if (t.piano === 'trickroom') {
+        assert.ok(sets.some(x => ha(x, 'trickroom')), `${t.nome}: nessuno con Trick Room`);
+        const lenti = sets.filter(x => attacca(x) && specie(x).baseStats.spe <= 60 && Math.max(specie(x).baseStats.atk, specie(x).baseStats.spa) >= 95);
+        assert.ok(lenti.length >= 2, `${t.nome}: servono almeno due attaccanti lenti (${lenti.map(x => x.species).join(', ')})`);
+    } else if (meteoDelPiano) {
+        const setter = sets.filter(x => K.METEO_SETTER[meteoDelPiano].includes(id(x.ability)));
+        assert.ok(setter.length >= 1, `${t.nome}: nessuno con l'abilità che mette il meteo`);
+        const abusatori = sets.filter(x => !setter.includes(x) && attacca(x) && (K.METEO_SFRUTTATORI[meteoDelPiano].includes(id(x.ability)) ||
+            ((x.moves || []).some(m => dex.moves.get(m).category !== 'Status' && dex.moves.get(m).type === K.METEO_TIPO[meteoDelPiano]) && Math.max(specie(x).baseStats.atk, specie(x).baseStats.spa) >= 80)));
+        assert.ok(abusatori.length >= 1, `${t.nome}: nessuno ne approfitta`);
+    }
+    // il nucleo (setter e abusatori) sono Pokémon del team
+    for (const n of s.nucleo) assert.ok(t.specie.includes(n), `${t.nome}: ${n} nel nucleo ma non nel team`);
+    if (s.piano !== 'bilanciato' && ['tailwind', 'trickroom'].concat(Object.keys(K.PIANO_METEO)).includes(s.piano)) assert.ok(s.setter.length >= 1 && s.nucleo.length >= 2, `${t.nome}: nucleo`);
+}
+
+for (const [nome, regolamento] of [
+    ['doppio Gen 9 con Teracristal', reg({ battleStyle: 'doubles', generationalMechanics: true })],
+    ['VGC Gen 8 (STANDARD)', reg({ genRuleValue: '8', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen8', vgcFormat: 'doubles' })],
+    ['singolo Gen 9 (OU)', reg()],
+    ['singolo Gen 4', reg({ genRuleValue: '4' })]
+]) {
+    test(`${nome}: ogni team ha una strategia vera (chi la imposta e chi ne approfitta sono nei set)`, { timeout: 120000 }, async () => {
+        const { sim } = await caricaSim();
+        const r = await genera(regolamento);
+        const dex = sim.Dex.forGen(T.contestoDa(regolamento).gen);
+        assert.equal(r.team.length, 12);
+        for (const t of r.team) controllaStrategia(t, await importa(t.testo), dex);
+        // e la varietà non è sparita: almeno quattro piani diversi
+        assert.ok(new Set(r.team.map(t => t.piano)).size >= 4, `piani: ${r.team.map(t => t.piano).join(', ')}`);
+    });
+}
+
+test('strategiaDelTeam: un piano che nessuno realizza diventa "bilanciato"; uno vero ha setter, abusatori e nucleo', async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    const K2 = K;
+    const cand = (nome, extra = {}) => { const s = dex.species.get(nome); return { nome: s.name, basi: s.baseStats, offesa: Math.max(s.baseStats.atk, s.baseStats.spa), lento: s.baseStats.spe <= 60, valore: 100, ...extra }; };
+    const mosse = (...ids) => ids.map(k => K2.descriviMossa(dex, k));
+    const info = (nome, ms, abilita) => ({ cand: cand(nome), mosse: mosse(...ms), abilita });
+    // Tailwind senza nessuno che la sappia → bilanciato
+    const senza = T.strategiaDelTeam('tailwind', [info('Garchomp', ['earthquake', 'dragonclaw'], 'Rough Skin'), info('Rillaboom', ['woodhammer', 'grassyglide'], 'Grassy Surge'), info('Incineroar', ['flareblitz', 'knockoff'], 'Intimidate')]);
+    assert.equal(senza.piano, 'bilanciato');
+    assert.equal(senza.coerente, false);
+    assert.equal(senza.richiesto, 'tailwind');
+    assert.deepEqual(senza.nucleo, []);
+    // Tailwind vero
+    const vero = T.strategiaDelTeam('tailwind', [info('Tornadus', ['tailwind', 'bleakwindstorm'], 'Prankster'), info('Garchomp', ['earthquake', 'dragonclaw'], 'Rough Skin'), info('Rillaboom', ['woodhammer'], 'Grassy Surge')]);
+    assert.equal(vero.piano, 'tailwind');
+    assert.deepEqual(vero.setter, ['Tornadus']);
+    assert.ok(vero.abusatori.length >= 2 && vero.nucleo[0] === 'Tornadus');
+    // pioggia: il setter da solo non basta, serve chi ne approfitta
+    const soloSetter = T.strategiaDelTeam('pioggia', [info('Pelipper', ['surf', 'hurricane'], 'Drizzle'), info('Garchomp', ['earthquake'], 'Rough Skin')]);
+    assert.equal(soloSetter.piano, 'bilanciato');
+    const pioggia = T.strategiaDelTeam('pioggia', [info('Pelipper', ['surf', 'hurricane'], 'Drizzle'), info('Barraskewda', ['liquidation', 'closecombat'], 'Swift Swim')]);
+    assert.equal(pioggia.piano, 'pioggia');
+    assert.deepEqual(pioggia.setter, ['Pelipper']);
+    // Stanza Magica: servono due attaccanti lenti
+    const tr = T.strategiaDelTeam('trickroom', [info('Hatterene', ['trickroom', 'dazzlinggleam'], 'Magic Bounce'), info('Torkoal', ['eruption', 'earthpower'], 'Drought'), info('Ursaluna', ['facade', 'earthquake'], 'Guts')]);
+    assert.equal(tr.piano, 'trickroom');
+    const trFinto = T.strategiaDelTeam('trickroom', [info('Hatterene', ['trickroom', 'dazzlinggleam'], 'Magic Bounce'), info('Garchomp', ['earthquake'], 'Rough Skin')]);
+    assert.equal(trFinto.piano, 'bilanciato');
+    // i piani senza setter sono sempre veri
+    assert.equal(T.strategiaDelTeam('offensivo', [info('Garchomp', ['earthquake'], 'Rough Skin')]).coerente, true);
+});
+
 test('nel doppio ci sono protezioni e supporti; nel singolo trappole, recupero e potenziamenti', async () => {
     const doppio = await genera(reg({ battleStyle: 'doubles' }));
     const conProtect = doppio.team.filter(t => /- (Protect|Detect|Spiky Shield|King's Shield|Baneful Bunker|Obstruct|Silk Trap|Burning Bulwark)/.test(t.testo)).length;

@@ -2,17 +2,30 @@
 // IA DELLA CPU
 // Sceglie le mosse dell'avversario controllato dal computer. Non tira a caso: per ogni turno
 //   1. legge il log pubblico (chi è in campo, HP, stati, potenziamenti, meteo, Tailwind, Camera Magica,
-//      trappole, mosse già viste dell'avversario);
+//      trappole, mosse già viste dell'avversario, quante Protezioni di fila ha fatto ognuno);
 //   2. elenca le sue azioni (ogni mossa su ogni bersaglio, i cambi, la Teracristal);
-//   3. prevede cosa farà l'avversario (la sua mossa migliore sul suo bersaglio migliore) e simula il turno
-//      in ordine di priorità e velocità: danni attesi, KO, Protezione, Fake Out, Follow Me, Helping Hand,
-//      cambi a inizio turno, mosse che colpiscono anche l'alleato, stati, potenziamenti, recupero, campo;
+//   3. prevede cosa farà l'avversario (la sua mossa migliore sul suo bersaglio migliore; per le mosse che non ha ancora
+//      mostrato presume la più forte che la sua specie può imparare) e simula il turno in ordine di priorità e velocità:
+//      danni attesi, KO, Protezione, Fake Out, Follow Me, Helping Hand, cambi a inizio turno, mosse che colpiscono anche
+//      l'alleato, tentennamenti, stati, potenziamenti, recupero, campo, abilità che agiscono in ingresso;
 //   4. sceglie l'azione (nel doppio, la coppia di azioni dei due slot) con il valore più alto.
 // Così "usa la mossa super efficace", "cambia se sta per essere messo KO e c'è chi regge meglio",
 // "Terremoto solo se l'alleato non lo subisce (vola, levita, si protegge o esce)", "Protezione quando serve"
-// vengono dalla stessa valutazione, non da regole sparse.
+// vengono dalla stessa valutazione, non da regole sparse:
+//   - Protezione: una seconda di fila riesce una volta su tre, quindi si gioca solo se il vantaggio è enorme;
+//   - mossa super efficace: vale più del solo danno in più (e una resistita meno), purché non sia peggio per altri motivi;
+//   - cambio sicuro: chi entra deve reggere la mossa prevista contro chi esce e anche la risposta migliore dell'avversario
+//     contro di lui; U-turn/Volt Switch/Flip Turn fanno entrare chi regge meglio; a fine turno conta la posizione (chi
+//     minaccia chi, chi muove prima) e non solo il danno del turno.
 //
-// Anteprima squadra: sceglie chi portare e chi mandare in campo in base agli scontri con la squadra avversaria.
+// Strategia del team: ogni team ha un piano (Tailwind, Stanza Magica, pioggia, sole, sabbia, neve, bilanciato...) deciso da
+// team-cpu.js. L'IA lo legge dai set (chi lo imposta, chi ne approfitta) e lo applica: in anteprima porta il nucleo del piano e
+// manda in campo per primo chi lo imposta; in battaglia valuta di più Tailwind, Stanza Magica e il proprio meteo, anche
+// rimesso in campo dopo un cambio.
+//
+// Anteprima squadra: guarda i sei Pokémon dell'avversario e sceglie i quattro da portare (e chi mandare per primo) cercando il
+// gruppo con una risposta per ognuno dei loro (chi fa più paura conta di più), forte contro di loro in media, senza debolezze
+// condivise ai tipi con cui colpiscono, con il nucleo del piano; in campo per primo chi apre meglio contro i loro sei.
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.CpuIa) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
@@ -26,6 +39,32 @@
     const STAT_NOMI = { atk: 'atk', def: 'def', spa: 'spa', spd: 'spd', spe: 'spe', accuracy: 'accuracy', evasion: 'evasion' };
     const lato2 = l => (l === 'p1' ? 'p2' : 'p1');
 
+    // Le "manopole" della valutazione. Si possono cambiare creando il cervello con { parametri: { ... } } (utile per provare).
+    //   penalitaProt        una protezione ripetuta riesce una volta su tre (poi una su nove): si gioca solo se il vantaggio è enorme,
+    //                       quindi ogni protezione di fila costa questo nel valore del piano (oltre alla probabilità di fallire, già contata)
+    //   bonusSE2/4          mossa super efficace (2x / 4x): vale di più del solo danno in più (frazione dei punti-danno)
+    //   malusRes05/025      mossa resistita (0,5x / 0,25x): vale di meno
+    //   pesoPosizione       quanto pesa la posizione a fine turno (chi minaccia chi, chi è più veloce): è ciò che rende sensato
+    //                       un cambio sicuro
+    //   rispostaAlCambio    quanta parte del peso va all'avversario che risponde a chi entra (non a chi esce): un cambio è "sicuro"
+    //                       se chi entra regge anche la mossa migliore contro di lui; nel doppio pesa meno (due avversari, due bersagli)
+    //   presunteDex         le mosse che non ha ancora mostrato si presumono dal Dex: la mossa di attacco più forte del suo tipo che può
+    //                       imparare (1) invece di una potenza fissa (0); in mezzo si media
+    //   ant*                anteprima: peso della copertura (una risposta per ogni loro Pokémon), della forza media, delle debolezze
+    //                       condivise, di chi fa più paura, del nucleo del piano e del setter tra i primi in campo
+    //   utilPianoTailwind, scalaTailwind, maxTailwind, bonusPianoStanza, bonusPianoMeteo
+    //                       quanto vale mettere Tailwind (per ogni sorpasso che crea, con un tetto; almeno utilPianoTailwind per il team costruito
+    //                       su di esso), la Stanza Magica o rimettere il meteo del piano
+    const PARAMETRI_BASE = {
+        penalitaProt: 1.5, bonusSE2: 0.4, bonusSE4: 0.6, malusRes05: 0.3, malusRes025: 0.5, pesoPosizione: 0.3,
+        rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
+        antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
+        utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5
+    };
+    // Abilità che agiscono quando il Pokémon entra in campo
+    const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
+    const ABILITA_TERRENO = { electricsurge: 'electric', hadronengine: 'electric', grassysurge: 'grassy', psychicsurge: 'psychic', mistysurge: 'misty' };
+    const ABILITA_CONTRO_INTIMIDATE = new Set(['clearbody', 'whitesmoke', 'hypercutter', 'innerfocus', 'oblivious', 'owntempo', 'scrappy', 'guarddog', 'fullmetalbody', 'mirrorarmor']);
     const boostVuoti = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 });
     const campoVuoto = () => ({ tailwind: 0, reflect: 0, lightscreen: 0, auroraveil: 0, rocce: 0, punte: 0, tossine: 0, ragnatela: 0 });
 
@@ -60,6 +99,9 @@
             this.lato = opzioni.lato || 'p2';
             this.casuale = opzioni.casuale || Math.random;
             this.debug = !!opzioni.debug;
+            this.par = Object.assign({}, PARAMETRI_BASE, opzioni.parametri || {});
+            this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
+            this.strategia = null;
             this.impostaGenerazione(9);
             this.tipo = 'singles';
             this.resetta();
@@ -80,7 +122,6 @@
             this.lati = { p1: this._latoVuoto(), p2: this._latoVuoto() };
             this.finita = false;
             this.ultimeAzioni = {};        // per slot: l'ultima azione che ho scelto
-            this.protezioniDiFila = [0, 0];
             this.cambiRecenti = [0, 0];
             this.ultimoUscito = [null, null, null];      // per slot: chi è appena uscito dal campo (per non farlo rientrare subito)
             this.teraUsata = false;
@@ -115,6 +156,18 @@
             }
         }
 
+        // Protezione, Individua, Scudo Spino... e anche Guardia Ampia/Rapida: condividono lo stesso conto (1, 1/3, 1/9...)
+        _registraProtezione(m) {
+            if (m.ultimaProtezione === this.turno) return;      // già contata in questo turno (scelta e log arrivano tutte e due)
+            m.protezioniDiFila = m.ultimaProtezione === this.turno - 1 ? (m.protezioniDiFila || 0) + 1 : 1;
+            m.ultimaProtezione = this.turno;
+        }
+
+        // Quante protezioni di fila ha già fatto questo Pokémon fino al turno scorso (0 se non ha protetto ieri)
+        _protezioniDiFila(m) {
+            return m && m.ultimaProtezione === this.turno - 1 ? (m.protezioniDiFila || 0) : 0;
+        }
+
         _mon(ident, crea) {
             const pos = posizione(ident);
             if (!pos) return null;
@@ -130,7 +183,7 @@
             return {
                 lato, nome, specie, livello: livello || 100, pct: 100, stato: '', boost: boostVuoti(), mosseViste: new Set(),
                 abilita: null, strumento: null, tera: null, vivo: true, turnoEntrata: this.turno, ultimaMossa: null, protettoNelTurno: -9,
-                posto: -1, megaDi: null
+                posto: -1, megaDi: null, protezioniDiFila: 0, ultimaProtezione: -9
             };
         }
 
@@ -153,7 +206,13 @@
                     const l = this.lati[pos.lato];
                     let m = l.mons[pos.nome];
                     if (!m) m = l.mons[pos.nome] = this._nuovoMon(pos.lato, pos.nome, d.specie, d.livello);
-                    if (cmd !== 'replace') { m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot; }
+                    if (cmd !== 'replace') {
+                        // chi esce dal campo perde potenziamenti e il conto delle protezioni; chi entra parte pulito
+                        const uscente = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
+                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; }
+                        m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot;
+                        m.protezioniDiFila = 0; m.ultimaProtezione = -9;
+                    }
                     m.specie = d.specie; m.livello = d.livello;
                     const h = leggiHp(p[3]);
                     m.pct = h.pct != null ? h.pct : m.pct; m.stato = h.stato || ''; m.vivo = true;
@@ -177,7 +236,18 @@
                     const mossa = id(p[2]);
                     m.mosseViste.add(mossa);
                     m.ultimaMossa = mossa;
-                    if (K.PROTEZIONI.has(mossa)) m.protettoNelTurno = this.turno;
+                    if (K.PROTEZIONI.has(mossa) || K.PROTEZIONI_DI_AREA.has(mossa)) {
+                        this._registraProtezione(m);
+                        if (K.PROTEZIONI.has(mossa)) m.protettoNelTurno = this.turno;
+                    } else { m.protezioniDiFila = 0; m.ultimaProtezione = -9; }
+                    break;
+                }
+                case '-fail': {
+                    // una protezione che fallisce azzera il conto: la prossima riesce di nuovo sempre
+                    const m = this._mon(p[1]);
+                    if (m && m.ultimaMossa && (K.PROTEZIONI.has(m.ultimaMossa) || K.PROTEZIONI_DI_AREA.has(m.ultimaMossa)) && m.ultimaProtezione === this.turno) {
+                        m.protezioniDiFila = 0; m.ultimaProtezione = -9; m.protettoNelTurno = -9;
+                    }
                     break;
                 }
                 case '-singleturn': {
@@ -337,13 +407,70 @@
                 const fisico = v.stat.atk >= v.stat.spa;
                 for (const t of v.tipiBase) {
                     if (out.some(m => m.tipo === t)) continue;
-                    out.push({
+                    const tipica = this.par.presunteDex ? this._stabTipico(v.specie, t, v.stat) : null;
+                    out.push(tipica || {
                         id: 'stab-' + t, nome: `${t} STAB`, categoria: fisico ? 'Physical' : 'Special', tipo: t, potenza: 85, precisione: 100,
                         priorita: 0, target: 'normal', flags: {}, secondari: null, presunta: true, multi: null
                     });
                 }
             }
             return out;
+        }
+
+        // Le mosse che una specie può imparare in questa generazione (anche dai suoi pre-evoluti): serve a presumere cosa porta
+        _mosseImparabili(nomeSpecie) {
+            const k = 'imp|' + id(nomeSpecie);
+            let out = this.cacheSpecie.get(k);
+            if (out) return out;
+            out = new Set();
+            const dati = this.dex.data && this.dex.data.Learnsets;
+            if (dati) {
+                const raccogli = soloQuestaGen => {
+                    let sp = this.specie(nomeSpecie);
+                    const viste = new Set();
+                    while (sp && sp.exists && !viste.has(sp.id)) {
+                        viste.add(sp.id);
+                        let d = dati[sp.id];
+                        if ((!d || !d.learnset) && sp.baseSpecies && sp.baseSpecies !== sp.name) d = dati[id(sp.baseSpecies)];
+                        if (d && d.learnset) {
+                            for (const [mossa, fonti] of Object.entries(d.learnset)) {
+                                if (fonti.some(src => 'MLT'.includes(src.charAt(1)) && (soloQuestaGen ? parseInt(src, 10) === this.gen : parseInt(src, 10) <= this.gen))) out.add(mossa);
+                            }
+                        }
+                        sp = sp.prevo ? this.dex.species.get(sp.prevo) : null;
+                    }
+                };
+                raccogli(this.gen >= 8);
+                if (out.size < 8) raccogli(false);
+            }
+            this.cacheSpecie.set(k, out);
+            return out;
+        }
+
+        // La mossa di attacco di un tipo che farebbe più male a chi la usa (potenza x precisione x la statistica con cui attacca, un po'
+        // meno con rinculo o potenziamenti negativi) tra quelle che la specie può imparare: è ciò che di solito porta chi ha quel tipo.
+        // null se non ne ha. `stat`: le statistiche stimate del Pokémon (conta quale tra Attacco e Attacco Speciale è la migliore).
+        _stabTipico(nomeSpecie, tipo, stat) {
+            const k = `stab|${id(nomeSpecie)}|${tipo}`;
+            if (this.cacheSpecie.has(k)) return this.cacheSpecie.get(k);
+            let migliore = null, mv = 0;
+            for (const nome of this._mosseImparabili(nomeSpecie)) {
+                const m = this.mossa(nome);
+                if (!m || m.categoria === 'Status' || m.tipo !== tipo) continue;
+                if (!(m.potenza > 0) || m.esclusa || m.dueTurni || m.ricarica || m.ohko || m.dannoFisso || m.id === 'fakeout' || m.id === 'firstimpression') continue;
+                let val = m.potenza * (m.precisione / 100) * (m.categoria === 'Physical' ? stat.atk : stat.spa);
+                if (m.rinculo) val *= 0.9;
+                if (m.boostSelf && Object.values(m.boostSelf).some(x => x < 0)) val *= 0.85;
+                if (m.priorita > 0) val *= 0.7;
+                if (m.target === 'allAdjacent') val *= 0.9;
+                if (m.rinculoMax) val *= 0.6;
+                if (val > mv) { mv = val; migliore = m; }
+            }
+            // quanto fidarsi della mossa più forte che potrebbe avere: 1 = tutta, 0 = la potenza media di un attacco principale (85)
+            const w = Math.max(0, Math.min(1, this.par.presunteDex));
+            const r = migliore ? Object.assign({}, migliore, { presunta: true, potenza: Math.round((1 - w) * 85 + w * migliore.potenza) }) : null;
+            this.cacheSpecie.set(k, r);
+            return r;
         }
 
         // =================================================
@@ -387,60 +514,182 @@
             });
         }
 
+        // ---------- strategia del team ----------
+        // Cosa fa il team e chi lo fa, letto dai set dei Pokémon portati: chi mette Tailwind, Stanza Magica, il meteo, gli schermi,
+        // chi ne approfitta. Il piano ("tailwind", "trickroom", "pioggia"...) è quello deciso da chi ha composto il team, se è
+        // davvero realizzabile con chi c'è; altrimenti si deduce da ciò che il team sa fare.
+        _leggiStrategia(squadra) {
+            const idm = k => id(k);
+            const dati = squadra.map(s => {
+                const sp = this.specie(s.m.specie || leggiDettagli(s.p.details).specie);
+                const b = sp.baseStats;
+                const moves = s.p.moves.map(idm);
+                const abilita = idm(s.p.baseAbility || s.p.ability);
+                const offesa = Math.max(b.atk, b.spa);
+                return {
+                    indice: s.indice, vivo: !s.esausto, moves, abilita, offesa, tipi: sp.types.slice(),
+                    ha: k => moves.includes(k),
+                    lento: b.spe <= 70 && offesa >= 95
+                };
+            });
+            const vivi = dati.filter(d => d.vivo);
+            const con = f => vivi.filter(f).map(d => d.indice);
+            const meteoDi = d => Object.keys(K.METEO_SETTER).find(w => K.METEO_SETTER[w].includes(d.abilita)) || null;
+            const setterMeteo = {};
+            vivi.forEach(d => { const w = meteoDi(d); if (w) (setterMeteo[w] = setterMeteo[w] || []).push(d.indice); });
+            const sfrutta = (d, w) => K.METEO_SFRUTTATORI[w].includes(d.abilita) || (d.tipi.includes(K.METEO_TIPO[w]) && d.offesa >= 80) ||
+                (w === 'rain' && d.ha('thunder')) || (w === 'sun' && (d.ha('solarbeam') || d.ha('weatherball')));
+            const abusatori = {};
+            Object.keys(setterMeteo).forEach(w => { abusatori[w] = vivi.filter(d => !setterMeteo[w].includes(d.indice) && sfrutta(d, w)).map(d => d.indice); });
+            const S = {
+                vento: con(d => d.ha('tailwind')), stanza: con(d => d.ha('trickroom')), lenti: con(d => d.lento),
+                meteoSetter: setterMeteo, abusatori,
+                fakeout: con(d => d.ha('fakeout')), redirezione: con(d => d.ha('followme') || d.ha('ragepowder'))
+            };
+            // il piano
+            const dato = this.pianoDato;
+            const meteoDato = dato && K.PIANO_METEO[dato];
+            let piano = null, meteo = null;
+            if (dato === 'tailwind' && S.vento.length) piano = 'tailwind';
+            else if (dato === 'trickroom' && S.stanza.length) piano = 'trickroom';
+            else if (meteoDato && (setterMeteo[meteoDato] || []).length) { piano = dato; meteo = meteoDato; }
+            else if (dato && !['tailwind', 'trickroom'].includes(dato) && !meteoDato) piano = dato;     // bilanciato, offensivo, bulky
+            if (!piano) {
+                // dedotto: la Stanza Magica con chi ne approfitta, poi il meteo con chi ne approfitta, poi Tailwind
+                const meteoVero = Object.keys(setterMeteo).find(w => abusatori[w].length) || null;
+                if (S.stanza.length && S.lenti.length >= 2) piano = 'trickroom';
+                else if (meteoVero) { piano = Object.keys(K.PIANO_METEO).find(n => K.PIANO_METEO[n] === meteoVero); meteo = meteoVero; }
+                else if (S.vento.length) piano = 'tailwind';
+                else piano = 'bilanciato';
+            }
+            S.piano = piano;
+            S.meteo = meteo;
+            return S;
+        }
+
         // ---------- anteprima ----------
+        // Si sceglie guardando i 6 Pokémon dell'avversario (l'anteprima mostra solo le specie): per ognuno dei miei, chi gli fa più
+        // male, chi lo mette in difficoltà e chi muove prima; poi si cerca il gruppo che ha una risposta per tutti i loro, senza
+        // debolezze condivise, con il nucleo del piano (chi mette Tailwind/Stanza Magica/meteo e chi ne approfitta).
+        // I due in campo per primi (uno nel singolo) sono la coppia con più sinergia e che meglio apre contro i loro 6.
         anteprima(richiesta) {
             const squadra = this._squadra(richiesta);
-            const quanti = richiesta.maxChosenTeamSize || squadra.length;
-            const avversari = this.lati[lato2(this.lato)].squadra.map(nome => {
-                const s = this.specie(nome);
-                const lvl = this.lati[lato2(this.lato)].livelloSquadra || squadra[0].m.livello;
-                const m = this._nuovoMon(lato2(this.lato), nome, s.name, lvl);
-                return this.vista(m);
-            });
+            const quanti = Math.min(richiesta.maxChosenTeamSize || squadra.length, squadra.length);
+            const strat = this.strategia = this._leggiStrategia(squadra);
             const ctx = this.contesto();
-            const punti = squadra.map(s => {
-                const v = this.vista(s.m, s.info);
-                const mosse = s.p.moves.map(k => this.mossa(k)).filter(Boolean);
-                let tot = 0;
-                for (const o of avversari) {
-                    const dato = this._miglioreSu(v, o, mosse, ctx);
-                    const preso = this._miglioreSu(o, v, this.mosseAvversario(Object.assign({}, o, { ref: { mosseViste: new Set() } })), ctx);
-                    const piuVeloce = C.confrontoVelocita(v, o, ctx) > 0 ? 0.25 : -0.1;
-                    tot += Math.min(1.2, dato) - 0.85 * Math.min(1.2, preso) + piuVeloce;
-                }
-                return { s, v, mosse, punteggio: tot / Math.max(1, avversari.length) + 0.0001 * s.indice };
+            const latoAvv = this.lati[lato2(this.lato)];
+            const lvl = latoAvv.livelloSquadra || squadra[0].m.livello;
+            const avversari = latoAvv.squadra.map(nome => {
+                const s = this.specie(nome);
+                return this.vista(this._nuovoMon(lato2(this.lato), nome, s.name, lvl));
             });
-            // chi portare: i migliori, ma si evita di avere troppi Pokémon con la stessa debolezza
-            const scelti = [];
-            const ordinati = punti.slice().sort((a, b) => b.punteggio - a.punteggio);
-            for (const x of ordinati) {
-                if (scelti.length >= quanti) break;
-                scelti.push(x);
-            }
-            // chi in campo per primo: nel doppio la coppia con più sinergia
+            const miei = squadra.map(s => ({ s, v: this.vista(s.m, s.info), mosse: s.p.moves.map(k => this.mossa(k)).filter(Boolean) }));
+            const n = miei.length;
+
+            // gli scontri: per ognuno dei miei contro ognuno dei loro
+            const nessunoAvv = !avversari.length;
+            const M = miei.map(x => avversari.map(o => {
+                const dato = this._miglioreSu(x.v, o, x.mosse, ctx);
+                const preso = this._miglioreSu(o, x.v, this.mosseAvversario(Object.assign({}, o, { ref: { mosseViste: new Set() } })), ctx);
+                const prima = C.confrontoVelocita(x.v, o, ctx) > 0;
+                // vantaggio dello scontro: quanto fa (al massimo il 120% dell'avversario), quanto prende, chi muove prima
+                const adv = Math.min(1.2, dato) - 0.85 * Math.min(1.2, preso) + (prima ? 0.25 : -0.1);
+                return { dato, preso, prima, adv: Math.max(-1.5, Math.min(1.8, adv)) };
+            }));
+            // chi fa più paura: pesa di più nella ricerca delle risposte
+            const peso = avversari.map((o, j) => 1 + this.par.antPesoMinaccia * 0.5 * Math.min(1.5, miei.reduce((s, x, i) => s + M[i][j].preso, 0) / Math.max(1, n)));
+            const pesoTot = peso.reduce((s, x) => s + x, 0) || 1;
+            const forza = i => nessunoAvv ? this._bst(miei[i].s.p.details) / 600 : M[i].reduce((s, e) => s + e.adv, 0) / M[i].length;
+
+            // i tipi con cui colpiscono (STAB) e quanti dei loro li hanno: servono a non portare 3 Pokémon deboli alla stessa cosa
+            const tipiLoro = {};
+            avversari.forEach(o => o.tipiBase.forEach(tp => { tipiLoro[tp] = (tipiLoro[tp] || 0) + 1; }));
+            const debole = (i, tp) => K.moltiplicatoreTipo(this.dex, tp, miei[i].v.tipi) > 1;
+
+            const ruoloPiano = i => {
+                const ind = miei[i].s.indice;
+                if (strat.piano === 'tailwind') return strat.vento.includes(ind) ? 'setter' : (miei[i].v.basi.spe >= 70 && Math.max(miei[i].v.basi.atk, miei[i].v.basi.spa) >= 90 ? 'abusatore' : null);
+                if (strat.piano === 'trickroom') return strat.stanza.includes(ind) ? 'setter' : (strat.lenti.includes(ind) ? 'abusatore' : null);
+                if (strat.meteo) {
+                    if ((strat.meteoSetter[strat.meteo] || []).includes(ind)) return 'setter';
+                    if ((strat.abusatori[strat.meteo] || []).includes(ind)) return 'abusatore';
+                }
+                return null;
+            };
+            const haSetter = Boolean(strat.piano === 'tailwind' || strat.piano === 'trickroom' || strat.meteo) && miei.some((x, i) => ruoloPiano(i) === 'setter');
+
+            const punteggioGruppo = idx => {
+                let copertura = 0;
+                if (!nessunoAvv) {
+                    avversari.forEach((o, j) => { copertura += peso[j] * Math.max(...idx.map(i => M[i][j].adv)); });
+                    copertura /= pesoTot;
+                }
+                const media = idx.reduce((s, i) => s + forza(i), 0) / idx.length;
+                let s = this.par.antCopertura * copertura + this.par.antMedia * media;
+                // debolezze condivise rispetto a ciò con cui colpiscono i loro
+                for (const tp of Object.keys(tipiLoro)) {
+                    const deboli = idx.filter(i => debole(i, tp)).length;
+                    if (deboli >= 2) s -= this.par.antDeboli * (deboli - 1) * 0.3 * (tipiLoro[tp] / Math.max(1, avversari.length)) * 2;
+                }
+                // il nucleo del piano
+                if (haSetter) {
+                    const setter = idx.filter(i => ruoloPiano(i) === 'setter').length;
+                    const abus = idx.filter(i => ruoloPiano(i) === 'abusatore').length;
+                    s += this.par.antPiano * (setter ? 0.9 : -1.2);
+                    s += this.par.antPiano * Math.min(2, abus) * 0.3;
+                    if (strat.piano === 'trickroom') s -= this.par.antPiano * idx.filter(i => miei[i].v.basi.spe >= 100 && ruoloPiano(i) !== 'setter').length * 0.3;
+                }
+                return s + this.casuale() * 0.03;
+            };
+
+            // tutti i gruppi di `quanti` tra i miei
+            const gruppi = [];
+            const scelgo = (da, k, cur) => {
+                if (cur.length === k) { gruppi.push(cur.slice()); return; }
+                for (let i = da; i < n; i++) { cur.push(i); scelgo(i + 1, k, cur); cur.pop(); }
+            };
+            scelgo(0, quanti, []);
+            let migliore = gruppi[0], mv = -1e9;
+            for (const g of gruppi) { const v = punteggioGruppo(g); if (v > mv) { mv = v; migliore = g; } }
+
+            // chi in campo per primo
             const nCampo = this.tipo === 'doubles' ? 2 : 1;
-            const sinergia = (a, b) => {
+            const aperturaContro = idx => {
+                if (nessunoAvv) return idx.reduce((s, i) => s + forza(i), 0) / idx.length;
                 let s = 0;
-                const ha = (x, k) => x.mosse.some(m => m.id === k);
-                if (ha(a, 'fakeout') || ha(b, 'fakeout')) s += 0.35;
-                if ((ha(a, 'tailwind') && b.v.basi.spe >= 80) || (ha(b, 'tailwind') && a.v.basi.spe >= 80)) s += 0.3;
-                if ((ha(a, 'trickroom') && b.v.basi.spe <= 60) || (ha(b, 'trickroom') && a.v.basi.spe <= 60)) s += 0.3;
-                if (a.v.abilita === 'intimidate' || b.v.abilita === 'intimidate') s += 0.15;
-                if (a.v.tipi.some(t => b.v.tipi.includes(t))) s -= 0.2;
-                if (ha(a, 'followme') || ha(a, 'ragepowder') || ha(b, 'followme') || ha(b, 'ragepowder')) s += 0.2;
-                return s;
+                avversari.forEach((o, j) => { s += peso[j] * Math.max(...idx.map(i => M[i][j].adv)); });
+                return s / pesoTot;
             };
             let ordine;
-            if (nCampo === 2 && scelti.length >= 2) {
-                let migliore = null, mv = -99;
-                for (let i = 0; i < scelti.length; i++) for (let j = i + 1; j < scelti.length; j++) {
-                    const v = scelti[i].punteggio + scelti[j].punteggio + sinergia(scelti[i], scelti[j]);
-                    if (v > mv) { mv = v; migliore = [scelti[i], scelti[j]]; }
+            if (nCampo === 2 && migliore.length >= 2) {
+                let coppia = null, cv = -1e9;
+                for (let a = 0; a < migliore.length; a++) for (let b = a + 1; b < migliore.length; b++) {
+                    const A = migliore[a], B = migliore[b];
+                    let v = aperturaContro([A, B]);
+                    if (haSetter) {
+                        const ruoli = [ruoloPiano(A), ruoloPiano(B)];
+                        if (ruoli.includes('setter')) v += this.par.antPiano * 0.8;
+                        if (strat.piano === 'trickroom' && ruoli.includes('setter')) {
+                            // chi mette la Stanza Magica va protetto: Fake Out, deviatore o almeno un compagno che regge
+                            const altro = ruoli[0] === 'setter' ? B : A;
+                            const ind = miei[altro].s.indice;
+                            if (strat.fakeout.includes(ind) || strat.redirezione.includes(ind)) v += 0.4;
+                        }
+                    }
+                    if (v > cv) { cv = v; coppia = [A, B]; }
                 }
-                const resto = scelti.filter(x => !migliore.includes(x));
-                ordine = migliore.concat(resto);
-            } else ordine = scelti;
-            return 'team ' + ordine.map(x => x.s.indice).join('');
+                const resto = migliore.filter(i => !coppia.includes(i)).sort((x, y) => forza(y) - forza(x));
+                ordine = coppia.concat(resto);
+            } else {
+                let primo = migliore[0], pv = -1e9;
+                for (const i of migliore) {
+                    let v = aperturaContro([i]);
+                    if (haSetter && ruoloPiano(i) === 'setter') v += this.par.antLeadSetter;
+                    if (v > pv) { pv = v; primo = i; }
+                }
+                ordine = [primo].concat(migliore.filter(i => i !== primo).sort((x, y) => forza(y) - forza(x)));
+            }
+            return 'team ' + ordine.map(i => miei[i].s.indice).join('');
         }
 
         // Miglior danno atteso (frazione dell'HP del bersaglio) tra le mosse date
@@ -458,6 +707,8 @@
         // ---------- cambio forzato (un Pokémon è caduto) ----------
         cambioForzato(richiesta) {
             const squadra = this._squadra(richiesta);
+            this.squadraCorrente = squadra;
+            this.strategia = this._leggiStrategia(squadra);
             const ctx = this.contesto();
             const usati = new Set();
             const nemici = this._avversariInCampo();
@@ -476,7 +727,9 @@
                 let migliore = null, mv = -1e9;
                 for (const s of liberi) {
                     const v = this.vista(s.m, s.info);
-                    const val = this._valoreEntrata(v, nemici, ctx, s.p.moves.map(k => this.mossa(k)).filter(Boolean));
+                    let val = this._valoreEntrata(v, nemici, ctx, s.p.moves.map(k => this.mossa(k)).filter(Boolean));
+                    // cosa fa entrando (meteo, terreno, Intimidazione) e se serve al piano
+                    val += this._abilitaIngresso(this._clona(v), Object.assign({}, ctx), nemici.map(o => this._clona(o)));
                     if (val > mv) { mv = val; migliore = s; }
                 }
                 usati.add(migliore.indice);
@@ -518,6 +771,8 @@
         // =================================================
         turnoDiMosse(richiesta, errori) {
             const squadra = this._squadra(richiesta);
+            this.squadraCorrente = squadra;
+            this.strategia = this._leggiStrategia(squadra);
             const doppio = this.tipo === 'doubles' || richiesta.active.length > 1;
             const nSlot = richiesta.active.length;
             const ctx = this.contesto();
@@ -540,6 +795,7 @@
             const opzioni = mie.map((v, slot) => v ? this._azioniDelloSlot(v, slot, squadra, mie, avv, ctx) : [{ tipo: 'passa', testo: 'pass', slot }]);
 
             const stato0 = { mie, avv, squadra, ctx, doppio, richiesta };
+            stato0.matrice = this._preparaMatrice(stato0);
             const alternative = this._scenariAvversari(stato0);
             if (this.debug) this.ultimoStato = { stato0, alternative, opzioni };
 
@@ -565,16 +821,19 @@
             migliori.sort((a, b) => b.val - a.val);
             // dopo un rifiuto del simulatore si passa alla seconda, terza scelta...
             const pick = migliori[Math.min(errori, migliori.length - 1)];
-            this._ricorda(pick.scelta);
+            this._ricorda(pick.scelta, stato0);
             if (this.debug) this.ultimaValutazione = migliori.slice(0, 5).map(x => ({ val: +x.val.toFixed(3), azioni: x.scelta.map(a => a.testo + (a.nome ? ` [${a.nome}]` : '')) }));
             return pick.scelta.map(a => a.testo).join(', ');
         }
 
-        _ricorda(scelta) {
+        _ricorda(scelta, S) {
             scelta.forEach((a, slot) => {
                 this.ultimeAzioni[slot] = a;
-                if (a.tipo === 'mossa' && a.mossa && a.mossa.protezione) this.protezioniDiFila[slot]++;
-                else this.protezioniDiFila[slot] = 0;
+                const m = S && S.mie[slot] && S.mie[slot].ref;
+                if (m) {
+                    if (a.tipo === 'mossa' && a.mossa && (a.mossa.protezione || a.mossa.id === 'wideguard' || a.mossa.id === 'quickguard')) this._registraProtezione(m);
+                    else { m.protezioniDiFila = 0; m.ultimaProtezione = -9; }
+                }
                 if (a.gimmick === 'terastallize') this.teraUsata = true;
             });
         }
@@ -664,6 +923,9 @@
                     const d = C.danno(this.dex, o, dif, m, ctx, { bersagliMultipli: S.doppio && ['allAdjacent', 'allAdjacentFoes'].includes(m.target) });
                     let v = d.fraz * C.precisione(o, dif, m, ctx) * (1 + (d.frazMax >= dif.hp / dif.hpMax ? 0.4 : 0));
                     if (m.priorita > 0) v *= 1.1;
+                    // chi si farebbe male da solo (rinculo) non usa quella mossa se rischia di cadere per questo
+                    if (m.rinculoMax && o.hp <= o.hpMax * m.rinculoMax) v *= 0.1;
+                    else if (m.rinculo && o.abilita !== 'rockhead' && o.abilita !== 'magicguard' && d.medio * m.rinculo[0] / m.rinculo[1] >= o.hp) v *= 0.4;
                     forte.push({ m, b, v });
                 }
             }
@@ -691,11 +953,13 @@
         // (la seconda di fila riesce una volta su tre: va pesata come una scommessa, non come uno sconto sul danno)
         _valutaPiano(scelta, S, scenari) {
             const incerte = [];
+            let penalita = 0;
             scelta.forEach((a, i) => {
                 if (a.tipo === 'mossa' && a.mossa && a.mossa.protezione) {
-                    const consecutive = this.protezioniDiFila[i] || 0;
+                    const consecutive = this._protezioniDiFila(S.mie[i] && S.mie[i].ref);
                     const p = consecutive === 0 ? 1 : Math.pow(1 / 3, consecutive);
                     incerte.push({ slot: i, p });
+                    penalita += this.par.penalitaProt * consecutive;
                 }
             });
             // tutte le combinazioni di riuscita/fallimento delle protezioni incerte
@@ -708,9 +972,35 @@
                 }
                 esiti = nuovi;
             }
+            // con un cambio l'avversario può anche rispondere a chi entra (non solo a chi esce): una parte del peso va alla sua
+            // risposta migliore contro i nuovi arrivati. È questo che rende "sicuro" un cambio: chi entra deve reggere anche quella.
+            const lam = scelta.some(a => a.tipo === 'cambio') ? (S.doppio ? this.par.rispostaAlCambioDoppio : this.par.rispostaAlCambio) : 0;
             let tot = 0;
-            for (const sc of scenari) for (const e of esiti) tot += sc.peso * e.peso * this._simula(scelta, S, sc.azioni, e.riesce);
-            return tot;
+            scenari.forEach((sc, k) => {
+                const parti = lam > 0
+                    ? [{ peso: sc.peso * (1 - lam), azioni: sc.azioni }, { peso: sc.peso * lam, azioni: this._rispostaAlCambio(scelta, S, k) }]
+                    : [sc];
+                for (const q of parti) for (const e of esiti) tot += q.peso * e.peso * this._simula(scelta, S, q.azioni, e.riesce);
+            });
+            return tot - penalita;
+        }
+
+        // Le azioni dell'avversario se a rispondere a chi entra dopo i miei cambi (la mossa migliore contro i nuovi arrivati)
+        _rispostaAlCambio(scelta, S, variante) {
+            const chiave = scelta.map(a => (a.tipo === 'cambio' ? a.verso : '-')).join(',') + '|' + variante;
+            const cache = S.cacheRisposte || (S.cacheRisposte = new Map());
+            if (cache.has(chiave)) return cache.get(chiave);
+            const mie = S.mie.map((v, i) => {
+                const a = scelta[i];
+                if (!a || a.tipo !== 'cambio') return v;
+                const sq = a.squadraInfo;
+                return Object.assign(this.vista(sq.m, sq.info), { indice: sq.indice, slot: i, moves: sq.p.moves });
+            });
+            const S2 = Object.assign({}, S, { mie });
+            const azioni = [];
+            S.avv.forEach((o, i) => { if (o) azioni.push(this._azioneAvversaria(o, i, S2, variante)); });
+            cache.set(chiave, azioni);
+            return azioni;
         }
 
         _pesoMon(v) { return 0.7 + (v.basi ? (v.basi.hp + v.basi.atk + v.basi.def + v.basi.spa + v.basi.spd + v.basi.spe) / 1500 : 0.3); }
@@ -751,6 +1041,7 @@
                     bonus -= 0.22;                                          // cambiare costa un turno
                     if (this.cambiRecenti[x.slot] === this.turno - 1) bonus -= 0.25;   // evita i va e vieni
                     if (this.ultimoUscito[x.slot] === s.nome) bonus -= 0.3;            // rientrare subito chi è appena uscito
+                    bonus += this._abilitaIngresso(nuovo, ctx, avv);
                 } else if (a.gimmick === 'terastallize') {
                     const v = mie[x.slot];
                     if (v) { v.tera = (v.ref && v.ref.teraTipo) || v.tipiBase[0]; v.tipi = [v.tera]; }
@@ -787,33 +1078,32 @@
             const chiave = lato => (lato === 'mie' ? 'avv' : 'mie');
             const schermiDi = lato => (lato === 'mie' ? campoMio : campoAvv);
 
-            for (const { x } of ordine) {
-                const lato = x.lato, a = x.a;
-                const me = insiemi(lato)[x.slot];
-                if (!me || me.hp <= 0) continue;
-                if (flinch[keyL(lato)][x.slot]) continue;
-                if (a.tipo !== 'mossa') continue;
-                const m = a.mossa;
-                if (!m) continue;
+            // Chi può non agire (tentennamento, "flinch"): la probabilità che il suo turno si giochi davvero.
+            // Un Pokémon colpito prima da una mossa che fa tentennare al 30% agisce con probabilità 0,7: la sua mossa
+            // pesa il 70% (danni, KO, effetti), non tutto o niente.
+            const agisce = { mie: [1, 1, 1], avv: [1, 1, 1] };
+            const usatiDaPerno = new Set(scelta.filter(a => a.tipo === 'cambio').map(a => a.verso));
 
+            // Una singola azione dell'ordine, applicata allo stato. `f` = probabilità che l'attore agisca (per i tentennamenti).
+            const eseguiAzione = (x, lato, a, me, m, f) => {
                 // ---- protezioni ----
                 if (m.protezione) {
                     // proteggersi non fa mai niente da solo: il valore sta nei danni evitati
                     if (lato !== 'mie' || (riesceProtezione || {})[x.slot] !== false) me.protetto = 1;
                     bonus -= 0.08;
-                    continue;
+                    return;
                 }
-                if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= 0.08; continue; }
+                if (m.id === 'wideguard') { me.protettoDaDiffusi = true; bonus -= 0.08; return; }
                 if (m.id === 'fakeout' || m.id === 'firstimpression') {
                     const primoTurno = lato === 'mie' ? (me.ref.turnoEntrata === this.turno || me.ref.ultimaMossa == null) : true;
-                    if (!primoTurno) { bonus -= 0.4; continue; }
+                    if (!primoTurno) { bonus -= 0.4; return; }
                 }
                 if (m.id === 'helpinghand') {
                     const altro = x.slot === 0 ? 1 : 0;
                     if (insiemi(lato)[altro] && insiemi(lato)[altro].hp > 0) aiuto[keyL(lato)][altro] = true;
-                    continue;
+                    return;
                 }
-                if (m.redirezione) { deviatore[keyL(lato)] = x.slot; continue; }
+                if (m.redirezione) { deviatore[keyL(lato)] = x.slot; return; }
 
                 // ---- mosse di stato e di supporto ----
                 if (m.categoria === 'Status') {
@@ -822,7 +1112,7 @@
                         for (const k of Object.keys(m.potenziamento)) me.boost[k] = Math.max(-6, Math.min(6, (me.boost[k] || 0) + m.potenziamento[k]));
                     }
                     if (m.recupero) me.hp = Math.min(me.hpMax, me.hp + me.hpMax * 0.5);
-                    continue;
+                    return;
                 }
 
                 // ---- attacchi ----
@@ -873,7 +1163,9 @@
                     // recupero/rinculo/drenaggio dell'attaccante
                     if (m.assorbe) me.hp = Math.min(me.hpMax, me.hp + preso * m.assorbe[0] / m.assorbe[1]);
                     if (m.rinculo && me.abilita !== 'rockhead' && me.abilita !== 'magicguard') me.hp = Math.max(0, me.hp - preso * m.rinculo[0] / m.rinculo[1]);
-                    valore += this._puntiDanno(b, dif, Math.min(prima, colpo.atteso), peso);
+                    const puntiColpo = this._puntiDanno(b, dif, Math.min(prima, colpo.atteso), peso);
+                    valore += puntiColpo;
+                    if (lato === 'mie' && b.lato === 'avv') valore += this._bonusEfficacia(colpo.mult, puntiColpo);
                     if (colpo.pKO > 0) {
                         const latoKo = b.lato;
                         const frazPrima = Math.min(1, prima / dif.hpMax);
@@ -892,8 +1184,9 @@
                             bonus += (b.lato === 'avv' ? 1 : -1) * val * p;
                         }
                         if (sec.volatileStatus === 'flinch' && p) {
+                            // tentenna solo chi deve ancora muovere, e solo con quella probabilità (se chi attacca agisce)
                             const ordineDopo = ordine.findIndex(o => o.x.lato === b.lato && o.x.slot === b.slot) > ordine.findIndex(o => o.x === x);
-                            if (ordineDopo) flinch[b.lato === 'mie' ? 'mie' : 'avv'][b.slot] = flinch[b.lato === 'mie' ? 'mie' : 'avv'][b.slot] || (p >= 0.3);
+                            if (ordineDopo) { const kb = b.lato === 'mie' ? 'mie' : 'avv'; agisce[kb][b.slot] *= 1 - Math.min(1, p * f); }
                         }
                     }
                 }
@@ -904,12 +1197,43 @@
                     valore += (lato === 'mie' ? -1 : 1) * 0.9 * (perso / me.hpMax) * (peso[lato][x.slot] || 1);
                     if (me.hp <= 0) valore += (lato === 'mie' ? -1 : 1) * 1.15 * (peso[lato][x.slot] || 1);
                 }
-                // le mosse con "perno" (U-turn): piccolo bonus, un cambio gratuito
-                if (m.perno && lato === 'mie') bonus += 0.12;
+                // le mosse con "perno" (U-turn, Volt Switch, Flip Turn): dopo il colpo chi le usa esce e al suo posto entra, senza
+                // perdere un turno, chi regge meglio (è il cambio sicuro per eccellenza: gli attacchi che seguono colpiscono lui)
+                if (m.perno && lato === 'mie' && me.hp > 0) {
+                    const s = this._sostitutoPerno(x.slot, S, mie, avv, usatiDaPerno);
+                    if (s) {
+                        usatiDaPerno.add(s.indice);
+                        const nuovo = this._clona(Object.assign(this.vista(s.m, s.info), { indice: s.indice, slot: x.slot, moves: s.p.moves }));
+                        mie[x.slot] = nuovo;
+                        peso.mie[x.slot] = this._pesoMon(nuovo);
+                        nuovo.hp = Math.max(0, nuovo.hp - this._dannoTrappole(nuovo, campoMio, ctx));
+                        bonus += this._abilitaIngresso(nuovo, ctx, avv) - 0.05;
+                    } else bonus += 0.04;
+                }
                 // il potenziamento che accompagna l'attacco (Flame Charge...) è già nella mossa
                 if (m.boostSelf && lato === 'mie') {
                     for (const k of Object.keys(m.boostSelf)) bonus += (m.boostSelf[k] > 0 ? 0.1 : -0.12) * Math.abs(m.boostSelf[k]);
                 }
+            };
+
+            for (const { x } of ordine) {
+                const lato = x.lato, a = x.a;
+                const me = insiemi(lato)[x.slot];
+                if (!me || me.hp <= 0) continue;
+                if (flinch[keyL(lato)][x.slot]) continue;
+                if (a.tipo !== 'mossa') continue;
+                const m = a.mossa;
+                if (!m) continue;
+                const f = agisce[keyL(lato)][x.slot];
+                if (f <= 0.02) continue;
+                if (f >= 0.98) { eseguiAzione(x, lato, a, me, m, 1); continue; }
+                // agisce solo con probabilità f: stato e valore sono la media tra "agisce" e "non agisce"
+                const prima = { valore, bonus, mie: mie.map(v => v && v.hp), avv: avv.map(v => v && v.hp) };
+                eseguiAzione(x, lato, a, me, m, f);
+                valore = prima.valore + f * (valore - prima.valore);
+                bonus = prima.bonus + f * (bonus - prima.bonus);
+                mie.forEach((v, i) => { if (v && prima.mie[i] != null) v.hp = prima.mie[i] + f * (v.hp - prima.mie[i]); });
+                avv.forEach((v, i) => { if (v && prima.avv[i] != null) v.hp = prima.avv[i] + f * (v.hp - prima.avv[i]); });
             }
 
             // 3) bilancio finale: i potenziamenti che restano a chi sopravvive (i danni sono già contati)
@@ -918,7 +1242,112 @@
 
             if (teraUsataQui) bonus -= 0.35;   // la Teracristal si usa una volta sola: va spesa quando conta
 
+            // 4) la posizione in cui si resta: chi minaccia chi e chi muove prima al turno dopo. È ciò che dice se conviene
+            // restare in un brutto scontro o fare un cambio sicuro verso chi regge e risponde
+            if (S.matrice) bonus += this.par.pesoPosizione * this._posizione(mie, avv, S);
+
             return valore + bonus;
+        }
+
+        // Chi entra dopo un U-turn/Volt Switch/Flip Turn: il compagno in panchina che regge meglio gli attacchi che stanno per
+        // arrivare e che risponde meglio (cambi sicuri). null se non c'è nessuno.
+        _sostitutoPerno(slot, S, mie, avv, usati) {
+            let migliore = null, mv = -1e9;
+            const inCampo = new Set(mie.filter(v => v).map(v => v.indice));
+            for (const s of S.squadra) {
+                if (s.attivo || s.esausto || s.comanda || usati.has(s.indice) || inCampo.has(s.indice)) continue;
+                let val = 0, n = 0;
+                avv.forEach((o, j) => {
+                    if (!o || o.hp <= 0) return;
+                    const d = S.matrice.get(s.indice + '|' + j);
+                    if (!d) return;
+                    val += Math.min(1.2, d.dato) * 0.6 - Math.min(1.5, d.preso) - (d.prima ? 0 : 0.1);
+                    n++;
+                });
+                val = (n ? val / n : 0) + 0.3 * (s.info.hp / Math.max(1, s.info.hpMax));
+                if (val > mv) { mv = val; migliore = s; }
+            }
+            return migliore;
+        }
+
+        // Cosa fa un Pokémon mio quando entra in campo (la simulazione lo applica a `ctx` e ai potenziamenti degli avversari):
+        // meteo e terreni, Intimidazione. Restituisce il valore strategico (il meteo giusto, il meteo di squadra tolto...).
+        _abilitaIngresso(v, ctx, avv) {
+            const ab = v.abilita;
+            if (!ab) return 0;
+            let valore = 0;
+            const meteo = ABILITA_METEO[ab];
+            if (meteo && ctx.meteo !== meteo) {
+                const mio = this.strategia && this.strategia.meteo;
+                // il meteo del piano rimesso in campo vale molto; togliere il proprio meteo per metterne un altro, il contrario
+                if (mio === meteo) valore += this.par.bonusPianoMeteo;
+                else if (mio && ctx.meteo === mio) valore -= this.par.bonusPianoMeteo;
+                else valore += 0.12;
+                ctx.meteo = meteo;
+            }
+            if (ABILITA_TERRENO[ab]) ctx.terreno = ABILITA_TERRENO[ab];
+            if (ab === 'intimidate') {
+                for (const o of avv) {
+                    if (!o || o.hp <= 0) continue;
+                    const possibili = o.abilitaPossibili || [];
+                    const immune = o.abilita ? ABILITA_CONTRO_INTIMIDATE.has(o.abilita) : (possibili.length > 0 && possibili.every(a => ABILITA_CONTRO_INTIMIDATE.has(a)));
+                    if (immune) continue;
+                    o.boost.atk = Math.max(-6, (o.boost.atk || 0) - 1);
+                    valore += 0.06;
+                }
+            }
+            return valore;
+        }
+
+        // Minacce reciproche: per ogni mio Pokémon che potrebbe stare in campo (chi c'è e chi è in panchina) contro ognuno
+        // degli avversari in campo: quanto fa (frazione dell'HP massimo) con la sua mossa migliore, quanto prende, chi muove prima
+        _preparaMatrice(S) {
+            const ctx = S.ctx;
+            const campoMio = this.lati[this.lato].campo, campoLoro = this.lati[lato2(this.lato)].campo;
+            const candidati = [];
+            S.mie.forEach(v => { if (v) candidati.push(v); });
+            for (const s of S.squadra) {
+                if (s.attivo || s.esausto || s.comanda) continue;
+                candidati.push(Object.assign(this.vista(s.m, s.info), { indice: s.indice, moves: s.p.moves }));
+            }
+            const M = new Map();
+            for (const v of candidati) {
+                const mosse = (v.moves || []).map(k => this.mossa(k)).filter(Boolean);
+                S.avv.forEach((o, j) => {
+                    if (!o) return;
+                    M.set(v.indice + '|' + j, {
+                        dato: this._miglioreSu(v, o, mosse, ctx),
+                        preso: this._miglioreSu(o, v, this.mosseAvversario(o), ctx),
+                        prima: C.confrontoVelocita(v, o, ctx, campoMio.tailwind > 0, campoLoro.tailwind > 0) > 0
+                    });
+                });
+            }
+            return M;
+        }
+
+        // Valore della posizione a fine turno per i miei Pokémon in campo (positivo: sto meglio io). Per ogni coppia:
+        // quanti "avversari" mi toglie il mio colpo migliore al turno dopo contro quanti "me" toglie il loro, con chi muove prima
+        _posizione(mie, avv, S) {
+            let somma = 0, n = 0;
+            for (const a of mie) {
+                if (!a || a.hp <= 0) continue;
+                const ha = Math.max(0.08, a.hp / a.hpMax);
+                avv.forEach((b, j) => {
+                    if (!b || b.hp <= 0) return;
+                    const d = S.matrice.get(a.indice + '|' + j);
+                    if (!d) return;
+                    const hb = Math.max(0.08, b.hp / b.hpMax);
+                    const tA = Math.min(1.5, d.dato / hb), tB = Math.min(1.5, d.preso / ha);
+                    let adv = tA * (d.prima ? 1.2 : 1) - tB * (d.prima ? 1 : 1.2);
+                    if (d.prima && tA >= 1) adv += 0.4;           // lo mette KO prima che muova
+                    if (!d.prima && tB >= 1) adv -= 0.4;          // è lui a metterlo KO prima
+                    somma += adv * this._pesoMon(a);
+                    n++;
+                });
+            }
+            if (n) return somma / n;
+            if (!mie.some(a => a && a.hp > 0)) return -0.6;
+            return 0.3;
         }
 
         // Un colpo: danno atteso (già pesato per la precisione) e probabilità di KO (tiro di danno x precisione)
@@ -934,7 +1363,18 @@
             if (dif.strumento === 'focussash' && dif.hp >= dif.hpMax) { max = Math.min(max, dif.hp - 1); min = Math.min(min, dif.hp - 1); medio = Math.min(medio, dif.hp - 1); }
             let pTiro = 0;
             if (max >= dif.hp) pTiro = min >= dif.hp ? 1 : max > min ? (max - dif.hp) / (max - min) : 1;
-            return { atteso: medio * prec, pKO: pTiro * prec, medio };
+            return { atteso: medio * prec, pKO: pTiro * prec, medio, mult: d.mult };
+        }
+
+        // Quanto in più (o in meno) vale un colpo per la sua efficacia: la super efficace si preferisce a una neutra quasi pari,
+        // la resistita si evita se c'è di meglio. `punti` sono i punti-danno del colpo.
+        _bonusEfficacia(mult, punti) {
+            if (!(mult > 0)) return 0;
+            if (mult >= 4) return punti * this.par.bonusSE4;
+            if (mult >= 2) return punti * this.par.bonusSE2;
+            if (mult <= 0.25) return -punti * this.par.malusRes025;
+            if (mult <= 0.5) return -punti * this.par.malusRes05;
+            return 0;
         }
 
         // Punti per il danno inflitto (positivi se a subirlo è l'avversario, negativi se sono io)
@@ -1043,16 +1483,29 @@
                     }
                     let util;
                     if (ctx.stanzaMagica) util = 0.1;
-                    else if (sorpassi) util = Math.min(1.3, 0.2 + 0.55 * sorpassi);
+                    else if (sorpassi) util = Math.min(this.par.maxTailwind, 0.2 + this.par.scalaTailwind * sorpassi);
                     else if (giaPiuVeloci >= mieiVivi.length * avversari.length) util = 0.1;
                     else util = 0.25;
+                    // è il piano del team: Tailwind è ciò per cui è stato fatto, si usa appena serve a superare qualcuno
+                    if (lato === 'mie' && this.strategia && this.strategia.piano === 'tailwind' && !ctx.stanzaMagica && giaPiuVeloci < mieiVivi.length * avversari.length) util = Math.max(util, this.par.utilPianoTailwind);
                     mioCampo.tailwind = 4;
                     v += util * (mieiVivi.length >= 2 || !doppio ? 1 : 0.6);
                 } else if (m.id === 'trickroom') {
                     const mieiMedia = mieiVivi.reduce((s, x) => s + C.velocitaEffettiva(x, ctx), 0) / Math.max(1, mieiVivi.length);
                     const loroMedia = avversari.reduce((s, x) => s + C.velocitaEffettiva(x, ctx), 0) / Math.max(1, avversari.length);
-                    const conviene = ctx.stanzaMagica ? (mieiMedia > loroMedia) : (mieiMedia < loroMedia * 0.85);
-                    v += conviene ? 0.7 : -0.5;
+                    let conviene = ctx.stanzaMagica ? (mieiMedia > loroMedia) : (mieiMedia < loroMedia * 0.85);
+                    // team costruito sulla Stanza Magica: conta la velocità di chi ne approfitta (anche in panchina), non solo chi è in campo
+                    const strat = lato === 'mie' ? this.strategia : null;
+                    let bonusPiano = 0;
+                    if (strat && strat.piano === 'trickroom' && !ctx.stanzaMagica && this.squadraCorrente) {
+                        const lenti = this.squadraCorrente.filter(s => !s.esausto && strat.lenti.includes(s.indice)).map(s => C.velocitaEffettiva(this.vista(s.m, s.info), ctx));
+                        if (lenti.length) {
+                            const lentiMedia = lenti.reduce((s, x) => s + x, 0) / lenti.length;
+                            conviene = lentiMedia < loroMedia * 0.95;
+                            if (conviene) bonusPiano = this.par.bonusPianoStanza;
+                        }
+                    }
+                    v += conviene ? 0.7 + bonusPiano : -0.5;
                 }
                 return v * segno;
             }

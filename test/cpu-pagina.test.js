@@ -222,7 +222,7 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     assert.match(ui, /if \(cpu && lato === 'p2'\) cpu\.errori\+\+/, 'dopo un rifiuto prova la scelta successiva');
     assert.match(ui, /richiesta\.rqid !== cpu\.rqid/, 'ogni richiesta nuova riparte dalla scelta migliore');
     assert.match(ui, /else if \(cpu\) \{\s*mostraFineCpu\(vincitore\);/);
-    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2'\)/, 'un cervello nuovo a ogni partita');
+    assert.match(ui, /cpu\.cerebro = nuovoCervello\('p2', \{ piano: cpu\.team\[cpu\.indice\] && cpu\.team\[cpu\.indice\]\.piano \}\)/, 'un cervello nuovo a ogni partita, che conosce il piano del team');
     // il giocatore non vede il team della CPU (solo le specie, come in una partita vera)
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
     // se la CPU va in errore si gioca una mossa valida a caso: la partita non si blocca
