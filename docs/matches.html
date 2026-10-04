@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
        <script src="risultati-match.js"></script>
+       <script src="team-visibili.js"></script>
        <script src="replay-sito.js"></script>
           <script src="sfide.js"></script>
 <link rel="stylesheet" href="temi.css">
@@ -1175,6 +1176,18 @@ async function apriModaleTeamsIscritti() {
         const isOpenSheet = snapOpenSheet.val() !== false; // È true di default, diventa false solo se esplicitamente disattivato
         const dataTeamsIscritti = snapTeams.val() || {};
 
+        // A scheda chiusa i team degli avversari si vedono solo dopo che sono scesi in campo contro di me (team-visibili.js).
+        // Chi non è collegato non ha mai giocato: non vede nessun team.
+        let contestoVisibilita = { chiusa: false, io: '', affrontate: new Set() };
+        if (!isOpenSheet) {
+            let io = '';
+            const utente = firebase.auth().currentUser ||
+                await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(u => { stop(); ok(u); }); });
+            if (utente) io = ((await db.ref(`users/${utente.uid}/name`).once('value')).val() || '');
+            const snapShowdowns = await db.ref(`seasons/${stagioneAttiva}/showdowns`).once('value');
+            contestoVisibilita = { chiusa: true, io, affrontate: TeamVisibili.squadreAffrontate(snapShowdowns.val(), io) };
+        }
+
         // 2. Mappiamo i team per ciascun giocatore mantenendo la struttura delle categorie
         const playerMap = {};
 
@@ -1275,7 +1288,7 @@ async function apriModaleTeamsIscritti() {
                 document.querySelectorAll('.player-tab-btn').forEach(b => b.classList.remove('active'));
                 btnTab.classList.add('active');
                 
-                mostraTeamGiocatoreSelezionato(player.name, playerMap[player.name]);
+                mostraTeamGiocatoreSelezionato(player.name, playerMap[player.name], contestoVisibilita);
             };
             
             tabsContainer.appendChild(btnTab);
@@ -1286,7 +1299,7 @@ async function apriModaleTeamsIscritti() {
         tabsContainer.innerHTML = "<p>Error occurred while loading data.</p>";
     }
 }
-async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
+async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visibilita = { chiusa: false }) {
     const teamsDisplay = document.getElementById('modal-teams-list-display');
     if (!teamsDisplay) return;
 
@@ -1326,9 +1339,19 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
         return angoli[Math.floor(Math.random() * angoli.length)];
     }
 
+    // A scheda chiusa: solo i team già scesi in campo contro di me (i miei sempre); gli altri non entrano nemmeno nella pagina
+    let teamNascosti = 0;
+    let teamMostrati = 0;
+
     Object.keys(categorieDati).forEach(categoria => {
-        const listaTeamIscritti = categorieDati[categoria] || [];
+        const divisi = TeamVisibili.dividiTeam({
+            chiusa: visibilita.chiusa, io: visibilita.io, giocatore: nomeGiocatore,
+            teams: categorieDati[categoria] || [], affrontate: visibilita.affrontate
+        });
+        teamNascosti += divisi.nascosti;
+        const listaTeamIscritti = divisi.visibili;
         if (listaTeamIscritti.length === 0) return;
+        teamMostrati += listaTeamIscritti.length;
 
         const colonnaFormato = document.createElement('div');
         colonnaFormato.className = 'modal-format-column';
@@ -1400,10 +1423,10 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
                                     </div>
                                     <div class="pkm-info">
                                         <span class="pkm-name">${p.nome}</span>
-                                        <div class="item-container">
+                                        ${visibilita.chiusa ? '' : `<div class="item-container">
                                             <img src="${itemSprite}" class="item-icon" title="${p.strumento || 'Nessuno'}" onerror="this.style.display='none'">
                                             <span class="pkm-item">${p.strumento || 'No item'}</span>
-                                        </div>
+                                        </div>`}
                                     </div>
                                 </div>
                             `;
@@ -1419,7 +1442,17 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati) {
         gridContainer.appendChild(colonnaFormato);
     });
 
-    teamsDisplay.appendChild(gridContainer);
+    if (teamMostrati > 0) teamsDisplay.appendChild(gridContainer);
+
+    // Scheda chiusa: perché mancano dei team (senza dire altro su di loro)
+    if (teamNascosti > 0) {
+        const nota = document.createElement('p');
+        nota.className = 'placeholder-text team-nascosti-nota';
+        nota.textContent = teamMostrati > 0
+            ? `🔒 Closed sheet season: ${teamNascosti} more team${teamNascosti === 1 ? '' : 's'} will show up once ${teamNascosti === 1 ? 'it has' : 'they have'} faced you.`
+            : `🔒 Closed sheet season: ${nomeGiocatore.charAt(0).toUpperCase() + nomeGiocatore.slice(1)}'s teams stay hidden until they have faced you.`;
+        teamsDisplay.appendChild(nota);
+    }
 }
 
 
