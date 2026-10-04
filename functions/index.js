@@ -81,6 +81,7 @@ function richiamabile(nome, opzioni = {}) {
 exports.apriPartita = richiamabile('apriPartita');
 exports.prontoPartita = richiamabile('pronto');
 exports.inviaScelta = richiamabile('inviaScelta', { minInstances: 0 });
+exports.annullaScelta = richiamabile('annullaScelta');   // ritirare la propria scelta finché l'avversario non ha scelto
 
 // Quando l'ultimo set finisce, il match si salva da solo
 exports.salvaPartitaConclusa = onValueWritten(

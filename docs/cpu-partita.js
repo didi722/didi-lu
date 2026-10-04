@@ -80,6 +80,13 @@ export function nuovoCervello(lato = 'p2') {
     return self.CpuIa.crea({ Dex, lato });
 }
 
+// Il nome con cui un team della CPU si presenta a chi gioca: "Team 7". Mai il nome vero (il piano di gioco, il Pokémon
+// asso: "CPU Tailwind · ..."), altrimenti si saprebbe già cosa farà. Il numero è quello stabile del team nel suo formato.
+export function nomeNeutro(team, indice) {
+    const n = team && Number.isInteger(team.numero) && team.numero > 0 ? team.numero : indice + 1;
+    return `Team ${n}`;
+}
+
 // Un team a caso tra quelli disponibili, diverso dal precedente se possibile
 export function sceglieTeam(team, escludiIndice = -1) {
     const possibili = team.map((t, i) => i).filter(i => i !== escludiIndice);

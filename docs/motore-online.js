@@ -14,7 +14,19 @@
 //   'stato'     (stato)             lobby / in_corso / da_salvare / salvata ...
 //   'avversario'(passo)             l'avversario ha scelto per questo passo
 //   'pronti'    ({ p1, p2 })        chi è pronto nella lobby
+//
+// Metodi: scegli(lato, scelta), annulla(lato) (ritira la scelta finché l'avversario non ha scelto), avvia(), chiudi().
 // =====================================================
+
+// L'errore di "annullaScelta" in parole del sito (il server risponde in italiano; una funzione non ancora pubblicata o
+// la rete che cade danno errori tecnici che a chi gioca non servono)
+export function messaggioAnnulla(errore) {
+    const testo = String((errore && errore.message) || errore || '');
+    if (/^Troppo tardi/i.test(testo)) return 'Too late: your opponent has already chosen.';
+    if (/nessuna scelta da annullare/i.test(testo)) return "There's no choice to cancel.";
+    if (/richiesta è scaduta/i.test(testo)) return 'This turn has already moved on.';
+    return "Couldn't cancel right now. Your choice stays as sent.";
+}
 
 export class BattagliaOnline {
     constructor({ id, lato, db, funzioni }) {
@@ -98,6 +110,16 @@ export class BattagliaOnline {
             await this.funzioni.httpsCallable('inviaScelta')({ id: this.id, passo: this.passo, scelta });
         } catch (e) {
             this._emetti('errore', lato, e.message || String(e));
+        }
+    }
+
+    // Ritira la scelta già inviata, finché l'avversario non ha scelto. { ok: true } oppure { ok: false, messaggio }
+    async annulla() {
+        try {
+            await this.funzioni.httpsCallable('annullaScelta')({ id: this.id, passo: this.passo });
+            return { ok: true };
+        } catch (e) {
+            return { ok: false, messaggio: messaggioAnnulla(e) };
         }
     }
 

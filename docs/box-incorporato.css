@@ -1,0 +1,26 @@
+/* =====================================================================
+   BOX APERTO DAL SIMULATORE (editor del team dentro una finestra)
+   ---------------------------------------------------------------------
+   A fine partita contro la CPU, "Edit my team" apre battle.html → box.html?modifica=ID&incorporato=1 dentro un iframe
+   (vedi editor-team.js). In quella modalità box.html mette la classe "incorporato" su <html> (prima di tutto il resto) e di
+   tutta la pagina si vede solo l'editor: il pannello e il Team Builder, gli stessi del Box, con le stesse regole e lo stesso
+   salvataggio. Va caricato dopo il foglio del Box.
+   ===================================================================== */
+html.incorporato body {
+    background: var(--nb-tip-bg, #fffdf6) !important;
+    overflow: hidden;
+}
+html.incorporato body::before { content: none !important; }
+
+/* la pagina del Box: titolo, filtri, griglia dei team, pulsanti tondi, menu, accesso, finestre dei dettagli */
+html.incorporato :is(main, .top-auth-bar, #teamsGrid, .btn-floating-admin, .btn-floating-helper, #music-control,
+                     #menu-overlay, #login-modal, #teamModal, #pkmDetailModal) {
+    display: none !important;
+}
+
+/* dietro il pannello c'è solo la carta: niente velo scuro da sfocare */
+html.incorporato #admin-backdrop {
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}

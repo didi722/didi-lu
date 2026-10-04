@@ -706,6 +706,9 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .btn.piccolo { padding: 6px 10px 4px; font-size: .72rem; border-width: 2px; box-shadow: 3px 3px 0 var(--inchiostro); }
 .btn.piccolo:hover:not(:disabled) { box-shadow: 5px 5px 0 var(--inchiostro); }
 .btn.meccanica[aria-pressed="true"] { background: var(--pericolo); color: var(--carta); }
+/* "Choice sent. Waiting…" con il pulsante per ritirare la scelta, e il perché se non si può */
+.annulla-scelta { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; }
+.annulla-errore { font: 700 .72rem 'Josefin Sans', sans-serif; text-transform: uppercase; color: var(--pericolo); }
 .riga-azioni { display: flex; flex-wrap: wrap; gap: 14px; }
 .riga-azioni.centrata { justify-content: center; }
 
@@ -779,6 +782,22 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
 .btn-pkm.compatto { flex-direction: column; gap: 2px; padding: 2px 4px 4px; }
 .btn-pkm.compatto .btn-pkm-hp { width: 38px; }
 .btn-pkm.compatto .tag-stato { position: absolute; top: -8px; right: -7px; z-index: 1; font-size: .55rem; transform: rotate(5deg); }
+/* Il compagno come bersaglio: piccolo e grigio. Si può scegliere (certe mosse lo vogliono), ma non salta all'occhio
+   e non è grande come i bottoni degli avversari, così non si preme per sbaglio */
+.bersagli-gruppo.alleati { opacity: .8; }
+.bersagli-gruppo.alleati .etichetta { font-size: .62rem; color: #666; }
+.btn-pkm.alleato {
+    --tilt: 0deg;
+    padding: 1px 7px 1px 1px;
+    background: #e4e4e4; color: #666;
+    border: 2px dashed #8a8a8a; box-shadow: 2px 2px 0 #9a9a9a;
+    font-size: .6rem;
+}
+.btn-pkm.alleato .picon { filter: grayscale(1) opacity(.75); transform: scale(.85); transform-origin: left center; margin-right: -4px; }
+.btn-pkm.alleato .btn-pkm-hp { width: 36px; height: 4px; border-color: #8a8a8a; }
+.btn-pkm.alleato .btn-pkm-nota { background: #8a8a8a; }
+.btn-pkm.alleato:hover:not(.spento) { background: #ececec; transform: none; box-shadow: 3px 3px 0 #9a9a9a; }
+.btn-pkm.alleato:active:not(.spento) { transform: none; box-shadow: 0 0 0 #9a9a9a; }
 .btn-pkm-hp span { display: block; height: 100%; }
 .hp-g { background: var(--conferma); }
 .hp-y { background: var(--ambra); }
@@ -1061,3 +1080,41 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro { transition: none; }
     .badge-live::before, .esito-card { animation: none; }
 }
+
+/* =====================================================================
+   EDITOR DEL TEAM (a fine partita contro la CPU)
+   Il Box aperto in una finestra a tutto schermo sopra il simulatore: una barra nera con il titolo e il ritorno, sotto
+   l'editor (un iframe, vedi editor-team.js). Finché c'è, la pagina dietro non scorre.
+   ===================================================================== */
+body.con-editor { overflow: hidden; }
+.editor-team {
+    position: fixed; inset: 0; z-index: 9000;
+    display: flex; flex-direction: column;
+    background: var(--carta);
+}
+.editor-team[hidden] { display: none; }
+.editor-team-barra {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 14px;
+    background: var(--inchiostro); color: var(--carta);
+    border-bottom: 4px solid var(--ambra);
+}
+.editor-team-titolo {
+    margin: 0; min-width: 0;
+    font: 700 .9rem 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.editor-team-corpo { position: relative; flex: 1 1 auto; min-height: 0; }
+.editor-team-corpo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+/* dietro l'iframe: si vede solo finché la pagina del Box non ha disegnato niente */
+.editor-team-attesa {
+    position: absolute; inset: 0; margin: 0;
+    display: grid; place-items: center;
+    font: 700 1rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+}
+@media (max-width: 699px) {
+    .editor-team-barra { padding: 6px 10px; gap: 8px; }
+    .editor-team-titolo { font-size: .78rem; }
+}
+

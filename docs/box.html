@@ -6,6 +6,11 @@
     <title>Box</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Aperto dal simulatore dentro una finestra, per modificare un team (editor-team.js): la classe va messa subito,
+        // prima del resto, così non si vede mai la pagina del Box. Vedi box-incorporato.css.
+        if (/[?&]incorporato=1(?:&|$)/.test(location.search) && window.parent !== window) document.documentElement.classList.add('incorporato');
+    </script>
     <link rel="stylesheet" href="style-box.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">  
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -15,7 +20,10 @@
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="box-team.css">
+<link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
+<script src="team-bloccati.js"></script>
+<script src="editor-team.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="formato-pool.js"></script>
@@ -610,7 +618,7 @@ async function inizializzaPaginaBox() {
         // 3. ATTENDIAMO che i team siano stati scaricati ed elaborati
         await scaricaDati(); 
 
-        if (typeof ascoltaMusicaFirebase === "function") {
+        if (typeof ascoltaMusicaFirebase === "function" && !INCORPORATO) {     // nell'editor del simulatore la musica non serve
             ascoltaMusicaFirebase();
         }
 
@@ -628,6 +636,7 @@ async function inizializzaPaginaBox() {
         }
 
         console.log(`✅ Box loaded successfully for ${nomeFormattato}. Teams found: ${tuttiITeam.length}`);
+        if (INCORPORATO) avviaEditorIncorporato();
 
     } catch (e) {
         console.error("❌ Error during Box initialization:", e);
@@ -742,6 +751,8 @@ function chiudiAdminProtetto() {
         backdrop.style.display = 'none';
         adminPanel.style.display = 'none';
     }
+    // Nell'editor del simulatore chiudere il pannello (fuori dal Team Builder) vuol dire uscire dall'editor
+    if (INCORPORATO && !tbModifica && !salvataggioTeamInCorso) notificaSimulatore('chiuso');
 }
 
 // 7. Gestione Play/Pause Manuale
@@ -877,37 +888,55 @@ async function coloraBordoDinamico(pkmName, elementId) {
 async function caricaTeamBloccati() {
     window.nomiTeamBloccati = new Set();
     try {
+        // La regola (stagione "playing" o "closed" con il team tra gli iscritti, "sbeta" esclusa) sta in team-bloccati.js,
+        // la stessa che usa il simulatore per decidere se a fine partita si può modificare il team
         const snap = await db.ref('seasons').once('value');
-        const seasons = snap.val() || {};
-
-        Object.entries(seasons).forEach(([seasonKey, season]) => {
-            // 🛠️ Esclude la stagione 'sbeta' dal blocco
-            if (seasonKey === 'sbeta') return;
-
-            const status = season?.info?.status;
-            
-            // Controlla se la stagione è in stato "playing" o "closed"
-            if (status === 'playing' || status === 'closed') {
-                const teamsIscritti = season.teams_iscritti || {};
-
-                // Naviga in formati -> allenatori -> datiTeams
-                Object.values(teamsIscritti).forEach(formato => {
-                    Object.values(formato || {}).forEach(allenatore => {
-                        const datiTeams = allenatore?.datiTeams || [];
-                        Object.values(datiTeams).forEach(t => {
-                            if (t && t.nome) {
-                                // Salviamo il nome in minuscolo per evitare discrepanze
-                                window.nomiTeamBloccati.add(t.nome.trim().toLowerCase());
-                            }
-                        });
-                    });
-                });
-            }
-        });
+        window.nomiTeamBloccati = TeamBloccati.nomiBloccati(snap.val());
     } catch (e) {
         console.error("Error retrieving blocked teams:", e);
     }
 }
+
+// ---------- Aperto dal simulatore (iframe) per modificare un team ----------
+// A fine partita contro la CPU battle.html apre il Box dentro una finestra con ?modifica=ID&incorporato=1 (editor-team.js).
+// Qui si vede solo l'editor (box-incorporato.css), che si apre da solo sul team indicato: stesso pannello e stesso Team Builder
+// di sempre. Dopo un salvataggio, invece di ricaricare la pagina, si avvisa il simulatore; lo stesso se si chiude.
+const INCORPORATO = EditorTeam.eIncorporato(location.search, window);
+
+function notificaSimulatore(evento, extra) {
+    if (!INCORPORATO) return;
+    try { window.parent.postMessage(EditorTeam.messaggio(evento, extra), location.origin); } catch (e) { /* nessuno ascolta: pazienza */ }
+}
+
+async function avviaEditorIncorporato() {
+    const id = EditorTeam.teamDaModificare(location.search);
+    const team = tuttiITeam.find(t => t.id === id);
+    if (!team) return notificaSimulatore('errore', { messaggio: 'That team is not in your Box anymore.' });
+    // la stessa regola del tasto con la matita: un team già iscritto a una stagione iniziata non si modifica
+    await caricaTeamBloccati();
+    if (TeamBloccati.eBloccato(window.nomiTeamBloccati, team.nome)) return notificaSimulatore('bloccato', { id });
+    // la lista dei formati del pannello si riempie quando Firebase risponde: senza, il formato del team non si potrebbe selezionare
+    const selectFormato = document.getElementById('admin-team-cat');
+    for (let i = 0; selectFormato && selectFormato.options.length < 2 && i < 30; i++) await new Promise(ok => setTimeout(ok, 100));
+    caricaTeamPerModifica(id);          // il pannello, con il team scritto in formato Showdown
+    notificaSimulatore('pronto', { id });
+    // e subito il Team Builder; se per qualche motivo non parte, resta il pannello (si può modificare anche da lì)
+    modificaTeamNelBuilder().catch(e => console.warn('Team Builder not opened, the panel stays', e));
+}
+
+// Il simulatore chiede di chiudere (il suo "Back"): si passa dalle chiusure di sempre, che chiedono conferma se ci sono modifiche
+function chiudiEditorIncorporato() {
+    if (salvataggioTeamInCorso) return;     // sta scrivendo su Firebase: chiudere ora lo interromperebbe, a salvataggio finito si chiude da solo
+    const builder = document.getElementById('tb-overlay');
+    if (builder && builder.classList.contains('open')) return tbChiediChiusura();
+    const pannello = document.getElementById('admin-panel');
+    if (pannello && pannello.style.display === 'block') return chiudiAdminProtetto();
+    notificaSimulatore('chiuso');
+}
+window.addEventListener('message', e => {
+    if (!INCORPORATO || e.source !== window.parent || e.origin !== location.origin) return;
+    if (e.data && e.data.sito === EditorTeam.SITO && e.data.comando === 'chiudi') chiudiEditorIncorporato();
+});
 
 // Effetto delle nature sulle statistiche: [statistica aumentata, statistica diminuita]
 const EFFETTI_NATURE = {
@@ -3059,6 +3088,11 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         const overlayBuilder = document.getElementById('tb-overlay');
         if (overlayBuilder) overlayBuilder.classList.remove('open');
 
+        if (INCORPORATO) {
+            // dentro il simulatore non si ricarica: lo si avvisa, e lui chiude la finestra
+            notificaSimulatore('salvato', { id: editingId || '' });
+            return;
+        }
         location.reload();
 
     } catch (error) { 
@@ -3175,9 +3209,11 @@ function sincronizzaCategorie() {
         }
 
         if (selectCat) {
+            const currentCatVal = selectCat.value;
             selectCat.innerHTML = adminHtml;
+            selectCat.value = currentCatVal; // Mantieni la selezione se il pannello è già aperto su un team
         }
-        
+
         console.log("Categorie sincronizzate da Firebase.");
     });
 }
@@ -4243,12 +4279,14 @@ function inizializzaChiusuraHelper(event) {
     // Caso A: Click sul bottone di chiusura (la X del modale)
     if (event.target.closest('.format-close-btn')) {
         chiudiTuttoHelper();
+        notificaSimulatore('chiuso');     // nell'editor del simulatore (se il Team Builder non è partito) chiudere l'helper è uscire
         return;
     }
-    
+
     // Caso B: Click fuori dal modale (sull'overlay di sfondo o sul wrapper)
     if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
         chiudiTuttoHelper();
+        notificaSimulatore('chiuso');
     }
 }
 
@@ -7621,6 +7659,8 @@ function chiudiTeamBuilder() {
         // Aperto direttamente dal box (modifica di un team): si torna al box e la pagina scorre di nuovo
         document.body.style.overflow = '';
     }
+    // Nell'editor del simulatore, chiuso il Team Builder (X, fuori, Esc, dopo la conferma) l'editor è finito
+    if (INCORPORATO && !tbModifica) notificaSimulatore('chiuso');
 }
 
 // Il builder è aperto e nel team c'è almeno un Pokémon

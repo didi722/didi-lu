@@ -119,7 +119,7 @@ async function creaCpuPartita() {
         localStorage: { getItem: k => (memoriaBrowser.has(k) ? memoriaBrowser.get(k) : null), setItem: (k, v) => memoriaBrowser.set(k, v) },
         fetch: async p => { scaricati.push(p); return { ok: true, json: async () => leggiJson(p) }; }
     };
-    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { squadreCpu, nuovoCervello, sceglieTeam, VERSIONE_TEAM_CPU };')(...Object.values(ambiente));
+    const modulo = new Function(...Object.keys(ambiente), src + '\nreturn { squadreCpu, nuovoCervello, sceglieTeam, nomeNeutro, VERSIONE_TEAM_CPU };')(...Object.values(ambiente));
     return { modulo, memoriaBrowser, scaricati };
 }
 const regPiccolo = (extra = {}) => ({ ...regOU, restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' } } }, ...extra });
@@ -191,12 +191,29 @@ test('sceglieTeam: a caso, diverso dal precedente quando si può', async () => {
     assert.equal(modulo.sceglieTeam([{ nome: 'unico' }], 0), 0, 'con un solo team si rigioca quello');
 });
 
+test('nomeNeutro: la CPU si presenta come "Team N", mai col piano di gioco né col Pokémon asso', async () => {
+    const { modulo } = await creaCpuPartita();
+    // col numero stabile del team, altrimenti con la posizione nell'elenco
+    assert.equal(modulo.nomeNeutro({ numero: 7, nome: 'CPU Tailwind · Calyrex-Shadow' }, 3), 'Team 7');
+    assert.equal(modulo.nomeNeutro({ nome: 'CPU Trick Room · Hatterene' }, 3), 'Team 4');
+    assert.equal(modulo.nomeNeutro({ numero: 0 }, 0), 'Team 1');
+    assert.equal(modulo.nomeNeutro(undefined, 11), 'Team 12');
+    // sui team veri: nessun nome mostrato contiene il piano o la specie
+    const r = await modulo.squadreCpu(regPiccolo());
+    r.team.forEach((t, i) => {
+        const nome = modulo.nomeNeutro(t, i);
+        assert.match(nome, /^Team \d+$/);
+        assert.ok(!/cpu|tailwind|trick|rain|sun|sand|snow|balanced|offense|stall/i.test(nome), nome);
+    });
+    assert.equal(new Set(r.team.map((t, i) => modulo.nomeNeutro(t, i))).size, r.team.length, 'un numero per team');
+});
+
 // ===================================================
 // CABLAGGIO NELLE PAGINE
 // ===================================================
 test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori, fine partita)', () => {
     const ui = leggi('battle-ui.js');
-    assert.match(ui, /import \{ squadreCpu, nuovoCervello, sceglieTeam \} from '\.\/cpu-partita\.js'/);
+    assert.match(ui, /import \{ squadreCpu, nuovoCervello, sceglieTeam, nomeNeutro \} from '\.\/cpu-partita\.js'/);
     assert.match(ui, /import \{ caricaMatch, caricaPerProva \} from '\.\/team-sito\.js'/);
     assert.match(ui, /parametri\.get\('cpu'\)[\s\S]{0,60}preparaCpu\(parametri\.get\('team'\)\)/);
     assert.match(ui, /return !online && lato === 'p2' && \(!!cpu \|\| \$\('bot-p2'\)\.checked\)/, 'con la CPU il lato 2 è sempre automatico');
@@ -210,6 +227,15 @@ test('battle-ui.js: la modalità CPU è collegata (avvio, log, richieste, errori
     assert.match(ui, /openSheet: false,\s*latiNoti: \['p1'\]/);
     // se la CPU va in errore si gioca una mossa valida a caso: la partita non si blocca
     assert.match(ui, /catch \(errore\) \{\s*console\.error\('CPU:', errore\);\s*scelta = sceltaCasuale/);
+});
+
+test('battle-ui.js: il team della CPU compare ovunque col nome neutro, mai col suo nome vero', () => {
+    const ui = leggi('battle-ui.js');
+    assert.match(ui, /config\.p2\.nomeTeam = nomeNeutro\(t, indice\)/);
+    assert.match(ui, /return `\$\{config\.p1\.nomeTeam\} vs \$\{config\.p2\.nomeTeam\}\$\{nota \? ` · \$\{nota\}` : ''\}`/, 'anche nel cartello di fine partita');
+    assert.match(ui, /mostraEsito\(titolo, \{ sotto: riepilogoFineCpu\(\), azioni: azioniCpu\(\) \}\)/);
+    assert.ok(!/cpu\.team\[[^\]]+\]\.nome/.test(ui), 'nessun punto legge il nome vero del team della CPU');
+    assert.ok(!/config\.p2\.nomeTeam = t\.nome/.test(ui));
 });
 
 test('battle-ui.js: a fine partita rivincita, altro team CPU a caso, ritorno al Box', () => {

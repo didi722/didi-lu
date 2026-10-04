@@ -61,6 +61,18 @@ export class BattagliaLocale {
         this.streams[lato].write(scelta);
     }
 
+    // Ritira la scelta già fatta, finché l'altro lato non ha scelto (i formati del sito hanno "Cancel Mod").
+    // A volte il simulatore rifiuta ("Can't undo: ... would leak information"): lo dice con un errore subito dopo,
+    // che qui si raccoglie invece di mandarlo al pannello come scelta rifiutata. { ok: true } oppure { ok: false, messaggio }
+    async annulla(lato) {
+        this._annullamento = { lato, errore: null };
+        this.streams[lato].write('undo');
+        await new Promise(ok => setTimeout(ok, 40));      // gli errori arrivano dallo stream un attimo dopo
+        const { errore } = this._annullamento;
+        this._annullamento = null;
+        return errore ? { ok: false, messaggio: errore.replace(/^\[Invalid choice\]\s*/, '') } : { ok: true };
+    }
+
     async _ascoltaSpettatore() {
         for await (const blocco of this.streams.spectator) {
             const righe = blocco.split('\n').filter(r => r.startsWith('|'));
@@ -81,7 +93,8 @@ export class BattagliaLocale {
                     const json = r.slice(9);
                     if (json) this._emetti('richiesta', lato, JSON.parse(json));
                 } else if (r.startsWith('|error|')) {
-                    this._emetti('errore', lato, r.slice(7));
+                    if (this._annullamento && this._annullamento.lato === lato) this._annullamento.errore = r.slice(7);
+                    else this._emetti('errore', lato, r.slice(7));
                 }
             }
         }

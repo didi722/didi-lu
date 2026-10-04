@@ -15,6 +15,7 @@ const PS = require('pokemon-showdown');
 const { creaReplayHtml } = require('./replay-sito');
 const { analizzaSet } = require('./statistiche-set');
 const { nomiUnici } = require('./nomi-unici');
+const { ritiraScelta } = require('./ritira-scelta');
 
 class ErroreUtente extends Error {}
 
@@ -401,6 +402,22 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         return { ok: true };
     }
 
+    // --- ritirare la propria scelta, finché l'avversario non ha scelto ---
+    async function annullaScelta(uid, { id, passo }) {
+        const info = await leggi(`partite/${id}/info`);
+        if (!info) throw new ErroreUtente('Partita inesistente');
+        const lato = latoDi(info, uid);
+        if (!lato) throw new ErroreUtente('Non sei uno dei due giocatori di questo match');
+        const stato = await leggi(`partiteServer/${id}/corrente`);
+        if (!stato) throw new ErroreUtente('Il match non è ancora iniziato');
+        if (chiavePasso(stato) !== passo) throw new ErroreUtente('Questa richiesta è scaduta: la pagina si aggiorna da sola');
+
+        const esito = await ritiraScelta(db, id, lato, passo);
+        if (esito === 'tardi') throw new ErroreUtente("Troppo tardi: l'avversario ha già scelto");
+        if (esito === 'nessuna') throw new ErroreUtente('Non c\'è nessuna scelta da annullare');
+        return { ok: true };
+    }
+
     // --- quando tutti hanno scelto, il turno si gioca (una sola volta) ---
     async function elabora(id, info, teams) {
         const [stato, attesa] = await Promise.all([leggi(`partiteServer/${id}/corrente`), leggi(`partiteServer/${id}/inAttesa`)]);
@@ -509,7 +526,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         }
     }
 
-    return { apriPartita, pronto, inviaScelta, salvaPartita };
+    return { apriPartita, pronto, inviaScelta, annullaScelta, salvaPartita };
 }
 
 module.exports = {

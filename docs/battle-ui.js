@@ -18,11 +18,13 @@ import {
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch, caricaPerProva } from './team-sito.js';
-import { squadreCpu, nuovoCervello, sceglieTeam } from './cpu-partita.js';
+import { squadreCpu, nuovoCervello, sceglieTeam, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './nomi-unici.js';       // self.NomiUnici
 import './nomi-log.js';         // self.NomiLog
+import './team-bloccati.js';    // self.TeamBloccati: quali team non si modificano più
+import './editor-team.js';      // self.EditorTeam: il Box aperto in una finestra per modificare il team
    import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
 const CONFIG_PROVA = {
     formato: 'gen8vgc2022',
@@ -50,8 +52,11 @@ const $ = id => document.getElementById(id);
 let config = null;          // { formato, etichetta, p1: { nome, team }, p2: { nome, team } }
 let battaglia, stato, pannelli, finita;
 
-// Solo nella prova contro la CPU: { cerebro, team[] (quelli della CPU), indice (quale sta giocando), giocatore, errori, rqid }
+// Solo nella prova contro la CPU: { cerebro, team[] (quelli della CPU), indice (quale sta giocando), giocatore, errori, rqid,
+// chiaveTeam (il team nel Box), modificabile (null mentre si controlla, poi true/false), avviso (testo sul cartello di fine
+// partita), problemi (perché il team, dopo una modifica, non si può giocare), ultimoVincitore }
 let cpu = null;
+let editor = null;          // { frame, pronto } mentre la finestra dell'editor del team è aperta
 
 // Solo online
 let mioLato = null;         // 'p1' o 'p2'; null = locale (entrambi i lati) o spettatore
@@ -201,7 +206,10 @@ async function preparaCpu(chiaveTeam) {
     }
 
     document.body.classList.add('prova-cpu');
-    cpu = { cerebro: null, team: squadre.team, indice: sceglieTeam(squadre.team), giocatore: dati, errori: 0, rqid: null };
+    cpu = {
+        cerebro: null, team: squadre.team, indice: sceglieTeam(squadre.team), giocatore: dati, errori: 0, rqid: null,
+        chiaveTeam, modificabile: null, avviso: '', problemi: [], ultimoVincitore: null
+    };
     config = {
         formato: dati.formato,
         etichetta: `Practice vs CPU · ${dati.categoria}`,
@@ -210,15 +218,18 @@ async function preparaCpu(chiaveTeam) {
     };
     if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
     impostaPannelli();
+    verificaModificabile(dati.team.nome);     // in sottofondo: a fine partita si sa già se il team si può modificare
     iniziaContro(cpu.indice);
 }
 
 // Mette in campo il team della CPU indicato e fa partire la battaglia
 function iniziaContro(indice) {
     cpu.indice = indice;
+    cpu.avviso = '';
+    cpu.ultimoVincitore = null;
     const t = cpu.team[indice];
     config.p2.team = t.testo;
-    config.p2.nomeTeam = t.nome;
+    config.p2.nomeTeam = nomeNeutro(t, indice);     // "Team 7", mai il piano di gioco: si saprebbe già cosa farà
     schedeCpu();
     avviaBattaglia();
 }
@@ -233,20 +244,130 @@ function schedeCpu() {
     });
 }
 
-// I tre pulsanti di fine partita. Su schermi larghi stanno nel cartello sullo schermo,
-// sui telefoni (dove il cartello è piccolo) nel pannello sotto lo schermo: vedi style-battle.css
+// I pulsanti di fine partita: rivincita, un altro team della CPU, modifica del proprio team (solo se si può) e ritorno al Box.
+// Su schermi larghi stanno nel cartello sullo schermo, sui telefoni (dove il cartello è piccolo) nel pannello sotto lo
+// schermo: vedi style-battle.css
 function azioniCpu() {
-    return [
-        el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.indice) }, 'Rematch · same CPU team'),
-        el('button', { type: 'button', class: 'btn secondario', onclick: () => iniziaContro(sceglieTeam(cpu.team, cpu.indice)) }, 'Another random CPU team'),
-        el('a', { class: 'btn secondario', href: 'box.html' }, 'Back to Box')
-    ];
+    const azioni = [];
+    // dopo una modifica il team può non essere più giocabile nel simulatore: allora niente rivincita finché non si sistema
+    if (!cpu.problemi.length) {
+        azioni.push(
+            el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.indice) }, 'Rematch · same CPU team'),
+            el('button', { type: 'button', class: 'btn secondario', onclick: () => iniziaContro(sceglieTeam(cpu.team, cpu.indice)) }, 'Another random CPU team'));
+    }
+    // Come nel Box, il team si modifica solo se non è già iscritto a una stagione iniziata (team-bloccati.js)
+    if (cpu.modificabile === true) azioni.push(el('button', { type: 'button', class: 'btn secondario', onclick: apriEditorTeam }, 'Edit my team'));
+    azioni.push(el('a', { class: 'btn secondario', href: 'box.html' }, 'Back to Box'));
+    return azioni;
+}
+
+// Quello che sta scritto sul cartello sotto il titolo: i due team, e se serve una nota (team aggiornato, team bloccato, errori)
+function riepilogoFineCpu() {
+    const nota = cpu.avviso || (cpu.modificabile === false ? '🔒 Locked team: it can\'t be edited' : '');
+    return `${config.p1.nomeTeam} vs ${config.p2.nomeTeam}${nota ? ` · ${nota}` : ''}`;
 }
 
 function mostraFineCpu(vincitore) {
+    cpu.ultimoVincitore = vincitore;
     const vinto = !!vincitore && vincitore === config.p1.nome;
     const titolo = !vincitore ? "It's a tie!" : vinto ? 'You win!' : 'The CPU wins!';
-    mostraEsito(titolo, { sotto: `${config.p1.nomeTeam} vs ${cpu.team[cpu.indice].nome}`, azioni: azioniCpu() });
+    mostraEsito(titolo, { sotto: riepilogoFineCpu(), azioni: azioniCpu() });
+}
+
+// Cambia qualcosa dopo la fine della partita (si è saputo se il team è bloccato, il team è stato modificato...): si ridisegna
+function aggiornaFineCpu() {
+    // non è finita, o il cartello non c'è ancora (le animazioni stanno finendo): lo mostrerà la fine partita, già aggiornato
+    if (!cpu || !finita || $('vittoria').hidden) return;
+    mostraFineCpu(cpu.ultimoVincitore);
+    ridisegnaComandi();
+}
+
+// Il team del Box di chi gioca può essere ancora modificato? La stessa regola del tasto con la matita (team-bloccati.js).
+// Nel dubbio (errore di rete, permessi) no: è la regola che protegge i team già iscritti.
+async function verificaModificabile(nomeTeam) {
+    try {
+        const snap = await firebase.database().ref('seasons').once('value');
+        cpu.modificabile = !self.TeamBloccati.eBloccato(snap.val(), nomeTeam);
+    } catch (errore) {
+        console.warn("Couldn't check whether the team is locked", errore);
+        cpu.modificabile = false;
+    }
+    aggiornaFineCpu();
+}
+
+
+// -----------------------------------------------------
+// Modifica del proprio team a fine partita (prova contro la CPU)
+// -----------------------------------------------------
+// Il Box si apre in una finestra sopra il simulatore (iframe, vedi editor-team.js): è lo stesso editor del Box, con le
+// stesse regole e lo stesso salvataggio. Chiusa la finestra il team si rilegge da Firebase e la prossima partita lo usa.
+function apriEditorTeam() {
+    if (!cpu || cpu.modificabile !== true || editor) return;
+    const frame = el('iframe', { title: 'Team editor', allow: 'clipboard-write', src: EditorTeam.urlEditor(cpu.chiaveTeam) });
+    $('editor-team-titolo').textContent = `Edit team · ${config.p1.nomeTeam}`;
+    $('editor-team-corpo').append(frame);
+    $('editor-team').hidden = false;
+    document.body.classList.add('con-editor');
+    editor = { frame, pronto: false };
+    $('editor-team-chiudi').focus();
+}
+
+function chiudiEditorTeam() {
+    if (!editor) return;
+    editor.frame.remove();             // tolto, non portato su about:blank: così il browser non chiede "Leave site?"
+    editor = null;
+    $('editor-team').hidden = true;
+    document.body.classList.remove('con-editor');
+}
+
+// "Back" (o Esc, quando la tastiera è sul simulatore e non dentro l'editor): se l'editor è aperto si passa dalle sue chiusure
+// (chiedono conferma se ci sono modifiche non salvate)
+function chiediChiusuraEditor() {
+    if (!editor) return;
+    if (editor.pronto) editor.frame.contentWindow.postMessage({ sito: EditorTeam.SITO, comando: 'chiudi' }, location.origin);
+    else chiudiEditorTeam();
+}
+$('editor-team-chiudi').addEventListener('click', chiediChiusuraEditor);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && editor) chiediChiusuraEditor(); });
+
+window.addEventListener('message', e => {
+    if (!editor) return;
+    const m = EditorTeam.leggiMessaggio(e, { origine: location.origin, sorgente: editor.frame.contentWindow });
+    if (!m) return;
+    if (m.evento === 'pronto') editor.pronto = true;
+    else if (m.evento === 'salvato') { chiudiEditorTeam(); dopoModificaTeam(); }
+    else if (m.evento === 'chiuso') chiudiEditorTeam();
+    else if (m.evento === 'bloccato') {
+        chiudiEditorTeam();
+        cpu.modificabile = false;
+        aggiornaFineCpu();
+    } else if (m.evento === 'errore') {
+        chiudiEditorTeam();
+        cpu.avviso = m.messaggio || "The editor couldn't open.";
+        aggiornaFineCpu();
+    }
+});
+
+// Il team è stato salvato nel Box: si rilegge e si aggiornano colonne e pulsanti
+async function dopoModificaTeam() {
+    let dati;
+    try {
+        dati = await caricaPerProva(firebase.database(), firebase.auth().currentUser, cpu.chiaveTeam);
+    } catch (errore) {
+        console.error(errore);
+        cpu.avviso = `Team saved, but it couldn't be reloaded (${errore.message}). Reload the page to use it.`;
+        return aggiornaFineCpu();
+    }
+    // Se la modifica ha cambiato il formato del team, la CPU e il simulatore non sono più quelli giusti: si riparte da capo
+    if (dati.formato !== config.formato) return location.reload();
+    cpu.giocatore = dati;
+    cpu.problemi = dati.problemi;
+    config.p1.team = dati.team.testo;
+    config.p1.nomeTeam = dati.team.nome;
+    cpu.avviso = dati.problemi.length ? `Team updated, but it can't be used here: ${dati.problemi.join('; ')}` : 'Team updated ✓';
+    schedeCpu();
+    verificaModificabile(dati.team.nome);     // il nome può essere cambiato
+    aggiornaFineCpu();
 }
 
 
@@ -301,7 +422,11 @@ async function preparaOnline(chiavi) {
     battaglia.on('stato', s => { online.stato = s; aggiornaFase(); });
     battaglia.on('pronti', p => { online.pronti = p; if (online.stato === 'lobby') disegnaLobby(); aggiornaStati(); });
     battaglia.on('risultati', r => { online.risultati = r; disegnaInfo(); });
-    battaglia.on('avversario', passo => { online.sceltaAvversario = passo; aggiornaStati(); });
+    battaglia.on('avversario', passo => {
+        online.sceltaAvversario = passo;
+        aggiornaStati();
+        if (pannelli && pannelli[mioLato] && pannelli[mioLato].inviata) disegnaPannello(mioLato);   // il pulsante "Cancel" sparisce
+    });
     battaglia.on('set', n => { nuovoSet(n); disegnaInfo(); ridisegnaComandi(); });
     battaglia.avvia();
 }
@@ -732,6 +857,8 @@ function nuovoPannello() {
         attesaBersaglio: null,
         ordine: [],              // anteprima: ordine dei Pokémon scelti
         inviata: false,
+        annullando: false,       // il ritiro della scelta è in corso (si aspetta la risposta)
+        erroreAnnulla: '',       // perché non si è potuto ritirare (es. "Too late: your opponent has already chosen.")
         errore: '',
         erroreInSospeso: ''
     };
@@ -818,6 +945,54 @@ function ricomincia(lato) {
     const p = pannelli[lato];
     Object.assign(p, { bozza: [], potenziamento: null, usati: [], attesaBersaglio: null, ordine: [] });
     avanza(lato);
+}
+
+// Ritirare la scelta già inviata: si può finché l'avversario non ha scelto (poi il turno si gioca da solo).
+// Mai contro la CPU (sceglie subito) né contro il bot.
+function puoAnnullare(lato) {
+    const p = pannelli && pannelli[lato];
+    if (!p || !p.inviata || finita || cpu || !battaglia || typeof battaglia.annulla !== 'function') return false;
+    if (online) {
+        if (lato !== mioLato || online.stato !== 'in_corso') return false;
+        return !(online.sceltaAvversario && online.sceltaAvversario === battaglia.passo);
+    }
+    // locale, due giocatori sullo stesso schermo: finché l'altro non ha scelto
+    const altro = avversarioDi(lato);
+    return !botAttivo(altro) && !!pannelli[altro] && !pannelli[altro].inviata;
+}
+
+function bottoneAnnulla(lato) {
+    const p = pannelli[lato];
+    return el('span', { class: 'annulla-scelta' },
+        el('button', {
+            type: 'button',
+            class: 'btn secondario piccolo',
+            disabled: p.annullando,
+            onclick: () => annullaScelta(lato)
+        }, p.annullando ? 'Cancelling…' : 'Cancel my choice'),
+        p.erroreAnnulla ? el('span', { class: 'annulla-errore', role: 'alert', testo: p.erroreAnnulla }) : null);
+}
+
+async function annullaScelta(lato) {
+    const p = pannelli[lato];
+    if (!puoAnnullare(lato) || p.annullando) return;
+    const richiesta = p.grezza;
+    p.annullando = true;
+    p.erroreAnnulla = '';
+    disegnaPannello(lato);
+    const esito = await battaglia.annulla(lato);
+    // nel frattempo è arrivata un'altra richiesta (il turno è andato avanti): il pannello è già un altro
+    if (!pannelli || pannelli[lato] !== p || p.grezza !== richiesta) return;
+    p.annullando = false;
+    if (!esito.ok) {
+        p.erroreAnnulla = esito.messaggio;
+        return disegnaPannello(lato);
+    }
+    // la scelta non c'è più: si torna a sceglierla con la richiesta che c'era già
+    p.inviata = false;
+    p.errore = '';
+    if (p.r && p.r.tipo === 'anteprima') disegnaPannello(lato);   // l'ordine scelto resta: basta ritoccarlo
+    else ricomincia(lato);
 }
 
 // Chi può entrare nello slot indicato (esclusi quelli già scelti in questo turno)
@@ -923,11 +1098,13 @@ function disegnaPannello(lato) {
     if (p.errore) corpo.append(el('p', { class: 'errore', testo: p.errore }));
     if (finita) {
         return corpo.append(cpu
-            ? messaggio('Battle over.', el('div', { class: 'riga-azioni centrata azioni-cpu' }, azioniCpu()))
+            ? messaggio(cpu.avviso ? `Battle over. ${cpu.avviso}` : 'Battle over.', el('div', { class: 'riga-azioni centrata azioni-cpu' }, azioniCpu()))
             : messaggio(online ? 'Set over. The next one starts by itself.' : 'Battle over.'));
     }
     if (!p.r || p.r.tipo === 'attesa') return corpo.append(messaggio(`Waiting for ${avv}…`));
-    if (p.inviata) return corpo.append(messaggio(`Choice sent. Waiting for ${avv}…`));
+    if (p.inviata) {
+        return corpo.append(messaggio(`Choice sent. Waiting for ${avv}…`, puoAnnullare(lato) ? bottoneAnnulla(lato) : null));
+    }
     if (scenaInCorsa()) return corpo.append(messaggio('The next set is about to start.'));
 
     if (p.r.tipo === 'anteprima') return disegnaAnteprima(lato, corpo);
@@ -1060,8 +1237,9 @@ function disegnaBersagli(lato, corpo) {
     const { base, suffisso, validi, nomeMossa, slot } = p.attesaBersaglio;
     const lato2 = avversarioDi(lato);
 
-    // Come sul campo: gli avversari (specchiati) e i tuoi, due gruppi sulla stessa riga
-    const gruppo = (nome, chi, lista) => el('div', { class: 'bersagli-gruppo' },
+    // Come sul campo: gli avversari (specchiati) e i tuoi, due gruppi sulla stessa riga.
+    // I bersagli veri sono gli avversari, grandi; il compagno (o te stesso) è piccolo e grigio: colpirlo per sbaglio costa caro
+    const gruppo = (nome, chi, lista) => el('div', { class: 'bersagli-gruppo' + (chi === 0 ? ' alleati' : '') },
         el('p', { class: 'etichetta', testo: nome }),
         el('div', { class: 'bersagli-riga' }, lista.map(b => bottonePokemon({
             specie: b.pkm ? b.pkm.specie : '',
@@ -1070,7 +1248,8 @@ function disegnaBersagli(lato, corpo) {
             nota: b.se ? 'you' : null,
             efficacia: chi === 1 ? efficaciaSu(lato, slot, nomeMossa, b) : null,
             attrTooltip: b.pkm ? tooltip(lato, `activepokemon|${chi}|${b.slot}`) : {},
-            grande: true,
+            grande: chi === 1,
+            alleato: chi === 0,
             onclick: () => scegliSlot(lato, `${base} ${b.valore}${suffisso}`)
         }))));
     const avversari = validi.filter(b => b.lato === 'avversario').sort((a, b) => b.slot - a.slot);
@@ -1105,14 +1284,14 @@ function disegnaCambio(lato, corpo) {
 
 // Bottone con icona, nome, salute e stato (cambi e bersagli).
 // "compatto": solo icona e barra della salute (il nome sta nel tooltip e nell'etichetta per i lettori di schermo)
-function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, efficacia, grande, compatto, onclick }) {
+function bottonePokemon({ specie, nome, condizione, spento, attrTooltip = {}, nota, efficacia, grande, compatto, alleato, onclick }) {
     const c = leggiCondizione(condizione);
     const chiamato = nome || specie;
     const barra = classe => el('span', { class: classe, role: 'img', 'aria-label': `${c.pct}% HP` },
         el('span', { class: 'hp-' + (c.pct > 50 ? 'g' : c.pct > 20 ? 'y' : 'r'), style: `width:${c.pct}%` }));
     return el('button', {
         type: 'button',
-        class: 'btn-pkm' + (attrTooltip['data-tooltip'] ? ' has-tooltip' : '') + (spento ? ' spento' : '') + (grande ? ' grande' : '') + (compatto ? ' compatto' : ''),
+        class: 'btn-pkm' + (attrTooltip['data-tooltip'] ? ' has-tooltip' : '') + (spento ? ' spento' : '') + (grande ? ' grande' : '') + (compatto ? ' compatto' : '') + (alleato ? ' alleato' : ''),
         'aria-disabled': spento ? 'true' : 'false',
         title: compatto && !attrTooltip['data-tooltip'] ? chiamato : null,
         'aria-label': compatto ? chiamato : null,

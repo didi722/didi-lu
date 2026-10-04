@@ -158,6 +158,18 @@
     </main>
     </div>
 
+    <!-- Modifica del proprio team a fine partita contro la CPU: il Box aperto in una finestra (iframe), vedi editor-team.js.
+         L'iframe lo crea battle-ui.js solo quando serve. -->
+    <div class="editor-team" id="editor-team" role="dialog" aria-modal="true" aria-labelledby="editor-team-titolo" hidden>
+        <div class="editor-team-barra">
+            <h2 class="editor-team-titolo" id="editor-team-titolo">Edit your team</h2>
+            <button type="button" class="btn secondario piccolo" id="editor-team-chiudi">← Back to the simulator</button>
+        </div>
+        <div class="editor-team-corpo" id="editor-team-corpo">
+            <p class="editor-team-attesa">Loading the editor…</p>
+        </div>
+    </div>
+
     <script>
         // Se dopo qualche secondo la pagina non è partita, quasi sempre è stata
         // aperta con doppio clic (file://) invece che da un server.
