@@ -850,16 +850,20 @@
     function sovrapposizione(a, b) { return a.filter(x => b.includes(x)).length; }
     const chiaveUso = c => id(c.base.baseSpecies || c.base.name);
 
-    // Il cuore: dato un pool già calcolato, produce i team.
-    //   opzioni: { Dex, TeamValidator, pool, regolamento, quanti, seme, pokedexBase, consigli }   (consigli: i dati di consigli.js della generazione, se ci sono)
-    // Restituisce { team: [{ nome, piano, testo, specie[] }], avvisi: [] }
-    async function generaTeam(opzioni) {
+    // Il cuore, in tre pezzi:
+    //   preparaFormato(): la parte lenta. Dal pool si scelgono i candidati e di ognuno si leggono le mosse che può imparare (il
+    //                     validatore del simulatore le controlla una per una). Si fa una volta per formato e si può tenere in memoria;
+    //   costruisciTeam(): dati i sei membri e il piano, i set (mosse, strumento, abilità, natura, EV) e la strategia verificata;
+    //   generaTeam():     una dozzina di team in fila, sempre gli stessi per lo stesso seme (i test);
+    //   unTeam():         un team solo, a caso, da una preparazione già fatta (la prova contro la CPU, un team per ogni sfida).
+    //   opzioni: { Dex, TeamValidator, pool, regolamento, seme, pokedexBase, consigli }   (consigli: i dati di consigli.js della generazione, se ci sono)
+    // `rnd` è il generatore da cui la preparazione pesca i candidati fuori dal comune: generaTeam gli passa il suo (la serie di numeri
+    // continua nella composizione dei team), una sessione lo ricava dal seme del formato.
+    async function preparaFormato(opzioni, rnd = creaCasuale(opzioni.seme || 'cpu')) {
         const { Dex, TeamValidator } = opzioni;
         const regolamento = opzioni.regolamento;
         const ctx = contestoDa(regolamento);
         const dex = Dex.forGen(ctx.gen);
-        const quanti = opzioni.quanti || 12;
-        const rnd = creaCasuale(opzioni.seme || 'cpu');
         const restrizioni = regolamento.restrizioni || {};
         const avvisi = [];
         const mosseBandite = nome => voceBannata(restrizioni, 'mosse', nome);
@@ -892,22 +896,67 @@
             const c = await analizza(dex, validatore, voce, ctx, restrizioni, mosseBandite, abilitaBandite, opzioni.pokedexBase);
             if (c) { c.cons = consigliDi(opzioni.consigli, c, ctx); cand.push(c); }
         }
-        if (cand.length < 6) return { team: [], avvisi: avvisi.concat(`Not enough Pokémon in this format for the CPU (${cand.length} usable)`) };
+        if (cand.length < 6) {
+            return { insufficiente: true, avvisi: avvisi.concat(`Not enough Pokémon in this format for the CPU (${cand.length} usable)`) };
+        }
 
-        const tipi = K.tipiDellaGenerazione(dex);
-        const piani = pianiPossibili(cand, ctx);
+        return {
+            insufficiente: false, avvisi, dex, ctx, restrizioni, cand,
+            tipi: K.tipiDellaGenerazione(dex),
+            piani: pianiPossibili(cand, ctx),
+            natura: naturaImposta(restrizioni),
+            // gli assi: i più forti, distinti per specie
+            assi: cand.slice().sort((a, b) => b.valore - a.valore)
+        };
+    }
+
+    // Dai sei membri e dal piano: set e strategia. null se un Pokémon non riesce ad avere nemmeno una mossa.
+    function costruisciTeam(prep, rnd, membri, piano, asso) {
+        const { dex, ctx, restrizioni, natura } = prep;
+        const assegnati = assegnaRuoli(dex, membri, ctx, piano);
+        const usati = new Set();
+        const testi = [];
+        const infoMembri = [];
+        for (const c of membri) {
+            const ruolo = ruoloDi(c, ctx, piano, assegnati);
+            ruolo.dex = dex;
+            const tera = ctx.gen >= 9 ? scegliTera(c, mosseDelSet(c, ruolo, ctx, piano), rnd) : null;
+            const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura);
+            if (s.mosse.length < 1) return null;
+            testi.push(s.testo);
+            infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita });
+        }
+        // il piano vale solo se i set lo realizzano (altrimenti il team è "bilanciato" e basta)
+        const strategia = strategiaDelTeam(piano.nome, infoMembri);
+        return {
+            nome: `CPU ${ETICHETTE[strategia.piano] || strategia.piano} · ${asso.nome}`,
+            piano: strategia.piano,
+            strategia,
+            testo: testi.join('\n\n'),
+            specie: membri.map(m => m.nome)
+        };
+    }
+
+    // Il Pokémon di un team conta per la sua specie base (due forme dello stesso Pokémon sono lo stesso Pokémon)
+    const pianoDi = nome => ({ nome, pesoValore: nome === 'bilanciato' ? 1.1 : 1 });
+
+    // Una dozzina di team (o quanti ne servono), deterministici: stesso formato e stesso seme, stessi team.
+    // Restituisce { team: [{ nome, piano, strategia, testo, specie[] }], avvisi: [] }
+    async function generaTeam(opzioni) {
+        const quanti = opzioni.quanti || 12;
+        const rnd = creaCasuale(opzioni.seme || 'cpu');
+        const prep = await preparaFormato(opzioni, rnd);
+        if (prep.insufficiente) return { team: [], avvisi: prep.avvisi };
+
+        const { dex, ctx, cand, tipi, piani, assi } = prep;
         const usoGlobale = new Map();
         const massimo = Math.max(2, Math.ceil(quanti / 3));
-        const natura = naturaImposta(restrizioni);
         const team = [];
         const firme = [];
-        // gli assi: i più forti, distinti per specie
-        const assi = cand.slice().sort((a, b) => b.valore - a.valore);
 
         for (let tentativo = 0; tentativo < quanti * 6 && team.length < quanti; tentativo++) {
             const n = team.length;
-            const nomePiano = piani[(n + Math.floor(tentativo / quanti)) % piani.length];
-            const piano = { nome: nomePiano, pesoValore: nomePiano === 'bilanciato' ? 1.1 : 1 };
+            const piano = pianoDi(piani[(n + Math.floor(tentativo / quanti)) % piani.length]);
             // asso: tra i migliori ancora poco usati
             const poolAssi = assi.filter(c => (usoGlobale.get(chiaveUso(c)) || 0) < massimo).slice(0, 24);
             if (!poolAssi.length) break;
@@ -918,36 +967,40 @@
             // team troppo simile a uno già fatto: si riprova
             if (firme.some(f => sovrapposizione(f, specie) >= 4)) continue;
 
-            // set
-            const assegnati = assegnaRuoli(dex, membri, ctx, piano);
-            const usati = new Set();
-            const testi = [];
-            const infoMembri = [];
-            let ok = true;
-            for (const c of membri) {
-                const ruolo = ruoloDi(c, ctx, piano, assegnati);
-                ruolo.dex = dex;
-                const tera = ctx.gen >= 9 ? scegliTera(c, mosseDelSet(c, ruolo, ctx, piano), rnd) : null;
-                const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura);
-                if (s.mosse.length < 1) { ok = false; break; }
-                testi.push(s.testo);
-                infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita });
-            }
-            if (!ok) continue;
-            const nomeAsso = asso.nome;
-            // il piano vale solo se i set lo realizzano (altrimenti il team è "bilanciato" e basta)
-            const strategia = strategiaDelTeam(nomePiano, infoMembri);
-            team.push({
-                nome: `CPU ${ETICHETTE[strategia.piano] || strategia.piano} · ${nomeAsso}`,
-                piano: strategia.piano,
-                strategia,
-                testo: testi.join('\n\n'),
-                specie: membri.map(m => m.nome)
-            });
+            const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
+            if (!fatto) continue;
+            team.push(fatto);
             firme.push(specie);
             specie.forEach(x => usoGlobale.set(x, (usoGlobale.get(x) || 0) + 1));
         }
-        return { team, avvisi };
+        return { team, avvisi: prep.avvisi };
+    }
+
+    // Un team solo, a caso, da una preparazione già fatta (preparaFormato). Piano e asso sono a caso; `recenti` sono i team già
+    // incontrati nella sessione (liste di `chiavi`): chi vi compare spesso pesa meno e un team con quattro Pokémon uguali a uno
+    // di quelli non si fa. Restituisce il team (con `chiavi`, da passare poi tra i `recenti`) o null.
+    function unTeam(prep, rnd, { recenti = [] } = {}) {
+        const { dex, ctx, cand, tipi, piani, assi } = prep;
+        const massimo = 2;
+        // Prima si cerca un team che non somigli ai recenti; se il formato ha pochi Pokémon (una sola lettera, un solo tipo) può non
+        // esserci, e allora ci si accontenta: meglio un team un po' simile che nessun team.
+        for (const evita of recenti.length ? [recenti, []] : [[]]) {
+            const usoGlobale = new Map();
+            for (const chiavi of evita) for (const k of chiavi) usoGlobale.set(k, (usoGlobale.get(k) || 0) + 1);
+            for (let tentativo = 0; tentativo < (evita.length ? 10 : 6); tentativo++) {
+                const piano = pianoDi(piani[Math.floor(rnd() * piani.length)]);
+                const poolAssi = assi.filter(c => (usoGlobale.get(chiaveUso(c)) || 0) < massimo).slice(0, 24);
+                if (!poolAssi.length) break;
+                const asso = poolAssi[Math.floor(rnd() * Math.min(poolAssi.length, 8 + Math.floor(rnd() * 12)))] || poolAssi[0];
+                const membri = compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo);
+                if (membri.length < 6) continue;
+                const chiavi = membri.map(chiaveUso);
+                if (evita.some(f => sovrapposizione(f, chiavi) >= 4)) continue;
+                const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
+                if (fatto) return Object.assign(fatto, { chiavi });
+            }
+        }
+        return null;
     }
 
     // =================================================
@@ -956,13 +1009,11 @@
     // Gestisce le scelte che alcuni formati lasciano a chi compone il team:
     //   - iniziale del nome (name_starts = PLAYER_INITIAL): la CPU usa le iniziali date, o una a caso con abbastanza Pokémon;
     //   - "stesso ... in tutto il team" (SAME_ACROSS_TEAM): un valore diverso per ogni team, tra quelli con abbastanza Pokémon.
-    // opzioni: { Dex, TeamValidator, regolamento, caricaJson, pokedexBase, quanti, seme, iniziali }
-    async function squadrePerFormato(opzioni) {
+    // Ognuna di queste scelte è una "variante" del regolamento, con il suo pool di Pokémon.
+    // opzioni: { regolamento, caricaJson, pokedexBase, consigli, iniziali }
+    // Restituisce { varianti: [{ regolamento, etichetta, pool?, scelte? }], pokedexBase, consigli, poolDi(regolamento) }
+    async function elencaVarianti(opzioni) {
         const regolamento = opzioni.regolamento;
-        const quanti = opzioni.quanti || 12;
-        const seme = opzioni.seme || ('cpu|' + (regolamento.categoria || '') + '|' + (regolamento.genRuleValue || ''));
-        const rnd = creaCasuale(seme + '|orchestratore');
-        const avvisi = [];
         const caricaJson = opzioni.caricaJson;
         let pokedexBase = opzioni.pokedexBase;
         if (!pokedexBase) pokedexBase = Pool.minuscole(await caricaJson('pkm-gens/pokedex_base.json'));
@@ -1013,6 +1064,23 @@
             }
             varianti = ampliate;
         }
+        return { varianti, pokedexBase, consigli, poolDi };
+    }
+
+    // Il pool di una variante (i Pokémon che quella variante ammette)
+    async function poolDellaVariante(v, pokedexBase, poolDi) {
+        if (v.scelte) return v.pool.filter(p => Object.keys(v.scelte).every(k => Pool.corrispondeAllaScelta(pokedexBase, p, k, v.scelte[k])));
+        return poolDi(v.regolamento);
+    }
+
+    // opzioni: { Dex, TeamValidator, regolamento, caricaJson, pokedexBase, quanti, seme, iniziali }
+    async function squadrePerFormato(opzioni) {
+        const regolamento = opzioni.regolamento;
+        const quanti = opzioni.quanti || 12;
+        const seme = opzioni.seme || ('cpu|' + (regolamento.categoria || '') + '|' + (regolamento.genRuleValue || ''));
+        const rnd = creaCasuale(seme + '|orchestratore');
+        const avvisi = [];
+        const { varianti, pokedexBase, consigli, poolDi } = await elencaVarianti(opzioni);
 
         // numero di team per variante
         const perVariante = Math.max(1, Math.ceil(quanti / Math.max(1, varianti.length)));
@@ -1026,9 +1094,7 @@
         const out = [];
         for (let i = 0; i < scelte.length && out.length < quanti; i++) {
             const v = scelte[i];
-            let pool = v.pool;
-            if (v.scelte) pool = pool.filter(p => Object.keys(v.scelte).every(k => Pool.corrispondeAllaScelta(pokedexBase, p, k, v.scelte[k])));
-            else pool = await poolDi(v.regolamento);
+            const pool = await poolDellaVariante(v, pokedexBase, poolDi);
             const quantiQui = Math.min(perVariante, quanti - out.length);
             const r = await generaTeam({
                 Dex: opzioni.Dex, TeamValidator: opzioni.TeamValidator, pool, regolamento: v.regolamento,
@@ -1042,8 +1108,64 @@
         return { team: out, avvisi };
     }
 
+    // =================================================
+    // UN TEAM ALLA VOLTA (la prova contro la CPU)
+    // =================================================
+    // Invece di una dozzina di team fatti in anticipo e ricordati, il team si compone quando inizia la sfida, a caso.
+    // La parte lenta (preparaFormato: leggere le mosse di un centinaio di Pokémon) si fa una volta per formato e per variante e si
+    // tiene in memoria finché la pagina resta aperta: il primo team costa una frazione di secondo, quelli dopo pochi millisecondi.
+    //   const sessione = await preparaSessione({ Dex, TeamValidator, regolamento, caricaJson, iniziali });
+    //   const { team, avvisi } = await nuovoTeam(sessione, { recenti });     // team = null se il formato non ha abbastanza Pokémon
+    async function preparaSessione(opzioni) {
+        const { varianti, pokedexBase, consigli, poolDi } = await elencaVarianti(opzioni);
+        const regolamento = opzioni.regolamento;
+        const semeBase = opzioni.seme || ('cpu|' + (regolamento.categoria || '') + '|' + (regolamento.genRuleValue || ''));
+        return { opzioni, varianti, pokedexBase, consigli, poolDi, semeBase, preparati: new Map() };
+    }
+
+    // La preparazione di una variante, la prima volta; poi quella in memoria (anche se due richieste arrivano insieme)
+    function preparaVariante(sessione, indice) {
+        if (!sessione.preparati.has(indice)) {
+            const v = sessione.varianti[indice];
+            const lavoro = (async () => {
+                const pool = await poolDellaVariante(v, sessione.pokedexBase, sessione.poolDi);
+                // la scelta dei candidati fuori dal comune dipende solo dal formato: così la preparazione è sempre la stessa
+                return preparaFormato({
+                    Dex: sessione.opzioni.Dex, TeamValidator: sessione.opzioni.TeamValidator, pool, regolamento: v.regolamento,
+                    pokedexBase: sessione.pokedexBase, consigli: sessione.consigli
+                }, creaCasuale(`${sessione.semeBase}|prep|${indice}|${v.etichetta}`));
+            })();
+            // un errore (rete...) non si ricorda: la volta dopo si riprova
+            lavoro.catch(() => sessione.preparati.delete(indice));
+            sessione.preparati.set(indice, lavoro);
+        }
+        return sessione.preparati.get(indice);
+    }
+
+    // opzioni: { seme (a caso se manca), recenti: [chiavi di team già incontrati], variantiDaProvare }
+    async function nuovoTeam(sessione, opzioni = {}) {
+        const rnd = creaCasuale(opzioni.seme || `${Date.now()}|${Math.random()}`);
+        const recenti = opzioni.recenti || [];
+        const ordine = sessione.varianti.map((_, i) => i);
+        for (let i = ordine.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ordine[i], ordine[j]] = [ordine[j], ordine[i]]; }
+        const avvisi = [];
+        // una variante può non avere abbastanza Pokémon (una lettera rara): se ne prova un'altra
+        for (const i of ordine.slice(0, opzioni.variantiDaProvare || 4)) {
+            const prep = await preparaVariante(sessione, i);
+            prep.avvisi.forEach(a => { if (!avvisi.includes(a)) avvisi.push(a); });
+            if (prep.insufficiente) continue;
+            const team = unTeam(prep, rnd, { recenti });
+            if (!team) continue;
+            const etichetta = sessione.varianti[i].etichetta;
+            if (etichetta) team.nome = `${team.nome} (${etichetta})`;
+            return { team, avvisi };
+        }
+        return { team: null, avvisi };
+    }
+
     return {
-        generaTeam, squadrePerFormato, contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche,
+        generaTeam, squadrePerFormato, preparaFormato, unTeam, preparaSessione, nuovoTeam,
+        contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche,
         voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam
     };
 });

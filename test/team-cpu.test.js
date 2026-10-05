@@ -33,7 +33,7 @@ const importa = async testo => { const { sim } = await caricaSim(); return sim.T
 const id = K.id;
 
 // Controlli comuni a ogni formato
-async function controllaTeam(regolamento, r, { sim } = {}) {
+async function controllaTeam(regolamento, r, { sim, varieta = true } = {}) {
     const { sim: S } = await caricaSim();
     const c = T.contestoDa(regolamento);
     const dex = S.Dex.forGen(c.gen);
@@ -67,6 +67,7 @@ async function controllaTeam(regolamento, r, { sim } = {}) {
         }
         assert.equal(t.specie.length, 6);
     }
+    if (!varieta) return;
     // varietà: due team non condividono quattro o più Pokémon e nessuno è in più di un terzo dei team
     const liste = r.team.map(t => t.specie.map(x => dex.species.get(x).baseSpecies));
     for (let i = 0; i < liste.length; i++) for (let j = i + 1; j < liste.length; j++) {
@@ -424,4 +425,139 @@ test('consigli: i team di sempre restano rispettosi delle regole con i consigli 
     const r = await genera(regolamento);
     assert.ok(r.team.length >= 6);
     await controllaTeam(regolamento, r);
+});
+
+
+// ===================================================
+// UN TEAM ALLA VOLTA (preparaSessione / nuovoTeam): la prova contro la CPU compone il team quando inizia la sfida
+// ===================================================
+async function sessioneDi(regolamento, opz = {}) {
+    const { sim } = await caricaSim();
+    return T.preparaSessione({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento, caricaJson, pokedexBase: base, ...opz });
+}
+// n team uno dopo l'altro, come in una pagina che resta aperta: i "recenti" si passano da una richiesta all'altra
+async function unoPerVolta(sessione, n, semi = 's') {
+    const team = [], recenti = [], avvisi = [];
+    for (let i = 0; i < n; i++) {
+        const r = await T.nuovoTeam(sessione, { recenti, seme: `${semi}${i}` });
+        avvisi.push(...r.avvisi);
+        if (!r.team) continue;
+        team.push(r.team);
+        recenti.push(r.team.chiavi);
+        if (recenti.length > 4) recenti.shift();
+    }
+    return { team, avvisi };
+}
+
+for (const [nome, regolamento] of FORMATI) {
+    test(`${nome}: un team alla volta, a caso, sempre legale e con un piano vero`, { timeout: 180000 }, async () => {
+        const sessione = await sessioneDi(regolamento);
+        const r = await unoPerVolta(sessione, 6);
+        assert.equal(r.team.length, 6, `team prodotti: ${r.team.length} (${r.avvisi.join('; ')})`);
+        await controllaTeam(regolamento, r, { varieta: false });
+        const { sim } = await caricaSim();
+        const dex = sim.Dex.forGen(T.contestoDa(regolamento).gen);
+        for (const t of r.team) {
+            // se il team si presenta con un piano (meteo, Tailwind, Stanza Magica) i set lo realizzano davvero
+            assert.equal(t.piano, t.strategia.piano);
+            if (t.strategia.coerente) controllaStrategia(t, await importa(t.testo), dex);
+            else assert.equal(t.piano, 'bilanciato', `${t.nome}: senza un piano vero è un team bilanciato`);
+            assert.ok(Array.isArray(t.chiavi) && t.chiavi.length === 6, 'le specie base, per i recenti');
+        }
+        // team diversi, e mai due di fila con quattro Pokémon uguali
+        assert.equal(new Set(r.team.map(t => t.testo)).size, 6);
+        for (let i = 1; i < r.team.length; i++) assert.ok(r.team[i].chiavi.filter(x => r.team[i - 1].chiavi.includes(x)).length < 4, `team ${i} e ${i + 1} troppo simili`);
+    });
+}
+
+test('un team alla volta: col seme è sempre lo stesso (le prove), senza seme è a caso', async () => {
+    const regolamento = reg({ battleStyle: 'doubles', generationalMechanics: true });
+    const sessione = await sessioneDi(regolamento);
+    const a = (await T.nuovoTeam(sessione, { seme: 'fisso' })).team;
+    const b = (await T.nuovoTeam(sessione, { seme: 'fisso' })).team;
+    assert.equal(a.testo, b.testo);
+    assert.notEqual((await T.nuovoTeam(sessione, { seme: 'altro' })).team.testo, a.testo);
+    // anche da una sessione nuova (la preparazione dipende solo dal formato)
+    const altra = await sessioneDi(regolamento);
+    assert.equal((await T.nuovoTeam(altra, { seme: 'fisso' })).team.testo, a.testo);
+    // senza seme: a caso
+    const senza = new Set();
+    for (let i = 0; i < 5; i++) senza.add((await T.nuovoTeam(sessione)).team.testo);
+    assert.ok(senza.size >= 4, `team diversi: ${senza.size}`);
+});
+
+test('un team alla volta: la parte lenta si fa una volta sola, e le volte dopo sono molto più veloci', { timeout: 120000 }, async () => {
+    let scaricati = 0;
+    const conta = async p => { scaricati++; return caricaJson(p); };
+    const sessione = await sessioneDi(reg({ battleStyle: 'doubles' }), { caricaJson: conta });
+    const t0 = process.hrtime.bigint();
+    await T.nuovoTeam(sessione, { seme: 'a' });
+    const primo = Number(process.hrtime.bigint() - t0) / 1e6;
+    const letture = scaricati;
+    const t1 = process.hrtime.bigint();
+    for (let i = 0; i < 5; i++) await T.nuovoTeam(sessione, { seme: 'b' + i });
+    const altri = Number(process.hrtime.bigint() - t1) / 1e6 / 5;
+    assert.equal(scaricati, letture, 'le volte dopo non rileggono nulla');
+    assert.ok(altri < primo, `il primo ${primo.toFixed(0)} ms, gli altri ${altri.toFixed(0)} ms`);
+    // la preparazione c'è una volta sola per variante, anche se due richieste arrivano insieme
+    assert.equal(sessione.preparati.size, 1);
+    const [x, y] = await Promise.all([T.nuovoTeam(sessione, { seme: 'p' }), T.nuovoTeam(sessione, { seme: 'q' })]);
+    assert.ok(x.team && y.team && sessione.preparati.size === 1);
+});
+
+test('un team alla volta: chi è comparso spesso di recente pesa meno, e un team non somiglia agli ultimi', async () => {
+    const regolamento = reg();
+    const sessione = await sessioneDi(regolamento);
+    const primo = (await T.nuovoTeam(sessione, { seme: 'x' })).team;
+    // con quel team tra i recenti, il prossimo non ha quattro Pokémon uguali, qualunque sia il seme
+    for (let i = 0; i < 15; i++) {
+        const r = await T.nuovoTeam(sessione, { seme: `y${i}`, recenti: [primo.chiavi] });
+        assert.ok(r.team.chiavi.filter(k => primo.chiavi.includes(k)).length < 4, `seme y${i}`);
+    }
+});
+
+test('un team alla volta: monotype (stesso tipo) e iniziale del nome funzionano, e il nome ricorda la variante', { timeout: 180000 }, async () => {
+    const monotype = reg({ restrizioni: { ...permessi, pokemon: { ...permessi.pokemon, type: { mode: 'SAME_ACROSS_TEAM', operator: 'equals' } } } });
+    const r = await unoPerVolta(await sessioneDi(monotype), 4);
+    assert.equal(r.team.length, 4);
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    for (const t of r.team) {
+        const tipi = (await importa(t.testo)).map(s => new Set(dex.species.get(s.species).types));
+        const comuni = [...tipi[0]].filter(x => tipi.every(ti => ti.has(x)));
+        assert.ok(comuni.length >= 1, `${t.nome}: nessun tipo in comune`);
+        assert.match(t.nome, /\([A-Za-z]+\)$/, 'il nome dice quale tipo');
+    }
+    const iniziale = reg({ restrizioni: { ...permessi, pokemon: { ...permessi.pokemon, name_starts: { mode: 'PLAYER_INITIAL' } } } });
+    const conIniziali = await unoPerVolta(await sessioneDi(iniziale, { iniziali: ['m', 'r'] }), 4);
+    assert.equal(conIniziali.team.length, 4);
+    for (const t of conIniziali.team) {
+        const lettere = new Set((await importa(t.testo)).map(s => s.species.charAt(0).toLowerCase()));
+        assert.equal(lettere.size, 1, `${t.nome}: iniziali ${[...lettere]}`);
+        assert.ok(['m', 'r'].includes([...lettere][0]));
+    }
+});
+
+test('un team alla volta: se una variante non ha abbastanza Pokémon se ne prova un\'altra; se nessuna ne ha, nessun team e un avviso', async () => {
+    // iniziali "x" (quasi nessun Pokémon) e "m": a volte esce prima la x, ma il team arriva sempre dalla m
+    const iniziale = reg({ restrizioni: { ...permessi, pokemon: { ...permessi.pokemon, name_starts: { mode: 'PLAYER_INITIAL' } } } });
+    const sessione = await sessioneDi(iniziale, { iniziali: ['x', 'm'] });
+    for (let i = 0; i < 6; i++) {
+        const r = await T.nuovoTeam(sessione, { seme: `v${i}`, variantiDaProvare: 2 });
+        assert.ok(r.team, `seme v${i}: ${r.avvisi.join('; ')}`);
+        assert.ok((await importa(r.team.testo)).every(s => s.species.toLowerCase().startsWith('m')));
+    }
+    const impossibile = await sessioneDi(reg({ restrizioni: { pokemon: { ...permessi.pokemon, name_starts: { mode: 'VALUE', operator: 'STARTS_WITH', value: 'x' } } } }));
+    const r = await T.nuovoTeam(impossibile, { seme: 'z' });
+    assert.equal(r.team, null);
+    assert.ok(r.avvisi.some(a => /Not enough Pokémon/.test(a)));
+});
+
+test('un team alla volta: un errore di caricamento non si ricorda (la volta dopo si riprova)', async () => {
+    const sessione = await sessioneDi(reg());
+    let rotto = true;
+    sessione.poolDi = async (...a) => { if (rotto) throw new Error('rete assente'); return (await P.caricaPool(...[a[0], caricaJson, { pokedexBase: base }])).pokemon; };
+    await assert.rejects(T.nuovoTeam(sessione, { seme: 'a' }), /rete assente/);
+    rotto = false;
+    assert.ok((await T.nuovoTeam(sessione, { seme: 'a' })).team);
 });

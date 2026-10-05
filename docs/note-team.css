@@ -1,0 +1,160 @@
+/* =====================================================
+   NOTE DEL TEAM (note-team.js): il pannello, il pulsante con il pannello a comparsa e la finestra della battaglia
+   ---------------------------------------------------------------------
+   Segue le variabili --nb-* del tema attivo (Box e dettaglio del team), con i valori classici come ripiego: la pagina della
+   battaglia non ha temi e usa quelli. Le misure non cambiano con il tema: solo colori, ombre, angoli e caratteri.
+   ===================================================== */
+
+/* ---------- Il pannello ---------- */
+.nt {
+    display: flex; flex-direction: column; gap: 10px;
+    font-family: var(--nb-font-testo, 'Montserrat', sans-serif);
+    color: var(--nb-ink, #000);
+    text-align: left;
+}
+.nt-nuova { display: flex; flex-direction: column; gap: 6px; }
+.nt-testo {
+    box-sizing: border-box; width: 100%; min-height: 76px; padding: 8px 10px; resize: vertical;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 600 .84rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.nt-testo:focus { outline: 3px dashed var(--nb-ink, #000); outline-offset: 2px; }
+.nt-testo:disabled { opacity: .55; cursor: not-allowed; }
+.nt-riga { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nt-conto { font: 800 .68rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); opacity: .6; }
+.nt-aggiungi, .nt-fatto {
+    padding: 6px 12px 4px; cursor: pointer;
+    background: var(--nb-giallo, #ffbd44); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase;
+}
+.nt-aggiungi:hover:not(:disabled), .nt-fatto:hover:not(:disabled) { transform: translate(-1px, -1px); }
+.nt-aggiungi:active:not(:disabled), .nt-fatto:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+.nt-aggiungi:focus-visible, .nt-fatto:focus-visible, .nt-apri:focus-visible, .nt-chiudi:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
+.nt-aggiungi:disabled, .nt-fatto:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.nt-errore {
+    margin: 0; padding: 6px 9px;
+    background: #ffd9d6; color: #6e0d08; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    font: 700 .74rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.nt-errore[hidden], .nt-vuoto[hidden] { display: none; }
+.nt-vuoto { margin: 0; font: 600 .78rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+
+.nt-lista { list-style: none; margin: 0; padding: 2px 4px 4px 0; display: flex; flex-direction: column; gap: 9px; max-height: 250px; overflow-y: auto; }
+.nt-lista:empty { display: none; }
+.nt-nota {
+    display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
+    background: var(--nb-carta, #fff);
+    border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+.nt-nota-testo { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 600 .82rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.nt-nota-pie { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.nt-nota-meta { min-width: 0; font: 700 .66rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; }
+.nt-fatto { padding: 3px 9px 2px; background: var(--nb-verde, #09ca49); box-shadow: 2px 2px 0 var(--nb-ink, #000); font-size: .66rem; }
+
+/* ---------- Il pulsante "Notes n" con il pannello a comparsa (dettaglio del team nel Box, Team Builder) ---------- */
+.nt-barra-team { position: relative; display: inline-flex; align-items: center; }
+.nt-barra-team[hidden] { display: none; }
+.nt-apri {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px 4px; cursor: pointer;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase;
+}
+.nt-apri b { font-weight: 900; }
+.nt-apri.nt-ci-sono, .nt-apri:hover, .nt-apri[aria-expanded="true"] { background: var(--nb-giallo, #ffbd44); }
+.nt-apri:active { transform: translate(2px, 2px); box-shadow: none; }
+.nt-pop {
+    position: absolute; top: calc(100% + 10px); left: 0; z-index: 1200;      /* sopra anche alla scheda del Pokémon che al passaggio sale a 999 */
+    box-sizing: border-box; width: min(380px, calc(100vw - 40px)); padding: 14px 14px 12px;
+    background: var(--nb-tip-bg, #fffdf6); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+}
+.nt-pop[hidden] { display: none; }
+.nt-pop-testa { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px dashed var(--nb-ink, #000); }
+.nt-pop-testa strong { font: 900 .86rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
+.nt-pop-testa small { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font: 700 .66rem/1.2 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; }
+.nt-pop-testa .nt-chiudi { flex: 0 0 auto; border-color: var(--nb-ink, #000); box-shadow: 2px 2px 0 var(--nb-ink, #000); }
+.nt-pop .nt-lista { max-height: min(200px, 24vh); }
+
+/* Nel dettaglio del team del Box: stessa famiglia del pulsante "Practice vs CPU" accanto (misura e inclinazione) */
+#teamModal .nt-apri {
+    padding: 5px 12px 4px; font-size: .74rem; font-weight: 800; line-height: 1.4; white-space: nowrap;
+    transform: rotate(calc(var(--nb-rot, 1) * 1deg));
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+#teamModal .nt-apri:hover { transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+#teamModal .nt-apri:active { transform: none; box-shadow: none; }
+
+/* Nell'intestazione del Team Builder (si modifica un team del Box): accanto al formato, prima della X */
+.tb-header .nt-barra-team { flex: 0 0 auto; }
+.tb-header .nt-apri { transform: rotate(calc(var(--nb-rot, 1) * -1.5deg)); transition: transform .12s ease, box-shadow .12s ease; }
+.tb-header .nt-apri:hover { transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+.tb-header .nt-pop { left: auto; right: 0; }
+/* con il bloc notes aperto l'intestazione sta sopra al resto del builder (le sue parti hanno z-index propri) */
+.tb-header.nt-sopra { z-index: 60; }
+
+/* ---------- La finestra della battaglia contro la CPU ---------- */
+.nt-finestra {
+    position: fixed; top: 96px; right: 16px; z-index: 2000;
+    box-sizing: border-box; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 112px); overflow-y: auto;
+    background: var(--nb-tip-bg, #fffdf6); color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+}
+.nt-finestra[hidden] { display: none; }
+.nt-finestra-testa {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 10px 6px 14px;
+    background: var(--nb-ink, #000); color: var(--nb-tip-bg, #fffdf6);
+}
+.nt-finestra-testa h2 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 .86rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; }
+.nt-chiudi {
+    width: 28px; height: 28px; padding: 0; cursor: pointer;
+    background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid #fffdf6; border-radius: var(--nb-raggio, 0px);
+    font: 900 1.1rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+.nt-finestra-corpo { padding: 12px 14px 14px; }
+.nt-finestra-corpo .nt-lista { max-height: 38vh; }
+
+/* Il pulsante nei "servizi" della battaglia (accanto al volume): stessa forma, col numero delle note */
+.btn-note { position: relative; }
+.btn-note-conto {
+    position: absolute; top: -9px; right: -9px; min-width: 20px; box-sizing: border-box; padding: 2px 5px 1px;
+    background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid #000; border-radius: 10px;
+    font: 900 .7rem/1.1 'Josefin Sans', sans-serif; text-align: center; pointer-events: none;
+}
+.btn-note-conto[hidden] { display: none; }
+.btn-note:hover .btn-note-conto { transform: rotate(-90deg) scale(.83); }
+
+/* ---------- Sulla card del team nel Box: un adesivo giallo sul bordo in basso, solo se il team ha note ---------- */
+.card > .azione-note {
+    position: absolute; right: 18px; bottom: -18px; z-index: 4;
+    display: inline-flex; align-items: center; gap: 4px;
+    box-sizing: border-box; height: 28px; margin: 0; padding: 2px 10px 0 8px; cursor: pointer;
+    background: var(--nb-giallo, #ffbd44); color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .78rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    rotate: calc(var(--nb-rot, 1) * 2deg);
+    transition: translate .12s ease, rotate .12s ease, background-color .12s ease;
+}
+.card > .azione-note[hidden] { display: none; }
+.card > .azione-note b { font-weight: 900; }
+.card > .azione-note:hover, .card > .azione-note:focus-visible { background: #fff; translate: 0 -2px; rotate: 0deg; outline: none; }
+.card > .azione-note:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
+
+@media (max-width: 900px) {
+    /* l'intestazione del Team Builder va a capo: le note stanno accanto alla X */
+    .tb-header .nt-barra-team { order: 2; }
+}
+@media (max-width: 560px) {
+    .nt-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; max-height: calc(100vh - 100px); overflow-y: auto; }
+    .nt-finestra { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 72vh; }
+    .nt-lista { max-height: 30vh; }
+}

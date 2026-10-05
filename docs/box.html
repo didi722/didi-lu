@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="box-team.css">
+<link rel="stylesheet" href="note-team.css">
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
@@ -29,6 +30,7 @@
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
+<script src="note-team.js"></script>
 <script src="formato-pool.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
@@ -541,9 +543,11 @@ async function scaricaDati() {
 
                 tuttiITeam = tempTeams;
                 resolve(tuttiITeam);
+                aggiornaChipNote();     // note aggiunte o cancellate (in battaglia, in un'altra scheda...): i segnalini restano giusti
             } else {
                 tuttiITeam = [];
                 resolve([]);
+                aggiornaChipNote();
             }
         }, (error) => {
             reject(error);
@@ -891,6 +895,12 @@ async function renderizza(lista) {
         const htmlProvaCpu = `
                 <button type="button" class="card-azione azione-cpu" onclick="event.stopPropagation(); provaControCpu('${team.id}')"
                         title="Practice this team against the CPU">🎮</button>`;
+        // Note del team (scritte in battaglia o nel dettaglio): l'adesivo sul bordo della card c'è solo se il team ne ha, e apre il bloc notes
+        const numeroNote = typeof NoteTeam !== 'undefined' ? NoteTeam.contaNote(team.note) : 0;
+        const htmlNote = `
+            <button type="button" class="azione-note" data-note-chip="${team.id}" ${numeroNote ? '' : 'hidden'}
+                    onclick="event.stopPropagation(); apriDettagli('${team.id}', { note: true })"
+                    title="Notes on this team: what to fix or try">📝 <b>${numeroNote}</b></button>`;
         const htmlAzioni = `
             <div class="card-actions">
                 ${htmlProvaCpu}
@@ -968,6 +978,7 @@ async function renderizza(lista) {
                     `;
                 }).join('')}
             </div>
+            ${htmlNote}
         </div>
         `;
     }).join('');
@@ -1090,7 +1101,7 @@ function provaControCpu(id) {
     window.location.href = 'battle.html?cpu=1&team=' + encodeURIComponent(id);
 }
 
-async function apriDettagli(id) {
+async function apriDettagli(id, opzioni = {}) {
     // Recupero il team dall'array globale
     const team = tuttiITeam.find(t => t.id === id);
     if (!team) {
@@ -1181,6 +1192,7 @@ async function apriDettagli(id) {
     `;
     modal.style.display = "flex";
         tbPreparaDettaglio(team);
+    montaNoteDettaglio(team, !!(opzioni && opzioni.note));
 
     // le medagliette dei fiocchi sulle card arrivano appena sono pronte le statistiche reali
     window.squadraAperta = team;
@@ -1191,6 +1203,60 @@ async function apriDettagli(id) {
             BadgeTeam.montaBarra(db, content.querySelector('[data-badge-team]'), { giocatore: playerID, team, valido: () => window.squadraAperta === team });
         }
     }
+}
+
+// -----------------------------------------------------
+// Note del team (note-team.js): il pulsante "Notes" nel dettaglio apre il bloc notes del team, con le note scritte in battaglia
+// contro la CPU; ognuna si cancella quando è risolta. Sulla card il segnalino col numero si aggiorna da solo.
+// -----------------------------------------------------
+let noteDettaglio = null;      // la barra montata nel dettaglio aperto (si ferma quando il dettaglio cambia o si chiude)
+
+function fermaNoteDettaglio() {
+    if (noteDettaglio) { noteDettaglio.distruggi(); noteDettaglio = null; }
+}
+
+function montaNoteDettaglio(team, aperto) {
+    fermaNoteDettaglio();
+    const casella = document.querySelector('#modalBody [data-note-team]');
+    if (!casella || typeof NoteTeam === 'undefined') return;
+    noteDettaglio = NoteTeam.montaBarra(casella, { db, giocatore: playerID, team: team.id, aperto });
+}
+
+// Nel Team Builder le note stanno nell'intestazione, solo quando si modifica un team del Box (le note sono del team): così le
+// correzioni segnate in battaglia si hanno sotto gli occhi mentre le si fa, e si cancellano appena risolte
+let noteBuilder = null;
+
+function tbFermaNote() {
+    if (noteBuilder) { noteBuilder.distruggi(); noteBuilder = null; }
+    const casella = document.getElementById('tb-note');
+    if (casella) casella.hidden = true;
+}
+
+// Il bloc notes aperto deve stare sopra al builder: l'intestazione (che lo contiene) passa davanti al resto
+const tbNoteSopra = aperto => {
+    const testata = document.querySelector('#tb-overlay .tb-header');
+    if (testata) testata.classList.toggle('nt-sopra', aperto);
+};
+
+function tbMontaNote() {
+    tbFermaNote();
+    const casella = document.getElementById('tb-note');
+    const idTeam = tbModifica && tbModifica.teamId;
+    if (!casella || !idTeam || typeof NoteTeam === 'undefined') return;
+    casella.hidden = false;
+    noteBuilder = NoteTeam.montaBarra(casella, { db, giocatore: playerID, team: idTeam, alAprire: tbNoteSopra });
+}
+
+// Mette sulle card il numero di note di ogni team (nascosto se zero): lo chiama l'ascolto dei team a ogni cambiamento
+function aggiornaChipNote() {
+    if (typeof NoteTeam === 'undefined') return;
+    document.querySelectorAll('[data-note-chip]').forEach(chip => {
+        const team = tuttiITeam.find(t => t.id === chip.dataset.noteChip);
+        const n = team ? NoteTeam.contaNote(team.note) : 0;
+        chip.hidden = !n;
+        const numero = chip.querySelector('b');
+        if (numero) numero.textContent = String(n);
+    });
 }
 
 // Listener per la tastiera (aggiungilo fuori dalla funzione apriDettagli)
@@ -1730,6 +1796,7 @@ container.innerHTML = `
 }
 
 function chiudiTeamModal() {
+    fermaNoteDettaglio();
     tbTokenDettaglio = null;   // ferma un'eventuale preparazione dei tag ancora in corso
     tbStatoDettaglio = null;
     tbNascondiTooltip();
@@ -2999,6 +3066,7 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
         // Con il builder ancora aperto il browser chiederebbe "Leave site?"
         const overlayBuilder = document.getElementById('tb-overlay');
         if (overlayBuilder) overlayBuilder.classList.remove('open');
+        tbFermaNote();
 
         if (INCORPORATO) {
             // dentro il simulatore non si ricarica: lo si avvisa, e lui chiude la finestra
@@ -6193,6 +6261,7 @@ function tbHtmlTagDettaglio(idTeam) {
             <span class="bt-barra-team" data-badge-team></span>
             ${idTeam ? `<button type="button" class="tb-prova-cpu" onclick="provaControCpu('${String(idTeam).replace(/'/g, '')}')"
                 title="Practice this team against the CPU in the battle simulator">🎮 Practice vs CPU</button>` : ''}
+            ${idTeam ? '<span class="nt-barra-team" data-note-team></span>' : ''}
         </div>`;
 }
 
@@ -7248,6 +7317,7 @@ function tbCreaOverlay() {
                        placeholder="Name your team" aria-label="Team name" title="Click to rename the team"
                        oninput="tbRenderRiepilogo()">
                 <span id="tb-format-badge" class="tb-format-badge"></span>
+                <span id="tb-note" class="nt-barra-team tb-note" hidden></span>
                 <button type="button" class="tb-close" onclick="tbChiediChiusura()" aria-label="Close">&times;</button>
             </div>
             <div class="tb-content-container">
@@ -7493,6 +7563,7 @@ async function apriTeamBuilder() {
         tbStato.consigli = typeof Consigli !== 'undefined' ? await Consigli.carica(tbStato.gen).catch(() => null) : null;
 
         tbRender();
+        tbMontaNote();
                 tbCaricaCalc().catch(() => {}); // precarica il damage calc in background
         if (daHelper) await tbAttendiBuilderPronto(); // font e sprite pronti prima di scoprirlo
     } catch (err) {
@@ -7514,6 +7585,7 @@ async function apriTeamBuilder() {
 function chiudiTeamBuilder() {
     const overlay = document.getElementById('tb-overlay');
     if (overlay) overlay.classList.remove('open');
+    tbFermaNote();
 
     const helper = document.getElementById('helper-modal-overlay');
         if (helper && helper.dataset.nascostoDaBuilder === '1') {

@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/battle.css">
     <link rel="stylesheet" href="https://play.pokemonshowdown.com/style/utilichart.css">
     <link rel="stylesheet" href="style-battle.css">
+    <link rel="stylesheet" href="note-team.css">
 
     <script>window.exports = window;</script>
     <script src="https://play.pokemonshowdown.com/js/lib/ps-polyfill.js"></script>
@@ -86,6 +87,13 @@
                     <input type="checkbox" id="bot-p2">
                     Bot plays P2
                 </label>
+                <!-- Note del team (solo nella prova contro la CPU, lo mostra battle-ui.js): un bloc notes che salva per quel team -->
+                <button type="button" class="btn-audio btn-note" id="btn-note" aria-label="Team notes" aria-expanded="false" aria-controls="note-team" title="Notes on your team" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                        <path d="M5 3h10l4 4v14H5zM8 11h8M8 15h8M8 19h5"></path>
+                    </svg>
+                    <span class="btn-note-conto" id="btn-note-conto" hidden>0</span>
+                </button>
                 <button type="button" class="btn-audio" id="btn-audio" aria-label="Battle sound">
                     <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
                         <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -157,6 +165,15 @@
         </div>
     </main>
     </div>
+
+    <!-- Il bloc notes del team (note-team.js): sta fuori dalla scena scalata, così resta della misura giusta -->
+    <aside class="nt-finestra" id="note-team" role="dialog" aria-modal="false" aria-labelledby="note-team-titolo" hidden>
+        <div class="nt-finestra-testa">
+            <h2 id="note-team-titolo">📝 Notes · <span id="note-team-nome"></span></h2>
+            <button type="button" class="nt-chiudi" id="note-team-chiudi" aria-label="Close the notes">×</button>
+        </div>
+        <div class="nt-finestra-corpo" id="note-team-corpo"></div>
+    </aside>
 
     <!-- Modifica del proprio team a fine partita contro la CPU: il Box aperto in una finestra (iframe), vedi editor-team.js.
          L'iframe lo crea battle-ui.js solo quando serve. -->

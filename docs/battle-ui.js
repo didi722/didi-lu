@@ -18,13 +18,14 @@ import {
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch, caricaPerProva } from './team-sito.js';
-import { squadreCpu, nuovoCervello, sceglieTeam, nomeNeutro } from './cpu-partita.js';
+import { nuovoTeamCpu, nuovoCervello, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './nomi-unici.js';       // self.NomiUnici
 import './nomi-log.js';         // self.NomiLog
 import './team-bloccati.js';    // self.TeamBloccati: quali team non si modificano più
 import './editor-team.js';      // self.EditorTeam: il Box aperto in una finestra per modificare il team
+import './note-team.js';        // self.NoteTeam: il bloc notes del team che si sta provando
    import { installa as installaSchede, impostaPartita, seguiBattaglia, efficaciaBersaglio } from './battle-extra.js';
 const CONFIG_PROVA = {
     formato: 'gen8vgc2022',
@@ -52,9 +53,10 @@ const $ = id => document.getElementById(id);
 let config = null;          // { formato, etichetta, p1: { nome, team }, p2: { nome, team } }
 let battaglia, stato, pannelli, finita;
 
-// Solo nella prova contro la CPU: { cerebro, team[] (quelli della CPU), indice (quale sta giocando), giocatore, errori, rqid,
+// Solo nella prova contro la CPU: { cerebro, team (quello della CPU che sta giocando), giocatore, errori, rqid,
 // chiaveTeam (il team nel Box), modificabile (null mentre si controlla, poi true/false), avviso (testo sul cartello di fine
-// partita), problemi (perché il team, dopo una modifica, non si può giocare), ultimoVincitore }
+// partita), problemi (perché il team, dopo una modifica, non si può giocare), ultimoVincitore, generando (si sta
+// componendo un altro team della CPU) }
 let cpu = null;
 let editor = null;          // { frame, pronto } mentre la finestra dell'editor del team è aperta
 
@@ -174,8 +176,8 @@ async function preparaDaSito(chiavi) {
 // -----------------------------------------------------
 // Prova contro la CPU: il team del Box del giocatore contro uno della CPU, dello stesso formato
 // -----------------------------------------------------
-// I team della CPU li compone cpu-partita.js dal pool del formato, quindi esistono per ogni formato, anche nuovo.
-// La CPU sceglie le mosse con cpu-ia.js. A fine partita: stessa squadra della CPU, un'altra a caso, o ritorno al Box.
+// Il team della CPU lo compone cpu-partita.js dal pool del formato quando inizia la sfida, a caso, quindi esiste per ogni
+// formato, anche nuovo. La CPU sceglie le mosse con cpu-ia.js. A fine partita: stesso team della CPU, uno nuovo a caso, o ritorno al Box.
 async function preparaCpu(chiaveTeam) {
     $('opzione-bot').hidden = true;
     const ritorno = $('link-hub');
@@ -183,7 +185,7 @@ async function preparaCpu(chiaveTeam) {
     ritorno.textContent = '← Box';
     mostraMessaggioCampo('Loading your team…');
 
-    let dati, squadre;
+    let dati, primo;
     try {
         if (!window.firebase) throw new Error('Firebase did not load: check the scripts in battle.html.');
         await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
@@ -195,10 +197,10 @@ async function preparaCpu(chiaveTeam) {
             throw new Error(`The simulator format "${dati.formato}" doesn't exist. Fix the formatoSimulatore field of the ${dati.categoria} ruleset.`);
         }
         if (dati.problemi.length) throw new Error(`This team can't be used in ${dati.categoria}: ${dati.problemi.join('; ')}`);
-        mostraMessaggioCampo(`Building the CPU teams for ${dati.categoria}…`);
-        squadre = await squadreCpu(dati.regolamento, { iniziali: dati.iniziali });
-        if (!squadre.team.length) {
-            throw new Error(`The CPU couldn't build teams for ${dati.categoria}${squadre.avvisi.length ? ' (' + squadre.avvisi[0] + ')' : ''}.`);
+        mostraMessaggioCampo(`Building a CPU team for ${dati.categoria}…`);
+        primo = await nuovoTeamCpu(dati.regolamento, { iniziali: dati.iniziali });
+        if (!primo.team) {
+            throw new Error(`The CPU couldn't build a team for ${dati.categoria}${primo.avvisi.length ? ' (' + primo.avvisi[0] + ')' : ''}.`);
         }
     } catch (errore) {
         console.error(errore);
@@ -207,8 +209,8 @@ async function preparaCpu(chiaveTeam) {
 
     document.body.classList.add('prova-cpu');
     cpu = {
-        cerebro: null, team: squadre.team, indice: sceglieTeam(squadre.team), giocatore: dati, errori: 0, rqid: null,
-        chiaveTeam, modificabile: null, avviso: '', problemi: [], ultimoVincitore: null
+        cerebro: null, team: primo.team, giocatore: dati, errori: 0, rqid: null,
+        chiaveTeam, modificabile: null, avviso: '', problemi: [], ultimoVincitore: null, generando: false
     };
     config = {
         formato: dati.formato,
@@ -219,19 +221,76 @@ async function preparaCpu(chiaveTeam) {
     if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
     impostaPannelli();
     verificaModificabile(dati.team.nome);     // in sottofondo: a fine partita si sa già se il team si può modificare
-    iniziaContro(cpu.indice);
+    preparaNote(dati, chiaveTeam);
+    iniziaContro(cpu.team);
+}
+
+// -----------------------------------------------------
+// Note del team (note-team.js)
+// -----------------------------------------------------
+// Un pulsantino accanto al volume apre un piccolo bloc notes: le note si salvano per il team che si sta provando (dentro il team,
+// in Firebase) e si ritrovano nel Box e nel Team Builder, da cancellare quando sono risolte. Ogni nota ricorda contro quale team
+// della CPU e a che turno è stata scritta.
+let notePannello = null;
+
+function preparaNote(dati, chiaveTeam) {
+    const bottone = $('btn-note'), finestra = $('note-team');
+    if (!bottone || !finestra || !self.NoteTeam) return;
+    bottone.hidden = false;
+    $('note-team-nome').textContent = dati.team.nome;
+    notePannello = self.NoteTeam.montaPannello($('note-team-corpo'), {
+        db: firebase.database(), giocatore: dati.id, team: chiaveTeam,
+        contesto: () => ({
+            contro: cpu && cpu.team ? { nome: nomeNeutro(cpu.team), specie: cpu.team.specie } : null,
+            turno: stato && stato.turno
+        }),
+        alCambio: note => {
+            const conto = $('btn-note-conto');
+            conto.textContent = String(note.length);
+            conto.hidden = !note.length;
+            bottone.title = note.length ? `Notes on your team (${note.length})` : 'Notes on your team';
+        }
+    });
+    const imposta = aperta => {
+        finestra.hidden = !aperta;
+        bottone.setAttribute('aria-expanded', String(aperta));
+        if (aperta) notePannello.focus();
+    };
+    bottone.addEventListener('click', () => imposta(finestra.hidden));
+    $('note-team-chiudi').addEventListener('click', () => { imposta(false); bottone.focus(); });
+    // la tastiera dentro il bloc notes resta lì (la pagina non deve reagire); Esc lo chiude
+    finestra.addEventListener('keydown', e => {
+        e.stopPropagation();
+        if (e.key === 'Escape') { imposta(false); bottone.focus(); }
+    });
 }
 
 // Mette in campo il team della CPU indicato e fa partire la battaglia
-function iniziaContro(indice) {
-    cpu.indice = indice;
+function iniziaContro(team) {
+    cpu.team = team;
     cpu.avviso = '';
     cpu.ultimoVincitore = null;
-    const t = cpu.team[indice];
-    config.p2.team = t.testo;
-    config.p2.nomeTeam = nomeNeutro(t, indice);     // "Team 7", mai il piano di gioco: si saprebbe già cosa farà
+    config.p2.team = team.testo;
+    config.p2.nomeTeam = nomeNeutro(team);     // "Team 7", mai il piano di gioco: si saprebbe già cosa farà
     schedeCpu();
     avviaBattaglia();
+}
+
+// "Another random CPU team": se ne compone uno nuovo (la parte lenta è già in memoria dalla prima volta)
+async function altroTeamCpu() {
+    if (!cpu || cpu.generando) return;
+    cpu.generando = true;
+    try {
+        const r = await nuovoTeamCpu(cpu.giocatore.regolamento, { iniziali: cpu.giocatore.iniziali });
+        if (!r.team) throw new Error(r.avvisi[0] || 'no team available');
+        cpu.generando = false;
+        iniziaContro(r.team);
+    } catch (errore) {
+        console.error(errore);
+        cpu.generando = false;
+        cpu.avviso = `Couldn't build another CPU team: ${errore.message}`;
+        aggiornaFineCpu();
+    }
 }
 
 // Colonne dei player: il team del giocatore si vede, quello della CPU solo come in una partita vera (le specie)
@@ -252,8 +311,8 @@ function azioniCpu() {
     // dopo una modifica il team può non essere più giocabile nel simulatore: allora niente rivincita finché non si sistema
     if (!cpu.problemi.length) {
         azioni.push(
-            el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.indice) }, 'Rematch · same CPU team'),
-            el('button', { type: 'button', class: 'btn secondario', onclick: () => iniziaContro(sceglieTeam(cpu.team, cpu.indice)) }, 'Another random CPU team'));
+            el('button', { type: 'button', class: 'btn primario', onclick: () => iniziaContro(cpu.team) }, 'Rematch · same CPU team'),
+            el('button', { type: 'button', class: 'btn secondario', onclick: ev => { ev.currentTarget.disabled = true; altroTeamCpu(); } }, 'Another random CPU team'));
     }
     // Come nel Box, il team si modifica solo se non è già iscritto a una stagione iniziata (team-bloccati.js)
     if (cpu.modificabile === true) azioni.push(el('button', { type: 'button', class: 'btn secondario', onclick: apriEditorTeam }, 'Edit my team'));
@@ -762,7 +821,7 @@ function avviaBattaglia() {
     nuovoSet();
     disegnaInfo();
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
-    if (cpu) { cpu.cerebro = nuovoCervello('p2', { piano: cpu.team[cpu.indice] && cpu.team[cpu.indice].piano }); cpu.errori = 0; cpu.rqid = null; }
+    if (cpu) { cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano }); cpu.errori = 0; cpu.rqid = null; }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2 });
     collegaEventi(battaglia);
     battaglia.avvia();
