@@ -55,7 +55,7 @@
           valore: c => num(c.g.percMatch), minimo: { campo: c => num(c.g.match && c.g.match.giocati), valore: 30, etichetta: 'matches played' },
           immagini: tre('badge-allenatore-dominant-{l}.png') },
         { id: 'knockout', nome: 'KO Artist', icona: '💥', unita: 'KOs', soglie: [300, 900, 2000],
-          descrizione: 'Opposing Pokémon knocked out (only sets played on the site are counted).',
+          descrizione: 'Opposing Pokémon knocked out.',
           valore: c => num(c.g.ko && c.g.ko.fatti), immagini: tre('badge-allenatore-knockout-{l}.png') },
         { id: 'untouchable', nome: 'Untouchable', icona: '🛡️', unita: 'flawless sets', soglie: [5, 15, 35],
           descrizione: 'Sets won without losing a single Pokémon.',
@@ -69,7 +69,7 @@
         { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1100, 1250, 1400], partenza: 1000,
           descrizione: 'The highest Elo you have ever reached (everyone starts at 1000).',
           valore: c => num(c.g.eloPicco), immagini: tre('badge-allenatore-elopeak-{l}.png') },
-        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [15, 40, 80],
+        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [30, 65, 100],
           descrizione: 'Different Pokémon species you have brought into battle.',
           valore: c => num(c.specie), immagini: tre('badge-allenatore-collector-{l}.png') }
     ];
