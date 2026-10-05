@@ -74,9 +74,18 @@
         return c ? c.slice(prefisso.length) : '';
     };
 
+    // Come nomi-unici.js battezza un Pokémon senza soprannome: la specie ("Garchomp"), o la forma davanti alla specie base ("Shadow
+    // Calyrex"); un secondo uguale prende un numero ("Garchomp 2"). Restituisce i nomi possibili senza il numero.
+    function radiciDiNome(specie) {
+        const parti = String(specie || '').split('-');
+        const radici = [idDi(specie), idDi(parti[0])];
+        if (parti.length > 1) radici.push(idDi(parti.slice(1).join(' ') + ' ' + parti[0]));
+        return radici;
+    }
+
     function nuovaEntry(lato, specie, extra) {
         return {
-            lato, specie, id: idDi(specie), base: baseDi(specie), nome: '',
+            lato, specie, id: idDi(specie), base: baseDi(specie), nome: '', nomeDichiarato: '',
             extra: !!extra,          // non c'era nel team preview (es. Illusion, formati senza preview)
             apparso: false, apparizioni: 0, portato: false, titolare: false,
             koFatti: 0, koDiretti: 0, svenuto: false, turnoKo: 0, ultimo: false,
@@ -87,8 +96,11 @@
     /**
      * @param {string|string[]} log   righe del log pubblico del set
      * @param {object} [opzioni]
-     * @param {{p1?: string[], p2?: string[]}} [opzioni.portati]  specie dei Pokémon portati, se il
-     *        server li conosce già (altrimenti valgono quelli scesi in campo)
+     * @param {{p1?: Array<string|{specie: string, nome: string}>, p2?: Array}} [opzioni.portati]  specie dei Pokémon portati (o
+     *        { specie, nome } col soprannome), se il server li conosce già (altrimenti valgono quelli scesi in campo)
+     * @param {{p1?: string[], p2?: string[]}} [opzioni.nomi]  i soprannomi dei Pokémon del team nell'ordine del team (come
+     *        nel team preview: nomi-unici.js li rende tutti diversi, "Garchomp" e "Garchomp 2"). Con due Pokémon della stessa
+     *        specie servono a sapere QUALE dei due è sceso in campo (il log dice solo "p1a: Garchomp 2|Garchomp")
      * @param {boolean} [opzioni.debug]  aggiunge al risultato l'elenco dei KO con la causa (per i test)
      */
     function analizzaSet(log, opzioni = {}) {
@@ -131,6 +143,21 @@
             const L = S.lati[lato];
             let e = L.porNick.get(nick);
             if (e && e.base !== baseDi(specie)) e = null;          // stesso soprannome ma un altro Pokémon
+            // Con due Pokémon della stessa specie il log non dice quale dei due entra: lo dice il soprannome.
+            // 1) quelli dichiarati dal server (nell'ordine del team); 2) altrimenti il numero che nomi-unici.js dà al secondo, al terzo...
+            if (!e && nick) e = L.entries.find(x => !x.apparso && !x.extra && x.nomeDichiarato === idDi(nick) && (x.id === idDi(specie) || x.base === baseDi(specie))) || null;
+            if (!e && nick) {
+                const m = /^(.*\S)\s+(\d+)$/.exec(nick);
+                if (m && radiciDiNome(specie).includes(idDi(m[1]))) {
+                    const stessi = L.entries.filter(x => !x.extra && x.id === idDi(specie));
+                    const candidato = stessi[parseInt(m[2], 10) - 1];
+                    if (candidato && !candidato.apparso) e = candidato;
+                }
+            }
+            if (!e && nick && radiciDiNome(specie).includes(idDi(nick))) {       // il primo dei doppioni ha il nome senza numero
+                const primo = L.entries.find(x => !x.extra && x.id === idDi(specie));
+                if (primo && !primo.apparso && L.entries.filter(x => !x.extra && x.id === idDi(specie)).length > 1) e = primo;
+            }
             if (!e) e = L.entries.find(x => !x.apparso && x.id === idDi(specie))
                 || L.entries.find(x => !x.apparso && x.base === baseDi(specie));
             if (!e) { e = nuovaEntry(lato, specie, true); L.entries.push(e); }
@@ -178,7 +205,12 @@
                         const L = S.lati[parti[2]];
                         if (!L) break;
                         const specie = String(parti[3] || '').split(',')[0].trim();
-                        if (specie) L.entries.push(nuovaEntry(parti[2], specie, false));
+                        if (specie) {
+                            const nuova = nuovaEntry(parti[2], specie, false);
+                            const dichiarati = (opzioni.nomi && opzioni.nomi[parti[2]]) || [];
+                            nuova.nomeDichiarato = idDi(dichiarati[L.entries.filter(x => !x.extra).length]);
+                            L.entries.push(nuova);
+                        }
                         break;
                     }
 
@@ -423,8 +455,14 @@
         const dichiarati = opzioni.portati || {};
         for (const lato of LATI) {
             const L = S.lati[lato];
-            for (const specie of dichiarati[lato] || []) {
-                const e = L.entries.find(x => !x.portato && x.id === idDi(specie))
+            for (const voce of dichiarati[lato] || []) {
+                // una specie ("Garchomp") o { specie, nome } (col soprannome, per distinguere due Pokémon della stessa specie)
+                const specie = typeof voce === 'string' ? voce : voce && voce.specie;
+                const nome = typeof voce === 'string' || !voce ? '' : idDi(voce.nome);
+                // col soprannome si sa QUALE dei due (anche se è già segnato: non si passa al fratello con la stessa specie)
+                const esatto = nome && L.entries.find(x => !x.extra && x.nomeDichiarato === nome && (x.id === idDi(specie) || x.base === baseDi(specie)));
+                const e = esatto
+                    || L.entries.find(x => !x.portato && x.id === idDi(specie))
                     || L.entries.find(x => !x.portato && x.base === baseDi(specie));
                 if (e) e.portato = true;
             }

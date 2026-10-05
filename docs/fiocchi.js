@@ -148,15 +148,37 @@
             .map(x => x.f);
     }
 
+    const elencoPokemon = team => {
+        const p = team && team.pokemon;
+        return Array.isArray(p) ? p : (p && typeof p === 'object' ? Object.values(p) : []);
+    };
+
     // -----------------------------------------------------
     // Ricerca del Pokémon nei risultati delle statistiche
     // -----------------------------------------------------
+    // `ordinale` serve quando un team ha due Pokémon della stessa specie (Anything Goose, o forme che il nome non distingue): le statistiche li
+    // chiamano "garchomp" e "garchomp#2", nell'ordine del team. Senza ordinale (o con 1) si prende il primo.
     function trova(risultato, ident) {
         const elenco = (risultato && risultato.pokemon) || [];
         const player = idDi(ident && ident.player), team = idDi(ident && ident.team);
         const specie = idSpecie(specieDaNome(ident && ident.specie));
         if (!player || !team || !specie) return null;
-        return elenco.find(e => idDi(e.player) === player && idDi(e.team) === team && e.specieId === specie) || null;
+        const ordinale = Math.max(1, Math.floor(num(ident && ident.ordinale)) || 1);
+        const chiave = ordinale > 1 ? `${specie}#${ordinale}` : specie;
+        return elenco.find(e => idDi(e.player) === player && idDi(e.team) === team && String(e.chiave || '').split('::').pop() === chiave)
+            || (ordinale === 1 ? elenco.find(e => idDi(e.player) === player && idDi(e.team) === team && e.specieId === specie && !/#/.test(String(e.chiave || ''))) : null)
+            || null;
+    }
+
+    // Il numero d'ordine di un Pokémon fra quelli della sua specie nel team: 1 il primo, 2 il secondo... `indice` è la sua posizione nel team;
+    // se non c'è lo si cerca (lo stesso oggetto, o uno uguale: la pagina pubblica ne riceve una copia)
+    function ordinaleDi(team, pokemon, indice) {
+        const lista = elencoPokemon(team);
+        let i = Number.isInteger(indice) ? indice : lista.indexOf(pokemon);
+        if (i < 0 && pokemon) { const j = JSON.stringify(pokemon); i = lista.findIndex(x => JSON.stringify(x) === j); }
+        if (i < 0 || !lista[i]) return 1;
+        const id = idSpecie(specieDaNome(lista[i].nome));
+        return 1 + lista.slice(0, i).filter(x => x && idSpecie(specieDaNome(x.nome)) === id).length;
     }
 
     // Una sola lettura per pagina: stagioni e giocatori da Firebase, poi il calcolo (lo stesso di stats.html)
@@ -233,11 +255,6 @@
     // Colla per le pagine (Box e pagina pubblica): leggono i dati e riempiono i contenitori.
     // "valido" serve quando la finestra può cambiare mentre i dati arrivano: se restituisce false non si scrive più nulla.
     // -----------------------------------------------------
-    const elencoPokemon = team => {
-        const p = team && team.pokemon;
-        return Array.isArray(p) ? p : (p && typeof p === 'object' ? Object.values(p) : []);
-    };
-
     // Le medagliette sulle card della squadra: ogni .pkm-badges-overlay[data-fiocchi-pkm="<posizione>"]
     async function riempiMini(db, contenitore, { giocatore, team, valido, amicizia } = {}) {
         if (!contenitore || !giocatore || !team) return false;
@@ -250,19 +267,20 @@
         for (const casella of caselle) {
             const p = pokemon[Number(casella.dataset.fiocchiPkm)];
             if (!p) continue;
-            const lista = calcola(trova(risultato, { player: giocatore, team: team.nome, specie: p.nome }), { amicizia: !!(amicizia && amicizia(p)) });
+            const indice = Number(casella.dataset.fiocchiPkm);
+            const lista = calcola(trova(risultato, { player: giocatore, team: team.nome, specie: p.nome, ordinale: ordinaleDi(team, p, indice) }), { amicizia: !!(amicizia && amicizia(p)) });
             casella.innerHTML = htmlMini(lista, 3);
         }
         return true;
     }
 
     // Lo scaffale completo nella scheda di un Pokémon
-    async function montaScaffale(db, casella, { giocatore, team, pokemon, amicizia, valido } = {}) {
+    async function montaScaffale(db, casella, { giocatore, team, pokemon, indice, amicizia, valido } = {}) {
         if (!casella) return false;
         let entry = null, nota = '';
         try {
             const risultato = await carica(db);
-            entry = trova(risultato, { player: giocatore, team: team && team.nome, specie: pokemon && pokemon.nome });
+            entry = trova(risultato, { player: giocatore, team: team && team.nome, specie: pokemon && pokemon.nome, ordinale: ordinaleDi(team, pokemon, indice) });
             if (!entry) nota = 'No set data yet for this Pokémon: its ribbons start from zero.';
         } catch (e) { nota = 'Live ribbon data is not available right now.'; }
         if (valido && !valido()) return false;
@@ -272,7 +290,7 @@
 
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
-        livelloDi, calcola, guadagnati, perVicinanza, trova, carica, svuotaCache,
+        livelloDi, calcola, guadagnati, perVicinanza, trova, ordinaleDi, carica, svuotaCache,
         htmlFiocco, htmlScaffale, htmlMini, immagineMancante,
         riempiMini, montaScaffale
     };

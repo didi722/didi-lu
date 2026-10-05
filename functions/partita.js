@@ -119,12 +119,21 @@ function controllaTeam(testo, reg) {
     if (!sets.length) return ['Il team è vuoto o illeggibile'];
     const livello = livelloFormato(reg);
     const gen = generazioneFormato(reg);
+    const dex = PS.Dex.forGen(gen);
+    // il simulatore segna "Future" ciò che nella generazione del formato non esiste ancora (Play Rough in Gen 4, Folletto in Gen 5...)
+    const nonEsisteAncora = voce => !!voce && voce.exists && voce.isNonstandard === 'Future';
     const problemi = [];
     for (const set of sets) {
         if ((set.level || 100) !== livello) problemi.push(`${set.species} è al livello ${set.level || 100} invece di ${livello}`);
-        const strumento = PS.Dex.forGen(gen).items.get(set.item);
+        const strumento = dex.items.get(set.item);
         if (!meccanicheAttive(reg) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
             problemi.push(`${set.species} tiene ${strumento.name}, ma il formato non ha le meccaniche generazionali`);
+        }
+        if (nonEsisteAncora(dex.species.get(set.species))) problemi.push(`${set.species} non esiste in Gen ${gen}`);
+        if (gen >= 3 && set.ability && nonEsisteAncora(dex.abilities.get(set.ability))) problemi.push(`${set.species}: l'abilità ${set.ability} non esiste in Gen ${gen}`);
+        if (nonEsisteAncora(strumento)) problemi.push(`${set.species}: lo strumento ${strumento.name} non esiste in Gen ${gen}`);
+        for (const mossa of set.moves || []) {
+            if (nonEsisteAncora(dex.moves.get(mossa))) problemi.push(`${set.species}: la mossa ${dex.moves.get(mossa).name} non esiste in Gen ${gen}`);
         }
     }
     return problemi;
@@ -450,8 +459,10 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         // Statistiche del set (KO, ultimo rimasto...). Se qualcosa va storto il set si salva lo stesso.
         let stats = null;
         try {
-            const portati = lato => b[lato].pokemon.map(p => p.set && p.set.species).filter(Boolean);
-            stats = analizzaSet(righe, { portati: { p1: portati('p1'), p2: portati('p2') } });
+            const portati = lato => b[lato].pokemon.filter(p => p.set && p.set.species).map(p => ({ specie: p.set.species, nome: p.set.name || '' }));
+            // i soprannomi nell'ordine del team: con due Pokémon della stessa specie dicono quale dei due è sceso in campo
+            const nomi = lato => (b[lato].team || []).map(s => s.name || s.species);
+            stats = analizzaSet(righe, { portati: { p1: portati('p1'), p2: portati('p2') }, nomi: { p1: nomi('p1'), p2: nomi('p2') } });
         } catch (e) {
             console.error('Statistiche del set non calcolate', id, stato.set, e);
         }
