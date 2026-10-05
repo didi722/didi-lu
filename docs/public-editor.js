@@ -175,7 +175,7 @@
         const icona = (titolo, testo, attivo, fn, disabilitato) => h('button', { type: 'button', class: 'pe-icona', title: titolo, 'aria-label': titolo, disabled: disabilitato, 'aria-pressed': attivo === undefined ? null : String(attivo), onclick: fn, testo });
         return h('li', { class: `pe-riga${b.on ? '' : ' is-spento'}`, 'data-id': b.id, draggable: 'true' },
             h('span', { class: 'pe-presa', 'aria-hidden': 'true', testo: '⠇' }),
-            h('span', { class: 'pe-riga-nome' }, h('b', { testo: def.nome }), h('small', { testo: vuoto ? 'Nothing to show yet' : def.desc })),
+            h('span', { class: 'pe-riga-nome' }, h('b', { testo: def.nome }), h('small', { testo: vuoto ? (def.vuoto || 'Nothing to show yet') : def.desc })),
             icona(b.on ? 'Hide' : 'Show', b.on ? '◉' : '○', b.on, () => cambia(c => P.accendi(c, b.id, !b.on))),
             icona('Move up', '▲', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i - 1)), i === 0),
             icona('Move down', '▼', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i + 1)), i === quanti - 1),
@@ -286,7 +286,15 @@
                 h('b', { testo: t.nome || t.name || 'My team' }),
                 h('small', { testo: `${t.categoria || t.category || 'VGC'} · ${Number(s.won) || 0}W ${Number(s.lose ?? s.lost) || 0}L` }));
         };
+        // le targhette (titolo, nome della personalità): nel blocco del nome, sul palco o nascoste
+        const targhette = h('div', { class: 'pe-targhette' }, Object.entries(P.TARGHETTE).map(([id, t]) =>
+            h('div', { class: 'pe-targhetta', 'data-targhetta': id },
+                h('b', { testo: t.nome }),
+                segmentato(Object.entries(P.POSTI_TARGHETTA), cfg().targhette[id], posto => cambia(c => { c.targhette[id] = posto; return c; })))));
         return [
+            sezione('Tags',
+                h('p', { class: 'pe-nota', testo: 'Small tags that can sit in the Name block or on the Stage, or stay hidden. The personality name shows up once your personality is unlocked (25 analysed sets); the whole chart is the Personality block (Blocks tab).' }),
+                targhette),
             sezione('Stats to show',
                 h('p', { class: 'pe-nota', testo: 'Tick the ones you want and put them in the order you like.' }),
                 h('ul', { class: 'pe-lista' }, tutte.map((id, i) => {

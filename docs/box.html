@@ -6368,8 +6368,10 @@ async function tbPreparaDettaglio(team) {
 function tbHtmlAzioni(variante) {
     return `
         <div class="tb-actions ${variante === 'riga' ? 'tb-actions-row' : ''}">
-            <button type="button" id="tb-btn-import" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('import')">Import</button>
-            <button type="button" id="tb-btn-export" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('export')">Export</button>
+            <div class="tb-actions-io">
+                <button type="button" id="tb-btn-import" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('import')">Import</button>
+                <button type="button" id="tb-btn-export" class="tb-btn tb-btn-copy" onclick="tbApriShowdown('export')">Export</button>
+            </div>
             <div class="tb-save-wrap" id="tb-save-wrap">
                 <button type="button" id="tb-btn-save" class="tb-btn tb-btn-save" onclick="tbSalvaNelBox()">${tbModifica ? 'Update team' : 'Save to box'}</button>
                 <div class="tb-bubble" id="tb-save-bubble"></div>

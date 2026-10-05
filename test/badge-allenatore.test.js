@@ -144,3 +144,65 @@ test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file
     assert.equal(BT.IMMAGINI_DA_CARICARE.length, 18);
     assert.equal(typeof BT.costruisci, 'function');
 });
+
+test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle schede dei badge delle serie', () => {
+    const l = BA.calcola(risultato(giocatore({
+        stagioniVinte: 1, stagioniGiocate: 0, eloPicco: 1140, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 50 }
+    })), 'didi');
+    const s = id => BA.scheda(per(l, id));
+
+    // un badge a metà strada: bronzo preso, argento in vista
+    const c = s('champion');
+    assert.deepEqual(c.livelli.map(x => [x.nome, x.soglia, x.stato]), [['Bronze', '1', 'done'], ['Silver', '2', 'next'], ['Gold', '4', '']]);
+    assert.deepEqual(c.numeri, [['Level', 'Bronze'], ['Now', '1']]);
+    assert.deepEqual(c.barra, { etichetta: 'Seasons won', valore: 1, obiettivo: 2, partenza: 0, suffisso: '' });
+    assert.equal(c.frase, '1 more to unlock Silver.');
+    assert.equal(c.classe, 'bronze');
+    assert.equal(c.bloccato, false);
+    assert.equal(c.immagine, 'immagini/champion-bronze.png');
+
+    // bloccato: il livello è "None yet" e il traguardo è il bronzo
+    const m = s('matchwinner');
+    assert.equal(m.bloccato, true);
+    assert.equal(m.classe, 'locked');
+    assert.deepEqual(m.numeri, [['Level', 'None yet'], ['Now', '11']]);
+    assert.equal(m.frase, '14 more to unlock Bronze.');
+    assert.equal(m.livelli[0].stato, 'next');
+
+    // al livello massimo: niente barra, "badge complete"
+    const sd = s('showdown');
+    assert.equal(sd.completo, true);
+    assert.equal(sd.barra, null);
+    assert.equal(sd.frase, 'Gold reached: badge complete!');
+    assert.ok(sd.livelli.every(x => x.stato === 'done'));
+
+    // la percentuale conta solo dopo 30 match: la barra è quella dei match giocati, le soglie hanno il "%"
+    const d = s('dominant');
+    assert.deepEqual(d.livelli.map(x => x.soglia), ['60%', '70%', '80%']);
+    assert.deepEqual(d.barra, { etichetta: 'Matches played', valore: 12, obiettivo: 30, partenza: 0, suffisso: '' });
+    assert.equal(d.frase, 'Counts after 30 matches played (12 so far).');
+    assert.deepEqual(d.numeri[1], ['Now', '91%']);
+    // quando conta, la barra è la percentuale con il suo traguardo
+    const tanti = BA.scheda(per(BA.calcola(risultato(giocatore({ percMatch: 71.3, match: { giocati: 40, vinti: 29, persi: 11 } })), 'didi'), 'dominant'));
+    assert.deepEqual(tanti.barra, { etichetta: 'Win rate', valore: 71.3, obiettivo: 80, partenza: 0, suffisso: '%' });
+    assert.equal(tanti.frase, 'Reach 80% to unlock Gold.');
+
+    // l'Elo parte da 1000, non da zero: la barra lo sa
+    const e = s('elopeak');
+    assert.deepEqual(e.barra, { etichetta: 'Peak Elo', valore: 1140, obiettivo: 1250, partenza: 1000, suffisso: '' });
+    assert.equal(e.frase, 'Reach 1250 to unlock Silver.');
+});
+
+test('scheda: per tutti e dodici i badge, con o senza dati, ha tutto quello che la pagina disegna', () => {
+    for (const lista of [BA.calcola(null, 'x'), BA.calcola(risultato(giocatore({ stagioniGiocate: 9, stagioniVinte: 9, match: { giocati: 400, vinti: 300, persi: 100 }, percMatch: 75, eloPicco: 1500 })), 'didi')]) {
+        for (const b of lista) {
+            const s = BA.scheda(b);
+            assert.equal(s.livelli.length, 3, b.id);
+            assert.ok(s.nome && s.descrizione && s.immagine && s.icona && s.frase, b.id);
+            assert.equal(s.numeri.length, 2, b.id);
+            assert.equal(s.completo, s.barra === null, `${b.id}: la barra c'è finché il badge non è completo`);
+            if (s.barra) assert.ok(s.barra.obiettivo > s.barra.partenza, `${b.id}: la barra ha un tratto da percorrere`);
+            assert.ok(!/undefined|NaN|\[object/.test(JSON.stringify(s)), b.id);
+        }
+    }
+});

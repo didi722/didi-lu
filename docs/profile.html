@@ -18,6 +18,7 @@
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="personalita.js"></script>
+<script src="personalita-grafico.js"></script>
 <script src="badge-team.js"></script>
 <script src="badge-allenatore.js"></script>
 <link rel="stylesheet" href="badge-team.css">
@@ -727,40 +728,9 @@ function disegnaRivali(rivaliTutti) {
 // =====================================================
 // PERSONALITÀ (personalita.js: scarti dalla media della lega, non numeri assoluti)
 // =====================================================
-const SVG_NS = 'http://www.w3.org/2000/svg';
-function svg(tag, attributi, ...figli) {
-    const e = document.createElementNS(SVG_NS, tag);
-    for (const [k, v] of Object.entries(attributi || {})) if (v != null) e.setAttribute(k, String(v));
-    for (const f of figli.flat()) if (f != null) e.append(f instanceof Node ? f : document.createTextNode(String(f)));
-    return e;
-}
-
-// Il diagramma a ragnatela. `valori` = null: diagramma vuoto (personalità ancora bloccata)
-function radarPersonalita(assi, valori) {
-    const R = 104, C = 150, n = assi.length;
-    const PersonalitaVertici = lista => Personalita.vertici(lista, R, C, C);
-    const anello = pct => PersonalitaVertici(Array(n).fill(pct)).map(p => `${p.x},${p.y}`).join(' ');
-    const radice = svg('svg', { class: 'pf-radar', viewBox: '0 0 300 300', role: 'img',
-        'aria-label': valori ? `Personality diagram: ${assi.map((a, i) => `${a.nome} ${valori[i]}`).join(', ')}. 50 is the league average.` : 'Personality diagram, still locked.' });
-    for (const pct of [25, 75, 100]) radice.append(svg('polygon', { class: 'pf-radar-anello', points: anello(pct) }));
-    radice.append(svg('polygon', { class: 'pf-radar-media', points: anello(50) }));
-    PersonalitaVertici(Array(n).fill(100)).forEach(p => radice.append(svg('line', { class: 'pf-radar-asse', x1: C, y1: C, x2: p.x, y2: p.y })));
-    if (valori) {
-        const punti = PersonalitaVertici(valori);
-        radice.append(svg('polygon', { class: 'pf-radar-area', points: punti.map(p => `${p.x},${p.y}`).join(' ') }));
-        punti.forEach(p => radice.append(svg('circle', { class: 'pf-radar-punto', cx: p.x, cy: p.y, r: 4.5 })));
-    }
-    // le etichette, fuori dal diagramma
-    PersonalitaVertici(Array(n).fill(100)).forEach((p, i) => {
-        const dx = Math.cos(p.angolo), dy = Math.sin(p.angolo);
-        const x = C + (R + 16) * dx, y = C + (R + 16) * dy + (dy > 0.3 ? 8 : dy < -0.3 ? -2 : 4);
-        const ancora = dx > 0.3 ? 'start' : dx < -0.3 ? 'end' : 'middle';
-        radice.append(svg('text', { class: 'pf-radar-et', x: x.toFixed(1), y: y.toFixed(1), 'text-anchor': ancora },
-            svg('tspan', {}, assi[i].nome.toUpperCase()),
-            valori ? svg('tspan', { class: 'pf-radar-val', x: x.toFixed(1), dy: '1.15em' }, valori[i]) : null));
-    });
-    return radice;
-}
+// Il diagramma a ragnatela lo disegna personalita-grafico.js (lo usa anche la pagina pubblica). `valori` = null: diagramma vuoto
+// (personalità ancora bloccata)
+const radarPersonalita = (assi, valori) => PersonalitaGrafico.radar(assi, valori);
 
 function disegnaPersonalitaBloccata(p) {
     const assi = Personalita.ASSI;
@@ -1013,13 +983,15 @@ function achFormattaData(dataRaw) {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-function achBarra(etichetta, valore, obiettivo) {
-    const pct = obiettivo > 0 ? Math.min((valore / obiettivo) * 100, 100) : 100;
+// suffisso: "%" dopo i numeri; partenza: da dove parte la barra (l'Elo parte da 1000, non da zero)
+function achBarra(etichetta, valore, obiettivo, { suffisso = '', partenza = 0 } = {}) {
+    const tratto = obiettivo - partenza;
+    const pct = tratto > 0 ? Math.max(0, Math.min(((valore - partenza) / tratto) * 100, 100)) : 100;
     return `
         <div>
             <div class="ach-progress-row">
-                <span>${etichetta}: ${valore}</span>
-                <span class="ach-target">${obiettivo}</span>
+                <span>${etichetta}: ${valore}${suffisso}</span>
+                <span class="ach-target">${obiettivo}${suffisso}</span>
             </div>
             <div class="ach-bar">
                 <div class="ach-bar-fill ${pct <= 0 ? 'empty' : ''}" style="width: ${pct}%;"></div>
@@ -1132,7 +1104,9 @@ async function aggiungiBadgeAllenatore(overlay, lista, summary) {
     lista.querySelector('.ach-badge-extra')?.remove();
     const extra = document.createElement('div');
     extra.className = 'ach-badge-extra';
-    extra.innerHTML = BadgeAllenatore.htmlScaffale(badge, { titolo: 'MORE TRAINER BADGES' }) +
+    const presi = badge.filter(b => b.livello > 0).length;
+    extra.innerHTML = `<h4 class="bt-titolo">MORE TRAINER BADGES <small class="bt-conto">${presi}/${badge.length}</small></h4>` +
+        badge.map(achSchedaBadgeAllenatore).join('') +
         (dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>');
     lista.append(extra);
     const livelli = badge.reduce((n, b) => n + b.livello, 0);
@@ -1140,6 +1114,28 @@ async function aggiungiBadgeAllenatore(overlay, lista, summary) {
     const sbloccati = (precedenti ? +precedenti[1] : 0) + livelli;
     const totali = (precedenti ? +precedenti[2] : 0) + badge.length * 3;
     summary.textContent = `${sbloccati} of ${totali} badge levels unlocked`;
+}
+
+// Un badge dell'allenatore con le stesse parti delle schede dei badge delle serie: immagine, spiegazione, livelli, numeri, barra e cosa
+// manca (i dati e i testi li prepara BadgeAllenatore.scheda). Senza la PNG, al suo posto compare la medaglia disegnata dal CSS.
+function achSchedaBadgeAllenatore(b) {
+    const d = BadgeAllenatore.scheda(b);
+    const livelli = d.livelli.map(l => `<span class="ach-tier ${l.classe} ${l.stato}">${esc(l.nome)} ${esc(l.soglia)}</span>`).join('');
+    const numeri = d.numeri.map(([k, v]) => `<span>${esc(k)}: ${esc(v)}</span>`).join('');
+    return `
+        <div class="ach-card ach-badge-card ach-lv-${d.classe} ${d.bloccato ? 'locked' : ''}" data-badge="${esc(d.id)}">
+            <img src="${esc(d.immagine)}" class="ach-badge-img" alt="${esc(d.nome)}" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(d.icona)}')">
+            <div>
+                <div class="ach-card-top">
+                    <div class="ach-card-name">${esc(d.nome)}</div>
+                </div>
+                <p class="ach-card-desc">${esc(d.descrizione)}</p>
+                <div class="ach-tiers">${livelli}</div>
+                <div class="ach-stats-line">${numeri}</div>
+                ${d.barra ? achBarra(esc(d.barra.etichetta), d.barra.valore, d.barra.obiettivo, d.barra) : ''}
+                <div class="ach-missing ${d.completo ? 'maxed' : ''}">${esc(d.frase)}</div>
+            </div>
+        </div>`;
 }
 
 function renderBadgeAchievements(badges, lista, summary) {

@@ -280,6 +280,7 @@ body.pp-modifica .pp-holo { display: none; }
 [data-layout="carta"] .pp-palco { padding: 0; }
 [data-layout="carta"] .pp-zona[data-zona="c"] > .pp-blocco { flex: 0 0 auto; }
 [data-layout="carta"] .pp-zona[data-zona="c"] > .pp-party { flex: 1 1 440px; }
+[data-layout="carta"] .pp-zona[data-zona="c"] > .pp-personalita { flex: 1 1 260px; }
 /* senza il party in vista, gli altri blocchi si dividono la fascia */
 [data-layout="carta"] .pp-zona[data-zona="c"]:not(:has(> .pp-party:not([hidden]))) > .pp-blocco { flex: 1 1 auto; }
 [data-layout="carta"] .pp-zona[data-zona="c"] > .pp-blocco + .pp-blocco { border-left: var(--pp-bordo) solid #000; }
@@ -571,6 +572,7 @@ body.pp-modifica .pp-holo { display: none; }
 }
 
 .pp-titolo-riga { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp-titolo-riga[hidden] { display: none; }
 
 .pp-titolo.hub-title-badge {
     display: inline-block;
@@ -582,6 +584,36 @@ body.pp-modifica .pp-holo { display: none; }
 }
 
 .pp-titolo.hub-title-badge:hover { transform: translate(-2px, -2px) rotate(-2deg); }
+
+/* la targhetta della personalità: come il titolo, nel colore della sua famiglia */
+.hub-title-badge.famiglia-offensiva { background-color: #de3a1d !important; border: 2px solid #751200; box-shadow: 4px 4px 0 #751200; }
+.hub-title-badge.famiglia-difensiva { background-color: #3399ff !important; border: 2px solid #004d9b; box-shadow: 4px 4px 0 #004d9b; }
+.hub-title-badge.famiglia-stratega { background-color: #7766ee !important; border: 2px solid #1a0d70; box-shadow: 4px 4px 0 #1a0d70; }
+.hub-title-badge.famiglia-equilibrata { background-color: #77cc55 !important; border: 2px solid #247f00; box-shadow: 4px 4px 0 #247f00; }
+
+/* le targhette sul palco: in un angolo della scena, in scala con lei (--d); il suggerimento è quello del browser (la scena taglia i fumetti) */
+.pp-targhette {
+    position: absolute;
+    top: calc(10 * var(--d));
+    left: calc(10 * var(--d));
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(6 * var(--d));
+    max-width: 78%;
+}
+.pp-targhette[hidden] { display: none; }
+.pp-targhette .pp-titolo.hub-title-badge {
+    padding: calc(5 * var(--d)) calc(9 * var(--d)) calc(4 * var(--d));
+    font-size: max(10px, calc(13 * var(--d)));
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pp-targhette .neubrutal-tooltip { display: none !important; }
+/* in modifica ogni blocco ha la sua etichetta nell'angolo in alto a sinistra: le targhette le stanno sotto */
+body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 
 .pp-motto {
     position: relative;
@@ -852,6 +884,46 @@ body.pp-modifica .pp-holo { display: none; }
 .pp-medaglia-altri { display: grid; place-items: center; box-sizing: border-box; border: 3px solid #000; border-radius: 50%; background: #fff; box-shadow: 3px 3px 0 #000; font: 900 1rem 'Josefin Sans', sans-serif; color: #000; }
 /* la medaglia disegnata (badge-team.css) quando la PNG di un badge dell'allenatore non c'è ancora */
 .pp-medaglia .bt-finto { width: 100%; height: 100%; font-size: 1.5rem; box-sizing: border-box; }
+
+/* ---------- Personalità: il diagramma a ragnatela (personalita-grafico.js) e il nome ---------- */
+
+.pp-personalita { container-type: inline-size; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.pp-pers-corpo { align-self: stretch; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
+.pp-pers-grafico { position: relative; width: 100%; max-width: 420px; aspect-ratio: 400 / 272; }
+.pp-pers-grafico .pers-radar { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.pers-radar-anello { fill: none; stroke: currentColor; stroke-width: 1; opacity: 0.25; }
+.pers-radar-media { fill: none; stroke: currentColor; stroke-width: 2; stroke-dasharray: 5 4; opacity: 0.7; }
+.pers-radar-asse { stroke: currentColor; stroke-width: 1; opacity: 0.3; }
+.pers-radar-area { fill: var(--pp-giocatore); fill-opacity: 0.6; stroke: #000; stroke-width: 3; stroke-linejoin: round; }
+.pers-radar-punto { fill: #fff; stroke: #000; stroke-width: 2.5; }
+/* le etichette hanno sempre lo stesso carattere (non quello scelto per la carta: certi sono larghissimi) */
+.pers-radar-et { font: 900 21px 'Josefin Sans', 'Montserrat', sans-serif; letter-spacing: 0.04em; fill: currentColor; }
+.pp-pers-testo { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.pp-pers-tipo {
+    margin: 0;
+    max-width: 100%;
+    padding: 5px 12px 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: var(--pp-giocatore);
+    color: var(--pp-giocatore-ink);
+    border: 3px solid #000;
+    border-radius: calc(var(--pp-raggio) * 0.4);
+    box-shadow: 3px 3px 0 #000;
+    font: 900 1rem var(--pp-font);
+    letter-spacing: 0.06em;
+    transform: rotate(-1deg);
+    cursor: help;
+}
+/* la spiegazione sta solo dove c'è posto: nel blocco largo, a destra del diagramma */
+.pp-pers-desc { display: none; margin: 0; font-weight: 700; font-size: 0.82rem; line-height: 1.3; }
+@container (min-width: 460px) {
+    .pp-pers-corpo { flex-direction: row; justify-content: center; gap: 22px; }
+    .pp-pers-grafico { flex: 0 1 46%; width: auto; }
+    .pp-pers-testo { flex: 1 1 0; align-items: flex-start; }
+    .pp-pers-desc { display: block; }
+}
 
 /* ---------- Musica ---------- */
 
@@ -1216,6 +1288,7 @@ body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-statistiche { min-width: 260px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-party { min-width: 300px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-trofei { min-width: 110px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-medaglie { min-width: 130px; }
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-personalita { min-width: 210px; }
 
 /* ---- Trainer Card: una sola scheda, le zone si dividono con i bordi ---- */
 body.pp-fisso [data-layout="carta"] .pp-zona { border-width: 0 !important; }
@@ -1281,6 +1354,16 @@ body.pp-fisso .pp-trofei > .pp-coppa-conto { grid-area: conto; font-size: 1.3rem
 body.pp-fisso .pp-medaglie { gap: 8px; }
 body.pp-fisso .pp-medaglia { width: 56px; height: 56px; }
 body.pp-fisso .pp-medaglie-riga { gap: 12px; }
+
+/* il diagramma riempie l'altezza che resta sotto il titolo e sopra il nome (e ha un minimo: sotto, le etichette non si leggono più) */
+body.pp-fisso .pp-personalita { gap: 6px; }
+body.pp-fisso .pp-pers-corpo { gap: 6px; }
+body.pp-fisso .pp-pers-grafico { flex: 1 1 0; aspect-ratio: auto; min-height: 100px; max-width: none; }
+body.pp-fisso .pp-pers-tipo { font-size: 0.9rem; padding: 4px 10px 2px; }
+@container (min-width: 460px) {
+    /* largo e basso: il diagramma prende l'altezza che c'è, il suo disegno sta intero e al centro della sua casella */
+    body.pp-fisso .pp-pers-grafico { flex: 0 1 46%; min-height: 0; align-self: stretch; }
+}
 
 body.pp-fisso .pp-musica-btn { padding: 8px 14px 8px 10px; }
 body.pp-fisso .pp-disco { width: 44px; height: 44px; }

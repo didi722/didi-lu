@@ -49,7 +49,8 @@
         dopoApplica: null,     // l'editor si aggancia qui
         dopoAdatta: null,      // e qui: la tela è stata ridimensionata
         griglia: null,         // la griglia dello schermo intero in uso (P.griglia)
-        lineeIntero: null      // com'è costruita la pagina: con i blocchi affiancati raggruppati (schermo intero) o tutti in fila
+        lineeIntero: null,     // com'è costruita la pagina: con i blocchi affiancati raggruppati (schermo intero) o tutti in fila
+        versioneTarghe: 0      // cresce quando cambia qualcosa da cui dipendono le targhette (il titolo): così si rifanno
     };
 
     // ---- Utilità ------------------------------------------------------------------------------
@@ -103,7 +104,8 @@
             h('div', { class: 'pp-raggi' }),
             h('div', { class: 'pp-puntini' }),
             h('div', { class: 'pp-pavimento' }),
-            set));
+            set,
+            h('div', { class: 'pp-targhette', hidden: true })));     // le targhette scelte per il palco (riempiTarghe)
     }
 
     // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo.
@@ -210,14 +212,48 @@
 
     function costruisciIdentita(d) {
         const nome = String(d.nome || '').toUpperCase();
-        const titolo = costruisciTitolo(d);
         const motto = d.info.bio ? h('p', { class: 'pp-motto' }, h('span', { testo: String(d.info.bio).toUpperCase() })) : null;
         const posizione = stato.riepilogo && stato.riepilogo.rank && /^#\d+$/.test(stato.riepilogo.rank.grande) ? stato.riepilogo.rank.grande : '\u2605';
         return blocco('identita', 'pp-identita',
             costruisciSigillo(posizione),
             h('h1', { class: 'pp-nome', stile: { '--len': nome.length || 1 } }, h('span', { id: 'player-name-display', testo: nome })),
-            titolo ? h('div', { class: 'pp-titolo-riga' }, titolo) : null,
+            h('div', { class: 'pp-titolo-riga', hidden: true }),     // le targhette scelte per questo blocco (riempiTarghe)
             motto);
+    }
+
+    // ---- Targhette: il titolo e il nome della personalità, nel blocco del nome o sul palco -----------------
+
+    // Il nome della personalità come una targhetta, dello stesso aspetto del titolo (e come lui con il suggerimento al passaggio)
+    function costruisciTargaPersonalita(d) {
+        const p = d.personalita;
+        if (!p || p.stato !== 'pronta' || !p.tipo) return null;
+        const tooltip = h('span', { class: 'neubrutal-tooltip pp-tip pp-tip-titolo' },
+            h('span', { class: 'pp-tip-nome', testo: `${p.tipo.nome.toUpperCase()} · PERSONALITY` }),
+            h('span', { class: 'pp-tip-testo', testo: p.tipo.descrizione }),
+            (p.frasi || []).slice(0, 2).map(f => h('span', { class: 'pp-tip-testo', testo: f })));
+        return h('div', { class: `hub-title-badge pp-titolo pp-targa-personalita pp-tip-host famiglia-${p.tipo.id}`, tabindex: '0' },
+            h('span', { 'aria-hidden': 'true', testo: p.tipo.icona }), ` ${p.tipo.nome}`, tooltip);
+    }
+
+    const TARGHETTE = { titolo: d => costruisciTitolo(d), personalita: d => costruisciTargaPersonalita(d) };
+
+    /** Mette ogni targhetta dove l'allenatore l'ha voluta (config.targhette); un contenitore si rifà solo se cambia cosa ci sta dentro */
+    function riempiTarghe() {
+        const posti = stato.config.targhette;
+        const contenitori = {
+            identita: stato.blocchi.identita && stato.blocchi.identita.querySelector('.pp-titolo-riga'),
+            palco: stato.blocchi.palco && stato.blocchi.palco.querySelector('.pp-targhette')
+        };
+        for (const [posto, contenitore] of Object.entries(contenitori)) {
+            if (!contenitore) continue;
+            const chi = Object.keys(TARGHETTE).filter(k => posti[k] === posto);
+            const firma = `${chi.join(',')}|${stato.versioneTarghe}`;
+            if (contenitore.dataset.firma === firma) continue;
+            contenitore.dataset.firma = firma;
+            const nodi = chi.map(k => TARGHETTE[k](stato.dati)).filter(Boolean);
+            contenitore.replaceChildren(...nodi);
+            contenitore.hidden = !nodi.length;
+        }
     }
 
     // ---- Statistiche --------------------------------------------------------------------------
@@ -398,6 +434,23 @@
         return blocco('medaglie', 'pp-medaglie', h('span', { class: 'pp-chip', testo: 'MEDALS' }), h('div', { class: 'pp-medaglie-riga' }, lista));
     }
 
+    // ---- Personalità: il diagramma a ragnatela e il nome --------------------------------------
+
+    function costruisciPersonalita(d) {
+        const p = d.personalita;
+        const pronta = !!p && p.stato === 'pronta' && !!p.tipo && !!window.PersonalitaGrafico && !!window.Personalita;
+        stato.vuoti.personalita = !pronta;
+        // in un blocco largo il diagramma sta a sinistra e a destra il nome con la sua spiegazione; in uno stretto, il nome sotto
+        const corpo = !pronta ? null : h('div', { class: 'pp-pers-corpo' },
+            h('div', { class: 'pp-pers-grafico' },
+                window.PersonalitaGrafico.radar(window.Personalita.ASSI, p.assi.map(a => a.valore), { piccolo: true })),
+            h('div', { class: 'pp-pers-testo' },
+                h('p', { class: 'pp-pers-tipo', title: p.tipo.descrizione },
+                    h('span', { 'aria-hidden': 'true', testo: p.tipo.icona }), ` ${p.tipo.nome.toUpperCase()}`),
+                h('p', { class: 'pp-pers-desc', testo: p.tipo.descrizione })));
+        return blocco('personalita', 'pp-personalita', h('span', { class: 'pp-chip', testo: 'PERSONALITY' }), corpo);
+    }
+
     // ---- Musica -------------------------------------------------------------------------------
 
     function costruisciMusica(d) {
@@ -485,6 +538,7 @@
 
         riempiStatistiche();
         riempiParty();
+        riempiTarghe();
 
         const per = P.blocchiPerZona(c);
         const intero = schermoIntero();
@@ -504,7 +558,7 @@
                 const fantasma = el.querySelector(':scope > .pp-fantasma');
                 if (fantasma) fantasma.textContent = !b.on
                     ? `${NOMI_BLOCCHI[b.id].nome} · hidden — click to show`
-                    : `${NOMI_BLOCCHI[b.id].nome} · nothing to show yet`;
+                    : `${NOMI_BLOCCHI[b.id].nome} · ${(NOMI_BLOCCHI[b.id].vuoto || 'nothing to show yet').toLowerCase()}`;
                 return el;
             });
             // Si ricostruisce la zona solo se cambia come sono messi i blocchi (le GIF non ripartono per niente). A schermo
@@ -751,7 +805,8 @@
         party: () => costruisciParty(),
         trofei: d => costruisciTrofei(d),
         medaglie: d => costruisciMedaglie(d),
-        musica: d => costruisciMusica(d)
+        musica: d => costruisciMusica(d),
+        personalita: d => costruisciPersonalita(d)
     };
 
     function preparaBlocco(id, el) {
@@ -791,6 +846,7 @@
             if ((info[k] == null ? '' : String(info[k])) === valore) continue;
             info[k] = valore;
             for (const id of DIPENDE[k]) daFare.add(id);
+            if (k === 'title') stato.versioneTarghe += 1;      // il titolo può stare anche sul palco
             if (k === 'color') {
                 stato.dati.colore = valore || '#31c489';
                 if (typeof window.getPlayerPalette === 'function') {

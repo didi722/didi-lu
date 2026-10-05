@@ -49,8 +49,21 @@
         party:       { nome: 'Party',    desc: 'The team you want to show off' },
         trofei:      { nome: 'Trophies', desc: 'Season trophies' },
         medaglie:    { nome: 'Medals',   desc: 'Streak badges' },
-        musica:      { nome: 'Music',    desc: 'Your favourite song' }
+        musica:      { nome: 'Music',    desc: 'Your favourite song' },
+        // `vuoto`: cosa si legge nell'editor quando non c'è ancora niente da mostrare (se non è il solito "Nothing to show yet")
+        personalita: { nome: 'Personality', desc: 'Your play style, as a spider chart', vuoto: 'Unlocks after 25 analysed sets' }
     };
+
+    // I blocchi che, finché l'allenatore non li accende, restano nascosti (le pagine già salvate non cambiano di un pixel)
+    const BLOCCHI_SPENTI = ['personalita'];
+
+    // Due "targhette" che stanno in un blocco piccolo invece che in uno tutto loro: il titolo dell'allenatore e il nome della sua
+    // personalità (solo il nome: il diagramma intero è il blocco Personality). Ognuna può stare nel blocco del nome, sul palco o essere nascosta.
+    const TARGHETTE = {
+        titolo:      { nome: 'Trainer title' },
+        personalita: { nome: 'Personality name' }
+    };
+    const POSTI_TARGHETTA = { identita: 'Name', palco: 'Stage', nessuno: 'Hidden' };
 
     const STAT = {
         rank:    { nome: 'Ranking' },
@@ -151,7 +164,7 @@
 
     // ---- Configurazione di partenza -----------------------------------------------------------
 
-    const ZONA_DEFAULT = { palco: 'a', musica: 'a', identita: 'b', statistiche: 'b', party: 'c', trofei: 'c', medaglie: 'c' };
+    const ZONA_DEFAULT = { palco: 'a', musica: 'a', identita: 'b', statistiche: 'b', party: 'c', trofei: 'c', medaglie: 'c', personalita: 'c' };
 
     // ---- Misure: come ogni layout divide lo schermo intero -------------------------------------
     //
@@ -175,13 +188,13 @@
     const MARGINE_PALCO = 1.3;           // il palco è almeno il 30% più grande del secondo blocco
     const PESO_PALCO_MAX = 80;           // tetto dell'ingrandimento automatico
 
-    const PESO_BLOCCO = { palco: 6, musica: 1.2, identita: 2.4, statistiche: 4, party: 5, trofei: 1.4, medaglie: 1.4 };
+    const PESO_BLOCCO = { palco: 6, musica: 1.2, identita: 2.4, statistiche: 4, party: 5, trofei: 1.4, medaglie: 1.4, personalita: 2.4 };
 
     // Sotto questa misura (pixel di progetto: larghezza, altezza) un blocco non si legge più. È anche il minimo
     // che il ridimensionamento rispetta, e coincide con i min-width / min-height di style-public-card.css.
     const MINIMI = {
         palco: [260, 200], musica: [180, 64], identita: [220, 120], statistiche: [260, 150],
-        party: [300, 120], trofei: [110, 100], medaglie: [130, 100]
+        party: [300, 120], trofei: [110, 100], medaglie: [130, 100], personalita: [210, 190]
     };
 
     const GEOMETRIA = {
@@ -448,8 +461,9 @@
         return {
             v: VERSIONE,
             layout: 'carta',
-            blocchi: ['palco', 'musica', 'identita', 'statistiche', 'party', 'trofei', 'medaglie']
-                .map(id => ({ id, zona: ZONA_DEFAULT[id], on: true })),
+            blocchi: ['palco', 'musica', 'identita', 'statistiche', 'party', 'trofei', 'medaglie', 'personalita']
+                .map(id => ({ id, zona: ZONA_DEFAULT[id], on: !BLOCCHI_SPENTI.includes(id) })),
+            targhette: { titolo: 'identita', personalita: 'identita' },
             sfondo: { colore: 'giocatore', motivo: 'punti', forza: 2, scritta: true, animato: false },
             carta: { tema: 'bianco', ombra: 10, bordo: 4, angoli: 'netti', inclinazione: 'nessuna', font: 'josefin', holo: true },
             statistiche: Object.keys(STAT),
@@ -509,6 +523,9 @@
         const statistiche = [];
         for (const id of comeElenco(grezza.statistiche)) if (STAT[id] && !statistiche.includes(id)) statistiche.push(id);
 
+        const t = grezza.targhette && typeof grezza.targhette === 'object' && !Array.isArray(grezza.targhette) ? grezza.targhette : {};
+        const posti = Object.keys(POSTI_TARGHETTA);
+
         const adesivi = [];
         for (const a of comeElenco(grezza.adesivi)) {
             if (adesivi.length >= MAX_ADESIVI) break;
@@ -526,6 +543,7 @@
             v: VERSIONE,
             layout: unOf(grezza.layout, Object.keys(LAYOUT), D.layout),
             blocchi,
+            targhette: { titolo: unOf(t.titolo, posti, D.targhette.titolo), personalita: unOf(t.personalita, posti, D.targhette.personalita) },
             sfondo: {
                 colore: s.colore === 'giocatore' ? 'giocatore' : esadecimale(s.colore, D.sfondo.colore),
                 motivo: unOf(s.motivo, Object.keys(MOTIVI), D.sfondo.motivo),
@@ -1003,7 +1021,7 @@
 
     return {
         VERSIONE, ZONE, MAX_ADESIVI,
-        LAYOUT, BLOCCHI, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
+        LAYOUT, BLOCCHI, BLOCCHI_SPENTI, TARGHETTE, POSTI_TARGHETTA, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
         predefinita, normalizza, copia, uguali,
         blocchiPerZona, lineeDiZona, sposta, senzaBlocco, affianca, accendi,
         PESO_MIN, PESO_MAX, MARGINE_PALCO, PESO_BLOCCO, MINIMI, GEOMETRIA,

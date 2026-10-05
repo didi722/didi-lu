@@ -136,6 +136,9 @@
 .pe-nota { margin: 0 0 14px; font-size: 0.8rem; font-weight: 700; line-height: 1.35; opacity: 0.75; }
 .pe-nota a { color: #000; font-weight: 900; }
 
+/* le targhette: il nome a sinistra, dove stanno a destra */
+.pe-targhette { display: flex; flex-direction: column; gap: 10px; }
+.pe-targhetta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; gap: 10px; font-size: 0.82rem; }
 .pe-seg { display: flex; border: 3px solid #000; box-shadow: 3px 3px 0 #000; background: #fff; }
 .pe-seg button { flex: 1; cursor: pointer; padding: 8px 6px; background: #fff; border: 0; border-right: 2px solid #000; font-size: 0.78rem; font-weight: 900; }
 .pe-seg button:last-child { border-right: 0; }

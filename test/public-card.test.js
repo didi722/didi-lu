@@ -375,3 +375,74 @@ test('il controllo "i blocchi non ci stanno" guarda anche dentro il corpo: se no
     // il collage ha le tessere storte: più aria sopra il piede
     assert.match(cssCard, /body\.pp-fisso \[data-layout="collage"\] \.pp-piede \{ margin-top: 30px; \}/);
 });
+
+test('personalità: public.html la calcola dai numeri di tutta la lega e la passa alla carta; il blocco e le targhette si costruiscono da lì', () => {
+    // i due moduli si caricano (personalita-grafico.js ha bisogno di personalita.js) prima della carta
+    const ordineScript = ['personalita.js', 'personalita-grafico.js', 'public-card.js'].map(s => html.indexOf(`<script src="${s}"></script>`));
+    assert.ok(ordineScript.every(i => i > 0), 'script mancanti');
+    assert.deepEqual([...ordineScript].sort((a, b) => a - b), ordineScript);
+    assert.match(html, /Personalita\.calcola\(risultato\.players, playerKey\)/);
+    assert.match(html, /await Fiocchi\.carica\(db\)/);
+    assert.match(html, /badgeAllenatore,\s*personalita,/);
+    // senza dati la pagina parte lo stesso (la personalità resta null e il blocco è vuoto)
+    assert.match(html, /let personalita = null;\s*try \{/);
+
+    // la carta: un costruttore per il blocco, e il blocco è "vuoto" (nascosto ai visitatori) finché la personalità non è pronta
+    assert.match(card, /personalita: d => costruisciPersonalita\(d\)/);
+    const blocco = card.slice(card.indexOf('function costruisciPersonalita'), card.indexOf('// ---- Musica'));
+    assert.match(blocco, /p\.stato === 'pronta'/);
+    assert.match(blocco, /stato\.vuoti\.personalita = !pronta;/);
+    assert.match(blocco, /radar\(window\.Personalita\.ASSI, p\.assi\.map\(a => a\.valore\), \{ piccolo: true \}\)/);
+    for (const vietato of ['innerHTML', 'outerHTML', 'insertAdjacentHTML']) assert.ok(!blocco.includes(vietato), vietato);
+    // in modifica un blocco vuoto dice perché (BLOCCHI.personalita.vuoto) e l'editor lo scrive nella lista dei blocchi
+    assert.match(card, /NOMI_BLOCCHI\[b\.id\]\.vuoto \|\| 'nothing to show yet'/);
+    assert.match(editor, /def\.vuoto \|\| 'Nothing to show yet'/);
+});
+
+test('targhette: il titolo e il nome della personalità stanno nel blocco del nome o sul palco, e si rifanno solo quando cambia qualcosa', () => {
+    // i due contenitori ci sono sempre (nascosti se vuoti): la riga del blocco del nome e un angolo della scena
+    assert.match(card, /h\('div', \{ class: 'pp-titolo-riga', hidden: true \}\)/);
+    assert.match(card, /h\('div', \{ class: 'pp-targhette', hidden: true \}\)\)\);/);
+    const targhette = card.slice(card.indexOf('function costruisciTargaPersonalita'), card.indexOf('// ---- Statistiche ---'));
+    assert.match(targhette, /famiglia-\$\{p\.tipo\.id\}/);
+    assert.match(targhette, /posti\[k\] === posto/);
+    assert.match(targhette, /contenitore\.dataset\.firma === firma\) continue;/);
+    assert.match(targhette, /stato\.versioneTarghe/);
+    // la carta le riempie a ogni applica(), e cambiare il titolo nell'editor le rifà anche sul palco
+    assert.match(card, /riempiParty\(\);\s*riempiTarghe\(\);/);
+    assert.match(card, /if \(k === 'title'\) stato\.versioneTarghe \+= 1;/);
+    // il testo del database entra solo come testo
+    for (const vietato of ['innerHTML', 'outerHTML', 'insertAdjacentHTML']) assert.ok(!targhette.includes(vietato), vietato);
+    // lo stile: una targhetta per ogni famiglia di personalità, e le targhette del palco in scala con la scena
+    const { FAMIGLIE } = require('../docs/personalita.js');
+    for (const id of Object.keys(FAMIGLIE)) assert.match(cssCard, new RegExp(`\\.hub-title-badge\\.famiglia-${id} \\{`), id);
+    assert.match(cssCard, /\.pp-targhette \{[^}]*position: absolute;[^}]*top: calc\(10 \* var\(--d\)\);/s);
+    assert.match(cssCard, /\.pp-targhette\[hidden\] \{ display: none; \}/);
+    assert.match(cssCard, /\.pp-titolo-riga\[hidden\] \{ display: none; \}/);
+});
+
+test('editor: la scheda Content ha le targhette (nome, palco, nascoste) e il blocco Personality si accende dalla scheda Blocks', () => {
+    const contenuto = editor.slice(editor.indexOf('function schedaContenuto'), editor.indexOf('// ---- Il pannello'));
+    assert.match(contenuto, /sezione\('Tags'/);
+    assert.match(contenuto, /Object\.entries\(P\.TARGHETTE\)/);
+    assert.match(contenuto, /segmentato\(Object\.entries\(P\.POSTI_TARGHETTA\), cfg\(\)\.targhette\[id\]/);
+    assert.match(contenuto, /c\.targhette\[id\] = posto;/);
+    assert.match(cssEditor, /\.pe-targhetta \{/);
+    // la scheda Blocks elenca tutti i blocchi dello schema: Personality compare da sola
+    assert.match(editor, /per\[z\]\.map\(\(b, i\) => rigaBlocco\(b, i, per\[z\]\.length\)\)/);
+    assert.ok(Object.keys(P.BLOCCHI).includes('personalita'));
+    // le targhette stanno nel campo pagina: l'editor salva la configurazione intera (e non la scrive se è quella di partenza)
+    assert.match(editor, /const daSalvare = P\.copia\(cfg\(\)\);/);
+    assert.match(editor, /pagina: P\.uguali\(daSalvare, P\.predefinita\(\)\) \? null : daSalvare/);
+});
+
+test('blocco Personality: lo stile ha la forma larga (diagramma e testo affiancati), quella stretta e quella a schermo intero', () => {
+    assert.match(cssCard, /\.pp-personalita \{ container-type: inline-size;/);
+    assert.match(cssCard, /@container \(min-width: 460px\) \{\s*\.pp-pers-corpo \{ flex-direction: row;/);
+    assert.match(cssCard, /\.pp-pers-desc \{ display: none;/);
+    assert.match(cssCard, /body\.pp-fisso \.pp-pers-grafico \{ flex: 1 1 0; aspect-ratio: auto; min-height: 100px;/);
+    assert.match(cssCard, /\[data-layout="carta"\] \.pp-zona\[data-zona="c"\] > \.pp-personalita \{ flex: 1 1 260px; \}/);
+    // il disegno ha sempre lo stesso carattere (certi font della carta sono larghissimi) e il nome della personalità segue il suo
+    assert.match(cssCard, /\.pers-radar-et \{[^}]*'Josefin Sans'/);
+    assert.match(cssCard, /\.pp-pers-tipo \{[^}]*font: 900 1rem var\(--pp-font\)/s);
+});

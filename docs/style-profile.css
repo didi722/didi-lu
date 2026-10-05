@@ -1428,15 +1428,15 @@ body.has-alert-banner .top-auth-bar {
    ===================================================== */
 .pf-pers { display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); gap: 26px; align-items: center; }
 .pf-pers-grafico { position: relative; }
-.pf-radar { display: block; width: 100%; height: auto; overflow: visible; }
-.pf-radar-anello { fill: none; stroke: var(--black); stroke-width: 1; opacity: 0.22; }
-.pf-radar-media { fill: none; stroke: var(--black); stroke-width: 2; stroke-dasharray: 5 4; opacity: 0.7; }
-.pf-radar-asse { stroke: var(--black); stroke-width: 1; opacity: 0.25; }
-.pf-radar-area { fill: var(--pers-colore, #31c489); fill-opacity: 0.55; stroke: var(--black); stroke-width: 3; stroke-linejoin: round; }
-.pf-radar-punto { fill: var(--white); stroke: var(--black); stroke-width: 2.5; }
-.pf-radar-et { font: 900 11px 'Josefin Sans', sans-serif; letter-spacing: 0.08em; fill: var(--black); }
-.pf-radar-val { font: 900 14px 'Josefin Sans', sans-serif; letter-spacing: 0; }
-.pf-pers-bloccata .pf-radar { opacity: 0.45; filter: grayscale(1); }
+.pers-radar { display: block; width: 100%; height: auto; overflow: visible; }
+.pers-radar-anello { fill: none; stroke: var(--black); stroke-width: 1; opacity: 0.22; }
+.pers-radar-media { fill: none; stroke: var(--black); stroke-width: 2; stroke-dasharray: 5 4; opacity: 0.7; }
+.pers-radar-asse { stroke: var(--black); stroke-width: 1; opacity: 0.25; }
+.pers-radar-area { fill: var(--pers-colore, #31c489); fill-opacity: 0.55; stroke: var(--black); stroke-width: 3; stroke-linejoin: round; }
+.pers-radar-punto { fill: var(--white); stroke: var(--black); stroke-width: 2.5; }
+.pers-radar-et { font: 900 11px 'Josefin Sans', sans-serif; letter-spacing: 0.08em; fill: var(--black); }
+.pers-radar-val { font: 900 14px 'Josefin Sans', sans-serif; letter-spacing: 0; }
+.pf-pers-bloccata .pers-radar { opacity: 0.45; filter: grayscale(1); }
 .pf-pers-lucchetto {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     display: grid; place-items: center; width: 64px; height: 64px;
@@ -1462,8 +1462,15 @@ body.has-alert-banner .top-auth-bar {
     .pf-pers-grafico { max-width: 360px; margin: 0 auto; width: 100%; }
 }
 
-/* I badge dell'allenatore (badge-allenatore.js) sotto quelli delle serie, nella colonna Badges */
-.ach-badge-extra { margin-top: 6px; }
-.ach-badge-extra .bt-titolo { font-size: 0.8rem; }
-.ach-badge-extra .bt-lista { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 10px; }
-.ach-badge-extra .bt-tip { width: 180px; }
+/* I badge dell'allenatore (badge-allenatore.js) sotto quelli delle serie, nella colonna Badges: stesse schede di quelle delle serie.
+   Il contenitore non conta (display: contents): titolo e schede sono elementi della lista, con il suo stesso distanziamento. */
+.ach-badge-extra { display: contents; }
+.ach-badge-extra .bt-titolo { margin: 8px 0 -4px; font-size: 0.8rem; }
+.ach-badge-extra .bt-nota { margin: 0; }
+/* la medaglia disegnata (quando la PNG non c'è ancora) prende il colore del livello, come sulle schede dei team */
+.ach-badge-card { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
+.ach-badge-card.ach-lv-bronze { --livello: var(--bt-bronzo); }
+.ach-badge-card.ach-lv-silver { --livello: var(--bt-argento); }
+.ach-badge-card.ach-lv-gold { --livello: var(--bt-oro); }
+.ach-badge-card .bt-finto { justify-self: center; align-self: start; }
+.ach-card.locked .bt-finto { filter: grayscale(1); opacity: 0.5; }

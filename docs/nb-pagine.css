@@ -297,7 +297,7 @@ body.pg-players .trainers-grid {
     max-width: 760px;
     margin: 54px 0 0;
     gap: 22px;
-    padding-top: 26px;
+    padding-top: 46px;       /* la tab è inclinata e la prima riga pure: tra le due resta aria in ogni tema */
     counter-reset: posto;
 }
 /* Testata della classifica: tab nera sopra la prima riga */

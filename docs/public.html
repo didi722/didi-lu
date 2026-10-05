@@ -29,6 +29,8 @@
     <script src="fiocchi.js"></script>
     <script src="badge-team.js"></script>
     <script src="badge-allenatore.js"></script>
+    <script src="personalita.js"></script>
+    <script src="personalita-grafico.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="public-card.js"></script>
 </head>
@@ -394,6 +396,15 @@ async function initPublicProfile() {
             }
         } catch (e) { console.warn('Trainer badges not available:', e); }
 
+        // la personalità (scarti dalla media della lega, stessa lettura di tutto il sito): se non c'è abbastanza, il blocco resta vuoto
+        let personalita = null;
+        try {
+            if (window.Personalita && window.Fiocchi) {
+                const risultato = await Fiocchi.carica(db);
+                personalita = Personalita.calcola(risultato.players, playerKey);
+            }
+        } catch (e) { console.warn('Personality not available:', e); }
+
         PublicCard.monta({
             chiave: playerKey,
             nome,
@@ -401,6 +412,7 @@ async function initPublicProfile() {
             info,
             badges: badges || {},
             badgeAllenatore,
+            personalita,
             stagioni: stagioni || {},
             tipi: tipi || {},
             pokemon: pokemon || {},

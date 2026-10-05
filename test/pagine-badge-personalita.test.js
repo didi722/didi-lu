@@ -28,15 +28,20 @@ test('profile.html: la sezione Personality ha i suoi script, nell\'ordine giusto
     assert.match(profilo, /await disegna\(\);\s*disegnaPersonalita\(\);/);
 });
 
-test('profile.html: la personalità si disegna con nodi (DOM e SVG), mai con HTML; il diagramma ha un testo per chi non lo vede', () => {
+test('profile.html: la personalità si disegna con nodi (DOM e SVG), mai con HTML; il diagramma (personalita-grafico.js) ha un testo per chi non lo vede', () => {
     const da = profilo.indexOf('// PERSONALITÀ (personalita.js');
     const a = profilo.indexOf('// AVVIO');
     assert.ok(da > 0 && a > da);
     const blocco = profilo.slice(da, a);
     for (const vietato of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write']) assert.ok(!blocco.includes(vietato), vietato);
-    assert.match(blocco, /createElementNS\(SVG_NS/);
-    assert.match(blocco, /role: 'img'/);
-    assert.match(blocco, /'aria-label'/);
+    // il diagramma lo disegna il modulo condiviso con la pagina pubblica
+    assert.match(blocco, /PersonalitaGrafico\.radar\(assi, valori\)/);
+    assert.match(profilo, /<script src="personalita\.js"><\/script>\s*<script src="personalita-grafico\.js"><\/script>/);
+    const modulo = docs('personalita-grafico.js');
+    for (const vietato of ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write']) assert.ok(!modulo.includes(vietato), vietato);
+    assert.match(modulo, /createElementNS\(SVG_NS/);
+    assert.match(modulo, /role: 'img'/);
+    assert.match(modulo, /'aria-label'/);
     // i tre stati: bloccata, in attesa della lega, pronta
     for (const f of ['disegnaPersonalitaBloccata', 'disegnaPersonalitaInAttesa', 'disegnaPersonalitaPronta']) assert.ok(blocco.includes(`function ${f}(`), f);
     assert.match(blocco, /Personalita\.calcola\(risultato\.players, playerID\)/);
@@ -65,4 +70,23 @@ test('stats: la scheda del giocatore mostra i badge dell\'allenatore, calcolati 
     assert.match(statsJs, /Statistiche\.calcola\(STATO\.dati, \{ stagione: 'all' \}\)/);
     assert.match(statsJs, /BadgeAllenatore\.guadagnati\(BadgeAllenatore\.calcola\(STATO\.globale, p\.id\)\)/);
     assert.match(statsJs, /STATO\.globale = null;/, 'si rifà quando i dati si ricaricano');
+});
+
+test('profile.html: i badge dell\'allenatore hanno le stesse schede dei badge delle serie (immagine, livelli, numeri, barra, cosa manca)', () => {
+    const scheda = profilo.slice(profilo.indexOf('function achSchedaBadgeAllenatore'), profilo.indexOf('function renderBadgeAchievements'));
+    assert.match(scheda, /BadgeAllenatore\.scheda\(b\)/);
+    // le stesse classi delle schede delle serie
+    for (const classe of ['ach-card ach-badge-card', 'ach-badge-img', 'ach-card-top', 'ach-card-name', 'ach-card-desc', 'ach-tiers', 'ach-tier', 'ach-stats-line', 'ach-missing']) {
+        assert.ok(scheda.includes(classe), classe);
+    }
+    assert.match(scheda, /\$\{d\.bloccato \? 'locked' : ''\}/);
+    assert.match(scheda, /onerror="BadgeTeam\.immagineMancante\(this,/);
+    // le schede sostituiscono lo scaffale a tessere
+    assert.ok(!/htmlScaffale/.test(profilo), 'niente più tessere nel profilo');
+    assert.match(profilo, /badge\.map\(achSchedaBadgeAllenatore\)\.join\(''\)/);
+    // la barra sa del suffisso % e della partenza (l'Elo parte da 1000)
+    assert.match(profilo, /function achBarra\(etichetta, valore, obiettivo, \{ suffisso = '', partenza = 0 \} = \{\}\)/);
+    const css = docs('style-profile.css');
+    assert.match(css, /\.ach-badge-extra \{ display: contents; \}/);
+    assert.match(css, /\.ach-badge-card\.ach-lv-gold \{ --livello: var\(--bt-oro\); \}/);
 });
