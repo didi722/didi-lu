@@ -292,7 +292,7 @@
     text-transform: uppercase;
     text-decoration: none;
 }
-.sfida-riprendi:hover { background: var(--nb-ink, #000); color: #fff; }
+.sfida-riprendi:hover { background: var(--nb-ink, #000); color: #fff; box-shadow: var(--nb-sh-tag, none); }
 .sfida-riprendi:focus-visible { outline: 3px solid #ffbd44; outline-offset: 3px; }
 .sfida-azioni { display: flex; gap: 14px; margin-top: 22px; }
 .sfida-azioni .btn-save, .sfida-azioni .btn-cancel { font-size: 1.15rem; }

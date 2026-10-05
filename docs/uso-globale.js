@@ -8,12 +8,19 @@
 // (test/uso-globale.test.js).
 //
 // Da dove vengono i numeri
-//   - I team sono quelli ISCRITTI alle stagioni (seasons/{id}/teams_iscritti/{formato}/{giocatore}/datiTeams): sono i team che
-//     si giocano davvero, fotografati con tutti i loro set (strumento, abilità, natura, mosse...) al momento dell'iscrizione.
-//     I team solo nel Box (prove, team della CPU...) non contano.
-//   - "Uso" = parte dei team iscritti che contengono quel Pokémon. Lo stesso team iscritto in due stagioni conta due volte:
+//   - I team sono quelli ISCRITTI alle stagioni (seasons/{id}/teams_iscritti/{formato}/{giocatore}/datiTeams: i team fotografati con
+//     tutti i loro set — strumento, abilità, natura, mosse... — al momento dell'iscrizione) che hanno GIOCATO almeno un set ufficiale
+//     di quella stagione, in quel formato: un match salvato in seasons/{id}/showdowns/*/matches con quel team e almeno un set giocato.
+//     Prima del primo set un team non conta: altrimenti l'uso rivelerebbe agli avversari i team (e i loro set) che si sono iscritti
+//     ma non hanno ancora giocato. Contano solo ciò che è già stato visto in campo.
+//     I team solo nel Box (prove, team della CPU...) e quelli iscritti ma mai giocati non contano.
+//   - "Uso" = parte dei team che hanno giocato e contengono quel Pokémon. Lo stesso team giocato in due stagioni conta due volte:
 //     è stato giocato due volte. Un Pokémon doppio nello stesso team conta una volta sola per l'uso, ma ogni set conta per le mosse.
 //   - Le mosse, gli strumenti, le abilità e le nature sono percentuali dei set di QUEL Pokémon (non dei team).
+//   - Nelle stagioni a SCHEDA CHIUSA (seasons/{id}/info/open_sheet === false) gli avversari vedono solo i 6 Pokémon dei team che
+//     hanno affrontato, mai strumenti, mosse e abilità (team-visibili.js): qui i Pokémon di quei team contano per l'uso e per i
+//     compagni di squadra, ma i loro set no. `setVisibili` è il numero di set che contano per le mosse, gli strumenti, le abilità e
+//     le nature (le percentuali sono su quelli), `istanze` tutti i Pokémon.
 //   - Come nel resto del sito, "tutte le stagioni" esclude la beta (sbeta); la si può comunque scegliere.
 //   - Le battaglie (set giocati, vinti, KO) arrivano da Statistiche.calcola, che si passa già calcolata (`battaglia`: l'elenco
 //     `pokemon` del suo risultato, con lo stesso filtro): così i due conti guardano lo stesso periodo e lo stesso formato.
@@ -63,8 +70,34 @@
         };
     }
 
-    // I team iscritti di tutte le stagioni nel perimetro: [{ stagione, formato, giocatore, team: {id, nome, pokemon[]} }]
-    function iscrizioni(seasons, players, stagioneScelta, formatoScelto) {
+    // Il nome di un team, com'è nei match e nelle iscrizioni (a volte è { valore })
+    const nomeTeam = n => pulisci(n && typeof n === 'object' ? n.valore : n).toLowerCase();
+    const chiaveGiocata = (stagione, formato, giocatore, team) => `${stagione}|${idDi(formato)}|${idDi(giocatore)}|${nomeTeam(team)}`;
+
+    // I team che hanno giocato almeno un set ufficiale: un match salvato (con il punteggio) con almeno un set giocato.
+    // Insieme di chiavi "stagione|formato|giocatore|team". Un match senza formato vale per ogni formato del giocatore.
+    function teamGiocati(seasons) {
+        const giocati = new Set();
+        for (const [sid, stagione] of Object.entries(seasons || {})) {
+            for (const sd of Object.values(stagione?.showdowns || {})) {
+                const formatoSd = sd?.info?.categoria;
+                for (const m of Object.values(sd?.matches || {})) {
+                    if (!m || m.p1score == null || m.p2score == null) continue;          // match non salvato
+                    if (num(m.p1score) + num(m.p2score) < 1) continue;                    // nessun set giocato
+                    const formato = m.categoria || formatoSd || '';
+                    for (const [chi, team] of [[m.player1Id, m.team1], [m.player2Id, m.team2]]) {
+                        if (idDi(chi) && nomeTeam(team)) giocati.add(chiaveGiocata(sid, formato, chi, team));
+                    }
+                }
+            }
+        }
+        return giocati;
+    }
+    const haGiocato = (giocati, stagione, formato, giocatore, team) =>
+        giocati.has(chiaveGiocata(stagione, formato, giocatore, team)) || giocati.has(chiaveGiocata(stagione, '', giocatore, team));
+
+    // I team iscritti nel perimetro che hanno giocato: [{ stagione, formato, giocatore, team: {id, nome, pokemon[]} }]
+    function iscrizioni(seasons, players, stagioneScelta, formatoScelto, giocati) {
         const out = [];
         for (const [sid, stagione] of Object.entries(seasons || {})) {
             if (stagioneScelta === 'all' ? sid === BETA : sid !== stagioneScelta) continue;
@@ -78,8 +111,9 @@
                         elenco = valori(iscr?.teamIds).map(id => suoi[id] ? { id, nome: suoi[id].nome, pokemon: suoi[id].pokemon } : null).filter(Boolean);
                     }
                     for (const t of elenco) {
+                        if (!haGiocato(giocati, sid, formato, giocatore, t.nome)) continue;   // mai sceso in campo: non si mostra
                         const pokemon = valori(t.pokemon).filter(p => p && typeof p === 'object' && pulisci(p.nome));
-                        if (pokemon.length) out.push({ stagione: sid, formato, giocatore: idDi(giocatore), team: { id: t.id, nome: t.nome, pokemon } });
+                        if (pokemon.length) out.push({ stagione: sid, formato, giocatore: idDi(giocatore), schedaAperta: stagione?.info?.open_sheet !== false, team: { id: t.id, nome: t.nome, pokemon } });
                     }
                 }
             }
@@ -98,15 +132,13 @@
         const stagioneScelta = filtro.stagione && filtro.stagione !== 'all' ? String(filtro.stagione) : 'all';
         const formatoScelto = filtro.formato && filtro.formato !== 'all' ? String(filtro.formato) : 'all';
 
-        // i formati che esistono nella stagione scelta (anche senza team), per il selettore
-        const formati = new Set();
-        for (const [sid, st] of Object.entries(seasons)) {
-            if (stagioneScelta === 'all' ? sid === BETA : sid !== stagioneScelta) continue;
-            for (const [f, g] of Object.entries(st?.teams_iscritti || {})) if (Object.keys(g || {}).length) formati.add(f);
-        }
-
-        const tutte = iscrizioni(seasons, players, stagioneScelta, 'all');
+        // solo i team che hanno già giocato: gli altri (iscritti ma non ancora scesi in campo) non si vedono
+        const giocati = teamGiocati(seasons);
+        const tutte = iscrizioni(seasons, players, stagioneScelta, 'all', giocati);
         const nelPerimetro = formatoScelto === 'all' ? tutte : tutte.filter(i => i.formato === formatoScelto);
+
+        // i formati della stagione scelta che hanno almeno un team giocato, per il selettore
+        const formati = new Set(tutte.map(i => i.formato));
 
         const teamPerFormato = {};
         for (const i of tutte) teamPerFormato[i.formato] = (teamPerFormato[i.formato] || 0) + 1;
@@ -115,7 +147,7 @@
         const scheda = (id, nome) => {
             if (!specie.has(id)) {
                 specie.set(id, {
-                    specieId: id, nome, team: 0, istanze: 0, giocatori: new Set(),
+                    specieId: id, nome, team: 0, istanze: 0, setVisibili: 0, giocatori: new Set(),
                     mosse: conteggio(), strumenti: conteggio(), abilita: conteggio(), nature: conteggio(), tera: conteggio(),
                     compagni: new Map(), perFormato: {}
                 });
@@ -131,6 +163,8 @@
                 if (!id) continue;
                 const s = scheda(id, n);
                 s.istanze++;
+                if (!i.schedaAperta) continue;                       // scheda chiusa: si sa che c'è, non cosa porta
+                s.setVisibili++;
                 valori(p.mosse).forEach(m => s.mosse.aggiungi(m));
                 s.strumenti.aggiungi(p.strumento);
                 s.abilita.aggiungi(p.abilita);
@@ -172,9 +206,9 @@
             return {
                 specieId: s.specieId, nome: s.nome,
                 team: s.team, perc: perc(s.team, totaleTeam),
-                giocatori: s.giocatori.size, istanze: s.istanze,
-                mosse: s.mosse.top(s.istanze), strumenti: s.strumenti.top(s.istanze, 8), abilita: s.abilita.top(s.istanze, 4),
-                nature: s.nature.top(s.istanze, 6), tera: s.tera.top(s.istanze, 6),
+                giocatori: s.giocatori.size, istanze: s.istanze, setVisibili: s.setVisibili,
+                mosse: s.mosse.top(s.setVisibili), strumenti: s.strumenti.top(s.setVisibili, 8), abilita: s.abilita.top(s.setVisibili, 4),
+                nature: s.nature.top(s.setVisibili, 6), tera: s.tera.top(s.setVisibili, 6),
                 compagni: [...s.compagni.values()].sort((a, c) => c.n - a.n || a.nome.localeCompare(c.nome)).slice(0, COMPAGNI_MAX)
                     .map(c => ({ ...c, perc: perc(c.n, s.team) })),
                 formati: Object.entries(s.perFormato).sort((a, c) => c[1] - a[1] || a[0].localeCompare(c[0]))

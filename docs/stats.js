@@ -242,11 +242,11 @@
             { id: 'nome', titolo: 'Name', val: m => m.specie.toLowerCase(), dir: 1, testo: true },
             { id: 'player', titolo: 'Trainer', val: m => m.playerNome.toLowerCase(), dir: 1, testo: true }
         ],
-        // uso globale delle specie: dai team iscritti alle stagioni (uso-globale.js)
+        // uso globale delle specie: dai team iscritti che hanno giocato almeno un set ufficiale (uso-globale.js)
         usage: () => [
-            { id: 'uso', titolo: 'Usage', val: x => x.perc, dir: -1, tip: 'Share of the registered teams that include it',
+            { id: 'uso', titolo: 'Usage', val: x => x.perc, dir: -1, tip: 'Share of the teams that have played at least one official set and include it',
                 html: x => numero(x.perc, pct), sotto: x => barra(x.perc) },
-            { id: 'team', titolo: 'Teams', val: x => x.team, dir: -1, tip: 'Registered teams that include it (the same team in two seasons counts twice)',
+            { id: 'team', titolo: 'Teams', val: x => x.team, dir: -1, tip: 'Teams that include it, among those that have played at least one official set (the same team in two seasons counts twice)',
                 html: x => numero(x.team) },
             { id: 'giocatori', titolo: 'Trainers', val: x => x.giocatori, dir: -1, tip: 'Different trainers who use it',
                 html: x => numero(x.giocatori) },
@@ -422,7 +422,7 @@
     function messaggioVuoto() {
         const q = STATO.cerca.trim();
         if (q) return `<p class="vuoto">Nothing matches “${esc(q)}”.<small>Try a trainer, team or Pokémon name.</small></p>`;
-        if (STATO.tab === 'usage') return '<p class="vuoto">No registered teams here yet.<small>Usage comes from the teams trainers register to the seasons.</small></p>';
+        if (STATO.tab === 'usage') return '<p class="vuoto">No teams have played here yet.<small>Usage counts only the teams that have played at least one official set of a season.</small></p>';
         const beta = STATO.r.stagioni.find(s => s.beta && s.partite > 0);
         if (STATO.stagione === 'all' && beta) {
             return `<p class="vuoto">No matches in the global stats yet.<small>The Beta season is not counted here: pick <b>${esc(beta.nome)}</b> from the Season list to see its numbers.</small></p>`;
@@ -441,7 +441,7 @@
             const u = STATO.uso.totali;
             $('stats-riepilogo').innerHTML = [
                 `<span class="chip chip-nero">${esc(nomeStagione())}${STATO.formato !== 'all' ? ` · ${esc(STATO.formato)}` : ''}</span>`,
-                `<span class="chip">${fmt(u.team)} registered team${u.team === 1 ? '' : 's'}</span>`,
+                `<span class="chip">${fmt(u.team)} team${u.team === 1 ? '' : 's'} played</span>`,
                 `<span class="chip">${fmt(u.giocatori)} trainer${u.giocatori === 1 ? '' : 's'}</span>`,
                 `<span class="chip">${fmt(u.specie)} different Pokémon</span>`
             ].join('');
@@ -512,7 +512,7 @@
         // Un filtro che non esiste (indirizzo vecchio, formato sparito) torna a "tutto"
         if (STATO.stagione !== 'all' && !r.stagioni.some(s => s.id === STATO.stagione)) { STATO.stagione = 'all'; r = calcola(); }
         let uso = usoDi(r);
-        // i formati: quelli con partite e quelli con team iscritti (per l'uso)
+        // i formati: quelli con partite e quelli con team che hanno giocato (per l'uso)
         const formati = [...new Set([...r.formati, ...uso.formati])].sort((a, b) => a.localeCompare(b));
         if (STATO.formato !== 'all' && !formati.includes(STATO.formato)) { STATO.formato = 'all'; r = calcola(); uso = usoDi(r); }
         r.formati = formati;
@@ -701,22 +701,24 @@
         const chip = chipStagione() + (STATO.formato !== 'all' ? tagFormato(STATO.formato) : '')
             + `<span class="chip">${fmt(x.team)} team${x.team === 1 ? '' : 's'}</span>`;
         const b = x.battaglia;
+        // le sue schede sono tutte di stagioni a scheda chiusa: gli avversari non vedono nemmeno là cosa porta, quindi qui nemmeno
+        const vuotoSet = testo => (x.istanze && !x.setVisibili ? 'Hidden: closed sheet season.' : testo);
         return `${testaScheda(x.nome, sprite(x.nome, 'scheda-grande'), chip)}
             ${sezione('Usage', griglia([
-                tessera('Usage', pct(x.perc), `of ${fmt(u ? u.team : 0)} registered teams`),
-                tessera('Teams', fmt(x.team), x.team === 1 ? 'registered team' : 'registered teams'),
+                tessera('Usage', pct(x.perc), `of ${fmt(u ? u.team : 0)} team${u && u.team === 1 ? '' : 's'} that played`),
+                tessera('Teams', fmt(x.team), x.team === 1 ? 'team that played' : 'teams that played'),
                 tessera('Trainers', fmt(x.giocatori), x.giocatori === 1 ? 'trainer uses it' : 'different trainers'),
-                tessera('Sets', fmt(x.istanze), 'with its moves, item and ability')
+                tessera('Sets', fmt(x.setVisibili), x.setVisibili === x.istanze ? 'with its moves, item and ability' : `of ${fmt(x.istanze)}: closed sheet seasons hide the rest`)
             ]))}
             ${sezione('In battle', b ? griglia([
                 tessera('Brought', fmt(b.portato), `to ${fmt(b.portato)} of ${fmt(b.setConDati)} sets of its teams`),
                 tessera('Win %', pct(b.percVinti), `${fmt(b.vinti)} won · ${fmt(b.persi)} lost`),
                 tessera('KOs per set', fmt(b.koPerSet, 1), `${fmt(b.koFatti)} KOs in all`)
             ]) : '<p class="vuoto piccolo">No battle data yet: only sets played on the site have it.</p>')}
-            ${sezione('Moves', righeUso(x.mosse, 'No moves recorded.'))}
-            ${sezione('Items', righeUso(x.strumenti, 'No items recorded.'))}
-            ${sezione('Abilities', righeUso(x.abilita, 'No abilities recorded.'))}
-            ${sezione('Natures', righeUso(x.nature, 'No natures recorded.'))}
+            ${sezione('Moves', righeUso(x.mosse, vuotoSet('No moves recorded.')))}
+            ${sezione('Items', righeUso(x.strumenti, vuotoSet('No items recorded.')))}
+            ${sezione('Abilities', righeUso(x.abilita, vuotoSet('No abilities recorded.')))}
+            ${sezione('Natures', righeUso(x.nature, vuotoSet('No natures recorded.')))}
             ${x.tera.length ? sezione('Tera types', righeUso(x.tera, '')) : ''}
             ${x.compagni.length ? sezione('Teammates', `<div class="scheda-lista">${x.compagni.map(c => `
                 <button type="button" class="voce" data-apri="usage" data-chiave="${esc(c.specieId)}">

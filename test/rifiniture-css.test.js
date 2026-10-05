@@ -91,3 +91,150 @@ test('Team Builder: sugli schermi bassi (PC) si stringe quello che sta intorno e
     // l'aria intorno alla finestra sì, ma non fino a far uscire il tag dallo schermo
     for (const m of tutto.matchAll(/\.tb-overlay\s*\{[^}]*padding-top:\s*(\d+)px/g)) assert.ok(Number(m[1]) >= 12, `padding-top ${m[1]}px`);
 });
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Tag e blocchi neri: mai un'ombra nera piena (nero su nero si fonde: la figura si ingrossa e basta)
+// ---------------------------------------------------------------------------------------------------------------------------
+const temi = docs('temi.css');
+const nbPagine2 = docs('nb-pagine.css');
+
+/** Il valore di una proprietà (l'ultima dichiarazione) nel corpo di una regola, senza !important */
+const valore = (corpo, proprieta) => {
+    const m = [...corpo.matchAll(new RegExp(`(?:^|[;\\s])${proprieta}\\s*:\\s*([^;]+)`, 'g'))].pop();
+    return m ? m[1].replace(/\s*!important\s*$/i, '').trim() : null;
+};
+
+test('temi: le ombre dei blocchi scuri sono grigie e trasparenti, quelle delle etichette piccole sono spente nei temi con ombra piena', () => {
+    const tema = nome => {
+        const m = temi.match(new RegExp(`\\[data-tema="${nome}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`));
+        assert.ok(m, `tema ${nome}`);
+        return m[1];
+    };
+    const neubrutal = temi.match(/:root,\s*\[data-tema="neubrutal"\]\s*\{([\s\S]*?)\n\}/);
+    assert.ok(neubrutal, 'tema neubrutal (predefinito)');
+    assert.equal(valore(neubrutal[1], '--nb-sh-tag'), 'none');
+    assert.equal(valore(tema('sticker'), '--nb-sh-tag'), 'none');
+    // nei temi con ombra sfumata o al neon quella del tema si vede: resta
+    assert.equal(valore(tema('morbido'), '--nb-sh-tag'), 'var(--nb-sh-s)');
+    assert.equal(valore(tema('arcade'), '--nb-sh-tag'), 'var(--nb-sh-s)');
+    // il colore dell'ombra degli adesivi scuri non è mai pieno: grigio trasparente (o il neon di Arcade)
+    for (const [nome, corpo] of [['neubrutal', neubrutal[1]], ['sticker', tema('sticker')], ['morbido', tema('morbido')]]) {
+        const col = valore(corpo, '--nb-shcol-titolo');
+        const a = col && col.match(/rgba\([^)]*,\s*(0?\.\d+)\s*\)/);
+        assert.ok(a && Number(a[1]) < 0.55, `${nome}: --nb-shcol-titolo ${col}`);
+    }
+    assert.equal(valore(tema('arcade'), '--nb-shcol-titolo'), 'var(--nb-neon)');
+    // le tre ombre "scure" usano quel colore, con gli stessi spostamenti di quelle piene
+    for (const [nome, px, blur] of [['s', 3, 8], ['4', 4, 10], ['m', 6, 16]]) {
+        const v = temi.match(new RegExp(`--nb-sh-${nome}-scuro:\\s*([^;]+);`));
+        assert.ok(v, `--nb-sh-${nome}-scuro`);
+        assert.match(v[1], new RegExp(`calc\\(${px}px \\* var\\(--nb-kx\\)\\) calc\\(${px}px \\* var\\(--nb-ky\\)\\) calc\\(${blur}px \\* var\\(--nb-bk\\)\\) var\\(--nb-shcol-titolo\\)`));
+    }
+});
+
+test('occorrenze sistemate: ogni blocco o tag scuro ha la sua ombra (grigia trasparente o nessuna)', () => {
+    const css = { 'nb-pagine.css': nbPagine2, 'temi.css': temi, 'showdown.css': docs('showdown.css'), 'style-formats.css': docs('style-formats.css'),
+        'style-box.css': stileBox, 'style-profile.css': docs('style-profile.css'), 'style-sfide.css': docs('style-sfide.css') };
+    const ombra = (file, selettore) => valore(regola(css[file], selettore), 'box-shadow');
+    // blocchi con un contenuto (nomi delle stagioni, conto alla rovescia, cifre, posizione e punti in classifica): grigio trasparente
+    assert.equal(ombra('nb-pagine.css', 'body.pg-index .season-card h3'), 'var(--nb-sh-s-scuro)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-index .timer-display'), 'var(--nb-sh-s-scuro)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-hub .countdown-label'), 'var(--nb-sh-m-scuro)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-hub .countdown-digits'), 'var(--nb-sh-m-scuro)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-players .trainer-rank-text'), 'var(--nb-sh-s-scuro)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-players .trainer-points-box'), 'var(--nb-sh-s-scuro)');
+    assert.match(ombra('showdown.css', '#sd-modal-overlay .sd-serie'), /^var\(--nb-sh-s-scuro,/);
+    assert.match(ombra('style-box.css', '.tb-dropdown-wrapper:hover .tb-dropdown-trigger,\n.tb-dropdown-wrapper:focus-within .tb-dropdown-trigger'), /^var\(--nb-sh-4-scuro,/);
+    assert.match(temi, /\.menu-item\[aria-current="page"\]\s*\{[^}]*box-shadow:\s*var\(--nb-sh-s-scuro\)/);
+    // etichette piccole (tab, filtro attivo, titolo del riquadro): nessuna ombra nei temi con ombra piena
+    assert.equal(ombra('nb-pagine.css', 'body.pg-index .season-card::before'), 'var(--nb-sh-tag)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-hub #registration-column::before,\nbody.pg-hub .hub-column-right::before'), 'var(--nb-sh-tag)');
+    assert.equal(ombra('nb-pagine.css', 'body.pg-players .trainers-grid::before'), 'var(--nb-sh-tag)');
+    assert.equal(ombra('style-formats.css', '.mandatory-title'), 'var(--nb-sh-tag, none)');
+    assert.match(css['style-profile.css'], /\.pf-filtro\.attivo\s*\{[^}]*box-shadow:\s*var\(--nb-sh-tag, none\)/);
+    assert.match(css['style-sfide.css'], /\.sfida-riprendi:hover\s*\{[^}]*box-shadow:\s*var\(--nb-sh-tag, none\)/);
+    // le tab colorate della card stagione (LIVE, SIGN-UPS OPEN, COMING SOON) tengono l'ombra piena: non sono nere
+    for (const stato of ['playing', 'open', 'empty']) {
+        assert.match(nbPagine2, new RegExp(`\\.season-card\\.status-${stato}::before\\s*\\{[^}]*box-shadow:\\s*var\\(--nb-sh-s\\)`), stato);
+    }
+});
+
+test('il badge del risultato di uno showdown senza vincitore non è nero (testo nero su nero) e il pareggio ha l\'ombra grigia', () => {
+    const matches = docs('matches.html');
+    assert.match(matches, /const COLORE_NEUTRO = "var\(--nb-giallo, #ffbd44\)";/);
+    assert.doesNotMatch(matches, /let winnerColor = "#000"/);
+    assert.match(matches, /ombraPunteggio = 'var\(--nb-sh-4-scuro, 4px 4px 0 rgba\(0, 0, 0, \.3\)\)'/);
+    assert.match(matches, /box-shadow: \$\{ombraPunteggio\};/);
+});
+
+// ---- la rete di sicurezza: nessuna regola con sfondo nero e ombra nera piena ----
+function regoleCss(css) {
+    const senza = css.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+    const out = [], pila = [];
+    let buf = '', riga = 1;
+    for (const c of senza) {
+        if (c === '\n') riga++;
+        if (c === '{') { pila.push({ sel: buf.trim(), riga }); buf = ''; }
+        else if (c === '}') { const r = pila.pop(); if (r) out.push({ ...r, corpo: buf }); buf = ''; }
+        else buf += c;
+    }
+    return out.filter(r => !r.sel.startsWith('@') && r.corpo.trim());
+}
+// sfondo scuro: il nero, l'inchiostro del tema (--nb-ink, --dt-ink, --inchiostro...) o il fondo delle tab (--nb-tab-bg)
+const SFONDO_SCURO = /^(#000(?:000)?\b|#1a1a1a\b|#1e1e1e\b|#111\b|black\b|var\(--(?:nb-ink|dt-ink|inchiostro|nero|black|nb-tab-bg)\b)/i;
+// un'ombra con spostamento che dietro un blocco scuro si legge come nero pieno
+function ombraNeraPiena(valoreOmbra) {
+    const pezzi = []; let prof = 0, cur = '';
+    for (const ch of valoreOmbra) {
+        if (ch === '(') prof++; if (ch === ')') prof--;
+        if (ch === ',' && prof === 0) { pezzi.push(cur.trim()); cur = ''; } else cur += ch;
+    }
+    if (cur.trim()) pezzi.push(cur.trim());
+    return pezzi.some(o => {
+        if (/^none$/i.test(o) || /\binset\b/i.test(o)) return false;
+        if (/^0(?:px)?\s+0(?:px)?\s/.test(o)) return false;                       // senza spostamento: un alone, non un'ombra
+        if (/--nb-sh-(?:s|4|m|8|l)-scuro|--nb-sh-tag|--nb-shcol-titolo|--nb-sh-titolo|--dt-sh-titolo/.test(o)) return false;
+        const rgba = o.match(/rgba\(\s*0\s*,\s*0\s*,\s*0\s*(?:,\s*([\d.]+)\s*)?\)/);
+        if (rgba) return rgba[1] == null || Number(rgba[1]) >= 0.55;                // nero: pieno se l'alfa è alto
+        return /#000(?:000)?\b|\bblack\b|var\(--(?:nb-ink|dt-ink|inchiostro|nero|black|nb-shcol|nb-sh-(?:s|4|m|8|l))\b/i.test(o);
+    });
+}
+// eccezioni note: la regola, e perché va bene
+const ECCEZIONI = {
+    'style-matches.css .news-ticker': 'regola morta (non c\'è nessun elemento): ha un filo giallo di 5px sotto, tra il nero e l\'ombra'
+};
+
+test('nessuna regola del sito dà a un blocco nero un\'ombra nera piena (nero su nero)', () => {
+    const colpevoli = [];
+    for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.css'))) {
+        for (const { sel, riga, corpo } of regoleCss(docs(f))) {
+            const sfondo = valore(corpo, 'background') || valore(corpo, 'background-color');
+            const ombra = valore(corpo, 'box-shadow');
+            if (!sfondo || !ombra || !SFONDO_SCURO.test(sfondo) || !ombraNeraPiena(ombra)) continue;
+            const chiave = `${f} ${sel.replace(/\s+/g, ' ')}`;
+            if (ECCEZIONI[chiave]) continue;
+            colpevoli.push(`${f}:${riga} ${sel.replace(/\s+/g, ' ')}  →  ${ombra}`);
+        }
+    }
+    assert.deepEqual(colpevoli, [], `blocchi scuri con ombra nera piena:\n${colpevoli.join('\n')}`);
+});
+
+test('la rete di sicurezza riconosce davvero il nero su nero (e lascia stare il resto)', () => {
+    assert.ok(ombraNeraPiena('var(--nb-sh-s)'));
+    assert.ok(ombraNeraPiena('3px 3px 0 #000'));
+    assert.ok(ombraNeraPiena('calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000)'));
+    assert.ok(ombraNeraPiena('4px 4px 0 var(--inchiostro)'));
+    assert.ok(ombraNeraPiena('5px 5px 0 rgba(0, 0, 0, .8)'));
+    assert.ok(ombraNeraPiena('0 4px 0 #000'));
+    assert.ok(!ombraNeraPiena('var(--nb-sh-s-scuro)'));
+    assert.ok(!ombraNeraPiena('var(--nb-sh-tag, none)'));
+    assert.ok(!ombraNeraPiena('none'));
+    assert.ok(!ombraNeraPiena('4px 4px 0 rgba(0, 0, 0, .3)'));
+    assert.ok(!ombraNeraPiena('4px 4px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3))'));
+    assert.ok(!ombraNeraPiena('4px 4px 0 white'));
+    assert.ok(!ombraNeraPiena('3px 3px 0 var(--giallo)'));
+    assert.ok(!ombraNeraPiena('0 0 30px rgba(0, 0, 0, 1)'), 'un alone senza spostamento');
+    assert.ok(!ombraNeraPiena('inset 0 -4px 0 #000'));
+    assert.ok(SFONDO_SCURO.test('var(--nb-ink, #000)') && SFONDO_SCURO.test('#000') && SFONDO_SCURO.test('var(--nb-tab-bg)'));
+    assert.ok(!SFONDO_SCURO.test('#09ca49') && !SFONDO_SCURO.test('#fff') && !SFONDO_SCURO.test('var(--nb-giallo)'));
+});

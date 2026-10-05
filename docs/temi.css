@@ -32,7 +32,8 @@
     --nb-ky: 1;
     --nb-bk: 0;
     --nb-shcol: var(--nb-ink);
-    --nb-shcol-titolo: rgba(0, 0, 0, .3);          /* ombra dell'adesivo del titolo */
+    --nb-shcol-titolo: rgba(0, 0, 0, .3);          /* ombra degli adesivi scuri: titoli, contatori, cifre (grigia, trasparente) */
+    --nb-sh-tag: none;                 /* ombra delle etichette scure piccole (tab, filtri attivi): nero su nero non si vede, niente */
     --nb-rot: 1;                       /* moltiplicatore di tutte le rotazioni (0 = dritto) */
 
     --nb-font-titoli: 'Josefin Sans', sans-serif;
@@ -53,6 +54,7 @@
     --nb-kx: 1.35;
     --nb-ky: 1.35;
     --nb-shcol-titolo: rgba(0, 0, 0, .35);
+    --nb-sh-tag: none;
     --nb-rot: 2.6;
     --nb-font-titoli: 'Titan One', 'Josefin Sans', sans-serif;
     --nb-font-testo: 'Fredoka', 'Montserrat', sans-serif;
@@ -78,6 +80,7 @@
     --nb-bk: 1;
     --nb-shcol: rgba(43, 42, 76, .2);
     --nb-shcol-titolo: rgba(43, 42, 76, .26);
+    --nb-sh-tag: var(--nb-sh-s);       /* l'ombra del tema è già sfumata e chiara: si vede */
     --nb-rot: .2;
     --nb-font-titoli: 'Nunito', 'Josefin Sans', sans-serif;
     --nb-font-testo: 'Nunito', 'Montserrat', sans-serif;
@@ -98,6 +101,7 @@
     --nb-giallo: #ffe45c;
     --nb-shcol: var(--nb-neon);
     --nb-shcol-titolo: var(--nb-neon);
+    --nb-sh-tag: var(--nb-sh-s);       /* al neon: si vede */
     --nb-rot: 0;
     --nb-font-titoli: 'Chakra Petch', 'Josefin Sans', sans-serif;
     --nb-font-testo: 'Inconsolata', 'Montserrat', monospace;
@@ -116,6 +120,12 @@
     --nb-sh-8: calc(8px * var(--nb-kx)) calc(8px * var(--nb-ky)) calc(22px * var(--nb-bk)) var(--nb-shcol);
     --nb-sh-l: calc(9px * var(--nb-kx)) calc(9px * var(--nb-ky)) calc(26px * var(--nb-bk)) var(--nb-shcol);
     --nb-sh-titolo: calc(8px * var(--nb-kx)) calc(8px * var(--nb-ky)) calc(18px * var(--nb-bk)) var(--nb-shcol-titolo);
+    /* Blocchi SCURI (sfondo nero): un'ombra nera piena dietro un blocco nero non si legge come ombra, lo ingrossa e basta.
+       Gli stessi spostamenti delle ombre piene, ma nel colore dell'adesivo del titolo (grigio trasparente; sfumata nel tema
+       Soft, al neon in Arcade). Per le etichette scure piccole c'è --nb-sh-tag, definita in ogni tema. */
+    --nb-sh-s-scuro: calc(3px * var(--nb-kx)) calc(3px * var(--nb-ky)) calc(8px * var(--nb-bk)) var(--nb-shcol-titolo);
+    --nb-sh-4-scuro: calc(4px * var(--nb-kx)) calc(4px * var(--nb-ky)) calc(10px * var(--nb-bk)) var(--nb-shcol-titolo);
+    --nb-sh-m-scuro: calc(6px * var(--nb-kx)) calc(6px * var(--nb-ky)) calc(16px * var(--nb-bk)) var(--nb-shcol-titolo);
 }
 
 /* =====================================================================
@@ -412,7 +422,7 @@ body.nb .top-bar > .music-btn.muted .onda { display: none; }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:hover::after,
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:focus-visible::after { opacity: 1; transform: none; }
 /* la pagina in cui si è */
-:is(body.nb, body.pg-public) .user-dropdown .menu-item[aria-current="page"] { background: var(--nb-ink) !important; color: #fff !important; }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item[aria-current="page"] { background: var(--nb-ink) !important; color: #fff !important; box-shadow: var(--nb-sh-s-scuro); }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item[aria-current="page"]::after { content: "●"; opacity: 1; transform: none; font-size: .7rem; color: var(--mi); }
 /* uscita */
 :is(body.nb, body.pg-public) .user-dropdown .logout-btn { --mi: #fff; background: var(--nb-rosso) !important; color: #fff !important; margin-top: 16px; transform: rotate(calc(var(--nb-rot) * -1deg)); }

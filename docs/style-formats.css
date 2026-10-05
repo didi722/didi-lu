@@ -1186,7 +1186,7 @@ body {
     border: 3px solid var(--nb-ink, #000);
     padding: 3px 10px;
     transform: rotate(-1deg);
-    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    box-shadow: var(--nb-sh-tag, none);
     position: absolute;
     top: -16px;
     left: 14px;

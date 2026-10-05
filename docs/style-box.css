@@ -4959,7 +4959,7 @@ color:#eeeeee;
 .tb-dropdown-trigger i { transition: transform .3s ease; }
 .tb-dropdown-wrapper:hover .tb-dropdown-trigger,
 .tb-dropdown-wrapper:focus-within .tb-dropdown-trigger {
-    background: var(--nb-ink, #000); color: #fff; transform: translate(-1px, -1px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    background: var(--nb-ink, #000); color: #fff; transform: translate(-1px, -1px); box-shadow: var(--nb-sh-4-scuro, 4px 4px 0 rgba(0, 0, 0, .3));
 }
 .tb-dropdown-wrapper:hover .tb-dropdown-trigger i,
 .tb-dropdown-wrapper:focus-within .tb-dropdown-trigger i { transform: rotate(90deg); }

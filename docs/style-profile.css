@@ -1235,7 +1235,7 @@ body.has-alert-banner .top-auth-bar {
     cursor: pointer;
 }
 
-.pf-filtro.attivo { background: var(--black); color: var(--white); }
+.pf-filtro.attivo { background: var(--black); color: var(--white); box-shadow: var(--nb-sh-tag, none); }   /* scuro: l'ombra nera non si vede */
 
 .pf-tessere {
     display: grid;

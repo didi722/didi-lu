@@ -174,7 +174,7 @@
     color: #fff;
     border: 3px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
-    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .3));
     font: 900 1.7rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     rotate: calc(var(--nb-rot, 1) * 1.4deg);
 }

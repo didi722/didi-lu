@@ -51,10 +51,11 @@ body.pg-index .season-card {
 }
 body.pg-index .season-card h3 {
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-s-scuro);
 }
 
-/* La tab con lo stato della stagione, a cavallo del bordo in alto a sinistra */
+/* La tab con lo stato della stagione, a cavallo del bordo in alto a sinistra. Scura (SEASON, FINISHED) non ha ombra: nera su nera
+   ingrossava solo la figura; le tab colorate (sotto) tengono l'ombra piena. */
 body.pg-index .season-card::before {
     content: "SEASON";
     position: absolute;
@@ -70,13 +71,13 @@ body.pg-index .season-card::before {
     letter-spacing: .18em;
     text-transform: uppercase;
     transform: rotate(calc(var(--nb-rot) * -3deg));
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-tag);
 }
-body.pg-index .season-card.status-playing::before { content: "● LIVE NOW"; background: #ea1818; color: #fff; }
+body.pg-index .season-card.status-playing::before { content: "● LIVE NOW"; background: #ea1818; color: #fff; box-shadow: var(--nb-sh-s); }
 body.pg-index .season-card.status-closed::before,
 body.pg-index .season-card.status-terminata::before { content: "FINISHED"; }
-body.pg-index .season-card.status-open::before { content: "SIGN-UPS OPEN"; background: var(--nb-giallo); color: #000; }
-body.pg-index .season-card.status-empty::before { content: "COMING SOON"; background: var(--nb-carta); color: #000; }
+body.pg-index .season-card.status-open::before { content: "SIGN-UPS OPEN"; background: var(--nb-giallo); color: #000; box-shadow: var(--nb-sh-s); }
+body.pg-index .season-card.status-empty::before { content: "COMING SOON"; background: var(--nb-carta); color: #000; box-shadow: var(--nb-sh-s); }
 
 /* Stagione ancora da annunciare: carta tratteggiata */
 body.pg-index .season-card.status-empty {
@@ -120,7 +121,7 @@ body.pg-index .timer-display {
     color: var(--nb-giallo);
     border: 3px solid var(--nb-ink);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-s-scuro);
     transform: rotate(calc(var(--nb-rot) * -3deg));
 }
 
@@ -165,7 +166,7 @@ body.pg-hub .hub-column-right::before {
     font: 800 .72rem/1.2 var(--nb-font-titoli);
     letter-spacing: .18em;
     text-transform: uppercase;
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-tag);
     transform: rotate(calc(var(--nb-rot) * -3deg));
     white-space: nowrap;
 }
@@ -220,7 +221,7 @@ body.pg-hub .countdown-label {
     background: var(--nb-tab-bg);
     color: var(--nb-tab-fg);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-m);
+    box-shadow: var(--nb-sh-m-scuro);
     transform: translateY(-5px) rotate(calc(var(--nb-rot) * -2deg));
 }
 body.pg-hub .countdown-digits {
@@ -228,7 +229,7 @@ body.pg-hub .countdown-digits {
     color: var(--nb-giallo);
     border: 4px solid var(--nb-ink);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-m);
+    box-shadow: var(--nb-sh-m-scuro);
     transform: rotate(calc(var(--nb-rot) * 1deg));
     outline: 3px dashed var(--nb-giallo);
     outline-offset: -11px;
@@ -314,7 +315,7 @@ body.pg-players .trainers-grid::before {
     border-radius: var(--nb-raggio);
     font: 800 .78rem/1.2 var(--nb-font-titoli);
     letter-spacing: .18em;
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-tag);
     transform: rotate(calc(var(--nb-rot) * -2deg));
 }
 
@@ -349,7 +350,7 @@ body.pg-players .trainer-rank-text {
     color: #fff;
     border: 3px solid var(--nb-ink);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-s-scuro);
     font-size: 1.15rem;
     font-weight: 900;
     transform: rotate(calc(var(--nb-rot) * -3deg));
@@ -380,7 +381,7 @@ body.pg-players .trainer-points-box {
     color: var(--nb-giallo);
     border: 3px solid var(--nb-ink);
     border-radius: var(--nb-raggio);
-    box-shadow: var(--nb-sh-s);
+    box-shadow: var(--nb-sh-s-scuro);
     font-size: 1.45rem;
     transform: rotate(calc(var(--nb-rot) * 2deg));
 }
