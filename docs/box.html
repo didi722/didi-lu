@@ -5498,7 +5498,20 @@ function tbPokemonCalc(s, evsDiversi = {}) {
     if (s.oggetto && tbDex.items[s.oggetto]) dati.item = tbDex.items[s.oggetto].name;
     if (opz.boost && tbStato.gen === 8) dati.isDynamaxed = true;
     if (opz.boost && tbStato.gen === 9 && s.tera && s.tera !== 'Stellar') dati.teraType = s.tera;
-    return new window.calc.Pokemon(tbCalcGen(), sp.name, dati);
+    return tbNuovoPokemonCalc(sp.name, dati);
+}
+
+// Il calcolatore ha la sua tabella di specie per generazione: un Pokémon che in quella non c'è (è di una generazione dopo, o la
+// squadra non è ancora corretta) farebbe cadere il calcolo. Si ripiega sui dati dell'ultima generazione, che li ha tutti.
+function tbNuovoPokemonCalc(nome, dati) {
+    const gen = tbCalcGen();
+    try {
+        return new window.calc.Pokemon(gen, nome, dati);
+    } catch (e) {
+        const ultima = window.calc.Generations.get(9);
+        if (ultima === gen) throw e;
+        return new window.calc.Pokemon(ultima, nome, dati);
+    }
 }
 
 // Bersaglio quando attacchi tu: niente strumento, prima abilità legale
@@ -5508,7 +5521,7 @@ function tbPokemonBersaglio(m, categoria, bulk) {
     const nature = bulk === 'max' ? (categoria === 'Physical' ? 'Bold' : 'Calm') : 'Serious';
     const dati = { level: tbStato.livello, nature, evs };
     if (m.abilita[0]) dati.ability = m.abilita[0];
-    return new window.calc.Pokemon(tbCalcGen(), m.v.sp.name, dati);
+    return tbNuovoPokemonCalc(m.v.sp.name, dati);
 }
 
 // Minaccia quando attacca lei: 252 nella stat d'attacco (con o senza natura), niente strumento.
@@ -5524,7 +5537,7 @@ function tbPokemonMinaccia(m, categoria, invest, abilita) {
             evs: categoria === 'Physical' ? { atk: 252 } : { spa: 252 }
         };
         if (abilita) dati.ability = abilita;
-        m.cache[chiave] = new window.calc.Pokemon(tbCalcGen(), m.v.sp.name, dati);
+        m.cache[chiave] = tbNuovoPokemonCalc(m.v.sp.name, dati);
     }
     return m.cache[chiave];
 }
