@@ -950,21 +950,21 @@ const ACH_LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
 
 const ACH_BADGES = [
     {
-        id: 'clean', label: 'Clean Streak',
+        id: 'clean', file: 'cleanstreak', label: 'Clean Streak',
         desc: 'Go undefeated in consecutive matches.',
         unita: 'undefeated matches',
         maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'],
         steps: [3, 5, 7]
     },
     {
-        id: 'won', label: 'Win Streak',
+        id: 'won', file: 'winstreak', label: 'Win Streak',
         desc: 'Win consecutive matches.',
         unita: 'match wins',
         maxKey: 'maxwonstrike', curKey: 'wonstrike', dateKeys: ['maxwonstrikedate'],
         steps: [5, 7, 10]
     },
     {
-        id: 'sd', label: 'SD Streak',
+        id: 'sd', file: 'sdstreak', label: 'SD Streak',
         desc: 'Win consecutive showdowns.',
         unita: 'showdown wins',
         maxKey: 'maxsdstrike', curKey: 'sdstrike', dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'],
@@ -1147,7 +1147,7 @@ function renderBadgeAchievements(badges, lista, summary) {
     if (id === 'didi' || id === 'lukiani') {
         html += `
             <div class="ach-card ach-badge-card">
-                <img src="immagini/badge_founder.png" class="ach-badge-img" alt="League Founder">
+                <img src="${Titoli.IMMAGINE_FONDATORE}" class="ach-badge-img" alt="League Founder">
                 <div>
                     <div class="ach-card-name">League Founder</div>
                     <p class="ach-card-desc">Hail to the kings.</p>
@@ -1168,7 +1168,7 @@ function renderBadgeAchievements(badges, lista, summary) {
         const completo = livello === b.steps.length;
         const obiettivo = completo ? null : b.steps[livello];
         const nomeProssimo = completo ? '' : achMaiuscola(ACH_LIVELLI_BADGE[livello]);
-        const img = `immagini/badge_${b.id}_${ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]}.png`;
+        const img = `immagini/badge-allenatore-${b.file}-${ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]}.png`;
 
         const chips = b.steps.map((s, i) => {
             const stato = i < livello ? 'done' : (i === livello ? 'next' : '');

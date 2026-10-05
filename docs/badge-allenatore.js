@@ -12,8 +12,9 @@
 // Meccanismo e stili sono quelli dei badge dei team (BadgeTeam.costruisci, badge-team.css). Funzione pura: funziona nel browser
 // (window.BadgeAllenatore) e in Node (test/badge-allenatore.test.js).
 //
-// Immagini: il campione usa le PNG che il sito ha già (champion-<livello>.png); le altre sono ancora da caricare
-// (docs/immagini/badge-allenatore-<id>-<bronze|silver|gold>.png): finché non ci sono compare una medaglia disegnata dal CSS.
+// Immagini: tutte in docs/immagini/badge-allenatore-<id>-<bronze|silver|gold>.png (anche il campione). Le serie (cleanstreak, winstreak,
+// sdstreak) e il fondatore, che stanno in titoli.js, hanno lo stesso prefisso. Finché un file non c'è compare una medaglia disegnata
+// dal CSS. IMMAGINI elenca i file del catalogo; `node tools/elenco-immagini.cjs` dice quali mancano.
 // =====================================================
 (function (radice, fabbrica) {
     if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./badge-team.js'), null);
@@ -37,7 +38,7 @@
     const CATALOGO = [
         { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 4],
           descrizione: 'Seasons of the league won.',
-          valore: c => num(c.g.stagioniVinte), immagini: tre('champion-{l}.png') },
+          valore: c => num(c.g.stagioniVinte), immagini: tre('badge-allenatore-champion-{l}.png') },
         { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [2, 4, 7],
           descrizione: 'Seasons of the league played.',
           valore: c => num(c.g.stagioniGiocate), immagini: tre('badge-allenatore-veteran-{l}.png') },
@@ -74,9 +75,8 @@
           valore: c => num(c.specie), immagini: tre('badge-allenatore-collector-{l}.png') }
     ];
 
-    const GIA_NEL_SITO = new Set(['champion-bronze.png', 'champion-silver.png', 'champion-gold.png']);
-    const base = BadgeTeam.costruisci(CATALOGO, { giaNelSito: GIA_NEL_SITO, titolo: 'TRAINER BADGES' });
-    const { IMMAGINI_DA_CARICARE, guadagnati, htmlBadge, htmlScaffale, htmlMini } = base;
+    const base = BadgeTeam.costruisci(CATALOGO, { titolo: 'TRAINER BADGES' });
+    const { IMMAGINI, guadagnati, htmlBadge, htmlScaffale, htmlMini } = base;
 
     // L'allenatore tra quelli di Statistiche.calcola(...), con i conteggi che servono ai badge
     function contestoDi(risultato, idAllenatore) {
@@ -144,7 +144,7 @@
     }
 
     return {
-        CATALOGO, IMMAGINI_DA_CARICARE, MIN_MATCH_FORMATO, PERC_FORMATO,
+        CATALOGO, IMMAGINI, MIN_MATCH_FORMATO, PERC_FORMATO,
         calcola, contestoDi, carica, guadagnati, scheda,
         htmlBadge, htmlScaffale, htmlMini, formatiForti
     };

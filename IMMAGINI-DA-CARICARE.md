@@ -1,11 +1,14 @@
-# Immagini da caricare
+# Immagini dei badge
 
 Tutte in `docs/immagini/`, PNG con sfondo trasparente, quadrate, almeno 256×256 px (vengono mostrate fra 22 e 66 px, ma così restano nitide). 
-Per ogni badge ci sono tre file, uno per livello: `-bronze`, `-silver`, `-gold`. Finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS.
+Nomi: `ribbon-<badge>-<livello>.png` per i Pokémon, `badge-team-<badge>-<livello>.png` per i team, `badge-allenatore-<badge>-<livello>.png` per gli allenatori, con `-bronze`, `-silver` o `-gold`. 
+Finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS. Per rifare il controllo: `node tools/elenco-immagini.cjs --scrivi`.
 
 ## Fiocchi dei Pokémon (scheda Pokémon e medagliette sulla card del team)
 
-9 file mancanti su 9
+12 file presenti su 21 attesi, 9 mancanti.
+
+Mancano:
 
 | File | Badge | Cosa rappresenta |
 |---|---|---|
@@ -19,9 +22,17 @@ Per ogni badge ci sono tre file, uno per livello: `-bronze`, `-silver`, `-gold`.
 | `ribbon-laststand-silver.png` | Last Stand · silver | Sets won as the very last Pokémon standing. |
 | `ribbon-laststand-gold.png` | Last Stand · gold | Sets won as the very last Pokémon standing. |
 
+Hanno un solo file per tutti i livelli (nessun bronze/silver/gold):
+
+- Win Streak: `ribbon-winstreak.png` → per i tre livelli servirebbero `ribbon-winstreak-bronze.png`, `ribbon-winstreak-silver.png` e `ribbon-winstreak-gold.png`
+- Clean Streak: `ribbon-cleanstreak.png` → per i tre livelli servirebbero `ribbon-cleanstreak-bronze.png`, `ribbon-cleanstreak-silver.png` e `ribbon-cleanstreak-gold.png`
+- Friendship: `ribbon-friendship.png` → per i tre livelli servirebbero `ribbon-friendship-bronze.png`, `ribbon-friendship-silver.png` e `ribbon-friendship-gold.png`
+
 ## Badge dei team (scaffale, medagliette nella testata e sulla card del team)
 
-18 file mancanti su 18
+6 file presenti su 24 attesi, 18 mancanti.
+
+Mancano:
 
 | File | Badge | Cosa rappresenta |
 |---|---|---|
@@ -44,44 +55,28 @@ Per ogni badge ci sono tre file, uno per livello: `-bronze`, `-silver`, `-gold`.
 | `badge-team-veteran-silver.png` | Veteran · silver | Seasons this team has played in. |
 | `badge-team-veteran-gold.png` | Veteran · gold | Seasons this team has played in. |
 
-## Badge degli allenatori (Achievements nel profilo, medaglie della pagina pubblica, scheda in Stats)
+Hanno un solo file per tutti i livelli (nessun bronze/silver/gold):
 
-33 file mancanti su 33
+- SD Streak: `badge-team-sdstreak.png` → per i tre livelli servirebbero `badge-team-sdstreak-bronze.png`, `badge-team-sdstreak-silver.png` e `badge-team-sdstreak-gold.png`
+- Win Streak: `badge-team-winstreak.png` → per i tre livelli servirebbero `badge-team-winstreak-bronze.png`, `badge-team-winstreak-silver.png` e `badge-team-winstreak-gold.png`
+- Clean Streak: `badge-team-cleanstreak.png` → per i tre livelli servirebbero `badge-team-cleanstreak-bronze.png`, `badge-team-cleanstreak-silver.png` e `badge-team-cleanstreak-gold.png`
+
+## Badge degli allenatori (Achievements nel profilo, pagina Trainers, medaglie della pagina pubblica, scheda in Stats)
+
+44 file presenti su 46 attesi, 2 mancanti.
+
+Mancano:
 
 | File | Badge | Cosa rappresenta |
 |---|---|---|
-| `badge-allenatore-veteran-bronze.png` | Veteran · bronze | Seasons of the league played. |
-| `badge-allenatore-veteran-silver.png` | Veteran · silver | Seasons of the league played. |
-| `badge-allenatore-veteran-gold.png` | Veteran · gold | Seasons of the league played. |
-| `badge-allenatore-matchwinner-bronze.png` | Match Winner · bronze | Matches won, in every format. |
-| `badge-allenatore-matchwinner-silver.png` | Match Winner · silver | Matches won, in every format. |
-| `badge-allenatore-matchwinner-gold.png` | Match Winner · gold | Matches won, in every format. |
-| `badge-allenatore-setcrusher-bronze.png` | Set Crusher · bronze | Sets won, in every format. |
-| `badge-allenatore-setcrusher-silver.png` | Set Crusher · silver | Sets won, in every format. |
-| `badge-allenatore-setcrusher-gold.png` | Set Crusher · gold | Sets won, in every format. |
-| `badge-allenatore-showdown-bronze.png` | Showdown Victor · bronze | Showdowns won (the best of three matches against one opponent). |
-| `badge-allenatore-showdown-silver.png` | Showdown Victor · silver | Showdowns won (the best of three matches against one opponent). |
-| `badge-allenatore-showdown-gold.png` | Showdown Victor · gold | Showdowns won (the best of three matches against one opponent). |
-| `badge-allenatore-dominant-bronze.png` | Dominant · bronze | Share of matches won, once you have played enough of them. |
-| `badge-allenatore-dominant-silver.png` | Dominant · silver | Share of matches won, once you have played enough of them. |
-| `badge-allenatore-dominant-gold.png` | Dominant · gold | Share of matches won, once you have played enough of them. |
 | `badge-allenatore-knockout-bronze.png` | KO Artist · bronze | Opposing Pokémon knocked out (only sets played on the site are counted). |
 | `badge-allenatore-knockout-silver.png` | KO Artist · silver | Opposing Pokémon knocked out (only sets played on the site are counted). |
-| `badge-allenatore-knockout-gold.png` | KO Artist · gold | Opposing Pokémon knocked out (only sets played on the site are counted). |
-| `badge-allenatore-untouchable-bronze.png` | Untouchable · bronze | Sets won without losing a single Pokémon. |
-| `badge-allenatore-untouchable-silver.png` | Untouchable · silver | Sets won without losing a single Pokémon. |
-| `badge-allenatore-untouchable-gold.png` | Untouchable · gold | Sets won without losing a single Pokémon. |
-| `badge-allenatore-closecall-bronze.png` | Against All Odds · bronze | Sets won with only one Pokémon left standing. |
-| `badge-allenatore-closecall-silver.png` | Against All Odds · silver | Sets won with only one Pokémon left standing. |
-| `badge-allenatore-closecall-gold.png` | Against All Odds · gold | Sets won with only one Pokémon left standing. |
-| `badge-allenatore-formatmaster-bronze.png` | Format Master · bronze | Formats where you won at least 60% of your matches, with at least 8 played. |
-| `badge-allenatore-formatmaster-silver.png` | Format Master · silver | Formats where you won at least 60% of your matches, with at least 8 played. |
-| `badge-allenatore-formatmaster-gold.png` | Format Master · gold | Formats where you won at least 60% of your matches, with at least 8 played. |
-| `badge-allenatore-elopeak-bronze.png` | Elo Peak · bronze | The highest Elo you have ever reached (everyone starts at 1000). |
-| `badge-allenatore-elopeak-silver.png` | Elo Peak · silver | The highest Elo you have ever reached (everyone starts at 1000). |
-| `badge-allenatore-elopeak-gold.png` | Elo Peak · gold | The highest Elo you have ever reached (everyone starts at 1000). |
-| `badge-allenatore-collector-bronze.png` | Collector · bronze | Different Pokémon species you have brought into battle. |
-| `badge-allenatore-collector-silver.png` | Collector · silver | Different Pokémon species you have brought into battle. |
-| `badge-allenatore-collector-gold.png` | Collector · gold | Different Pokémon species you have brought into battle. |
 
-Totale: 60 file.
+Sagome "ghost" presenti ma non usate da nessuna pagina:
+
+- `badge-allenatore-champion-ghost.png`
+- `badge-allenatore-cleanstreak-ghost.png`
+- `badge-allenatore-sdstreak-ghost.png`
+- `badge-allenatore-winstreak-ghost.png`
+
+Totale: 29 file mancanti.

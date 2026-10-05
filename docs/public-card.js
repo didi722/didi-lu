@@ -392,9 +392,9 @@
     function costruisciMedaglie(d) {
         const st = d.badges || {};
         const serie = [
-            { id: 'clean', etichetta: 'Clean Streak', desc: n => `${n} matches undefeated`, max: parseInt(st.maxcleanstrike) || 0, corrente: parseInt(st.cleanstrike) || 0, data: formattaData(st.maxcleanstrikedate), passi: [3, 5, 7] },
-            { id: 'won', etichetta: 'Win Streak', desc: n => `${n} matches in a row`, max: parseInt(st.maxwonstrike) || 0, corrente: parseInt(st.wonstrike) || 0, data: formattaData(st.maxwonstrikedate), passi: [5, 7, 10] },
-            { id: 'sd', etichetta: 'SD Streak', desc: n => `${n} showdowns in a row`, max: parseInt(st.maxsdstrike) || 0, corrente: parseInt(st.sdstrike) || 0, data: formattaData(st.sdwonstrikedate), passi: [3, 5, 7] }
+            { id: 'clean', file: 'cleanstreak', etichetta: 'Clean Streak', desc: n => `${n} matches undefeated`, max: parseInt(st.maxcleanstrike) || 0, corrente: parseInt(st.cleanstrike) || 0, data: formattaData(st.maxcleanstrikedate), passi: [3, 5, 7] },
+            { id: 'won', file: 'winstreak', etichetta: 'Win Streak', desc: n => `${n} matches in a row`, max: parseInt(st.maxwonstrike) || 0, corrente: parseInt(st.wonstrike) || 0, data: formattaData(st.maxwonstrikedate), passi: [5, 7, 10] },
+            { id: 'sd', file: 'sdstreak', etichetta: 'SD Streak', desc: n => `${n} showdowns in a row`, max: parseInt(st.maxsdstrike) || 0, corrente: parseInt(st.sdstrike) || 0, data: formattaData(st.sdwonstrikedate), passi: [3, 5, 7] }
         ];
         // `icona`: se la PNG non c'è ancora (badge nuovi) al suo posto compare una medaglia disegnata dal CSS (badge-team.js)
         const medaglia = (img, alt, tip, icona) => h('div', { class: 'pp-medaglia pp-tip-host', tabindex: '0' },
@@ -403,7 +403,7 @@
 
         const chiavi = [d.chiave, d.nome].map(x => String(x || '').trim().toLowerCase());
         if (chiavi.includes('didi') || chiavi.includes('lukiani')) {
-            lista.push(medaglia('immagini/badge_founder.png', 'Founder', h('div', { class: 'neubrutal-tooltip pp-tip' },
+            lista.push(medaglia('immagini/badge-allenatore-founder.png', 'Founder', h('div', { class: 'neubrutal-tooltip pp-tip' },
                 h('span', { class: 'pp-tip-nome', testo: 'LEAGUE FOUNDER' }), h('span', { class: 'pp-tip-testo', testo: 'Hail to the kings' }))));
         }
         for (const b of serie) {
@@ -413,7 +413,7 @@
             else if (b.max >= b.passi[0]) { livello = 'bronze'; raggiunto = b.passi[0]; prossimo = b.passi[1]; }
             if (!livello) continue;
             const pct = Math.min((b.corrente / prossimo) * 100, 100);
-            lista.push(medaglia(`immagini/badge_${b.id}_${livello}.png`, `${b.etichetta} ${livello}`, h('div', { class: 'neubrutal-tooltip pp-tip' },
+            lista.push(medaglia(`immagini/badge-allenatore-${b.file}-${livello}.png`, `${b.etichetta} ${livello}`, h('div', { class: 'neubrutal-tooltip pp-tip' },
                 h('span', { class: 'pp-tip-riga' }, h('span', { class: 'pp-tip-nome', testo: b.etichetta.toUpperCase() }), h('span', { class: 'pp-tip-obiettivo', testo: b.data })),
                 h('span', { class: 'pp-tip-testo', testo: b.desc(raggiunto) }),
                 h('span', { class: 'pp-barra' }, h('i', { stile: { width: `${pct}%` } })),

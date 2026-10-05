@@ -83,10 +83,12 @@ test('badge delle serie: livello, descrizione, avanzamento; fondatori', () => {
     assert.deepEqual(b.map(x => `${x.id}:${x.livello}`), ['clean:silver', 'sd:gold']);       // win streak 4 < 5: nessun badge
     assert.equal(b[0].descrizione, '5 matches undefeated');
     assert.equal(b[0].obiettivo, 7);
-    assert.equal(b[0].img, 'immagini/badge_clean_silver.png');
+    assert.equal(b[0].img, 'immagini/badge-allenatore-cleanstreak-silver.png');
+    assert.equal(b[1].img, 'immagini/badge-allenatore-sdstreak-gold.png');
     assert.equal(b[0].data, '04/03/2026');
     assert.equal(b[1].obiettivo, 7);                       // oro: l'obiettivo resta il massimo
     assert.equal(T.badgeSbloccati({}, 'didi')[0].id, 'founder');
+    assert.equal(T.badgeSbloccati({}, 'didi')[0].img, 'immagini/badge-allenatore-founder.png');
     assert.deepEqual(T.badgeSbloccati(null, 'tom'), []);
 });
 

@@ -105,20 +105,23 @@ test('guadagnati: dal livello più alto, a parità nell\'ordine del catalogo', (
 test('le immagini: un livello usa il suo file, i fiocchi con un solo file lo usano per tutti; il non preso mostra il bronzo', () => {
     const l = F.calcola({ koFatti: 45, serie: { vittorieMax: 8 } });
     assert.equal(perId(l, 'ko').immagine, 'immagini/ribbon-ko-silver.png');
-    assert.equal(perId(l, 'winstreak').immagine, 'immagini/victory-ribbon.png');
-    assert.equal(perId(l, 'winner').immagine, 'immagini/badge_won_bronze.png');
-    assert.equal(perId(l, 'champion').immagine, 'immagini/champion-bronze.png');
+    assert.equal(perId(l, 'winstreak').immagine, 'immagini/ribbon-winstreak.png');
+    assert.equal(perId(l, 'winner').immagine, 'immagini/ribbon-winner-bronze.png');
+    assert.equal(perId(l, 'champion').immagine, 'immagini/ribbon-champion-bronze.png');
 });
 
 // ---------- immagini ----------
-test('ogni immagine dei fiocchi esiste nel sito oppure è nell\'elenco di quelle da caricare', () => {
+test('le immagini dei fiocchi si chiamano tutte ribbon-<id>[-livello].png (i file che mancano li elenca tools/elenco-immagini.cjs)', () => {
     const citate = new Set(F.CATALOGO.flatMap(f => f.immagini).map(p => p.replace(/^immagini\//, '')));
-    const mancanti = [...citate].filter(n => !fs.existsSync(path.join(DOCS, 'immagini', n))).sort();
-    assert.deepEqual(mancanti, [...F.IMMAGINI_DA_CARICARE].sort(),
-        'l\'elenco IMMAGINI_DA_CARICARE deve coincidere con i file che mancano davvero');
-    // quelle fittizie seguono lo schema ribbon-<id>-<livello>.png
-    for (const n of F.IMMAGINI_DA_CARICARE) assert.match(n, /^ribbon-(regular|ko|laststand)-(bronze|silver|gold)\.png$/);
-    assert.equal(F.IMMAGINI_DA_CARICARE.length, 9);
+    assert.deepEqual([...citate].sort(), [...F.IMMAGINI].sort());
+    // nove fiocchi: sei con un file per livello, tre (le serie e l'amicizia) con un file solo
+    assert.equal(F.IMMAGINI.length, 6 * 3 + 3);
+    for (const n of F.IMMAGINI) assert.match(n, /^ribbon-[a-z]+(-(bronze|silver|gold))?\.png$/);
+    for (const f of F.CATALOGO) assert.ok(f.immagini.length === 1 || f.immagini.length === 3, f.id);
+    // quelli già caricati ci sono (con il loro nome nuovo): niente più victory-ribbon, badge_won, champion-...
+    for (const n of ['ribbon-winner-bronze.png', 'ribbon-survivor-gold.png', 'ribbon-champion-silver.png', 'ribbon-winstreak.png', 'ribbon-cleanstreak.png', 'ribbon-friendship.png']) {
+        assert.ok(fs.existsSync(path.join(DOCS, 'immagini', n)), n);
+    }
 });
 
 // ---------- le serie reali per Pokémon (statistiche.js) ----------

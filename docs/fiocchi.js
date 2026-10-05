@@ -20,9 +20,9 @@
 // cambiano solo i numeri di CATALOGO. Funzione pura, niente DOM e niente Firebase (carica() riceve il db):
 // funziona nel browser (window.Fiocchi) e in Node (test/fiocchi.test.js).
 //
-// Immagini: i fiocchi che hanno già una PNG nel sito la usano; per gli altri il catalogo indica un nome di file
-// (docs/immagini/ribbon-<id>-<bronze|silver|gold>.png) ancora da caricare: finché il file non c'è, al suo posto
-// compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI_DA_CARICARE elenca i file attesi.
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "ribbon-": ribbon-<id>-<bronze|silver|gold>.png (un file per livello) oppure
+// ribbon-<id>.png (un file solo, uguale per tutti i livelli). Finché un file non c'è, al suo posto compare una medaglia disegnata con
+// il CSS (immagineMancante). IMMAGINI elenca i file che il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
 // =====================================================
 (function (radice, fabbrica) {
     if (typeof module === 'object' && module.exports) module.exports = fabbrica(null);
@@ -59,37 +59,30 @@
           valore: p => num(p.koFatti), immagini: tre('ribbon-ko-{l}.png') },
         { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'sets won', soglie: [10, 30, 60],
           descrizione: 'Sets won while on the field.',
-          valore: p => num(p.setPortatoVinti), immagini: tre('badge_won_{l}.png') },
+          valore: p => num(p.setPortatoVinti), immagini: tre('ribbon-winner-{l}.png') },
         { id: 'laststand', nome: 'Last Stand', icona: '🛡️', unita: 'last-standing wins', soglie: [1, 3, 6],
           descrizione: 'Sets won as the very last Pokémon standing.',
           valore: p => num(p.ultimoVinto), immagini: tre('ribbon-laststand-{l}.png') },
         { id: 'survivor', nome: 'Survivor', icona: '❤️', unita: '% survival', soglie: [60, 75, 90],
           descrizione: 'Share of sets on the field without fainting.',
           valore: p => num(p.sopravvivenza), minimo: { campo: 'portato', valore: 15, etichetta: 'sets fielded' },
-          immagini: tre('badge_clean_{l}.png') },
+          immagini: tre('ribbon-survivor-{l}.png') },
         { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [3, 5, 8],
           descrizione: 'Matches won in a row, counting only the ones it actually played.',
-          valore: p => num(p.serie && p.serie.vittorieMax), immagini: [CARTELLA + 'victory-ribbon.png'] },
+          valore: p => num(p.serie && p.serie.vittorieMax), immagini: [CARTELLA + 'ribbon-winstreak.png'] },
         { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [2, 3, 5],
           descrizione: 'Matches won without dropping a set, counting only the ones it actually played.',
-          valore: p => num(p.serie && p.serie.pulitaMax), immagini: [CARTELLA + 'strike-ribbon.png'] },
+          valore: p => num(p.serie && p.serie.pulitaMax), immagini: [CARTELLA + 'ribbon-cleanstreak.png'] },
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3],
           descrizione: 'Seasons won with its team while actually playing in them.',
-          valore: p => num(p.stagioniVinteInCampo), immagini: tre('champion-{l}.png') },
+          valore: p => num(p.stagioniVinteInCampo), immagini: tre('ribbon-champion-{l}.png') },
         { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 3, 5],
           descrizione: 'A bond that lasts: seasons on the field with the same trainer and team.',
-          valore: p => num(p.stagioniInCampo), immagini: [CARTELLA + 'friend-ribbon.png'] }
+          valore: p => num(p.stagioniInCampo), immagini: [CARTELLA + 'ribbon-friendship.png'] }
     ];
 
-    // I file ancora da caricare (ogni livello dei fiocchi con 3 immagini che non sono già nel sito)
-    const GIA_NEL_SITO = new Set([
-        'badge_won_bronze.png', 'badge_won_silver.png', 'badge_won_gold.png',
-        'badge_clean_bronze.png', 'badge_clean_silver.png', 'badge_clean_gold.png',
-        'champion-bronze.png', 'champion-silver.png', 'champion-gold.png',
-        'victory-ribbon.png', 'strike-ribbon.png', 'friend-ribbon.png'
-    ]);
-    const IMMAGINI_DA_CARICARE = [...new Set(CATALOGO.flatMap(f => f.immagini).map(p => p.replace(CARTELLA, '')))]
-        .filter(nome => !GIA_NEL_SITO.has(nome));
+    // Tutti i file che il catalogo usa (nomi, senza cartella). Quali ci sono davvero in docs/immagini/ lo dice tools/elenco-immagini.cjs
+    const IMMAGINI = [...new Set(CATALOGO.flatMap(f => f.immagini).map(p => p.replace(CARTELLA, '')))];
 
     // -----------------------------------------------------
     // Calcolo
@@ -271,7 +264,7 @@
     }
 
     return {
-        CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI_DA_CARICARE,
+        CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, trova, carica, svuotaCache,
         htmlFiocco, htmlScaffale, htmlMini, immagineMancante,
         riempiMini, montaScaffale

@@ -1,35 +1,45 @@
-FIOCCHI DEI POKÉMON — immagini da caricare
-==========================================
+IMMAGINI DEI BADGE — come si chiamano i file
+============================================
 
-I fiocchi (scheda del Pokémon e medagliette sulle card della squadra) usano queste PNG. Quelle di sotto NON ci sono ancora:
-finché il file manca, al suo posto si vede una medaglia disegnata dal CSS con un'icona (bronzo, argento o oro), quindi non si
-rompe nulla. Basta aggiungere il file con lo stesso nome in questa cartella (docs/immagini/): compare da solo.
+Tre famiglie, una per prefisso. Ogni badge ha tre file, uno per livello (-bronze, -silver, -gold); le serie e l'amicizia hanno per
+ora un file solo, uguale per tutti i livelli. PNG con sfondo trasparente, quadrate (128x128 oppure 256x256 o più), disegno a tutta
+altezza con il contorno nero spesso. Finché un file manca, il sito mostra al suo posto una medaglia disegnata dal CSS con un'icona.
 
-Come sono le altre medaglie del sito: PNG con sfondo trasparente, quadrate (128x128 oppure 1024x1024), disegno a tutta
-altezza con il contorno nero spesso, nello stile dei fiocchi/medaglie Pokémon già presenti (badge_won_*, champion-*).
+  ribbon-<badge>-<livello>.png          fiocchi dei Pokémon (scheda Pokémon, medagliette sulla card del team)
+  badge-team-<badge>-<livello>.png      badge dei team (scaffale, testata e card del team)
+  badge-allenatore-<badge>-<livello>.png  badge degli allenatori (Achievements del profilo, pagina Trainers, pagina pubblica, Stats)
 
-Da caricare (9 file, tre fiocchi per tre livelli)
--------------------------------------------------
-  ribbon-regular-bronze.png      "Regular"    presenze reali in campo (15 / 40 / 80 set)
-  ribbon-regular-silver.png
-  ribbon-regular-gold.png
+Per sapere cosa manca, cosa ha un file solo e cosa non è agganciato a niente (nome sbagliato):
 
-  ribbon-ko-bronze.png           "Knockout"   KO fatti (15 / 40 / 80)
-  ribbon-ko-silver.png
-  ribbon-ko-gold.png
+  node tools/elenco-immagini.cjs            stampa il controllo
+  node tools/elenco-immagini.cjs --scrivi   lo scrive anche in IMMAGINI-DA-CARICARE.md (cartella principale)
 
-  ribbon-laststand-bronze.png    "Last Stand" set vinti restando l'ultimo Pokémon in piedi (1 / 3 / 6)
-  ribbon-laststand-silver.png
-  ribbon-laststand-gold.png
+I badge e le loro soglie stanno in docs/fiocchi.js, docs/badge-team.js, docs/badge-allenatore.js e docs/titoli.js (serie e fondatore).
 
-Già nel sito (non serve caricare nulla)
----------------------------------------
-  Winner         badge_won_bronze|silver|gold.png        set vinti con il Pokémon in campo (10 / 30 / 60)
-  Survivor       badge_clean_bronze|silver|gold.png      % di set in campo senza andare KO (60 / 75 / 90 %, da 15 set)
-  Win Streak     victory-ribbon.png                      match vinti di fila (3 / 5 / 8)
-  Clean Streak   strike-ribbon.png                       match vinti senza perdere set, di fila (2 / 3 / 5)
-  Champion       champion-bronze|silver|gold.png         stagioni vinte col team giocandoci davvero (1 / 2 / 3)
-  Friendship     friend-ribbon.png                       stagioni in campo con lo stesso team (2 / 3 / 5)
+Fiocchi dei Pokémon (ribbon-*)
+------------------------------
+  regular      presenze reali in campo (15 / 40 / 80 set)                          ribbon-regular-<livello>.png
+  ko           KO fatti (15 / 40 / 80)                                             ribbon-ko-<livello>.png
+  winner       set vinti con il Pokémon in campo (10 / 30 / 60)                    ribbon-winner-<livello>.png
+  laststand    set vinti restando l'ultimo Pokémon in piedi (1 / 3 / 6)            ribbon-laststand-<livello>.png
+  survivor     % di set in campo senza andare KO (60 / 75 / 90 %, da 15 set)       ribbon-survivor-<livello>.png
+  winstreak    match vinti di fila (3 / 5 / 8)                                     ribbon-winstreak.png        (un file solo)
+  cleanstreak  match vinti senza perdere set, di fila (2 / 3 / 5)                  ribbon-cleanstreak.png      (un file solo)
+  champion     stagioni vinte col team giocandoci davvero (1 / 2 / 3)              ribbon-champion-<livello>.png
+  friendship   stagioni in campo con lo stesso team (2 / 3 / 5)                    ribbon-friendship.png       (un file solo)
 
-I fiocchi con un solo file (Win Streak, Clean Streak, Friendship) mostrano il livello con il colore della fascia sopra la
-card e con il numero romano accanto alla medaglia. Le soglie si cambiano in docs/fiocchi.js (CATALOGO).
+I fiocchi con un solo file mostrano il livello con il colore della fascia sopra la card e con il numero romano accanto alla medaglia.
+Winner, Survivor e Champion hanno per ora lo stesso disegno dei badge degli allenatori (winstreak, cleanstreak, champion): per avere
+un disegno tutto loro basta sostituire il file con lo stesso nome.
+
+Badge dei team (badge-team-*)
+-----------------------------
+  champion, showdown, winner, winrate, flawless, knockout, veteran   badge-team-<badge>-<livello>.png
+  sdstreak, winstreak, cleanstreak                                   badge-team-<badge>.png      (un file solo)
+
+Badge degli allenatori (badge-allenatore-*)
+-------------------------------------------
+  champion, veteran, matchwinner, setcrusher, showdown, dominant, knockout, untouchable, closecall, formatmaster, elopeak, collector
+  e le serie cleanstreak, winstreak, sdstreak                        badge-allenatore-<badge>-<livello>.png
+  il fondatore                                                       badge-allenatore-founder.png  (un file solo)
+  sagome per lo stato "bloccato" (ancora non usate)                  badge-allenatore-<champion|cleanstreak|winstreak|sdstreak>-ghost.png

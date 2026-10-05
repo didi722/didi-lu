@@ -15,9 +15,10 @@
 // quei numeri. Funzione pura, niente DOM e niente Firebase (le colle ricevono db e Fiocchi): funziona nel browser
 // (window.BadgeTeam) e in Node (test/badge-team.test.js).
 //
-// Immagini: tre badge usano le PNG che il sito ha già (serie dei team, campione); per gli altri il catalogo indica un nome
-// di file (docs/immagini/badge-team-<id>-<bronze|silver|gold>.png) ancora da caricare: finché il file non c'è, al suo posto
-// compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI_DA_CARICARE elenca i file attesi.
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "badge-team-": badge-team-<id>-<bronze|silver|gold>.png (un file per livello)
+// oppure badge-team-<id>.png (un file solo, uguale per tutti i livelli: le serie). Finché un file non c'è, al suo posto compare una
+// medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file che il catalogo usa; `node tools/elenco-immagini.cjs` dice
+// quali mancano.
 // Prima c'erano tre badge di serie solo nella pagina pubblica (7 vittorie di fila, 4 match puliti, 3 showdown): ora sono
 // qui, con tre livelli, e si vedono ovunque si apra un team.
 //
@@ -65,15 +66,13 @@
     //   immagini  3 file (uno per livello) oppure 1 file per tutti
     //   minimo    se presente, sotto questo numero di base il valore non conta ancora (serve per le percentuali)
     //   valore    funzione del "contesto" (un team, un allenatore...) che dà il numero da confrontare con le soglie
-    // opzioni: { giaNelSito: Set di nomi di file che esistono già (non sono da caricare), titolo: titolo dello scaffale, chiedi: testo del tasto }
+    // opzioni: { titolo: titolo dello scaffale, chiedi: testo del tasto }
     // =====================================================
     function costruisci(CATALOGO, opzioni = {}) {
-        const giaNelSito = opzioni.giaNelSito || new Set();
         const titoloPredefinito = opzioni.titolo || 'BADGES';
 
-        // Le immagini ancora da caricare (quelle che il sito non ha già)
-        const IMMAGINI_DA_CARICARE = [...new Set(CATALOGO.flatMap(b => b.immagini).map(p => p.replace(CARTELLA, '')))]
-            .filter(nome => !giaNelSito.has(nome));
+        // Tutti i file che il catalogo usa (nomi, senza cartella)
+        const IMMAGINI = [...new Set(CATALOGO.flatMap(b => b.immagini).map(p => p.replace(CARTELLA, '')))];
 
         const immagineDi = (def, livello) => {
             const l = Math.max(1, livello || 1);
@@ -158,7 +157,7 @@
             ).join('') + (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
         }
 
-        return { CATALOGO, IMMAGINI_DA_CARICARE, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini };
+        return { CATALOGO, IMMAGINI, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini };
     }
 
     // =====================================================
@@ -167,13 +166,13 @@
     const CATALOGO = [
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3],
           descrizione: 'Seasons won by its trainer while the team played in them.',
-          valore: t => num(t.stagioniVinte), immagini: tre('champion-{l}.png') },
+          valore: t => num(t.stagioniVinte), immagini: tre('badge-team-champion-{l}.png') },
         { id: 'showdown', nome: 'Showdown Winner', icona: '⚔️', unita: 'showdowns won', soglie: [2, 5, 10],
           descrizione: 'Showdowns won with this team.',
           valore: t => num(t.showdown && t.showdown.vinti), immagini: tre('badge-team-showdown-{l}.png') },
         { id: 'sdstreak', nome: 'SD Streak', icona: '🎯', unita: 'showdowns in a row', soglie: [2, 3, 5],
           descrizione: 'Showdowns won in a row with this team.',
-          valore: t => num(t.serie && t.serie.showdownMax), immagini: [CARTELLA + 'team-sd.png'] },
+          valore: t => num(t.serie && t.serie.showdownMax), immagini: [CARTELLA + 'badge-team-sdstreak.png'] },
         { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'matches won', soglie: [5, 15, 30],
           descrizione: 'Matches won with this team.',
           valore: t => num(t.match && t.match.vinti), immagini: tre('badge-team-winner-{l}.png') },
@@ -183,10 +182,10 @@
           immagini: tre('badge-team-winrate-{l}.png') },
         { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [3, 5, 7],
           descrizione: 'Matches won in a row with this team.',
-          valore: t => num(t.serie && t.serie.vittorieMax), immagini: [CARTELLA + 'team-wins.png'] },
+          valore: t => num(t.serie && t.serie.vittorieMax), immagini: [CARTELLA + 'badge-team-winstreak.png'] },
         { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [2, 3, 4],
           descrizione: 'Matches won in a row without dropping a set.',
-          valore: t => num(t.serie && t.serie.pulitaMax), immagini: [CARTELLA + 'team-clean.png'] },
+          valore: t => num(t.serie && t.serie.pulitaMax), immagini: [CARTELLA + 'badge-team-cleanstreak.png'] },
         { id: 'flawless', nome: 'Flawless', icona: '🛡️', unita: 'flawless sets', soglie: [1, 3, 6],
           descrizione: 'Sets won without losing a single Pokémon.',
           valore: t => num(t.ko && t.ko.setPerfetti), immagini: tre('badge-team-flawless-{l}.png') },
@@ -198,13 +197,8 @@
           valore: t => num(t.stagioniGiocate), immagini: tre('badge-team-veteran-{l}.png') }
     ];
 
-    const GIA_NEL_SITO = new Set([
-        'champion-bronze.png', 'champion-silver.png', 'champion-gold.png',
-        'team-sd.png', 'team-wins.png', 'team-clean.png'
-    ]);
-
-    const squadra = costruisci(CATALOGO, { giaNelSito: GIA_NEL_SITO, titolo: 'TEAM BADGES' });
-    const { IMMAGINI_DA_CARICARE, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini } = squadra;
+    const squadra = costruisci(CATALOGO, { titolo: 'TEAM BADGES' });
+    const { IMMAGINI, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini } = squadra;
 
     // Il team di un giocatore tra quelli di Statistiche.calcola(...).teams
     function trova(risultato, { player, team } = {}) {
@@ -262,7 +256,7 @@
     }
 
     return {
-        CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI_DA_CARICARE,
+        CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, trova,
         htmlBadge, htmlScaffale, htmlMini, immagineMancante,
         montaBarra, riempiCard,

@@ -223,25 +223,28 @@ function generaHTMLBadge(statsBadges = {}, playerKey = "") {
     // 1. FOUNDER BADGE (Didi e Lukiani)
     const pKeyLower = (playerKey || "").trim().toLowerCase();
     if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
-        html += `<img src="immagini/badge_founder.png" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
+        html += `<img src="immagini/badge-allenatore-founder.png" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
     }
 
     // 2. DYNAMIC BADGES (Clean, Won, SD Streaks)
     const badgeConfig = [
         {
             id: 'clean',
+            file: 'cleanstreak',
             label: 'Clean Streak',
             max: parseInt(statsBadges.maxcleanstrike) || 0,
             steps: [3, 5, 7]
         },
         {
             id: 'won',
+            file: 'winstreak',
             label: 'Win Streak',
             max: parseInt(statsBadges.maxwonstrike) || 0,
             steps: [5, 7, 10]
         },
         {
             id: 'sd',
+            file: 'sdstreak',
             label: 'SD Streak',
             max: parseInt(statsBadges.maxsdstrike) || 0,
             steps: [3, 5, 7]
@@ -260,7 +263,7 @@ function generaHTMLBadge(statsBadges = {}, playerKey = "") {
         }
 
         if (level !== "") {
-            const imagePath = `immagini/badge_${b.id}_${level}.png`;
+            const imagePath = `immagini/badge-allenatore-${b.file}-${level}.png`;
             html += `<img src="${imagePath}" class="trainer-mini-badge" title="${b.label} (${level.toUpperCase()})" alt="${b.label} ${level}">`;
         }
     });

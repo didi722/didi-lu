@@ -103,11 +103,12 @@ test('collezionista: le specie diverse portate in campo (non i team, non le comp
     assert.equal(per(BA.calcola(risultato(giocatore(), tanti), 'didi'), 'collector').livello, 2);
 });
 
-test('immagini: il campione usa quelle del sito, le altre 33 sono da caricare e hanno un nome prevedibile', () => {
-    assert.equal(BA.IMMAGINI_DA_CARICARE.length, 33);
-    assert.ok(!BA.IMMAGINI_DA_CARICARE.some(n => n.startsWith('champion-')));
-    assert.ok(BA.IMMAGINI_DA_CARICARE.every(n => /^badge-allenatore-[a-z]+-(bronze|silver|gold)\.png$/.test(n)));
-    for (const f of ['champion-bronze.png', 'champion-silver.png', 'champion-gold.png']) assert.ok(fs.existsSync(path.join(DOCS, 'immagini', f)), f);
+test('immagini: dodici badge × tre livelli, tutti badge-allenatore-<id>-<livello>.png (anche il campione)', () => {
+    assert.equal(BA.IMMAGINI.length, 36);
+    assert.ok(BA.IMMAGINI.every(n => /^badge-allenatore-[a-z]+-(bronze|silver|gold)\.png$/.test(n)));
+    assert.ok(BA.IMMAGINI.includes('badge-allenatore-champion-gold.png'));
+    assert.ok(!BA.IMMAGINI.some(n => n.startsWith('champion-')), 'niente più champion-*.png');
+    for (const f of ['bronze', 'silver', 'gold']) assert.ok(fs.existsSync(path.join(DOCS, 'immagini', `badge-allenatore-champion-${f}.png`)), f);
 });
 
 test('HTML: scaffale con tutti i badge, medagliette dei più alti, testi sicuri', () => {
@@ -141,7 +142,7 @@ test('dati veri di Statistiche.calcola: un allenatore con match e set ha badge c
 
 test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file da caricare', () => {
     assert.equal(BT.CATALOGO.length, 10);
-    assert.equal(BT.IMMAGINI_DA_CARICARE.length, 18);
+    assert.equal(BT.IMMAGINI.length, 24);
     assert.equal(typeof BT.costruisci, 'function');
 });
 
@@ -159,7 +160,7 @@ test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle sch
     assert.equal(c.frase, '1 more to unlock Silver.');
     assert.equal(c.classe, 'bronze');
     assert.equal(c.bloccato, false);
-    assert.equal(c.immagine, 'immagini/champion-bronze.png');
+    assert.equal(c.immagine, 'immagini/badge-allenatore-champion-bronze.png');
 
     // bloccato: il livello è "None yet" e il traguardo è il bronzo
     const m = s('matchwinner');

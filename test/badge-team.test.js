@@ -70,17 +70,17 @@ test('percentuale di match vinti: sotto i 10 match non conta, e dice quanto manc
     assert.equal(abbastanza.nota, '');
 });
 
-test('immagini: i badge che il sito ha già le usano, per gli altri un nome di file da caricare', () => {
+test('immagini: tutte col prefisso badge-team-, le serie con un file solo, gli altri con un file per livello', () => {
     const l = B.calcola(null);
-    assert.equal(perId(l, 'winstreak').immagine, 'immagini/team-wins.png');
-    assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/team-clean.png');
-    assert.equal(perId(l, 'sdstreak').immagine, 'immagini/team-sd.png');
-    assert.equal(perId(l, 'champion').immagine, 'immagini/champion-bronze.png');
+    assert.equal(perId(l, 'winstreak').immagine, 'immagini/badge-team-winstreak.png');
+    assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak.png');
+    assert.equal(perId(l, 'sdstreak').immagine, 'immagini/badge-team-sdstreak.png');
+    assert.equal(perId(l, 'champion').immagine, 'immagini/badge-team-champion-bronze.png');
     assert.equal(perId(B.calcola(team({ match: { giocati: 40, vinti: 30, persi: 10 } })), 'winner').immagine, 'immagini/badge-team-winner-gold.png');
-    // 6 badge nuovi × 3 livelli
-    assert.equal(B.IMMAGINI_DA_CARICARE.length, 18);
-    assert.ok(B.IMMAGINI_DA_CARICARE.includes('badge-team-knockout-silver.png'));
-    assert.ok(!B.IMMAGINI_DA_CARICARE.some(n => /^(team-|champion-)/.test(n)));
+    // 7 badge × 3 livelli + 3 serie con un file solo
+    assert.equal(B.IMMAGINI.length, 24);
+    assert.ok(B.IMMAGINI.includes('badge-team-knockout-silver.png'));
+    assert.ok(B.IMMAGINI.every(n => /^badge-team-[a-z]+(-(bronze|silver|gold))?\.png$/.test(n)), 'nomi sbagliati');
 });
 
 test('HTML: lo scaffale mostra tutti i badge, le medagliette solo i migliori (con "+n"), e il testo di chi scrive è protetto', () => {

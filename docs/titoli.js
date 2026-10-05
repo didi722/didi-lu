@@ -181,12 +181,17 @@
     // -----------------------------------------------------
     // Badge delle serie (clean streak, win streak, SD streak)
     // -----------------------------------------------------
+    // `file`: la parte del nome della PNG, docs/immagini/badge-allenatore-<file>-<bronze|silver|gold>.png (come i badge di badge-allenatore.js)
     const LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
+    const IMMAGINE_FONDATORE = 'immagini/badge-allenatore-founder.png';
+    const immagineSerie = (b, livello) => `immagini/badge-allenatore-${b.file}-${livello}.png`;
     const BADGE = [
-        { id: 'clean', label: 'Clean Streak', descrizione: n => `${n} matches undefeated`,   unita: 'undefeated matches', maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'], steps: [3, 5, 7] },
-        { id: 'won',   label: 'Win Streak',   descrizione: n => `${n} matches in a row`,     unita: 'match wins',         maxKey: 'maxwonstrike',   curKey: 'wonstrike',   dateKeys: ['maxwonstrikedate'],   steps: [5, 7, 10] },
-        { id: 'sd',    label: 'SD Streak',    descrizione: n => `${n} showdowns in a row`,   unita: 'showdown wins',      maxKey: 'maxsdstrike',    curKey: 'sdstrike',    dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'], steps: [3, 5, 7] }
+        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', descrizione: n => `${n} matches undefeated`,   unita: 'undefeated matches', maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'], steps: [3, 5, 7] },
+        { id: 'won',   file: 'winstreak',   label: 'Win Streak',   descrizione: n => `${n} matches in a row`,     unita: 'match wins',         maxKey: 'maxwonstrike',   curKey: 'wonstrike',   dateKeys: ['maxwonstrikedate'],   steps: [5, 7, 10] },
+        { id: 'sd',    file: 'sdstreak',    label: 'SD Streak',    descrizione: n => `${n} showdowns in a row`,   unita: 'showdown wins',      maxKey: 'maxsdstrike',    curKey: 'sdstrike',    dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'], steps: [3, 5, 7] }
     ];
+    // Tutte le PNG delle serie e del fondatore (con la cartella): le usa tools/elenco-immagini.cjs
+    const IMMAGINI = [IMMAGINE_FONDATORE].concat(BADGE.flatMap(b => LIVELLI_BADGE.map(l => immagineSerie(b, l))));
     const FONDATORI = ['didi', 'lukiani'];
 
     function formattaData(raw) {
@@ -206,7 +211,7 @@
         const s = stats || {};
         const out = [];
         if (FONDATORI.includes(String(idPlayer || '').trim().toLowerCase())) {
-            out.push({ id: 'founder', label: 'League Founder', livello: 'founder', img: 'immagini/badge_founder.png', descrizione: 'Hail to the kings', data: '', attuale: 0, obiettivo: 0, pct: 100 });
+            out.push({ id: 'founder', label: 'League Founder', livello: 'founder', img: IMMAGINE_FONDATORE, descrizione: 'Hail to the kings', data: '', attuale: 0, obiettivo: 0, pct: 100 });
         }
         for (const b of BADGE) {
             const max = parseInt(s[b.maxKey], 10) || 0;
@@ -216,7 +221,7 @@
             const obiettivo = b.steps[Math.min(i + 1, b.steps.length - 1)];
             out.push({
                 id: b.id, label: b.label, livello: LIVELLI_BADGE[i],
-                img: `immagini/badge_${b.id}_${LIVELLI_BADGE[i]}.png`,
+                img: immagineSerie(b, LIVELLI_BADGE[i]),
                 descrizione: b.descrizione(b.steps[i]),
                 data: formattaData(b.dateKeys.map(k => s[k]).find(Boolean)),
                 attuale, obiettivo, pct: Math.min(100, obiettivo ? (attuale / obiettivo) * 100 : 100)
@@ -228,6 +233,6 @@
     return {
         TIPI, LIVELLI_TIPO, LIVELLI_POKEMON, MAX_POKEMON_ACHIEVEMENTS,
         livello, progresso, titoliSbloccati, descriviTitolo, pokemonPiuVicini, normalizzaTipi,
-        LIVELLI_BADGE, BADGE, badgeSbloccati, formattaData, maiuscola, idDi
+        LIVELLI_BADGE, BADGE, IMMAGINE_FONDATORE, IMMAGINI, immagineSerie, badgeSbloccati, formattaData, maiuscola, idDi
     };
 });
