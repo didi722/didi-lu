@@ -102,23 +102,29 @@ test('guadagnati: dal livello più alto, a parità nell\'ordine del catalogo', (
     assert.deepEqual(F.guadagnati(l).map(f => f.id), ['regular', 'winstreak', 'winner', 'ko', 'laststand']);
 });
 
-test('le immagini: un livello usa il suo file, i fiocchi con un solo file lo usano per tutti; il non preso mostra il bronzo', () => {
-    const l = F.calcola({ koFatti: 45, serie: { vittorieMax: 8 } });
+test('le immagini: ogni livello usa il suo file (anche le serie e l\'amicizia); il non preso mostra il bronzo', () => {
+    const l = F.calcola({ koFatti: 45, serie: { vittorieMax: 8, pulitaMax: 3 }, stagioniInCampo: 2 });
     assert.equal(perId(l, 'ko').immagine, 'immagini/ribbon-ko-silver.png');
-    assert.equal(perId(l, 'winstreak').immagine, 'immagini/victory-ribbon.png');
-    assert.equal(perId(l, 'winner').immagine, 'immagini/badge_won_bronze.png');
-    assert.equal(perId(l, 'champion').immagine, 'immagini/champion-bronze.png');
+    assert.equal(perId(l, 'winstreak').immagine, 'immagini/ribbon-winstreak-gold.png');            // 8 match di fila: la soglia dell'oro
+    assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/ribbon-cleanstreak-silver.png');      // 3 di fila: argento
+    assert.equal(perId(l, 'friendship').immagine, 'immagini/ribbon-friendship-bronze.png');        // 2 stagioni: bronzo
+    assert.equal(perId(l, 'winner').immagine, 'immagini/ribbon-winner-bronze.png');                // non preso: mostra il bronzo
+    assert.equal(perId(l, 'champion').immagine, 'immagini/ribbon-champion-bronze.png');
 });
 
 // ---------- immagini ----------
-test('ogni immagine dei fiocchi esiste nel sito oppure è nell\'elenco di quelle da caricare', () => {
+test('le immagini dei fiocchi si chiamano tutte ribbon-<id>-<livello>.png, tre per fiocco (i file che mancano li elenca tools/elenco-immagini.cjs)', () => {
     const citate = new Set(F.CATALOGO.flatMap(f => f.immagini).map(p => p.replace(/^immagini\//, '')));
-    const mancanti = [...citate].filter(n => !fs.existsSync(path.join(DOCS, 'immagini', n))).sort();
-    assert.deepEqual(mancanti, [...F.IMMAGINI_DA_CARICARE].sort(),
-        'l\'elenco IMMAGINI_DA_CARICARE deve coincidere con i file che mancano davvero');
-    // quelle fittizie seguono lo schema ribbon-<id>-<livello>.png
-    for (const n of F.IMMAGINI_DA_CARICARE) assert.match(n, /^ribbon-(regular|ko|laststand)-(bronze|silver|gold)\.png$/);
-    assert.equal(F.IMMAGINI_DA_CARICARE.length, 9);
+    assert.deepEqual([...citate].sort(), [...F.IMMAGINI].sort());
+    // nove fiocchi × tre livelli
+    assert.equal(F.IMMAGINI.length, 9 * 3);
+    for (const n of F.IMMAGINI) assert.match(n, /^ribbon-[a-z]+-(bronze|silver|gold)\.png$/);
+    for (const f of F.CATALOGO) assert.deepEqual(f.immagini.map(p => /-(bronze|silver|gold)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold'], f.id);
+    // quelli già caricati ci sono (con il loro nome): Winner, Survivor e Champion a tre livelli; le serie e l'amicizia, che avevano un file
+    // solo, sono l'oro (le immagini sono gialle: argento e bronzo ancora da fare)
+    for (const n of ['ribbon-winner-bronze.png', 'ribbon-survivor-gold.png', 'ribbon-champion-silver.png', 'ribbon-winstreak-gold.png', 'ribbon-cleanstreak-gold.png', 'ribbon-friendship-gold.png']) {
+        assert.ok(fs.existsSync(path.join(DOCS, 'immagini', n)), n);
+    }
 });
 
 // ---------- le serie reali per Pokémon (statistiche.js) ----------
