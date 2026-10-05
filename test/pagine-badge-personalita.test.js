@@ -73,7 +73,7 @@ test('stats: la scheda del giocatore mostra i badge dell\'allenatore, calcolati 
 });
 
 test('profile.html: i badge dell\'allenatore hanno le stesse schede dei badge delle serie (immagine, livelli, numeri, barra, cosa manca)', () => {
-    const scheda = profilo.slice(profilo.indexOf('function achSchedaBadgeAllenatore'), profilo.indexOf('function renderBadgeAchievements'));
+    const scheda = profilo.slice(profilo.indexOf('function achSchedaBadgeAllenatore'), profilo.indexOf('// Il badge speciale dei fondatori'));
     assert.match(scheda, /BadgeAllenatore\.scheda\(b\)/);
     // le stesse classi delle schede delle serie
     for (const classe of ['ach-card ach-badge-card', 'ach-badge-img', 'ach-card-top', 'ach-card-name', 'ach-card-desc', 'ach-tiers', 'ach-tier', 'ach-stats-line', 'ach-missing']) {
@@ -83,10 +83,24 @@ test('profile.html: i badge dell\'allenatore hanno le stesse schede dei badge de
     assert.match(scheda, /onerror="BadgeTeam\.immagineMancante\(this,/);
     // le schede sostituiscono lo scaffale a tessere
     assert.ok(!/htmlScaffale/.test(profilo), 'niente più tessere nel profilo');
-    assert.match(profilo, /badge\.map\(achSchedaBadgeAllenatore\)\.join\(''\)/);
+    assert.match(profilo, /html: achSchedaBadgeAllenatore\(b\)/);
     // la barra sa del suffisso % e della partenza (l'Elo parte da 1000)
     assert.match(profilo, /function achBarra\(etichetta, valore, obiettivo, \{ suffisso = '', partenza = 0 \} = \{\}\)/);
     const css = docs('style-profile.css');
-    assert.match(css, /\.ach-badge-extra \{ display: contents; \}/);
+    assert.match(css, /#ach-badges-list > \.bt-nota \{ margin: 0; \}/);
+    assert.doesNotMatch(css, /ach-badge-extra/);
     assert.match(css, /\.ach-badge-card\.ach-lv-gold \{ --livello: var\(--bt-oro\); \}/);
+});
+
+test('profile.html: una sola lista di badge, il fondatore in cima e il resto dal più vicino al prossimo livello; niente "More trainer badges"', () => {
+    assert.doesNotMatch(profilo, /MORE TRAINER BADGES/i, 'il titolo della seconda sezione non c\'è più');
+    assert.doesNotMatch(profilo, /ach-badge-extra/);
+    // le serie e i badge dell'allenatore si ordinano insieme, il fondatore si mette davanti
+    const disegna = profilo.slice(profilo.indexOf('function achDisegnaElenco'), profilo.indexOf('async function aggiungiBadgeAllenatore'));
+    assert.match(disegna, /achElenco\.serie\.concat\(achElenco\.catalogo\)/);
+    assert.match(disegna, /BadgeTeam\.perVicinanza\(tutte\)/);
+    assert.match(disegna, /achFondatore\(\) \+ ordinate\.map\(c => c\.html\)\.join\(''\)/, 'il fondatore prima di tutti');
+    // ogni elemento dice quanto manca al prossimo livello (la barra che si vede), e se è già all'oro
+    assert.match(profilo, /prossima: st\.completo \? null : st\.obiettivo, progresso: st\.progresso/);
+    assert.match(profilo, /prossima: b\.prossima, progresso: b\.progresso/);
 });

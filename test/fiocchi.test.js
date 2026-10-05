@@ -58,7 +58,7 @@ test('calcola: i livelli dai numeri reali, con progresso verso il successivo', (
     const l = F.calcola(p);
     assert.equal(perId(l, 'regular').livello, 2);            // 45 sets: argento (40), manca 80 per l'oro
     assert.equal(perId(l, 'regular').prossima, 80);
-    assert.equal(perId(l, 'regular').progresso, (45 - 40) / (80 - 40));
+    assert.equal(perId(l, 'regular').progresso, 45 / 80);        // la barra è quella dei numeri "45 / 80"
     assert.equal(perId(l, 'ko').livello, 3);                  // 80 KO: oro
     assert.equal(perId(l, 'ko').prossima, null);
     assert.equal(perId(l, 'ko').progresso, 1);
@@ -311,4 +311,23 @@ test('immagineMancante: al posto della PNG compare la medaglia disegnata con l\'
     assert.equal(img.parentNode.sostituito[1], img);
     assert.doesNotThrow(() => F.immagineMancante(null, 'x'));
     assert.doesNotThrow(() => F.immagineMancante({ parentNode: null }, 'x'));
+});
+
+// ---------- ordine per vicinanza al prossimo livello ----------
+test('perVicinanza: i fiocchi più vicini al prossimo livello in alto, i più lontani in basso, chi ha l\'oro in fondo', () => {
+    const l = F.calcola({
+        portato: 45, koFatti: 80, setPortatoVinti: 9, ultimoVinto: 3, sopravvivenza: 76,
+        serie: { vittorieMax: 5, pulitaMax: 1 }, stagioniVinteInCampo: 1, stagioniInCampo: 2
+    });
+    const ordine = F.perVicinanza(l).map(f => f.id);
+    assert.equal(ordine[0], 'winner', '9 set vinti su 10 per il bronzo: il più vicino');
+    assert.equal(ordine[ordine.length - 1], 'ko', '80 KO: oro, non c\'è più niente da prendere');
+    for (let i = 1; i < ordine.length - 1; i++) {
+        assert.ok(perId(l, ordine[i - 1]).progresso >= perId(l, ordine[i]).progresso, `${ordine[i - 1]} prima di ${ordine[i]}`);
+    }
+    assert.equal(l[0].id, 'regular', 'la lista di partenza resta nell\'ordine del catalogo');
+    // lo scaffale della scheda Pokémon segue lo stesso ordine
+    const ids = html => [...html.matchAll(/data-fiocco="([a-z]+)"/g)].map(m => m[1]);
+    assert.deepEqual(ids(F.htmlScaffale(l)), ordine);
+    assert.deepEqual(ids(F.htmlScaffale(l, { ordina: false })), l.map(f => f.id));
 });

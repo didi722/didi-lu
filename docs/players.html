@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
 <script src="sfide.js"></script>
+<script src="titoli.js"></script>
 </head>
 <body class="nb pg-players">
 
@@ -223,49 +224,15 @@ function generaHTMLBadge(statsBadges = {}, playerKey = "") {
     // 1. FOUNDER BADGE (Didi e Lukiani)
     const pKeyLower = (playerKey || "").trim().toLowerCase();
     if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
-        html += `<img src="immagini/badge-allenatore-founder.png" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
+        html += `<img src="${Titoli.IMMAGINE_FONDATORE}" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
     }
 
-    // 2. DYNAMIC BADGES (Clean, Won, SD Streaks)
-    const badgeConfig = [
-        {
-            id: 'clean',
-            file: 'cleanstreak',
-            label: 'Clean Streak',
-            max: parseInt(statsBadges.maxcleanstrike) || 0,
-            steps: [3, 5, 7]
-        },
-        {
-            id: 'won',
-            file: 'winstreak',
-            label: 'Win Streak',
-            max: parseInt(statsBadges.maxwonstrike) || 0,
-            steps: [5, 7, 10]
-        },
-        {
-            id: 'sd',
-            file: 'sdstreak',
-            label: 'SD Streak',
-            max: parseInt(statsBadges.maxsdstrike) || 0,
-            steps: [3, 5, 7]
-        }
-    ];
-
-    badgeConfig.forEach(b => {
-        let level = "";
-
-        if (b.max >= b.steps[2]) {
-            level = "gold";
-        } else if (b.max >= b.steps[1]) {
-            level = "silver";
-        } else if (b.max >= b.steps[0]) {
-            level = "bronze";
-        }
-
-        if (level !== "") {
-            const imagePath = `immagini/badge-allenatore-${b.file}-${level}.png`;
-            html += `<img src="${imagePath}" class="trainer-mini-badge" title="${b.label} (${level.toUpperCase()})" alt="${b.label} ${level}">`;
-        }
+    // 2. LE SERIE (Clean, Win, SD Streak): nomi, chiavi e soglie sono in titoli.js (Titoli.BADGE); livello e file vengono da lì
+    Titoli.BADGE.forEach(b => {
+        const st = Titoli.statoSerie(statsBadges, b);
+        if (!st.livello) return;
+        const level = Titoli.LIVELLI_BADGE[st.livello - 1];
+        html += `<img src="${Titoli.immagineSerie(b, level)}" class="trainer-mini-badge" title="${b.label} (${level.toUpperCase()})" alt="${b.label} ${level}">`;
     });
 
     return html;

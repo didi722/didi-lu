@@ -120,9 +120,9 @@
             let livello = conta ? livelloDi(valore, def.soglie) : 0;
             if (def.id === 'friendship' && extra && extra.amicizia && livello < 1) livello = 1;
             const prossima = livello >= def.soglie.length ? null : def.soglie[livello];
-            const precedente = livello === 0 ? 0 : def.soglie[livello - 1];
+            // quanta strada è fatta verso il prossimo traguardo: è la barra dei numeri "7 / 8"
             const progresso = sblocco ? Math.max(0, Math.min(1, sblocco.valore / sblocco.serve))
-                : prossima == null ? 1 : Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente)));
+                : prossima == null ? 1 : Math.max(0, Math.min(1, valore / prossima));
             return {
                 id: def.id, nome: def.nome, icona: def.icona, descrizione: def.descrizione, unita: def.unita,
                 soglie: def.soglie.slice(), valore, livello,
@@ -138,6 +138,14 @@
     function guadagnati(lista) {
         return lista.map((f, i) => ({ f, i })).filter(x => x.f.livello > 0)
             .sort((a, b) => b.f.livello - a.f.livello || a.i - b.i).map(x => x.f);
+    }
+
+    // Dal più vicino al prossimo livello al più lontano (la barra più piena prima); a parità l'ordine del catalogo. In fondo chi ha già
+    // l'oro. (Stessa regola di BadgeTeam.perVicinanza per i badge dei team e degli allenatori.)
+    function perVicinanza(lista) {
+        return lista.map((f, i) => ({ f, i }))
+            .sort((a, b) => (a.f.prossima == null) - (b.f.prossima == null) || b.f.progresso - a.f.progresso || a.i - b.i)
+            .map(x => x.f);
     }
 
     // -----------------------------------------------------
@@ -189,12 +197,14 @@
             `</div>`;
     }
 
-    // Lo scaffale completo (scheda del Pokémon): tutti i fiocchi, quelli non presi in grigio con la barra del progresso
+    // Lo scaffale completo (scheda del Pokémon): tutti i fiocchi, dal più vicino al prossimo livello al più lontano; quelli non presi in grigio
+    // con la barra del progresso. opzioni.ordina === false tiene l'ordine del catalogo
     function htmlScaffale(lista, opzioni = {}) {
         const presi = lista.filter(f => f.livello > 0).length;
         const titolo = opzioni.titolo || 'RIBBONS';
+        const ordinati = opzioni.ordina === false ? lista : perVicinanza(lista);
         return `<h4 class="panel-title">${esc(titolo)} <small class="fiocchi-conto">${presi}/${lista.length}</small></h4>` +
-            `<div class="fiocchi-lista">${lista.map(htmlFiocco).join('')}</div>`;
+            `<div class="fiocchi-lista">${ordinati.map(htmlFiocco).join('')}</div>`;
     }
 
     // Le medagliette sulla card della squadra: i fiocchi più alti (al massimo "max")
@@ -262,7 +272,7 @@
 
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
-        livelloDi, calcola, guadagnati, trova, carica, svuotaCache,
+        livelloDi, calcola, guadagnati, perVicinanza, trova, carica, svuotaCache,
         htmlFiocco, htmlScaffale, htmlMini, immagineMancante,
         riempiMini, montaScaffale
     };

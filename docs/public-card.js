@@ -390,12 +390,8 @@
     const MEDAGLIE_ALLENATORE = 4;     // badge dell'allenatore sulla carta (oltre alle serie)
 
     function costruisciMedaglie(d) {
-        const st = d.badges || {};
-        const serie = [
-            { id: 'clean', file: 'cleanstreak', etichetta: 'Clean Streak', desc: n => `${n} matches undefeated`, max: parseInt(st.maxcleanstrike) || 0, corrente: parseInt(st.cleanstrike) || 0, data: formattaData(st.maxcleanstrikedate), passi: [3, 5, 7] },
-            { id: 'won', file: 'winstreak', etichetta: 'Win Streak', desc: n => `${n} matches in a row`, max: parseInt(st.maxwonstrike) || 0, corrente: parseInt(st.wonstrike) || 0, data: formattaData(st.maxwonstrikedate), passi: [5, 7, 10] },
-            { id: 'sd', file: 'sdstreak', etichetta: 'SD Streak', desc: n => `${n} showdowns in a row`, max: parseInt(st.maxsdstrike) || 0, corrente: parseInt(st.sdstrike) || 0, data: formattaData(st.sdwonstrikedate), passi: [3, 5, 7] }
-        ];
+        const st0 = d.badges || {};
+        // le serie (Clean, Win, SD Streak): nomi, chiavi dei dati e soglie sono in titoli.js (Titoli.BADGE, Titoli.statoSerie)
         // `icona`: se la PNG non c'è ancora (badge nuovi) al suo posto compare una medaglia disegnata dal CSS (badge-team.js)
         const medaglia = (img, alt, tip, icona) => h('div', { class: 'pp-medaglia pp-tip-host', tabindex: '0' },
             h('img', { src: img, alt, onerror: icona && window.BadgeTeam ? ev => window.BadgeTeam.immagineMancante(ev.target, icona) : null }), tip);
@@ -406,18 +402,17 @@
             lista.push(medaglia('immagini/badge-allenatore-founder.png', 'Founder', h('div', { class: 'neubrutal-tooltip pp-tip' },
                 h('span', { class: 'pp-tip-nome', testo: 'LEAGUE FOUNDER' }), h('span', { class: 'pp-tip-testo', testo: 'Hail to the kings' }))));
         }
-        for (const b of serie) {
-            let livello = '', raggiunto = 0, prossimo = b.passi[0];
-            if (b.max >= b.passi[2]) { livello = 'gold'; raggiunto = b.passi[2]; prossimo = b.passi[2]; }
-            else if (b.max >= b.passi[1]) { livello = 'silver'; raggiunto = b.passi[1]; prossimo = b.passi[2]; }
-            else if (b.max >= b.passi[0]) { livello = 'bronze'; raggiunto = b.passi[0]; prossimo = b.passi[1]; }
-            if (!livello) continue;
-            const pct = Math.min((b.corrente / prossimo) * 100, 100);
-            lista.push(medaglia(`immagini/badge-allenatore-${b.file}-${livello}.png`, `${b.etichetta} ${livello}`, h('div', { class: 'neubrutal-tooltip pp-tip' },
-                h('span', { class: 'pp-tip-riga' }, h('span', { class: 'pp-tip-nome', testo: b.etichetta.toUpperCase() }), h('span', { class: 'pp-tip-obiettivo', testo: b.data })),
-                h('span', { class: 'pp-tip-testo', testo: b.desc(raggiunto) }),
+        for (const b of Titoli.BADGE) {
+            const st = Titoli.statoSerie(st0, b);
+            if (!st.livello) continue;
+            const livello = Titoli.LIVELLI_BADGE[st.livello - 1];
+            const raggiunto = b.steps[st.livello - 1], prossimo = st.obiettivo;
+            const pct = Math.min((st.attuale / prossimo) * 100, 100);
+            lista.push(medaglia(Titoli.immagineSerie(b, livello), `${b.label} ${livello}`, h('div', { class: 'neubrutal-tooltip pp-tip' },
+                h('span', { class: 'pp-tip-riga' }, h('span', { class: 'pp-tip-nome', testo: b.label.toUpperCase() }), h('span', { class: 'pp-tip-obiettivo', testo: st.data || '--/--/----' })),
+                h('span', { class: 'pp-tip-testo', testo: b.descrizione(raggiunto) }),
                 h('span', { class: 'pp-barra' }, h('i', { stile: { width: `${pct}%` } })),
-                h('span', { class: 'pp-tip-obiettivo', testo: `CURRENT: ${b.corrente} / ${prossimo}` }))));
+                h('span', { class: 'pp-tip-obiettivo', testo: `CURRENT: ${st.attuale} / ${prossimo}` })), b.icona));
         }
         // i badge dell'allenatore (badge-allenatore.js): i quattro più alti; gli altri in un "+N" (tutti si vedono nel profilo, Achievements).
         // Il blocco deve starci anche negli schermi interi senza scroll: poche medaglie, mai una fila infinita.
