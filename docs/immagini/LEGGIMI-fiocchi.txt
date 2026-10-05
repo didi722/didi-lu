@@ -1,15 +1,16 @@
 IMMAGINI DEI BADGE — come si chiamano i file
 ============================================
 
-Tre famiglie, una per prefisso. Ogni badge ha tre file, uno per livello (-bronze, -silver, -gold); le serie e l'amicizia hanno per
-ora un file solo, uguale per tutti i livelli. PNG con sfondo trasparente, quadrate (128x128 oppure 256x256 o più), disegno a tutta
-altezza con il contorno nero spesso. Finché un file manca, il sito mostra al suo posto una medaglia disegnata dal CSS con un'icona.
+Tre famiglie, una per prefisso. Ogni badge ha tre file, uno per livello (-bronze, -silver, -gold); solo il fondatore ha un file solo.
+I sei disegni che prima erano un file unico (le serie e l'amicizia dei Pokémon, le serie dei team) sono ora il livello oro, perché
+sono gialli: servono ancora l'argento e il bronzo. PNG con sfondo trasparente, quadrate (128x128 oppure 256x256 o più), disegno a
+tutta altezza con il contorno nero spesso. Finché un file manca, il sito mostra al suo posto una medaglia disegnata dal CSS con un'icona.
 
   ribbon-<badge>-<livello>.png          fiocchi dei Pokémon (scheda Pokémon, medagliette sulla card del team)
   badge-team-<badge>-<livello>.png      badge dei team (scaffale, testata e card del team)
   badge-allenatore-<badge>-<livello>.png  badge degli allenatori (Achievements del profilo, pagina Trainers, pagina pubblica, Stats)
 
-Per sapere cosa manca, cosa ha un file solo e cosa non è agganciato a niente (nome sbagliato):
+Per sapere cosa manca (con i colori che mancano a ogni badge) e cosa non è agganciato a niente (nome sbagliato, o file da cancellare):
 
   node tools/elenco-immagini.cjs            stampa il controllo
   node tools/elenco-immagini.cjs --scrivi   lo scrive anche in IMMAGINI-DA-CARICARE.md (cartella principale)
@@ -23,23 +24,21 @@ Fiocchi dei Pokémon (ribbon-*)
   winner       set vinti con il Pokémon in campo (10 / 30 / 60)                    ribbon-winner-<livello>.png
   laststand    set vinti restando l'ultimo Pokémon in piedi (1 / 3 / 6)            ribbon-laststand-<livello>.png
   survivor     % di set in campo senza andare KO (60 / 75 / 90 %, da 15 set)       ribbon-survivor-<livello>.png
-  winstreak    match vinti di fila (3 / 5 / 8)                                     ribbon-winstreak.png        (un file solo)
-  cleanstreak  match vinti senza perdere set, di fila (2 / 3 / 5)                  ribbon-cleanstreak.png      (un file solo)
+  winstreak    match vinti di fila (3 / 5 / 8)                                     ribbon-winstreak-<livello>.png     (c'è l'oro)
+  cleanstreak  match vinti senza perdere set, di fila (2 / 3 / 5)                  ribbon-cleanstreak-<livello>.png   (c'è l'oro)
   champion     stagioni vinte col team giocandoci davvero (1 / 2 / 3)              ribbon-champion-<livello>.png
-  friendship   stagioni in campo con lo stesso team (2 / 3 / 5)                    ribbon-friendship.png       (un file solo)
+  friendship   stagioni in campo con lo stesso team (2 / 3 / 5)                    ribbon-friendship-<livello>.png    (c'è l'oro)
 
-I fiocchi con un solo file mostrano il livello con il colore della fascia sopra la card e con il numero romano accanto alla medaglia.
 Winner, Survivor e Champion hanno per ora lo stesso disegno dei badge degli allenatori (winstreak, cleanstreak, champion): per avere
 un disegno tutto loro basta sostituire il file con lo stesso nome.
 
 Badge dei team (badge-team-*)
 -----------------------------
   champion, showdown, winner, winrate, flawless, knockout, veteran   badge-team-<badge>-<livello>.png
-  sdstreak, winstreak, cleanstreak                                   badge-team-<badge>.png      (un file solo)
+  sdstreak, winstreak, cleanstreak                                   badge-team-<badge>-<livello>.png  (c'è l'oro)
 
 Badge degli allenatori (badge-allenatore-*)
 -------------------------------------------
   champion, veteran, matchwinner, setcrusher, showdown, dominant, knockout, untouchable, closecall, formatmaster, elopeak, collector
   e le serie cleanstreak, winstreak, sdstreak                        badge-allenatore-<badge>-<livello>.png
   il fondatore                                                       badge-allenatore-founder.png  (un file solo)
-  sagome per lo stato "bloccato" (ancora non usate)                  badge-allenatore-<champion|cleanstreak|winstreak|sdstreak>-ghost.png

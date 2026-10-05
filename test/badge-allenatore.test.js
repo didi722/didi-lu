@@ -99,8 +99,10 @@ test('collezionista: le specie diverse portate in campo (non i team, non le comp
     const lista = BA.calcola(risultato(giocatore(), pokemon), 'didi');
     assert.equal(per(lista, 'collector').valore, 2, 'garchomp (due volte) e gengar; kyurem non è mai sceso; zapdos è di Lu');
     assert.equal(per(lista, 'collector').livello, 0);
-    const tanti = Array.from({ length: 41 }, (_, i) => mostro('specie' + i, 1));
-    assert.equal(per(BA.calcola(risultato(giocatore(), tanti), 'didi'), 'collector').livello, 2);
+    // i livelli alle soglie del catalogo (30 / 65 / 100 specie): un attimo prima non basta, alla soglia sì
+    const soglie = BA.CATALOGO.find(b => b.id === 'collector').soglie;
+    const livelloCon = n => per(BA.calcola(risultato(giocatore(), Array.from({ length: n }, (_, i) => mostro('specie' + i, 1))), 'didi'), 'collector').livello;
+    assert.deepEqual([soglie[0] - 1, soglie[0], soglie[1] - 1, soglie[1], soglie[2]].map(livelloCon), [0, 1, 1, 2, 3]);
 });
 
 test('immagini: dodici badge × tre livelli, tutti badge-allenatore-<id>-<livello>.png (anche il campione)', () => {
@@ -142,7 +144,7 @@ test('dati veri di Statistiche.calcola: un allenatore con match e set ha badge c
 
 test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file da caricare', () => {
     assert.equal(BT.CATALOGO.length, 10);
-    assert.equal(BT.IMMAGINI.length, 24);
+    assert.equal(BT.IMMAGINI.length, 30);
     assert.equal(typeof BT.costruisci, 'function');
 });
 

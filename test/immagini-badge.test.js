@@ -1,8 +1,8 @@
 'use strict';
 // Le immagini dei badge in docs/immagini/ e i nomi con cui il sito le cerca:
-//   - ribbon-<badge>[-livello].png per i Pokémon, badge-team-<badge>[-livello].png per i team, badge-allenatore-<badge>[-livello].png per gli
-//     allenatori (anche le serie e il fondatore di titoli.js), con -bronze, -silver o -gold;
-//   - nessun file con uno di questi prefissi resta senza un badge che lo usa (un nome sbagliato non passa inosservato);
+//   - ribbon-<badge>-<livello>.png per i Pokémon, badge-team-<badge>-<livello>.png per i team, badge-allenatore-<badge>-<livello>.png per gli
+//     allenatori (anche le serie di titoli.js), con -bronze, -silver o -gold: ogni badge ha i tre livelli (solo il fondatore ha un file solo);
+//   - nessun file con uno di questi prefissi resta senza un badge che lo usa (un nome sbagliato, o un file inutile, non passa inosservato);
 //   - i vecchi nomi (badge_won_*, champion-*, victory-ribbon.png, team-sd.png, galar-ghost.png...) non si usano più da nessuna parte;
 //   - le pagine che costruiscono il nome dell'immagine (profilo, Trainers, pagina pubblica) puntano a file che esistono;
 //   - tools/elenco-immagini.cjs elenca solo file che mancano davvero.
@@ -31,48 +31,56 @@ const GRUPPI = [
     { prefisso: 'badge-team-', file: nomi(BadgeTeam.IMMAGINI) },
     { prefisso: 'badge-allenatore-', file: nomi(BadgeAllenatore.IMMAGINI).concat(nomi(Titoli.IMMAGINI)) }
 ];
-const SAGOME = /-ghost\.png$/;      // sagome dello stato "bloccato", ancora non usate
-
 test('ogni PNG con un prefisso dei badge è usata da un badge (e si chiama come il sito la cerca)', () => {
     const presenti = fs.readdirSync(IMMAGINI);
     for (const g of GRUPPI) {
         const usati = new Set(g.file);
-        const orfani = presenti.filter(f => f.startsWith(g.prefisso) && !usati.has(f) && !SAGOME.test(f));
-        assert.deepEqual(orfani, [], `file ${g.prefisso}* che nessun badge usa: controlla il nome (badge, livello bronze|silver|gold)`);
+        const orfani = presenti.filter(f => f.startsWith(g.prefisso) && !usati.has(f));
+        assert.deepEqual(orfani, [], `file ${g.prefisso}* che nessun badge usa: controlla il nome (badge, livello bronze|silver|gold) o cancellalo`);
     }
     // e un file non ha due prefissi: ognuno sta in un solo gruppo
     for (const f of presenti) assert.ok(GRUPPI.filter(g => f.startsWith(g.prefisso)).length <= 1, f);
 });
 
-test('i nomi attesi seguono lo schema <prefisso><badge>[-livello].png, e un badge ha un file solo oppure tre', () => {
+test('i nomi attesi seguono lo schema <prefisso><badge>-<livello>.png (solo il fondatore ha un file solo) e ogni badge ha i tre livelli', () => {
     for (const g of GRUPPI) {
         for (const f of g.file) assert.match(f, new RegExp(`^${g.prefisso}[a-z]+(-(bronze|silver|gold))?\\.png$`), f);
+        for (const f of g.file.filter(f => f !== 'badge-allenatore-founder.png')) assert.match(f, /-(bronze|silver|gold)\.png$/, `${f}: manca il livello`);
     }
+    // i tre livelli di un badge sono sempre le stesse tre parole, in questo ordine
+    for (const [nome, catalogo] of [['fiocchi', Fiocchi.CATALOGO], ['team', BadgeTeam.CATALOGO], ['allenatore', BadgeAllenatore.CATALOGO]]) {
+        for (const b of catalogo) {
+            assert.deepEqual(b.immagini.map(p => /-(bronze|silver|gold)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold'], `${nome}/${b.id}`);
+        }
+    }
+    // e ogni badge è un achievement vero: ha soglie crescenti e un valore che si legge dai numeri del Pokémon, del team o dell'allenatore
     for (const catalogo of [Fiocchi.CATALOGO, BadgeTeam.CATALOGO, BadgeAllenatore.CATALOGO]) {
-        for (const b of catalogo) assert.ok(b.immagini.length === 1 || b.immagini.length === 3, `${b.id}: ${b.immagini.length} immagini`);
-    }
-    // i tre livelli di un badge sono sempre le stesse tre parole
-    for (const b of BadgeAllenatore.CATALOGO) {
-        assert.deepEqual(b.immagini.map(p => /-(bronze|silver|gold)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold'], b.id);
+        for (const b of catalogo) {
+            assert.equal(b.soglie.length, 3, b.id);
+            assert.ok(b.soglie[0] < b.soglie[1] && b.soglie[1] < b.soglie[2], `${b.id}: soglie crescenti`);
+            assert.equal(typeof b.valore, 'function', b.id);
+        }
     }
 });
 
-test('i badge già caricati ci sono con il loro nome nuovo (allenatore, team, Pokémon)', () => {
+test('i badge già caricati ci sono con il loro nome (allenatore, team, Pokémon)', () => {
     const previsti = [
         // allenatore: le serie e il campione, ex badge_clean_*, badge_won_*, badge_sd_*, champion-*, badge_founder.png
         ...['cleanstreak', 'winstreak', 'sdstreak', 'champion'].flatMap(b => ['bronze', 'silver', 'gold'].map(l => `badge-allenatore-${b}-${l}.png`)),
         'badge-allenatore-founder.png',
-        // team: il campione e le tre serie (un file solo, ex team-sd.png, team-wins.png, team-clean.png)
+        // team: il campione, e le tre serie che avevano un file solo (ex team-sd.png, team-wins.png, team-clean.png): i disegni gialli sono l'oro
         ...['bronze', 'silver', 'gold'].map(l => `badge-team-champion-${l}.png`),
-        'badge-team-sdstreak.png', 'badge-team-winstreak.png', 'badge-team-cleanstreak.png',
-        // Pokémon: Winner, Survivor e Champion (tre livelli) e i tre fiocchi con un file solo (ex victory-ribbon.png, strike-ribbon.png, friend-ribbon.png)
+        'badge-team-sdstreak-gold.png', 'badge-team-winstreak-gold.png', 'badge-team-cleanstreak-gold.png',
+        // Pokémon: Winner, Survivor e Champion (tre livelli) e i tre fiocchi che avevano un file solo (ex victory-ribbon.png, strike-ribbon.png,
+        // friend-ribbon.png): anche questi sono l'oro
         ...['winner', 'survivor', 'champion'].flatMap(b => ['bronze', 'silver', 'gold'].map(l => `ribbon-${b}-${l}.png`)),
-        'ribbon-winstreak.png', 'ribbon-cleanstreak.png', 'ribbon-friendship.png'
+        'ribbon-winstreak-gold.png', 'ribbon-cleanstreak-gold.png', 'ribbon-friendship-gold.png'
     ];
     for (const f of previsti) assert.ok(esiste(f), f);
     // ...e i vecchi nomi non ci sono più
-    const vecchi = fs.readdirSync(IMMAGINI).filter(f => /^(badge_(clean|won|sd|founder)|champion-|victory-ribbon|strike-ribbon|friend-ribbon|team-(sd|wins|clean)|(galar|hoenn|sinnoh)-)/.test(f));
-    assert.deepEqual(vecchi, [], 'vecchi nomi ancora in docs/immagini/');
+    const vecchi = fs.readdirSync(IMMAGINI).filter(f => /^(badge_(clean|won|sd|founder)|champion-|victory-ribbon|strike-ribbon|friend-ribbon|team-(sd|wins|clean)|(galar|hoenn|sinnoh)-)/.test(f)
+        || /^(ribbon-(winstreak|cleanstreak|friendship)|badge-team-(sdstreak|winstreak|cleanstreak))\.png$/.test(f) || /-ghost\.png$/.test(f));
+    assert.deepEqual(vecchi, [], 'vecchi nomi (o sagome inutilizzate) ancora in docs/immagini/');
 });
 
 test('nessuna pagina o script cerca più i vecchi nomi delle immagini', () => {
@@ -109,7 +117,7 @@ test('profilo, pagina Trainers e pagina pubblica costruiscono lo stesso nome (ba
     assert.match(carta, /immagini\/badge-allenatore-founder\.png/);
 });
 
-test('tools/elenco-immagini.cjs: elenca solo file che mancano davvero, e dice quali badge hanno un file solo', () => {
+test('tools/elenco-immagini.cjs: elenca solo file che mancano davvero e i colori che mancano a ogni badge', () => {
     const r = controlla();
     assert.equal(r.gruppi.length, 3);
     let totale = 0;
@@ -120,10 +128,16 @@ test('tools/elenco-immagini.cjs: elenca solo file che mancano davvero, e dice qu
         totale += g.mancanti.length;
     }
     assert.equal(r.mancanti, totale);
-    const unFile = r.gruppi.map(g => g.unFile.map(b => b.id));
-    assert.deepEqual(unFile[0], ['winstreak', 'cleanstreak', 'friendship']);        // fiocchi dei Pokémon
-    assert.deepEqual(unFile[1], ['sdstreak', 'winstreak', 'cleanstreak']);           // badge dei team
-    assert.deepEqual(unFile[2], []);                                                  // allenatori: tre livelli per tutti (il fondatore è speciale)
+    // nessun badge è senza i tre livelli nel catalogo
+    for (const g of r.gruppi) assert.deepEqual(g.senzaLivelli, [], g.g.prefisso);
+    // i "parziali" sono badge che hanno già qualche livello e ne aspettano altri: i colori che mancano sono quelli che non ci sono
+    for (const g of r.gruppi) {
+        for (const x of g.parziali) {
+            for (const l of ['bronze', 'silver', 'gold']) {
+                const f = x.b.immagini.map(p => p.replace(/^immagini\//, '')).find(p => p.endsWith(`-${l}.png`));
+                assert.equal(x.mancanti.includes(l), !esiste(f), f);
+            }
+        }
+    }
     assert.match(r.testo, /# Immagini dei badge/);
-    assert.match(r.testo, /ribbon-winstreak-bronze\.png/);
 });

@@ -6,7 +6,7 @@ Finché un file manca il sito mostra al suo posto una medaglia disegnata con il 
 
 ## Fiocchi dei Pokémon (scheda Pokémon e medagliette sulla card del team)
 
-12 file presenti su 21 attesi, 9 mancanti.
+12 file presenti su 27 attesi, 15 mancanti.
 
 Mancano:
 
@@ -21,16 +21,22 @@ Mancano:
 | `ribbon-laststand-bronze.png` | Last Stand · bronze | Sets won as the very last Pokémon standing. |
 | `ribbon-laststand-silver.png` | Last Stand · silver | Sets won as the very last Pokémon standing. |
 | `ribbon-laststand-gold.png` | Last Stand · gold | Sets won as the very last Pokémon standing. |
+| `ribbon-winstreak-bronze.png` | Win Streak · bronze | Matches won in a row, counting only the ones it actually played. |
+| `ribbon-winstreak-silver.png` | Win Streak · silver | Matches won in a row, counting only the ones it actually played. |
+| `ribbon-cleanstreak-bronze.png` | Clean Streak · bronze | Matches won without dropping a set, counting only the ones it actually played. |
+| `ribbon-cleanstreak-silver.png` | Clean Streak · silver | Matches won without dropping a set, counting only the ones it actually played. |
+| `ribbon-friendship-bronze.png` | Friendship · bronze | A bond that lasts: seasons on the field with the same trainer and team. |
+| `ribbon-friendship-silver.png` | Friendship · silver | A bond that lasts: seasons on the field with the same trainer and team. |
 
-Hanno un solo file per tutti i livelli (nessun bronze/silver/gold):
+Badge con solo alcuni livelli (colori che mancano):
 
-- Win Streak: `ribbon-winstreak.png` → per i tre livelli servirebbero `ribbon-winstreak-bronze.png`, `ribbon-winstreak-silver.png` e `ribbon-winstreak-gold.png`
-- Clean Streak: `ribbon-cleanstreak.png` → per i tre livelli servirebbero `ribbon-cleanstreak-bronze.png`, `ribbon-cleanstreak-silver.png` e `ribbon-cleanstreak-gold.png`
-- Friendship: `ribbon-friendship.png` → per i tre livelli servirebbero `ribbon-friendship-bronze.png`, `ribbon-friendship-silver.png` e `ribbon-friendship-gold.png`
+- Win Streak: c'è gold; mancano bronze e silver
+- Clean Streak: c'è gold; mancano bronze e silver
+- Friendship: c'è gold; mancano bronze e silver
 
 ## Badge dei team (scaffale, medagliette nella testata e sulla card del team)
 
-6 file presenti su 24 attesi, 18 mancanti.
+6 file presenti su 30 attesi, 24 mancanti.
 
 Mancano:
 
@@ -39,12 +45,18 @@ Mancano:
 | `badge-team-showdown-bronze.png` | Showdown Winner · bronze | Showdowns won with this team. |
 | `badge-team-showdown-silver.png` | Showdown Winner · silver | Showdowns won with this team. |
 | `badge-team-showdown-gold.png` | Showdown Winner · gold | Showdowns won with this team. |
+| `badge-team-sdstreak-bronze.png` | SD Streak · bronze | Showdowns won in a row with this team. |
+| `badge-team-sdstreak-silver.png` | SD Streak · silver | Showdowns won in a row with this team. |
 | `badge-team-winner-bronze.png` | Winner · bronze | Matches won with this team. |
 | `badge-team-winner-silver.png` | Winner · silver | Matches won with this team. |
 | `badge-team-winner-gold.png` | Winner · gold | Matches won with this team. |
 | `badge-team-winrate-bronze.png` | Win Rate · bronze | Share of matches won, once the team has played enough of them. |
 | `badge-team-winrate-silver.png` | Win Rate · silver | Share of matches won, once the team has played enough of them. |
 | `badge-team-winrate-gold.png` | Win Rate · gold | Share of matches won, once the team has played enough of them. |
+| `badge-team-winstreak-bronze.png` | Win Streak · bronze | Matches won in a row with this team. |
+| `badge-team-winstreak-silver.png` | Win Streak · silver | Matches won in a row with this team. |
+| `badge-team-cleanstreak-bronze.png` | Clean Streak · bronze | Matches won in a row without dropping a set. |
+| `badge-team-cleanstreak-silver.png` | Clean Streak · silver | Matches won in a row without dropping a set. |
 | `badge-team-flawless-bronze.png` | Flawless · bronze | Sets won without losing a single Pokémon. |
 | `badge-team-flawless-silver.png` | Flawless · silver | Sets won without losing a single Pokémon. |
 | `badge-team-flawless-gold.png` | Flawless · gold | Sets won without losing a single Pokémon. |
@@ -55,28 +67,14 @@ Mancano:
 | `badge-team-veteran-silver.png` | Veteran · silver | Seasons this team has played in. |
 | `badge-team-veteran-gold.png` | Veteran · gold | Seasons this team has played in. |
 
-Hanno un solo file per tutti i livelli (nessun bronze/silver/gold):
+Badge con solo alcuni livelli (colori che mancano):
 
-- SD Streak: `badge-team-sdstreak.png` → per i tre livelli servirebbero `badge-team-sdstreak-bronze.png`, `badge-team-sdstreak-silver.png` e `badge-team-sdstreak-gold.png`
-- Win Streak: `badge-team-winstreak.png` → per i tre livelli servirebbero `badge-team-winstreak-bronze.png`, `badge-team-winstreak-silver.png` e `badge-team-winstreak-gold.png`
-- Clean Streak: `badge-team-cleanstreak.png` → per i tre livelli servirebbero `badge-team-cleanstreak-bronze.png`, `badge-team-cleanstreak-silver.png` e `badge-team-cleanstreak-gold.png`
+- SD Streak: c'è gold; mancano bronze e silver
+- Win Streak: c'è gold; mancano bronze e silver
+- Clean Streak: c'è gold; mancano bronze e silver
 
 ## Badge degli allenatori (Achievements nel profilo, pagina Trainers, medaglie della pagina pubblica, scheda in Stats)
 
-44 file presenti su 46 attesi, 2 mancanti.
+46 file presenti su 46 attesi, 0 mancanti.
 
-Mancano:
-
-| File | Badge | Cosa rappresenta |
-|---|---|---|
-| `badge-allenatore-knockout-bronze.png` | KO Artist · bronze | Opposing Pokémon knocked out (only sets played on the site are counted). |
-| `badge-allenatore-knockout-silver.png` | KO Artist · silver | Opposing Pokémon knocked out (only sets played on the site are counted). |
-
-Sagome "ghost" presenti ma non usate da nessuna pagina:
-
-- `badge-allenatore-champion-ghost.png`
-- `badge-allenatore-cleanstreak-ghost.png`
-- `badge-allenatore-sdstreak-ghost.png`
-- `badge-allenatore-winstreak-ghost.png`
-
-Totale: 29 file mancanti.
+Totale: 39 file mancanti.

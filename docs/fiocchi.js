@@ -20,9 +20,9 @@
 // cambiano solo i numeri di CATALOGO. Funzione pura, niente DOM e niente Firebase (carica() riceve il db):
 // funziona nel browser (window.Fiocchi) e in Node (test/fiocchi.test.js).
 //
-// Immagini: tutte in docs/immagini/ e tutte col prefisso "ribbon-": ribbon-<id>-<bronze|silver|gold>.png (un file per livello) oppure
-// ribbon-<id>.png (un file solo, uguale per tutti i livelli). Finché un file non c'è, al suo posto compare una medaglia disegnata con
-// il CSS (immagineMancante). IMMAGINI elenca i file che il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "ribbon-": ribbon-<id>-<bronze|silver|gold>.png, un file per livello per ogni
+// fiocco. Finché un file non c'è, al suo posto compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file che
+// il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
 // =====================================================
 (function (radice, fabbrica) {
     if (typeof module === 'object' && module.exports) module.exports = fabbrica(null);
@@ -47,7 +47,7 @@
     // -----------------------------------------------------
     // Catalogo
     //   soglie    valori per bronzo, argento, oro
-    //   immagini  3 file (uno per livello) oppure 1 file per tutti
+    //   immagini  3 file, uno per livello (bronzo, argento, oro)
     //   minimo    se presente, sotto questo numero di set in campo il valore non conta ancora (serve per le percentuali)
     // -----------------------------------------------------
     const CATALOGO = [
@@ -69,16 +69,16 @@
           immagini: tre('ribbon-survivor-{l}.png') },
         { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [3, 5, 8],
           descrizione: 'Matches won in a row, counting only the ones it actually played.',
-          valore: p => num(p.serie && p.serie.vittorieMax), immagini: [CARTELLA + 'ribbon-winstreak.png'] },
+          valore: p => num(p.serie && p.serie.vittorieMax), immagini: tre('ribbon-winstreak-{l}.png') },
         { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [2, 3, 5],
           descrizione: 'Matches won without dropping a set, counting only the ones it actually played.',
-          valore: p => num(p.serie && p.serie.pulitaMax), immagini: [CARTELLA + 'ribbon-cleanstreak.png'] },
+          valore: p => num(p.serie && p.serie.pulitaMax), immagini: tre('ribbon-cleanstreak-{l}.png') },
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3],
           descrizione: 'Seasons won with its team while actually playing in them.',
           valore: p => num(p.stagioniVinteInCampo), immagini: tre('ribbon-champion-{l}.png') },
         { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 3, 5],
           descrizione: 'A bond that lasts: seasons on the field with the same trainer and team.',
-          valore: p => num(p.stagioniInCampo), immagini: [CARTELLA + 'ribbon-friendship.png'] }
+          valore: p => num(p.stagioniInCampo), immagini: tre('ribbon-friendship-{l}.png') }
     ];
 
     // Tutti i file che il catalogo usa (nomi, senza cartella). Quali ci sono davvero in docs/immagini/ lo dice tools/elenco-immagini.cjs
@@ -94,10 +94,7 @@
         return l;
     }
 
-    const immagineDi = (def, livello) => {
-        const l = Math.max(1, livello || 1);
-        return def.immagini.length === 1 ? def.immagini[0] : def.immagini[Math.min(l, def.immagini.length) - 1];
-    };
+    const immagineDi = (def, livello) => def.immagini[Math.min(Math.max(1, livello || 1), def.immagini.length) - 1];
 
     /**
      * @param {object|null} pokemon  un elemento di Statistiche.calcola(...).pokemon (null se il Pokémon non ha mai giocato)

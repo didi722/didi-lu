@@ -15,10 +15,9 @@
 // quei numeri. Funzione pura, niente DOM e niente Firebase (le colle ricevono db e Fiocchi): funziona nel browser
 // (window.BadgeTeam) e in Node (test/badge-team.test.js).
 //
-// Immagini: tutte in docs/immagini/ e tutte col prefisso "badge-team-": badge-team-<id>-<bronze|silver|gold>.png (un file per livello)
-// oppure badge-team-<id>.png (un file solo, uguale per tutti i livelli: le serie). Finché un file non c'è, al suo posto compare una
-// medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file che il catalogo usa; `node tools/elenco-immagini.cjs` dice
-// quali mancano.
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "badge-team-": badge-team-<id>-<bronze|silver|gold>.png, un file per livello per
+// ogni badge. Finché un file non c'è, al suo posto compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file
+// che il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
 // Prima c'erano tre badge di serie solo nella pagina pubblica (7 vittorie di fila, 4 match puliti, 3 showdown): ora sono
 // qui, con tre livelli, e si vedono ovunque si apra un team.
 //
@@ -63,7 +62,7 @@
     // =====================================================
     // Il meccanismo, per un catalogo qualunque
     //   soglie    valori per bronzo, argento, oro
-    //   immagini  3 file (uno per livello) oppure 1 file per tutti
+    //   immagini  3 file, uno per livello (bronzo, argento, oro)
     //   minimo    se presente, sotto questo numero di base il valore non conta ancora (serve per le percentuali)
     //   valore    funzione del "contesto" (un team, un allenatore...) che dà il numero da confrontare con le soglie
     // opzioni: { titolo: titolo dello scaffale, chiedi: testo del tasto }
@@ -74,10 +73,7 @@
         // Tutti i file che il catalogo usa (nomi, senza cartella)
         const IMMAGINI = [...new Set(CATALOGO.flatMap(b => b.immagini).map(p => p.replace(CARTELLA, '')))];
 
-        const immagineDi = (def, livello) => {
-            const l = Math.max(1, livello || 1);
-            return def.immagini.length === 1 ? def.immagini[0] : def.immagini[Math.min(l, def.immagini.length) - 1];
-        };
+        const immagineDi = (def, livello) => def.immagini[Math.min(Math.max(1, livello || 1), def.immagini.length) - 1];
 
         /**
          * @param {object|null} contesto  quello che serve ai `valore` del catalogo (null: niente dati, tutto a zero)
@@ -172,7 +168,7 @@
           valore: t => num(t.showdown && t.showdown.vinti), immagini: tre('badge-team-showdown-{l}.png') },
         { id: 'sdstreak', nome: 'SD Streak', icona: '🎯', unita: 'showdowns in a row', soglie: [2, 3, 5],
           descrizione: 'Showdowns won in a row with this team.',
-          valore: t => num(t.serie && t.serie.showdownMax), immagini: [CARTELLA + 'badge-team-sdstreak.png'] },
+          valore: t => num(t.serie && t.serie.showdownMax), immagini: tre('badge-team-sdstreak-{l}.png') },
         { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'matches won', soglie: [5, 15, 30],
           descrizione: 'Matches won with this team.',
           valore: t => num(t.match && t.match.vinti), immagini: tre('badge-team-winner-{l}.png') },
@@ -182,10 +178,10 @@
           immagini: tre('badge-team-winrate-{l}.png') },
         { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [3, 5, 7],
           descrizione: 'Matches won in a row with this team.',
-          valore: t => num(t.serie && t.serie.vittorieMax), immagini: [CARTELLA + 'badge-team-winstreak.png'] },
+          valore: t => num(t.serie && t.serie.vittorieMax), immagini: tre('badge-team-winstreak-{l}.png') },
         { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [2, 3, 4],
           descrizione: 'Matches won in a row without dropping a set.',
-          valore: t => num(t.serie && t.serie.pulitaMax), immagini: [CARTELLA + 'badge-team-cleanstreak.png'] },
+          valore: t => num(t.serie && t.serie.pulitaMax), immagini: tre('badge-team-cleanstreak-{l}.png') },
         { id: 'flawless', nome: 'Flawless', icona: '🛡️', unita: 'flawless sets', soglie: [1, 3, 6],
           descrizione: 'Sets won without losing a single Pokémon.',
           valore: t => num(t.ko && t.ko.setPerfetti), immagini: tre('badge-team-flawless-{l}.png') },

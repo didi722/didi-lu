@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-/* Controlla le immagini dei badge in docs/immagini/: quelle che il sito si aspetta e non trova, quelle con un solo file (senza i tre
-   livelli) e quelle che nessun catalogo usa (nome sbagliato, o file messi lì senza essere agganciati a niente).
+/* Controlla le immagini dei badge in docs/immagini/: quelle che il sito si aspetta e non trova (con i livelli che mancano badge per badge)
+   e quelle che nessun catalogo usa (nome sbagliato, o file messi lì senza essere agganciati a niente).
    Tre gruppi, uno per prefisso: ribbon-* (fiocchi dei Pokémon), badge-team-* (badge dei team), badge-allenatore-* (badge degli allenatori,
-   comprese le serie e il fondatore di titoli.js). Un badge ha tre file, -bronze, -silver e -gold (le serie e il fondatore possono averne
-   uno solo); finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS.
+   comprese le serie di titoli.js e il fondatore). Ogni badge ha tre file, -bronze, -silver e -gold (solo il fondatore ne ha uno);
+   finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS.
    Uso:  node tools/elenco-immagini.cjs            (stampa il controllo)
          node tools/elenco-immagini.cjs --scrivi   (scrive anche IMMAGINI-DA-CARICARE.md nella cartella principale) */
 'use strict';
@@ -18,8 +18,7 @@ const CARTELLA = path.join(__dirname, '..', 'docs', 'immagini');
 const nomi = lista => lista.map(p => p.replace(/^immagini\//, ''));
 const esiste = nome => fs.existsSync(path.join(CARTELLA, nome));
 const LIVELLO = /-(bronze|silver|gold)\.png$/;
-// Sagome per lo stato "bloccato": ci sono, ma nessuna pagina le usa ancora (il bloccato si disegna in grigio con il CSS)
-const SAGOME = /-ghost\.png$/;
+const LIVELLI = ['bronze', 'silver', 'gold'];
 
 // Gli elementi delle serie e del fondatore (titoli.js) hanno la stessa forma dei badge dei cataloghi
 const serie = Titoli.BADGE.map(b => ({ id: b.file, nome: b.label, descrizione: `Series badge: ${b.unita}.`, immagini: Titoli.LIVELLI_BADGE.map(l => Titoli.immagineSerie(b, l)) }));
@@ -44,13 +43,16 @@ function controlla() {
     for (const g of gruppi) {
         const attesi = [...new Set(g.catalogo.flatMap(b => nomi(b.immagini)))];
         const mancanti = attesi.filter(f => !esiste(f));
-        const unFile = g.catalogo.filter(b => b.immagini.length === 1 && b.id !== 'founder');
+        // un badge (il fondatore è l'unico speciale) deve avere i tre livelli; "parziali" sono quelli che ne hanno già qualcuno ma non tutti
+        const senzaLivelli = g.catalogo.filter(b => b.id !== 'founder' && b.immagini.length !== LIVELLI.length);
+        const parziali = g.catalogo.filter(b => b.id !== 'founder' && b.immagini.length === LIVELLI.length).map(b => {
+            const presenti = LIVELLI.filter((l, i) => esiste(nomi(b.immagini)[i]));
+            return { b, presenti, mancanti: LIVELLI.filter(l => !presenti.includes(l)) };
+        }).filter(x => x.presenti.length && x.mancanti.length);
         const usati = new Set(attesi);
-        const suoi = tutti.filter(f => f.startsWith(g.prefisso) && f.endsWith('.png'));
-        const orfani = suoi.filter(f => !usati.has(f) && !SAGOME.test(f)).sort();
-        const sagome = suoi.filter(f => SAGOME.test(f)).sort();
+        const orfani = tutti.filter(f => f.startsWith(g.prefisso) && f.endsWith('.png') && !usati.has(f)).sort();
         totale += mancanti.length;
-        risultati.push({ g, attesi, mancanti, unFile, orfani, sagome });
+        risultati.push({ g, attesi, mancanti, senzaLivelli, parziali, orfani });
 
         righe.push(`## ${g.titolo}`, '', `${attesi.length - mancanti.length} file presenti su ${attesi.length} attesi, ${mancanti.length} mancanti.`, '');
         if (mancanti.length) {
@@ -63,17 +65,15 @@ function controlla() {
             }
             righe.push('');
         }
-        if (unFile.length) {
-            righe.push('Hanno un solo file per tutti i livelli (nessun bronze/silver/gold):', '');
-            for (const b of unFile) {
-                const f = nomi(b.immagini)[0];
-                const base = f.replace(/\.png$/, '');
-                righe.push(`- ${b.nome}: \`${f}\` → per i tre livelli servirebbero \`${base}-bronze.png\`, \`${base}-silver.png\` e \`${base}-gold.png\``);
-            }
+        if (parziali.length) {
+            righe.push('Badge con solo alcuni livelli (colori che mancano):', '');
+            for (const x of parziali) righe.push(`- ${x.b.nome}: ${x.presenti.length > 1 ? 'ci sono' : "c'è"} ${x.presenti.join(' e ')}; ${x.mancanti.length > 1 ? 'mancano' : 'manca'} ${x.mancanti.join(' e ')}`);
             righe.push('');
         }
-        if (orfani.length) righe.push('File con questo prefisso che nessun badge usa (nome sbagliato?):', '', ...orfani.map(f => `- \`${f}\``), '');
-        if (sagome.length) righe.push('Sagome "ghost" presenti ma non usate da nessuna pagina:', '', ...sagome.map(f => `- \`${f}\``), '');
+        if (senzaLivelli.length) {
+            righe.push('Badge che NON hanno i tre livelli nel catalogo (devono averli):', '', ...senzaLivelli.map(b => `- ${b.nome}: ${b.immagini.length} immagini`), '');
+        }
+        if (orfani.length) righe.push('File con questo prefisso che nessun badge usa (nome sbagliato, o da cancellare):', '', ...orfani.map(f => `- \`${f}\``), '');
     }
     righe.push(`Totale: ${totale} file mancanti.`, '');
     return { gruppi: risultati, testo: righe.join('\n'), mancanti: totale };
