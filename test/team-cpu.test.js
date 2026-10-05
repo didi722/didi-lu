@@ -235,6 +235,121 @@ test('STANDARD: al massimo due Uber, niente AG né misteriosi', async () => {
     }
 });
 
+// ANYTHING GOOSE: nessuna clausola e nessun limite di tier; la CPU doppia Pokémon e strumenti e punta sull'attacco
+const goose = (extra = {}) => reg({ strutturaSito: 'anything_goes', restrizioni: {}, ...extra });
+const nomiStrumenti = testo => (testo.match(/^.+ @ (.+)$/gm) || []).map(r => id(r.split(' @ ')[1]));
+const conta = lista => lista.length - new Set(lista).size;
+
+test('Anything Goose: il contesto non ha le regole di STANDARD (Uber, mitici) e sa di essere Goose', () => {
+    const c = T.contestoDa({ strutturaSito: 'anything_goes', baseTier: 'STANDARD', genRuleValue: '9' });
+    assert.equal(c.goose, true);
+    assert.equal(c.standard, false);
+    const s = T.contestoDa({ strutturaSito: 'custom', baseTier: 'STANDARD', genRuleValue: '9' });
+    assert.equal(s.goose, false);
+    assert.equal(s.standard, true);
+});
+
+for (const [nome, extra] of [['singolo', {}], ['doppio', { battleStyle: 'doubles' }], ['Gen 4', { genRuleValue: '4' }]]) {
+    test(`Anything Goose (${nome}): nessun limite di tier, anche i Pokémon AG e Uber; tutto resta legale per il simulatore`, { timeout: 120000 }, async () => {
+        const { sim } = await caricaSim();
+        const regolamento = goose(extra);
+        const r = await genera(regolamento);
+        assert.equal(r.team.length, 12, `team prodotti: ${r.team.length}`);
+        const c = T.contestoDa(regolamento);
+        const dex = sim.Dex.forGen(c.gen);
+        const alti = new Set();
+        const validatore = sim.TeamValidator.get([`gen${c.gen}anythinggoes`, `gen${c.gen}ubers`, `gen${c.gen}ou`].find(f => sim.Dex.formats.get(f).exists));
+        for (const t of r.team) {
+            const sets = await importa(t.testo);
+            assert.equal(sets.length, 6, t.nome);
+            for (const s of sets) {
+                const sp = dex.species.get(s.species);
+                const tier = String(c.doppio ? sp.doublesTier : sp.tier).replace(/[()]/g, '');
+                if (/^(AG|D?Uber)$/i.test(tier)) alti.add(sp.name);
+                assert.equal((s.moves || []).length, 4, `${t.nome}: ${s.species} ha quattro mosse`);
+                assert.equal(new Set(s.moves.map(id)).size, 4, `${t.nome}: ${s.species} senza mosse doppie`);
+                const copia = JSON.parse(JSON.stringify(s)); copia.level = 100;
+                const problemi = (validatore.validateSet(copia, {}) || []).filter(x => !/event|Hidden Ability|obtainable|tier|banned|Tera|restricted|EVs|Species Clause|Item Clause/i.test(x));
+                assert.deepEqual(problemi, [], `${t.nome}: ${s.species}`);
+            }
+        }
+        // niente tetto sulla tier: sono i Pokémon più forti a comparire, non i soli OU
+        assert.ok(alti.size >= (c.gen >= 3 ? 8 : 2), `Pokémon AG/Uber nei team: ${[...alti].join(', ')}`);
+    });
+}
+
+test('Anything Goose: si possono doppiare Pokémon e strumenti (due Calyrex-Shadow vanno bene), ma non in tutti i team', { timeout: 120000 }, async () => {
+    let conCopie = 0, conStrumentiUguali = 0, totale = 0, massimoCopie = 0;
+    for (const seme of ['uno', 'due', 'tre', 'quattro']) {
+        const r = await genera(goose({ battleStyle: seme === 'tre' ? 'doubles' : 'singles' }), { seme });
+        for (const t of r.team) {
+            totale++;
+            const copie = conta(t.specie);
+            if (copie) conCopie++;
+            massimoCopie = Math.max(massimoCopie, copie);
+            if (conta(nomiStrumenti(t.testo))) conStrumentiUguali++;
+            assert.equal((await importa(t.testo)).length, 6);
+        }
+    }
+    assert.ok(conCopie >= 3, `team con lo stesso Pokémon due volte: ${conCopie}/${totale}`);
+    assert.ok(conCopie <= totale * 0.5, `le copie sono l'eccezione: ${conCopie}/${totale}`);
+    assert.ok(massimoCopie <= 2, `mai più di tre copie dello stesso Pokémon in un team (copie extra: ${massimoCopie})`);
+    assert.ok(conStrumentiUguali >= totale * 0.5, `strumenti ripetuti (niente Item Clause): ${conStrumentiUguali}/${totale}`);
+});
+
+test('Anything Goose: le copie dello stesso Pokémon hanno ognuna quattro mosse e i ruoli (Tailwind...) non si moltiplicano', { timeout: 120000 }, async () => {
+    const r = await genera(goose({ battleStyle: 'doubles' }), { seme: 'tre', quanti: 12 });
+    const conCopia = r.team.filter(t => conta(t.specie));
+    assert.ok(conCopia.length >= 1, 'serve almeno un team con una copia');
+    for (const t of conCopia) {
+        const sets = await importa(t.testo);
+        for (const s of sets) assert.equal((s.moves || []).length, 4, `${t.nome}: ${s.species}`);
+        // il ruolo di chi mette Tailwind o Stanza Magica va a una copia sola
+        const tw = sets.filter(s => s.moves.some(m => id(m) === 'tailwind')).length;
+        assert.ok(tw <= 2, `${t.nome}: Tailwind su ${tw} Pokémon`);
+    }
+});
+
+test('Anything Goose: i team sono molto offensivi (piano "Offense" in metà dei team o più, più attacchi dei formati con clausole)', { timeout: 120000 }, async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(9);
+    const attacchi = async regolamento => {
+        const r = await genera(regolamento, { seme: 'offensivi' });
+        let n = 0, k = 0;
+        for (const t of r.team) for (const s of await importa(t.testo)) { n += s.moves.filter(m => dex.moves.get(m).category !== 'Status').length; k++; }
+        return { media: n / k, piani: r.team.map(t => t.piano) };
+    };
+    for (const stile of ['singles', 'doubles']) {
+        const g = await attacchi(goose({ battleStyle: stile }));
+        const c = await attacchi(reg({ battleStyle: stile, baseTier: 'OU' }));
+        const offensivi = g.piani.filter(p => p === 'offensivo').length;
+        assert.ok(offensivi >= g.piani.length * 0.5, `${stile}: ${offensivi}/${g.piani.length} team offensivi (${g.piani.join(', ')})`);
+        assert.ok(!g.piani.includes('bulky') && !g.piani.includes('bilanciato'), `${stile}: ${g.piani.join(', ')}`);
+        assert.ok(g.media > c.media + 0.1, `${stile}: attacchi per Pokémon ${g.media.toFixed(2)} (Goose) contro ${c.media.toFixed(2)} (con clausole)`);
+        assert.ok(g.media >= (stile === 'doubles' ? 2.6 : 3), `${stile}: ${g.media.toFixed(2)} attacchi per Pokémon`);   // nel doppio chi gioca Fake Out o Tailwind ha meno attacchi
+    }
+});
+
+test('Anything Goose: un team alla volta ha le stesse regole (copie, niente tier) e le clausole restano nei formati custom', { timeout: 120000 }, async () => {
+    const sessione = await sessioneDi(goose());
+    let alti = 0, copie = 0;
+    for (let i = 0; i < 12; i++) {
+        const { team } = await T.nuovoTeam(sessione, { seme: `g${i}` });
+        assert.ok(team, 'un team');
+        assert.equal((await importa(team.testo)).length, 6);
+        if (conta(team.specie)) copie++;
+        if (/Calyrex-Shadow|Zacian|Koraidon|Miraidon|Kyogre|Groudon|Mewtwo|Rayquaza|Eternatus/.test(team.testo)) alti++;
+    }
+    assert.ok(alti >= 8, `Pokémon di livello AG nei team: ${alti}/12`);
+    assert.ok(copie >= 1, `almeno un team con una copia: ${copie}/12`);
+    const custom = await sessioneDi(reg());
+    for (let i = 0; i < 12; i++) {
+        const { team } = await T.nuovoTeam(custom, { seme: `c${i}` });
+        assert.equal(conta(team.specie), 0, 'Species Clause nei formati custom');
+        assert.equal(conta(nomiStrumenti(team.testo)), 0, 'Item Clause nei formati custom');
+    }
+});
+
 test('mosse e abilità bandite non compaiono mai', async () => {
     const regolamento = reg({
         battleStyle: 'doubles',

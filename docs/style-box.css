@@ -3354,8 +3354,9 @@ color:#eeeeee;
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 40px;
-    margin-left: 300px;
+    gap: 24px;
+    /* il tag del nome parte dal bordo sinistro della scheda, subito dopo la colonna degli slot (75px + 20px di spazio) */
+    margin-left: 95px;
     margin-top: -5px;
     margin-bottom: -40px;
     z-index: 1;
@@ -3372,7 +3373,8 @@ color:#eeeeee;
     text-transform: uppercase;
     transform: rotate(-2deg);
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
-    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* se manca spazio cede poco (il formato a fianco va a capo prima) e non scende mai sotto otto lettere */
+    flex: 0 0.35 auto; min-width: min(100%, 9rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .tb-format-badge {
@@ -3384,7 +3386,8 @@ color:#eeeeee;
     font-size: 0.78rem;
     text-transform: uppercase;
     transform: rotate(1.5deg);
-    flex-shrink: 0; white-space: nowrap;
+    /* il formato è il primo a cedere spazio al nome: va a capo su due o tre righe invece di schiacciarlo */
+    flex-shrink: 1; min-width: 0; white-space: normal; line-height: 1.15;
 }
 
 .tb-close {
@@ -4261,17 +4264,24 @@ color:#eeeeee;
 .tb-btn-save { background: #4ade80; }
 
 /* --- Responsive --- */
+/* schermo stretto ma ancora con la colonna degli slot: nome e formato si fanno più piccoli, perché il nome resti leggibile */
+@media (min-width: 901px) and (max-width: 1060px) {
+    .tb-header { gap: 14px; }
+    .tb-title { font-size: 1.5rem; padding: 6px 14px; }
+    .tb-format-badge { font-size: 0.68rem; padding: 3px 8px; }
+}
+
 @media (max-width: 900px) {
     .tb-slots   { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .tb-editor  { grid-template-columns: 1fr; }
     .tb-footer  { grid-template-columns: 1fr; }
     .tb-title   { font-size: 1.5rem; }
-    /* l'intestazione non ha più la colonna dei team a sinistra: parte dal bordo, il nome occupa lo spazio che c'è
-       e il tasto di chiusura resta sempre nello schermo (il formato va a capo sotto) */
+    /* l'intestazione non ha più la colonna dei team a sinistra: parte dal bordo. Sulla prima riga ci sono solo il nome (tutto lo spazio
+       che resta) e il tasto di chiusura, che sta sempre nello schermo; il formato e le note vanno a capo sotto, insieme */
     .tb-header { margin: 0; gap: 10px 14px; flex-wrap: wrap; }
-    input.tb-title { flex: 1 1 0; width: auto; min-width: 0; }
+    input.tb-title { flex: 1 1 calc(100% - 60px); width: auto; min-width: 0; }
     .tb-close { order: 2; margin-left: 0; }
-    .tb-format-badge { order: 3; flex-basis: 100%; flex-shrink: 1; white-space: normal; text-align: center; }
+    .tb-format-badge { order: 3; flex: 1 1 0; min-width: 0; white-space: normal; text-align: center; }
 }
 
 @media (max-width: 560px) {

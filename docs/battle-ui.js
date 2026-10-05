@@ -737,6 +737,8 @@ function distruggiScena() {
 
 function aggiungiAScena(righe) {
     if (!PS) return;
+    righe = righe.filter(r => !r.startsWith('|debug|'));      // mai righe di debug nella cronaca (le manda il formato "Custom Game")
+    if (!righe.length) return;
     if (prossimaScena) { prossimaScena.push(...righe); return; }
     if (!scena) creaScena();
     if (righe.some(r => r.startsWith('|turn|'))) scena.turnoVisto = true;

@@ -75,7 +75,8 @@ export class BattagliaLocale {
 
     async _ascoltaSpettatore() {
         for await (const blocco of this.streams.spectator) {
-            const righe = blocco.split('\n').filter(r => r.startsWith('|'));
+            // le righe "|debug|" (il formato "Custom Game" del simulatore ne manda: "Multiscale weaken"...) non sono per i giocatori
+            const righe = blocco.split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
             this.righeLog.push(...righe);
             this._emetti('log', righe);
 

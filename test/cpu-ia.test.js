@@ -851,6 +851,34 @@ for (const f of FORMATI) {
     });
 }
 
+// Anything Goose: due copie dello stesso Pokémon (stesso nome nel log) e strumenti uguali, e il simulatore non rifiuta nessuna scelta
+for (const stile of ['singles', 'doubles']) {
+    test(`partite vere (Anything Goose, ${stile}): team con Pokémon e strumenti doppi, la CPU gioca senza scelte rifiutate`, { timeout: 240000 }, async () => {
+        const { sim } = await caricaSim();
+        const reg = { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: stile, strutturaSito: 'anything_goes', restrizioni: {} };
+        const T = require('../docs/team-cpu.js');
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const leggi = p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8'));
+        const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: reg, caricaJson: async p => leggi(p), quanti: 12, seme: 'goose-partite' });
+        const conCopie = r.team.filter(t => t.specie.length !== new Set(t.specie).size);
+        assert.ok(conCopie.length >= 1, 'serve almeno un team con una copia');
+        const formato = formatoSito(reg);
+        assert.ok(!/Sleep Clause/.test(formato), 'Anything Goose non ha clausole in battaglia');
+        let giocate = 0;
+        for (let i = 0; i < Math.min(2, conCopie.length); i++) {
+            const t1 = conCopie[i], t2 = r.team[(r.team.indexOf(t1) + 3) % r.team.length];
+            const cpu1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 31) });
+            const cpu2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 77) });
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu1 }, agente2: { tipo: 'cpu', cerebro: cpu2 }, casuale: creaCasuale(i + 5), seme: [i + 2, 9, 4, 6] });
+            assert.deepEqual(e.errori.map(x => `${x.lato} ${x.scelta} => ${x.messaggio}`), [], 'nessuna scelta rifiutata');
+            assert.ok(!e.bloccata && !e.scaduta, `la partita deve finire (turni ${e.turni})`);
+            giocate++;
+        }
+        assert.ok(giocate >= 1);
+    });
+}
+
 test('partite vere: la CPU batte il bot casuale la gran parte delle volte (singolo e doppio)', { timeout: 300000 }, async () => {
     const { sim } = await caricaSim();
     for (const f of [FORMATI[0], FORMATI[1]]) {
