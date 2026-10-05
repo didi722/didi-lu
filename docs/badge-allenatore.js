@@ -36,10 +36,10 @@
     // Catalogo. Il "contesto" di un allenatore: { g: players[i], specie: n. specie portate in campo, team: n. team giocati }
     // -----------------------------------------------------
     const CATALOGO = [
-        { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 4],
+        { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [2, 3, 5],
           descrizione: 'Seasons of the league won.',
           valore: c => num(c.g.stagioniVinte), immagini: tre('badge-allenatore-champion-{l}.png') },
-        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [2, 4, 7],
+        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [3, 6, 10],
           descrizione: 'Seasons of the league played.',
           valore: c => num(c.g.stagioniGiocate), immagini: tre('badge-allenatore-veteran-{l}.png') },
         { id: 'matchwinner', nome: 'Match Winner', icona: '🏆', unita: 'matches won', soglie: [25, 75, 160],
@@ -49,7 +49,7 @@
           descrizione: 'Sets won, in every format.',
           valore: c => num(c.g.set && c.g.set.vinti), immagini: tre('badge-allenatore-setcrusher-{l}.png') },
         { id: 'showdown', nome: 'Showdown Victor', icona: '🎯', unita: 'showdowns won', soglie: [8, 24, 50],
-          descrizione: 'Showdowns won (the best of three matches against one opponent).',
+          descrizione: 'Showdowns won.',
           valore: c => num(c.g.showdown && c.g.showdown.vinti), immagini: tre('badge-allenatore-showdown-{l}.png') },
         { id: 'dominant', nome: 'Dominant', icona: '📈', unita: '% of matches won', soglie: [60, 70, 80], etichetta: 'Win rate', suffisso: '%',
           descrizione: 'Share of matches won, once you have played enough of them.',
