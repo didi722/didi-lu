@@ -57,13 +57,13 @@
 
     const FAMIGLIE = {
         offensiva: { id: 'offensiva', nome: 'Aggressor', icona: '⚔️',
-            descrizione: 'You take the fight to the opponent: more damaging moves than the league average.' },
+            descrizione: 'You take the fight to the opponent.' },
         difensiva: { id: 'difensiva', nome: 'Guardian', icona: '🛡️',
-            descrizione: 'You play it safe: more Protect, healing and switching than the league average.' },
+            descrizione: 'You play it safe:  protect, healing and safe-switching.' },
         stratega: { id: 'stratega', nome: 'Strategist', icona: '♟️',
-            descrizione: 'You win with plans: more setup, field control, support and tricks than the league average.' },
+            descrizione: 'You win with plans: setup, field control, support and tricks.' },
         equilibrata: { id: 'equilibrata', nome: 'All-rounder', icona: '⚖️',
-            descrizione: 'No style stands out: you play very close to the league average.' }
+            descrizione: 'You calibrate every match adapting to your opponent.' }
     };
 
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };

@@ -89,7 +89,7 @@
 
     <section class="pf-sezione pf-tema" id="pf-tema" aria-labelledby="pf-tema-titolo">
         <h2 class="section-title" id="pf-tema-titolo">SITE THEME</h2>
-        <p class="pf-tema-intro">Pick how the whole site looks <strong>for you</strong>: type, shadows, tilt. Sizes never change.</p>
+        <p class="pf-tema-intro">Pick how the whole site looks for you.</p>
         <div id="pf-tema-corpo" class="pf-corpo"></div>
     </section>
 
@@ -607,7 +607,7 @@ function disegnaDaFare(d) {
     const parti = [];
 
     if (!d.stagioni.length) {
-        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'No season is running right now. When the next one opens, the sign-up will show up here.'));
+        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Relax: no season is running right now.'));
     } else if (!iscritte.length && !d.iscrizioni.length) {
         parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'You are not in any running season, so there is nothing to do for now.'));
     } else if (!contatori.length) {
@@ -739,10 +739,9 @@ function disegnaPersonalitaBloccata(p) {
         h('div', { class: 'pf-pers-grafico' }, radarPersonalita(assi, null), h('span', { class: 'pf-pers-lucchetto', 'aria-hidden': 'true' }, '🔒')),
         h('div', { class: 'pf-pers-testo' },
             h('p', { class: 'pf-pers-titolo' }, 'Your personality is still a secret'),
-            h('p', {}, `It unlocks after ${p.setServono} sets analysed. The league watches what you choose every turn — attack, Protect, switch, setup, field control, tricks — and compares it with everyone else's average.`),
+            h('p', {}, `It unlocks after ${p.setServono} sets analysed.`),
             h('div', { class: 'pf-progresso' }, h('div', { class: 'pf-barra' }, h('span', { style: `width:${Math.round(quanti / p.setServono * 100)}%` })),
-                h('span', { class: 'pf-progresso-testo' }, `${quanti} / ${p.setServono} sets`)),
-            h('p', { class: 'pf-nota' }, 'Only sets played on the site count: matches typed in by hand have no turn-by-turn data.')));
+                h('span', { class: 'pf-progresso-testo' }, `${quanti} / ${p.setServono} sets`))));
 }
 
 function disegnaPersonalitaInAttesa(p) {

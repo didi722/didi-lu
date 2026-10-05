@@ -425,7 +425,7 @@
         if (STATO.tab === 'usage') return '<p class="vuoto">No teams have played here yet.<small>Usage counts only the teams that have played at least one official set of a season.</small></p>';
         const beta = STATO.r.stagioni.find(s => s.beta && s.partite > 0);
         if (STATO.stagione === 'all' && beta) {
-            return `<p class="vuoto">No matches in the global stats yet.<small>The Beta season is not counted here: pick <b>${esc(beta.nome)}</b> from the Season list to see its numbers.</small></p>`;
+            return `<p class="vuoto">No matches in the global stats yet.</p>`;
         }
         return '<p class="vuoto">No matches recorded here yet.</p>';
     }
