@@ -179,17 +179,55 @@
     }
 
     // -----------------------------------------------------
-    // Badge delle serie (clean streak, win streak, SD streak)
+    // Badge delle serie (clean streak, win streak, SD streak): l'unico posto dove stanno nomi, chiavi e soglie. Profilo, Trainers, pagina
+    // pubblica e Stats li leggono da qui (BADGE, statoSerie).
+    //   - `file`: la parte del nome della PNG, docs/immagini/badge-allenatore-<file>-<bronze|silver|gold>.png;
+    //   - maxKeys / curKeys / dateKeys: i campi di players/<id>/stats/badges che il server scrive (functions/risultati-match.js), nell'ordine in cui si
+    //     cercano. Lo showdown ha DUE nomi: il server scrive maxshowdownstrike e compagni, la prima versione della pagina leggeva maxsdstrike:
+    //     per questo il badge SD Streak restava a zero per tutti. Ora si leggono entrambi;
+    //   - steps: i match (o gli showdown) di fila per bronzo, argento, oro. Sono ricalcolati sui numeri di una stagione tipica (14 showdown da
+    //     3 match, 42 match a testa): una simulazione dà per ognuno quante stagioni servono a un giocatore da 50, 60, 70, 80 % di match vinti.
+    //     Win Streak 7 / 10 / 15, Clean Streak 4 / 6 / 8, SD Streak 5 / 7 / 10: il bronzo dopo una stagione o due per un buon giocatore, l'oro
+    //     dopo anni (o per un giocatore dominante). Prima erano 5 / 7 / 10, 3 / 5 / 7 e 3 / 5 / 7: il bronzo veniva quasi a tutti nella prima stagione.
     // -----------------------------------------------------
-    // `file`: la parte del nome della PNG, docs/immagini/badge-allenatore-<file>-<bronze|silver|gold>.png (come i badge di badge-allenatore.js)
     const LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
     const IMMAGINE_FONDATORE = 'immagini/badge-allenatore-founder.png';
     const immagineSerie = (b, livello) => `immagini/badge-allenatore-${b.file}-${livello}.png`;
     const BADGE = [
-        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', descrizione: n => `${n} matches undefeated`,   unita: 'undefeated matches', maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'], steps: [3, 5, 7] },
-        { id: 'won',   file: 'winstreak',   label: 'Win Streak',   descrizione: n => `${n} matches in a row`,     unita: 'match wins',         maxKey: 'maxwonstrike',   curKey: 'wonstrike',   dateKeys: ['maxwonstrikedate'],   steps: [5, 7, 10] },
-        { id: 'sd',    file: 'sdstreak',    label: 'SD Streak',    descrizione: n => `${n} showdowns in a row`,   unita: 'showdown wins',      maxKey: 'maxsdstrike',    curKey: 'sdstrike',    dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'], steps: [3, 5, 7] }
+        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [4, 6, 8],
+          testo: 'Win matches without dropping a single set, back to back.',
+          descrizione: n => `${n} matches won without losing a set, in a row`,
+          maxKeys: ['maxcleanstrike'], curKeys: ['cleanstrike'], dateKeys: ['maxcleanstrikedate'] },
+        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [7, 10, 15],
+          testo: 'Win matches back to back.',
+          descrizione: n => `${n} matches won in a row`,
+          maxKeys: ['maxwonstrike'], curKeys: ['wonstrike'], dateKeys: ['maxwonstrikedate'] },
+        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [5, 7, 10],
+          testo: 'Win showdowns back to back.',
+          descrizione: n => `${n} showdowns won in a row`,
+          maxKeys: ['maxshowdownstrike', 'maxsdstrike'], curKeys: ['showdownstrike', 'sdstrike'],
+          dateKeys: ['maxshowdownstrikedate', 'maxsdstrikedate', 'sdwonstrikedate'] }
     ];
+    const interoDi = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+
+    /**
+     * Lo stato di una serie dai numeri salvati del giocatore (`players/<id>/stats/badges`).
+     * @returns {{ record, attuale, data, livello (0-3), completo, obiettivo (il prossimo traguardo, o l'ultimo se completo), progresso (0-1:
+     *             la serie in corso verso il prossimo traguardo, la barra che si vede; 1 se completo) }}
+     */
+    function statoSerie(stats, b) {
+        const s = stats || {};
+        const record = Math.max(0, ...b.maxKeys.map(k => interoDi(s[k])).filter(n => n !== null));
+        const corrente = b.curKeys.map(k => interoDi(s[k])).find(n => n !== null);
+        const attuale = corrente == null ? 0 : corrente;
+        const livello = b.steps.filter(n => record >= n).length;
+        const completo = livello === b.steps.length;
+        const obiettivo = b.steps[Math.min(livello, b.steps.length - 1)];
+        return {
+            record, attuale, data: formattaData(b.dateKeys.map(k => s[k]).find(Boolean)),
+            livello, completo, obiettivo, progresso: completo ? 1 : Math.max(0, Math.min(1, attuale / obiettivo))
+        };
+    }
     // Tutte le PNG delle serie e del fondatore (con la cartella): le usa tools/elenco-immagini.cjs
     const IMMAGINI = [IMMAGINE_FONDATORE].concat(BADGE.flatMap(b => LIVELLI_BADGE.map(l => immagineSerie(b, l))));
     const FONDATORI = ['didi', 'lukiani'];
@@ -208,23 +246,19 @@
      * -> [{ id, label, livello: 'bronze'|'silver'|'gold'|'founder', img, descrizione, data, attuale, obiettivo, pct }]
      */
     function badgeSbloccati(stats, idPlayer) {
-        const s = stats || {};
         const out = [];
         if (FONDATORI.includes(String(idPlayer || '').trim().toLowerCase())) {
             out.push({ id: 'founder', label: 'League Founder', livello: 'founder', img: IMMAGINE_FONDATORE, descrizione: 'Hail to the kings', data: '', attuale: 0, obiettivo: 0, pct: 100 });
         }
         for (const b of BADGE) {
-            const max = parseInt(s[b.maxKey], 10) || 0;
-            const attuale = parseInt(s[b.curKey], 10) || 0;
-            const i = b.steps.filter(n => max >= n).length - 1;
-            if (i < 0) continue;
-            const obiettivo = b.steps[Math.min(i + 1, b.steps.length - 1)];
+            const st = statoSerie(stats, b);
+            if (!st.livello) continue;
             out.push({
-                id: b.id, label: b.label, livello: LIVELLI_BADGE[i],
-                img: immagineSerie(b, LIVELLI_BADGE[i]),
-                descrizione: b.descrizione(b.steps[i]),
-                data: formattaData(b.dateKeys.map(k => s[k]).find(Boolean)),
-                attuale, obiettivo, pct: Math.min(100, obiettivo ? (attuale / obiettivo) * 100 : 100)
+                id: b.id, label: b.label, livello: LIVELLI_BADGE[st.livello - 1],
+                img: immagineSerie(b, LIVELLI_BADGE[st.livello - 1]),
+                descrizione: b.descrizione(b.steps[st.livello - 1]),
+                data: st.data,
+                attuale: st.attuale, obiettivo: st.obiettivo, pct: Math.min(100, st.obiettivo ? (st.attuale / st.obiettivo) * 100 : 100)
             });
         }
         return out;
@@ -233,6 +267,6 @@
     return {
         TIPI, LIVELLI_TIPO, LIVELLI_POKEMON, MAX_POKEMON_ACHIEVEMENTS,
         livello, progresso, titoliSbloccati, descriviTitolo, pokemonPiuVicini, normalizzaTipi,
-        LIVELLI_BADGE, BADGE, IMMAGINE_FONDATORE, IMMAGINI, immagineSerie, badgeSbloccati, formattaData, maiuscola, idDi
+        LIVELLI_BADGE, BADGE, IMMAGINE_FONDATORE, IMMAGINI, immagineSerie, statoSerie, badgeSbloccati, formattaData, maiuscola, idDi
     };
 });

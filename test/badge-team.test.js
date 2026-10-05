@@ -45,7 +45,7 @@ test('livelli: bronzo, argento e oro alle soglie; al massimo la barra è piena e
     assert.equal(perId(l, 'showdown').progresso, 1);
     assert.equal(perId(l, 'champion').livello, 1);
     assert.equal(perId(l, 'veteran').livelloNome, 'Gold');
-    assert.equal(perId(l, 'winner').progresso, (29 - 15) / (30 - 15));
+    assert.equal(perId(l, 'winner').progresso, 29 / 30, 'la barra è quella dei numeri "29 / 30"');
     assert.deepEqual(B.guadagnati(l).map(b => b.id).slice(0, 2), ['showdown', 'veteran'], 'prima i più alti, a parità l\'ordine del catalogo');
 });
 
@@ -64,7 +64,7 @@ test('percentuale di match vinti: sotto i 10 match non conta, e dice quanto manc
     assert.equal(poco.progresso, 0.6);
     assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 6, s: 10 });
     assert.match(poco.nota, /needs 10 matches played \(now 6\)/);
-    assert.match(B.htmlBadge(poco), /<div class="bt-valore">6 <i>\/ 10<\/i><\/div>/);
+    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 10<\/i><\/span>/);
     const abbastanza = perId(B.calcola(team({ match: { giocati: 12, vinti: 9, persi: 3 }, percMatch: 75 })), 'winrate');
     assert.equal(abbastanza.livello, 3);
     assert.equal(abbastanza.nota, '');
@@ -143,4 +143,71 @@ test('collegamento: Box, pagina pubblica e Stats mostrano i badge dei team; i tr
     assert.doesNotMatch(doc('public.html'), /teamBadgesHtml|maxshowdownstrike/, 'niente più la copia dei tre badge di serie');
     assert.match(doc('stats.js'), /BadgeTeam\.htmlScaffale\(BadgeTeam\.calcola\(t\)/);
     assert.match(doc('stats.js'), /BadgeTeam\.htmlMini\(BadgeTeam\.calcola\(t\), 4\)/);
+});
+
+// ---------- ordine per vicinanza al prossimo livello ----------
+test('perVicinanza: dal più vicino al prossimo livello al più lontano; a parità l\'ordine del catalogo; in fondo chi ha già l\'oro', () => {
+    const l = B.calcola(team({
+        match: { giocati: 40, vinti: 29, persi: 11 },                 // Winner: 29 / 30 (argento preso), il più vicino
+        stagioniGiocate: 2,                                              // Veteran: 2 / 3
+        serie: { vittorieMax: 0, pulitaMax: 0, showdownMax: 0 },
+        showdown: { giocati: 12, vinti: 10, persi: 2 },                  // Showdown Winner: oro (10), in fondo
+        ko: { fatti: 150, setPerfetti: 0, setConDati: 9 }                // Knockout: argento, 150 / 250
+    }));
+    const ordine = B.perVicinanza(l).map(b => b.id);
+    assert.equal(ordine[0], 'winner', 'il più vicino: 29 su 30');
+    assert.ok(ordine.indexOf('veteran') < ordine.indexOf('knockout'), '2/3 prima di 150/250');
+    assert.equal(ordine[ordine.length - 1], 'showdown', 'chi ha già l\'oro va in fondo');
+    // chi è a zero resta nell'ordine del catalogo, tutti insieme, prima di chi ha già l'oro
+    const azzerati = ordine.filter(id => perId(l, id).progresso === 0 && perId(l, id).prossima != null);
+    assert.deepEqual(azzerati, B.CATALOGO.map(b => b.id).filter(id => azzerati.includes(id)));
+    // la lista originale non si tocca, e dentro ci sono tutti
+    assert.equal(l[0].id, 'champion');
+    assert.equal(new Set(ordine).size, B.CATALOGO.length);
+});
+
+test('htmlScaffale: i badge escono nell\'ordine di vicinanza (o in quello del catalogo con ordina: false), con il riepilogo dei livelli', () => {
+    const l = B.calcola(team({ stagioniGiocate: 2, match: { giocati: 40, vinti: 29, persi: 11 } }));
+    const ids = html => [...html.matchAll(/data-badge="([a-z]+)"/g)].map(m => m[1]);
+    assert.deepEqual(ids(B.htmlScaffale(l)), B.perVicinanza(l).map(b => b.id));
+    assert.deepEqual(ids(B.htmlScaffale(l, { ordina: false })), l.map(b => b.id));
+    const html = B.htmlScaffale(l, { titolo: 'TEAM BADGES' });
+    assert.match(html, /TEAM BADGES <small class="bt-conto">\d+\/10<\/small>/);
+    assert.match(html, /<b>\d+<\/b>\/10 badges/);
+    assert.match(html, /<b>\d+<\/b>\/30 levels/);
+    assert.match(html, /Closest to the next level first\./);
+    // niente fumetti nascosti: spiegazione, traguardi, barra e cosa manca sono sempre visibili
+    assert.doesNotMatch(html, /bt-tip/);
+    for (const parte of ['bt-desc', 'bt-livelli', 'bt-barra', 'bt-frase']) assert.ok(html.includes(parte), parte);
+});
+
+test('una riga di badge: i tre livelli con il prossimo evidenziato, la barra uguale ai numeri, e cosa manca', () => {
+    const l = B.calcola(team({ stagioniGiocate: 2 }));
+    const veteran = perId(l, 'veteran');                      // 2 stagioni: bronzo (2), prossimo argento (3)
+    const riga = B.htmlBadge(veteran);
+    assert.match(riga, /class="bt bt-bronze bt-p-silver"/, 'colore del livello preso e di quello in arrivo');
+    assert.match(riga, /bt-lv bt-lv-bronze done">Bronze <b>2<\/b>/);
+    assert.match(riga, /bt-lv bt-lv-silver next">Silver <b>3<\/b>/);
+    assert.match(riga, /bt-lv bt-lv-gold ">Gold <b>5<\/b>/);
+    assert.match(riga, /<b>2<\/b> <i>\/ 3<\/i>/);
+    assert.match(riga, /aria-valuenow="67"/);
+    assert.match(riga, /1 more to unlock Silver\./);
+    const oro = B.htmlBadge(perId(B.calcola(team({ stagioniGiocate: 6 })), 'veteran'));
+    assert.match(oro, /bt-completo/);
+    assert.match(oro, /Gold reached: badge complete!/);
+    assert.match(oro, /<i>MAX<\/i>/);
+    // la percentuale ha il suo segno e la sua etichetta
+    const wr = B.htmlBadge(perId(B.calcola(team({ match: { giocati: 12, vinti: 9, persi: 3 }, percMatch: 75 })), 'winrate'));
+    assert.match(wr, /Win rate<\/span><span class="bt-val"><b>75%<\/b>/);
+});
+
+test('il pannello dei badge nella testata del team: si apre e si chiude (tasto, clic fuori, Esc), senza il vecchio title del tasto', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'docs', 'badge-team.js'), 'utf8');
+    const barra = src.slice(src.indexOf('async function montaBarra'), src.indexOf('async function riempiCard'));
+    assert.doesNotMatch(barra, /title="All the badges of this team"/);
+    assert.match(barra, /aria-haspopup="dialog"/);
+    assert.match(barra, /e\.key === 'Escape'/);
+    assert.match(barra, /document\.addEventListener\('click', fuori, true\)/);
+    assert.match(barra, /document\.removeEventListener\('click', fuori, true\)/);
+    assert.match(barra, /titolo: 'TEAM BADGES'/);
 });

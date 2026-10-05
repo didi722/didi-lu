@@ -95,26 +95,31 @@ test('titoli.js: le serie e il fondatore usano badge-allenatore-<serie>-<livello
     assert.equal(Titoli.IMMAGINE_FONDATORE, 'immagini/badge-allenatore-founder.png');
     assert.equal(Titoli.IMMAGINI.length, 10);
     for (const p of Titoli.IMMAGINI) assert.ok(esiste(p.replace(/^immagini\//, '')), p);
-    // gli stessi file che compaiono nei dati di badgeSbloccati
-    const b = Titoli.badgeSbloccati({ maxcleanstrike: 7, maxwonstrike: 5, maxsdstrike: 3 }, 'didi');
+    // gli stessi file che compaiono nei dati di badgeSbloccati: oro per la pulita, bronzo per le vittorie, argento per lo showdown
+    const [clean, won, sd] = Titoli.BADGE;
+    const b = Titoli.badgeSbloccati({ maxcleanstrike: clean.steps[2], maxwonstrike: won.steps[0], maxshowdownstrike: sd.steps[1] }, 'didi');
     assert.deepEqual(b.map(x => x.img), [
         'immagini/badge-allenatore-founder.png', 'immagini/badge-allenatore-cleanstreak-gold.png',
-        'immagini/badge-allenatore-winstreak-bronze.png', 'immagini/badge-allenatore-sdstreak-bronze.png'
+        'immagini/badge-allenatore-winstreak-bronze.png', 'immagini/badge-allenatore-sdstreak-silver.png'
     ]);
 });
 
-test('profilo, pagina Trainers e pagina pubblica costruiscono lo stesso nome (badge-allenatore-<file>-<livello>.png)', () => {
-    const serie = ['cleanstreak', 'winstreak', 'sdstreak'];
+test('profilo, pagina Trainers e pagina pubblica leggono le serie da titoli.js (nomi, chiavi, soglie e file in un posto solo)', () => {
     const profilo = leggi('profile.html'), trainers = leggi('players.html'), carta = leggi('public-card.js');
-    // nelle tre pagine ogni serie dichiara il suo `file`, ed è quello di titoli.js
+    // nessuna delle tre pagine ha più la sua copia delle serie: niente `file:`, `steps:` o chiavi dei dati scritte a mano
     for (const [nome, testo] of [['profile.html', profilo], ['players.html', trainers], ['public-card.js', carta]]) {
-        const dichiarati = [...testo.matchAll(/\bfile:\s*'([a-z]+)'/g)].map(m => m[1]);
-        assert.deepEqual(dichiarati, serie, `${nome}: serie e file`);
-        assert.match(testo, /immagini\/badge-allenatore-\$\{b\.file\}-\$\{/, `${nome}: il nome si costruisce da b.file e dal livello`);
+        assert.doesNotMatch(testo, /\bfile:\s*'(cleanstreak|winstreak|sdstreak)'/, `${nome}: una copia delle serie`);
+        assert.doesNotMatch(testo, /steps:\s*\[\d+,\s*\d+,\s*\d+\]/, `${nome}: soglie scritte a mano`);
+        assert.doesNotMatch(testo, /maxsdstrike|maxcleanstrike|maxwonstrike/, `${nome}: chiavi dei dati scritte a mano`);
+        assert.match(testo, /Titoli\.statoSerie\(/, `${nome}: livello e avanzamento da Titoli.statoSerie`);
     }
+    assert.match(profilo, /Titoli\.immagineSerie\(b,/);
+    assert.match(trainers, /Titoli\.immagineSerie\(b,/);
+    assert.match(carta, /Titoli\.immagineSerie\(b,/);
     assert.match(profilo, /\$\{Titoli\.IMMAGINE_FONDATORE\}/);
-    assert.match(trainers, /immagini\/badge-allenatore-founder\.png/);
+    assert.match(trainers, /\$\{Titoli\.IMMAGINE_FONDATORE\}/);
     assert.match(carta, /immagini\/badge-allenatore-founder\.png/);
+    assert.match(trainers, /<script src="titoli\.js"><\/script>/, 'players.html carica titoli.js');
 });
 
 test('tools/elenco-immagini.cjs: elenca solo file che mancano davvero e i colori che mancano a ogni badge', () => {
