@@ -59,12 +59,18 @@
         img.parentNode.replaceChild(span, img);
     }
 
+    const maiuscola = t => { const x = String(t == null ? '' : t); return x.charAt(0).toUpperCase() + x.slice(1); };
+    const arrotonda = v => Math.round(num(v) * 10) / 10;
+    const tra01 = x => Math.max(0, Math.min(1, x));
+
     // =====================================================
     // Il meccanismo, per un catalogo qualunque
     //   soglie    valori per bronzo, argento, oro
     //   immagini  3 file, uno per livello (bronzo, argento, oro)
     //   minimo    se presente, sotto questo numero di base il valore non conta ancora (serve per le percentuali)
     //   valore    funzione del "contesto" (un team, un allenatore...) che dà il numero da confrontare con le soglie
+    //   partenza  (opzionale) da dove parte la barra: l'Elo parte da 1000, non da zero
+    //   suffisso / etichetta  (opzionali) "%" dopo i numeri e il nome della barra
     // opzioni: { titolo: titolo dello scaffale, chiedi: testo del tasto }
     // =====================================================
     function costruisci(CATALOGO, opzioni = {}) {
@@ -94,9 +100,9 @@
                 }
                 const livello = conta ? livelloDi(valore, def.soglie) : 0;
                 const prossima = livello >= def.soglie.length ? null : def.soglie[livello];
-                const precedente = livello === 0 ? 0 : def.soglie[livello - 1];
-                const progresso = sblocco ? Math.max(0, Math.min(1, sblocco.valore / sblocco.serve))
-                    : prossima == null ? 1 : Math.max(0, Math.min(1, (valore - precedente) / (prossima - precedente)));
+                // quanta strada è fatta verso il prossimo traguardo: è la barra dei numeri "2 / 3" (da `partenza`, di solito zero)
+                const progresso = sblocco ? tra01(sblocco.valore / sblocco.serve)
+                    : prossima == null ? 1 : tra01((valore - num(def.partenza)) / (prossima - num(def.partenza)));
                 return {
                     id: def.id, nome: def.nome, icona: def.icona, descrizione: def.descrizione, unita: def.unita,
                     soglie: def.soglie.slice(), valore, livello,
@@ -114,32 +120,87 @@
                 .sort((a, c) => c.b.livello - a.b.livello || a.i - c.i).map(x => x.b);
         }
 
+        // Dal più vicino al prossimo livello al più lontano (la barra più piena prima); a parità l'ordine del catalogo. In fondo chi ha già
+        // l'oro, che non ha più niente da prendere. Va bene per qualunque elenco di oggetti con `prossima` (null a livello massimo) e `progresso`.
+        function perVicinanza(lista) {
+            return lista.map((b, i) => ({ b, i }))
+                .sort((x, y) => (x.b.prossima == null) - (y.b.prossima == null) || y.b.progresso - x.b.progresso || x.i - y.i)
+                .map(x => x.b);
+        }
+
+        /**
+         * La scheda di un badge: dati e testi per disegnarlo (si provano in Node, la pagina li disegna nel suo stile).
+         * @param {object} b  un elemento di calcola(...)
+         * @returns {{ id, nome, icona, descrizione, immagine, livello, classe, bloccato, completo, etichetta, suffisso,
+         *             livelli: { nome, classe, soglia, stato }[], numeri: [string, string][],
+         *             barra: { etichetta, valore, obiettivo, partenza, suffisso }|null, frase: string }}
+         */
+        function scheda(b) {
+            const def = CATALOGO.find(d => d.id === b.id) || {};
+            const suffisso = def.suffisso || '';
+            const completo = b.prossima == null;
+            const prossimo = completo ? '' : NOMI_LIVELLO[b.livello];
+            const livelli = b.soglie.map((soglia, i) => ({
+                nome: NOMI_LIVELLO[i], classe: LIVELLI[i], soglia: `${soglia}${suffisso}`, stato: i < b.livello ? 'done' : (i === b.livello ? 'next' : '')
+            }));
+            let barra = null, frase = 'Gold reached: badge complete!';
+            if (!completo && b.sblocco) {
+                // una percentuale conta solo dopo abbastanza match: la barra è quella dei match giocati
+                barra = { etichetta: maiuscola(b.sblocco.etichetta), valore: b.sblocco.valore, obiettivo: b.sblocco.serve, partenza: 0, suffisso: '' };
+                frase = `Counts after ${b.sblocco.serve} ${b.sblocco.etichetta} (${b.sblocco.valore} so far).`;
+            } else if (!completo) {
+                barra = { etichetta: def.etichetta || maiuscola(b.unita), valore: arrotonda(b.valore), obiettivo: b.prossima, partenza: num(def.partenza), suffisso };
+                // l'unità sta già sulla barra: qui solo quanto manca (per percentuali ed Elo, il traguardo)
+                frase = suffisso || def.partenza ? `Reach ${b.prossima}${suffisso} to unlock ${prossimo}.` : `${Math.max(arrotonda(b.prossima - b.valore), 0)} more to unlock ${prossimo}.`;
+            }
+            return {
+                id: b.id, nome: b.nome, icona: b.icona, descrizione: b.descrizione, immagine: b.immagine,
+                livello: b.livello, classe: b.livello ? LIVELLI[b.livello - 1] : 'locked', bloccato: b.livello === 0, completo,
+                etichetta: def.etichetta || maiuscola(b.unita), suffisso,
+                livelli,
+                numeri: [['Level', b.livello ? b.livelloNome : 'None yet'], ['Now', `${arrotonda(b.valore)}${suffisso}`]],
+                barra, frase
+            };
+        }
+
         const htmlImmagine = (b, classe) =>
             `<img class="${classe}" src="${esc(b.immagine)}" alt="" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(b.icona)}')">`;
 
+        // Una riga dello scaffale: medaglia, nome e livello preso, spiegazione, i tre livelli con i loro traguardi, la barra e cosa manca.
+        // Tutto è sempre visibile (niente fumetti da cercare con il mouse: sul telefono non esistono).
         function htmlBadge(b) {
+            const d = scheda(b);
             const stato = b.livello ? `bt-${b.classeLivello}` : 'bt-bloccato';
-            const fino = b.prossima == null ? b.soglie[b.soglie.length - 1] : b.prossima;
-            // al livello massimo il traguardo è già passato: "7 MAX" invece di "7 / 6"
-            const valore = b.sblocco ? `${esc(b.sblocco.valore)} <i>/ ${esc(b.sblocco.serve)}</i>`
-                : b.prossima == null ? `${esc(b.valore)} <i>MAX</i>` : `${esc(b.valore)} <i>/ ${esc(fino)}</i>`;
-            const titolo = b.livello ? `${esc(b.nome)} · ${esc(b.livelloNome)}` : `${esc(b.nome)} · locked`;
-            const prossima = b.prossima == null ? 'Top level reached.' : `Next level: ${esc(b.prossima)} ${esc(b.unita)}.`;
-            return `<div class="bt ${stato}" tabindex="0" data-badge="${esc(b.id)}">` +
+            const pct = Math.round(b.progresso * 100);
+            const livelli = d.livelli.map(l => `<span class="bt-lv bt-lv-${l.classe} ${l.stato}">${esc(l.nome)} <b>${esc(l.soglia)}</b></span>`).join('');
+            const numeri = d.barra
+                ? `<span class="bt-et">${esc(d.barra.etichetta)}</span><span class="bt-val"><b>${esc(d.barra.valore)}${esc(d.barra.suffisso)}</b> <i>/ ${esc(d.barra.obiettivo)}${esc(d.barra.suffisso)}</i></span>`
+                : `<span class="bt-et">${esc(d.etichetta)}</span><span class="bt-val"><b>${esc(arrotonda(b.valore))}${esc(d.suffisso)}</b> <i>MAX</i></span>`;
+            return `<article class="bt ${stato}${d.completo ? ' bt-completo' : ` bt-p-${LIVELLI[b.livello]}`}" data-badge="${esc(b.id)}">` +
                 `<div class="bt-medaglia">${htmlImmagine(b, 'bt-img')}${b.livello ? `<span class="bt-livello">${ROMANI[b.livello - 1]}</span>` : ''}</div>` +
-                `<div class="bt-nome">${esc(b.nome)}</div>` +
-                `<div class="bt-barra"><span style="width:${Math.round(b.progresso * 100)}%"></span></div>` +
-                `<div class="bt-valore">${valore}</div>` +
-                `<div class="bt-tip" role="tooltip"><strong>${titolo}</strong><p>${esc(b.descrizione)}</p><p class="bt-tip-nota">${b.nota ? esc(b.nota) : prossima}</p></div>` +
-                `</div>`;
+                `<div class="bt-corpo">` +
+                `<div class="bt-testa"><span class="bt-nome">${esc(b.nome)}</span><span class="bt-stato">${b.livello ? esc(b.livelloNome) : 'Locked'}</span></div>` +
+                `<p class="bt-desc">${esc(b.descrizione)}</p>` +
+                `<div class="bt-livelli">${livelli}</div>` +
+                `<div class="bt-numeri">${numeri}</div>` +
+                `<div class="bt-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>` +
+                `<div class="bt-frase">${esc(d.frase)}</div>` +
+                `</div></article>`;
         }
 
-        // Lo scaffale completo: tutti i badge, quelli non presi in grigio con la barra del progresso
+        // Lo scaffale completo: il riepilogo (badge e livelli presi) e tutti i badge, dal più vicino al prossimo livello al più lontano.
+        // opz: { titolo (vuoto: nessun titolo), ordina: false per tenere l'ordine del catalogo }
         function htmlScaffale(lista, opz = {}) {
             const presi = lista.filter(b => b.livello > 0).length;
+            const livelli = lista.reduce((n, b) => n + b.livello, 0);
+            const totali = lista.reduce((n, b) => n + b.soglie.length, 0);
             const titolo = opz.titolo === undefined ? titoloPredefinito : opz.titolo;
+            const ordinati = opz.ordina === false ? lista : perVicinanza(lista);
             return (titolo ? `<h4 class="bt-titolo">${esc(titolo)} <small class="bt-conto">${presi}/${lista.length}</small></h4>` : '') +
-                `<div class="bt-lista">${lista.map(htmlBadge).join('')}</div>`;
+                `<div class="bt-riepilogo"><span><b>${presi}</b>/${lista.length} badges</span><span><b>${livelli}</b>/${totali} levels</span>` +
+                `<span class="bt-totale" aria-hidden="true"><i style="width:${totali ? Math.round(100 * livelli / totali) : 0}%"></i></span></div>` +
+                `<p class="bt-ordine">Closest to the next level first.</p>` +
+                `<div class="bt-lista">${ordinati.map(htmlBadge).join('')}</div>`;
         }
 
         // Le medagliette (sulla card e nella testata): i badge più alti, al massimo "max"
@@ -153,7 +214,7 @@
             ).join('') + (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
         }
 
-        return { CATALOGO, IMMAGINI, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini };
+        return { CATALOGO, IMMAGINI, calcola, guadagnati, perVicinanza, scheda, htmlBadge, htmlScaffale, htmlMini };
     }
 
     // =====================================================
@@ -172,7 +233,7 @@
         { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'matches won', soglie: [5, 15, 30],
           descrizione: 'Matches won with this team.',
           valore: t => num(t.match && t.match.vinti), immagini: tre('badge-team-winner-{l}.png') },
-        { id: 'winrate', nome: 'Win Rate', icona: '📈', unita: '% of matches won', soglie: [55, 65, 75],
+        { id: 'winrate', nome: 'Win Rate', icona: '📈', unita: '% of matches won', soglie: [55, 65, 75], etichetta: 'Win rate', suffisso: '%',
           descrizione: 'Share of matches won, once the team has played enough of them.',
           valore: t => num(t.percMatch), minimo: { campo: p => num(p.match && p.match.giocati), valore: 10, etichetta: 'matches played' },
           immagini: tre('badge-team-winrate-{l}.png') },
@@ -194,7 +255,7 @@
     ];
 
     const squadra = costruisci(CATALOGO, { titolo: 'TEAM BADGES' });
-    const { IMMAGINI, calcola, guadagnati, htmlBadge, htmlScaffale, htmlMini } = squadra;
+    const { IMMAGINI, calcola, guadagnati, perVicinanza, scheda, htmlBadge, htmlScaffale, htmlMini } = squadra;
 
     // Il team di un giocatore tra quelli di Statistiche.calcola(...).teams
     function trova(risultato, { player, team } = {}) {
@@ -222,16 +283,30 @@
         const presi = lista.filter(b => b.livello > 0).length;
         casella.innerHTML =
             `<span class="bt-barra-mini">${htmlMini(lista, 4)}</span>` +
-            `<button type="button" class="bt-apri" aria-expanded="false" title="All the badges of this team">🏅 Badges <b>${presi}/${lista.length}</b></button>` +
-            `<div class="bt-pop" hidden>${htmlScaffale(lista, { titolo: '' })}${nota ? `<p class="bt-nota">${esc(nota)}</p>` : ''}</div>`;
+            `<button type="button" class="bt-apri" aria-expanded="false" aria-haspopup="dialog">🏅 Badges <b>${presi}/${lista.length}</b></button>` +
+            `<div class="bt-pop" role="dialog" aria-label="Team badges" hidden>${htmlScaffale(lista, { titolo: 'TEAM BADGES' })}${nota ? `<p class="bt-nota">${esc(nota)}</p>` : ''}</div>`;
         const tasto = casella.querySelector('.bt-apri'), pop = casella.querySelector('.bt-pop');
-        tasto.addEventListener('click', e => {
-            e.stopPropagation();
-            const aperto = pop.hidden;
-            pop.hidden = !aperto;
-            tasto.setAttribute('aria-expanded', String(aperto));
-        });
-        pop.addEventListener('click', e => e.stopPropagation());
+        // Si chiude con un clic fuori, con Esc e di nuovo col tasto; aprendosi resta dentro lo schermo (il pannello è largo)
+        const fuori = e => { if (!pop.contains(e.target) && !tasto.contains(e.target)) chiudi(); };
+        const tastiera = e => { if (e.key === 'Escape') { chiudi(); tasto.focus(); } };
+        function chiudi() {
+            pop.hidden = true;
+            tasto.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', fuori, true);
+            document.removeEventListener('keydown', tastiera);
+        }
+        function apri() {
+            pop.hidden = false;
+            tasto.setAttribute('aria-expanded', 'true');
+            pop.style.left = '0px';
+            const r = pop.getBoundingClientRect(), margine = 12;
+            if (r.right > window.innerWidth - margine) pop.style.left = `${Math.min(0, window.innerWidth - margine - r.right)}px`;
+            // sotto il tasto c'è posto fino al bordo dello schermo: oltre, il pannello scorre
+            if (window.innerWidth > 560) pop.style.maxHeight = `${Math.max(260, window.innerHeight - r.top - margine)}px`;
+            document.addEventListener('click', fuori, true);
+            document.addEventListener('keydown', tastiera);
+        }
+        tasto.addEventListener('click', e => { e.stopPropagation(); pop.hidden ? apri() : chiudi(); });
         return true;
     }
 
@@ -253,7 +328,7 @@
 
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
-        livelloDi, calcola, guadagnati, trova,
+        livelloDi, calcola, guadagnati, perVicinanza, scheda, trova,
         htmlBadge, htmlScaffale, htmlMini, immagineMancante,
         montaBarra, riempiCard,
         // per altri cataloghi (badge-allenatore.js)

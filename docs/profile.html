@@ -946,31 +946,10 @@ firebase.auth().onAuthStateChanged(async (currentUser) => {
 // =====================================================
 // ACHIEVEMENTS
 // =====================================================
-const ACH_LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
+const ACH_LIVELLI_BADGE = Titoli.LIVELLI_BADGE;
 
-const ACH_BADGES = [
-    {
-        id: 'clean', file: 'cleanstreak', label: 'Clean Streak',
-        desc: 'Go undefeated in consecutive matches.',
-        unita: 'undefeated matches',
-        maxKey: 'maxcleanstrike', curKey: 'cleanstrike', dateKeys: ['maxcleanstrikedate'],
-        steps: [3, 5, 7]
-    },
-    {
-        id: 'won', file: 'winstreak', label: 'Win Streak',
-        desc: 'Win consecutive matches.',
-        unita: 'match wins',
-        maxKey: 'maxwonstrike', curKey: 'wonstrike', dateKeys: ['maxwonstrikedate'],
-        steps: [5, 7, 10]
-    },
-    {
-        id: 'sd', file: 'sdstreak', label: 'SD Streak',
-        desc: 'Win consecutive showdowns.',
-        unita: 'showdown wins',
-        maxKey: 'maxsdstrike', curKey: 'sdstrike', dateKeys: ['maxsdstrikedate', 'sdwonstrikedate'],
-        steps: [3, 5, 7]
-    }
-];
+// Le serie (Clean Streak, Win Streak, SD Streak): nomi, chiavi dei dati e soglie stanno in titoli.js (Titoli.BADGE, Titoli.statoSerie)
+const ACH_BADGES = Titoli.BADGE;
 
 const ACH_TIPI = Titoli.TIPI;   // { tipo: { base, colore } }
 const achMaiuscola = Titoli.maiuscola;
@@ -1095,24 +1074,26 @@ function chiudiModaleAchievements() {
     document.body.style.overflow = '';
 }
 
-// I badge dell'allenatore calcolati sui numeri di tutta la lega (badge-allenatore.js), sotto quelli delle serie
+// La colonna Badges: il fondatore sempre in cima, poi le serie e i badge dell'allenatore (badge-allenatore.js, calcolati sui numeri di tutta la lega)
+// in un'unica lista, dal più vicino al prossimo livello al più lontano; in fondo quelli già all'oro.
+// `achElenco.serie` e `.catalogo` sono liste di { prossima, progresso, livello, html }: ognuno si disegna da solo, qui si ordinano e si contano.
+const achElenco = { serie: [], catalogo: [], nota: '' };
+
+function achDisegnaElenco(lista, summary) {
+    const tutte = achElenco.serie.concat(achElenco.catalogo);
+    const ordinate = window.BadgeTeam ? BadgeTeam.perVicinanza(tutte) : tutte;
+    lista.innerHTML = achFondatore() + ordinate.map(c => c.html).join('') + achElenco.nota;
+    const sbloccati = tutte.reduce((n, c) => n + c.livello, 0);
+    summary.textContent = `${sbloccati} of ${tutte.length * ACH_LIVELLI_BADGE.length} badge levels unlocked`;
+}
+
 async function aggiungiBadgeAllenatore(overlay, lista, summary) {
     if (!window.BadgeAllenatore) return;
     const { lista: badge, dati } = await BadgeAllenatore.carica(db, playerID);
     if (!overlay.classList.contains('open') || !lista.isConnected) return;
-    lista.querySelector('.ach-badge-extra')?.remove();
-    const extra = document.createElement('div');
-    extra.className = 'ach-badge-extra';
-    const presi = badge.filter(b => b.livello > 0).length;
-    extra.innerHTML = `<h4 class="bt-titolo">MORE TRAINER BADGES <small class="bt-conto">${presi}/${badge.length}</small></h4>` +
-        badge.map(achSchedaBadgeAllenatore).join('') +
-        (dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>');
-    lista.append(extra);
-    const livelli = badge.reduce((n, b) => n + b.livello, 0);
-    const precedenti = /^(\d+) of (\d+)/.exec(summary.textContent || '');
-    const sbloccati = (precedenti ? +precedenti[1] : 0) + livelli;
-    const totali = (precedenti ? +precedenti[2] : 0) + badge.length * 3;
-    summary.textContent = `${sbloccati} of ${totali} badge levels unlocked`;
+    achElenco.catalogo = badge.map(b => ({ prossima: b.prossima, progresso: b.progresso, livello: b.livello, html: achSchedaBadgeAllenatore(b) }));
+    achElenco.nota = dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>';
+    achDisegnaElenco(lista, summary);
 }
 
 // Un badge dell'allenatore con le stesse parti delle schede dei badge delle serie: immagine, spiegazione, livelli, numeri, barra e cosa
@@ -1137,79 +1118,74 @@ function achSchedaBadgeAllenatore(b) {
         </div>`;
 }
 
-function renderBadgeAchievements(badges, lista, summary) {
-    let html = '';
-    let livelliSbloccati = 0;
-    const livelliTotali = ACH_BADGES.length * ACH_LIVELLI_BADGE.length;
-
-    // Badge speciale dei fondatori (non ha progressi)
+// Il badge speciale dei fondatori (non ha progressi): sempre il primo della lista
+function achFondatore() {
     const id = String(playerID).toLowerCase().trim();
-    if (id === 'didi' || id === 'lukiani') {
-        html += `
-            <div class="ach-card ach-badge-card">
-                <img src="${Titoli.IMMAGINE_FONDATORE}" class="ach-badge-img" alt="League Founder">
-                <div>
-                    <div class="ach-card-name">League Founder</div>
-                    <p class="ach-card-desc">Hail to the kings.</p>
-                    <div class="ach-missing maxed">Special badge unlocked</div>
-                </div>
+    if (id !== 'didi' && id !== 'lukiani') return '';
+    return `
+        <div class="ach-card ach-badge-card">
+            <img src="${Titoli.IMMAGINE_FONDATORE}" class="ach-badge-img" alt="League Founder">
+            <div>
+                <div class="ach-card-name">League Founder</div>
+                <p class="ach-card-desc">Hail to the kings.</p>
+                <div class="ach-missing maxed">Special badge unlocked</div>
+            </div>
+        </div>`;
+}
+
+// La carta di una serie (Clean Streak, Win Streak, SD Streak). `st` è Titoli.statoSerie: il livello conta sul record, la barra sulla serie in corso
+function achCartaSerie(b, st) {
+    const { record, attuale, data, livello, completo, obiettivo } = st;
+    const bloccato = livello === 0;
+    const nomeProssimo = completo ? '' : achMaiuscola(ACH_LIVELLI_BADGE[livello]);
+    const img = Titoli.immagineSerie(b, ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]);
+
+    const chips = b.steps.map((s, i) => {
+        const stato = i < livello ? 'done' : (i === livello ? 'next' : '');
+        return `<span class="ach-tier ${ACH_LIVELLI_BADGE[i]} ${stato}">${ACH_LIVELLI_BADGE[i]} ${s}</span>`;
+    }).join('');
+
+    let progresso;
+    if (completo) {
+        progresso = `<div class="ach-missing maxed">Gold reached: badge complete!</div>`;
+    } else {
+        const mancano = Math.max(obiettivo - attuale, 0);
+        progresso = `
+            ${achBarra('Current streak', attuale, obiettivo)}
+            <div class="ach-missing">
+                ${mancano > 0
+                    ? `${mancano} more ${b.unita} in a row to unlock ${nomeProssimo}.`
+                    : `${nomeProssimo} unlocks with your next update.`}
             </div>`;
     }
 
-    ACH_BADGES.forEach(b => {
-        const record = parseInt(badges[b.maxKey]) || 0;
-        const attuale = parseInt(badges[b.curKey]) || 0;
-        const data = achFormattaData(b.dateKeys.map(k => badges[k]).find(Boolean));
-
-        const livello = b.steps.filter(s => record >= s).length; // 0 = bloccato, 3 = oro
-        livelliSbloccati += livello;
-
-        const bloccato = livello === 0;
-        const completo = livello === b.steps.length;
-        const obiettivo = completo ? null : b.steps[livello];
-        const nomeProssimo = completo ? '' : achMaiuscola(ACH_LIVELLI_BADGE[livello]);
-        const img = `immagini/badge-allenatore-${b.file}-${ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]}.png`;
-
-        const chips = b.steps.map((s, i) => {
-            const stato = i < livello ? 'done' : (i === livello ? 'next' : '');
-            return `<span class="ach-tier ${ACH_LIVELLI_BADGE[i]} ${stato}">${ACH_LIVELLI_BADGE[i]} ${s}</span>`;
-        }).join('');
-
-        let progresso;
-        if (completo) {
-            progresso = `<div class="ach-missing maxed">Gold reached: badge complete!</div>`;
-        } else {
-            const mancano = Math.max(obiettivo - attuale, 0);
-            progresso = `
-                ${achBarra('Current streak', attuale, obiettivo)}
-                <div class="ach-missing">
-                    ${mancano > 0
-                        ? `${mancano} more ${b.unita} in a row to unlock ${nomeProssimo}.`
-                        : `${nomeProssimo} unlocks with your next update.`}
-                </div>`;
-        }
-
-        html += `
-            <div class="ach-card ach-badge-card ${bloccato ? 'locked' : ''}">
-                <img src="${img}" class="ach-badge-img" alt="${b.label}">
-                <div>
-                    <div class="ach-card-top">
-                        <div class="ach-card-name">${b.label}</div>
-                        ${data && !bloccato ? `<span class="ach-card-date">${data}</span>` : ''}
-                    </div>
-                    <p class="ach-card-desc">${b.desc}</p>
-                    <div class="ach-tiers">${chips}</div>
-                    <div class="ach-stats-line">
-                        <span>Best: ${record}</span>
-                        <span>Current: ${attuale}</span>
-                    </div>
-                    ${progresso}
+    return `
+        <div class="ach-card ach-badge-card ach-lv-${ACH_LIVELLI_BADGE[Math.max(livello, 1) - 1]} ${bloccato ? 'locked' : ''}" data-badge="${b.id}">
+            <img src="${img}" class="ach-badge-img" alt="${b.label}" onerror="BadgeTeam.immagineMancante(this,'${b.icona}')">
+            <div>
+                <div class="ach-card-top">
+                    <div class="ach-card-name">${b.label}</div>
+                    ${data && !bloccato ? `<span class="ach-card-date">${data}</span>` : ''}
                 </div>
-            </div>`;
-    });
+                <p class="ach-card-desc">${b.testo}</p>
+                <div class="ach-tiers">${chips}</div>
+                <div class="ach-stats-line">
+                    <span>Best: ${record}</span>
+                    <span>Current: ${attuale}</span>
+                </div>
+                ${progresso}
+            </div>
+        </div>`;
+}
 
-    lista.innerHTML = html;
-    summary.textContent = `${livelliSbloccati} of ${livelliTotali} badge levels unlocked`;
+function renderBadgeAchievements(badges, lista, summary) {
+    achElenco.catalogo = [];
+    achElenco.nota = '';
+    achElenco.serie = ACH_BADGES.map(b => {
+        const st = Titoli.statoSerie(badges, b);
+        return { prossima: st.completo ? null : st.obiettivo, progresso: st.progresso, livello: st.livello, html: achCartaSerie(b, st) };
+    });
+    achDisegnaElenco(lista, summary);
 }
 
 // Barre di avanzamento di uno scaglione: presenze, vittorie e (solo al terzo scaglione) KO

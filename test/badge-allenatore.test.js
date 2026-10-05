@@ -69,7 +69,7 @@ test('livelli: bronzo, argento e oro alle soglie, con il traguardo successivo e 
     const m = per(l, 'matchwinner');
     assert.equal(m.livello, 2, '100 match vinti: argento (75), non ancora oro (160)');
     assert.equal(m.prossima, 160);
-    assert.ok(m.progresso > 0.2 && m.progresso < 0.4, `(100-75)/(160-75) = ${m.progresso}`);
+    assert.equal(m.progresso, 100 / 160, 'la barra è quella dei numeri: 100 su 160');
     assert.equal(m.livelloNome, 'Silver');
     assert.equal(per(l, 'showdown').livello, 3);
     assert.equal(per(l, 'showdown').prossima, null);
@@ -208,4 +208,30 @@ test('scheda: per tutti e dodici i badge, con o senza dati, ha tutto quello che 
             assert.ok(!/undefined|NaN|\[object/.test(JSON.stringify(s)), b.id);
         }
     }
+});
+
+test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000 e le percentuali che contano dopo 30 match', () => {
+    const l = BA.calcola(risultato(giocatore({
+        eloPicco: 1050, match: { giocati: 130, vinti: 100, persi: 30 }, percMatch: 77, stagioniVinte: 0, stagioniGiocate: 1
+    })), 'didi');
+    // Elo: 1050 con partenza 1000 e prossimo 1100 = a metà strada (non 1050/1100)
+    assert.equal(per(l, 'elopeak').progresso, 0.5);
+    const ordine = BA.perVicinanza(l);
+    for (let i = 1; i < ordine.length; i++) {
+        const [a, b] = [ordine[i - 1], ordine[i]];
+        assert.ok((a.prossima == null) <= (b.prossima == null), 'chi ha l\'oro è in fondo');
+        if (a.prossima != null && b.prossima != null) assert.ok(a.progresso >= b.progresso, `${a.id} prima di ${b.id}`);
+    }
+    // a zero: prima di chi ha già l'oro
+    assert.equal(l.length, ordine.length);
+});
+
+test('scheda: il testo "cosa manca" e le etichette sono quelli di sempre (la scheda ora è generica, in badge-team.js)', () => {
+    const l = BA.calcola(risultato(giocatore({ eloPicco: 1140, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 } })), 'didi');
+    const elo = BA.scheda(per(l, 'elopeak'));
+    assert.equal(elo.frase, 'Reach 1250 to unlock Silver.');
+    assert.deepEqual(elo.barra, { etichetta: 'Peak Elo', valore: 1140, obiettivo: 1250, partenza: 1000, suffisso: '' });
+    const dom = BA.scheda(per(l, 'dominant'));
+    assert.equal(dom.barra.etichetta, 'Matches played');
+    assert.match(dom.frase, /Counts after 30 matches played/);
 });

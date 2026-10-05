@@ -22,7 +22,7 @@
 })(typeof self !== 'undefined' ? self : this, function (BadgeTeam, finestra) {
     'use strict';
 
-    const { tre, esc, LIVELLI, NOMI_LIVELLO } = BadgeTeam;
+    const { tre } = BadgeTeam;
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -76,7 +76,7 @@
     ];
 
     const base = BadgeTeam.costruisci(CATALOGO, { titolo: 'TRAINER BADGES' });
-    const { IMMAGINI, guadagnati, htmlBadge, htmlScaffale, htmlMini } = base;
+    const { IMMAGINI, guadagnati, perVicinanza, scheda, htmlBadge, htmlScaffale, htmlMini } = base;
 
     // L'allenatore tra quelli di Statistiche.calcola(...), con i conteggi che servono ai badge
     function contestoDi(risultato, idAllenatore) {
@@ -90,46 +90,9 @@
     /** I badge di un allenatore (tutti quelli del catalogo, anche non presi). `risultato` = Statistiche.calcola(dati, { stagione: 'all' }) */
     const calcola = (risultato, idAllenatore) => base.calcola(contestoDi(risultato, idAllenatore) || { g: {}, specie: 0 });
 
-    // -----------------------------------------------------
-    // La scheda di un badge per il profilo (Achievements), come quelle dei badge delle serie: immagine, spiegazione, i tre livelli,
-    // i numeri, la barra e cosa manca. Qui si preparano dati e testi (si provano in Node), la pagina li disegna nel suo stile.
+    // La scheda di un badge per il profilo (Achievements) è quella generica di badge-team.js (costruisci): immagine, spiegazione, i tre livelli,
+    // i numeri, la barra e cosa manca. Si usa `scheda(b)`; la pagina la disegna nel suo stile.
     //   etichetta / suffisso / partenza (opzionali nel catalogo): nome della barra, "%" dopo i numeri, da dove parte la barra (l'Elo da 1000)
-    // -----------------------------------------------------
-    const maiuscola = t => { const x = String(t == null ? '' : t); return x.charAt(0).toUpperCase() + x.slice(1); };
-    const arrotonda = v => Math.round(num(v) * 10) / 10;
-
-    /**
-     * @param {object} b  un elemento di calcola(...)
-     * @returns {{ id, nome, icona, descrizione, immagine, livello, classe, bloccato, completo,
-     *             livelli: { nome, classe, soglia, stato }[], numeri: [string, string][],
-     *             barra: { etichetta, valore, obiettivo, partenza, suffisso }|null, frase: string }}
-     */
-    function scheda(b) {
-        const def = CATALOGO.find(d => d.id === b.id) || {};
-        const suffisso = def.suffisso || '';
-        const completo = b.prossima == null;
-        const prossimo = completo ? '' : NOMI_LIVELLO[b.livello];
-        const livelli = b.soglie.map((soglia, i) => ({
-            nome: NOMI_LIVELLO[i], classe: LIVELLI[i], soglia: `${soglia}${suffisso}`, stato: i < b.livello ? 'done' : (i === b.livello ? 'next' : '')
-        }));
-        let barra = null, frase = 'Gold reached: badge complete!';
-        if (!completo && b.sblocco) {
-            // una percentuale conta solo dopo abbastanza match: la barra è quella dei match giocati
-            barra = { etichetta: maiuscola(b.sblocco.etichetta), valore: b.sblocco.valore, obiettivo: b.sblocco.serve, partenza: 0, suffisso: '' };
-            frase = `Counts after ${b.sblocco.serve} ${b.sblocco.etichetta} (${b.sblocco.valore} so far).`;
-        } else if (!completo) {
-            barra = { etichetta: def.etichetta || maiuscola(b.unita), valore: arrotonda(b.valore), obiettivo: b.prossima, partenza: num(def.partenza), suffisso };
-            // l'unità sta già sulla barra: qui solo quanto manca (per percentuali ed Elo, il traguardo)
-            frase = suffisso || def.partenza ? `Reach ${b.prossima}${suffisso} to unlock ${prossimo}.` : `${Math.max(arrotonda(b.prossima - b.valore), 0)} more to unlock ${prossimo}.`;
-        }
-        return {
-            id: b.id, nome: b.nome, icona: b.icona, descrizione: b.descrizione, immagine: b.immagine,
-            livello: b.livello, classe: b.livello ? LIVELLI[b.livello - 1] : 'locked', bloccato: b.livello === 0, completo,
-            livelli,
-            numeri: [['Level', b.livello ? b.livelloNome : 'None yet'], ['Now', `${arrotonda(b.valore)}${suffisso}`]],
-            barra, frase
-        };
-    }
 
     // -----------------------------------------------------
     // Colla per le pagine: i badge di un allenatore con i numeri di tutto il sito (Fiocchi.carica(db): una sola lettura per pagina)
@@ -145,7 +108,7 @@
 
     return {
         CATALOGO, IMMAGINI, MIN_MATCH_FORMATO, PERC_FORMATO,
-        calcola, contestoDi, carica, guadagnati, scheda,
+        calcola, contestoDi, carica, guadagnati, perVicinanza, scheda,
         htmlBadge, htmlScaffale, htmlMini, formatiForti
     };
 });

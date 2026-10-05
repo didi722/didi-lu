@@ -1462,11 +1462,9 @@ body.has-alert-banner .top-auth-bar {
     .pf-pers-grafico { max-width: 360px; margin: 0 auto; width: 100%; }
 }
 
-/* I badge dell'allenatore (badge-allenatore.js) sotto quelli delle serie, nella colonna Badges: stesse schede di quelle delle serie.
-   Il contenitore non conta (display: contents): titolo e schede sono elementi della lista, con il suo stesso distanziamento. */
-.ach-badge-extra { display: contents; }
-.ach-badge-extra .bt-titolo { margin: 8px 0 -4px; font-size: 0.8rem; }
-.ach-badge-extra .bt-nota { margin: 0; }
+/* La colonna Badges del profilo: il fondatore in cima, poi serie e badge dell'allenatore (badge-allenatore.js) in un'unica lista, dal più
+   vicino al prossimo livello al più lontano. La nota "nessun dato" in fondo è un elemento della lista, con il suo stesso distanziamento. */
+#ach-badges-list > .bt-nota { margin: 0; }
 /* la medaglia disegnata (quando la PNG non c'è ancora) prende il colore del livello, come sulle schede dei team */
 .ach-badge-card { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
 .ach-badge-card.ach-lv-bronze { --livello: var(--bt-bronzo); }
