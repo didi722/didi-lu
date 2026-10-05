@@ -65,7 +65,7 @@
 
         // Descrizione
         const descr = (dati.descrizioneBreve || '').trim();
-        html += `<div class="frt-section-title">Description / Rules</div>`;
+        html += `<div class="frt-section-title">Description</div>`;
         html += descr
             ? `<p class="frt-desc">${escapeHtmlFormato(descr)}</p>`
             : `<p class="frt-empty">No description provided for this format.</p>`;
