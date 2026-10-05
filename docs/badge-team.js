@@ -310,6 +310,20 @@
         return true;
     }
 
+    // Una versione piccola per le testate strette (il replay): le medagliette dei badge più alti e quanti ne ha il team, senza scaffale
+    async function montaMini(db, casella, { giocatore, team, valido, max = 4 } = {}) {
+        if (!casella || !giocatore || !team) return false;
+        let entry = null;
+        try { entry = trova(await finestra.Fiocchi.carica(db), { player: giocatore, team: team.nome }); } catch (e) { return false; }
+        if (valido && !valido()) return false;
+        const lista = calcola(entry);
+        const presi = lista.filter(b => b.livello > 0).length;
+        casella.innerHTML =
+            `<span class="bt-barra-mini">${htmlMini(lista, max)}</span>` +
+            `<span class="bt-conto-chip" title="${presi} of ${lista.length} team badges earned">🏅 ${presi}/${lista.length}</span>`;
+        return true;
+    }
+
     // Le medagliette sulle card dei team nel Box: ogni .bt-card[data-team-badge="<id del team>"]
     async function riempiCard(db, contenitore, { giocatore, squadre, valido } = {}) {
         if (!contenitore || !giocatore) return false;
@@ -330,7 +344,7 @@
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, perVicinanza, scheda, trova,
         htmlBadge, htmlScaffale, htmlMini, immagineMancante,
-        montaBarra, riempiCard,
+        montaBarra, montaMini, riempiCard,
         // per altri cataloghi (badge-allenatore.js)
         costruisci, tre, CARTELLA, esc
     };

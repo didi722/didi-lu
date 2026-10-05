@@ -237,8 +237,8 @@ html[data-modo="fit"] .lato-pkm { flex-basis: auto; grid-template-columns: repea
 .membro:nth-child(4n+3) { --tilt: .8deg; }
 .membro:nth-child(4n+4) { --tilt: -1deg; }
 /* GIF animate come nel resto del sito: contenute nel riquadro, con l'ombra nera di .modal-sprite */
-.membro img { display: block; width: 100%; max-width: 48px; aspect-ratio: 1; height: auto; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
-html[data-modo="fit"] .membro img { width: 64px; max-width: none; height: 64px; }
+.membro > img { display: block; width: 100%; max-width: 48px; aspect-ratio: 1; height: auto; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
+html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px; }
 .membro-nome {
     max-width: 100%;
     font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;
@@ -247,6 +247,112 @@ html[data-modo="fit"] .membro img { width: 64px; max-width: none; height: 64px; 
 .membro-hp { display: block; width: 100%; height: 5px; border: 2px solid var(--inchiostro); background: var(--carta); visibility: hidden; }
 .membro-hp.visibile { visibility: visible; }
 .membro-hp > span { display: block; height: 100%; }
+
+/* ---------- La scheda dell'allenatore: titolo, ELO, posizione, badge (scheda-battaglia.js) ---------- */
+.lato-scheda {
+    box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 6px;
+    max-width: 100%; min-width: 0;
+    padding: 8px 10px 9px;
+    background: var(--carta);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--colore-mio);
+    font-family: 'Josefin Sans', sans-serif;
+}
+.scheda-titolo {
+    margin: 0; padding: 4px 8px 2px;
+    background: var(--ambra); color: var(--inchiostro);
+    border: 2px solid var(--inchiostro);
+    font: 700 .72rem/1.15 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .03em;
+    overflow-wrap: anywhere;
+}
+.scheda-riga { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.scheda-elo, .scheda-posizione {
+    padding: 3px 8px 1px;
+    border: 2px solid var(--inchiostro);
+    font: 700 .74rem/1.25 'Josefin Sans', sans-serif; letter-spacing: .04em; white-space: nowrap; cursor: help;
+}
+.scheda-elo { background: var(--inchiostro); color: var(--carta); }
+.scheda-elo b { font-weight: 900; }
+.scheda-posizione { background: var(--colore-mio); color: var(--inchiostro); }
+.scheda-etichetta { flex: 0 0 100%; font: 700 .62rem/1 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.scheda-medaglie { gap: 5px; }
+/* i badge del team accanto al nome del team: medagliette e quanti ne ha */
+.scheda-team-badge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; max-width: 100%; min-width: 0; }
+.bt-barra-mini { display: inline-flex; align-items: center; gap: 5px; }
+
+/* le medagliette e il tondino dei fiocchi: gli stessi del resto del sito, con i colori di questa pagina */
+.bt-mini, .fiocco-tondino { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
+.bt-mini {
+    --livello: #999;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-sizing: border-box; width: 28px; height: 28px;
+    background: var(--livello);
+    border: 3px solid var(--inchiostro); border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--inchiostro);
+    cursor: help;
+}
+.bt-mini.bt-bronze { --livello: var(--bt-bronzo); }
+.bt-mini.bt-silver { --livello: var(--bt-argento); }
+.bt-mini.bt-gold { --livello: var(--bt-oro); }
+.bt-mini-img { width: 18px; height: 18px; object-fit: contain; }
+.bt-mini .bt-finto { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: .78rem; }
+.bt-mini.bt-altri { width: auto; min-width: 28px; padding: 0 6px; border-radius: 14px; background: var(--carta); font: 900 .66rem/1 'Josefin Sans', sans-serif; color: var(--inchiostro); }
+.bt-conto-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 7px 1px;
+    background: var(--carta); color: var(--inchiostro);
+    border: 2px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
+    font: 900 .66rem/1.3 'Josefin Sans', sans-serif; letter-spacing: .05em; white-space: nowrap; cursor: help;
+}
+
+/* il tondino sul Pokémon: del colore del fiocco più alto; passandoci sopra il fumetto elenca i fiocchi */
+.membro .fiocco-tondino {
+    --livello: var(--bt-oro);
+    position: absolute; left: -9px; bottom: -9px; z-index: 3;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box; width: 26px; height: 26px;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .7), transparent 55%), var(--livello);
+    border: 3px solid var(--inchiostro); border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--inchiostro);
+    color: var(--inchiostro);
+    font: 900 .74rem/1 'Josefin Sans', sans-serif; cursor: help;
+}
+.membro .fiocco-tondino.fiocco-bronze { --livello: var(--bt-bronzo); }
+.membro .fiocco-tondino.fiocco-silver { --livello: var(--bt-argento); }
+.membro .fiocco-tondino.fiocco-gold { --livello: var(--bt-oro); }
+.membro .fiocco-tondino:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 2px; }
+.membro .fiocco-t-tip {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+    box-sizing: border-box; width: 224px;
+    padding: 9px 12px;
+    background: var(--carta); color: var(--inchiostro);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    font: 700 .7rem/1.3 'Josefin Sans', sans-serif; text-align: left; text-transform: none;
+    display: none; pointer-events: none; cursor: default;
+}
+/* si apre dove c'è posto (sopra o sotto, mai fuori dallo schermo): battle-extra.js, apriFumettoFiocchi (aggiunge .aperto) */
+.membro .fiocco-tondino.aperto .fiocco-t-tip { display: block; }
+.fiocco-t-tip strong { display: block; margin-bottom: 5px; padding-bottom: 4px; border-bottom: 2px dashed var(--inchiostro); font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
+.fiocco-t-tip ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.fiocco-t-riga { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; column-gap: 7px; }
+.fiocco-t-img, .fiocco-t-tip .fiocco-finto { grid-column: 1; grid-row: 1 / span 2; width: 22px; height: 22px; object-fit: contain; }
+.fiocco-t-tip .fiocco-finto { display: flex; align-items: center; justify-content: center; border: 2px solid var(--inchiostro); border-radius: 50%; font-size: .8rem; }
+.fiocco-t-nome { grid-column: 2; grid-row: 1; font-size: .7rem; font-weight: 900; letter-spacing: .03em; text-transform: uppercase; }
+.fiocco-t-livello {
+    grid-column: 3; grid-row: 1; padding: 0 6px;
+    background: var(--livello, #999); border: 2px solid var(--inchiostro);
+    font-size: .6rem; font-weight: 900; line-height: 1.5; letter-spacing: .03em; text-transform: uppercase;
+}
+.fiocco-t-riga.fiocco-bronze { --livello: var(--bt-bronzo); }
+.fiocco-t-riga.fiocco-silver { --livello: var(--bt-argento); }
+.fiocco-t-riga.fiocco-gold { --livello: var(--bt-oro); }
+.fiocco-t-valore { grid-column: 2 / -1; grid-row: 2; font-size: .66rem; font-weight: 800; }
+.fiocco-t-valore i { font-style: normal; opacity: .6; }
+html[data-modo="fit"] .lato-scheda { align-self: stretch; }
+html[data-modo="fit"] .scheda-team-badge { align-self: flex-start; }
+html[data-modo="fit"] .lato.p2 .scheda-team-badge { align-self: flex-end; }
+html[data-modo="fit"] body.vista-p2 .lato.p1 .scheda-team-badge { align-self: flex-end; }
+html[data-modo="fit"] body.vista-p2 .lato.p2 .scheda-team-badge { align-self: flex-start; }
 
 /* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),
    oppure si sa che è rimasto fuori (il tuo team). Torna pieno quando scende in campo. */
@@ -1052,7 +1158,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
    ===================================================== */
 @media (min-width: 700px) {
     .lato-pkm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .membro img { max-width: 56px; }
+    .membro > img { max-width: 56px; }
 }
 @media (max-width: 699px) {
     .pagina { padding: 14px 12px 28px; gap: 16px; }

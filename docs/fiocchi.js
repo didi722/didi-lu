@@ -240,6 +240,20 @@
         ).join('') + (resto > 0 ? `<span class="fiocco-mini fiocco-altri" title="${resto} more ribbon${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
     }
 
+    // Per le card dei Pokémon degli altri (vanto, ma senza ingombro): un tondino col numero dei fiocchi presi, del colore del più alto;
+    // al passaggio (o al tocco) un fumetto elenca quali sono, con livello e numeri. Senza fiocchi presi non si vede niente.
+    function htmlTondino(lista) {
+        const presi = guadagnati(lista);
+        if (!presi.length) return '';
+        const righe = presi.map(f =>
+            `<li class="fiocco-t-riga fiocco-${f.classeLivello}">${htmlImmagine(f, 'fiocco-t-img')}` +
+            `<span class="fiocco-t-nome">${esc(f.nome)}</span><span class="fiocco-t-livello">${esc(f.livelloNome)}</span>` +
+            `<b class="fiocco-t-valore">${esc(f.valore)} <i>${esc(f.unita)}</i></b></li>`).join('');
+        return `<span class="fiocco-tondino fiocco-${presi[0].classeLivello}" tabindex="0" aria-label="${presi.length} ribbon${presi.length > 1 ? 's' : ''}">` +
+            `<b>${presi.length}</b>` +
+            `<span class="fiocco-t-tip tip-coach" role="tooltip"><strong>Ribbons ${presi.length}/${lista.length}</strong><ul>${righe}</ul></span></span>`;
+    }
+
     // Se la PNG non c'è (ancora), la sostituisce con una medaglia disegnata dal CSS con l'icona del fiocco
     function immagineMancante(img, icona) {
         if (!img || !img.parentNode || !img.ownerDocument) return;
@@ -256,7 +270,8 @@
     // "valido" serve quando la finestra può cambiare mentre i dati arrivano: se restituisce false non si scrive più nulla.
     // -----------------------------------------------------
     // Le medagliette sulle card della squadra: ogni .pkm-badges-overlay[data-fiocchi-pkm="<posizione>"]
-    async function riempiMini(db, contenitore, { giocatore, team, valido, amicizia } = {}) {
+    // modo 'tondino': il numero dei fiocchi in un tondino con l'elenco nel fumetto (le card degli altri); altrimenti le medagliette più alte
+    async function riempiMini(db, contenitore, { giocatore, team, valido, amicizia, modo } = {}) {
         if (!contenitore || !giocatore || !team) return false;
         const caselle = [...contenitore.querySelectorAll('.pkm-badges-overlay[data-fiocchi-pkm]')];
         if (!caselle.length) return false;
@@ -269,7 +284,7 @@
             if (!p) continue;
             const indice = Number(casella.dataset.fiocchiPkm);
             const lista = calcola(trova(risultato, { player: giocatore, team: team.nome, specie: p.nome, ordinale: ordinaleDi(team, p, indice) }), { amicizia: !!(amicizia && amicizia(p)) });
-            casella.innerHTML = htmlMini(lista, 3);
+            casella.innerHTML = modo === 'tondino' ? htmlTondino(lista) : htmlMini(lista, 3);
         }
         return true;
     }
@@ -291,7 +306,7 @@
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, perVicinanza, trova, ordinaleDi, carica, svuotaCache,
-        htmlFiocco, htmlScaffale, htmlMini, immagineMancante,
+        htmlFiocco, htmlScaffale, htmlMini, htmlTondino, immagineMancante,
         riempiMini, montaScaffale
     };
 });

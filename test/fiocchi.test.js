@@ -331,3 +331,43 @@ test('perVicinanza: i fiocchi più vicini al prossimo livello in alto, i più lo
     assert.deepEqual(ids(F.htmlScaffale(l)), ordine);
     assert.deepEqual(ids(F.htmlScaffale(l, { ordina: false })), l.map(f => f.id));
 });
+
+// ---------- il tondino con il numero dei fiocchi (le card dei Pokémon degli altri) ----------
+test('htmlTondino: il numero dei fiocchi presi, del colore del più alto, e un fumetto che li elenca (niente se non ce n\'è nessuno)', () => {
+    const lista = F.calcola({
+        portato: 45, koFatti: 80, setPortatoVinti: 9, ultimoVinto: 3, sopravvivenza: 76,
+        serie: { vittorieMax: 5, pulitaMax: 1 }, stagioniVinteInCampo: 1, stagioniInCampo: 2
+    });
+    const presi = F.guadagnati(lista);
+    const html = F.htmlTondino(lista);
+    assert.match(html, new RegExp(`<span class="fiocco-tondino fiocco-${presi[0].classeLivello}" tabindex="0" aria-label="${presi.length} ribbons?">`));
+    assert.match(html, new RegExp(`<b>${presi.length}</b>`));
+    assert.match(html, new RegExp(`<strong>Ribbons ${presi.length}/${lista.length}</strong>`));
+    assert.equal((html.match(/<li class="fiocco-t-riga /g) || []).length, presi.length, 'una riga per fiocco preso');
+    for (const f of presi) assert.ok(html.includes(`>${f.nome}</span><span class="fiocco-t-livello">${f.livelloNome}</span>`), f.id);
+    assert.ok(!html.includes('locked'), 'i fiocchi non presi non compaiono');
+    assert.match(html, /role="tooltip"/);
+    // nessun fiocco: nessun tondino (niente "0" di vergogna)
+    assert.equal(F.htmlTondino(F.calcola({})), '');
+    assert.equal(F.htmlTondino(F.calcola(null)), '');
+    // un solo fiocco: singolare
+    const uno = F.htmlTondino(F.calcola({ portato: 15 }));
+    assert.match(uno, /aria-label="1 ribbon"/);
+});
+
+test('matches.html e hub.html: il riepilogo del team di un avversario mostra i badge del team e il tondino dei fiocchi di ogni Pokémon', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    for (const pagina of ['matches.html', 'hub.html']) {
+        const testo = fs.readFileSync(path.join(__dirname, '..', 'docs', pagina), 'utf8');
+        for (const dip of ['statistiche.js', 'fiocchi.js', 'badge-team.js']) assert.match(testo, new RegExp(`<script src="${dip}"></script>`), `${pagina}: ${dip}`);
+        assert.match(testo, /<link rel="stylesheet" href="badge-team\.css">/, pagina);
+        assert.match(testo, /<span class="bt-barra-team" data-badge-team><\/span>/, `${pagina}: la barra dei badge del team nella testata`);
+        assert.match(testo, /<div class="pkm-badges-overlay" data-fiocchi-pkm="\$\{pIndex\}"><\/div>/, `${pagina}: il posto del tondino su ogni card`);
+        assert.match(testo, /function mostraBadgeDelTeam\(contenuto, giocatore, team\)/, pagina);
+        assert.match(testo, /Fiocchi\.riempiMini\(db, contenuto, \{ giocatore, team: squadra, modo: 'tondino', valido \}\)/, pagina);
+        assert.match(testo, /BadgeTeam\.montaBarra\(db, contenuto\.querySelector\('\[data-badge-team\]'\), \{ giocatore, team: squadra, valido \}\)/, pagina);
+        assert.match(testo, /mostraBadgeDelTeam\(content, .*\);/, `${pagina}: chiamata dopo il rendering`);
+    }
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'dettagli.css'), 'utf8');
+    for (const regola of ['.fiocco-tondino {', '.fiocco-t-tip {', '.fiocco-tondino:hover .fiocco-t-tip']) assert.ok(css.includes(regola), regola);
+});

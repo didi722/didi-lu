@@ -235,6 +235,28 @@
     }
 
     /**
+     * Quanto prende un Pokémon con questi tipi da ogni tipo, nella generazione del delta (PokeAPI dà le relazioni di oggi: qui si
+     * correggono con la tabella di allora, e i tipi che non esistono ancora non compaiono). { tipo: moltiplicatore } con i nomi in minuscolo.
+     * `leggiTipo(nome)` restituisce la risposta di PokeAPI /type/<nome> (default: fetch).
+     */
+    async function moltiplicatoriContro(tipiDifesa, delta, leggiTipo) {
+        const esistenti = tipiDellaGenerazione(delta, GEN_ATTUALE).map(t => t.toLowerCase());
+        const prendi = leggiTipo || (nome => fetch(`https://pokeapi.co/api/v2/type/${nome}`).then(r => r.json()));
+        const efficacia = {};
+        esistenti.forEach(t => { efficacia[t] = 1; });
+        await Promise.all((tipiDifesa || []).map(async nomeTipo => {
+            const rel = (await prendi(nomeTipo)).damage_relations;
+            const nomi = lista => new Set((lista || []).map(t => t.name));
+            const doppio = nomi(rel.double_damage_from), meta = nomi(rel.half_damage_from), niente = nomi(rel.no_damage_from);
+            for (const att of esistenti) {
+                const oggi = niente.has(att) ? 0 : doppio.has(att) ? 2 : meta.has(att) ? 0.5 : 1;
+                efficacia[att] *= moltiplicatore(delta, maiuscola(att), maiuscola(nomeTipo), oggi);
+            }
+        }));
+        return efficacia;
+    }
+
+    /**
      * Il payload che box.html prepara per la validazione (preparaDatiTeamPerValidazione): tipi, BST, statistica migliore e dati delle mosse
      * di quella generazione. Cambia l'oggetto e lo restituisce.
      */
@@ -297,6 +319,6 @@
         GEN_ATTUALE, TUTTI_I_TIPI, url, carica, generazioneValida,
         specieDi, mossaDi, tipiSpecie, statSpecie, abilitaSpecie, moltiplicatore, tipiDellaGenerazione, tipiEsistenti,
         creaApplicatore, applicaAlPokedex, applicaAlleMosse, applicaAPokedexBase,
-        rettificaPokemonPokeApi, rettificaMossaPokeApi, fetchPokeApi, rettificaDatiValidazione, controllaSet
+        rettificaPokemonPokeApi, rettificaMossaPokeApi, fetchPokeApi, moltiplicatoriContro, rettificaDatiValidazione, controllaSet
     };
 });

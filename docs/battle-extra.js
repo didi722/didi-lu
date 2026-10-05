@@ -31,7 +31,9 @@ const S = {
     latiNoti: [],               // lati di cui si vedono sempre i set (il proprio; in locale entrambi)
     candidati: { p1: [], p2: [] }, // team registrati: [{ nome, set: [...] }]
     squadre: { p1: [], p2: [] },// set del team in uso, alla Showdown: { name, species, item, ability, nature, evs, ivs, level, moves }
-    info: { p1: {}, p2: {} },   // { nome, team, avatar }
+    info: { p1: {}, p2: {} },   // { id, nome, team, avatar }
+    schede: { p1: null, p2: null, risultato: null },   // titolo, ELO, badge e fiocchi dei due allenatori (scheda-battaglia.js)
+    schedeChiave: '',
     battle: null,
     timerLati: null,
 };
@@ -63,6 +65,7 @@ export function impostaPartita({ openSheet, latiNoti, p1, p2 } = {}) {
     if (latiNoti !== undefined) S.latiNoti = latiNoti || [];
     for (const [lato, dati] of [['p1', p1], ['p2', p2]]) {
         if (!dati) continue;
+        if (dati.id !== undefined) S.info[lato].id = dati.id || '';
         if (dati.nome !== undefined) S.info[lato].nome = dati.nome;
         if (dati.avatar !== undefined) S.info[lato].avatar = dati.avatar || '';
         if (Array.isArray(dati.candidati)) {
@@ -73,6 +76,56 @@ export function impostaPartita({ openSheet, latiNoti, p1, p2 } = {}) {
     }
     risolviSquadre();
     disegnaLati();
+    caricaSchede();
+}
+
+// Titolo, ELO, posizione e badge dei due allenatori (e i fiocchi dei loro Pokémon): numeri pubblici, letti in disparte. Se non
+// arrivano, o chi gioca non ha un profilo (la CPU), la colonna resta com'era.
+function caricaSchede() {
+    const SB = window.SchedaBattaglia;
+    const ids = { p1: S.info.p1.id || '', p2: S.info.p2.id || '' };
+    const chiave = JSON.stringify(ids);
+    if (S.schedeChiave === chiave) return;
+    S.schedeChiave = chiave;
+    if (!SB || !window.firebase || (!ids.p1 && !ids.p2)) {
+        if (S.schede.p1 || S.schede.p2) { S.schede = { p1: null, p2: null, risultato: null }; disegnaLati(); }
+        return;
+    }
+    SB.carica(window.firebase.database(), ids).then(r => {
+        if (S.schedeChiave !== chiave) return;      // nel frattempo sono cambiati i giocatori
+        S.schede = r;
+        disegnaLati();
+    }).catch(e => console.warn('Trainer cards not available:', e));
+}
+
+// Il fumetto dei fiocchi di un Pokémon (sul tondino): si apre dove c'è posto, sopra o sotto, e non esce mai dallo schermo.
+// Le misure sono quelle a schermo: nel layout "tutto in una schermata" la pagina è in scala, i valori CSS no.
+function apriFumettoFiocchi(tondino) {
+    const tip = tondino && tondino.querySelector('.fiocco-t-tip');
+    if (!tip) return;
+    const t = tondino.getBoundingClientRect();
+    const scala = tondino.offsetWidth ? t.width / tondino.offsetWidth : 1;
+    const larghezza = document.documentElement.clientWidth, altezza = window.innerHeight || document.documentElement.clientHeight;
+    // lo si misura aperto ma invisibile, e solo dopo si mostra (aperto altrove allargherebbe la pagina)
+    tip.style.display = 'block'; tip.style.visibility = 'hidden'; tip.style.left = '0px'; tip.style.right = 'auto';
+    const misura = tip.getBoundingClientRect();
+    const sotto = altezza - t.bottom, sopra = t.top;
+    const inAlto = misura.height + 10 * scala > sotto && sopra > sotto;
+    const sinistra = Math.max(6, Math.min(t.left, larghezza - 6 - misura.width));
+    tip.style.left = `${(sinistra - t.left) / scala}px`;
+    tip.style.top = inAlto ? 'auto' : 'calc(100% + 8px)';
+    tip.style.bottom = inAlto ? 'calc(100% + 8px)' : 'auto';
+    tip.style.display = ''; tip.style.visibility = '';
+    tondino.classList.add('aperto');
+}
+function chiudiFumettoFiocchi(tondino) { if (tondino) tondino.classList.remove('aperto'); }
+const tondinoDi = e => { const t = e.target && e.target.closest && e.target.closest('.fiocco-tondino'); return t && t.closest('.lato') ? t : null; };
+// (si collega da installa(), con gli altri ascoltatori della pagina)
+function collegaFumettiFiocchi() {
+    document.addEventListener('mouseover', e => apriFumettoFiocchi(tondinoDi(e)));
+    document.addEventListener('focusin', e => apriFumettoFiocchi(tondinoDi(e)));
+    document.addEventListener('mouseout', e => { const t = tondinoDi(e); if (t && !t.contains(e.relatedTarget)) chiudiFumettoFiocchi(t); });
+    document.addEventListener('focusout', e => chiudiFumettoFiocchi(tondinoDi(e)));
 }
 
 // Quale dei team registrati è in campo: quello con le stesse 6 specie del team preview
@@ -128,6 +181,7 @@ export function installa({ ritardoMosse, BattleTooltips } = {}) {
         Dex.resolveAvatar.sito = true;
     }
     const P = BT.prototype;
+    collegaFumettiFiocchi();
 
     // Passare col mouse da una parte all'altra dello stesso bottone (nome, tipo, PP)
     // per il browser è uscire ed entrare: Showdown nasconderebbe e rimostrerebbe il
@@ -762,20 +816,29 @@ function disegnaLati() {
         if (!box) continue;
         const elenco = elencoLato(lato);
         const nome = S.info[lato].nome || S.battle?.[lato]?.name || (lato === 'p1' ? 'Player 1' : 'Player 2');
-        const firma = JSON.stringify([nome, S.info[lato].team, elenco.map(x => x.nome), S.openSheet, S.latiNoti]);
+        const sc = S.schede[lato] || null;
+        const firma = JSON.stringify([nome, S.info[lato].team, elenco.map(x => x.nome), S.openSheet, S.latiNoti, sc && [sc.id, sc.elo, sc.posizione, sc.titolo, sc.medaglie.length]]);
         if (box.dataset.firma === firma) continue;
         box.dataset.firma = firma;
 
         const conTooltip = puoVedereSet(lato);
         risolviSquadre();
+        // i fiocchi di ogni Pokémon e i badge del team (di chi ha un profilo): chi lo ha guadagnato lo mostra
+        const SB = window.SchedaBattaglia;
+        const nomeTeam = S.info[lato].team;
+        const nomiTeam = elenco.map(x => x.nome === x.specie ? x.specie : `${x.nome} (${x.specie})`);
+        const badgeTeam = SB && sc ? SB.htmlBadgeTeam(S.schede.risultato, sc, nomeTeam) : '';
         box.innerHTML = `
             <h2 class="lato-nome" title="${esc(nome)}">${esc(nome)}</h2>
-            ${S.info[lato].team ? `<p class="lato-team">${esc(S.info[lato].team)}</p>` : ''}
+            ${nomeTeam ? `<p class="lato-team">${esc(nomeTeam)}</p>` : ''}
+            ${SB && sc ? SB.htmlScheda(sc) : ''}
+            ${badgeTeam}
             <ol class="lato-pkm">${elenco.map((x, i) => `
                 <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
                     ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
                     <img src="${esc(sprite(x.specie))}" data-slug="${esc(slugSprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
+                    ${SB && sc ? SB.htmlTondinoPokemon(S.schede.risultato, sc, nomeTeam, nomiTeam, i) : ''}
                 </li>`).join('')}
             </ol>
             <div class="lato-condizioni" id="condizioni-${lato}" aria-label="Side effects"></div>`;

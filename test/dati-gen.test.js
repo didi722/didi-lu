@@ -289,7 +289,7 @@ test('box.html: il Team Builder, i pool, il dettaglio dei team e la validazione 
         assert.match(dopo(nome), /DatiGen\.fetchPokeApi\(`https:\/\/pokeapi\.co\/api\/v2\/(pokemon|move)\//, `${nome}: legge PokeAPI con i dati della generazione`);
     }
     assert.match(box, /deltaGenDettaglio = await DatiGen\.carica\(generazioneDelRegolamento\(formatoTeam\.regolamento\)\)/);
-    assert.match(box, /async function moltiplicatoriContro\(/);
+    assert.match(box, /function moltiplicatoriContro\(tipiDifesa, delta = deltaGenDettaglio\) \{\s*return DatiGen\.moltiplicatoriContro\(tipiDifesa, delta\);/);
     assert.equal((box.match(/await moltiplicatoriContro\(data\.types\.map\(t => t\.type\.name\)\)/g) || []).length, 2, 'le due schede con le debolezze');
     // il salvataggio: i dati per la validazione sono quelli della generazione, e il validatore controlla la coerenza di abilità, strumenti e mosse
     assert.match(box, /preparaDatiTeamPerValidazione\(datiTeamDaSalvare\.pokemon, regolamento\)/);
@@ -337,5 +337,40 @@ test('il server controlla le stesse cose, con gli stessi criteri (functions/part
         assert.match(testo, /gen >= 3 && set\.ability && nonEsisteAncora\(dex\.abilities\.get\(set\.ability\)\)/, nome);
         assert.match(testo, /nonEsisteAncora\(strumento\)/, nome);
         assert.match(testo, /nonEsisteAncora\(dex\.moves\.get\(mossa\)\)/, nome);
+    }
+});
+
+test('moltiplicatoriContro: le debolezze di un Pokémon con la tabella dei tipi della sua generazione', async () => {
+    // le relazioni di PokeAPI sono di oggi: Acciaio non resiste a Spettro e Buio, Folletto esiste
+    const relazioni = {
+        steel: { damage_relations: { double_damage_from: [{ name: 'fire' }, { name: 'fighting' }, { name: 'ground' }], half_damage_from: [{ name: 'normal' }, { name: 'grass' }, { name: 'ice' }, { name: 'flying' }, { name: 'psychic' }, { name: 'bug' }, { name: 'rock' }, { name: 'dragon' }, { name: 'steel' }, { name: 'fairy' }], no_damage_from: [{ name: 'poison' }] } },
+        fairy: { damage_relations: { double_damage_from: [{ name: 'poison' }, { name: 'steel' }], half_damage_from: [{ name: 'fighting' }, { name: 'bug' }, { name: 'dark' }], no_damage_from: [{ name: 'dragon' }] } }
+    };
+    const leggi = nome => Promise.resolve(relazioni[nome]);
+    const oggi = await G.moltiplicatoriContro(['steel', 'fairy'], null, leggi);
+    assert.equal(oggi.fairy, 0.5);
+    assert.equal(oggi.ghost, 1, 'Spettro oggi è neutro contro Acciaio');
+    assert.equal(oggi.poison, 0, 'Acciaio immune al veleno, Folletto lo teme: 0');
+    assert.equal(oggi.fire, 2);
+    // Mawile in Gen 4 è solo Acciaio: Spettro e Buio fanno la metà, Folletto non esiste, niente "tipo" in più
+    const g4 = await G.moltiplicatoriContro(['steel'], leggiDelta(4), leggi);
+    assert.equal(g4.ghost, 0.5);
+    assert.equal(g4.dark, 0.5);
+    assert.ok(!('fairy' in g4), 'il tipo Folletto non esiste in Gen 4');
+    assert.equal(g4.fire, 2);
+    // Gen 1: niente Buio né Acciaio
+    const g1 = await G.moltiplicatoriContro(['steel'], leggiDelta(1), leggi);
+    assert.ok(!('dark' in g1) && !('steel' in g1) && !('fairy' in g1));
+    assert.equal(Object.keys(g1).length, 15);
+});
+
+test('matches.html e hub.html: il riepilogo del team legge PokeAPI con i dati della generazione del formato', () => {
+    for (const pagina of ['matches.html', 'hub.html']) {
+        const testo = fs.readFileSync(path.join(DOCS, pagina), 'utf8');
+        assert.match(testo, /<script src="dati-gen\.js"><\/script>/, pagina);
+        assert.match(testo, /let deltaGenDettaglio = null;/, pagina);
+        assert.match(testo, /await impostaGenerazioneDettaglio\(formato\);/, `${pagina}: la generazione si imposta prima del rendering`);
+        assert.match(testo, /DatiGen\.moltiplicatoriContro\(data\.types\.map\(t => t\.type\.name\), deltaGenDettaglio\)/, `${pagina}: debolezze della generazione`);
+        assert.doesNotMatch(testo, /\bfetch\(`https:\/\/pokeapi\.co\/api\/v2\/(pokemon|move)\//, `${pagina}: una lettura di PokeAPI non passa da DatiGen.fetchPokeApi`);
     }
 });

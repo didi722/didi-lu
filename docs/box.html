@@ -142,14 +142,14 @@
         <div class="loading">Loading data from Pokédex...</div>
     </div>
 
-    <div id="teamModal" class="modal" onclick="chiudiTeamModal()">
+    <div id="teamModal" class="modal">
     <div class="modal-content"> 
         <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
         <div id="modalBody"></div>
     </div>
 </div>
 
-    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+    <div id="pkmDetailModal" class="modal" onclick="if (event.target === this) chiudiPkmModal()">
     <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
         <div id="pkmModalBody"></div>
     </div>
@@ -159,11 +159,12 @@
     <i class="fas fa-tools tasto-icona"></i><span class="tasto-testo">Team builder</span>
 </button>
 
-<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
+<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-label="Team Builder assistant" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
         
         <div class="format-modal-header">
             <h2>TEAM BUILDER ASSISTANT</h2>
-            <span class="format-close-btn" style="display: flex;">&times;</span>
+            <p class="format-modal-hint">Pick a format to see its rules and the Pokémon you can use, then build your team.</p>
+            <span class="format-close-btn" role="button" aria-label="Close" title="Close">&times;</span>
         </div>
         
         <div class="format-modal-container">
@@ -196,9 +197,7 @@
                     <span id="helper-clause-badge" class="clause-badge">Found: <span id="helper-count">0</span></span>
                 </div>
                 
-                <div id="helper-pkm-grid" class="explorer-pkm-scroll-container">
-
-                </div>
+                <div id="helper-pkm-grid" class="explorer-pkm-scroll-container"></div>
             </div>
             
         </div>
@@ -1160,7 +1159,10 @@ async function apriDettagli(id, opzioni = {}) {
                 }, 0);
                 
                 return `
-                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                <div class="modal-pkm-card modal-pkm-card-apri" style="z-index: ${10 - pIndex}; position: relative;"
+                     role="button" tabindex="0" aria-label="Open ${String(p.nome).replace(/[&<>"]/g, '')}"
+                     onclick="preparaAperturaPkm('${team.id}', ${pIndex}, '${pkmNameUrl}')"
+                     onkeydown="if (event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); preparaAperturaPkm('${team.id}', ${pIndex}, '${pkmNameUrl}'); }"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
@@ -1278,8 +1280,6 @@ document.addEventListener('keydown', (e) => {
             apriDettagli(tuttiITeam[currentIndex - 1].id);
         } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
             apriDettagli(tuttiITeam[currentIndex + 1].id);
-        } else if (e.key === "Escape") {
-            chiudiTeamModal();
         }
     }
 });
@@ -1799,13 +1799,7 @@ function chiudiTeamModal() {
     }
 }
 
-// Gestione intelligente della chiusura cliccando fuori
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('teamModal');
-    if (event.target === modal) {
-        chiudiTeamModal();
-    }
-});
+// Il dettaglio del team si chiude solo con la X (un clic sulla card di un Pokémon apre il Pokémon, non chiude niente)
 
 function normalizzaNomePerPokeAPI(nomeShowdown) {
     // Trasforma in minuscolo, sostituisce gli spazi con trattini e rimuove i caratteri speciali
@@ -1870,22 +1864,8 @@ let deltaGenDettaglio = null;
 
 // Quanto prende un Pokémon con questi tipi da ogni tipo, nella generazione del dettaglio aperto (le relazioni di PokeAPI sono di oggi:
 // la tabella dei tipi cambia nelle prime cinque generazioni, e Folletto, Buio e Acciaio non esistono sempre). { tipo: moltiplicatore }
-async function moltiplicatoriContro(tipiDifesa, delta = deltaGenDettaglio) {
-    const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
-    const esistenti = DatiGen.tipiDellaGenerazione(delta, DatiGen.GEN_ATTUALE).map(t => t.toLowerCase());
-    const efficacia = {};
-    esistenti.forEach(t => { efficacia[t] = 1; });
-    await Promise.all(tipiDifesa.map(async nomeTipo => {
-        const res = await fetch(`https://pokeapi.co/api/v2/type/${nomeTipo}`);
-        const rel = (await res.json()).damage_relations;
-        const nomi = lista => new Set(lista.map(t => t.name));
-        const doppio = nomi(rel.double_damage_from), meta = nomi(rel.half_damage_from), niente = nomi(rel.no_damage_from);
-        for (const att of esistenti) {
-            const oggi = niente.has(att) ? 0 : doppio.has(att) ? 2 : meta.has(att) ? 0.5 : 1;
-            efficacia[att] *= DatiGen.moltiplicatore(delta, cap(att), cap(nomeTipo), oggi);
-        }
-    }));
-    return efficacia;
+function moltiplicatoriContro(tipiDifesa, delta = deltaGenDettaglio) {
+    return DatiGen.moltiplicatoriContro(tipiDifesa, delta);
 }
 async function applicaGenerazioneFormato(regolamento) {
     const delta = await DatiGen.carica(generazioneDelRegolamento(regolamento)).catch(err => {
@@ -3217,9 +3197,11 @@ document.addEventListener('DOMContentLoaded', sincronizzaCategorie);
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        chiudiTeamModal();
-    }
+    if (e.key !== "Escape") return;
+    // si chiude un livello alla volta: prima la scheda del Pokémon, poi il dettaglio del team
+    const pkm = document.getElementById('pkmDetailModal');
+    if (pkm && pkm.style.display !== 'none' && pkm.style.display !== '') chiudiPkmModal();
+    else chiudiTeamModal();
 });
 
 firebase.auth().onAuthStateChanged(async (currentUser) => {
@@ -4280,8 +4262,8 @@ function inizializzaChiusuraHelper(event) {
         return;
     }
 
-    // Caso B: Click fuori dal modale (sull'overlay di sfondo o sul wrapper)
-    if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
+    // Caso B: Click fuori dalla finestra (sul velo di sfondo: la finestra è la carta, i suoi margini non chiudono)
+    if (event.target.id === 'helper-modal-overlay') {
         chiudiTuttoHelper();
         notificaSimulatore('chiuso');
     }

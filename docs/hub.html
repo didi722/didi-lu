@@ -11,7 +11,12 @@
     <link rel="stylesheet" href="nb-pagine.css">
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
-    <script src="dettagli.js" defer></script>
+<link rel="stylesheet" href="badge-team.css">
+    <script src="dati-gen.js"></script>
+<script src="statistiche.js"></script>
+<script src="fiocchi.js"></script>
+<script src="badge-team.js"></script>
+<script src="dettagli.js" defer></script>
     <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="formato-tooltip.css">
 <script src="formato-tooltip.js"></script>
@@ -850,6 +855,17 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
     }
 }
 
+// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario li vede (un vanto). Il team: le
+// medagliette più alte e il tasto con lo scaffale completo; ogni Pokémon: un tondino col numero dei suoi fiocchi, e il fumetto li elenca.
+function mostraBadgeDelTeam(contenuto, giocatore, team) {
+    if (typeof Fiocchi === 'undefined') return;
+    const squadra = { nome: team.nome, pokemon: team.pokemon };
+    window.squadraAperta = squadra;
+    const valido = () => window.squadraAperta === squadra;
+    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, modo: 'tondino', valido }).catch(() => {});
+    if (typeof BadgeTeam !== 'undefined') BadgeTeam.montaBarra(db, contenuto.querySelector('[data-badge-team]'), { giocatore, team: squadra, valido }).catch(() => {});
+}
+
 function gestisciErroreSprite(img, pkmNameUrl) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
@@ -860,7 +876,7 @@ function gestisciErroreSprite(img, pkmNameUrl) {
     }
 
     if (fase === 1) {
-        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+        DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`, deltaGenDettaglio)
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
@@ -1082,8 +1098,11 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
                     : Object.values(teamData.pokemon);
             }
 
+            await impostaGenerazioneDettaglio(formato);
+
             // --- GENERAZIONE HTML ---
             content.innerHTML = generaHtmlDettaglioTeam(teamFinalizzato, idPlayerPuro, palette);
+            mostraBadgeDelTeam(content, idPlayerPuro.toLowerCase(), teamFinalizzato);
             
         } else {
             content.innerHTML = `<div style="color:white; text-align:center;">Team "${nomeTeam}" non trovato tra i team di ${idPlayerPuro}.</div>`;
@@ -1105,7 +1124,7 @@ function gestisciErroreSprite(img, pkmNameUrl) {
     }
 
     if (fase === 1) {
-        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+        DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`, deltaGenDettaglio)
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
@@ -1163,6 +1182,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                 <div class="score-item"><span>Points</span><strong>${pts}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${partiteGiocate}</strong></div>
             </div>
+            <span class="bt-barra-team" data-badge-team></span>
         </div>
 
         <div class="modal-grid">
@@ -1184,7 +1204,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
-                    
+                    <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
@@ -1269,7 +1289,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
     try {
         const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${cleanName}`, deltaGenDettaglio);
         
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -1303,7 +1323,7 @@ async function caricaStats(pkmName, elementId) {
     if (tooltip.dataset.loaded === "true") return;
 
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         
         const statsMap = {
@@ -1342,24 +1362,12 @@ async function caricaStats(pkmName, elementId) {
 // Aggiunto "direzione" ai parametri
 async function caricaTipi(pkmName, elementId, direzione) {
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         const container = document.getElementById(elementId);
         if (!container) return;
 
-        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
-        let effectiveness = {};
-        d_types.forEach(type => effectiveness[type] = 1);
-
-        await Promise.all(data.types.map(async (t) => {
-            const typeRes = await fetch(t.type.url);
-            const typeData = await typeRes.json();
-            const rel = typeData.damage_relations;
-
-            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
-            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
-            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
-        }));
+        const effectiveness = await DatiGen.moltiplicatoriContro(data.types.map(t => t.type.name), deltaGenDettaglio);
 
         let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
         for (let type in effectiveness) {
@@ -1405,6 +1413,21 @@ function getGifUrl(pName) {
     return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
 }
 
+
+// I dati di PokeAPI sono di oggi: nel riepilogo di un team di Gen 4 si rimettono come erano nella generazione del suo formato (dati-gen.js)
+let deltaGenDettaglio = null;
+async function impostaGenerazioneDettaglio(formato) {
+    deltaGenDettaglio = null;
+    try {
+        const snap = await db.ref('regolamenti').once('value');
+        let reg = null;
+        snap.forEach(c => { const v = c.val(); if (v && String(v.categoria || '').toLowerCase().trim() === String(formato || '').toLowerCase().trim()) reg = v; });
+        const gen = reg ? (parseInt(reg.genRuleValue, 10) || parseInt(String(reg.vgcGen || '').replace(/\D/g, ''), 10) || 9) : 9;
+        deltaGenDettaglio = await DatiGen.carica(gen);
+    } catch (err) {
+        console.warn('[Dati per generazione] riepilogo con i dati di oggi:', err);
+    }
+}
 
 function chiudiTeamModal() { document.getElementById('teamModal').style.display = 'none'; }
 function chiudiTeamSeFuori(event) { if (event.target.id === 'teamModal') chiudiTeamModal(); }

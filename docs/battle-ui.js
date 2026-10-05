@@ -215,7 +215,7 @@ async function preparaCpu(chiaveTeam) {
     config = {
         formato: dati.formato,
         etichetta: `Practice vs CPU · ${dati.categoria}`,
-        p1: { nome: dati.nome, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
+        p1: { nome: dati.nome, id: dati.id, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
         p2: { nome: 'CPU', team: '', nomeTeam: '' }
     };
     if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
@@ -298,7 +298,7 @@ function schedeCpu() {
     impostaPartita({
         openSheet: false,
         latiNoti: ['p1'],
-        p1: { nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
+        p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
         p2: { nome: 'CPU', avatar: '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
     });
 }
@@ -1439,6 +1439,7 @@ function disegnaInfo() {
    // In locale e in prova i due team sono sullo stesso schermo: si vedono entrambi
    function schedeLocali() {
        const lato = l => ({
+           id: config[l].id || '',
            nome: config[l].nome,
                       avatar: config[l].avatar || '',
            candidati: [{ nome: config[l].nomeTeam || 'Test team', set: setDaTeam(config[l].team || '') }]
@@ -1455,6 +1456,7 @@ function disegnaInfo() {
        const lato = l => {
            const vedo = d.openSheet || l === mioLato;
            return {
+               id: d.giocatori[l].id || '',
                nome: d.giocatori[l].nome,
                               avatar: d.giocatori[l].avatar || '',
                candidati: d.giocatori[l].teams.map(t => {
