@@ -268,6 +268,10 @@
         // 1-3 statistiche in una riga, 4 in due da due, 5-6 in due righe da tre: mai una riga con un solo riquadro
         const quante = stato.config.statistiche.length;
         griglia.style.setProperty('--col', String(quante <= 3 ? quante : quante === 4 ? 2 : 3));
+        // quante sono: con un solo riquadro il blocco può stringersi quanto lui e il riquadro prende tutta la larghezza (CSS)
+        griglia.style.setProperty('--quante', String(quante));
+        griglia.dataset.quante = String(quante);
+        stato.blocchi.statistiche.dataset.quante = String(quante);
         stato.config.statistiche.forEach((id, i) => {
             const v = stato.riepilogo[id];
             if (!v) return;

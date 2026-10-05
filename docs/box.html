@@ -4334,6 +4334,8 @@ const TB_MOSSE_PROTECT = ['protect', 'detect', 'spikyshield', 'banefulbunker', '
 
 // Dati di Showdown (riempiti al primo caricamento)
 const tbDex = { pokedex: null, moves: null, items: null, abilities: null, learnsets: null };
+// Le spiegazioni di mosse, strumenti e abilità (descrizioni.json): i dati di Showdown non le portano più
+let tbDescrizioni = null;
 
 // Stato del builder
 const tbStato = {
@@ -5351,11 +5353,11 @@ function tbCoachAperto(id) {
 // Tooltip sulle statistiche del pannello EV: Velocità → speed tier, Atk/SpA → danni fatti, HP/Def/SpD → danni subiti
 function tbApriCoachStat(el, chiave) {
     const id = `stat-${chiave}`;
-    if (chiave === 'spe') return tbApriCoach(el, id, tbHtmlSpeedTier);
+    if (chiave === 'spe') return tbHoverCoach(el, id, tbHtmlSpeedTier);
     const costruisci = (chiave === 'atk' || chiave === 'spa')
         ? () => tbHtmlCalcAttacco(chiave)
         : () => tbHtmlCalcDifesa(chiave);
-    tbApriCoach(el, id, () => tbHtmlCalcConLibreria(id, costruisci));
+    tbHoverCoach(el, id, () => tbHtmlCalcConLibreria(id, costruisci));
 }
 
 // Se la libreria non è ancora arrivata mostra un messaggio e aggiorna il tooltip appena è pronta
@@ -6266,7 +6268,7 @@ function tbHtmlTagDettaglio(idTeam) {
 }
 
 function tbApriCoachDettaglio(el, id, costruisci) {
-    tbApriCoach(el, id, () => {
+    tbHoverCoach(el, id, () => {
         if (!tbStatoDettaglio) {
             return `${tbTestataCoach('TEAM')}<div class="neubrutalist-tooltip-body"><div class="tb-tip-sub">${tbEsc(tbErroreDettaglio || '⏳ Loading team data...')}</div></div>`;
         }
@@ -6378,15 +6380,15 @@ function tbHtmlAzioni(variante) {
             </div>
             <div class="tb-cov-wrap">
                 <span class="tb-cov-tag" id="tb-cov-tag"
-                      onmouseenter="tbApriCoach(this, 'cov-def', tbHtmlDifesa)" onmouseleave="tbChiudiCoachPresto('cov-def')">Team weaknesses</span>
+                      onmouseenter="tbHoverCoach(this, 'cov-def', tbHtmlDifesa)" onmouseleave="tbChiudiCoachPresto('cov-def')">Team weaknesses</span>
             </div>
             <div class="tb-cov-wrap">
                 <span class="tb-cov-tag" id="tb-off-tag"
-                      onmouseenter="tbApriCoach(this, 'cov-off', tbHtmlAttacco)" onmouseleave="tbChiudiCoachPresto('cov-off')">Team coverage</span>
+                      onmouseenter="tbHoverCoach(this, 'cov-off', tbHtmlAttacco)" onmouseleave="tbChiudiCoachPresto('cov-off')">Team coverage</span>
             </div>
                         <div class="tb-cov-wrap">
                 <span class="tb-cov-tag" id="tb-roles-tag"
-                      onmouseenter="tbApriCoach(this, 'cov-roles', tbHtmlRuoli)" onmouseleave="tbChiudiCoachPresto('cov-roles')">Team roles</span>
+                      onmouseenter="tbHoverCoach(this, 'cov-roles', tbHtmlRuoli)" onmouseleave="tbChiudiCoachPresto('cov-roles')">Team roles</span>
             </div>
                     </div>`;
 }
@@ -6430,6 +6432,22 @@ function tbCalcolaStat(chiave, base, ev, iv, natura) {
 // =====================================================================
 let tbCoachTimer = null;
 let tbCoachAncora = null;
+let tbHoverTimer = null;
+// In hover il fumetto non compare subito: muovendo il mouse per lo schermo se ne aprirebbero a decine. Il primo aspetta un
+// po'; se un fumetto è già aperto e si passa a un altro elemento, il cambio è più svelto; tornando sullo stesso, è immediato
+const TB_RITARDO_COACH = 450;
+const TB_RITARDO_COACH_CAMBIO = 150;
+
+function tbHoverCoach(el, id, costruisci) {
+    clearTimeout(tbHoverTimer);
+    clearTimeout(tbCoachTimer);                                          // un fumetto in chiusura: resta, se si torna su
+    const tooltip = document.getElementById('global-neubrutalist-tooltip');
+    const aperto = !!tooltip && tooltip.style.display === 'block' && tooltip.classList.contains('tb-coach');
+    if (aperto && tbCoachAncora && tbCoachAncora.el === el) return tbApriCoach(el, id, costruisci);
+    tbHoverTimer = setTimeout(() => {
+        if (el.isConnected && el.matches(':hover')) tbApriCoach(el, id, costruisci);   // il mouse è ancora lì (e la lista non è cambiata)
+    }, aperto ? TB_RITARDO_COACH_CAMBIO : TB_RITARDO_COACH);
+}
 
 function tbApriCoach(el, id, costruisci) {
     clearTimeout(tbCoachTimer);
@@ -6454,6 +6472,7 @@ function tbApriCoach(el, id, costruisci) {
 
 // Piccolo ritardo: dà il tempo di passare dal testo al tooltip senza che si chiuda
 function tbChiudiCoachPresto(id) {
+    clearTimeout(tbHoverTimer);                  // il fumetto in attesa non deve comparire dopo che il mouse se n'è andato
     clearTimeout(tbCoachTimer);
     tbCoachTimer = setTimeout(() => tbNascondiTooltip(id), 200);
 }
@@ -7563,6 +7582,8 @@ async function apriTeamBuilder() {
 
         // mosse, strumenti e abilità consigliati per la generazione del formato (se il file manca, resta l'ordine alfabetico)
         tbStato.consigli = typeof Consigli !== 'undefined' ? await Consigli.carica(tbStato.gen).catch(() => null) : null;
+        // le spiegazioni di mosse, strumenti e abilità (se il file manca, restano quelle dei dati di Showdown, se ci sono)
+        if (typeof Descrizioni !== 'undefined') tbDescrizioni = await Descrizioni.carica().catch(() => null);
 
         tbRender();
         tbMontaNote();
@@ -8150,6 +8171,7 @@ function tbProgrammaTooltip(pkm, card, leggiInfo) {
 // Senza id: chiude sempre. Con id: chiude solo se il tooltip è di quel Pokémon.
 function tbNascondiTooltip(id) {
     clearTimeout(tbTooltipTimer);
+    if (id === undefined) clearTimeout(tbHoverTimer);
     const tooltip = document.getElementById('global-neubrutalist-tooltip');
     if (!tooltip) return;
     if (id !== undefined && tooltip.dataset.currentId !== String(id)) return;
@@ -8286,7 +8308,7 @@ function tbHtmlCampoMossa(s, j) {
     const id = s.mosse[j];
     const d = id ? tbDex.moves[id] : null;
     const stile = d ? `style="background: ${tbColoreTipo(d.type)};"` : '';
-    const descrizione = d ? (d.shortDesc || d.desc || '') : '';
+    const descrizione = d ? tbDescBreve('mossa', id, d) : '';
     const icona = d
         ? `<img class="tb-combo-cat" alt="${d.category}" src="immagini/move-${d.category.toLowerCase()}.png"
                 onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/categories/${d.category}.png';">`
@@ -8438,7 +8460,7 @@ function tbHtmlEditor(s) {
              <select class="tb-select" onchange="tbImpostaCampo('abilita', this.value); tbAggiornaTipiEditor();" style="flex-grow: 1;"
                      ${s.abilita ? `onmouseenter="tbHintCampo(this, 'abilita', '${tbEsc(tbToID(s.abilita))}', ${abilitaConsigliata(s.abilita)})" onmouseleave="tbChiudiCoachPresto('hint-campo')"` : ''}
                      onmousedown="tbChiudiCoachPresto('hint-campo')">
-                 ${abilitaOrdinate.map(a => `<option value="${tbEsc(a)}" data-desc="${tbEsc(tbTestoDesc(tbDex.abilities[tbToID(a)]))}" ${a === s.abilita ? 'selected' : ''}>${abilitaConsigliata(a) ? '★ ' : ''}${tbEsc(a)}</option>`).join('')}
+                 ${abilitaOrdinate.map(a => `<option value="${tbEsc(a)}" data-desc="${tbEsc(tbTestoDesc('abilita', tbToID(a), tbDex.abilities[tbToID(a)]))}" ${a === s.abilita ? 'selected' : ''}>${abilitaConsigliata(a) ? '★ ' : ''}${tbEsc(a)}</option>`).join('')}
              </select>
              ${tbHtmlAltriDati(s, sp)} 
            </div>`
@@ -8605,12 +8627,12 @@ function tbRenderRiepilogo() {
     const descAbilita = document.getElementById('tb-desc-abilita');
     if (descAbilita) {
         const ab = s && s.abilita ? tbDex.abilities[tbToID(s.abilita)] : null;
-        descAbilita.textContent = ab ? (ab.shortDesc || ab.desc || '') : '';
+        descAbilita.textContent = ab ? tbDescBreve('abilita', tbToID(s.abilita), ab) : '';
     }
     const descOggetto = document.getElementById('tb-desc-oggetto');
     if (descOggetto) {
         const it = s && s.oggetto ? tbDex.items[s.oggetto] : null;
-        descOggetto.textContent = it ? (it.shortDesc || it.desc || '') : '';
+        descOggetto.textContent = it ? tbDescBreve('oggetto', s.oggetto, it) : '';
     }
 
     tbAggiornaTag({ difesa: 'tb-cov-tag', attacco: 'tb-off-tag', ruoli: 'tb-roles-tag' });
@@ -8670,14 +8692,22 @@ function tbFiltraCombo(input) {
 }
 
 // ---- Fumetto con la spiegazione di una mossa, di uno strumento o di un'abilità (liste di scelta e campi già scelti) ----
-function tbTestoDesc(d) {
+// Quelle di Showdown se i suoi dati le hanno, altrimenti la tabella del sito (descrizioni.js). tipo: 'mossa' | 'oggetto' | 'abilita'
+function tbDescBreve(tipo, id, d) {
+    if (typeof Descrizioni !== 'undefined') return Descrizioni.breve(tbDescrizioni, tipo, id, d);
+    return d ? String(d.shortDesc || d.desc || '').trim() : '';
+}
+
+// Il testo del fumetto: il lungo se non supera i 260 caratteri, altrimenti il breve
+function tbTestoDesc(tipo, id, d) {
+    if (typeof Descrizioni !== 'undefined') return Descrizioni.completa(tbDescrizioni, tipo, id, d);
     if (!d) return '';
     const lunga = String(d.desc || '').trim(), breve = String(d.shortDesc || '').trim();
     return lunga && lunga.length <= 260 ? lunga : (breve || lunga);
 }
 
-function tbHtmlHint(tipo, dati, nome, consigliata) {
-    const testo = tbTestoDesc(dati);
+function tbHtmlHint(tipo, dati, nome, consigliata, id) {
+    const testo = tbTestoDesc(tipo, id || tbToID(nome), dati);
     let tag = '';
     if (tipo === 'mossa' && dati) {
         const potenza = dati.basePower ? `${dati.basePower} BP` : '— BP';
@@ -8699,14 +8729,14 @@ function tbHintVoce(el, i) {
     const v = tbCombo.voci[i];
     if (!v) return;
     const tipo = tbCombo.tipo === 'mossa' ? 'mossa' : 'oggetto';
-    tbApriCoach(el, 'hint-voce', () => tbHtmlHint(tipo, v.dati || tbDatiPerHint(tipo, v.id), v.nome || v.dati?.name || v.id, v.consigliata));
+    tbHoverCoach(el, 'hint-voce', () => tbHtmlHint(tipo, v.dati || tbDatiPerHint(tipo, v.id), v.nome || v.dati?.name || v.id, v.consigliata, v.id));
 }
 
 // Sui campi già scelti (strumento, abilità, mosse): passando sopra si legge cosa fa
 function tbHintCampo(el, tipo, id, consigliata) {
     const dati = id ? tbDatiPerHint(tipo, id) : null;
     if (!dati) return;
-    tbApriCoach(el, 'hint-campo', () => tbHtmlHint(tipo, dati, dati.name || id, consigliata));
+    tbHoverCoach(el, 'hint-campo', () => tbHtmlHint(tipo, dati, dati.name || id, consigliata, id));
 }
 
 // I consigli per il Pokémon dello slot: { mosse, oggetti, abilita } (id, dal più consigliato)
@@ -8771,7 +8801,7 @@ function tbAggiornaCombo() {
             const d = v.dati;
             const potenza = d.basePower ? `${d.basePower} BP` : '— BP';
             const precisione = d.accuracy === true ? '—' : `${d.accuracy}%`;
-            const descrizione = d.shortDesc || d.desc || '';
+            const descrizione = tbDescBreve('mossa', v.id, d);
             return `${intestazione(i)}
                 <div class="tb-opt tb-opt-move ${i === tbCombo.evidenziata ? 'hl' : ''}" style="background: ${tbColoreTipo(d.type)};"
                      ${hint(i)} onmousedown="event.preventDefault(); tbScegliDaCombo(${i})">
@@ -8789,7 +8819,7 @@ function tbAggiornaCombo() {
                 <img class="tb-opt-icon" alt="" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${tbSlugOggetto(v.nome)}.png"
                      onerror="this.style.visibility='hidden'">
                 <span class="tb-opt-name">${stella(v)}${tbEsc(v.nome)}</span>
-                <span class="tb-opt-desc tb-opt-desc-item">${tbEsc(v.dati?.shortDesc || v.dati?.desc || '')}</span>
+                <span class="tb-opt-desc tb-opt-desc-item">${tbEsc(tbDescBreve('oggetto', v.id, v.dati))}</span>
             </div>`).join('');
     }
 
@@ -9289,6 +9319,7 @@ function tbCambiaFiltroTipo(tipo) {
 
     </script>
 <script src="consigli.js"></script>
+<script src="descrizioni.js"></script>
 <script src="controlli.js"></script>
 </body>
 </html>

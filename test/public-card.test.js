@@ -446,3 +446,39 @@ test('blocco Personality: lo stile ha la forma larga (diagramma e testo affianca
     assert.match(cssCard, /\.pers-radar-et \{[^}]*'Josefin Sans'/);
     assert.match(cssCard, /\.pp-pers-tipo \{[^}]*font: 900 1rem var\(--pp-font\)/s);
 });
+
+test('statistiche con un solo riquadro: il blocco si stringe quanto lui (190) invece che quanto due (260), e il riquadro prende tutta la larghezza', () => {
+    // il modello: la larghezza minima dipende da quanti riquadri ci sono
+    const con = n => ({ statistiche: Object.keys(P.STAT).slice(0, n) });
+    assert.equal(P.LARGHEZZA_MIN_STATISTICA_SOLA, 190);
+    assert.equal(P.larghezzaMinima('statistiche', con(1)), 190);
+    for (const n of [2, 3, 4, 5, 6]) assert.equal(P.larghezzaMinima('statistiche', con(n)), P.MINIMI.statistiche[0], `${n} riquadri`);
+    assert.equal(P.larghezzaMinima('statistiche', null), P.MINIMI.statistiche[0], 'senza configurazione vale il minimo di sempre');
+    assert.equal(P.larghezzaMinima('statistiche', { statistiche: 'x' }), P.MINIMI.statistiche[0]);
+    for (const id of Object.keys(P.MINIMI).filter(i => i !== 'statistiche')) assert.equal(P.larghezzaMinima(id, con(1)), P.MINIMI[id][0], id);
+    assert.equal(P.larghezzaMinima('nonesiste', con(1)), 0);
+    assert.ok(P.LARGHEZZA_MIN_STATISTICA_SOLA < P.MINIMI.statistiche[0]);
+    // la carta dice a CSS quanti sono, e lo stile ha lo stesso numero del modello
+    assert.match(card, /griglia\.dataset\.quante = String\(quante\);/);
+    assert.match(card, /stato\.blocchi\.statistiche\.dataset\.quante = String\(quante\);/);
+    assert.match(card, /griglia\.style\.setProperty\('--quante', String\(quante\)\);/);
+    assert.match(cssCard, new RegExp(`body\\.pp-fisso :is\\(\\.pp-zona, \\.pp-linea\\) > \\.pp-statistiche\\[data-quante="1"\\] \\{ min-width: ${P.LARGHEZZA_MIN_STATISTICA_SOLA}px; \\}`));
+    assert.match(cssCard, /\.pp-stat-griglia\[data-quante="1"\], body\.pp-fisso \.pp-stat-griglia\[data-quante="1"\] \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+    // in una carta larga le colonne sono tante quanti i riquadri (prima: sempre sei, con i riquadri in meno lasciava vuoto)
+    assert.match(cssCard, /@container \(min-width: 720px\) \{ body\.pp-fisso \.pp-stat-griglia \{ grid-template-columns: repeat\(var\(--quante, 6\), minmax\(0, 1fr\)\); \} \}/);
+    // l'editor non legge più MINIMI a mano per le larghezze: passa da larghezzaMinima (che conosce le statistiche)
+    assert.doesNotMatch(editor, /P\.MINIMI\[[^\]]+\]\[0\]/);
+    assert.equal((editor.match(/P\.larghezzaMinima\(/g) || []).length, 4);
+});
+
+test('in modifica un blocco spento o vuoto è un segnaposto che non collassa: niente container-type e, in una riga, una larghezza ragionevole', () => {
+    // il bug: .pp-personalita (container-type: inline-size) spenta, in una riga, si riduceva al solo riempimento (40px) e il suo
+    // testo sporgeva dalla carta: la tela, che "non ci stava", si rimpiccioliva a un terzo (scala 0,29 invece di 0,75)
+    assert.match(cssCard, /body\.pp-modifica \.pp-blocco:is\(\.pp-spento, \.pp-vuoto\) \{ container-type: normal !important; \}/);
+    assert.match(cssCard, /body\.pp-modifica :is\(\.pp-zona\[data-dir="riga"\], \.pp-linea\) > \.pp-blocco:is\(\.pp-spento, \.pp-vuoto\) \{ max-width: 210px; \}/);
+    // ogni blocco che misura il proprio spazio è coperto da quella regola (vale per ogni blocco che ne avrà bisogno in futuro)
+    const conContenimento = [...cssCard.matchAll(/([^{}]+)\{[^{}]*container-type:\s*(?:inline-size|size)/g)].map(m => m[1].trim().split('\n').pop().trim());
+    assert.ok(conContenimento.length >= 3, conContenimento.join(' | '));
+    // il segnaposto non deve restare in .pp-fisso a larghezza zero: il suo min-width resta 0 (non toglie spazio agli altri) ma con testo
+    assert.match(cssCard, /body\.pp-fisso :is\(\.pp-zona, \.pp-linea\) > \.pp-blocco:is\(\.pp-spento, \.pp-vuoto\) \{ flex: 0 0 auto !important; min-width: 0 !important; min-height: 0 !important; \}/);
+});
