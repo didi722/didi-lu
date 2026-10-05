@@ -121,7 +121,7 @@ test('Team Builder: carica i consigli della generazione, li mette in cima a moss
     assert.match(box, /tbHintCampo\(this, 'mossa'/);
     assert.match(box, /tbHintCampo\(this, 'oggetto'/);
     assert.match(box, /tbHintCampo\(this, 'abilita'/);
-    assert.match(box, /data-desc="\$\{tbEsc\(tbTestoDesc\(tbDex\.abilities/);
+    assert.match(box, /data-desc="\$\{tbEsc\(tbTestoDesc\('abilita', tbToID\(a\), tbDex\.abilities/);
     // l'elenco che si apre dopo un altro non lascia il precedente aperto
     assert.match(box, /if \(tbCombo\.input && tbCombo\.input !== input\) tbChiudiCombo\(\);/);
 });

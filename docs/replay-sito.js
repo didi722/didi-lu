@@ -795,7 +795,7 @@ ${barreSalute('.palco')}
 
     function righeDi(log) {
         const testo = Array.isArray(log) ? log.join('\n') : String(log || '');
-        return testo.split('\n').map(r => r.replace(/\r$/, '')).filter(r => r.startsWith('|'));
+        return testo.split('\n').map(r => r.replace(/\r$/, '')).filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
     }
 
     // Avatar: nome di un allenatore di Showdown (es. "cynthia") oppure immagine.

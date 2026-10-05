@@ -196,6 +196,9 @@
         }
 
         const proprietaTierDinamica = regolamento.battleStyle === "doubles" ? "doubles_tier" : "single_tier";
+        // Anything Goose: nessun limite di tier (come nella validazione del Box, che salta il controllo del tier): ci sono anche gli AG
+        const senzaLimiteDiTier = String(regolamento.strutturaSito || '').toLowerCase().trim() === 'anything_goes';
+        const tierAmmessa = tier => senzaLimiteDiTier || controllaTierAmmessa(tier, regolamento.baseTier);
 
         function controllaRestrizioniBiologiche(nomeChiave) {
             if (!pokedexBase) return true;
@@ -401,7 +404,7 @@
 
                 if (!tierFinale || tierFinale === "ILLEGAL" || tierFinale === "PAST") return;
 
-                if (!controllaTierAmmessa(tierFinale, regolamento.baseTier)) return;
+                if (!tierAmmessa(tierFinale)) return;
                 if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
                 aggiungi(nomeChiave, tuttiIKnots[lowKey]);
@@ -423,7 +426,7 @@
                 }
 
                 if (tierUpper === "ILLEGAL" || tierUpper === "PAST") return;
-                if (!controllaTierAmmessa(tierUpper, regolamento.baseTier)) return;
+                if (!tierAmmessa(tierUpper)) return;
                 if (!controllaRestrizioniBiologiche(nomeChiave)) return;
 
                 aggiungi(nomeChiave, datoGrezzo);

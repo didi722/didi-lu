@@ -1127,6 +1127,14 @@ body.pp-modifica .pp-blocco.pp-vuoto > .pp-fantasma {
 }
 
 body.pp-modifica .pp-blocco.pp-vuoto > .pp-fantasma { cursor: default; }
+
+/* Un blocco spento o vuoto è solo un segnaposto con il suo testo. I blocchi che misurano il proprio spazio (container-type: la
+   personalità, le statistiche, il team) non hanno una larghezza "naturale": in una riga il segnaposto si riduceva al solo riempimento
+   (40px) e il suo testo sporgeva oltre il bordo della carta, che a quel punto "non ci stava più" e si rimpiccioliva a un terzo.
+   Qui niente contenimento (la larghezza è quella del testo) e, in una riga, il segnaposto non supera una misura ragionevole:
+   il testo va a capo. */
+body.pp-modifica .pp-blocco:is(.pp-spento, .pp-vuoto) { container-type: normal !important; }
+body.pp-modifica :is(.pp-zona[data-dir="riga"], .pp-linea) > .pp-blocco:is(.pp-spento, .pp-vuoto) { max-width: 210px; }
 body.pp-modifica .pp-adesivo { pointer-events: auto; cursor: grab; touch-action: none; }
 body.pp-modifica .pp-adesivo:hover { filter: brightness(1.05); }
 body.pp-modifica .pp-adesivo.is-scelto { outline: 3px dashed #000; outline-offset: 5px; cursor: grabbing; }
@@ -1285,6 +1293,8 @@ body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-palco { min-width: 260px; min-heigh
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-musica { min-width: 180px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-identita { min-width: 220px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-statistiche { min-width: 260px; }
+/* un solo riquadro: il blocco si stringe quanto lui (LARGHEZZA_MIN_STATISTICA_SOLA), non quanto due */
+body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-statistiche[data-quante="1"] { min-width: 190px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-party { min-width: 300px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-trofei { min-width: 110px; }
 body.pp-fisso :is(.pp-zona, .pp-linea) > .pp-medaglie { min-width: 130px; }
@@ -1333,7 +1343,9 @@ body.pp-fisso .pp-sigillo { top: 2px; right: 10px; width: clamp(64px, 14cqw, 100
 body.pp-fisso .pp-statistiche { display: flex; flex-direction: column; container-type: inline-size; }
 /* poche colonne se il blocco è stretto (i numeri non vanno a capo), tutte in fila se è largo (meno altezza) */
 @container (max-width: 400px) { body.pp-fisso .pp-stat-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@container (min-width: 720px) { body.pp-fisso .pp-stat-griglia { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); } }
+@container (min-width: 720px) { body.pp-fisso .pp-stat-griglia { grid-template-columns: repeat(var(--quante, 6), minmax(0, 1fr)); } }
+/* un solo riquadro: una colonna, per larga o stretta che sia la carta (a metà larghezza il testo andava a capo: "Unra-nked") */
+.pp-stat-griglia[data-quante="1"], body.pp-fisso .pp-stat-griglia[data-quante="1"] { grid-template-columns: minmax(0, 1fr); }
 body.pp-fisso .pp-stat-griglia { flex: 1 1 auto; grid-auto-rows: minmax(min-content, 1fr); gap: 16px 12px; padding: 6px 4px 4px 0; }
 body.pp-fisso .pp-stat { padding: 20px 12px 8px; justify-content: center; }
 body.pp-fisso .pp-stat-val { font-size: clamp(1rem, calc((1.9rem - var(--n, 4) * 0.06rem) / var(--pp-font-w, 1)), 1.9rem); }

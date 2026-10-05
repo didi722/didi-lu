@@ -149,6 +149,119 @@ test('singolo: non usa una mossa di stato su chi è immune (Onda d\'Urto su un t
     assert.notEqual(s, 'move 1', 'Thunder Wave non ha effetto su un tipo Terra');
 });
 
+// Illusion: uno Zorua di Hisui (Normale/Spettro) travestito da Magnemite (Elettro/Acciaio). Lottaiuto sembra super efficace
+// sull'Acciaio, ma non ha effetto sullo Spettro. Il simulatore lo dice (|-immune|) e la CPU non deve riprovarci a ogni turno.
+const BUNEARY = ['Drain Punch', 'Ice Punch', 'Quick Attack', 'Swords Dance'];
+const logImmune = (turno, mossa = 'Drain Punch') => [`|move|p2a: Buneary|${mossa}|p1a: Magnemite`, '|-immune|p1a: Magnemite', `|turn|${turno}`];
+
+test('Illusion: dopo un "non ha effetto" la CPU non riprova la stessa mossa sullo stesso Pokémon (Lottaiuto su uno Zorua travestito da Magnemite)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Buneary', item: 'Leftovers', mosse: BUNEARY }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    const primo = scelta(ia, r, [...logAvversario([{ specie: 'Magnemite' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.equal(primo, 'move 1', 'contro un Magnemite visibile, Lottaiuto è super efficace: si prova');
+    const secondo = scelta(ia, r, logImmune(2));
+    assert.notEqual(secondo, 'move 1', 'Lottaiuto non ha avuto effetto: non si ripete');
+    const terzo = scelta(ia, r, ['|move|p2a: Buneary|Ice Punch|p1a: Magnemite', '|-damage|p1a: Magnemite|90/100', '|turn|3']);
+    assert.notEqual(terzo, 'move 1', 'e nemmeno al turno dopo');
+});
+
+test('Illusion: l\'immunità si impara per tipo: dopo Lottaiuto la CPU non prova nemmeno Close Combat (stessa Lotta)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Buneary', item: 'Leftovers', mosse: ['Close Combat', 'Drain Punch', 'Ice Punch', 'Quick Attack'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    assert.ok(['move 1', 'move 2'].includes(scelta(ia, r, [...logAvversario([{ specie: 'Magnemite' }], false), ...logMiaSquadra(squadra, [0])])));
+    const dopo = scelta(ia, r, logImmune(2, 'Close Combat'));
+    assert.ok(!['move 1', 'move 2'].includes(dopo), `non una mossa di tipo Lotta (scelta: ${dopo})`);
+});
+
+test('Illusion: l\'immunità vale finché resta in campo; se esce e un altro Magnemite rientra, si riparte da zero', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Buneary', item: 'Leftovers', mosse: BUNEARY }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    scelta(ia, r, [...logAvversario([{ specie: 'Magnemite' }], false), ...logMiaSquadra(squadra, [0])]);
+    assert.notEqual(scelta(ia, r, logImmune(2)), 'move 1');
+    const m = ia.lati.p1.mons.Magnemite;
+    assert.deepEqual([...m.immuneTipi], ['Fighting']);
+    // esce Magnemite (lo Zorua) ed entra un altro Pokémon: poi rientra "Magnemite" (stavolta quello vero)
+    ia.osserva(['|switch|p1a: Pikachu|Pikachu, L50|100/100', '|turn|3']);
+    assert.equal(m.immuneTipi.size, 0, 'chi esce dal campo non porta con sé le immunità viste');
+    const dopo = scelta(ia, r, ['|switch|p1a: Magnemite|Magnemite, L50|100/100', '|turn|4']);
+    assert.equal(dopo, 'move 1', 'un Magnemite vero è debole alla Lotta');
+});
+
+test('Illusion: si legge solo un "non ha effetto" semplice; quelli per abilità, Mangiasogni o OHKO non insegnano niente sul tipo', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Buneary', item: 'Leftovers', mosse: BUNEARY }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    scelta(ia, r, [...logAvversario([{ specie: 'Magnemite' }], false), ...logMiaSquadra(squadra, [0])]);
+    const m = ia.lati.p1.mons.Magnemite;
+    // per abilità: si impara l'abilità, non il tipo
+    ia.osserva(['|move|p2a: Buneary|Drain Punch|p1a: Magnemite', '|-immune|p1a: Magnemite|[from] ability: Levitate']);
+    assert.equal(m.immuneTipi.size, 0);
+    assert.equal(m.abilita, 'levitate');
+    // Mangiasogni: serve un bersaglio addormentato, non c'entra il tipo
+    ia.osserva(['|move|p2a: Buneary|Dream Eater|p1a: Magnemite', '|-immune|p1a: Magnemite']);
+    assert.equal(m.immuneTipi.size, 0);
+    // mossa dal tipo variabile
+    ia.osserva(['|move|p2a: Buneary|Weather Ball|p1a: Magnemite', '|-immune|p1a: Magnemite']);
+    assert.equal(m.immuneTipi.size, 0);
+    // un "non ha effetto" di un altro turno non si lega a una mossa vecchia
+    ia.osserva(['|turn|5', '|-immune|p1a: Magnemite']);
+    assert.equal(m.immuneTipi.size, 0);
+});
+
+test('Illusion: con Scrappy la mossa Lotta/Normale colpisce comunque gli Spettro, quindi l\'immunità vista non vale per chi ce l\'ha', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Lopunny', item: 'Leftovers', abilita: 'Scrappy', mosse: ['Drain Punch', 'Ice Punch', 'Quick Attack', 'Protect'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    scelta(ia, r, [...logAvversario([{ specie: 'Magnemite' }], false), ...logMiaSquadra(squadra, [0])]);
+    ia.osserva(['|move|p2a: Lopunny|Drain Punch|p1a: Magnemite', '|-immune|p1a: Magnemite', '|turn|2']);
+    const v = ia.vista(ia.lati.p1.mons.Magnemite);
+    const C = require('../docs/cpu-calcolo.js');
+    const dex = sim.Dex.forGen(9);
+    const att = { ...ia.vista(ia.lati.p2.mons.Lopunny), abilita: 'scrappy' };
+    const d = C.danno(dex, att, v, K.descriviMossa(dex, 'Drain Punch'), ia.contesto(), {});
+    assert.equal(d.immune, false, 'Scrappy: Lotta tocca anche lo Spettro');
+    const senza = C.danno(dex, { ...att, abilita: 'limber' }, v, K.descriviMossa(dex, 'Drain Punch'), ia.contesto(), {});
+    assert.equal(senza.immune, true, 'senza Scrappy: immune');
+});
+
+test('Illusion: una mossa di stato che non ha avuto effetto non si riprova con lo stesso Pokémon (e non si estende ad altri)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Zapdos', item: 'Leftovers', mosse: ['Thunder Wave', 'Heat Wave', 'Roost', 'Hurricane'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0] });
+    // si vede un Pelipper (Acqua/Volante): Onda d'Urto sembra a posto. In realtà è un Pokémon di tipo Terra sotto Illusion
+    const primo = scelta(ia, r, [...logAvversario([{ specie: 'Pelipper' }], false), ...logMiaSquadra(squadra, [0])]);
+    ia.osserva(['|move|p2a: Zapdos|Thunder Wave|p1a: Pelipper', '|-immune|p1a: Pelipper', '|turn|2']);
+    const pel = ia.lati.p1.mons.Pelipper;
+    assert.deepEqual([...pel.immuneMosse], ['Zapdos|thunderwave']);
+    assert.equal(pel.immuneTipi.size, 0, 'una mossa di stato non insegna niente sul tipo');
+    const dopo = scelta(ia, r, []);
+    assert.notEqual(dopo, 'move 1', `Onda d'Urto non ha avuto effetto (prima: ${primo})`);
+});
+
+test('Illusion, con il simulatore vero: contro lo Zorua di Hisui travestito da Magnemite la CPU prova Lottaiuto una volta sola', { timeout: 120000 }, async () => {
+    const { sim } = await caricaSim();
+    const cerebro = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(3) });
+    // Zorua di Hisui (Normale/Spettro) con Illusion si traveste dell'ultimo Pokémon della squadra: Magnemite. Non fa altro che Splash
+    const zorua = 'Zorua-Hisui @ Leftovers\nAbility: Illusion\n- Splash\n\nMagnemite @ Leftovers\nAbility: Sturdy\n- Splash';
+    const buneary = 'Buneary @ Leftovers\nAbility: Klutz\n- Drain Punch\n- Ice Punch\n- Quick Attack\n- Swords Dance';
+    const e = await giocaPartita({
+        sim, formato: 'gen9customgame', team1: zorua, team2: buneary, seme: [1, 2, 3, 4], maxTurni: 5,
+        agente1: { tipo: 'script', gestore: r => (r.teamPreview ? 'team 12' : 'move 1') }, agente2: { tipo: 'cpu', cerebro },
+        fermaDopo: x => x.turni >= 5
+    });
+    assert.deepEqual(e.errori, [], 'nessuna scelta rifiutata');
+    const righe = e.righe;
+    assert.ok(righe.includes('|switch|p1a: Magnemite|Magnemite, L100|100/100') || righe.some(r => r.startsWith('|switch|p1a: Magnemite|Magnemite')), 'in campo si vede Magnemite');
+    const usate = righe.filter(r => r.startsWith('|move|p2a: Buneary|')).map(r => r.split('|')[3]);
+    const lotta = usate.filter(n => n === 'Drain Punch');
+    assert.equal(lotta.length, 1, `Lottaiuto una volta sola (mosse: ${usate.join(', ')})`);
+    const i = righe.findIndex(r => r === '|move|p2a: Buneary|Drain Punch|p1a: Magnemite');
+    assert.equal(righe[i + 1], '|-immune|p1a: Magnemite', 'il simulatore dice che non ha effetto');
+});
+
 test('singolo: dopo un KO manda il Pokémon più adatto (cambio forzato)', async () => {
     const { sim, ia } = await cervello();
     const squadra = [
@@ -735,6 +848,34 @@ for (const f of FORMATI) {
             assert.ok(!e.bloccata && !e.scaduta, `la partita deve finire (turni ${e.turni})`);
             assert.ok(e.vincitore === 'p1' || e.vincitore === 'p2' || e.vincitore === null);
         }
+    });
+}
+
+// Anything Goose: due copie dello stesso Pokémon (stesso nome nel log) e strumenti uguali, e il simulatore non rifiuta nessuna scelta
+for (const stile of ['singles', 'doubles']) {
+    test(`partite vere (Anything Goose, ${stile}): team con Pokémon e strumenti doppi, la CPU gioca senza scelte rifiutate`, { timeout: 240000 }, async () => {
+        const { sim } = await caricaSim();
+        const reg = { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: stile, strutturaSito: 'anything_goes', restrizioni: {} };
+        const T = require('../docs/team-cpu.js');
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const leggi = p => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', p), 'utf8'));
+        const r = await T.squadrePerFormato({ Dex: sim.Dex, TeamValidator: sim.TeamValidator, regolamento: reg, caricaJson: async p => leggi(p), quanti: 12, seme: 'goose-partite' });
+        const conCopie = r.team.filter(t => t.specie.length !== new Set(t.specie).size);
+        assert.ok(conCopie.length >= 1, 'serve almeno un team con una copia');
+        const formato = formatoSito(reg);
+        assert.ok(!/Sleep Clause/.test(formato), 'Anything Goose non ha clausole in battaglia');
+        let giocate = 0;
+        for (let i = 0; i < Math.min(2, conCopie.length); i++) {
+            const t1 = conCopie[i], t2 = r.team[(r.team.indexOf(t1) + 3) % r.team.length];
+            const cpu1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 31) });
+            const cpu2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 77) });
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu1 }, agente2: { tipo: 'cpu', cerebro: cpu2 }, casuale: creaCasuale(i + 5), seme: [i + 2, 9, 4, 6] });
+            assert.deepEqual(e.errori.map(x => `${x.lato} ${x.scelta} => ${x.messaggio}`), [], 'nessuna scelta rifiutata');
+            assert.ok(!e.bloccata && !e.scaduta, `la partita deve finire (turni ${e.turni})`);
+            giocate++;
+        }
+        assert.ok(giocate >= 1);
     });
 }
 
