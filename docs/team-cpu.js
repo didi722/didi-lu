@@ -19,6 +19,8 @@
 // e nessun Pokémon in più di un terzo dei team.
 // Rispetta le regole del sito: Species Clause, Item Clause, livello, Uber limit del formato STANDARD,
 // mosse e abilità bandite, restrizioni su mosse/strumenti/natura e "stesso ... per tutto il team".
+// Anything Goose (nessuna clausola): niente limite di tier (ci sono anche gli AG), Pokémon e strumenti si possono doppiare
+// (due Calyrex-Shadow vanno bene) e i team sono molto offensivi, con solo un po' di strategia (Tailwind, meteo, Stanza Magica).
 //
 // Il Dex di @pkmn/sim arriva da fuori. Funziona nel browser (window.TeamCpu) e in Node (require).
 // =====================================================
@@ -75,7 +77,11 @@
             doppio: formatoInDoppio(regolamento),
             meccaniche: meccaniche(regolamento),
             struttura: String(regolamento.strutturaSito || 'custom').toLowerCase().trim(),
-            baseTier: String(regolamento.baseTier || '').toUpperCase()
+            baseTier: String(regolamento.baseTier || '').toUpperCase(),
+            // Anything Goose: nessuna clausola e nessun limite di tier. Si può doppiare Pokémon e strumenti (due Calyrex-Shadow vanno bene)
+            goose: String(regolamento.strutturaSito || '').toLowerCase().trim() === 'anything_goes',
+            // le regole del tier STANDARD (al massimo 2 Uber, niente mitici) non valgono in Anything Goose
+            standard: String(regolamento.baseTier || '').toUpperCase() === 'STANDARD' && String(regolamento.strutturaSito || '').toLowerCase().trim() !== 'anything_goes'
         };
     }
 
@@ -242,7 +248,7 @@
         if (!base.exists) return null;
         // lo strumento obbligato (pietra, maschera, sfera...) deve rispettare le restrizioni sugli strumenti del formato
         if (richiesto && !strumentoAmmesso(dex.items.get(richiesto), restrizioni)) return null;
-        if (ctx.baseTier === 'STANDARD' && pokedexBase) {
+        if (ctx.standard && pokedexBase) {
             const dett = pokedexBase[id(voce.id)] || pokedexBase[id(base.baseSpecies)];
             if (dett && (dett.is_mythical === true || String(dett.is_mythical) === 'true')) return null;
         }
@@ -342,13 +348,14 @@
         }
         s += (coperti.size / tipi.length) * 3.2;
 
-        // difesa: nessuna debolezza condivisa da molti
+        // difesa: nessuna debolezza condivisa da molti (in Anything Goose conta la metà: si vince colpendo per primi)
         const tab = tabellaTipi(dex, membri, tipi);
+        const pesoDifesa = ctx.goose ? 0.5 : 1;
         for (const t of tipi) {
             const { deboli, resistenti } = tab[t];
             const eccesso = deboli - resistenti - 1;
-            if (eccesso > 0) s -= eccesso * 0.7;
-            if (deboli >= 3 && resistenti === 0) s -= 1.2;
+            if (eccesso > 0) s -= eccesso * 0.7 * pesoDifesa;
+            if (deboli >= 3 && resistenti === 0) s -= 1.2 * pesoDifesa;
         }
         // tipi ripetuti
         const conteggio = {};
@@ -375,6 +382,14 @@
         }
         // almeno un Pokémon che attacca davvero col tipo giusto: evita squadre di soli supporti
         s += Math.min(membri.filter(c => c.offesa >= 100).length, 3) * 0.5;
+        // Anything Goose: team molto offensivi. Contano la potenza (attacco o attacco speciale) e la velocità di ognuno,
+        // fino a sei Pokémon; i supporti (Fake Out, Tailwind, schermi...) valgono molto meno
+        if (ctx.goose) {
+            for (const c of membri) {
+                s += Math.max(0, Math.min((c.offesa - 90) / 40, 1.6)) * 0.9 + Math.max(0, Math.min((c.basi.spe - 80) / 60, 1)) * 0.5;
+            }
+            s -= membri.filter(c => c.supporto).length * 0.5;
+        }
 
         // piano della squadra
         const p = piano.nome;
@@ -413,7 +428,8 @@
         const bonusCons = m => (posCons.has(m.id) ? Math.max(0.3, 0.9 - posCons.get(m.id) * 0.06) : 0);
 
         if (ctx.doppio) {
-            aggiungi(o.protezione);
+            // Anything Goose: solo chi ha un ruolo di supporto si protegge, gli altri attaccano con tutte e quattro le mosse
+            if (!(ctx.goose && !ruolo.supporto)) aggiungi(o.protezione);
             if (ruolo.fakeout) aggiungi(get('fakeout'));
             if (ruolo.velocita === 'tailwind') aggiungi(get('tailwind'));
             if (ruolo.velocita === 'trickroom') aggiungi(get('trickroom'));
@@ -488,7 +504,7 @@
             r.rallenta = assegnati.rallenta.includes(cand.id);
             r.stato = assegnati.stato.includes(cand.id);
             const nSupp = [r.fakeout, r.velocita, r.redirezione, r.schermi, r.aiuto, r.rallenta, r.stato].filter(Boolean).length;
-            r.attacchi = Math.max(1, 3 - nSupp);
+            r.attacchi = ctx.goose ? Math.max(2, 4 - nSupp) : Math.max(1, 3 - nSupp);
             r.supporto = nSupp > 0;
         } else {
             r.trappola = assegnati.trappola === cand.id;
@@ -518,12 +534,13 @@
             const red = per(membri.filter(c => c.opz.redirezione && c.id !== (fo && fo.id)), c => c.robustezza)[0];
             if (red) a.redirezione = red.id;
             // gli schermi (due mosse su quattro, più Protezione) li mette chi ha poco da attaccare, o chi li mette in priorità (Prankster)
-            const sch = membri.find(c => c.opz.schermi && ![fo, red].some(x => x && x.id === c.id) && c.supporto &&
+            const sch = ctx.goose ? null : membri.find(c => c.opz.schermi && ![fo, red].some(x => x && x.id === c.id) && c.supporto &&
                 (c.offesa < 105 || abilitaPossibili(c).includes('prankster')));
             if (sch) a.schermi = sch.id;
             for (const c of membri) {
                 const preso = c.id === a.fakeout || a.velocita[c.id] || c.id === a.redirezione || c.id === a.schermi;
                 if (c.opz.helpinghand && c.supporto && !preso) a.aiuto.push(c.id);
+                else if (ctx.goose) continue;                       // Anything Goose: niente rallentamenti e stati, si attacca
                 else if (!preso && c.opz.rallenta === 'icywind') a.rallenta.push(c.id);
                 else if (!preso && (c.opz.paralisi || c.opz.sonno) && c.offesa < 100) a.stato.push(c.id);
             }
@@ -532,7 +549,7 @@
             const tr = per(mu, c => c.robustezza + (c.opz.roccia ? 20 : 0))[0];
             if (tr) a.trappola = tr.id;
             for (const c of per(membri, c => c.robustezza)) {
-                if (c.opz.recupero && c.robustezza > 60 && a.recupero.length < 2) a.recupero.push(c.id);
+                if (!ctx.goose && c.opz.recupero && c.robustezza > 60 && a.recupero.length < 2) a.recupero.push(c.id);
             }
             for (const c of per(membri.filter(c => c.opz.setup.length), c => c.offesa + c.basi.spe / 2)) {
                 if (Object.keys(a.setup).length >= 2) break;
@@ -576,8 +593,9 @@
 
     function itemValido(dex, nome, ctx, restrizioni, usati) {
         const it = dex.items.get(nome);
-        if (!it.exists || it.gen > ctx.gen || (it.isNonstandard && it.isNonstandard !== 'Past')) return null;
-        if (usati.has(it.id) || K.STRUMENTI_SCELTA.has(it.id)) return null;
+        // niente strumenti fuori dalla generazione (anche 'Past': in Gen 8 e 9 sono Red Orb, Blue Orb... che il validatore rifiuta)
+        if (!it.exists || it.gen > ctx.gen || it.isNonstandard) return null;
+        if ((!ctx.goose && usati.has(it.id)) || K.STRUMENTI_SCELTA.has(it.id)) return null;   // Anything Goose: niente Item Clause
         if (it.megaStone || it.zMove) return null;
         if (!strumentoAmmesso(it, restrizioni)) return null;
         return it.name;
@@ -607,9 +625,9 @@
         if (!attacchi.length) nomi.push('Leftovers', 'Sitrus Berry');
         const tipoMigliore = attacchi.slice().sort((a, b) => b.potenza - a.potenza)[0];
         const robusto = cand.robustezza >= 75;
-        if (robusto && !qualunqueStato && cand.basi.spd >= cand.basi.def) nomi.push('Assault Vest');
+        if (robusto && !qualunqueStato && cand.basi.spd >= cand.basi.def && !(ctx.goose && cand.offesa >= 100)) nomi.push('Assault Vest');
         if (ruolo.setup || ruolo.velocita === 'trickroom') nomi.push('Leftovers', 'Sitrus Berry');
-        if (cand.offesa >= 100 && !robusto) {
+        if (cand.offesa >= (ctx.goose ? 90 : 100) && (!robusto || ctx.goose)) {
             nomi.push(fragile && ctx.doppio ? 'Focus Sash' : 'Life Orb');
             if (tipoMigliore) nomi.push(K.STRUMENTI_TIPO[tipoMigliore.tipo]);
             nomi.push('Expert Belt', 'Life Orb', 'Focus Sash');
@@ -718,6 +736,15 @@
         });
     }
 
+    // Anything Goose: la CPU punta sull'attacco. "Offensivo" pesa quanto tutti gli altri piani insieme (compare più volte nell'elenco,
+    // da cui si pesca), gli altri restano come un po' di strategia; "bilanciato" e "bulky" non servono.
+    function pianiDelFormato(cand, ctx) {
+        const piani = pianiPossibili(cand, ctx);
+        if (!ctx.goose) return piani;
+        const altri = piani.filter(p => p !== 'offensivo' && p !== 'bilanciato' && p !== 'bulky');
+        return Array.from({ length: Math.max(3, altri.length) }, () => 'offensivo').concat(altri);
+    }
+
     // Chi può impostare il piano del team: Tailwind, Stanza Magica (meglio se non troppo veloce), il meteo (abilità)
     function impostaIlPiano(piano, c) {
         if (piano.nome === 'tailwind') return !!c.opz.tailwind;
@@ -737,48 +764,57 @@
     }
     const abusatoriNecessari = piano => piano.nome === 'trickroom' ? 2 : (SETTER[piano.nome] ? 1 : 0);
 
+    // Anything Goose: lo stesso Pokémon può comparire più volte (la seconda copia è un duplicato con un altro `id`, così i ruoli
+    // - chi mette Tailwind, chi ha Fake Out... - si assegnano a una copia sola). Ogni copia in più costa un po' di punteggio: due
+    // Calyrex-Shadow succedono, ma non sempre e non tre alla volta.
+    const COPIE_MASSIME = 3;
+    const PROBABILITA_COPIA = 0.3;
+    const radiceDi = m => m.origine || m;
+    function copiaDi(c, numero) { return Object.assign(Object.create(Object.getPrototypeOf(c)), c, { origine: c, id: `${c.id}~${numero}` }); }
+
     function compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo) {
         const membri = [asso];
         const usate = new Set([id(asso.base.baseSpecies || asso.base.name)]);
-        let uber = ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(asso.tier).replace(/[()]/g, '')) ? 1 : 0;
+        let uber = ctx.standard && /^D?UBER$/i.test(String(asso.tier).replace(/[()]/g, '')) ? 1 : 0;
         let guardia = 0;
+        const eUberDi = c => /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
+        const copie = c => membri.filter(m => radiceDi(m) === c).length;
+        // chi si può ancora aggiungere: senza clausole (Anything Goose) anche chi c'è già, fino a tre copie
+        const libero = c => ctx.goose ? copie(c) < COPIE_MASSIME : !membri.includes(c) && !usate.has(id(c.base.baseSpecies || c.base.name));
+        // Anything Goose: circa un team su tre ha apposta una copia di un suo Pokémon (le copie in più, mai senza motivo, costano)
+        let cercaCopia = ctx.goose && rnd() < PROBABILITA_COPIA;
+        const costoCopia = c => { const n = copie(c); return n ? (n === 1 && cercaCopia ? -2.2 : 0.8 + (n - 1) * 2.2) : 0; };
+        const aggiungi = scelto => {
+            const n = ctx.goose ? copie(scelto) : 0;
+            if (n) cercaCopia = false;                    // una copia sola per volta: il bonus finisce qui
+            membri.push(n ? copiaDi(scelto, n + 1) : scelto);
+            usate.add(id(scelto.base.baseSpecies || scelto.base.name));
+            if (ctx.standard && eUberDi(scelto)) uber++;
+        };
         // Un team con un piano parte da chi lo imposta: se l'asso non può farlo, il secondo membro è il miglior setter disponibile
         // (altrimenti il piano resterebbe un'etichetta senza nessuno che lo faccia)
         if (pianoConSetter(piano) && !impostaIlPiano(piano, asso)) {
             let scelto = null, mv = -1e9;
             for (const c of cand) {
-                if (membri.includes(c) || !impostaIlPiano(piano, c)) continue;
-                if (usate.has(id(c.base.baseSpecies || c.base.name))) continue;
-                const eUber = /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
-                if (ctx.baseTier === 'STANDARD' && eUber && uber >= 2) continue;
+                if (!impostaIlPiano(piano, c) || !libero(c)) continue;
+                if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25);
+                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25) - costoCopia(c);
                 if (piano.nome === 'trickroom' && c.basi.spe <= 80) v += 0.6;
                 if (v > mv) { mv = v; scelto = c; }
             }
-            if (scelto) {
-                membri.push(scelto);
-                usate.add(id(scelto.base.baseSpecies || scelto.base.name));
-                if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
-            }
+            if (scelto) aggiungi(scelto);
         }
         // ...e da chi ne approfitta: senza, il setter metterebbe un meteo (o una Stanza Magica) che non serve a nessuno
-        const aggiungi = scelto => {
-            membri.push(scelto);
-            usate.add(id(scelto.base.baseSpecies || scelto.base.name));
-            if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
-        };
         // (per il meteo il setter non conta: ci vuole qualcun altro che ne approfitti)
         const abusatoriPresenti = () => membri.filter(c => sfruttaIlPiano(piano, c) && !(SETTER[piano.nome] && impostaIlPiano(piano, c))).length;
         while (abusatoriNecessari(piano) && abusatoriPresenti() < abusatoriNecessari(piano) && membri.length < 5 && guardia++ < 100) {
             let scelto = null, mv = -1e9;
             for (const c of cand) {
-                if (membri.includes(c) || !sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c))) continue;
-                if (usate.has(id(c.base.baseSpecies || c.base.name))) continue;
-                const eUber = /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
-                if (ctx.baseTier === 'STANDARD' && eUber && uber >= 2) continue;
+                if (!sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c)) || !libero(c)) continue;
+                if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25);
+                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25) - costoCopia(c);
                 if (v > mv) { mv = v; scelto = c; }
             }
             if (!scelto) break;
@@ -788,23 +824,19 @@
             const attuale = punteggio(dex, membri, piano, ctx, tipi);
             let migliori = [];
             for (const c of cand) {
-                if (membri.includes(c)) continue;
-                if (usate.has(id(c.base.baseSpecies || c.base.name))) continue;
-                const eUber = /^D?UBER$/i.test(String(c.tier).replace(/[()]/g, ''));
-                if (ctx.baseTier === 'STANDARD' && eUber && uber >= 2) continue;
+                if (!libero(c)) continue;
+                if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) - attuale;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
                 if (uso >= massimo) v -= 3 + (uso - massimo) * 2;
                 else v -= uso * 0.25;
+                v -= costoCopia(c);
                 v += (rnd() - 0.5) * 1.1;
                 migliori.push({ c, v });
             }
             if (!migliori.length) break;
             migliori.sort((a, b) => b.v - a.v);
-            const scelto = migliori[Math.min(migliori.length - 1, Math.floor(rnd() * rnd() * 3))].c;
-            membri.push(scelto);
-            usate.add(id(scelto.base.baseSpecies || scelto.base.name));
-            if (ctx.baseTier === 'STANDARD' && /^D?UBER$/i.test(String(scelto.tier).replace(/[()]/g, ''))) uber++;
+            aggiungi(migliori[Math.min(migliori.length - 1, Math.floor(rnd() * rnd() * 3))].c);
         }
         return membri;
     }
@@ -847,7 +879,7 @@
         };
     }
 
-    function sovrapposizione(a, b) { return a.filter(x => b.includes(x)).length; }
+    function sovrapposizione(a, b) { return Array.from(new Set(a)).filter(x => b.includes(x)).length; }   // per specie: le copie non contano due volte
     const chiaveUso = c => id(c.base.baseSpecies || c.base.name);
 
     // Il cuore, in tre pezzi:
@@ -882,13 +914,16 @@
         const ordinati = opzioni.pool.map(v => {
             const s = dex.species.get(v.id);
             const t = ctx.doppio ? s.doublesTier : s.tier;
-            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + rnd() * 4 };
+            // Anything Goose: conta anche quanto il Pokémon colpisce forte (a parità di tier vince chi attacca di più)
+            const potenza = ctx.goose ? Math.max(s.baseStats.atk, s.baseStats.spa) / 10 : 0;
+            return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 };
         }).sort((a, b) => b.valore - a.valore);
         const MAX_CAND = 130;
-        const fissi = ordinati.slice(0, Math.min(ordinati.length, 100));
+        const NUM_FISSI = ctx.goose ? 85 : 100;
+        const fissi = ordinati.slice(0, Math.min(ordinati.length, NUM_FISSI));
         const resto = ordinati.slice(fissi.length);
         const extra = [];
-        for (let i = 0; i < 30 && resto.length; i++) extra.push(resto.splice(Math.floor(rnd() * resto.length), 1)[0]);
+        for (let i = 0; i < MAX_CAND - NUM_FISSI && resto.length; i++) extra.push(resto.splice(Math.floor(rnd() * resto.length), 1)[0]);
         const voci = fissi.concat(extra).slice(0, MAX_CAND).map(x => x.v);
 
         const cand = [];
@@ -903,7 +938,7 @@
         return {
             insufficiente: false, avvisi, dex, ctx, restrizioni, cand,
             tipi: K.tipiDellaGenerazione(dex),
-            piani: pianiPossibili(cand, ctx),
+            piani: pianiDelFormato(cand, ctx),
             natura: naturaImposta(restrizioni),
             // gli assi: i più forti, distinti per specie
             assi: cand.slice().sort((a, b) => b.valore - a.valore)
@@ -971,7 +1006,7 @@
             if (!fatto) continue;
             team.push(fatto);
             firme.push(specie);
-            specie.forEach(x => usoGlobale.set(x, (usoGlobale.get(x) || 0) + 1));
+            new Set(specie).forEach(x => usoGlobale.set(x, (usoGlobale.get(x) || 0) + 1));   // un team conta una volta per specie, anche con le copie
         }
         return { team, avvisi: prep.avvisi };
     }
@@ -994,7 +1029,7 @@
                 const asso = poolAssi[Math.floor(rnd() * Math.min(poolAssi.length, 8 + Math.floor(rnd() * 12)))] || poolAssi[0];
                 const membri = compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo);
                 if (membri.length < 6) continue;
-                const chiavi = membri.map(chiaveUso);
+                const chiavi = Array.from(new Set(membri.map(chiaveUso)));
                 if (evita.some(f => sovrapposizione(f, chiavi) >= 4)) continue;
                 const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
                 if (fatto) return Object.assign(fatto, { chiavi });

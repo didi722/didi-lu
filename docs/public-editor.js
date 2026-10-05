@@ -663,7 +663,8 @@
     // righe della griglia del layout) e tra due blocchi vicini della stessa zona. Trascinarne una sposta il confine:
     // chi sta da una parte si allarga, chi sta dall'altra si stringe, e la somma dei loro pesi non cambia, quindi
     // tutto il resto resta com'è. Ogni passo si prova sul serio (public-card.js, provaMisure) e vale solo se
-    //   - nessuno scende sotto la sua misura minima (MINIMI, per le larghezze, e un minimo per le altezze);
+    //   - nessuno scende sotto la sua misura minima (MINIMI, per le larghezze, e un minimo per le altezze; le statistiche con un solo
+    //     riquadro hanno meno, vedi larghezzaMinima);
     //   - i blocchi ci stanno ancora alla scala di adesso (se no la tela si dovrebbe rimpicciolire);
     //   - il palco resta il blocco più grande (la pagina lo ingrandisce da sola; si misura sullo schermo).
     // Se non vale si ferma all'ultimo punto buono. Si può anche usare la tastiera (frecce) e il doppio clic
@@ -793,7 +794,7 @@
             const tracce = getComputedStyle(corpo)[proprieta].split(/\s+/).map(parseFloat);
             const lista = c.tipo === 'colonne' ? g.colonne : g.righe;
             const minimoColonna = j => Math.max(0, ...Object.values(g.zone).filter(z => z.c0 === j && z.c1 === j).map(z => {
-                const larghezze = z.ids.map(id => P.MINIMI[id][0]);
+                const larghezze = z.ids.map(id => P.larghezzaMinima(id, cfg()));
                 return z.dir === 'riga' ? larghezze.reduce((a, b) => a + b, 0) : Math.max(...larghezze);
             }));
             return {
@@ -812,7 +813,7 @@
                     : (Math.max(...rect.map(r => r.bottom)) - Math.min(...rect.map(r => r.top))) / k;
             };
             const peso = ids => Math.max(...ids.map(id => g.blocchi[id]));
-            const minimo = ids => (c.asse === 'x' ? Math.max(...ids.map(id => P.MINIMI[id][0])) : ALTEZZA_MIN);
+            const minimo = ids => (c.asse === 'x' ? Math.max(...ids.map(id => P.larghezzaMinima(id, cfg()))) : ALTEZZA_MIN);
             return { px: [misura(la), misura(lb)], pesi: [peso(la), peso(lb)], minimi: [minimo(la), minimo(lb)] };
         }
         const [a, b] = c.quale;
@@ -821,7 +822,7 @@
         return {
             px: larghezza ? [ra.width / k, rb.width / k] : [ra.height / k, rb.height / k],
             pesi: [g.blocchi[a], g.blocchi[b]],
-            minimi: larghezza ? [P.MINIMI[a][0], P.MINIMI[b][0]] : [ALTEZZA_MIN, ALTEZZA_MIN]
+            minimi: larghezza ? [P.larghezzaMinima(a, cfg()), P.larghezzaMinima(b, cfg())] : [ALTEZZA_MIN, ALTEZZA_MIN]
         };
     }
 

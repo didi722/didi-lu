@@ -104,6 +104,36 @@ const valore = (corpo, proprieta) => {
     return m ? m[1].replace(/\s*!important\s*$/i, '').trim() : null;
 };
 
+test('Team Builder: il nome del team (il tag nero in alto) parte dal bordo della scheda e non si riduce a due lettere accanto al formato', () => {
+    const intestazione = regola(stileBox, '.tb-header');
+    // prima partiva 300px più in là e, col formato lungo ("Little Cup · Up to Gen 6 · Lv. 5 · Species & Item Clause"), restava "I..."
+    const spazio = Number(intestazione.match(/margin-left:\s*(\d+)px/)[1]);
+    assert.ok(spazio >= 75 && spazio <= 110, `margin-left ${spazio}px: dopo la colonna degli slot (75px + 20) e non oltre`);
+    assert.match(intestazione, /flex-wrap:\s*nowrap/);
+    const nome = regola(stileBox, '.tb-title');
+    assert.match(nome, /flex:\s*0 0\.\d+ auto/, 'cede poco spazio (il formato cede per primo)');
+    assert.match(nome, /min-width:\s*min\(100%,\s*9rem\)/, 'mai sotto le otto lettere circa');
+    assert.doesNotMatch(nome, /min-width:\s*0\b/);
+    const formato = regola(stileBox, '.tb-format-badge');
+    assert.match(formato, /flex-shrink:\s*1/, 'il formato si restringe');
+    assert.match(formato, /white-space:\s*normal/, '...andando a capo');
+    assert.doesNotMatch(formato, /flex-shrink:\s*0/);
+    assert.doesNotMatch(formato, /white-space:\s*nowrap/);
+    // schermi stretti ma con la colonna degli slot: nome e formato più piccoli
+    const stretto = stileBox.match(/@media \(min-width: 901px\) and \(max-width: (\d+)px\) \{([^@]*?)\n\}/);
+    assert.ok(stretto && Number(stretto[1]) >= 1000, 'scaglione 901px...');
+    assert.match(stretto[2], /\.tb-title\s*\{[^}]*font-size:\s*1\.5rem/);
+    assert.match(stretto[2], /\.tb-format-badge\s*\{[^}]*font-size:\s*0\.68rem/);
+    // telefono (<= 900px): sulla prima riga solo il nome e la X, formato e note sotto, insieme
+    const telefono = stileBox.match(/@media \(max-width: 900px\) \{([\s\S]*?)\n\}/)[1];
+    assert.match(telefono, /input\.tb-title\s*\{[^}]*flex:\s*1 1 calc\(100% - 60px\)/);
+    assert.match(telefono, /\.tb-close\s*\{[^}]*order:\s*2/);
+    assert.match(telefono, /\.tb-format-badge\s*\{[^}]*order:\s*3[^}]*flex:\s*1 1 0/);
+    assert.match(docs('note-team.css'), /@media \(max-width: 900px\) \{[^@]*\.tb-header \.nt-barra-team \{ order: 4; \}/);
+    // i temi non toccano né larghezze né margini dell'intestazione
+    for (const f of ['temi.css', 'nb-pagine.css']) assert.doesNotMatch(docs(f), /\.tb-(header|title)[^{]*\{[^}]*(margin|width)/);
+});
+
 test('temi: le ombre dei blocchi scuri sono grigie e trasparenti, quelle delle etichette piccole sono spente nei temi con ombra piena', () => {
     const tema = nome => {
         const m = temi.match(new RegExp(`\\[data-tema="${nome}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`));

@@ -75,6 +75,12 @@
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
     const ABILITA_TERRENO = { electricsurge: 'electric', hadronengine: 'electric', grassysurge: 'grassy', psychicsurge: 'psychic', mistysurge: 'misty' };
+    // Mosse che "non hanno effetto" (|-immune|) per un motivo che non è il tipo del bersaglio: dalla loro immunità non si impara
+    // niente sul tipo (Mangiasogni vuole un bersaglio addormentato, Sincrorumore un tipo in comune)
+    const IMMUNITA_NON_DI_TIPO = new Set(['dreameater', 'synchronoise', 'skydrop']);
+    // Mosse il cui tipo cambia (con il meteo, il terreno, lo strumento, il Pokémon): il tipo "della mossa" non dice quale è stato
+    const TIPO_VARIABILE = new Set(['weatherball', 'terrainpulse', 'judgment', 'multiattack', 'revelationdance', 'ivycudgel', 'terablast',
+        'terastarstorm', 'technoblast', 'naturalgift', 'hiddenpower', 'aurawheel', 'ragingbull']);
     const ABILITA_CONTRO_INTIMIDATE = new Set(['clearbody', 'whitesmoke', 'hypercutter', 'innerfocus', 'oblivious', 'owntempo', 'scrappy', 'guarddog', 'fullmetalbody', 'mirrorarmor']);
     const boostVuoti = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 });
     const campoVuoto = () => ({ tailwind: 0, reflect: 0, lightscreen: 0, auroraveil: 0, rocce: 0, punte: 0, tossine: 0, ragnatela: 0 });
@@ -174,6 +180,20 @@
             m.ultimaProtezione = this.turno;
         }
 
+        // "Non ha effetto": la mossa appena usata non può toccare questo Pokémon. Se la mossa colpisce (non è di stato) e ha un tipo
+        // fisso, ricordiamo che è immune a quel tipo: sotto Illusion si vede un'altra specie (uno Zorua di Hisui travestito da
+        // Magnemite prende Lottaiuto come se fosse d'Acciaio, ma è Spettro) e senza questo la CPU riproverebbe a ogni turno.
+        // Una mossa di stato (Onda d'Urto, Prepotenza...) si ricorda per chi l'ha provata: Prankster, per dire, non vale per gli altri.
+        _imparaImmunita(m) {
+            const u = this._ultimaMossa;
+            if (!u || u.turno !== this.turno) return;
+            const d = this.mossa(u.mossa);
+            if (!d) return;
+            if (d.categoria === 'Status') { m.immuneMosse.add(`${u.da}|${u.mossa}`); return; }
+            if (IMMUNITA_NON_DI_TIPO.has(u.mossa) || TIPO_VARIABILE.has(u.mossa) || !d.tipo) return;
+            m.immuneTipi.add(d.tipo);
+        }
+
         // Quante protezioni di fila ha già fatto questo Pokémon fino al turno scorso (0 se non ha protetto ieri)
         _protezioniDiFila(m) {
             return m && m.ultimaProtezione === this.turno - 1 ? (m.protezioniDiFila || 0) : 0;
@@ -194,7 +214,10 @@
             return {
                 lato, nome, specie, livello: livello || 100, pct: 100, stato: '', boost: boostVuoti(), mosseViste: new Set(),
                 abilita: null, strumento: null, tera: null, vivo: true, turnoEntrata: this.turno, ultimaMossa: null, protettoNelTurno: -9,
-                posto: -1, megaDi: null, protezioniDiFila: 0, ultimaProtezione: -9
+                posto: -1, megaDi: null, protezioniDiFila: 0, ultimaProtezione: -9,
+                // cosa ha già "non avuto effetto" contro di lui (|-immune|): i tipi delle mosse, e le mosse di stato di chi le ha provate.
+                // Vale finché resta in campo: sotto Illusion il suo tipo vero non si vede, ma una mossa che non fa niente lo dice
+                immuneTipi: new Set(), immuneMosse: new Set()
             };
         }
 
@@ -220,7 +243,7 @@
                     if (cmd !== 'replace') {
                         // chi esce dal campo perde potenziamenti e il conto delle protezioni; chi entra parte pulito
                         const uscente = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
-                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; }
+                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); }
                         m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot;
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9;
                     }
@@ -237,7 +260,13 @@
                 }
                 case 'detailschange': case '-formechange': {
                     const m = this._mon(p[1]);
-                    if (m) { const d = leggiDettagli(p[2]); m.specie = d.specie; }
+                    if (m) { const d = leggiDettagli(p[2]); m.specie = d.specie; m.immuneTipi.clear(); }
+                    break;
+                }
+                case '-start': {
+                    // un cambio di tipo (Inzuppa, Camuffamento, Maledizione del bosco...): i tipi non sono più quelli di prima
+                    const m = this._mon(p[1]);
+                    if (m && /typechange|typeadd/i.test(p[2] || '')) m.immuneTipi.clear();
                     break;
                 }
                 case '-mega': { const m = this._mon(p[1]); if (m) m.megaDi = p[2]; break; }
@@ -245,6 +274,7 @@
                     const m = this._mon(p[1]);
                     if (!m) break;
                     const mossa = id(p[2]);
+                    this._ultimaMossa = { da: m.nome, mossa, turno: this.turno };      // serve a capire a cosa si riferisce un |-immune|
                     m.mosseViste.add(mossa);
                     m.ultimaMossa = mossa;
                     if (K.PROTEZIONI.has(mossa) || K.PROTEZIONI_DI_AREA.has(mossa)) {
@@ -354,13 +384,15 @@
                     const m = this._mon(p[1]);
                     const trovato = p.slice(2).join('|').match(/ability: ([^|\]]+)/i);
                     if (m && trovato) m.abilita = id(trovato[1]);
+                    // "|-immune|p1a: Nome" da solo (senza abilità né altro): la mossa non ha effetto per il suo tipo
+                    if (cmd === '-immune' && m && p.length === 2) this._imparaImmunita(m);
                     break;
                 }
                 case '-item': { const m = this._mon(p[1]); if (m && p[2]) m.strumento = id(p[2]); break; }
                 case '-enditem': { const m = this._mon(p[1]); if (m) m.strumento = ''; break; }
                 case '-terastallize': {
                     const m = this._mon(p[1]);
-                    if (m) m.tera = p[2];
+                    if (m) { m.tera = p[2]; m.immuneTipi.clear(); }
                     const pos = posizione(p[1]);
                     if (pos && pos.lato === this.lato) this.teraUsata = true;
                     break;
@@ -401,7 +433,8 @@
                 nome: m.nome, specie: sp.name, tipi: tera ? [tera] : tipiBase, tipiBase, livello: m.livello, stat,
                 hp, hpMax: Math.max(1, hpMax), boost: m.boost, stato: m.stato === 'fnt' ? '' : m.stato, abilita: abilita || null,
                 abilitaPossibili: Object.values(sp.abilities || {}).map(id), strumento: strumento || null, tera: tera || null,
-                peso: sp.weightkg, nfe: !!(sp.nfe), caduti: this.lati[m.lato].caduti, ref: m, basi
+                peso: sp.weightkg, nfe: !!(sp.nfe), caduti: this.lati[m.lato].caduti, ref: m, basi,
+                immuneTipi: m.immuneTipi, immuneMosse: m.immuneMosse
             };
             if (!vista.abilita && vista.abilitaPossibili.length === 1) vista.abilita = vista.abilitaPossibili[0];
             return vista;
@@ -1470,6 +1503,7 @@
                 for (const o of bersagli) {
                     if (o.stato) continue;
                     if (m.stato.immuni.some(t => (o.tipi || []).includes(t))) continue;
+                    if (o.immuneMosse && o.immuneMosse.has(`${me.nome}|${m.id}`)) continue;      // già provata: non ha effetto su di lui
                     if (m.stato.polvere && (o.abilita === 'overcoat' || o.strumento === 'safetygoggles')) continue;
                     if (o.abilita === 'magicbounce' || o.abilita === 'goodasgold') continue;
                     const base = { par: 0.3, brn: 0.3, slp: 0.65, psn: 0.15, tox: 0.25 }[m.stato.stato] || 0.1;

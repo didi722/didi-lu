@@ -197,6 +197,17 @@
         party: [300, 120], trofei: [110, 100], medaglie: [130, 100], personalita: [210, 190]
     };
 
+    // Il blocco delle statistiche con un solo riquadro può stringersi più degli altri: non deve fare posto a due. Con due o più
+    // riquadri vale MINIMI.statistiche (due in fila); con uno solo il riquadro prende tutta la larghezza e basta questa (coincide con il
+    // min-width di .pp-statistiche[data-quante="1"] in style-public-card.css)
+    const LARGHEZZA_MIN_STATISTICA_SOLA = 190;
+
+    /** La larghezza minima (pixel di progetto) di un blocco con questa configurazione: MINIMI, salvo le statistiche con un solo riquadro */
+    function larghezzaMinima(id, config) {
+        if (id === 'statistiche' && config && Array.isArray(config.statistiche) && config.statistiche.length === 1) return LARGHEZZA_MIN_STATISTICA_SOLA;
+        return MINIMI[id] ? MINIMI[id][0] : 0;
+    }
+
     const GEOMETRIA = {
         carta:   { aree: [['a', 'b'], ['c', 'c']], colonne: [7, 5],    righe: [3.2, 1.1],     dir: { a: 'colonna', b: 'colonna', c: 'riga' } },
         poster:  { aree: [['a'], ['b'], ['c']],    colonne: [1],      righe: [3, 1.1, 1.1],   dir: { a: 'riga',    b: 'riga',    c: 'riga' } },
@@ -1024,7 +1035,7 @@
         LAYOUT, BLOCCHI, BLOCCHI_SPENTI, TARGHETTE, POSTI_TARGHETTA, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
         predefinita, normalizza, copia, uguali,
         blocchiPerZona, lineeDiZona, sposta, senzaBlocco, affianca, accendi,
-        PESO_MIN, PESO_MAX, MARGINE_PALCO, PESO_BLOCCO, MINIMI, GEOMETRIA,
+        PESO_MIN, PESO_MAX, MARGINE_PALCO, PESO_BLOCCO, MINIMI, LARGHEZZA_MIN_STATISTICA_SOLA, larghezzaMinima, GEOMETRIA,
         griglia, muoviConfine, impostaPesi, ripristinaPesi, impostaLayout, azzeraMisure,
         esadecimale, luminanza, inchiostroSu, mescola, sfondoCss, temaCarta, variabiliCss,
         CAMPI_PROFILO, BIO_MAX, chiaveAvatar, scelteDegliAltri, conflitti, elencoAvatar, leggiCsvCanzoni,

@@ -150,8 +150,8 @@
 .card > .azione-note:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
 
 @media (max-width: 900px) {
-    /* l'intestazione del Team Builder va a capo: le note stanno accanto alla X */
-    .tb-header .nt-barra-team { order: 2; }
+    /* l'intestazione del Team Builder va a capo: le note stanno accanto al formato, sotto il nome (che così non si taglia) */
+    .tb-header .nt-barra-team { order: 4; }
 }
 @media (max-width: 560px) {
     .nt-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; max-height: calc(100vh - 100px); overflow-y: auto; }

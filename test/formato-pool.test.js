@@ -42,6 +42,20 @@ test('Little Cup: solo i Pokémon LC', () => {
     assert.ok(!lc.has('pikachu'));
 });
 
+test('Anything Goose: nessun limite di tier, qualunque tier sia scritta nel formato (ci sono anche gli AG)', () => {
+    for (const baseTier of ['OU', 'UU', 'LC', 'STANDARD']) {
+        const goose = ids(pool(reg({ strutturaSito: 'anything_goes', baseTier })));
+        assert.ok(goose.has('calyrex-shadow'), `${baseTier}: Calyrex-Shadow (AG)`);
+        assert.ok(goose.has('garchomp') && goose.has('pichu'), `${baseTier}: anche le tier basse`);
+        assert.ok(goose.size > ids(pool(reg({ baseTier: 'STANDARD', restrizioni: permessi }))).size, `${baseTier}: più del pool STANDARD`);
+    }
+    // lo stesso regolamento, ma custom, la tier la limita ancora
+    assert.ok(!ids(pool(reg({ baseTier: 'OU', restrizioni: permessi }))).has('calyrex-shadow'));
+    // le restrizioni del formato valgono sempre (qui un solo Pokémon vietato per iniziale)
+    const soloP = ids(pool(reg({ strutturaSito: 'anything_goes', baseTier: 'OU', restrizioni: { pokemon: { name_starts: { mode: 'VALUE', operator: 'STARTS_WITH', value: 'p' } } } })));
+    assert.ok(soloP.has('palkia') && !soloP.has('calyrex-shadow'));
+});
+
 test('singolo e doppio guardano la tier giusta', () => {
     const singolo = ids(pool(reg({ baseTier: 'UU', restrizioni: permessi })));
     const doppio = ids(pool(reg({ baseTier: 'UU', battleStyle: 'doubles', restrizioni: permessi })));

@@ -178,7 +178,10 @@
         // le mosse di terra non toccano chi vola o levita; tranne con Gravità e Radicamento (ignorato)
         if (tipoMossa === 'Ground' && m.categoria !== 'Status' && !aTerra(dif) && m.id !== 'thousandarrows') mult = 0;
         const probAbilita = probImmunitaAbilita(dif, tipoMossa, m);
-        if (mult === 0 || probAbilita === 1) return Object.assign({}, nullo, { mult: 0, immune: true });
+        // ha già "non avuto effetto" contro di lui (Illusion: il tipo che si vede non è quello vero); Scrappy e Occhio Mentale
+        // colpiscono i Pokémon Spettro anche con mosse Normale e Lotta, quindi per loro l'osservazione non vale
+        const giaImmune = !!(dif.immuneTipi && dif.immuneTipi.has(tipoMossa)) && !(att.abilita === 'scrappy' || att.abilita === 'mindseye');
+        if (mult === 0 || probAbilita === 1 || giaImmune) return Object.assign({}, nullo, { mult: 0, immune: true });
         if (dif.abilita === 'wonderguard' && mult <= 1) return Object.assign({}, nullo, { mult, immune: true });
 
         const fisica = m.categoria === 'Physical';

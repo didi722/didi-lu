@@ -78,7 +78,8 @@ export class BattagliaOnline {
                 this._consegna(sospesa);
             }
             this.refLog = this._ascolta(`${base}/log/set${n}`, 'child_added', blocco => {
-                const righe = String(blocco.val() || '').split('\n').filter(r => r.startsWith('|'));
+                // il server le toglie già (righePubbliche); qui una difesa in più per i log salvati prima
+                const righe = String(blocco.val() || '').split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
                 this.righeLog.push(...righe);
                 this._emetti('log', righe);
                 for (const r of righe) {
