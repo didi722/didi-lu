@@ -32,6 +32,7 @@
 <script src="badge-team.js"></script>
 <script src="note-team.js"></script>
 <script src="formato-pool.js"></script>
+<script src="dati-gen.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -141,14 +142,14 @@
         <div class="loading">Loading data from Pokédex...</div>
     </div>
 
-    <div id="teamModal" class="modal" onclick="chiudiTeamModal()">
+    <div id="teamModal" class="modal">
     <div class="modal-content"> 
         <span class="close-modal" id="closeModal" onclick="chiudiTeamModal()">&times;</span>
         <div id="modalBody"></div>
     </div>
 </div>
 
-    <div id="pkmDetailModal" class="modal" onclick="chiudiPkmModal()">
+    <div id="pkmDetailModal" class="modal" onclick="if (event.target === this) chiudiPkmModal()">
     <div class="modal-content pkm-single-card"> <span class="close" onclick="chiudiPkmModal()">&times;</span>
         <div id="pkmModalBody"></div>
     </div>
@@ -158,11 +159,12 @@
     <i class="fas fa-tools tasto-icona"></i><span class="tasto-testo">Team builder</span>
 </button>
 
-<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
+<div id="helper-modal-overlay" class="format-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-label="Team Builder assistant" onclick="inizializzaChiusuraHelper(event)">    <div class="format-modal-wrapper">
         
         <div class="format-modal-header">
             <h2>TEAM BUILDER ASSISTANT</h2>
-            <span class="format-close-btn" style="display: flex;">&times;</span>
+            <p class="format-modal-hint">Pick a format to see its rules and the Pokémon you can use, then build your team.</p>
+            <span class="format-close-btn" role="button" aria-label="Close" title="Close">&times;</span>
         </div>
         
         <div class="format-modal-container">
@@ -195,9 +197,7 @@
                     <span id="helper-clause-badge" class="clause-badge">Found: <span id="helper-count">0</span></span>
                 </div>
                 
-                <div id="helper-pkm-grid" class="explorer-pkm-scroll-container">
-
-                </div>
+                <div id="helper-pkm-grid" class="explorer-pkm-scroll-container"></div>
             </div>
             
         </div>
@@ -1027,7 +1027,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
     try {
         const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${cleanName}`, deltaGenDettaglio);
         
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -1123,6 +1123,15 @@ async function apriDettagli(id, opzioni = {}) {
     const pts = Number(s.points || 0);
     const partiteGiocate = Number(s.played || 0);
 
+    // i dati di PokeAPI sono di oggi: nel dettaglio di un team di Gen 4 si rimettono com'erano nella sua generazione
+    deltaGenDettaglio = null;
+    try {
+        const formatoTeam = await tbTrovaFormatoTeam(team);
+        if (formatoTeam) deltaGenDettaglio = await DatiGen.carica(generazioneDelRegolamento(formatoTeam.regolamento));
+    } catch (err) {
+        console.warn('[Dati per generazione] dettaglio con i dati di oggi:', err);
+    }
+
     content.innerHTML = `
         <div class="modal-header-container" style="position: relative;">
             <h2>${team.nome}</h2>
@@ -1150,7 +1159,10 @@ async function apriDettagli(id, opzioni = {}) {
                 }, 0);
                 
                 return `
-                <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
+                <div class="modal-pkm-card modal-pkm-card-apri" style="z-index: ${10 - pIndex}; position: relative;"
+                     role="button" tabindex="0" aria-label="Open ${String(p.nome).replace(/[&<>"]/g, '')}"
+                     onclick="preparaAperturaPkm('${team.id}', ${pIndex}, '${pkmNameUrl}')"
+                     onkeydown="if (event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); preparaAperturaPkm('${team.id}', ${pIndex}, '${pkmNameUrl}'); }"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
@@ -1268,8 +1280,6 @@ document.addEventListener('keydown', (e) => {
             apriDettagli(tuttiITeam[currentIndex - 1].id);
         } else if (e.key === "ArrowRight" && currentIndex < tuttiITeam.length - 1) {
             apriDettagli(tuttiITeam[currentIndex + 1].id);
-        } else if (e.key === "Escape") {
-            chiudiTeamModal();
         }
     }
 });
@@ -1280,7 +1290,7 @@ async function caricaStats(pkmName, elementId, natura = '') {
     if (tooltip.dataset.loaded === "true") return;
 
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         
         const statsMap = {
@@ -1346,24 +1356,12 @@ async function caricaStats(pkmName, elementId, natura = '') {
 // Aggiunto "direzione" ai parametri
 async function caricaTipi(pkmName, elementId, direzione) {
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         const container = document.getElementById(elementId);
         if (!container) return;
 
-        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
-        let effectiveness = {};
-        d_types.forEach(type => effectiveness[type] = 1);
-
-        await Promise.all(data.types.map(async (t) => {
-            const typeRes = await fetch(t.type.url);
-            const typeData = await typeRes.json();
-            const rel = typeData.damage_relations;
-
-            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
-            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
-            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
-        }));
+        const effectiveness = await moltiplicatoriContro(data.types.map(t => t.type.name));
 
         let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
         for (let type in effectiveness) {
@@ -1516,7 +1514,7 @@ function gestisciErroreSprite(img, pkmNameUrl) {
     }
 
     if (fase === 1) {
-        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+        DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`, deltaGenDettaglio)
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
@@ -1533,7 +1531,7 @@ function gestisciErroreSprite(img, pkmNameUrl) {
     img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
 }
 
-function apriPkmDettaglio(pokemonData, pkmNameUrl) {
+function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
     const modal = document.getElementById('pkmDetailModal');
     const content = document.getElementById('pkmModalBody');
     if (!modal || !content) return;
@@ -1607,12 +1605,12 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     if (typeof Fiocchi !== 'undefined') {
         const casella = document.getElementById('pkm-fiocchi');
         Fiocchi.montaScaffale(db, casella, {
-            giocatore: playerID, team: window.squadraAperta, pokemon: pokemonData,
+            giocatore: playerID, team: window.squadraAperta, pokemon: pokemonData, indice,
             valido: () => document.getElementById('pkm-fiocchi') === casella
         });
     }
 
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`)
+    DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl.toLowerCase()}`, deltaGenDettaglio)
         .then(res => res.json())
         .then(data => {
             const heroSprite = document.getElementById('pkm-hero-sprite');
@@ -1626,7 +1624,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     mosseList.forEach((m, i) => {
         if(m && m !== "-") {
             const mName = m.toLowerCase().replace(/ /g, '-');
-            fetch(`https://pokeapi.co/api/v2/move/${mName}`)
+            DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${mName}`, deltaGenDettaglio)
                 .then(res => res.json())
                 .then(moveData => {
                     const entry = moveData.flavor_text_entries.find(e => e.language.name === 'en');
@@ -1651,7 +1649,7 @@ function preparaAperturaPkm(teamId, pkmIndex, pkmNameUrl) {
     
     if (team && team.pokemon && team.pokemon[pkmIndex]) {
         window.squadraAperta = team;   // serve ai fiocchi: sono del Pokémon DI QUEL team
-        apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl);
+        apriPkmDettaglio(team.pokemon[pkmIndex], pkmNameUrl, pkmIndex);
     } else {
         console.error("Error: Impossible to find the Pokémon for the team", teamId);
     }
@@ -1677,7 +1675,7 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
     if (!nomeMossa || nomeMossa === "-") return;
     try {
         const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${cleanName}`, deltaGenDettaglio);
         const data = await res.json();
         const index = cardId.split('-').pop();
         
@@ -1744,24 +1742,10 @@ async function caricaDebolezzeStatiche(pkmName, elementId) {
     if (!container) return;
 
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         
-        // Lista completa dei tipi per il calcolo
-        const tuttiITipi = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
-        
-        let effectiveness = {};
-        tuttiITipi.forEach(type => effectiveness[type] = 1);
-
-        await Promise.all(data.types.map(async (t) => {
-            const typeRes = await fetch(t.type.url);
-            const typeData = await typeRes.json();
-            const rel = typeData.damage_relations;
-
-            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
-            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
-            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
-        }));
+        const effectiveness = await moltiplicatoriContro(data.types.map(t => t.type.name));
 
         // Raggruppiamo i risultati
         let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
@@ -1797,6 +1781,7 @@ container.innerHTML = `
 
 function chiudiTeamModal() {
     fermaNoteDettaglio();
+    deltaGenDettaglio = null;
     tbTokenDettaglio = null;   // ferma un'eventuale preparazione dei tag ancora in corso
     tbStatoDettaglio = null;
     tbNascondiTooltip();
@@ -1814,13 +1799,7 @@ function chiudiTeamModal() {
     }
 }
 
-// Gestione intelligente della chiusura cliccando fuori
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('teamModal');
-    if (event.target === modal) {
-        chiudiTeamModal();
-    }
-});
+// Il dettaglio del team si chiude solo con la X (un clic sulla card di un Pokémon apre il Pokémon, non chiude niente)
 
 function normalizzaNomePerPokeAPI(nomeShowdown) {
     // Trasforma in minuscolo, sostituisce gli spazi con trattini e rimuove i caratteri speciali
@@ -1874,6 +1853,30 @@ function generazioneDelRegolamento(regolamento) {
 
 function meccanicheAttiveRegolamento(regolamento) {
     return regolamento?.generationalMechanics === true;
+}
+
+// I dati che il sito legge (Showdown, PokeAPI, pokedex_base.json) sono quelli di oggi: in un formato di una generazione precedente vanno
+// rimessi come erano allora (Mawile in Gen 4 è solo Acciaio, le mosse hanno altro tipo e potenza...). Vedi dati-gen.js.
+// Si chiama prima di usare quei dati per un formato; passare da un formato all'altro rimette a posto quello che aveva cambiato.
+let deltaGenCorrente = null;
+// Il dettaglio di un team aperto: i dati di PokeAPI (sempre di oggi) si rimettono com'erano nella generazione del suo formato
+let deltaGenDettaglio = null;
+
+// Quanto prende un Pokémon con questi tipi da ogni tipo, nella generazione del dettaglio aperto (le relazioni di PokeAPI sono di oggi:
+// la tabella dei tipi cambia nelle prime cinque generazioni, e Folletto, Buio e Acciaio non esistono sempre). { tipo: moltiplicatore }
+function moltiplicatoriContro(tipiDifesa, delta = deltaGenDettaglio) {
+    return DatiGen.moltiplicatoriContro(tipiDifesa, delta);
+}
+async function applicaGenerazioneFormato(regolamento) {
+    const delta = await DatiGen.carica(generazioneDelRegolamento(regolamento)).catch(err => {
+        console.warn('[Dati per generazione] non caricati, restano quelli di oggi:', err);
+        return null;
+    });
+    deltaGenCorrente = delta;
+    DatiGen.applicaAPokedexBase(window.pokedexBase, delta);
+    DatiGen.applicaAlPokedex(tbDex.pokedex, delta);
+    DatiGen.applicaAlleMosse(tbDex.moves, delta);
+    return delta;
 }
 
 // Scrive il livello del formato e toglie dal testo ciò che il formato non prevede
@@ -1980,7 +1983,9 @@ function parseShowdown(text) {
 }
 
 
-async function preparaDatiTeamPerValidazione(listaPokemon) {
+// PokeAPI risponde con i dati di oggi: con il regolamento si rimettono come erano nella generazione del formato (tipi, statistiche, mosse)
+async function preparaDatiTeamPerValidazione(listaPokemon, regolamento = null) {
+    const delta = regolamento ? await DatiGen.carica(generazioneDelRegolamento(regolamento)).catch(() => null) : null;
     const promesse = listaPokemon.map(async (pkmn) => {
         const nomePkmn = pkmn.nome;
         if (!nomePkmn) return null;
@@ -2077,7 +2082,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
             const infoMosse = (await Promise.all(promesseMosse)).filter(Boolean);
 
             // 5. COMPILAZIONE PAYLOAD COMPLETO
-            return {
+            return DatiGen.rettificaDatiValidazione({
                 name: nomePkmn,
                 idPokeAPI: nomeIdPokeAPI,
                 generation: genId,
@@ -2102,7 +2107,7 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
                 is_mythical: misterioso,
                 itemData: infoStrumento,
                 movesData: infoMosse
-            };
+            }, delta);
 
         } catch (err) {
             console.error(`Error retrieving data for ${nomePkmn}:`, err);
@@ -2118,6 +2123,42 @@ async function preparaDatiTeamPerValidazione(listaPokemon) {
     });
 
     return (await Promise.all(promesse)).filter(p => p !== null);
+}
+
+// Ogni set è possibile nella generazione del formato? (abilità, strumento e mosse esistenti, abilità fra quelle della specie di allora)
+// Legge i dati di Showdown già pronti per il Team Builder; se non si caricano non si blocca niente (restano gli altri controlli).
+async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
+    const lista = Array.isArray(teamDatiPokeAPI) ? teamDatiPokeAPI : Object.values(teamDatiPokeAPI || {});
+    const gen = generazioneDelRegolamento(regolamento);
+    if (!lista.length) return [];
+    try {
+        await tbCaricaTuttiDati();
+    } catch (err) {
+        console.warn('[Validazione] dati di Showdown non disponibili, controllo per generazione saltato:', err);
+        return [];
+    }
+    const delta = await applicaGenerazioneFormato(regolamento);
+    const fonti = {
+        abilitaGen: nome => tbDex.abilities[tbToID(nome)] ? tbGenAbilita(nome) : null,
+        strumentoGen: nome => tbDex.items[tbToID(nome)] ? (tbDex.items[tbToID(nome)].gen || 0) : null,
+        mossaGen: nome => tbDex.moves[tbToID(nome)] ? tbGenMossa(tbDex.moves[tbToID(nome)]) : null
+    };
+    const errori = [];
+    for (const p of lista) {
+        if (!p || p.erroreDati) continue;
+        const nome = p.name || p.nome || '';
+        const sp = tbSpecie(tbToID(p.idPokeAPI || nome));
+        const set = { nome, id: sp ? tbToID(sp.name) : tbToID(nome), abilita: p.abilita, strumento: p.strumento, mosse: p.mosse };
+        const base = sp && sp.battleOnly ? tbSpecieBase(sp) : null;
+        // una forma di battaglia (Mega, Zacian-Crowned...) ha le sue abilità, o quelle della specie da cui parte: va bene l'una o l'altra
+        let problemi = DatiGen.controllaSet(Object.assign({}, set), gen, delta, Object.assign({ specie: sp }, fonti));
+        if (base && problemi.some(x => x.includes('is not one of its abilities'))) {
+            const dalBase = DatiGen.controllaSet(Object.assign({}, set, { id: tbToID(base.name) }), gen, delta, Object.assign({ specie: base }, fonti));
+            if (!dalBase.some(x => x.includes('is not one of its abilities'))) problemi = problemi.filter(x => !x.includes('is not one of its abilities'));
+        }
+        errori.push(...problemi);
+    }
+    return errori;
 }
 
 // Array di supporto per mappe tier
@@ -2360,6 +2401,10 @@ async function validaTeamDinamico(teamInput, regolamento, altriTeamEsistenti = [
 
         // Mosse ripetute o più di 4 mosse: impossibili nel gioco, quindi valgono in tutti i formati
     tuttiGliErrori = tuttiGliErrori.concat(validaMosseDuplicate(teamDatiPokeAPI));
+
+    // Abilità, strumenti e mosse devono esistere nella generazione del formato (e l'abilità essere una di quelle della specie di allora):
+    // valgono in tutti i formati, Anything Goes compreso
+    tuttiGliErrori = tuttiGliErrori.concat(await validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento));
 
     // Restrizioni del formato: valgono SEMPRE, anche in Anything Goes
     if (regolamento.restrizioni) {
@@ -3022,7 +3067,7 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
             }
         }
 
-        const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon);
+        const datiPokeAPI = await preparaDatiTeamPerValidazione(datiTeamDaSalvare.pokemon, regolamento);
         
         const oggettoTeamPerValidazione = {
             id: editingId,
@@ -3152,9 +3197,11 @@ document.addEventListener('DOMContentLoaded', sincronizzaCategorie);
 
 // Se vuoi che si chiuda anche premendo il tasto ESC (molto comodo)
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        chiudiTeamModal();
-    }
+    if (e.key !== "Escape") return;
+    // si chiude un livello alla volta: prima la scheda del Pokémon, poi il dettaglio del team
+    const pkm = document.getElementById('pkmDetailModal');
+    if (pkm && pkm.style.display !== 'none' && pkm.style.display !== '') chiudiPkmModal();
+    else chiudiTeamModal();
 });
 
 firebase.auth().onAuthStateChanged(async (currentUser) => {
@@ -3848,6 +3895,9 @@ async function generaListaPokémonPerFormato(regolamento, jsonDati) {
         }
     }
 
+    // tipi, statistiche e abilità come erano nella generazione del formato (le regole sul tipo o sul BST valgono per quelli)
+    await applicaGenerazioneFormato(regolamento);
+
     // Il calcolo vero e proprio sta in formato-pool.js: è lo stesso che usa la CPU per scegliere i suoi team.
     // Il file già scaricato dal chiamante non si riscarica.
     const cache = {};
@@ -4212,8 +4262,8 @@ function inizializzaChiusuraHelper(event) {
         return;
     }
 
-    // Caso B: Click fuori dal modale (sull'overlay di sfondo o sul wrapper)
-    if (event.target.id === 'helper-modal-overlay' || event.target.classList.contains('format-modal-wrapper')) {
+    // Caso B: Click fuori dalla finestra (sul velo di sfondo: la finestra è la carta, i suoi margini non chiudono)
+    if (event.target.id === 'helper-modal-overlay') {
         chiudiTuttoHelper();
         notificaSimulatore('chiuso');
     }
@@ -4813,7 +4863,8 @@ function tbImpostaNatura(tipo, chiave) {
 
 // --- DEBOLEZZE E RESISTENZE ------------------------------------------
 function tbTipiAttaccanti() {
-    return tbStato.gen >= 6 ? TB_TIPI : TB_TIPI.filter(t => t !== 'Fairy');
+    const esistenti = DatiGen.tipiDellaGenerazione(tbStato.deltaGen, tbStato.gen);
+    return TB_TIPI.filter(t => esistenti.includes(t));
 }
 
 function tbMoltiplicatore(attacco, tipiDifesa, abilita) {
@@ -4821,11 +4872,9 @@ function tbMoltiplicatore(attacco, tipiDifesa, abilita) {
     tipiDifesa.forEach(dif => {
         const tabella = TB_DIFESE[dif];
         if (!tabella) return;
-        let [deboli, resiste, immune] = tabella;
-        if (tbStato.gen < 6 && dif === 'Steel') resiste = [...resiste, 'Ghost', 'Dark'];
-        if (immune.includes(attacco)) mult *= 0;
-        else if (deboli.includes(attacco)) mult *= 2;
-        else if (resiste.includes(attacco)) mult *= 0.5;
+        const [deboli, resiste, immune] = tabella;
+        const oggi = immune.includes(attacco) ? 0 : deboli.includes(attacco) ? 2 : resiste.includes(attacco) ? 0.5 : 1;
+        mult *= DatiGen.moltiplicatore(tbStato.deltaGen, attacco, dif, oggi);   // la tabella dei tipi della generazione (Gen 1-5 cambia)
     });
     const mod = TB_ABILITA_DIFENSIVE[tbToID(abilita)];
     if (mod && mod[attacco] !== undefined && mult !== 0) mult *= mod[attacco];
@@ -6344,6 +6393,8 @@ async function tbPreparaDettaglio(team) {
 
         const lista = await tbPoolDelFormato(formato.id, pokemonTeam);
         if (token !== tbTokenDettaglio) return;
+        await applicaGenerazioneFormato(formato.regolamento);   // tipi, statistiche e mosse della generazione del formato (le calcola il tag)
+        if (token !== tbTokenDettaglio) return;
 
         const stato = {};
         tbEseguiCon(stato, () => {
@@ -7566,6 +7617,7 @@ async function apriTeamBuilder() {
         ]);
         const regolamento = regSnap.val();
         if (!regolamento) throw new Error('Format not found.');
+        await applicaGenerazioneFormato(regolamento);   // tipi, statistiche, abilità e mosse della generazione del formato
 
         const firma = `${formatId}|${lista.length}|${lista.map(p => p.id).join(',')}`;
         if (tbModifica) {
@@ -7577,6 +7629,7 @@ async function apriTeamBuilder() {
             tbInizializzaStato(firma, regolamento, lista);
         } else {
             tbStato.regolamento = regolamento;
+            tbStato.deltaGen = deltaGenCorrente;
             tbStato.cacheMosse = {}; // le regole del formato potrebbero essere cambiate
         }
 
@@ -7656,6 +7709,7 @@ function tbInizializzaStato(firma, regolamento, lista) {
     tbStato.firma = firma;
     tbStato.regolamento = regolamento;
     tbStato.gen = gen;
+    tbStato.deltaGen = deltaGenCorrente;   // la tabella dei tipi di quella generazione (applicaGenerazioneFormato)
     tbStato.within = regolamento.genRuleType === 'within' || struttura === 'vgc';
     tbStato.struttura = struttura;
     tbStato.clausole = ['custom', 'vgc', 'vcg'].includes(struttura);

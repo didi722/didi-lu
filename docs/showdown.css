@@ -384,3 +384,383 @@
     #sd-modal-overlay .sd-replay { justify-self: stretch; text-align: center; rotate: 0deg; }
     #sd-modal-overlay .sd-lineup .mini-gif { height: 38px; }
 }
+
+
+/* =====================================================================
+   I QUADRATI DEI SHOWDOWN NELL'ELENCO (Matches)
+   ---------------------------------------------------------------------
+   Ogni showdown è una finestrina come quella che si apre al clic: la striscia nera con i tre pallini e la categoria, i due allenatori
+   sul loro colore con il punteggio in nero in mezzo (chi vince si alza e porta l'adesivo WIN, il suo numero è giallo), la data in
+   fondo. Colori, angoli, ombre e caratteri sono quelli del tema attivo. Il markup lo scrive il rendering degli showdown in matches.html.
+   ===================================================================== */
+.showdown-grid-double .showdown-summary-card,
+.showdown-summary-card {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0 !important;
+    overflow: hidden;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.showdown-summary-card:hover { transform: translate(-2px, -2px) rotate(calc(var(--nb-rot, 1) * -.4deg)); box-shadow: var(--nb-sh-8, 8px 8px 0 #000); }
+.showdown-summary-card:active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.showdown-summary-card:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 3px; }
+
+/* la striscia: tre pallini a sinistra, la categoria a destra */
+.showdown-summary-card .sd-card-barra {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    height: 26px;
+    margin: 0;
+    padding: 0 8px 0 66px;
+    background:
+        radial-gradient(circle at 15px 50%, #ff5f57 0 4.2px, transparent 4.8px),
+        radial-gradient(circle at 30px 50%, #febc2e 0 4.2px, transparent 4.8px),
+        radial-gradient(circle at 45px 50%, #28c840 0 4.2px, transparent 4.8px),
+        var(--nb-ink, #000);
+}
+.showdown-summary-card .sd-badge-label { display: none; }
+.showdown-summary-card .sd-category-tag {
+    max-width: 100%;
+    margin: 0;
+    padding: 1px 7px 0;
+    overflow: hidden;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 0;
+    border-radius: calc(var(--nb-raggio, 0px) * .4);
+    box-shadow: none;
+    font: 900 .7rem/1.45 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: rotate(calc(var(--nb-rot, 1) * -2deg));
+}
+
+/* i due allenatori affiancati sul loro colore (il nome in alto), il punteggio in nero a cavallo del loro bordo, in basso */
+.showdown-summary-card .sd-card-content {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+    margin: 0;
+    padding: 18px 12px 26px;
+}
+.showdown-summary-card .sd-lato {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    min-height: 76px;
+    padding: 9px 6px 26px;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--lato, #8a8a8a);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.showdown-summary-card .sd-lato-1 { --lato: var(--lato1, #8a8a8a); margin-right: -1.5px; }
+.showdown-summary-card .sd-lato-2 { --lato: var(--lato2, #8a8a8a); margin-left: -1.5px; }
+.showdown-summary-card.vince-1 .sd-lato-1,
+.showdown-summary-card.vince-2 .sd-lato-2 { transform: translateY(-4px); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); z-index: 1; }
+.showdown-summary-card .sd-nome {
+    display: block;
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 3px 6px 1px;
+    overflow: hidden;
+    background: var(--nb-carta, #fff);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font: 900 .8rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.showdown-summary-card .sd-win {
+    position: absolute;
+    top: -13px; right: -8px;
+    padding: 1px 6px 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .4);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .6rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font-style: normal;
+    letter-spacing: .08em;
+    rotate: calc(var(--nb-rot, 1) * 6deg);
+}
+.showdown-summary-card .sd-result-badge {
+    position: absolute;
+    left: 50%; bottom: 9px;
+    z-index: 3;
+    margin: 0;
+    padding: 6px 10px 4px;
+    background: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .3));
+    color: #fff;
+    translate: -50% 0;
+    rotate: calc(var(--nb-rot, 1) * -2deg);
+    transform: none;
+}
+.showdown-summary-card .sd-final-score { display: flex; align-items: center; gap: 4px; font: 900 1.25rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: 0; }
+.showdown-summary-card .sd-final-score i { font-style: normal; font-weight: 400; opacity: .55; }
+.showdown-summary-card.vince-1 .sd-final-score b:first-child,
+.showdown-summary-card.vince-2 .sd-final-score b:last-child { color: var(--nb-giallo, #ffbd44); }
+
+/* la data, e la freccia che dice "si apre" */
+.showdown-summary-card .sd-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    padding: 7px 10px 8px 12px;
+    border-top: 3px solid var(--nb-ink, #000);
+}
+.showdown-summary-card .sd-date-text {
+    padding: 0;
+    background: none;
+    color: var(--nb-ink, #000);
+    font: 800 .74rem/1.2 var(--nb-font-testo, 'Montserrat', sans-serif);
+    letter-spacing: .02em;
+    transform: none;
+}
+.showdown-summary-card .sd-view-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font: 900 .8rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    transition: translate .12s ease;
+}
+.showdown-summary-card:hover .sd-view-action { translate: 3px 0; }
+
+/* telefono: la card è larga quanto lo schermo, i nomi ci stanno comodi */
+@media (max-width: 560px) {
+    .showdown-summary-card .sd-nome { font-size: .9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .showdown-summary-card,
+    .showdown-summary-card .sd-lato,
+    .showdown-summary-card .sd-view-action { transition: none; }
+}
+
+
+/* =====================================================================
+   LA FINESTRA DELLE SQUADRE ISCRITTE (Matches · REGISTERED TEAMS)
+   ---------------------------------------------------------------------
+   Stessa famiglia della finestra del Showdown: striscia nera con i pallini e la X gialla, carta calda con la mezzatinta, bordo e
+   ombra del tema. Dentro: i tasti degli allenatori sul loro colore (quello scelto è premuto), i formati con il loro titolo nero e i
+   team come cartellini bianchi con il bilancio; passando sopra un team si apre l'anteprima dei suoi Pokémon (sul colore
+   dell'allenatore, come prima). Il markup lo scrivono apriModaleTeamsIscritti() e mostraTeamGiocatoreSelezionato() in matches.html.
+   ===================================================================== */
+#modal-registered-teams.custom-modal-backdrop {
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding: 10px 18px 14px;
+    background: rgba(0, 0, 0, .46) radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px) 0 0 / 14px 14px;
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+}
+#modal-registered-teams .pokemon-theme-modal {
+    position: relative;
+    box-sizing: border-box;
+    width: min(1040px, 100%);
+    max-width: none;
+    margin: auto !important;
+    padding: 36px 0 0 !important;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6) !important;
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0px) !important;
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000) !important;
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    animation: sd-salta .34s cubic-bezier(.2, .9, .3, 1.15) both;
+}
+#modal-registered-teams .pokemon-theme-modal::after { display: none !important; }
+/* la striscia nera con i tre pallini */
+#modal-registered-teams .pokemon-theme-modal::before {
+    content: "TEAMS · SANT'ALVISE PKMN LEAGUE";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 2;
+    height: 36px;
+    box-sizing: border-box;
+    padding: 0 56px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink, #000);
+    color: #fff;
+    font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .2em;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+/* titolo e X */
+#modal-registered-teams .modal-custom-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 20px 30px 10px;
+    background: none;
+    border: 0;
+}
+#modal-registered-teams .neubrutal-badge-title {
+    display: inline-block;
+    margin: 0;
+    padding: 7px 24px 5px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    font: 900 clamp(1.3rem, 2.4vw, 1.8rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+#modal-registered-teams .close-modal-btn {
+    position: absolute;
+    top: 5px; right: 12px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 26px; height: 26px;
+    padding: 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 14px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+    rotate: calc(var(--nb-rot, 1) * 3deg);
+    transition: rotate .1s ease, background-color .1s ease, scale .1s ease;
+}
+#modal-registered-teams .close-modal-btn:hover,
+#modal-registered-teams .close-modal-btn:focus-visible { background: var(--nb-rosso, #ff4444); color: #fff; rotate: 0deg; scale: 1.08; outline: none; }
+
+/* i tasti degli allenatori */
+#modal-registered-teams .players-tabs-container { display: flex; flex-wrap: wrap; gap: 12px 14px; margin: 0; padding: 8px 30px 16px; }
+#modal-registered-teams .player-tab-btn {
+    --tab: #31c489;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 124px;
+    height: 42px;
+    padding: 2px 14px 0;
+    background: var(--tab) !important;
+    color: #000;
+    border: 3px solid var(--nb-ink, #000) !important;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .86rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.2deg));
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+#modal-registered-teams .player-tab-btn:nth-child(even) { transform: rotate(calc(var(--nb-rot, 1) * 1.2deg)); }
+#modal-registered-teams .player-tab-btn:hover { transform: translate(-2px, -2px) rotate(0deg); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
+#modal-registered-teams .player-tab-btn.active {
+    transform: translate(2px, 2px) rotate(0deg);
+    box-shadow: none;
+    outline: 3px solid var(--nb-ink, #000);
+    outline-offset: 3px;
+}
+#modal-registered-teams .player-tab-avatar { flex-shrink: 0; width: 24px; height: 24px; object-fit: contain; animation: pokemon-bounce .8s steps(1) infinite; }
+#modal-registered-teams .modal-separator { margin: 0 30px 20px; border: 0; border-top: 3px dashed var(--nb-ink, #000); }
+
+/* i formati e i team */
+#modal-registered-teams .teams-list-display { padding: 0 30px 34px; }
+#modal-registered-teams .teams-list-display .placeholder-text {
+    margin: 0;
+    padding: 14px 0;
+    color: var(--nb-ink, #000);
+    font: 700 .95rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif);
+    opacity: .7;
+}
+#modal-registered-teams .modal-formats-grid-container { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px 28px; }
+#modal-registered-teams .modal-format-title-brutal {
+    margin: 0 0 4px;
+    padding: 6px 14px 4px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 5px 5px 0 rgba(0, 0, 0, .3));
+    font: 900 1rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    transform: rotate(calc(var(--nb-rot, 1) * 1deg));
+}
+#modal-registered-teams .neu-compact-team-tag {
+    gap: 12px;
+    padding: 11px 14px 9px;
+    background: var(--nb-carta, #fff);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+#modal-registered-teams .neu-compact-team-tag:hover { transform: translate(-2px, -2px) rotate(calc(var(--nb-rot, 1) * -.5deg)); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
+#modal-registered-teams .neu-tag-team-name { max-width: 68%; font: 900 .95rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); }
+#modal-registered-teams .neu-tag-stats-badge {
+    padding: 3px 7px 1px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 0;
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font: 800 .72rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif);
+    letter-spacing: .02em;
+}
+
+@media (max-width: 700px) {
+    #modal-registered-teams.custom-modal-backdrop { padding: 8px 8px 12px; }
+    #modal-registered-teams .pokemon-theme-modal::before { height: 32px; padding-left: 82px; font-size: 10px; line-height: 32px; letter-spacing: .14em; }
+    #modal-registered-teams .pokemon-theme-modal { padding-top: 32px !important; }
+    #modal-registered-teams .modal-custom-header { padding: 16px 16px 8px; }
+    #modal-registered-teams .neubrutal-badge-title { padding: 6px 14px 4px; font-size: 1.2rem; }
+    #modal-registered-teams .players-tabs-container { gap: 10px; padding: 6px 16px 14px; }
+    #modal-registered-teams .player-tab-btn { flex: 1 1 calc(50% - 6px); min-width: 0; }
+    #modal-registered-teams .modal-separator { margin: 0 16px 16px; }
+    #modal-registered-teams .teams-list-display { padding: 0 16px 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #modal-registered-teams .pokemon-theme-modal { animation: none; }
+}

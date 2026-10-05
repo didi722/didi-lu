@@ -565,7 +565,7 @@ async function apriDettagli(id) {
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
                              class="modal-sprite clickable-pkm"
-                             onclick="apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}')">
+                             onclick="apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}', ${pIndex})">
                     </div>
 
                     <div class="modal-pkm-info">
@@ -975,7 +975,7 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
     }
 }
 
-async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
+async function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
     const modal = document.getElementById('pkmDetailModal');
     const content = document.getElementById('pkmModalBody');
     if (!modal || !content) return;
@@ -1071,7 +1071,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl) {
     if (typeof Fiocchi !== 'undefined') {
         const casella = document.getElementById('pkm-fiocchi');
         Fiocchi.montaScaffale(db, casella, {
-            giocatore: playerName, team: window.squadraAperta, pokemon: pokemonData, amicizia,
+            giocatore: playerName, team: window.squadraAperta, pokemon: pokemonData, indice, amicizia,
             valido: () => document.getElementById('pkm-fiocchi') === casella
         });
     }

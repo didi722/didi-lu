@@ -21,6 +21,11 @@
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
+<link rel="stylesheet" href="badge-team.css">
+<script src="dati-gen.js"></script>
+<script src="statistiche.js"></script>
+<script src="fiocchi.js"></script>
+<script src="badge-team.js"></script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="tooltip.css">
@@ -778,44 +783,36 @@ async function inizializzaPaginaArchivio() {
         const sdCard = document.createElement('div');
         sdCard.className = 'showdown-summary-card';
         sdCard.style.setProperty('--winner-color', winnerColor);
-        
+        const p1Name = info.player1 || 'TBD';
+        const p2Name = info.player2 || 'TBD';
+        // i due lati sono sul colore del loro allenatore (come nella finestra del Showdown); chi sta vincendo si alza e porta l'adesivo WIN
+        const colorePlayer = nome => dataPlayers[String(nome || '').toLowerCase().trim()]?.info?.color || '#8a8a8a';
+        sdCard.style.setProperty('--lato1', colorePlayer(p1Name));
+        sdCard.style.setProperty('--lato2', colorePlayer(p2Name));
+        const chiVince = vintiP1 === vintiP2 ? 0 : (vintiP1 > vintiP2 ? 1 : 2);
+        if (chiVince) sdCard.classList.add(`vince-${chiVince}`);
+        const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
         sdCard.onclick = (e) => {
             if (e.target.closest('.sd-admin-overlay')) return; 
             if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
         };
 
-        const p1Name = info.player1 || 'TBD';
-const p2Name = info.player2 || 'TBD';
-
-// Controllo lunghezza > 5 caratteri
-const p1Class = p1Name.length > 5 ? 'sd-name scrollable' : 'sd-name';
-const p2Class = p2Name.length > 5 ? 'sd-name scrollable' : 'sd-name';
-
-sdCard.innerHTML = `
-    <div class="sd-card-header">
+        // una finestrina: la striscia con la categoria, i due giocatori sul loro colore con il punteggio in mezzo, la data in fondo
+        sdCard.innerHTML = `
+    <div class="sd-card-barra">
         <span class="sd-badge-label">SHOWDOWN</span>
-        <span class="sd-category-tag">${info.categoria || "OU"}</span>
+        <span class="sd-category-tag">${esc(info.categoria || "OU")}</span>
     </div>
     <div class="sd-card-content">
-        <div class="sd-player-display">
-            <div class="sd-name-container">
-                <span class="${p1Class}">${p1Name}</span>
-            </div>
-        </div>
+        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
         <div class="sd-result-badge">
-            <span class="sd-final-score">${vintiP1} - ${vintiP2}</span>
+            <span class="sd-final-score"><b>${vintiP1}</b><i>:</i><b>${vintiP2}</b></span>
         </div>
-        <div class="sd-player-display">
-            <div class="sd-name-container">
-                <span class="${p2Class}">${p2Name}</span>
-            </div>
-        </div>
+        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
     </div>
     <div class="sd-card-footer">
-        <span class="sd-date-text">${info.data || 'No date'}</span>
-        
-
-        
+        <span class="sd-date-text">${esc(info.data || 'No date')}</span>
         <span class="sd-view-action">➜</span>
     </div>
 `;
@@ -1264,24 +1261,14 @@ async function apriModaleTeamsIscritti() {
         playerProfiles.forEach(player => {
             const btnTab = document.createElement('button');
             btnTab.className = 'player-tab-btn';
-            
-            btnTab.style.setProperty('background-color', player.color, 'important');
-            btnTab.style.setProperty('font-family', "'Josefin Sans', sans-serif", 'important');
-            btnTab.style.setProperty('font-weight', "700", 'important');
-            btnTab.style.setProperty('text-transform', "uppercase", 'important');
-            btnTab.style.setProperty('width', "130px", 'important');
-            btnTab.style.setProperty('height', "42px", 'important');
-            btnTab.style.setProperty('display', "inline-flex", 'important');
-            btnTab.style.setProperty('align-items', "center", 'important');
-            btnTab.style.setProperty('justify-content', "center", 'important');
-            btnTab.style.setProperty('gap', "6px", 'important');
+            // il colore dell'allenatore: lo stile del tasto lo decide il tema (showdown.css)
+            btnTab.style.setProperty('--tab', player.color);
 
             let avatarHtml = "";
             if (player.avatar) {
                 avatarHtml = `
-                    <img src="${player.avatar}" 
-                         alt="Avatar ${player.name}" 
-                         style="width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; animation: pokemon-bounce 0.8s steps(1) infinite;"
+                    <img src="${player.avatar}" class="player-tab-avatar"
+                         alt="Avatar ${player.name}"
                          onerror="this.style.display='none';">
                 `;
             }
@@ -1297,6 +1284,7 @@ async function apriModaleTeamsIscritti() {
             
             tabsContainer.appendChild(btnTab);
         });
+        teamsDisplay.innerHTML = "<p class='placeholder-text'>Pick a trainer to see their registered teams.</p>";
 
     } catch (error) {
         console.error("❌ Error occurred while loading initial registered teams:", error);
@@ -2393,8 +2381,10 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
             }));
         }
 
-        // 5. Rendering
+        // 5. Rendering (con i dati della generazione del formato)
+        await impostaGenerazioneDettaglio(formato);
         content.innerHTML = generaHtmlDettaglioTeam(team, idLower, palette);
+        mostraBadgeDelTeam(content, idLower, team);
 
     } catch (e) {
         console.error("ERROR:", e);
@@ -2403,6 +2393,17 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
                 <p style="color: #ff4d4d; font-weight: bold;">Error: ${e.message}</p>
             </div>`;
     }
+}
+
+// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario li vede (un vanto). Il team: le
+// medagliette più alte e il tasto con lo scaffale completo; ogni Pokémon: un tondino col numero dei suoi fiocchi, e il fumetto li elenca.
+function mostraBadgeDelTeam(contenuto, giocatore, team) {
+    if (typeof Fiocchi === 'undefined') return;
+    const squadra = { nome: team.nome, pokemon: team.pokemon };
+    window.squadraAperta = squadra;
+    const valido = () => window.squadraAperta === squadra;
+    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, modo: 'tondino', valido }).catch(() => {});
+    if (typeof BadgeTeam !== 'undefined') BadgeTeam.montaBarra(db, contenuto.querySelector('[data-badge-team]'), { giocatore, team: squadra, valido }).catch(() => {});
 }
 
 // Effetto delle nature sulle statistiche: [statistica aumentata, statistica diminuita]
@@ -2431,7 +2432,7 @@ function gestisciErroreSprite(img, pkmNameUrl) {
     }
 
     if (fase === 1) {
-        fetch(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`)
+        DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmNameUrl}`, deltaGenDettaglio)
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
@@ -2462,6 +2463,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                 <div class="score-item"><span>Points</span><strong>${team.puntiFatti}</strong></div>
                 <div class="score-item"><span>Played</span><strong>${team.played}</strong></div>
             </div>
+            <span class="bt-barra-team" data-badge-team></span>
         </div>
 
         <div class="modal-grid">
@@ -2485,7 +2487,7 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                 <div class="modal-pkm-card" style="z-index: ${10 - pIndex}; position: relative;"
                      onmouseenter="this.style.zIndex='999'"
                      onmouseleave="this.style.zIndex='${10 - pIndex}'">
-                    
+                    <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
                         <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
@@ -2531,6 +2533,21 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
             }).join('')}
         </div>
     </div>`;
+}
+
+// I dati di PokeAPI sono di oggi: nel riepilogo di un team di Gen 4 si rimettono come erano nella generazione del suo formato (dati-gen.js)
+let deltaGenDettaglio = null;
+async function impostaGenerazioneDettaglio(formato) {
+    deltaGenDettaglio = null;
+    try {
+        const snap = await db.ref('regolamenti').once('value');
+        let reg = null;
+        snap.forEach(c => { const v = c.val(); if (v && String(v.categoria || '').toLowerCase().trim() === String(formato || '').toLowerCase().trim()) reg = v; });
+        const gen = reg ? (parseInt(reg.genRuleValue, 10) || parseInt(String(reg.vgcGen || '').replace(/\D/g, ''), 10) || 9) : 9;
+        deltaGenDettaglio = await DatiGen.carica(gen);
+    } catch (err) {
+        console.warn('[Dati per generazione] riepilogo con i dati di oggi:', err);
+    }
 }
 
 // Funzioni di chiusura
@@ -2743,17 +2760,26 @@ selector.style.height = 'auto';
         miniHeader.innerHTML = `
             <div class="mini-team-info side-didi">
                 <div id="header-gifs-didi" class="mini-gifs-row"></div>
-                <span class="badge-label">${teamDidi}</span>
+                <div class="mini-team-col"><span class="badge-label">${teamDidi}</span><span class="mini-badges" data-replay-badge="1"></span></div>
             </div>
 
             <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
 
             <div class="mini-team-info side-lu">
-                <span class="badge-label">${teamLu}</span>
+                <div class="mini-team-col"><span class="badge-label">${teamLu}</span><span class="mini-badges" data-replay-badge="2"></span></div>
                 <div id="header-gifs-lu" class="mini-gifs-row"></div>
             </div>
         `;
         modal.prepend(miniHeader);
+
+        // i badge dei due team che si affrontano: un vanto, visibile a tutti (le medagliette più alte e quanti ne hanno)
+        if (typeof BadgeTeam !== 'undefined') {
+            const apertura = window.replayAperto = {};
+            [[sdData.info.player1, teamDidi, '1'], [sdData.info.player2, teamLu, '2']].forEach(([giocatore, nomeTeam, lato]) => {
+                BadgeTeam.montaMini(db, miniHeader.querySelector(`[data-replay-badge="${lato}"]`),
+                    { giocatore, team: { nome: nomeTeam }, valido: () => window.replayAperto === apertura }).catch(() => {});
+            });
+        }
 
         // --- 3. RESTO DELLA LOGICA (Bottoni Replay) ---
         const categoriaMatch = sdData.info.categoria;
@@ -2786,15 +2812,13 @@ selector.style.height = 'auto';
 
                 if (infoSet.url) {
                     // il colore di chi ha vinto il set è un filetto sul tasto (--vinc), non il suo sfondo
+                    // un tasto per set: la lettera di chi lo ha vinto (il suo colore come filetto in basso) e, piccolo, il numero del set
                     buttonsHtml += `
-                        <div class="set-riga">
-                            <div class="set-etichetta">SET ${numSet}</div>
-                            <button class="btn-set vincitore-${vincId}" style="--vinc: ${colorSfondo};"
-                                    title="Set ${numSet}: won by ${winInitial}"
-                                    onclick="gestisciClickReplay(this, '${infoSet.url}')">
-                                ${winInitial}
-                            </button>
-                        </div>`;
+                        <button class="btn-set vincitore-${vincId}" style="--vinc: ${colorSfondo};"
+                                title="Set ${numSet}: won by ${winInitial}" aria-label="Set ${numSet}, won by ${winInitial}"
+                                onclick="gestisciClickReplay(this, '${infoSet.url}')">
+                            <span class="set-num" aria-hidden="true">${numSet}</span>${winInitial}
+                        </button>`;
                 }
             });
             
@@ -2903,7 +2927,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
     try {
         const cleanName = nomeMossa.trim().toLowerCase().replace(/\s+/g, '-').replace(/[.'é]/g, '');
-        const res = await fetch(`https://pokeapi.co/api/v2/move/${cleanName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${cleanName}`, deltaGenDettaglio);
         
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -2937,7 +2961,7 @@ async function caricaStats(pkmName, elementId, natura = '') {
     if (tooltip.dataset.loaded === "true") return;
 
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         
         const statsMap = {
@@ -2997,24 +3021,12 @@ async function caricaStats(pkmName, elementId, natura = '') {
 // Aggiunto "direzione" ai parametri
 async function caricaTipi(pkmName, elementId, direzione) {
     try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pkmName}`);
+        const res = await DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/pokemon/${pkmName}`, deltaGenDettaglio);
         const data = await res.json();
         const container = document.getElementById(elementId);
         if (!container) return;
 
-        const d_types = ["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
-        let effectiveness = {};
-        d_types.forEach(type => effectiveness[type] = 1);
-
-        await Promise.all(data.types.map(async (t) => {
-            const typeRes = await fetch(t.type.url);
-            const typeData = await typeRes.json();
-            const rel = typeData.damage_relations;
-
-            rel.double_damage_from.forEach(type => effectiveness[type.name] *= 2);
-            rel.half_damage_from.forEach(type => effectiveness[type.name] *= 0.5);
-            rel.no_damage_from.forEach(type => effectiveness[type.name] *= 0);
-        }));
+        const effectiveness = await DatiGen.moltiplicatoriContro(data.types.map(t => t.type.name), deltaGenDettaglio);
 
         let result = { x4: [], x2: [], x05: [], x025: [], x0: [] };
         for (let type in effectiveness) {

@@ -233,17 +233,19 @@
 
 </div>
 
-<div id="modal-overlay" onclick="toggleIscrizioneModal()"></div>
+<div id="modal-overlay" class="iscr-velo" onclick="toggleIscrizioneModal()"></div>
 
-<div id="modal-iscrizione">
-   <h3 id="modal-season-name" style="text-transform: uppercase;">---</h3>
-    
-    <div id="modal-season-rules">
+<div id="modal-iscrizione" role="dialog" aria-modal="true" aria-labelledby="modal-season-name">
+    <div class="iscr-finestra">
+        <span class="iscr-chiudi" role="button" aria-label="Close" title="Close" onclick="toggleIscrizioneModal()">&times;</span>
+        <h3 id="modal-season-name">---</h3>
+
+        <div id="modal-season-rules"></div>
+
+        <div class="button-group-modern iscr-azioni">
+            <button id="btn-conferma-iscrizione" class="btn-save">Confirm & Join</button>
+            <button onclick="toggleIscrizioneModal()" class="btn-cancel">Not now</button>
         </div>
-
-    <div class="button-group-modern">
-        <button id="btn-conferma-iscrizione" class="btn-save">Confirm & Join</button>
-        <button onclick="toggleIscrizioneModal()" class="btn-cancel">Not now</button>
     </div>
 </div>
 
@@ -846,6 +848,17 @@ function attivaTooltipFormati(contenitore, listaFormati, mappaRegolamenti) {
     });
 }
 
+// La scadenza delle iscrizioni per il riepilogo: la data e quanto manca ("3 days left"). Senza data valida, niente.
+function descriviScadenzaIscrizioni(deadline, adesso = Date.now()) {
+    const fine = deadline ? new Date(deadline).getTime() : NaN;
+    if (!Number.isFinite(fine)) return null;
+    const data = new Date(fine).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const manca = fine - adesso;
+    if (manca <= 0) return { data, resta: 'closed' };
+    const giorni = Math.floor(manca / 86400000), ore = Math.floor((manca % 86400000) / 3600000);
+    return { data, resta: giorni >= 1 ? `${giorni} day${giorni > 1 ? 's' : ''} left` : `${ore} hour${ore === 1 ? '' : 's'} left` };
+}
+
 async function gestisciAccessoHub(seasonId, status, seasonName) {
     const user = firebase.auth().currentUser;
     const s = status ? status.toLowerCase() : "";
@@ -925,47 +938,33 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
             const daysPerPlayer = countFormati * showdownsPerFormato; // Formati * Showdowns per formato
 
             // Impostiamo il titolo principale (stile "ADD NEW FORMAT")
-            document.getElementById('modal-season-name').style.display = "inline-block";
-            document.getElementById('modal-season-name').innerHTML = `
-                <span class="neubru-title-badge">Register to: ${seasonName}</span>
-            `;
+            document.getElementById('modal-season-name').textContent = `Register to: ${seasonName}`;
 
-            // Generiamo la struttura del modale con le classi CSS
+            // Il riepilogo della stagione: i formati a sinistra, i numeri a destra
+            const teamsPerFormato = Number(info.teams_per_format) || 0;
+            const scadenza = descriviScadenzaIscrizioni(info.deadline);
+            const dato = (etichetta, valore, nota = '', classe = '') =>
+                `<div class="iscr-dato ${classe}"><dt>${etichetta}</dt><dd>${valore}${nota ? `<i>${nota}</i>` : ''}</dd></div>`;
+
             document.getElementById('modal-season-rules').innerHTML = `
-                <div class="neubru-grid">
-                    
-                    <!-- COLONNA DI SINISTRA: FORMATI -->
-                    <div class="neubru-col">
-                        <div class="neubru-content-card">
-                            <span class="neubru-floating-label rotate-left">Formats</span>
-                            <ul class="neubru-format-list">
-                                ${formatiHtml}
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <!-- COLONNA DI DESTRA: STRUTTURA -->
-                    <div class="neubru-col">
-                        
-                        <!-- Box Players -->
-                        <div class="neubru-content-card">
-                            <span class="neubru-floating-label rotate-left">Registered players</span>
-                            <span class="neubru-stat-value">${countIscritti}</span>
-                        </div>
+                <div class="iscr-riepilogo">
+                    <section class="iscr-scheda iscr-formati">
+                        <span class="iscr-etichetta rotate-left">Formats <b>${countFormati}</b></span>
+                        <ul class="neubru-format-list">
+                            ${formatiHtml}
+                        </ul>
+                    </section>
 
-                        <!-- Box Showdowns -->
-                        <div class="neubru-content-card">
-                            <span class="neubru-floating-label rotate-right">Showdowns per format</span>
-                            <span class="neubru-stat-value">${showdownsPerFormato}</span>
-                        </div>
-
-                        <!-- Box Days Per Player (Formati * Showdowns per format) -->
-                        <div class="neubru-content-card">
-                            <span class="neubru-floating-label rotate-right">Showdowns per opponent</span>
-                            <span class="neubru-stat-value">${daysPerPlayer}</span>
-                        </div>
-
-                    </div>
+                    <section class="iscr-scheda iscr-numeri">
+                        <span class="iscr-etichetta rotate-right">The season</span>
+                        <dl class="iscr-dati">
+                            ${dato('Registered players', countIscritti, limit > 0 ? `of ${limit}` : '')}
+                            ${dato('Showdowns per format', showdownsPerFormato)}
+                            ${dato('Showdowns per opponent', daysPerPlayer)}
+                            ${teamsPerFormato > 0 ? dato('Teams per format', teamsPerFormato) : ''}
+                            ${scadenza ? dato('Registrations close', scadenza.data, scadenza.resta, 'iscr-scadenza') : ''}
+                        </dl>
+                    </section>
                 </div>
             `;
 

@@ -77,13 +77,22 @@ export function controllaTeam(testo, regolamento) {
     const sets = Teams.import(testo) || [];
     if (!sets.length) return ['The team is empty or unreadable'];
     const livello = livelloFormato(regolamento);
-    const dex = Dex.forGen(generazioneFormato(regolamento));
+    const gen = generazioneFormato(regolamento);
+    const dex = Dex.forGen(gen);
+    // il simulatore segna "Future" ciò che nella generazione del formato non esiste ancora (Play Rough in Gen 4, Folletto in Gen 5...)
+    const nonEsisteAncora = voce => !!voce && voce.exists && voce.isNonstandard === 'Future';
     const problemi = [];
     for (const set of sets) {
         if ((set.level || 100) !== livello) problemi.push(`${set.species} is level ${set.level || 100} instead of ${livello}`);
         const strumento = dex.items.get(set.item);
         if (!meccanicheAttive(regolamento) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
             problemi.push(`${set.species} holds ${strumento.name}, but this format has no generational mechanics`);
+        }
+        if (nonEsisteAncora(dex.species.get(set.species))) problemi.push(`${set.species} does not exist in Gen ${gen}`);
+        if (gen >= 3 && set.ability && nonEsisteAncora(dex.abilities.get(set.ability))) problemi.push(`${set.species}: the ability ${set.ability} does not exist in Gen ${gen}`);
+        if (nonEsisteAncora(strumento)) problemi.push(`${set.species}: the item ${strumento.name} does not exist in Gen ${gen}`);
+        for (const mossa of set.moves || []) {
+            if (nonEsisteAncora(dex.moves.get(mossa))) problemi.push(`${set.species}: the move ${dex.moves.get(mossa).name} does not exist in Gen ${gen}`);
         }
     }
     return problemi;
