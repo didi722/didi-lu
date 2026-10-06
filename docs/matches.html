@@ -22,10 +22,13 @@
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="badge-team.css">
+<link rel="stylesheet" href="nome-scorrevole.css">
 <script src="dati-gen.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
+<script src="nome-scorrevole.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole'));</script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="tooltip.css">
@@ -805,11 +808,11 @@ async function inizializzaPaginaArchivio() {
         <span class="sd-category-tag">${esc(info.categoria || "OU")}</span>
     </div>
     <div class="sd-card-content">
-        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
+        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
         <div class="sd-result-badge">
             <span class="sd-final-score"><b>${vintiP1}</b><i>:</i><b>${vintiP2}</b></span>
         </div>
-        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
+        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
     </div>
     <div class="sd-card-footer">
         <span class="sd-date-text">${esc(info.data || 'No date')}</span>

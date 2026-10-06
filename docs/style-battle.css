@@ -196,7 +196,7 @@ html[data-modo="fit"] .lato > * { flex-shrink: 0; }
     font: 700 1.7rem 'Josefin Sans', sans-serif;
     line-height: 1; letter-spacing: .01em;
     text-transform: uppercase;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
     transform: rotate(calc(var(--verso) * 4deg));
 }
 html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
@@ -207,7 +207,7 @@ html[data-modo="fit"] .lato-nome { max-width: 100%; font-size: 2rem; }
     padding: 6px 10px 4px;
     background: var(--inchiostro); color: var(--carta);
     font: 700 .78rem 'Josefin Sans', sans-serif; text-transform: uppercase;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
     box-shadow: 4px 4px 0 var(--colore-mio);
     transform: rotate(calc(var(--verso) * -2deg));
 }

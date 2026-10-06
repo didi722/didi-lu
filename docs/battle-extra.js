@@ -829,8 +829,8 @@ function disegnaLati() {
         const nomiTeam = elenco.map(x => x.nome === x.specie ? x.specie : `${x.nome} (${x.specie})`);
         const badgeTeam = SB && sc ? SB.htmlBadgeTeam(S.schede.risultato, sc, nomeTeam) : '';
         box.innerHTML = `
-            <h2 class="lato-nome" title="${esc(nome)}">${esc(nome)}</h2>
-            ${nomeTeam ? `<p class="lato-team">${esc(nomeTeam)}</p>` : ''}
+            <h2 class="lato-nome nome-scorrevole" title="${esc(nome)}">${esc(nome)}</h2>
+            ${nomeTeam ? `<p class="lato-team nome-scorrevole">${esc(nomeTeam)}</p>` : ''}
             ${SB && sc ? SB.htmlScheda(sc) : ''}
             ${badgeTeam}
             <ol class="lato-pkm">${elenco.map((x, i) => `

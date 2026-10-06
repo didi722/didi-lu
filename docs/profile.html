@@ -538,13 +538,15 @@ function voceIscrizione(i) {
     const resto = PP.tempoRimasto(i.scadenza);
     const scadenza = resto === '' ? '' : (resto === null ? 'registration deadline passed' : `closes in ${resto}`);
     const hub = `hub.html?id=${encodeURIComponent(i.stagione)}`;
+    // chi non è ancora iscritto passa dal riepilogo di iscrizione della home (si apre da solo), non dall'hub
+    const iscrizione = `index.html?iscrizione=${encodeURIComponent(i.stagione)}`;
     return i.tipo === 'iscriviti'
         ? h('div', { class: 'pf-voce pf-voce-iscrizione' },
             h('div', { class: 'pf-icona', 'aria-hidden': 'true' }, '★'),
             h('div', { class: 'pf-testo' },
                 h('p', { class: 'pf-riga' }, h('strong', null, i.nome), ' is open for sign-up'),
                 h('p', { class: 'pf-dettagli' }, scadenza || 'You are not registered yet')),
-            h('div', { class: 'pf-azioni' }, collegamento('Sign up', 'pf-primario', hub)))
+            h('div', { class: 'pf-azioni' }, collegamento('Sign up', 'pf-primario', iscrizione)))
         : h('div', { class: 'pf-voce pf-voce-iscrizione' },
             h('div', { class: 'pf-icona', 'aria-hidden': 'true' }, '!'),
             h('div', { class: 'pf-testo' },

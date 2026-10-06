@@ -1,0 +1,22 @@
+/* Nome che scorre (vedi nome-scorrevole.js): un nome troppo lungo per il suo riquadro scorre piano fino alla fine, si ferma, e torna
+   piano all'inizio. Senza puntini di sospensione. Stessa cosa in tutti i temi: cambiano solo i colori degli elementi, non il movimento. */
+.nome-scorrevole {
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+.nome-scorrevole > .ns-testo { display: inline-block; white-space: nowrap; }
+.nome-scorrevole.ns-attivo > .ns-testo {
+    animation: nomeScorrevole var(--ns-durata, 6s) ease-in-out infinite alternate;
+    will-change: transform;
+}
+/* fermo un istante all'inizio e alla fine (16% di un tratto, come QUOTA_FERMA) */
+@keyframes nomeScorrevole {
+    0%, 16% { transform: translate3d(0, 0, 0); }
+    84%, 100% { transform: translate3d(var(--ns-eccesso, 0px), 0, 0); }
+}
+/* chi ha chiesto meno movimento: il nome resta fermo e si taglia con i puntini */
+@media (prefers-reduced-motion: reduce) {
+    .nome-scorrevole.ns-attivo { text-overflow: ellipsis; }
+    .nome-scorrevole.ns-attivo > .ns-testo { animation: none; display: inline; }
+}

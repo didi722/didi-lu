@@ -490,8 +490,7 @@
     border-radius: calc(var(--nb-raggio, 0px) * .5);
     font: 900 .8rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     letter-spacing: var(--nb-spaziatura, .04em);
-    text-overflow: ellipsis;
-    text-transform: uppercase;
+    text-transform: uppercase;      /* il nome lungo scorre (nome-scorrevole.css), niente puntini */
     white-space: nowrap;
 }
 .showdown-summary-card .sd-win {
