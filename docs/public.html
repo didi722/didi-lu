@@ -25,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="temi.js"></script>
     <script src="titoli.js"></script>
+    <script src="sprite-pkm.js"></script>
     <script src="statistiche.js"></script>
     <script src="fiocchi.js"></script>
     <script src="badge-team.js"></script>
@@ -389,10 +390,12 @@ async function initPublicProfile() {
 
         // i badge dell'allenatore si calcolano sui numeri di tutto il sito (una lettura per pagina); senza, restano le medaglie delle serie
         let badgeAllenatore = [];
+        let stagioniVinte = null;     // le stagioni vinte come le contano i badge (dalla classifica di ogni stagione chiusa); senza, il contatore del profilo
         try {
             if (window.BadgeAllenatore && window.Fiocchi) {
                 const r = await BadgeAllenatore.carica(db, playerKey);
                 badgeAllenatore = BadgeAllenatore.guadagnati(r.lista);
+                if (r.dati) stagioniVinte = { conteggio: r.stagioniVinte, elenco: r.elencoStagioniVinte };
             }
         } catch (e) { console.warn('Trainer badges not available:', e); }
 
@@ -414,6 +417,7 @@ async function initPublicProfile() {
             badgeAllenatore,
             personalita,
             stagioni: stagioni || {},
+            stagioniVinte,
             tipi: tipi || {},
             pokemon: pokemon || {},
             teams,
@@ -563,8 +567,9 @@ async function apriDettagli(id) {
 
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                        <img src="${SpritePkm.gif(p.nome)}" 
                              class="modal-sprite clickable-pkm"
+                             onerror="SpritePkm.riserva(this, '${SpritePkm.id(p.nome)}')"
                              onclick="apriPkmDettaglio(${JSON.stringify(p).replace(/"/g, '&quot;')}, '${pkmNameUrl}', ${pIndex})">
                     </div>
 
@@ -1004,7 +1009,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
             <div class="pkm-modal-grid">
                 <div class="area-header">
                     <div id="single-types" class="types-centered"></div>
-                    <img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero">
+                    <img id="pkm-hero-sprite" src="${SpritePkm.gif(pokemonData.nome || pkmNameUrl)}" class="pkm-sprite-hero" onerror="SpritePkm.riserva(this, '${SpritePkm.id(pokemonData.nome || pkmNameUrl)}')">
                     <h2 class="pkm-name-banner">${pokemonData.nome}</h2>
                 </div>
 
@@ -1081,7 +1086,8 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         .then(res => res.json())
         .then(data => {
             const spriteImg = document.getElementById('pkm-hero-sprite');
-            if(spriteImg) spriteImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
+            // la GIF di Showdown c'è già (SpritePkm): quella di PokéAPI non la sostituisce
+            if (spriteImg && spriteImg.dataset.spriteFase) spriteImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
             caricaStats(pkmNameUrl, 'single-stats');
             caricaTipi(pkmNameUrl, 'single-types', '');
         });

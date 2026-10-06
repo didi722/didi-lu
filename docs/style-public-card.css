@@ -1018,6 +1018,17 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 @keyframes pp-tip { from { opacity: 0; translate: 0 6px; } }
 .pp-pagina .pp-tip-su > .neubrutal-tooltip { top: auto; bottom: calc(100% + 12px); }
 
+/* il suggerimento di una targhetta sul palco: una copia fuori dalla scena (che taglia i fumetti), ferma vicino alla targhetta */
+.pp-pagina > .neubrutal-tooltip.pp-tip-fisso {
+    display: block;
+    position: fixed;
+    left: var(--tx, 8px);
+    top: var(--ty, 8px);
+    z-index: 10003;
+    transform: rotate(-1.5deg);
+    animation: pp-tip 0.14s ease-out;
+}
+
 .pp-pagina .pp-tip-host:focus-visible { outline: 3px dashed #000; outline-offset: 4px; }
 
 .pp-tip > * { display: block; }

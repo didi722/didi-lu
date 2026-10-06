@@ -394,10 +394,19 @@ export function calcolaStat(baseStats, set, livello, gen = 8) {
     return out;
 }
 
+// La specie che il Pokémon ha DAVVERO adesso: le forme di battaglia temporanee (Minior che rompe lo Scudo con Shields Down, Mimikyu, Castform...)
+// sono "formechange": non cambiano speciesForme ma stanno nei volatili del client. Le stat vere (quelle che vede il proprietario, dalla richiesta
+// del server) sono quelle di quella forma: se si calcolassero dalla speciesForme, chi guarda in open sheet vedrebbe un altro Minior (Core invece di Meteor).
+export function specieEffettiva(clientPokemon, setSpecie) {
+    const fc = clientPokemon?.volatiles?.formechange;
+    const temporanea = Array.isArray(fc) ? fc[1] : (typeof fc === 'string' ? fc : '');
+    return (typeof temporanea === 'string' && temporanea) || clientPokemon?.speciesForme || setSpecie;
+}
+
 // Oggetto con la stessa forma dei "serverPokemon" della richiesta di Showdown
-function serverDaSet(battle, set, clientPokemon) {
+export function serverDaSet(battle, set, clientPokemon) {
     const dex = battle.dex;
-    const specie = dex.species.get(clientPokemon?.speciesForme || set.species);
+    const specie = dex.species.get(specieEffettiva(clientPokemon, set.species));
     const livello = set.level || clientPokemon?.level || 100;
     const stats = calcolaStat(specie.baseStats, set, livello, battle.gen);
     const maxhp = stats.hp;
@@ -420,8 +429,8 @@ function serverDaSet(battle, set, clientPokemon) {
         stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
         moves: (set.moves || []).map(idDi),
         baseAbility: idDi(set.ability),
-        ability: idDi(set.ability),
-        item: consumato ? '' : idDi(set.item),
+        ability: idDi(clientPokemon?.ability || set.ability),
+        item: clientPokemon?.item ? idDi(clientPokemon.item) : (consumato ? '' : idDi(set.item)),
         pokeball: '', teraType: set.teraType || '', terastallized: '',
         hpApprossimato: !!clientPokemon,
         set,
@@ -789,7 +798,7 @@ function sezioneMosse(tt, clientPokemon, serverPokemon, attivo, daSheet) {
 const POKEBALL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
 function slugSprite(specie) {
     const sp = window.Dex?.species?.get?.(specie);
-    return sp?.spriteid || String(specie ?? '').toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, '');
+    return sp?.spriteid || (window.SpritePkm ? window.SpritePkm.id(specie) : String(specie ?? '').toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, ''));
 }
 function sprite(specie) {
     return `https://play.pokemonshowdown.com/sprites/ani/${slugSprite(specie)}.gif`;

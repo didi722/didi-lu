@@ -33,6 +33,7 @@
 <script src="note-team.js"></script>
 <script src="formato-pool.js"></script>
 <script src="dati-gen.js"></script>
+<script src="sprite-pkm.js"></script>
 <script src="controllo-team.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
@@ -940,7 +941,7 @@ async function renderizza(lista) {
 
                     const pkmNameUrl = nomePkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                     const itemNameUrl = strumentoPkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                    const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                    const pkmSprite = SpritePkm.gif(nomePkm);
                     const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
                     const teamIdSanitized = (team.id || '').toString().replace(/-/g, '');
@@ -956,7 +957,7 @@ async function renderizza(lista) {
                         <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]};"` : ''}
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
-                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">
+                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
                                 </div>
                             <div class="pkm-info">
                                 <span class="pkm-name">${nomePkm}</span>
@@ -1169,7 +1170,7 @@ async function apriDettagli(id, opzioni = {}) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-<img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
+<img src="${SpritePkm.gif(p.nome)}" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
                                                         <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}', '${p.natura || ''}')">${p.nome}</strong>
@@ -1505,12 +1506,12 @@ async function applicaColoreBordo(pokemonNome, elemento) {
     }
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1546,7 +1547,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         <div class="pkm-modal-grid">
             <div class="area-header">
                 <div id="single-types" class="types-centered"></div>
-<img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
+<img id="pkm-hero-sprite" src="${SpritePkm.gif(pokemonData.nome || pkmNameUrl)}" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(pokemonData.nome || pkmNameUrl)}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
             </div>
             <div class="area-weakness pkm-panel">
                 <h4 class="panel-title">DEFENSE</h4>
@@ -1615,7 +1616,8 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         .then(res => res.json())
         .then(data => {
             const heroSprite = document.getElementById('pkm-hero-sprite');
-            if (heroSprite) {
+            // la GIF di Showdown c'è già (SpritePkm): quella di PokéAPI serve solo se è mancata (gestisciErroreSprite l'ha già provata)
+            if (heroSprite && heroSprite.dataset.spriteFase) {
                 heroSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
             }
                         caricaStats(pkmNameUrl, 'single-stats', pokemonData.natura);
@@ -4137,12 +4139,12 @@ let listaFiltrata = grid.originalPokemonList.filter(pkm => pokemonCorrispondeRic
 
             // Stessa normalizzazione e stesso fallback usati in renderizza()
             const pkmNameUrl = String(pkm.name || pkm.id).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-            const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+            const gifUrl = SpritePkm.gif(pkm.name || pkm.id);
 
             card.innerHTML = `
                 <div class="helper-pkm-gif-container">
                     <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
-                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">
+                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(pkm.name || pkm.id)}')">
                 </div>
                 <div class="helper-pkm-name"><span>${pkm.name}</span></div>
             `;

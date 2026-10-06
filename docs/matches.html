@@ -28,6 +28,7 @@
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="nome-scorrevole.js"></script>
+<script src="sprite-pkm.js"></script>
 <script src="ordine-showdown.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole, .cl-nome'));</script>
 <script src="dettagli.js" defer></script>
@@ -1237,11 +1238,9 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visi
                 <div class="modal-team-hover-tooltip" style="background-color: ${coloreDelPlayer} !important; transform: translateX(-50%) rotate(${gradiRotazione}deg) !important;">
                     <div class="pkm-grid">
                         ${pokemonList.map((p, pidx) => {
-                            let pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            if (pkmNameUrl === 'mr-mime') pkmNameUrl = 'mrmime'; 
-                            
+                            const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                             const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                            const pkmSprite = SpritePkm.gif(p.nome);
                             const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                             const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${pidx}`;
                             
@@ -2078,24 +2077,14 @@ function generaHtmlGifs(nomeTeam, categoria) {
     return Object.values(teamTrovato.pokemon).map(p => {
         if (!p || !p.nome || p.nome === "None") return "";
         
-        // 1. Pulizia standard dello slug per Showdown
-        let slug = p.nome.toLowerCase().trim()
-                         .replace(/\s+/g, '')
-                         .replace(/[.'é’%]/g, '');
-
-        // 2. Mappatura forme speciali per i server delle animazioni di Showdown
-        if (slug === 'mimikyu') slug = 'mimikyu-disguised';
-        if (slug === 'giratina') slug = 'giratina-altered';
-        if (slug === 'deoxys') slug = 'deoxys-normal';
-        if (slug === 'shaymin') slug = 'shaymin-land';
-        if (slug === 'aegislash') slug = 'aegislash-shield';
-
-        // 3. Puntiamo alla cartella /ani/ di Showdown
+        // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike); le forme che Showdown
+        // chiama solo col nome base (Mimikyu, Giratina...) hanno già la loro GIF con quel nome
+        const id = SpritePkm.id(p.nome);
         return `
-            <img src="https://play.pokemonshowdown.com/sprites/ani/${slug}.gif" 
+            <img src="${SpritePkm.gif(p.nome)}" 
                  class="mini-gif" 
-                 alt="${slug}"
-                 onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/dex/${slug}.png';">
+                 alt="${id}"
+                 onerror="SpritePkm.riserva(this, '${id}')">
         `;
     }).join('');
 }
@@ -2244,12 +2233,12 @@ function formattaEffettoNatura(natura) {
     return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -2312,9 +2301,9 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                        <img src="${SpritePkm.gif(p.nome)}" 
                              class="modal-sprite clickable-pkm" 
-                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
+                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
@@ -2894,11 +2883,7 @@ async function caricaTipi(pkmName, elementId, direzione) {
 // Funzione globale per generare l'URL della GIF
 function getGifUrl(pName) {
     if (!pName) return "";
-    // Showdown usa nomi puliti senza spazi e punteggiatura
-    const urlName = pName.toLowerCase()
-                         .replace(/\s+/g, '') // Rimuove gli spazi
-                         .replace(/[.'é’]/g, ''); // Rimuove punteggiatura
-    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+    return SpritePkm.gif(pName);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
 }
 
 

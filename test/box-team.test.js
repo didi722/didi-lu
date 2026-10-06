@@ -88,7 +88,8 @@ function eseguiRenderizza(lista, { bloccati = [], grid } = {}) {
         applicaColoreBordo: () => {},
         setTimeout: () => 0,
         EFFETTI_NATURE: {},
-        formattaEffettoNatura: () => ''
+        formattaEffettoNatura: () => '',
+        SpritePkm: require('../docs/sprite-pkm.js')     // il nome della GIF lo decide la regola condivisa
     };
     const renderizza = new Function(...Object.keys(ambiente), sorgente)(...Object.values(ambiente));
     return renderizza(lista).then(() => ({ griglia, finestra, html: griglia.innerHTML }));
@@ -136,7 +137,7 @@ test('renderizza: una tessera il cui colore è già noto nasce colorata (niente 
     const griglia = { innerHTML: '', dataset: {}, classList: { toggle() {} } };
     const finestra = { nomiTeamBloccati: new Set(), coloriPokemonNoti: { 'Calyrex-Shadow': '#ff5599' } };
     const sorgente = box.slice(inizio, box.indexOf('async function caricaInfoAbilita')) + '\nreturn renderizza;';
-    const amb = { window: finestra, document: { getElementById: () => griglia }, caricaTeamBloccati: async () => {}, applicaColoreBordo() {}, setTimeout: () => 0, formattaEffettoNatura: () => '' };
+    const amb = { window: finestra, document: { getElementById: () => griglia }, caricaTeamBloccati: async () => {}, applicaColoreBordo() {}, setTimeout: () => 0, formattaEffettoNatura: () => '', SpritePkm: require('../docs/sprite-pkm.js') };
     await new Function(...Object.keys(amb), sorgente)(...Object.values(amb))([squadra('t1', 'A', 1, 0)]);
     assert.match(griglia.innerHTML, /id="box-t1-0" style="--tipo: #ff5599;"/);
     assert.ok(!/id="box-t1-1" style=/.test(griglia.innerHTML), 'il Pokémon di cui non si sa il tipo non ha stile');
