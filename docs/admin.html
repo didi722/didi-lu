@@ -304,6 +304,7 @@ async function caricaStagioni() {
                         <button class="btn-small btn-status-toggle" title="Cambia Stato" onclick="ciclaStatoStagione('${id}', '${statusAttuale}')">
                             ${statusIcons[statusAttuale] || '🔄'}
                         </button>
+                        ${String(statusAttuale).toLowerCase() === 'closed' ? `<button class="btn-small" title="Recalculate standings and winner" onclick="ricalcolaVincitoreStagione('${id}')">🏆</button>` : ''}
                         <button class="btn-small" onclick="apriModaleEdit('${id}')">✏️</button>
                         <button class="btn-small" onclick="eliminaStagioneCorrente('${id}')">🗑️</button>
                     </td>
@@ -330,17 +331,35 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
         await db.ref(`seasons/${idStagione}/info/status`).set(nuovoStato);
         console.log(`Stagione ${idStagione} passata a: ${nuovoStato}`);
 
-        // 2. SE IL NUOVO STATO È "CLOSED", CALCOLA E SALVA IL VINCITORE
+        // 2. SE IL NUOVO STATO È "CLOSED", CALCOLA E SALVA IL VINCITORE (con la classifica rifatta da capo)
         if (nuovoStato === 'closed') {
             console.log(`CLOSED state detected for ${idStagione}. Calculating winner...`);
+            await aggiornaLeaderboard(idStagione);
             const vincitore = await salvaVincitoreStagione(idStagione);
             alert(`Season Closed! Winner saved: ${vincitore}`);
+        } else if (String(statoCorrente).toLowerCase() === 'closed') {
+            // la stagione non è più chiusa: niente vincitore, e niente stagione vinta nei profili
+            await ritiraVincitoreStagione(idStagione);
+            await db.ref(`seasons/${idStagione}/info`).update({ winner: null, chiusuraAutomatica: null, chiusaIl: null });
         }
         
         caricaStagioni(); 
     } catch (e) {
         console.error("Error during status change:", e);
         alert("Unable to update the status.");
+    }
+}
+
+// Rifà la classifica e il vincitore di una stagione già chiusa (utile se era stata chiusa prima dell'ultimo showdown)
+async function ricalcolaVincitoreStagione(idStagione) {
+    try {
+        await aggiornaLeaderboard(idStagione);
+        const vincitore = await salvaVincitoreStagione(idStagione);
+        alert(`Standings recalculated. Winner: ${vincitore}`);
+        caricaStagioni();
+    } catch (e) {
+        console.error("Error recalculating the winner:", e);
+        alert("Unable to recalculate the standings.");
     }
 }
 
@@ -720,99 +739,7 @@ async function eliminaStagioneCorrente(idDaEliminare) {
     }
 }
 
-async function salvaVincitoreStagione(seasonId) {
-    const seasonRef = db.ref(`seasons/${seasonId}`);
-    const snapshot = await seasonRef.once('value');
-    const seasonData = snapshot.val();
-
-    if (!seasonData || !seasonData.leaderboard) {
-        console.error("Leaderboard non trovata per la stagione:", seasonId);
-        return "---";
-    }
-
-    const info = seasonData.info || {};
-    const lb = seasonData.leaderboard;
-    const showdowns = seasonData.showdowns || {};
-
-    // --- A. CALCOLO DATE (START & END basati sugli Showdown) ---
-    let startDate = "N/A";
-    let endDate = "N/A"; 
-
-    const dateShowdown = [];
-    Object.keys(showdowns).forEach(sdId => {
-        if (showdowns[sdId].info && showdowns[sdId].info.data) {
-            dateShowdown.push(showdowns[sdId].info.data);
-        }
-    });
-
-    if (dateShowdown.length > 0) {
-        // Ordiniamo le date: dalla più vecchia alla più recente
-        dateShowdown.sort((a, b) => {
-            const dateA = new Date(a.split('/').reverse().join('-'));
-            const dateB = new Date(b.split('/').reverse().join('-'));
-            return dateA - dateB;
-        });
-
-        startDate = dateShowdown[0]; // Il primo showdown giocato
-        endDate = dateShowdown[dateShowdown.length - 1]; // L'ultimo showdown giocato
-    }
-
-    // --- B. ORDINAMENTO PARTECIPANTI ---
-    const nomiPartecipanti = Object.keys(lb);
-    const classifica = nomiPartecipanti.map(name => {
-        const d = lb[name];
-        return {
-            name: name,
-            dbPath: name.toLowerCase(),
-            points: Number(d.points || 0),
-            sdWon: Number(d.sdWon || 0),
-            won: Number(d.won || 0)
-        };
-    });
-
-    classifica.sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        if (b.sdWon !== a.sdWon) return b.sdWon - a.sdWon;
-        return b.won - a.won;
-    });
-
-    // --- C. AGGIORNAMENTO DI TUTTI I PROFILI ---
-    for (let i = 0; i < classifica.length; i++) {
-        const p = classifica[i];
-        const rank = i + 1;
-        const isWinner = (rank === 1 && p.points > 0);
-
-        const playerStatsRef = db.ref(`players/${p.dbPath}/stats/seasons`);
-
-        try {
-            const historySnap = await playerStatsRef.child(`history/${seasonId}`).once('value');
-            const wasAlreadyWinner = historySnap.exists() && historySnap.val().rank === 1;
-
-            // Aggiornamento History con seasonId come chiave
-            await playerStatsRef.child(`history/${seasonId}`).set({
-                name: info.name || seasonId,
-                startdate: startDate,
-                enddate: endDate, // Ora è la data dell'ultimo showdown
-                rank: rank
-            });
-
-            if (isWinner && !wasAlreadyWinner) {
-                await playerStatsRef.child('won').transaction((current) => (current || 0) + 1);
-            } else if (!isWinner && wasAlreadyWinner) {
-                await playerStatsRef.child('won').transaction((current) => Math.max(0, (current || 1) - 1));
-            }
-            
-            console.log(`Profilo aggiornato per: ${p.dbPath} (Rank: ${rank})`);
-        } catch (err) {
-            console.error(`Errore nel salvataggio per ${p.dbPath}:`, err);
-        }
-    }
-
-    const winnerName = classifica[0] && classifica[0].points > 0 ? classifica[0].name : "Nessun Vincitore";
-    await seasonRef.child('info').update({ winner: winnerName });
-
-    return winnerName;
-}
+// salvaVincitoreStagione(seasonId) sta in risultati-match.js: è la stessa che chiude la stagione da sola quando tutti hanno giocato tutto
 
 function validaMezzora(input) {
     const dataSelezionata = new Date(input.value);

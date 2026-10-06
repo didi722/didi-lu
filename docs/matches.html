@@ -1701,30 +1701,11 @@ async function eliminaShowdown(sdId) {
         console.log(`Showdown ${sdId} rimosso. Avvio ricalcolo statistiche...`);
 
 
-        // ==========================================
-        // 🔄 LOGICA: RIPRISTINO STATO PLAYING SU ELIMINAZIONE GIORNATA
-        // ==========================================
-        const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
-        const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-        
-        const stagioneInfo = snapStagioneInfo.val() || {};
-        const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-        // Se la stagione è attualmente 'closed'
-        if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
-            const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
-            const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-
-            // Se i giorni effettivi sono inferiori ai total_days previsti, riapriamo la stagione.
-            if (numeroShowdownAttuali < totalDaysPrevisti) {
-                // Aggiorna lo stato su Firebase riportandolo su 'playing'
-                await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
-                console.log(`La stagione ${stagione} è stata riaperta e impostata su PLAYING.`);
-                
-                alert("⚠️ Info: Having deleted a complete Showdown, the season has been reopened!");
-            }
+        // Una stagione chiusa DA SOLA (tutti gli showdown giocati) a cui manca di nuovo uno showdown torna "playing", senza vincitore
+        if (await riapriStagioneSeIncompleta(stagione)) {
+            console.log(`La stagione ${stagione} è stata riaperta e impostata su PLAYING.`);
+            alert("⚠️ Info: Having deleted a complete Showdown, the season has been reopened!");
         }
-        // ==================================
 
 
         // 3. Ricalcolo Leaderboard e Statistiche Globali
@@ -3545,51 +3526,11 @@ async function eliminaMatch(showdownId, matchNum) {
             await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
 
 
-            // ==========================================
-            // 🔥 NUOVA LOGICA: RIPRISTINO STATO PLAYING SE INCOMPLETO (CORRETTA)
-            // ==========================================
-            const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
-            const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-            
-            const stagioneInfo = snapStagioneInfo.val() || {};
-            const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-            // Se la stagione è attualmente 'closed' e abbiamo impostato dei giorni totali
-            if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
-                const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-                
-                // Ordiniamo le chiavi degli showdown inseriti (es: ["day1", "day2", "day3"])
-                const chiaviShowdowns = Object.keys(tuttiShowdowns).sort();
-                const numeroShowdownAttuali = chiaviShowdowns.length;
-                
-                let ultimoShowdownIncompleto = false;
-
-                if (numeroShowdownAttuali === totalDaysPrevisti) {
-                    // Identifichiamo l'ID dell'ultimo showdown inserito in ordine temporale/alfabetico
-                    const ultimoShowdownId = chiaviShowdowns[chiaviShowdowns.length - 1];
-                    
-                    // Contiamo quanti match REALI sono rimasti dentro l'ultimo giorno dopo la rimozione
-                    // Se stiamo cancellando proprio dall'ultimo giorno, usiamo la lunghezza aggiornata locale (matchesArray)
-                    const matchUltimoDay = (showdownId === ultimoShowdownId) 
-                        ? matchesArray.length 
-                        : (tuttiShowdowns[ultimoShowdownId]?.matches ? Object.keys(tuttiShowdowns[ultimoShowdownId].matches).length : 0);
-
-                    if (matchUltimoDay < 3) {
-                        ultimoShowdownIncompleto = true;
-                    }
-                }
-
-                // Se mancano showdown sul totale, OPPURE se siamo arrivati al totale ma l'ultimo è stato "azzoppato" (< 3 match)
-                if (numeroShowdownAttuali < totalDaysPrevisti || ultimoShowdownIncompleto) {
-                    
-                    // Riporta lo stato su playing in modo atomico
-                    await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
-                    console.log(`La stagione ${stagione} è tornata in stato PLAYING a causa dell'eliminazione del match.`);
-                    
-                    alert("⚠️ Warning: The last showdown is no longer complete (requires 3 matches). The season status has been reset to PLAYING!");
-                }
+            // Una stagione chiusa DA SOLA (tutti gli showdown giocati) a cui manca di nuovo un match torna "playing", senza vincitore
+            if (await riapriStagioneSeIncompleta(stagione)) {
+                console.log(`La stagione ${stagione} è tornata in stato PLAYING a causa dell'eliminazione del match.`);
+                alert("⚠️ Warning: The last showdown is no longer complete (requires 3 matches). The season status has been reset to PLAYING!");
             }
-            // ==========================================
 
 
             // --- 4. SINCRONIZZAZIONE STATISTICHE ---
@@ -3994,7 +3935,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 Showdowns/Format:<strong> ${info.showdowns_per_format}</strong>
             </div>
             <div class="modal-info-box">
-                Total Matches: <strong>${info.total_days} </strong>
+                Showdowns vs each opponent: <strong>${(Number(info.showdowns_per_format) || 0) * (info.selected_formats ? Object.values(info.selected_formats).length : 0)} </strong>
             </div>
         </div>
     </div>

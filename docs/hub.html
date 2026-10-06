@@ -1512,7 +1512,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 Showdowns/Format:<strong> ${info.showdowns_per_format}</strong>
             </div>
             <div class="modal-info-box">
-                Total Matches: <strong>${info.total_days} </strong>
+                Showdowns vs each opponent: <strong>${(Number(info.showdowns_per_format) || 0) * (info.selected_formats ? Object.values(info.selected_formats).length : 0)} </strong>
             </div>
         </div>
     </div>

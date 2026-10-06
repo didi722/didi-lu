@@ -513,11 +513,8 @@ function caricaStagioniHome() {
 
             let status = (info.status || "open").toLowerCase();
             if (status === "open" && info.deadline && new Date() >= new Date(info.deadline)) status = "playing";
-            if (status === "playing") {
-                const totalDays = Number(info.total_days || 0);
-                const count = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
-                if (totalDays > 0 && count >= totalDays) status = "closed";
-            }
+            // "closed" lo scrive il sito quando ogni giocatore ha giocato tutti gli showdown contro tutti (risultati-match.js): niente più stato
+            // dedotto dal numero di showdown aperti, che chiudeva la stagione prima che l'ultimo showdown fosse giocato
 
             if (nameEl) nameEl.innerText = info.name || "Season " + item.key;
             if (anchor) {
