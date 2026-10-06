@@ -110,7 +110,7 @@ test('le barre aggiunte ai replay di Showdown sono quelle del replay del sito', 
 
 // ---------- file condivisi: due copie identiche ----------
 test('docs/ e functions/ hanno la stessa copia dei file condivisi', () => {
-    for (const nome of ['risultati-match.js', 'replay-sito.js']) {
+    for (const nome of ['risultati-match.js', 'replay-sito.js', 'esito-set.js']) {
         assert.equal(leggi(`docs/${nome}`), leggi(`functions/${nome}`), `${nome} è diverso tra docs/ e functions/: copia quello che hai modificato sull'altro`);
     }
 });

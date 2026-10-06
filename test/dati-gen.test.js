@@ -235,6 +235,7 @@ test('i file delta coincidono con il simulatore (specie, mosse e tabella dei tip
         let controllate = 0;
         for (const s of dex.species.all()) {
             if (!s.exists || s.num <= 0 || s.gen > gen) continue;
+            if (s.isNonstandard === 'Future') continue;      // Leggende Arceus in Gen 8: dati provvisori nel simulatore, valgono quelli di oggi
             const b = oggi.species.get(s.id);
             if (!b.exists) continue;
             controllate++;
@@ -297,48 +298,11 @@ test('box.html: il Team Builder, i pool, il dettaglio dei team e la validazione 
     const validatore = box.slice(box.indexOf('async function validaTeamDinamico'), box.indexOf('function validaSovrapposizioneTeam'));
     assert.match(validatore, /await validaCoerenzaGenerazione\(teamDatiPokeAPI, regolamento\)/);
     assert.match(validatore, /validaMosseDuplicate[\s\S]*validaCoerenzaGenerazione[\s\S]*if \(regolamento\.restrizioni\)/, 'vale anche per Anything Goes: sta fuori dal blocco dei controlli standard');
-    assert.match(box, /DatiGen\.controllaSet\(/);
+    assert.match(box, /ControlloTeam\.problemiDelTeam\(sets, regole, fonti\)/, 'il Box usa la regola condivisa (controllo-team.js), che a sua volta chiama DatiGen.controllaSet');
+    assert.match(fs.readFileSync(path.join(DOCS, 'controllo-team.js'), 'utf8'), /DatiGen\.controllaSet\(/);
 });
 
-// ---------- il controllo prima di giocare (server e simulatore del sito) ----------
-const { caricaTeamSito } = require('./ayuda-sim.js');
-const TEAM_GEN4 = `Mawile @ Leftovers
-Ability: Sheer Force
-Level: 100
-- Play Rough
-- Iron Head
-
-Garchomp @ Heavy-Duty Boots
-Ability: Rough Skin
-Level: 100
-- Earthquake`;
-
-test('prima di giocare: abilità, strumenti, mosse e Pokémon che nella generazione del formato non esistono ancora fanno rifiutare il team', async () => {
-    const { controllaTeam } = await caricaTeamSito();
-    const reg = gen => ({ genRuleValue: gen, genRuleType: 'up_to', strutturaSito: 'custom', baseTier: 'OU' });
-    const g4 = controllaTeam(TEAM_GEN4, reg(4));
-    assert.deepEqual(g4, [
-        'Mawile: the ability Sheer Force does not exist in Gen 4',
-        'Mawile: the move Play Rough does not exist in Gen 4',
-        'Garchomp: the item Heavy-Duty Boots does not exist in Gen 4'
-    ]);
-    assert.deepEqual(controllaTeam(TEAM_GEN4, reg(9)), []);
-    assert.ok(controllaTeam('Garchomp\nAbility: Sand Veil\n- Earthquake', reg(3)).includes('Garchomp does not exist in Gen 3'));
-    // Gen 1-2: niente abilità, quindi niente controllo sulle abilità
-    assert.deepEqual(controllaTeam('Alakazam\nAbility: Magic Guard\n- Psychic', reg(2)), []);
-});
-
-test('il server controlla le stesse cose, con gli stessi criteri (functions/partita.js è la copia di docs/team-sito.js)', () => {
-    const server = fs.readFileSync(path.join(__dirname, '..', 'functions', 'partita.js'), 'utf8');
-    const sito = fs.readFileSync(path.join(DOCS, 'team-sito.js'), 'utf8');
-    for (const [nome, testo] of [['server', server], ['sito', sito]]) {
-        assert.match(testo, /voce\.exists && voce\.isNonstandard === 'Future'/, nome);
-        assert.match(testo, /nonEsisteAncora\(dex\.species\.get\(set\.species\)\)/, nome);
-        assert.match(testo, /gen >= 3 && set\.ability && nonEsisteAncora\(dex\.abilities\.get\(set\.ability\)\)/, nome);
-        assert.match(testo, /nonEsisteAncora\(strumento\)/, nome);
-        assert.match(testo, /nonEsisteAncora\(dex\.moves\.get\(mossa\)\)/, nome);
-    }
-});
+// ---------- il controllo prima di giocare: test/controllo-team.test.js (stessa regola di Box, simulatore e server) ----------
 
 test('moltiplicatoriContro: le debolezze di un Pokémon con la tabella dei tipi della sua generazione', async () => {
     // le relazioni di PokeAPI sono di oggi: Acciaio non resiste a Spettro e Buio, Folletto esiste

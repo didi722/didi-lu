@@ -24,8 +24,9 @@ function caricaMotoreLocale() {
             const cartella = fs.mkdtempSync(path.join(os.tmpdir(), 'motore-debug-'));
             fs.writeFileSync(path.join(cartella, 'pkmn-sim.mjs'), leggi('pkmn-sim.js'));
             fs.writeFileSync(path.join(cartella, 'nomi-unici.mjs'), leggi('nomi-unici.js'));
+            fs.writeFileSync(path.join(cartella, 'esito-set.mjs'), leggi('esito-set.js'));
             fs.writeFileSync(path.join(cartella, 'motore-battaglia.mjs'), leggi('motore-battaglia.js')
-                .replace("'./pkmn-sim.js'", "'./pkmn-sim.mjs'").replace("'./nomi-unici.js'", "'./nomi-unici.mjs'"));
+                .replace("'./pkmn-sim.js'", "'./pkmn-sim.mjs'").replace("'./nomi-unici.js'", "'./nomi-unici.mjs'").replace("'./esito-set.js'", "'./esito-set.mjs'"));
             return import(pathToFileURL(path.join(cartella, 'motore-battaglia.mjs')).href);
         })();
     }

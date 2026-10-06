@@ -17,7 +17,7 @@
 //   {
 //     v: 3,
 //     turni: 9,                    // ultimo turno
-//     vincitore: 'p1' | 'p2' | '', // '' = pareggio o log incompleto
+//     vincitore: 'p1' | 'p2' | '', // '' = log incompleto (i pareggi non esistono: vince chi cade per ultimo, esito-set.js)
 //     p1: {
 //       nome: 'Didi',
 //       portati: 4,                // Pokémon portati (4 su 6 nei formati con team preview)
@@ -44,9 +44,9 @@
 //   }
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./azioni-mosse'));
-    else radice.StatisticheSet = fabbrica(radice.AzioniMosse);
-})(typeof self !== 'undefined' ? self : this, function (AzioniMosse) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./azioni-mosse'), require('./esito-set'));
+    else radice.StatisticheSet = fabbrica(radice.AzioniMosse, radice.EsitoSet);
+})(typeof self !== 'undefined' ? self : this, function (AzioniMosse, EsitoSet) {
     'use strict';
 
     const VERSIONE = 3;      // 2: aggiunto "sceso" (chi è entrato davvero in campo); 3: aggiunte le "azioni" di ogni lato
@@ -104,7 +104,9 @@
      * @param {boolean} [opzioni.debug]  aggiunge al risultato l'elenco dei KO con la causa (per i test)
      */
     function analizzaSet(log, opzioni = {}) {
-        const righe = Array.isArray(log) ? log : String(log || '').split('\n');
+        // i pareggi non esistono: un log che finisce in "|tie" vale come una vittoria di chi è caduto per ultimo (esito-set.js)
+        const grezze = Array.isArray(log) ? log : String(log || '').split('\n');
+        const righe = EsitoSet ? EsitoSet.risolviPareggio(grezze) : grezze;
 
         const S = {
             nomi: { p1: '', p2: '' },

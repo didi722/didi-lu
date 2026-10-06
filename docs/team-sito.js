@@ -8,6 +8,8 @@
 // =====================================================
 
 import { Teams, Dex } from './pkmn-sim.js';
+import './dati-gen.js';          // self.DatiGen: i dati per generazione (gli stessi del Box)
+import './controllo-team.js';    // self.ControlloTeam: la regola per generazione, quella del Box e del server
 
 
 // -----------------------------------------------------
@@ -70,32 +72,24 @@ export function meccanicheAttive(regolamento) {
     return regolamento.generationalMechanics === true;
 }
 
+// I dati della generazione del formato (null per la Gen 9 o se non si caricano: restano quelli di oggi)
+export function caricaDeltaFormato(regolamento) {
+    return self.DatiGen.carica(generazioneFormato(regolamento)).catch(() => null);
+}
+
 // Problemi che impediscono di giocare con un team. Il simulatore non
 // corregge nulla: se un team non è conforme, non si gioca.
-// (Stesso controllo che fa il server in functions/partita.js.)
-export function controllaTeam(testo, regolamento) {
+// Il controllo è lo STESSO del Box (quando salva un team) e del server (functions/partita.js): vedi controllo-team.js.
+// `delta` = caricaDeltaFormato(regolamento) (le abilità delle specie di allora).
+export function controllaTeam(testo, regolamento, delta = null) {
     const sets = Teams.import(testo) || [];
     if (!sets.length) return ['The team is empty or unreadable'];
-    const livello = livelloFormato(regolamento);
-    const gen = generazioneFormato(regolamento);
-    const dex = Dex.forGen(gen);
-    // il simulatore segna "Future" ciò che nella generazione del formato non esiste ancora (Play Rough in Gen 4, Folletto in Gen 5...)
-    const nonEsisteAncora = voce => !!voce && voce.exists && voce.isNonstandard === 'Future';
-    const problemi = [];
-    for (const set of sets) {
-        if ((set.level || 100) !== livello) problemi.push(`${set.species} is level ${set.level || 100} instead of ${livello}`);
-        const strumento = dex.items.get(set.item);
-        if (!meccanicheAttive(regolamento) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
-            problemi.push(`${set.species} holds ${strumento.name}, but this format has no generational mechanics`);
-        }
-        if (nonEsisteAncora(dex.species.get(set.species))) problemi.push(`${set.species} does not exist in Gen ${gen}`);
-        if (gen >= 3 && set.ability && nonEsisteAncora(dex.abilities.get(set.ability))) problemi.push(`${set.species}: the ability ${set.ability} does not exist in Gen ${gen}`);
-        if (nonEsisteAncora(strumento)) problemi.push(`${set.species}: the item ${strumento.name} does not exist in Gen ${gen}`);
-        for (const mossa of set.moves || []) {
-            if (nonEsisteAncora(dex.moves.get(mossa))) problemi.push(`${set.species}: the move ${dex.moves.get(mossa).name} does not exist in Gen ${gen}`);
-        }
-    }
-    return problemi;
+    const regole = {
+        gen: generazioneFormato(regolamento), livello: livelloFormato(regolamento), meccaniche: meccanicheAttive(regolamento),
+        controllaSpecie: String(regolamento.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes',
+        delta
+    };
+    return self.ControlloTeam.problemiDeiSetShowdown(sets, regole, Dex);
 }
 
 
@@ -158,6 +152,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
     if (!regolamento) throw new Error(`Ruleset "${categoria}" not found.`);
 
     const livello = livelloFormato(regolamento);
+    const delta = await caricaDeltaFormato(regolamento);
     const giocatori = {};
 
     for (const [lato, nome] of [['p1', info.player1], ['p2', info.player2]]) {
@@ -177,7 +172,7 @@ export async function caricaMatch(db, { stagione, showdown, match }) {
             const sorgente = (iscritto && iscritto.pokemon) ? iscritto : (dalBox || {});
             const testoSalvato = (iscritto && iscritto.testoShowdown) || (dalBox && dalBox.testoShowdown) || '';
             const testo = testoShowdownDaTeam({ ...sorgente, testoShowdown: testoSalvato }, livello);
-            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento) };
+            return { nome: nomeT, testo, completo: !!testoSalvato, problemi: controllaTeam(testo, regolamento, delta) };
         }).filter(t => t.nome && t.testo);
 
            giocatori[lato] = { nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', teams };    }
@@ -227,6 +222,7 @@ export async function caricaPerProva(db, utente, chiaveTeam) {
     if (!regolamento) throw new Error("This team's format was not found.");
 
     const livello = livelloFormato(regolamento);
+    const delta = await caricaDeltaFormato(regolamento);
     const testo = testoShowdownDaTeam(team, livello);
     const u = utenteSnap.val() || {}, info = infoSnap.val() || {};
     const iniziali = [u.real_name || info.real_name, u.last_name || info.last_name]
@@ -235,6 +231,6 @@ export async function caricaPerProva(db, utente, chiaveTeam) {
     return {
         nome, id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', iniziali,
         team: { nome: nomeTeam(team), testo }, categoria: regolamento.categoria, regolamento,
-        formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento) : ['The team is empty']
+        formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento, delta) : ['The team is empty']
     };
 }

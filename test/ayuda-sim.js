@@ -40,8 +40,12 @@ function caricaTeamSito() {
         promessaSito = (async () => {
             const docs = path.join(__dirname, '..', 'docs');
             const cartella = fs.mkdtempSync(path.join(os.tmpdir(), 'sito-'));
+            globalThis.self = globalThis;     // i file del sito scrivono in self.DatiGen / self.ControlloTeam
             fs.copyFileSync(path.join(docs, 'pkmn-sim.js'), path.join(cartella, 'pkmn-sim.mjs'));
-            const testo = fs.readFileSync(path.join(docs, 'team-sito.js'), 'utf8').replace("'./pkmn-sim.js'", "'./pkmn-sim.mjs'");
+            fs.copyFileSync(path.join(docs, 'dati-gen.js'), path.join(cartella, 'dati-gen.mjs'));
+            fs.copyFileSync(path.join(docs, 'controllo-team.js'), path.join(cartella, 'controllo-team.mjs'));
+            const testo = fs.readFileSync(path.join(docs, 'team-sito.js'), 'utf8').replace("'./pkmn-sim.js'", "'./pkmn-sim.mjs'")
+                .replace("'./dati-gen.js'", "'./dati-gen.mjs'").replace("'./controllo-team.js'", "'./controllo-team.mjs'");
             fs.writeFileSync(path.join(cartella, 'team-sito.mjs'), testo);
             return import(pathToFileURL(path.join(cartella, 'team-sito.mjs')).href);
         })();

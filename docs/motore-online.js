@@ -18,6 +18,8 @@
 // Metodi: scegli(lato, scelta), annulla(lato) (ritira la scelta finché l'avversario non ha scelto), avvia(), chiudi().
 // =====================================================
 
+import './esito-set.js';         // self.EsitoSet
+
 // L'errore di "annullaScelta" in parole del sito (il server risponde in italiano; una funzione non ancora pubblicata o
 // la rete che cade danno errori tecnici che a chi gioca non servono)
 export function messaggioAnnulla(errore) {
@@ -79,12 +81,15 @@ export class BattagliaOnline {
             }
             this.refLog = this._ascolta(`${base}/log/set${n}`, 'child_added', blocco => {
                 // il server le toglie già (righePubbliche); qui una difesa in più per i log salvati prima
-                const righe = String(blocco.val() || '').split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
+                let righe = String(blocco.val() || '').split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
+                // set chiusi in pareggio prima che il server lo risolvesse da solo: vince chi è caduto per ultimo
+                if (righe.some(r => r === '|tie' || r === '|tie|') && self.EsitoSet) {
+                    righe = self.EsitoSet.risolviPareggio([...this.righeLog, ...righe]).slice(this.righeLog.length);
+                }
                 this.righeLog.push(...righe);
                 this._emetti('log', righe);
                 for (const r of righe) {
                     if (r.startsWith('|win|')) this._emetti('fine', { vincitore: r.slice(5) });
-                    if (r === '|tie') this._emetti('fine', { vincitore: null });
                 }
             });
         });

@@ -8,7 +8,7 @@
 //   mosse:  { id: { t: tipo, c: categoria, p: potenza, a: precisione, pp, pr: priorità } }   (idem)
 //   tipi:   { Difensore: { Attaccante: moltiplicatore } }  solo dove la tabella dei tipi cambia (Gen 1-5)
 //   esistenti: i tipi che esistono in quella generazione
-// docs/dati-gen.js li applica ai dati di oggi.
+// docs/dati-gen.js li applica ai dati di oggi. Le stesse copie vanno in functions/pkm-gens/ (le Cloud Functions non vedono docs/).
 //
 //   node tools/genera-dati-gen.cjs      (dalla cartella principale; rifarlo quando si aggiorna docs/pkmn-sim.js)
 const fs = require('node:fs');
@@ -18,6 +18,7 @@ const { pathToFileURL } = require('node:url');
 
 const QUI = path.join(__dirname, '..');
 const CARTELLA = path.join(QUI, 'docs', 'pkm-gens');
+const CARTELLA_SERVER = path.join(QUI, 'functions', 'pkm-gens');     // il server (Cloud Functions) controlla i team con gli stessi dati
 const GEN_ATTUALE = 9;
 const STAT = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 const MOLTIPLICATORE = [1, 2, 0.5, 0];          // codici di damageTaken: normale, debole, resiste, immune
@@ -45,6 +46,9 @@ function deltaDiGenerazione(Dex, gen) {
 
     for (const s of dex.species.all()) {
         if (!s.exists || s.num <= 0 || s.gen > gen) continue;     // le specie arrivate dopo non esistono in questa generazione
+        // Le specie di Leggende Arceus (forme di Hisui, Wyrdeer, Kleavor...) sono Gen 8 per il sito, ma nella Gen 8 del simulatore (Spada e
+        // Scudo) sono "Future" e portano dati provvisori e superati (Samurott di Hisui senza Sharpness...): valgono quelli di oggi.
+        if (s.isNonstandard === 'Future') continue;
         const b = oggi.species.get(s.id);
         if (!b.exists) continue;
         const d = {};
@@ -88,6 +92,8 @@ function deltaDiGenerazione(Dex, gen) {
         const testo = `{\n  "gen": ${gen},\n  "esistenti": ${JSON.stringify(d.esistenti)},\n  "tipi": ${JSON.stringify(d.tipi)},\n` +
             `  "specie": ${righe(d.specie)},\n  "mosse": ${righe(d.mosse)}\n}\n`;
         fs.writeFileSync(path.join(CARTELLA, `delta-gen${gen}.json`), testo);
+        fs.mkdirSync(CARTELLA_SERVER, { recursive: true });
+        fs.writeFileSync(path.join(CARTELLA_SERVER, `delta-gen${gen}.json`), testo);
         console.log(`gen${gen}: ${Object.keys(d.specie).length} specie, ${Object.keys(d.mosse).length} mosse, ${Object.keys(d.tipi).length} tipi con tabella diversa (${(testo.length / 1024).toFixed(1)} KB)`);
     }
 })();
