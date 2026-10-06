@@ -789,18 +789,16 @@ async function inizializzaPaginaArchivio() {
             if (typeof apriModaleShowdown === 'function') apriModaleShowdown(sdId, sd);
         };
 
-        // una finestrina: la striscia con la categoria, i due giocatori sul loro colore con il punteggio in mezzo, la data in fondo
+        // una finestrina a tabellone: la striscia con la categoria, una riga per allenatore sul suo colore (nome a sinistra, set vinti a destra,
+        // chi vince porta il WIN e il numero in nero e giallo), la data in fondo
         sdCard.innerHTML = `
     <div class="sd-card-barra">
         <span class="sd-badge-label">SHOWDOWN</span>
         <span class="sd-category-tag">${esc(info.categoria || "OU")}</span>
     </div>
     <div class="sd-card-content">
-        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
-        <div class="sd-result-badge">
-            <span class="sd-final-score"><b>${vintiP1}</b><i>:</i><b>${vintiP2}</b></span>
-        </div>
-        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
+        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP1}</b></div>
+        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}<b class="sd-punti">${vintiP2}</b></div>
     </div>
     <div class="sd-card-footer">
         <span class="sd-date-text">${esc(info.data || 'No date')}</span>
