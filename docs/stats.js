@@ -71,33 +71,8 @@
     // -----------------------------------------------------
     const SD = 'https://play.pokemonshowdown.com/sprites';
     const POKEBALL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
-    // specie il cui nome base contiene già un trattino
-    const BASI_CON_TRATTINO = ['ho-oh', 'porygon-z', 'jangmo-o', 'hakamo-o', 'kommo-o',
-        'wo-chien', 'chien-pao', 'ting-lu', 'chi-yu', 'nidoran-f', 'nidoran-m'];
-
-    const senzaAccenti = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const toId = t => senzaAccenti(t).toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    function pulisciSpecie(specie) {
-        let s = String(specie || '').trim().replace(/\s*\((?:m|f)\)\s*$/i, '');   // "Garchomp (M)"
-        const m = s.match(/\(([^()]+)\)\s*$/);                                     // "Soprannome (Garchomp)"
-        if (m) s = m[1].trim();
-        return s;
-    }
-
-    function idSprite(specie) {
-        const s = senzaAccenti(pulisciSpecie(specie)).toLowerCase();
-        let base = s, forma = '';
-        const conTrattino = BASI_CON_TRATTINO.find(b => s === b || s.startsWith(b + '-'));
-        if (conTrattino) { base = conTrattino; forma = s.slice(conTrattino.length + 1); }
-        else if (s.includes('-')) { base = s.slice(0, s.indexOf('-')); forma = s.slice(s.indexOf('-') + 1); }
-        const idBase = toId(base);
-        return {
-            completo: forma ? `${idBase}-${toId(forma)}` : idBase,   // stesso schema di Showdown: "urshifu-rapidstrike"
-            base: idBase,
-            db: base.replace(/[.'’:]/g, '').trim().replace(/\s+/g, '-')   // Pokémon Database: "mr-mime", "great-tusk"
-        };
-    }
+    // l'id di un Pokémon per i file di Showdown lo decide sprite-pkm.js (caricato prima di questo file)
+    const { idSprite } = window.SpritePkm;
 
     const CATENE = new Map();      // chiave -> lista di indirizzi da provare
     const RIUSCITO = new Map();    // chiave -> indice dell'indirizzo che ha funzionato

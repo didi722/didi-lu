@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="badge-team.css">
     <script src="dati-gen.js"></script>
+    <script src="sprite-pkm.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
@@ -866,12 +867,12 @@ function mostraBadgeDelTeam(contenuto, giocatore, team) {
     if (typeof BadgeTeam !== 'undefined') BadgeTeam.montaBarra(db, contenuto.querySelector('[data-badge-team]'), { giocatore, team: squadra, valido }).catch(() => {});
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -972,11 +973,11 @@ async function openTeamPicker(format, nomeUtenteClean) {
 
                 // Stessa normalizzazione e stesso fallback usati in renderizza()
                 const pkmNameUrl = pkmnName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                const pkmSprite = SpritePkm.gif(pkmnName);
 
                 return `<figure class="tp-pkm"><img src="${pkmSprite}" alt="${escapeHtmlFormato(pkmnName)}"
                         class="preview-pkmn-img"
-                        onerror="gestisciErroreSprite(this, '${pkmNameUrl}')"><figcaption>${escapeHtmlFormato(pkmnName)}</figcaption></figure>`;
+                        onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(pkmnName)}')"><figcaption>${escapeHtmlFormato(pkmnName)}</figcaption></figure>`;
             }).join('');
 
             div.innerHTML = `
@@ -1114,12 +1115,12 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     }
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1207,9 +1208,9 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                        <img src="${SpritePkm.gif(p.nome || '')}" 
                              class="modal-sprite clickable-pkm" 
-                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
+                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome || '')}')">                    </div>
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
@@ -1406,11 +1407,7 @@ async function caricaTipi(pkmName, elementId, direzione) {
 // Funzione globale per generare l'URL della GIF
 function getGifUrl(pName) {
     if (!pName) return "";
-    // Showdown usa nomi puliti senza spazi e punteggiatura
-    const urlName = pName.toLowerCase()
-                         .replace(/\s+/g, '') // Rimuove gli spazi
-                         .replace(/[.'é’]/g, ''); // Rimuove punteggiatura
-    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+    return SpritePkm.gif(pName);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
 }
 
 
@@ -1512,7 +1509,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 Showdowns/Format:<strong> ${info.showdowns_per_format}</strong>
             </div>
             <div class="modal-info-box">
-                Total Matches: <strong>${info.total_days} </strong>
+                Showdowns vs each opponent: <strong>${(Number(info.showdowns_per_format) || 0) * (info.selected_formats ? Object.values(info.selected_formats).length : 0)} </strong>
             </div>
         </div>
     </div>

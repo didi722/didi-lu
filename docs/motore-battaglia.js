@@ -9,6 +9,7 @@
 
 import { BattleStreams, Dex, Teams, TeamValidator } from './pkmn-sim.js';
 import './nomi-unici.js';        // lo mette in self.NomiUnici (è lo stesso file delle Cloud Functions)
+import './esito-set.js';         // self.EsitoSet: i pareggi non esistono (stesso file delle Cloud Functions)
 
 const baseDi = specie => Dex.species.get(specie).baseSpecies;
 
@@ -76,13 +77,17 @@ export class BattagliaLocale {
     async _ascoltaSpettatore() {
         for await (const blocco of this.streams.spectator) {
             // le righe "|debug|" (il formato "Custom Game" del simulatore ne manda: "Multiscale weaken"...) non sono per i giocatori
-            const righe = blocco.split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
+            let righe = blocco.split('\n').filter(r => r.startsWith('|') && !r.startsWith('|debug|'));
+            // i pareggi non esistono (gen. 1-4: gli ultimi due Pokémon cadono insieme): vince chi è caduto per ultimo
+            if (righe.some(r => r === '|tie' || r === '|tie|')) {
+                const tutte = self.EsitoSet.risolviPareggio([...this.righeLog, ...righe]);
+                righe = tutte.slice(this.righeLog.length);
+            }
             this.righeLog.push(...righe);
             this._emetti('log', righe);
 
             for (const r of righe) {
                 if (r.startsWith('|win|')) this._emetti('fine', { vincitore: r.slice(5) });
-                if (r === '|tie') this._emetti('fine', { vincitore: null });
             }
         }
     }

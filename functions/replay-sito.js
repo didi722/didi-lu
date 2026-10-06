@@ -219,6 +219,14 @@ body {
     .replay-cornice { position: static; padding: 0; border: 0; box-shadow: none; background: none; }
     .replay-cornice::before { display: none; }
     .palco { position: absolute; top: 22px; left: 0; transform-origin: 0 0; }
+    /* lo schermo è piccolo: il grande "Play" e il cartello di fine set si riducono, la scritta sotto il Play (c'è già la testata della pagina) sparisce */
+    .velo-avvio { gap: 0; }
+    .velo-avvio .btn-avvio { padding: 11px 22px 8px; font-size: 1.2rem; box-shadow: 6px 6px 0 var(--inchiostro); }
+    .velo-avvio .btn-avvio svg { width: 17px; height: 17px; }
+    .velo-avvio p { display: none; }
+    .esito-card { padding: 12px 14px 12px; }
+    .esito-card h2 { font-size: 1.05rem; }
+    .esito-card .btn { margin-top: 10px; padding: 7px 12px 5px; font-size: .75rem; }
 }
 
 
@@ -413,6 +421,15 @@ ${barreSalute('.palco')}
 .barra-turni:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 /* la pagina che contiene il replay ha già la sua barra (fuori dallo schermo): quella interna non serve */
 .barra-fuori .barra-turni { display: none; }
+/* con la barra dei turni fuori dallo schermo i comandi sono una pillola piccola: indietro, play, avanti, velocità, suono
+   (il contatore e "dall'inizio" stanno già nella barra della pagina) e non coprono il campo */
+.barra-fuori .comandi-replay { width: auto; padding: 5px 7px 6px; }
+.barra-fuori .contatore-turni, .barra-fuori #btn-inizio { display: none; }
+.barra-fuori .riga-comandi { gap: 6px; }
+.barra-fuori .tasto { width: 30px; height: 28px; }
+.barra-fuori .tasto.play { width: 38px; }
+.barra-fuori .tasto.velocita { width: 34px; }
+.barra-fuori .tasto svg { width: 12px; height: 12px; }
 
 .riga-comandi { display: flex; align-items: center; gap: 7px; }
 .tasto {

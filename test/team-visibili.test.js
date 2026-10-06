@@ -108,3 +108,20 @@ test('matches.html: i team nascosti non entrano nella pagina; a scheda chiusa ni
     assert.match(mostra, /\$\{visibilita\.chiusa \? '' : `<div class="item-container">/);
     assert.match(mostra, /Closed sheet season/);
 });
+
+// ---------- stesso nome di team in formati diversi ----------
+test('scheda chiusa: due team con lo stesso nome in formati diversi → si vede solo quello del formato giocato contro di me', () => {
+    const sds = { a: { info: { player1: 'Didi', player2: 'Lu', categoria: 'OU' }, matches: { m1: { player1Id: 'didi', player2Id: 'lu', team1: 'Mio', team2: 'Team 1', categoria: 'OU' } } } };
+    const affrontate = TV.squadreAffrontate(sds, 'didi');
+    assert.deepEqual([...affrontate], ['lu|team 1|ou']);
+    const teamsOu = [{ nome: 'Team 1' }, { nome: 'Altro' }];
+    const teamsUu = [{ nome: 'Team 1' }];
+    assert.equal(TV.dividiTeam({ chiusa: true, io: 'didi', giocatore: 'Lu', teams: teamsOu, affrontate, formato: 'OU' }).visibili.length, 1);
+    assert.equal(TV.dividiTeam({ chiusa: true, io: 'didi', giocatore: 'Lu', teams: teamsUu, affrontate, formato: 'UU' }).visibili.length, 0, 'lo stesso nome in UU non è stato affrontato');
+    // senza il formato si guarda solo il nome; un match senza formato vale per tutti
+    assert.equal(TV.dividiTeam({ chiusa: true, io: 'didi', giocatore: 'Lu', teams: teamsUu, affrontate }).visibili.length, 1);
+    const vecchi = TV.squadreAffrontate({ a: { matches: { m1: { player1Id: 'didi', player2Id: 'lu', team2: 'Team 1' } } } }, 'didi');
+    assert.equal(TV.dividiTeam({ chiusa: true, io: 'didi', giocatore: 'lu', teams: teamsUu, affrontate: vecchi, formato: 'UU' }).visibili.length, 1);
+    // la pagina passa il formato della colonna
+    assert.match(matches, /affrontate: visibilita\.affrontate, formato: categoria/);
+});

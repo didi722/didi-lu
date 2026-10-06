@@ -16,6 +16,11 @@ const { creaReplayHtml } = require('./replay-sito');
 const { analizzaSet } = require('./statistiche-set');
 const { nomiUnici } = require('./nomi-unici');
 const { ritiraScelta } = require('./ritira-scelta');
+const EsitoSet = require('./esito-set');
+const DatiGen = require('./dati-gen');
+const ControlloTeam = require('./controllo-team');
+const fs = require('fs');
+const path = require('path');
 
 class ErroreUtente extends Error {}
 
@@ -113,30 +118,21 @@ function importaTeam(testo) {
     return sets;
 }
 
+// I dati per generazione (functions/pkm-gens/, gli stessi del Box): le abilità delle specie di allora, i tipi...
+const deltaDi = gen => DatiGen.carica(gen, url => JSON.parse(fs.readFileSync(path.join(__dirname, url), 'utf8'))).catch(() => null);
+
 // Il server non corregge i team: se non sono conformi, non si gioca.
-function controllaTeam(testo, reg) {
+// Il controllo è lo STESSO del Box e del simulatore sul sito (controllo-team.js): un team che il Box salva non viene rifiutato qui.
+async function controllaTeam(testo, reg) {
     const sets = importaTeam(testo);
     if (!sets.length) return ['Il team è vuoto o illeggibile'];
-    const livello = livelloFormato(reg);
     const gen = generazioneFormato(reg);
-    const dex = PS.Dex.forGen(gen);
-    // il simulatore segna "Future" ciò che nella generazione del formato non esiste ancora (Play Rough in Gen 4, Folletto in Gen 5...)
-    const nonEsisteAncora = voce => !!voce && voce.exists && voce.isNonstandard === 'Future';
-    const problemi = [];
-    for (const set of sets) {
-        if ((set.level || 100) !== livello) problemi.push(`${set.species} è al livello ${set.level || 100} invece di ${livello}`);
-        const strumento = dex.items.get(set.item);
-        if (!meccanicheAttive(reg) && strumento.exists && (strumento.megaStone || strumento.zMove)) {
-            problemi.push(`${set.species} tiene ${strumento.name}, ma il formato non ha le meccaniche generazionali`);
-        }
-        if (nonEsisteAncora(dex.species.get(set.species))) problemi.push(`${set.species} non esiste in Gen ${gen}`);
-        if (gen >= 3 && set.ability && nonEsisteAncora(dex.abilities.get(set.ability))) problemi.push(`${set.species}: l'abilità ${set.ability} non esiste in Gen ${gen}`);
-        if (nonEsisteAncora(strumento)) problemi.push(`${set.species}: lo strumento ${strumento.name} non esiste in Gen ${gen}`);
-        for (const mossa of set.moves || []) {
-            if (nonEsisteAncora(dex.moves.get(mossa))) problemi.push(`${set.species}: la mossa ${dex.moves.get(mossa).name} non esiste in Gen ${gen}`);
-        }
-    }
-    return problemi;
+    const regole = {
+        gen, livello: livelloFormato(reg), meccaniche: meccanicheAttive(reg),
+        controllaSpecie: String(reg.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes',
+        delta: await deltaDi(gen)
+    };
+    return ControlloTeam.problemiDeiSetShowdown(sets, regole, PS.Dex);
 }
 
 
@@ -168,7 +164,8 @@ function righePubbliche(log) {
         if (riga.startsWith('|debug|')) continue;
         out.push(riga);
     }
-    return out;
+    // i pareggi non esistono: "|tie" diventa la vittoria di chi è caduto per ultimo (esito-set.js)
+    return EsitoSet.risolviPareggio(out);
 }
 
 function inPercentuale(riga) {
@@ -315,7 +312,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         const reg = trovaRegolamento(await leggi('regolamenti'), info.categoria);
         const scelto = (await teamIscritti(info, lato)).find(t => t.nome === team);
         if (!scelto) throw new ErroreUtente(`Il team "${team}" non è tra i tuoi iscritti in ${info.categoria}`);
-        const problemi = controllaTeam(scelto.testo, reg);
+        const problemi = await controllaTeam(scelto.testo, reg);
         if (problemi.length) throw new ErroreUtente(`Team non conforme: ${problemi.join('; ')}`);
 
         await db.ref(`partiteServer/${id}/team/${lato}`).set({
@@ -453,8 +450,10 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
 
     // --- fine di un set ---
     async function fineSet(id, info, stato, b) {
-        const vincitore = b.winner === b.p1.name ? 'p1' : (b.winner === b.p2.name ? 'p2' : '');
         const righe = righePubbliche(b.log);
+        // chi vince lo dice il log già senza pareggi; se il log non basta, il motore
+        const vincitore = EsitoSet.vincitoreDelLog(righe).lato
+            || (b.winner === b.p1.name ? 'p1' : (b.winner === b.p2.name ? 'p2' : ''));
 
         // Statistiche del set (KO, ultimo rimasto...). Se qualcosa va storto il set si salva lo stesso.
         let stats = null;
@@ -511,9 +510,17 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
             const setStats = {};
             for (let n = 1; n <= info.bestOf; n++) {
                 const r = (risultati || {})[`set${n}`] || {};
-                if (r.vincitore === 'p1') s1++;
-                if (r.vincitore === 'p2') s2++;
-                replays[`set${n}`] = { url: r.url || '', vincitore: r.vincitore === 'p1' ? '1' : (r.vincitore === 'p2' ? '2' : '') };
+                let vincitore = r.vincitore;
+                if (vincitore !== 'p1' && vincitore !== 'p2') {
+                    // un set chiuso in pareggio prima di questa regola: il vincitore si ricava dal suo log
+                    const blocchi = await leggi(`partite/${id}/log/set${n}`);
+                    const righe = Object.values(blocchi || {}).join('\n').split('\n').filter(Boolean);
+                    vincitore = EsitoSet.vincitoreDelLog(righe).lato;
+                    if (vincitore && r.stats) r.stats.vincitore = vincitore;
+                }
+                if (vincitore === 'p1') s1++;
+                if (vincitore === 'p2') s2++;
+                replays[`set${n}`] = { url: r.url || '', vincitore: vincitore === 'p1' ? '1' : (vincitore === 'p2' ? '2' : '') };
                 if (r.stats) setStats[`set${n}`] = r.stats;
             }
             await registraRisultato({
@@ -543,5 +550,5 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
 module.exports = {
     creaServizio, ErroreUtente,
     // esportate per i test
-    formatoSimulatore, livelloFormato, controllaTeam, importaTeam, righePubbliche, creaReplayHtml, creaCifratura
+    formatoSimulatore, livelloFormato, controllaTeam, importaTeam, righePubbliche, creaReplayHtml, creaCifratura, EsitoSet
 };

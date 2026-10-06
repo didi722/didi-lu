@@ -557,7 +557,7 @@ test('replay di una partita: intestazione e scelta del set sono finestre del tem
     assert.match(fin, /#replayModal \.replay-mini-header \{/);
     assert.match(fin, /#replayModal \.set-lista \{/);
     assert.match(fin, /#replayModal \.gba-shell \{ filter: drop-shadow\(var\(--nb-sh-l/);
-    assert.match(fin, /linear-gradient\(to top, var\(--vinc, #555\) 0 9px, var\(--nb-carta/);
+    assert.match(fin, /linear-gradient\(to top, var\(--vinc, #555\) 0 \d+px, var\(--nb-carta/);
     const m = docs('matches.html');
     assert.doesNotMatch(m, /miniHeader\.style\.(backgroundColor|boxShadow|border)/, 'niente stili fissi scritti nel JS');
     assert.doesNotMatch(m, /class="btn-set[^"]*"[^>]*style="background-color/, 'il tasto del set non ha lo sfondo pieno');

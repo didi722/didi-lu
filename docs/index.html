@@ -359,9 +359,26 @@ document.addEventListener('click', function(event) {
     }
 });
 
+// Il tasto "Sign up" del profilo manda qui (index.html?iscrizione=<stagione>): si apre da solo il riepilogo di iscrizione di quella stagione
+let iscrizioneDaLink = new URLSearchParams(location.search).get('iscrizione');
+async function apriIscrizioneDaLink() {
+    const id = iscrizioneDaLink;
+    if (!id) return;
+    iscrizioneDaLink = null;
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* l'indirizzo resta com'è */ }
+    try {
+        const info = (await db.ref(`seasons/${id}/info`).once('value')).val();
+        if (!info) return;
+        let status = (info.status || 'open').toLowerCase();
+        if (status === 'open' && info.deadline && new Date() >= new Date(info.deadline)) status = 'playing';
+        await gestisciAccessoHub(id, status, info.name || `Season ${id}`);
+    } catch (e) { console.error('Iscrizione da link:', e); }
+}
+
 // UNICO listener per lo stato autenticazione
 auth.onAuthStateChanged(async (user) => {
     console.log("Stato Auth cambiato. Utente:", user ? user.uid : "Nessuno");
+    apriIscrizioneDaLink();
     const authIcon = document.getElementById('auth-icon');
     const authText = document.getElementById('auth-text');
     const topBar = document.querySelector('.top-bar');
@@ -513,11 +530,8 @@ function caricaStagioniHome() {
 
             let status = (info.status || "open").toLowerCase();
             if (status === "open" && info.deadline && new Date() >= new Date(info.deadline)) status = "playing";
-            if (status === "playing") {
-                const totalDays = Number(info.total_days || 0);
-                const count = seasonData.showdowns ? Object.keys(seasonData.showdowns).length : 0;
-                if (totalDays > 0 && count >= totalDays) status = "closed";
-            }
+            // "closed" lo scrive il sito quando ogni giocatore ha giocato tutti gli showdown contro tutti (risultati-match.js): niente più stato
+            // dedotto dal numero di showdown aperti, che chiudeva la stagione prima che l'ultimo showdown fosse giocato
 
             if (nameEl) nameEl.innerText = info.name || "Season " + item.key;
             if (anchor) {

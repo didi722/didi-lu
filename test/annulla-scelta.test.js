@@ -30,8 +30,9 @@ function caricaMotori() {
             };
             copia('pkmn-sim.js', 'pkmn-sim.mjs');
             copia('nomi-unici.js', 'nomi-unici.mjs');
-            copia('motore-battaglia.js', 'motore-battaglia.mjs', [["'./pkmn-sim.js'", "'./pkmn-sim.mjs'"], ["'./nomi-unici.js'", "'./nomi-unici.mjs'"]]);
-            copia('motore-online.js', 'motore-online.mjs');
+            copia('esito-set.js', 'esito-set.mjs');
+            copia('motore-battaglia.js', 'motore-battaglia.mjs', [["'./pkmn-sim.js'", "'./pkmn-sim.mjs'"], ["'./nomi-unici.js'", "'./nomi-unici.mjs'"], ["'./esito-set.js'", "'./esito-set.mjs'"]]);
+            copia('motore-online.js', 'motore-online.mjs', [["'./esito-set.js'", "'./esito-set.mjs'"]]);
             const url = nome => pathToFileURL(path.join(cartella, nome)).href;
             return { battaglia: await import(url('motore-battaglia.mjs')), online: await import(url('motore-online.mjs')) };
         })();

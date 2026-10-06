@@ -100,9 +100,13 @@
     async function carica(db, idAllenatore) {
         try {
             const risultato = await finestra.Fiocchi.carica(db);
-            return { lista: calcola(risultato, idAllenatore), dati: !!contestoDi(risultato, idAllenatore) };
+            const c = contestoDi(risultato, idAllenatore);
+            // le stagioni vinte come le contano i badge (dalla classifica di ogni stagione chiusa): le pagine mostrano questo numero, non un contatore a parte
+            const nomi = Object.fromEntries(((risultato && risultato.stagioni) || []).map(x => [x.id, x.nome]));
+            const vinte = c ? (c.g.stagioniVinteId || []).map(id => ({ id, nome: nomi[id] || id })) : [];
+            return { lista: calcola(risultato, idAllenatore), dati: !!c, stagioniVinte: vinte.length, elencoStagioniVinte: vinte, risultato };
         } catch (e) {
-            return { lista: calcola(null, idAllenatore), dati: false, errore: true };
+            return { lista: calcola(null, idAllenatore), dati: false, errore: true, stagioniVinte: null, elencoStagioniVinte: [], risultato: null };
         }
     }
 

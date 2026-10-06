@@ -1,0 +1,252 @@
+/* =====================================================================
+   CLASSIFICA DI STAGIONE (Matches): i RANKINGS a lato e la LEAGUE TABLE (classifica estesa)
+   ---------------------------------------------------------------------
+   Stessa famiglia delle altre finestre del sito (showdown.css, finestre.css): striscia nera con i tre pallini e la X gialla, carta
+   calda con la mezzatinta, bordo e ombra del tema. Le righe sono sul colore dell'allenatore, con la posizione in un'etichetta nera
+   (la prima è gialla), il nome in maiuscolo, i numeri essenziali e i punti in un riquadro bianco.
+   Usa le variabili --nb-* del tema attivo (con i valori classici come ripiego): i temi cambiano colori, ombre, rotazioni, angoli
+   e caratteri, mai larghezze, altezze, margini o spessori dei bordi. Va caricato dopo il foglio della pagina.
+   Il markup lo scrivono popolaListaPlayers() e renderClassificaDettagliata() in matches.html.
+   ===================================================================== */
+
+/* ---------- La finestra (uguale per la colonna a lato e per la tabella grande) ---------- */
+.cl-finestra {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+/* la striscia nera con i tre pallini, il titolo e (a destra) il suo tasto */
+.cl-barra {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+    padding: 0 8px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink, #000);
+    color: #fff;
+    font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .2em;
+    white-space: nowrap;
+}
+.cl-barra-titolo { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* il tasto giallo nella striscia: "tabella completa" (a lato) e la X (nella finestra grande) */
+.cl-apri, .cl-chiudi {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 26px;
+    padding: 0 9px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 11px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    rotate: calc(var(--nb-rot, 1) * 2deg);
+    transition: rotate .1s ease, background-color .1s ease, scale .1s ease;
+}
+.cl-chiudi { width: 26px; padding: 0; font-size: 18px; letter-spacing: 0; }
+.cl-apri:hover, .cl-apri:focus-visible, .cl-chiudi:hover, .cl-chiudi:focus-visible { background: var(--nb-rosso, #ff4444); color: #fff; rotate: 0deg; scale: 1.06; outline: none; }
+.cl-corpo { box-sizing: border-box; min-width: 0; padding: 16px 16px 18px; }
+
+/* ---------- La colonna a lato (RANKINGS) ---------- */
+.cl-laterale { box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+.cl-laterale .cl-corpo { padding: 14px 14px 8px; }
+/* ogni riga ha il suo posto per il pulsante VS (fuori, a sinistra: lo disegna style-sfide.css) */
+.cl-laterale .rank-riga { margin-bottom: 11px; }
+
+.cl-riga {
+    position: relative;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--cl-colore, #31c489);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    text-decoration: none;
+    cursor: pointer;
+    rotate: calc(var(--nb-rot, 1) * -.7deg);
+    transition: translate .1s ease, box-shadow .1s ease;
+}
+.cl-riga:hover, .cl-riga:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-4, 5px 5px 0 #000); outline: none; }
+.cl-riga:active { translate: 1px 1px; box-shadow: none; }
+.cl-pos {
+    padding: 3px 6px 1px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font: 900 .8rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    text-align: center;
+}
+.cl-primo .cl-pos { background: var(--nb-giallo, #ffbd44); color: #000; box-shadow: 0 0 0 2px var(--nb-ink, #000); }
+.cl-avatar {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .55));
+    animation: clSalta .8s steps(1) infinite;
+}
+.cl-avatar-vuoto { display: block; filter: none; animation: none; }
+@keyframes clSalta { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.cl-testi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cl-nome {
+    display: block;
+    min-width: 0;
+    font: 900 .92rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+}
+.cl-dati {
+    overflow: hidden;
+    color: rgba(0, 0, 0, .72);
+    font: 700 .68rem/1.2 var(--nb-font-testo, 'Montserrat', sans-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cl-punti {
+    box-sizing: border-box;
+    min-width: 42px;
+    padding: 4px 8px 2px;
+    background: #fff;
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s-scuro, 2px 2px 0 rgba(0, 0, 0, .35));
+    font: 900 1.05rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    text-align: center;
+    rotate: calc(var(--nb-rot, 1) * 1deg);
+}
+.cl-vuoto { margin: 4px 2px 10px; font: 600 .8rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); font-style: italic; }
+
+/* ---------- La tabella grande (LEAGUE TABLE) ---------- */
+#modal-rank-details {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, .46) radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px) 0 0 / 14px 14px;
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+    -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility .2s ease;
+}
+#modal-rank-details.aperta { opacity: 1; visibility: visible; }
+#modal-rank-details .cl-grande { width: min(1000px, 100%); margin: auto; }
+#modal-rank-details.aperta .cl-grande { animation: clSalta-su .32s cubic-bezier(.2, .9, .3, 1.15) both; }
+@keyframes clSalta-su { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* una riga della tabella: posizione | allenatore | 3 gruppi da (giocate, vinte, perse) | punti */
+.cl-tab {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1.5fr) repeat(9, minmax(30px, .5fr)) 70px;
+    align-items: center;
+    gap: 6px;
+}
+.cl-tab-testa { margin-bottom: 4px; padding: 0 13px; align-items: end; }       /* come il bordo e il margine interno delle righe sotto */
+.cl-gruppo {
+    grid-column: span 3;
+    padding: 3px 4px 1px;
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    box-shadow: var(--nb-sh-s-scuro, 2px 2px 0 rgba(0, 0, 0, .35));
+    font: 900 .68rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .08em;
+    text-align: center;
+    text-transform: uppercase;
+}
+.cl-g-sd { background: var(--nb-giallo, #ffbd44); }
+.cl-corto { display: none; }
+.cl-g-match { background: var(--nb-verde, #47ea6a); }
+.cl-g-set { background: var(--nb-rosso, #ff4444); color: #fff; }
+.cl-sotto {
+    color: rgba(0, 0, 0, .62);
+    font: 800 .62rem/1.2 var(--nb-font-testo, 'Montserrat', sans-serif);
+    letter-spacing: .06em;
+    text-align: center;
+}
+.cl-tab-testa .cl-sotto-riga { display: contents; }
+.cl-pile { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.cl-tab-riga {
+    position: relative;
+    padding: 8px 10px;
+    background: var(--cl-colore, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    text-decoration: none;
+    cursor: pointer;
+    transition: translate .1s ease, box-shadow .1s ease;
+}
+.cl-tab-riga:nth-child(odd) { rotate: calc(var(--nb-rot, 1) * -.35deg); }
+.cl-tab-riga:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .35deg); }
+.cl-tab-riga:hover, .cl-tab-riga:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-4, 5px 5px 0 #000); outline: none; }
+.cl-tab-riga .cl-pos { justify-self: start; }
+.cl-identita { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cl-identita .cl-avatar { width: 40px; height: 40px; }
+.cl-identita .cl-nome { flex: 1 1 auto; font-size: 1.15rem; }
+.cl-val { font: 800 .95rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-align: center; }
+.cl-val.cl-tot { opacity: .55; font-size: .85rem; }
+.cl-val.cl-perse { color: rgba(0, 0, 0, .6); }
+.cl-tab-riga .cl-punti { min-width: 0; font-size: 1.2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cl-avatar { animation: none; }
+    #modal-rank-details.aperta .cl-grande { animation: none; }
+}
+
+/* ---------- Telefono ---------- */
+@media (max-width: 900px) {
+    /* a lato diventa una finestra intera, sotto i match; il posto del pulsante VS resta a sinistra delle righe */
+    .cl-laterale { width: 100%; }
+}
+@media (max-width: 680px) {
+    #modal-rank-details { padding: 10px; }
+    .cl-corpo { padding: 12px 10px 14px; }
+    /* i totali si tolgono (sono vinte + perse) e le altre colonne si stringono: la tabella sta tutta senza scorrere di lato */
+    .cl-tab { grid-template-columns: 30px minmax(0, 1fr) repeat(6, 26px) 46px; gap: 3px; }
+    .cl-tab .cl-tot { display: none; }
+    .cl-gruppo { grid-column: span 2; padding: 3px 0 1px; font-size: .56rem; letter-spacing: 0; }
+    .cl-lungo { display: none; }
+    .cl-corto { display: inline; }
+    .cl-tab-testa { padding: 0 9px; }
+    .cl-tab-riga { padding: 8px 6px; }
+    .cl-tab-riga .cl-avatar { display: none; }
+    .cl-identita .cl-nome { font-size: .9rem; letter-spacing: 0; }
+    .cl-val { font-size: .8rem; }
+    .cl-tab-riga .cl-punti { padding: 3px 2px 1px; font-size: .95rem; }
+    .cl-tab-riga .cl-pos { padding: 2px 3px 0; font-size: .7rem; }
+}

@@ -18,11 +18,16 @@
 <link rel="stylesheet" href="nb-pagine.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
+<link rel="stylesheet" href="badge-team.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
 <script src="sfide.js"></script>
 <script src="titoli.js"></script>
+<script src="statistiche.js"></script>
+<script src="fiocchi.js"></script>
+<script src="badge-team.js"></script>
+<script src="badge-allenatore.js"></script>
 </head>
 <body class="nb pg-players">
 
@@ -266,18 +271,23 @@ async function initTrainersPage() {
             const indStats = stats['individual-stats'] || {};
             const statsBadges = stats.badges || {};
 
-            // 🚫 RECUPERO ED ESCLUSIONE STAGIONE BETA DALLA CONTA TROFEI
-            const seasonsData = player['seasons-history'] || player.seasonsHistory || player.seasons || stats.seasons || {};
-            
-            let trophiesWon = 0;
-            if (seasonsData && typeof seasonsData === 'object') {
-                trophiesWon = Object.entries(seasonsData).filter(([sId, s]) => {
-                    if (!s || typeof s !== 'object') return false;
-                    const isBeta = sId === 'sbeta' || s.id === 'sbeta' || (s.name && String(s.name).toLowerCase().includes('beta'));
-                    if (isBeta) return false;
-                    return s.rank === 1 || s.rank === "1";
-                }).length;
-            }
+            // I badge dell'allenatore e le stagioni vinte come nel resto del sito (stessi numeri del profilo e della pagina pubblica):
+            // si calcolano sui dati di tutta la lega (una sola lettura per pagina). Se non si riesce restano le serie e il contatore del profilo.
+            let badgeAllenatoreHTML = '';
+            let calcolate = null;
+            try {
+                if (window.BadgeAllenatore && window.Fiocchi) {
+                    const r = await BadgeAllenatore.carica(db, key);
+                    badgeAllenatoreHTML = BadgeAllenatore.htmlMini(r.lista, 99);       // TUTTI quelli guadagnati
+                    if (r.dati) calcolate = r.stagioniVinte;
+                }
+            } catch (e) { console.warn('Trainer badges not available:', e); }
+
+            // contatore salvato nel profilo (la stagione di prova non conta)
+            const stagioniSalvate = stats.seasons || {};
+            const dalloStorico = Object.entries(stagioniSalvate.history || {})
+                .filter(([sId, st]) => sId !== 'sbeta' && st && (st.rank === 1 || st.rank === '1')).length;
+            const trophiesWon = calcolate != null ? calcolate : Math.max(Number(stagioniSalvate.won) || 0, dalloStorico);
 
             playersList.push({
                 id: key,
@@ -286,7 +296,7 @@ async function initTrainersPage() {
                 color: info.color || '#31c489',
                 ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
                 trophiesWon: trophiesWon,
-                badgesHTML: generaHTMLBadge(statsBadges, key)
+                badgesHTML: generaHTMLBadge(statsBadges, key) + badgeAllenatoreHTML
             });
         }
 

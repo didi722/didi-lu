@@ -120,7 +120,8 @@
             if (p.vincitore === p.p1) a.vinti++; else if (p.vincitore === p.p2) b.vinti++;
             if (p.vincitoreSd && !sdVisti.has(p.sd)) { sdVisti.add(p.sd); scheda(p.vincitoreSd).punti += 1; }
         }
-        return Object.values(g).sort((a, b) => b.punti - a.punti || b.vinti - a.vinti || b.setV - a.setV);
+        // punti, match vinti, set vinti, poi il nome: lo stesso ordine della classifica in matches.html e di salvaVincitoreStagione (risultati-match.js)
+        return Object.values(g).sort((a, b) => b.punti - a.punti || b.vinti - a.vinti || b.setV - a.setV || String(a.id).localeCompare(String(b.id)));
     }
 
     // -----------------------------------------------------
@@ -442,6 +443,7 @@
                 punti: g.punti,
                 stagioniGiocate: g.stagioni.size,
                 stagioniVinte: g.stagioniVinte.size,
+                stagioniVinteId: [...g.stagioniVinte],
                 showdown: g.showdown,
                 match: g.match, set: g.set,
                 percMatch: perc(g.match.vinti, g.match.giocati),

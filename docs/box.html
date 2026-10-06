@@ -33,6 +33,8 @@
 <script src="note-team.js"></script>
 <script src="formato-pool.js"></script>
 <script src="dati-gen.js"></script>
+<script src="sprite-pkm.js"></script>
+<script src="controllo-team.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -939,7 +941,7 @@ async function renderizza(lista) {
 
                     const pkmNameUrl = nomePkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                     const itemNameUrl = strumentoPkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                    const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                    const pkmSprite = SpritePkm.gif(nomePkm);
                     const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
                     const teamIdSanitized = (team.id || '').toString().replace(/-/g, '');
@@ -955,7 +957,7 @@ async function renderizza(lista) {
                         <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]};"` : ''}
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
-                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">
+                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
                                 </div>
                             <div class="pkm-info">
                                 <span class="pkm-name">${nomePkm}</span>
@@ -1168,7 +1170,7 @@ async function apriDettagli(id, opzioni = {}) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-<img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
+<img src="${SpritePkm.gif(p.nome)}" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
                                                         <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}', '${p.natura || ''}')">${p.nome}</strong>
@@ -1504,12 +1506,12 @@ async function applicaColoreBordo(pokemonNome, elemento) {
     }
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1545,7 +1547,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         <div class="pkm-modal-grid">
             <div class="area-header">
                 <div id="single-types" class="types-centered"></div>
-<img id="pkm-hero-sprite" src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl.toLowerCase()}.gif" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
+<img id="pkm-hero-sprite" src="${SpritePkm.gif(pokemonData.nome || pkmNameUrl)}" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(pokemonData.nome || pkmNameUrl)}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
             </div>
             <div class="area-weakness pkm-panel">
                 <h4 class="panel-title">DEFENSE</h4>
@@ -1614,7 +1616,8 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         .then(res => res.json())
         .then(data => {
             const heroSprite = document.getElementById('pkm-hero-sprite');
-            if (heroSprite) {
+            // la GIF di Showdown c'è già (SpritePkm): quella di PokéAPI serve solo se è mancata (gestisciErroreSprite l'ha già provata)
+            if (heroSprite && heroSprite.dataset.spriteFase) {
                 heroSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${data.id}.gif`;
             }
                         caricaStats(pkmNameUrl, 'single-stats', pokemonData.natura);
@@ -2125,7 +2128,8 @@ async function preparaDatiTeamPerValidazione(listaPokemon, regolamento = null) {
     return (await Promise.all(promesse)).filter(p => p !== null);
 }
 
-// Ogni set è possibile nella generazione del formato? (abilità, strumento e mosse esistenti, abilità fra quelle della specie di allora)
+// Ogni set è possibile nella generazione del formato? (specie, abilità, strumento e mosse esistenti; abilità fra quelle della specie di allora)
+// È LA STESSA regola del simulatore e del server (controllo-team.js): un team salvato qui non verrà rifiutato prima di giocare.
 // Legge i dati di Showdown già pronti per il Team Builder; se non si caricano non si blocca niente (restano gli altri controlli).
 async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
     const lista = Array.isArray(teamDatiPokeAPI) ? teamDatiPokeAPI : Object.values(teamDatiPokeAPI || {});
@@ -2139,26 +2143,25 @@ async function validaCoerenzaGenerazione(teamDatiPokeAPI, regolamento) {
     }
     const delta = await applicaGenerazioneFormato(regolamento);
     const fonti = {
-        abilitaGen: nome => tbDex.abilities[tbToID(nome)] ? tbGenAbilita(nome) : null,
-        strumentoGen: nome => tbDex.items[tbToID(nome)] ? (tbDex.items[tbToID(nome)].gen || 0) : null,
-        mossaGen: nome => tbDex.moves[tbToID(nome)] ? tbGenMossa(tbDex.moves[tbToID(nome)]) : null
+        specie: nome => tbSpecie(tbToID(nome)),
+        abilita: nome => tbDex.abilities[tbToID(nome)] || null,
+        strumento: nome => tbDex.items[tbToID(nome)] || null,
+        mossa: nome => tbDex.moves[tbToID(nome)] || null,
+        base: sp => (sp.battleOnly || /^(Mega|Primal)/.test(sp.forme || '')) ? tbSpecieBase(sp) : null
     };
-    const errori = [];
-    for (const p of lista) {
-        if (!p || p.erroreDati) continue;
+    const regole = {
+        gen, delta,
+        meccaniche: meccanicheAttiveRegolamento(regolamento),
+        // i formati Anything Goes non limitano le specie (le abilità, gli strumenti e le mosse sì)
+        controllaSpecie: String(regolamento?.strutturaSito || 'custom').toLowerCase().trim() !== 'anything_goes'
+    };
+    const sets = lista.filter(p => p && !p.erroreDati).map(p => {
         const nome = p.name || p.nome || '';
-        const sp = tbSpecie(tbToID(p.idPokeAPI || nome));
-        const set = { nome, id: sp ? tbToID(sp.name) : tbToID(nome), abilita: p.abilita, strumento: p.strumento, mosse: p.mosse };
-        const base = sp && sp.battleOnly ? tbSpecieBase(sp) : null;
-        // una forma di battaglia (Mega, Zacian-Crowned...) ha le sue abilità, o quelle della specie da cui parte: va bene l'una o l'altra
-        let problemi = DatiGen.controllaSet(Object.assign({}, set), gen, delta, Object.assign({ specie: sp }, fonti));
-        if (base && problemi.some(x => x.includes('is not one of its abilities'))) {
-            const dalBase = DatiGen.controllaSet(Object.assign({}, set, { id: tbToID(base.name) }), gen, delta, Object.assign({ specie: base }, fonti));
-            if (!dalBase.some(x => x.includes('is not one of its abilities'))) problemi = problemi.filter(x => !x.includes('is not one of its abilities'));
-        }
-        errori.push(...problemi);
-    }
-    return errori;
+        // il nome scritto nel team (Showdown lo capisce); se non si trova, quello di PokeAPI
+        const trovata = tbSpecie(tbToID(nome)) ? nome : (p.idPokeAPI || nome);
+        return { nome, specie: trovata, abilita: p.abilita, strumento: p.strumento, mosse: p.mosse };
+    });
+    return ControlloTeam.problemiDelTeam(sets, regole, fonti);
 }
 
 // Array di supporto per mappe tier
@@ -4136,12 +4139,12 @@ let listaFiltrata = grid.originalPokemonList.filter(pkm => pokemonCorrispondeRic
 
             // Stessa normalizzazione e stesso fallback usati in renderizza()
             const pkmNameUrl = String(pkm.name || pkm.id).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-            const gifUrl = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+            const gifUrl = SpritePkm.gif(pkm.name || pkm.id);
 
             card.innerHTML = `
                 <div class="helper-pkm-gif-container">
                     <img src="${gifUrl}" alt="${pkm.name}" class="helper-pkm-gif" 
-                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">
+                         onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(pkm.name || pkm.id)}')">
                 </div>
                 <div class="helper-pkm-name"><span>${pkm.name}</span></div>
             `;
@@ -4595,26 +4598,9 @@ function tbOggettoObbligatorio(sp) {
     return lista.length ? tbToID(lista[0]) : '';
 }
 
-// Generazione di debutto della specie (stessa logica di Showdown: le forme di Hisui sono Gen 8)
+// Generazione di debutto della specie (le forme di Hisui sono Gen 8): la regola è in controllo-team.js, la stessa del simulatore e del server
 function tbGenSpecie(sp) {
-    if (!sp) return 0;
-    if (sp.gen) return sp.gen;
-    const forme = sp.forme || '';
-    const n = sp.num || 0;
-    if (n < 1) {
-        // forme cosmetiche senza numero (Gastrodon-East...): conta la specie base
-        const base = sp.baseSpecies && tbSpecie(tbToID(sp.baseSpecies));
-        return base && base !== sp ? tbGenSpecie(base) : 99;
-    }
-    if (n >= 906 || forme.includes('Paldea')) return 9;
-    if (n >= 810 || ['Gmax', 'Galar', 'Galar-Zen', 'Hisui'].includes(forme)) return 8;
-    if (n >= 722 || forme.startsWith('Alola') || forme === 'Starter') return 7;
-    if (n >= 650 || /^(Mega|Primal)/.test(forme)) return 6;
-    if (n >= 494) return 5;
-    if (n >= 387) return 4;
-    if (n >= 252) return 3;
-    if (n >= 152) return 2;
-    return 1;
+    return ControlloTeam.genSpecie(sp, nome => tbSpecie(tbToID(nome)));
 }
 
 // Specie che esistono già nella gen del formato ma di cui Showdown ha solo il learnset
@@ -4679,34 +4665,13 @@ function tbFonteValida(fonte) {
     return generazioni.some(g => !isNaN(g) && (tbStato.within ? g === tbStato.gen : g <= tbStato.gen));
 }
 
+// Le mosse di Leggende Arceus valgono Gen 8, come le forme di Hisui (controllo-team.js)
 function tbGenMossa(m) {
-    const n = m.num || 0;
-    // Mosse di Leggende Arceus (Dire Claw → Take Heart): Showdown le conta di Gen 9,
-    // qui valgono come Gen 8, coerentemente con le forme di Hisui
-    if (n >= 827 && n <= 850 && !m.isMax && !m.isZ) return 8;
-    if (m.gen) return m.gen;if (n >= 827) return 9;
-    if (n >= 743) return 8;
-    if (n >= 622) return 7;
-    if (n >= 560) return 6;
-    if (n >= 468) return 5;
-    if (n >= 355) return 4;
-    if (n >= 252) return 3;
-    if (n >= 166) return 2;
-    return 1;
+    return ControlloTeam.genMossa(m);
 }
 
 function tbGenAbilita(nome) {
-    const a = tbDex.abilities[tbToID(nome)];
-    if (!a) return 3;
-    if (a.gen) return a.gen;
-    const n = a.num || 0;
-    if (n >= 268) return 9;
-    if (n >= 234) return 8;
-    if (n >= 192) return 7;
-    if (n >= 165) return 6;
-    if (n >= 124) return 5;
-    if (n >= 77) return 4;
-    return 3;
+    return ControlloTeam.genAbilita(tbDex.abilities[tbToID(nome)]);
 }
 
 // Valori della mossa con gli stessi nomi usati dal validatore del sito

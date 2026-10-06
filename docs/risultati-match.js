@@ -161,52 +161,224 @@ async function registraRisultatoMatch(r) {
 
     await db.ref(`${pathShowdown}/info`).update(infoUpdate);
 
-    // --- 5. CHIUSURA AUTOMATICA STAGIONE ---
-    const esito = { stagioneChiusa: false, vincitoreStagione: null, totalDays: 0 };
-
-    const [snapStagioneInfo, snapTuttiShowdowns] = await Promise.all([
-        db.ref(`seasons/${stagione}/info`).once('value'),
-        db.ref(`seasons/${stagione}/showdowns`).once('value')
-    ]);
-
-    const stagioneInfo = snapStagioneInfo.val() || {};
-    const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-    if (stagioneInfo.status === 'playing' && stagioneInfo.total_days) {
-        const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
-        const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-        const matchInQuestoShowdown = Object.keys(allMatches).length;
-
-        if (numeroShowdownAttuali >= totalDaysPrevisti && matchInQuestoShowdown >= 3) {
-            await db.ref(`seasons/${stagione}/info`).update({ status: 'closed' });
-            console.log(`La stagione ${stagione} è stata impostata automaticamente su CLOSED.`);
-
-            const snapPlayers = await db.ref('players').once('value');
-            const tuttiIPlayers = snapPlayers.val() || {};
-
-            let vincitoreStagioneId = "Nessuno";
-            let punteggioMassimo = -1;
-
-            Object.entries(tuttiIPlayers).forEach(([idPlayer, datiPlayer]) => {
-                const rankingActual = datiPlayer.stats?.['individual-stats']?.ranking || 1000;
-                if (rankingActual > punteggioMassimo) {
-                    punteggioMassimo = rankingActual;
-                    vincitoreStagioneId = idPlayer.toUpperCase();
-                }
-            });
-
-            esito.stagioneChiusa = true;
-            esito.vincitoreStagione = vincitoreStagioneId;
-            esito.totalDays = totalDaysPrevisti;
-        }
-    }
-
-    // --- 6. SINCRONIZZAZIONE STATISTICHE ---
+    // --- 5. SINCRONIZZAZIONE STATISTICHE ---
+    // Prima la classifica della stagione e le statistiche dei due giocatori: poi si decide se la stagione è finita, così il vincitore
+    // si calcola su una classifica che comprende anche quest'ultimo match.
     await aggiornaLeaderboard(stagione);
     await ricalcolaStatisticheGlobali(p1Id);
     await ricalcolaStatisticheGlobali(p2Id);
 
+    // --- 6. CHIUSURA AUTOMATICA STAGIONE ---
+    // Quando ogni giocatore ha giocato tutti gli showdown contro tutti gli altri (vedi avanzamentoStagione) la stagione passa a
+    // "closed", si calcola il vincitore e si aggiornano i profili (stagioni vinte, storico).
+    return chiudiStagioneSeCompleta(stagione);
+}
+
+
+// =====================================================
+// FINE DELLA STAGIONE
+//
+// Una stagione è finita quando OGNI coppia di giocatori iscritti ha giocato TUTTI gli showdown previsti in OGNI formato:
+// `showdowns_per_format` (nelle info della stagione) per formato, contro ciascun avversario. Uno showdown conta solo se è
+// concluso (i suoi 3 match salvati: stessa regola di sfide.js). Gli showdown solo aperti o in corso non contano.
+// Se il numero di showdown per formato non c'è (0 = nessun limite) la stagione non si chiude da sola: lo fa l'amministratore.
+// Un formato in cui uno dei due giocatori non ha iscritto nessun team non si può giocare: quella coppia non è richiesta.
+// =====================================================
+const MATCH_PER_SHOWDOWN_STAGIONE = 3;
+
+const idGiocatoreStagione = t => String(t == null ? '' : t).toLowerCase().trim();
+const valoriStagione = x => (x && typeof x === 'object' ? Object.values(x) : []);
+
+function showdownConcluso(sd) {
+    if (!sd) return false;
+    if (sd.info && sd.info.isCompleted === true) return true;
+    return valoriStagione(sd.matches).filter(m => m && m.p1score != null && m.p2score != null).length >= MATCH_PER_SHOWDOWN_STAGIONE;
+}
+
+/**
+ * Quanto manca alla fine di una stagione.
+ *   info, iscritti, showdowns, teamsIscritti: i nodi di Firebase della stagione (`teams_iscritti` può mancare)
+ * Restituisce { completa, richiesti, giocati, giocatori, formati, mancanti: [{ a, b, formato, mancano }] }
+ */
+function avanzamentoStagione(info, iscritti, showdowns, teamsIscritti) {
+    info = info || {};
+    const perFormato = parseInt(info.showdowns_per_format, 10) || 0;
+    const formati = (Array.isArray(info.selected_formats) ? info.selected_formats : valoriStagione(info.selected_formats)).filter(Boolean);
+    const nomi = Array.isArray(iscritti) ? iscritti : Object.keys(iscritti || {});
+    const giocatori = [...new Set(nomi.map(idGiocatoreStagione).filter(Boolean))].sort();
+    const teams = teamsIscritti && typeof teamsIscritti === 'object' && Object.keys(teamsIscritti).length ? teamsIscritti : null;
+
+    const haTeam = (formato, id) => {
+        if (!teams) return true;
+        const chiave = Object.keys(teams).find(k => idGiocatoreStagione(k) === idGiocatoreStagione(formato));
+        const voce = chiave && teams[chiave] ? Object.entries(teams[chiave]).find(([k]) => idGiocatoreStagione(k) === id) : null;
+        if (!voce || !voce[1]) return false;
+        return Number(voce[1].count) > 0 || valoriStagione(voce[1].datiTeams).length > 0;
+    };
+
+    const fatti = {};
+    for (const sd of valoriStagione(showdowns)) {
+        if (!showdownConcluso(sd)) continue;
+        // i giocatori e il formato stanno nelle info dello showdown; i showdown più vecchi li hanno solo nei match
+        const i = (sd && sd.info) || {};
+        const m = valoriStagione(sd.matches).find(x => x && (x.player1Id || x.player1)) || {};
+        const a = idGiocatoreStagione(i.player1Id || i.player1 || m.player1Id || m.player1);
+        const b = idGiocatoreStagione(i.player2Id || i.player2 || m.player2Id || m.player2);
+        if (!a || !b) continue;
+        const chiave = `${[a, b].sort().join('|')}|${idGiocatoreStagione(i.categoria || m.categoria)}`;
+        fatti[chiave] = (fatti[chiave] || 0) + 1;
+    }
+
+    const esito = { completa: false, richiesti: 0, giocati: 0, giocatori, formati, mancanti: [] };
+    if (!perFormato || giocatori.length < 2 || !formati.length) return esito;
+    for (let x = 0; x < giocatori.length; x++) {
+        for (let y = x + 1; y < giocatori.length; y++) {
+            for (const formato of formati) {
+                if (!haTeam(formato, giocatori[x]) || !haTeam(formato, giocatori[y])) continue;
+                const fattiQui = Math.min(perFormato, fatti[`${giocatori[x]}|${giocatori[y]}|${idGiocatoreStagione(formato)}`] || 0);
+                esito.richiesti += perFormato;
+                esito.giocati += fattiQui;
+                if (fattiQui < perFormato) esito.mancanti.push({ a: giocatori[x], b: giocatori[y], formato, mancano: perFormato - fattiQui });
+            }
+        }
+    }
+    esito.completa = esito.richiesti > 0 && esito.mancanti.length === 0;
     return esito;
+}
+
+async function leggiStagione(stagione) {
+    const base = `seasons/${stagione}`;
+    const [i, isc, sd, ti] = await Promise.all([
+        db.ref(`${base}/info`).once('value'), db.ref(`${base}/iscritti`).once('value'),
+        db.ref(`${base}/showdowns`).once('value'), db.ref(`${base}/teams_iscritti`).once('value')
+    ]);
+    const info = i.val() || {};
+    return { info, avanzamento: avanzamentoStagione(info, isc.val(), sd.val(), ti.val()) };
+}
+
+/**
+ * Chiude la stagione se è finita: stato "closed", vincitore e profili (salvaVincitoreStagione).
+ * Restituisce { stagioneChiusa, vincitoreStagione, totalDays } (totalDays = showdown richiesti in tutto).
+ */
+async function chiudiStagioneSeCompleta(stagione) {
+    const esito = { stagioneChiusa: false, vincitoreStagione: null, totalDays: 0 };
+    if (stagione === 'sbeta') return esito;       // la stagione di prova non si chiude da sola
+    const { info, avanzamento } = await leggiStagione(stagione);
+    esito.totalDays = avanzamento.richiesti;
+    const stato = idGiocatoreStagione(info.status);
+    const scadutaIscrizione = info.deadline && new Date() >= new Date(info.deadline);
+    if (!avanzamento.completa || !(stato === 'playing' || (stato === 'open' && scadutaIscrizione))) return esito;
+
+    // chi arriva per primo chiude: due match salvati insieme non fanno chiudere (e contare i profili) due volte
+    const claim = await db.ref(`seasons/${stagione}/info/status`).transaction(cur => {
+        if (cur === null) return null;                    // cache vuota: Firebase riprova col valore vero
+        const c = idGiocatoreStagione(cur);
+        return c === 'playing' || c === 'open' ? 'closed' : undefined;
+    });
+    if (!claim.committed) return esito;
+
+    await db.ref(`seasons/${stagione}/info`).update({ chiusuraAutomatica: true, chiusaIl: new Date().toISOString() });
+    esito.vincitoreStagione = await salvaVincitoreStagione(stagione);
+    esito.stagioneChiusa = true;
+    console.log(`La stagione ${stagione} è finita (${avanzamento.giocati}/${avanzamento.richiesti} showdown): CLOSED, vince ${esito.vincitoreStagione}.`);
+    return esito;
+}
+
+/**
+ * Dopo aver tolto uno showdown o un match: una stagione chiusa DA SOLA che non è più completa torna "playing" e perde il vincitore.
+ * (Una stagione chiusa a mano dall'amministratore non si riapre da sola.) Restituisce true se è stata riaperta.
+ */
+async function riapriStagioneSeIncompleta(stagione) {
+    const { info, avanzamento } = await leggiStagione(stagione);
+    if (idGiocatoreStagione(info.status) !== 'closed' || info.chiusuraAutomatica !== true || avanzamento.completa) return false;
+    await ritiraVincitoreStagione(stagione);
+    await db.ref(`seasons/${stagione}/info`).update({ status: 'playing', chiusuraAutomatica: null, chiusaIl: null, winner: null });
+    return true;
+}
+
+/**
+ * Ordine della classifica di una stagione: punti, poi match vinti, poi set vinti, poi il nome. Lo stesso in matches.html (RANKINGS e LEAGUE TABLE)
+ * e per decidere chi ha vinto la stagione. Funziona con { points, won, setW, name } (o `id` al posto di `name`).
+ */
+function confrontaClassifica(a, b) {
+    const n = x => Number(x) || 0;
+    return n(b.points) - n(a.points) || n(b.won) - n(a.won) || n(b.setW) - n(a.setW)
+        || String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''));
+}
+
+/**
+ * Classifica finale di una stagione e aggiornamento dei profili: stagioni vinte (players/{id}/stats/seasons/won) e storico
+ * (players/{id}/stats/seasons/history/{stagione}). Ordine: punti, match vinti, set vinti (come la classifica in matches.html).
+ * Si può rifare quante volte si vuole: il contatore delle stagioni vinte cambia solo se cambia chi ha vinto.
+ */
+async function salvaVincitoreStagione(seasonId) {
+    const seasonRef = db.ref(`seasons/${seasonId}`);
+    const snapshot = await seasonRef.once('value');
+    const seasonData = snapshot.val();
+
+    if (!seasonData || !seasonData.leaderboard) {
+        console.error("Leaderboard non trovata per la stagione:", seasonId);
+        return "---";
+    }
+
+    const info = seasonData.info || {};
+    const lb = seasonData.leaderboard;
+    const showdowns = seasonData.showdowns || {};
+
+    // --- A. DATE (inizio e fine, dagli showdown) ---
+    let startDate = "N/A";
+    let endDate = "N/A";
+    const dateShowdown = Object.values(showdowns).map(sd => sd && sd.info && sd.info.data).filter(Boolean);
+    if (dateShowdown.length > 0) {
+        dateShowdown.sort((a, b) => new Date(String(a).split('/').reverse().join('-')) - new Date(String(b).split('/').reverse().join('-')));
+        startDate = dateShowdown[0];
+        endDate = dateShowdown[dateShowdown.length - 1];
+    }
+
+    // --- B. CLASSIFICA ---
+    const classifica = Object.keys(lb).map(name => {
+        const d = lb[name] || {};
+        return { name, dbPath: name.toLowerCase(), points: Number(d.points || 0), won: Number(d.won || 0), setW: Number(d.setW || 0) };
+    }).sort(confrontaClassifica);
+
+    // --- C. PROFILI ---
+    for (let i = 0; i < classifica.length; i++) {
+        const p = classifica[i];
+        const rank = i + 1;
+        const isWinner = (rank === 1 && p.points > 0);
+        const playerStatsRef = db.ref(`players/${p.dbPath}/stats/seasons`);
+        try {
+            const historySnap = await playerStatsRef.child(`history/${seasonId}`).once('value');
+            const wasAlreadyWinner = historySnap.exists() && historySnap.val().rank === 1;
+
+            await playerStatsRef.child(`history/${seasonId}`).set({ name: info.name || seasonId, startdate: startDate, enddate: endDate, rank });
+
+            if (isWinner && !wasAlreadyWinner) {
+                await playerStatsRef.child('won').transaction(current => (current || 0) + 1);
+            } else if (!isWinner && wasAlreadyWinner) {
+                await playerStatsRef.child('won').transaction(current => Math.max(0, (current || 1) - 1));
+            }
+        } catch (err) {
+            console.error(`Errore nel salvataggio per ${p.dbPath}:`, err);
+        }
+    }
+
+    const winnerName = classifica[0] && classifica[0].points > 0 ? classifica[0].name : "Nessun Vincitore";
+    await seasonRef.child('info').update({ winner: winnerName });
+    return winnerName;
+}
+
+/** Il contrario di salvaVincitoreStagione: toglie lo storico della stagione ai giocatori e una stagione vinta a chi l'aveva vinta. */
+async function ritiraVincitoreStagione(seasonId) {
+    const snap = await db.ref('players').once('value');
+    const giocatori = snap.val() || {};
+    for (const [pid, g] of Object.entries(giocatori)) {
+        const storico = g && g.stats && g.stats.seasons && g.stats.seasons.history && g.stats.seasons.history[seasonId];
+        if (!storico) continue;
+        const ref = db.ref(`players/${pid}/stats/seasons`);
+        if (Number(storico.rank) === 1) await ref.child('won').transaction(current => Math.max(0, (current || 1) - 1));
+        await ref.child(`history/${seasonId}`).remove();
+    }
 }
 
 

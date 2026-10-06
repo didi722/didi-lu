@@ -22,12 +22,18 @@
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="dettagli.css">
 <link rel="stylesheet" href="badge-team.css">
+<link rel="stylesheet" href="nome-scorrevole.css">
 <script src="dati-gen.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
+<script src="nome-scorrevole.js"></script>
+<script src="sprite-pkm.js"></script>
+<script src="ordine-showdown.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole, .cl-nome'));</script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
+<link rel="stylesheet" href="classifica.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -168,28 +174,16 @@
         </div>
 
         <aside class="hub-right-column">
-            <div class="neubrutal-card participants-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px;">
-                    <h3 class="right-hub-title" style="margin:0;">RANKINGS:</h3>
-                    <button class="rank-btn" onclick="document.getElementById('modal-rank-details').style.display='flex'; renderClassificaDettagliata(stagioneAttiva)" style="
-                background: #ffbd44; 
-                border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-                box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-                cursor: pointer;
-                font-weight: 900;
-                padding: 2px 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: 0.2s;
-                "
-                onmouseover="this.style.transform='translate(-1px, -1px)'; this.style.boxShadow='3px 3px 0px #000';" 
-                onmouseout="this.style.transform='none'; this.style.boxShadow='2px 2px 0px #000';">
-                ➜
-                    </button>
+            <!-- RANKINGS: una finestra nello stile del sito (classifica.css); le righe le scrive renderRankings() -->
+            <section class="cl-finestra cl-laterale participants-card" aria-label="Rankings">
+                <div class="cl-barra">
+                    <span class="cl-barra-titolo">RANKINGS</span>
+                    <button type="button" class="cl-apri rank-btn" title="Open the full league table" onclick="apriClassificaEstesa()">Full table ➜</button>
                 </div>
+                <div class="cl-corpo">
                     <div id="participants-list" class="simple-player-list"></div>
-            </div>
+                </div>
+            </section>
         </aside>
     </div>
 </main>
@@ -383,16 +377,18 @@
         </div>
     </div>
 
-    <div id="modal-rank-details" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
-    
-    <div class="neubrutal-card rank-modal-card">
-       
-
-        <div id="modal-rank-details-content" class="rank-modal-body">
-            <p style="text-align: center; font-weight: 800; text-transform: uppercase;">Loading Stats...</p>
+    <!-- LEAGUE TABLE: la classifica estesa, una finestra nello stile del sito (classifica.css); la tabella la scrive renderClassificaDettagliata() -->
+    <div id="modal-rank-details" onclick="if (event.target === this) chiudiClassificaEstesa()">
+        <div class="cl-finestra cl-grande" role="dialog" aria-modal="true" aria-label="League table">
+            <div class="cl-barra">
+                <span class="cl-barra-titolo">LEAGUE TABLE · SANT'ALVISE PKMN LEAGUE</span>
+                <button type="button" class="cl-chiudi" aria-label="Close" onclick="chiudiClassificaEstesa()">×</button>
+            </div>
+            <div id="modal-rank-details-content" class="cl-corpo">
+                <p class="cl-vuoto">Loading stats...</p>
+            </div>
         </div>
     </div>
-</div>
 
 <script>      
 
@@ -747,13 +743,8 @@ async function inizializzaPaginaArchivio() {
     container.innerHTML = "";
 
     // --- 5. RENDERING SHOWDOWNS ---
-    const sortedSdKeys = Object.keys(dataShowdowns)
-       .filter(id => Sfide.completato(dataShowdowns[id]))
-       .sort((a, b) => {
-        const dataA = dataShowdowns[a].info?.data || "";
-        const dataB = dataShowdowns[b].info?.data || "";
-        return dataB.localeCompare(dataA);
-    });
+    // i giocati per ultimi in cima; nello stesso giorno, in cima quello il cui ultimo match è stato salvato per ultimo (ordine-showdown.js)
+    const sortedSdKeys = OrdineShowdown.ordina(dataShowdowns).filter(id => Sfide.completato(dataShowdowns[id]));
 
     if (sortedSdKeys.length === 0) {
         container.innerHTML = "<p style='color:black; text-align:center; padding:20px;'>No showdowns yet. Start battling with your friends!</p>";
@@ -805,11 +796,11 @@ async function inizializzaPaginaArchivio() {
         <span class="sd-category-tag">${esc(info.categoria || "OU")}</span>
     </div>
     <div class="sd-card-content">
-        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
+        <div class="sd-lato sd-lato-1" title="${esc(p1Name)}"><span class="sd-nome nome-scorrevole">${esc(p1Name)}</span>${chiVince === 1 ? '<i class="sd-win">WIN</i>' : ''}</div>
         <div class="sd-result-badge">
             <span class="sd-final-score"><b>${vintiP1}</b><i>:</i><b>${vintiP2}</b></span>
         </div>
-        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
+        <div class="sd-lato sd-lato-2" title="${esc(p2Name)}"><span class="sd-nome nome-scorrevole">${esc(p2Name)}</span>${chiVince === 2 ? '<i class="sd-win">WIN</i>' : ''}</div>
     </div>
     <div class="sd-card-footer">
         <span class="sd-date-text">${esc(info.data || 'No date')}</span>
@@ -827,6 +818,22 @@ async function inizializzaPaginaArchivio() {
     }
 }
 
+// testo sicuro dentro l'HTML della classifica (nomi e indirizzi arrivano dal database)
+const escClassifica = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// la classifica estesa (LEAGUE TABLE): si apre dal tasto della striscia a lato, si chiude con la X, toccando fuori o con Esc
+function apriClassificaEstesa() {
+    const velo = document.getElementById('modal-rank-details');
+    if (!velo) return;
+    velo.classList.add('aperta');
+    renderClassificaDettagliata(stagioneAttiva);
+}
+function chiudiClassificaEstesa() {
+    const velo = document.getElementById('modal-rank-details');
+    if (velo) velo.classList.remove('aperta');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiClassificaEstesa(); });
+
 async function renderRankings(leaderboardData) {
     const listContainer = document.getElementById('participants-list');
     if (!listContainer) return;
@@ -839,11 +846,7 @@ async function renderRankings(leaderboardData) {
         sortedPlayers = Object.keys(leaderboardData).map(name => ({
             name: name,
             ...leaderboardData[name]
-        })).sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            if (b.won !== a.won) return b.won - a.won;
-            return (b.setW || 0) - (a.setW || 0);
-        });
+        })).sort(confrontaClassifica);
     } else {
         // FALLBACK: Recuperiamo solo gli ISCRITTI a questa specifica stagione in ordine alfabetico
         try {
@@ -865,166 +868,38 @@ async function renderRankings(leaderboardData) {
         return;
     }
 
-    // Generiamo l'HTML con i colori dinamici recuperati da players
+    // Generiamo l'HTML con i colori dinamici recuperati da players: una riga per giocatore (classifica.css), niente stili qui dentro
     const htmlRows = await Promise.all(sortedPlayers.map(async (player, index) => {
         const nameClean = player.name.toLowerCase().trim();
         const snapInfo = await db.ref(`players/${nameClean}/info`).once('value');
         const infoPlayer = snapInfo.val() || {};
-        const color = infoPlayer.color || "#31c489";
+        const color = String(infoPlayer.color || "#31c489").replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
         const avatarHtml = infoPlayer.avatar
-            ? `<img src="${infoPlayer.avatar}" class="rank-avatar-mini" alt="" loading="lazy">`
-            : `<div class="rank-avatar-mini rank-avatar-vuoto"></div>`;
+            ? `<img src="${escClassifica(infoPlayer.avatar)}" class="cl-avatar" alt="" loading="lazy">`
+            : `<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>`;
 
-        const sdWon = player.sdWon || 0; 
-        const sdLost = player.sdLost || 0; 
-        const totalShowdowns = sdWon + sdLost;
+        const sdWon = player.sdWon || 0;
+        const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
+        const dettaglio = `Showdowns: ${sdWon} won, ${sdLost} lost · Matches: ${player.won || 0} won, ${player.lost || 0} lost`;
 
         return `
        <div class="rank-riga">
            ${Sfide.bottoneRanking(player.name)}
-
-            <div class="player-rank-row" 
-                onclick="window.location.href='public.html?player=${playerUrlParam}'"
-                style="
-                    display: flex; 
-                    align-items: center; 
-                    gap: 8px; 
-                    margin-bottom: 10px; 
-                    padding: 10px; 
-                    background: ${color}; 
-                    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-                    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-                    --hover-color: #000;
-                    transition: transform 0.1s ease, box-shadow 0.1s ease;
-                    transform: rotate(-1deg);
-                    cursor: pointer;
-                "
-                onmouseenter="this.style.transform='translate(-2px, -2px) rotate(-1deg)'; this.style.boxShadow='6px 6px 0px #000';"
-                onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px #000';"
-            >
-                <div style="font-weight: 900; font-size: 1.1rem; min-width: 25px;">#${index + 1}</div>
-
+            <a class="cl-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${playerUrlParam}" style="--cl-colore: ${color};" title="${escClassifica(dettaglio)}">
+                <span class="cl-pos">#${index + 1}</span>
                 ${avatarHtml}
-
-                <div style="flex-grow: 1; min-width: 0;">
-                    <div style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #1a1a1a; font-family: 'Josefin Sans';">
-                        ${player.name}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #333; font-weight: 700; letter-spacing: -0.2px;">
-                        P: ${totalShowdowns}, S: ${sdWon}/${sdLost}, W/L: ${player.won || 0}/${player.lost || 0}
-                    </div>
-                </div>
-                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); transform: rotate(1deg);">
-                    ${player.points}
-                </div>
-            </div>
+                <span class="cl-testi">
+                    <span class="cl-nome nome-scorrevole">${escClassifica(player.name)}</span>
+                    <span class="cl-dati">SD ${sdWon}-${sdLost} · MATCH ${player.won || 0}-${player.lost || 0}</span>
+                </span>
+                <span class="cl-punti">${player.points || 0}</span>
+            </a>
         </div>
         `;
     }));
 
     listContainer.innerHTML = htmlRows.join('');
-}
-
-async function popolaClassifica() {
-    const listContainer = document.getElementById('participants-list');
-    if (!listContainer) return;
-
-    try {
-        const snapLeaderboard = await db.ref(`seasons/${stagioneAttiva}/leaderboard`).once('value');
-        const leaderboardData = snapLeaderboard.val() || {};
-
-        let playersArray = [];
-
-        if (Object.keys(leaderboardData).length > 0) {
-            playersArray = Object.keys(leaderboardData).map(name => ({
-                name: name,
-                ...leaderboardData[name]
-            }));
-
-            playersArray.sort((a, b) => {
-                if (b.points !== a.points) return b.points - a.points;
-                if (b.won !== a.won) return b.won - a.won;
-                return (b.setW || 0) - (a.setW || 0);
-            });
-        } else {
-            // FALLBACK: Leggiamo solo i nodi iscritti alla stagione corrente
-            const snapIscritti = await db.ref(`seasons/${stagioneAttiva}/iscritti`).once('value');
-            const iscritti = snapIscritti.val() || {};
-
-            playersArray = Object.keys(iscritti).map(key => ({
-                name: key,
-                points: 0, won: 0, lost: 0, setW: 0, setL: 0
-            })).sort((a, b) => a.name.localeCompare(b.name));
-        }
-
-        if (playersArray.length === 0) {
-            listContainer.innerHTML = "<p style='color:#666; font-style:italic;'>No players registered in this season.</p>";
-            return;
-        }
-
-        const htmlRows = await Promise.all(playersArray.map(async (player, index) => {
-            const nameClean = player.name.toLowerCase().trim();
-            const snapColor = await db.ref(`players/${nameClean}/info/color`).once('value');
-            const baseColor = snapColor.val() || "#31c489";
-            const borderColor = pSBC(-0.4, baseColor);
-
-            const playerUrlParam = encodeURIComponent(player.name.trim());
-
-            return `
-                <div class="player-rank-row" 
-                    onclick="window.location.href='public.html?player=${playerUrlParam}'"
-                    style="
-                        display: flex; 
-                        align-items: center; 
-                        gap: 10px; 
-                        margin-bottom: 10px; 
-                        padding: 10px; 
-                        background: ${baseColor}22; 
-                        border: 3px solid ${borderColor};
-                        box-shadow: 4px 4px 0px ${borderColor};
-                        cursor: pointer;
-                        transition: transform 0.1s ease, box-shadow 0.1s ease;
-                    "
-                    onmouseenter="this.style.transform='translate(-2px, -2px)'; this.style.boxShadow='6px 6px 0px ${borderColor}';"
-                    onmouseleave="this.style.transform='none'; this.style.boxShadow='4px 4px 0px ${borderColor}';"
-                >
-                    <div class="rank-number" style="
-                        font-weight: 900; 
-                        font-size: 1.2rem; 
-                        color: ${borderColor};
-                        min-width: 25px;
-                    ">#${index + 1}</div>
-                    
-                    <div class="rank-info" style="flex-grow: 1;">
-                        <div style="font-weight: 800; font-family: 'Josefin Sans'; color: ${borderColor}; text-transform: uppercase;">
-                            ${player.name}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #444; font-weight: 600;">
-                            W: ${player.won} | L: ${player.lost} | Sets: ${player.setW || 0}-${player.setL || 0}
-                        </div>
-                    </div>
-
-                    <div class="rank-points" style="
-                        background: ${borderColor}; 
-                        color: white; 
-                        padding: 5px 10px; 
-                        font-weight: 900; 
-                        font-size: 1.1rem;
-                        border-radius: 2px;
-                    ">
-                        ${player.points} PT
-                    </div>
-                </div>
-            `;
-        }));
-
-        listContainer.innerHTML = htmlRows.join('');
-
-    } catch (e) {
-        console.error("Error occurred while loading rankings:", e);
-        listContainer.innerHTML = "<p style='color:red;'>Error loading rankings.</p>";
-    }
 }
 
 async function renderClassificaDettagliata(stagione) {
@@ -1042,106 +917,73 @@ async function renderClassificaDettagliata(stagione) {
         const leaderboardData = snapLeaderboard.val() || {};
         const iscrittiData = snapIscritti.val() || {};
         const playersData = snapPlayers.val() || {};
+        const coloreDi = id => String(playersData[String(id).toLowerCase().trim()]?.info?.color || '#ffbd44').replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
+        const avatarDi = id => playersData[String(id).toLowerCase().trim()]?.info?.avatar || '';
 
         let sorted = [];
 
         if (Object.keys(leaderboardData).length > 0) {
+            // stesso ordine dei RANKINGS e del vincitore: punti, match vinti, set vinti, nome
             sorted = Object.keys(leaderboardData).map(id => {
                 const s = leaderboardData[id];
                 return {
-                    id, ...s,
-                    color: playersData[id]?.info?.color || "#ffbd44",
-                    avatar: playersData[id]?.info?.avatar || "", 
+                    id, name: id, ...s,
                     sdTot: (s.sdWon || 0) + (s.sdLost || 0),
                     mTot: (s.won || 0) + (s.lost || 0),
                     sTot: (s.setW || 0) + (s.setL || 0)
                 };
-            }).sort((a, b) => b.points - a.points);
+            }).sort(confrontaClassifica);
         } else {
             // FALLBACK: Popoliamo la tabella con gli iscritti a 0 in ordine alfabetico
-            sorted = Object.keys(iscrittiData).map(key => {
-                const pKeyLower = key.toLowerCase().trim();
-                return {
-                    id: key,
-                    points: 0, sdTot: 0, sdWon: 0, sdLost: 0, mTot: 0, won: 0, lost: 0, sTot: 0, setW: 0, setL: 0,
-                    color: playersData[pKeyLower]?.info?.color || "#ffbd44",
-                    avatar: playersData[pKeyLower]?.info?.avatar || ""
-                };
-            }).sort((a, b) => a.id.localeCompare(b.id));
+            sorted = Object.keys(iscrittiData).map(key => ({
+                id: key, name: key,
+                points: 0, sdTot: 0, sdWon: 0, sdLost: 0, mTot: 0, won: 0, lost: 0, sTot: 0, setW: 0, setL: 0
+            })).sort((a, b) => a.id.localeCompare(b.id));
         }
 
-        let html = `
-        <div class="rank-modal-title">LEAGUE TABLE</div>
-            <div class="rank-grid-system rank-header-row">
-                <div style="grid-column: 1"></div> 
-                <div style="grid-column: 2"></div>
-                <div class="group-main-label bg-sd">SHOWDOWN</div>
-                <div class="group-main-label bg-match">MATCH</div>
-                <div class="group-main-label bg-set">SET</div>
-                <div style="grid-column: 12"></div>                
-            </div>
+        if (!sorted.length) {
+            container.innerHTML = '<p class="cl-vuoto">No players registered in this season.</p>';
+            return;
+        }
 
-            <div class="rank-stack">
-        `;
+        // tre gruppi (showdown, match, set) da giocati / vinti / persi, poi i punti: le colonne hanno la loro etichetta
+        const sotto = ['P', 'W', 'L'].map((t, i) => `<span class="cl-sotto${i === 0 ? ' cl-tot' : ''}">${t}</span>`).join('');
+        let html = `
+            <div class="cl-tab cl-tab-testa" aria-hidden="true">
+                <span></span><span></span>
+                <span class="cl-gruppo cl-g-sd"><span class="cl-lungo">Showdown</span><span class="cl-corto">SD</span></span>
+                <span class="cl-gruppo cl-g-match">Match</span>
+                <span class="cl-gruppo cl-g-set">Set</span>
+                <span></span>
+                <span></span><span></span>${sotto}${sotto}${sotto}<span class="cl-sotto">PT</span>
+            </div>
+            <div class="cl-pile">`;
 
         sorted.forEach((p, index) => {
-            const playerUrlParam = encodeURIComponent(p.id.trim());
-            const avatarHtml = p.avatar 
-                ? `<img src="${p.avatar}" class="stack-avatar-inline" alt="${p.id}">` 
-                : `<div class="stack-avatar-inline-empty"></div>`;
+            const nome = escClassifica(p.id);
+            const url = encodeURIComponent(String(p.id).trim());
+            const avatar = avatarDi(p.id);
+            const avatarHtml = avatar
+                ? `<img src="${escClassifica(avatar)}" class="cl-avatar" alt="" loading="lazy">`
+                : `<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>`;
+            const val = (n, extra = '') => `<span class="cl-val ${extra}">${n || 0}</span>`;
 
             html += `
-                <!-- event.stopPropagation() impedisce al click di risalire all'overlay -->
-                <div class="rank-grid-system player-stack-card" 
-                    onclick="event.stopPropagation(); window.location.href='public.html?player=${playerUrlParam}'"
-                    style="
-                        --player-color: ${p.color}; 
-                        margin-bottom: 10px;
-                        cursor: pointer;
-                        transition: transform 0.2s ease, box-shadow 0.1s ease;
-                    "
-                >
-                    <div class="stack-pos">#${index + 1}</div>
-                    
-                    <div class="stack-identity-wrapper">
-                        ${avatarHtml}
-                        <div class="stack-name">${p.id}</div>
-                    </div>
-                    
-                    <div class="stack-val val-tot">${p.sdTot}</div>
-                    <div class="stack-val">${p.sdWon || 0}</div>
-                    <div class="stack-val">${p.sdLost || 0}</div>
-
-                    <div class="stack-val val-tot">${p.mTot}</div>
-                    <div class="stack-val">${p.won || 0}</div>
-                    <div class="stack-val">${p.lost || 0}</div>
-
-                    <div class="stack-val val-tot">${p.sTot}</div>
-                    <div class="stack-val">${p.setW || 0}</div>
-                    <div class="stack-val">${p.setL || 0}</div>
-
-                    <div class="stack-points-badge">${p.points}</div>
-                </div>
-            `;
+                <a class="cl-tab cl-tab-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${url}" style="--cl-colore: ${coloreDi(p.id)};">
+                    <span class="cl-pos">#${index + 1}</span>
+                    <span class="cl-identita">${avatarHtml}<span class="cl-nome nome-scorrevole">${nome}</span></span>
+                    ${val(p.sdTot, 'cl-tot')}${val(p.sdWon)}${val(p.sdLost, 'cl-perse')}
+                    ${val(p.mTot, 'cl-tot')}${val(p.won)}${val(p.lost, 'cl-perse')}
+                    ${val(p.sTot, 'cl-tot')}${val(p.setW)}${val(p.setL, 'cl-perse')}
+                    <span class="cl-punti">${p.points || 0}</span>
+                </a>`;
         });
 
         container.innerHTML = html + `</div>`;
-
-        // --- GESTIONE CHIUSURA AUTOMATICA ---
-        // Trova l'overlay principale (la schermata grigia/sfocata di sfondo)
-        const overlay = container.closest('.modal-overlay') || document.getElementById('modal-rank-details'); 
-        
-        if (overlay) {
-            overlay.onclick = function() {
-                // Nasconde l'intero overlay del modale
-                overlay.style.display = 'none'; 
-                
-                // NOTA: Se usi una funzione specifica nel tuo script per chiudere i modali, 
-                // (es. chiudiModaleRank() o simili), puoi chiamarla direttamente qui dentro.
-            };
-        }
-
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="cl-vuoto">Unable to load the league table.</p>';
+    }
 }
 async function apriModaleTeamsIscritti() {
     const modal = document.getElementById('modal-registered-teams');
@@ -1338,7 +1180,7 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visi
     Object.keys(categorieDati).forEach(categoria => {
         const divisi = TeamVisibili.dividiTeam({
             chiusa: visibilita.chiusa, io: visibilita.io, giocatore: nomeGiocatore,
-            teams: categorieDati[categoria] || [], affrontate: visibilita.affrontate
+            teams: categorieDati[categoria] || [], affrontate: visibilita.affrontate, formato: categoria
         });
         teamNascosti += divisi.nascosti;
         const listaTeamIscritti = divisi.visibili;
@@ -1396,11 +1238,9 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visi
                 <div class="modal-team-hover-tooltip" style="background-color: ${coloreDelPlayer} !important; transform: translateX(-50%) rotate(${gradiRotazione}deg) !important;">
                     <div class="pkm-grid">
                         ${pokemonList.map((p, pidx) => {
-                            let pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            if (pkmNameUrl === 'mr-mime') pkmNameUrl = 'mrmime'; 
-                            
+                            const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                             const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            const pkmSprite = `https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif`;
+                            const pkmSprite = SpritePkm.gif(p.nome);
                             const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                             const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${pidx}`;
                             
@@ -1701,30 +1541,11 @@ async function eliminaShowdown(sdId) {
         console.log(`Showdown ${sdId} rimosso. Avvio ricalcolo statistiche...`);
 
 
-        // ==========================================
-        // 🔄 LOGICA: RIPRISTINO STATO PLAYING SU ELIMINAZIONE GIORNATA
-        // ==========================================
-        const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
-        const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-        
-        const stagioneInfo = snapStagioneInfo.val() || {};
-        const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-        // Se la stagione è attualmente 'closed'
-        if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
-            const numeroShowdownAttuali = Object.keys(tuttiShowdowns).length;
-            const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-
-            // Se i giorni effettivi sono inferiori ai total_days previsti, riapriamo la stagione.
-            if (numeroShowdownAttuali < totalDaysPrevisti) {
-                // Aggiorna lo stato su Firebase riportandolo su 'playing'
-                await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
-                console.log(`La stagione ${stagione} è stata riaperta e impostata su PLAYING.`);
-                
-                alert("⚠️ Info: Having deleted a complete Showdown, the season has been reopened!");
-            }
+        // Una stagione chiusa DA SOLA (tutti gli showdown giocati) a cui manca di nuovo uno showdown torna "playing", senza vincitore
+        if (await riapriStagioneSeIncompleta(stagione)) {
+            console.log(`La stagione ${stagione} è stata riaperta e impostata su PLAYING.`);
+            alert("⚠️ Info: Having deleted a complete Showdown, the season has been reopened!");
         }
-        // ==================================
 
 
         // 3. Ricalcolo Leaderboard e Statistiche Globali
@@ -2256,24 +2077,14 @@ function generaHtmlGifs(nomeTeam, categoria) {
     return Object.values(teamTrovato.pokemon).map(p => {
         if (!p || !p.nome || p.nome === "None") return "";
         
-        // 1. Pulizia standard dello slug per Showdown
-        let slug = p.nome.toLowerCase().trim()
-                         .replace(/\s+/g, '')
-                         .replace(/[.'é’%]/g, '');
-
-        // 2. Mappatura forme speciali per i server delle animazioni di Showdown
-        if (slug === 'mimikyu') slug = 'mimikyu-disguised';
-        if (slug === 'giratina') slug = 'giratina-altered';
-        if (slug === 'deoxys') slug = 'deoxys-normal';
-        if (slug === 'shaymin') slug = 'shaymin-land';
-        if (slug === 'aegislash') slug = 'aegislash-shield';
-
-        // 3. Puntiamo alla cartella /ani/ di Showdown
+        // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike); le forme che Showdown
+        // chiama solo col nome base (Mimikyu, Giratina...) hanno già la loro GIF con quel nome
+        const id = SpritePkm.id(p.nome);
         return `
-            <img src="https://play.pokemonshowdown.com/sprites/ani/${slug}.gif" 
+            <img src="${SpritePkm.gif(p.nome)}" 
                  class="mini-gif" 
-                 alt="${slug}"
-                 onerror="this.onerror=null; this.src='https://play.pokemonshowdown.com/sprites/dex/${slug}.png';">
+                 alt="${id}"
+                 onerror="SpritePkm.riserva(this, '${id}')">
         `;
     }).join('');
 }
@@ -2422,12 +2233,12 @@ function formattaEffettoNatura(natura) {
     return `<span style="white-space: nowrap; ">(<span style="color: #15803d; font-weight: bold;">+ ${effetto[0]}</span>, <span style="color: #b91c1c; font-weight: bold;">- ${effetto[1]}</span>)</span>`;
 }
 
-function gestisciErroreSprite(img, pkmNameUrl) {
+function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     const fase = parseInt(img.dataset.spriteFase || '0', 10);
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -2490,9 +2301,9 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="https://play.pokemonshowdown.com/sprites/ani/${pkmNameUrl}.gif" 
+                        <img src="${SpritePkm.gif(p.nome)}" 
                              class="modal-sprite clickable-pkm" 
-                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}')">                    </div>
+                             onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
 
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
@@ -2662,9 +2473,16 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
 function adattaReplayAlloSchermo() {
     const modal = document.getElementById('replayModal');
     if (!modal) return;
-    const scala = Math.min(1, (document.documentElement.clientWidth - 16) / 1150);
+    // la console misura 1150 × 647 px (l'immagine è 1920 × 1080): si rimpicciolisce per stare nella larghezza e, sugli schermi bassi, anche
+    // nell'altezza (restano l'intestazione sopra e i tasti dei set sotto); non scende sotto la metà per l'altezza, poi la finestra scorre
+    const larghezza = document.documentElement.clientWidth;
+    const altezza = window.innerHeight || document.documentElement.clientHeight;
+    const perLarghezza = (larghezza - 24) / 1150;
+    const perAltezza = (altezza - 230) / 647;
+    const scala = Math.min(1, perLarghezza, Math.max(0.5, perAltezza));
     modal.style.setProperty('--gba-scala', scala.toFixed(3));
 }
+window.addEventListener('resize', () => { if (document.getElementById('replayModal')?.style.display === 'flex') adattaReplayAlloSchermo(); });
 window.addEventListener('resize', adattaReplayAlloSchermo);
 
 window.chiudiReplay = function() {
@@ -3065,11 +2883,7 @@ async function caricaTipi(pkmName, elementId, direzione) {
 // Funzione globale per generare l'URL della GIF
 function getGifUrl(pName) {
     if (!pName) return "";
-    // Showdown usa nomi puliti senza spazi e punteggiatura
-    const urlName = pName.toLowerCase()
-                         .replace(/\s+/g, '') // Rimuove gli spazi
-                         .replace(/[.'é’]/g, ''); // Rimuove punteggiatura
-    return `https://play.pokemonshowdown.com/sprites/ani/${urlName}.gif`;
+    return SpritePkm.gif(pName);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
 }
 
 
@@ -3545,51 +3359,11 @@ async function eliminaMatch(showdownId, matchNum) {
             await db.ref(`seasons/${stagione}/showdowns/${showdownId}/info`).update(infoUpdate);
 
 
-            // ==========================================
-            // 🔥 NUOVA LOGICA: RIPRISTINO STATO PLAYING SE INCOMPLETO (CORRETTA)
-            // ==========================================
-            const snapStagioneInfo = await db.ref(`seasons/${stagione}/info`).once('value');
-            const snapTuttiShowdowns = await db.ref(`seasons/${stagione}/showdowns`).once('value');
-            
-            const stagioneInfo = snapStagioneInfo.val() || {};
-            const tuttiShowdowns = snapTuttiShowdowns.val() || {};
-
-            // Se la stagione è attualmente 'closed' e abbiamo impostato dei giorni totali
-            if (stagioneInfo.status === 'closed' && stagioneInfo.total_days) {
-                const totalDaysPrevisti = parseInt(stagioneInfo.total_days) || 0;
-                
-                // Ordiniamo le chiavi degli showdown inseriti (es: ["day1", "day2", "day3"])
-                const chiaviShowdowns = Object.keys(tuttiShowdowns).sort();
-                const numeroShowdownAttuali = chiaviShowdowns.length;
-                
-                let ultimoShowdownIncompleto = false;
-
-                if (numeroShowdownAttuali === totalDaysPrevisti) {
-                    // Identifichiamo l'ID dell'ultimo showdown inserito in ordine temporale/alfabetico
-                    const ultimoShowdownId = chiaviShowdowns[chiaviShowdowns.length - 1];
-                    
-                    // Contiamo quanti match REALI sono rimasti dentro l'ultimo giorno dopo la rimozione
-                    // Se stiamo cancellando proprio dall'ultimo giorno, usiamo la lunghezza aggiornata locale (matchesArray)
-                    const matchUltimoDay = (showdownId === ultimoShowdownId) 
-                        ? matchesArray.length 
-                        : (tuttiShowdowns[ultimoShowdownId]?.matches ? Object.keys(tuttiShowdowns[ultimoShowdownId].matches).length : 0);
-
-                    if (matchUltimoDay < 3) {
-                        ultimoShowdownIncompleto = true;
-                    }
-                }
-
-                // Se mancano showdown sul totale, OPPURE se siamo arrivati al totale ma l'ultimo è stato "azzoppato" (< 3 match)
-                if (numeroShowdownAttuali < totalDaysPrevisti || ultimoShowdownIncompleto) {
-                    
-                    // Riporta lo stato su playing in modo atomico
-                    await db.ref(`seasons/${stagione}/info`).update({ status: 'playing' });
-                    console.log(`La stagione ${stagione} è tornata in stato PLAYING a causa dell'eliminazione del match.`);
-                    
-                    alert("⚠️ Warning: The last showdown is no longer complete (requires 3 matches). The season status has been reset to PLAYING!");
-                }
+            // Una stagione chiusa DA SOLA (tutti gli showdown giocati) a cui manca di nuovo un match torna "playing", senza vincitore
+            if (await riapriStagioneSeIncompleta(stagione)) {
+                console.log(`La stagione ${stagione} è tornata in stato PLAYING a causa dell'eliminazione del match.`);
+                alert("⚠️ Warning: The last showdown is no longer complete (requires 3 matches). The season status has been reset to PLAYING!");
             }
-            // ==========================================
 
 
             // --- 4. SINCRONIZZAZIONE STATISTICHE ---
@@ -3994,7 +3768,7 @@ async function gestisciAccessoHub(seasonId, status, seasonName) {
                 Showdowns/Format:<strong> ${info.showdowns_per_format}</strong>
             </div>
             <div class="modal-info-box">
-                Total Matches: <strong>${info.total_days} </strong>
+                Showdowns vs each opponent: <strong>${(Number(info.showdowns_per_format) || 0) * (info.selected_formats ? Object.values(info.selected_formats).length : 0)} </strong>
             </div>
         </div>
     </div>

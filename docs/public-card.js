@@ -71,7 +71,8 @@
     }
 
     const pulisci = nome => String(nome || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-    const gifShowdown = nome => `https://play.pokemonshowdown.com/sprites/ani/${pulisci(nome)}.gif`;
+    // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime); senza il modulo si usa il vecchio nome con i trattini
+    const gifShowdown = nome => (window.SpritePkm ? window.SpritePkm.gif(nome) : `https://play.pokemonshowdown.com/sprites/ani/${pulisci(nome)}.gif`);
     const elenco = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
 
     // I tipi di un Pokémon (PokeAPI), una sola richiesta per specie
@@ -237,6 +238,42 @@
 
     const TARGHETTE = { titolo: d => costruisciTitolo(d), personalita: d => costruisciTargaPersonalita(d) };
 
+    // Sul palco la scena taglia i fumetti: il suggerimento della targhetta (titolo, personalità) si copia fuori dalla scena, fisso vicino a lei.
+    // Prima sul palco il cursore diventava un punto di domanda ma non compariva niente.
+    let suggerimentoFisso = null;
+    let timerSuggerimento = null;
+    function chiudiSuggerimentoFisso() {
+        clearTimeout(timerSuggerimento);
+        if (suggerimentoFisso) { suggerimentoFisso.remove(); suggerimentoFisso = null; }
+    }
+    function mostraSuggerimentoFisso(host) {
+        const originale = host.querySelector(':scope > .neubrutal-tooltip');
+        const pagina = document.getElementById('pp-pagina');
+        if (!originale || !pagina) return;
+        chiudiSuggerimentoFisso();
+        const copia = originale.cloneNode(true);
+        copia.classList.add('pp-tip-fisso');
+        pagina.appendChild(copia);
+        suggerimentoFisso = copia;
+        // sotto la targhetta; se non c'è posto, sopra; sempre dentro la finestra
+        const r = host.getBoundingClientRect();
+        const larghezza = document.documentElement.clientWidth;
+        const x = Math.min(Math.max(8, r.left + r.width / 2 - copia.offsetWidth / 2), Math.max(8, larghezza - copia.offsetWidth - 8));
+        let y = r.bottom + 10;
+        if (y + copia.offsetHeight > window.innerHeight - 8) y = Math.max(8, r.top - copia.offsetHeight - 10);
+        copia.style.setProperty('--tx', `${x}px`);
+        copia.style.setProperty('--ty', `${y}px`);
+    }
+    function collegaSuggerimentoFisso(nodo) {
+        nodo.addEventListener('pointerenter', () => mostraSuggerimentoFisso(nodo));
+        nodo.addEventListener('focus', () => mostraSuggerimentoFisso(nodo));
+        nodo.addEventListener('pointerleave', e => {
+            if (e.pointerType === 'touch') { timerSuggerimento = setTimeout(chiudiSuggerimentoFisso, 2800); return; }   // sul telefono resta un attimo
+            chiudiSuggerimentoFisso();
+        });
+        nodo.addEventListener('blur', chiudiSuggerimentoFisso);
+    }
+
     /** Mette ogni targhetta dove l'allenatore l'ha voluta (config.targhette); un contenitore si rifà solo se cambia cosa ci sta dentro */
     function riempiTarghe() {
         const posti = stato.config.targhette;
@@ -251,8 +288,10 @@
             if (contenitore.dataset.firma === firma) continue;
             contenitore.dataset.firma = firma;
             const nodi = chi.map(k => TARGHETTE[k](stato.dati)).filter(Boolean);
+            chiudiSuggerimentoFisso();
             contenitore.replaceChildren(...nodi);
             contenitore.hidden = !nodi.length;
+            if (posto === 'palco') nodi.forEach(collegaSuggerimentoFisso);
         }
     }
 
@@ -340,7 +379,10 @@
                         if (typeof window.apriPkmDettaglio === 'function' && Array.isArray(p.mosse)) window.apriPkmDettaglio(p, pulisci(nomePkm));
                     } },
                     h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
-                        onerror: e => { e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'; } }));
+                        onerror: e => {
+                            if (window.SpritePkm) return window.SpritePkm.riserva(e.target, window.SpritePkm.id(nomePkm));
+                            e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+                        } }));
                 tipiDi(nomePkm).then(tipi => {
                     const c = tipi.map(t => COLORI_TIPO[t]).filter(Boolean);
                     if (c.length) { slot.style.setProperty('--t1', c[0]); slot.style.setProperty('--t2', c[1] || c[0]); }
@@ -353,8 +395,13 @@
 
     function costruisciTrofei(d) {
         const stagioni = d.stagioni || {};
-        const conteggio = Number(stagioni.won) || 0;
-        const vinte = Object.values(stagioni.history || {}).filter(s => s && (s.rank === 1 || s.rank === '1'));
+        // il numero è quello dei badge (calcolato dalla classifica di ogni stagione chiusa): se la pagina non lo ha, il contatore salvato nel profilo
+        const calcolate = d.stagioniVinte && Number.isFinite(Number(d.stagioniVinte.conteggio)) ? d.stagioniVinte : null;
+        const conteggio = calcolate ? Number(calcolate.conteggio) : (Number(stagioni.won) || 0);
+        const storico = stagioni.history || {};
+        const vinte = calcolate
+            ? calcolate.elenco.map(x => ({ ...(storico[x.id] || {}), name: (storico[x.id] && storico[x.id].name) || x.nome }))
+            : Object.values(storico).filter(s => s && (s.rank === 1 || s.rank === '1'));
         const ha = conteggio > 0;
         const maschera = `url('immagini/${ha ? 'season-winner-color' : 'season-no-winner-color'}.png')`;
 
