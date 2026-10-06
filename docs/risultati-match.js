@@ -297,6 +297,16 @@ async function riapriStagioneSeIncompleta(stagione) {
 }
 
 /**
+ * Ordine della classifica di una stagione: punti, poi match vinti, poi set vinti, poi il nome. Lo stesso in matches.html (RANKINGS e LEAGUE TABLE)
+ * e per decidere chi ha vinto la stagione. Funziona con { points, won, setW, name } (o `id` al posto di `name`).
+ */
+function confrontaClassifica(a, b) {
+    const n = x => Number(x) || 0;
+    return n(b.points) - n(a.points) || n(b.won) - n(a.won) || n(b.setW) - n(a.setW)
+        || String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''));
+}
+
+/**
  * Classifica finale di una stagione e aggiornamento dei profili: stagioni vinte (players/{id}/stats/seasons/won) e storico
  * (players/{id}/stats/seasons/history/{stagione}). Ordine: punti, match vinti, set vinti (come la classifica in matches.html).
  * Si può rifare quante volte si vuole: il contatore delle stagioni vinte cambia solo se cambia chi ha vinto.
@@ -329,7 +339,7 @@ async function salvaVincitoreStagione(seasonId) {
     const classifica = Object.keys(lb).map(name => {
         const d = lb[name] || {};
         return { name, dbPath: name.toLowerCase(), points: Number(d.points || 0), won: Number(d.won || 0), setW: Number(d.setW || 0) };
-    }).sort((a, b) => b.points - a.points || b.won - a.won || b.setW - a.setW || a.name.localeCompare(b.name));
+    }).sort(confrontaClassifica);
 
     // --- C. PROFILI ---
     for (let i = 0; i < classifica.length; i++) {

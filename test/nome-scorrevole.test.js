@@ -95,7 +95,7 @@ test('simulatore e card showdown: il nome lungo scorre, niente puntini', () => {
     const matches = leggi('docs/matches.html');
     assert.equal((matches.match(/class="sd-nome nome-scorrevole"/g) || []).length, 2, 'i due giocatori della card');
     assert.match(matches, /nome-scorrevole\.css/);
-    assert.match(matches, /NomeScorrevole\.installa\('\.showdown-summary-card \.nome-scorrevole'\)/);
+    assert.match(matches, /NomeScorrevole\.installa\('\.showdown-summary-card \.nome-scorrevole, \.cl-nome'\)/, 'anche i nomi delle classifiche');
 });
 
 test('profilo: "Sign up" porta al riepilogo di iscrizione della home, che si apre da solo; "Choose teams" resta sull\'hub', () => {
