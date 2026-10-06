@@ -389,9 +389,10 @@
 /* =====================================================================
    I QUADRATI DEI SHOWDOWN NELL'ELENCO (Matches)
    ---------------------------------------------------------------------
-   Ogni showdown è una finestrina come quella che si apre al clic: la striscia nera con i tre pallini e la categoria, i due allenatori
-   sul loro colore con il punteggio in nero in mezzo (chi vince si alza e porta l'adesivo WIN, il suo numero è giallo), la data in
-   fondo. Colori, angoli, ombre e caratteri sono quelli del tema attivo. Il markup lo scrive il rendering degli showdown in matches.html.
+   Ogni showdown è una finestrina a tabellone: la striscia nera con i tre pallini e la categoria, una riga per allenatore sul suo colore
+   PIENO (niente mezzatinta: il nome in un cartellino bianco a sinistra, i set vinti in un quadrato a destra; chi vince porta il WIN e il
+   numero in nero e giallo), la data in fondo. Colori, angoli, ombre e caratteri sono quelli del tema attivo. Il markup lo scrive il
+   rendering degli showdown in matches.html.
    ===================================================================== */
 .showdown-grid-double .showdown-summary-card,
 .showdown-summary-card {
@@ -402,7 +403,7 @@
     min-width: 0;
     padding: 0 !important;
     overflow: hidden;
-    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    background: var(--nb-tip-bg, #fffdf6);          /* carta liscia: niente puntini */
     color: var(--nb-ink, #000);
     border: 3px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
@@ -449,40 +450,44 @@
     transform: rotate(calc(var(--nb-rot, 1) * -2deg));
 }
 
-/* i due allenatori affiancati sul loro colore (il nome in alto), il punteggio in nero a cavallo del loro bordo, in basso */
+/* una riga per allenatore, una sopra l'altra e con i bordi in comune: il suo colore pieno, il nome a sinistra, i set vinti a destra */
 .showdown-summary-card .sd-card-content {
     position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;           /* le righe sono larghe quanto la card (il foglio di prima le centrava) */
+    justify-content: flex-start;
     gap: 0;
     margin: 0;
-    padding: 18px 12px 26px;
+    padding: 14px 14px 12px 10px;     /* a destra un po' di più: il vincitore è spostato in avanti */
 }
 .showdown-summary-card .sd-lato {
     position: relative;
     box-sizing: border-box;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    align-items: center;
+    gap: 6px;
     min-width: 0;
-    min-height: 76px;
-    padding: 9px 6px 26px;
-    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--lato, #8a8a8a);
+    min-height: 48px;
+    padding: 6px 6px 6px 7px;
+    background: var(--lato, #8a8a8a);               /* colore pieno dell'allenatore, senza mezzatinta */
     border: 3px solid var(--nb-ink, #000);
     border-radius: var(--nb-raggio, 0px);
     box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
-    transition: transform .12s ease, box-shadow .12s ease;
+    transition: translate .12s ease, box-shadow .12s ease;
 }
-.showdown-summary-card .sd-lato-1 { --lato: var(--lato1, #8a8a8a); margin-right: -1.5px; }
-.showdown-summary-card .sd-lato-2 { --lato: var(--lato2, #8a8a8a); margin-left: -1.5px; }
+.showdown-summary-card .sd-lato + .sd-lato { margin-top: -3px; }
+.showdown-summary-card .sd-lato-1 { --lato: var(--lato1, #8a8a8a); }
+.showdown-summary-card .sd-lato-2 { --lato: var(--lato2, #8a8a8a); }
+/* chi sta vincendo spicca: sta sopra l'altro, con l'ombra più grande e un po' spostato in avanti */
 .showdown-summary-card.vince-1 .sd-lato-1,
-.showdown-summary-card.vince-2 .sd-lato-2 { transform: translateY(-4px); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); z-index: 1; }
+.showdown-summary-card.vince-2 .sd-lato-2 { z-index: 1; translate: 4px 0; box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
 .showdown-summary-card .sd-nome {
     display: block;
+    flex: 1 1 auto;
     box-sizing: border-box;
-    max-width: 100%;
-    padding: 3px 6px 1px;
+    min-width: 0;
+    padding: 4px 7px 2px;
     overflow: hidden;
     background: var(--nb-carta, #fff);
     color: #000;
@@ -494,38 +499,37 @@
     white-space: nowrap;
 }
 .showdown-summary-card .sd-win {
-    position: absolute;
-    top: -13px; right: -8px;
-    padding: 1px 6px 0;
+    position: absolute;             /* un adesivo sul bordo alto della riga di chi vince, a sinistra del numero: non ruba spazio al nome */
+    top: -10px; right: 42px;
+    z-index: 2;
+    padding: 1px 5px 0;
     background: var(--nb-giallo, #ffbd44);
     color: #000;
     border: 2px solid var(--nb-ink, #000);
     border-radius: calc(var(--nb-raggio, 0px) * .4);
     box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
-    font: 900 .6rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    font: 900 .55rem/1.5 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     font-style: normal;
-    letter-spacing: .08em;
-    rotate: calc(var(--nb-rot, 1) * 6deg);
+    letter-spacing: .1em;
+    rotate: calc(var(--nb-rot, 1) * -4deg);
 }
-.showdown-summary-card .sd-result-badge {
-    position: absolute;
-    left: 50%; bottom: 9px;
-    z-index: 3;
-    margin: 0;
-    padding: 6px 10px 4px;
-    background: var(--nb-ink, #000);
-    border: 3px solid var(--nb-ink, #000);
-    border-radius: var(--nb-raggio, 0px);
-    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .3));
-    color: #fff;
-    translate: -50% 0;
-    rotate: calc(var(--nb-rot, 1) * -2deg);
-    transform: none;
+/* i set vinti: un quadrato bianco con il numero; per chi vince è nero con il numero giallo */
+.showdown-summary-card .sd-punti {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 30px; height: 30px;
+    padding-top: 2px;
+    background: var(--nb-carta, #fff);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    font: 900 1.2rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
-.showdown-summary-card .sd-final-score { display: flex; align-items: center; gap: 4px; font: 900 1.25rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: 0; }
-.showdown-summary-card .sd-final-score i { font-style: normal; font-weight: 400; opacity: .55; }
-.showdown-summary-card.vince-1 .sd-final-score b:first-child,
-.showdown-summary-card.vince-2 .sd-final-score b:last-child { color: var(--nb-giallo, #ffbd44); }
+.showdown-summary-card.vince-1 .sd-lato-1 .sd-punti,
+.showdown-summary-card.vince-2 .sd-lato-2 .sd-punti { background: var(--nb-ink, #000); color: var(--nb-giallo, #ffbd44); }
 
 /* la data, e la freccia che dice "si apre" */
 .showdown-summary-card .sd-card-footer {

@@ -14,9 +14,9 @@ const matches = leggi('matches.html');
 const showdownCss = leggi('showdown.css');
 const finestreCss = leggi('finestre.css');
 
-test('i quadrati dei showdown: una finestrina con striscia, i due allenatori sul loro colore, punteggio, data', () => {
+test('i quadrati dei showdown: una finestrina a tabellone con striscia, una riga per allenatore sul suo colore pieno, set vinti, data', () => {
     const markup = matches.slice(matches.indexOf("sdCard.className = 'showdown-summary-card'"), matches.indexOf('container.appendChild(sdCard)'));
-    for (const parte of ['sd-card-barra', 'sd-category-tag', 'sd-lato sd-lato-1', 'sd-lato sd-lato-2', 'sd-result-badge', 'sd-final-score', 'sd-card-footer', 'sd-date-text']) {
+    for (const parte of ['sd-card-barra', 'sd-category-tag', 'sd-lato sd-lato-1', 'sd-lato sd-lato-2', 'sd-punti', 'sd-card-footer', 'sd-date-text']) {
         assert.ok(markup.includes(parte), parte);
     }
     // i colori dei due allenatori e chi vince (adesivo WIN, numero giallo) arrivano come variabili e classi
@@ -41,9 +41,14 @@ test('showdown.css: i quadrati e la finestra delle squadre usano solo le variabi
         for (const m of css.matchAll(/border(?:-top)?:\s*(\d+)px/g)) assert.ok([0, 2, 3, 4].includes(+m[1]), `${nome}: bordo di ${m[1]}px`);
         assert.doesNotMatch(css, /data-tema/, `${nome}: nessun tema scritto a mano, solo variabili`);
     }
-    // il vincitore si alza, il suo numero è giallo; la striscia ha i tre pallini
-    assert.match(quadrati, /\.vince-1 \.sd-lato-1,[\s\S]*?\.vince-2 \.sd-lato-2[\s\S]*?translateY\(-4px\)/);
-    assert.match(quadrati, /\.vince-1 \.sd-final-score b:first-child,\s*\.showdown-summary-card\.vince-2 \.sd-final-score b:last-child \{ color: var\(--nb-giallo/);
+    // il vincitore spicca (sopra l'altro, ombra più grande), il suo numero è giallo su nero; la striscia ha i tre pallini
+    assert.match(quadrati, /\.vince-1 \.sd-lato-1,[\s\S]*?\.vince-2 \.sd-lato-2 \{[^}]*z-index: 1;[^}]*var\(--nb-sh-4/);
+    assert.match(quadrati, /\.vince-1 \.sd-lato-1 \.sd-punti,\s*\.showdown-summary-card\.vince-2 \.sd-lato-2 \.sd-punti \{[^}]*color: var\(--nb-giallo/);
+    // niente puntini (mezzatinta) né sulle righe degli allenatori né sulla carta dei quadrati
+    const rigaLato = /\.showdown-summary-card \.sd-lato \{[^}]*\}/.exec(quadrati)[0];
+    assert.doesNotMatch(rigaLato, /--nb-motivo|radial-gradient/, 'la riga dell\'allenatore è un colore pieno');
+    const carta = /\.showdown-summary-card \{[^}]*\}/.exec(quadrati)[0];
+    assert.doesNotMatch(carta, /--nb-motivo|radial-gradient/, 'la carta è liscia');
     assert.match(quadrati, /#ff5f57[\s\S]*#febc2e[\s\S]*#28c840/);
     // movimento ridotto
     assert.match(quadrati, /prefers-reduced-motion: reduce/);
