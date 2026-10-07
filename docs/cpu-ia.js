@@ -469,7 +469,8 @@
             out = new Set();
             const dati = this.dex.data && this.dex.data.Learnsets;
             if (dati) {
-                const raccogli = soloQuestaGen => {
+                // retroattive: valgono le fonti di ogni generazione fino a quella della partita
+                const raccogli = () => {
                     let sp = this.specie(nomeSpecie);
                     const viste = new Set();
                     while (sp && sp.exists && !viste.has(sp.id)) {
@@ -478,14 +479,13 @@
                         if ((!d || !d.learnset) && sp.baseSpecies && sp.baseSpecies !== sp.name) d = dati[id(sp.baseSpecies)];
                         if (d && d.learnset) {
                             for (const [mossa, fonti] of Object.entries(d.learnset)) {
-                                if (fonti.some(src => 'MLT'.includes(src.charAt(1)) && (soloQuestaGen ? parseInt(src, 10) === this.gen : parseInt(src, 10) <= this.gen))) out.add(mossa);
+                                if (fonti.some(src => 'MLT'.includes(src.charAt(1)) && parseInt(src, 10) <= this.gen)) out.add(mossa);
                             }
                         }
                         sp = sp.prevo ? this.dex.species.get(sp.prevo) : null;
                     }
                 };
-                raccogli(this.gen >= 8);
-                if (out.size < 8) raccogli(false);
+                raccogli();
             }
             this.cacheSpecie.set(k, out);
             return out;

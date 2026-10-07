@@ -189,7 +189,8 @@
             catena.push(s);
             s = s.prevo ? dex.species.get(s.prevo) : null;
         }
-        const raccogli = async soloQuestaGen => {
+        // le mosse sono retroattive: valgono le fonti di ogni generazione fino a quella del formato (anche in quelli "within")
+        const raccogli = async () => {
             const out = new Set();
             for (const sp of catena) {
                 let dati = await dex.learnsets.get(sp.id);
@@ -200,16 +201,14 @@
                         const g = parseInt(src, 10);
                         const via = src.charAt(1);
                         if (!'MLT'.includes(via)) return false;
-                        return soloQuestaGen ? g === gen : g <= gen;
+                        return g <= gen;
                     });
                     if (ok) out.add(mossa);
                 }
             }
             return out;
         };
-        let m = gen >= 8 ? await raccogli(true) : await raccogli(false);
-        if (m.size < 8) m = await raccogli(false);
-        return m;
+        return raccogli();
     }
 
     // Una mossa di attacco vale quanto potenza x precisione x STAB, corretta dalla categoria
@@ -261,7 +260,8 @@
             if (mosseBandite(m.nome)) continue;
             if (!mossaAmmessa(dex, m, restrizioni)) continue;
             if (dex.moves.get(m.id).gen > ctx.gen) continue;
-            if (dex.moves.get(m.id).isNonstandard && dex.moves.get(m.id).isNonstandard !== 'Past') continue;
+            // 'Past' = tolta dal gioco di quella generazione (Wake-Up Slap in Gen 8 e 9): con le fonti retroattive non basta più la generazione della fonte
+            if (dex.moves.get(m.id).isNonstandard) continue;
             // la mossa deve essere davvero legale per questa specie nella generazione
             const problema = validatore ? validatore.checkCanLearn(dex.moves.get(m.id), base, validatore.allSources(base), { species: base.name, moves: [m.nome], level: ctx.livello }) : null;
             if (problema) continue;
@@ -1200,7 +1200,7 @@
 
     return {
         generaTeam, squadrePerFormato, preparaFormato, unTeam, preparaSessione, nuovoTeam,
-        contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche,
+        contestoDa, generazioneFormato, livelloFormato, formatoInDoppio, meccaniche, mosseApprese,
         voceBannata, creaCasuale, puntiTier, datiStrumento, strategiaDelTeam
     };
 });
