@@ -4658,11 +4658,12 @@ function tbRaccogliLearnset(specieId) {
     return risultato;
 }
 
-// "9M", "8L20", "7E"... → la prima cifra è la generazione
+// "9M", "8L20", "7E"... → la prima cifra è la generazione. Le mosse sono retroattive anche nei formati "within": quello che
+// cambia è l'elenco dei Pokémon, non le mosse (Zapdos impara Tailwind, di Gen 7, anche nel VGC di Gen 8)
 function tbFonteValida(fonte) {
     const s = String(fonte);
     const generazioni = /^\d+$/.test(s) ? s.split('').map(Number) : [parseInt(s.charAt(0), 10)];
-    return generazioni.some(g => !isNaN(g) && (tbStato.within ? g === tbStato.gen : g <= tbStato.gen));
+    return generazioni.some(g => !isNaN(g) && g <= tbStato.gen);
 }
 
 // Le mosse di Leggende Arceus valgono Gen 8, come le forme di Hisui (controllo-team.js)
@@ -4695,7 +4696,7 @@ function tbMossaAmmessaDalFormato(m) {
     if (!m || !m.name) return false;
     if (m.isZ || m.isMax) return false;
     if (['CAP', 'LGPE', 'Custom', 'Unobtainable', 'Future', 'Gigantamax'].includes(m.isNonstandard)) return false;
-    if (tbStato.within && tbStato.gen === 9 && m.isNonstandard === 'Past') return false;
+    if (tbStato.gen === 9 && m.isNonstandard === 'Past') return false; // tolta da Scarlatto e Violetto (Wake-Up Slap...)
         if (voceBannata(tbStato.regolamento?.restrizioni, 'mosse', m.name)) return false;
 
     const regole = tbStato.regolamento?.restrizioni?.mosse;

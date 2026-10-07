@@ -676,3 +676,24 @@ test('un team alla volta: un errore di caricamento non si ricorda (la volta dopo
     rotto = false;
     assert.ok((await T.nuovoTeam(sessione, { seme: 'a' })).team);
 });
+
+// Le mosse sono retroattive: Zapdos impara Tailwind in Gen 7 (tutor) e lo usa in ogni formato fino alla Gen 8 e anche nel VGC di Gen 8,
+// "within" o "up to" che sia (la differenza riguarda i Pokémon del formato, non le mosse).
+test('Zapdos con Tailwind in Gen 8: la CPU e il Team Builder lo ammettono sia in "up to" sia in "within"', async () => {
+    const { sim } = await caricaSim();
+    const dex = sim.Dex.forGen(8);
+    const apprese = await T.mosseApprese(dex, dex.species.get('zapdos'), 8);
+    assert.ok(apprese.has('tailwind'), 'mosseApprese: Tailwind (7T) manca in Gen 8');
+    assert.ok(apprese.has('thunderbolt'));
+
+    // la stessa funzione di box.html (tbFonteValida), con lo stato del Team Builder per i due tipi di formato
+    const box = fs.readFileSync(path.join(DOCS, 'box.html'), 'utf8');
+    const inizio = box.indexOf('function tbFonteValida(');
+    const corpo = box.slice(inizio, box.indexOf('\n}\n', inizio) + 2);
+    for (const within of [false, true]) {
+        const ctx = { tbStato: { gen: 8, within } };
+        require('node:vm').runInNewContext(`${corpo}; risultati = { tailwind: ['9M', '7T', '6T'].some(tbFonteValida), soloGen9: ['9M'].some(tbFonteValida) };`, ctx);
+        assert.equal(ctx.risultati.tailwind, true, `Team Builder (within=${within}): Tailwind (7T) deve essere ammesso in Gen 8`);
+        assert.equal(ctx.risultati.soloGen9, false, `Team Builder (within=${within}): una mossa solo di Gen 9 non esiste in Gen 8`);
+    }
+});
