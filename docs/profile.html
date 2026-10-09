@@ -609,7 +609,7 @@ function disegnaDaFare(d) {
     const parti = [];
 
     if (!d.stagioni.length) {
-        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Relax: no season is running right now.'));
+        parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'Relax: no matches or new seasons.'));
     } else if (!iscritte.length && !d.iscrizioni.length) {
         parti.push(h('p', { class: 'pf-vuoto pf-vuoto-grande' }, 'You are not in any running season, so there is nothing to do for now.'));
     } else if (!contatori.length) {
@@ -751,7 +751,7 @@ function disegnaPersonalitaInAttesa(p) {
         h('div', { class: 'pf-pers-grafico' }, radarPersonalita(Personalita.ASSI, null), h('span', { class: 'pf-pers-lucchetto', 'aria-hidden': 'true' }, '⏳')),
         h('div', { class: 'pf-pers-testo' },
             h('p', { class: 'pf-pers-titolo' }, 'Almost there'),
-            h('p', {}, `You have ${p.set} sets analysed, enough to unlock it. But your style is measured against the rest of the league, and so far only ${p.allenatoriConDati} trainer${p.allenatoriConDati === 1 ? '' : 's'} ${p.allenatoriConDati === 1 ? 'has' : 'have'} analysed sets: at least ${p.allenatoriServono} are needed.`)));
+            h('p', {}, `You have ${p.set} sets analysed. So far only ${p.allenatoriConDati} trainer${p.allenatoriConDati === 1 ? '' : 's'} ${p.allenatoriConDati === 1 ? 'has' : 'have'} analysed sets: at least ${p.allenatoriServono} are needed.`)));
 }
 
 function disegnaPersonalitaPronta(p) {

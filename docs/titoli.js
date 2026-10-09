@@ -67,7 +67,7 @@
 
     // Scaglioni: ognuno chiede presenze (played), vittorie (won) e KO (ko); 0 = non richiesto
     const LIVELLI_TIPO = [
-        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 30,  won: 0,   ko: 0 },
+        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 50,  won: 0,   ko: 0 },
         { chip: () => 'Gym Leader', nome: t => `${maiuscola(t)} Gym Leader`, played: 120, won: 40,  ko: 0 },
         { chip: () => 'Elite Four', nome: t => `${maiuscola(t)} Elite Four`, played: 400, won: 140, ko: 180 }
     ];
