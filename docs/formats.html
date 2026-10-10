@@ -23,6 +23,7 @@
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
+<script src="menu-sito.js"></script>
 </head>
 <body class="nb pg-formats">
 
@@ -130,8 +131,8 @@
                 </div>
 
                 <div class="format-input-group flex-1" style="justify-content: center;">
-                    <label for="format-generational-mechanics" style="cursor: pointer; display: flex; align-items: center; gap: 10px; margin-top: 22px; font-weight: bold; user-select: none;">
-                        <input type="checkbox" id="format-generational-mechanics" style="width: 18px; height: 18px; cursor: pointer; accent-color: #ffcb05;">
+                    <label for="format-generational-mechanics" class="fmt-spunta">
+                        <input type="checkbox" id="format-generational-mechanics">
                         <span>GENERATIONAL MECHANICS</span>
                     </label>
                 </div>
@@ -288,6 +289,10 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 const auth = firebase.auth(); // Fondamentale!
+
+// Testo e colori che arrivano dal database finiscono nella pagina solo dopo un controllo: nomi (anche dei formati) tra i tag, colori nello stile
+const escHtml = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const coloreSicuro = (c, ripiego = '') => /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%\/-]+\))$/i.test(String(c || '').trim()) ? String(c).trim() : ripiego;
 
 // Funzione per aprire/chiudere il modale
 function toggleLoginModal() {
@@ -485,7 +490,6 @@ function aggiungiChipBanlist(id, voceId, nome) {
     chip.dataset.nome = nome;
     chip.title = 'Click to remove';
     chip.textContent = `${nome} ✕`;
-    chip.style.cssText = "background:#ef4444; color:#fff; border:2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); font-weight:900; font-size:0.75rem; padding:2px 8px; text-transform:uppercase; cursor:pointer;";
     chip.onclick = () => { chip.remove(); eseguiControlloConflitti(); };
     box.appendChild(chip);
 }
@@ -565,50 +569,6 @@ function gestisciCambioTipoFormato(tipo) {
     sezioneVGC.style.display = 'none';
     sezioneCustom.style.display = 'none';
 
-    // 1. INIEZIONE DELLO STILE DEL TOOLTIP NEUBRUTALIST
-    if (!document.getElementById('nb-tooltip-core-styles')) {
-        const style = document.createElement('style');
-        style.id = 'nb-tooltip-core-styles';
-        style.innerHTML = `
-            #clause-badge {
-                position: relative;
-                overflow: visible !important;
-                display: inline-block;
-            }
-            .nb-badge-tooltip {
-                display: none;
-                position: absolute;
-                bottom: 145%; 
-                left: 50%;   
-                transform: translateX(-80%); 
-                background: #ffffff !important;
-                color: #000000 !important;
-                border: 3px solid var(--nb-ink, #000) !important;
-                box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
-                padding: 10px 14px;
-                min-width: 190px;
-                white-space: nowrap;
-                z-index: 9999;
-                font-family: inherit;
-                text-transform: none;
-            }
-            .nb-badge-tooltip::after {
-                content: '';
-                position: absolute;
-                top: 100%; 
-                left: 55%; 
-                transform: translateX(-50%);
-                border-width: 8px;
-                border-style: solid;
-                border-color: #000000 transparent transparent transparent;
-            }
-            #clause-badge:hover .nb-badge-tooltip {
-                display: block;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
     if (tipo === 'vgc') {
         sezioneVGC.style.display = 'block';
     } else if (tipo === 'custom' || tipo === 'anything_goes') {
@@ -620,21 +580,11 @@ function gestisciCambioTipoFormato(tipo) {
                 badgeClausole.innerHTML = `
                     STANDARD CLAUSES ACTIVE
                     <div class="nb-badge-tooltip">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">✔</span> Sleep Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">✔</span> Pokémon Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">✔</span> Item Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">✔</span> Max. 2 Uber (if Tier = Standard)
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">✔</span> No legendary / mythical (unless specified)
-                        </div>
+                        <div><span>✔</span> Sleep Clause</div>
+                        <div><span>✔</span> Pokémon Clause</div>
+                        <div><span>✔</span> Item Clause</div>
+                        <div><span>✔</span> Max. 2 Uber (if Tier = Standard)</div>
+                        <div><span>✔</span> No legendary / mythical (unless specified)</div>
                     </div>
                 `;
             } else {
@@ -642,21 +592,11 @@ function gestisciCambioTipoFormato(tipo) {
                 badgeClausole.innerHTML = `
                     NO CLAUSES
                     <div class="nb-badge-tooltip">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">❌</span> Sleep Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">❌</span> Pokémon Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">❌</span> Item Clause
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">❌</span> Max. 2 Uber (if Tier = Standard)
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;font-weight: bold;">
-                            <span style="color: black; font-weight: 900;">❌</span> No legendary / mythical (unless specified)
-                        </div>
+                        <div><span>❌</span> Sleep Clause</div>
+                        <div><span>❌</span> Pokémon Clause</div>
+                        <div><span>❌</span> Item Clause</div>
+                        <div><span>❌</span> Max. 2 Uber (if Tier = Standard)</div>
+                        <div><span>❌</span> No legendary / mythical (unless specified)</div>
                     </div>
                 `;
             }
@@ -942,17 +882,15 @@ function aggiornaInputValore(id, categoria, campo, presetRule = null) {
         const testoRicerca = infoCampo.source === "moves" ? "Search a move to ban..." : "Search an ability to ban...";
 
         valueContainer.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-                <div style="display: flex; gap: 6px;">
+            <div class="fmt-banlist">
+                <div class="fmt-banlist-riga">
                     <input type="text" id="banlist-search-${id}" list="banlist-dl-${id}" placeholder="Loading list..." disabled
-                           style="flex: 1; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 4px 8px;"
                            oninput="if (!event.inputType || event.inputType === 'insertReplacementText') aggiungiVoceBanlist(${id});"
                            onkeydown="if (event.key === 'Enter') { event.preventDefault(); aggiungiVoceBanlist(${id}); }">
-                    <button type="button" onclick="aggiungiVoceBanlist(${id})"
-                            style="border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: #ffde00; font-weight: 900; padding: 2px 10px; cursor: pointer;">BAN</button>
+                    <button type="button" class="fmt-banlist-ban" onclick="aggiungiVoceBanlist(${id})">BAN</button>
                 </div>
                 <datalist id="banlist-dl-${id}"></datalist>
-                <div id="banlist-chips-${id}" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                <div id="banlist-chips-${id}" class="fmt-banlist-chips"></div>
             </div>
         `;
 
@@ -997,26 +935,26 @@ function renderizzaInputNumerici(id, categoria, campo) {
         if (infoCampo.type === "tier") {
             // Doppia tendina selettiva per il range di Tier (Es: da NU a OU)
             html = `
-                <select class="input-value range-min" style="margin-left: 10px; max-width: 90px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+                <select class="input-value range-min fmt-valore-stretto fmt-largo-90">${tierOptionsHtml}</select>
                 <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
-                <select class="input-value range-max" style="max-width: 90px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>
+                <select class="input-value range-max fmt-valore-stretto fmt-largo-90">${tierOptionsHtml}</select>
             `;
         } else {
             html = `
-                <input type="number" class="input-value range-min" placeholder="Min" style="margin-left: 10px; max-width: 75px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">
+                <input type="number" class="input-value range-min fmt-valore-stretto fmt-largo-75" placeholder="Min">
                 <span style="margin: 0 4px; font-weight: 900; font-family: inherit;">to</span>
-                <input type="number" class="input-value range-max" placeholder="Max" style="max-width: 75px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">
+                <input type="number" class="input-value range-max fmt-valore-stretto fmt-largo-75" placeholder="Max">
             `;
         }
     } else {
         if (infoCampo.type === "number") {
-            html = `<input type="number" class="input-value" placeholder="Value" style="margin-left: 10px; max-width: 120px;">`;
+            html = `<input type="number" class="input-value fmt-valore-stretto fmt-largo-120" placeholder="Value">`;
         } else if (infoCampo.type === "text_length") {
-            html = `<input type="text" class="input-value" maxlength="1" placeholder="Letter" style="margin-left: 10px; max-width: 80px;">`;
+            html = `<input type="text" class="input-value fmt-valore-stretto fmt-largo-90" maxlength="1" placeholder="Letter">`;
         } 
         else if (infoCampo.type === "tier") {
             // Singola tendina selettiva per operatori singoli (< OU, = UU)
-            html = `<select class="input-value" style="margin-left: 10px; max-width: 120px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: bold; padding: 2px 5px;">${tierOptionsHtml}</select>`;
+            html = `<select class="input-value fmt-valore-stretto fmt-largo-120">${tierOptionsHtml}</select>`;
         }
     }
     
@@ -1168,10 +1106,7 @@ function eseguiControlloConflitti() {
     const messaggiErrore = [];
 
     // Ripristina lo stato grafico di default per tutte le righe prima del controllo
-    regole.forEach(r => {
-        r.rowElement.style.border = "";
-        r.rowElement.style.background = "";
-    });
+    regole.forEach(r => r.rowElement.classList.remove('in-conflitto'));
 
     // 1. Controllo di coerenza interna alla singola riga (es. Between Min > Max)
     regole.forEach(r => {
@@ -1234,7 +1169,6 @@ function eseguiControlloConflitti() {
     if (!boxErrore) {
         boxErrore = document.createElement('div');
         boxErrore.id = 'rules-error-summary';
-        boxErrore.style.cssText = "margin: 15px 0; padding: 10px; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); background: #fca5a5; font-weight: bold; font-family: inherit; display: none; box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);";
         const container = document.getElementById('dynamic-rules-container');
         if (container) container.parentNode.insertBefore(boxErrore, container);
     }
@@ -1243,15 +1177,12 @@ function eseguiControlloConflitti() {
         // Applica lo stile di errore alle righe incriminate
         IDConflitti.forEach(id => {
             const rElement = document.getElementById(`rule-row-${id}`);
-            if (rElement) {
-                rElement.style.border = "3px solid #ef4444";
-                rElement.style.background = "#fee2e2";
-            }
+            if (rElement) rElement.classList.add('in-conflitto');
         });
 
         // Mostra il riepilogo testuale degli errori riscontrati
-        boxErrore.innerHTML = `<span style="text-transform: uppercase; color: #b91c1c; display:block; margin-bottom: 5px;">⚠️ Invalid:</span>` + 
-                              [...new Set(messaggiErrore)].map(msg => `• ${msg}`).join('<br>');
+        boxErrore.innerHTML = `<span class="fmt-errore-titolo">⚠️ Invalid:</span>` +
+                              [...new Set(messaggiErrore)].map(msg => `• ${escHtml(msg)}`).join('<br>');
         boxErrore.style.display = "block";
     } else {
         boxErrore.style.display = "none";
@@ -1929,72 +1860,36 @@ async function caricaEVisualizzaFormati() {
 
         // 4. STAMPA DELLE CARD NEUBRUTALIST
         Object.values(allFormats).forEach(format => {
-            const formatEscaped = format.formatName.replace(/'/g, "\\'");
-            
-            const leaderContent = format.hasLeader 
-                ? `<img src="${format.avatar}" alt="Avatar Leader" style="width: 100%; height: 100%; object-fit: cover; transform: rotate(-6deg);" />`
-                : `<span style="font-size: 20px; transform: rotate(-6deg); filter: grayscale(1);">👑</span>`;
+            // il nome va nel JavaScript di un attributo: prima si protegge per il JavaScript (\\ e '), poi per l'HTML
+            const formatEscaped = escHtml(format.formatName.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+            const colore = coloreSicuro(format.color);
+
+            const leaderContent = format.hasLeader
+                ? `<img src="${escHtml(format.avatar)}" alt="Leader avatar" />`
+                : `<span>👑</span>`;
 
             // Serializzazione dati formato per eventuale modale di modifica
             const formatDataEscaped = format.rawDetails ? btoa(unescape(encodeURIComponent(JSON.stringify(format.rawDetails)))) : '';
 
+            // La card non ha più stili in linea: carta, bordo, ombra, angoli e caratteri li decide il tema (style-formats.css)
             const cardHtml = `
-                <div class="format-card-nb" 
-                     style="
-                       background-color: #ffffff !important; 
-                       cursor: pointer; 
-                       position: relative; 
-                       min-height: 180px; 
-                       min-width: 150px !important;
-                       padding: 30px !important;
-                       display: flex;
-                       flex-direction: column;
-                       justify-content: flex-start;
-                       align-items: flex-start;
-                     " 
-                     onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}', '${formatDataEscaped}')">
-                  
-                  ${isAdmin && format.id ? `
-                    <div style="position: absolute; bottom: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 1;">
-                      
-                      <button onclick="event.stopPropagation(); apriModaleModificaFormato('${format.id}', '${formatDataEscaped}')" 
-                              onmouseenter="this.style.backgroundColor='#7dd3fc'; this.style.transform='scale(1.1)';" 
-                              onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                              style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
-                              title="Edit format">✏️</button>
-                      
-                      <button onclick="event.stopPropagation(); eliminaFormato('${format.id}', '${formatEscaped}')" 
-                              onmouseenter="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1.1)';" 
-                              onmouseleave="this.style.backgroundColor='transparent'; this.style.transform='scale(1)';"
-                              style="background-color: transparent; border: 0px; font-size: 12px; padding: 5px 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;" 
-                              title="Delete format">🗑️</button>
+                <div class="format-card-nb" role="button" tabindex="0"
+                     onclick="apriModaleFormato('${formatEscaped}', '${playersEscaped}', '${formatDataEscaped}')"
+                     onkeydown="if (event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); this.click(); }">
 
+                  ${isAdmin && format.id ? `
+                    <div class="fmt-azioni">
+                      <button type="button" class="fmt-azione fmt-modifica" aria-label="Edit format" title="Edit format"
+                              onclick="event.stopPropagation(); apriModaleModificaFormato('${format.id}', '${formatDataEscaped}')">✏️</button>
+                      <button type="button" class="fmt-azione fmt-elimina" aria-label="Delete format" title="Delete format"
+                              onclick="event.stopPropagation(); eliminaFormato('${format.id}', '${formatEscaped}')">🗑️</button>
                     </div>
                   ` : ''}
 
-                  <div class="format-nb-title-badge" style="margin-bottom: auto; max-width: 100%;">
-                    ${format.formatName}
-                  </div>
-                  
-                  <div class="format-nb-leader-box" 
-                       style="
-                         position: absolute;
-                         bottom: 12px;
-                         right: 12px;
-                         width: 50px;
-                         height: 50px;
-                         background-color: ${format.color} !important;
-                         border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-                         box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-                         transform: rotate(6deg);
-                         display: flex;
-                         align-items: center;
-                         justify-content: center;
-                         overflow: hidden;
-                         padding: ${format.hasLeader ? '10px !important' : '0 !important'};
-                         transition: transform 0.2s ease;
-                       "
-                       title="${format.hasLeader ? 'Leader attuale' : 'No leader for this format'}">
+                  <div class="format-nb-title-badge">${escHtml(format.formatName)}</div>
+
+                  <div class="format-nb-leader-box${format.hasLeader ? '' : ' senza-leader'}"${colore && format.hasLeader ? ` style="--fmt-leader: ${colore}"` : ''}
+                       title="${format.hasLeader ? 'Current leader' : 'No leader for this format'}">
                     ${leaderContent}
                   </div>
 
@@ -2165,7 +2060,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         }
     }
 
-    // 3. OVERLAY MANAGEMENT & DIRECT INLINE STYLING
+    // 3. IL VELO (aspetto in style-formats.css, cornice della finestra in finestre.css)
     let modalOverlay = document.getElementById('format-modal-overlay');
     if (!modalOverlay) {
         modalOverlay = document.createElement('div');
@@ -2173,22 +2068,12 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         document.body.appendChild(modalOverlay);
     }
 
-    modalOverlay.style.position = 'fixed';
-    modalOverlay.style.top = '0';
-    modalOverlay.style.left = '0';
-    modalOverlay.style.width = '100vw';
-    modalOverlay.style.height = '100vh';
-    modalOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'; 
-    modalOverlay.style.backdropFilter = 'blur(15px)'; 
-    modalOverlay.style.zIndex = '99999';
-    modalOverlay.style.display = 'flex';
-    modalOverlay.style.alignItems = 'center';
-    modalOverlay.style.justifyContent = 'center';
-    modalOverlay.style.overflowY = 'auto';
-    modalOverlay.style.padding = '30px 20px';
-    modalOverlay.style.boxSizing = 'border-box';
+    // 4. I RIQUADRI DELLA SCHEDA: una tab gialla con il nome del dato e il suo contenuto. Solo classi: i colori li decide il tema.
+    const riquadro = (etichetta, contenuto) =>
+        `<div class="fmt-blocco"><span class="fmt-etichetta">${etichetta}</span>${contenuto}</div>`;
+    const valore = (testo, classe = '') => `<p class="fmt-valore${classe ? ' ' + classe : ''}">${escHtml(testo)}</p>`;
+    const fmtChip = (testo, classe = '') => `<span class="fmt-chip${classe ? ' ' + classe : ''}">${escHtml(testo)}</span>`;
 
-    // 4. PREPARE DYNAMIC INDEPENDENT BLOCKS
     let blocksHtml = '';
 
     if (formatoDati) {
@@ -2235,7 +2120,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'is_mythical': 'Mythical',
             'true': 'Allowed',
             'name_starts': 'Name starts with:',
-                        'banned_list': 'Banned',
+            'banned_list': 'Banned',
             'abilita': 'Abilities',
             'mosse': 'Moves',
             'strumenti': 'Items'
@@ -2248,121 +2133,43 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         };
 
         // --- 4a. DESCRIPTION BLOCK ---
-        let descContent = `<p style="margin: 0; font-size: 0.95rem; line-height: 1.4; color: #475569; font-style: italic;">No description provided for this format.</p>`;
-        if (formatoDati.descrizioneBreve && formatoDati.descrizioneBreve.trim() !== "") {
-            descContent = `<p style="margin: 0; font-size: 0.95rem; line-height: 1.4; color: #000000; font-weight: 600;">${formatoDati.descrizioneBreve.trim()}</p>`;
-        }
+        const descrizione = String(formatoDati.descrizioneBreve || '').trim();
+        blocksHtml += riquadro('Description / Tournament Rules', descrizione
+            ? `<p class="fmt-testo">${escHtml(descrizione)}</p>`
+            : `<p class="fmt-testo fmt-vuoto">No description provided for this format.</p>`);
 
-        blocksHtml += `
-            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px 20px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                <div style="background: #ffde00; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-1.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
-                    Description / Tournament Rules
-                </div>
-                ${descContent}
-            </div>
-        `;
-
-        blocksHtml += `<div style="display: flex; flex-wrap: wrap; gap: 30px 25px; width: 100%; box-sizing: border-box; padding-top: 15px; overflow: visible;">`;
-
-        // --- 4b. FORMAT TYPE BLOCK ---
-        const tipoStrutturaUmano = umanizza(formatoDati.strutturaSito || 'custom').toUpperCase();
-        blocksHtml += `
-            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                    Format Type
-                </div>
-                <span style="color: #000; padding: 2px 8px; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; display: inline-block;">${tipoStrutturaUmano}</span>
-            </div>
-        `;
+        // --- 4b. LE CASELLE: tipo, stile, generazione, tier, formato Showdown, meccaniche ---
+        let caselle = riquadro('Format Type', valore(umanizza(formatoDati.strutturaSito || 'custom')));
 
         if (formatoDati.strutturaSito === 'vgc') {
             if (formatoDati.vgcGen) {
-                blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                            Generation
-                        </div>
-                        <span style="font-weight: 900; font-size: 0.95rem; color: #000;">GEN ${formatoDati.vgcGen}</span>
-                    </div>
-                `;
+                caselle += riquadro('Generation', valore(`Gen ${String(formatoDati.vgcGen).replace(/[^0-9]/g, '') || formatoDati.vgcGen}`));
             }
             if (formatoDati.vgcFormat) {
-                blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 2; min-width: 180px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(2deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                            VGC Regulation
-                        </div>
-                        <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">${formatoDati.vgcFormat}</span>
-                    </div>
-                `;
+                caselle += riquadro('VGC Regulation', valore(formatoDati.vgcFormat));
             }
         } else {
-            // --- 4c. BATTLE STYLE BLOCK ---
             if (formatoDati.battleStyle) {
-                const stileUmano = umanizza(formatoDati.battleStyle).toUpperCase();
-                blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                            Battle Style
-                        </div>
-                        <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">${stileUmano}</span>
-                    </div>
-                `;
+                caselle += riquadro('Battle Style', valore(umanizza(formatoDati.battleStyle)));
             }
-
-            // --- 4d. GENERATION BLOCK ---
             if (formatoDati.genRuleValue) {
                 const genTypeLabel = formatoDati.genRuleType ? ` (${umanizza(formatoDati.genRuleType)})` : '';
-                blocksHtml += `
-                    <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                        <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                            Pokémon Origin
-                        </div>
-                        <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: uppercase;">GEN ${formatoDati.genRuleValue}${genTypeLabel}</span>
-                    </div>
-                `;
+                caselle += riquadro('Pokémon Origin', valore(`Gen ${formatoDati.genRuleValue}${genTypeLabel}`));
+            }
+            if (formatoDati.baseTier) {
+                caselle += riquadro('Max. Tier', valore(formatoDati.baseTier));
             }
         }
 
-        // 🆕 4e. SHOWDOWN FORMAT BLOCK (Se presente)
         if (formatoDati.showdownFormat && formatoDati.showdownFormat.trim() !== "") {
-            blocksHtml += `
-                <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                    <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.5deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                        Showdown Format
-                    </div>
-                    <span style="font-weight: 900; font-size: 0.95rem; color: #000; text-transform: lowercase;">${formatoDati.showdownFormat.trim()}</span>
-                </div>
-            `;
+            caselle += riquadro('Showdown Format', valore(formatoDati.showdownFormat.trim().toLowerCase(), 'fmt-codice'));
         }
 
-        // 🆕 4f. GENERATIONAL MECHANICS BLOCK
-        const genMechText = formatoDati.generationalMechanics ? 'ENABLED' : 'DISABLED';
-        const genMechColor = formatoDati.generationalMechanics ? '#15803d' : '#b91c1c'; // Verde o Rosso scuro
-        blocksHtml += `
-            <div class="neubrutal-grid-block" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 16px 14px 16px; flex: 1; min-width: 140px; box-sizing: border-box; overflow: visible;">
-                <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(1deg); position: absolute; top: -13px; left: 12px; z-index: 10; color: #000; white-space: nowrap;">
-                    Gen Mechanics
-                </div>
-                <span style="font-weight: 900; font-size: 0.95rem; color: ${genMechColor}; text-transform: uppercase;">${genMechText}</span>
-            </div>
-        `;
+        caselle += riquadro('Gen Mechanics', valore(formatoDati.generationalMechanics ? 'Enabled' : 'Disabled', formatoDati.generationalMechanics ? 'fmt-si' : 'fmt-no'));
 
-        blocksHtml += `</div>`; // Close Row
+        blocksHtml += `<div class="fmt-griglia">${caselle}</div>`;
 
-        // --- 4g. TIER BLOCK ---
-        if (formatoDati.strutturaSito !== 'vgc' && formatoDati.baseTier) {
-            blocksHtml += `
-                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 22px 20px 16px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                    <div style="background: #ffde00; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 2px 8px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase; transform: rotate(-1.2deg); position: absolute; top: -13px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
-                        Max. Tier
-                    </div>
-                    <span style="text-transform: uppercase; font-weight: 900; color: #000; font-size: 1rem; letter-spacing: 0.5px;">${formatoDati.baseTier}</span>
-                </div>
-            `;
-        }
-
-        // --- 4h. CLAUSES & RESTRICTIONS BLOCK ---
+        // --- 4c. CLAUSES & RESTRICTIONS BLOCK ---
         if (formatoDati.restrizioni && Object.keys(formatoDati.restrizioni).length > 0) {
             let restrizioniItemsHtml = '';
 
@@ -2371,16 +2178,16 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                     let badgeStato = '';
 
                     if (regola.mode === 'BANNED') {
-                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">BANNED</span>`;
+                        badgeStato = fmtChip('Banned', 'fmt-chip-no');
                     } else if (regola.mode === 'ALLOWED') {
-                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">ALLOWED</span>`;
+                        badgeStato = fmtChip('Allowed', 'fmt-chip-si');
                     } else if (regola.mode === 'PLAYER_INITIAL') {
-                        badgeStato = `<span style="background: #3b82f6; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">PLAYER INITIAL</span>`;
+                        badgeStato = fmtChip('Player initial', 'fmt-chip-info');
                     } else if (regola.mode === 'SAME_ACROSS_TEAM') {
-                        badgeStato = `<span style="background: #22c55e; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">SAME ACROSS TEAM</span>`;
-                                        } else if (regola.mode === 'BANLIST') {
+                        badgeStato = fmtChip('Same across team', 'fmt-chip-si');
+                    } else if (regola.mode === 'BANLIST') {
                         const nomi = Object.values(regola.value || {}).sort();
-                        badgeStato = `<span style="background: #ef4444; color: #fff; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000); max-width: 65%; text-align: right; white-space: normal;">${nomi.join(' · ')}</span>`;
+                        badgeStato = fmtChip(nomi.join(' · '), 'fmt-chip-no fmt-chip-lista');
                     } else if (regola.mode === 'SPECIFIC') {
                         let dettagliOp = '';
                         if (regola.operator === 'between') {
@@ -2388,95 +2195,65 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
                         } else {
                             const opUmano = umanizza(regola.operator);
                             const valUmano = umanizza(regola.value);
-                            
+
                             dettagliOp = (opUmano === '=') ? `${valUmano}` : `${opUmano} ${valUmano}`;
                         }
-                        badgeStato = `<span style="background: #fbbf24; color: #000; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); font-weight: 900; font-size: 0.7rem; padding: 2px 6px; box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);">${dettagliOp.toUpperCase()}</span>`;
+                        badgeStato = fmtChip(dettagliOp);
                     }
-                    
-                    const categoriaUmana = umanizza(categoria).toUpperCase();
-                    const campoUmano = umanizza(campo);
 
                     restrizioniItemsHtml += `
-                    <div style="border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; font-family: 'Josefin Sans', sans-serif;">
-                        <span style="color: #000; font-weight: 600; font-size: 0.9rem;">
-                            <b style="text-transform: uppercase; color: #1e293b;">${categoriaUmana}</b> 
-                            <span style="color: #64748b; font-weight: 400;">➔</span> 
-                            ${campoUmano}
-                        </span>
+                    <div class="fmt-clausola">
+                        <span><b>${escHtml(umanizza(categoria))}</b> <i>➔</i> ${escHtml(umanizza(campo))}</span>
                         ${badgeStato}
                     </div>`;
                 });
             });
 
-            blocksHtml += `
-                <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px 15px 20px; width: 100%; box-sizing: border-box; margin-top: 15px; overflow: visible;">
-                    <div style="background: #ffde00; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 4px 12px; font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; transform: rotate(-0.5deg); position: absolute; top: -16px; left: 15px; z-index: 10; color: #000; white-space: nowrap;">
-                        Clauses & Restrictions Active
-                    </div>
-                    <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 5px;">
-                        ${restrizioniItemsHtml}
-                    </div>
-                </div>
-            `;
+            blocksHtml += riquadro('Clauses & Restrictions Active', `<div class="fmt-clausole">${restrizioniItemsHtml}</div>`);
         }
     } else {
-        blocksHtml = `
-            <div class="neubrutal-section-container" style="position: relative; background: #ffffff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000); padding: 25px 20px; width: 100%; overflow: visible; margin-top: 15px;">
-                <p style="margin: 0; font-style: italic; color: #475569;">No configurations found for this format.</p>
-            </div>
-        `;
+        blocksHtml = riquadro('Format Rules', `<p class="fmt-testo fmt-vuoto">No configurations found for this format.</p>`);
     }
 
-    // 5. INJECT FULL LAYOUT & FIX CENTERING
+    // 5. LA FINESTRA: titolo, regole a sinistra e classifica a destra (in colonna su telefono)
     modalOverlay.innerHTML = `
-        <div class="format-modal-wrapper" style="font-family: 'Josefin Sans', sans-serif; display: flex; flex-direction: column; gap: 25px; max-width: 1100px; width: 100%; margin: 0 auto; overflow: visible; box-sizing: border-box;">
-            
-            <div class="format-modal-title-tag" 
-                 style="background: #000; color: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.3); padding: 10px 24px; display: inline-block; align-self: flex-start; transform: rotate(-1deg); overflow: visible;">
-                <h2 style="font-family: 'Josefin Sans', sans-serif; margin: 0; text-transform: uppercase; font-size: 1.8rem; font-weight: 900; letter-spacing: 1px;">${formatName}</h2>
-            </div>
-            
-            <div class="format-modal-container" style="display: flex; gap: 40px; width: 100%; align-items: flex-start; overflow: visible; box-sizing: border-box;">
-                
-                <div class="format-modal-card-left" 
-                     style="background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; display: flex; flex-direction: column; gap: 25px; flex: 1.3; box-sizing: border-box; overflow: visible;">
-                    
-                    ${blocksHtml}
-                    
-                </div>
-
-                <div class="format-modal-card-right" style="flex: 1; width: 100%; box-sizing: border-box;">
-                    <div id="format-participants-list" class="simple-player-list" style="width: 100%;">
-                        <p style="font-size: 0.8rem; color: #fff; padding: 10px; font-style: italic;">Calculating rankings...</p>
+        <div class="fmt-finestra" role="dialog" aria-modal="true" aria-labelledby="fmt-titolo-scheda">
+            <button type="button" class="fmt-chiudi" aria-label="Close" onclick="chiudiModaleFormato()">&times;</button>
+            <h2 class="fmt-titolo" id="fmt-titolo-scheda">${escHtml(formatName)}</h2>
+            <div class="fmt-corpo">
+                <div class="fmt-regole">${blocksHtml}</div>
+                <section class="fmt-classifica" aria-label="Format ranking">
+                    <span class="fmt-etichetta">Ranking</span>
+                    <div id="format-participants-list" class="fmt-classifica-lista">
+                        <p class="fmt-classifica-vuota">Calculating rankings...</p>
                     </div>
-                </div>
+                </section>
             </div>
-
         </div>
     `;
 
     document.body.style.overflow = 'hidden';
+    modalOverlay.classList.add('aperto');
 
-    // 🌟 LOGICA DI CHIUSURA
+    // Si chiude toccando il velo (fuori dalla finestra), con la X o con Esc
     modalOverlay.onclick = (e) => {
-        if (!e.target.closest('.format-modal-card-right')) {
-            chiudiModaleFormato();
-        }
+        if (e.target === modalOverlay) chiudiModaleFormato();
     };
+    const tastoChiudi = modalOverlay.querySelector('.fmt-chiudi');
+    if (tastoChiudi) tastoChiudi.focus({ preventScroll: true });
 
     // 6. ASYNC RANKING COMPILATION FETCH
     await renderRankingsDelFormato(formatName, players);
 }
 
-// 🔥 MODIFICA 2: CORRETTA LA CHIUSURA AGENDO SULLO STILE INLINE 'DISPLAY'
 function chiudiModaleFormato() {
     const modalOverlay = document.getElementById('format-modal-overlay');
-    if (modalOverlay) {
-        modalOverlay.style.display = 'none'; // Nasconde l'elemento forzato in linea prima
-    }
+    if (modalOverlay) modalOverlay.classList.remove('aperto');
     document.body.style.overflow = ''; // Ripristina lo scroll della pagina
 }
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') chiudiModaleFormato();
+});
 
 async function renderRankingsDelFormato(formatName, players) {
     const listContainer = document.getElementById('format-participants-list');
@@ -2488,12 +2265,12 @@ async function renderRankingsDelFormato(formatName, players) {
     Object.entries(players).forEach(([pId, pData]) => {
         const formatsStats = pData.stats?.['formats-stats'] || {};
         const specificStats = formatsStats[formatName];
-        
+
         // Se il giocatore ha giocato almeno un match in questo formato, lo inseriamo in classifica
         if (specificStats) {
             sortedPlayers.push({
                 name: pData.info?.name || pId,
-                color: pData.info?.color || "#31c489",
+                color: coloreSicuro(pData.info?.color, '#31c489'),
                 points: Number(specificStats.points || 0),
                 won: Number(specificStats.won || 0),
                 lost: Number(specificStats.lost || 0),
@@ -2515,51 +2292,21 @@ async function renderRankingsDelFormato(formatName, players) {
     });
 
     if (sortedPlayers.length === 0) {
-        // Testo virato al bianco (#fff) poiché adesso si trova sullo sfondo scuro del modale
-        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: #fff; font-style: italic; padding: 10px;">No matches played in this format</p>';
+        listContainer.innerHTML = '<p class="fmt-classifica-vuota">No matches played in this format</p>';
         return;
     }
 
-    // Generiamo le righe HTML mantenendo lo stile grafico fluttuante neubrutalist
-    const htmlRows = sortedPlayers.map((player, index) => {
-        const playerUrlParam = encodeURIComponent(player.name.trim());
-
-        return `
-            <div class="player-rank-row" 
-                onclick="window.location.href='public.html?player=${playerUrlParam}'"
-                style="
-                    display: flex; 
-                    align-items: center; 
-                    gap: 8px; 
-                    margin-bottom: 12px; 
-                    padding: 10px; 
-                    background: ${player.color}; 
-                    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-                    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-                    transition: transform 0.1s ease, box-shadow 0.1s ease;
-                    transform: rotate(-1deg);
-                    cursor: pointer;
-                "
-                onmouseenter="this.style.transform='translate(-2px, -2px) rotate(-1deg)'; this.style.boxShadow='6px 6px 0px #000';"
-                onmouseleave="this.style.transform='rotate(-1deg)'; this.style.boxShadow='4px 4px 0px #000';"
-            >
-                <div style="font-weight: 900; font-size: 1.1rem; min-width: 25px;">#${index + 1}</div>
-                
-                <div style="flex-grow: 1;">
-                    <div style="font-weight: 800; text-transform: uppercase; font-size: 0.9rem; color: #1a1a1a; font-family: 'Josefin Sans';">
-                        ${player.name}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #333; font-weight: 700; letter-spacing: -0.2px;">
-                        P: ${player.showdownsPlayed}, S: ${player.showdownsWon}/${player.showdownsLost}, W/L: ${player.won}/${player.lost}
-                    </div>
-                </div>
-
-                <div style="background: white; color: black; padding: 4px 10px; font-weight: 900; text-align: center; min-width: 45px; border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000); transform: rotate(1deg);">
-                    ${player.points}
-                </div>
-            </div>
-        `;
-    });
+    // Una riga per giocatore, sul suo colore (un link alla sua pagina pubblica)
+    const htmlRows = sortedPlayers.map((player, index) => `
+        <a class="player-rank-row" href="public.html?player=${encodeURIComponent(player.name.trim())}" style="--fmt-colore: ${player.color}">
+            <span class="fmt-pos">#${index + 1}</span>
+            <span class="fmt-chi">
+                <span class="fmt-nome">${escHtml(player.name)}</span>
+                <span class="fmt-numeri">P: ${player.showdownsPlayed}, S: ${player.showdownsWon}/${player.showdownsLost}, W/L: ${player.won}/${player.lost}</span>
+            </span>
+            <span class="fmt-punti">${player.points}</span>
+        </a>
+    `);
 
     listContainer.innerHTML = htmlRows.join('');
 }

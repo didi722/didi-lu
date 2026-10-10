@@ -79,9 +79,10 @@ test('replay: niente "SET N" accanto ai tasti dei set (il numero sta nel tasto),
     assert.ok(!finestreCss.includes('.set-etichetta') && !finestreCss.includes('.set-riga'), 'finestre.css non stila più la scritta');
     assert.match(finestreCss, /#replayModal \.btn-set \.set-num \{/);
     const badge = leggi('badge-team.js');
-    assert.match(badge, /async function montaMini\(db, casella, \{ giocatore, team, valido, max = 4 \} = \{\}\)/);
+    // nella testata ci sono solo le medagliette vinte (niente progresso: quello è nel Box del giocatore), ognuna con la sua descrizione al passaggio
+    assert.match(badge, /function montaMini\(db, casella, \{ giocatore, team, valido, max = 4 \} = \{\}\) \{\s*return montaBarra\(db, casella, \{ giocatore, team, valido, max \}\);/);
     assert.match(badge, /montaBarra, montaMini, riempiCard/);
-    assert.match(leggi('badge-team.css'), /\.bt-conto-chip \{/);
+    assert.match(leggi('badge-team.css'), /\.bt-mini \{/);
     // matches.html carica quello che serve ai badge
     for (const f of ['statistiche.js', 'fiocchi.js', 'badge-team.js']) assert.match(matches, new RegExp(`<script src="${f}"></script>`));
 });

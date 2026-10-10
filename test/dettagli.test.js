@@ -50,15 +50,17 @@ test('Box e pagina pubblica caricano le statistiche e i fiocchi (statistiche.js 
     }
 });
 
-test('le pagine usano i fiocchi calcolati: lo scaffale nella scheda Pokémon, le medagliette sulle card; niente più soglie fisse nel codice', () => {
+test('le pagine usano i fiocchi calcolati: lo scaffale con il progresso solo nel Box, le medagliette vinte ovunque; niente più soglie fisse nel codice', () => {
     for (const p of ['box', 'public']) {
         const html = docs(p + '.html');
         assert.match(html, /id="pkm-fiocchi"/, `${p}: manca l'area dei fiocchi`);
-        assert.match(html, /Fiocchi\.montaScaffale\(/, `${p}: manca lo scaffale`);
-        assert.match(html, /Fiocchi\.riempiMini\(/, `${p}: mancano le medagliette sulle card`);
+        assert.match(html, /Fiocchi\.riempiMini\(/, `${p}: mancano le medagliette (sulle card e nella scheda del Pokémon)`);
         assert.match(html, /data-fiocchi-pkm="\$\{pIndex\}"/, `${p}: manca la casella delle medagliette`);
         assert.match(html, /window\.squadraAperta = team/, `${p}: i fiocchi sono del Pokémon DI QUEL team`);
     }
+    // il progresso (lo scaffale con le barre e "cosa manca") si vede solo nel Box del giocatore: negli altri posti, medagliette e basta
+    assert.match(docs('box.html'), /Fiocchi\.montaScaffale\(/, 'box: lo scaffale con il progresso');
+    assert.doesNotMatch(docs('public.html'), /Fiocchi\.montaScaffale\(|htmlScaffale/, 'public: niente progresso, solo le medagliette vinte');
     // la card dell'allenatore apre la scheda di un Pokémon senza passare dalla scheda squadra: deve dire di che team è
     assert.match(docs('public-card.js'), /window\.squadraAperta = team;[\s\S]{0,160}window\.apriPkmDettaglio\(/, 'public-card.js: i fiocchi del Pokémon sono quelli del suo team');
     const pub = docs('public.html');

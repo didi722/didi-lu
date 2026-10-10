@@ -98,13 +98,13 @@ function caricaSchede() {
     }).catch(e => console.warn('Trainer cards not available:', e));
 }
 
-// Il fumetto dei fiocchi di un Pokémon (sul tondino): si apre dove c'è posto, sopra o sotto, e non esce mai dallo schermo.
+// Il fumetto dei fiocchi di un Pokémon (sulle sue medagliette): si apre dove c'è posto, sopra o sotto, e non esce mai dallo schermo.
 // Le misure sono quelle a schermo: nel layout "tutto in una schermata" la pagina è in scala, i valori CSS no.
-function apriFumettoFiocchi(tondino) {
-    const tip = tondino && tondino.querySelector('.fiocco-t-tip');
+function apriFumettoFiocchi(medaglie) {
+    const tip = medaglie && medaglie.querySelector('.fiocco-t-tip');
     if (!tip) return;
-    const t = tondino.getBoundingClientRect();
-    const scala = tondino.offsetWidth ? t.width / tondino.offsetWidth : 1;
+    const t = medaglie.getBoundingClientRect();
+    const scala = medaglie.offsetWidth ? t.width / medaglie.offsetWidth : 1;
     const larghezza = document.documentElement.clientWidth, altezza = window.innerHeight || document.documentElement.clientHeight;
     // lo si misura aperto ma invisibile, e solo dopo si mostra (aperto altrove allargherebbe la pagina)
     tip.style.display = 'block'; tip.style.visibility = 'hidden'; tip.style.left = '0px'; tip.style.right = 'auto';
@@ -116,16 +116,16 @@ function apriFumettoFiocchi(tondino) {
     tip.style.top = inAlto ? 'auto' : 'calc(100% + 8px)';
     tip.style.bottom = inAlto ? 'calc(100% + 8px)' : 'auto';
     tip.style.display = ''; tip.style.visibility = '';
-    tondino.classList.add('aperto');
+    medaglie.classList.add('aperto');
 }
-function chiudiFumettoFiocchi(tondino) { if (tondino) tondino.classList.remove('aperto'); }
-const tondinoDi = e => { const t = e.target && e.target.closest && e.target.closest('.fiocco-tondino'); return t && t.closest('.lato') ? t : null; };
+function chiudiFumettoFiocchi(medaglie) { if (medaglie) medaglie.classList.remove('aperto'); }
+const medaglieDi = e => { const m = e.target && e.target.closest && e.target.closest('.fiocco-medaglie'); return m && m.closest('.lato') ? m : null; };
 // (si collega da installa(), con gli altri ascoltatori della pagina)
 function collegaFumettiFiocchi() {
-    document.addEventListener('mouseover', e => apriFumettoFiocchi(tondinoDi(e)));
-    document.addEventListener('focusin', e => apriFumettoFiocchi(tondinoDi(e)));
-    document.addEventListener('mouseout', e => { const t = tondinoDi(e); if (t && !t.contains(e.relatedTarget)) chiudiFumettoFiocchi(t); });
-    document.addEventListener('focusout', e => chiudiFumettoFiocchi(tondinoDi(e)));
+    document.addEventListener('mouseover', e => apriFumettoFiocchi(medaglieDi(e)));
+    document.addEventListener('focusin', e => apriFumettoFiocchi(medaglieDi(e)));
+    document.addEventListener('mouseout', e => { const m = medaglieDi(e); if (m && !m.contains(e.relatedTarget)) chiudiFumettoFiocchi(m); });
+    document.addEventListener('focusout', e => chiudiFumettoFiocchi(medaglieDi(e)));
 }
 
 // Quale dei team registrati è in campo: quello con le stesse 6 specie del team preview
@@ -847,7 +847,7 @@ function disegnaLati() {
                     ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
                     <img src="${esc(sprite(x.specie))}" data-slug="${esc(slugSprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
-                    ${SB && sc ? SB.htmlTondinoPokemon(S.schede.risultato, sc, nomeTeam, nomiTeam, i) : ''}
+                    ${SB && sc ? SB.htmlFiocchiPokemon(S.schede.risultato, sc, nomeTeam, nomiTeam, i) : ''}
                 </li>`).join('')}
             </ol>
             <div class="lato-condizioni" id="condizioni-${lato}" aria-label="Side effects"></div>`;

@@ -6,7 +6,7 @@
 //   - il titolo che l'allenatore ha scelto di mostrare (lo stesso della sua pagina pubblica: se lì lo ha nascosto, qui non c'è);
 //   - ELO e posizione in classifica (come nella sua scheda: la classifica conta chi ha giocato almeno tre showdown);
 //   - le medaglie dei suoi badge da allenatore (il fondatore, le serie, i badge del catalogo), le più alte;
-//   - i badge del team in campo (medagliette e quanti ne ha) e un tondino con il numero dei fiocchi su ogni suo Pokémon.
+//   - i badge del team in campo (le medagliette vinte) e le medagliette dei fiocchi su ogni suo Pokémon (passandoci sopra, l'elenco).
 // Sono tutti numeri pubblici, calcolati come nel resto del sito (Fiocchi.carica: una sola lettura di Firebase per pagina).
 // Funzione di dati e di HTML, niente DOM: funziona nel browser (window.SchedaBattaglia) e in Node (test/scheda-battaglia.test.js).
 // Le dipendenze (Fiocchi, BadgeTeam, BadgeAllenatore, Titoli, PaginaPubblica) si passano in `dip` o si prendono dalla pagina.
@@ -127,30 +127,28 @@
             medaglie + `</div>`;
     }
 
-    /** I badge del team in campo: le medagliette più alte e quanti ne ha. Vuoto se non si sa quale team è o non ne ha. */
+    /** I badge del team in campo: le medagliette vinte (la descrizione al passaggio), come in ogni pagina fuori dal Box. Vuoto se non si sa quale team è o non ne ha. */
     function htmlBadgeTeam(risultato, sc, nomeTeam, dip) {
         const { BadgeTeam } = dipendenze(dip);
         if (!BadgeTeam || !risultato || !sc || !nomeTeam) return '';
         const lista = BadgeTeam.calcola(BadgeTeam.trova(risultato, { player: sc.id, team: nomeTeam }));
-        const presi = lista.filter(b => b.livello > 0).length;
-        if (!presi) return '';
-        return `<span class="scheda-team-badge"><span class="bt-barra-mini">${BadgeTeam.htmlMini(lista, 3)}</span>` +
-            `<span class="bt-conto-chip" title="${presi} of ${lista.length} team badges earned">🏅 ${presi}/${lista.length}</span></span>`;
+        const medaglie = BadgeTeam.htmlMini(lista, MAX_MEDAGLIE);
+        return medaglie ? `<span class="scheda-team-badge"><span class="bt-barra-mini">${medaglie}</span></span>` : '';
     }
 
     /**
-     * Il tondino con i fiocchi di un Pokémon del team. `nomi`: i Pokémon del team nell'ordine (la specie o "Soprannome (Specie)"), `indice`
-     * la posizione di quello che interessa (due Pokémon della stessa specie si distinguono per l'ordine).
+     * Le medagliette dei fiocchi di un Pokémon del team (e l'elenco al passaggio). `nomi`: i Pokémon del team nell'ordine (la specie o
+     * "Soprannome (Specie)"), `indice` la posizione di quello che interessa (due Pokémon della stessa specie si distinguono per l'ordine).
      */
-    function htmlTondinoPokemon(risultato, sc, nomeTeam, nomi, indice, dip) {
+    function htmlFiocchiPokemon(risultato, sc, nomeTeam, nomi, indice, dip) {
         const { Fiocchi } = dipendenze(dip);
         if (!Fiocchi || !risultato || !sc || !nomeTeam || !nomi || !nomi[indice]) return '';
         const squadra = { nome: nomeTeam, pokemon: nomi.map(n => ({ nome: n })) };
         const entry = Fiocchi.trova(risultato, {
             player: sc.id, team: nomeTeam, specie: nomi[indice], ordinale: Fiocchi.ordinaleDi(squadra, squadra.pokemon[indice], indice)
         });
-        return entry ? Fiocchi.htmlTondino(Fiocchi.calcola(entry)) : '';
+        return entry ? Fiocchi.htmlMedaglieConElenco(Fiocchi.calcola(entry)) : '';
     }
 
-    return { MAX_MEDAGLIE, titoloVisibile, medaglieAllenatore, carica, htmlScheda, htmlBadgeTeam, htmlTondinoPokemon };
+    return { MAX_MEDAGLIE, titoloVisibile, medaglieAllenatore, carica, htmlScheda, htmlBadgeTeam, htmlFiocchiPokemon };
 });

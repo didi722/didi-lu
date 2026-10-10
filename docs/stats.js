@@ -619,6 +619,13 @@
             ${suoiTeam.length ? sezione('Teams', `<div class="scheda-lista">${suoiTeam.map(voceTeam).join('')}</div>`) : ''}`;
     }
 
+    // I badge di un team in una pagina di tutti: solo quelli vinti, medagliette con la descrizione al passaggio. I progressi verso il livello
+    // dopo (lo scaffale) sono solo nel Box del giocatore.
+    function badgeVintiDelTeam(t) {
+        const medaglie = BadgeTeam.htmlMini(BadgeTeam.calcola(t), 99);
+        return medaglie ? `<div class="bt-barra-mini bt-vinti">${medaglie}</div>` : '<p class="vuoto piccolo">No badges earned yet.</p>';
+    }
+
     function schedaTeam(t) {
         const suoi = STATO.r.pokemon.filter(m => m.squadra === t.chiave);
         const ordine = [...suoi].sort((a, b) => b.koFatti - a.koFatti || b.portato - a.portato);
@@ -629,7 +636,7 @@
                 tessera('Seasons', `${fmt(t.stagioniVinte)} <small>won of ${fmt(t.stagioniGiocate)}</small>`),
                 tessera('Last used', t.ultimoUso ? esc(t.ultimoUso) : '—')
             ]))}
-            ${window.BadgeTeam ? sezione('Badges', BadgeTeam.htmlScaffale(BadgeTeam.calcola(t), { titolo: '' })) : ''}
+            ${window.BadgeTeam ? sezione('Badges', badgeVintiDelTeam(t)) : ''}
             ${sezione('KOs', tessereKo(t.ko))}
             ${ordine.length ? sezione('Roster', `<div class="scheda-lista">${ordine.map(m => `
                 <button type="button" class="voce" data-apri="pokemon" data-chiave="${esc(m.chiave)}">

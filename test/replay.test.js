@@ -123,17 +123,23 @@ test('matches.html carica replay-sito.js e adatta i replay che si caricano', () 
 });
 
 
-test('replay dentro la scocca del Game Boy: la barra dei turni sta fuori dallo schermo (postMessage con matches.html)', () => {
+test('replay dentro la scocca del Game Boy: i comandi (pausa, avanti, velocità, suono) stanno fuori dallo schermo (postMessage con matches.html), niente barra dei turni', () => {
     const html = replay();
-    // il replay dice a che turno è, e sa togliere la sua barra e ricevere i clic dalla pagina
-    assert.match(html, /replay-turni/);
-    assert.match(html, /replay-barra-fuori/);
-    assert.match(html, /replay-vai/);
-    assert.match(html, /\.barra-fuori \.barra-turni \{ display: none; \}/);
-    // la pagina ha la barra sotto la scocca e risponde al replay
+    // il replay dice com'è messo (in pausa, velocità, suono), sa togliere i suoi comandi e riceve i clic dalla pagina
+    assert.match(html, /replay-stato/);
+    assert.match(html, /replay-comandi-fuori/);
+    assert.match(html, /replay-comando/);
+    assert.match(html, /\.comandi-fuori \.comandi-replay \{ display: none; \}/);
+    // i comandi che la pagina sa mandare: uno per tasto (play, indietro, avanti, inizio, velocità, audio)
+    assert.match(html, /COMANDI = \{\s*play: playPausa, indietro: \(\) => spostaTurno\(-1\), avanti: \(\) => spostaTurno\(1\),\s*inizio: daCapo, velocita: prossimaVelocita, audio: commutaAudio,?\s*\}/);
+    // la barra dei turni e il vai-a-un-turno non ci sono più: sotto la scocca non c'è più "turn x/y"
+    assert.doesNotMatch(html, /replay-turni|replay-barra-fuori|replay-vai|barra-fuori/);
+    // la pagina ha i comandi sotto la scocca, li mostra solo se il replay li sa usare e gli rimanda i clic
     const matches = leggi('docs/matches.html');
-    assert.match(matches, /id="replayBarra"/);
-    assert.match(matches, /e\.data\.tipo !== 'replay-turni'/);
-    assert.match(matches, /tipo: 'replay-barra-fuori'/);
-    assert.match(matches, /tipo: 'replay-vai'/);
+    assert.match(matches, /id="replayComandi"/);
+    assert.doesNotMatch(matches, /id="replayBarra"|replay-turni|replay-vai/);
+    assert.match(matches, /e\.data\.tipo !== 'replay-stato'/);
+    assert.match(matches, /tipo: 'replay-comandi-fuori'/);
+    assert.match(matches, /tipo: 'replay-comando', comando: /);
+    for (const comando of ['inizio', 'indietro', 'play', 'avanti', 'velocita', 'audio']) assert.match(matches, new RegExp(`data-comando="${comando}"`), comando);
 });

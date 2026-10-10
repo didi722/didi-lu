@@ -40,6 +40,7 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js"></script>
 <script src="temi.js"></script>
+<script src="menu-sito.js"></script>
 </head>
 <body class="nb pg-box senza-ads"> 
 
@@ -77,16 +78,26 @@
             </section>
 
             <div class="controls">
-                <input type="text" id="searchInput" placeholder="Browse teams..." oninput="applicaFiltri()">
-                
+                <!-- come i filtri di Stats: l'etichetta è un tag appoggiato sul bordo del campo -->
+                <label class="box-filtro box-filtro-cerca">
+                    <span>Search</span>
+                    <input type="text" id="searchInput" placeholder="Browse teams..." autocomplete="off" oninput="applicaFiltri()">
+                </label>
+
                 <div class="select-group">
-                    <select id="categoryFilter" onchange="applicaFiltri()">
-                        <option value="">Format...</option>
-                    </select>
-                    <select id="sortFilter" onchange="applicaFiltri()">
-                        <option value="win">Max Wins</option>
-                        <option value="alpha">A-Z</option>
+                    <label class="box-filtro">
+                        <span>Format</span>
+                        <select id="categoryFilter" onchange="applicaFiltri()">
+                            <option value="">All formats</option>
                         </select>
+                    </label>
+                    <label class="box-filtro">
+                        <span>Sort by</span>
+                        <select id="sortFilter" onchange="applicaFiltri()">
+                            <option value="win">Max Wins</option>
+                            <option value="alpha">A-Z</option>
+                        </select>
+                    </label>
                 </div>
             </div>
 
@@ -1212,9 +1223,9 @@ async function apriDettagli(id, opzioni = {}) {
     window.squadraAperta = team;
     if (typeof Fiocchi !== 'undefined') {
         Fiocchi.riempiMini(db, content, { giocatore: playerID, team, valido: () => window.squadraAperta === team });
-        // i badge del team: medagliette e scaffale nella testata
+        // i badge del team: medagliette e scaffale nella testata. Il tasto con lo scaffale e i progressi c'è solo qui, nel Box del giocatore
         if (typeof BadgeTeam !== 'undefined') {
-            BadgeTeam.montaBarra(db, content.querySelector('[data-badge-team]'), { giocatore: playerID, team, valido: () => window.squadraAperta === team });
+            BadgeTeam.montaBarra(db, content.querySelector('[data-badge-team]'), { giocatore: playerID, team, valido: () => window.squadraAperta === team, progresso: true });
         }
     }
 }
@@ -1662,7 +1673,7 @@ function popolaFiltroCategorie(setInsieme) {
     const select = document.getElementById('categoryFilter');
     if (!select) return;
 
-    select.innerHTML = '<option value="">Category</option>';
+    select.innerHTML = '<option value="">All formats</option>';
     
     const categorieOrdinate = Array.from(setInsieme).sort();
     
@@ -3176,7 +3187,7 @@ function sincronizzaCategorie() {
         const data = snapshot.val();
         
         // Prepariamo le opzioni per il filtro (con "Tutte")
-        let filterHtml = '<option value="">Category...</option>';
+        let filterHtml = '<option value="">All formats</option>';
 
         if (data) {
             Object.keys(data).forEach(key => {

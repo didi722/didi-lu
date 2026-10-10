@@ -419,17 +419,8 @@ ${barreSalute('.palco')}
 }
 .barra-turni > span { display: block; height: 100%; width: 0; background: var(--ambra); border-right: 2px solid var(--inchiostro); box-sizing: border-box; }
 .barra-turni:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
-/* la pagina che contiene il replay ha già la sua barra (fuori dallo schermo): quella interna non serve */
-.barra-fuori .barra-turni { display: none; }
-/* con la barra dei turni fuori dallo schermo i comandi sono una pillola piccola: indietro, play, avanti, velocità, suono
-   (il contatore e "dall'inizio" stanno già nella barra della pagina) e non coprono il campo */
-.barra-fuori .comandi-replay { width: auto; padding: 5px 7px 6px; }
-.barra-fuori .contatore-turni, .barra-fuori #btn-inizio { display: none; }
-.barra-fuori .riga-comandi { gap: 6px; }
-.barra-fuori .tasto { width: 30px; height: 28px; }
-.barra-fuori .tasto.play { width: 38px; }
-.barra-fuori .tasto.velocita { width: 34px; }
-.barra-fuori .tasto svg { width: 12px; height: 12px; }
+/* dentro la scocca di matches.html i comandi stanno fuori dallo schermo, sotto la console (la pagina li disegna e li comanda): quelli interni spariscono */
+.comandi-fuori .comandi-replay { display: none; }
 
 .riga-comandi { display: flex; align-items: center; gap: 7px; }
 .tasto {
@@ -580,6 +571,18 @@ ${barreSalute('.palco')}
             b.setAttribute('aria-pressed', muto ? 'false' : 'true');
             b.setAttribute('aria-label', muto ? 'Sound off' : 'Sound on');
         }
+        function prossimaVelocita() {
+            velocita = (velocita + 1) % VELOCITA.length;
+            scrivi('replaySitoVelocita', String(velocita));
+            applicaVelocita();
+            avvisaGenitore();
+        }
+        function commutaAudio() {
+            muto = !muto;
+            scrivi('replaySitoMuto', muto ? '1' : '0');
+            applicaAudio();
+            avvisaGenitore();
+        }
         applicaVelocita();
         applicaAudio();
 
@@ -642,11 +645,12 @@ ${barreSalute('.palco')}
 
         // --- Comandi ---
         const totaleTurni = dati.turni;
+        const inPausa = () => battle.paused || !!(battle.ended && battle.atQueueEnd);
         function aggiornaComandi() {
-            const inPausa = battle.paused || !!(battle.ended && battle.atQueueEnd);
+            const ferma = inPausa();
             const play = $('btn-play');
-            play.innerHTML = inPausa ? ICONE.play : ICONE.pausa;
-            play.setAttribute('aria-label', inPausa ? 'Play' : 'Pause');
+            play.innerHTML = ferma ? ICONE.play : ICONE.pausa;
+            play.setAttribute('aria-label', ferma ? 'Play' : 'Pause');
 
             // La barra conta i turni conclusi: all'inizio del turno N ne sono finiti N - 1
             const turno = Math.max(0, battle.turn);
@@ -658,19 +662,19 @@ ${barreSalute('.palco')}
             barra.setAttribute('aria-valuetext', 'Turn ' + turno + ' of ' + totaleTurni);
             $('contatore-turni').textContent = turno ? 'Turn ' + turno + ' / ' + totaleTurni : dati.etichettaInizio;
 
-            palco.classList.toggle('in-pausa', !!inPausa);
+            palco.classList.toggle('in-pausa', !!ferma);
             mostraComandi();
-            avvisaGenitore(turno, finito, fatto);
+            avvisaGenitore();
         }
 
-        // Dentro la scocca del Game Boy (matches.html) la barra dei turni sta fuori dallo schermo: il replay
-        // dice alla pagina a che turno è e la pagina gli manda i clic. La pagina, appena sente il replay,
-        // risponde "barra-fuori": solo allora la barra interna sparisce (con una pagina che non sa
-        // nulla di tutto questo, per esempio un replay aperto da solo, resta quella interna).
+        // Dentro la scocca del Game Boy (matches.html) i comandi stanno fuori dallo schermo, sotto la console: il replay dice alla pagina in che
+        // stato è (in pausa o no, la velocità, il suono) e la pagina gli manda i comandi (play, indietro, avanti, da capo, velocità, suono).
+        // La pagina, appena sente il replay, risponde "comandi-fuori": solo allora i comandi interni spariscono (con una pagina che non sa
+        // nulla di tutto questo, per esempio un replay aperto da solo, restano quelli interni).
         let ultimoAvviso = '';
-        function avvisaGenitore(turno, finito, fatto) {
+        function avvisaGenitore() {
             if (window.parent === window) return;
-            const messaggio = { tipo: 'replay-turni', turno, totale: totaleTurni, finito, fatto: Math.round(fatto * 1000) / 1000 };
+            const messaggio = { tipo: 'replay-stato', inPausa: inPausa(), velocita: VELOCITA[velocita].etichetta, muto };
             const chiave = JSON.stringify(messaggio);
             if (chiave === ultimoAvviso) return;
             ultimoAvviso = chiave;
@@ -735,16 +739,8 @@ ${barreSalute('.palco')}
         $('btn-indietro').addEventListener('click', () => spostaTurno(-1));
         $('btn-avanti').addEventListener('click', () => spostaTurno(1));
         $('btn-ancora').addEventListener('click', daCapo);
-        $('btn-velocita').addEventListener('click', () => {
-            velocita = (velocita + 1) % VELOCITA.length;
-            scrivi('replaySitoVelocita', String(velocita));
-            applicaVelocita();
-        });
-        $('btn-audio').addEventListener('click', () => {
-            muto = !muto;
-            scrivi('replaySitoMuto', muto ? '1' : '0');
-            applicaAudio();
-        });
+        $('btn-velocita').addEventListener('click', prossimaVelocita);
+        $('btn-audio').addEventListener('click', commutaAudio);
 
         // Barra dei turni: un clic porta lì (in fondo = fine del set)
         const barra = $('barra-turni');
@@ -759,12 +755,15 @@ ${barreSalute('.palco')}
             vaiAFrazione((e.clientX - r.left) / r.width);
         });
 
-        // La pagina che contiene il replay (matches.html) può avere la sua barra dei turni
+        // I comandi che arrivano dalla pagina che contiene il replay (matches.html), quando li disegna lei fuori dalla scocca
+        const COMANDI = {
+            play: playPausa, indietro: () => spostaTurno(-1), avanti: () => spostaTurno(1),
+            inizio: daCapo, velocita: prossimaVelocita, audio: commutaAudio,
+        };
         window.addEventListener('message', e => {
             if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
-            if (e.data.tipo === 'replay-barra-fuori') document.documentElement.classList.add('barra-fuori');
-            else if (e.data.tipo === 'replay-vai' && typeof e.data.frazione === 'number') vaiAFrazione(e.data.frazione);
-            else if (e.data.tipo === 'replay-passo' && (e.data.delta === 1 || e.data.delta === -1)) spostaTurno(e.data.delta);
+            if (e.data.tipo === 'replay-comandi-fuori') document.documentElement.classList.add('comandi-fuori');
+            else if (e.data.tipo === 'replay-comando' && Object.prototype.hasOwnProperty.call(COMANDI, e.data.comando)) COMANDI[e.data.comando]();
         });
         ultimoAvviso = '';
         aggiornaComandi();

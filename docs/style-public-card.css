@@ -261,6 +261,29 @@ body {
 [data-layout="carta"].pp-holo-on .pp-carta.is-sopra .pp-holo { opacity: 0.42; }
 body.pp-modifica .pp-holo { display: none; }
 
+/* Gli altri layout hanno più carte: ogni blocco, la testata e il piede sono una piastrella, e ognuna ha la sua patina, che si accende solo quando
+   il mouse è sopra di lei e segue il puntatore dentro di lei (public-card.js, attivaInclinazione: --mx e --my sono quelli della piastrella). */
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-blocco, .pp-testata, .pp-piede) { position: relative; }
+:is([data-layout="poster"], [data-layout="dossier"], [data-layout="collage"], [data-layout="cinema"], [data-layout="podio"]) :is(.pp-blocco, .pp-testata, .pp-piede)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    mix-blend-mode: overlay;
+    background:
+        radial-gradient(circle at calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%), rgba(255, 255, 255, 0.85) 0, rgba(255, 255, 255, 0) 42%),
+        repeating-linear-gradient(115deg, transparent 0 22px, rgba(255, 222, 77, 0.85) 22px 34px, rgba(255, 90, 160, 0.7) 34px 46px, rgba(70, 200, 255, 0.8) 46px 58px, transparent 58px 96px);
+    background-size: 100% 100%, 220% 220%;
+    background-position: 0 0, calc(var(--mx, 0.5) * 100%) calc(var(--my, 0.5) * 100%);
+}
+.pp-holo-on :is(.pp-blocco, .pp-testata, .pp-piede).is-sopra::after { opacity: 0.42; }
+body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none; }
+
 /* ---------- Come sono disposte le zone ---------- */
 
 .pp-zona { min-width: 0; }
@@ -611,7 +634,6 @@ body.pp-modifica .pp-holo { display: none; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.pp-targhette .neubrutal-tooltip { display: none !important; }
 /* in modifica ogni blocco ha la sua etichetta nell'angolo in alto a sinistra: le targhette le stanno sotto */
 body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 
@@ -982,15 +1004,20 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 
 /* ---------- Tooltip ---------- */
 
-.pp-pagina .neubrutal-tooltip {
-    display: none;
-    position: absolute;
-    z-index: 10002;
-    left: 50%;
-    top: calc(100% + 12px);
+/* Nella pagina il fumetto è solo il modello (display: none a riposo: un fumetto nascosto con visibility conterebbe nell'overflow della tela):
+   mentre lo si guarda public-card.js ne mostra una copia fissa sul <body>, nelle coordinate dello schermo, sempre dentro la finestra
+   (mostraFumetto). Per questo la copia porta da sola tutto l'aspetto. */
+.pp-pagina .neubrutal-tooltip { display: none; }
+
+.neubrutal-tooltip.pp-tip-fisso {
+    display: block;
+    position: fixed;
+    left: var(--tx, 8px);
+    top: var(--ty, 8px);
+    z-index: 10003;
     width: max-content;
     min-width: 190px;
-    max-width: 270px;
+    max-width: min(270px, calc(100vw - 20px));
     box-sizing: border-box;
     margin: 0;
     padding: 10px 12px;
@@ -998,6 +1025,7 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     color: #000;
     border: 3px solid #000;
     box-shadow: 6px 6px 0 #000;
+    font-family: var(--pp-font, 'Josefin Sans', sans-serif);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0;
@@ -1006,28 +1034,11 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     white-space: normal;
     line-height: 1.25;
     pointer-events: none;
-    transform: translateX(calc(-50% + var(--dx, 0px))) rotate(-2deg);
-}
-
-.pp-pagina .pp-tip-host:hover > .neubrutal-tooltip,
-.pp-pagina .pp-tip-host:focus-visible > .neubrutal-tooltip {
-    display: block;
+    transform: rotate(-1.5deg);
     animation: pp-tip 0.14s ease-out;
 }
 
 @keyframes pp-tip { from { opacity: 0; translate: 0 6px; } }
-.pp-pagina .pp-tip-su > .neubrutal-tooltip { top: auto; bottom: calc(100% + 12px); }
-
-/* il suggerimento di una targhetta sul palco: una copia fuori dalla scena (che taglia i fumetti), ferma vicino alla targhetta */
-.pp-pagina > .neubrutal-tooltip.pp-tip-fisso {
-    display: block;
-    position: fixed;
-    left: var(--tx, 8px);
-    top: var(--ty, 8px);
-    z-index: 10003;
-    transform: rotate(-1.5deg);
-    animation: pp-tip 0.14s ease-out;
-}
 
 .pp-pagina .pp-tip-host:focus-visible { outline: 3px dashed #000; outline-offset: 4px; }
 

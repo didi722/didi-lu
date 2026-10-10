@@ -238,42 +238,6 @@
 
     const TARGHETTE = { titolo: d => costruisciTitolo(d), personalita: d => costruisciTargaPersonalita(d) };
 
-    // Sul palco la scena taglia i fumetti: il suggerimento della targhetta (titolo, personalità) si copia fuori dalla scena, fisso vicino a lei.
-    // Prima sul palco il cursore diventava un punto di domanda ma non compariva niente.
-    let suggerimentoFisso = null;
-    let timerSuggerimento = null;
-    function chiudiSuggerimentoFisso() {
-        clearTimeout(timerSuggerimento);
-        if (suggerimentoFisso) { suggerimentoFisso.remove(); suggerimentoFisso = null; }
-    }
-    function mostraSuggerimentoFisso(host) {
-        const originale = host.querySelector(':scope > .neubrutal-tooltip');
-        const pagina = document.getElementById('pp-pagina');
-        if (!originale || !pagina) return;
-        chiudiSuggerimentoFisso();
-        const copia = originale.cloneNode(true);
-        copia.classList.add('pp-tip-fisso');
-        pagina.appendChild(copia);
-        suggerimentoFisso = copia;
-        // sotto la targhetta; se non c'è posto, sopra; sempre dentro la finestra
-        const r = host.getBoundingClientRect();
-        const larghezza = document.documentElement.clientWidth;
-        const x = Math.min(Math.max(8, r.left + r.width / 2 - copia.offsetWidth / 2), Math.max(8, larghezza - copia.offsetWidth - 8));
-        let y = r.bottom + 10;
-        if (y + copia.offsetHeight > window.innerHeight - 8) y = Math.max(8, r.top - copia.offsetHeight - 10);
-        copia.style.setProperty('--tx', `${x}px`);
-        copia.style.setProperty('--ty', `${y}px`);
-    }
-    function collegaSuggerimentoFisso(nodo) {
-        nodo.addEventListener('pointerenter', () => mostraSuggerimentoFisso(nodo));
-        nodo.addEventListener('focus', () => mostraSuggerimentoFisso(nodo));
-        nodo.addEventListener('pointerleave', e => {
-            if (e.pointerType === 'touch') { timerSuggerimento = setTimeout(chiudiSuggerimentoFisso, 2800); return; }   // sul telefono resta un attimo
-            chiudiSuggerimentoFisso();
-        });
-        nodo.addEventListener('blur', chiudiSuggerimentoFisso);
-    }
-
     /** Mette ogni targhetta dove l'allenatore l'ha voluta (config.targhette); un contenitore si rifà solo se cambia cosa ci sta dentro */
     function riempiTarghe() {
         const posti = stato.config.targhette;
@@ -288,10 +252,9 @@
             if (contenitore.dataset.firma === firma) continue;
             contenitore.dataset.firma = firma;
             const nodi = chi.map(k => TARGHETTE[k](stato.dati)).filter(Boolean);
-            chiudiSuggerimentoFisso();
+            chiudiFumetto();
             contenitore.replaceChildren(...nodi);
             contenitore.hidden = !nodi.length;
-            if (posto === 'palco') nodi.forEach(collegaSuggerimentoFisso);
         }
     }
 
@@ -376,7 +339,7 @@
                     title: nomePkm, 'aria-label': nomePkm,   // il nome non è scritto sulla card: resta nel suggerimento e per chi legge lo schermo
                     onclick: () => {
                         window.squadraAperta = team;     // i fiocchi del Pokémon sono quelli DI QUEL team
-                        if (typeof window.apriPkmDettaglio === 'function' && Array.isArray(p.mosse)) window.apriPkmDettaglio(p, pulisci(nomePkm));
+                        if (typeof window.apriPkmDettaglio === 'function') window.apriPkmDettaglio(p, pulisci(nomePkm), elenco(team.pokemon).indexOf(p));
                     } },
                     h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
                         onerror: e => {
@@ -765,49 +728,82 @@
 
     // ---- Effetto "carta olografica" -----------------------------------------------------------
 
+    // La carta (layout "carta") si inclina e brilla sotto il mouse; negli altri layout, dove le carte sono più d'una (ogni blocco, la testata, il
+    // piede), brilla solo quella su cui si sta: --mx e --my sono la posizione del puntatore dentro di lei (la patina è nel CSS).
     function attivaInclinazione() {
         const carta = document.getElementById('pp-carta');
         if (!carta || !window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        let attesa = 0;
+        const PIASTRELLE = '.pp-blocco, .pp-testata, .pp-piede';
+        let attesa = 0, piastrella = null;
+        const posizione = (el, e) => {
+            const r = el.getBoundingClientRect();
+            el.style.setProperty('--mx', ((e.clientX - r.left) / r.width).toFixed(3));
+            el.style.setProperty('--my', ((e.clientY - r.top) / r.height).toFixed(3));
+            el.classList.add('is-sopra');
+        };
+        const lascia = el => { if (!el) return; el.classList.remove('is-sopra'); el.style.setProperty('--mx', '0.5'); el.style.setProperty('--my', '0.5'); };
         carta.addEventListener('pointermove', e => {
             if (stato.modifica || attesa) return;
+            const evento = { clientX: e.clientX, clientY: e.clientY };
+            const sotto = e.target && e.target.closest ? e.target.closest(PIASTRELLE) : null;
             attesa = requestAnimationFrame(() => {
                 attesa = 0;
-                const r = carta.getBoundingClientRect();
-                carta.style.setProperty('--mx', ((e.clientX - r.left) / r.width).toFixed(3));
-                carta.style.setProperty('--my', ((e.clientY - r.top) / r.height).toFixed(3));
-                carta.classList.add('is-sopra');
+                posizione(carta, evento);
+                if (piastrella && piastrella !== sotto) lascia(piastrella);
+                piastrella = sotto && carta.contains(sotto) ? sotto : null;
+                if (piastrella) posizione(piastrella, evento);
             });
         });
         carta.addEventListener('pointerleave', () => {
-            carta.classList.remove('is-sopra');
-            carta.style.setProperty('--mx', '0.5');
-            carta.style.setProperty('--my', '0.5');
+            lascia(carta);
+            lascia(piastrella);
+            piastrella = null;
         });
     }
 
-    // ---- Tooltip che non escono dallo schermo -------------------------------------------------
+    // ---- Fumetti dei .pp-tip-host: una copia fissa, sempre intera dentro lo schermo -------------------------
+    // Dentro la pagina un fumetto non ha mai il posto garantito: su PC la pagina è una tela scalata (transform) con overflow nascosto, che taglia
+    // quello che esce e sposta e rimpicciolisce tutto (una correzione in pixel dello schermo, lì dentro, sbaglia); sul telefono ci sono i bordi
+    // dello schermo; un blocco accanto può coprirlo (il numero dei trofei, un altro blocco). Per questo il fumetto scritto nel blocco resta nascosto e fa
+    // solo da modello: mentre lo si guarda se ne mostra una copia sul <body>, nelle coordinate dello schermo (posizionaFumetto, pagina-pubblica.js).
+    let fumetto = null, hostFumetto = null, timerFumetto = null;
 
-    function tieniTooltipInSchermo(e) {
-        const host = e.target.closest && e.target.closest('.pp-tip-host');
-        const tip = host && host.querySelector(':scope > .neubrutal-tooltip');
-        if (!tip) return;
-        host.classList.remove('pp-tip-su');
-        tip.style.setProperty('--dx', '0px');
-        let r = tip.getBoundingClientRect();
-        const margine = 10, larghezza = document.documentElement.clientWidth, altezza = document.documentElement.clientHeight;
-        // in basso non c'è posto (la tela arriva al bordo della finestra): si apre verso l'alto
-        if (r.bottom > altezza - margine && host.getBoundingClientRect().top > r.height + margine) {
-            host.classList.add('pp-tip-su');
-            r = tip.getBoundingClientRect();
-        }
-        let dx = 0;
-        if (r.left < margine) dx = margine - r.left;
-        else if (r.right > larghezza - margine) dx = larghezza - margine - r.right;
-        tip.style.setProperty('--dx', `${Math.round(dx)}px`);
+    function chiudiFumetto() {
+        clearTimeout(timerFumetto);
+        if (fumetto) { fumetto.remove(); fumetto = null; }
+        hostFumetto = null;
     }
-    document.addEventListener('mouseover', tieniTooltipInSchermo);
-    document.addEventListener('focusin', tieniTooltipInSchermo);
+
+    function mostraFumetto(host) {
+        const modello = host && host.querySelector(':scope > .neubrutal-tooltip');
+        if (!modello || host === hostFumetto) return;
+        chiudiFumetto();
+        const copia = modello.cloneNode(true);
+        copia.classList.add('pp-tip-fisso');
+        copia.style.visibility = 'hidden';
+        document.body.appendChild(copia);
+        fumetto = copia;
+        hostFumetto = host;
+        const p = P.posizionaFumetto(host.getBoundingClientRect(), { w: copia.offsetWidth, h: copia.offsetHeight },
+            { w: document.documentElement.clientWidth, h: window.innerHeight });
+        copia.style.setProperty('--tx', `${p.left}px`);
+        copia.style.setProperty('--ty', `${p.top}px`);
+        copia.style.visibility = '';
+    }
+
+    const hostDi = e => (e.target && e.target.closest ? e.target.closest('.pp-tip-host') : null);
+    document.addEventListener('pointerover', e => { const h = hostDi(e); if (h) mostraFumetto(h); });
+    document.addEventListener('pointerout', e => {
+        const h = hostDi(e);
+        if (!h || h !== hostFumetto || (e.relatedTarget && h.contains(e.relatedTarget))) return;
+        if (e.pointerType === 'touch') { timerFumetto = setTimeout(chiudiFumetto, 2800); return; }     // sul telefono resta un attimo
+        chiudiFumetto();
+    });
+    document.addEventListener('focusin', e => { const h = hostDi(e); if (h) mostraFumetto(h); });
+    document.addEventListener('focusout', e => { if (hostDi(e) === hostFumetto) chiudiFumetto(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiFumetto(); });
+    window.addEventListener('scroll', chiudiFumetto, true);
+    window.addEventListener('resize', chiudiFumetto);
 
     // ---- Proprietario -------------------------------------------------------------------------
 

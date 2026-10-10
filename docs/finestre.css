@@ -1,5 +1,5 @@
 /* =====================================================================
-   FINESTRE DEL SITO: login, scelta delle squadre (Hub), nuova stagione (Index e Admin), lancia la sfida
+   FINESTRE DEL SITO: login, scelta delle squadre (Hub), nuova stagione (Index e Admin), lancia la sfida, scheda e modifica di un formato (Formats)
    ---------------------------------------------------------------------
    Stessa famiglia delle schede squadra e Pokémon (dettagli.css): finestra con la striscia nera e i tre pallini,
    bordo e ombra del tema, carta calda con la mezzatinta. Prima ognuna aveva bordi neri e ombre nere scritti a mano e non
@@ -9,7 +9,7 @@
    ===================================================================== */
 
 /* ---------- La striscia nera in alto ---------- */
-:is(#login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card, #modal-iscrizione .iscr-finestra, #replayModal .replay-mini-header)::before {
+:is(.fmt-finestra, #format-modal .format-modal-content, #login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card, #modal-iscrizione .iscr-finestra, #replayModal .replay-mini-header)::before {
     content: var(--fin-etichetta, "SANT'ALVISE PKMN LEAGUE");
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -32,6 +32,8 @@
 }
 
 /* ---------- La finestra: carta calda, bordo e ombra del tema ---------- */
+.fmt-finestra,
+#format-modal .format-modal-content,
 #login-modal .modal-content,
 .modal-neubrutal,
 .sfida-card,
@@ -436,6 +438,24 @@
     overflow-y: auto;
 }
 #replayModal .gba-container { order: 2; margin: 0; }
+/* i comandi del replay: una barra tra la console e i tasti dei set, nello stile del tema */
+#replayModal .replay-comandi {
+    order: 3; flex: 0 0 auto;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+}
+#replayModal .rc-tasto {
+    background: var(--nb-carta, #fff);
+    border-radius: calc(var(--nb-raggio, 0px) * .6);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    transform: rotate(calc(var(--nb-rot, 1) * var(--tilt)));
+}
+#replayModal .rc-tasto:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+#replayModal .rc-tasto:active { transform: translate(2px, 2px); box-shadow: none; }
+#replayModal .rc-play { background: var(--nb-giallo, #ffbd44); }
+#replayModal .rc-play:hover { background: var(--nb-carta, #fff); }
 
 /* intestazione: una finestra bassa con i due team e il punteggio; il colore di chi ha vinto è il filetto in basso (--vinc) */
 #replayModal .replay-mini-header {
@@ -512,7 +532,7 @@
 #replayModal > .close-replay:hover { background: var(--nb-rosso, #ff4444); color: #fff; rotate: 0deg; }
 
 /* scelta del set: una barretta sotto la console, un tasto piccolo per set (la lettera di chi lo ha vinto, il suo colore come filetto in basso) */
-#replayModal .set-selector { position: static !important; top: auto !important; right: auto !important; order: 3; flex: 0 0 auto; width: auto; height: auto; padding: 0; transform: none; }
+#replayModal .set-selector { position: static !important; top: auto !important; right: auto !important; order: 4; flex: 0 0 auto; width: auto; height: auto; padding: 0; transform: none; }
 #replayModal .set-lista {
     position: relative;
     box-sizing: border-box;

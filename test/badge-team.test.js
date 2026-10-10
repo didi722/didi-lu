@@ -37,7 +37,7 @@ test('un team che non ha mai giocato: nessun badge, barre a zero (senza errori)'
 });
 
 test('livelli: bronzo, argento e oro alle soglie; al massimo la barra è piena e non c\'è un prossimo traguardo', () => {
-    const l = B.calcola(team({ match: { giocati: 40, vinti: 29, persi: 11 }, showdown: { giocati: 12, vinti: 10, persi: 2 }, stagioniVinte: 1, stagioniGiocate: 5 }));
+    const l = B.calcola(team({ match: { giocati: 40, vinti: 29, persi: 11 }, showdown: { giocati: 14, vinti: 12, persi: 2 }, stagioniVinte: 1, stagioniGiocate: 5 }));
     assert.equal(perId(l, 'winner').livello, 2, '29 match vinti: argento (15), non ancora oro (30)');
     assert.equal(perId(l, 'winner').prossima, 30);
     assert.equal(perId(l, 'showdown').livello, 3);
@@ -50,7 +50,8 @@ test('livelli: bronzo, argento e oro alle soglie; al massimo la barra è piena e
 });
 
 test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del team', () => {
-    const l = B.calcola(team({ serie: { vittorieMax: 5, pulitaMax: 4, showdownMax: 3 }, ko: { fatti: 120, setPerfetti: 2, setConDati: 9 } }));
+    // soglie: vittorie di fila 4/7/9, match puliti 2/4/6, showdown di fila 2/3/5, KO 150/350/600, set perfetti 3/6/10
+    const l = B.calcola(team({ serie: { vittorieMax: 7, pulitaMax: 6, showdownMax: 3 }, ko: { fatti: 350, setPerfetti: 3, setConDati: 9 } }));
     assert.equal(perId(l, 'winstreak').livello, 2);
     assert.equal(perId(l, 'cleanstreak').livello, 3);
     assert.equal(perId(l, 'sdstreak').livello, 2);
@@ -58,14 +59,17 @@ test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del
     assert.equal(perId(l, 'flawless').livello, 1);
 });
 
-test('percentuale di match vinti: sotto i 10 match non conta, e dice quanto manca (come i fiocchi)', () => {
+test('percentuale di match vinti: sotto i 7 match non conta, e dice quanto manca (come i fiocchi)', () => {
     const poco = perId(B.calcola(team({ match: { giocati: 6, vinti: 6, persi: 0 }, percMatch: 100 })), 'winrate');
     assert.equal(poco.livello, 0);
-    assert.equal(poco.progresso, 0.6);
-    assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 6, s: 10 });
-    assert.match(poco.nota, /needs 10 matches played \(now 6\)/);
-    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 10<\/i><\/span>/);
-    const abbastanza = perId(B.calcola(team({ match: { giocati: 12, vinti: 9, persi: 3 }, percMatch: 75 })), 'winrate');
+    const minimo = B.CATALOGO.find(b => b.id === 'winrate').minimo.valore;
+    assert.equal(minimo, 7, 'servono sette match giocati');
+    assert.equal(poco.progresso, 6 / minimo);
+    assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 6, s: minimo });
+    assert.match(poco.nota, /needs 7 matches played \(now 6\)/);
+    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 7<\/i><\/span>/);
+    // soglie 65% / 75% / 80%
+    const abbastanza = perId(B.calcola(team({ match: { giocati: 12, vinti: 10, persi: 2 }, percMatch: 83 })), 'winrate');
     assert.equal(abbastanza.livello, 3);
     assert.equal(abbastanza.nota, '');
 });
@@ -77,7 +81,7 @@ test('immagini: tutte col prefisso badge-team-, un file per livello per ogni bad
     assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-bronze.png');
     assert.equal(perId(l, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-bronze.png');
     assert.equal(perId(l, 'champion').immagine, 'immagini/badge-team-champion-bronze.png');
-    const alto = B.calcola(team({ serie: { vittorieMax: 7, pulitaMax: 3, showdownMax: 5 }, match: { giocati: 40, vinti: 30, persi: 10 } }));
+    const alto = B.calcola(team({ serie: { vittorieMax: 9, pulitaMax: 4, showdownMax: 5 }, match: { giocati: 40, vinti: 30, persi: 10 } }));
     assert.equal(perId(alto, 'winstreak').immagine, 'immagini/badge-team-winstreak-gold.png');
     assert.equal(perId(alto, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-silver.png');
     assert.equal(perId(alto, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-gold.png');
@@ -141,8 +145,73 @@ test('collegamento: Box, pagina pubblica e Stats mostrano i badge dei team; i tr
     assert.match(doc('box.html'), /data-team-badge="\$\{team\.id\}"/);
     assert.match(doc('public.html'), /BadgeTeam\.montaBarra\(db, content\.querySelector\('\[data-badge-team\]'\)/);
     assert.doesNotMatch(doc('public.html'), /teamBadgesHtml|maxshowdownstrike/, 'niente più la copia dei tre badge di serie');
-    assert.match(doc('stats.js'), /BadgeTeam\.htmlScaffale\(BadgeTeam\.calcola\(t\)/);
+    // Stats mostra le medagliette vinte (le prime quattro sulla card, tutte nel dettaglio), mai il progresso: quello è solo nel Box del giocatore
+    assert.match(doc('stats.js'), /BadgeTeam\.htmlMini\(BadgeTeam\.calcola\(t\), 99\)/);
     assert.match(doc('stats.js'), /BadgeTeam\.htmlMini\(BadgeTeam\.calcola\(t\), 4\)/);
+    assert.doesNotMatch(doc('stats.js'), /htmlScaffale/, 'Stats: niente scaffale con il progresso');
+    assert.match(doc('box.html'), /BadgeTeam\.montaBarra\(db, content\.querySelector\('\[data-badge-team\]'\)[^\n]*progresso: true/, 'Box: il tasto "Badges x/10" con il progresso');
+    assert.doesNotMatch(doc('public.html'), /progresso: true/, 'pagina pubblica: solo le medagliette');
+});
+
+// ---------- le medagliette (l'unico modo in cui un team si mostra fuori dal Box) ----------
+test('testoMedaglia: nome e livello, descrizione e quanto vale, una riga ciascuno (è la descrizione al passaggio)', () => {
+    const lista = B.calcola(team({ match: { giocati: 40, vinti: 29, persi: 11 }, stagioniVinte: 1, stagioniGiocate: 5 }));
+    const preso = B.guadagnati(lista)[0];
+    assert.ok(preso, 'il team ha almeno un badge');
+    const righe = B.testoMedaglia(preso).split('\n');
+    assert.equal(righe.length, 3);
+    assert.equal(righe[0], `${preso.nome} · ${preso.livelloNome}`);
+    assert.equal(righe[1], preso.descrizione);
+    assert.match(righe[2], /\d/, 'il numero raggiunto');
+});
+
+test('htmlMedaglietta: cerchio del livello con l\'immagine, descrizione al passaggio e per la tastiera; il testo è protetto', () => {
+    const b = { id: 'champion', nome: '"><img src=x onerror=alert(1)>', livelloNome: 'Gold', descrizione: '<b>d</b>', valore: 5, unita: 'seasons won', classeLivello: 'gold', immagine: 'a.png', icona: '🏅' };
+    const h = B.htmlMedaglietta(b);
+    assert.match(h, /^<span class="bt-mini bt-gold" tabindex="0" role="img" aria-label="[^"]*" title="[^"]*">/);
+    assert.match(h, /<img class="bt-mini-img"/);
+    assert.doesNotMatch(h, /<img src=x onerror=/, 'il nome non esce dall\'attributo');
+    assert.doesNotMatch(h, /<b>d<\/b>/);
+    // la descrizione si può dare a mano (la usano la pagina Trainers e il simulatore); per chi legge lo schermo le righe si separano con un punto
+    const h2 = B.htmlMedaglietta({ ...b, nome: 'Ok' }, 'Titolo\nSeconda riga');
+    assert.match(h2, /title="Titolo\nSeconda riga"/);
+    assert.match(h2, /aria-label="Titolo\. Seconda riga"/);
+});
+
+function casellaFinta() {
+    const elementi = {
+        '.bt-apri': { setAttribute() {}, addEventListener() {}, contains: () => false, focus() {} },
+        '.bt-pop': { hidden: true, style: {}, contains: () => false, getBoundingClientRect: () => ({ right: 0, top: 0 }) }
+    };
+    return { innerHTML: '', querySelector: sel => elementi[sel] || null };
+}
+
+test('montaBarra: senza "progresso" solo le medagliette vinte; con "progresso" (il Box del giocatore) il tasto "Badges x/10" e lo scaffale', async () => {
+    // in Node non c'è Fiocchi: i dati dal vivo non arrivano (c'è la nota) ma la barra si monta lo stesso, con i badge a zero
+    const sola = casellaFinta();
+    assert.equal(await B.montaBarra(null, sola, { giocatore: 'didi', team: { nome: 'Alfa' } }), true);
+    assert.equal(sola.innerHTML, '', 'nessun badge vinto: niente barra');
+    assert.doesNotMatch(sola.innerHTML, /bt-apri|bt-pop/);
+
+    const col = casellaFinta();
+    assert.equal(await B.montaBarra(null, col, { giocatore: 'didi', team: { nome: 'Alfa' }, progresso: true }), true);
+    assert.match(col.innerHTML, /<button type="button" class="bt-apri" aria-expanded="false" aria-haspopup="dialog">🏅 Badges <b>0\/10<\/b><\/button>/);
+    assert.match(col.innerHTML, /<div class="bt-pop" role="dialog" aria-label="Team badges" hidden>/);
+    assert.equal((col.innerHTML.match(/data-badge="/g) || []).length, 10, 'lo scaffale ha tutti e dieci i badge, con il progresso');
+    assert.match(col.innerHTML, /class="bt-nota"/, 'e la nota che i dati dal vivo non ci sono');
+
+    // senza giocatore o team non si monta niente; una barra superata da un'altra apertura (valido) non si tocca
+    assert.equal(await B.montaBarra(null, casellaFinta(), { giocatore: 'didi' }), false);
+    assert.equal(await B.montaBarra(null, null, { giocatore: 'didi', team: { nome: 'Alfa' } }), false);
+    const intatta = casellaFinta(); intatta.innerHTML = 'vecchio';
+    assert.equal(await B.montaBarra(null, intatta, { giocatore: 'didi', team: { nome: 'Alfa' }, progresso: true, valido: () => false }), false);
+    assert.equal(intatta.innerHTML, 'vecchio');
+});
+
+test('montaMini: la barra delle testate strette (il replay) è sempre solo medagliette, mai il progresso', async () => {
+    const c = casellaFinta();
+    assert.equal(await B.montaMini(null, c, { giocatore: 'didi', team: { nome: 'Alfa' } }), true);
+    assert.doesNotMatch(c.innerHTML, /bt-apri|bt-pop/);
 });
 
 // ---------- ordine per vicinanza al prossimo livello ----------
@@ -151,8 +220,8 @@ test('perVicinanza: dal più vicino al prossimo livello al più lontano; a parit
         match: { giocati: 40, vinti: 29, persi: 11 },                 // Winner: 29 / 30 (argento preso), il più vicino
         stagioniGiocate: 2,                                              // Veteran: 2 / 3
         serie: { vittorieMax: 0, pulitaMax: 0, showdownMax: 0 },
-        showdown: { giocati: 12, vinti: 10, persi: 2 },                  // Showdown Winner: oro (10), in fondo
-        ko: { fatti: 150, setPerfetti: 0, setConDati: 9 }                // Knockout: argento, 150 / 250
+        showdown: { giocati: 14, vinti: 12, persi: 2 },                  // Showdown Winner: oro (12), in fondo
+        ko: { fatti: 150, setPerfetti: 0, setConDati: 9 }                // Knockout: bronzo, 150 / 350
     }));
     const ordine = B.perVicinanza(l).map(b => b.id);
     assert.equal(ordine[0], 'winner', 'il più vicino: 29 su 30');

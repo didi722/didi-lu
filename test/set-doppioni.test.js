@@ -194,9 +194,13 @@ test('box e pagina pubblica passano la posizione del Pokémon ai fiocchi', () =>
     assert.match(box, /apriPkmDettaglio\(team\.pokemon\[pkmIndex\], pkmNameUrl, pkmIndex\)/);
     assert.match(box, /function apriPkmDettaglio\(pokemonData, pkmNameUrl, indice\)/);
     assert.match(box, /pokemon: pokemonData, indice,/);
-    assert.ok(pub.includes("apriPkmDettaglio(${JSON.stringify(p).replace(/\"/g, '&quot;')}, '${pkmNameUrl}', ${pIndex})"), 'la pagina pubblica passa l\'indice del Pokémon');
+    // la pagina pubblica non ha più i dati del Pokémon scritti nell'HTML (mosse, EV...): passa l'indice, e il Pokémon sta nella lista della pagina
+    assert.match(pub, /data-i="\$\{pIndex\}"/, 'la card porta la posizione del Pokémon');
+    assert.match(pub, /apriPkmDettaglio\(team\.pokemon\[i\], SpritePkm\.id\(team\.pokemon\[i\]\.nome\), i\)/);
     assert.match(pub, /async function apriPkmDettaglio\(pokemonData, pkmNameUrl, indice\)/);
-    assert.match(pub, /pokemon: pokemonData, indice, amicizia,/);
+    assert.match(pub, /data-fiocchi-pkm="\$\{Number\.isInteger\(indice\) \? indice : 0\}"/, 'la casella delle medagliette porta la posizione');
+    assert.match(pub, /casella\.dataset\.fiocchiPkm = String\(posto\)/);
+    assert.match(pub, /amicizia: p => p === pokemonData && amicizia/);
     // il server passa i soprannomi del team e i portati col nome
     const partitaJs = fs.readFileSync(path.join(__dirname, '..', 'functions', 'partita.js'), 'utf8');
     assert.match(partitaJs, /const nomi = lato => \(b\[lato\]\.team \|\| \[\]\)\.map\(s => s\.name \|\| s\.species\)/);

@@ -9,8 +9,8 @@ const T = require('../docs/titoli.js');
 const testi = elenco => elenco.map(t => t.testo);
 
 test('tipi: il primo scaglione chiede solo presenze, il secondo anche le vittorie, il terzo anche i KO', () => {
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 29, won: 99, ko: 99 } })), []);
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 30, won: 0, ko: 0 } })), ['Hex Maniac']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 49, won: 99, ko: 99 } })), []);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 50, won: 0, ko: 0 } })), ['Hex Maniac']);
     // tante presenze ma poche vittorie: resta al primo
     assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 500, won: 39, ko: 999 } })), ['Hex Maniac']);
     assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 120, won: 40, ko: 0 } })), ['Hex Maniac', 'Ghost Gym Leader']);
@@ -20,7 +20,7 @@ test('tipi: il primo scaglione chiede solo presenze, il secondo anche le vittori
 });
 
 test('i tipi si leggono anche con la maiuscola e con dati mancanti', () => {
-    assert.deepEqual(testi(T.titoliSbloccati({ Ghost: { played: 30 }, nonsense: { played: 999 }, fire: null })), ['Hex Maniac']);
+    assert.deepEqual(testi(T.titoliSbloccati({ Ghost: { played: 50 }, nonsense: { played: 999 }, fire: null })), ['Hex Maniac']);
     assert.deepEqual(T.titoliSbloccati(null, null), []);
 });
 

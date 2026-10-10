@@ -133,7 +133,10 @@ test('replay: una colonna nel flusso (intestazione compatta, console, set) e la 
     assert.match(intest, /width: min\(980px, 100%\)/);
     const set = /#replayModal \.set-selector \{[^}]*\}/.exec(fin)[0];
     assert.match(set, /position: static !important/);
-    assert.match(set, /order: 3/);
+    assert.match(set, /order: 4/, 'i set stanno sotto i comandi');
+    // i comandi (pausa, avanti, 2x...) stanno fuori dalla scocca, tra la console e i set
+    const comandi = /#replayModal \.replay-comandi \{[^}]*\}/.exec(fin)[0];
+    assert.match(comandi, /order: 3/);
     // i set sono tasti piccoli
     const tasto = /#replayModal button\.btn-set \{[^}]*\}/.exec(fin)[0];
     assert.match(tasto, /width: 40px;[^}]*height: 36px/);
@@ -148,11 +151,15 @@ test('replay: una colonna nel flusso (intestazione compatta, console, set) e la 
     assert.equal(Math.round(1150 * 1080 / 1920), 647);
 });
 
-test('replay dentro la console: comandi piccoli (una pillola) quando la pagina ha la sua barra dei turni; Play e cartello di fine più piccoli', () => {
+test('replay dentro la console: i comandi vanno fuori dalla scocca se la pagina li sa usare (postMessage), niente barra dei turni sotto la scocca', () => {
     const rs = docs('replay-sito.js');
-    assert.match(rs, /\.barra-fuori \.comandi-replay \{ width: auto;/);
-    assert.match(rs, /\.barra-fuori \.contatore-turni, \.barra-fuori #btn-inizio \{ display: none; \}/);
-    assert.match(rs, /\.barra-fuori \.tasto \{ width: 30px; height: 28px; \}/);
+    // il replay avvisa la pagina dello stato e, quando la pagina risponde, toglie i suoi comandi dallo schermo
+    assert.match(rs, /\.comandi-fuori \.comandi-replay \{ display: none; \}/);
+    assert.match(rs, /tipo: 'replay-stato', inPausa: inPausa\(\), velocita: VELOCITA\[velocita\]\.etichetta, muto/);
+    assert.match(rs, /e\.data\.tipo === 'replay-comandi-fuori'\) document\.documentElement\.classList\.add\('comandi-fuori'\)/);
+    assert.match(rs, /e\.data\.tipo === 'replay-comando' && Object\.prototype\.hasOwnProperty\.call\(COMANDI, e\.data\.comando\)/);
+    // la barra del progresso dei set (la vecchia "turn x/y" sotto la scocca) non c'è più
+    assert.doesNotMatch(rs, /barra-fuori|replay-turni|replay-vai/);
     assert.match(rs, /@media \(max-width: 719px\) \{[^]*\.velo-avvio p \{ display: none; \}/);
     assert.equal(rs, fs.readFileSync(path.join(__dirname, '..', 'functions', 'replay-sito.js'), 'utf8'), 'le due copie sono identiche');
 });

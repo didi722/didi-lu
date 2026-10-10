@@ -234,7 +234,9 @@
             sezione('Lettering (name, titles, numbers)', h('div', { class: 'pe-caratteri' }, Object.entries(P.FONT).map(([id, f]) =>
                 h('button', { type: 'button', class: `pe-carattere${k.font === id ? ' is-on' : ''}`, 'aria-pressed': String(k.font === id), stile: { 'font-family': f.pila }, onclick: () => nuovo('font', id) },
                     h('b', { testo: 'Aa' }), h('small', { testo: f.nome }))))),
-            sezione('Effects', interruttore('Holographic shine (Trainer Card layout)', k.holo, v => nuovo('holo', v)))
+            sezione('Effects',
+                interruttore('Holographic shine', k.holo, v => nuovo('holo', v)),
+                h('p', { class: 'pe-nota', testo: 'Hover the page: in the Trainer Card layout the whole card shines, in the other layouts every card shines on its own.' }))
         ];
     }
 

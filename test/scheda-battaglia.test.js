@@ -147,12 +147,14 @@ test('htmlScheda: il testo che entra nell\'HTML è protetto', () => {
     assert.match(h, /&lt;img src=x onerror=alert\(1\)&gt;/);
 });
 
-test('htmlBadgeTeam: medagliette e conto del team in campo; vuoto se non si sa il team o non ha badge', async () => {
+test('htmlBadgeTeam: le medagliette vinte dal team in campo (senza conto né progresso); vuoto se non si sa il team o non ha badge', async () => {
     const r = await carica({ p1: 'didi', p2: 'lu' });
     const h = SB.htmlBadgeTeam(r.risultato, r.p1, 'Alfa', DIP);
     assert.match(h, /class="scheda-team-badge"/);
+    assert.match(h, /class="bt-barra-mini"/);
     assert.match(h, /class="bt-mini /);
-    assert.match(h, /🏅 \d+\/\d+/);
+    assert.match(h, /title="[^"]*\n?[^"]*"/, 'la descrizione al passaggio');
+    assert.doesNotMatch(h, /🏅 \d+\/\d+|bt-conto-chip|bt-apri|bt-pop/, 'niente conto x/10 né progresso: quello è solo nel Box del giocatore');
     assert.equal(SB.htmlBadgeTeam(r.risultato, r.p1, 'alfa', DIP), h, 'maiuscole del nome del team non contano');
     assert.equal(SB.htmlBadgeTeam(r.risultato, r.p1, 'Altro team', DIP), '');
     assert.equal(SB.htmlBadgeTeam(r.risultato, r.p1, '', DIP), '');
@@ -160,24 +162,27 @@ test('htmlBadgeTeam: medagliette e conto del team in campo; vuoto se non si sa i
     assert.equal(SB.htmlBadgeTeam(null, r.p1, 'Alfa', DIP), '');
 });
 
-test('htmlTondinoPokemon: il numero dei fiocchi di ciascun Pokémon, anche con la stessa specie due volte', async () => {
+test('htmlFiocchiPokemon: le medagliette dei fiocchi di ciascun Pokémon (con l\'elenco al passaggio), anche con la stessa specie due volte', async () => {
     const r = await carica({ p1: 'didi', p2: 'lu' });
     const nomi = ['Garchomp', 'Garchomp', 'Rotom-Wash', 'Amoonguss'];
-    const t = i => SB.htmlTondinoPokemon(r.risultato, r.p1, 'Alfa', nomi, i, DIP);
-    assert.match(t(0), /class="fiocco-tondino /);
-    assert.match(t(2), /class="fiocco-tondino /);
+    const t = i => SB.htmlFiocchiPokemon(r.risultato, r.p1, 'Alfa', nomi, i, DIP);
+    assert.match(t(0), /class="fiocco-medaglie"/);
+    assert.match(t(2), /class="fiocco-medaglie"/);
     assert.equal(t(3), '', 'chi non è mai sceso in campo non ha fiocchi');
-    const conto = h => Number((h.match(/<b>(\d+)<\/b>/) || [])[1]);
+    // il numero dei fiocchi presi sta nell'etichetta ("3 ribbons") e nel titolo dell'elenco ("Ribbons 3/9")
+    const conto = h => Number((h.match(/aria-label="(\d+) ribbons?"/) || [])[1]);
     // i due Garchomp sono Pokémon diversi: il primo ha KO e non è mai svenuto, il secondo è sempre svenuto (Survivor e KO diversi)
     const primo = Fiocchi.trova(r.risultato, { player: 'didi', team: 'Alfa', specie: 'Garchomp', ordinale: 1 });
     const secondo = Fiocchi.trova(r.risultato, { player: 'didi', team: 'Alfa', specie: 'Garchomp', ordinale: 2 });
     assert.ok(primo && secondo && primo !== secondo, 'due righe di statistiche distinte');
     assert.equal(conto(t(0)), Fiocchi.guadagnati(Fiocchi.calcola(primo)).length);
     assert.equal(conto(t(1)), Fiocchi.guadagnati(Fiocchi.calcola(secondo)).length);
+    assert.match(t(0), /<ul>.*<li class="fiocco-t-riga/, 'l\'elenco con livello e numeri');
+    assert.doesNotMatch(t(0), /fiocco-tondino|bt-pop|bt-apri/);
     assert.equal(t(9), '');
-    assert.equal(SB.htmlTondinoPokemon(r.risultato, r.p1, '', nomi, 0, DIP), '');
-    assert.equal(SB.htmlTondinoPokemon(null, r.p1, 'Alfa', nomi, 0, DIP), '');
-    assert.equal(SB.htmlTondinoPokemon(r.risultato, r.p2, 'Beta', ['Garchomp'], 0, DIP), '', 'un Pokémon che non è di quel team non prende i fiocchi di un altro');
+    assert.equal(SB.htmlFiocchiPokemon(r.risultato, r.p1, '', nomi, 0, DIP), '');
+    assert.equal(SB.htmlFiocchiPokemon(null, r.p1, 'Alfa', nomi, 0, DIP), '');
+    assert.equal(SB.htmlFiocchiPokemon(r.risultato, r.p2, 'Beta', ['Garchomp'], 0, DIP), '', 'un Pokémon che non è di quel team non prende i fiocchi di un altro');
 });
 
 // ---------- la pagina del simulatore ----------
@@ -190,7 +195,7 @@ test('battle.html carica i moduli della scheda e il suo CSS; battle-extra.js li 
     assert.ok(html.indexOf('<script src="scheda-battaglia.js">') > html.indexOf('<script src="badge-allenatore.js">'), 'prima le dipendenze');
     const extra = fs.readFileSync(path.join(DOCS, 'battle-extra.js'), 'utf8');
     assert.match(extra, /SchedaBattaglia/);
-    assert.match(extra, /htmlTondinoPokemon\(/);
+    assert.match(extra, /htmlFiocchiPokemon\(/);
     assert.match(extra, /htmlBadgeTeam\(/);
     assert.match(extra, /htmlScheda\(/);
     assert.match(extra, /if \(dati\.id !== undefined\) S\.info\[lato\]\.id/);
@@ -198,6 +203,6 @@ test('battle.html carica i moduli della scheda e il suo CSS; battle-extra.js li 
     assert.match(ui, /id: dati\.id/, 'la prova contro la CPU: il giocatore');
     assert.match(ui, /id: d\.giocatori\[l\]\.id/, 'online: i due giocatori');
     const css = fs.readFileSync(path.join(DOCS, 'style-battle.css'), 'utf8');
-    for (const c of ['.lato-scheda', '.scheda-titolo', '.scheda-elo', '.scheda-posizione', '.scheda-team-badge', '.membro .fiocco-tondino', '.membro .fiocco-t-tip']) assert.ok(css.includes(c), c);
+    for (const c of ['.lato-scheda', '.scheda-titolo', '.scheda-elo', '.scheda-posizione', '.scheda-team-badge', '.membro .fiocco-medaglie', '.membro .fiocco-medaglie .bt-mini']) assert.ok(css.includes(c), c);
     assert.doesNotMatch(css, /\.membro img/, 'le immagini del fumetto non prendono le regole dello sprite');
 });

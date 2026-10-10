@@ -111,13 +111,15 @@ test('profilo, pagina Trainers e pagina pubblica leggono le serie da titoli.js (
         assert.doesNotMatch(testo, /\bfile:\s*'(cleanstreak|winstreak|sdstreak)'/, `${nome}: una copia delle serie`);
         assert.doesNotMatch(testo, /steps:\s*\[\d+,\s*\d+,\s*\d+\]/, `${nome}: soglie scritte a mano`);
         assert.doesNotMatch(testo, /maxsdstrike|maxcleanstrike|maxwonstrike/, `${nome}: chiavi dei dati scritte a mano`);
-        assert.match(testo, /Titoli\.statoSerie\(/, `${nome}: livello e avanzamento da Titoli.statoSerie`);
+        // il profilo e la pagina pubblica calcolano livello e avanzamento da titoli.js; la pagina Trainers mostra solo le medaglie già prese
+        // (Titoli.badgeSbloccati: nome, livello, descrizione e immagine), tutte nel cerchio del colore del livello
+        if (nome === 'players.html') assert.match(testo, /Titoli\.badgeSbloccati\(/, `${nome}: le medaglie prese da Titoli.badgeSbloccati`);
+        else assert.match(testo, /Titoli\.statoSerie\(/, `${nome}: livello e avanzamento da Titoli.statoSerie`);
     }
     assert.match(profilo, /Titoli\.immagineSerie\(b,/);
-    assert.match(trainers, /Titoli\.immagineSerie\(b,/);
     assert.match(carta, /Titoli\.immagineSerie\(b,/);
     assert.match(profilo, /\$\{Titoli\.IMMAGINE_FONDATORE\}/);
-    assert.match(trainers, /\$\{Titoli\.IMMAGINE_FONDATORE\}/);
+    assert.match(trainers, /BadgeTeam\.htmlMedaglietta\(/, 'players.html: ogni badge nel suo cerchio (come i badge del team)');
     assert.match(carta, /immagini\/badge-allenatore-founder\.png/);
     assert.match(trainers, /<script src="titoli\.js"><\/script>/, 'players.html carica titoli.js');
 });

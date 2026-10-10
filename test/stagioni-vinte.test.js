@@ -92,14 +92,16 @@ test('la pagina pubblica e la lista Trainers usano quel numero; il contatore del
     assert.ok(giocatoriHtml.includes('<link rel="stylesheet" href="badge-team.css">'));
 });
 
-test('il suggerimento del titolo sul palco della pagina pubblica compare (prima il cursore era un punto di domanda e basta)', () => {
+test('il suggerimento del titolo sul palco della pagina pubblica compare (prima il cursore era un punto di domanda e basta): una copia fissa sul body, intera dentro lo schermo', () => {
     const card = docs('public-card.js');
-    assert.match(card, /function mostraSuggerimentoFisso\(host\)/);
-    assert.match(card, /if \(posto === 'palco'\) nodi\.forEach\(collegaSuggerimentoFisso\);/);
-    assert.match(card, /nodo\.addEventListener\('pointerenter', \(\) => mostraSuggerimentoFisso\(nodo\)\);/);
-    assert.match(card, /nodo\.addEventListener\('focus', \(\) => mostraSuggerimentoFisso\(nodo\)\);/);
+    assert.match(card, /function mostraFumetto\(host\)/);
+    assert.match(card, /copia\.classList\.add\('pp-tip-fisso'\)/);
+    // vale per ogni .pp-tip-host: il titolo e la targhetta della personalità sul palco, le coppe, le medaglie
+    assert.match(card, /class: `hub-title-badge pp-titolo pp-tip-host tipo-\$\{classeTipo\}`/);
+    assert.match(card, /document\.addEventListener\('pointerover', e => \{ const h = hostDi\(e\); if \(h\) mostraFumetto\(h\); \}\);/);
+    assert.match(card, /document\.addEventListener\('focusin', e => \{ const h = hostDi\(e\); if \(h\) mostraFumetto\(h\); \}\);/);
     const css = docs('style-public-card.css');
-    assert.match(css, /\.pp-pagina > \.neubrutal-tooltip\.pp-tip-fisso \{[^}]*position: fixed/);
-    // il fumetto vecchio dentro la scena resta nascosto (la scena lo taglierebbe): quello visibile è la copia fuori
-    assert.match(css, /\.pp-targhette \.neubrutal-tooltip \{ display: none !important; \}/);
+    assert.match(css, /\.neubrutal-tooltip\.pp-tip-fisso \{[^}]*position: fixed/);
+    // il fumetto scritto nel blocco resta nascosto (la scena lo taglierebbe e un blocco accanto lo coprirebbe): quello visibile è la copia fuori
+    assert.match(css, /\.pp-pagina \.neubrutal-tooltip \{ display: none; \}/);
 });

@@ -896,3 +896,31 @@ test('blocco Personality: ha peso, misura minima e un posto in ogni layout, e ac
         assert.equal(spenta.blocchi.personalita, undefined, layout);
     }
 });
+
+// ---- fumetti: dove mettere il fumetto di un elemento (sempre dentro lo schermo) ----------------------
+test('posizionaFumetto: centrato sotto l\'elemento; sopra se sotto non ci sta e sopra c\'è più posto', () => {
+    const vista = { w: 1000, h: 800 };
+    const dim = { w: 200, h: 100 };
+    // c'è posto sotto: centrato, 12px più giù del bordo basso
+    assert.deepEqual(P.posizionaFumetto({ left: 400, right: 440, top: 100, bottom: 140 }, dim, vista), { left: 320, top: 152, sopra: false });
+    // in fondo allo schermo sotto non ci sta e sopra sì: va sopra
+    const giu = P.posizionaFumetto({ left: 400, right: 440, top: 700, bottom: 740 }, dim, vista);
+    assert.equal(giu.sopra, true);
+    assert.equal(giu.top, 700 - 12 - 100);
+    // se non c'è più posto sopra che sotto resta sotto, ma schiacciato dentro lo schermo
+    const stretto = P.posizionaFumetto({ left: 400, right: 440, top: 380, bottom: 420 }, { w: 200, h: 700 }, vista);
+    assert.ok(stretto.top >= 10 && stretto.top + 700 <= 800 - 10, `dentro lo schermo: ${JSON.stringify(stretto)}`);
+});
+
+test('posizionaFumetto: mai fuori dai bordi laterali (un elemento a sinistra o a destra, un fumetto largo come lo schermo)', () => {
+    const vista = { w: 400, h: 800 };
+    const sinistra = P.posizionaFumetto({ left: 0, right: 30, top: 100, bottom: 130 }, { w: 220, h: 80 }, vista);
+    assert.equal(sinistra.left, 10, 'a 10px dal bordo sinistro, non fuori');
+    const destra = P.posizionaFumetto({ left: 370, right: 400, top: 100, bottom: 130 }, { w: 220, h: 80 }, vista);
+    assert.equal(destra.left, 400 - 220 - 10, 'a 10px dal bordo destro');
+    // più largo dello schermo: si appoggia al bordo sinistro, non esce a sinistra
+    assert.equal(P.posizionaFumetto({ left: 100, right: 140, top: 100, bottom: 130 }, { w: 500, h: 80 }, vista).left, 10);
+    // margini e distanza si possono cambiare
+    assert.equal(P.posizionaFumetto({ left: 0, right: 30, top: 100, bottom: 130 }, { w: 220, h: 80 }, vista, { margine: 0 }).left, 0);
+    assert.equal(P.posizionaFumetto({ left: 100, right: 140, top: 100, bottom: 130 }, { w: 100, h: 50 }, vista, { distanza: 30 }).top, 160);
+});

@@ -928,16 +928,15 @@ body {
     min-height: 30px;
 }
 
-/* Il trofeo viene bloccato esattamente al centro della sezione centrale */
+/* Il trofeo sta davanti ai badge, sulla stessa riga: non si sovrappone mai alle medaglie, nemmeno quando sono tante e vanno a capo */
 .trainer-card-trophy {
-    position: absolute;
-    left: 40%;
-    transform: translateX(-50%);
+    position: static;
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    margin-right: 14px;
     white-space: nowrap;
-    z-index: 1;
 }
 
 /* I badge rimangono allineati a destra */
@@ -948,16 +947,6 @@ body {
     flex-wrap: wrap;
     justify-content: flex-end;
 }
-
-/* Singola icona del badge (ridimensionata) */
-.trainer-mini-badge {
-    width: 24px;           /* Forza la larghezza esatta */
-    height: 24px;          /* Forza l'altezza esatta */
-    object-fit: contain;  /* Mantiene le proporzioni originali */
-    filter: drop-shadow(1px 1px 0px #000); /* Ombra stile neubrutalist */
-    flex-shrink: 0;        /* Impedisce al browser di schiacciarle */
-}
-
 
 /* Icona dell'immagine del trofeo */
 .trophy-icon {

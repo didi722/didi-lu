@@ -153,6 +153,17 @@
     transition: opacity .1s ease;
 }
 .tip-coach.tip-globale.tip-visibile { opacity: 1; }
+/* con più righe la prima è il titolo (tooltip.js) */
+.tip-coach.tip-globale strong {
+    display: block;
+    margin: 0 0 4px;
+    padding: 0 0 4px;
+    border-bottom: 2px dashed var(--nb-ink, #000);
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
 
 /* ---------- 7. Telefono: i fumetti non escono dallo schermo ---------- */
 @media (max-width: 900px) {

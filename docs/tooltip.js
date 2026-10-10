@@ -70,7 +70,17 @@
             el.removeAttribute('title');
             corrente = el;
             const f = crea();
-            f.textContent = testo.trim();
+            // un suggerimento di più righe ha il titolo nella prima (medagliette dei badge: "Nome · Livello", poi cosa premia e i numeri)
+            const righe = testo.trim().split('\n');
+            f.textContent = '';
+            if (righe.length > 1) {
+                const titolo = doc.createElement('strong');
+                titolo.textContent = righe[0];
+                f.appendChild(titolo);
+                f.appendChild(doc.createTextNode(righe.slice(1).join('\n')));
+            } else {
+                f.textContent = righe[0];
+            }
             f.classList.remove('tip-visibile');
             f.style.left = '0px'; f.style.top = '0px';
             const r = el.getBoundingClientRect();

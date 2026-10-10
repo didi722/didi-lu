@@ -219,9 +219,10 @@ body {
     box-shadow: 0 0 0;
 }
 
+/* il contenuto usa tutta la larghezza a destra della colonna delle pubblicità (le card si dispongono da sole: vedi la griglia più sotto) */
+.main-wrapper,
 .home-seasons-container {
     width: 100%;
-    width: 1100px;
 }
 
 #music-control svg path {
@@ -767,192 +768,344 @@ body {
     font-family: 'Josefin Sans', sans-serif;
 }
 
-/* LA GRIGLIA: Forziamo il posizionamento affiancato delle card su più colonne */
+/* =====================================================================
+   LE CARD DEI FORMATI E LA LORO SCHEDA
+   ---------------------------------------------------------------------
+   Come le altre pagine del sito, tutto segue il tema scelto (variabili --nb-*: carta, inchiostro, giallo, angoli, ombre, rotazioni,
+   caratteri): niente più bianchi, gialli e neri scritti a mano. La finestra della scheda ha la stessa cornice di login, iscrizione
+   alla stagione e sfida (striscia nera con i tre pallini, carta calda con la mezzatinta): vedi finestre.css.
+   ===================================================================== */
+
+/* LA GRIGLIA: parte dopo la colonna delle pubblicità come il contenuto delle altre pagine e mette tante card per riga quante ce
+   ne stanno (con lo zoom alto non si schiaccia, ne va una in meno) */
 .formats-neubrutalist-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; /* Card piccole */
-  gap: 40px !important;
-  width: 80% !important;
-  max-width: 1200px;
-  margin-top: 30px;
-  box-sizing: border-box;
-  margin-left: 20%;
-}
-
-/* LA CARD: angoli e ombra del tema (nel neubrutal: angoli vivi e ombra netta) */
-.format-card-nb {
-  border: 3px solid var(--nb-ink, #000) !important;
-  border-radius: var(--nb-raggio, 0px) !important; /* gli angoli sono quelli del tema (vivi nel neubrutal) */
-  padding: 15px 10px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 15px !important;
-  box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important; /* Ombra netta stile match */
-  box-sizing: border-box;
-  transition: all 0.2s ease;
-}
-
-.format-card-nb:hover {
-    transform: translateY(-5px) scale(1.1);
-    box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
-    border: 3px solid var(--nb-ink, #000);
-}
-
-.format-card-nb:active {
-    box-shadow: 0 0 0 !important;
-    transform: translate(0) !important;
-}
-
-/* IL TAG DEL FORMATO (Nero, testo bianco, inclinato) */
-.format-nb-title-badge {
-  background-color: var(--nb-ink, #000) !important;
-  color: #ffffff !important;
-  display: inline-block !important;
-  padding: 4px 10px !important;
-  border: 2px solid var(--nb-ink, #000) !important;
-  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
-  transform: rotate(-1.5deg) !important;
-  font-family: 'Josefin Sans', sans-serif;
-  font-size: 0.95rem !important;
-  white-space: nowrap;
-  font-weight: 800;
-}
-
-/* L'AVATAR PICCOLO CIRCOLARE CON BORDO */
-.format-nb-avatar-mini {
-  width: 48px !important;
-  height: 48px !important;
-  object-fit: cover !important;
-    animation: pokemon-bounce 0.8s steps(1) infinite;
-    
-}
-
-@keyframes pokemon-bounce {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-4px); /* Si sposta in alto di 4 pixel di colpo */
-    }
-}
-
-
-/* Breakpoint per forzare l'allineamento orizzontale */
-@media (min-width: 480px) { .formats-neubrutalist-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-@media (min-width: 768px) { .formats-neubrutalist-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-@media (min-width: 1024px) { .formats-neubrutalist-grid { grid-template-columns: repeat(4, 1fr) !important; } }
-
-#format-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    backdrop-filter: blur(25px);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 46px 36px;
     box-sizing: border-box;
-}
-#format-modal-overlay.active {
-    display: flex;
-}
-.format-modal-container {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-    max-width: 1000px;
-    max-height: 85vh;
-}
-.format-modal-card-left {
-    flex: 1;
-    background: #fff;
-    padding: 25px;
-    overflow-y: auto;
-}
-.format-modal-card-right {
-    width: 380px;
-    background: #fff;
-    padding: 25px;
-    overflow-y: auto;
-}
-.format-modal-title {
-    margin: 0;
-    font-size: 2.2rem;
-    font-family: 'Josefin Sans', sans-serif;
-    text-transform: uppercase;
+    width: calc(100% - var(--nb-ads, 220px) - 60px);
+    margin: 34px 0 0 calc(var(--nb-ads, 220px) + 30px);
+    padding: 14px 0 50px;
 }
 
-.format-modal-title-tag {
-    background: var(--nb-ink, #000);
-    color: #fff;
-    padding: 12px 35px;
-    border: 4px solid var(--nb-ink, #000);
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.3); /* Ombra colorata accesa tipica del genere */
-    transform: rotate(-2deg); /* Inclinazione */
-    display: inline-block;
-}
-.format-modal-title-tag h2 {
-    margin: 0;
-    font-size: 2.3rem;
-    font-family: 'Josefin Sans', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.format-modal-wrapper {
+/* LA CARD: carta con la mezzatinta, bordo e ombra del tema, la tab "FORMAT" a cavallo del bordo (come "SEASON" nelle card della home) */
+.format-card-nb {
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Allinea il titolo a sinistra rispetto alle card */
-    gap: 100px;
-    width: 100%;
-    max-width: 1000px;
+    align-items: flex-start;
+    gap: 12px;
+    box-sizing: border-box;
+    min-height: 190px;
+    min-width: 0;
+    padding: 34px 16px 88px; /* sotto resta il posto per matita, cestino e leader: un nome lungo non ci finisce sopra */
+    background-color: var(--nb-carta, #fff);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px);
+    background-size: 11px 11px;
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.format-card-nb::before {
+    content: "FORMAT";
+    position: absolute;
+    top: -17px;
+    left: 14px;
+    z-index: 3;
+    padding: 3px 12px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-tag, none);
+    font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .18em;
+    transform: rotate(calc(var(--nb-rot, 1) * -3deg));
+}
+.format-card-nb:hover {
+    transform: translate(-3px, -4px) rotate(calc(var(--nb-rot, 1) * -.7deg));
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+}
+.format-card-nb:active { transform: translate(2px, 2px); box-shadow: none; }
+.format-card-nb:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 5px; }
+
+/* IL NOME DEL FORMATO: cartellino nero inclinato (va a capo se è lungo, non esce più dalla card) */
+.format-nb-title-badge {
+    display: inline-block;
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 5px 12px 3px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s-scuro, none);
+    font: 900 1rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
 }
 
-/* Container inferiore delle due colonne */
-.format-modal-container {
+/* IL LEADER: l'avatar di chi ha più punti nel formato (o la corona vuota) su un adesivo del suo colore */
+.format-nb-leader-box {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
     display: flex;
-    gap: 25px; /* Leggermente aumentato lo stacco visivo */
-    width: 100%;
-    max-height: 65vh;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 56px;
+    height: 56px;
+    padding: 8px;
+    overflow: hidden;
+    background: var(--fmt-leader, var(--nb-carta, #fff));
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-4, 4px 4px 0 #000);
+    transform: rotate(calc(var(--nb-rot, 1) * 6deg));
+}
+.format-nb-leader-box img { width: 100%; height: 100%; object-fit: cover; transform: rotate(calc(var(--nb-rot, 1) * -6deg)); }
+.format-nb-leader-box.senza-leader { padding: 0; }
+.format-nb-leader-box.senza-leader span { font-size: 1.35rem; filter: grayscale(1); opacity: .65; transform: rotate(calc(var(--nb-rot, 1) * -6deg)); }
+
+/* MATITA E CESTINO (solo admin): due adesivi piccoli, giallo per modificare e rosso per eliminare */
+.fmt-azioni { position: absolute; left: 12px; bottom: 12px; z-index: 1; display: flex; flex-direction: column; gap: 6px; }
+.fmt-azione {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: var(--nb-carta, #fff);
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font-size: .9rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .08s ease, background-color .1s ease;
+}
+.fmt-modifica:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-1px, -1px) rotate(calc(var(--nb-rot, 1) * -4deg)); }
+.fmt-elimina:hover { background: var(--nb-rosso, #ff4444); transform: translate(-1px, -1px) rotate(calc(var(--nb-rot, 1) * 4deg)); }
+.fmt-azione:active { transform: translate(1px, 1px); box-shadow: none; }
+.fmt-azione:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 2px; }
+
+/* =====================================================================
+   LA SCHEDA DI UN FORMATO (si apre toccando una card)
+   Velo scuro con la mezzatinta, come l'iscrizione alla stagione; dentro, la finestra: titolo, regole a sinistra e classifica a destra.
+   ===================================================================== */
+#format-modal-overlay,
+#format-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 24px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: rgba(0, 0, 0, .46);
+    background-image: radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px);
+    background-size: 14px 14px;
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+}
+#format-modal-overlay.aperto { display: flex; }
+
+.fmt-finestra {
+    --fin-etichetta: "FORMAT";
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+    width: min(1100px, 100%);
+    max-height: calc(100vh - 48px);
+    padding: 62px 28px 26px;
+    margin: auto;
+}
+.fmt-chiudi {
+    position: absolute;
+    top: 5px; right: 12px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 26px; height: 26px;
+    padding: 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * 3deg));
+}
+.fmt-chiudi:hover { background: var(--nb-rosso, #ff4444); color: #fff; transform: none; }
+.fmt-chiudi:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
+
+/* il titolo: cartellino nero come quello delle altre schede */
+.fmt-titolo {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    box-sizing: border-box;
+    max-width: 100%;
+    margin: 0 0 6px;
+    padding: 9px 22px 7px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    font: 900 clamp(1.2rem, 2.4vw, 1.7rem)/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.8deg));
 }
 
-/* Colonna info sinistra (Inalterata, solida) */
-.format-modal-card-left {
-    flex: 1;
-    background: #fff;
-    padding: 25px;
+/* il corpo scorre da solo se lo schermo è basso (la striscia e il titolo restano fermi) */
+.fmt-corpo {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+    padding: 28px 10px 14px;
+    margin: 0 -10px;
     overflow-y: auto;
 }
+.fmt-regole { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.fmt-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px 20px; }
 
-/* COLONNA DESTRA FLUTTUANTE: Trasparente, senza bordi né ombre */
-.format-modal-card-right {
-    width: 380px;
-    background: transparent !important; /* Rimuove lo sfondo bianco */
-    border: none !important;            /* Rimuove il bordo nero esterno */
-    box-shadow: none !important;        /* Rimuove l'ombra globale */
-    overflow-y: auto;
-    padding-right: 5px; /* Spazio di sicurezza per la scrollbar se la lista è lunga */
+/* i riquadri: carta del tema, tab gialla con il nome del dato a cavallo del bordo */
+.fmt-blocco {
+    position: relative;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 26px 16px 14px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
 }
+.fmt-etichetta {
+    position: absolute;
+    top: -15px;
+    left: 12px;
+    z-index: 2;
+    box-sizing: border-box;
+    padding: 3px 11px 1px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .74rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.6deg));
+}
+.fmt-blocco:nth-child(even) > .fmt-etichetta { transform: rotate(calc(var(--nb-rot, 1) * 1.4deg)); }
+.fmt-valore { margin: 0; font: 900 .98rem/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; overflow-wrap: anywhere; }
+.fmt-valore.fmt-codice { text-transform: none; }
+.fmt-valore.fmt-si { color: #15803d; }
+.fmt-valore.fmt-no { color: #b91c1c; }
+.fmt-testo { margin: 0; font: 600 .95rem/1.45 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.fmt-testo.fmt-vuoto { font-style: italic; font-weight: 500; opacity: .65; }
 
-/* Assicurati che le righe mantengano la loro estetica e stacchino bene */
-.format-modal-card-right .player-rank-row {
-    margin-bottom: 12px; /* Un pelo di spazio in più tra una card fluttuante e l'altra */
+/* le clausole: una riga per regola (categoria ➔ campo) con il suo stato a destra */
+.fmt-clausole { display: flex; flex-direction: column; gap: 6px; max-height: 220px; padding-right: 5px; overflow-y: auto; }
+.fmt-clausola {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    border-bottom: 2px dashed var(--nb-ink, #000);
+    font: 600 .9rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
 }
+.fmt-clausola b { text-transform: uppercase; }
+.fmt-clausola i { font-style: normal; opacity: .55; }
+.fmt-chip {
+    flex: none;
+    padding: 2px 7px 1px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font: 900 .7rem/1.35 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+.fmt-chip-no { background: var(--nb-rosso, #ff4444); }
+.fmt-chip-si { background: var(--nb-verde, #47ea6a); }
+.fmt-chip-info { background: #7cc8ff; }
+.fmt-chip-lista { max-width: 65%; text-align: right; white-space: normal; }
+
+/* la classifica del formato: un'etichetta e una riga per giocatore, sul suo colore */
+.fmt-classifica { position: relative; min-width: 0; }
+.fmt-classifica > .fmt-etichetta { position: static; display: inline-block; margin: 0 0 20px 4px; }
+.fmt-classifica-lista { display: flex; flex-direction: column; gap: 14px; }
+.fmt-classifica-vuota { margin: 0; padding: 10px 2px; font: italic 600 .85rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
 
 .player-rank-row {
-    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    background: var(--fmt-colore, var(--nb-carta, #fff));
+    color: #1a1a1a;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-4, 4px 4px 0 #000);
+    text-decoration: none;
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * -.5deg));
+    transition: transform .1s ease, box-shadow .1s ease;
 }
-
-.player-rank-row:hover {
-    transform: translate(-15px) !important;
-    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000) !important;
+.player-rank-row:nth-child(even) { transform: rotate(calc(var(--nb-rot, 1) * .4deg)); }
+.player-rank-row:hover, .player-rank-row:focus-visible {
+    transform: translate(-3px, -3px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    outline: none;
 }
-
-.player-rank-row:active {
-    transform: translate(0px) rotate(-1deg) !important;
-    box-shadow: 0px 0px 0px var(--hover-color) !important;
+.player-rank-row:active { transform: translate(2px, 2px); box-shadow: none; }
+.fmt-pos { min-width: 30px; font: 900 1.1rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.fmt-chi { flex: 1 1 auto; min-width: 0; }
+.fmt-nome { display: block; font: 800 .92rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; overflow-wrap: anywhere; }
+.fmt-numeri { display: block; margin-top: 2px; font: 700 .75rem/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: #333; }
+.fmt-punti {
+    flex: none;
+    min-width: 46px;
+    box-sizing: border-box;
+    padding: 4px 10px 2px;
+    background: var(--nb-carta, #fff);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font: 900 1rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    text-align: center;
+    transform: rotate(calc(var(--nb-rot, 1) * 1deg));
 }
 
 .is-admin {
@@ -962,369 +1115,366 @@ body {
 /* il tasto "New format" (solo admin) sta nel dock dei tasti in alto: vedi temi.css e controlli.js */
 
 /* ==========================================================================
-   MODAL CREAZIONE FORMATO (NEUBRUTALIST COMPETE STYLE - JOSEFIN SANS)
+   "ADD NEW FORMAT" / "EDIT FORMAT" (solo admin)
+   La finestra ha la cornice di tutte le altre (striscia nera, carta calda, bordo e ombra del tema: finestre.css). Qui il resto: titolo,
+   campi, riquadri, bottoni, tutti con i colori, gli angoli, le ombre, le rotazioni e i caratteri del tema scelto.
    ========================================================================== */
 
-/* Forza il font Josefin Sans su ogni elemento dell'interfaccia */
-.format-modal-backdrop,
-.format-modal-backdrop *,
-.format-modal-content input,
-.format-modal-content select,
-.format-modal-content textarea,
-.format-modal-content button {
-    font-family: 'Josefin Sans', sans-serif !important;
-}
+/* Il carattere: i titoli, le etichette e i bottoni usano quello dei titoli del tema, i campi quello del testo */
+.format-modal-content,
+.format-modal-content :is(label, button, h2, h3, span, div, option) { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.format-modal-content :is(input, textarea, select) { font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
 
-/* Sfondo oscurato con blur dinamico sul gioco */
-.format-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(15px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-/* Finestra Canvas del Modal (Niente intestazioni fisse, i bordi sono liberi) */
+/* La finestra: stesse misure di prima, un po' di striscia in alto; il corpo scorre da solo, il titolo e il tasto Save restano fermi */
 .format-modal-content {
-    background-color: transparent !important;
-    width: 100%;
-    max-width: 760px;
-    max-height: 85vh;
+    --fin-etichetta: "FORMAT EDITOR";
+    position: relative;
     display: flex;
     flex-direction: column;
-    /* CRITICO: deve essere visible altrimenti le etichette che volano fuori dai bordi vengono tagliate! */
-    overflow: visible; 
-    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 760px;
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 56px 0 0;
+    color: var(--nb-ink, #000);
     animation: entraModal 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
 @keyframes entraModal {
     from { transform: scale(0.93) translateY(10px); opacity: 0; }
     to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* Container Trasparente dell'Header per far fluttuare i titoli */
-.format-modal-header {
-    background: transparent !important;
-    border-bottom: none !important;
-    position: absolute;
-    top: -24px; /* Esce sopra il bordo superiore */
-    left: 15px;
-    right: 15px;
-    padding: 0 !important;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
-    pointer-events: none; /* Non blocca i click sotto */
-}
-
-/* Sticker Titolo Principale "ADD NEW FORMAT" (Nero, inclinato, fluttuante) */
+/* Il titolo: cartellino nero inclinato sotto la striscia; la X è il bollino giallo nella striscia */
+.format-modal-header { flex: 0 0 auto; display: flex; align-items: flex-start; padding: 0 28px; }
 .format-modal-header h2 {
     margin: 0;
-    font-weight: 900;
-    font-size: 1.35rem;
-    color: #ffffff;
-    background-color: var(--nb-ink, #000);
+    padding: 8px 20px 6px;
+    background: var(--nb-ink, #000);
+    color: #fff;
     border: 4px solid var(--nb-ink, #000);
-    padding: 6px 16px;
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    font-weight: 900;
+    font-size: 1.3rem;
+    line-height: 1.15;
+    letter-spacing: var(--nb-spaziatura, .04em);
     text-transform: uppercase;
-    transform: rotate(-2.5deg);
-    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.2);
-    letter-spacing: 0.5px;
-    pointer-events: auto;
+    transform: rotate(calc(var(--nb-rot, 1) * -2deg));
 }
-
-/* Pulsante di Chiusura (X) identico a quello della schermata ELO */
 .format-close-btn {
-    font-size: 20px;
-    font-weight: 900;
-    cursor: pointer;
-    color: #000000;
-    background-color: #ffffff;
-    border: 4px solid var(--nb-ink, #000);
-    width: 34px;
-    height: 34px;
-    display: none;
+    position: absolute;
+    top: 5px; right: 12px;
+    z-index: 5;
+    display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    transform: rotate(3deg) translateY(-4px);
-    pointer-events: auto;
-    transition: transform 0.05s, box-shadow 0.05s, background-color 0.1s;
+    box-sizing: border-box;
+    width: 26px; height: 26px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 18px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * 3deg));
 }
+.format-close-btn:hover { background: var(--nb-rosso, #ff4444); color: #fff; transform: none; }
 
-.format-close-btn:hover {
-    transform: rotate(3deg) translate(-1px, -5px);
-    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    background-color: #ef4444;
-    color: #ffffff;
-}
-
-.format-close-btn:active {
-    transform: rotate(3deg) translate(2px, -2px);
-    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-}
-
-/* Corpo del Blocco */
+/* Corpo del blocco */
 .format-modal-body {
-    padding: 35px 24px 24px 24px; /* Più spazio in alto per non collidere con il titolo principale */
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    background-color: transparent !important;
+    gap: 26px;
+    padding: 34px 28px 24px;
+    overflow-y: auto;
 }
 
 /* Layout righe */
-.format-input-row {
-    display: flex;
-    gap: 16px;
-    width: 100%;
-}
+.format-input-row { display: flex; gap: 16px; width: 100%; }
 .flex-1 { flex: 1; }
 .flex-2 { flex: 2; }
 
-/* Gruppi di Input e Campi di Testo */
-.format-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+/* Gruppi di input e campi di testo */
+.format-input-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
-/* ETICHETTE CHE VOLANO (Stile DATE, FORMAT, SCORE nell'aggiunta match) */
+/* Le etichette: tab gialla, come quelle delle altre finestre */
 .format-input-group label {
+    width: fit-content;
+    margin-bottom: 4px;
+    padding: 2px 9px 0;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font-weight: 900;
     font-size: 0.8rem;
-    color: #000000;
+    letter-spacing: .05em;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background-color: #ffde4d; /* Il tuo giallo caratteristico */
-    border: 3px solid var(--nb-ink, #000);
-    padding: 2px 8px;
-    width: fit-content;
-    transform: rotate(-1.5deg) translateX(-2px);
-    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    margin-bottom: 4px;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg)) translateX(-2px);
 }
+/* "Generational mechanics": la casella e il suo nome stanno sulla stessa tab */
+.format-input-group label.fmt-spunta { display: flex; align-items: center; gap: 10px; margin-top: 22px; cursor: pointer; user-select: none; }
+.format-input-group label.fmt-spunta input { width: 18px; height: 18px; margin: 0; flex: none; cursor: pointer; accent-color: var(--nb-ink, #000); }
 
-/* Input, Selettori e Textarea */
-.format-input-group input[type="text"],
-.format-input-group textarea,
-.format-input-group select,
-.format-rule-row select,
-.format-rule-row input {
+/* Campi, tendine e area di testo */
+.format-modal-content :is(input[type="text"], input[type="number"], textarea, select) {
     width: 100%;
-    padding: 11px 14px;
-    border: 4px solid var(--nb-ink, #000);
-    background-color: #ffffff;
-    font-weight: 700;
-    font-size: 0.95rem;
     box-sizing: border-box;
+    padding: 10px 12px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-weight: 700;
+    font-size: .92rem;
+    line-height: 1.3;
     outline: none;
-    border-radius: 0px;
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    transition: transform 0.05s, box-shadow 0.05s;
+    transition: transform .05s, box-shadow .05s;
 }
-
-.format-input-group input[type="text"]:focus,
-.format-input-group textarea:focus,
-.format-input-group select:focus {
+.format-modal-content :is(input[type="text"], input[type="number"], textarea, select):focus {
     transform: translate(-1px, -1px);
-    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    background-color: #fafafa;
+    box-shadow: var(--nb-sh-4, 4px 4px 0 #000);
 }
+.format-modal-content ::placeholder { color: color-mix(in srgb, var(--nb-ink, #000) 55%, transparent); opacity: 1; }
 
-/* Sezioni condizionali ad attivazione dinamica */
-.format-conditional-section {
-    border-top: 4px dashed #000000;
-    padding-top: 25px;
-    margin-top: 5px;
-}
+/* Sezioni condizionali (compaiono scegliendo il tipo di formato) */
+.format-conditional-section { padding-top: 24px; margin-top: 4px; border-top: 3px dashed var(--nb-ink, #000); }
 
-/* Titoli delle Sotto-Sezioni (Stile MATCH INFO / TEAMS) */
+/* Titoli delle sotto-sezioni: un cartellino sulla carta */
 .format-conditional-section h3,
 .rules-header-badge-container h3 {
-    font-weight: 900;
-    font-size: 1.05rem;
-    color: #000000;
-    background-color: #ffffff;
-    border: 4px solid var(--nb-ink, #000);
     display: inline-block;
-    padding: 4px 12px;
-    margin-top: 0;
-    margin-bottom: 18px;
-    transform: rotate(-1deg);
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    text-transform: uppercase;
-}
-
-/* Box Grigio dei Parametri Obbligatori (Stile sotto-pannelli di Match Info) */
-.format-mandatory-box {
-    background-color: #e5e7eb; 
-    border: 4px solid var(--nb-ink, #000);
-    padding: 24px 18px 18px 18px;
-    margin-bottom: 22px;
-    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    position: relative;
-}
-
-/* Intestazione interna del Box Grigio Obbligatorio */
-.mandatory-title {
-    font-size: 0.8rem;
-    font-weight: 900;
-    color: #ffffff;
-    background-color: var(--nb-ink, #000);
+    margin: 0 0 18px;
+    padding: 5px 14px 3px;
+    background: var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
     border: 3px solid var(--nb-ink, #000);
-    padding: 3px 10px;
-    transform: rotate(-1deg);
-    box-shadow: var(--nb-sh-tag, none);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: var(--nb-spaziatura, .04em);
+    text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1deg));
+}
+
+/* Riquadro dei parametri obbligatori: carta appena più scura, con il suo cartellino nero */
+.format-mandatory-box {
+    position: relative;
+    margin-bottom: 22px;
+    padding: 26px 18px 18px;
+    background: color-mix(in srgb, var(--nb-ink, #000) 8%, var(--nb-carta, #fff));
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+}
+.mandatory-title {
     position: absolute;
     top: -16px;
     left: 14px;
+    padding: 3px 10px 1px;
+    background: var(--nb-ink, #000);
+    color: #fff;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-tag, none);
+    font-size: 0.8rem;
+    font-weight: 900;
     text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1deg));
 }
 
-.format-optional-box {
-    border-top: 4px dashed #000000;
-    padding-top: 25px;
-    position: relative;
-}
+.format-optional-box { position: relative; padding-top: 24px; border-top: 3px dashed var(--nb-ink, #000); }
 
-/* Contenitore delle righe personalizzate aggiunte */
-#dynamic-rules-container {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 16px;
-}
-
-/* Singola riga di restrizione inserita */
+/* Le restrizioni aggiunte: una riga ciascuna */
+#dynamic-rules-container { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
 .format-rule-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    background-color: #ffffff;
-    border: 4px solid var(--nb-ink, #000);
     padding: 10px 14px;
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    background: var(--nb-carta, #fff);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
 }
-
-/* Mappatura spaziatura elementi interni filtri */
+/* una riga in conflitto con un'altra: bordo e fondo rossi (il testo dell'errore sta nel riquadro sopra l'elenco) */
+.format-rule-row.in-conflitto { border-color: var(--nb-rosso, #ff4444); background: color-mix(in srgb, var(--nb-rosso, #ff4444) 16%, var(--nb-carta, #fff)); }
 .format-rule-row .select-category { flex: 1.2; min-width: 120px; }
-.format-rule-row .inline-container { display: contents; } 
+.format-rule-row .inline-container { display: contents; }
 .format-rule-row .select-field { flex: 2; min-width: 150px; }
 .format-rule-row .select-operator { flex: 1; min-width: 80px; }
 .format-rule-row .input-value { flex: 1.5; min-width: 120px; }
+/* i valori più piccoli (numeri, tier, vero/falso) hanno una misura loro, il resto lo decide il tema */
+.format-rule-row .fmt-valore-stretto { flex: 0 1 auto; width: auto; min-width: 0; }
+.format-rule-row .fmt-valore-stretto.fmt-largo-75 { max-width: 75px; }
+.format-rule-row .fmt-valore-stretto.fmt-largo-90 { max-width: 90px; }
+.format-rule-row .fmt-valore-stretto.fmt-largo-120 { max-width: 120px; }
+.format-rule-row :is(input, select).fmt-valore-stretto { padding: 6px 8px; }
 
-/* Bottone Cestino / Elimina riga (Rosso solido) */
+/* Cestino della riga: rosso del tema */
 .btn-remove-rule {
-    background-color: #ef4444;
-    color: #ffffff;
-    border: 4px solid var(--nb-ink, #000);
-    font-size: 1.1rem;
-    font-weight: 900;
-    cursor: pointer;
-    width: 38px;
-    height: 38px;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    transition: transform 0.05s, box-shadow 0.05s;
+    box-sizing: border-box;
+    width: 38px;
+    height: 38px;
+    background: var(--nb-rosso, #ff4444);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .05s, box-shadow .05s;
 }
+.btn-remove-rule:hover { transform: translate(-1px, -1px); box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
 
-.btn-remove-rule:hover {
-    background-color: #dc2626;
-    transform: translate(-1px, -1px);
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-}
-
-/* Bottone Giallo "+ ADD SPECIFIC RESTRICTION" */
+/* "+ ADD SPECIFIC RESTRICTION" */
 .btn-add-rule {
-    background-color: #ffde4d;
-    color: #000000;
-    border: 4px solid var(--nb-ink, #000);
-    padding: 11px 20px;
+    padding: 11px 20px 9px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font-weight: 900;
     font-size: 0.85rem;
+    letter-spacing: var(--nb-spaziatura, .04em);
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: calc(4px * var(--nb-kx, 1)) calc(4px * var(--nb-ky, 1)) calc(10px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    transition: transform 0.05s, background-color 0.1s, box-shadow 0.05s;
+    transition: transform .05s, background-color .1s, box-shadow .05s;
 }
+.btn-add-rule:hover { background: var(--nb-carta, #fff); transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
 
-.btn-add-rule:hover {
-    background-color: #ffe675;
-    transform: translate(-2px, -2px);
-    box-shadow: calc(6px * var(--nb-kx, 1)) calc(6px * var(--nb-ky, 1)) calc(15px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-}
-
-/* Badge di controllo delle Clausole Attive */
-.rules-header-badge-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
+/* Il badge delle clausole attive e il suo fumetto con l'elenco */
+.rules-header-badge-container { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 14px; margin-bottom: 15px; }
 .rules-header-badge-container h3 { margin: 0; }
-
 .clause-badge {
+    position: relative;
+    display: inline-block;
+    padding: 5px 12px 3px;
+    background: var(--nb-verde, #47ea6a);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font-weight: 900;
     font-size: 0.75rem;
-    padding: 5px 12px;
-    border: 4px solid var(--nb-ink, #000);
-    background-color: #4ade80; /* Il tuo verde fluo */
-    color: #000000;
     text-transform: uppercase;
-    transform: rotate(1.5deg);
-    box-shadow: calc(3px * var(--nb-kx, 1)) calc(3px * var(--nb-ky, 1)) calc(8px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    cursor: help;
+    transform: rotate(calc(var(--nb-rot, 1) * 1.5deg));
 }
-.clause-badge.disabled {
-    background-color: #ef4444;
-    color: #ffffff;
+.clause-badge.disabled { background: var(--nb-rosso, #ff4444); color: #000; }
+.nb-badge-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    z-index: 20;
+    box-sizing: border-box;
+    min-width: 210px;
+    padding: 10px 14px;
+    background: var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-4, 4px 4px 0 #000);
+    font-size: .8rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg)); /* il badge è inclinato: il fumetto sta dritto */
 }
+.nb-badge-tooltip > div { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.nb-badge-tooltip > div:last-child { margin-bottom: 0; }
+.nb-badge-tooltip > div > span { font-weight: 900; }
+.clause-badge:hover .nb-badge-tooltip,
+.clause-badge:focus-within .nb-badge-tooltip { display: block; }
 
-/* Footer inferiore del Modal */
-.format-modal-footer {
-    padding: 16px 24px;
-    background-color: transparent !important;
-    display: flex;
-    justify-content: flex-end;
-}
-
-/* Bottone Verde Salva "SAVE FORMAT" (Identico ad ADD MATCH dello screenshot) */
-.btn-save-format {
-    background-color: #4ade80; 
-    color: #000000;
-    border: 4px solid var(--nb-ink, #000);
-    padding: 12px 32px;
+/* La lista di mosse/abilità da vietare: ricerca, tasto BAN e le "chip" con quello che è già vietato */
+.fmt-banlist { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.fmt-banlist-riga { display: flex; gap: 6px; }
+.fmt-banlist-riga input { flex: 1; min-width: 0; padding: 6px 10px !important; }
+.fmt-banlist-ban {
+    flex: none;
+    padding: 4px 12px 2px;
+    background: var(--nb-giallo, #ffbd44);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font-weight: 900;
-    font-size: 1rem;
+    cursor: pointer;
+}
+.fmt-banlist-ban:hover { background: var(--nb-rosso, #ff4444); }
+.fmt-banlist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.banlist-chip {
+    padding: 2px 8px 1px;
+    background: var(--nb-rosso, #ff4444);
+    color: #000;
+    border: 2px solid var(--nb-ink, #000);
+    border-radius: calc(var(--nb-raggio, 0px) * .5);
+    box-shadow: calc(2px * var(--nb-kx, 1)) calc(2px * var(--nb-ky, 1)) calc(5px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+    font-weight: 900;
+    font-size: 0.75rem;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: calc(5px * var(--nb-kx, 1)) calc(5px * var(--nb-ky, 1)) calc(13px * var(--nb-bk, 0)) var(--nb-shcol, #000);
-    transition: transform 0.05s, background-color 0.1s, box-shadow 0.05s;
 }
+.banlist-chip:hover { background: var(--nb-carta, #fff); }
 
-.btn-save-format:hover {
-    background-color: #22c55e;
-    transform: translate(-2px, -2px);
-    box-shadow: calc(7px * var(--nb-kx, 1)) calc(7px * var(--nb-ky, 1)) calc(18px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+/* Il riquadro con gli errori delle regole */
+#rules-error-summary {
+    display: none;
+    margin: 15px 0;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--nb-rosso, #ff4444) 24%, var(--nb-carta, #fff));
+    color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-weight: 800;
+    font-size: .88rem;
+    line-height: 1.4;
 }
+#rules-error-summary .fmt-errore-titolo { display: block; margin-bottom: 5px; color: #b91c1c; text-transform: uppercase; }
 
-.btn-save-format:active {
-    transform: translate(3px, 3px);
-    box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000);
+/* Piede: il tasto Save */
+.format-modal-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 28px 22px;
+    border-top: 3px dashed var(--nb-ink, #000);
 }
+.btn-save-format {
+    padding: 12px 32px 10px;
+    background: var(--nb-verde, #47ea6a);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: var(--nb-spaziatura, .08em);
+    text-transform: uppercase;
+    cursor: pointer;
+    transform: rotate(calc(var(--nb-rot, 1) * 1deg));
+    transition: transform .05s, background-color .1s, box-shadow .05s;
+}
+.btn-save-format:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+.btn-save-format:active { transform: translate(2px, 2px); box-shadow: none; }
+.format-modal-content :is(button, .format-close-btn, .fmt-chiudi):focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
 
 .menu-backdrop {
     position: fixed;
@@ -1372,36 +1522,39 @@ body {
         padding: 0 16px 40px;
         gap: 26px !important;
     }
-    /* matita e cestino (solo admin) sono emoji da 12px: da toccare con il dito servono più grandi */
-    .format-card-nb button[title="Edit format"],
-    .format-card-nb button[title="Delete format"] { font-size: 18px !important; padding: 8px 10px !important; }
+    /* matita e cestino (solo admin): da toccare con il dito servono più grandi */
+    .fmt-azione { width: 40px; height: 40px; font-size: 1.15rem; }
 }
 
 /* =====================================================================
-   TELEFONO (≤ 900px): la scheda di un formato. A PC regole e classifica stanno affiancate (stili in linea nello script);
-   su telefono vanno in pila e la finestra scorre. Il desktop non cambia: tutto sta dentro la media query.
+   TELEFONO (≤ 900px): la scheda di un formato e "Add new format". A PC regole e classifica stanno affiancate; su telefono vanno in
+   pila e la finestra scorre insieme al velo. Il desktop non cambia: tutto sta dentro la media query.
    ===================================================================== */
 @media (max-width: 900px) {
-    #format-modal-overlay {
-        align-items: flex-start !important;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 16px 12px 30px !important;
+    #format-modal-overlay,
+    #format-modal {
+        align-items: flex-start;
+        padding: 16px 12px 30px;
     }
-    #format-modal-overlay .format-modal-wrapper { gap: 20px !important; }
-    #format-modal-overlay .format-modal-title-tag h2 { font-size: 1.4rem !important; overflow-wrap: anywhere; }
-    #format-modal-overlay .format-modal-container { flex-direction: column; gap: 26px !important; max-height: none; }
-    #format-modal-overlay .format-modal-card-left,
-    #format-modal-overlay .format-modal-card-right { flex: none !important; width: 100% !important; }
-}
-
-/* Telefono: le caselle della scheda di un formato (tipo, generazione, formato Showdown...) una per riga, a tutta larghezza:
-   a due per riga le etichette e i valori lunghi (es. "gen9vgc2024regg") uscivano dal riquadro. */
-@media (max-width: 900px) {
-    #format-modal-overlay .neubrutal-grid-block { flex: 1 1 100% !important; min-width: 0 !important; overflow-wrap: anywhere; }
+    .fmt-finestra { max-height: none; padding: 56px 14px 18px; }
+    .fmt-titolo { font-size: 1.4rem; }
+    .fmt-corpo { grid-template-columns: minmax(0, 1fr); gap: 36px; padding: 26px 6px 10px; margin: 0 -6px; overflow: visible; }
+    /* le caselle della scheda (tipo, generazione, formato Showdown...) una per riga, a tutta larghezza:
+       a due per riga le etichette e i valori lunghi (es. "gen9vgc2024regg") uscivano dal riquadro */
+    .fmt-griglia { grid-template-columns: minmax(0, 1fr); }
 
     /* "Add new format": i campi in colonna invece che affiancati */
+    .format-modal-content { max-height: none; padding-top: 52px; }
     #format-modal .format-input-row { flex-direction: column; gap: 22px; }
     #format-modal .format-input-row > .format-input-group { flex: none; width: 100%; }
-    #format-modal .format-modal-body { padding: 34px 14px 18px; }
+    #format-modal .format-modal-header { padding: 0 14px; }
+    #format-modal .format-modal-body { padding: 34px 14px 18px; overflow: visible; }
+    #format-modal .format-modal-footer { padding: 14px 14px 18px; }
+}
+
+/* Chi preferisce meno movimento: le card non si sollevano né girano al passaggio */
+@media (prefers-reduced-motion: reduce) {
+    .format-card-nb, .player-rank-row, .fmt-azione, .btn-save-format, .btn-add-rule { transition: none; }
+    .format-card-nb:hover, .player-rank-row:hover { transform: none; }
+    .format-modal-content { animation: none; }
 }

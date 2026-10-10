@@ -22,6 +22,7 @@
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
+<script src="menu-sito.js"></script>
 <script src="sfide.js"></script>
 <script src="titoli.js"></script>
 <script src="statistiche.js"></script>
@@ -222,25 +223,18 @@ function nascondiLoader() {
 }
 // Funzione di caricamento unificata
 
-// Funzione per generare i badge dinamici e il Founder badge
+// Le medaglie dei badge che l'allenatore ha già tra quelli delle serie (Clean, Win, SD Streak) e il fondatore: ognuna nel suo cerchio del colore del
+// livello, come quelle dei badge del catalogo (BadgeAllenatore.htmlMini) e dei team, con la descrizione al passaggio.
+// Nomi, chiavi e soglie delle serie sono in titoli.js (Titoli.badgeSbloccati)
 function generaHTMLBadge(statsBadges = {}, playerKey = "") {
-    let html = "";
-
-    // 1. FOUNDER BADGE (Didi e Lukiani)
-    const pKeyLower = (playerKey || "").trim().toLowerCase();
-    if (pKeyLower === 'didi' || pKeyLower === 'lukiani') {
-        html += `<img src="${Titoli.IMMAGINE_FONDATORE}" class="trainer-mini-badge" title="League Founder" alt="Founder">`;
-    }
-
-    // 2. LE SERIE (Clean, Win, SD Streak): nomi, chiavi e soglie sono in titoli.js (Titoli.BADGE); livello e file vengono da lì
-    Titoli.BADGE.forEach(b => {
-        const st = Titoli.statoSerie(statsBadges, b);
-        if (!st.livello) return;
-        const level = Titoli.LIVELLI_BADGE[st.livello - 1];
-        html += `<img src="${Titoli.immagineSerie(b, level)}" class="trainer-mini-badge" title="${b.label} (${level.toUpperCase()})" alt="${b.label} ${level}">`;
-    });
-
-    return html;
+    return Titoli.badgeSbloccati(statsBadges, playerKey).map(b => {
+        const fondatore = b.livello === 'founder';
+        const livelloNome = fondatore ? 'Founder' : b.livello.charAt(0).toUpperCase() + b.livello.slice(1);
+        return BadgeTeam.htmlMedaglietta(
+            { classeLivello: fondatore ? 'gold' : b.livello, immagine: b.img, icona: fondatore ? '👑' : '🏅' },
+            `${b.label} · ${livelloNome}\n${b.descrizione}`
+        );
+    }).join('');
 }
 
 async function initTrainersPage() {

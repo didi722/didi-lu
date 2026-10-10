@@ -216,9 +216,15 @@ test('reset: un tasto nel pannello e uno nella scheda Layout riportano alla Trai
     assert.match(editor, /cambia\(\(\) => P\.predefinita\(\)\)/);
 });
 
-test('tooltip: si aprono verso l\'alto quando in basso non c\'è posto, e a riposo non occupano spazio nella pagina', () => {
-    assert.match(card, /host\.classList\.add\('pp-tip-su'\)/);
-    assert.match(cssCard, /\.pp-pagina \.pp-tip-su > \.neubrutal-tooltip \{ top: auto; bottom:/);
+test('tooltip: il fumetto scritto nel blocco fa da modello, se ne mostra una copia fissa sul body sempre dentro lo schermo; a riposo non occupano spazio nella pagina', () => {
+    // la copia sta sul body (fuori dalla tela scalata e dai suoi bordi), nelle coordinate dello schermo, e porta da sola il suo aspetto
+    assert.match(card, /copia\.classList\.add\('pp-tip-fisso'\)/);
+    assert.match(card, /document\.body\.appendChild\(copia\)/);
+    assert.match(card, /P\.posizionaFumetto\(host\.getBoundingClientRect\(\), \{ w: copia\.offsetWidth, h: copia\.offsetHeight \}/);
+    assert.match(cssCard, /\.neubrutal-tooltip\.pp-tip-fisso \{/);
+    // si chiude con Esc, scorrendo, ridimensionando e quando il mouse o il fuoco se ne vanno
+    for (const evento of ["'pointerout'", "'focusout'", "'keydown'", "'scroll'", "'resize'"]) assert.ok(card.includes(evento), evento);
+    assert.doesNotMatch(card, /pp-tip-su|tieniTooltipInSchermo|suggerimentoFisso/, 'via le vecchie correzioni in pixel dentro la pagina scalata');
     // display: none a riposo: un tooltip nascosto con visibility continuerebbe a contare nell'overflow della tela
     const regola = /\.pp-pagina \.neubrutal-tooltip \{([^}]*)\}/.exec(cssCard)[1];
     assert.match(regola, /display: none/);
@@ -301,6 +307,28 @@ test('nitidezza: a riposo la carta è dritta e piatta (niente 3D né will-change
     // le tessere del collage: rotazione semplice, senza strato composto a parte
     assert.match(cssCard, /\[data-layout="collage"\] \.pp-blocco \{ transform: rotate\(var\(--rot, 0deg\)\)/);
     assert.match(editor, /Tilted text is drawn a little less sharp/);
+});
+
+test('effetto laminato: ogni layout ce l\'ha; nella carta singola lo strato unico, negli altri una patina per ogni piastrella (blocco, testata, piede) accesa solo sotto il mouse', () => {
+    // la carta (un solo pezzo)
+    assert.match(cssCard, /\[data-layout="carta"\]\.pp-holo-on \.pp-carta\.is-sopra \.pp-holo \{ opacity: 0\.42; \}/);
+    // gli altri cinque layout: la patina sta su ogni piastrella, non su un unico strato (che sarebbe nascosto)
+    const altri = ['poster', 'dossier', 'collage', 'cinema', 'podio'];
+    for (const id of altri) assert.ok(Object.keys(P.LAYOUT).includes(id), `layout ${id}`);
+    assert.deepEqual(Object.keys(P.LAYOUT).filter(id => id !== 'carta').sort(), altri.slice().sort(), 'nessun layout resta senza patina');
+    const elenco = altri.map(id => `\\[data-layout="${id}"\\]`).join(', ');
+    assert.match(cssCard, new RegExp(`:is\\(${elenco}\\) :is\\(\\.pp-blocco, \\.pp-testata, \\.pp-piede\\)::after \\{`));
+    assert.match(cssCard, new RegExp(`:is\\(${elenco}\\) \\.pp-holo \\{ display: none; \\}`), 'lo strato unico non serve dove le carte sono più d\'una');
+    assert.match(cssCard, /\.pp-holo-on :is\(\.pp-blocco, \.pp-testata, \.pp-piede\)\.is-sopra::after \{ opacity: 0\.42; \}/, 'si accende solo la piastrella sotto il mouse');
+    assert.match(cssCard, /body\.pp-modifica :is\(\.pp-blocco, \.pp-testata, \.pp-piede\)::after \{ display: none; \}/, 'in modifica non brilla');
+    // il codice: una piastrella alla volta, con la posizione del puntatore dentro di lei
+    assert.match(card, /const PIASTRELLE = '\.pp-blocco, \.pp-testata, \.pp-piede';/);
+    assert.match(card, /e\.target\.closest\(PIASTRELLE\)/);
+    assert.match(card, /if \(piastrella && piastrella !== sotto\) lascia\(piastrella\);/, 'quella che il mouse lascia si spegne');
+    assert.match(card, /el\.style\.setProperty\('--mx'/);
+    assert.match(card, /el\.classList\.add\('is-sopra'\)/);
+    // l'interruttore lo spiega nell'editor
+    assert.match(editor, /interruttore\('Holographic shine'/);
 });
 
 test('il Pokémon preferito non ha il nome scritto sul palco (si riconosce a vista), solo nell\'alt', () => {

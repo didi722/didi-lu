@@ -834,79 +834,8 @@
     gap: 5px;
 }
 .pkm-badges-overlay:empty { display: none; }
-.fiocco-mini {
-    --livello: #999;
-    display: flex; align-items: center; justify-content: center;
-    box-sizing: border-box;
-    width: 32px; height: 32px;
-    background: var(--livello);
-    border: 3px solid var(--dt-ink, #000);
-    border-radius: 50%;
-    box-shadow: 2px 2px 0 var(--dt-ink, #000);
-    cursor: help;
-}
-.fiocco-mini.fiocco-bronze { --livello: #d98a3d; }
-.fiocco-mini.fiocco-silver { --livello: #cfd6de; }
-.fiocco-mini.fiocco-gold { --livello: #ffd23f; }
-.fiocco-mini-img { width: 22px; height: 22px; object-fit: contain; }
-.fiocco-mini .fiocco-finto { width: 100%; height: 100%; border: 0; box-shadow: none; background: none; font-size: .9rem; }
-.fiocco-mini.fiocco-altri { width: auto; min-width: 32px; padding: 0 7px; border-radius: 16px; background: var(--dt-carta, #fff); font: 900 .7rem/1 var(--dt-font, 'Josefin Sans', sans-serif); color: var(--dt-ink, #000); }
-
-/* il tondino con il numero dei fiocchi (le card dei Pokémon degli altri): del colore del fiocco più alto; il fumetto li elenca */
-.fiocco-tondino {
-    --livello: #ffd23f;
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-    box-sizing: border-box;
-    width: 32px; height: 32px;
-    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .7), transparent 55%), var(--livello);
-    border: 3px solid var(--dt-ink, #000);
-    border-radius: 50%;
-    box-shadow: 2px 2px 0 var(--dt-ink, #000);
-    color: #000;
-    font: 900 .86rem/1 var(--dt-font, 'Josefin Sans', sans-serif);
-    cursor: help;
-}
-.fiocco-tondino.fiocco-bronze { --livello: #d98a3d; }
-.fiocco-tondino.fiocco-silver { --livello: #cfd6de; }
-.fiocco-tondino.fiocco-gold { --livello: #ffd23f; }
-.fiocco-tondino:focus-visible { outline: 3px solid var(--dt-ink, #000); outline-offset: 2px; }
-.fiocco-t-tip {
-    position: absolute;
-    top: calc(100% + 10px); right: -6px;
-    z-index: 60;
-    width: 244px;
-    padding: 9px 12px !important;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .12s ease;
-    cursor: default;
-}
-.fiocco-tondino:hover .fiocco-t-tip, .fiocco-tondino:focus .fiocco-t-tip, .fiocco-tondino:focus-within .fiocco-t-tip { visibility: visible; opacity: 1; }
-.fiocco-t-tip strong { display: block; margin-bottom: 5px; padding-bottom: 4px; border-bottom: 2px dashed var(--dt-ink, #000); font-size: .7rem; letter-spacing: .03em; text-transform: uppercase; }
-.fiocco-t-tip ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.fiocco-t-riga { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "img nome livello" "img valore valore"; align-items: center; column-gap: 7px; }
-.fiocco-t-img, .fiocco-t-tip .fiocco-finto { grid-area: img; width: 22px; height: 22px; object-fit: contain; }
-.fiocco-t-tip .fiocco-finto { border-width: 2px; box-shadow: none; font-size: .8rem; }
-.fiocco-t-nome { grid-area: nome; font-size: .7rem; font-weight: 900; letter-spacing: .03em; text-transform: uppercase; }
-.fiocco-t-livello {
-    grid-area: livello;
-    padding: 0 6px;
-    background: var(--livello, #999);
-    border: 2px solid var(--dt-ink, #000);
-    border-radius: var(--dt-raggio, 0);
-    font-size: .6rem; font-weight: 900; line-height: 1.5; letter-spacing: .03em; text-transform: uppercase;
-}
-.fiocco-t-riga.fiocco-bronze { --livello: #d98a3d; }
-.fiocco-t-riga.fiocco-silver { --livello: #cfd6de; }
-.fiocco-t-riga.fiocco-gold { --livello: #ffd23f; }
-.fiocco-t-valore { grid-area: valore; font-size: .66rem; font-weight: 800; }
-.fiocco-t-valore i { font-style: normal; opacity: .6; }
-@media (max-width: 560px) {
-    /* sul telefono il fumetto si apre a sinistra: il tondino sta in fondo a destra della card */
-    .fiocco-t-tip { width: min(244px, calc(100vw - 48px)); }
-}
+/* le medagliette dei fiocchi sono quelle dei badge dei team (.bt-mini, badge-team.css): qui solo come stanno sulla card */
+.pkm-badges-overlay .bt-mini { cursor: help; }
 
 /* =====================================================================
    PC: LE SCHEDE STANNO INTERE NELLO SCHERMO (niente scorrimento)
@@ -1081,3 +1010,67 @@
     #teamModal .modal-moves { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
     #teamModal .modal-moves .move-span { padding: 5px 3px 4px !important; }
 }
+
+/* =====================================================================
+   PAGINA PUBBLICA: la scheda di un Pokémon con i soli fiocchi vinti
+   ---------------------------------------------------------------------
+   Chi guarda la pagina di un allenatore non vede mai strumento, abilità, EV, natura e mosse (il team potrebbe essere di una stagione a
+   scheda chiusa): del Pokémon restano lo sprite, il nome, il suo team e le medagliette dei fiocchi vinti, ognuna con la sua descrizione
+   al passaggio. I progressi verso il livello dopo sono nello scaffale della scheda del Box del suo giocatore.
+   ===================================================================== */
+#pkmDetailModal.pp-modale .modal-content { width: min(580px, 100%) !important; padding-bottom: 38px !important; }
+.pp-pkm-scheda { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.pp-pkm-hero {
+    box-sizing: border-box;
+    width: 150px; height: 150px;
+    padding: 14px;
+    object-fit: contain;
+    background: radial-gradient(rgba(0, 0, 0, .18) 1.2px, transparent 1.5px) 0 0 / 7px 7px, var(--dt-accento);
+    border: 4px solid var(--dt-ink);
+    border-radius: 50%;
+    box-shadow: var(--dt-sh-m);
+}
+.pp-pkm-nome {
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 6px 0 0;
+    padding: 8px 24px 6px;
+    background: var(--dt-ink);
+    color: #fff;
+    border: 4px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-titolo);
+    font: 900 clamp(1.3rem, 4vw, 1.9rem)/1.1 var(--dt-font);
+    letter-spacing: var(--nb-spaziatura, .04em);
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--dt-rot) * -1.5deg));
+}
+.pp-pkm-team {
+    margin: 0;
+    padding: 2px 12px 1px;
+    background: var(--dt-giallo);
+    color: #000;
+    border: 2px solid var(--dt-ink);
+    border-radius: var(--dt-raggio);
+    box-shadow: var(--dt-sh-s);
+    font: 800 .72rem/1.5 var(--dt-font);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: rotate(calc(var(--dt-rot) * 1.5deg));
+}
+.pp-pkm-etichetta {
+    margin: 10px 0 0;
+    padding: 3px 12px 1px;
+    background: var(--dt-ink);
+    color: #fff;
+    border-radius: var(--dt-raggio);
+    font: 800 .7rem/1.5 var(--dt-font);
+    letter-spacing: .18em;
+    transform: rotate(calc(var(--dt-rot) * -2deg));
+}
+.pp-pkm-fiocchi { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; max-width: 100%; }
+.pp-pkm-fiocchi .bt-mini { width: 56px; height: 56px; border-width: 4px; box-shadow: 3px 3px 0 var(--dt-ink); }
+.pp-pkm-fiocchi .bt-mini-img { width: 38px; height: 38px; }
+.pp-pkm-fiocchi .bt-mini .bt-finto { font-size: 1.5rem; }
+.pp-nota, .pp-pkm-fiocchi .fiocchi-caricamento { color: var(--dt-ink); font: 700 .82rem/1.4 var(--dt-font); opacity: .75; }

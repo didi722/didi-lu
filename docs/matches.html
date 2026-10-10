@@ -39,6 +39,7 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js"></script>
 <script src="temi.js"></script>
+<script src="menu-sito.js"></script>
 </head>
 <body class="nb pg-matches">
     
@@ -352,17 +353,22 @@
     
     <div class="gba-container">
         <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
-        <!-- Barra dei turni del replay: sta sotto la scocca, fuori dallo schermo (la riempie il replay via postMessage) -->
-        <div class="replay-barra" id="replayBarra" onclick="event.stopPropagation()" hidden>
-            <div class="replay-barra-traccia" id="replayBarraTraccia" role="slider" tabindex="0" aria-label="Turn"
-                 aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><span id="replayBarraAvanzamento"></span></div>
-            <span class="replay-barra-testo" id="replayBarraTesto" aria-live="polite"></span>
-        </div>
         <div class="gba-screen-area" onclick="event.stopPropagation()">
              <div class="replay-content">
                 <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
             </div>
         </div>
+    </div>
+
+    <!-- I comandi del replay (da capo, indietro, play/pausa, avanti, velocità, suono): stanno sotto la console, fuori dalla scocca. Compaiono
+         quando il replay dice di saperli usare (replay-stato) e gli mandano i comandi (replay-comando); altrimenti restano quelli nello schermo -->
+    <div class="replay-comandi" id="replayComandi" role="group" aria-label="Replay controls" onclick="event.stopPropagation()" hidden>
+        <button type="button" class="rc-tasto" data-comando="inizio" aria-label="Watch from the start" title="From the start"></button>
+        <button type="button" class="rc-tasto" data-comando="indietro" aria-label="Previous turn" title="Previous turn"></button>
+        <button type="button" class="rc-tasto rc-play" data-comando="play" id="rcPlay" aria-label="Play"></button>
+        <button type="button" class="rc-tasto" data-comando="avanti" aria-label="Next turn" title="Next turn"></button>
+        <button type="button" class="rc-tasto rc-velocita" data-comando="velocita" id="rcVelocita" title="Speed">1×</button>
+        <button type="button" class="rc-tasto" data-comando="audio" id="rcAudio" title="Sound"></button>
     </div>
 
     <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
@@ -879,12 +885,11 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        const dettaglio = `Showdowns: ${sdWon} won, ${sdLost} lost · Matches: ${player.won || 0} won, ${player.lost || 0} lost`;
 
         return `
        <div class="rank-riga">
            ${Sfide.bottoneRanking(player.name)}
-            <a class="cl-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${playerUrlParam}" style="--cl-colore: ${color};" title="${escClassifica(dettaglio)}">
+            <a class="cl-riga${index === 0 ? ' cl-primo' : ''}" href="public.html?player=${playerUrlParam}" style="--cl-colore: ${color};">
                 <span class="cl-pos">#${index + 1}</span>
                 ${avatarHtml}
                 <span class="cl-testi">
@@ -2107,25 +2112,22 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
 
     try {
         // --- 1. CONTROLLO OPEN SHEET DELLA STAGIONE ---
-        // Recupera l'ID della stagione dall'URL (?id=s1) o da una variabile globale se presente
-        const urlParams = new URLSearchParams(window.location.search);
-        const seasonId = urlParams.get('id') || (typeof idStagione !== 'undefined' ? idStagione : null);
+        // La stagione è quella della pagina (?id= oppure, senza, quella in corso: stagioneAttiva). Se non la si conosce non si mostra niente:
+        // i dettagli di un team (strumento, abilità, EV, mosse) si vedono solo in una stagione a scheda aperta.
+        const seasonId = (typeof stagioneAttiva !== 'undefined' && stagioneAttiva) ? stagioneAttiva : null;
+        const openSheetSnap = seasonId ? await db.ref(`seasons/${seasonId}/info/open_sheet`).once('value') : null;
+        const isOpenSheet = openSheetSnap ? openSheetSnap.val() : false;
 
-        if (seasonId) {
-            const openSheetSnap = await db.ref(`seasons/${seasonId}/info/open_sheet`).once('value');
-            const isOpenSheet = openSheetSnap.val();
+        // Se open_sheet è impostato esplicitamente su false (o la stagione non si sa), blocca la funzione
+        if (!seasonId || isOpenSheet === false) {
+            content.innerHTML = `
+                <div style="color:white; text-align:center; padding:40px 20px;">
+                    <p style="color: black; font-weight: 900; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; background: white; padding: 15px; box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);">
+                        🔒 This is a closed sheet season
+                    </p>
 
-            // Se open_sheet è impostato esplicitamente su false, blocca la funzione
-            if (isOpenSheet === false) {
-                content.innerHTML = `
-                    <div style="color:white; text-align:center; padding:40px 20px;">
-                        <p style="color: black; font-weight: 900; font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; background: white; padding: 15px; box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);">
-                            🔒 This is a closed sheet season
-                        </p>
-                    
-                    </div>`;
-                return; // Interrompe la funzione ed evita il caricamento dei dati
-            }
+                </div>`;
+            return; // Interrompe la funzione ed evita il caricamento dei dati
         }
 
         // --- 2. PROSEGUIMENTO CARICAMENTO STANDARD ---
@@ -2204,14 +2206,14 @@ async function apriDettaglioTeam(idPlayerPuro, nomeTeam, formato) {
     }
 }
 
-// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario li vede (un vanto). Il team: le
-// medagliette più alte e il tasto con lo scaffale completo; ogni Pokémon: un tondino col numero dei suoi fiocchi, e il fumetto li elenca.
+// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario vede quelli vinti (un vanto), come
+// medagliette con la descrizione al passaggio. I progressi verso il livello dopo (lo scaffale con "Badges x/10") sono solo nel Box del giocatore.
 function mostraBadgeDelTeam(contenuto, giocatore, team) {
     if (typeof Fiocchi === 'undefined') return;
     const squadra = { nome: team.nome, pokemon: team.pokemon };
     window.squadraAperta = squadra;
     const valido = () => window.squadraAperta === squadra;
-    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, modo: 'tondino', valido }).catch(() => {});
+    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, valido }).catch(() => {});
     if (typeof BadgeTeam !== 'undefined') BadgeTeam.montaBarra(db, contenuto.querySelector('[data-badge-team]'), { giocatore, team: squadra, valido }).catch(() => {});
 }
 
@@ -2384,8 +2386,8 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         return;
     }
 
-    // La barra dei turni del replay precedente non vale più: riappare quando il nuovo replay si fa vivo
-    if (window.nascondiBarraReplay) window.nascondiBarraReplay();
+    // I comandi del replay precedente non valgono più: riappaiono quando il nuovo replay si fa vivo
+    if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
     // 3. Logica di caricamento URL
     if (urlFile && (urlFile.startsWith('http') || urlFile.startsWith('https'))) {
@@ -2421,48 +2423,61 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     }
 };
 
-// --- Barra dei turni del replay, sotto la scocca ---
-// Il replay (nell'iframe, spesso su un altro dominio: Storage) manda "replay-turni" a ogni cambio di turno;
-// la barra compare solo se arriva (i replay vecchi non lo mandano e hanno la barra dentro lo schermo) e
-// risponde "barra-fuori", così il replay toglie la sua. I clic tornano al replay come "replay-vai" / "replay-passo".
+// --- Comandi del replay, sotto la console ---
+// Il replay (nell'iframe, spesso su un altro dominio: Storage) manda "replay-stato" (in pausa o no, velocità, suono) a ogni cambio; i comandi
+// compaiono solo se arriva (i replay vecchi non lo mandano e hanno i comandi dentro lo schermo) e il replay riceve "replay-comandi-fuori",
+// così toglie i suoi. I clic tornano al replay come "replay-comando". Niente barra dei turni: del progresso non serve dare conto.
 (function () {
     const frame = () => document.getElementById('replayFrame');
-    const barra = () => document.getElementById('replayBarra');
+    const barra = () => document.getElementById('replayComandi');
+    const ICONE = {
+        play: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg>',
+        pausa: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 1.5h4v13h-4zM9.5 1.5h4v13h-4z"/></svg>',
+        inizio: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2a6 6 0 1 1-5.66 8h2.2A4 4 0 1 0 8 4v2.5L4 3.25 8 0z"/></svg>',
+        indietro: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h2.5v12H2zM14 2v12L5.5 8z"/></svg>',
+        avanti: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 2H14v12h-2.5zM2 2v12l8.5-6z"/></svg>',
+        audio: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10.5 4.6a4.6 4.6 0 0 1 0 6.8l-1-1.1a3.1 3.1 0 0 0 0-4.6zM12.6 2.4a7.6 7.6 0 0 1 0 11.2l-1-1.1a6.1 6.1 0 0 0 0-9z"/></svg>',
+        muto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10 5.6l1-1 2 2 2-2 1 1-2 2 2 2-1 1-2-2-2 2-1-1 2-2z"/></svg>'
+    };
 
-    window.nascondiBarraReplay = function () {
+    window.nascondiComandiReplay = function () {
         const b = barra();
         if (b) b.hidden = true;
     };
 
     window.addEventListener('message', e => {
         const f = frame();
-        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-turni') return;
+        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-stato') return;
         const b = barra();
         if (!b) return;
         if (b.hidden) {
             b.hidden = false;
-            try { e.source.postMessage({ tipo: 'replay-barra-fuori' }, '*'); } catch (err) { /* iframe già chiuso */ }
+            try { e.source.postMessage({ tipo: 'replay-comandi-fuori' }, '*'); } catch (err) { /* iframe già chiuso */ }
         }
-        const { turno, totale, finito, fatto } = e.data;
-        document.getElementById('replayBarraAvanzamento').style.width = (Math.min(1, Math.max(0, +fatto || 0)) * 100) + '%';
-        const traccia = document.getElementById('replayBarraTraccia');
-        traccia.setAttribute('aria-valuemax', String(totale || 0));
-        traccia.setAttribute('aria-valuenow', String(turno || 0));
-        traccia.setAttribute('aria-valuetext', `Turn ${turno || 0} of ${totale || 0}`);
-        document.getElementById('replayBarraTesto').textContent = finito ? `End · ${totale} turns` : (turno ? `Turn ${turno} / ${totale}` : 'Start');
+        const { inPausa, velocita, muto } = e.data;
+        const play = document.getElementById('rcPlay');
+        play.innerHTML = inPausa ? ICONE.play : ICONE.pausa;
+        play.setAttribute('aria-label', inPausa ? 'Play' : 'Pause');
+        const v = document.getElementById('rcVelocita');
+        v.textContent = String(velocita || '1×');
+        v.setAttribute('aria-label', `Speed ${v.textContent}`);
+        const a = document.getElementById('rcAudio');
+        a.innerHTML = muto ? ICONE.muto : ICONE.audio;
+        a.setAttribute('aria-pressed', muto ? 'false' : 'true');
+        a.setAttribute('aria-label', muto ? 'Sound off' : 'Sound on');
     });
 
     const invia = messaggio => { const f = frame(); if (f && f.contentWindow) f.contentWindow.postMessage(messaggio, '*'); };
     document.addEventListener('DOMContentLoaded', () => {
-        const traccia = document.getElementById('replayBarraTraccia');
-        if (!traccia) return;
-        traccia.addEventListener('click', e => {
-            const r = traccia.getBoundingClientRect();
-            invia({ tipo: 'replay-vai', frazione: (e.clientX - r.left) / r.width });
-        });
-        traccia.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') { e.preventDefault(); invia({ tipo: 'replay-passo', delta: -1 }); }
-            if (e.key === 'ArrowRight') { e.preventDefault(); invia({ tipo: 'replay-passo', delta: 1 }); }
+        const b = barra();
+        if (!b) return;
+        // le icone fisse (quelle che non cambiano con lo stato)
+        for (const t of b.querySelectorAll('[data-comando="inizio"], [data-comando="indietro"], [data-comando="avanti"]')) t.innerHTML = ICONE[t.dataset.comando];
+        document.getElementById('rcPlay').innerHTML = ICONE.play;
+        document.getElementById('rcAudio').innerHTML = ICONE.audio;
+        b.addEventListener('click', e => {
+            const t = e.target.closest('[data-comando]');
+            if (t) invia({ tipo: 'replay-comando', comando: t.dataset.comando });
         });
     });
 })();
@@ -2498,7 +2513,7 @@ window.chiudiReplay = function() {
     if (iframe) {
         iframe.src = ""; 
     }
-    if (window.nascondiBarraReplay) window.nascondiBarraReplay();
+    if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
     // 3. GESTIONE RIPRESA MUSICA (rispettando il Mute)
     if (player) {

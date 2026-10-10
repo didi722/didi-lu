@@ -241,6 +241,15 @@ body.nb .ads-sidebar::after {
     pointer-events: none;
 }
 
+/* ---------- Il pulsante che apre il menù del sito: fermo ovunque, piccolo quando si scorre ----------
+   Prima in alcune pagine (Box, Rulebook) scorreva via con la pagina e nelle altre restava fermo sopra il contenuto. Ora sta fermo in alto a destra
+   in tutte e, appena si scorre, si riduce alla sola icona (menu-sito.js mette menu-compatto su <body>): torna intero al passaggio del mouse, col fuoco
+   della tastiera e in cima alla pagina. */
+:is(body.nb, body.pg-public) .top-auth-bar { position: fixed; top: 20px; right: 20px; z-index: 3000; }
+:is(body.nb, body.pg-public) .auth-interaction { transition: padding .15s ease, gap .15s ease, transform .1s, box-shadow .1s; }
+body.menu-compatto:is(.nb, .pg-public) .auth-interaction:not(:hover):not(:focus-visible) { padding: 7px 10px; gap: 0; }
+body.menu-compatto:is(.nb, .pg-public) .auth-interaction:not(:hover):not(:focus-visible) #auth-text { display: none; }
+
 /* ---------- Tasto utente ---------- */
 :is(body.nb, body.pg-public) .auth-interaction {
     border-color: var(--nb-ink);

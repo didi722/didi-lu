@@ -229,37 +229,56 @@
             `<div class="fiocchi-lista">${ordinati.map(htmlFiocco).join('')}</div>`;
     }
 
+    // Cosa si legge passando sopra una medaglietta: nome e livello, cosa premia e quanto ha fatto. Mai il progresso verso il livello dopo:
+    // quello si vede solo nello scaffale, nella scheda del Pokémon nel Box del suo giocatore.
+    function testoMedaglia(f) {
+        const quanto = String(f.unita).startsWith('%') ? `${f.valore}${f.unita}` : `${f.valore} ${f.unita}`;
+        return `${f.nome} · ${f.livelloNome}\n${f.descrizione}\n${quanto}`;
+    }
+
+    // La medaglietta di un fiocco è la stessa dei badge dei team e degli allenatori (classi bt-mini, badge-team.css): un cerchio del colore del
+    // livello con l'immagine. `titolo`: la descrizione al passaggio del mouse (tooltip.js la mostra nel fumetto del sito).
+    function htmlMedaglietta(f, titolo = testoMedaglia(f)) {
+        return `<span class="bt-mini bt-${f.classeLivello}" tabindex="0" role="img" aria-label="${esc(titolo.replace(/\n/g, '. '))}" title="${esc(titolo)}">` +
+            `<img class="bt-mini-img" src="${esc(f.immagine)}" alt="" loading="lazy" onerror="Fiocchi.immagineMancante(this,'${esc(f.icona)}','bt-finto')"></span>`;
+    }
+
     // Le medagliette sulla card della squadra: i fiocchi più alti (al massimo "max")
     function htmlMini(lista, max = 3) {
         const presi = guadagnati(lista);
         if (!presi.length) return '';
         const visibili = presi.slice(0, max);
         const resto = presi.length - visibili.length;
-        return visibili.map(f =>
-            `<span class="fiocco-mini fiocco-${f.classeLivello}" title="${esc(f.nome)} · ${esc(f.livelloNome)}: ${esc(f.valore)} ${esc(f.unita)}">${htmlImmagine(f, 'fiocco-mini-img')}</span>`
-        ).join('') + (resto > 0 ? `<span class="fiocco-mini fiocco-altri" title="${resto} more ribbon${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
+        return visibili.map(f => htmlMedaglietta(f)).join('') +
+            (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more ribbon${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
     }
 
-    // Per le card dei Pokémon degli altri (vanto, ma senza ingombro): un tondino col numero dei fiocchi presi, del colore del più alto;
-    // al passaggio (o al tocco) un fumetto elenca quali sono, con livello e numeri. Senza fiocchi presi non si vede niente.
-    function htmlTondino(lista) {
+    // Per la scheda dell'allenatore nel simulatore (battle.html, dove i fumetti sono suoi): le medagliette più alte e, passandoci sopra
+    // (o col fuoco della tastiera), un fumetto che elenca tutti i fiocchi presi con livello e numeri. Senza fiocchi presi non si vede niente.
+    function htmlMedaglieConElenco(lista, max = 3) {
         const presi = guadagnati(lista);
         if (!presi.length) return '';
+        const visibili = presi.slice(0, max);
+        const resto = presi.length - visibili.length;
+        const medaglie = visibili.map(f =>
+            `<span class="bt-mini bt-${f.classeLivello}">` +
+            `<img class="bt-mini-img" src="${esc(f.immagine)}" alt="" loading="lazy" onerror="Fiocchi.immagineMancante(this,'${esc(f.icona)}','bt-finto')"></span>`).join('') +
+            (resto > 0 ? `<span class="bt-mini bt-altri">+${resto}</span>` : '');
         const righe = presi.map(f =>
             `<li class="fiocco-t-riga fiocco-${f.classeLivello}">${htmlImmagine(f, 'fiocco-t-img')}` +
             `<span class="fiocco-t-nome">${esc(f.nome)}</span><span class="fiocco-t-livello">${esc(f.livelloNome)}</span>` +
             `<b class="fiocco-t-valore">${esc(f.valore)} <i>${esc(f.unita)}</i></b></li>`).join('');
-        return `<span class="fiocco-tondino fiocco-${presi[0].classeLivello}" tabindex="0" aria-label="${presi.length} ribbon${presi.length > 1 ? 's' : ''}">` +
-            `<b>${presi.length}</b>` +
+        return `<span class="fiocco-medaglie" tabindex="0" aria-label="${presi.length} ribbon${presi.length > 1 ? 's' : ''}">${medaglie}` +
             `<span class="fiocco-t-tip tip-coach" role="tooltip"><strong>Ribbons ${presi.length}/${lista.length}</strong><ul>${righe}</ul></span></span>`;
     }
 
     // Se la PNG non c'è (ancora), la sostituisce con una medaglia disegnata dal CSS con l'icona del fiocco
-    function immagineMancante(img, icona) {
+    // `classe`: quella della medaglia disegnata (fiocco-finto nello scaffale, bt-finto nelle medagliette, che sono quelle dei badge)
+    function immagineMancante(img, icona, classe) {
         if (!img || !img.parentNode || !img.ownerDocument) return;
         img.onerror = null;
         const span = img.ownerDocument.createElement('span');
-        span.className = 'fiocco-finto';
+        span.className = classe || 'fiocco-finto';
         span.textContent = icona || '★';
         span.setAttribute('aria-hidden', 'true');
         img.parentNode.replaceChild(span, img);
@@ -269,11 +288,11 @@
     // Colla per le pagine (Box e pagina pubblica): leggono i dati e riempiono i contenitori.
     // "valido" serve quando la finestra può cambiare mentre i dati arrivano: se restituisce false non si scrive più nulla.
     // -----------------------------------------------------
-    // Le medagliette sulle card della squadra: ogni .pkm-badges-overlay[data-fiocchi-pkm="<posizione>"]
-    // modo 'tondino': il numero dei fiocchi in un tondino con l'elenco nel fumetto (le card degli altri); altrimenti le medagliette più alte
-    async function riempiMini(db, contenitore, { giocatore, team, valido, amicizia, modo } = {}) {
+    // Le medagliette sulle card della squadra: ogni [data-fiocchi-pkm="<posizione>"] (di solito un .pkm-badges-overlay). Sono i fiocchi vinti e basta, con la
+    // descrizione al passaggio: in ogni pagina, sulle card dei propri Pokémon come su quelle degli altri.
+    async function riempiMini(db, contenitore, { giocatore, team, valido, amicizia, max = 3 } = {}) {
         if (!contenitore || !giocatore || !team) return false;
-        const caselle = [...contenitore.querySelectorAll('.pkm-badges-overlay[data-fiocchi-pkm]')];
+        const caselle = [...contenitore.querySelectorAll('[data-fiocchi-pkm]')];
         if (!caselle.length) return false;
         let risultato;
         try { risultato = await carica(db); } catch (e) { return false; }
@@ -284,12 +303,12 @@
             if (!p) continue;
             const indice = Number(casella.dataset.fiocchiPkm);
             const lista = calcola(trova(risultato, { player: giocatore, team: team.nome, specie: p.nome, ordinale: ordinaleDi(team, p, indice) }), { amicizia: !!(amicizia && amicizia(p)) });
-            casella.innerHTML = modo === 'tondino' ? htmlTondino(lista) : htmlMini(lista, 3);
+            casella.innerHTML = htmlMini(lista, max);
         }
         return true;
     }
 
-    // Lo scaffale completo nella scheda di un Pokémon
+    // Lo scaffale completo nella scheda di un Pokémon, con i progressi verso il livello dopo: solo nel Box del suo giocatore, in nessun'altra pagina
     async function montaScaffale(db, casella, { giocatore, team, pokemon, indice, amicizia, valido } = {}) {
         if (!casella) return false;
         let entry = null, nota = '';
@@ -306,7 +325,7 @@
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, perVicinanza, trova, ordinaleDi, carica, svuotaCache,
-        htmlFiocco, htmlScaffale, htmlMini, htmlTondino, immagineMancante,
+        testoMedaglia, htmlFiocco, htmlScaffale, htmlMedaglietta, htmlMini, htmlMedaglieConElenco, immagineMancante,
         riempiMini, montaScaffale
     };
 });

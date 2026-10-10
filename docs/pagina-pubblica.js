@@ -1030,6 +1030,27 @@
         return normalizza(nuova);
     }
 
+    // ---- Fumetti ---------------------------------------------------------------------------------
+
+    /**
+     * Dove mettere il fumetto di un elemento: centrato sotto di lui, sopra se sotto non ci sta e sopra c'è più posto, e in ogni caso intero
+     * dentro la finestra (se non ci sta da nessuna parte si stringe ai bordi).
+     * @param {{left:number, top:number, right:number, bottom:number}} ancora  riquadro dell'elemento, in coordinate della finestra
+     * @param {{w:number, h:number}} dim    dimensioni del fumetto
+     * @param {{w:number, h:number}} vista  dimensioni della finestra
+     * @returns {{left:number, top:number, sopra:boolean}}
+     */
+    function posizionaFumetto(ancora, dim, vista, { margine = 10, distanza = 12 } = {}) {
+        const sotto = vista.h - margine - (ancora.bottom + distanza);
+        const sopra = ancora.top - distanza - margine;
+        const inAlto = dim.h > sotto && sopra > sotto;
+        let top = inAlto ? ancora.top - distanza - dim.h : ancora.bottom + distanza;
+        top = Math.max(margine, Math.min(top, vista.h - dim.h - margine));
+        let left = (ancora.left + ancora.right) / 2 - dim.w / 2;
+        left = Math.max(margine, Math.min(left, vista.w - dim.w - margine));
+        return { left: Math.round(left), top: Math.round(top), sopra: inAlto };
+    }
+
     return {
         VERSIONE, ZONE, MAX_ADESIVI,
         LAYOUT, BLOCCHI, BLOCCHI_SPENTI, TARGHETTE, POSTI_TARGHETTA, STAT, MOTIVI, TEMI, FONT, PALETTE_PROFILO, PALETTE_EXTRA, PALETTE_NEUTRI, PALETTE_FIRMA, PALETTE_SFONDO, OMBRE, BORDI, ANGOLI, INCLINAZIONI, ADESIVI,
@@ -1039,6 +1060,6 @@
         griglia, muoviConfine, impostaPesi, ripristinaPesi, impostaLayout, azzeraMisure,
         esadecimale, luminanza, inchiostroSu, mescola, sfondoCss, temaCarta, variabiliCss,
         CAMPI_PROFILO, BIO_MAX, chiaveAvatar, scelteDegliAltri, conflitti, elencoAvatar, leggiCsvCanzoni,
-        SCENA, scalaScena, codiceBarre, numeroTessera, riepilogoStat, casuale
+        SCENA, scalaScena, codiceBarre, numeroTessera, riepilogoStat, casuale, posizionaFumetto
     };
 });

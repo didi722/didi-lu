@@ -203,18 +203,32 @@
                 `<div class="bt-lista">${ordinati.map(htmlBadge).join('')}</div>`;
         }
 
+        // Cosa si legge passando sopra una medaglietta: nome e livello, cosa premia e quanto ha fatto. Mai il progresso verso il livello
+        // dopo: quello sta solo nello scaffale, che si apre nel Box del giocatore.
+        function testoMedaglia(b) {
+            const def = CATALOGO.find(d => d.id === b.id) || {};
+            const valore = arrotonda(b.valore);
+            const quanto = String(b.unita).startsWith('%') ? `${valore}${b.unita}` : `${valore}${def.suffisso || ''} ${b.unita}`;
+            return `${b.nome} · ${b.livelloNome}\n${b.descrizione}\n${quanto}`;
+        }
+
+        // Una medaglietta: il cerchio del colore del livello con l'immagine. `titolo` è la descrizione al passaggio (tooltip.js la mostra nel fumetto
+        // del sito); con la tastiera si arriva con Tab e il fumetto compare lo stesso.
+        function htmlMedaglietta(b, titolo = testoMedaglia(b)) {
+            return `<span class="bt-mini bt-${b.classeLivello}" tabindex="0" role="img" aria-label="${esc(titolo.replace(/\n/g, '. '))}" title="${esc(titolo)}">${htmlImmagine(b, 'bt-mini-img')}</span>`;
+        }
+
         // Le medagliette (sulla card e nella testata): i badge più alti, al massimo "max"
         function htmlMini(lista, max = 4) {
             const presi = guadagnati(lista);
             if (!presi.length) return '';
             const visibili = presi.slice(0, max);
             const resto = presi.length - visibili.length;
-            return visibili.map(b =>
-                `<span class="bt-mini bt-${b.classeLivello}" title="${esc(b.nome)} · ${esc(b.livelloNome)}: ${esc(b.valore)} ${esc(b.unita)}">${htmlImmagine(b, 'bt-mini-img')}</span>`
-            ).join('') + (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
+            return visibili.map(b => htmlMedaglietta(b)).join('') +
+                (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
         }
 
-        return { CATALOGO, IMMAGINI, calcola, guadagnati, perVicinanza, scheda, htmlBadge, htmlScaffale, htmlMini };
+        return { CATALOGO, IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini };
     }
 
     // =====================================================
@@ -255,7 +269,7 @@
     ];
 
     const squadra = costruisci(CATALOGO, { titolo: 'TEAM BADGES' });
-    const { IMMAGINI, calcola, guadagnati, perVicinanza, scheda, htmlBadge, htmlScaffale, htmlMini } = squadra;
+    const { IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini } = squadra;
 
     // Il team di un giocatore tra quelli di Statistiche.calcola(...).teams
     function trova(risultato, { player, team } = {}) {
@@ -269,8 +283,12 @@
     // Colla per le pagine (Box e pagina pubblica). Usano i numeri che Fiocchi.carica(db) ha già calcolato per tutto il sito
     // (stessa lettura di Firebase). "valido" serve quando la finestra può cambiare mentre i dati arrivano.
     // -----------------------------------------------------
-    // La barra dei badge nella testata di un team: medagliette dei più alti e un tasto che apre lo scaffale con tutti
-    async function montaBarra(db, casella, { giocatore, team, valido } = {}) {
+    // La barra dei badge nella testata di un team.
+    //   progresso: true   solo nel Box del giocatore: le medagliette più alte e il tasto "Badges x/10", che apre lo scaffale con tutti i
+    //                     badge e a che punto è ciascuno. I progressi di un team sono affare del suo giocatore.
+    //   altrimenti        le medagliette vinte e basta, ognuna con la sua descrizione al passaggio: è così in ogni altra pagina e in
+    //                     ogni finestra dove compare un team (Hub, Match, pagina pubblica...). Senza badge vinti non compare niente.
+    async function montaBarra(db, casella, { giocatore, team, valido, progresso = false, max = 99 } = {}) {
         if (!casella || !giocatore || !team) return false;
         let entry = null, nota = '';
         try {
@@ -280,6 +298,11 @@
         } catch (e) { nota = 'Live badge data is not available right now.'; }
         if (valido && !valido()) return false;
         const lista = calcola(entry);
+        if (!progresso) {
+            const medaglie = htmlMini(lista, max);
+            casella.innerHTML = medaglie ? `<span class="bt-barra-mini">${medaglie}</span>` : '';
+            return true;
+        }
         const presi = lista.filter(b => b.livello > 0).length;
         casella.innerHTML =
             `<span class="bt-barra-mini">${htmlMini(lista, 4)}</span>` +
@@ -310,18 +333,9 @@
         return true;
     }
 
-    // Una versione piccola per le testate strette (il replay): le medagliette dei badge più alti e quanti ne ha il team, senza scaffale
-    async function montaMini(db, casella, { giocatore, team, valido, max = 4 } = {}) {
-        if (!casella || !giocatore || !team) return false;
-        let entry = null;
-        try { entry = trova(await finestra.Fiocchi.carica(db), { player: giocatore, team: team.nome }); } catch (e) { return false; }
-        if (valido && !valido()) return false;
-        const lista = calcola(entry);
-        const presi = lista.filter(b => b.livello > 0).length;
-        casella.innerHTML =
-            `<span class="bt-barra-mini">${htmlMini(lista, max)}</span>` +
-            `<span class="bt-conto-chip" title="${presi} of ${lista.length} team badges earned">🏅 ${presi}/${lista.length}</span>`;
-        return true;
+    // Una versione per le testate strette (il replay): solo le medagliette vinte, senza tasto e senza scaffale
+    function montaMini(db, casella, { giocatore, team, valido, max = 4 } = {}) {
+        return montaBarra(db, casella, { giocatore, team, valido, max });
     }
 
     // Le medagliette sulle card dei team nel Box: ogni .bt-card[data-team-badge="<id del team>"]
@@ -343,7 +357,7 @@
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, perVicinanza, scheda, trova,
-        htmlBadge, htmlScaffale, htmlMini, immagineMancante,
+        testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, immagineMancante,
         montaBarra, montaMini, riempiCard,
         // per altri cataloghi (badge-allenatore.js)
         costruisci, tre, CARTELLA, esc

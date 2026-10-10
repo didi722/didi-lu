@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="mobile.css">
     <script src="mobile.js"></script>
 <script src="temi.js"></script>
+<script src="menu-sito.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -856,14 +857,14 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
     }
 }
 
-// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario li vede (un vanto). Il team: le
-// medagliette più alte e il tasto con lo scaffale completo; ogni Pokémon: un tondino col numero dei suoi fiocchi, e il fumetto li elenca.
+// I badge del team e i fiocchi dei suoi Pokémon sono di tutti: chi apre il riepilogo di un avversario vede quelli vinti (un vanto), come
+// medagliette con la descrizione al passaggio. I progressi verso il livello dopo (lo scaffale con "Badges x/10") sono solo nel Box del giocatore.
 function mostraBadgeDelTeam(contenuto, giocatore, team) {
     if (typeof Fiocchi === 'undefined') return;
     const squadra = { nome: team.nome, pokemon: team.pokemon };
     window.squadraAperta = squadra;
     const valido = () => window.squadraAperta === squadra;
-    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, modo: 'tondino', valido }).catch(() => {});
+    Fiocchi.riempiMini(db, contenuto, { giocatore, team: squadra, valido }).catch(() => {});
     if (typeof BadgeTeam !== 'undefined') BadgeTeam.montaBarra(db, contenuto.querySelector('[data-badge-team]'), { giocatore, team: squadra, valido }).catch(() => {});
 }
 
