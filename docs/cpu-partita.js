@@ -78,8 +78,15 @@ export async function nuovoTeamCpu(regolamento, { iniziali = [], seme } = {}) {
 
 // Chi sceglie le mosse della CPU (uno per battaglia: tiene a mente com'è andata).
 // `piano`: la strategia del team che gioca (team.piano di nuovoTeamCpu): l'IA la applica in anteprima e in battaglia.
-export function nuovoCervello(lato = 'p2', { piano = null } = {}) {
-    return self.CpuIa.crea({ Dex, lato, piano });
+// `meccaniche`: le meccaniche di generazione che il formato ammette (Mega Evoluzione, Mosse Z, Dynamax, Teracristal): false se il formato
+// non le ammette (generationalMechanics spento), altrimenti ci pensa il simulatore a offrirle (e a scrivere nel log le clausole che le vietano)
+export function nuovoCervello(lato = 'p2', { piano = null, meccaniche } = {}) {
+    return self.CpuIa.crea({ Dex, lato, piano, meccaniche });
+}
+
+// Cosa dire a nuovoCervello delle meccaniche di generazione di un formato: false se spente, altrimenti niente (le decide il simulatore)
+export function meccanicheDelFormato(regolamento) {
+    return regolamento && regolamento.generationalMechanics === true ? undefined : false;
 }
 
 // Il nome con cui un team della CPU si presenta a chi gioca: "Team 7". Mai il nome vero (il piano di gioco, il Pokémon

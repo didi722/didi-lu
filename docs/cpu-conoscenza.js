@@ -20,7 +20,7 @@
     const insieme = (...nomi) => new Set(nomi);
 
     // ---------- mosse per ruolo ----------
-    const PROTEZIONI = insieme('protect', 'detect', 'spikyshield', 'kingsshield', 'banefulbunker', 'obstruct', 'silktrap', 'burningbulwark');
+    const PROTEZIONI = insieme('protect', 'detect', 'spikyshield', 'kingsshield', 'banefulbunker', 'obstruct', 'silktrap', 'burningbulwark', 'maxguard');
     const PROTEZIONI_DI_AREA = insieme('wideguard', 'quickguard');
 
     // Potenziamenti: quanto alzano (o abbassano) ciascuna statistica
@@ -162,6 +162,78 @@
         };
     }
 
+    // ---------- mosse Max (Dynamax, Gen 8) e Mosse Z (Gen 7) ----------
+    // Sono varianti di una mossa normale: stesso tipo e stessa categoria, potenza che dipende dalla mossa di partenza, non sbagliano mai
+    // il bersaglio e non hanno gli effetti della mossa originale. Qui si ricavano dal descrittore della mossa di partenza
+    // (descriviMossa) e da ciò che offre il simulatore nella richiesta, così l'IA le valuta come qualunque altra mossa.
+    const NEUTRE = {
+        secondari: null, assorbe: null, rinculo: null, rinculoMax: 0, multi: null, dannoFisso: null, ohko: false, ricarica: false, dueTurni: false,
+        perno: false, boostSelf: null, flags: {}, stato: null, potenziamento: null, recupero: false, redirezione: false, schermo: false,
+        trappola: false, velocitaSquadra: false, terra: false, colpisceAlleato: false, esclusa: false, protezione: false
+    };
+    // Se il Dex non dà la potenza (mosse di partenza a potenza variabile): le tabelle di Showdown
+    function potenzaMaxDaTabella(potenza, tipo) {
+        const bassa = tipo === 'Fighting' || tipo === 'Poison';
+        const soglie = [[40, 90, 70], [50, 100, 75], [60, 110, 80], [70, 120, 85], [100, 130, 90], [140, 140, 95]];
+        for (const [fino, alta, piu] of soglie) if (potenza <= fino) return bassa ? piu : alta;
+        return bassa ? 100 : 150;
+    }
+    function potenzaZDaTabella(potenza) {
+        const soglie = [[55, 100], [65, 120], [75, 140], [85, 160], [95, 175], [100, 180], [110, 185], [125, 190], [130, 195]];
+        for (const [fino, z] of soglie) if (potenza <= fino) return z;
+        return 200;
+    }
+
+    // La mossa Max di ogni tipo (quella "normale", non la G-Max: quella la dice la richiesta del simulatore)
+    const MOSSE_MAX = {
+        Fire: 'maxflare', Water: 'maxgeyser', Electric: 'maxlightning', Ground: 'maxquake', Dragon: 'maxwyrmwind', Rock: 'maxrockfall',
+        Flying: 'maxairstream', Normal: 'maxstrike', Fighting: 'maxknuckle', Steel: 'maxsteelspike', Psychic: 'maxmindstorm', Dark: 'maxdarkness',
+        Ghost: 'maxphantasm', Grass: 'maxovergrowth', Ice: 'maxhailstorm', Poison: 'maxooze', Bug: 'maxflutterby', Fairy: 'maxstarfall'
+    };
+
+    /** Max Guard: protegge da (quasi) tutto per un turno, con la priorità di una protezione. Per ogni mossa di stato di un Pokémon in Dynamax. */
+    function maxGuard() {
+        return Object.assign({}, NEUTRE, {
+            id: 'maxguard', nome: 'Max Guard', categoria: 'Status', tipo: 'Normal', potenza: 0, precisione: 100, priorita: 4,
+            target: 'self', protezione: true, max: true
+        });
+    }
+
+    /**
+     * La mossa Max che prende il posto di `base` (descrittore di descriviMossa) per un Pokémon in Dynamax.
+     * idMax: l'id della mossa Max nella richiesta ("maxflare", "gmaxwildfire", "maxguard"), se si conosce.
+     */
+    function mossaMax(dex, base, idMax) {
+        if (!idMax && base && base.categoria !== 'Status') idMax = MOSSE_MAX[base.tipo];
+        const dmax = idMax ? dex.moves.get(idMax) : null;
+        const esiste = !!(dmax && dmax.exists);
+        if (!base || base.categoria === 'Status' || (esiste && dmax.id === 'maxguard')) return maxGuard();
+        const dbase = dex.moves.get(base.id);
+        const potenza = (dbase.maxMove && dbase.maxMove.basePower) || potenzaMaxDaTabella(base.potenza || 0, base.tipo);
+        return Object.assign({}, base, NEUTRE, {
+            id: esiste ? dmax.id : 'max' + base.id, nome: esiste ? dmax.name : 'Max ' + base.nome, tipo: esiste ? dmax.type : base.tipo,
+            potenza, precisione: 100, priorita: 0, target: 'adjacentFoe', max: true, base: base.id
+        });
+    }
+
+    /**
+     * La Mossa Z che prende il posto di `base`. voce: la voce di `canZMove` nella richiesta ({ move: 'Gigavolt Havoc', target: 'normal' }).
+     * null per le mosse di stato (la Mossa Z di stato dà solo un bonus alla mossa: la CPU non la usa).
+     */
+    function mossaZ(dex, base, voce) {
+        if (!base || base.categoria === 'Status') return null;
+        const dz = voce && voce.move ? dex.moves.get(voce.move) : null;
+        const esiste = !!(dz && dz.exists);
+        const dbase = dex.moves.get(base.id);
+        // le Mosse Z "uniche" (Catastropika...) hanno la loro potenza; quelle comuni la ricavano dalla mossa di partenza
+        const potenza = esiste && dz.basePower > 1 ? dz.basePower : ((dbase.zMove && dbase.zMove.basePower) || potenzaZDaTabella(base.potenza || 0));
+        const target = (voce && voce.target) || base.target;
+        return Object.assign({}, base, NEUTRE, {
+            id: esiste ? dz.id : 'z' + base.id, nome: esiste ? dz.name : 'Z-' + base.nome, tipo: esiste && dz.basePower > 1 ? dz.type : base.tipo,
+            potenza, precisione: 100, target, colpisceAlleato: target === 'allAdjacent', z: true, base: base.id
+        });
+    }
+
     // Una mossa è ammessa nei team della CPU se la sa usare
     function mossaUsabile(dex, nome) {
         const d = descriviMossa(dex, nome);
@@ -188,6 +260,6 @@
         REDIREZIONE, PERNO, ESCLUSE, DUE_TURNI, MOSSE_TERRA, IMMUNITA_ABILITA, ABILITA_PERICOLOSE, ABILITA_SCARTATE,
         STRUMENTI_OFFENSIVI, STRUMENTI_TIPO, STRUMENTI_SCELTA, POTENZA_STIMATA,
         METEO_SETTER, METEO_SFRUTTATORI, METEO_TIPO, PIANO_METEO,
-        moltiplicatoreTipo, tipiDellaGenerazione, descriviMossa, mossaUsabile
+        moltiplicatoreTipo, tipiDellaGenerazione, descriviMossa, mossaUsabile, mossaMax, mossaZ, maxGuard, potenzaMaxDaTabella, potenzaZDaTabella, MOSSE_MAX
     };
 });

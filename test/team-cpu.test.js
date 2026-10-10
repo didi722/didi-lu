@@ -94,6 +94,42 @@ const FORMATI = [
     ['fino alla Gen 6 (up_to)', reg({ genRuleType: 'up_to', genRuleValue: '6' })]
 ];
 
+// Gen 7 con le meccaniche accese: un Cristallo Z per team (la Mossa Z si fa una volta sola per partita)
+for (const stile of ['singles', 'doubles']) {
+    test(`Gen 7 con le meccaniche (${stile}): un solo Cristallo Z per team, valido, su chi ha un attacco di quel tipo`, { timeout: 120000 }, async () => {
+        const regolamento = reg({ genRuleValue: '7', battleStyle: stile, generationalMechanics: true });
+        const r = await genera(regolamento);
+        assert.equal(r.team.length, 12, `team prodotti: ${r.team.length} (${r.avvisi.join('; ')})`);
+        const { sim } = await caricaSim();
+        const dex = sim.Dex.forGen(7);
+        const formato = `gen7${stile === 'doubles' ? 'doubles' : ''}customgame@@@Picked Team Size = 4`;
+        for (const t of r.team) {
+            const sets = sim.Teams.import(t.testo);
+            const conZ = sets.filter(s => { const it = dex.items.get(s.item); return it.exists && it.zMove; });
+            assert.equal(conZ.length, 1, `${t.nome}: un solo Cristallo Z`);
+            const it = dex.items.get(conZ[0].item);
+            assert.ok(it.zMoveType, `${t.nome}: un cristallo di un tipo (${it.name})`);
+            assert.ok(conZ[0].moves.some(m => { const d = dex.moves.get(m); return d.category !== 'Status' && d.type === it.zMoveType; }),
+                `${t.nome}: ${conZ[0].species} ha un attacco ${it.zMoveType} per la sua Mossa Z`);
+            const strumenti = sets.map(s => id(s.item)).filter(Boolean);
+            assert.equal(new Set(strumenti).size, strumenti.length, `${t.nome}: Item Clause`);
+            assert.equal(sim.TeamValidator.get(formato).validateTeam(sets), null, `${t.nome}: il validatore lo accetta`);
+        }
+    });
+}
+
+test('Cristalli Z: solo in Gen 7 con le meccaniche accese (mai senza, mai nelle altre generazioni)', { timeout: 120000 }, async () => {
+    const { sim } = await caricaSim();
+    const d7 = sim.Dex.forGen(7);
+    for (const regolamento of [reg({ genRuleValue: '7', battleStyle: 'doubles' }), reg({ genRuleValue: '8', battleStyle: 'doubles', generationalMechanics: true }),
+        reg({ genRuleValue: '6', battleStyle: 'doubles', generationalMechanics: true })]) {
+        const r = await genera(regolamento, { quanti: 6 });
+        for (const t of r.team) {
+            for (const s of sim.Teams.import(t.testo)) assert.ok(!d7.items.get(s.item).zMove, `${t.nome}: ${s.species} con ${s.item} (gen ${regolamento.genRuleValue}, meccaniche ${!!regolamento.generationalMechanics})`);
+        }
+    }
+});
+
 for (const [nome, regolamento] of FORMATI) {
     test(`${nome}: dodici team legali, diversi tra loro`, { timeout: 120000 }, async () => {
         const r = await genera(regolamento);

@@ -406,6 +406,217 @@ test('doppio: due Pokémon non cambiano con lo stesso compagno e c\'è al massim
 });
 
 // ===================================================
+// MECCANICHE DI GENERAZIONE: Dynamax (Gen 8), Mosse Z e Ultra Esplosione (Gen 7). La Mega e la Teracristal sono più sopra.
+// La CPU sa se il formato le ammette (opzione `meccaniche`, o la clausola scritta nel log dal simulatore) e, quando sono ammesse,
+// le usa: il Dynamax e la Mossa Z come varianti della mossa (la Mossa Z è una mossa a parte), ognuna una volta per partita.
+// ===================================================
+// Quello che il simulatore scrive in `maxMoves` della richiesta: una mossa Max per ogni mossa (Max Guard per quelle di stato)
+function mosseMax(Dex, mosse) {
+    const dex = Dex.forGen(8);
+    return {
+        maxMoves: mosse.map(nome => {
+            const d = dex.moves.get(nome);
+            return d.category === 'Status' ? { move: 'maxguard', target: 'self' } : { move: K.MOSSE_MAX[d.type], target: 'adjacentFoe' };
+        })
+    };
+}
+// Una richiesta di Gen 8 (livello 100) con i miei Pokémon; `dinamax` aggiunge canDynamax/maxMoves ai Pokémon in campo, `inDinamax` solo maxMoves
+function richiesta8(Dex, squadra, attivi, { dinamax = true, inDinamax = false } = {}) {
+    const active = attivi.map(i => ({
+        ...(dinamax && !inDinamax ? { canDynamax: true } : {}),
+        ...(dinamax || inDinamax ? { maxMoves: mosseMax(Dex, squadra[i].mosse) } : {})
+    }));
+    return creaRichiesta(Dex, { squadra, attivi, gen: 8, livello: 100, extra: { active } });
+}
+// extra: righe prima della squadra (le regole); dopo: righe dopo che i Pokémon sono in campo (Dynamax già in corso...)
+function log8(avversari, miaSquadra, attivi, doppio, extra = [], dopo = []) {
+    const righe = ['|gen|8', `|gametype|${doppio ? 'doubles' : 'singles'}`, ...extra];
+    avversari.forEach(a => righe.push(`|poke|p1|${a.specie}, L100|`));
+    avversari.slice(0, doppio ? 2 : 1).forEach((a, i) => righe.push(`|switch|p1${'ab'[i]}: ${a.specie}|${a.specie}, L100|${a.hp == null ? 100 : a.hp}/100`));
+    miaSquadra.forEach(s => righe.push(`|poke|p2|${s.specie}, L100|`));
+    attivi.forEach((i, k) => righe.push(`|switch|p2${'ab'[k]}: ${miaSquadra[i].specie}|${miaSquadra[i].specie}, L100|${miaSquadra[i].hp == null ? 100 : miaSquadra[i].hp}/100`));
+    righe.push(...dopo, '|turn|2');
+    return righe;
+}
+const DRAGAPULT = [{ specie: 'Dragapult', mosse: ['Shadow Ball', 'Draco Meteor', 'U-turn', 'Thunderbolt'] }, { specie: 'Blissey', mosse: ['Soft-Boiled', 'Seismic Toss', 'Toxic', 'Protect'] }];
+
+test('Dynamax: se la mossa Max mette KO e quella normale no, la CPU lo fa (move N dynamax)', async () => {
+    const { sim, ia } = await cervello();
+    const s = scelta(ia, richiesta8(sim.Dex, DRAGAPULT, [0]), log8([{ specie: 'Gengar' }], DRAGAPULT, [0], false));
+    assert.equal(s, 'move 1 dynamax', 'Ombrartigli normale non basta, Max Phantasma sì');
+    assert.equal(ia.ammette('dynamax'), true);
+});
+
+test('Dynamax Clause nel log: la CPU sa che il formato non lo ammette e non lo sceglie, anche se la richiesta lo offre', async () => {
+    const { sim, ia } = await cervello();
+    const righe = log8([{ specie: 'Gengar' }], DRAGAPULT, [0], false, ['|rule|Dynamax Clause: Pokémon cannot Dynamax']);
+    const s = scelta(ia, richiesta8(sim.Dex, DRAGAPULT, [0]), righe);
+    assert.doesNotMatch(s, /dynamax/);
+    assert.equal(ia.ammette('dynamax'), false);
+    assert.equal(ia.ammette('tera'), true, 'le altre meccaniche restano come sono');
+});
+
+test('meccaniche: opzione false = nessuna; un oggetto spegne solo quelle dette', async () => {
+    const { sim, ia } = await cervello({ meccaniche: false });
+    for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(ia.ammette(m), false, m);
+    const s = scelta(ia, richiesta8(sim.Dex, DRAGAPULT, [0]), log8([{ specie: 'Gengar' }], DRAGAPULT, [0], false));
+    assert.doesNotMatch(s, /dynamax|zmove|mega|ultra|terastallize/);
+
+    const { ia: parziale } = await cervello({ meccaniche: { dynamax: false } });
+    assert.equal(parziale.ammette('dynamax'), false);
+    assert.equal(parziale.ammette('mega'), true);
+    const { ia: libera } = await cervello({ meccaniche: true });
+    for (const m of ['mega', 'z', 'dynamax', 'tera']) assert.equal(libera.ammette(m), true, m);
+});
+
+test('Dynamax: un Pokémon con le mosse di stato non lo fa (sarebbe solo un Max Guard)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Blissey', mosse: ['Soft-Boiled', 'Toxic', 'Protect', 'Wish'] }, DRAGAPULT[0]];
+    const s = scelta(ia, richiesta8(sim.Dex, squadra, [0]), log8([{ specie: 'Gengar' }], squadra, [0], false));
+    assert.doesNotMatch(s, /dynamax/);
+});
+
+test('Dynamax in corso: gioca la mossa Max (la scelta resta "move N") e non riprova il Dynamax', async () => {
+    const { sim, ia } = await cervello();
+    const richiesta = richiesta8(sim.Dex, DRAGAPULT, [0], { dinamax: false, inDinamax: true });
+    assert.ok(richiesta.active[0].maxMoves && !richiesta.active[0].canDynamax, 'la richiesta ha maxMoves e non canDynamax');
+    const s = scelta(ia, richiesta, log8([{ specie: 'Gengar' }], DRAGAPULT, [0], false, [], ['|-start|p2a: Dragapult|Dynamax']));
+    assert.equal(s, 'move 1', 'Max Phantasma, la mossa più forte contro Gengar');
+});
+
+test('Dynamax in corso: le mosse di stato sono Max Guard, una protezione (non due volte di fila)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Blissey', mosse: ['Soft-Boiled', 'Toxic', 'Protect', 'Wish'] }, DRAGAPULT[0]];
+    const richiesta = richiesta8(sim.Dex, squadra, [0], { dinamax: false, inDinamax: true });
+    const s = scelta(ia, richiesta, log8([{ specie: 'Gengar' }], squadra, [0], false, [], ['|-start|p2a: Blissey|Dynamax']));
+    assert.match(s, /^move [1-4]$/);
+    // Max Guard ha priorità +4 e conta come protezione: dopo un Max Guard riuscito la CPU lo sa dal log
+    ia.osserva(['|move|p2a: Blissey|Max Guard|p2a: Blissey', '|turn|3']);
+    assert.equal(ia.lati.p2.mons.Blissey.protezioniDiFila, 1);
+});
+
+test('Dynamax in doppio: il bersaglio è quello della mossa Max (un avversario), anche se la mossa normale colpisce tutti (Terremoto)', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Garchomp', mosse: ['Earthquake', 'Dragon Claw', 'Rock Slide', 'Protect'] }, { specie: 'Amoonguss', mosse: ['Spore', 'Rage Powder', 'Pollen Puff', 'Protect'] }];
+    const avv = [{ specie: 'Heatran' }, { specie: 'Tyranitar' }];
+    const r = richiesta8(sim.Dex, squadra, [0, 1]);
+    const parti = scelta(ia, r, log8(avv, squadra, [0, 1], true)).split(', ');
+    assert.equal(parti.length, 2);
+    assert.ok(parti.filter(x => /dynamax/.test(x)).length <= 1, `un solo Dynamax per turno: ${parti}`);
+    for (const x of parti.filter(x => /dynamax/.test(x))) assert.match(x, /^move [1-4] [12] dynamax$/, 'la mossa Max vuole un bersaglio');
+});
+
+test('Dynamax: un avversario in Dynamax ha il doppio degli HP e gioca mosse Max, finché dura', async () => {
+    const { sim, ia } = await cervello();
+    const avv = [{ specie: 'Tyranitar' }];
+    ia.osserva(log8(avv, DRAGAPULT, [0], false));
+    ia.osserva(['|move|p1a: Tyranitar|Earthquake|p2a: Dragapult']);
+    const mon = ia.lati.p1.mons.Tyranitar;
+    const normale = ia.vista(mon);
+    const moltoPrima = ia.mosseAvversario(normale).find(m => m.id === 'earthquake');
+    assert.equal(moltoPrima.potenza, 100);
+
+    ia.osserva(['|-start|p1a: Tyranitar|Dynamax']);
+    const inMax = ia.vista(mon);
+    assert.equal(inMax.hpMax, normale.hpMax * 2, 'HP doppi');
+    assert.equal(inMax.hp, normale.hp * 2, 'la percentuale che si vede resta la stessa');
+    assert.equal(ia.lati.p1.dinamaxUsato, true);
+    const max = ia.mosseAvversario(inMax).find(m => m.id === 'maxquake');
+    assert.ok(max, 'Terremoto diventa Max Terremoto');
+    assert.equal(max.potenza, 130);
+    assert.equal(max.tipo, 'Ground');
+    assert.equal(max.precisione, 100);
+
+    ia.osserva(['|-end|p1a: Tyranitar|Dynamax']);
+    assert.equal(ia.vista(mon).hpMax, normale.hpMax, 'finito il Dynamax gli HP sono quelli di prima');
+    // anche un cambio o un KO lo fanno finire
+    ia.osserva(['|-start|p1a: Tyranitar|Dynamax', '|faint|p1a: Tyranitar']);
+    assert.equal(mon.dinamax, false);
+});
+
+test('Dynamax: un avversario che ne ha già fatto uno non conta come offerto a noi (una sola volta per lato)', async () => {
+    const { sim, ia } = await cervello();
+    ia.osserva(log8([{ specie: 'Tyranitar' }], DRAGAPULT, [0], false, [], ['|-start|p1a: Tyranitar|Dynamax']));
+    assert.equal(ia.lati.p1.dinamaxUsato, true);
+    assert.ok(!ia.lati.p2.dinamaxUsato, 'il suo Dynamax non è il nostro: la richiesta dice se possiamo');
+    const s = scelta(ia, richiesta8(sim.Dex, DRAGAPULT, [0]), []);
+    assert.match(s, /^move /);
+});
+
+// ---------- Mosse Z (Gen 7) ----------
+const KOKO = ['Tapu Koko', ['Thunderbolt', 'Dazzling Gleam', 'Protect', 'U-turn'], 'Electrium Z', [{ move: 'Gigavolt Havoc', target: 'normal' }, null, null, null]];
+function sceltaZ(sim, ia, avversario, mio = KOKO, righeExtra = []) {
+    const squadra = [{ specie: mio[0], mosse: mio[1], item: mio[2] }, { specie: 'Blissey', mosse: ['Soft-Boiled', 'Seismic Toss', 'Toxic', 'Protect'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], gen: 7, livello: 100, extra: { active: [{ canZMove: mio[3] }] } });
+    return scelta(ia, r, ['|gen|7', '|gametype|singles', ...righeExtra, `|poke|p1|${avversario}, L100|`, `|switch|p1a: ${avversario}|${avversario}, L100|100/100`,
+        `|poke|p2|${mio[0]}, L100|`, `|switch|p2a: ${mio[0]}|${mio[0]}, L100|100/100`, '|turn|2']);
+}
+
+test('Mossa Z: la CPU la usa quando è lei a mettere KO (Gigavolt Havoc contro Skarmory)', async () => {
+    const { sim, ia } = await cervello();
+    assert.equal(sceltaZ(sim, ia, 'Skarmory'), 'move 1 zmove');
+});
+
+test('Mossa Z: non si spreca quando la mossa normale basta (Fulmine contro un Gyarados), né contro chi è immune (Garchomp)', async () => {
+    const { sim, ia } = await cervello();
+    assert.equal(sceltaZ(sim, ia, 'Gyarados'), 'move 1', 'Fulmine contro un 4x mette già KO');
+    const { ia: altra } = await cervello();
+    assert.doesNotMatch(sceltaZ(sim, altra, 'Garchomp'), /zmove/, 'Garchomp è immune alla Mossa Z di tipo Elettro');
+});
+
+test('Mossa Z: se il formato non le ammette (Z-Move Clause nel log o meccaniche spente) la CPU non la considera', async () => {
+    const { sim, ia } = await cervello();
+    assert.doesNotMatch(sceltaZ(sim, ia, 'Skarmory', KOKO, ['|rule|Z-Move Clause: Z-Moves are banned']), /zmove/);
+    assert.equal(ia.ammette('z'), false);
+    const { ia: spenta } = await cervello({ meccaniche: false });
+    assert.doesNotMatch(sceltaZ(sim, spenta, 'Skarmory'), /zmove/);
+});
+
+test('Mossa Z: la richiesta con una Mossa Z per una mossa di stato non fa scegliere la Mossa Z (nessun bonus che la CPU sappia usare)', async () => {
+    const { sim, ia } = await cervello();
+    const mio = ['Tapu Koko', ['Thunderbolt', 'Dazzling Gleam', 'Protect', 'U-turn'], 'Electrium Z', [null, null, { move: 'Z-Protect', target: 'self' }, null]];
+    const s = sceltaZ(sim, ia, 'Skarmory', mio);
+    assert.doesNotMatch(s, /zmove/);
+});
+
+test('Ultra Esplosione: la CPU la fa (è una forma più forte e non costa nulla), una sola per turno', async () => {
+    const { sim, ia } = await cervello();
+    const squadra = [{ specie: 'Necrozma-Dusk-Mane', item: 'Ultranecrozium Z', mosse: ['Sunsteel Strike', 'Earthquake', 'Photon Geyser', 'Protect'] }, { specie: 'Blissey', mosse: ['Soft-Boiled', 'Seismic Toss', 'Toxic', 'Protect'] }];
+    const r = creaRichiesta(sim.Dex, { squadra, attivi: [0], gen: 7, livello: 100, extra: { active: [{ canUltraBurst: true }] } });
+    const s = scelta(ia, r, ['|gen|7', '|gametype|singles', '|poke|p1|Gengar, L100|', '|switch|p1a: Gengar|Gengar, L100|100/100',
+        '|poke|p2|Necrozma-Dusk-Mane, L100|', '|switch|p2a: Necrozma-Dusk-Mane|Necrozma-Dusk-Mane, L100|100/100', '|turn|2']);
+    assert.match(s, /^move [1-4] ultra$/);
+});
+
+test('mosse Max e Mosse Z: potenza, tipo e categoria dalla mossa di partenza (CpuConoscenza.mossaMax / mossaZ)', async () => {
+    const { sim } = await caricaSim();
+    const d8 = sim.Dex.forGen(8), d7 = sim.Dex.forGen(7);
+    const terremoto = K.descriviMossa(d8, 'Earthquake');
+    const max = K.mossaMax(d8, terremoto, 'maxquake');
+    assert.deepEqual([max.id, max.nome, max.tipo, max.categoria, max.potenza, max.precisione, max.target, max.priorita], ['maxquake', 'Max Quake', 'Ground', 'Physical', 130, 100, 'adjacentFoe', 0]);
+    assert.equal(max.multi, null);
+    assert.equal(max.secondari, null);
+    assert.equal(max.colpisceAlleato, false, 'una mossa Max colpisce un solo avversario, anche se Terremoto colpisce tutti');
+    // Lotta e Veleno hanno una potenza Max più bassa
+    assert.equal(K.mossaMax(d8, K.descriviMossa(d8, 'Close Combat'), 'maxknuckle').potenza, 95);
+    assert.equal(K.potenzaMaxDaTabella(100, 'Fire'), 130);
+    assert.equal(K.potenzaMaxDaTabella(100, 'Fighting'), 90);
+    assert.equal(K.potenzaMaxDaTabella(150, 'Normal'), 150);
+    // le mosse di stato diventano Max Guard: una protezione con priorità +4
+    const guardia = K.mossaMax(d8, K.descriviMossa(d8, 'Toxic'), 'maxguard');
+    assert.deepEqual([guardia.id, guardia.categoria, guardia.protezione, guardia.priorita, guardia.target], ['maxguard', 'Status', true, 4, 'self']);
+    assert.ok(K.PROTEZIONI.has('maxguard'));
+    // la Mossa Z
+    const z = K.mossaZ(d7, K.descriviMossa(d7, 'Thunderbolt'), { move: 'Gigavolt Havoc', target: 'normal' });
+    assert.deepEqual([z.id, z.tipo, z.categoria, z.potenza, z.precisione, z.target], ['gigavolthavoc', 'Electric', 'Special', 175, 100, 'normal']);
+    const unica = K.mossaZ(d7, K.descriviMossa(d7, 'Volt Tackle'), { move: 'Catastropika', target: 'normal' });
+    assert.equal(unica.potenza, 210, 'le Mosse Z uniche hanno la loro potenza');
+    assert.equal(K.mossaZ(d7, K.descriviMossa(d7, 'Protect'), { move: 'Z-Protect', target: 'self' }), null, 'la Mossa Z di stato non si usa');
+    assert.equal(K.potenzaZDaTabella(90), 175);
+    assert.equal(K.potenzaZDaTabella(150), 200);
+});
+
+// ===================================================
 // ANTEPRIMA, CAMBI FORZATI, CASI PARTICOLARI
 // ===================================================
 test('anteprima: sceglie quanti Pokémon servono e li ordina come "team 1234"', async () => {
@@ -815,6 +1026,8 @@ const FORMATI = [
     { nome: 'doppio Gen 9 con Teracristal', reg: { genRuleType: 'within', genRuleValue: '9', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi } },
     { nome: 'VGC Gen 8', reg: { genRuleType: 'within', genRuleValue: '8', baseTier: 'STANDARD', battleStyle: 'doubles', strutturaSito: 'vgc', vgcGen: 'Gen8', vgcFormat: 'doubles', restrizioni: permessi } },
     { nome: 'doppio Gen 6 con Mega', reg: { genRuleType: 'within', genRuleValue: '6', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: { pokemon: { ...permessi.pokemon, is_mega: { mode: 'SPECIFIC', value: true } } } } },
+    { nome: 'doppio Gen 8 con Dynamax', reg: { genRuleType: 'within', genRuleValue: '8', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi } },
+    { nome: 'singolo Gen 7 con Mega e Mosse Z', reg: { genRuleType: 'within', genRuleValue: '7', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi } },
     { nome: 'singolo Gen 4', reg: { genRuleType: 'within', genRuleValue: '4', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } },
     { nome: 'singolo Gen 1', reg: { genRuleType: 'within', genRuleValue: '1', baseTier: 'OU', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } },
     { nome: 'Little Cup', reg: { genRuleType: 'within', genRuleValue: '9', baseTier: 'LC', battleStyle: 'singles', strutturaSito: 'custom', restrizioni: permessi } }
@@ -878,6 +1091,73 @@ for (const stile of ['singles', 'doubles']) {
         assert.ok(giocate >= 1);
     });
 }
+
+// Quante volte, in una partita, un lato ha fatto una meccanica (righe del log): "-start|p1a: ...|Dynamax", "-zpower|p1a: ..."
+function volte(righe, lato, regex) { return righe.filter(r => regex.test(r) && r.includes(`|${lato}`)).length; }
+const DYNAMAX = /^\|-start\|p[12][ab]: [^|]*\|Dynamax/;
+
+for (const stile of ['singles', 'doubles']) {
+    test(`partite vere (Gen 8 ${stile}, Dynamax ammesso): la CPU lo usa e il simulatore non rifiuta nessuna scelta`, { timeout: 240000 }, async () => {
+        const { sim } = await caricaSim();
+        const reg = { genRuleType: 'within', genRuleValue: '8', baseTier: 'OU', battleStyle: stile, strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi };
+        const r = await squadreDi(sim, reg);
+        const formato = formatoSito(reg);
+        assert.ok(!/Dynamax Clause/.test(formato), 'con le meccaniche accese il formato non vieta il Dynamax');
+        let conDynamax = 0, giocate = 0;
+        for (let i = 0; i < 6; i++) {
+            const t1 = r.team[i % r.team.length], t2 = r.team[(i + 3) % r.team.length];
+            const cpu1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 11) });
+            const cpu2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 61) });
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu1 }, agente2: { tipo: 'cpu', cerebro: cpu2 }, casuale: creaCasuale(i + 3), seme: [i + 4, 8, 15, 16] });
+            assert.deepEqual(e.errori.map(x => `${x.lato} ${x.scelta} => ${x.messaggio}`), [], 'nessuna scelta rifiutata');
+            assert.ok(!e.bloccata && !e.scaduta, `la partita deve finire (turni ${e.turni})`);
+            giocate++;
+            // un solo Dynamax per lato (il simulatore lo garantisce: la CPU non ci riprova)
+            for (const lato of ['p1', 'p2']) assert.ok(volte(e.righe, lato, DYNAMAX) <= 1, `${lato}: un solo Dynamax per partita`);
+            if (volte(e.righe, 'p1', DYNAMAX) + volte(e.righe, 'p2', DYNAMAX) > 0) conDynamax++;
+        }
+        assert.ok(conDynamax >= Math.ceil(giocate * 0.6), `la CPU deve usare il Dynamax: ${conDynamax}/${giocate} partite`);
+    });
+}
+
+test('partite vere (Gen 8, Dynamax Clause): il formato lo vieta, la CPU lo legge dal log e non ci prova', { timeout: 240000 }, async () => {
+    const { sim } = await caricaSim();
+    const reg = { genRuleType: 'within', genRuleValue: '8', baseTier: 'OU', battleStyle: 'doubles', strutturaSito: 'custom', generationalMechanics: false, restrizioni: permessi };
+    const r = await squadreDi(sim, reg);
+    const formato = formatoSito(reg);
+    assert.match(formato, /Dynamax Clause/);
+    for (let i = 0; i < 3; i++) {
+        const cpu1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 1) });
+        const cpu2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 2) });
+        const e = await giocaPartita({ sim, formato, team1: r.team[i % r.team.length].testo, team2: r.team[(i + 3) % r.team.length].testo, agente1: { tipo: 'cpu', cerebro: cpu1 }, agente2: { tipo: 'cpu', cerebro: cpu2 }, casuale: creaCasuale(i + 9), seme: [i + 1, 2, 3, 5] });
+        assert.deepEqual(e.errori, []);
+        assert.equal(e.righe.filter(x => DYNAMAX.test(x)).length, 0, 'nessun Dynamax');
+        assert.ok(e.righe.some(x => /^\|rule\|Dynamax Clause/.test(x)), 'il simulatore scrive la clausola');
+        assert.equal(cpu1.ammette('dynamax'), false, 'la CPU ha letto la clausola');
+    }
+});
+
+test('partite vere (Gen 7, Mosse Z e Mega): la CPU le usa e il simulatore non rifiuta nessuna scelta', { timeout: 240000 }, async () => {
+    const { sim } = await caricaSim();
+    for (const stile of ['singles', 'doubles']) {
+        const reg = { genRuleType: 'within', genRuleValue: '7', baseTier: 'OU', battleStyle: stile, strutturaSito: 'custom', generationalMechanics: true, restrizioni: permessi };
+        const r = await squadreDi(sim, reg);
+        const formato = formatoSito(reg);
+        let conZ = 0, giocate = 0;
+        for (let i = 0; i < 10; i++) {
+            const t1 = r.team[i % r.team.length], t2 = r.team[(i + 5) % r.team.length];
+            const cpu1 = IA.crea({ Dex: sim.Dex, lato: 'p1', casuale: creaCasuale(i + 21) });
+            const cpu2 = IA.crea({ Dex: sim.Dex, lato: 'p2', casuale: creaCasuale(i + 71) });
+            const e = await giocaPartita({ sim, formato, team1: t1.testo, team2: t2.testo, agente1: { tipo: 'cpu', cerebro: cpu1 }, agente2: { tipo: 'cpu', cerebro: cpu2 }, casuale: creaCasuale(i + 5), seme: [i + 2, 4, 6, 8] });
+            assert.deepEqual(e.errori.map(x => `${x.lato} ${x.scelta} => ${x.messaggio}`), [], `${stile}: nessuna scelta rifiutata`);
+            assert.ok(!e.bloccata && !e.scaduta);
+            giocate++;
+            for (const lato of ['p1', 'p2']) assert.ok(volte(e.righe, lato, /^\|-zpower\|/) <= 1, 'una sola Mossa Z per lato');
+            if (e.righe.some(x => /^\|-zpower\|/.test(x))) conZ++;
+        }
+        assert.ok(conZ >= 2, `${stile}: la CPU deve usare la Mossa Z (${conZ}/${giocate} partite)`);
+    }
+});
 
 test('partite vere: la CPU batte il bot casuale la gran parte delle volte (singolo e doppio)', { timeout: 300000 }, async () => {
     const { sim } = await caricaSim();

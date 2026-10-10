@@ -707,6 +707,35 @@
         return { testo: righe.join('\n'), mosse, strumento, abilita };
     }
 
+    // Gen 7 con le meccaniche accese: la CPU porta un Cristallo Z. La Mossa Z si fa una volta sola per partita, quindi un solo cristallo
+    // per team (più di uno sarebbe sprecato). Lo prende chi ha l'attacco con più da guadagnare dalla Mossa Z (la potenza della Mossa Z
+    // per la sua statistica offensiva, col bonus STAB) tra chi non ha già uno strumento obbligato (Megapietra, strumento della forma).
+    const CRISTALLI_Z = {
+        Normal: 'Normalium Z', Fire: 'Firium Z', Water: 'Waterium Z', Electric: 'Electrium Z', Grass: 'Grassium Z', Ice: 'Icium Z',
+        Fighting: 'Fightinium Z', Poison: 'Poisonium Z', Ground: 'Groundium Z', Flying: 'Flyinium Z', Psychic: 'Psychium Z',
+        Bug: 'Buginium Z', Rock: 'Rockium Z', Ghost: 'Ghostium Z', Dragon: 'Dragonium Z', Dark: 'Darkinium Z', Steel: 'Steelium Z',
+        Fairy: 'Fairium Z'
+    };
+    function cristalloZDelTeam(dex, ctx, restrizioni, usati, infoMembri) {
+        if (ctx.gen !== 7 || !ctx.meccaniche) return null;
+        let migliore = null;
+        infoMembri.forEach((info, i) => {
+            const c = info.cand;
+            if (c.isMega || c.richiesto) return;
+            for (const m of info.mosse) {
+                if (m.categoria === 'Status' || !(m.potenza >= 60) || m.dueTurni || m.ricarica) continue;
+                const nome = CRISTALLI_Z[m.tipo];
+                const it = nome ? dex.items.get(nome) : null;
+                if (!it || !it.exists || !it.zMove || it.gen > ctx.gen || it.isNonstandard) continue;
+                if (!strumentoAmmesso(it, restrizioni) || (!ctx.goose && usati.has(it.id))) continue;
+                const statOffensiva = m.categoria === 'Physical' ? c.basi.atk : c.basi.spa;
+                const valore = K.potenzaZDaTabella(m.potenza) * (c.tipiBase.includes(m.tipo) ? 1.5 : 1) * statOffensiva;
+                if (!migliore || valore > migliore.valore) migliore = { i, it, valore };
+            }
+        });
+        return migliore;
+    }
+
     function scegliTera(cand, mosse, rnd) {
         // il tipo dell'attacco più forte se non è già uno dei suoi, altrimenti il tipo principale
         const att = mosse.filter(m => m.categoria !== 'Status').sort((a, b) => b.potenza - a.potenza)[0];
@@ -959,7 +988,18 @@
             const s = testoSet(c, ctx, ruolo, piano, restrizioni, usati, tera, natura);
             if (s.mosse.length < 1) return null;
             testi.push(s.testo);
-            infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita });
+            infoMembri.push({ cand: c, mosse: s.mosse, abilita: s.abilita, strumento: s.strumento });
+        }
+        // Gen 7 con le meccaniche: un Cristallo Z al posto dello strumento di chi ne ha più bisogno
+        const z = cristalloZDelTeam(dex, ctx, restrizioni, usati, infoMembri);
+        if (z) {
+            const vecchio = infoMembri[z.i].strumento;
+            if (vecchio) usati.delete(id(vecchio));
+            usati.add(z.it.id);
+            const righe = testi[z.i].split('\n');
+            righe[0] = `${membri[z.i].nome} @ ${z.it.name}`;
+            testi[z.i] = righe.join('\n');
+            infoMembri[z.i].strumento = z.it.name;
         }
         // il piano vale solo se i set lo realizzano (altrimenti il team è "bilanciato" e basta)
         const strategia = strategiaDelTeam(piano.nome, infoMembri);

@@ -18,7 +18,7 @@ import {
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
 import { caricaMatch, caricaPerProva } from './team-sito.js';
-import { nuovoTeamCpu, nuovoCervello, nomeNeutro } from './cpu-partita.js';
+import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './nomi-unici.js';       // self.NomiUnici
@@ -823,7 +823,11 @@ function avviaBattaglia() {
     nuovoSet();
     disegnaInfo();
     // il cervello conosce la strategia del team che sta giocando (non si vede da nessuna parte: il team si chiama "Team N")
-    if (cpu) { cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano }); cpu.errori = 0; cpu.rqid = null; }
+    // ...e quali meccaniche di generazione ammette il formato (Dynamax, Mosse Z, Mega, Teracristal): se è spento, la CPU non ci pensa nemmeno
+    if (cpu) {
+        cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento) });
+        cpu.errori = 0; cpu.rqid = null;
+    }
     battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2 });
     collegaEventi(battaglia);
     battaglia.avvia();

@@ -3,7 +3,8 @@
 // Sceglie le mosse dell'avversario controllato dal computer. Non tira a caso: per ogni turno
 //   1. legge il log pubblico (chi è in campo, HP, stati, potenziamenti, meteo, Tailwind, Camera Magica,
 //      trappole, mosse già viste dell'avversario, quante Protezioni di fila ha fatto ognuno);
-//   2. elenca le sue azioni (ogni mossa su ogni bersaglio, i cambi, la Teracristal);
+//   2. elenca le sue azioni (ogni mossa su ogni bersaglio, i cambi e le meccaniche di generazione che il formato ammette: Mega
+//      Evoluzione, Ultra Esplosione, Mosse Z, Dynamax, Teracristal);
 //   3. prevede cosa farà l'avversario (la sua mossa migliore sul suo bersaglio migliore; per le mosse che non ha ancora
 //      mostrato presume la più forte che la sua specie può imparare) e simula il turno in ordine di priorità e velocità:
 //      danni attesi, KO, Protezione, Fake Out, Follow Me, Helping Hand, cambi a inizio turno, mosse che colpiscono anche
@@ -65,12 +66,20 @@
     //                       fa perdere partite)
     //   costoProtezione     proteggersi non fa niente da solo: un piccolo costo fisso per ogni protezione
     //   sogliaRecupero      curarsi vale solo per gli HP che mancano oltre questa frazione (con quasi tutta la salute non serve)
+    //   bonusDinamax, spesaDinamax
+    //                       il Dynamax dura tre turni (HP doppi, mosse Max che non sbagliano): il turno in cui si fa vale subito per i danni
+    //                       e la resistenza che si vedono nel turno, più bonusDinamax per i due turni dopo; si fa una volta sola per partita,
+    //                       quindi costa spesaDinamax (meno se restano pochi Pokémon: usarlo o perderlo)
+    //   spesaMossaZ         la Mossa Z si fa una volta sola per partita: costa questo (meno se restano pochi Pokémon)
+    //   antMeccanica        anteprima: portare chi ha il Cristallo Z (se il formato ammette le Mosse Z) vale questo; chi ha la Megapietra
+    //                       si valuta già con le statistiche della Mega (se il formato ammette la Mega Evoluzione)
     const PARAMETRI_BASE = {
         penalitaProt: 1.5, bonusSE2: 0.4, bonusSE4: 0.6, malusRes05: 0.3, malusRes025: 0.5, pesoPosizione: 0.3,
         rispostaAlCambio: 0.4, rispostaAlCambioDoppio: 0.25, presunteDex: 0.5,
         antCopertura: 0.3, antMedia: 1, antDeboli: 0.5, antPesoMinaccia: 1, antPiano: 0.25, antLeadSetter: 0.7,
         utilPianoTailwind: 0.9, scalaTailwind: 1.2, maxTailwind: 2.4, bonusPianoStanza: 1, bonusPianoMeteo: 0.5,
-        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25
+        aggressivita: 0.35, aggressivitaDoppio: 0, costoCambio: 0.3, costoCambioDoppio: 0.22, costoCambioSano: 0.2, costoProtezione: 0.08, sogliaRecupero: 0.25,
+        bonusDinamax: 0.3, spesaDinamax: 0.9, spesaMossaZ: 0.25, antMeccanica: 0.2
     };
     // Abilità che agiscono quando il Pokémon entra in campo
     const ABILITA_METEO = { drizzle: 'rain', drought: 'sun', orichalcumpulse: 'sun', sandstream: 'sand', snowwarning: 'snow' };
@@ -99,6 +108,16 @@
         const [hp, hpMax] = parte.split('/').map(Number);
         return { hp, hpMax, pct: hpMax ? hp / hpMax * 100 : 0, stato };
     }
+    // Le meccaniche di generazione che il formato ammette. Opzione `meccaniche` del cervello: undefined/true = quelle che offre il
+    // simulatore; false = nessuna; { mega, z, dynamax, tera } = ognuna true o false. Le regole che il simulatore scrive nel log
+    // (Dynamax Clause, Terastal Clause, Z-Move Clause) la correggono: vedi _riga.
+    const MECCANICHE = ['mega', 'z', 'dynamax', 'tera'];
+    function leggiMeccaniche(m) {
+        const out = {};
+        if (m === false) MECCANICHE.forEach(k => { out[k] = false; });
+        else if (m && typeof m === 'object') MECCANICHE.forEach(k => { if (typeof m[k] === 'boolean') out[k] = m[k]; });
+        return out;
+    }
     function leggiDettagli(d) {
         // "Calyrex-Shadow, L50, M" -> { specie, livello }
         const p = String(d || '').split(', ');
@@ -118,6 +137,7 @@
             this.debug = !!opzioni.debug;
             this.par = Object.assign({}, PARAMETRI_BASE, opzioni.parametri || {});
             this.pianoDato = opzioni.piano || null;     // il piano del team deciso da chi lo ha composto (team-cpu.js), se c'è
+            this.meccOpzioni = leggiMeccaniche(opzioni.meccaniche);
             this.strategia = null;
             this.impostaGenerazione(9);
             this.tipo = 'singles';
@@ -142,7 +162,12 @@
             this.cambiRecenti = [0, 0];
             this.ultimoUscito = [null, null, null];      // per slot: chi è appena uscito dal campo (per non farlo rientrare subito)
             this.teraUsata = false;
+            this.mecc = Object.assign({}, this.meccOpzioni);   // quali meccaniche sono ammesse (false = vietata dal formato)
         }
+
+        // Il formato ammette questa meccanica? 'mega' (anche Ultra Esplosione), 'z', 'dynamax', 'tera'. Ciò che non è detto si lascia al simulatore:
+        // offre una meccanica solo se il formato la ammette (e al Pokémon che può farla), quindi senza notizie contrarie si prova.
+        ammette(meccanica) { return this.mecc[meccanica] !== false; }
 
         _latoVuoto() {
             return { mons: {}, attivi: [null, null, null], squadra: [], campo: campoVuoto(), caduti: 0 };
@@ -227,6 +252,14 @@
                 case 'gen': this.impostaGenerazione(parseInt(p[1], 10) || 9); break;
                 case 'gametype': this.tipo = p[1] === 'doubles' ? 'doubles' : 'singles'; break;
                 case 'turn': this.turno = parseInt(p[1], 10); break;
+                case 'rule': {
+                    // le clausole che spengono una meccanica: "Dynamax Clause: Pokémon cannot Dynamax", "Terastal Clause: ..."
+                    const regola = String(p[1] || '');
+                    if (/^Dynamax Clause/i.test(regola)) this.mecc.dynamax = false;
+                    else if (/^Terastal Clause/i.test(regola)) this.mecc.tera = false;
+                    else if (/^Z-Move Clause/i.test(regola)) this.mecc.z = false;
+                    break;
+                }
                 case 'poke': {
                     const d = leggiDettagli(p[2]);
                     this.lati[p[1]].squadra.push(d.specie);
@@ -243,8 +276,8 @@
                     if (cmd !== 'replace') {
                         // chi esce dal campo perde potenziamenti e il conto delle protezioni; chi entra parte pulito
                         const uscente = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
-                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); }
-                        m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot;
+                        if (uscente) { uscente.boost = boostVuoti(); uscente.protezioniDiFila = 0; uscente.ultimaProtezione = -9; uscente.immuneTipi.clear(); uscente.immuneMosse.clear(); uscente.dinamax = false; }
+                        m.boost = boostVuoti(); m.turnoEntrata = this.turno; m.ultimaMossa = null; m.posto = pos.slot; m.dinamax = false;
                         m.protezioniDiFila = 0; m.ultimaProtezione = -9;
                     }
                     m.specie = d.specie; m.livello = d.livello;
@@ -267,8 +300,20 @@
                     // un cambio di tipo (Inzuppa, Camuffamento, Maledizione del bosco...): i tipi non sono più quelli di prima
                     const m = this._mon(p[1]);
                     if (m && /typechange|typeadd/i.test(p[2] || '')) m.immuneTipi.clear();
+                    // Dynamax: per tre turni gli HP sono doppi e le mosse diventano Max. Si fa una volta sola per partita e per lato
+                    if (m && /^Dynamax/i.test(p[2] || '')) {
+                        m.dinamax = true;
+                        const pos = posizione(p[1]);
+                        if (pos) this.lati[pos.lato].dinamaxUsato = true;
+                    }
                     break;
                 }
+                case '-end': {
+                    const m = this._mon(p[1]);
+                    if (m && /^Dynamax/i.test(p[2] || '')) m.dinamax = false;
+                    break;
+                }
+                case '-zpower': { const pos = posizione(p[1]); if (pos) this.lati[pos.lato].zUsata = true; break; }
                 case '-mega': { const m = this._mon(p[1]); if (m) m.megaDi = p[2]; break; }
                 case 'move': {
                     const m = this._mon(p[1]);
@@ -304,7 +349,7 @@
                 case 'faint': {
                     const pos = posizione(p[1]);
                     const m = this._mon(p[1]);
-                    if (m) { m.vivo = false; m.pct = 0; m.stato = 'fnt'; }
+                    if (m) { m.vivo = false; m.pct = 0; m.stato = 'fnt'; m.dinamax = false; }
                     if (pos) { this.lati[pos.lato].caduti++; if (this.lati[pos.lato].attivi[pos.slot] === pos.nome) this.lati[pos.lato].attivi[pos.slot] = null; }
                     break;
                 }
@@ -427,6 +472,9 @@
                 abilita = info.ability ? id(info.ability) : (info.baseAbility ? id(info.baseAbility) : abilita);
                 strumento = info.item != null ? id(info.item) : strumento;
                 if (info.terastallized) tera = info.terastallized;
+            } else if (m.dinamax) {
+                // un avversario in Dynamax ha il doppio degli HP (la percentuale che si vede è sul massimo di adesso)
+                hpMax *= 2; hp = Math.round(hpMax * m.pct / 100);
             }
             const tipiBase = sp.types.slice();
             const vista = {
@@ -434,7 +482,7 @@
                 hp, hpMax: Math.max(1, hpMax), boost: m.boost, stato: m.stato === 'fnt' ? '' : m.stato, abilita: abilita || null,
                 abilitaPossibili: Object.values(sp.abilities || {}).map(id), strumento: strumento || null, tera: tera || null,
                 peso: sp.weightkg, nfe: !!(sp.nfe), caduti: this.lati[m.lato].caduti, ref: m, basi,
-                immuneTipi: m.immuneTipi, immuneMosse: m.immuneMosse
+                immuneTipi: m.immuneTipi, immuneMosse: m.immuneMosse, dinamax: !!m.dinamax
             };
             if (!vista.abilita && vista.abilitaPossibili.length === 1) vista.abilita = vista.abilitaPossibili[0];
             return vista;
@@ -458,7 +506,22 @@
                     });
                 }
             }
-            return out;
+            // in Dynamax gioca le mosse Max (potenza alta, non sbagliano mai): le mosse di stato sono già fuori
+            return v.dinamax ? out.map(d => this._mossaMax(d)) : out;
+        }
+
+        // La mossa Max / la Mossa Z al posto di `base` (con cache: si rifanno uguali a ogni turno)
+        _mossaMax(base, idMax) {
+            const k = 'max|' + (base ? base.id : '') + '|' + (idMax || '');
+            let d = this.cacheMosse.get(k);
+            if (d === undefined) { d = K.mossaMax(this.dex, base, idMax); this.cacheMosse.set(k, d); }
+            return d;
+        }
+        _mossaZ(base, voce) {
+            const k = 'z|' + (base ? base.id : '') + '|' + (voce && voce.move) + '|' + (voce && voce.target);
+            let d = this.cacheMosse.get(k);
+            if (d === undefined) { d = K.mossaZ(this.dex, base, voce); this.cacheMosse.set(k, d); }
+            return d;
         }
 
         // Le mosse che una specie può imparare in questa generazione (anche dai suoi pre-evoluti): serve a presumere cosa porta
@@ -627,8 +690,18 @@
                 const s = this.specie(nome);
                 return this.vista(this._nuovoMon(lato2(this.lato), nome, s.name, lvl));
             });
-            const miei = squadra.map(s => ({ s, v: this.vista(s.m, s.info), mosse: s.p.moves.map(k => this.mossa(k)).filter(Boolean) }));
+            const miei = squadra.map(s => {
+                const v = this.vista(s.m, s.info);
+                // chi ha la Megapietra gioca la partita da Mega: si valuta con le sue statistiche (se il formato ammette la Mega Evoluzione)
+                if (this._megaPossibile()) this._applicaMega(v);
+                return { s, v, mosse: s.p.moves.map(k => this.mossa(k)).filter(Boolean) };
+            });
             const n = miei.length;
+            // chi ha un Cristallo Z (la Mossa Z si fa una volta sola: serve almeno uno in campo, non uno per ogni Pokémon)
+            const conCristalloZ = miei.map(x => {
+                const it = this.gen === 7 && this.ammette('z') && x.v.strumento ? this.dex.items.get(x.v.strumento) : null;
+                return !!(it && it.exists && it.zMove);
+            });
 
             // gli scontri: per ognuno dei miei contro ognuno dei loro
             const nessunoAvv = !avversari.length;
@@ -670,6 +743,7 @@
                 }
                 const media = idx.reduce((s, i) => s + forza(i), 0) / idx.length;
                 let s = this.par.antCopertura * copertura + this.par.antMedia * media;
+                if (idx.some(i => conCristalloZ[i])) s += this.par.antMeccanica;
                 // debolezze condivise rispetto a ciò con cui colpiscono i loro
                 for (const tp of Object.keys(tipiLoro)) {
                     const deboli = idx.filter(i => debole(i, tp)).length;
@@ -879,6 +953,8 @@
                     else { m.protezioniDiFila = 0; m.ultimaProtezione = -9; }
                 }
                 if (a.gimmick === 'terastallize') this.teraUsata = true;
+                if (a.gimmick === 'dynamax') this.lati[this.lato].dinamaxUsato = true;
+                if (a.gimmick === 'zmove') this.lati[this.lato].zUsata = true;
             });
         }
 
@@ -893,25 +969,65 @@
             // mossa obbligata (carica, ricarica, blocco): una sola e senza scelta
             const usabili = mosse.map((m, j) => ({ m, j })).filter(x => !x.m.disabled && x.m.pp !== 0);
             if (!usabili.length) return [{ tipo: 'mossa', testo: 'move 1', slot, mossa: null, nome: 'forced' }];
-            // Mega e Teracristal sono varianti di ogni mossa: una sola Mega per turno, una sola Teracristal per partita
+            // Dynamax: finché dura, le mosse del Pokémon sono le sue mosse Max (la richiesta le elenca in maxMoves, nello stesso ordine
+            // delle mosse normali); se la richiesta ha maxMoves e canDynamax, il Dynamax non è ancora stato fatto
+            const maxMosse = req.maxMoves && Array.isArray(req.maxMoves.maxMoves) ? req.maxMoves.maxMoves : null;
+            const inDynamax = !!maxMosse && !req.canDynamax;
+            const zMosse = Array.isArray(req.canZMove) ? req.canZMove : null;
+            const conTarget = (j, t, suffisso) => `move ${j + 1}${t != null ? ' ' + t : ''}${suffisso || ''}`;
+
+            // Mega, Ultra Esplosione, Dynamax e Teracristal sono varianti di ogni mossa (una sola per turno, tranne la Teracristal che è
+            // una per partita); la Mossa Z è una mossa a parte. Il simulatore le offre solo se il formato le ammette e al Pokémon che le può
+            // fare; qui si rispetta anche ciò che il formato ha dichiarato (ammette)
             const gimmicks = [null];
-            if (req.canMegaEvo) gimmicks.push('mega');
-            if (req.canMegaEvoX) gimmicks.push('megax');
-            if (req.canMegaEvoY) gimmicks.push('megay');
-            if (req.canTerastallize && !this.teraUsata) gimmicks.push('terastallize');
+            if (req.canMegaEvo && this.ammette('mega')) gimmicks.push('mega');
+            if (req.canMegaEvoX && this.ammette('mega')) gimmicks.push('megax');
+            if (req.canMegaEvoY && this.ammette('mega')) gimmicks.push('megay');
+            if (req.canUltraBurst && this.ammette('mega')) gimmicks.push('ultra');
+            if (req.canDynamax && maxMosse && this.ammette('dynamax')) gimmicks.push('dynamax');
+            if (req.canTerastallize && !this.teraUsata && this.ammette('tera')) gimmicks.push('terastallize');
 
             for (const { m, j } of usabili) {
                 const d = this.mossa(m.id || m.move);
                 if (!d) { azioni.push({ tipo: 'mossa', testo: `move ${j + 1}`, slot, mossa: null, nome: m.move, mossaIdx: j + 1 }); continue; }
+                const voceMax = maxMosse ? maxMosse[j] : null;
+                // in Dynamax si gioca la mossa Max al posto di quella normale (la scelta resta "move N": è il simulatore a trasformarla)
+                if (inDynamax) {
+                    if (voceMax && voceMax.disabled) continue;
+                    const dm = this._mossaMax(d, voceMax && voceMax.move);
+                    for (const t of this._bersagli(voceMax ? voceMax.target : dm.target, slot, doppio, avv, mie)) {
+                        azioni.push({ tipo: 'mossa', slot, mossa: dm, nome: dm.nome, mossaIdx: j + 1, bersaglio: t, gimmick: null, testo: conTarget(j, t) });
+                    }
+                    continue;
+                }
                 const bersagli = this._bersagli(m.target, slot, doppio, avv, mie);
                 for (const g of gimmicks) {
                     if (g === 'terastallize' && d.categoria === 'Status' && !d.potenziamento) continue;
+                    if (g === 'dynamax') {
+                        // con una mossa di stato il Dynamax sarebbe solo un Max Guard: non vale la meccanica
+                        if (d.categoria === 'Status' || (voceMax && voceMax.disabled)) continue;
+                        const dm = this._mossaMax(d, voceMax && voceMax.move);
+                        // il bersaglio è quello della mossa Max (sempre un avversario), non quello della mossa normale
+                        for (const t of this._bersagli(voceMax ? voceMax.target : dm.target, slot, doppio, avv, mie)) {
+                            azioni.push({ tipo: 'mossa', slot, mossa: dm, nome: dm.nome, mossaIdx: j + 1, bersaglio: t, gimmick: 'dynamax', testo: conTarget(j, t, ' dynamax') });
+                        }
+                        continue;
+                    }
                     for (const t of bersagli) {
-                        const suff = g ? ` ${g}` : '';
                         azioni.push({
                             tipo: 'mossa', slot, mossa: d, nome: d.nome, mossaIdx: j + 1, bersaglio: t, gimmick: g,
-                            testo: `move ${j + 1}${t != null ? ' ' + t : ''}${suff}`
+                            testo: conTarget(j, t, g ? ` ${g}` : '')
                         });
+                    }
+                }
+                // la Mossa Z: una per partita, la offre solo a chi ha il Cristallo Z giusto (nell'array, una voce per ogni mossa)
+                const voceZ = zMosse && zMosse[j];
+                if (voceZ && this.ammette('z')) {
+                    const dz = this._mossaZ(d, voceZ);
+                    if (dz) {
+                        for (const t of this._bersagli(voceZ.target || dz.target, slot, doppio, avv, mie)) {
+                            azioni.push({ tipo: 'mossa', slot, mossa: dz, nome: dz.nome, mossaIdx: j + 1, bersaglio: t, gimmick: 'zmove', testo: conTarget(j, t, ' zmove') });
+                        }
                     }
                 }
             }
@@ -1062,7 +1178,7 @@
             const flinch = { mie: [false, false], avv: [false, false] };
             const aiuto = { mie: [false, false], avv: [false, false] };
             const deviatore = { mie: -1, avv: -1 };
-            let teraUsataQui = false;
+            let teraUsataQui = false, dinamaxQui = false, zQui = false;
             let bonus = 0;
 
             // 1) cambi e Teracristal/Mega: avvengono prima delle mosse
@@ -1083,6 +1199,7 @@
                     // trappole all'ingresso
                     const dannoTrappole = this._dannoTrappole(nuovo, campoMio, ctx);
                     nuovo.hp = Math.max(0, nuovo.hp - dannoTrappole);
+                    if (uscente && uscente.dinamax) bonus -= 0.4;     // chi esce perde i turni di Dynamax che gli restano
                     bonus -= doppio ? this.par.costoCambioDoppio : this.par.costoCambio;      // cambiare costa un turno
                     if (!doppio && uscente && uscente.hpMax) bonus -= this.par.costoCambioSano * Math.max(0, uscente.hp / uscente.hpMax - 0.4) / 0.6;   // ...di più se chi esce sta bene
                     if (this.cambiRecenti[x.slot] === this.turno - 1) bonus -= 0.25;   // evita i va e vieni
@@ -1096,6 +1213,18 @@
                     const v = mie[x.slot];
                     if (v) this._applicaMega(v);
                     bonus += 0.2;       // la Mega si fa appena si può: è un vantaggio che dura tutta la partita
+                } else if (a.gimmick === 'ultra') {
+                    const v = mie[x.slot];
+                    if (v) this._applicaForma(v, 'Necrozma-Ultra');
+                    bonus += 0.2;
+                } else if (a.gimmick === 'dynamax') {
+                    // HP doppi (la frazione resta la stessa) e mosse Max: l'azione scelta è già la mossa Max; due turni in più di vantaggio
+                    const v = mie[x.slot];
+                    if (v) { v.hp *= 2; v.hpMax *= 2; v.dinamax = true; }
+                    dinamaxQui = true;
+                    bonus += this.par.bonusDinamax;
+                } else if (a.gimmick === 'zmove') {
+                    zQui = true;
                 }
             }
 
@@ -1288,6 +1417,8 @@
             for (const v of avv) if (v && v.hp > 0) bonus -= this._valoreBoost(v);
 
             if (teraUsataQui) bonus -= 0.35;   // la Teracristal si usa una volta sola: va spesa quando conta
+            if (dinamaxQui) bonus -= this.par.spesaDinamax * this._fattoreSpesa(S);
+            if (zQui) bonus -= this.par.spesaMossaZ * this._fattoreSpesa(S);
 
             // 4) la posizione in cui si resta: chi minaccia chi e chi muove prima al turno dopo. È ciò che dice se conviene
             // restare in un brutto scontro o fare un cambio sicuro verso chi regge e risponde
@@ -1443,8 +1574,22 @@
         _applicaMega(v) {
             const it = v.strumento ? this.dex.items.get(v.strumento) : null;
             const mega = it && it.megaStone ? (typeof it.megaStone === 'string' ? it.megaStone : Object.values(it.megaStone)[0]) : null;
-            if (!mega) return;
-            const s = this.dex.species.get(mega);
+            if (mega) this._applicaForma(v, mega);
+        }
+
+        // La Mega Evoluzione esiste in Gen 6 e 7, se il formato la ammette
+        _megaPossibile() { return (this.gen === 6 || this.gen === 7) && this.ammette('mega'); }
+
+        // Quanto pesa spendere una meccanica che si fa una volta sola (Dynamax, Mossa Z): per intero finché ci sono molti Pokémon,
+        // sempre meno quando ne restano pochi (a fine partita si usa o si perde). Conta i miei Pokémon ancora in piedi.
+        _fattoreSpesa(S) {
+            const vivi = (S.squadra || []).filter(x => !x.esausto).length;
+            return vivi >= 4 ? 1 : vivi === 3 ? 0.8 : vivi === 2 ? 0.45 : 0.1;
+        }
+
+        // Cambia le statistiche, i tipi e l'abilità di `v` con quelli di un'altra forma (Mega Evoluzione, Ultra Esplosione)
+        _applicaForma(v, nomeSpecie) {
+            const s = this.dex.species.get(nomeSpecie);
             if (!s.exists) return;
             const prima = C.statStimate(v.basi, v.livello, this.gen);
             const dopo = C.statStimate({ hp: s.baseStats.hp, atk: s.baseStats.atk, def: s.baseStats.def, spa: s.baseStats.spa, spd: s.baseStats.spd, spe: s.baseStats.spe }, v.livello, this.gen);
@@ -1611,7 +1756,9 @@
                 const mosse = (a.moves || []).map((m, j) => ({ m, j })).filter(x => !x.m.disabled && x.m.pp !== 0);
                 if (!mosse.length) return 'move 1';
                 const scelta = mosse[(errori + slot) % mosse.length];
-                const t = scelta.m.target;
+                // in Dynamax il bersaglio è quello della mossa Max (un avversario, o nessuno per Max Guard), non della mossa di partenza
+                const maxM = a.maxMoves && !a.canDynamax && Array.isArray(a.maxMoves.maxMoves) ? a.maxMoves.maxMoves[scelta.j] : null;
+                const t = maxM && maxM.target ? maxM.target : scelta.m.target;
                 const doppio = richiesta.active.length > 1;
                 const bers = doppio && ['normal', 'any', 'adjacentFoe'].includes(t) ? ' 1' : (doppio && t === 'adjacentAlly' ? ` ${-(slot === 0 ? 2 : 1)}` : '');
                 return `move ${scelta.j + 1}${bers}`;
