@@ -190,14 +190,30 @@
     </div>
 
     <script>
-        // Se dopo qualche secondo la pagina non è partita, quasi sempre è stata
-        // aperta con doppio clic (file://) invece che da un server.
-        setTimeout(() => {
-            if (!window.battagliaPronta) {
-                document.getElementById('testo-palco').textContent =
-                    "The battle didn't start. Open this page from the site (or a local server like Live Server), not by double-clicking the file. Check the console for errors.";
-            }
-        }, 6000);
+        // Il motore di Showdown e il simulatore sono un download di diversi MB (il solo simulatore: 6,6 MB, circa 1 MB compresso):
+        // su una rete lenta, dal telefono, la pagina può metterci più di 6 secondi ad avviarsi, e poi parte da sola. Per questo un
+        // messaggio d'errore solo quando serve: subito se la pagina è aperta con doppio clic (file://: i moduli non partono), appena
+        // uno script o un modulo non si carica, o dopo un minuto. Prima, dopo 6 secondi, diceva "non è partita" anche a una pagina
+        // che stava solo caricando.
+        (function () {
+            const ERRORE = "The battle didn't start. Open this page from the site (or a local server like Live Server), not by double-clicking the file. Check the console for errors.";
+            // battagliaPronta la imposta battle-ui.js appena i moduli sono caricati: da lì in poi i messaggi sono suoi
+            const scrivi = testo => {
+                const el = document.getElementById('testo-palco');
+                if (el && !window.battagliaPronta) el.textContent = testo;
+            };
+            if (location.protocol === 'file:') return scrivi(ERRORE);
+            setTimeout(() => scrivi('Still loading… the simulator is a big download, it can take a while on a slow connection.'), 6000);
+            setTimeout(() => scrivi(ERRORE), 60000);
+            window.addEventListener('error', e => {
+                const t = e.target;
+                if (t && t.tagName === 'SCRIPT') {
+                    scrivi(`A script didn't load (${String(t.src || '').split('/').pop() || 'unknown'}). Check your connection or content blocker, then reload the page.`);
+                } else if (/module|import|export/i.test((e && e.message) || '')) {
+                    scrivi(`The battle didn't start: ${String(e.message).replace(/^Uncaught\s*/, '')}. Reload the page; if it keeps happening, clear the site's cache.`);
+                }
+            }, true);
+        })();
     </script>
     <!-- titolo, ELO e badge dei due allenatori, e i fiocchi dei loro Pokémon (scheda-battaglia.js): numeri pubblici di tutto il sito -->
     <script src="statistiche.js"></script>
