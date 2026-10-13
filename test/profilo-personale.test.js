@@ -19,7 +19,7 @@ const showdown = (p1, p2, categoria, risultati, info = {}) => ({
 });
 
 const stagioneChiusa = {
-    info: { name: 'Beta', status: 'closed' },
+    info: { name: 'Season 0', status: 'closed' },
     iscritti: { Didi: {}, Lu: {}, Gio: {} },
     showdowns: {
         a: showdown('Didi', 'Lu', 'OU', [[2, 0, { data: '2026-01-01' }], [2, 1, { data: '2026-01-02' }], [0, 2, { data: '2026-01-03' }]], { isCompleted: true }),
@@ -29,7 +29,7 @@ const stagioneChiusa = {
 };
 
 test('rivali: match, set e showdown contro ciascun avversario', () => {
-    const r = P.rivali('didi', { sbeta: stagioneChiusa });
+    const r = P.rivali('didi', { s0: stagioneChiusa });
     assert.deepEqual(r.map(x => x.id).sort(), ['gio', 'lu']);
 
     const lu = r.find(x => x.id === 'lu');
@@ -54,7 +54,7 @@ test('rivali: i più affrontati per primi, con il bilancio per formato e la data
                 x: showdown('Didi', 'Gio', 'VGC', [[2, 0, { data: '2026-03-01' }]], { isCompleted: false })
             }
         },
-        sbeta: stagioneChiusa
+        s0: stagioneChiusa
     };
     const r = P.rivali('Didi', stagioni);
     assert.deepEqual(r.map(x => x.id), ['gio', 'lu']);   // Gio: 3 + 1 match, Lu: 3
@@ -62,9 +62,45 @@ test('rivali: i più affrontati per primi, con il bilancio per formato e la data
     assert.deepEqual(gio.formati.OU, { matchV: 1, matchP: 2, sdV: 0, sdP: 1 });
     assert.deepEqual(gio.formati.VGC, { matchV: 1, matchP: 0, sdV: 0, sdP: 0 });
     assert.equal(gio.sdInCorso, 1);
-    assert.deepEqual(gio.stagioni, ['s1', 'sbeta']);
+    assert.deepEqual(gio.stagioni, ['s0', 's1']);
     assert.equal(gio.ultimo, Date.parse('2026-03-01'));
     assert.deepEqual(gio.forma, ['P', 'P', 'V', 'V']);
+});
+
+test('rivali: la stagione beta (sbeta) non conta: né match, né set, né showdown, né l\'avversario che si è incontrato solo lì', () => {
+    // Lu e Gio si affrontano in beta; in s1 Didi gioca solo contro Gio
+    const s1 = { info: { status: 'playing' }, showdowns: { x: showdown('Didi', 'Gio', 'VGC', [[2, 0, { data: '2026-03-01' }]], { isCompleted: true }) } };
+    const r = P.rivali('didi', { sbeta: stagioneChiusa, s1 });
+    assert.deepEqual(r.map(x => x.id), ['gio'], 'Lu c\'è solo in beta: non compare');
+    const gio = r[0];
+    assert.deepEqual([gio.matchV, gio.matchP], [1, 0], 'dei 3 match di beta contro Gio non resta traccia');
+    assert.deepEqual([gio.setV, gio.setP], [2, 0]);
+    assert.deepEqual([gio.sdV, gio.sdP, gio.sdInCorso], [1, 0, 0]);
+    assert.deepEqual(gio.stagioni, ['s1'], 'e la stagione beta non è tra quelle del filtro');
+    assert.deepEqual(Object.keys(gio.formati), ['VGC']);
+    assert.deepEqual(gio.forma, ['V']);
+    // solo la beta: nessun rivale (la pagina dice che non c'è ancora nessuno showdown)
+    assert.deepEqual(P.rivali('didi', { sbeta: stagioneChiusa }), []);
+    // l'id si riconosce anche con la maiuscola
+    assert.deepEqual(P.rivali('didi', { SBeta: stagioneChiusa }), []);
+    // il riepilogo (totali, nemesi, preda) parte da questo elenco: niente beta nemmeno lì
+    const rie = P.riepilogoRivali(P.rivali('didi', { sbeta: stagioneChiusa, s1 }));
+    assert.deepEqual([rie.totali.matchV, rie.totali.matchP, rie.totali.avversari], [1, 0, 1]);
+});
+
+test('rivali: la beta si può chiedere ({ beta: true }) e allora conta come ogni altra stagione', () => {
+    assert.equal(P.BETA, 'sbeta');
+    const r = P.rivali('didi', { sbeta: stagioneChiusa }, { beta: true });
+    assert.deepEqual(r.map(x => x.id).sort(), ['gio', 'lu']);
+    assert.deepEqual(r.find(x => x.id === 'lu').stagioni, ['sbeta']);
+    assert.deepEqual(P.rivali('didi', { sbeta: stagioneChiusa }, { beta: false }), []);
+});
+
+test('profile.html: i rivali si calcolano senza chiedere la beta (e il filtro per stagione non la offre)', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'profile.html'), 'utf8');
+    const chiamate = [...html.matchAll(/PP\.rivali\(([^;\n]*)\)/g)].map(m => m[1]);
+    assert.ok(chiamate.length >= 3, 'avversariVisibili, disegna e disegnaRivali');
+    for (const c of chiamate) assert.doesNotMatch(c, /beta/i, 'nessuna chiamata chiede la beta: ' + c);
 });
 
 test('rivali: la forma tiene solo gli ultimi cinque risultati, in ordine di data', () => {

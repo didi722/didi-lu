@@ -2,7 +2,7 @@
 // PROFILO PERSONALE — Poké-Tournament
 //
 // I due calcoli che stanno dietro a profile.html, senza nessun riferimento al DOM né a Firebase:
-//   - rivali():  il bilancio contro ogni avversario (match, set, showdown, ultimi risultati)
+//   - rivali():  il bilancio contro ogni avversario (match, set, showdown, ultimi risultati), senza la stagione beta
 //   - daFare():  cosa c'è da fare adesso (sfide in attesa, showdown in corso, showdown ancora da giocare
 //                contro ciascun avversario formato per formato, iscrizioni aperte)
 //
@@ -20,6 +20,9 @@
     else radice.ProfiloPersonale = fabbrica();
 })(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
+
+    // La stagione di prova: come nel resto del sito (statistiche.js, uso-globale.js) i suoi numeri non entrano nei conteggi
+    const BETA = 'sbeta';
 
     const MATCH_PER_SHOWDOWN = 3;
     const FORMA_MAX = 5;         // quanti risultati recenti mostrare su ogni rivale
@@ -116,14 +119,16 @@
         };
     }
 
-    // Bilancio di `io` contro ogni avversario con cui ha almeno uno showdown, in tutte le stagioni date.
+    // Bilancio di `io` contro ogni avversario con cui ha almeno uno showdown, in tutte le stagioni date TRANNE la beta (sbeta): sono i
+    // numeri veri, non quelli delle prove. Chi vuole anche la beta lo chiede con { beta: true }.
     // Ordinato: più match giocati per primi, poi per nome.
-    function rivali(io, stagioni) {
+    function rivali(io, stagioni, { beta = false } = {}) {
         io = idDi(io);
         const per = new Map();
         const risultatiRecenti = new Map();   // id → [{ t, vinto }]
 
         for (const [idStagione, S] of Object.entries(oggetti(stagioni))) {
+            if (!beta && idDi(idStagione) === BETA) continue;
             for (const sd of valori(oggetti(S).showdowns)) {
                 if (!sd || !sd.info) continue;
                 const [p1, p2] = giocatoriShowdown(sd);
@@ -341,7 +346,7 @@
     }
 
     return {
-        MATCH_PER_SHOWDOWN, FORMA_MAX, MIN_MATCH_RIVALE,
+        BETA, MATCH_PER_SHOWDOWN, FORMA_MAX, MIN_MATCH_RIVALE,
         idDi, percorsoAvatar, matchValido, completato, prossimoMatch, vincitoreMatch, vincitoreShowdown,
         stato, formatiStagione, nomiIscritti, tempoRimasto,
         rivali, riepilogoRivali, showdownRimasti, daFare
