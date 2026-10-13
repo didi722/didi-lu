@@ -1303,8 +1303,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
         const power = data.power || '--';
         const accuracy = data.accuracy ? data.accuracy + '%' : '--';
-        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
-        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+        const effect = DatiGen.effettoMossa(data);   // lo stesso testo dei fumetti delle altre pagine e della scheda del Pokémon nel Box
 
         tooltip.innerHTML = `
             <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">

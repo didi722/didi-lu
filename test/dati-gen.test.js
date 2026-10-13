@@ -338,3 +338,61 @@ test('matches.html e hub.html: il riepilogo del team legge PokeAPI con i dati de
         assert.doesNotMatch(testo, /\bfetch\(`https:\/\/pokeapi\.co\/api\/v2\/(pokemon|move)\//, `${pagina}: una lettura di PokeAPI non passa da DatiGen.fetchPokeApi`);
     }
 });
+
+// ---------- la descrizione di una mossa: una sola fonte per tutto il sito ----------
+const rispostaMossa = (shortEffect, extra = {}) => ({
+    name: 'thunderbolt',
+    effect_entries: [
+        { language: { name: 'de' }, short_effect: 'Auf Deutsch' },
+        { language: { name: 'en' }, short_effect: shortEffect, effect: 'La versione lunga' }
+    ],
+    flavor_text_entries: [{ language: { name: 'en' }, flavor_text: 'A strong electric blast\fcrashes down on the target.' }],
+    ...extra
+});
+
+test('effettoMossa: lo short_effect inglese, con la percentuale al posto di $effect_chance', () => {
+    assert.equal(G.effettoMossa(rispostaMossa('Has a $effect_chance% chance to paralyze the target.', { effect_chance: 10 })),
+        'Has a 10% chance to paralyze the target.');
+    // più di una volta nello stesso testo, e a capo o spazi doppi nel testo di PokeAPI
+    assert.equal(G.effettoMossa(rispostaMossa('Hits.  $effect_chance% to burn,\n$effect_chance% to flinch.', { effect_chance: 30 })),
+        'Hits. 30% to burn, 30% to flinch.');
+    // senza percentuale (effect_chance null) il testo resta com'è
+    assert.equal(G.effettoMossa(rispostaMossa('Inflicts regular damage.', { effect_chance: null })), 'Inflicts regular damage.');
+    // il testo "da Pokédex" (flavor) non è mai l'effetto
+    assert.doesNotMatch(G.effettoMossa(rispostaMossa('Inflicts regular damage.')), /strong electric blast/);
+});
+
+test('effettoMossa: se la mossa non ha un effetto inglese (o i dati mancano) dice che non c\'è, sempre con le stesse parole', () => {
+    assert.equal(G.SENZA_DESCRIZIONE, 'No description available.');
+    assert.equal(G.effettoMossa({ effect_entries: [{ language: { name: 'de' }, short_effect: 'Nur Deutsch' }] }), G.SENZA_DESCRIZIONE);
+    assert.equal(G.effettoMossa({ effect_entries: [] }), G.SENZA_DESCRIZIONE);
+    assert.equal(G.effettoMossa({ effect_entries: [{ language: { name: 'en' }, short_effect: '   ' }] }), G.SENZA_DESCRIZIONE);
+    assert.equal(G.effettoMossa({}), G.SENZA_DESCRIZIONE);
+    assert.equal(G.effettoMossa(null), G.SENZA_DESCRIZIONE);
+    assert.equal(G.effettoMossa(undefined), G.SENZA_DESCRIZIONE);
+});
+
+test('effettoMossa: resta lo stesso con i dati ritoccati per una generazione (rettificaMossaPokeApi cambia potenza e tipo, non il testo)', () => {
+    const originale = rispostaMossa('Has a $effect_chance% chance to paralyze the target.', { effect_chance: 10, power: 95 });
+    const gen4 = G.rettificaMossaPokeApi(originale, leggiDelta(4));
+    assert.equal(G.effettoMossa(gen4), G.effettoMossa(originale));
+});
+
+test('box.html, hub.html e matches.html: ogni descrizione di una mossa passa da DatiGen.effettoMossa (nessun testo "da Pokédex" di PokeAPI)', () => {
+    for (const pagina of ['box.html', 'hub.html', 'matches.html']) {
+        const testo = fs.readFileSync(path.join(DOCS, pagina), 'utf8');
+        assert.match(testo, /DatiGen\.effettoMossa\(data\)/, `${pagina}: il fumetto della mossa`);
+        assert.doesNotMatch(testo, /flavor_text/, `${pagina}: il flavor text di PokeAPI non si usa più`);
+        // il fumetto della mossa non ricava più il testo a mano (le abilità e gli strumenti, che hanno i loro, non c'entrano)
+        const inizio = testo.indexOf('async function caricaInfoMossa');
+        const fumetto = testo.slice(inizio, testo.indexOf('\n}\n', inizio));
+        assert.ok(inizio > -1 && fumetto.length > 200, `${pagina}: caricaInfoMossa`);
+        assert.doesNotMatch(fumetto, /short_effect|effect_entries|Descrizione non disponibile/, `${pagina}: il testo non si ricava più a mano`);
+    }
+    // la scheda del singolo Pokémon nel Box usa la stessa funzione, con una sola lettura per mossa
+    const box = fs.readFileSync(path.join(DOCS, 'box.html'), 'utf8');
+    assert.match(box, /descElement\.innerText = DatiGen\.effettoMossa\(data\);/);
+    const scheda = box.slice(box.indexOf('function apriPkmDettaglio'), box.indexOf('function preparaAperturaPkm'));
+    assert.equal((scheda.match(/api\/v2\/move\//g) || []).length, 0, 'la lettura delle mosse sta in aggiornaColoreMossa, non è doppia');
+    assert.match(scheda, /aggiornaColoreMossa\(m, `move-card-\$\{i\}`, i\)/);
+});

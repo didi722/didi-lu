@@ -1052,8 +1052,7 @@ async function caricaInfoMossa(nomeMossa, elementoId) {
 
         const power = data.power || '--';
         const accuracy = data.accuracy ? data.accuracy + '%' : '--';
-        let effect = data.effect_entries.find(e => e.language.name === 'en')?.short_effect || "Descrizione non disponibile.";
-        if (data.effect_chance) effect = effect.replace('$effect_chance', data.effect_chance);
+        const effect = DatiGen.effettoMossa(data);   // lo stesso testo dei fumetti delle altre pagine e della scheda del Pokémon nel Box
 
         tooltip.innerHTML = `
             <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.4);">
@@ -1635,22 +1634,9 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
             caricaTipi(pkmNameUrl, 'single-types', '');
         }).catch(() => {});
 
+    // colore, categoria, potenza, precisione e descrizione di ogni mossa: tutto da aggiornaColoreMossa, con una sola lettura per mossa
     mosseList.forEach((m, i) => {
-        if(m && m !== "-") {
-            const mName = m.toLowerCase().replace(/ /g, '-');
-            DatiGen.fetchPokeApi(`https://pokeapi.co/api/v2/move/${mName}`, deltaGenDettaglio)
-                .then(res => res.json())
-                .then(moveData => {
-                    const entry = moveData.flavor_text_entries.find(e => e.language.name === 'en');
-                    if (entry) {
-                        const el = document.getElementById(`sm-${i}`);
-                        if(el) el.innerText = entry.flavor_text.replace(/[\n\f]/g, ' ').trim();
-                    }
-                }).catch(() => {});
-            if (typeof aggiornaColoreMossa === 'function') {
-                aggiornaColoreMossa(m, `move-card-${i}`, i);
-            }
-        }
+        if (m && m !== "-") aggiornaColoreMossa(m, `move-card-${i}`, i);
     });
 
     caricaDebolezzeStatiche(pkmNameUrl, 'static-weaknesses');
@@ -1727,14 +1713,9 @@ async function aggiornaColoreMossa(nomeMossa, cardId, typeBadgeId) {
             catContainer.innerHTML = `<img src="${percorsoImmagine}" class="cat-icon-render" alt="${categoria}">`;
         }
 
-        // --- 4. DESCRIZIONE INGLESE ---
+        // --- 4. DESCRIZIONE: l'effetto della mossa, lo stesso testo dei fumetti (DatiGen.effettoMossa) ---
         const descElement = document.getElementById(`sm-${index}`);
-        if (descElement) {
-            let desc = data.flavor_text_entries.find(e => e.language.name === 'en');
-            if (desc) {
-                descElement.innerText = desc.flavor_text.replace(/[\n\f]/g, ' ');
-            }
-        }
+        if (descElement) descElement.innerText = DatiGen.effettoMossa(data);
 
     } catch (e) { 
         console.error("Error loading move:", nomeMossa, e); 

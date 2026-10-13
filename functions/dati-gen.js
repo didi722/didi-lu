@@ -219,6 +219,21 @@
     }
 
     /**
+     * L'effetto di una mossa in una riga, dalla risposta di PokeAPI /move/<nome>: lo "short_effect" inglese con la percentuale al posto di
+     * "$effect_chance" ("Has a 30% chance to paralyze the target."). È il testo di tutti i fumetti e le schede delle mosse (Box, Hub,
+     * Matches, la scheda del singolo Pokémon): una sola fonte, perché non possano più dire cose diverse (la scheda del Box mostrava il testo
+     * "da Pokédex" di PokeAPI, i fumetti l'effetto). Se la mossa non ne ha uno restituisce SENZA_DESCRIZIONE.
+     */
+    const SENZA_DESCRIZIONE = 'No description available.';
+    function effettoMossa(dati) {
+        const voci = (dati && Array.isArray(dati.effect_entries)) ? dati.effect_entries : [];
+        const inglese = voci.find(e => e && e.language && e.language.name === 'en');
+        let testo = String((inglese && inglese.short_effect) || '').replace(/\s+/g, ' ').trim();
+        if (testo && dati.effect_chance != null) testo = testo.replace(/\$effect_chance/g, dati.effect_chance);
+        return testo || SENZA_DESCRIZIONE;
+    }
+
+    /**
      * Come fetch() per gli indirizzi di PokeAPI /pokemon/<nome> e /move/<nome>: con un delta restituisce una risposta con i dati di quella
      * generazione (tipi, statistiche; tipo, categoria, potenza, precisione, PP, priorità). Qualsiasi altro indirizzo passa com'è.
      */
@@ -319,6 +334,6 @@
         GEN_ATTUALE, TUTTI_I_TIPI, url, carica, generazioneValida,
         specieDi, mossaDi, tipiSpecie, statSpecie, abilitaSpecie, moltiplicatore, tipiDellaGenerazione, tipiEsistenti,
         creaApplicatore, applicaAlPokedex, applicaAlleMosse, applicaAPokedexBase,
-        rettificaPokemonPokeApi, rettificaMossaPokeApi, fetchPokeApi, moltiplicatoriContro, rettificaDatiValidazione, controllaSet
+        rettificaPokemonPokeApi, rettificaMossaPokeApi, SENZA_DESCRIZIONE, effettoMossa, fetchPokeApi, moltiplicatoriContro, rettificaDatiValidazione, controllaSet
     };
 });
