@@ -1555,6 +1555,10 @@ async function eliminaShowdown(sdId) {
                 await aggiornaLeaderboard(stagione);
             }
 
+            if (typeof ricalcolaEloGiocatori === "function") {
+                await ricalcolaEloGiocatori([p1Id, p2Id].filter(Boolean));      // senza più match ufficiali: unranked (0)
+            }
+
             if (typeof ricalcolaStatisticheGlobali === "function") {
                 if (p1Id) await ricalcolaStatisticheGlobali(p1Id);
                 if (p2Id) await ricalcolaStatisticheGlobali(p2Id);
@@ -3232,6 +3236,7 @@ async function forzamentoRicalcoloGlobale() {
         
         const playerIds = Object.keys(tuttiIPlayers);
         console.log(`👥 Trovati ${playerIds.length} giocatori da aggiornare.`);
+        await ricalcolaEloGiocatori();      // l'Elo prima di tutto: senza match ufficiali, unranked (0)
 
         // 3. Eseguiamo il ricalcolo in sequenza per evitare di sovraccaricare le connessioni
         for (let i = 0; i < playerIds.length; i++) {
@@ -3367,6 +3372,10 @@ async function eliminaMatch(showdownId, matchNum) {
             // --- 4. SINCRONIZZAZIONE STATISTICHE ---
             if (typeof aggiornaLeaderboard === "function") {
                 await aggiornaLeaderboard(stagione);
+            }
+
+            if (typeof ricalcolaEloGiocatori === "function") {
+                await ricalcolaEloGiocatori([p1Id, p2Id].filter(Boolean));      // senza più match ufficiali: unranked (0)
             }
 
             if (typeof ricalcolaStatisticheGlobali === "function") {

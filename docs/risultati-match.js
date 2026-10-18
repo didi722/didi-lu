@@ -165,6 +165,7 @@ async function registraRisultatoMatch(r) {
     // Prima la classifica della stagione e le statistiche dei due giocatori: poi si decide se la stagione è finita, così il vincitore
     // si calcola su una classifica che comprende anche quest'ultimo match.
     await aggiornaLeaderboard(stagione);
+    await ricalcolaEloGiocatori([p1Id, p2Id]);        // l'Elo giusto subito (la beta non lo cambia), anche se il ricalcolo completo qui sotto va storto
     await ricalcolaStatisticheGlobali(p1Id);
     await ricalcolaStatisticheGlobali(p2Id);
 
@@ -491,6 +492,49 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
 }
 
 
+// =====================================================
+// ELO DEI GIOCATORI
+//
+// L'Elo di un allenatore viene SOLO dai match delle stagioni ufficiali (la beta "sbeta" non conta): 1000 + la somma dei delta dei suoi match.
+// Senza nessun match completo ufficiale non ha un Elo: 0 = "unranked" (il primo match parte da 1000, vedi registraRisultatoMatch).
+// Questa funzione ricalcola SOLO l'Elo (una lettura delle stagioni e una scrittura per giocatore), senza il resto delle statistiche:
+// si usa dopo aver cancellato una stagione, e a ogni match salvato, così un valore vecchio (la stagione di prova cancellata che lascia
+// 983 a uno e 1000 a un altro) non resta mai, anche se il ricalcolo completo di un giocatore va storto.
+//   idDaToccare: lista di id da aggiornare, oppure null per tutti i profili esistenti
+// Restituisce { id: elo } per i giocatori aggiornati.
+// =====================================================
+function eloDaiMatch(seasons, idGiocatore) {
+    const id = String(idGiocatore).toLowerCase().trim();
+    let match = 0, somma = 0;
+    for (const [sId, stagione] of Object.entries(seasons || {})) {
+        if (sId === 'sbeta') continue;
+        for (const sd of Object.values((stagione && stagione.showdowns) || {})) {
+            for (const m of Object.values((sd && sd.matches) || {})) {
+                if (!m || m.p1score == null || m.p2score == null) continue;      // match non completo
+                const p1 = String(m.player1Id || '').toLowerCase().trim(), p2 = String(m.player2Id || '').toLowerCase().trim();
+                if (p1 === id) { match++; somma += Number(m.p1DeltaElo || 0); }
+                else if (p2 === id) { match++; somma += Number(m.p2DeltaElo || 0); }
+            }
+        }
+    }
+    return match > 0 ? 1000 + somma : 0;
+}
+
+async function ricalcolaEloGiocatori(idDaToccare = null) {
+    const [snapStagioni, snapGiocatori] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
+    const stagioni = snapStagioni.val() || {};
+    const profili = Object.keys(snapGiocatori.val() || {});
+    const voluti = idDaToccare ? new Set(idDaToccare.map(x => String(x).toLowerCase().trim())) : null;
+    const out = {};
+    for (const chiave of profili) {
+        if (voluti && !voluti.has(chiave.toLowerCase().trim())) continue;
+        const elo = eloDaiMatch(stagioni, chiave);
+        await db.ref(`players/${chiave}/stats/individual-stats`).update({ ranking: elo });
+        out[chiave] = elo;
+    }
+    return out;
+}
+
 async function ricalcolaStatisticheGlobali(pId) {
     try {
         const seasonsSnap = await db.ref(`seasons`).once('value');
@@ -727,12 +771,14 @@ async function ricalcolaStatisticheGlobali(pId) {
         };
 
         // 4. CALCOLO RANKING E TOTALIZZAZIONE PUNTI ASSOLUTI
+        // Senza nessun match completo ufficiale l'allenatore non ha un Elo (0 = unranked); dal primo match parte da 1000
         let ranking = 1000;
         let totalPointsCalculated = 0;
         cronologiaMatchPiatta.forEach(m => {
             ranking += m.deltaElo;
             totalPointsCalculated += m.points; 
         });
+        if (cronologiaMatchPiatta.length === 0) ranking = 0;
 
         // 5. SALVATAGGIO E ANALISI TEAM
         const badgeGlobali = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati);
