@@ -19,7 +19,7 @@ import './team-cpu.js';          // self.TeamCpu
 
 const sessioni = new Map();       // firma del formato -> promessa della sessione di team-cpu.js (la parte lenta, già fatta)
 const recenti = new Map();        // firma -> le specie degli ultimi team incontrati: i prossimi non somigliano troppo
-const RECENTI_MAX = 4;
+const RECENTI_MAX = 12;           // la memoria della sessione: gli ultimi dodici team (team-cpu.js ne pesa di più i più recenti)
 let contatore = 0;                // "Team 1", "Team 2"...: il numero progressivo della pagina
 
 function hash(testo) {

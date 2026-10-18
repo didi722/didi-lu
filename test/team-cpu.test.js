@@ -733,3 +733,28 @@ test('Zapdos con Tailwind in Gen 8: la CPU e il Team Builder lo ammettono sia in
         assert.equal(ctx.risultati.soloGen9, false, `Team Builder (within=${within}): una mossa solo di Gen 9 non esiste in Gen 8`);
     }
 });
+
+// ---------- varietà tra i team di una sessione ----------
+test('un team alla volta: con la memoria della sessione i team cambiano davvero (poca sovrapposizione e non i soliti dieci Pokémon)', { timeout: 300000 }, async () => {
+    const sessione = await sessioneDi(reg());
+    const recenti = [], team = [];
+    for (let i = 0; i < 30; i++) {
+        const r = await T.nuovoTeam(sessione, { recenti, seme: `var${i}` });
+        assert.ok(r.team);
+        team.push(r.team.chiavi);
+        recenti.push(r.team.chiavi);
+        if (recenti.length > 12) recenti.shift();
+    }
+    const comuni = (a, b) => a.filter(k => b.includes(k)).length;
+    for (let i = 1; i < team.length; i++) {
+        assert.ok(comuni(team[i], team[i - 1]) <= 1, `team ${i + 1}: al massimo un Pokémon in comune con quello di prima`);
+        if (i >= 2) assert.ok(comuni(team[i], team[i - 2]) <= 2, `team ${i + 1}: al massimo due con quello prima ancora`);
+        if (i >= 3) assert.ok(comuni(team[i], team[i - 3]) <= 3, `team ${i + 1}: al massimo tre con gli altri recenti`);
+    }
+    const freq = {};
+    team.forEach(t => t.forEach(k => { freq[k] = (freq[k] || 0) + 1; }));
+    const specie = Object.keys(freq).length;
+    const top10 = Object.values(freq).sort((a, b) => b - a).slice(0, 10).reduce((s, n) => s + n, 0);
+    assert.ok(specie >= 45, `specie diverse in 30 team: ${specie}`);
+    assert.ok(top10 / (team.length * 6) < 0.36, `i dieci più usati occupano il ${(100 * top10 / (team.length * 6)).toFixed(0)}% degli slot`);
+});
