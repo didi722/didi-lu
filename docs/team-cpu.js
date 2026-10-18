@@ -772,7 +772,7 @@
     const radiceDi = m => m.origine || m;
     function copiaDi(c, numero) { return Object.assign(Object.create(Object.getPrototypeOf(c)), c, { origine: c, id: `${c.id}~${numero}` }); }
 
-    function compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo) {
+    function compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo, pesoUso = 0.25) {
         const membri = [asso];
         const usate = new Set([id(asso.base.baseSpecies || asso.base.name)]);
         let uber = ctx.standard && /^D?UBER$/i.test(String(asso.tier).replace(/[()]/g, '')) ? 1 : 0;
@@ -799,7 +799,7 @@
                 if (!impostaIlPiano(piano, c) || !libero(c)) continue;
                 if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25) - costoCopia(c);
+                let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c);
                 if (piano.nome === 'trickroom' && c.basi.spe <= 80) v += 0.6;
                 if (v > mv) { mv = v; scelto = c; }
             }
@@ -814,7 +814,7 @@
                 if (!sfruttaIlPiano(piano, c) || (SETTER[piano.nome] && impostaIlPiano(piano, c)) || !libero(c)) continue;
                 if (ctx.standard && eUberDi(c) && uber >= 2) continue;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
-                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * 0.25) - costoCopia(c);
+                const v = punteggio(dex, membri.concat(c), piano, ctx, tipi) + (rnd() - 0.5) * 1.1 - (uso >= massimo ? 3 + (uso - massimo) * 2 : uso * pesoUso) - costoCopia(c);
                 if (v > mv) { mv = v; scelto = c; }
             }
             if (!scelto) break;
@@ -829,7 +829,7 @@
                 let v = punteggio(dex, membri.concat(c), piano, ctx, tipi) - attuale;
                 const uso = usoGlobale.get(chiaveUso(c)) || 0;
                 if (uso >= massimo) v -= 3 + (uso - massimo) * 2;
-                else v -= uso * 0.25;
+                else v -= uso * pesoUso;
                 v -= costoCopia(c);
                 v += (rnd() - 0.5) * 1.1;
                 migliori.push({ c, v });
@@ -918,8 +918,8 @@
             const potenza = ctx.goose ? Math.max(s.baseStats.atk, s.baseStats.spa) / 10 : 0;
             return { v, valore: puntiTier(t) * 18 + (s.bst || 0) / 12 + potenza + rnd() * 4 };
         }).sort((a, b) => b.valore - a.valore);
-        const MAX_CAND = 130;
-        const NUM_FISSI = ctx.goose ? 85 : 100;
+        const MAX_CAND = 170;
+        const NUM_FISSI = ctx.goose ? 95 : 110;
         const fissi = ordinati.slice(0, Math.min(ordinati.length, NUM_FISSI));
         const resto = ordinati.slice(fissi.length);
         const extra = [];
@@ -1012,8 +1012,24 @@
     }
 
     // Un team solo, a caso, da una preparazione già fatta (preparaFormato). Piano e asso sono a caso; `recenti` sono i team già
-    // incontrati nella sessione (liste di `chiavi`): chi vi compare spesso pesa meno e un team con quattro Pokémon uguali a uno
-    // di quelli non si fa. Restituisce il team (con `chiavi`, da passare poi tra i `recenti`) o null.
+    // incontrati nella sessione (liste di `chiavi`, dal più vecchio al più nuovo). Per non vedere sempre gli stessi Pokémon:
+    //   - regole dure sui più recenti: con il team di prima al massimo UN Pokémon in comune, con quello ancora prima al massimo due,
+    //     con gli altri al massimo tre;
+    //   - memoria lunga: ogni Pokémon pesa tanto quanto è comparso di recente e spesso (i più recenti contano di più, ma anche quelli
+    //     di dieci team fa lasciano una traccia), così a lungo andare escono tutti e non i soliti dieci;
+    //   - ogni volta una parte dei candidati (circa un terzo) resta "in panchina", a caso: il team non si costruisce sempre intorno
+    //     agli stessi pezzi migliori.
+    // Restituisce il team (con `chiavi`, da passare poi tra i `recenti`) o null.
+    const PESI_RECENTI = [4, 3, 2.4, 1.8, 1.4, 1.1, .9, .7, .6, .5, .4, .3];       // dal team più recente al più vecchio
+    const PESO_USO_CPU = 0.8;                                                      // quanto costa un Pokémon già visto (compone: uso × peso)
+    const MASSIMO_COMUNI = [1, 2, 3];                                              // con il team di prima, con quello prima ancora, con gli altri
+    function troppoSimile(chiavi, recenti) {
+        for (let i = 0; i < recenti.length; i++) {
+            const eta = recenti.length - 1 - i;                                    // 0 = il team di prima
+            if (sovrapposizione(recenti[i], chiavi) > MASSIMO_COMUNI[Math.min(eta, MASSIMO_COMUNI.length - 1)]) return true;
+        }
+        return false;
+    }
     function unTeam(prep, rnd, { recenti = [] } = {}) {
         const { dex, ctx, cand, tipi, piani, assi } = prep;
         const massimo = 2;
@@ -1021,16 +1037,22 @@
         // esserci, e allora ci si accontenta: meglio un team un po' simile che nessun team.
         for (const evita of recenti.length ? [recenti, []] : [[]]) {
             const usoGlobale = new Map();
-            for (const chiavi of evita) for (const k of chiavi) usoGlobale.set(k, (usoGlobale.get(k) || 0) + 1);
-            for (let tentativo = 0; tentativo < (evita.length ? 10 : 6); tentativo++) {
+            evita.forEach((chiavi, i) => {
+                const peso = PESI_RECENTI[Math.min(PESI_RECENTI.length - 1, evita.length - 1 - i)];
+                for (const k of chiavi) usoGlobale.set(k, (usoGlobale.get(k) || 0) + peso);
+            });
+            for (let tentativo = 0; tentativo < (evita.length ? 14 : 6); tentativo++) {
                 const piano = pianoDi(piani[Math.floor(rnd() * piani.length)]);
-                const poolAssi = assi.filter(c => (usoGlobale.get(chiaveUso(c)) || 0) < massimo).slice(0, 24);
-                if (!poolAssi.length) break;
-                const asso = poolAssi[Math.floor(rnd() * Math.min(poolAssi.length, 8 + Math.floor(rnd() * 12)))] || poolAssi[0];
-                const membri = compone(dex, cand, ctx, piano, rnd, usoGlobale, asso, tipi, massimo);
+                // la panchina: circa un terzo dei candidati non gioca in questo team (mai se così ne restano troppo pochi)
+                const inCampo = cand.filter(() => rnd() > 0.33);
+                const scelta = inCampo.length >= 40 ? inCampo : cand;
+                const poolAssi = assi.filter(c => scelta.includes(c) && (usoGlobale.get(chiaveUso(c)) || 0) < massimo).slice(0, 36);
+                if (!poolAssi.length) continue;
+                const asso = poolAssi[Math.floor(rnd() * Math.min(poolAssi.length, 8 + Math.floor(rnd() * 20)))] || poolAssi[0];
+                const membri = compone(dex, scelta, ctx, piano, rnd, usoGlobale, asso, tipi, massimo, PESO_USO_CPU);
                 if (membri.length < 6) continue;
                 const chiavi = Array.from(new Set(membri.map(chiaveUso)));
-                if (evita.some(f => sovrapposizione(f, chiavi) >= 4)) continue;
+                if (evita.length && troppoSimile(chiavi, evita)) continue;
                 const fatto = costruisciTeam(prep, rnd, membri, piano, asso);
                 if (fatto) return Object.assign(fatto, { chiavi });
             }
