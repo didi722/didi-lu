@@ -357,3 +357,55 @@ test('le due copie di risultati-match.js sono identiche; il server, l\'amministr
     assert.doesNotMatch(matches + leggi('docs/hub.html') + leggi('docs/index.html'), /info\.total_days|stagioneInfo\.total_days/);
     assert.doesNotMatch(leggi('docs/index.html'), /status = ["']closed["']/, 'la home non dichiara "closed" contando gli showdown');
 });
+
+// ---------- Elo ----------
+test('Elo: cancellando le stagioni di prova nessuno ha più un Elo (unranked, 0), anche chi era rimasto a 983; la beta non lo cambia', async () => {
+    // dopo le prove: Didi 1017, Lukiani 983 (restati nel profilo anche dopo aver cancellato la stagione di prova)
+    const db = creaDb({ seasons: { sbeta: { ...stagione(), showdowns: { sdb: { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: { ...matchDatiElo('didi', 'lukiani', 2, 1, 17, -17) } } } } } },
+        players: { didi: { stats: { 'individual-stats': { ranking: 1017 } } }, lukiani: { stats: { 'individual-stats': { ranking: 983 } } }, ada: {} } });
+    const sito = caricaSito(db);
+    const out = await sito.ricalcolaEloGiocatori();
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 0);
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 0, 'la beta non fa stat');
+    assert.equal(out.ada, 0);
+});
+
+function matchDatiElo(a, b, s1, s2, d1, d2) {
+    return { player1Id: a, player2Id: b, p1score: s1, p2score: s2, winnerId: s1 > s2 ? a : b, p1DeltaElo: d1, p2DeltaElo: d2 };
+}
+
+test('Elo: con una stagione ufficiale rimasta vale 1000 + la somma dei delta dei suoi match; chi non ha giocato resta a 0', async () => {
+    const sd = { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: matchDatiElo('didi', 'lukiani', 2, 1, 16, -16), match2: matchDatiElo('lukiani', 'didi', 2, 0, 15, -15), match3: { player1Id: 'didi', player2Id: 'lukiani' } } };
+    const db = creaDb({ seasons: { s1: { ...stagione(), showdowns: { sd1: sd } } }, players: { didi: {}, lukiani: {}, ada: { stats: { 'individual-stats': { ranking: 1000 } } } } });
+    const sito = caricaSito(db);
+    await sito.ricalcolaEloGiocatori(['Didi', 'ada']);                 // solo chi si chiede, maiuscole comprese
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1000 + 16 - 15);
+    assert.equal(db.leggi('players/ada/stats/individual-stats/ranking'), 0);
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), null, 'non toccato');
+    await sito.ricalcolaEloGiocatori();
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 1000 - 16 + 15, 'il match 3 senza punteggio non conta');
+});
+
+test('Elo: un match salvato nella beta non dà un Elo; in una stagione ufficiale il primo match parte da 1000', async () => {
+    const db = dbStagione(stagione({ stato: 'playing' }), {});
+    await db.ref('players/lukiani').set({ stats: {} });
+    await db.ref('seasons/sbeta').set(stagione());
+    const sito = caricaSito(db);
+    await sito.registraRisultatoMatch({ ...matchDatiRegistra(), stagione: 'sbeta', showdownId: 'sdb' });
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 0, 'dopo un match di beta Didi è ancora unranked');
+    await sito.registraRisultatoMatch(matchDatiRegistra());
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1016, 'primo match ufficiale 2-1 contro uno da 1000: +16');
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 984);
+});
+function matchDatiRegistra() {
+    return { stagione: 'st1', showdownId: 'sd1', matchNum: 1, player1: 'Didi', player2: 'Lukiani', team1: 'A', team2: 'B', score: '2-1', data: '10/10/2026', categoria: 'OU', replays: {} };
+}
+
+test('Elo: l\'amministrazione e i match cancellati lo rifanno', () => {
+    const admin = leggi('docs/admin.html');
+    assert.match(admin, /await ricalcolaEloGiocatori\(\);\s*for \(let i = 0; i < giocatori\.length; i\+\+\)/, 'cancellando una stagione: Elo di tutti, prima del resto');
+    assert.match(admin, /onclick="ricalcolaEloAdmin\(\)"/);
+    const m = leggi('docs/matches.html');
+    assert.equal((m.match(/await ricalcolaEloGiocatori\(\[p1Id, p2Id\]\.filter\(Boolean\)\)/g) || []).length, 2, 'cancellando uno showdown o un match');
+    assert.match(m, /await ricalcolaEloGiocatori\(\);\s*\/\/ l'Elo prima di tutto/);
+});

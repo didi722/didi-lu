@@ -23,6 +23,7 @@
             <h1>⚙️ Admin Panel</h1>
             <div class="header-buttons">
                 <button class="btn-add-season" onclick="apriModaleCreazione()">+ New Season</button>
+                <button class="btn-cancel" title="Recalculate everyone's Elo from the official matches (no official match: unranked, 0)" onclick="ricalcolaEloAdmin()">↻ Recalculate Elo</button>
                 <button class="btn-cancel" onclick="window.location.href='index.html'">Home</button>
             </div>
         </div>
@@ -346,6 +347,18 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
     } catch (e) {
         console.error("Error during status change:", e);
         alert("Unable to update the status.");
+    }
+}
+
+// Rifà l'Elo di tutti dai match ufficiali rimasti (senza match ufficiali: unranked, 0). Serve se un valore vecchio è rimasto.
+async function ricalcolaEloAdmin() {
+    if (!confirm("Recalculate the Elo of ALL trainers from the official matches?\n\nTrainers without an official match go back to unranked (0).")) return;
+    try {
+        const risultato = await ricalcolaEloGiocatori();
+        alert("Elo recalculated:\n" + Object.entries(risultato).map(([id, elo]) => `${id}: ${elo || 'unranked'}`).join('\n'));
+    } catch (e) {
+        console.error("Error recalculating Elo:", e);
+        alert("Unable to recalculate the Elo.");
     }
 }
 
@@ -717,6 +730,10 @@ async function eliminaStagioneCorrente(idDaEliminare) {
         // ricalcolaStatisticheGlobali ricostruisce da zero ELO (1000 + somma dei delta),
         // vittorie/sconfitte, showdown, statistiche dei team, badge e uso dei tipi
         // sommando solo le stagioni rimaste: quella appena cancellata non conta più.
+        // L'Elo si rifà per TUTTI i profili e per primo (senza match ufficiali: unranked, 0): così non resta nessun valore vecchio, anche se
+        // il ricalcolo completo di qualcuno va storto qui sotto.
+        mostraProgressoEliminazione("Resetting Elo...");
+        await ricalcolaEloGiocatori();
         for (let i = 0; i < giocatori.length; i++) {
             mostraProgressoEliminazione(`Recalculating statistics (${i + 1}/${giocatori.length}): ${giocatori[i]}...`);
             await ricalcolaStatisticheGlobali(giocatori[i]);
