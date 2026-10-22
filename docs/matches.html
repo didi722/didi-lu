@@ -3160,14 +3160,7 @@ async function aggiornaGraficaShowdown() {
 let vincitoriSelezionati = {};
 
 // --- 1. SALVATAGGIO NUOVO MATCH ---
-// Funzione di supporto matematica per il calcolo Elo
-function calcolaVariazioneElo(ratingA, ratingB, vittoriaA) {
-    const K = 32; // Fattore di impatto (standard)
-    // Calcolo probabilità di vittoria per il Player A
-    const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-    // Calcolo variazione basata sul risultato (1 = vittoria, 0 = sconfitta)
-    return Math.round(K * ((vittoriaA ? 1 : 0) - expectedA));
-}
+// L'Elo non si calcola qui: lo rifà registraRisultatoMatch() (risultati-match.js), in ordine cronologico
 
 // Sostituisce INTERAMENTE la vecchia salvaMatchFirebase() in matches.html.
 // Legge il modulo, prepara i dati e passa tutto a registraRisultatoMatch()

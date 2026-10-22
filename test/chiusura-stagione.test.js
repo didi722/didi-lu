@@ -374,16 +374,18 @@ function matchDatiElo(a, b, s1, s2, d1, d2) {
     return { player1Id: a, player2Id: b, p1score: s1, p2score: s2, winnerId: s1 > s2 ? a : b, p1DeltaElo: d1, p2DeltaElo: d2 };
 }
 
-test('Elo: con una stagione ufficiale rimasta vale 1000 + la somma dei delta dei suoi match; chi non ha giocato resta a 0', async () => {
-    const sd = { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: matchDatiElo('didi', 'lukiani', 2, 1, 16, -16), match2: matchDatiElo('lukiani', 'didi', 2, 0, 15, -15), match3: { player1Id: 'didi', player2Id: 'lukiani' } } };
+test('Elo: con una stagione ufficiale rimasta si ricalcola in ordine cronologico per tutti; chi non ha giocato resta a 0', async () => {
+    const sd = { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: matchDatiElo('didi', 'lukiani', 2, 1, 99, -99), match2: matchDatiElo('lukiani', 'didi', 2, 0, 99, -99), match3: { player1Id: 'didi', player2Id: 'lukiani' } } };
     const db = creaDb({ seasons: { s1: { ...stagione(), showdowns: { sd1: sd } } }, players: { didi: {}, lukiani: {}, ada: { stats: { 'individual-stats': { ranking: 1000 } } } } });
     const sito = caricaSito(db);
-    await sito.ricalcolaEloGiocatori(['Didi', 'ada']);                 // solo chi si chiede, maiuscole comprese
-    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1000 + 16 - 15);
+    const out = await sito.ricalcolaEloGiocatori(['Didi']);            // l'elenco è ignorato: un match sposta anche gli avversari
+    // match 1: 2-1 tra due da 1000, K 48 e margine 0,8: +-19. match 2: 2-0 per Lukiani (981) su Didi (1019): atteso 0,4455, K 48: +-27
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1000 + 19 - 27);
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 1000 - 19 + 27, 'il match 3 senza punteggio non conta');
     assert.equal(db.leggi('players/ada/stats/individual-stats/ranking'), 0);
-    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), null, 'non toccato');
-    await sito.ricalcolaEloGiocatori();
-    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 1000 - 16 + 15, 'il match 3 senza punteggio non conta');
+    assert.deepEqual(JSON.parse(JSON.stringify(out)), { didi: 992, lukiani: 1008, ada: 0 });
+    const m1 = db.leggi('seasons/s1/showdowns/sd1/matches/match1');
+    assert.deepEqual([m1.p1EloAtMatch, m1.p2EloAtMatch, m1.p1DeltaElo, m1.p2DeltaElo], [1000, 1000, 19, -19], 'i delta vecchi (99) sono rifatti e scritti nel match');
 });
 
 test('Elo: un match salvato nella beta non dà un Elo; in una stagione ufficiale il primo match parte da 1000', async () => {
@@ -394,8 +396,8 @@ test('Elo: un match salvato nella beta non dà un Elo; in una stagione ufficiale
     await sito.registraRisultatoMatch({ ...matchDatiRegistra(), stagione: 'sbeta', showdownId: 'sdb' });
     assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 0, 'dopo un match di beta Didi è ancora unranked');
     await sito.registraRisultatoMatch(matchDatiRegistra());
-    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1016, 'primo match ufficiale 2-1 contro uno da 1000: +16');
-    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 984);
+    assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1019, 'primo match ufficiale 2-1 contro uno da 1000: K 48 x margine 0,8 x 0,5 = +19');
+    assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 981);
 });
 function matchDatiRegistra() {
     return { stagione: 'st1', showdownId: 'sd1', matchNum: 1, player1: 'Didi', player2: 'Lukiani', team1: 'A', team2: 'B', score: '2-1', data: '10/10/2026', categoria: 'OU', replays: {} };
