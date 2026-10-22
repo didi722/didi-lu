@@ -13,6 +13,10 @@ import './esito-set.js';         // self.EsitoSet: i pareggi non esistono (stess
 
 const baseDi = specie => Dex.species.get(specie).baseSpecies;
 
+// Alcune regole di Showdown (PotD, in tutti i formati Random) leggono `global.Config`: in Node c'è, nel browser `global` non esiste
+// e la battaglia non partirebbe ("global is not defined")
+if (typeof globalThis.global === 'undefined') globalThis.global = globalThis;
+
 
 // -----------------------------------------------------
 // 1. BATTAGLIA LOCALE

@@ -261,6 +261,10 @@
 #sd-modal-overlay .sd-team:hover,
 #sd-modal-overlay .sd-team:focus-visible { translate: -2px -3px; rotate: calc(var(--nb-rot, 1) * .6deg); box-shadow: 7px 8px 0 var(--nb-ink, #000); outline: none; }
 #sd-modal-overlay .sd-team:active { translate: 2px 2px; rotate: 0deg; box-shadow: 1px 1px 0 var(--nb-ink, #000); }
+/* match senza team (Random): solo l'etichetta, niente da aprire */
+#sd-modal-overlay .sd-senza-team { cursor: default; }
+#sd-modal-overlay .sd-senza-team:hover { translate: 0 0; rotate: 0deg; box-shadow: 4px 4px 0 var(--nb-ink, #000); }
+#sd-modal-overlay .sd-senza-team.sd-vincitore:hover { translate: 0 -3px; box-shadow: 6px 7px 0 var(--nb-ink, #000); }
 #sd-modal-overlay .sd-team:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 4px; }
 /* chi ha perso si spegne un po'; chi ha vinto si alza e porta l'adesivo */
 #sd-modal-overlay .sd-perde { filter: saturate(.6) brightness(.96); }

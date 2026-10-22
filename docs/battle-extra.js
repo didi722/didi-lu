@@ -28,6 +28,7 @@ const S = {
     installato: false,
     ritardoMosse: 350,          // ms prima che compaia il tooltip di una mossa
     openSheet: false,
+    senzaAnteprima: false,      // formato Random: niente anteprima squadre, dei Pokémon avversari si conosce solo chi è sceso in campo
     latiNoti: [],               // lati di cui si vedono sempre i set (il proprio; in locale entrambi)
     candidati: { p1: [], p2: [] }, // team registrati: [{ nome, set: [...] }]
     squadre: { p1: [], p2: [] },// set del team in uso, alla Showdown: { name, species, item, ability, nature, evs, ivs, level, moves }
@@ -52,6 +53,8 @@ const NOME_STAT = { hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', sp
 /**
  * Da chiamare quando si sa qualcosa di nuovo sulla partita (si può richiamare).
  *  openSheet: seasons/{id}/info/open_sheet
+ *  senzaAnteprima: true nei formati Random (niente anteprima squadre): del team che non si conosce si vedono 6 caselle con
+ *             il punto interrogativo, che si riempiono man mano che i Pokémon scendono in campo
  *  latiNoti:  ['p1'] per chi gioca P1, [] per chi guarda, ['p1', 'p2'] in locale
  *  p1/p2:     { nome, avatar, candidati: [{ nome, set }] }
  *             avatar = indirizzo di un'immagine (anche relativo) oppure il nome
@@ -60,8 +63,9 @@ const NOME_STAT = { hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', sp
  *             candidati = i team registrati; quello in uso si riconosce dal team
  *             preview. Per un lato che non si può vedere basta { species } nei set.
  */
-export function impostaPartita({ openSheet, latiNoti, p1, p2 } = {}) {
+export function impostaPartita({ openSheet, senzaAnteprima, latiNoti, p1, p2 } = {}) {
     if (openSheet !== undefined) S.openSheet = !!openSheet;
+    if (senzaAnteprima !== undefined) S.senzaAnteprima = !!senzaAnteprima;
     if (latiNoti !== undefined) S.latiNoti = latiNoti || [];
     for (const [lato, dati] of [['p1', p1], ['p2', p2]]) {
         if (!dati) continue;
@@ -816,7 +820,12 @@ function elencoLato(lato) {
     const squadra = S.squadre[lato];
     if (squadra?.length) return squadra.map(s => ({ specie: s.species, nome: s.name || s.species, set: s }));
     const side = S.battle?.[lato];
-    return (side?.pokemon || []).map(p => ({ specie: p.speciesForme, nome: p.name, set: null }));
+    const elenco = (side?.pokemon || []).map(p => ({ specie: p.speciesForme, nome: p.name, set: null }));
+    if (S.senzaAnteprima && side) {
+        // niente anteprima: si conosce solo chi è già sceso in campo, gli altri sono caselle col punto interrogativo
+        while (elenco.length < (side.totalPokemon || 6)) elenco.push({ specie: '', nome: 'Unknown Pokémon', set: null, ignoto: true });
+    }
+    return elenco;
 }
 
 function disegnaLati() {
@@ -829,6 +838,7 @@ function disegnaLati() {
         const firma = JSON.stringify([nome, S.info[lato].team, elenco.map(x => x.nome), S.openSheet, S.latiNoti, sc && [sc.id, sc.elo, sc.posizione, sc.titolo, sc.medaglie.length]]);
         if (box.dataset.firma === firma) continue;
         box.dataset.firma = firma;
+        box.dataset.elenco = elenco.map(x => `${x.specie}|${x.nome}`).join(',');
 
         const conTooltip = puoVedereSet(lato);
         risolviSquadre();
@@ -843,9 +853,9 @@ function disegnaLati() {
             ${SB && sc ? SB.htmlScheda(sc) : ''}
             ${badgeTeam}
             <ol class="lato-pkm">${elenco.map((x, i) => `
-                <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
+                <li class="membro${conTooltip && setCompleto(x.set) ? ' con-tooltip' : ''}${x.ignoto ? ' ignoto' : ''}" data-indice="${i}" data-specie="${esc(x.specie)}"
                     ${conTooltip && setCompleto(x.set) ? 'tabindex="0"' : ''} aria-label="${esc(x.nome)}">
-                    <img src="${esc(sprite(x.specie))}" data-slug="${esc(slugSprite(x.specie))}" alt="" loading="lazy" width="64" height="64">
+                    <img src="${esc(x.ignoto ? POKEBALL : sprite(x.specie))}" data-slug="${esc(x.ignoto ? '' : slugSprite(x.specie))}" data-fase="${x.ignoto ? 2 : 0}" alt="" loading="lazy" width="64" height="64">
                     <span class="membro-hp" aria-hidden="true"><span></span></span>
                     ${SB && sc ? SB.htmlFiocchiPokemon(S.schede.risultato, sc, nomeTeam, nomiTeam, i) : ''}
                 </li>`).join('')}
@@ -989,6 +999,8 @@ function aggiornaLati() {
         if (!box || !side) continue;
         // Nessun set passato: appena Showdown riceve il team preview disegno i 6
         if (!box.querySelector('.membro') && side.pokemon?.length) { box.dataset.firma = ''; disegnaLati(); return; }
+        // Formato Random: un Pokémon avversario appena sceso in campo prende il posto di una casella con il punto interrogativo
+        if (S.senzaAnteprima && box.dataset.elenco !== elencoLato(lato).map(x => `${x.specie}|${x.nome}`).join(',')) { box.dataset.firma = ''; disegnaLati(); return; }
         for (const p of side.active) if (p) visti.add(p);
         const elenco = elencoLato(lato);
         const abbinati = abbinaLato(lato, elenco);

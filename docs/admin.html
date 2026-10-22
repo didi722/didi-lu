@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="risultati-match.js"></script>
+    <script src="formato-random.js"></script>
 </head>
 <body class="admin-page">
 
@@ -385,8 +386,9 @@ async function popolaFormatiDaRegolamenti() {
             select.innerHTML = '<option value="">Choose formats...</option>';
             Object.keys(regs).forEach(idReg => {
                 const nomeCat = regs[idReg].categoria;
+                // un formato Random può essere una categoria di stagione: nessun team da iscrivere, Showdown ne dà uno nuovo a ogni set
                 if (nomeCat) {
-                    select.innerHTML += `<option value="${nomeCat}">${nomeCat}</option>`;
+                    select.innerHTML += `<option value="${nomeCat}">${nomeCat}${FormatoRandom.eRandom(regs[idReg]) ? ' (Random)' : ''}</option>`;
                 }
             });
         }

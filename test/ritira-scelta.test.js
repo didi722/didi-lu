@@ -120,7 +120,7 @@ test('functions: annullaScelta è un servizio del server e una funzione richiama
     assert.match(f[1], /if \(chiavePasso\(stato\) !== passo\) throw new ErroreUtente\('Questa richiesta è scaduta/, 'solo per il passo in corso');
     assert.match(f[1], /ritiraScelta\(db, id, lato, passo\)/);
     assert.match(f[1], /esito === 'tardi'\) throw new ErroreUtente\("Troppo tardi/);
-    assert.match(partita, /return \{ apriPartita, pronto, inviaScelta, annullaScelta, salvaPartita \};/);
+    assert.match(partita, /return \{ apriPartita, pronto, inviaScelta, annullaScelta, salvaPartita, /);
     const indice = fs.readFileSync(path.join(__dirname, '..', 'functions', 'index.js'), 'utf8');
     assert.match(indice, /exports\.annullaScelta = richiamabile\('annullaScelta'\);/);
 });

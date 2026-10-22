@@ -83,6 +83,11 @@ exports.prontoPartita = richiamabile('pronto');
 exports.inviaScelta = richiamabile('inviaScelta', { minInstances: 0 });
 exports.annullaScelta = richiamabile('annullaScelta');   // ritirare la propria scelta finché l'avversario non ha scelto
 
+// Partite amichevoli: sfidare un altro giocatore fuori dalle stagioni (niente punti, niente statistiche, niente replay).
+// La partita vera usa le stesse funzioni di quelle ufficiali (apriPartita con { amichevole }, prontoPartita, inviaScelta...).
+exports.sfidaAmichevole = richiamabile('sfidaAmichevole');
+exports.rispondiAmichevole = richiamabile('rispondiAmichevole');
+
 // Quando l'ultimo set finisce, il match si salva da solo
 exports.salvaPartitaConclusa = onValueWritten(
     { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '512MiB', timeoutSeconds: 300 },

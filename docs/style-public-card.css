@@ -1104,6 +1104,8 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     animation: pp-saluta 3.2s ease-in-out 1.2s 2;
 }
 
+/* "Friendly match" per i visitatori: stesso tasto, verde, e senza il saluto animato */
+.pp-amichevole-btn { background: #47ea6a; animation: none; transform: rotate(-1.5deg); }
 .pp-modifica-btn:hover { transform: rotate(0deg) translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
 .pp-modifica-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 .pp-modifica-icona { font-size: 1.1rem; line-height: 1; }

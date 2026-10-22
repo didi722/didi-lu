@@ -35,6 +35,7 @@
 <script src="dati-gen.js"></script>
 <script src="sprite-pkm.js"></script>
 <script src="controllo-team.js"></script>
+<script src="formato-random.js"></script>
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -3172,6 +3173,7 @@ function sincronizzaCategorie() {
 
         if (data) {
             Object.keys(data).forEach(key => {
+                if (FormatoRandom.eRandom(data[key])) return;      // un formato Random non ha team: niente da filtrare
                 const nomeCat = data[key].categoria;
                 filterHtml += `<option value="${nomeCat}">${nomeCat}</option>`;
             });
@@ -3298,6 +3300,7 @@ async function popolaSelettoreFormati() {
         snapshot.forEach((childSnapshot) => {
             const id = childSnapshot.key;
             const data = childSnapshot.val();
+            if (FormatoRandom.eRandom(data)) return;      // i team del formato Random li dà Showdown: niente da costruire
             const nomeVisualizzato = data.categoria || id;
 
             const option = document.createElement('option');

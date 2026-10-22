@@ -786,23 +786,29 @@ async function renderHub(data, nomeUtenteClean, myRenderID) {
         formats.forEach((format, idx) => {
             const iscrizione = teamsIscritti[format] ? teamsIscritti[format][nomeUtenteClean] : null;
             const count = iscrizione ? (iscrizione.count || 0) : 0;
-            const isOverLimit = !isNoLimit && count > maxTeamsPerFormat;
-            const isFull = isNoLimit ? (count > 0) : (count >= maxTeamsPerFormat);
+            const datiFormato = mappaRegolamenti[String(format).toLowerCase().trim()] || null;
+            // un formato Random non ha team da iscrivere: Showdown ne dà uno nuovo a ognuno a ogni set
+            const eRandom = !!datiFormato && String(datiFormato.strutturaSito || '').toLowerCase().trim() === 'random';
+            const isOverLimit = !eRandom && !isNoLimit && count > maxTeamsPerFormat;
+            const isFull = eRandom || (isNoLimit ? (count > 0) : (count >= maxTeamsPerFormat));
 
             const btn = document.createElement('button');
-            btn.className = `btn-team ${isOverLimit ? 'overlimit' : (isFull ? 'registered' : '')}`;
+            btn.className = `btn-team ${isOverLimit ? 'overlimit' : (isFull ? 'registered' : '')}${eRandom ? ' btn-random' : ''}`;
             
-            let counterHTML = isNoLimit ? (count > 0 ? `${count}` : "∞") : `${count}/${maxTeamsPerFormat}`;
+            let counterHTML = eRandom ? 'RANDOM' : (isNoLimit ? (count > 0 ? `${count}` : "∞") : `${count}/${maxTeamsPerFormat}`);
 
             btn.innerHTML = `
                 <div class="btn-team-label">${format.toUpperCase()}</div>
                 <div class="btn-team-counter">${counterHTML}</div>
                 <span class="btn-team-info" title="Format rules">i</span>
             `;
-            btn.onclick = () => openTeamPicker(format, nomeUtenteClean);
+            if (eRandom) {
+                btn.title = 'Nothing to pick here: Showdown gives you a random team in every set';
+            } else {
+                btn.onclick = () => openTeamPicker(format, nomeUtenteClean);
+            }
 
             // Tooltip con il riepilogo delle regole del formato
-            const datiFormato = mappaRegolamenti[String(format).toLowerCase().trim()] || null;
             collegaTooltipFormato(
                 btn,
                 generaRiepilogoFormatoHtml(format, datiFormato),

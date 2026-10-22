@@ -19,12 +19,18 @@
 //     creata, risposta, showdownId
 //   }
 //   notifiche/{uid}/{stagione}/{idSfida-stato} = timestamp di lettura
+//
+// Le sfide AMICHEVOLI (fuori dalle stagioni: niente punti, niente statistiche, niente replay) stanno in sfide/amichevoli/{id}, come
+// se "amichevoli" fosse una stagione, e usano la stessa campanella e le stesse notifiche lette. Le crea e le gestisce il server
+// (Cloud Functions sfidaAmichevole / rispondiAmichevole, chiamate da amichevoli.js, che qui si carica quando serve).
 // =====================================================
 (function () {
     'use strict';
 
     const MATCH_PER_SHOWDOWN = 3;
     const UN_GIORNO = 24 * 3600 * 1000;
+    const SEI_ORE = 6 * 3600 * 1000;
+    const AMICHEVOLI = 'amichevoli';   // la "stagione" delle sfide amichevoli (vedi sopra)
     const PAGINA = location.pathname.split('/').pop().toLowerCase();
     const IN_BATTAGLIA = PAGINA === 'battle.html';
 
@@ -338,8 +344,10 @@
                 || (await db().ref(`seasons/${stagione}/info`).once('value')).val() || {};
             desiderate.set(stagione, info);
         }
+        // Le sfide amichevoli: una "stagione" a parte, per chiunque abbia fatto il login (non ha iscritti: possono giocare tutti)
+        if (utente) desiderate.set(AMICHEVOLI, { name: 'Friendly matches', status: 'playing' });
         const ids = [...desiderate.keys()];
-        const iscritti = await Promise.all(ids.map(id => db().ref(`seasons/${id}/iscritti`).once('value')
+        const iscritti = await Promise.all(ids.map(id => id === AMICHEVOLI ? [] : db().ref(`seasons/${id}/iscritti`).once('value')
             .then(s => Object.keys(s.val() || {})).catch(() => [])));
         if (giro !== S.giro) return;   // nel frattempo è partita un'altra chiamata
 
@@ -360,7 +368,8 @@
             const D = S.stagioni[id] || (S.stagioni[id] = nuovaStagione(id));
             D.info = desiderate.get(id) || {};
             D.iscritti = iscritti[k];
-            D.io = S.ioId ? (D.iscritti.find(p => idDi(p) === S.ioId) || '') : '';
+            D.amichevole = id === AMICHEVOLI;
+            D.io = S.ioId ? (D.amichevole ? datiUtente.name : (D.iscritti.find(p => idDi(p) === S.ioId) || '')) : '';
             if (nuova) ascolta(D);
         });
 
@@ -384,7 +393,8 @@
             refs.push([ref, fn]);
         };
 
-        segui(`seasons/${D.id}/showdowns`, snap => {
+        // (le sfide amichevoli non hanno showdown)
+        if (!D.amichevole) segui(`seasons/${D.id}/showdowns`, snap => {
             D.showdowns = snap.val() || {};
             const firma = Object.keys(D.showdowns).sort()
                 .map(id => `${id}:${matchSalvati(D.showdowns[id])}`).join('|');
@@ -608,6 +618,7 @@
     // -----------------------------------------------------
     // Cambia stato solo se la sfida è ancora in attesa
     async function cambiaStato(D, id, nuovo) {
+        if (D.amichevole) return rispondiAmichevole(id, nuovo === 'rifiutata' ? 'rifiuta' : 'ritira');
         try {
             await db().ref(`sfide/${D.id}/${id}`).transaction(cur => {
                 if (cur === null) return null;          // cache vuota: Firebase riprova col valore vero
@@ -620,6 +631,7 @@
     }
 
     async function accetta(D, id) {
+        if (D.amichevole) return accettaAmichevole(id);
         const sf = D.sfide[id];
         if (!sf || sf.aId !== S.ioId || sf.stato !== 'in_attesa') return;
 
@@ -670,6 +682,51 @@
         location.href = linkBattaglia(D.id, sdId, 1);
     }
 
+    // ---- Sfide amichevoli: le risposte le dà il server (amichevoli.js, caricato quando serve) ----
+    const linkAmichevole = id => `battle.html?amichevole=${encodeURIComponent(id)}`;
+
+    // "Free battle · singles, level 50 · best of 3", "OU · best of 5, teams can change", "OU · one battle"
+    function descrizioneAmichevole(s) {
+        const cosa = s.libera ? `Free battle · ${s.stile === 'doubles' ? 'doubles' : 'singles'}, level 50` : s.categoria;
+        const serie = s.bestOf > 1 ? `best of ${s.bestOf}${s.cambioTeam ? ', teams can change' : ''}` : 'one battle';
+        return `${cosa} · ${serie}`;
+    }
+
+    let promessaAmichevoli = null;
+    function caricaAmichevoli() {
+        if (window.Amichevoli) return Promise.resolve(window.Amichevoli);
+        if (!promessaAmichevoli) {
+            promessaAmichevoli = new Promise(ok => {
+                const sc = document.createElement('script');
+                sc.src = 'amichevoli.js';
+                sc.onload = () => ok(window.Amichevoli || null);
+                sc.onerror = () => { promessaAmichevoli = null; ok(null); };
+                document.head.append(sc);
+            });
+        }
+        return promessaAmichevoli;
+    }
+
+    // risposta: 'accetta' | 'rifiuta' | 'ritira'. Restituisce la risposta del server, o null (e un avviso) se non è andata
+    async function rispondiAmichevole(id, risposta) {
+        const A = await caricaAmichevoli();
+        if (!A) { mostraAvviso("Couldn't load the friendly matches. Reload the page and try again"); return null; }
+        try {
+            return await A.rispondi(id, risposta);
+        } catch (e) {
+            mostraAvviso(A.messaggioErrore(e));
+            return null;
+        }
+    }
+
+    async function accettaAmichevole(id) {
+        const r = await rispondiAmichevole(id, 'accetta');
+        if (r && r.partita) {
+            S.inPartenza = true;
+            location.href = linkAmichevole(id);
+        }
+    }
+
     // Lo sfidante viene portato in battaglia quando l'altro accetta
     // (ma non se sta già giocando un'altra battaglia)
     function controllaAccettate() {
@@ -679,16 +736,19 @@
                 if (!s || s.daId !== S.ioId) continue;
                 const chiave = `${D.id}/${id}`;
                 if (s.stato === 'in_attesa') { S.vistePendenti.add(chiave); continue; }
-                if (s.stato === 'accettata' && s.showdownId && S.vistePendenti.has(chiave) && D.showdowns[s.showdownId]) {
+                // in una stagione la battaglia è pronta quando c'è lo showdown, in un'amichevole quando c'è la partita
+                const pronta = D.amichevole ? !!s.partita : !!(s.showdownId && D.showdowns[s.showdownId]);
+                if (s.stato === 'accettata' && pronta && S.vistePendenti.has(chiave)) {
                     S.vistePendenti.delete(chiave);
+                    const cosa = D.amichevole ? 'your friendly challenge' : 'your challenge';
                     if (IN_BATTAGLIA) {
-                        mostraAvviso(`${s.a} accepted your challenge`);
+                        mostraAvviso(`${s.a} accepted ${cosa}`);
                         continue;
                     }
                     S.inPartenza = true;
                     segnaLette([{ D, chiave: chiaveNotifica(id, s) }]);
                     mostraAvviso(`${s.a} accepted. Opening the battle…`);
-                    setTimeout(() => { location.href = linkBattaglia(D.id, s.showdownId, 1); }, 1500);
+                    setTimeout(() => { location.href = D.amichevole ? linkAmichevole(id) : linkBattaglia(D.id, s.showdownId, 1); }, 1500);
                     return;
                 }
             }
@@ -711,6 +771,7 @@
             for (const [id, s] of Object.entries(D.sfide)) {
                 if (!s) continue;
                 if (s.stato === 'in_attesa' && s.aId === S.ioId) {
+                    if (D.amichevole && (s.creata || 0) < Date.now() - UN_GIORNO) continue;      // una sfida amichevole scade dopo un giorno
                     elenco.push({ D, id, s, tipo: 'ricevuta', quando: s.creata });
                 } else if (s.daId === S.ioId && ['accettata', 'rifiutata'].includes(s.stato) && (s.risposta || 0) > ieri) {
                     elenco.push({ D, id, s, tipo: s.stato, quando: s.risposta });
@@ -828,7 +889,15 @@
         const nuova = x => S.nuoveAperte.has(`${x.D.id}/${x.chiave}`) || !letta(x.D, x.chiave);
         const regole = `${MATCH_PER_SHOWDOWN} matches, best of `;
 
-        const ricevute = tutte.filter(x => x.tipo === 'ricevuta').map(x => voce({
+        const ricevute = tutte.filter(x => x.tipo === 'ricevuta').map(x => x.D.amichevole ? voce({
+            classe: 'ricevuta amichevole', tag: 'Friendly', quando: x.quando, nuova: nuova(x),
+            testo: `<strong>${esc(x.s.da)}</strong> ${x.s.rivincitaDi ? 'wants to play again' : 'challenges you to a friendly match'}`,
+            dettagli: `${descrizioneAmichevole(x.s)} · no points, nothing saved`,
+            azioni: [
+                azione('Accept', 'si', () => accetta(x.D, x.id)),
+                azione('Decline', 'no', () => cambiaStato(x.D, x.id, 'rifiutata'))
+            ]
+        }) : voce({
             classe: 'ricevuta', tag: x.s.categoria, quando: x.quando, nuova: nuova(x),
             testo: `<strong>${esc(x.s.da)}</strong> challenges you`,
             dettagli: `${regole}${x.s.bestOf || bestOf(x.D)} each`,
@@ -838,29 +907,45 @@
             ]
         }));
 
-        // Solo l'avviso: la battaglia in corso si apre dal bottone con le spade
-        const risposte = tutte.filter(x => x.tipo !== 'ricevuta').map(x => voce({
+        // Solo l'avviso: la battaglia in corso si apre dal bottone con le spade (le amichevoli accettate stanno nella sezione sotto)
+        const risposte = tutte.filter(x => x.tipo !== 'ricevuta' && !(x.D.amichevole && x.tipo === 'accettata')).map(x => voce({
             classe: x.tipo === 'rifiutata' ? 'rifiutata' : 'accettata',
-            tag: x.s.categoria, quando: x.quando, nuova: nuova(x),
-            testo: `<strong>${esc(x.s.a)}</strong> ${x.tipo === 'rifiutata' ? 'declined' : 'accepted'} your challenge`
+            tag: x.D.amichevole ? 'Friendly' : x.s.categoria, quando: x.quando, nuova: nuova(x),
+            testo: `<strong>${esc(x.s.a)}</strong> ${x.tipo === 'rifiutata' ? 'declined' : 'accepted'} your ${x.D.amichevole ? 'friendly ' : ''}challenge`
         }));
 
         const inviate = elencoStagioni()
             .flatMap(D => Object.entries(D.sfide)
-                .filter(([, s]) => s?.stato === 'in_attesa' && s.daId === S.ioId)
+                .filter(([, s]) => s?.stato === 'in_attesa' && s.daId === S.ioId && !(D.amichevole && (s.creata || 0) < Date.now() - UN_GIORNO))
                 .map(([id, s]) => ({ D, id, s })))
             .sort((x, y) => (y.s.creata || 0) - (x.s.creata || 0))
             .map(({ D, id, s }) => voce({
-                tag: s.categoria, quando: s.creata,
+                tag: D.amichevole ? 'Friendly' : s.categoria, quando: s.creata,
                 testo: `Waiting for <strong>${esc(s.a)}</strong> to answer`,
+                dettagli: D.amichevole ? descrizioneAmichevole(s) : '',
                 azioni: [azione('Withdraw', 'no', () => cambiaStato(D, id, 'annullata'))]
+            }));
+
+        // Amichevoli accettate e non ancora finite (per chi ha chiuso la pagina della battaglia, o è arrivato dopo): si riprendono da qui
+        const inCorso = elencoStagioni().filter(D => D.amichevole)
+            .flatMap(D => Object.entries(D.sfide)
+                .filter(([, s]) => s?.stato === 'accettata' && (s.daId === S.ioId || s.aId === S.ioId) && Date.now() - (s.risposta || 0) < SEI_ORE)
+                .map(([id, s]) => ({ D, id, s })))
+            .sort((x, y) => (y.s.risposta || 0) - (x.s.risposta || 0))
+            .map(({ D, id, s }) => voce({
+                classe: 'da-giocare', tag: 'Friendly', quando: s.risposta,
+                nuova: s.daId === S.ioId && nuova({ D, chiave: chiaveNotifica(id, s) }),
+                testo: `Against <strong>${esc(s.daId === S.ioId ? s.a : s.da)}</strong>`,
+                dettagli: descrizioneAmichevole(s),
+                azioni: [collegamento('Play', 'si', linkAmichevole(id))]
             }));
 
         box.replaceChildren(...menuConSezioni('Notifications', [
             ['Waiting for you', ricevute],
+            ['Friendly matches in progress', inCorso],
             ['Replies', risposte],
             ['Sent', inviate]
-        ], 'No notifications. Press VS next to a player in the rankings to send a challenge.'));
+        ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'));
     }
 
     // ---- Spade: battaglie in corso in tutte le stagioni (compare solo se ce ne sono) ----
@@ -1107,5 +1192,5 @@
         return cambiaStato(D, id, risposta === 'ritira' ? 'annullata' : 'rifiutata');
     }
 
-    window.Sfide = { avvia, bottoneRanking, apriSfida, rispondi, completato };
+    window.Sfide = { avvia, bottoneRanking, apriSfida, rispondi, completato, caricaAmichevoli };
 })();

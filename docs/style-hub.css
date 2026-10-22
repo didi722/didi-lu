@@ -1042,6 +1042,9 @@ body.status-live .hub-header {
     background-color: #fc2929;
 }
 
+/* Formato Random: nessun team da scegliere (li dà Showdown), il bottone è solo un'etichetta */
+.btn-team.btn-random { cursor: help; }
+
 /* Tag Partecipanti nella Sidebar */
 .player-tag {
     display: flex;
