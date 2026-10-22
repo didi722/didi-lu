@@ -57,33 +57,9 @@ async function registraRisultatoMatch(r) {
     const p2points = calcolaPuntiMatch(s2, isBO3);
 
     // --- 2. ELO ---
-    const [snapP1, snapP2, snapEsistente] = await Promise.all([
-        db.ref(`players/${p1Id}/stats/individual-stats/ranking`).once('value'),
-        db.ref(`players/${p2Id}/stats/individual-stats/ranking`).once('value'),
-        db.ref(pathMatch).once('value')
-    ]);
-
-    const eloP1_pre = snapP1.val() || 1000;
-    const eloP2_pre = snapP2.val() || 1000;
-    const matchEsistente = snapEsistente.val();
-
-    let delta1, delta2;
-    const K = 32;
-
-    if (matchEsistente &&
-        matchEsistente.player1Id === p1Id &&
-        matchEsistente.player2Id === p2Id &&
-        matchEsistente.winnerId === winnerId &&
-        matchEsistente.p1DeltaElo !== undefined) {
-        // Modifica di un match esistente con stesso esito: riuso i delta
-        delta1 = matchEsistente.p1DeltaElo;
-        delta2 = matchEsistente.p2DeltaElo;
-    } else {
-        const exp1 = 1 / (1 + Math.pow(10, (eloP2_pre - eloP1_pre) / 400));
-        const exp2 = 1 / (1 + Math.pow(10, (eloP1_pre - eloP2_pre) / 400));
-        delta1 = Math.round(K * ((winnerId === p1Id ? 1 : 0) - exp1));
-        delta2 = Math.round(K * ((winnerId === p2Id ? 1 : 0) - exp2));
-    }
+    // Non si calcola qui: l'Elo di un match dipende da tutti quelli che lo precedono, quindi dopo il salvataggio si rifà tutto in
+    // ordine cronologico (ricalcolaEloGiocatori, più sotto), che scrive anche i delta nel match.
+    const matchEsistente = (await db.ref(pathMatch).once('value')).val();
 
     // --- 3. SALVATAGGIO MATCH ---
     const datiMatch = {
@@ -103,12 +79,12 @@ async function registraRisultatoMatch(r) {
         categoria: r.categoria,
         replays: r.replays || {},
         lastEdit: new Date().toISOString(),
-        showdownId: showdownId,
-        p1EloAtMatch: eloP1_pre,
-        p2EloAtMatch: eloP2_pre,
-        p1DeltaElo: delta1,
-        p2DeltaElo: delta2
+        showdownId: showdownId
     };
+    // L'Elo del match (prima e variazione) resta finché non viene ricalcolato più sotto
+    if (matchEsistente && matchEsistente.p1DeltaElo !== undefined) {
+        for (const k of ['p1EloAtMatch', 'p2EloAtMatch', 'p1DeltaElo', 'p2DeltaElo']) datiMatch[k] = matchEsistente[k];
+    }
 
     // Statistiche per set (KO, ultimo rimasto...): le calcola il server a fine set.
     // Una modifica fatta a mano non le ha: in quel caso restano quelle già salvate.
@@ -118,10 +94,6 @@ async function registraRisultatoMatch(r) {
     if (setStats) datiMatch.setStats = setStats;
 
     await db.ref(pathMatch).set(datiMatch);
-
-    await db.ref(`players/${p1Id}/stats/individual-stats`).update({ ranking: eloP1_pre + delta1 });
-    await db.ref(`players/${p2Id}/stats/individual-stats`).update({ ranking: eloP2_pre + delta2 });
-    console.log(`Elo aggiornato con Delta: ${p1Id} (${delta1}), ${p2Id} (${delta2})`);
 
     // --- 4. VINCITORE SHOWDOWN ---
     const sdSnap = await db.ref(`${pathShowdown}/matches`).once('value');
@@ -165,7 +137,7 @@ async function registraRisultatoMatch(r) {
     // Prima la classifica della stagione e le statistiche dei due giocatori: poi si decide se la stagione è finita, così il vincitore
     // si calcola su una classifica che comprende anche quest'ultimo match.
     await aggiornaLeaderboard(stagione);
-    await ricalcolaEloGiocatori([p1Id, p2Id]);        // l'Elo giusto subito (la beta non lo cambia), anche se il ricalcolo completo qui sotto va storto
+    await ricalcolaEloGiocatori();        // l'Elo di tutti, in ordine cronologico (la beta non lo cambia), anche se il ricalcolo completo qui sotto va storto
     await ricalcolaStatisticheGlobali(p1Id);
     await ricalcolaStatisticheGlobali(p2Id);
 
@@ -502,42 +474,119 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
 // =====================================================
 // ELO DEI GIOCATORI
 //
-// L'Elo di un allenatore viene SOLO dai match delle stagioni ufficiali (la beta "sbeta" non conta): 1000 + la somma dei delta dei suoi match.
-// Senza nessun match completo ufficiale non ha un Elo: 0 = "unranked" (il primo match parte da 1000, vedi registraRisultatoMatch).
-// Questa funzione ricalcola SOLO l'Elo (una lettura delle stagioni e una scrittura per giocatore), senza il resto delle statistiche:
-// si usa dopo aver cancellato una stagione, e a ogni match salvato, così un valore vecchio (la stagione di prova cancellata che lascia
-// 983 a uno e 1000 a un altro) non resta mai, anche se il ricalcolo completo di un giocatore va storto.
-//   idDaToccare: lista di id da aggiornare, oppure null per tutti i profili esistenti
-// Restituisce { id: elo } per i giocatori aggiornati.
+// Elo classico, con tre accorgimenti. Il rating è 1000 + la somma delle variazioni dei match ufficiali; la beta "sbeta" non conta.
+// Senza nessun match completo ufficiale non ha un Elo: 0 = "unranked" (il primo match parte da 1000).
+//
+//   Atteso            E = 1 / (1 + 10^((Elo avversario - Elo mio) / 400)), con l'Elo di entrambi PRIMA del match
+//   Variazione        round(K x margine x (risultato - E)), risultato 1 = match vinto, 0 = perso
+//   K                 ELO_K_INIZIALE (48) per i primi ELO_MATCH_INIZIALI (8) match del giocatore, poi ELO_K (32): all'inizio il
+//                     rating si assesta più in fretta
+//   Margine           0,7 + 0,3 x (set vinti - set persi) / set giocati: un 2-0 (o 3-0, 5-0) vale 1, un 2-1 vale 0,8, un 3-2 0,76
+//
+// I match si processano SEMPRE in ordine cronologico (data, poi stagione, showdown, numero del match), tutti insieme: l'Elo non dipende
+// da quando o in che ordine sono stati inseriti, e modificare o cancellare un match vecchio aggiusta tutti i successivi. Le variazioni
+// calcolate si scrivono nei match (p1EloAtMatch, p1DeltaElo, ...: li leggono statistiche e pagina pubblica) e il rating nei profili.
+// La beta ha una classifica a parte (tutti da 1000), che non tocca i profili.
 // =====================================================
-function eloDaiMatch(seasons, idGiocatore) {
-    const id = String(idGiocatore).toLowerCase().trim();
-    let match = 0, somma = 0;
+const ELO_BASE = 1000;
+const ELO_K = 32;
+const ELO_K_INIZIALE = 48;
+const ELO_MATCH_INIZIALI = 8;
+const ELO_MARGINE_MIN = 0.7;
+
+function moltiplicatoreMargine(setVinti, setPersi) {
+    const totale = setVinti + setPersi;
+    if (!(totale > 0)) return 1;
+    return ELO_MARGINE_MIN + (1 - ELO_MARGINE_MIN) * Math.abs(setVinti - setPersi) / totale;
+}
+
+// La data di un match come numero, per l'ordine: "2026-10-03" (campo data) o "3/10/2026" (giorno/mese/anno); senza data vale 0
+function dataPerElo(testo) {
+    const t = String(testo == null ? '' : testo).trim();
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t);
+    if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t);
+    if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
+    const d = Date.parse(t);
+    return Number.isFinite(d) ? d : 0;
+}
+
+/**
+ * @param {Object} seasons   il nodo `seasons`
+ * @returns {{ match: Object<string, {p1EloAtMatch, p2EloAtMatch, p1DeltaElo, p2DeltaElo}>, elo: Object<string, number> }}
+ *   match: per percorso ("s1/showdowns/d1/matches/match2") per TUTTI i match completi, beta compresa (con la sua classifica);
+ *   elo: per giocatore (id in minuscolo) solo per chi ha almeno un match ufficiale
+ */
+function calcolaEloCronologico(seasons) {
+    const elenco = [];
     for (const [sId, stagione] of Object.entries(seasons || {})) {
-        if (sId === 'sbeta') continue;
-        for (const sd of Object.values((stagione && stagione.showdowns) || {})) {
-            for (const m of Object.values((sd && sd.matches) || {})) {
-                if (!m || m.p1score == null || m.p2score == null) continue;      // match non completo
+        for (const [sdId, sd] of Object.entries((stagione && stagione.showdowns) || {})) {
+            const infoData = sd && sd.info && (sd.info.data || sd.info.lastEdit);
+            for (const [mKey, m] of Object.entries((sd && sd.matches) || {})) {
+                if (!m || m.p1score == null || m.p2score == null) continue;           // match non completo
                 const p1 = String(m.player1Id || '').toLowerCase().trim(), p2 = String(m.player2Id || '').toLowerCase().trim();
-                if (p1 === id) { match++; somma += Number(m.p1DeltaElo || 0); }
-                else if (p2 === id) { match++; somma += Number(m.p2DeltaElo || 0); }
+                if (!p1 || !p2 || p1 === p2) continue;
+                elenco.push({
+                    percorso: `${sId}/showdowns/${sdId}/matches/${mKey}`, beta: sId === 'sbeta', stagione: sId, showdown: sdId,
+                    numero: parseInt(String(mKey).replace(/\D/g, ''), 10) || 0, data: dataPerElo(m.data || infoData),
+                    p1, p2, s1: Number(m.p1score) || 0, s2: Number(m.p2score) || 0, vincitore: String(m.winnerId || '').toLowerCase().trim()
+                });
             }
         }
     }
-    return match > 0 ? 1000 + somma : 0;
+    const confronta = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+    elenco.sort((a, b) => (a.data - b.data) || confronta(a.stagione, b.stagione) || confronta(a.showdown, b.showdown) || (a.numero - b.numero));
+
+    const classifiche = { ufficiale: { somma: {}, giocati: {} }, beta: { somma: {}, giocati: {} } };
+    const match = {};
+    for (const m of elenco) {
+        const c = m.beta ? classifiche.beta : classifiche.ufficiale;
+        const elo = id => ELO_BASE + (c.somma[id] || 0);
+        const k = id => ((c.giocati[id] || 0) < ELO_MATCH_INIZIALI ? ELO_K_INIZIALE : ELO_K);
+        const pre1 = elo(m.p1), pre2 = elo(m.p2);
+        const pari = m.vincitore !== m.p1 && m.vincitore !== m.p2 && m.s1 === m.s2;
+        const vince1 = m.vincitore === m.p1 || (m.vincitore !== m.p2 && m.s1 > m.s2);
+        const risultato1 = pari ? 0.5 : vince1 ? 1 : 0;
+        const atteso1 = 1 / (1 + Math.pow(10, (pre2 - pre1) / 400));
+        const margine = moltiplicatoreMargine(Math.max(m.s1, m.s2), Math.min(m.s1, m.s2));
+        const d1 = Math.round(k(m.p1) * margine * (risultato1 - atteso1));
+        const d2 = Math.round(k(m.p2) * margine * ((1 - risultato1) - (1 - atteso1)));
+        match[m.percorso] = { p1EloAtMatch: pre1, p2EloAtMatch: pre2, p1DeltaElo: d1, p2DeltaElo: d2 };
+        c.somma[m.p1] = (c.somma[m.p1] || 0) + d1;
+        c.somma[m.p2] = (c.somma[m.p2] || 0) + d2;
+        c.giocati[m.p1] = (c.giocati[m.p1] || 0) + 1;
+        c.giocati[m.p2] = (c.giocati[m.p2] || 0) + 1;
+    }
+    const elo = {};
+    for (const [id, n] of Object.entries(classifiche.ufficiale.giocati)) if (n > 0) elo[id] = ELO_BASE + classifiche.ufficiale.somma[id];
+    return { match, elo };
 }
 
+// Rifà l'Elo di TUTTI: i match (prima e variazione, solo dove cambiano) e i profili (0 = unranked). Si usa a ogni match salvato e dopo
+// ogni modifica o cancellazione di stagioni, showdown e match, così nessun valore vecchio resta (la stagione di prova cancellata che
+// lascia 983 a uno e 1000 a un altro). Un cambiamento sposta anche gli avversari successivi: per questo il ricalcolo è sempre completo
+// (l'elenco `idDaToccare` degli usi precedenti è ignorato).
+// Restituisce { id: elo } per tutti i profili esistenti.
 async function ricalcolaEloGiocatori(idDaToccare = null) {
     const [snapStagioni, snapGiocatori] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
     const stagioni = snapStagioni.val() || {};
     const profili = Object.keys(snapGiocatori.val() || {});
-    const voluti = idDaToccare ? new Set(idDaToccare.map(x => String(x).toLowerCase().trim())) : null;
+    const { match, elo } = calcolaEloCronologico(stagioni);
+
+    // i match: solo i campi che cambiano
+    for (const [percorso, nuovo] of Object.entries(match)) {
+        const [sId, , sdId, , mKey] = percorso.split('/');
+        const attuale = ((((stagioni[sId] || {}).showdowns || {})[sdId] || {}).matches || {})[mKey] || {};
+        const cambiati = {};
+        for (const campo of Object.keys(nuovo)) if (attuale[campo] !== nuovo[campo]) cambiati[campo] = nuovo[campo];
+        if (Object.keys(cambiati).length) await db.ref(`seasons/${percorso}`).update(cambiati);
+    }
+
     const out = {};
     for (const chiave of profili) {
-        if (voluti && !voluti.has(chiave.toLowerCase().trim())) continue;
-        const elo = eloDaiMatch(stagioni, chiave);
-        await db.ref(`players/${chiave}/stats/individual-stats`).update({ ranking: elo });
-        out[chiave] = elo;
+        const valore = elo[String(chiave).toLowerCase().trim()] || 0;
+        await db.ref(`players/${chiave}/stats/individual-stats`).update({ ranking: valore });
+        out[chiave] = valore;
     }
     return out;
 }

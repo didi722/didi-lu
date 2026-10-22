@@ -729,7 +729,7 @@ async function eliminaStagioneCorrente(idDaEliminare) {
         const avvisi = await pulisciSfideENotifiche(idDaEliminare);
 
         // --- 4. RICALCOLO STATISTICHE ---
-        // ricalcolaStatisticheGlobali ricostruisce da zero ELO (1000 + somma dei delta),
+        // ricalcolaStatisticheGlobali ricostruisce da zero le statistiche (l'Elo lo rifà ricalcolaEloGiocatori, in ordine cronologico),
         // vittorie/sconfitte, showdown, statistiche dei team, badge e uso dei tipi
         // sommando solo le stagioni rimaste: quella appena cancellata non conta più.
         // L'Elo si rifà per TUTTI i profili e per primo (senza match ufficiali: unranked, 0): così non resta nessun valore vecchio, anche se
