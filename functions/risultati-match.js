@@ -385,6 +385,10 @@ const specieDaNomeBox = nome => {
 };
 const valoriUso = x => (x && typeof x === 'object' ? Object.values(x) : []);
 
+// Le chiavi di Firebase non possono contenere . # $ / [ ]: i nomi dei Pokémon ("Mr. Mime") e dei team, usati come chiave, si scrivono con "_"
+// al posto di quei caratteri (public.html legge i badge dei Pokémon con la stessa regola)
+const chiaveFirebase = nome => String(nome == null ? '' : nome).replace(/[.#$/\[\]]/g, '_') || '_';
+
 // Un match senza team è un match Random: i team li ha dati Showdown e non esistono nel Box dell'allenatore. Conta per l'allenatore
 // (punti, vittorie, KO, serie, Elo, showdown), ma non per ciò che riguarda team e Pokémon: uso dei Pokémon e dei tipi (e quindi i
 // titoli), statistiche e badge di team e di Pokémon.
@@ -940,9 +944,14 @@ async function ricalcolaStatisticheGlobali(pId) {
         const allPokemon = [...new Set(Object.values(teamCompositionMap).flat())];
         const pkmBadges = {};
         allPokemon.forEach(pkm => {
-            pkmBadges[pkm] = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, pkm, 'pokemon');
+            pkmBadges[chiaveFirebase(pkm)] = calcolaParametriBadge(cronologiaMatchPiatta, listaShowdownPartecipati, pkm, 'pokemon');
         });
-        await db.ref(`players/${pId}/pokemon-badges`).set(pkmBadges);
+        // un problema nei badge dei Pokémon non deve fermare il resto (punti, vittorie, statistiche dei team)
+        try {
+            await db.ref(`players/${pId}/pokemon-badges`).set(pkmBadges);
+        } catch (e) {
+            console.error(`⚠️ Badge dei Pokémon non salvati per ${pId}:`, e.message);
+        }
 
         // Calcolo Best Format e caricamento dei relativi Showdown vinti/giocati/persi
         let bestFormatName = "-";
@@ -1151,6 +1160,8 @@ async function aggiornaLeaderboard(stagione) {
                 };
             }
             delete s.pkmnCounter; 
+            // i team sono salvati con il nome come chiave: senza i caratteri che Firebase non accetta
+            s.teams = Object.fromEntries(Object.entries(s.teams).map(([nome, dati]) => [chiaveFirebase(nome), dati]));
         }
 
         // 4. Salvataggio finale
