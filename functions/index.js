@@ -63,9 +63,11 @@ function prendiServizio() {
 function richiamabile(nome, opzioni = {}) {
     return onCall({ 
         region: REGIONE, 
-        memory: '512MiB', 
+        // 1 GiB: a ogni scelta il server ricostruisce la battaglia dall'inizio con il simulatore completo, e con più partite in
+        // corso la memoria da 512 MiB si esauriva: l'istanza veniva riavviata e le richieste fallivano (nel browser: "CORS policy")
+        memory: '1GiB', 
         timeoutSeconds: 60, 
-        cors: true, // <--- AGGIUNGI QUESTA RIGA
+        cors: true,
         ...opzioni 
     }, async richiesta => {
         if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
@@ -90,7 +92,7 @@ exports.rispondiAmichevole = richiamabile('rispondiAmichevole');
 
 // Quando l'ultimo set finisce, il match si salva da solo
 exports.salvaPartitaConclusa = onValueWritten(
-    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '512MiB', timeoutSeconds: 300 },
+    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '1GiB', timeoutSeconds: 300 },
     async evento => {
         if (evento.data.after.val() !== 'da_salvare') return;
         await prendiServizio().salvaPartita(evento.params.id);
