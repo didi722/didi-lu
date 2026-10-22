@@ -413,6 +413,11 @@ const specieDaNomeBox = nome => {
 };
 const valoriUso = x => (x && typeof x === 'object' ? Object.values(x) : []);
 
+// Un match senza team è un match Random: i team li ha dati Showdown e non esistono nel Box dell'allenatore. Conta per l'allenatore
+// (punti, vittorie, KO, serie, Elo, showdown), ma non per ciò che riguarda team e Pokémon: uso dei Pokémon e dei tipi (e quindi i
+// titoli), statistiche e badge di team e di Pokémon.
+const matchSenzaTeam = m => !String((m && m.team) == null ? '' : m.team).trim();
+
 // Chi è sceso davvero in campo. I set salvati prima del campo "sceso" non lo dicono: si riconosce chi
 // ha lasciato un segno (titolare, KO fatti, svenuto, ultimo rimasto), il resto è un minimo.
 function pokemonSceso(p) {
@@ -430,6 +435,7 @@ function setUtilizzabili(partita) {
 function specieSceseInCampo(partite) {
     const specie = new Set();
     for (const m of partite) {
+        if (matchSenzaTeam(m)) continue;
         for (const st of setUtilizzabili(m)) {
             valoriUso(st[m.lato].pokemon).filter(pokemonSceso).forEach(p => p.specie && specie.add(p.specie));
         }
@@ -449,6 +455,7 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
     const s = (id, nome) => (specie[id] ||= { nome, played: 0, won: 0, ko: 0 });
 
     for (const m of partite) {
+        if (matchSenzaTeam(m)) continue;
         const sets = setUtilizzabili(m);
 
         if (sets.length) {
@@ -688,13 +695,14 @@ async function ricalcolaStatisticheGlobali(pId) {
                     }
                 });
 
-                if (haGiocatoInQuestoSD && lastTeamInSD) {
+                // anche uno showdown Random (senza team) conta per l'allenatore: nelle liste per team e per Pokémon non corrisponde a nulla
+                if (haGiocatoInQuestoSD) {
                     const haVintoSD = (infoSD.vincitoreShowdown === pId);
 
                     listaShowdownPartecipati.push({
                         data: dataSD,
                         vintoTorneo: haVintoSD,
-                        team: lastTeamInSD,
+                        team: lastTeamInSD || '',
                         pokemon: [...new Set(teamCompositionMap[lastTeamInSD] || [])]
                     });
 
