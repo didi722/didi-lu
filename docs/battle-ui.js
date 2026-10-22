@@ -545,7 +545,7 @@ async function preparaOnline(chiavi) {
     await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
     if (!firebase.auth().currentUser) return mostraMessaggioCampo('Log in on the site to play or watch this match.');
 
-    const funzioni = firebase.app().functions('europe-west1');
+    const funzioni = firebase.app().functions('europe-west4');
     let aperta;
     try {
         aperta = (await funzioni.httpsCallable('apriPartita')(chiavi)).data;
@@ -612,7 +612,7 @@ async function preparaAmichevole(idSfida) {
     await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
     if (!firebase.auth().currentUser) return mostraMessaggioCampo('Log in on the site to play or watch this match.');
 
-    const funzioni = firebase.app().functions('europe-west1');
+    const funzioni = firebase.app().functions('europe-west4');
     let aperta;
     try {
         aperta = (await funzioni.httpsCallable('apriPartita')({ amichevole: idSfida })).data;
