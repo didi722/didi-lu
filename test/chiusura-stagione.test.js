@@ -375,11 +375,11 @@ function matchDatiElo(a, b, s1, s2, d1, d2) {
 }
 
 test('Elo: con una stagione ufficiale rimasta si ricalcola in ordine cronologico per tutti; chi non ha giocato resta a 0', async () => {
-    const sd = { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: matchDatiElo('didi', 'lukiani', 2, 1, 99, -99), match2: matchDatiElo('lukiani', 'didi', 2, 0, 99, -99), match3: { player1Id: 'didi', player2Id: 'lukiani' } } };
+    const sd = { info: { player1: 'Didi', player2: 'Lukiani', categoria: 'OU' }, matches: { match1: matchDatiElo('didi', 'lukiani', 2, 1, 99, -99), match2: matchDatiElo('lukiani', 'didi', 3, 0, 99, -99), match3: { player1Id: 'didi', player2Id: 'lukiani' } } };
     const db = creaDb({ seasons: { s1: { ...stagione(), showdowns: { sd1: sd } } }, players: { didi: {}, lukiani: {}, ada: { stats: { 'individual-stats': { ranking: 1000 } } } } });
     const sito = caricaSito(db);
     const out = await sito.ricalcolaEloGiocatori(['Didi']);            // l'elenco è ignorato: un match sposta anche gli avversari
-    // match 1: 2-1 tra due da 1000, K 48 e margine 0,8: +-19. match 2: 2-0 per Lukiani (981) su Didi (1019): atteso 0,4455, K 48: +-27
+    // match 1: 2-1 (3 set) tra due da 1000, K 48 e margine 0,8: +-19. match 2: 3-0 per Lukiani (981) su Didi (1019): atteso 0,4455, K 48: +-27
     assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1000 + 19 - 27);
     assert.equal(db.leggi('players/lukiani/stats/individual-stats/ranking'), 1000 - 19 + 27, 'il match 3 senza punteggio non conta');
     assert.equal(db.leggi('players/ada/stats/individual-stats/ranking'), 0);

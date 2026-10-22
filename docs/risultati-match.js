@@ -481,7 +481,11 @@ function calcolaUsoPokemon(partite, tipiDi, teamDi) {
 //   Variazione        round(K x margine x (risultato - E)), risultato 1 = match vinto, 0 = perso
 //   K                 ELO_K_INIZIALE (48) per i primi ELO_MATCH_INIZIALI (8) match del giocatore, poi ELO_K (32): all'inizio il
 //                     rating si assesta più in fretta
-//   Margine           0,7 + 0,3 x (set vinti - set persi) / set giocati: un 2-0 (o 3-0, 5-0) vale 1, un 2-1 vale 0,8, un 3-2 0,76
+//   Margine           0,7 + 0,3 x (set vinti - set persi) / set giocati. Un match si gioca SEMPRE per intero (3 set, o 5 se la
+//                     stagione è al meglio dei 5), quindi: con 3 set un 3-0 vale 1 e un 2-1 vale 0,8; con 5 set un 5-0 vale 1,
+//                     un 4-1 0,88 e un 3-2 0,76
+//   Struttura         set (una battaglia) -> match (3 o 5 set, tutti giocati) -> showdown (3 match contro lo stesso avversario):
+//                     l'Elo si aggiorna a ogni MATCH, quindi uno showdown muove il rating tre volte
 //
 // I match si processano SEMPRE in ordine cronologico (data, poi stagione, showdown, numero del match), tutti insieme: l'Elo non dipende
 // da quando o in che ordine sono stati inseriti, e modificare o cancellare un match vecchio aggiusta tutti i successivi. Le variazioni
