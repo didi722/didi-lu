@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="temi.js"></script>
 <script src="menu-sito.js"></script>
+<script src="formato-random.js"></script>
 </head>
 <body class="nb pg-formats">
 
@@ -114,6 +115,7 @@
                         <option value="vgc">Official VGC</option>
                         <option value="custom">Custom Format</option>
                         <option value="anything_goes">Anything Goose</option>
+                        <option value="random">Random Battle</option>
                     </select>
                 </div>
             </div>
@@ -123,8 +125,8 @@
                 <textarea id="format-desc" rows="2" placeholder="Explain the rules or the spirit of this format to players..."></textarea>
             </div>
 
-            <!-- 🆕 NUOVA RIGA: SHOWDOWN FORMAT & GENERATIONAL MECHANICS -->
-            <div class="format-input-row">
+            <!-- 🆕 NUOVA RIGA: SHOWDOWN FORMAT & GENERATIONAL MECHANICS (non c'è nei formati Random: le decide Showdown) -->
+            <div class="format-input-row" id="row-showdown-meccaniche">
                 <div class="format-input-group flex-2">
                     <label>SHOWDOWN FORMAT FOR VALIDATION</label>
                     <input type="text" id="format-showdown-format" placeholder="Es: gen9ou, gen8vgc2021, gen9doublesou...">
@@ -136,6 +138,17 @@
                         <span>GENERATIONAL MECHANICS</span>
                     </label>
                 </div>
+            </div>
+
+            <div id="section-random" class="format-conditional-section" style="display: none;">
+                <h3>RANDOM BATTLE</h3>
+                <div class="format-input-row">
+                    <div class="format-input-group flex-1">
+                        <label for="random-format">SHOWDOWN RANDOM FORMAT</label>
+                        <select id="random-format"></select>
+                    </div>
+                </div>
+                <p class="format-random-nota">The teams are composed by Pokémon Showdown, a new one for every battle, exactly like in the official Random Battle. Nothing else can be set: no tier, no clauses, no team to build or register.</p>
             </div>
 
             <div id="section-official-vgc" class="format-conditional-section" style="display: none;">
@@ -537,8 +550,14 @@ function apriCreazioneFormato() {
 
     const secVgc = document.getElementById('section-official-vgc');
     const secCustom = document.getElementById('section-custom-rules');
+    const secRandom = document.getElementById('section-random');
+    const rigaShowdown = document.getElementById('row-showdown-meccaniche');
     if (secVgc) secVgc.style.display = 'none';
     if (secCustom) secCustom.style.display = 'none';
+    if (secRandom) secRandom.style.display = 'none';
+    if (rigaShowdown) rigaShowdown.style.display = '';
+    const sceltaRandom = document.getElementById('random-format');
+    if (sceltaRandom) sceltaRandom.selectedIndex = 0;
 
     if (container) container.innerHTML = ""; 
 
@@ -560,16 +579,31 @@ function apriCreazioneFormato() {
     };
 }
 
+// Le scelte del formato Random (docs/formato-random.js): le stesse del Random Battle di Showdown
+function popolaFormatiRandom() {
+    const select = document.getElementById('random-format');
+    if (!select || select.options.length) return;
+    FormatoRandom.FORMATI.forEach(f => select.add(new Option(f.nome, f.id)));
+}
+
 function gestisciCambioTipoFormato(tipo) {
     const sezioneVGC = document.getElementById('section-official-vgc');
     const sezioneCustom = document.getElementById('section-custom-rules');
+    const sezioneRandom = document.getElementById('section-random');
+    const rigaShowdown = document.getElementById('row-showdown-meccaniche');
     const badgeClausole = document.getElementById('clause-badge');
     const containerRegole = document.getElementById('dynamic-rules-container');
 
     sezioneVGC.style.display = 'none';
     sezioneCustom.style.display = 'none';
+    if (sezioneRandom) sezioneRandom.style.display = 'none';
+    // in un formato Random non c'è da validare nulla e le meccaniche le decide Showdown: la riga non serve
+    if (rigaShowdown) rigaShowdown.style.display = tipo === 'random' ? 'none' : '';
 
-    if (tipo === 'vgc') {
+    if (tipo === 'random') {
+        popolaFormatiRandom();
+        if (sezioneRandom) sezioneRandom.style.display = 'block';
+    } else if (tipo === 'vgc') {
         sezioneVGC.style.display = 'block';
     } else if (tipo === 'custom' || tipo === 'anything_goes') {
         sezioneCustom.style.display = 'block';
@@ -1218,7 +1252,7 @@ async function salvaNuovoFormato() {
         return;
     }
     if (!fType || !fType.value || fType.value.trim() === "") {
-        alert("Please select a format type (VGC, Custom or Anything Goes).");
+        alert("Please select a format type (VGC, Custom, Anything Goes or Random).");
         return;
     }
 
@@ -1236,7 +1270,17 @@ async function salvaNuovoFormato() {
     };
 
     // 4. RACCOLTA DATI CONDIZIONALE + VALIDAZIONE RIGIDA DEI CAMPI OBBLIGATORI
-    if (tipoFormato === 'vgc') {
+    if (tipoFormato === 'random') {
+        // Random Battle di Showdown: nulla da impostare oltre a quale (generazione, singolo o doppio)
+        const scelto = document.getElementById('random-format');
+        if (!scelto || !FormatoRandom.trova(scelto.value)) {
+            alert("Please select the Random Battle format.");
+            return;
+        }
+        Object.assign(payload, FormatoRandom.campiRegolamento(scelto.value));
+        // nessun controllo dei team in un formato che non ha team
+        payload.showdownFormat = "";
+    } else if (tipoFormato === 'vgc') {
         const vgcGen = document.getElementById('vgc-gen');
         const vgcFormat = document.getElementById('vgc-format');
         
@@ -1964,6 +2008,11 @@ function apriModaleModificaFormato(id, dataJsonB64) {
       fType.value = formato.strutturaSito || (formato.gen === "vgc" ? "vgc" : "custom");
       fType.dispatchEvent(new Event('change')); // Aggiorna i sottomenu della modale
     }
+    if (formato.strutturaSito === 'random') {
+      popolaFormatiRandom();
+      const sceltaRandom = document.getElementById('random-format');
+      if (sceltaRandom) sceltaRandom.value = FormatoRandom.idSimulatore(formato);
+    }
 
     // 🌟 CORREZIONE: Svuotiamo il container delle regole ADESSO, 
     // rimuovendo la riga vuota di default generata automaticamente dal dispatchEvent precedente
@@ -1972,8 +2021,10 @@ function apriModaleModificaFormato(id, dataJsonB64) {
         containerRegole.innerHTML = ''; 
     }
 
-    // Precompilazione campi specifici Custom/VGC
-    if (formato.strutturaSito === 'vgc' || formato.gen === "vgc") {
+    // Precompilazione campi specifici Custom/VGC (un formato Random non ne ha)
+    if (formato.strutturaSito === 'random') {
+      // niente da riempire: la scelta del Random è già al suo posto
+    } else if (formato.strutturaSito === 'vgc' || formato.gen === "vgc") {
       if (document.getElementById('vgc-gen')) document.getElementById('vgc-gen').value = formato.vgcGen || "";
       if (document.getElementById('vgc-format')) document.getElementById('vgc-format').value = formato.vgcFormat || "";
     } else {
@@ -2085,6 +2136,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             'singles': 'Singles',
             'doubles': 'Doubles',
             'anything_goes': 'Goose',
+            'random': 'Random Battle',
 
             // Database Categories (Main nodes)
             'pokemon': 'Pokémon',
@@ -2141,7 +2193,17 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
         // --- 4b. LE CASELLE: tipo, stile, generazione, tier, formato Showdown, meccaniche ---
         let caselle = riquadro('Format Type', valore(umanizza(formatoDati.strutturaSito || 'custom')));
 
-        if (formatoDati.strutturaSito === 'vgc') {
+        if (FormatoRandom.eRandom(formatoDati)) {
+            // Random Battle di Showdown: nessuna regola del sito, nessun team. Si può provare subito contro la CPU; è anche un formato come
+            // gli altri per le sfide amichevoli e per le stagioni (dove nessuno iscrive team: li dà Showdown a ogni set).
+            const random = FormatoRandom.descrivi(formatoDati);
+            caselle += riquadro('Showdown Format', valore(random.nome, 'fmt-codice'));
+            caselle += riquadro('Teams', valore('Random, given by Showdown'));
+            blocksHtml += `<div class="fmt-griglia">${caselle}</div>`;
+            blocksHtml += riquadro('Practice', `
+                <p class="fmt-testo">Try it right now: you and the CPU each get a random team, a new one every battle.</p>
+                <a class="fmt-gioca-cpu" href="battle.html?cpu=1&random=${encodeURIComponent(random.id)}&nome=${encodeURIComponent(formatName)}">⚔ Play vs CPU</a>`);
+        } else if (formatoDati.strutturaSito === 'vgc') {
             if (formatoDati.vgcGen) {
                 caselle += riquadro('Generation', valore(`Gen ${String(formatoDati.vgcGen).replace(/[^0-9]/g, '') || formatoDati.vgcGen}`));
             }
@@ -2161,13 +2223,15 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             }
         }
 
-        if (formatoDati.showdownFormat && formatoDati.showdownFormat.trim() !== "") {
-            caselle += riquadro('Showdown Format', valore(formatoDati.showdownFormat.trim().toLowerCase(), 'fmt-codice'));
+        if (!FormatoRandom.eRandom(formatoDati)) {      // (il Random ha già la sua griglia, più su)
+            if (formatoDati.showdownFormat && formatoDati.showdownFormat.trim() !== "") {
+                caselle += riquadro('Showdown Format', valore(formatoDati.showdownFormat.trim().toLowerCase(), 'fmt-codice'));
+            }
+
+            caselle += riquadro('Gen Mechanics', valore(formatoDati.generationalMechanics ? 'Enabled' : 'Disabled', formatoDati.generationalMechanics ? 'fmt-si' : 'fmt-no'));
+
+            blocksHtml += `<div class="fmt-griglia">${caselle}</div>`;
         }
-
-        caselle += riquadro('Gen Mechanics', valore(formatoDati.generationalMechanics ? 'Enabled' : 'Disabled', formatoDati.generationalMechanics ? 'fmt-si' : 'fmt-no'));
-
-        blocksHtml += `<div class="fmt-griglia">${caselle}</div>`;
 
         // --- 4c. CLAUSES & RESTRICTIONS BLOCK ---
         if (formatoDati.restrizioni && Object.keys(formatoDati.restrizioni).length > 0) {

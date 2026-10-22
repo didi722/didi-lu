@@ -24,6 +24,7 @@
 <script src="temi.js"></script>
 <script src="menu-sito.js"></script>
 <script src="sfide.js"></script>
+<script src="amichevoli.js"></script>
 <script src="titoli.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
@@ -330,12 +331,16 @@ async function initTrainersPage() {
                         </div>
                     </div>
 
+                    ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
+
                     <div class="trainer-points-box">
                         ${player.ranking}
                     </div>
                 </a>
             `;
         }).join('');
+        // le spade per sfidare a una partita amichevole (non sul proprio nome)
+        if (window.Amichevoli) Amichevoli.aggiornaTasti(gridContainer);
 
     } catch (error) {
         console.error("Errore durante il caricamento dei giocatori:", error);

@@ -43,6 +43,8 @@ export function livelloFormato(regolamento) {
 // Se nel regolamento su Firebase esiste il campo "formatoSimulatore",
 // vince sempre lui (serve solo per casi eccezionali).
 export function formatoSimulatore(regolamento) {
+    // un formato Random gioca il Random Battle di Showdown, com'è (self.FormatoRandom lo carica la pagina: formato-random.js)
+    if (self.FormatoRandom && self.FormatoRandom.eRandom(regolamento)) return self.FormatoRandom.idSimulatore(regolamento);
     if (regolamento.formatoSimulatore) return regolamento.formatoSimulatore;
 
     const struttura = String(regolamento.strutturaSito || 'custom').toLowerCase().trim();
@@ -233,4 +235,62 @@ export async function caricaPerProva(db, utente, chiaveTeam) {
         team: { nome: nomeTeam(team), testo }, categoria: regolamento.categoria, regolamento,
         formato: formatoSimulatore(regolamento), livello, problemi: testo ? controllaTeam(testo, regolamento, delta) : ['The team is empty']
     };
+}
+
+
+// -----------------------------------------------------
+// 5. PARTITA AMICHEVOLE: I TEAM DEL BOX DI UN GIOCATORE
+// -----------------------------------------------------
+// Fuori dalle stagioni: i team non si iscrivono, si portano dal Box. In una partita su un formato dell'elenco solo quelli fatti per quel
+// formato (con i suoi controlli); in modalità libera tutti, qualunque formato (il server li porta a livello 50).
+// `info`: le informazioni della partita (categoria, libera). controlla: false per i team di chi non sei (servono solo i nomi e le specie).
+// Restituisce [{ nome, testo, categoria, completo, problemi }]
+export async function caricaTeamAmichevoli(db, idGiocatore, info, { controlla = true } = {}) {
+    const [boxSnap, regolamentiSnap] = await Promise.all([
+        db.ref(`players/${idGiocatore}/teams`).once('value'),
+        db.ref('regolamenti').once('value')
+    ]);
+    const regolamenti = Object.values(regolamentiSnap.val() || {}).filter(r => r && r.categoria);
+    const dei = categoria => regolamenti.find(r => String(r.categoria).toLowerCase().trim() === String(categoria || '').toLowerCase().trim()) || null;
+
+    const risultato = [];
+    for (const team of Object.values(boxSnap.val() || {})) {
+        if (!team) continue;
+        const nome = nomeTeam(team);
+        const categoria = String(team.categoria || team.category || '').trim();
+        const regolamento = dei(categoria);
+        const testo = testoShowdownDaTeam(team, regolamento ? livelloFormato(regolamento) : 100);
+        if (!nome || !testo) continue;
+        const voce = { nome, testo, categoria, completo: !!(team.testoShowdown && String(team.testoShowdown).trim()), problemi: [] };
+        if (!info.libera) {
+            if (categoria.toLowerCase() !== String(info.categoria || '').toLowerCase().trim()) continue;
+            if (controlla) {
+                const regolamentoPartita = dei(info.categoria);
+                voce.problemi = regolamentoPartita
+                    ? controllaTeam(testo, regolamentoPartita, await caricaDeltaFormato(regolamentoPartita))
+                    : ['The format of this match no longer exists'];
+            }
+        } else if (controlla && !(Teams.import(testo) || []).length) {
+            voce.problemi = ['The team is empty or unreadable'];
+        }
+        risultato.push(voce);
+    }
+    return risultato;
+}
+
+// Quel che serve alla pagina di battaglia di una partita amichevole: per i due giocatori nome, colore, avatar e i team del Box
+// (i propri con i controlli, quelli dell'altro solo per riconoscerlo dall'anteprima). Nei formati Random non ci sono team.
+// Restituisce { openSheet: false, giocatori: { p1: { nome, id, colore, avatar, teams }, p2: {...} } }
+export async function caricaAmichevole(db, info, mioLato) {
+    const giocatori = {};
+    for (const lato of ['p1', 'p2']) {
+        const g = info[lato];
+        const [coloreSnap, avatarSnap] = await Promise.all([
+            db.ref(`players/${g.id}/info/color`).once('value'),
+            db.ref(`players/${g.id}/info/avatar`).once('value')
+        ]);
+        const teams = info.random ? [] : await caricaTeamAmichevoli(db, g.id, info, { controlla: lato === mioLato }).catch(() => []);
+        giocatori[lato] = { nome: g.nome, id: g.id, colore: coloreSnap.val(), avatar: avatarSnap.val() || '', teams };
+    }
+    return { openSheet: false, giocatori };
 }

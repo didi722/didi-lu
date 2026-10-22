@@ -14,6 +14,7 @@
 //   'stato'     (stato)             lobby / in_corso / da_salvare / salvata ...
 //   'avversario'(passo)             l'avversario ha scelto per questo passo
 //   'pronti'    ({ p1, p2 })        chi è pronto nella lobby
+//   'rivincita' (offerta | null)    (amichevoli) la rivincita offerta a fine partita: { sfida, daUid, da, bestOf, cambioTeam, stato }
 //
 // Metodi: scegli(lato, scelta), annulla(lato) (ritira la scelta finché l'avversario non ha scelto), avvia(), chiudi().
 // =====================================================
@@ -65,6 +66,7 @@ export class BattagliaOnline {
         this._ascolta(`${base}/stato`, 'value', s => this._emetti('stato', s.val()));
         this._ascolta(`${base}/pronti`, 'value', s => this._emetti('pronti', s.val() || {}));
         this._ascolta(`${base}/risultati`, 'value', s => this._emetti('risultati', s.val() || {}));
+        this._ascolta(`${base}/rivincita`, 'value', s => this._emetti('rivincita', s.val() || null));
 
         this._ascolta(`${base}/setCorrente`, 'value', s => {
             const n = s.val();

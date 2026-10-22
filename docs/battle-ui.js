@@ -9,6 +9,8 @@
 //   battle.html?stagione=S&showdown=ID&match=N           -> match ONLINE (turni sul server)
 //   battle.html?stagione=S&showdown=ID&match=N&locale=1  -> stessi team, stesso schermo (prove)
 //   battle.html?cpu=1&team=ID                            -> prova del proprio team (dal Box) contro la CPU
+//   battle.html?cpu=1&random=gen9randombattle            -> Random Battle di Showdown contro la CPU: team a caso per tutti e due
+//   battle.html?amichevole=ID                            -> partita amichevole tra due giocatori (niente punti, niente salvataggi)
 //   battle.html                                           -> team di prova (sviluppo)
 // =====================================================
 
@@ -17,10 +19,11 @@ import {
     bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale, setDaTeam
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
-import { caricaMatch, caricaPerProva } from './team-sito.js';
+import { caricaMatch, caricaPerProva, caricaAmichevole } from './team-sito.js';
 import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
+import './formato-random.js';   // self.FormatoRandom: i formati Random Battle di Showdown
 import './nomi-unici.js';       // self.NomiUnici
 import './nomi-log.js';         // self.NomiLog
 import './team-bloccati.js';    // self.TeamBloccati: quali team non si modificano più
@@ -59,6 +62,7 @@ let battaglia, stato, pannelli, finita;
 // componendo un altro team della CPU) }
 let cpu = null;
 let editor = null;          // { frame, pronto } mentre la finestra dell'editor del team è aperta
+let generatoriRandom = null; // la promessa del caricamento di pkmn-randoms.js (i team dei formati Random), solo quando serve
 
 // Solo online
 let mioLato = null;         // 'p1' o 'p2'; null = locale (entrambi i lati) o spettatore
@@ -85,7 +89,9 @@ if (!PS || !PS.Battle || !jq) {
     mostraMessaggioCampo("Showdown's battle engine didn't load. Check your connection and reload the page.");
 } else {
     const parametri = new URLSearchParams(location.search);
-    if (parametri.get('showdown')) {
+    if (parametri.get('amichevole')) {
+        preparaAmichevole(parametri.get('amichevole'));
+    } else if (parametri.get('showdown')) {
         const chiavi = {
             stagione: parametri.get('stagione'),
             showdown: parametri.get('showdown'),
@@ -94,7 +100,8 @@ if (!PS || !PS.Battle || !jq) {
         if (parametri.get('locale')) preparaDaSito(chiavi);
         else preparaOnline(chiavi);
     } else if (parametri.get('cpu')) {
-        preparaCpu(parametri.get('team'));
+        if (parametri.get('random')) preparaCpuRandom(parametri.get('random'), parametri.get('nome'));
+        else preparaCpu(parametri.get('team'));
     } else {
         config = CONFIG_PROVA;
                    schedeLocali();
@@ -226,6 +233,94 @@ async function preparaCpu(chiaveTeam) {
 }
 
 // -----------------------------------------------------
+// Random Battle di Showdown contro la CPU: i team non si costruiscono, li compone Showdown
+// -----------------------------------------------------
+// Il formato lo decide l'indirizzo (gen9randombattle...): niente team nel Box, niente team della CPU del sito, niente note né
+// modifiche. A ogni partita due team nuovi, uno per lato, dal generatore di Showdown (pkmn-randoms.js, caricato solo qui).
+function caricaGeneratoriRandom() {
+    if (!generatoriRandom) {
+        generatoriRandom = import('./pkmn-randoms.js').catch(errore => { generatoriRandom = null; throw errore; });
+    }
+    return generatoriRandom;
+}
+
+// Chi gioca, dal suo profilo se ha fatto il login (nome, colore, avatar): la prova di un Random non lo richiede
+async function profiloDiChiGioca() {
+    const anonimo = { nome: 'You', id: '', colore: '', avatar: '' };
+    try {
+        if (!window.firebase || !firebase.auth) return anonimo;
+        await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
+        const utente = firebase.auth().currentUser;
+        if (!utente) return anonimo;
+        const db = firebase.database();
+        const nome = (await db.ref(`users/${utente.uid}/name`).once('value')).val();
+        if (!nome) return anonimo;
+        const id = String(nome).toLowerCase().trim();
+        const [colore, avatar] = await Promise.all([db.ref(`players/${id}/info/color`).once('value'), db.ref(`players/${id}/info/avatar`).once('value')]);
+        return { nome, id, colore: colore.val() || '', avatar: avatar.val() || '' };
+    } catch (errore) {
+        console.warn("Couldn't load your profile, playing as a guest", errore);
+        return anonimo;
+    }
+}
+
+async function preparaCpuRandom(idFormato) {
+    $('opzione-bot').hidden = true;
+    const ritorno = $('link-hub');
+    ritorno.href = 'formats.html';
+    ritorno.textContent = '← Formats';
+    const formato = self.FormatoRandom.trova(idFormato);
+    if (!formato || !DexSim.formats.get(formato.id).exists) {
+        return mostraMessaggioCampo(`"${idFormato}" isn't a Random Battle this site can play.`);
+    }
+    mostraMessaggioCampo(`Getting ${formato.nome} ready…`);
+    let io;
+    try {
+        [io] = await Promise.all([profiloDiChiGioca(), caricaGeneratoriRandom()]);
+    } catch (errore) {
+        console.error(errore);
+        return mostraMessaggioCampo(`Couldn't load the Random Battle team generator: ${errore.message}`);
+    }
+
+    document.body.classList.add('prova-cpu');
+    cpu = {
+        cerebro: null, team: { piano: null }, giocatore: { regolamento: self.FormatoRandom.campiRegolamento(formato.id), iniziali: [] },
+        errori: 0, rqid: null, chiaveTeam: null, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
+        random: formato
+    };
+    config = {
+        formato: formato.id,
+        etichetta: `Practice vs CPU · ${formato.nome}`,
+        p1: { nome: io.nome, id: io.id, team: [], nomeTeam: 'Random team', avatar: io.avatar },
+        p2: { nome: 'CPU', team: [], nomeTeam: 'Random team' }
+    };
+    if (io.colore) document.documentElement.style.setProperty('--colore-p1', io.colore);
+    impostaPannelli();
+    iniziaRandom();
+}
+
+// Due team nuovi e si parte (anche per la rivincita)
+function iniziaRandom() {
+    cpu.avviso = '';
+    cpu.ultimoVincitore = null;
+    config.p1.team = Teams.generate(cpu.random.id);
+    config.p2.team = Teams.generate(cpu.random.id);
+    schedeRandom();
+    avviaBattaglia();
+}
+
+// Colonne dei player: il proprio team si vede, quello della CPU solo man mano che scende in campo (nel Random non c'è anteprima)
+function schedeRandom() {
+    impostaPartita({
+        openSheet: false,
+        senzaAnteprima: true,
+        latiNoti: ['p1'],
+        p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
+        p2: { nome: 'CPU', avatar: '', candidati: [{ nome: config.p2.nomeTeam, set: [] }] }
+    });
+}
+
+// -----------------------------------------------------
 // Note del team (note-team.js)
 // -----------------------------------------------------
 // Un pulsantino accanto al volume apre un piccolo bloc notes: le note si salvano per il team che si sta provando (dentro il team,
@@ -308,6 +403,12 @@ function schedeCpu() {
 // schermo: vedi style-battle.css
 function azioniCpu() {
     const azioni = [];
+    if (cpu.random) {       // Random Battle: due team nuovi a ogni partita, niente Box da cui modificare
+        return [
+            el('button', { type: 'button', class: 'btn primario', onclick: iniziaRandom }, 'Rematch · new random teams'),
+            el('a', { class: 'btn secondario', href: 'formats.html' }, 'Back to Formats')
+        ];
+    }
     // dopo una modifica il team può non essere più giocabile nel simulatore: allora niente rivincita finché non si sistema
     if (!cpu.problemi.length) {
         azioni.push(
@@ -322,6 +423,7 @@ function azioniCpu() {
 
 // Quello che sta scritto sul cartello sotto il titolo: i due team, e se serve una nota (team aggiornato, team bloccato, errori)
 function riepilogoFineCpu() {
+    if (cpu.random) return `${cpu.random.nome} · random teams, new every battle`;
     const nota = cpu.avviso || (cpu.modificabile === false ? '🔒 Locked team: it can\'t be edited' : '');
     return `${config.p1.nomeTeam} vs ${config.p2.nomeTeam}${nota ? ` · ${nota}` : ''}`;
 }
@@ -479,7 +581,7 @@ async function preparaOnline(chiavi) {
     battaglia = new BattagliaOnline({ id, lato, db: firebase.database(), funzioni });
     collegaEventi(battaglia);
     battaglia.on('stato', s => { online.stato = s; aggiornaFase(); });
-    battaglia.on('pronti', p => { online.pronti = p; if (online.stato === 'lobby') disegnaLobby(); aggiornaStati(); });
+    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); });
     battaglia.on('risultati', r => { online.risultati = r; disegnaInfo(); });
     battaglia.on('avversario', passo => {
         online.sceltaAvversario = passo;
@@ -488,6 +590,107 @@ async function preparaOnline(chiavi) {
     });
     battaglia.on('set', n => { nuovoSet(n); disegnaInfo(); ridisegnaComandi(); });
     battaglia.avvia();
+}
+
+// -----------------------------------------------------
+// Partita AMICHEVOLE: due giocatori, ognuno sul proprio dispositivo, fuori dalle stagioni
+// -----------------------------------------------------
+// Niente punti, statistiche, replay né storico: il server non salva nulla (vedi functions/partita.js). La macchina è quella di un
+// match ufficiale (lobby, set, richieste private, BattagliaOnline), con tre differenze: i team si portano dal Box (quelli del formato,
+// oppure tutti in modalità libera, a livello 50) o non ci sono (formato Random: li dà Showdown); la serie è una partita sola o al meglio
+// dei 3, 5, 7 set, con team fissi o cambiabili dopo ogni set; alla fine c'è il risultato e l'offerta di una rivincita.
+async function preparaAmichevole(idSfida) {
+    $('opzione-bot').hidden = true;
+    const ritorno = $('link-hub');
+    ritorno.href = 'players.html';
+    ritorno.textContent = '← Trainers';
+    mostraMessaggioCampo('Connecting to the friendly match…');
+
+    if (!window.firebase || !firebase.functions) {
+        return mostraMessaggioCampo('Firebase did not load: check the scripts in battle.html.');
+    }
+    await new Promise(ok => { const stop = firebase.auth().onAuthStateChanged(() => { stop(); ok(); }); });
+    if (!firebase.auth().currentUser) return mostraMessaggioCampo('Log in on the site to play or watch this match.');
+
+    const funzioni = firebase.app().functions('europe-west1');
+    let aperta;
+    try {
+        aperta = (await funzioni.httpsCallable('apriPartita')({ amichevole: idSfida })).data;
+    } catch (e) {
+        return mostraMessaggioCampo(`Couldn't open the friendly match: ${e.message}`);
+    }
+
+    const { id, lato, info } = aperta;
+    mioLato = lato;
+    document.body.classList.toggle('spettatore', !mioLato);
+    document.body.classList.toggle('vista-p2', mioLato === 'p2');   // chi gioca sta sempre a sinistra
+    $('badge-live').hidden = !!mioLato;
+    document.title = 'Friendly match | Poké-Tournament';
+    online = { id, info, funzioni, giaSalvato: false, stato: null, pronti: {}, risultati: {}, sceltaAvversario: null, datiMatch: null, amichevole: true, miei: [] };
+    config = { formato: info.formato, etichetta: `Friendly · ${info.categoria}`, p1: { nome: info.p1.nome }, p2: { nome: info.p2.nome } };
+    impostaNomeGiocatore('p1', info.p1.nome);
+    impostaNomeGiocatore('p2', info.p2.nome);
+    impostaPannelli();
+    nuovoSet();
+
+    // Colori, avatar e team del Box (per la lobby e per riconoscere i team dall'anteprima)
+    try {
+        online.datiMatch = await caricaAmichevole(firebase.database(), info, mioLato);
+        for (const l of ['p1', 'p2']) {
+            const colore = online.datiMatch.giocatori[l].colore;
+            if (colore) document.documentElement.style.setProperty(`--colore-${l}`, colore);
+        }
+        if (mioLato) online.miei = online.datiMatch.giocatori[mioLato].teams;
+        schedeOnline();
+    } catch (e) {
+        console.warn('Match data not loaded', e);
+    }
+
+    battaglia = new BattagliaOnline({ id, lato, db: firebase.database(), funzioni });
+    collegaEventi(battaglia);
+    battaglia.on('stato', s => { online.stato = s; aggiornaFase(); });
+    battaglia.on('pronti', p => { online.pronti = p; ridisegnaLobby(); aggiornaStati(); });
+    battaglia.on('risultati', r => {
+        online.risultati = r;
+        disegnaInfo();
+        // il server scrive risultati e stato quasi insieme: se lo stato è arrivato per primo, il punteggio del cartello finale
+        // (o quello della scelta del team tra i set) va aggiornato
+        if (online.stato === 'conclusa') quandoScenaFerma(mostraEsitoAmichevole);
+        else if (online.stato === 'tra_set') ridisegnaLobby();
+    });
+    battaglia.on('avversario', passo => {
+        online.sceltaAvversario = passo;
+        aggiornaStati();
+        if (pannelli && pannelli[mioLato] && pannelli[mioLato].inviata) disegnaPannello(mioLato);   // il pulsante "Cancel" sparisce
+    });
+    battaglia.on('set', n => { nuovoSet(n); disegnaInfo(); ridisegnaComandi(); });
+    battaglia.on('rivincita', r => {
+        online.rivincita = r;
+        online.invioRivincita = false;
+        // l'altro ha accettato (o ho accettato io da un altro dispositivo): si passa alla partita nuova
+        if (r && r.stato === 'accettata' && r.sfida && mioLato) return vaiAllaPartita(r.sfida);
+        if (online.stato === 'conclusa') quandoScenaFerma(mostraEsitoAmichevole);
+    });
+    battaglia.avvia();
+}
+
+// Formato Random: del proprio team non c'è altro che la richiesta del simulatore. Le colonne dei player lo mostrano da lì (specie e
+// nome) a ogni set, perché i team cambiano; quello dell'avversario si scopre man mano che scende in campo.
+let firmaSquadraRandom = '';
+function squadraRandomDaRichiesta(richiesta) {
+    const pokemon = (richiesta.side.pokemon || []).map(p => ({
+        species: String(p.details || '').split(', ')[0],
+        name: String(p.ident || '').replace(/^p\d: /, '')
+    })).filter(x => x.species);
+    const firma = pokemon.map(x => x.species).join('|');
+    if (!pokemon.length || firma === firmaSquadraRandom) return;
+    firmaSquadraRandom = firma;
+    impostaPartita({
+        senzaAnteprima: true,
+        latiNoti: [mioLato],
+        [mioLato]: { candidati: [{ nome: '', set: pokemon }] },
+        [avversarioDi(mioLato)]: { candidati: [{ nome: '', set: [] }] }
+    });
 }
 
 const avversarioDi = lato => (lato === 'p1' ? 'p2' : 'p1');
@@ -508,7 +711,7 @@ function aggiornaFase() {
             disegnaLobby();
         }
     } else {
-        nascondiLobby();
+        if (s !== 'tra_set') nascondiLobby();
         nascondiMessaggio();
         // a match finito il conto alla rovescia verso un nuovo set non ha più senso (e non deve coprire l'esito)
         if (s !== 'in_corso') fermaPausaSet();
@@ -528,10 +731,21 @@ function aggiornaFase() {
                 sotto: "The result couldn't be saved. Let an admin know.",
                 azioni: [el('a', { class: 'btn secondario', href: $('link-hub').href }, 'Back to hub')]
             }));
+        } else if (s === 'conclusa') {
+            quandoScenaFerma(mostraEsitoAmichevole);
+        } else if (s === 'tra_set') {
+            // team cambiabili: il set è finito, ognuno sceglie il team del prossimo (quando l'ultimo turno ha finito di animarsi)
+            quandoScenaFerma(ridisegnaLobby);
         }
     }
     aggiornaStati();
     ridisegnaComandi();
+}
+
+// La lobby giusta per lo stato in cui è la partita: prima del primo set, o tra un set e l'altro (solo amichevoli con team cambiabili)
+function ridisegnaLobby() {
+    if (online.stato === 'lobby') disegnaLobby();
+    else if (online.stato === 'tra_set' && !animazioneInCorso()) disegnaLobby();
 }
 
 function punteggio(risultati = online.risultati) {
@@ -575,12 +789,29 @@ function contoAllaRovescia(link, prossimo) {
 // Lobby: scelta del team per tutto il match
 // -----------------------------------------------------
 function disegnaLobby() {
+    if (online.amichevole) return disegnaLobbyAmichevole();
     nascondiMessaggio();
     if (!mioLato) {
         const riga = lato => el('li', { testo: `${nomeDi(lato)}: ${online.pronti[lato] ? 'ready ✓' : 'picking a team…'}` });
         return mostraLobby(
             el('h2', { class: 'lobby-titolo', testo: `Match ${online.info.match}: players are picking their teams` }),
             el('ul', { class: 'lobby-stati' }, riga('p1'), riga('p2'))
+        );
+    }
+
+    // un formato Random: nessun team (li dà Showdown, nuovi a ogni set), basta dire "pronto"
+    if (online.info.random) {
+        const avv = avversarioDi(mioLato);
+        return mostraLobby(
+            el('h2', { class: 'lobby-titolo', testo: `Match ${online.info.match}: ${online.info.categoria}` }),
+            el('p', { class: 'lobby-sotto' },
+                'Showdown gives each of you a random team, new in every set. ',
+                el('strong', { testo: online.pronti[avv] ? `${nomeDi(avv)} is ready.` : `${nomeDi(avv)} is not ready yet.` })),
+            online.erroreLobby ? el('p', { class: 'errore', testo: online.erroreLobby }) : null,
+            el('div', { class: 'riga-azioni' }, el('button', {
+                type: 'button', class: 'btn ' + (online.pronti[mioLato] ? 'scelto' : 'primario'), disabled: !!online.invioLobby,
+                onclick: () => mandaPronto({ pronto: !online.pronti[mioLato] })
+            }, online.pronti[mioLato] ? 'Ready ✓ (undo)' : 'Ready'))
         );
     }
 
@@ -620,8 +851,208 @@ function disegnaLobby() {
     );
 }
 
+// "Pronto" nella lobby (prima del primo set, o tra un set e l'altro): parametri = { team } oppure { pronto } nei Random
+async function mandaPronto(parametri) {
+    online.invioLobby = true;
+    online.erroreLobby = '';
+    disegnaLobby();
+    try {
+        await online.funzioni.httpsCallable('prontoPartita')({ id: online.id, ...parametri });
+    } catch (e) {
+        online.erroreLobby = e.message;
+    }
+    online.invioLobby = false;
+    ridisegnaLobby();
+}
+
+// Lobby di una partita amichevole: un team del Box (del formato, o qualunque in modalità libera), oppure solo "Ready" nei Random.
+// Con i team cambiabili si torna qui tra un set e l'altro ("tra_set"): si può tenere il team di prima o sceglierne un altro.
+function disegnaLobbyAmichevole() {
+    nascondiMessaggio();
+    const info = online.info;
+    const traSet = online.stato === 'tra_set';
+    const serie = info.bestOf > 1 ? `Best of ${info.bestOf}` : 'One battle';
+    const prossimo = Object.keys(online.risultati || {}).length + 1;
+    if (traSet) nascondiEsito();
+    if (!mioLato) {
+        const riga = lato => el('li', { testo: `${nomeDi(lato)}: ${online.pronti[lato] ? 'ready ✓' : (traSet ? 'picking a team…' : 'getting ready…')}` });
+        return mostraLobby(
+            el('h2', { class: 'lobby-titolo', testo: traSet ? `Set ${prossimo}: the players are picking their teams` : 'Friendly match: the players are getting ready' }),
+            el('ul', { class: 'lobby-stati' }, riga('p1'), riga('p2'))
+        );
+    }
+
+    const avv = avversarioDi(mioLato);
+    const pronto = !!online.pronti[mioLato];
+    const stato = el('strong', { testo: online.pronti[avv] ? `${nomeDi(avv)} is ready.` : `${nomeDi(avv)} is still getting ready.` });
+
+    if (info.random) {
+        return mostraLobby(
+            el('h2', { class: 'lobby-titolo', testo: info.categoria }),
+            el('p', { class: 'lobby-sotto' }, `${serie} · no points, nothing saved. Showdown gives each of you a random team, new in every battle. Ready when you are. `, stato),
+            online.erroreLobby ? el('p', { class: 'errore', testo: online.erroreLobby }) : null,
+            el('div', { class: 'riga-azioni' }, el('button', {
+                type: 'button', class: 'btn ' + (pronto ? 'scelto' : 'primario'), disabled: !!online.invioLobby,
+                onclick: () => mandaPronto({ pronto: !pronto })
+            }, pronto ? 'Ready ✓ (undo)' : 'Ready'))
+        );
+    }
+
+    const teams = online.miei || [];
+    online.teamScelto ||= (teams.find(t => !t.problemi.length) || teams[0] || {}).nome;
+    const scelto = teams.find(t => t.nome === online.teamScelto) || null;
+    const { s1, s2 } = punteggio();
+    const chiVince = s1 === s2 ? '' : ` ${nomeDi(s1 > s2 ? 'p1' : 'p2')} leads ${Math.max(s1, s2)}–${Math.min(s1, s2)}.`;
+    mostraLobby(
+        el('h2', { class: 'lobby-titolo', testo: traSet ? `Set ${prossimo}: pick your team` : (info.libera ? 'Free battle: pick a team' : `${info.categoria}: pick your team`) }),
+        el('p', { class: 'lobby-sotto' },
+            traSet ? `${serie}.${chiVince || ' All square.'} Keep your team or switch to another one. ` : `${serie} · no points, nothing saved. `,
+            !traSet ? (info.cambioTeam ? 'You can change team after every battle. ' : 'You keep it for the whole match. ') : '',
+            info.libera ? 'Any team of your Box, whatever its format: all the Pokémon are set to level 50. ' : (traSet ? `Same format (${info.categoria}). ` : ''),
+            stato),
+        sceltaTeam({
+            teams,
+            scelto,
+            pronto,
+            occupato: online.invioLobby,
+            errore: online.erroreLobby,
+            conFormato: !!info.libera,
+            vuoto: info.libera ? 'You have no teams in your Box.' : `You have no ${info.categoria} teams in your Box.`,
+            onScegli: t => { online.teamScelto = t.nome; online.erroreLobby = ''; disegnaLobby(); },
+            onPronto: () => mandaPronto({ team: pronto ? null : scelto.nome })
+        })
+    );
+}
+
+// Fine di una partita amichevole (anche di una serie): il risultato, "giochiamo ancora?" e il ritorno ai Trainers
+function mostraEsitoAmichevole() {
+    const { s1, s2 } = punteggio();
+    const serie = online.info.bestOf > 1;
+    const vincitore = s1 === s2 ? '' : nomeDi(s1 > s2 ? 'p1' : 'p2');
+    const titolo = serie ? `${nomeDi('p1')} ${s1} – ${s2} ${nomeDi('p2')}` : (vincitore ? `${vincitore} wins!` : "It's a tie!");
+    mostraEsito(titolo, {
+        sotto: 'Friendly match over: no points, nothing saved.',
+        azioni: [...rivincitaUi(), el('a', { class: `btn ${mioLato ? 'secondario' : 'primario'}`, href: 'players.html' }, 'Back to Trainers')]
+    });
+    ridisegnaComandi();      // la rivincita sta anche nel pannello sotto lo schermo (sui telefoni è solo lì)
+}
+
+// "Giochiamo ancora?": chi ha giocato offre una rivincita (stesso avversario e stesso formato, serie nuova: si scelgono di nuovo la
+// lunghezza e se i team sono fissi o cambiabili, e poi i team). L'offerta è una sfida amichevole nuova (sfidaAmichevole con { rivincita });
+// l'altro risponde da qui o dalla campanella. Quando accetta, i due passano alla partita nuova.
+const SERIE_RIVINCITA = [1, 3, 5, 7];
+function descrizioneSerie(bestOf, cambioTeam) {
+    if (bestOf <= 1) return 'one battle';
+    return `best of ${bestOf}${cambioTeam && !online.info.random ? ', teams can change' : ''}`;
+}
+
+function rivincitaUi() {
+    if (!mioLato) return [];
+    const r = online.rivincita;
+    const avv = nomeDi(avversarioDi(mioLato));
+    const mioUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+    const inAttesa = !!r && r.stato === 'in_attesa';
+    const miaOfferta = inAttesa && r.daUid === mioUid;
+    const blocco = el('div', { class: 'rivincita' });
+    const errore = online.erroreRivincita ? el('p', { class: 'errore', role: 'alert', testo: online.erroreRivincita }) : null;
+    const occupato = !!online.invioRivincita;
+
+    if (inAttesa && miaOfferta) {
+        blocco.append(...[
+            el('p', { class: 'rivincita-testo' }, 'You asked for a rematch: ', el('b', { testo: descrizioneSerie(r.bestOf, r.cambioTeam) }), `. Waiting for ${avv}…`),
+            errore,
+            el('button', { type: 'button', class: 'btn secondario piccolo', disabled: occupato, onclick: () => rispondiRivincita('ritira') }, 'Withdraw')
+        ].filter(Boolean));
+        return [blocco];
+    }
+    if (inAttesa) {
+        blocco.append(...[
+            el('p', { class: 'rivincita-testo' }, el('b', { testo: r.da || avv }), ' wants to play again: ', el('b', { testo: descrizioneSerie(r.bestOf, r.cambioTeam) }), '.'),
+            errore,
+            el('div', { class: 'rivincita-azioni' },
+                el('button', { type: 'button', class: 'btn primario piccolo', disabled: occupato, onclick: () => rispondiRivincita('accetta') }, 'Accept'),
+                el('button', { type: 'button', class: 'btn secondario piccolo', disabled: occupato, onclick: () => rispondiRivincita('rifiuta') }, 'No thanks'))
+        ].filter(Boolean));
+        return [blocco];
+    }
+
+    // nessuna offerta (o chiusa): si può offrirne una
+    const f = online.formRivincita ||= { serie: online.info.bestOf > 1 ? online.info.bestOf : 1, cambioTeam: !!online.info.cambioTeam };
+    const gruppo = (nome, voci, attuale, scegli) => el('div', { class: 'rivincita-gruppo', role: 'radiogroup', 'aria-label': nome },
+        el('span', { class: 'rivincita-nome', testo: nome }),
+        voci.map(([valore, testo]) => el('button', {
+            type: 'button', class: 'rivincita-scelta' + (valore === attuale ? ' scelta' : ''), role: 'radio', 'aria-checked': String(valore === attuale),
+            disabled: occupato, onclick: () => { scegli(valore); mostraEsitoAmichevole(); }
+        }, testo)));
+
+    const chiusa = r && r.stato === 'rifiutata' && r.daUid === mioUid ? `${avv} didn't accept the rematch.`
+        : (r && r.stato === 'annullata' && r.daUid !== mioUid ? `${avv} withdrew the rematch offer.` : '');
+    blocco.append(...[
+        el('p', { class: 'rivincita-testo' }, el('b', { testo: 'Play again?' }), chiusa ? ` ${chiusa}` : ''),
+        gruppo('Length', SERIE_RIVINCITA.map(n => [n, n === 1 ? 'One battle' : `Best of ${n}`]), f.serie, v => { f.serie = v; }),
+        f.serie > 1 && !online.info.random
+            ? gruppo('Teams', [[false, 'Fixed'], [true, 'Change after each battle']], f.cambioTeam, v => { f.cambioTeam = v; })
+            : null,
+        online.info.random && f.serie > 1 ? el('p', { class: 'rivincita-nota', testo: 'New random teams in every battle.' }) : null,
+        errore,
+        el('div', { class: 'rivincita-azioni' },
+            el('button', { type: 'button', class: 'btn primario piccolo', disabled: occupato, onclick: offriRivincita }, occupato ? 'Sending…' : 'Play again'))
+    ].filter(Boolean));
+    return [blocco];
+}
+
+async function offriRivincita() {
+    const f = online.formRivincita;
+    online.invioRivincita = true;
+    online.erroreRivincita = '';
+    mostraEsitoAmichevole();
+    try {
+        const r = (await online.funzioni.httpsCallable('sfidaAmichevole')({
+            rivincita: online.info.sfida, bestOf: f.serie, cambioTeam: f.serie > 1 && !online.info.random && f.cambioTeam
+        })).data;
+        if (r && r.accettata) return vaiAllaPartita(r.id);        // anche l'altro la voleva: si parte
+        return attendiRivincita();
+    } catch (e) {
+        online.erroreRivincita = e.message;
+    }
+    online.invioRivincita = false;
+    mostraEsitoAmichevole();
+}
+
+// Com'è andata la offerta o la risposta lo dice la partita (ascolto "rivincita"): finché non arriva si resta su "Sending…", ma non per sempre
+function attendiRivincita() {
+    setTimeout(() => {
+        if (!online.invioRivincita) return;
+        online.invioRivincita = false;
+        mostraEsitoAmichevole();
+    }, 5000);
+}
+
+// risposta: 'accetta' | 'rifiuta' | 'ritira'
+async function rispondiRivincita(risposta) {
+    const r = online.rivincita;
+    if (!r) return;
+    online.invioRivincita = true;
+    online.erroreRivincita = '';
+    mostraEsitoAmichevole();
+    try {
+        await online.funzioni.httpsCallable('rispondiAmichevole')({ id: r.sfida, risposta });
+        if (risposta === 'accetta') return vaiAllaPartita(r.sfida);
+        return attendiRivincita();
+    } catch (e) {
+        online.erroreRivincita = e.message;
+    }
+    online.invioRivincita = false;
+    mostraEsitoAmichevole();
+}
+
+// La partita nuova (la rivincita accettata) si apre dalla sua sfida
+function vaiAllaPartita(idSfida) {
+    location.href = `battle.html?amichevole=${encodeURIComponent(idSfida)}`;
+}
+
 // Scelta del team: una scheda per team con le icone dei Pokémon, poi "Ready"
-function sceltaTeam({ titolo, teams, scelto, bloccato, pronto, occupato, errore, vuoto, onScegli, onPronto }) {
+function sceltaTeam({ titolo, teams, scelto, bloccato, pronto, occupato, errore, vuoto, conFormato, onScegli, onPronto }) {
     const box = el('div', { class: 'scelta-team' });
     if (titolo) box.append(el('h3', { class: 'scelta-team-titolo', testo: titolo }));
 
@@ -642,6 +1073,7 @@ function sceltaTeam({ titolo, teams, scelto, bloccato, pronto, occupato, errore,
             onclick: () => onScegli(t)
         },
         el('span', { class: 'scheda-team-nome', testo: t.nome }),
+        conFormato && t.categoria ? el('span', { class: 'scheda-team-formato', testo: t.categoria }) : null,
         el('span', { class: 'scheda-team-icone' }, specie.map(sp => icona(sp))));
     })));
 
@@ -775,8 +1207,21 @@ function avviaProssimaScena() {
     titoloFineSet = '';
     nascondiEsito();
     creaScena();
+    rinnovaSquadre();
     if (righe.length) aggiungiAScena(righe);
     ridisegnaComandi();
+}
+
+// Nei Random i team sono nuovi a ogni set, e nelle amichevoli con team cambiabili ognuno può aver scelto un team diverso: le colonne dei
+// player (battle-extra.js) ricominciano da capo quando entra in scena il set nuovo, non prima (il set di prima è ancora in vista)
+function rinnovaSquadre() {
+    if (!online) return;
+    if (online.info.random) {
+        if (online.richiestaRandom) squadraRandomDaRichiesta(online.richiestaRandom);
+        online.richiestaRandom = null;
+    } else if (online.info.cambioTeam) {
+        schedeOnline();
+    }
 }
 
 
@@ -848,8 +1293,10 @@ function nuovoSet(numero) {
         const animando = !scena.battle.atQueueEnd;
         prossimaScena = [];
         prossimoSet = numero;
-        if (animando) quandoScenaFerma(avviaPausaSet);
-        else avviaPausaSet();
+        // con i team cambiabili i due hanno appena premuto "pronto" per il set nuovo: parte subito, senza conto alla rovescia
+        const parti = online && online.amichevole && online.info.cambioTeam ? avviaProssimaScena : avviaPausaSet;
+        if (animando) quandoScenaFerma(parti);
+        else parti();
     } else {
         nascondiEsito();
         creaScena({ recupera });
@@ -877,6 +1324,10 @@ function collegaEventi(b) {
             squadraTooltip = richiesta.side.pokemon;
             if (scena) scena.battle.myPokemon = squadraPerTooltip(scena.battle, squadraTooltip);
         }
+        if (online && online.info.random && mioLato && lato === mioLato && richiesta.side) {
+            if (prossimaScena) online.richiestaRandom = richiesta;       // set nuovo: le colonne cambiano quando entra in scena
+            else squadraRandomDaRichiesta(richiesta);
+        }
         if (botAttivo(lato)) return giocaBot(lato);
         avanza(lato);
     });
@@ -901,7 +1352,11 @@ function collegaEventi(b) {
         }
         quandoScenaFerma(() => {
             if (online) {
-                if (!pausaSet) mostraFineSet();
+                // amichevole finita: il cartello finale batte quello del set (i due eventi possono arrivare in un ordine qualunque);
+                // se i team si cambiano tra un set e l'altro, al cartello del set subentra la scelta del team
+                if (online.amichevole && online.stato === 'conclusa') mostraEsitoAmichevole();
+                else if (online.stato === 'tra_set') ridisegnaLobby();
+                else if (!pausaSet) mostraFineSet();
             } else if (cpu) {
                 mostraFineCpu(vincitore);
             } else {
@@ -1123,9 +1578,9 @@ function ridisegnaComandi() {
 function aggiornaStati() {
     if (!online) return;
     // a campo che anima il testo resta quello di prima: aggiornarlo direbbe come è finito il turno
-    if (animazioneInCorso() && online.stato !== 'lobby') return;
+    if (animazioneInCorso() && online.stato !== 'lobby') return;     // (tra un set e l'altro la lobby compare solo a campo fermo)
     if (!mioLato) {
-        const testo = online.stato === 'lobby'
+        const testo = online.stato === 'lobby' || online.stato === 'tra_set'
             ? `${nomeDi('p1')}: ${online.pronti.p1 ? 'ready ✓' : 'picking a team…'} · ${nomeDi('p2')}: ${online.pronti.p2 ? 'ready ✓' : 'picking a team…'}`
             : online.stato === 'in_corso' ? `You're watching live${battaglia && battaglia.set ? `, set ${battaglia.set}` : ''}.` : 'The match is over.';
         $('striscia-spettatore').textContent = testo;
@@ -1151,7 +1606,7 @@ function disegnaPannello(lato) {
     const p = pannelli[lato];
     const avv = nomeDi(avversarioDi(lato));
 
-    if (online && online.stato === 'lobby') return corpo.append(messaggio('Pick your team above.'));
+    if (online && online.stato === 'lobby') return corpo.append(messaggio(online.info.random ? 'Press Ready above.' : 'Pick your team above.'));
     // Finché il campo anima il pannello è sempre lo stesso, col tasto per saltare l'animazione, anche se è
     // l'ultimo turno del set o del match (senza una nuova richiesta, con "Set over" o "The match is over"
     // si capirebbe in anticipo che sta per finire)
@@ -1159,6 +1614,8 @@ function disegnaPannello(lato) {
         return corpo.append(messaggio('The turn is playing out.',
             el('button', { type: 'button', class: 'btn secondario piccolo', onclick: () => scena && scena.battle.seekTurn(Infinity) }, 'Skip animation')));
     }
+    if (online && online.stato === 'tra_set') return corpo.append(messaggio('Pick your team above.'));
+    if (online && online.amichevole && online.stato === 'conclusa' && lato === mioLato) return corpo.append(...rivincitaUi());
     if (online && online.stato && online.stato !== 'in_corso') return corpo.append(messaggio('The match is over.'));
     if (pausaSet) return corpo.append(messaggio('Set over. Get ready for the next one.'));
     if (p.errore) corpo.append(el('p', { class: 'errore', testo: p.errore }));
@@ -1418,8 +1875,8 @@ function disegnaInfo() {
     aggiornaVistoInsegna();
     const voci = [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
     if (online) {
-        voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
-        if (vistoInsegna.set) {
+        if (!online.amichevole) voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
+        if (vistoInsegna.set && !(online.amichevole && online.info.bestOf === 1)) {
             const { s1, s2 } = punteggio(vistoInsegna.risultati);
             const punti = { p1: s1, p2: s2 };
             // chi gioca sta a sinistra, come nelle colonne e nello schermo
@@ -1464,12 +1921,13 @@ function disegnaInfo() {
                nome: d.giocatori[l].nome,
                               avatar: d.giocatori[l].avatar || '',
                candidati: d.giocatori[l].teams.map(t => {
-                   const sets = setDaTeam(t.testo);
+                   // in modalità libera tutti i Pokémon sono a livello 50, qualunque sia quello scritto nel team
+                   const sets = setDaTeam(t.testo).map(x => (online.info && online.info.libera ? { ...x, level: 50 } : x));
                    return { nome: t.nome, set: vedo ? sets : sets.map(x => ({ species: x.species, name: x.name })) };
                })
            };
        };
-       impostaPartita({ openSheet: !!d.openSheet, latiNoti: mioLato ? [mioLato] : [], p1: lato('p1'), p2: lato('p2') });
+       impostaPartita({ openSheet: !!d.openSheet, senzaAnteprima: !!(online.info && online.info.random), latiNoti: mioLato ? [mioLato] : [], p1: lato('p1'), p2: lato('p2') });
    }
 
    // Cartellino sul bottone del bersaglio: superefficace, poco efficace, nessun effetto

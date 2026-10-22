@@ -499,7 +499,7 @@ test('il formato che il sito dà al simulatore fa partire la partita in ogni gen
     const S = await caricaTeamSito();
     // functions/partita.js carica il simulatore di Node (non installato qui): se ne prende solo la parte sul formato
     const srcServer = fs.readFileSync(path.join(__dirname, '..', 'functions', 'partita.js'), 'utf8');
-    const server = new Function(srcServer.slice(srcServer.indexOf('function generazioneFormato'), srcServer.indexOf('function trovaRegolamento')) + '\nreturn { formatoSimulatore };')();
+    const server = new Function('FormatoRandom', srcServer.slice(srcServer.indexOf('function generazioneFormato'), srcServer.indexOf('function trovaRegolamento')) + '\nreturn { formatoSimulatore };')(require('../docs/formato-random.js'));
     for (let gen = 1; gen <= 9; gen++) for (const stile of ['singles', 'doubles']) {
         const regolamento = reg({ genRuleValue: String(gen), battleStyle: stile });
         const formato = S.formatoSimulatore(regolamento);

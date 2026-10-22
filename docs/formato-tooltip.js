@@ -12,7 +12,7 @@
 
     const DIZIONARIO_TERMINI_FORMATO = {
         'custom': 'Custom', 'vgc': 'Official VGC', 'singles': 'Singles', 'doubles': 'Doubles',
-        'anything_goes': 'Goose',
+        'anything_goes': 'Goose', 'random': 'Random Battle',
         'pokemon': 'Pokémon', 'items': 'Items', 'abilities': 'Abilities', 'moves': 'Moves',
         'species': 'Specific Pokémon', 'duplicates': 'Duplicate Clause', 'total_allowed': 'Total Allowed',
         'same_across_team': 'Same Across Team', 'uber_limit': 'Uber / Legendary Limit',
@@ -73,7 +73,12 @@
         // Griglia dati principali
         let celle = cella('Format Type', umanizzaTermineFormato(dati.strutturaSito || 'custom'));
 
-        if (dati.strutturaSito === 'vgc') {
+        const eRandom = String(dati.strutturaSito || '').toLowerCase().trim() === 'random';
+        if (eRandom) {
+            // Random Battle di Showdown: lo decide tutto Showdown, i team compresi
+            if (dati.formatoSimulatore) celle += cella('Showdown Format', dati.formatoSimulatore, 'frt-lower');
+            celle += cella('Teams', 'Random, given by Showdown');
+        } else if (dati.strutturaSito === 'vgc') {
             if (dati.vgcGen) celle += cella('Generation', `GEN ${dati.vgcGen}`);
             if (dati.vgcFormat) celle += cella('VGC Regulation', dati.vgcFormat);
         } else {
@@ -85,16 +90,18 @@
             if (dati.baseTier) celle += cella('Max. Tier', dati.baseTier);
         }
 
-        if (dati.showdownFormat && dati.showdownFormat.trim() !== '') {
+        if (!eRandom && dati.showdownFormat && dati.showdownFormat.trim() !== '') {
             celle += cella('Showdown Format', dati.showdownFormat.trim(), 'frt-lower');
         }
 
-        celle += cella(
-            'Gen Mechanics',
-            dati.generationalMechanics ? 'Enabled' : 'Disabled',
-            '',
-            dati.generationalMechanics ? 'strong' : 'critical'
-        );
+        if (!eRandom) {
+            celle += cella(
+                'Gen Mechanics',
+                dati.generationalMechanics ? 'Enabled' : 'Disabled',
+                '',
+                dati.generationalMechanics ? 'strong' : 'critical'
+            );
+        }
 
         html += `<div class="frt-section"><div class="frt-section-title">Format</div><div class="frt-grid">${celle}</div></div>`;
 

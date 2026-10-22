@@ -26,10 +26,28 @@ function caricaSim() {
             const copia = path.join(cartella, 'pkmn-sim.mjs');
             fs.copyFileSync(origine, copia);
             const sim = await import(pathToFileURL(copia).href);
-            return { sim };
+            return { sim, cartella };
         })();
     }
     return promessa;
+}
+
+// I generatori dei team dei formati Random (docs/pkmn-randoms.js). Nel browser è un modulo che si aggancia alla stessa copia del
+// simulatore (import './pkmn-sim.js'); qui lo si copia accanto alla copia .mjs del simulatore, con l'importazione puntata lì:
+// dopo, sim.Teams.generate('gen9randombattle') funziona. Restituisce { sim }.
+let promessaRandoms = null;
+function caricaRandoms() {
+    if (!promessaRandoms) {
+        promessaRandoms = (async () => {
+            const { sim, cartella } = await caricaSim();
+            const testo = fs.readFileSync(path.join(__dirname, '..', 'docs', 'pkmn-randoms.js'), 'utf8').replace(/"\.\/pkmn-sim\.js"/g, '"./pkmn-sim.mjs"');
+            const copia = path.join(cartella, 'pkmn-randoms.mjs');
+            fs.writeFileSync(copia, testo);
+            await import(pathToFileURL(copia).href);
+            return { sim };
+        })();
+    }
+    return promessaRandoms;
 }
 
 // docs/team-sito.js e docs/cpu-partita.js (moduli ES del sito) caricati davvero: si copiano accanto al simulatore
@@ -89,6 +107,9 @@ function sceltaCasuale(richiesta, casuale) {
         return `move ${j + 1}${bers}`;
     }).join(', ');
 }
+
+// Un team è il testo di Showdown oppure già l'elenco dei set (come lo dà Teams.generate nei formati Random)
+const impacchetta = (Teams, team) => Teams.pack(typeof team === 'string' ? Teams.import(team) : team);
 
 // Gioca una partita intera. agente1/agente2: { tipo, cerebro }.
 // Restituisce { vincitore: 'p1'|'p2'|null, turni, errori: [...], righe: [...] }
@@ -164,8 +185,8 @@ async function giocaPartita({ sim, formato, team1, team2, agente1, agente2, casu
     const spec = { formatid: formato, seed: seme || [1, 2, 3, 4] };
     streams.omniscient.write(
         `>start ${JSON.stringify(spec)}\n` +
-        `>player p1 ${JSON.stringify({ name: 'P1', team: Teams.pack(Teams.import(team1)) })}\n` +
-        `>player p2 ${JSON.stringify({ name: 'P2', team: Teams.pack(Teams.import(team2)) })}`
+        `>player p1 ${JSON.stringify({ name: 'P1', team: impacchetta(Teams, team1) })}\n` +
+        `>player p2 ${JSON.stringify({ name: 'P2', team: impacchetta(Teams, team2) })}`
     );
 
     await finita;
@@ -184,4 +205,4 @@ function creaCasuale(seme) {
     };
 }
 
-module.exports = { caricaSim, caricaTeamSito, giocaPartita, sceltaCasuale, creaCasuale };
+module.exports = { caricaSim, caricaRandoms, caricaTeamSito, giocaPartita, sceltaCasuale, creaCasuale };

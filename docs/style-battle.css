@@ -342,6 +342,10 @@ html[data-modo="fit"] body.vista-p2 .lato.p2 .scheda-team-badge { align-self: fl
 
 /* Bring 6 pick 4: non si sa ancora se è stato portato (avversario),
    oppure si sa che è rimasto fuori (il tuo team). Torna pieno quando scende in campo. */
+/* formato Random: un Pokémon avversario non ancora sceso in campo è una Poké Ball in ombra */
+.membro.ignoto { opacity: .4; box-shadow: 2px 2px 0 var(--inchiostro); }
+.membro.ignoto > img { max-width: 32px; filter: grayscale(1) drop-shadow(1px 1px 0 var(--inchiostro)); }
+html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
 .membro.incerto { opacity: .45; box-shadow: 2px 2px 0 var(--inchiostro); }
 .membro.non-portato { opacity: .3; box-shadow: none; transform: none; }
 .membro.incerto.con-tooltip:hover, .membro.incerto.con-tooltip:focus-visible,
@@ -635,6 +639,8 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; ove
 .scheda-team:disabled:not(.scelta) { opacity: .45; transform: none; box-shadow: none; }
 .scheda-team.scelta { background: var(--ambra); }
 .scheda-team-nome { font: 700 .9rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+/* modalità libera: di che formato è il team */
+.scheda-team-formato { align-self: flex-start; padding: 1px 6px; background: var(--inchiostro); color: #fff; font: 700 .65rem/1.4 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .scheda-team-icone { display: flex; flex-wrap: wrap; }
 .picon { display: inline-block; flex-shrink: 0; width: 40px; height: 30px; }
 
@@ -644,7 +650,8 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; ove
 /* Cartello di fine set / fine match */
 .esito {
     position: absolute; inset: 0; z-index: 30;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; align-items: safe center; justify-content: center;
+    overflow-y: auto;      /* un cartello più alto del palco (con la rivincita) scorre invece di tagliarsi */
     background: rgba(0, 0, 0, .25);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
@@ -672,6 +679,37 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; ove
 }
 .esito-card p { margin: 14px 0 0; font-weight: 700; }
 .esito-card .riga-azioni { margin-top: 16px; }
+
+/* Fine di una partita amichevole: "Play again?" (lunghezza della serie, team fissi o cambiabili) e la risposta dell'altro.
+   Sul desktop sta nel cartello; sui telefoni il palco è troppo basso per le scelte e sta nel pannello sotto lo schermo
+   (come i pulsanti di fine partita della prova contro la CPU). */
+.rivincita {
+    box-sizing: border-box; display: grid; gap: 8px; justify-items: stretch;
+    padding: 10px 12px 12px; text-align: left;
+    background: var(--carta); border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+}
+.esito-card .rivincita { flex: 1 1 100%; }
+.pannello .rivincita { display: none; margin: 10px; }
+/* con la rivincita il cartello è più alto: si stringe un po' */
+.esito-card:has(.rivincita) { padding: 14px 18px 14px; }
+.esito-card:has(.rivincita) #sotto-vittoria { margin-top: 8px; }
+.esito-card:has(.rivincita) .riga-azioni { margin-top: 10px; gap: 8px; }
+.rivincita p { margin: 0; font: 600 .82rem/1.35 'Montserrat', sans-serif; }
+.rivincita .errore { color: var(--pericolo); }
+.rivincita-gruppo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rivincita-nome { flex: 0 0 100%; font: 700 .66rem/1.2 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.rivincita-scelta {
+    padding: 5px 9px 3px; cursor: pointer;
+    background: var(--carta); color: var(--inchiostro);
+    border: 2px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
+    font: 700 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+    transition: transform .1s ease, box-shadow .1s ease;
+}
+.rivincita-scelta:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--inchiostro); }
+.rivincita-scelta.scelta { background: var(--inchiostro); color: var(--carta); }
+.rivincita-scelta:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
+.rivincita-scelta:disabled { cursor: default; opacity: .6; }
+.rivincita-azioni { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 
 
 /* ---------- Cronaca ---------- */
@@ -1161,6 +1199,9 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     /* Prova contro la CPU: i tre pulsanti di fine partita stanno nel pannello sotto lo schermo, non nel cartello */
     .riga-azioni.azioni-cpu { display: flex; }
     body.prova-cpu #azioni-vittoria { display: none; }
+    /* Amichevole finita: lo stesso per la rivincita */
+    .pannello .rivincita { display: grid; }
+    .esito-card .rivincita { display: none; }
     /* Il cartello di fine partita deve stare nello schermo stretto */
     .esito-card { max-width: calc(100% - 16px); padding: 10px 12px 12px; box-shadow: 5px 5px 0 var(--inchiostro); }
     .esito-card h2 { padding: 4px 10px 2px; font-size: 1.05rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); }
@@ -1169,7 +1210,7 @@ html[data-modo="fit"] .corpo { min-height: 0; overflow-x: hidden; overflow-y: au
     .esito-card .riga-azioni .btn { padding: 6px 10px 4px; font-size: .72rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro { transition: none; }
+    .btn, .btn-pkm, .mossa, .tessera, .scheda-team, .btn-hub, .btn-audio, .membro, .rivincita-scelta { transition: none; }
     .badge-live::before, .esito-card { animation: none; }
 }
 

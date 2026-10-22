@@ -319,6 +319,7 @@ const PP = window.ProfiloPersonale;
 const AVATAR_PREDEFINITO = 'immagini/profile/1.png';
 
 const stato = {
+    formatiSenzaTeam: [],   // i formati Random: nessun team da iscrivere (li dà Showdown)
     stagioni: {},     // id → { info, iscritti, teams_iscritti, showdowns }
     sfide: {},        // id → { idSfida: { da, daId, a, aId, categoria, stato, … } }
     giocatori: {},    // id → { avatar, color, name }   (solo gli avversari che servono)
@@ -445,7 +446,7 @@ function pianificaDisegno() {
 
 // Chi serve disegnare, per leggerne avatar e colore prima di costruire le carte
 function avversariVisibili() {
-    const d = PP.daFare(playerID, stato.stagioni, stato.sfide);
+    const d = PP.daFare(playerID, stato.stagioni, stato.sfide, { formatiSenzaTeam: stato.formatiSenzaTeam });
     return [
         ...PP.rivali(playerID, stato.stagioni).map(r => r.id),
         ...[d.sfideRicevute, d.sfideInviate, d.inCorso, d.mancanti].flat().map(x => x.avversario)
@@ -455,7 +456,7 @@ function avversariVisibili() {
 async function disegna() {
     await caricaGiocatori(avversariVisibili());
     // dopo l'attesa si calcola di nuovo: i dati potrebbero essere cambiati nel frattempo
-    disegnaDaFare(PP.daFare(playerID, stato.stagioni, stato.sfide));
+    disegnaDaFare(PP.daFare(playerID, stato.stagioni, stato.sfide, { formatiSenzaTeam: stato.formatiSenzaTeam }));
     disegnaRivali(PP.rivali(playerID, stato.stagioni));
 }
 
@@ -807,6 +808,10 @@ async function avviaProfilo() {
             if (hero) hero.style.backgroundColor = mie.color;
         }
         stato.giocatori[playerID] = mie || {};
+        // i formati Random non vogliono team: non vanno chiesti tra le cose da fare
+        const regolamenti = await leggi('regolamenti').catch(() => null);
+        stato.formatiSenzaTeam = Object.values(regolamenti || {})
+            .filter(r => r && r.categoria && String(r.strutturaSito || '').toLowerCase().trim() === 'random').map(r => r.categoria);
 
         await Promise.all([...stagioni].map(([id, info]) => caricaStagione(id, info)));
         stato.pronto = true;

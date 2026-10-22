@@ -240,8 +240,10 @@
     //      inCorso: [{ stagione, id, avversario, categoria, match, mioPunteggio, aggiornato }],
     //      mancanti: [{ stagione, nomeStagione, avversario, nome, totale, formati: [{ formato, rimasti, occupato }] }] }
     // Le stagioni chiuse non entrano.
-    function daFare(io, stagioni, sfide) {
+    // opzioni.formatiSenzaTeam: i formati dove non c'è nessun team da iscrivere (i Random: li dà Showdown), per non chiederli
+    function daFare(io, stagioni, sfide, { formatiSenzaTeam = [] } = {}) {
         io = idDi(io);
+        const senzaTeam = new Set(Array.from(formatiSenzaTeam, idDi));
         const fuori = { stagioni: [], iscrizioni: [], sfideRicevute: [], sfideInviate: [], inCorso: [], mancanti: [] };
         if (!io) return fuori;
 
@@ -274,7 +276,7 @@
                     fuori.iscrizioni.push({ tipo: 'iscriviti', stagione: id, nome: nomeStagione, scadenza: scheda.scadenza });
                 } else {
                     const teams = oggetti(S.teams_iscritti);
-                    const senza = formati.filter(f => !(oggetti(oggetti(teams[f])[io]).count > 0));
+                    const senza = formati.filter(f => !senzaTeam.has(idDi(f)) && !(oggetti(oggetti(teams[f])[io]).count > 0));
                     if (senza.length) {
                         fuori.iscrizioni.push({ tipo: 'squadre', stagione: id, nome: nomeStagione, scadenza: scheda.scadenza, formati: senza });
                     }

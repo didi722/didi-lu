@@ -807,8 +807,23 @@
 
     // ---- Proprietario -------------------------------------------------------------------------
 
+    // Chi guarda una pagina che non è la sua può sfidare quell'allenatore a una partita amichevole (amichevoli.js)
+    function aggiornaTastoAmichevole() {
+        if (!stato.dati || !window.Amichevoli) return;
+        const utente = String(window.__nomeUtente || '').toLowerCase().trim();
+        const esistente = document.getElementById('pp-amichevole-btn');
+        if (utente && utente === String(stato.dati.chiave).toLowerCase()) { if (esistente) esistente.remove(); return; }    // è la sua pagina
+        if (esistente) return;
+        (document.getElementById('pp-nav') || document.body).append(h('button', {
+            id: 'pp-amichevole-btn', class: 'pp-modifica-btn pp-amichevole-btn', type: 'button',
+            title: `Challenge ${stato.dati.nome} to a friendly match: no points, nothing saved`,
+            onclick: () => window.Amichevoli.apri(stato.dati.nome)
+        }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '⚔' }), ' FRIENDLY MATCH'));
+    }
+
     /** Chi è loggato? Se è il proprietario di questa pagina compare il pulsante per modificarla. */
     function controllaProprietario() {
+        aggiornaTastoAmichevole();
         const utente = String(window.__nomeUtente || '').toLowerCase().trim();
         if (!stato.dati || !utente || utente !== String(stato.dati.chiave).toLowerCase()) return;
         stato.proprietario = true;

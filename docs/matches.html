@@ -1348,14 +1348,19 @@ async function apriModaleShowdown(sdId, sdData) {
         const team2Escaped = jsq(m.team2);
         const a = Number(m.p1score), b = Number(m.p2score);
         const vince1 = a > b, vince2 = b > a;
-        const blocco = (lato, giocatore, team, escaped, colore, vince, perde) => `
+        // un match senza team (formato Random: li dà Showdown, nuovi a ogni set) non ha un team da aprire
+        const blocco = (lato, giocatore, team, escaped, colore, vince, perde) => team ? `
                 <button type="button" class="sd-team sd-team-${lato}${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}"
                         style="--c: ${colore};"
                         onclick="apriDettaglioTeam('${jsq(giocatore)}', '${escaped}', '${categoriaEscaped}')">
                     ${vince ? '<span class="sd-win">WIN</span>' : ''}
                     <span class="sd-team-nome">${esc(team)}</span>
                     <span class="sd-lineup">${generaHtmlGifs(team, info.categoria)}</span>
-                </button>`;
+                </button>` : `
+                <div class="sd-team sd-team-${lato} sd-senza-team${vince ? ' sd-vincitore' : ''}${perde ? ' sd-perde' : ''}" style="--c: ${colore};">
+                    ${vince ? '<span class="sd-win">WIN</span>' : ''}
+                    <span class="sd-team-nome">Random teams</span>
+                </div>`;
         return `
             <article class="sd-match" style="--i: ${i};">
                 <span class="sd-numero">MATCH ${esc(String(mKey).replace('match', ''))}</span>
@@ -1987,6 +1992,15 @@ async function popolaSelectTeamSpecificoPerPlayer(p1, p2, formato) {
         t1Select.innerHTML = generaHtmlOptionsTeams(data, formato, p1);
         t2Select.innerHTML = generaHtmlOptionsTeams(data, formato, p2);
 
+        // Un formato Random non ha team da scegliere (li dà Showdown a ogni set): il match si registra senza
+        const regolamenti = (await db.ref('regolamenti').once('value')).val() || {};
+        const eRandom = Object.values(regolamenti).some(r => r && String(r.categoria || '').toLowerCase().trim() === String(formato || '').toLowerCase().trim()
+            && String(r.strutturaSito || '').toLowerCase().trim() === 'random');
+        [t1Select, t2Select].forEach(sel => {
+            sel.dataset.random = eRandom ? '1' : '';
+            if (eRandom) sel.innerHTML = '<option value="">Random teams</option>';
+        });
+
         console.log("✅ Targeted population completed successfully");
 
     } catch (e) {
@@ -2595,13 +2609,13 @@ selector.style.height = 'auto';
         miniHeader.innerHTML = `
             <div class="mini-team-info side-didi">
                 <div id="header-gifs-didi" class="mini-gifs-row"></div>
-                <div class="mini-team-col"><span class="badge-label">${teamDidi}</span><span class="mini-badges" data-replay-badge="1"></span></div>
+                <div class="mini-team-col"><span class="badge-label">${teamDidi || 'Random teams'}</span><span class="mini-badges" data-replay-badge="1"></span></div>
             </div>
 
             <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
 
             <div class="mini-team-info side-lu">
-                <div class="mini-team-col"><span class="badge-label">${teamLu}</span><span class="mini-badges" data-replay-badge="2"></span></div>
+                <div class="mini-team-col"><span class="badge-label">${teamLu || 'Random teams'}</span><span class="mini-badges" data-replay-badge="2"></span></div>
                 <div id="header-gifs-lu" class="mini-gifs-row"></div>
             </div>
         `;
@@ -2611,6 +2625,7 @@ selector.style.height = 'auto';
         if (typeof BadgeTeam !== 'undefined') {
             const apertura = window.replayAperto = {};
             [[sdData.info.player1, teamDidi, '1'], [sdData.info.player2, teamLu, '2']].forEach(([giocatore, nomeTeam, lato]) => {
+                if (!nomeTeam) return;      // nei Random non c'è un team a cui appartengono i badge
                 BadgeTeam.montaMini(db, miniHeader.querySelector(`[data-replay-badge="${lato}"]`),
                     { giocatore, team: { nome: nomeTeam }, valido: () => window.replayAperto === apertura }).catch(() => {});
             });
@@ -3181,8 +3196,9 @@ async function salvaMatchFirebase() {
     const data = document.getElementById('match-date').value;
     const categoria = document.getElementById('match-cat').value;
 
-    if (!team1 || !team2 || !data || !score) {
-        alert("Please select teams, score and date!");
+    const senzaTeam = document.getElementById('match-team1').dataset.random === '1';      // formato Random: nessun team da scegliere
+    if ((!senzaTeam && (!team1 || !team2)) || !data || !score) {
+        alert(senzaTeam ? "Please select score and date!" : "Please select teams, score and date!");
         return;
     }
 

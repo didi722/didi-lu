@@ -284,6 +284,21 @@ test('da fare: stagione aperta, iscrizione e squadre mancanti; nessun conteggio 
     assert.deepEqual(P.daFare('didi', { s3: aperta }, {}).iscrizioni, []);
 });
 
+test('da fare: un formato Random non chiede nessun team da iscrivere (li dà Showdown)', () => {
+    const aperta = {
+        info: { name: 'Season 4', status: 'open', showdowns_per_format: 1, selected_formats: ['OU', 'Random Gen 9'] },
+        iscritti: { Didi: {} },
+        teams_iscritti: { OU: { didi: { count: 1 } } }
+    };
+    // senza dirlo, il Random sembra un formato a cui mancano i team...
+    assert.deepEqual(P.daFare('didi', { s4: aperta }, {}).iscrizioni.map(x => x.formati), [['Random Gen 9']]);
+    // ...dicendo quali formati non hanno team (anche scritti diversamente) non c'è niente da fare
+    assert.deepEqual(P.daFare('didi', { s4: aperta }, {}, { formatiSenzaTeam: [' random gen 9 '] }).iscrizioni, []);
+    // gli altri formati continuano a chiederli
+    aperta.teams_iscritti = {};
+    assert.deepEqual(P.daFare('didi', { s4: aperta }, {}, { formatiSenzaTeam: ['Random Gen 9'] }).iscrizioni.map(x => x.formati), [['OU']]);
+});
+
 test('da fare: le stagioni chiuse non contano; senza tetto per formato non ci sono showdown "mancanti"', () => {
     const d = P.daFare('didi', { sbeta: stagioneChiusa, s2: stagioneInCorso({ info: { name: 'S2', status: 'playing', selected_formats: ['OU'] } }) }, {});
     assert.deepEqual(d.stagioni.map(s => s.id), ['s2']);
@@ -369,7 +384,7 @@ test('profile.html: il testo che viene dal database entra solo come testo, mai c
 test('profile.html: usa le stesse risposte alle sfide della campanella (sfide.js le espone, non le copia)', () => {
     const html = docs('profile.html');
     const sfide = docs('sfide.js');
-    assert.match(sfide, /window\.Sfide = \{ avvia, bottoneRanking, apriSfida, rispondi, completato \}/);
+    assert.match(sfide, /window\.Sfide = \{ avvia, bottoneRanking, apriSfida, rispondi, completato, caricaAmichevoli \}/);
     assert.match(sfide, /function apriSfida\(nome, stagione\)/);
     assert.match(sfide, /const D = stagione \? S\.stagioni\[stagione\] : pagina\(\)/);
     for (const risposta of ['accetta', 'rifiuta', 'ritira']) {

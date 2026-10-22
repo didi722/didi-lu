@@ -976,6 +976,27 @@ body {
     transform: rotate(calc(var(--nb-rot, 1) * -1.8deg));
 }
 
+/* "Play vs CPU" sulla scheda di un formato Random */
+.fmt-gioca-cpu {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 22px 8px;
+    background: var(--nb-verde, #47ea6a);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .95rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .06em);
+    text-transform: uppercase;
+    text-decoration: none;
+    transform: rotate(calc(var(--nb-rot, 1) * -1deg));
+    transition: transform .05s, background-color .1s, box-shadow .05s;
+}
+.fmt-gioca-cpu:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
+.fmt-gioca-cpu:active { transform: translate(2px, 2px); box-shadow: none; }
+.fmt-gioca-cpu:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
+
 /* il corpo scorre da solo se lo schermo è basso (la striscia e il titolo restano fermi) */
 .fmt-corpo {
     flex: 1 1 auto;
@@ -1245,6 +1266,9 @@ body {
 
 /* Sezioni condizionali (compaiono scegliendo il tipo di formato) */
 .format-conditional-section { padding-top: 24px; margin-top: 4px; border-top: 3px dashed var(--nb-ink, #000); }
+
+/* Il formato Random non ha nulla da impostare: una nota lo spiega */
+.format-random-nota { margin: 4px 0 0; font: 600 .9rem/1.45 var(--nb-font-testo, 'Montserrat', sans-serif); }
 
 /* Titoli delle sotto-sezioni: un cartellino sulla carta */
 .format-conditional-section h3,
@@ -1554,7 +1578,7 @@ body {
 
 /* Chi preferisce meno movimento: le card non si sollevano né girano al passaggio */
 @media (prefers-reduced-motion: reduce) {
-    .format-card-nb, .player-rank-row, .fmt-azione, .btn-save-format, .btn-add-rule { transition: none; }
+    .format-card-nb, .player-rank-row, .fmt-azione, .btn-save-format, .btn-add-rule, .fmt-gioca-cpu { transition: none; }
     .format-card-nb:hover, .player-rank-row:hover { transform: none; }
     .format-modal-content { animation: none; }
 }
