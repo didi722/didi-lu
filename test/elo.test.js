@@ -108,3 +108,11 @@ test('registrare un match scrive i delta nel match e il rating nei profili', asy
     assert.equal(db.leggi('players/didi/stats/individual-stats/ranking'), 1024);
     assert.equal(db.leggi('players/lu/stats/individual-stats/ranking'), 976);
 });
+
+test('amministrazione: il tasto "Recalculate stats" rifà classifiche, Elo e statistiche di tutti', () => {
+    const admin = fs.readFileSync(path.join(__dirname, '..', 'docs', 'admin.html'), 'utf8');
+    assert.match(admin, /onclick="ricalcolaStatisticheAdmin\(\)"/);
+    const f = admin.slice(admin.indexOf('async function ricalcolaStatisticheAdmin'));
+    const fine = f.slice(0, f.indexOf('\n}\n'));
+    assert.match(fine, /aggiornaLeaderboard\(stagioni\[i\]\)[\s\S]*ricalcolaEloGiocatori\(\)[\s\S]*ricalcolaStatisticheGlobali\(giocatori\[i\]\)/, 'in quest\'ordine: classifiche, Elo, statistiche');
+});
