@@ -355,9 +355,9 @@ body.pg-players .trainer-rank-text {
     font-weight: 900;
     transform: rotate(calc(var(--nb-rot) * -3deg));
 }
-body.pg-players .trainer-card:nth-child(1) .trainer-rank-text { background: #ffd23f; color: #000; }
-body.pg-players .trainer-card:nth-child(2) .trainer-rank-text { background: #d8dde6; color: #000; }
-body.pg-players .trainer-card:nth-child(3) .trainer-rank-text { background: #f0a060; color: #000; }
+body.pg-players .trainer-riga:nth-child(1) .trainer-rank-text { background: #ffd23f; color: #000; }
+body.pg-players .trainer-riga:nth-child(2) .trainer-rank-text { background: #d8dde6; color: #000; }
+body.pg-players .trainer-riga:nth-child(3) .trainer-rank-text { background: #f0a060; color: #000; }
 
 /* Avatar in una cornice quadrata, sopra un cartellino bianco */
 body.pg-players .trainer-avatar-box {

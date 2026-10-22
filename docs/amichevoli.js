@@ -337,22 +337,17 @@
         </svg>`;
 
     // Il tasto da scrivere dentro una pagina fatta di testo HTML (nascosto finché aggiornaTasti() non sa chi sei: il proprio non c'è).
-    // È un <span role="button">, non un <button>: sta dentro la card di un allenatore, che è un collegamento.
+    // Sta accanto alla card dell'allenatore, non dentro: la card è un collegamento e coi badge sarebbe troppo piena.
     function htmlTasto(nome) {
-        return `<span role="button" tabindex="0" class="tasto-amichevole" data-nome="${esc(nome)}" hidden
+        return `<button type="button" class="tasto-amichevole" data-nome="${esc(nome)}" hidden
                 title="Challenge ${esc(nome)} to a friendly match" aria-label="Challenge ${esc(nome)} to a friendly match"
-                onclick="Amichevoli.clic(event, this)" onkeydown="Amichevoli.tastiera(event, this)">${ICONA_SPADE}</span>`;
+                onclick="Amichevoli.clic(event, this)">${ICONA_SPADE}</button>`;
     }
 
-    // Il clic su un tasto dentro un collegamento: non deve aprire la pagina dell'allenatore
+    // Il clic sul tasto di un allenatore
     function clic(evento, tasto) {
         evento.preventDefault();
-        evento.stopPropagation();
         apri(tasto.dataset.nome);
-    }
-    function tastiera(evento, tasto) {
-        if (evento.key !== 'Enter' && evento.key !== ' ') return;
-        clic(evento, tasto);
     }
 
     // Nasconde il proprio tasto (non ci si sfida da soli); chi non ha fatto il login li vede tutti: il clic apre il login
@@ -362,5 +357,5 @@
         radice.querySelectorAll('.tasto-amichevole[data-nome]').forEach(t => { t.hidden = !!mio && idDi(t.dataset.nome) === mio; });
     }
 
-    window.Amichevoli = { apri, rispondi, chiama, messaggioErrore, htmlTasto, clic, tastiera, aggiornaTasti, ICONA_SPADE };
+    window.Amichevoli = { apri, rispondi, chiama, messaggioErrore, htmlTasto, clic, aggiornaTasti, ICONA_SPADE };
 })();

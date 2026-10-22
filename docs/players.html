@@ -307,7 +307,9 @@ async function initTrainersPage() {
                    </div>` 
                 : '';
 
+            // il tasto per la partita amichevole sta accanto alla card (non dentro: con i badge sarebbe troppo piena)
             return `
+              <div class="trainer-riga">
                 <a href="public.html?player=${encodeURIComponent(player.id)}" 
                    class="trainer-card" 
                    style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
@@ -331,12 +333,12 @@ async function initTrainersPage() {
                         </div>
                     </div>
 
-                    ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
-
                     <div class="trainer-points-box">
                         ${player.ranking}
                     </div>
                 </a>
+                ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
+              </div>
             `;
         }).join('');
         // le spade per sfidare a una partita amichevole (non sul proprio nome)
