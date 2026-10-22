@@ -2201,7 +2201,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
             caselle += riquadro('Teams', valore('Random, given by Showdown'));
             blocksHtml += `<div class="fmt-griglia">${caselle}</div>`;
             blocksHtml += riquadro('Practice', `
-                <p class="fmt-testo">Try it right now: you and the CPU each get a random team, a new one every battle.</p>
+                <p class="fmt-testo">Just for fun!.</p>
                 <a class="fmt-gioca-cpu" href="battle.html?cpu=1&random=${encodeURIComponent(random.id)}&nome=${encodeURIComponent(formatName)}">⚔ Play vs CPU</a>`);
         } else if (formatoDati.strutturaSito === 'vgc') {
             if (formatoDati.vgcGen) {

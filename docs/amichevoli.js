@@ -183,7 +183,7 @@
         carta.innerHTML = `
             <span class="sfida-sticker">Friendly match</span>
             <h2 id="amic-titolo">${esc(io.nome)} <small>vs</small> ${esc(lui.nome)}</h2>
-            <p class="sfida-sotto">Just for fun: no points, no stats, no replay, nothing saved. Pick what to play.</p>
+            <p class="sfida-sotto">Just for fun!</p>
             <div class="sfida-corpo amic-corpo"><p class="sfida-messaggio">Loading…</p></div>
             <div class="sfida-azioni">
                 <button type="button" class="amic-invia" id="amic-invia" disabled>Send challenge</button>
