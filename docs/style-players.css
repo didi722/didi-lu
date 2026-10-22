@@ -818,6 +818,12 @@ body {
     box-sizing: border-box;
 }
 
+/* Una riga: la card dell'allenatore e, al suo fianco, il tasto per la partita amichevole */
+.trainer-riga { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+.trainer-riga .trainer-card { flex: 1 1 0; width: auto; }
+/* il proprio tasto non c'è, ma il suo posto resta: le card hanno tutte la stessa larghezza */
+.trainer-riga .tasto-amichevole[hidden] { display: inline-flex !important; visibility: hidden; }
+
 /* Card bassa e allungata */
 .trainer-card {
     border: 3px solid var(--nb-ink, #000);

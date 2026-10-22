@@ -188,3 +188,17 @@ test('matches.html: un match senza team (Random) ha la sua scheda e si può regi
     assert.match(src, /if \(!nomeTeam\) return;\s*\/\/ nei Random non c'è un team a cui appartengono i badge/);
     assert.match(leggi('showdown.css'), /\.sd-senza-team/);
 });
+
+test('Trainers: il tasto della sfida amichevole sta accanto alla card (non dentro) e la pagina pubblica non lo ha', () => {
+    const players = leggi('players.html');
+    const riga = players.slice(players.indexOf('class="trainer-riga"'));
+    const finecard = riga.indexOf('</a>');
+    const tasto = riga.indexOf('Amichevoli.htmlTasto');
+    assert.ok(finecard > 0 && tasto > finecard, 'il tasto viene dopo la chiusura del collegamento della card');
+    assert.match(leggi('amichevoli.js'), /<button type="button" class="tasto-amichevole"/, 'è un vero pulsante, non più dentro un collegamento');
+    assert.match(leggi('style-players.css'), /\.trainer-riga \.tasto-amichevole\[hidden\][^}]*visibility: hidden/, 'il proprio tasto lascia il posto');
+    assert.match(leggi('nb-pagine.css'), /\.trainer-riga:nth-child\(1\) \.trainer-rank-text/, 'il podio segue le righe');
+    for (const f of ['public.html', 'public-card.js', 'style-public-card.css']) {
+        assert.doesNotMatch(leggi(f), /amichevol|Amichevoli|FRIENDLY MATCH/i, `${f}: niente tasto amichevole nella pagina pubblica`);
+    }
+});
