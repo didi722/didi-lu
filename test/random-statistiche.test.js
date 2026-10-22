@@ -147,3 +147,22 @@ test('l\'uso globale dei Pokémon non conta i Random: un team iscritto che ha gi
     assert.deepEqual(specieDi(true), ['gengar'], 'con un match del team vero il Pokémon conta');
     assert.deepEqual(specieDi(false), [], 'con soli match Random no');
 });
+
+test('il badge Collector conta solo le specie dei team veri: i Pokémon dei match Random non lo fanno salire', () => {
+    const Statistiche = require('../docs/statistiche.js');
+    const BadgeAllenatore = require('../docs/badge-allenatore.js');
+    const squadra = prefisso => ({ pokemon: Object.fromEntries(['A', 'B', 'C', 'D'].map((x, i) => [i, pk(prefisso + x, 1)])) });
+    const set = prefisso => ({ vincitore: 'p1', p1: squadra(prefisso), p2: { pokemon: { a: pk('Altro', 0) } } });
+    const match = (team, prefisso) => ({
+        player1Id: 'didi', player2Id: 'lu', winnerId: 'didi', team1: team, team2: team ? 'Beta' : '', p1score: 2, p2score: 0,
+        setStats: { set1: set(prefisso), set2: set(prefisso) }
+    });
+    const seasons = { s1: { info: {}, showdowns: {
+        d1: { info: { categoria: 'OU', data: '1/1/2026' }, matches: { match1: match('Alpha', 'ou') } },
+        d2: { info: { categoria: 'Random', data: '2/1/2026' }, matches: { match1: match('', 'rndx'), match2: match('', 'rndy') } }
+    } } };
+    const players = { didi: { name: 'Didi', teams: [{ nome: 'Alpha', pokemon: [{ nome: 'ouA' }] }] }, lu: { name: 'Lu' } };
+    const r = Statistiche.calcola({ players, seasons }, { stagione: 'all' });
+    const collector = BadgeAllenatore.calcola(r, 'didi').find(b => b.id === 'collector');
+    assert.equal(collector.valore, 4, 'solo le 4 specie del team OU, non le 8 dei team Random');
+});
