@@ -662,7 +662,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
     let amicizia = !!pokemonData.amicizia;
     if (!amicizia) {
         try {
-            const pkmSnap = await db.ref(`players/${playerName}/pokemon-badges/${nome}`).once('value');
+            const pkmSnap = await db.ref(`players/${playerName}/pokemon-badges/${nome.replace(/[.#$/\[\]]/g, '_') || '_'}`).once('value');   // stessa regola di risultati-match.js (chiaveFirebase)
             const badgesData = pkmSnap.val() || {};
             amicizia = badgesData.loyaltybadge === true || badgesData.loyaltyBadge === true;
         } catch (e) { /* senza, il fiocco dell'amicizia segue i numeri */ }

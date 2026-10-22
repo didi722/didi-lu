@@ -25,7 +25,15 @@ function creaDb(iniziale = {}) {
         pota(nodo[ks[0]], ks.slice(1));
         if (vuoto(nodo[ks[0]])) delete nodo[ks[0]];
     };
+    // come Firebase: le chiavi non possono contenere . # $ / [ ] (un nome come "Mr. Mime" usato come chiave fa fallire la scrittura)
+    const controllaChiavi = (v, dove) => {
+        if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) {
+            if (!k || /[.#$/\[\]]/.test(k)) throw new Error(`set failed: value argument contains an invalid key (${k}) in property '${dove}'`);
+            controllaChiavi(x, `${dove}.${k}`);
+        }
+    };
     const scrivi = (p, v) => {
+        controllaChiavi(v, chiavi(p).join('.'));
         scritture.push(chiavi(p).join('/'));
         const ks = chiavi(p);
         if (v === null || v === undefined) {

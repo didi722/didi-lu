@@ -180,3 +180,35 @@ test('i badge dell\'allenatore (tranne il Collector) contano i match Random: par
         { veteran: 1, matchwinner: 2, setcrusher: 4, showdown: 1, dominant: 100, knockout: 16, untouchable: 4, elopeak: 1020 });
     assert.equal(v.collector, 0, 'e il Collector no');
 });
+
+// ---------- chiavi di Firebase ----------
+test('un Pokémon o un team con il punto nel nome ("Mr. Mime") non ferma il ricalcolo: i punti si aggiornano lo stesso', async () => {
+    const stagione = {
+        info: { name: 'S', status: 'playing' },
+        showdowns: { d1: { info: { categoria: 'OU', data: '2026-10-10', vincitoreShowdown: 'didi' }, matches: {
+            match1: { player1Id: 'didi', player2Id: 'lu', winnerId: 'didi', team1: 'Team Mr. Mime', team2: 'Beta', p1score: 3, p2score: 0, p1points: 2 }
+        } } }
+    };
+    const db = creaDb({
+        players: { didi: { teams: [{ nome: 'Team Mr. Mime', pokemon: [{ nome: 'Mr. Mime' }, { nome: 'Gengar' }] }] }, lu: {} },
+        seasons: { s1: stagione }
+    });
+    const sito = caricaSito(db);
+    await sito.ricalcolaStatisticheGlobali('didi');
+    assert.equal(db.leggi('players/didi/stats/individual-stats/points'), 3, 'i punti del match più il bonus dello showdown');
+    assert.deepEqual(Object.keys(db.leggi('players/didi/pokemon-badges')).sort(), ['Gengar', 'Mr_ Mime']);
+    await sito.aggiornaLeaderboard('s1');
+    const lb = db.leggi('seasons/s1/leaderboard/didi');
+    assert.equal(lb.points, 3);
+    assert.ok(lb.teams['Team Mr_ Mime'], 'il team con il punto nel nome è salvato con la chiave "pulita"');
+    assert.equal(lb.records.mostUsedTeam.name, 'Team Mr. Mime', 'il nome vero resta nei dati');
+});
+
+test('se i badge dei Pokémon non si possono salvare, punti e statistiche si salvano lo stesso', async () => {
+    const db = creaDb({ players: { didi: {}, lu: {} }, seasons: { s1: { info: { name: 'S' }, showdowns: { d1: { info: { categoria: 'OU', data: '2026-10-10' }, matches: {
+        match1: { player1Id: 'didi', player2Id: 'lu', winnerId: 'didi', team1: 'A', team2: 'B', p1score: 3, p2score: 0, p1points: 2 } } } } } } });
+    const vero = db.ref;
+    db.ref = p => (String(p).endsWith('/pokemon-badges') ? { ...vero(p), set: async () => { throw new Error('rifiutato'); } } : vero(p));
+    await caricaSito(db).ricalcolaStatisticheGlobali('didi');
+    assert.equal(db.leggi('players/didi/stats/individual-stats/points'), 2);
+});
