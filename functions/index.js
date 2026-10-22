@@ -13,7 +13,12 @@ const { getDatabase } = require('firebase-admin/database');
 const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueWritten } = require('firebase-functions/v2/database');
-const { creaServizio, ErroreUtente } = require('./partita');
+// partita.js porta con sé il simulatore completo di Showdown (migliaia di file): si carica alla prima richiesta e non all'avvio,
+// così il contenitore apre subito la porta e supera il controllo di avvio di Cloud Run anche quando leggere i file è lento
+let moduloPartita = null;
+const partita = () => (moduloPartita ||= require('./partita'));
+// dopo l'avvio (la porta è già aperta) lo si carica comunque, così la prima partita non lo aspetta
+setTimeout(() => { try { partita(); } catch (e) { console.error('Caricamento di partita.js fallito', e); } }, 200).unref();
 
 initializeApp();
 
@@ -49,7 +54,7 @@ function prendiServizio() {
         return `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${encodeURIComponent(percorso)}?alt=media&token=${token}`;
     }
 
-    servizio = creaServizio({
+    servizio = partita().creaServizio({
         db,
         salvaReplay,
         registraRisultato: r => caricaRegistraRisultato(db)(r),
@@ -74,7 +79,7 @@ function richiamabile(nome, opzioni = {}) {
         try {
             return await prendiServizio()[nome](richiesta.auth.uid, richiesta.data || {});
         } catch (e) {
-            if (e instanceof ErroreUtente) throw new HttpsError('failed-precondition', e.message);
+            if (e instanceof partita().ErroreUtente) throw new HttpsError('failed-precondition', e.message);
             console.error(nome, e);
             throw new HttpsError('internal', 'Errore del server: riprova tra poco');
         }
