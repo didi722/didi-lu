@@ -352,6 +352,8 @@
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
     
     <!-- il palco: la console e, alla sua destra, i tasti dei set in verticale (sul telefono vanno sotto) -->
+    <!-- Meteo, terreni e condizioni dei lati: stanno sopra la console, fuori dallo schermo, per non coprire le barre della salute (il replay le manda con replay-campo) -->
+    <div class="replay-campo" id="replayCampo" aria-label="Field conditions" onclick="event.stopPropagation()" hidden></div>
     <div class="replay-palco">
     <div class="gba-container">
         <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
@@ -2463,7 +2465,33 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
     window.nascondiComandiReplay = function () {
         const b = barra();
         if (b) b.hidden = true;
+        const c = document.getElementById('replayCampo');
+        if (c) { c.hidden = true; c.innerHTML = ''; }
     };
+
+    // I cartellini del campo (meteo, terreno, stanze, condizioni dei lati): il replay li manda come dati, qui si disegnano con testo e basta
+    const CLASSI_CAMPO = ['meteo', 'terreno', 'campo', 'lato-cond', 'p1', 'p2', 'annullato'];
+    const colore = c => (/^#[0-9a-f]{3,8}$/i.test(c || '') ? c : '');
+    window.addEventListener('message', e => {
+        const f = frame();
+        if (!f || e.source !== f.contentWindow || !e.data || e.data.tipo !== 'replay-campo' || !Array.isArray(e.data.voci)) return;
+        const box = document.getElementById('replayCampo');
+        if (!box) return;
+        const colori = e.data.colori || {};
+        box.style.setProperty('--rc-p1', colore(colori.p1) || '#6fa8ff');
+        box.style.setProperty('--rc-p2', colore(colori.p2) || '#ff8a8a');
+        box.replaceChildren(...e.data.voci.slice(0, 24).map(v => {
+            const el = document.createElement('span');
+            el.className = 'rcampo-voce ' + String(v.classe || '').split(' ').filter(c => CLASSI_CAMPO.includes(c)).join(' ');
+            if (v.di) el.title = `${String(v.di).slice(0, 40)}'s side`;
+            el.append(String(v.nome || '').slice(0, 40));
+            if (v.turni) { const t = document.createElement('small'); t.textContent = String(v.turni).slice(0, 20); el.append(t); }
+            return el;
+        }));
+        box.hidden = !box.childElementCount;
+        try { e.source.postMessage({ tipo: 'replay-campo-fuori' }, '*'); } catch (err) { /* iframe già chiuso */ }
+        if (typeof adattaReplayAlloSchermo === 'function') adattaReplayAlloSchermo();
+    });
 
     window.addEventListener('message', e => {
         const f = frame();
@@ -2515,7 +2543,7 @@ function adattaReplayAlloSchermo() {
     const insieme = larghezza > 900;
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
-    const riservato = alto('.replay-mini-header') + alto('.replay-comandi') + sotto + 54;
+    const riservato = alto('.replay-mini-header') + alto('.replay-campo') + alto('.replay-comandi') + sotto + 54;
     const perLarghezza = (larghezza - 24 - tastiSet) / 1150;
     const perAltezza = (altezza - riservato) / 647;
     const scala = Math.min(1, perLarghezza, Math.max(0.5, perAltezza));

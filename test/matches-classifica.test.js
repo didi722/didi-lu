@@ -139,7 +139,7 @@ test('replay: intestazione, palco (console con i set a destra) e comandi nel flu
     assert.match(fin, /#replayModal \.replay-palco \{ flex-direction: column;/, 'sul telefono i set vanno sotto');
     // i comandi (pausa, avanti, 2x...) stanno fuori dalla scocca, sotto la console
     const comandi = /#replayModal \.replay-comandi \{[^}]*\}/.exec(fin)[0];
-    assert.match(comandi, /order: 3/);
+    assert.match(comandi, /order: 4/);
     // i set sono tasti piccoli
     const tasto = /#replayModal button\.btn-set \{[^}]*\}/.exec(fin)[0];
     assert.match(tasto, /width: 40px;[^}]*height: 36px/);
@@ -148,7 +148,7 @@ test('replay: intestazione, palco (console con i set a destra) e comandi nel flu
 
     const adatta = matches.slice(matches.indexOf('function adattaReplayAlloSchermo()'), matches.indexOf("window.addEventListener('resize', () => { if (document.getElementById('replayModal')"));
     assert.match(adatta, /const perLarghezza = \(larghezza - 24 - tastiSet\) \/ 1150;/, 'la larghezza dei tasti dei set a destra si toglie');
-    assert.match(adatta, /const riservato = alto\('\.replay-mini-header'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione e i comandi si misura');
+    assert.match(adatta, /const riservato = alto\('\.replay-mini-header'\) \+ alto\('\.replay-campo'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione, il campo e i comandi si misura');
     assert.match(adatta, /const perAltezza = \(altezza - riservato\) \/ 647;/);
     assert.match(adatta, /Math\.min\(1, perLarghezza, Math\.max\(0\.5, perAltezza\)\)/);
     // l'immagine della console è 1920 × 1080: a 1150 px di larghezza è alta 647 px
@@ -179,4 +179,22 @@ test('classifica: il tasto VS sparisce quando contro quel giocatore non resta nu
     assert.match(docs('style-sfide.css'), /\.sfida-rank-btn\[hidden\] \{ display: none !important; \}/);
     // la stessa regola della finestra di sfida: "You have played every showdown against ..." quando non c'è nessun formato libero né occupato
     assert.match(sfide, /You have played every showdown against/);
+});
+
+test('replay: meteo, terreni e condizioni dei lati stanno fuori dallo schermo del GBA (sopra la console), non sopra le barre della salute', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const leggi = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
+    const replay = leggi('replay-sito.js'), pagina = leggi('matches.html'), css = leggi('finestre.css');
+    // il replay manda le voci alla pagina e toglie i suoi cartellini quando la pagina li disegna
+    assert.match(replay, /tipo: 'replay-campo'/);
+    assert.match(replay, /replay-campo-fuori/);
+    assert.match(replay, /\.campo-fuori \.effetti \{ display: none; \}/);
+    // la pagina li disegna in una striscia sopra la console, con solo testo
+    assert.match(pagina, /id="replayCampo"/);
+    assert.match(pagina, /e\.data\.tipo !== 'replay-campo'/);
+    assert.doesNotMatch(pagina.slice(pagina.indexOf("tipo !== 'replay-campo'"), pagina.indexOf("tipo !== 'replay-campo'") + 1500), /innerHTML/);
+    assert.match(css, /#replayModal \.replay-campo \{\s*order: 2;/);
+    assert.match(css, /#replayModal \.replay-palco \{ order: 3;/);
+    // l'altezza della striscia si toglie dallo spazio della console
+    assert.match(pagina, /alto\('\.replay-campo'\)/);
 });
