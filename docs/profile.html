@@ -579,7 +579,7 @@ function schedaStagione(s, mancanti) {
     return h('div', { class: 'pf-gruppo pf-stagione' },
         h('div', { class: 'pf-stagione-testa' },
             h('h3', { class: 'pf-sottotitolo' }, 'STILL TO PLAY'),
-            h('a', { class: 'pf-stagione-nome', href: `hub.html?id=${encodeURIComponent(s.id)}` }, s.nome),
+            h('a', { class: 'pf-stagione-nome', href: `${s.stato === 'PLAYING' ? 'matches' : 'hub'}.html?id=${encodeURIComponent(s.id)}` }, s.nome),
             etichetta(s.stato, `pf-stato-${s.stato.toLowerCase()}`),
             resto ? h('span', { class: 'pf-nota' }, `${resto} left`) : null),
         s.richiesti
