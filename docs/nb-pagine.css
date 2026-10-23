@@ -100,6 +100,8 @@ body.pg-index .winner-avatar-home {
     box-shadow: var(--nb-sh-s);
     margin-bottom: 0;
 }
+/* l'avatar è un'immagine: il tondo la ritaglia, quindi lo sprite si rimpicciolisce dentro il disco (e il disco cresce) */
+body.pg-index img.winner-avatar-home { box-sizing: border-box; width: 112px !important; height: 112px !important; padding: 0; object-view-box: inset(-21%); }
 /* il trofeo e il pallino LIVE restano accanto al tondo, che è più largo dello sprite */
 body.pg-index .winner-content-wrapper > div > img[alt="Winner"] { right: -72px !important; }
 body.pg-index .winner-content-wrapper > div > .live-dot { right: -48px !important; }
