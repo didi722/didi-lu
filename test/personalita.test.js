@@ -3,7 +3,7 @@
 //   - si sblocca dopo 25 set con dati sulle scelte, e quando almeno 3 allenatori hanno dati da confrontare;
 //   - tutti attaccano più di quanto si proteggano: un allenatore nella media di tutti gli assi vale 50 ovunque;
 //   - chi usa Protezione un po' più della media è "difensivo" anche se attacca sempre più di quanto si protegga;
-//   - le famiglie: offensiva (attacco), difensiva (guardia, cambio), stratega (potenziamento, campo, trucchi).
+//   - le famiglie: offensiva (attacco), difensiva (guardia), pivot (cambio), stratega (potenziamento, campo), sabotatore (trucchi).
 //
 //   npm test        (dalla cartella principale)
 const test = require('node:test');
@@ -61,17 +61,29 @@ test('un po\' più di Protezione della media: più difensivo, pur attaccando sem
     assert.ok(r.famiglie.difensiva > r.famiglie.offensiva);
 });
 
-test('chi attacca più della media è offensivo, chi gioca di campo e trucchi è stratega', () => {
+test('chi attacca più della media è offensivo, chi gioca di potenziamenti e di campo è stratega', () => {
     const aggressivo = allenatore('g', 40, { attacco: 0.82, protezione: 0.05, recupero: 0.01, cambi: 0.03, potenziamento: 0.02, campo: 0.01, supporto: 0.01, disturbo: 0.01 });
     const r = P.calcola(lega(aggressivo), 'g');
     assert.equal(r.tipo.id, 'offensiva');
     assert.ok(r.assi.find(a => a.id === 'attacco').valore > 60);
     assert.ok(r.assi.find(a => a.id === 'guardia').valore < 40);
 
-    const stratega = allenatore('s', 40, { attacco: 0.5, potenziamento: 0.1, campo: 0.1, supporto: 0.06, disturbo: 0.1 });
+    const stratega = allenatore('s', 40, { attacco: 0.5, potenziamento: 0.12, campo: 0.12 });
     const s = P.calcola(lega(stratega), 's');
     assert.equal(s.tipo.id, 'stratega');
-    for (const id of ['potenziamento', 'campo', 'trucchi']) assert.ok(s.assi.find(a => a.id === id).valore > 60, id);
+    for (const id of ['potenziamento', 'campo']) assert.ok(s.assi.find(a => a.id === id).valore > 60, id);
+});
+
+test('chi cambia molto è pivot, chi riempie l\'avversario di stati e trucchi è sabotatore', () => {
+    const pivot = allenatore('p', 40, { attacco: 0.55, cambi: 0.2 });
+    const p = P.calcola(lega(pivot), 'p');
+    assert.equal(p.tipo.id, 'pivot');
+    assert.ok(p.assi.find(a => a.id === 'cambio').valore > 60);
+
+    const sabotatore = allenatore('s', 40, { attacco: 0.5, disturbo: 0.18, supporto: 0.08 });
+    const s = P.calcola(lega(sabotatore), 's');
+    assert.equal(s.tipo.id, 'sabotatore');
+    assert.ok(s.assi.find(a => a.id === 'trucchi').valore > 60);
 });
 
 test('i set che mancano rendono il giudizio più prudente: con pochi dati si resta più vicini a 50', () => {
@@ -112,10 +124,10 @@ test('i valori restano nella scala 0-100 anche per allenatori estremi, e il risu
     assert.match(r.frasi[0], /of your choices against .*% for the league \(/);
 });
 
-test('cambi e protezioni ripetute: i sei assi e le tre famiglie del progetto', () => {
+test('cambi e protezioni ripetute: i sei assi e le cinque famiglie del progetto', () => {
     assert.deepEqual(P.ASSI.map(a => a.id), ['attacco', 'guardia', 'cambio', 'potenziamento', 'campo', 'trucchi']);
-    assert.deepEqual([...new Set(P.ASSI.map(a => a.famiglia))], ['offensiva', 'difensiva', 'stratega']);
-    assert.deepEqual(Object.keys(P.FAMIGLIE).sort(), ['difensiva', 'equilibrata', 'offensiva', 'stratega']);
+    assert.deepEqual([...new Set(P.ASSI.map(a => a.famiglia))], ['offensiva', 'difensiva', 'pivot', 'stratega', 'sabotatore']);
+    assert.deepEqual(Object.keys(P.FAMIGLIE).sort(), ['difensiva', 'equilibrata', 'offensiva', 'pivot', 'sabotatore', 'stratega']);
 });
 
 test('vertici del diagramma: il primo asse in alto, gli altri in senso orario, il raggio è proporzionale al valore', () => {
@@ -127,4 +139,14 @@ test('vertici del diagramma: il primo asse in alto, gli altri in senso orario, i
     assert.deepEqual(meta.map(p => [p.x, p.y]), [[0, -50], [50, 0], [0, 50], [-50, 0]]);
     // fuori scala resta dentro il disegno
     assert.deepEqual([P.vertici([250], 10, 0, 0)[0].y, P.vertici([-5], 10, 0, 0)[0].y], [-10, 0]);
+});
+
+test('ogni famiglia ha la sua icona PNG (con l\'emoji come riserva) e il file esiste', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const P = require('../docs/personalita.js');
+    for (const f of Object.values(P.FAMIGLIE || {})) {
+        assert.ok(f.icona, `${f.id}: emoji di riserva`);
+        assert.equal(f.immagine, `immagini/personalita-${f.id}.png`);
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', f.immagine)), `${f.id}: manca ${f.immagine}`);
+    }
 });

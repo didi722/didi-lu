@@ -767,7 +767,10 @@ function disegnaPersonalitaPronta(p) {
     return h('div', { class: 'pf-pers' },
         h('div', { class: 'pf-pers-grafico' }, radarPersonalita(Personalita.ASSI, assi.map(a => a.valore))),
         h('div', { class: 'pf-pers-testo' },
-            h('p', { class: 'pf-pers-tipo' }, h('span', { 'aria-hidden': 'true' }, p.tipo.icona), ` ${p.tipo.nome.toUpperCase()}`),
+            h('p', { class: 'pf-pers-tipo' }, (() => {
+                const emoji = h('span', { 'aria-hidden': 'true' }, p.tipo.icona);
+                return !p.tipo.immagine ? emoji : h('img', { class: 'pers-icona', src: p.tipo.immagine, alt: '', 'aria-hidden': 'true', onerror: ev => ev.target.replaceWith(emoji) });
+            })(), ` ${p.tipo.nome.toUpperCase()}`),
             h('p', {}, p.tipo.descrizione),
             p.frasi.length ? h('ul', { class: 'pf-pers-frasi' }, p.frasi.map(f => h('li', {}, f))) : null,
             h('table', { class: 'pf-pers-tabella' },

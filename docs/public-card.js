@@ -224,6 +224,13 @@
 
     // ---- Targhette: il titolo e il nome della personalità, nel blocco del nome o sul palco -----------------
 
+    // L'icona della personalità: la PNG dell'oggetto; se il file manca resta l'emoji
+    function iconaPersonalita(tipo) {
+        const emoji = h('span', { 'aria-hidden': 'true', testo: tipo.icona });
+        if (!tipo.immagine) return emoji;
+        return h('img', { class: 'pers-icona', src: tipo.immagine, alt: '', 'aria-hidden': 'true', onerror: ev => ev.target.replaceWith(emoji) });
+    }
+
     // Il nome della personalità come una targhetta, dello stesso aspetto del titolo (e come lui con il suggerimento al passaggio)
     function costruisciTargaPersonalita(d) {
         const p = d.personalita;
@@ -233,7 +240,7 @@
             h('span', { class: 'pp-tip-testo', testo: p.tipo.descrizione }),
             (p.frasi || []).slice(0, 2).map(f => h('span', { class: 'pp-tip-testo', testo: f })));
         return h('div', { class: `hub-title-badge pp-titolo pp-targa-personalita pp-tip-host famiglia-${p.tipo.id}`, tabindex: '0' },
-            h('span', { 'aria-hidden': 'true', testo: p.tipo.icona }), ` ${p.tipo.nome}`, tooltip);
+            iconaPersonalita(p.tipo), ` ${p.tipo.nome}`, tooltip);
     }
 
     const TARGHETTE = { titolo: d => costruisciTitolo(d), personalita: d => costruisciTargaPersonalita(d) };

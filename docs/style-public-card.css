@@ -611,6 +611,8 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 /* la targhetta della personalità: come il titolo, nel colore della sua famiglia */
 .hub-title-badge.famiglia-offensiva { background-color: #de3a1d !important; border: 2px solid #751200; box-shadow: 4px 4px 0 #751200; }
 .hub-title-badge.famiglia-difensiva { background-color: #3399ff !important; border: 2px solid #004d9b; box-shadow: 4px 4px 0 #004d9b; }
+.hub-title-badge.famiglia-pivot { background-color: #ff9a2e !important; border: 2px solid #8a4700; box-shadow: 4px 4px 0 #8a4700; }
+.hub-title-badge.famiglia-sabotatore { background-color: #c0449f !important; border: 2px solid #5c0d4d; box-shadow: 4px 4px 0 #5c0d4d; }
 .hub-title-badge.famiglia-stratega { background-color: #7766ee !important; border: 2px solid #1a0d70; box-shadow: 4px 4px 0 #1a0d70; }
 .hub-title-badge.famiglia-equilibrata { background-color: #77cc55 !important; border: 2px solid #247f00; box-shadow: 4px 4px 0 #247f00; }
 
@@ -1387,3 +1389,6 @@ body.pp-fisso .pp-disco { width: 44px; height: 44px; }
 body.pp-fisso .pp-eq { height: 22px; }
 
 
+
+/* l'icona della personalità è l'oggetto (PNG), grande come il testo della targhetta */
+.pp-targa-personalita .pers-icona { width: 1.7em; height: 1.7em; margin: -0.35em 0.1em -0.35em -0.2em; vertical-align: middle; object-fit: contain; image-rendering: auto; }
