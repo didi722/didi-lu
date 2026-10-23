@@ -707,6 +707,8 @@ async function ricalcolaStatisticheGlobali(pId) {
             Object.entries(showdowns).forEach(([sdId, sd]) => {
                 const infoSD = sd.info || {};
                 const dataSD = infoSD.data || infoSD.lastEdit || "2000-01-01";
+                // due showdown dello stesso giorno non si mescolano: prima tutti i match di quello giocato prima (come nella lista di matches.html)
+                const quandoSD = Object.values(sd.matches || {}).reduce((max, mm) => Math.max(max, Date.parse(mm && mm.lastEdit) || 0), 0);
                 const categoria = infoSD.categoria || "Standard";
                 let haGiocatoInQuestoSD = false;
                 let lastTeamInSD = null;
@@ -728,6 +730,8 @@ async function ricalcolaStatisticheGlobali(pId) {
 
                         cronologiaMatchPiatta.push({
                             data: dataSD,
+                            quandoSD,
+                            sdId,
                             ordineInterno: matchNumber,
                             vittoria: vinceMatch,
                             punteggioAvversario: scoreAvversario,
@@ -758,6 +762,8 @@ async function ricalcolaStatisticheGlobali(pId) {
 
                     listaShowdownPartecipati.push({
                         data: dataSD,
+                        quandoSD,
+                        sdId,
                         vintoTorneo: haVintoSD,
                         team: lastTeamInSD || '',
                         pokemon: [...new Set(teamCompositionMap[lastTeamInSD] || [])]
@@ -786,14 +792,12 @@ async function ricalcolaStatisticheGlobali(pId) {
         });
 
         // 2. ORDINAMENTO
-        cronologiaMatchPiatta.sort((a, b) => {
-            const d1 = new Date(a.data);
-            const d2 = new Date(b.data);
-            if (d1.getTime() !== d2.getTime()) return d1 - d2;
-            return a.ordineInterno - b.ordineInterno;
-        });
+        // giorno, poi lo showdown giocato prima, poi il numero del match: la serie (clean, vittorie) si spezza alla prima sconfitta,
+        // quindi l'ordine deve essere quello vero anche tra showdown dello stesso giorno
+        const ordineShowdown = (a, b) => (dataPerElo(a.data) - dataPerElo(b.data)) || (a.quandoSD - b.quandoSD) || String(a.sdId).localeCompare(String(b.sdId), undefined, { numeric: true });
+        cronologiaMatchPiatta.sort((a, b) => ordineShowdown(a, b) || (a.ordineInterno - b.ordineInterno));
 
-        listaShowdownPartecipati.sort((a, b) => new Date(a.data) - new Date(b.data));
+        listaShowdownPartecipati.sort(ordineShowdown);
 
         // 3. FUNZIONE CALCOLO BADGE
         const calcolaParametriBadge = (matchList, showdownList, filtro = null, tipoFiltro = 'global') => {
