@@ -9,45 +9,46 @@ const T = require('../docs/titoli.js');
 const testi = elenco => elenco.map(t => t.testo);
 
 test('tipi: il primo scaglione chiede solo presenze, il secondo anche le vittorie, il terzo anche i KO', () => {
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 49, won: 99, ko: 99 } })), []);
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 50, won: 0, ko: 0 } })), ['Hex Maniac']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 119, won: 99, ko: 99 } })), []);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 120, won: 25, ko: 0 } })), ['Hex Maniac']);
     // tante presenze ma poche vittorie: resta al primo
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 500, won: 39, ko: 999 } })), ['Hex Maniac']);
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 120, won: 40, ko: 0 } })), ['Hex Maniac', 'Ghost Gym Leader']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 900, won: 109, ko: 999 } })), ['Hex Maniac']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 120, won: 24, ko: 0 } })), [], 'il primo livello chiede anche le vittorie');
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 500, won: 110, ko: 0 } })), ['Hex Maniac', 'Ghost Gym Leader']);
     // superquattro: servono anche i KO
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 400, won: 140, ko: 179 } })), ['Hex Maniac', 'Ghost Gym Leader']);
-    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 400, won: 140, ko: 180 } })), ['Hex Maniac', 'Ghost Gym Leader', 'Ghost Elite Four']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 1300, won: 300, ko: 699 } })), ['Hex Maniac', 'Ghost Gym Leader']);
+    assert.deepEqual(testi(T.titoliSbloccati({ ghost: { played: 1300, won: 300, ko: 700 } })), ['Hex Maniac', 'Ghost Gym Leader', 'Ghost Elite Four']);
 });
 
 test('i tipi si leggono anche con la maiuscola e con dati mancanti', () => {
-    assert.deepEqual(testi(T.titoliSbloccati({ Ghost: { played: 50 }, nonsense: { played: 999 }, fire: null })), ['Hex Maniac']);
+    assert.deepEqual(testi(T.titoliSbloccati({ Ghost: { played: 120, won: 25 }, nonsense: { played: 999 }, fire: null })), ['Hex Maniac']);
     assert.deepEqual(T.titoliSbloccati(null, null), []);
 });
 
 test('Pokémon: Fan, Specialist, Master', () => {
     const uso = (played, won, ko) => ({ scizor: { nome: 'Scizor', played, won, ko } });
-    assert.deepEqual(testi(T.titoliSbloccati({}, uso(24, 99, 99))), []);
-    assert.deepEqual(testi(T.titoliSbloccati({}, uso(25, 0, 0))), ['Scizor Fan']);
-    assert.deepEqual(testi(T.titoliSbloccati({}, uso(80, 30, 0))), ['Scizor Fan', 'Scizor Specialist']);
-    assert.deepEqual(testi(T.titoliSbloccati({}, uso(200, 80, 99))), ['Scizor Fan', 'Scizor Specialist']);
-    assert.deepEqual(testi(T.titoliSbloccati({}, uso(200, 80, 100))), ['Scizor Fan', 'Scizor Specialist', 'Scizor Master']);
+    assert.deepEqual(testi(T.titoliSbloccati({}, uso(74, 99, 99))), []);
+    assert.deepEqual(testi(T.titoliSbloccati({}, uso(75, 35, 0))), ['Scizor Fan']);
+    assert.deepEqual(testi(T.titoliSbloccati({}, uso(220, 110, 0))), ['Scizor Fan', 'Scizor Specialist']);
+    assert.deepEqual(testi(T.titoliSbloccati({}, uso(550, 280, 449))), ['Scizor Fan', 'Scizor Specialist']);
+    assert.deepEqual(testi(T.titoliSbloccati({}, uso(550, 280, 450))), ['Scizor Fan', 'Scizor Specialist', 'Scizor Master']);
 });
 
 test('progresso: cosa manca e quanto manca al prossimo scaglione', () => {
-    const p = T.progresso(T.LIVELLI_TIPO, { played: 100, won: 10, ko: 5 });
+    const p = T.progresso(T.LIVELLI_TIPO, { played: 400, won: 30, ko: 5 });
     assert.equal(p.livello, 1);
     assert.equal(p.prossimo.nome('ghost'), 'Ghost Gym Leader');
-    assert.deepEqual(p.mancano, { played: 20, won: 30, ko: 0 });
+    assert.deepEqual(p.mancano, { played: 100, won: 80, ko: 0 });
     assert.deepEqual(p.barre.map(b => b.c), ['played', 'won']);                 // il KO non serve ancora
-    assert.ok(Math.abs(p.pct - (100 / 120 + 10 / 40) / 2) < 1e-9);
-    const ultimo = T.progresso(T.LIVELLI_TIPO, { played: 999, won: 999, ko: 999 });
+    assert.ok(Math.abs(p.pct - (400 / 500 + 30 / 110) / 2) < 1e-9);
+    const ultimo = T.progresso(T.LIVELLI_TIPO, { played: 9999, won: 9999, ko: 9999 });
     assert.equal(ultimo.prossimo, null);
     assert.equal(ultimo.pct, 1);
 });
 
 test('descriviTitolo riconosce titoli di tipo e di Pokémon', () => {
-    const tipi = { ghost: { played: 130, won: 41, ko: 20 } };
-    const pokemon = { scizor: { nome: 'Scizor', played: 90, won: 31, ko: 12 } };
+    const tipi = { ghost: { played: 520, won: 115, ko: 20 } };
+    const pokemon = { scizor: { nome: 'Scizor', played: 230, won: 115, ko: 12 } };
     const gym = T.descriviTitolo('Ghost Gym Leader', tipi, pokemon);
     assert.equal(gym.categoria, 'tipo'); assert.equal(gym.tipo, 'ghost'); assert.equal(gym.livelloIndice, 1);
     assert.equal(gym.progresso.prossimo.nome('ghost'), 'Ghost Elite Four');
@@ -66,8 +67,8 @@ test('descriviTitolo riconosce titoli di tipo e di Pokémon', () => {
 test('colonna Pokémon: le specie più avanti verso le soglie, non tutte', () => {
     const uso = {};
     for (let i = 0; i < 12; i++) uso['mon' + i] = { nome: 'Mon' + i, played: 1 + i, won: 0, ko: 0 };
-    uso.master = { nome: 'Master', played: 300, won: 100, ko: 150 };      // già al massimo
-    uso.quasi = { nome: 'Quasi', played: 79, won: 30, ko: 0 };             // a un passo da Specialist
+    uso.master = { nome: 'Master', played: 600, won: 300, ko: 500 };      // già al massimo
+    uso.quasi = { nome: 'Quasi', played: 219, won: 110, ko: 0 };             // a un passo da Specialist
     uso.mai = { nome: 'Mai', played: 0, won: 0, ko: 0 };                   // mai sceso: fuori
     const elenco = T.pokemonPiuVicini(uso, 5);
     assert.equal(elenco.length, 5);
@@ -134,7 +135,7 @@ test('SD Streak: legge le chiavi che scrive davvero il server (maxshowdownstrike
     for (const b of T.BADGE) assert.ok(server.includes(b.maxKeys[0]) && server.includes(b.curKeys[0]), b.id);
 });
 
-test('serie: soglie crescenti, più difficili di prima (la stagione tipica ha 42 match e 14 showdown), con testo e descrizione', () => {
+test('serie: soglie crescenti e difficili (la stagione tipica ha 36 match e 12 showdown a testa), con testo e descrizione', () => {
     for (const b of T.BADGE) {
         assert.equal(b.steps.length, 3, b.id);
         assert.ok(b.steps[0] < b.steps[1] && b.steps[1] < b.steps[2], `${b.id}: soglie crescenti`);
@@ -142,11 +143,11 @@ test('serie: soglie crescenti, più difficili di prima (la stagione tipica ha 42
         assert.match(b.descrizione(b.steps[0]), new RegExp(`^${b.steps[0]} `), b.id);
     }
     const passi = id => T.BADGE.find(b => b.id === id).steps;
-    assert.deepEqual(passi('won'), [7, 10, 15]);
-    assert.deepEqual(passi('clean'), [4, 6, 8]);
-    assert.deepEqual(passi('sd'), [5, 7, 10]);
-    // l'oro di una serie non supera una stagione (match: 42, showdown: 14), sennò non si prende più
-    assert.ok(passi('won')[2] <= 42 && passi('clean')[2] <= 42 && passi('sd')[2] <= 14);
+    assert.deepEqual(passi('won'), [10, 16, 24]);
+    assert.deepEqual(passi('clean'), [5, 7, 9]);
+    assert.deepEqual(passi('sd'), [8, 14, 22]);
+    // il bronzo si può prendere in una stagione (match: 36, showdown: 12); l'oro chiede più stagioni, perché le serie continuano tra una stagione e l'altra
+    assert.ok(passi('won')[0] <= 36 && passi('clean')[0] <= 36 && passi('sd')[0] <= 12);
     // l'ordine in cui si mostrano i badge dell'allenatore è lo stesso del catalogo delle serie: clean, win, sd
     assert.deepEqual(T.BADGE.map(b => b.id), ['clean', 'won', 'sd']);
 });

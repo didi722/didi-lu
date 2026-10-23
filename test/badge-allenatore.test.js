@@ -1,6 +1,6 @@
 'use strict';
 // I badge degli allenatori (docs/badge-allenatore.js): dodici badge a tre livelli, difficili, sui numeri reali di Statistiche.calcola.
-//   - soglie crescenti e pensate per una stagione tipica (14 showdown, ~105 set): il bronzo richiede un impegno vero;
+//   - soglie crescenti e pensate per una stagione tipica (12 showdown, 36 match, 108 set a testa): il bronzo richiede una stagione giocata molto bene;
 //   - le percentuali contano solo dopo abbastanza match;
 //   - le immagini: il campione usa quelle che il sito ha già, le altre sono da caricare e il catalogo le elenca;
 //   - stessi meccanismi e stessi stili dei badge dei team.
@@ -48,22 +48,33 @@ test('senza dati: tutti a zero, bloccati, senza errori (anche con un allenatore 
     assert.deepEqual(BA.guadagnati(BA.calcola(null, 'x')), []);
 });
 
-test('difficili: una stagione piena di buoni risultati non basta per l\'oro, e per il primo livello serve più di un assaggio', () => {
-    // una stagione: 46 match (30 vinti, 65%), 105 set (58 vinti), 14 showdown (10 vinti), 260 KO
+test('difficili: una stagione giocata molto bene dà al massimo il bronzo, e non tutti i badge', () => {
+    // una stagione: 36 match (30 vinti, 83%), 108 set (68 vinti), 12 showdown (10 vinti), 330 KO, 1205 di picco
     const stagione = giocatore({
-        stagioniGiocate: 1, match: { giocati: 46, vinti: 30, persi: 16 }, set: { giocati: 105, vinti: 58, persi: 47 }, showdown: { giocati: 14, vinti: 10, persi: 4 },
-        percMatch: 65.2, ko: { fatti: 260, setPerfetti: 4, setAlLimite: 3 }, eloPicco: 1130
+        stagioniGiocate: 1, match: { giocati: 36, vinti: 30, persi: 6 }, set: { giocati: 108, vinti: 68, persi: 40 }, showdown: { giocati: 12, vinti: 10, persi: 2 },
+        percMatch: 83.3, ko: { fatti: 330, setPerfetti: 6, setAlLimite: 8 }, eloPicco: 1205
     });
     const l = BA.calcola(risultato(stagione), 'didi');
     for (const b of l) assert.ok(b.livello <= 1, `${b.id}: dopo una stagione al massimo il bronzo (livello ${b.livello})`);
     assert.equal(per(l, 'matchwinner').livello, 1, '30 match vinti: il bronzo (30)');
     assert.equal(per(l, 'showdown').livello, 1, '10 showdown vinti: il bronzo (10)');
-    assert.equal(per(l, 'setcrusher').livello, 0, '58 set vinti: ancora sotto gli 80');
-    assert.equal(per(l, 'knockout').livello, 0, '260 KO: ancora sotto i 400');
-    assert.equal(per(l, 'dominant').livello, 1, 'il 65,2% con 46 match giocati è il bronzo');
-    assert.equal(per(l, 'elopeak').livello, 1, '1130 supera 1125');
+    assert.equal(per(l, 'elopeak').livello, 1, '1205 supera 1200');
+    assert.equal(per(l, 'setcrusher').livello, 0, '68 set vinti: ancora sotto gli 80');
+    assert.equal(per(l, 'knockout').livello, 0, '330 KO: ancora sotto i 450');
+    assert.equal(per(l, 'untouchable').livello, 0, '6 set senza perdere un Pokémon: sotto gli 8');
+    assert.equal(per(l, 'closecall').livello, 0, '8 set vinti con l\'ultimo Pokémon: sotto i 15');
+    assert.equal(per(l, 'dominant').livello, 0, 'la percentuale conta dopo 72 match (due stagioni), anche all\'83%');
+    // con quattro stagioni di buoni risultati il quadro cambia, ma resta lontano dall'oro
+    const quattro = giocatore({
+        stagioniGiocate: 4, match: { giocati: 144, vinti: 110, persi: 34 }, set: { giocati: 432, vinti: 270, persi: 162 }, showdown: { giocati: 48, vinti: 38, persi: 10 },
+        percMatch: 76.4, ko: { fatti: 1300, setPerfetti: 20, setAlLimite: 30 }, eloPicco: 1260
+    });
+    const q = BA.calcola(risultato(quattro), 'didi');
+    assert.equal(per(q, 'dominant').livello, 2, 'il 76,4% con 144 match giocati è l\'argento (75%)');
+    assert.equal(per(q, 'matchwinner').livello, 2);
+    assert.ok(q.every(b => b.livello <= 2), 'nessun oro dopo quattro stagioni');
     // a un soffio dal primo livello non basta: il 64,9% non è il 65%
-    assert.equal(per(BA.calcola(risultato(giocatore({ ...stagione, percMatch: 64.9 })), 'didi'), 'dominant').livello, 0);
+    assert.equal(per(BA.calcola(risultato(giocatore({ ...quattro, percMatch: 64.9 })), 'didi'), 'dominant').livello, 0);
 });
 
 test('livelli: bronzo, argento e oro alle soglie, con il traguardo successivo e la barra del progresso', () => {
@@ -80,19 +91,19 @@ test('livelli: bronzo, argento e oro alle soglie, con il traguardo successivo e 
     assert.deepEqual(BA.guadagnati(l).map(b => b.id), ['showdown', 'matchwinner']);
 });
 
-test('percentuale di vittorie: conta solo dopo 25 match', () => {
+test('percentuale di vittorie: conta solo dopo 72 match', () => {
     const pochi = per(BA.calcola(risultato(giocatore({ percMatch: 90, match: { giocati: 12, vinti: 11, persi: 1 } })), 'didi'), 'dominant');
     assert.equal(pochi.livello, 0);
-    assert.match(pochi.nota, /needs 25 matches played \(now 12\)/);
-    assert.deepEqual(pochi.sblocco, { valore: 12, serve: 25, etichetta: 'matches played' });
-    const tanti = per(BA.calcola(risultato(giocatore({ percMatch: 77.5, match: { giocati: 40, vinti: 31, persi: 9 } })), 'didi'), 'dominant');
+    assert.match(pochi.nota, /needs 72 matches played \(now 12\)/);
+    assert.deepEqual(pochi.sblocco, { valore: 12, serve: 72, etichetta: 'matches played' });
+    const tanti = per(BA.calcola(risultato(giocatore({ percMatch: 77.5, match: { giocati: 80, vinti: 62, persi: 18 } })), 'didi'), 'dominant');
     assert.equal(tanti.livello, 2, 'il 77,5% è l\'argento (75%)');
 });
 
-test('format master: formati con almeno 8 match e almeno il 60% di vittorie', () => {
-    const formati = { VGC: { n: 20, vinti: 14 }, OU: { n: 10, vinti: 6 }, Monotype: { n: 7, vinti: 7 }, Uber: { n: 12, vinti: 5 } };
+test('format master: formati con almeno 24 match e almeno il 60% di vittorie', () => {
+    const formati = { VGC: { n: 40, vinti: 28 }, OU: { n: 30, vinti: 18 }, Monotype: { n: 20, vinti: 20 }, Uber: { n: 36, vinti: 14 } };
     assert.equal(BA.formatiForti(giocatore({ formati })), 2, 'Monotype ha troppi pochi match, Uber troppe sconfitte');
-    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 1, 'due formati: il bronzo (soglie 2 / 5 / 8)');
+    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 1, 'due formati: il bronzo (soglie 2 / 4 / 6)');
 });
 
 test('collezionista: le specie diverse portate in campo (non i team, non le comparse in panchina)', () => {
@@ -101,7 +112,7 @@ test('collezionista: le specie diverse portate in campo (non i team, non le comp
     const lista = BA.calcola(risultato(giocatore(), pokemon), 'didi');
     assert.equal(per(lista, 'collector').valore, 2, 'garchomp (due volte) e gengar; kyurem non è mai sceso; zapdos è di Lu');
     assert.equal(per(lista, 'collector').livello, 0);
-    // i livelli alle soglie del catalogo (30 / 65 / 100 specie): un attimo prima non basta, alla soglia sì
+    // i livelli alle soglie del catalogo (80 / 160 / 260 specie): un attimo prima non basta, alla soglia sì
     const soglie = BA.CATALOGO.find(b => b.id === 'collector').soglie;
     const livelloCon = n => per(BA.calcola(risultato(giocatore(), Array.from({ length: n }, (_, i) => mostro('specie' + i, 1))), 'didi'), 'collector').livello;
     assert.deepEqual([soglie[0] - 1, soglie[0], soglie[1] - 1, soglie[1], soglie[2]].map(livelloCon), [0, 1, 1, 2, 3]);
@@ -152,7 +163,7 @@ test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file
 
 test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle schede dei badge delle serie', () => {
     const l = BA.calcola(risultato(giocatore({
-        stagioniVinte: 2, stagioniGiocate: 0, eloPicco: 1140, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 50 }
+        stagioniVinte: 2, stagioniGiocate: 0, eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 50 }
     })), 'didi');
     const s = id => BA.scheda(per(l, id));
 
@@ -184,17 +195,17 @@ test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle sch
     // la percentuale conta solo dopo 25 match: la barra è quella dei match giocati, le soglie hanno il "%"
     const d = s('dominant');
     assert.deepEqual(d.livelli.map(x => x.soglia), ['65%', '75%', '80%']);
-    assert.deepEqual(d.barra, { etichetta: 'Matches played', valore: 12, obiettivo: 25, partenza: 0, suffisso: '' });
-    assert.equal(d.frase, 'Counts after 25 matches played (12 so far).');
+    assert.deepEqual(d.barra, { etichetta: 'Matches played', valore: 12, obiettivo: 72, partenza: 0, suffisso: '' });
+    assert.equal(d.frase, 'Counts after 72 matches played (12 so far).');
     assert.deepEqual(d.numeri[1], ['Now', '91%']);
     // quando conta, la barra è la percentuale con il suo traguardo
-    const tanti = BA.scheda(per(BA.calcola(risultato(giocatore({ percMatch: 77.5, match: { giocati: 40, vinti: 31, persi: 9 } })), 'didi'), 'dominant'));
+    const tanti = BA.scheda(per(BA.calcola(risultato(giocatore({ percMatch: 77.5, match: { giocati: 80, vinti: 62, persi: 18 } })), 'didi'), 'dominant'));
     assert.deepEqual(tanti.barra, { etichetta: 'Win rate', valore: 77.5, obiettivo: 80, partenza: 0, suffisso: '%' });
     assert.equal(tanti.frase, 'Reach 80% to unlock Gold.');
 
     // l'Elo parte da 1000, non da zero: la barra lo sa
     const e = s('elopeak');
-    assert.deepEqual(e.barra, { etichetta: 'Peak Elo', valore: 1140, obiettivo: 1300, partenza: 1000, suffisso: '' });
+    assert.deepEqual(e.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1300, partenza: 1000, suffisso: '' });
     assert.equal(e.frase, 'Reach 1300 to unlock Silver.');
 });
 
@@ -212,12 +223,12 @@ test('scheda: per tutti e dodici i badge, con o senza dati, ha tutto quello che 
     }
 });
 
-test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000 e le percentuali che contano dopo 25 match', () => {
+test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000 e le percentuali che contano dopo 72 match', () => {
     const l = BA.calcola(risultato(giocatore({
         eloPicco: 1050, match: { giocati: 130, vinti: 100, persi: 30 }, percMatch: 77, stagioniVinte: 0, stagioniGiocate: 1
     })), 'didi');
-    // Elo: 1050 con partenza 1000 e prossimo 1125 = 50 su 125 (non 1050/1125)
-    assert.equal(per(l, 'elopeak').progresso, 0.4);
+    // Elo: 1050 con partenza 1000 e prossimo 1200 = 50 su 200 (non 1050/1200)
+    assert.equal(per(l, 'elopeak').progresso, 0.25);
     const ordine = BA.perVicinanza(l);
     for (let i = 1; i < ordine.length; i++) {
         const [a, b] = [ordine[i - 1], ordine[i]];
@@ -229,11 +240,11 @@ test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000
 });
 
 test('scheda: il testo "cosa manca" e le etichette sono quelli di sempre (la scheda ora è generica, in badge-team.js)', () => {
-    const l = BA.calcola(risultato(giocatore({ eloPicco: 1140, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 } })), 'didi');
+    const l = BA.calcola(risultato(giocatore({ eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 } })), 'didi');
     const elo = BA.scheda(per(l, 'elopeak'));
     assert.equal(elo.frase, 'Reach 1300 to unlock Silver.');
-    assert.deepEqual(elo.barra, { etichetta: 'Peak Elo', valore: 1140, obiettivo: 1300, partenza: 1000, suffisso: '' });
+    assert.deepEqual(elo.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1300, partenza: 1000, suffisso: '' });
     const dom = BA.scheda(per(l, 'dominant'));
     assert.equal(dom.barra.etichetta, 'Matches played');
-    assert.match(dom.frase, /Counts after 25 matches played/);
+    assert.match(dom.frase, /Counts after 72 matches played/);
 });

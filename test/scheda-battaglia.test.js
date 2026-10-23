@@ -76,7 +76,7 @@ test('titoloVisibile: quello scelto, a meno che nella pagina pubblica la targhet
 
 // ---------- le medaglie da allenatore ----------
 test('medaglieAllenatore: il fondatore per primo, poi per livello; senza badge, niente', () => {
-    const m = SB.medaglieAllenatore({ id: 'didi', statsBadge: { maxcleanstrike: 7, maxwonstrike: 10, maxsdstrike: 5 }, lista: null }, DIP);
+    const m = SB.medaglieAllenatore({ id: 'didi', statsBadge: { maxcleanstrike: 7, maxwonstrike: 16, maxsdstrike: 8 }, lista: null }, DIP);
     assert.deepEqual(m.map(x => x.id), ['founder', 'clean', 'won', 'sd']);
     assert.deepEqual(m.map(x => x.livello), ['founder', 'silver', 'silver', 'bronze']);
     assert.ok(m.every(x => x.nome && x.img && x.livelloNome), 'ogni medaglia ha nome, immagine e livello');

@@ -50,8 +50,8 @@ test('livelli: bronzo, argento e oro alle soglie; al massimo la barra è piena e
 });
 
 test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del team', () => {
-    // soglie: vittorie di fila 4/7/9, match puliti 2/4/6, showdown di fila 2/3/5, KO 150/350/600, set perfetti 3/6/10
-    const l = B.calcola(team({ serie: { vittorieMax: 7, pulitaMax: 6, showdownMax: 3 }, ko: { fatti: 350, setPerfetti: 3, setConDati: 9 } }));
+    // soglie: vittorie di fila 7/10/14, match puliti 3/5/7, showdown di fila 3/5/8, KO 150/350/600, set perfetti 4/8/14
+    const l = B.calcola(team({ serie: { vittorieMax: 10, pulitaMax: 7, showdownMax: 5 }, ko: { fatti: 350, setPerfetti: 4, setConDati: 9 } }));
     assert.equal(perId(l, 'winstreak').livello, 2);
     assert.equal(perId(l, 'cleanstreak').livello, 3);
     assert.equal(perId(l, 'sdstreak').livello, 2);
@@ -59,15 +59,15 @@ test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del
     assert.equal(perId(l, 'flawless').livello, 1);
 });
 
-test('percentuale di match vinti: sotto i 7 match non conta, e dice quanto manca (come i fiocchi)', () => {
+test('percentuale di match vinti: sotto i 12 match non conta, e dice quanto manca (come i fiocchi)', () => {
     const poco = perId(B.calcola(team({ match: { giocati: 6, vinti: 6, persi: 0 }, percMatch: 100 })), 'winrate');
     assert.equal(poco.livello, 0);
     const minimo = B.CATALOGO.find(b => b.id === 'winrate').minimo.valore;
-    assert.equal(minimo, 7, 'servono sette match giocati');
+    assert.equal(minimo, 12, 'servono dodici match giocati (una stagione)');
     assert.equal(poco.progresso, 6 / minimo);
     assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 6, s: minimo });
-    assert.match(poco.nota, /needs 7 matches played \(now 6\)/);
-    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 7<\/i><\/span>/);
+    assert.match(poco.nota, /needs 12 matches played \(now 6\)/);
+    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 12<\/i><\/span>/);
     // soglie 65% / 75% / 80%
     const abbastanza = perId(B.calcola(team({ match: { giocati: 12, vinti: 10, persi: 2 }, percMatch: 83 })), 'winrate');
     assert.equal(abbastanza.livello, 3);
@@ -81,7 +81,7 @@ test('immagini: tutte col prefisso badge-team-, un file per livello per ogni bad
     assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-bronze.png');
     assert.equal(perId(l, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-bronze.png');
     assert.equal(perId(l, 'champion').immagine, 'immagini/badge-team-champion-bronze.png');
-    const alto = B.calcola(team({ serie: { vittorieMax: 9, pulitaMax: 4, showdownMax: 5 }, match: { giocati: 40, vinti: 30, persi: 10 } }));
+    const alto = B.calcola(team({ serie: { vittorieMax: 14, pulitaMax: 5, showdownMax: 8 }, match: { giocati: 40, vinti: 30, persi: 10 } }));
     assert.equal(perId(alto, 'winstreak').immagine, 'immagini/badge-team-winstreak-gold.png');
     assert.equal(perId(alto, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-silver.png');
     assert.equal(perId(alto, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-gold.png');

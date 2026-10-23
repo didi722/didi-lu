@@ -6,8 +6,8 @@
 // partono dai numeri reali: Statistiche.calcola(dati, { stagione: 'all' }), un elemento per allenatore in `players`, più le sue
 // squadre (`teams`) e i suoi Pokémon (`pokemon`).
 //
-// Sono fatti per essere difficili: una stagione tipica ha 14 showdown da 3 match, circa 105 set a testa. Il primo livello si
-// prende dopo una stagione o più di impegno, l'oro in anni. Le soglie sono nel CATALOGO: se la stagione tipica cambia si cambiano solo lì.
+// Sono fatti per essere difficili: una stagione tipica ha 12 showdown da 3 match (5 giocatori, 3 formati, un showdown per formato contro ciascun
+// avversario), cioè 36 match e 108 set a testa. Il primo livello si prende dopo una stagione giocata molto bene (o più), l'oro in molti anni. Le soglie sono nel CATALOGO: se la stagione tipica cambia si cambiano solo lì.
 //
 // Meccanismo e stili sono quelli dei badge dei team (BadgeTeam.costruisci, badge-team.css). Funzione pura: funziona nel browser
 // (window.BadgeAllenatore) e in Node (test/badge-allenatore.test.js).
@@ -28,7 +28,7 @@
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
     // Formati in cui si è davvero forti: abbastanza match (MIN_MATCH_FORMATO) e almeno questa % di vittorie
-    const MIN_MATCH_FORMATO = 8;
+    const MIN_MATCH_FORMATO = 24;
     const PERC_FORMATO = 60;
     const formatiForti = g => Object.values((g && g.formati) || {}).filter(f => num(f.n) >= MIN_MATCH_FORMATO && (num(f.vinti) / num(f.n)) * 100 >= PERC_FORMATO).length;
 
@@ -53,24 +53,24 @@
           valore: c => num(c.g.showdown && c.g.showdown.vinti), immagini: tre('badge-allenatore-showdown-{l}.png') },
         { id: 'dominant', nome: 'Dominant', icona: '📈', unita: '% of matches won', soglie: [65, 75, 80], etichetta: 'Win rate', suffisso: '%',
           descrizione: 'Share of matches won, once you have played enough of them.',
-          valore: c => num(c.g.percMatch), minimo: { campo: c => num(c.g.match && c.g.match.giocati), valore: 25, etichetta: 'matches played' },
+          valore: c => num(c.g.percMatch), minimo: { campo: c => num(c.g.match && c.g.match.giocati), valore: 72, etichetta: 'matches played' },
           immagini: tre('badge-allenatore-dominant-{l}.png') },
-        { id: 'knockout', nome: 'KO Artist', icona: '💥', unita: 'KOs', soglie: [400, 900, 2000],
+        { id: 'knockout', nome: 'KO Artist', icona: '💥', unita: 'KOs', soglie: [450, 1100, 2500],
           descrizione: 'Opposing Pokémon knocked out.',
           valore: c => num(c.g.ko && c.g.ko.fatti), immagini: tre('badge-allenatore-knockout-{l}.png') },
-        { id: 'untouchable', nome: 'Untouchable', icona: '🛡️', unita: 'flawless sets', soglie: [6, 15, 35],
+        { id: 'untouchable', nome: 'Untouchable', icona: '🛡️', unita: 'flawless sets', soglie: [8, 22, 50],
           descrizione: 'Sets won without losing a single Pokémon.',
           valore: c => num(c.g.ko && c.g.ko.setPerfetti), immagini: tre('badge-allenatore-untouchable-{l}.png') },
-        { id: 'closecall', nome: 'Against All Odds', icona: '💪', unita: 'sets won on the last Pokémon', soglie: [8, 20, 45],
+        { id: 'closecall', nome: 'Against All Odds', icona: '💪', unita: 'sets won on the last Pokémon', soglie: [15, 40, 90],
           descrizione: 'Sets won with only one Pokémon left standing.',
           valore: c => num(c.g.ko && c.g.ko.setAlLimite), immagini: tre('badge-allenatore-closecall-{l}.png') },
-        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [2, 5, 8],
+        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [2, 4, 6],
           descrizione: `Formats where you won at least ${PERC_FORMATO}% of your matches, with at least ${MIN_MATCH_FORMATO} played.`,
           valore: c => formatiForti(c.g), immagini: tre('badge-allenatore-formatmaster-{l}.png') },
-        { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1125, 1300, 1450], partenza: 1000,
+        { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1200, 1300, 1375], partenza: 1000,
           descrizione: 'The highest Elo you have ever reached.',
           valore: c => num(c.g.eloPicco), immagini: tre('badge-allenatore-elopeak-{l}.png') },
-        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [65, 130, 200],
+        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [80, 160, 260],
           descrizione: 'Different Pokémon species you have brought into battle.',
           valore: c => num(c.specie), immagini: tre('badge-allenatore-collector-{l}.png') }
     ];
