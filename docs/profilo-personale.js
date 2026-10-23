@@ -119,7 +119,7 @@
         };
     }
 
-    // Bilancio di `io` contro ogni avversario con cui ha almeno uno showdown, in tutte le stagioni date TRANNE la beta (sbeta): sono i
+    // Bilancio di `io` contro ogni avversario con cui ha almeno uno showdown, in tutte le stagioni date TRANNE la beta (sbeta) e le cup: sono i
     // numeri veri, non quelli delle prove. Chi vuole anche la beta lo chiede con { beta: true }.
     // Ordinato: più match giocati per primi, poi per nome.
     function rivali(io, stagioni, { beta = false } = {}) {
@@ -129,6 +129,7 @@
 
         for (const [idStagione, S] of Object.entries(oggetti(stagioni))) {
             if (!beta && idDi(idStagione) === BETA) continue;
+            if (idDi(oggetti(oggetti(S).info).tipo) === 'cup') continue;      // le cup non fanno statistica: niente bilancio testa a testa
             for (const sd of valori(oggetti(S).showdowns)) {
                 if (!sd || !sd.info) continue;
                 const [p1, p2] = giocatoriShowdown(sd);

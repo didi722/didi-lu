@@ -127,7 +127,8 @@
      * @param {Array} [battaglia]   `pokemon` di Statistiche.calcola(dati, stessoFiltro): set portati/vinti e KO, sommati per specie
      */
     function calcola(dati, filtro = {}, battaglia = []) {
-        const seasons = dati?.seasons || {};
+        // le cup non fanno statistica (tipo-stagione.js)
+        const seasons = Object.fromEntries(Object.entries(dati?.seasons || {}).filter(([, s]) => String(s?.info?.tipo || '').toLowerCase().trim() !== 'cup'));
         const players = dati?.players || {};
         const stagioneScelta = filtro.stagione && filtro.stagione !== 'all' ? String(filtro.stagione) : 'all';
         const formatoScelto = filtro.formato && filtro.formato !== 'all' ? String(filtro.formato) : 'all';

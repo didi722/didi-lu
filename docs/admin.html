@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="risultati-match.js"></script>
+    <script src="tipo-stagione.js"></script>
     <script src="formato-random.js"></script>
     <script src="iscrizioni-team.js"></script>
 </head>
@@ -106,8 +107,26 @@
         <div class="admin-col">
     <h4 class="col-title">SEASON INFO</h4>
     <div class="form-group">
-        <label>Season Name:</label>
-        <input type="text" id="new-season-name" placeholder="Es: Spring Cup 2026">
+        <label>Type:</label>
+        <select id="tipo-stagione" onchange="cambiaTipoStagione()">
+            <optgroup label="Season (counts for statistics)">
+                <option value="league">Sant'Alvise League</option>
+                <option value="monoformat">Monoformat · Martiri di Marzabotto Memorial</option>
+                <option value="random">Randomize · Friuli DOC</option>
+            </optgroup>
+            <optgroup label="Cup (no statistics, trophy only)">
+                <option value="cup">Cup</option>
+            </optgroup>
+        </select>
+    </div>
+    <div class="form-group">
+        <label id="etichetta-nome-stagione">Season Name:</label>
+        <input type="text" id="new-season-name" placeholder="Es: Christmas Cup">
+        <small id="nota-tipo-stagione" style="display:block; margin-top:4px; opacity:.75;"></small>
+    </div>
+    <div class="form-group" id="gruppo-icona-cup" style="display:none;">
+        <label>Trophy icon (optional):</label>
+        <input type="text" id="icona-cup" placeholder="immagini/coppe/natale.png">
     </div>
     <div class="form-group">
         <label>Deadline:</label>
@@ -215,6 +234,8 @@
 const db = firebase.database();
 
 let formatiSelezionati = [];
+let regolamentiCache = {};          // id → regolamento (serve a filtrare i formati Random)
+let stagioniInfoCache = {};         // id → info delle stagioni esistenti (serve al nome progressivo)
 let editingSeasonId = null;
 
 firebase.auth().onAuthStateChanged(async (user) => {
@@ -436,23 +457,77 @@ async function ricalcolaVincitoreStagione(idStagione) {
     }
 }
 
-// 1. Carica i formati nel menù a tendina
+// 1. Carica i formati nel menù a tendina (con il filtro del tipo di stagione: la Randomize usa solo formati Random, la Monoformat nessuno)
 async function popolaFormatiDaRegolamenti() {
-    const select = document.getElementById('select-regolamenti');
     try {
         const snap = await db.ref('regolamenti').once('value');
-        const regs = snap.val();
-        if (regs) {
-            select.innerHTML = '<option value="">Choose formats...</option>';
-            Object.keys(regs).forEach(idReg => {
-                const nomeCat = regs[idReg].categoria;
-                // un formato Random può essere una categoria di stagione: nessun team da iscrivere, Showdown ne dà uno nuovo a ogni set
-                if (nomeCat) {
-                    select.innerHTML += `<option value="${nomeCat}">${nomeCat}${FormatoRandom.eRandom(regs[idReg]) ? ' (Random)' : ''}</option>`;
-                }
-            });
-        }
+        regolamentiCache = snap.val() || {};
     } catch (e) { console.error("Errore select:", e); }
+    disegnaOpzioniFormati();
+}
+
+function disegnaOpzioniFormati() {
+    const select = document.getElementById('select-regolamenti');
+    const tipo = document.getElementById('tipo-stagione').value;
+    const regole = TipoStagione.regoleDi(tipo);
+    select.innerHTML = '<option value="">Choose formats...</option>';
+    Object.keys(regolamentiCache).forEach(idReg => {
+        const reg = regolamentiCache[idReg];
+        const nomeCat = reg && reg.categoria;
+        if (!nomeCat) return;
+        const random = FormatoRandom.eRandom(reg);
+        if (regole.formatoRandom === true && !random) return;
+        if (regole.formatoRandom === false && random) return;
+        // un formato Random può essere una categoria di stagione: nessun team da iscrivere, Showdown ne dà uno nuovo a ogni set
+        select.innerHTML += `<option value="${nomeCat}">${nomeCat}${random ? ' (Random)' : ''}</option>`;
+    });
+}
+
+// Cambia il tipo di stagione: nome (automatico o scritto a mano), numero di formati e di showdown fissi, formati ammessi
+async function cambiaTipoStagione(conservaNome) {
+    const tipo = document.getElementById('tipo-stagione').value;
+    const regole = TipoStagione.regoleDi(tipo);
+    const nome = document.getElementById('new-season-name');
+    const nota = document.getElementById('nota-tipo-stagione');
+    document.getElementById('gruppo-icona-cup').style.display = tipo === 'cup' ? 'block' : 'none';
+
+    if (regole.nomeAutomatico) {
+        if (!conservaNome) {
+            try { stagioniInfoCache = await TipoStagione.leggiInfo(db); } catch (e) { /* senza, il nome si riscrive al salvataggio */ }
+            nome.value = TipoStagione.nomeProgressivo(tipo, stagioniInfoCache);
+        }
+        nome.readOnly = !editingSeasonId;
+        nota.innerText = 'The name is progressive: it is set automatically.';
+        document.getElementById('etichetta-nome-stagione').innerText = 'Season Name (automatic):';
+    } else {
+        nome.readOnly = false;
+        if (!conservaNome) nome.value = '';
+        nota.innerText = 'A cup does not count for statistics: it only gives a trophy. Give it a name.';
+        document.getElementById('etichetta-nome-stagione').innerText = 'Cup Name:';
+    }
+
+    const formati = document.getElementById('num-formati-target');
+    if (regole.formati) formati.value = regole.formati;
+    formati.disabled = !!regole.formati;
+    const showdown = document.getElementById('num-showdowns-per-format');
+    if (regole.showdowns) showdown.value = regole.showdowns;
+    showdown.disabled = !!regole.showdowns;
+
+    // con un formato solo non ha senso sorteggiarlo: lo sceglie l'admin
+    const metodo = document.getElementById('metodo-selezione-tendina');
+    if (regole.formati === 1) { metodo.value = 'manuale'; metodo.disabled = true; } else metodo.disabled = false;
+    toggleMetodoFormati();
+    // i formati già scelti che il nuovo tipo non ammette si tolgono
+    formatiSelezionati = formatiSelezionati.filter(f => {
+        const reg = Object.values(regolamentiCache).find(r => r && r.categoria === f);
+        const random = !!reg && FormatoRandom.eRandom(reg);
+        return !((regole.formatoRandom === true && !random) || (regole.formatoRandom === false && random));
+    });
+    if (regole.formati && formatiSelezionati.length > regole.formati) formatiSelezionati = formatiSelezionati.slice(0, regole.formati);
+    renderTags();
+    disegnaOpzioniFormati();
+    aggiornaCalcoloDinamico();
+    aggiornaStatoConferma();
 }
 
 function checkNoLimit(input) {
@@ -594,10 +669,15 @@ async function apriModaleEdit(idStagione) {
             if (badgeNoLimit) badgeNoLimit.style.display = 'none';
         }
 
-        // 4. GESTIONE FORMATI (TAG)
+        // 4. GESTIONE FORMATI (TAG) e TIPO (non si cambia dopo la creazione)
         formatiSelezionati = season.selected_formats ? [...season.selected_formats] : [];
         renderTags(); 
         await popolaFormatiDaRegolamenti();
+        const tipoSelect = document.getElementById('tipo-stagione');
+        tipoSelect.value = TipoStagione.tipoDi(season, idStagione) === 'beta' ? 'league' : TipoStagione.tipoDi(season, idStagione);
+        tipoSelect.disabled = true;
+        document.getElementById('icona-cup').value = season.icona || '';
+        await cambiaTipoStagione(true);
 
         // 5. TRASFORMAZIONE UI
         const titoloModale = document.querySelector('#modalCreazione h3');
@@ -630,6 +710,7 @@ async function salvaModificheStagione() {
         const nomeStagione = document.getElementById('new-season-name').value;
         const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
         const n = parseInt(document.getElementById('num-formati-target').value) || 0;
+        const iconaCup = document.getElementById('icona-cup').value.trim();
         const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
         const openSheetVal = document.getElementById('new-season-open-sheet').checked;
         
@@ -657,6 +738,7 @@ async function salvaModificheStagione() {
             open_sheet: openSheetVal,
             updated_at: new Date().toISOString()
         };
+        if (document.getElementById('tipo-stagione').value === 'cup') updatedData.icona = iconaCup || null;
 
         await db.ref(`seasons/${editingSeasonId}/info`).update(updatedData);
 
@@ -860,11 +942,13 @@ function aggiornaCalcoloDinamico() {
 /** 2. Salvataggio su Firebase con ID Automatico **/
 async function creaNuovaStagione() {
     try {
-        const nomeStagione = document.getElementById('new-season-name').value;
-        if (!nomeStagione) return alert("Please enter a name for the season!");
+        const tipo = document.getElementById('tipo-stagione').value;
+        const regole = TipoStagione.regoleDi(tipo);
+        let nomeStagione = document.getElementById('new-season-name').value.trim();
+        if (!regole.nomeAutomatico && !nomeStagione) return alert("Please enter a name for the cup!");
 
         const metodo = document.getElementById('metodo-selezione-tendina').value;
-        const numFormatiTarget = parseInt(document.getElementById('num-formati-target').value) || 1;
+        const numFormatiTarget = regole.formati || parseInt(document.getElementById('num-formati-target').value) || 1;
         
         let formatiFinali = [];
 
@@ -908,8 +992,10 @@ async function creaNuovaStagione() {
             }
         });
         const nuovoID = `s${maxIdx + 1}`;
+        // il nome delle stagioni è progressivo (Sant'Alvise III, Friuli DOC II...): si ricalcola ora, sulle stagioni che ci sono davvero
+        if (regole.nomeAutomatico) nomeStagione = TipoStagione.nomeProgressivo(tipo, seasons);
 
-        const s = parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
+        const s = regole.showdowns || parseInt(document.getElementById('num-showdowns-per-format').value) || 0;
         const deadlineVal = document.getElementById('deadline-iscrizioni').value || "";
         const bo = parseInt(document.getElementById('best-of-format').value) || 3;
         const openSheetVal = document.getElementById('new-season-open-sheet').checked;
@@ -920,6 +1006,7 @@ async function creaNuovaStagione() {
 
         const seasonInfo = {
             id: nuovoID,
+            tipo,
             name: nomeStagione,
             deadline: deadlineVal,
             teams_per_format: t, // Salva numero o "No Limit"
@@ -931,6 +1018,10 @@ async function creaNuovaStagione() {
             open_sheet: openSheetVal,
             created_at: new Date().toISOString()
         };
+        if (tipo === 'cup') {
+            const icona = document.getElementById('icona-cup').value.trim();
+            if (icona) seasonInfo.icona = icona;
+        }
 
         await db.ref(`seasons/${nuovoID}/info`).set(seasonInfo);
 
@@ -1030,9 +1121,13 @@ window.onload = () => {
     }
 
     // 4. Apertura modale e caricamento dati necessari
+    const tipo = document.getElementById('tipo-stagione');
+    tipo.value = 'league';
+    tipo.disabled = false;
+    document.getElementById('icona-cup').value = '';
     document.getElementById('modalCreazione').style.display = 'flex';
-    popolaFormatiDaRegolamenti();
-    
+    popolaFormatiDaRegolamenti().then(() => cambiaTipoStagione());
+
     // Aggiorna il calcolo dinamico (es: "6 Sd / avversario")
     aggiornaCalcoloDinamico();
 }

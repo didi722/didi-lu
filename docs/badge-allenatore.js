@@ -36,8 +36,8 @@
     // Catalogo. Il "contesto" di un allenatore: { g: players[i], specie: n. specie portate in campo, team: n. team giocati }
     // -----------------------------------------------------
     const CATALOGO = [
-        { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [2, 3, 5],
-          descrizione: 'Seasons of the league won.',
+        { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [3, 5, 8],
+          descrizione: 'Official seasons won: Sant\'Alvise League, Monoformat and Randomize (cups do not count).',
           valore: c => num(c.g.stagioniVinte), immagini: tre('badge-allenatore-champion-{l}.png') },
         { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [3, 8, 15],
           descrizione: 'Seasons of the league played.',
