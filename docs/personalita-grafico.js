@@ -21,7 +21,7 @@
     // Le due forme: la grandezza del disegno (viewBox), il centro e il raggio (in unità del disegno)
     const FORME = {
         grande:  { larghezza: 300, altezza: 300, cx: 150, cy: 150, raggio: 104, distanza: 16 },
-        piccolo: { larghezza: 400, altezza: 272, cx: 200, cy: 134, raggio: 84,  distanza: 12 }
+        piccolo: { larghezza: 380, altezza: 244, cx: 190, cy: 123, raggio: 98,  distanza: 11 }
     };
 
     function svg(doc, tag, attributi, ...figli) {
