@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="box-incorporato.css">
 <script src="dettagli.js" defer></script>
 <script src="team-bloccati.js"></script>
+<script src="iscrizioni-team.js"></script>
 <script src="editor-team.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
@@ -3086,6 +3087,9 @@ const testoAdattato = adattaTestoAlFormato(testoShowdown, regolamento);
             // 🆕 Salvataggio dinamico sul player loggato in caso di modifica
             datiTeamDaSalvare.id = editingId;
             await databaseRef.child(`players/${playerID}/teams/${editingId}`).update(datiTeamDaSalvare);
+            // il team potrebbe essere iscritto a una stagione in iscrizione: la fotografia dell'iscrizione segue il Box (nome, Pokémon)
+            try { await IscrizioniTeam.sincronizza(databaseRef, { giocatore: playerID, teamId: editingId, conMatch: false }); }
+            catch (e) { console.warn('Iscrizioni non aggiornate:', e); }
         } else {
             // 🆕 Salvataggio dinamico sul player loggato per nuovi team
             const newTeamRef = databaseRef.child(`players/${playerID}/teams`).push();

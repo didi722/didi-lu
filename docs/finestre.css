@@ -437,7 +437,9 @@
     overflow-x: hidden;
     overflow-y: auto;
 }
-#replayModal .gba-container { order: 2; margin: 0; }
+/* il palco: la console e, alla sua destra, i tasti dei set in verticale */
+#replayModal .replay-palco { order: 2; flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 16px; max-width: 100%; min-width: 0; }
+#replayModal .gba-container { margin: 0; }
 /* i comandi del replay: una barra tra la console e i tasti dei set, nello stile del tema */
 #replayModal .replay-comandi {
     order: 3; flex: 0 0 auto;
@@ -463,15 +465,16 @@
     position: relative;
     top: auto;
     order: 1;
+    flex: 0 0 auto;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    width: min(980px, 100%);
+    width: min(1120px, 100%);
     min-width: 0;
     margin: 0;
-    padding: 46px 16px 18px !important;
+    padding: 44px 18px 18px !important;
     background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6) !important;
     color: var(--nb-ink, #000);
     border: 4px solid var(--nb-ink, #000) !important;
@@ -489,7 +492,9 @@
     background: var(--vinc, var(--nb-giallo, #ffbd44));
     border-top: 3px solid var(--nb-ink, #000);
 }
-#replayModal .replay-mini-header .mini-team-info { display: flex; align-items: center; gap: 10px; flex: 1 1 0; min-width: 0; }
+#replayModal .replay-mini-header .mini-team-info { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex: 1 1 0; min-width: 0; }
+#replayModal .replay-mini-header .side-lu { align-items: flex-end; }
+#replayModal .replay-mini-header .badge-label { max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
 #replayModal .replay-mini-header .mini-score-box,
 #replayModal .replay-mini-header .badge-label {
     background: var(--nb-carta, #fff);
@@ -501,7 +506,7 @@
 #replayModal .replay-mini-header .badge-label { margin: 0; }
 #replayModal .replay-mini-header .mini-score-box { flex-shrink: 0; margin: 0; padding: 5px 12px !important; font-weight: 900; box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
 #replayModal .replay-mini-header .mini-gifs-row { flex: 0 0 auto; flex-wrap: nowrap; gap: 2px; padding: 0; justify-content: center; }
-#replayModal .replay-mini-header .mini-gifs-row img { width: 28px; height: 28px; }
+#replayModal .replay-mini-header .mini-gifs-row img { width: 36px; height: 36px; }
 /* il team accanto alle sue GIF: il nome e, di fianco o sotto se non c'è posto, i suoi badge */
 #replayModal .replay-mini-header .mini-team-col { display: flex; flex-flow: row wrap; align-items: center; gap: 6px 8px; min-width: 0; }
 #replayModal .replay-mini-header .side-lu .mini-team-col { justify-content: flex-end; }
@@ -532,18 +537,18 @@
 #replayModal > .close-replay:hover { background: var(--nb-rosso, #ff4444); color: #fff; rotate: 0deg; }
 
 /* scelta del set: una barretta sotto la console, un tasto piccolo per set (la lettera di chi lo ha vinto, il suo colore come filetto in basso) */
-#replayModal .set-selector { position: static !important; top: auto !important; right: auto !important; order: 4; flex: 0 0 auto; width: auto; height: auto; padding: 0; transform: none; }
+#replayModal .set-selector { position: static !important; top: auto !important; right: auto !important; flex: 0 0 auto; width: auto; height: auto; padding: 0; transform: none; }
 #replayModal .set-lista {
     position: relative;
     box-sizing: border-box;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 10px 16px;
+    gap: 14px;
     min-width: 0;
-    padding: 9px 14px 9px 12px;
+    padding: 10px 12px 12px;
     background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
     color: var(--nb-ink, #000);
     border: 3px solid var(--nb-ink, #000);
@@ -632,7 +637,7 @@
     #replayModal.replay-modal { justify-content: flex-start; gap: 10px; padding: 10px 8px 16px; }
     #replayModal .replay-mini-header { width: 100%; padding: 42px 10px 16px !important; transform: none; }
     #replayModal .replay-mini-header { display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; justify-content: stretch; gap: 8px; }
-    #replayModal .replay-mini-header .mini-team-info { flex-direction: column-reverse; align-items: stretch; gap: 6px; min-width: 0; }
+    #replayModal .replay-mini-header .mini-team-info { flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
     #replayModal .replay-mini-header .side-lu { flex-direction: column; }
     #replayModal .replay-mini-header .mini-team-col,
     #replayModal .replay-mini-header .side-lu .mini-team-col { justify-content: center; text-align: center; }
@@ -645,8 +650,9 @@
     #replayModal .replay-mini-header .mini-score-box { align-self: center; }
     #replayModal .replay-mini-header .badge-label { font-size: .68rem; padding: 3px 6px; }
     #replayModal > .close-replay { top: 3px; right: 8px; width: 26px; height: 26px; font-size: 17px; border-width: 2px; }
+    #replayModal .replay-palco { flex-direction: column; gap: 10px; }
     #replayModal .set-selector { width: 100%; }
-    #replayModal .set-lista { gap: 8px 14px; padding: 8px 12px; }
+    #replayModal .set-lista { flex-direction: row; flex-wrap: wrap; gap: 8px 14px; padding: 8px 12px; }
     #modalCreazione.admin-panel-modern { padding: 54px 14px 18px !important; }
     #modalCreazione.admin-panel-modern > h3 { margin-bottom: 22px; font-size: 1rem; }
 }

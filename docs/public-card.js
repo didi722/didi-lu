@@ -443,20 +443,16 @@
         return blocco('medaglie', 'pp-medaglie', h('span', { class: 'pp-chip', testo: 'MEDALS' }), h('div', { class: 'pp-medaglie-riga' }, lista));
     }
 
-    // ---- Personalità: il diagramma a ragnatela e il nome --------------------------------------
+    // ---- Personalità: il diagramma a ragnatela --------------------------------------
 
     function costruisciPersonalita(d) {
         const p = d.personalita;
         const pronta = !!p && p.stato === 'pronta' && !!p.tipo && !!window.PersonalitaGrafico && !!window.Personalita;
         stato.vuoti.personalita = !pronta;
-        // in un blocco largo il diagramma sta a sinistra e a destra il nome con la sua spiegazione; in uno stretto, il nome sotto
+        // solo il diagramma: il nome della personalità sta già sul palco (targhetta); al passaggio del mouse resta la spiegazione
         const corpo = !pronta ? null : h('div', { class: 'pp-pers-corpo' },
-            h('div', { class: 'pp-pers-grafico' },
-                window.PersonalitaGrafico.radar(window.Personalita.ASSI, p.assi.map(a => a.valore), { piccolo: true })),
-            h('div', { class: 'pp-pers-testo' },
-                h('p', { class: 'pp-pers-tipo', title: p.tipo.descrizione },
-                    h('span', { 'aria-hidden': 'true', testo: p.tipo.icona }), ` ${p.tipo.nome.toUpperCase()}`),
-                h('p', { class: 'pp-pers-desc', testo: p.tipo.descrizione })));
+            h('div', { class: 'pp-pers-grafico', title: `${p.tipo.nome}: ${p.tipo.descrizione}` },
+                window.PersonalitaGrafico.radar(window.Personalita.ASSI, p.assi.map(a => a.valore), { piccolo: true })));
         return blocco('personalita', 'pp-personalita', h('span', { class: 'pp-chip', testo: 'PERSONALITY' }), corpo);
     }
 

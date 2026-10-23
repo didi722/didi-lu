@@ -351,6 +351,8 @@
 
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
     
+    <!-- il palco: la console e, alla sua destra, i tasti dei set in verticale (sul telefono vanno sotto) -->
+    <div class="replay-palco">
     <div class="gba-container">
         <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
         <div class="gba-screen-area" onclick="event.stopPropagation()">
@@ -358,6 +360,8 @@
                 <iframe id="replayFrame" src="" frameborder="0" scrolling="no"></iframe>
             </div>
         </div>
+    </div>
+    <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
     </div>
 
     <!-- I comandi del replay (da capo, indietro, play/pausa, avanti, velocità, suono): stanno sotto la console, fuori dalla scocca. Compaiono
@@ -371,8 +375,6 @@
         <button type="button" class="rc-tasto" data-comando="audio" id="rcAudio" title="Sound"></button>
     </div>
 
-    <div class="set-selector" id="setSelector" onclick="event.stopPropagation()"></div>
-    
     <span class="close-replay" onclick="chiudiReplay()">&times;</span>
 </div>
 
@@ -2504,12 +2506,18 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
 function adattaReplayAlloSchermo() {
     const modal = document.getElementById('replayModal');
     if (!modal) return;
-    // la console misura 1150 × 647 px (l'immagine è 1920 × 1080): si rimpicciolisce per stare nella larghezza e, sugli schermi bassi, anche
-    // nell'altezza (restano l'intestazione sopra e i tasti dei set sotto); non scende sotto la metà per l'altezza, poi la finestra scorre
+    // la console misura 1150 × 647 px (l'immagine è 1920 × 1080): si rimpicciolisce per stare nella larghezza (con i tasti dei set a destra,
+    // sul telefono sotto) e nell'altezza, dove restano l'intestazione sopra e i comandi sotto, misurati sul serio; non scende sotto la metà
+    // per l'altezza, poi la finestra scorre
     const larghezza = document.documentElement.clientWidth;
     const altezza = window.innerHeight || document.documentElement.clientHeight;
-    const perLarghezza = (larghezza - 24) / 1150;
-    const perAltezza = (altezza - 230) / 647;
+    const alto = sel => { const e = modal.querySelector(sel); return e && e.offsetParent !== null ? e.offsetHeight : 0; };
+    const insieme = larghezza > 900;
+    const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
+    const sotto = insieme ? 0 : alto('.set-selector') + 10;
+    const riservato = alto('.replay-mini-header') + alto('.replay-comandi') + sotto + 54;
+    const perLarghezza = (larghezza - 24 - tastiSet) / 1150;
+    const perAltezza = (altezza - riservato) / 647;
     const scala = Math.min(1, perLarghezza, Math.max(0.5, perAltezza));
     modal.style.setProperty('--gba-scala', scala.toFixed(3));
 }
@@ -2608,8 +2616,8 @@ selector.style.height = 'auto';
 
         miniHeader.innerHTML = `
             <div class="mini-team-info side-didi">
-                <div id="header-gifs-didi" class="mini-gifs-row"></div>
                 <div class="mini-team-col"><span class="badge-label">${teamDidi || 'Random teams'}</span><span class="mini-badges" data-replay-badge="1"></span></div>
+                <div id="header-gifs-didi" class="mini-gifs-row"></div>
             </div>
 
             <div class="mini-score-box">${scoreDidi} - ${scoreLu}</div>
@@ -2620,6 +2628,7 @@ selector.style.height = 'auto';
             </div>
         `;
         modal.prepend(miniHeader);
+        adattaReplayAlloSchermo();
 
         // i badge dei due team che si affrontano: un vanto, visibile a tutti (le medagliette più alte e quanti ne hanno)
         if (typeof BadgeTeam !== 'undefined') {
@@ -2674,6 +2683,7 @@ selector.style.height = 'auto';
             
             buttonsHtml += '</div>';
             selector.innerHTML = buttonsHtml;
+            adattaReplayAlloSchermo();
             
             setTimeout(() => { 
                 const firstBtn = selector.querySelector('.btn-set'); 

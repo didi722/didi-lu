@@ -598,3 +598,6 @@
     .live-vai { font-size: 0; padding: 4px 9px 2px; }
     .live-vai::before { font-size: 0.8rem; }
 }
+
+/* il tasto VS di una classifica già disegnata si nasconde quando contro quel giocatore non resta nulla da giocare (sfide.js) */
+.sfida-rank-btn[hidden] { display: none !important; }

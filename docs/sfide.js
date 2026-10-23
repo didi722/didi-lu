@@ -437,6 +437,7 @@
         disegnaLive();
         disegnaBattaglie();
         disegnaCampanella();
+        aggiornaBottoniRanking();
     }
 
     // Su ogni pagina che carica sfide.js: parte da sola quando Firebase è pronto,
@@ -462,14 +463,30 @@
     // -----------------------------------------------------
     // 4. Bottone nella classifica (stagione della pagina)
     // -----------------------------------------------------
+    // C'è ancora qualcosa da fare contro `nome` in questa stagione? No quando non resta nessun formato con showdown da giocare e non c'è
+    // niente di attivo (una sfida in attesa o uno showdown da riprendere tengono il tasto, perché da lì si risponde o si riprende)
+    function dacoSfidare(D, nome) {
+        if (formatiOccupati(D, D.io, nome).occupati.size) return true;
+        return formatiStagione(D).some(f => rimasti(D, D.io, nome, f) > 0);
+    }
+
     function bottoneRanking(nome) {
         const D = pagina();
         if (!D || !S.utente || !D.io || chiusa(D.info)) return '';
         if (idDi(nome) === S.ioId) return '';
         if (!D.iscritti.some(p => idDi(p) === idDi(nome))) return '';
+        if (!dacoSfidare(D, nome)) return '';
         return `<button type="button" class="sfida-rank-btn" data-nome="${esc(nome)}"
                     title="Challenge ${esc(nome)}" aria-label="Challenge ${esc(nome)}"
                     onclick="event.stopPropagation(); Sfide.apriSfida(this.dataset.nome)">VS</button>`;
+    }
+
+    // La classifica si disegna una volta sola, magari prima che arrivino gli showdown: quando i dati cambiano i tasti già in pagina si
+    // nascondono (o tornano) senza ridisegnarla
+    function aggiornaBottoniRanking() {
+        const D = pagina();
+        if (!D || !D.io) return;
+        document.querySelectorAll('.sfida-rank-btn[data-nome]').forEach(b => { b.hidden = !dacoSfidare(D, b.dataset.nome); });
     }
 
 
