@@ -1472,3 +1472,6 @@ body.has-alert-banner .top-auth-bar {
 .ach-badge-card.ach-lv-gold { --livello: var(--bt-oro); }
 .ach-badge-card .bt-finto { justify-self: center; align-self: start; }
 .ach-card.locked .bt-finto { filter: grayscale(1); opacity: 0.5; }
+
+/* l'icona della personalità è l'oggetto (PNG), grande come il testo */
+.pf-pers-tipo .pers-icona { width: 2em; height: 2em; margin: -0.5em 0.1em -0.5em 0; vertical-align: middle; object-fit: contain; }

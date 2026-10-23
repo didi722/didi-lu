@@ -1387,3 +1387,6 @@ body.pp-fisso .pp-disco { width: 44px; height: 44px; }
 body.pp-fisso .pp-eq { height: 22px; }
 
 
+
+/* l'icona della personalità è l'oggetto (PNG), grande come il testo della targhetta */
+.pp-targa-personalita .pers-icona { width: 1.7em; height: 1.7em; margin: -0.35em 0.1em -0.35em -0.2em; vertical-align: middle; object-fit: contain; image-rendering: auto; }

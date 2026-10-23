@@ -128,3 +128,13 @@ test('vertici del diagramma: il primo asse in alto, gli altri in senso orario, i
     // fuori scala resta dentro il disegno
     assert.deepEqual([P.vertici([250], 10, 0, 0)[0].y, P.vertici([-5], 10, 0, 0)[0].y], [-10, 0]);
 });
+
+test('ogni famiglia ha la sua icona PNG (con l\'emoji come riserva) e il file esiste', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const P = require('../docs/personalita.js');
+    for (const f of Object.values(P.FAMIGLIE || {})) {
+        assert.ok(f.icona, `${f.id}: emoji di riserva`);
+        assert.equal(f.immagine, `immagini/personalita-${f.id}.png`);
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', f.immagine)), `${f.id}: manca ${f.immagine}`);
+    }
+});

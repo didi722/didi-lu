@@ -56,13 +56,13 @@
     ];
 
     const FAMIGLIE = {
-        offensiva: { id: 'offensiva', nome: 'Aggressor', icona: '⚔️',
+        offensiva: { id: 'offensiva', nome: 'Aggressor', icona: '⚔️', immagine: 'immagini/personalita-offensiva.png',
             descrizione: 'You take the fight to the opponent.' },
-        difensiva: { id: 'difensiva', nome: 'Guardian', icona: '🛡️',
+        difensiva: { id: 'difensiva', nome: 'Guardian', icona: '🛡️', immagine: 'immagini/personalita-difensiva.png',
             descrizione: 'You play it safe:  protect, healing and safe-switching.' },
-        stratega: { id: 'stratega', nome: 'Strategist', icona: '♟️',
+        stratega: { id: 'stratega', nome: 'Strategist', icona: '♟️', immagine: 'immagini/personalita-stratega.png',
             descrizione: 'You win with plans: setup, field control, support and tricks.' },
-        equilibrata: { id: 'equilibrata', nome: 'All-rounder', icona: '⚖️',
+        equilibrata: { id: 'equilibrata', nome: 'All-rounder', icona: '⚖️', immagine: 'immagini/personalita-equilibrata.png',
             descrizione: 'You calibrate every match adapting to your opponent.' }
     };
 
