@@ -146,23 +146,18 @@
         <div class="admin-col">
             <h4 class="col-title">MATCH STRUCTURE</h4>
             <div class="form-group">
-    <label>Teams per format:</label>
-    <div style="position: relative; display: flex; align-items: center;">
-        <input type="number" 
-               id="teams-per-formato" 
-               value="3" 
-               min="0" 
-               oninput="checkNoLimit(this)"
-               style="width: 100%;">
-        <span id="badge-no-limit" 
-              style="position: absolute; right: 10px; background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: none;">
-              NO LIMIT
-        </span>
-    </div>
-</div>
-            <div class="form-group">
                 <label>Showdowns per Format:</label>
-                <input type="number" id="num-showdowns-per-format" value="2" oninput="aggiornaSquadreMax(); aggiornaCalcoloDinamico()">
+                <select id="num-showdowns-per-format" onchange="aggiornaSquadreMax(); aggiornaCalcoloDinamico()"></select>
+            </div>
+            <div class="form-group">
+                <label>Teams per format:</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <select id="teams-per-formato" onchange="checkNoLimit(this)" style="width: 100%;"></select>
+                    <span id="badge-no-limit"
+                          style="position: absolute; right: 38px; background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: none; pointer-events: none;">
+                          NO LIMIT
+                    </span>
+                </div>
             </div>
             <div class="form-group">
                 <label>Best of:</label>
@@ -179,9 +174,8 @@
             <div class="form-group" style="position: relative;">
                 <label>Number of Formats:</label>
                 <div style="position: relative; display: flex; align-items: center;">
-                    <input type="number" id="num-formati-target" value="3" min="1" 
-                           oninput="aggiornaCalcoloDinamico()" 
-                           style="padding-right: 150px;"> <span id="calcolo-operazione" 
+                    <select id="num-formati-target" onchange="aggiornaCalcoloDinamico()"
+                           style="padding-right: 150px;"></select> <span id="calcolo-operazione" 
                           style="position: absolute; right: 12px; color: #31c489; font-weight: 800; font-size: 0.75rem; pointer-events: none; white-space: nowrap;">
                         6 Sd / opponent 
                     </span>
@@ -538,10 +532,10 @@ async function cambiaTipoStagione(conservaNome) {
     }
 
     const formati = document.getElementById('num-formati-target');
-    if (regole.formati) formati.value = regole.formati;
+    if (regole.formati) scegliNumero(formati, regole.formati);
     formati.disabled = !!regole.formati;
     const showdown = document.getElementById('num-showdowns-per-format');
-    if (regole.showdowns) showdown.value = regole.showdowns;
+    if (regole.showdowns) scegliNumero(showdown, regole.showdowns);
     showdown.disabled = !!regole.showdowns;
 
     // il numero di squadre iscrivibili segue gli showdown per formato (solo creando: in modifica restano quelli salvati)
@@ -578,7 +572,7 @@ function aggiornaSquadreMax() {
     const max = TipoStagione.squadreMax(document.getElementById('num-showdowns-per-format').value);
     if (!max) return;
     const campo = document.getElementById('teams-per-formato');
-    campo.value = max;
+    scegliNumero(campo, max);
     checkNoLimit(campo);
 }
 
@@ -642,6 +636,24 @@ function rimuoviTag(index) {
 }
 
 
+// I numeri del pannello si scelgono da elenchi a tendina (niente freccine): se un valore salvato è fuori elenco, si aggiunge
+function riempiNumeri(id, da, a, predefinito, testo0) {
+    const el = document.getElementById(id);
+    for (let n = da; n <= a; n++) el.add(new Option(n === 0 && testo0 ? testo0 : String(n), String(n)));
+    el.value = String(predefinito);
+}
+function scegliNumero(el, valore) {
+    const v = String(parseInt(valore, 10) || 0);
+    if (![...el.options].some(o => o.value === v)) {
+        el.add(new Option(v, v));
+        [...el.options].sort((x, y) => x.value - y.value).forEach(o => el.add(o));
+    }
+    el.value = v;
+}
+riempiNumeri('num-showdowns-per-format', 1, 12, 2);
+riempiNumeri('teams-per-formato', 0, 20, 3, '0 (no limit)');
+riempiNumeri('num-formati-target', 1, 10, 3);
+
 function toggleMetodoFormati() {
     const metodo = document.getElementById('metodo-selezione-tendina').value;
     const sezManuale = document.getElementById('sezione-manuale');
@@ -685,8 +697,8 @@ async function apriModaleEdit(idStagione) {
 
         // 1. COMPILAZIONE CAMPI BASE
         document.getElementById('new-season-name').value = season.name || "";
-        document.getElementById('num-showdowns-per-format').value = season.showdowns_per_format || 2;
-        document.getElementById('num-formati-target').value = season.num_formats || 3;
+        scegliNumero(document.getElementById('num-showdowns-per-format'), season.showdowns_per_format || 2);
+        scegliNumero(document.getElementById('num-formati-target'), season.num_formats || 3);
         document.getElementById('new-season-open-sheet').checked = season.open_sheet || false;
         
         // Carica il valore di Best Of (se non presente default a 3)
@@ -715,10 +727,10 @@ async function apriModaleEdit(idStagione) {
         const badgeNoLimit = document.getElementById('badge-no-limit');
         
         if (season.teams_per_format === "No Limit" || season.teams_per_format === 0) {
-            teamsInput.value = 0;
+            scegliNumero(teamsInput, 0);
             if (badgeNoLimit) badgeNoLimit.style.display = 'block';
         } else {
-            teamsInput.value = season.teams_per_format || 3;
+            scegliNumero(teamsInput, season.teams_per_format || 3);
             if (badgeNoLimit) badgeNoLimit.style.display = 'none';
         }
 
@@ -1145,9 +1157,9 @@ window.onload = () => {
     document.getElementById('new-season-name').value = "";
     document.getElementById('deadline-iscrizioni').value = "";
     document.getElementById('new-season-open-sheet').checked = true;
-    document.getElementById('teams-per-formato').value = "3";
-    document.getElementById('num-showdowns-per-format').value = "2";
-    document.getElementById('num-formati-target').value = "3";
+    scegliNumero(document.getElementById('teams-per-formato'), "3");
+    scegliNumero(document.getElementById('num-showdowns-per-format'), "2");
+    scegliNumero(document.getElementById('num-formati-target'), "3");
     
     // Reset dei tag formati selezionati
     formatiSelezionati = [];
