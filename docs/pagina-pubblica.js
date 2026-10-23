@@ -854,7 +854,7 @@
         const voce = (v, p) => ({ grande: comePercento(percentuale(v, p)), piccolo: `${v}W \u00b7 ${p}L`, pct: percentuale(v, p), clic: false });
         return {
             rank: {
-                grande: inClassifica ? `#${posizione}` : 'Unranked',
+                grande: inClassifica ? `#${posizione}` : 'N/A',
                 piccolo: inClassifica ? `ELO ${elo}` : `${Math.min(sdGiocati, MIN_SD_CLASSIFICA)}/${MIN_SD_CLASSIFICA} showdowns`,
                 pct: null,
                 clic: true

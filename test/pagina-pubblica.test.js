@@ -230,7 +230,7 @@ test('statistiche: posizione in classifica solo con almeno 3 showdown, per ELO d
     assert.deepEqual(d.rank, { grande: '#2', piccolo: 'ELO 1032', pct: null, clic: true });
     assert.equal(P.riepilogoStat('tom', tutti).rank.grande, '#1');
     assert.equal(P.riepilogoStat('zed', tutti).rank.grande, '#3');
-    assert.deepEqual(P.riepilogoStat('anna', tutti).rank, { grande: 'Unranked', piccolo: '2/3 showdowns', pct: null, clic: true });
+    assert.deepEqual(P.riepilogoStat('anna', tutti).rank, { grande: 'N/A', piccolo: '2/3 showdowns', pct: null, clic: true });
 });
 
 test('statistiche: percentuali, vinte e perse, formato migliore', () => {
@@ -249,7 +249,7 @@ test('statistiche: senza partite niente percentuali inventate', () => {
         assert.equal(d.sd.grande, '—');
         assert.equal(d.sd.pct, null);
         assert.equal(d.match.piccolo, '0W · 0L');
-        assert.equal(d.rank.grande, 'Unranked');
+        assert.equal(d.rank.grande, 'N/A');
         assert.equal(d.rank.piccolo, '0/3 showdowns');
         assert.deepEqual(d.formato, { grande: '—', piccolo: 'no format yet', pct: null, clic: false });
         assert.equal(d.punti.grande, '0');

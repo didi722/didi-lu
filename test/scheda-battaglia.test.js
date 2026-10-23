@@ -120,7 +120,7 @@ test('carica: id con maiuscole diverse, giocatore che non esiste, nessuno da cer
 test('carica: un giocatore con poche partite non ha la posizione ("Unranked" non si mostra)', async () => {
     const r = await carica({ p1: 'zed', p2: 'didi' });
     assert.equal(r.p1.posizione, '');
-    assert.equal(r.p1.elo, 900);
+    assert.equal(r.p1.elo, 'N/A');        // unranked: niente Elo, come ovunque nel sito
     assert.deepEqual(r.p1.medaglie, []);
     assert.equal(r.p2.posizione, '#1');
 });

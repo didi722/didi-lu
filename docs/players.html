@@ -290,12 +290,14 @@ async function initTrainersPage() {
                 avatar: info.avatar || 'immagini/magikarp.png',
                 color: info.color || '#31c489',
                 ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
+                classificato: Number(indStats.showdownsPlayed || 0) >= Statistiche.MIN_SD_CLASSIFICA,   // meno showdown: unranked, N/A
                 trophiesWon: trophiesWon,
                 badgesHTML: generaHTMLBadge(statsBadges, key) + badgeAllenatoreHTML
             });
         }
 
-        playersList.sort((a, b) => b.ranking - a.ranking);
+        // prima i classificati per Elo, poi gli unranked
+        playersList.sort((a, b) => (b.classificato - a.classificato) || (b.ranking - a.ranking));
 
         gridContainer.innerHTML = playersList.map((player, index) => {
             const randomRotation = (Math.random() * 2 - 1).toFixed(2);
@@ -315,7 +317,7 @@ async function initTrainersPage() {
                    style="background-color: ${player.color}; --random-deg: ${randomRotation}deg;">
                     
                     <div class="trainer-left-group">
-                        <span class="trainer-rank-text">#${index + 1}</span>
+                        <span class="trainer-rank-text">${player.classificato ? `#${index + 1}` : '–'}</span>
                         
                         <div class="trainer-avatar-box">
                             <img src="${player.avatar}" alt="${player.name}" onerror="this.src='immagini/magikarp.png'">
@@ -334,7 +336,7 @@ async function initTrainersPage() {
                     </div>
 
                     <div class="trainer-points-box">
-                        ${player.ranking}
+                        ${player.classificato ? player.ranking : 'N/A'}
                     </div>
                 </a>
                 ${window.Amichevoli ? Amichevoli.htmlTasto(player.name) : ''}
