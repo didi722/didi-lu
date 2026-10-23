@@ -376,12 +376,12 @@ function dataBreve(ts) {
 // ---------- lettura dei dati ----------
 const leggi = percorso => db.ref(percorso).once('value').then(s => s.val()).catch(() => null);
 
-// Tutte le stagioni (anche chiuse): sbeta, s1, s2, … + settings/currentSeason
+// Tutte le stagioni (anche chiuse): sbeta, s0, s1, s2, … + settings/currentSeason (la prima stagione creata da admin è s0)
 async function trovaStagioni() {
     const trovate = new Map();
     const aggiungi = (id, info) => { if (info) trovate.set(id, info); };
     aggiungi('sbeta', await leggi('seasons/sbeta/info'));
-    for (let da = 1; da < 500; da += 10) {
+    for (let da = 0; da < 500; da += 10) {
         const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`seasons/s${da + i}/info`)));
         blocco.forEach((info, i) => aggiungi(`s${da + i}`, info));
         if (!blocco[blocco.length - 1]) break;   // l'ultima del blocco non esiste: finito

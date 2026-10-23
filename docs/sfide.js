@@ -305,7 +305,7 @@
             db().ref('settings/currentSeason').once('value').then(s => s.val()).catch(() => null)
         ]);
         const trovate = [beta];
-        for (let da = 1; da < 500; da += 10) {
+        for (let da = 0; da < 500; da += 10) {
             const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`s${da + i}`)));
             trovate.push(...blocco);
             if (!blocco[blocco.length - 1][1]) break;   // l'ultima del blocco non esiste: finito
