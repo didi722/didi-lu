@@ -74,7 +74,6 @@
                 <h3 class="palm-nome">${esc(v.nome)}</h3>
                 <div class="palm-cerchio">${cerchio}${segno}</div>
                 ${nome}
-                ${giocando && chi ? '<span class="palm-stato">In progress</span>' : ''}
                 ${chiusa && v.data ? `<time class="palm-data">${esc(dataIt(v.data))}</time>` : ''}
             </a>`;
         }).join('');
