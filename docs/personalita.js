@@ -64,7 +64,7 @@
             descrizione: 'You keep the rhythm by switching: the right Pokémon in at the right moment.' },
         stratega: { id: 'stratega', nome: 'Strategist', icona: '♟️', immagine: 'immagini/personalita-stratega.png',
             descrizione: 'You win with plans: setup and control of the field.' },
-        sabotatore: { id: 'sabotatore', nome: 'Saboteur', icona: '☠️', immagine: 'immagini/personalita-sabotatore.png',
+        sabotatore: { id: 'sabotatore', nome: 'Disrupter', icona: '☠️', immagine: 'immagini/personalita-sabotatore.png',
             descrizione: 'You wear the opponent down with status, tricks and support.' },
         equilibrata: { id: 'equilibrata', nome: 'All-rounder', icona: '⚖️', immagine: 'immagini/personalita-equilibrata.png',
             descrizione: 'You calibrate every match adapting to your opponent.' }
