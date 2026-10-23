@@ -62,7 +62,7 @@
             const chi = chiusa ? v.vincitore : (giocando ? v.capo : '');
             const g = (giocatori || {})[idDi(chi)] || {};
             const cerchio = chi
-                ? (g.avatar ? `<img src="${esc(g.avatar)}" alt="" class="palm-avatar">` : `<span class="palm-avatar palm-senza">?</span>`)
+                ? (g.avatar ? `<span class="palm-avatar"><img src="${esc(g.avatar)}" alt=""></span>` : `<span class="palm-avatar palm-senza">?</span>`)
                 : `<span class="palm-avatar palm-senza">?</span>`;
             const segno = chiusa
                 ? `<img src="${esc(v.icona)}" alt="" class="palm-trofeo" onerror="this.src='immagini/season-winner-color.png';this.onerror=null">`

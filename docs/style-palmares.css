@@ -39,9 +39,11 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 }
 .palm-cerchio { position: relative; display: flex; align-items: center; justify-content: center; }
 .palm-avatar {
-    width: 85px; height: 85px; object-fit: contain; border-radius: 50%; background: #fff; border: 3px solid #000; box-sizing: border-box; padding: 13px; /* il quadrato inscritto nel cerchio: niente angoli tagliati */
-    filter: drop-shadow(3px 3px 0 #000); animation: palm-salto .8s steps(1) infinite;
+    display: flex; align-items: center; justify-content: center; width: 85px; height: 85px; border-radius: 50%; background: #fff;
+    border: 3px solid #000; box-sizing: border-box; filter: drop-shadow(3px 3px 0 #000); animation: palm-salto .8s steps(1) infinite;
 }
+/* l'immagine sta in un quadrato inscritto nel cerchio e non ha bordi arrotondati suoi: gli angoli non si tagliano */
+.palm-avatar img { width: 60px; height: 60px; object-fit: contain; border-radius: 0; }
 @keyframes palm-salto { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .palm-senza { display: flex; align-items: center; justify-content: center; font: 900 2rem sans-serif; animation: none; }
 .palm-trofeo { position: absolute; right: -54px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); }
