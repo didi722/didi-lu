@@ -19,7 +19,8 @@ const GIOCATORI = { didi: { name: 'Didi', color: '#31c489', avatar: 'immagini/a.
 
 test('voci: stagioni e cup (la beta no), le più recenti per prime, con stato e tipo', () => {
     const v = P.voci(INFO);
-    assert.equal(v.length, 4);
+    assert.equal(v.length, 3, 'la stagione con le iscrizioni aperte non compare');
+    assert.equal(v.some(x => x.stagione === 's3'), false);
     assert.equal(v.some(x => x.stagione === 'sbeta'), false);
     assert.deepEqual(v.filter(x => x.stato === 'closed').map(x => [x.stagione, x.tipo, x.data]), [['s1', 'cup', '2026-12-24'], ['s0', 'league', '2026-04-10']]);
     assert.equal(v.find(x => x.stagione === 's2').stato, 'playing');
@@ -32,19 +33,18 @@ test('html: card con tipo, nome, vincitore e data; il testo è protetto; in cors
     assert.ok(!/palm-tipo/.test(h), 'nessun tag di tipo');
     assert.match(h, /Christmas &lt;Cup&gt;/);
     assert.ok(!h.includes('<Cup>'), 'il testo di chi scrive non entra come HTML');
-    assert.match(h, /href="public\.html\?player=lu"/);
+    assert.match(h, /<a class="palm-card palm-cup" href="matches\.html\?id=s1"/);
     assert.match(h, /24\/12\/2026/);
     assert.match(h, /10\/04\/2026/);
     const incorso = P.html(v.filter(x => x.stato !== 'closed'), GIOCATORI);
     assert.match(incorso, /In progress/);
-    assert.match(incorso, /Sign-ups open/);
     assert.ok(!/palm-vincitore/.test(incorso));
 });
 
 test('html: il filtro per tipo', () => {
     const v = P.voci(INFO);
-    assert.equal((P.html(v, GIOCATORI, 'cup').match(/<article/g) || []).length, 1);
-    assert.equal((P.html(v, GIOCATORI, 'all').match(/<article/g) || []).length, 4);
+    assert.equal((P.html(v, GIOCATORI, 'cup').match(/<a /g) || []).length, 1);
+    assert.equal((P.html(v, GIOCATORI, 'all').match(/<a /g) || []).length, 3);
     assert.equal(P.html([], GIOCATORI), '');
 });
 

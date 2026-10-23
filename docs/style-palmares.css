@@ -12,6 +12,7 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 .palm-titolo { margin: 26px 0 14px; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; }
 .palm-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
 .palm-card {
+    text-decoration: none; cursor: pointer; transition: transform .12s;
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 16px 14px;
     background: var(--palm-col, #fff); color: #000; text-align: center;
     border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
@@ -30,3 +31,4 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 .palm-data { font: 700 .78rem sans-serif; opacity: .75; }
 .palm-vuoto { font-weight: 700; opacity: .7; }
 body.pg-palmares .hub-title-display { white-space: normal; overflow: visible; text-overflow: clip; }
+.palm-card:hover { transform: translate(-2px, -2px); }

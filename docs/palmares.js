@@ -20,15 +20,22 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
 
+    // Come la home: con le iscrizioni scadute la stagione è in corso
+    const statoDi = info => {
+        const st = idDi(info && info.status) || 'open';
+        return st === 'open' && info && info.deadline && new Date() >= new Date(info.deadline) ? 'playing' : st;
+    };
+
     /** Le stagioni e le cup (la beta no) con il loro stato: 'closed' (vinta da qualcuno), 'playing' (in corso), 'open' (iscrizioni aperte). */
     function voci(infoStagioni) {
         const out = [];
         for (const [id, info] of Object.entries(infoStagioni || {})) {
             if (!TipoStagione.daTrofeo(info, id)) continue;
+            if (statoDi(info) === 'open') continue; // iscrizioni aperte: non ancora iniziata, non compare
             const tipo = TipoStagione.tipoDi(info, id);
             out.push({
                 stagione: id, tipo, nome: (info && info.name) || id, data: TipoStagione.dataVittoria(info || {}),
-                vincitore: String((info && info.winner) || ''), stato: idDi(info && info.status) || 'open',
+                vincitore: String((info && info.winner) || ''), stato: statoDi(info),
                 icona: (tipo === 'cup' && info && info.icona) ? String(info.icona) : TipoStagione.TIPI[tipo].icona
             });
         }
@@ -61,15 +68,15 @@
                 ? `<img src="${esc(v.icona)}" alt="" class="palm-trofeo" onerror="this.src='immagini/season-winner-color.png';this.onerror=null">`
                 : (giocando ? '<span class="palm-live">●</span>' : '');
             const nome = chi
-                ? `<a class="palm-vincitore" href="public.html?player=${encodeURIComponent(idDi(chi))}">${esc(g.name || chi)}</a>`
-                : `<span class="palm-stato">${giocando ? 'In progress' : v.stato === 'open' ? 'Sign-ups open' : 'No winner'}</span>`;
-            return `<article class="palm-card palm-${esc(v.tipo)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
+                ? `<span class="palm-vincitore">${esc(g.name || chi)}</span>`
+                : `<span class="palm-stato">${giocando ? 'In progress' : 'No winner'}</span>`;
+            return `<a class="palm-card palm-${esc(v.tipo)}" href="matches.html?id=${encodeURIComponent(v.stagione)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
                 <h3 class="palm-nome">${esc(v.nome)}</h3>
                 <div class="palm-cerchio">${cerchio}${segno}</div>
                 ${nome}
                 ${giocando && chi ? '<span class="palm-stato">In progress</span>' : ''}
                 ${chiusa && v.data ? `<time class="palm-data">${esc(dataIt(v.data))}</time>` : ''}
-            </article>`;
+            </a>`;
         }).join('');
     }
 
