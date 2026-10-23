@@ -564,8 +564,10 @@ function caricaStagioniHome() {
                 if (isPlaying) {
                     badgeHtml = `<span class="live-dot" style="position: absolute; right: -32px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px;">●</span>`;
                 } else {
-                    const iconaTrofeo = (typeof TipoStagione !== 'undefined' && TipoStagione.tipoDi(info, item.key) !== 'league')
-                        ? (info.icona && TipoStagione.tipoDi(info, item.key) === 'cup' ? info.icona : TipoStagione.TIPI[TipoStagione.tipoDi(info, item.key)].icona)
+                    const tipoTrofeo = typeof TipoStagione !== 'undefined' ? TipoStagione.tipoDi(info, item.key) : 'league';
+                    const defTipo = (typeof TipoStagione !== 'undefined' && TipoStagione.TIPI[tipoTrofeo]) || null; // la beta non ha un tipo di trofeo
+                    const iconaTrofeo = (defTipo && tipoTrofeo !== 'league')
+                        ? ((tipoTrofeo === 'cup' && info.icona) ? info.icona : defTipo.icona)
                         : 'immagini/season-winner-color.png';
                     badgeHtml = `<img src="${iconaTrofeo.replace(/"/g, '&quot;')}" onerror="this.onerror=null;this.src='immagini/season-winner-color.png'" alt="Winner" style="position: absolute; right: -54px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(2px 2px 0 black);">`;
                 }
