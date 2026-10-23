@@ -12,11 +12,11 @@
 //
 //   asse            conta (sul totale delle sue scelte)                   famiglia
 //   attacco         mosse che fanno danni                                  offensiva
-//   guardia         Protezione e simili + mosse che curano                 difensiva
-//   cambio          cambi di Pokémon scelti a inizio turno                 difensiva
+//   guardia         Protezione e simili + mosse che curano                 difensiva (Guardian)
+//   cambio          cambi di Pokémon scelti a inizio turno                 pivot
 //   potenziamento   Swords Dance, Calm Mind, Dragon Dance...               stratega
 //   campo           meteo, terreni, stanze, trappole, schermi, Tailwind    stratega
-//   trucchi         stati e trucchi sull'avversario + aiuto al compagno    stratega
+//   trucchi         stati e trucchi sull'avversario + aiuto al compagno    sabotatore
 //
 // Per ogni asse: scarto relativo = (quota sua - quota della lega) / quota della lega. Si divide per quanto gli allenatori si
 // distinguono tra loro su quell'asse (z), si tempera con la quantità di dati (pochi set: ci si fida meno) e si porta su una
@@ -45,13 +45,13 @@
           descrizione: 'Moves that deal damage.' },
         { id: 'guardia', nome: 'Guard', famiglia: 'difensiva', chiavi: ['protezione', 'recupero'], scalaBase: 0.45,
           descrizione: 'Protect and its relatives, plus healing moves.' },
-        { id: 'cambio', nome: 'Switch', famiglia: 'difensiva', chiavi: ['cambi'], scalaBase: 0.45,
+        { id: 'cambio', nome: 'Switch', famiglia: 'pivot', chiavi: ['cambi'], scalaBase: 0.45,
           descrizione: 'Switching a Pokémon out on purpose at the start of the turn.' },
         { id: 'potenziamento', nome: 'Setup', famiglia: 'stratega', chiavi: ['potenziamento'], scalaBase: 0.45,
           descrizione: 'Boosting stats before attacking (Swords Dance, Calm Mind, Dragon Dance...).' },
         { id: 'campo', nome: 'Field', famiglia: 'stratega', chiavi: ['campo'], scalaBase: 0.45,
           descrizione: 'Weather, terrain, Trick Room, Tailwind, hazards and screens.' },
-        { id: 'trucchi', nome: 'Tricks', famiglia: 'stratega', chiavi: ['disturbo', 'supporto'], scalaBase: 0.45,
+        { id: 'trucchi', nome: 'Tricks', famiglia: 'sabotatore', chiavi: ['disturbo', 'supporto'], scalaBase: 0.45,
           descrizione: 'Status conditions and tricks on the opponent, and helping a teammate.' }
     ];
 
@@ -59,9 +59,13 @@
         offensiva: { id: 'offensiva', nome: 'Aggressor', icona: '⚔️', immagine: 'immagini/personalita-offensiva.png',
             descrizione: 'You take the fight to the opponent.' },
         difensiva: { id: 'difensiva', nome: 'Guardian', icona: '🛡️', immagine: 'immagini/personalita-difensiva.png',
-            descrizione: 'You play it safe:  protect, healing and safe-switching.' },
+            descrizione: 'You play it safe: protect and healing keep your team standing.' },
+        pivot: { id: 'pivot', nome: 'Pivot', icona: '🔄', immagine: 'immagini/personalita-pivot.png',
+            descrizione: 'You keep the rhythm by switching: the right Pokémon in at the right moment.' },
         stratega: { id: 'stratega', nome: 'Strategist', icona: '♟️', immagine: 'immagini/personalita-stratega.png',
-            descrizione: 'You win with plans: setup, field control, support and tricks.' },
+            descrizione: 'You win with plans: setup and control of the field.' },
+        sabotatore: { id: 'sabotatore', nome: 'Saboteur', icona: '☠️', immagine: 'immagini/personalita-sabotatore.png',
+            descrizione: 'You wear the opponent down with status, tricks and support.' },
         equilibrata: { id: 'equilibrata', nome: 'All-rounder', icona: '⚖️', immagine: 'immagini/personalita-equilibrata.png',
             descrizione: 'You calibrate every match adapting to your opponent.' }
     };
@@ -140,7 +144,7 @@
         });
 
         const famiglie = {};
-        for (const f of ['offensiva', 'difensiva', 'stratega']) {
+        for (const f of ['offensiva', 'difensiva', 'pivot', 'stratega', 'sabotatore']) {
             famiglie[f] = arrotonda(mediaSemplice(assi.filter(a => a.famiglia === f).map(a => a.z)), 2);
         }
         const migliore = Object.entries(famiglie).sort((a, b) => b[1] - a[1])[0];
