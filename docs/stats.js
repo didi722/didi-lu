@@ -205,9 +205,8 @@
                 html: m => (m.setConDati ? `${fmt(m.portato)}<small>/${fmt(m.setConDati)}</small>` : ND) },
             { id: 'svenuto', titolo: 'Fainted', val: m => (m.portato ? m.svenuto : null), dir: -1, tip: "Times it was KO'd",
                 html: m => (m.portato ? fmt(m.svenuto) : ND) },
-            { id: 'ultimo', titolo: 'Last standing', val: m => (m.setConDati ? m.ultimo : null), dir: -1, tip: 'Times it was the only Pokémon left on its team (and how many of those sets were won)',
-                html: m => (m.setConDati ? fmt(m.ultimo) : ND),
-                sotto: m => (m.setConDati && m.ultimo ? `<small class="sub v">${fmt(m.ultimoVinto)} won</small>` : '') },
+            { id: 'ultimo', titolo: 'Last standing', val: m => (m.setConDati ? m.ultimoVinto : null), dir: -1, tip: 'Sets won as the only Pokémon left on its team',
+                html: m => (m.setConDati ? fmt(m.ultimoVinto) : ND) },
             { id: 'match', titolo: 'Matches', val: m => m.match.vinti * 1000 - m.match.persi, dir: -1, tip: 'Won – lost',
                 html: m => wl(m.match) },
             { id: 'showdown', titolo: 'Showdowns', val: m => m.showdown.vinti * 1000 - m.showdown.persi, dir: -1, tip: 'Won – lost',
@@ -667,7 +666,7 @@
                 tessera('Brought', `${fmt(m.portato)} <small>of ${fmt(m.setConDati)} sets</small>`, m.percPortato == null ? '' : `${pct(m.percPortato)} of the sets`),
                 tessera('Lead', fmt(m.titolare), 'started on the field'),
                 tessera('Fainted', fmt(m.svenuto), m.sopravvivenza == null ? '' : `survives ${pct(m.sopravvivenza)} of the time`),
-                tessera('Last standing', fmt(m.ultimo), m.ultimo ? `${fmt(m.ultimoVinto)} of them won` : 'only one left on its team'),
+                tessera('Last standing', fmt(m.ultimoVinto), 'sets won as the only one left'),
                 tessera('Sets when brought', wl({ giocati: m.setPortatoVinti + m.setPortatoPersi, vinti: m.setPortatoVinti, persi: m.setPortatoPersi }), m.percVintiPortato == null ? '' : `${pct(m.percVintiPortato)} won`)
             ]) : '<p class="vuoto piccolo">No KO data yet: only sets played on the site have it.</p>')}
             ${t ? sezione('Its team', `<div class="scheda-lista">${voceTeam(t)}</div>`) : ''}`;
