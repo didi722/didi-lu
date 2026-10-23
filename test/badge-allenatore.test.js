@@ -78,7 +78,7 @@ test('difficili: una stagione giocata molto bene dà al massimo il bronzo, e non
 });
 
 test('livelli: bronzo, argento e oro alle soglie, con il traguardo successivo e la barra del progresso', () => {
-    const l = BA.calcola(risultato(giocatore({ match: { giocati: 130, vinti: 100, persi: 30 }, showdown: { vinti: 50 } })), 'didi');
+    const l = BA.calcola(risultato(giocatore({ match: { giocati: 130, vinti: 100, persi: 30 }, showdown: { vinti: 70 } })), 'didi');
     const m = per(l, 'matchwinner');
     assert.equal(m.livello, 2, '100 match vinti: argento (75), non ancora oro (160)');
     assert.equal(m.prossima, 160);
@@ -100,10 +100,12 @@ test('percentuale di vittorie: conta solo dopo 72 match', () => {
     assert.equal(tanti.livello, 2, 'il 77,5% è l\'argento (75%)');
 });
 
-test('format master: formati con almeno 24 match e almeno il 60% di vittorie', () => {
-    const formati = { VGC: { n: 40, vinti: 28 }, OU: { n: 30, vinti: 18 }, Monotype: { n: 20, vinti: 20 }, Uber: { n: 36, vinti: 14 } };
-    assert.equal(BA.formatiForti(giocatore({ formati })), 2, 'Monotype ha troppi pochi match, Uber troppe sconfitte');
-    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 1, 'due formati: il bronzo (soglie 2 / 4 / 6)');
+test('format master: formati con almeno 12 match (una stagione) e almeno il 65% di vittorie', () => {
+    const formati = { VGC: { n: 14, vinti: 10 }, OU: { n: 12, vinti: 8 }, Monotype: { n: 11, vinti: 11 }, Uber: { n: 20, vinti: 8 }, LC: { n: 12, vinti: 7 } };
+    assert.equal(BA.formatiForti(giocatore({ formati })), 2, 'VGC e OU; Monotype ha troppi pochi match, LC il 58%, Uber troppe sconfitte');
+    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 0, 'due formati: ancora sotto il bronzo (soglie 3 / 7 / 12)');
+    const tre = { ...formati, LC: { n: 12, vinti: 9 } };
+    assert.equal(per(BA.calcola(risultato(giocatore({ formati: tre })), 'didi'), 'formatmaster').livello, 1, 'tre formati: il bronzo');
 });
 
 test('collezionista: le specie diverse portate in campo (non i team, non le comparse in panchina)', () => {
@@ -163,7 +165,7 @@ test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file
 
 test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle schede dei badge delle serie', () => {
     const l = BA.calcola(risultato(giocatore({
-        stagioniVinte: 2, stagioniGiocate: 0, eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 50 }
+        stagioniVinte: 2, stagioniGiocate: 0, eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 70 }
     })), 'didi');
     const s = id => BA.scheda(per(l, id));
 
