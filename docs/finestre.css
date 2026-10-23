@@ -438,11 +438,32 @@
     overflow-y: auto;
 }
 /* il palco: la console e, alla sua destra, i tasti dei set in verticale */
-#replayModal .replay-palco { order: 2; flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 16px; max-width: 100%; min-width: 0; }
+#replayModal .replay-palco { order: 3; flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 16px; max-width: 100%; min-width: 0; }
 #replayModal .gba-container { margin: 0; }
+/* meteo, terreni e condizioni dei lati: una riga di cartellini sopra la console, sotto l'intestazione */
+#replayModal .replay-campo {
+    order: 2; flex: 0 0 auto; max-width: min(1120px, 100%);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+#replayModal .replay-campo[hidden] { display: none; }
+#replayModal .rcampo-voce {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    padding: 5px 10px 3px;
+    background: var(--nb-carta, #fff); color: #000;
+    border: 2px solid #000; border-radius: calc(var(--nb-raggio, 0px) * .6);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase;
+}
+#replayModal .rcampo-voce small { font: 600 .66rem 'Montserrat', sans-serif; letter-spacing: 0; text-transform: none; }
+#replayModal .rcampo-voce.meteo { background: var(--nb-giallo, #ffbd44); }
+#replayModal .rcampo-voce.meteo.annullato { text-decoration: line-through 2px; }
+#replayModal .rcampo-voce.terreno { background: #d4f7df; }
+#replayModal .rcampo-voce.campo { background: #000; color: #fff; }
+#replayModal .rcampo-voce.lato-cond.p1 { background: var(--rc-p1, #6fa8ff); }
+#replayModal .rcampo-voce.lato-cond.p2 { background: var(--rc-p2, #ff8a8a); }
 /* i comandi del replay: una barra tra la console e i tasti dei set, nello stile del tema */
 #replayModal .replay-comandi {
-    order: 3; flex: 0 0 auto;
+    order: 4; flex: 0 0 auto;
     background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
     border-radius: var(--nb-raggio, 0px);
     box-shadow: var(--nb-sh-m, 6px 6px 0 #000);

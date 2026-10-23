@@ -421,6 +421,7 @@ ${barreSalute('.palco')}
 .barra-turni:focus-visible { outline: 3px dashed var(--inchiostro); outline-offset: 3px; }
 /* dentro la scocca di matches.html i comandi stanno fuori dallo schermo, sotto la console (la pagina li disegna e li comanda): quelli interni spariscono */
 .comandi-fuori .comandi-replay { display: none; }
+.campo-fuori .effetti { display: none; }
 
 .riga-comandi { display: flex; align-items: center; gap: 7px; }
 .tasto {
@@ -611,6 +612,16 @@ ${barreSalute('.palco')}
         function nomeMossa(nome) {
             try { return battle.dex.moves.get(nome).name || nome; } catch (e) { return nome; }
         }
+        // Dentro la scocca del Game Boy (matches.html) i cartellini del campo stanno fuori dallo schermo, sopra la console, per non coprire le
+        // barre della salute: il replay manda alla pagina le voci (con i colori dei due lati) e, appena la pagina risponde "campo-fuori", toglie i suoi.
+        let ultimeVoci = [];
+        function inviaCampo(voci) {
+            ultimeVoci = voci;
+            if (window.parent === window) return;
+            const stile = getComputedStyle(document.documentElement);
+            const colori = { p1: stile.getPropertyValue('--colore-p1').trim(), p2: stile.getPropertyValue('--colore-p2').trim() };
+            try { window.parent.postMessage({ tipo: 'replay-campo', voci, colori }, '*'); } catch (e) { /* la pagina non ascolta */ }
+        }
         function aggiornaCampo() {
             const box = $('effetti');
             const voci = [];
@@ -638,6 +649,7 @@ ${barreSalute('.palco')}
             const firma = JSON.stringify(voci);
             if (box.dataset.firma === firma) return;
             box.dataset.firma = firma;
+            inviaCampo(voci);
             box.innerHTML = voci.map(v =>
                 '<span class="campo-voce ' + v.classe + '"' + (v.di ? ' title="' + esc(v.di) + '\'s side"' : '') + '>' +
                 esc(v.nome) + (v.turni ? '<small>' + esc(v.turni) + '</small>' : '') + '</span>').join('');
@@ -763,6 +775,7 @@ ${barreSalute('.palco')}
         window.addEventListener('message', e => {
             if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
             if (e.data.tipo === 'replay-comandi-fuori') document.documentElement.classList.add('comandi-fuori');
+            else if (e.data.tipo === 'replay-campo-fuori') { document.documentElement.classList.add('campo-fuori'); inviaCampo(ultimeVoci); }
             else if (e.data.tipo === 'replay-comando' && Object.prototype.hasOwnProperty.call(COMANDI, e.data.comando)) COMANDI[e.data.comando]();
         });
         ultimoAvviso = '';
