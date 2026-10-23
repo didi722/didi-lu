@@ -1,10 +1,11 @@
 // =====================================================
-// TROPHY ARCHIVE (palmarès) — Poké-Tournament
+// ARCHIVE (palmarès) — Poké-Tournament
 //
 // Tutte le stagioni e le cup giocate, chiuse e in corso, con il vincitore e la data: la home ne mostra solo tre. Si legge dalle info di
 // ogni stagione (tipo-stagione.js), mai dalle stagioni intere.
 //
 //   Palmares.html(voci, giocatori, filtro)   le card (testo sempre protetto)
+//   Palmares.capoClassifica(classifica)      chi guida una stagione in corso
 //   Palmares.voci(infoStagioni)              [{ stagione, tipo, nome, data, vincitore, stato }] le più recenti per prime
 //
 // Funziona nel browser (window.Palmares) e in Node (test/palmares.test.js).
@@ -35,20 +36,38 @@
         return out.sort((a, b) => (b.data || '').localeCompare(a.data || '') || numero(b) - numero(a));
     }
 
-    // Una card: il tipo di coppa, il nome, il vincitore (con il colore e il link alla sua pagina) e la data
+    /** Chi guida una classifica ({ giocatore: { points } }): il primo per punti, '' se è vuota. */
+    function capoClassifica(classifica) {
+        let max = -1, capo = '';
+        for (const [nome, r] of Object.entries(classifica || {})) {
+            const pt = Number(r && r.points || 0);
+            if (pt > max) { max = pt; capo = nome; }
+        }
+        return capo;
+    }
+
+    // Una card come quelle della home: colore e cerchio con il vincitore (o chi guida, se la stagione è in corso), il nome della competizione,
+    // l'icona del suo trofeo accanto al cerchio (nessun tag di tipo) e la data
     function html(lista, giocatori, filtro = 'all') {
         return (lista || []).filter(v => filtro === 'all' || v.tipo === filtro).map(v => {
-            const tipo = TipoStagione.TIPI[v.tipo];
-            const g = (giocatori || {})[idDi(v.vincitore)] || {};
             const chiusa = v.stato === 'closed';
-            const vincitore = chiusa && v.vincitore
-                ? `<a class="palm-vincitore" href="public.html?player=${encodeURIComponent(idDi(v.vincitore))}" style="--palm-col:${esc(g.color || '#31c489')}">
-                        ${g.avatar ? `<img src="${esc(g.avatar)}" alt="" class="palm-avatar">` : ''}<span>${esc(g.name || v.vincitore)}</span></a>`
-                : `<span class="palm-stato">${v.stato === 'playing' ? 'In progress' : v.stato === 'open' ? 'Sign-ups open' : 'No winner'}</span>`;
-            return `<article class="palm-card palm-${esc(v.tipo)}">
-                <span class="palm-tipo">${esc(tipo.etichetta)}</span>
+            const giocando = v.stato === 'playing';
+            const chi = chiusa ? v.vincitore : (giocando ? v.capo : '');
+            const g = (giocatori || {})[idDi(chi)] || {};
+            const cerchio = chi
+                ? (g.avatar ? `<img src="${esc(g.avatar)}" alt="" class="palm-avatar">` : `<span class="palm-avatar palm-senza">?</span>`)
+                : `<span class="palm-avatar palm-senza">?</span>`;
+            const segno = chiusa
+                ? `<img src="${esc(v.icona)}" alt="" class="palm-trofeo" onerror="this.src='immagini/season-winner-color.png';this.onerror=null">`
+                : (giocando ? '<span class="palm-live">●</span>' : '');
+            const nome = chi
+                ? `<a class="palm-vincitore" href="public.html?player=${encodeURIComponent(idDi(chi))}">${esc(g.name || chi)}</a>`
+                : `<span class="palm-stato">${giocando ? 'In progress' : v.stato === 'open' ? 'Sign-ups open' : 'No winner'}</span>`;
+            return `<article class="palm-card palm-${esc(v.tipo)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
                 <h3 class="palm-nome">${esc(v.nome)}</h3>
-                ${vincitore}
+                <div class="palm-cerchio">${cerchio}${segno}</div>
+                ${nome}
+                ${giocando && chi ? '<span class="palm-stato">In progress</span>' : ''}
                 ${chiusa && v.data ? `<time class="palm-data">${esc(dataIt(v.data))}</time>` : ''}
             </article>`;
         }).join('');
@@ -78,13 +97,17 @@
         try {
             const [info, snap] = await Promise.all([TipoStagione.leggiInfo(db), db.ref('players').once('value')]);
             lista = voci(info);
+            await Promise.all(lista.filter(v => v.stato === 'playing').map(async v => {
+                const lb = await db.ref(`seasons/${v.stagione}/leaderboard`).once('value').then(x => x.val()).catch(() => null);
+                v.capo = capoClassifica(lb);
+            }));
             for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar };
-        } catch (e) { console.warn('Trophy archive not available:', e); }
+        } catch (e) { console.warn('Archive not available:', e); }
         disegna();
         const loader = document.getElementById('poke-loader');
         if (loader) loader.style.display = 'none';
     }
     if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', avvia);
 
-    return { voci, html };
+    return { voci, html, capoClassifica };
 });

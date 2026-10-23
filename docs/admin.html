@@ -126,7 +126,9 @@
     </div>
     <div class="form-group" id="gruppo-icona-cup" style="display:none;">
         <label>Trophy icon (optional):</label>
-        <input type="text" id="icona-cup" placeholder="immagini/coppe/natale.png">
+        <input type="file" id="file-icona-cup" accept="image/png,image/webp,image/jpeg">
+        <img id="anteprima-icona-cup" alt="" style="display:none; width:64px; height:64px; object-fit:contain; margin-top:6px;">
+        <input type="text" id="icona-cup" placeholder="oppure un percorso: immagini/coppe/natale.png">
     </div>
     <div class="form-group">
         <label>Deadline:</label>
@@ -484,12 +486,41 @@ function disegnaOpzioniFormati() {
 }
 
 // Cambia il tipo di stagione: nome (automatico o scritto a mano), numero di formati e di showdown fissi, formati ammessi
+
+    // Icona della cup caricata dal computer: ridotta a 192px e salvata nelle info della stagione come data URL
+    function mostraAnteprimaIconaCup() {
+        const v = document.getElementById('icona-cup').value.trim();
+        const img = document.getElementById('anteprima-icona-cup');
+        img.style.display = v ? 'block' : 'none';
+        if (v) img.src = v;
+    }
+    document.getElementById('file-icona-cup').addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        const im = new Image();
+        im.onload = () => {
+            const k = Math.min(1, 192 / Math.max(im.width, im.height));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(im.width * k));
+            c.height = Math.max(1, Math.round(im.height * k));
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            document.getElementById('icona-cup').value = c.toDataURL('image/png');
+            URL.revokeObjectURL(url);
+            mostraAnteprimaIconaCup();
+        };
+        im.onerror = () => { URL.revokeObjectURL(url); alert('Image not readable.'); };
+        im.src = url;
+    });
+    document.getElementById('icona-cup').addEventListener('input', mostraAnteprimaIconaCup);
+
 async function cambiaTipoStagione(conservaNome) {
     const tipo = document.getElementById('tipo-stagione').value;
     const regole = TipoStagione.regoleDi(tipo);
     const nome = document.getElementById('new-season-name');
     const nota = document.getElementById('nota-tipo-stagione');
     document.getElementById('gruppo-icona-cup').style.display = tipo === 'cup' ? 'block' : 'none';
+    mostraAnteprimaIconaCup();
 
     if (regole.nomeAutomatico) {
         if (!conservaNome) {

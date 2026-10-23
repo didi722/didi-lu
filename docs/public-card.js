@@ -389,7 +389,7 @@
         const MAX_RIGHE = 8;
         const righe = gruppo.vittorie.slice(0, MAX_RIGHE).map(v => h('span', { class: 'pp-tip-riga' },
             h('span', { testo: `🏆 ${v.nome}` }), h('span', { class: 'pp-tip-obiettivo', testo: dataIt(v.data) })));
-        if (gruppo.vittorie.length > MAX_RIGHE) righe.push(h('span', { class: 'pp-tip-testo', testo: `+${gruppo.vittorie.length - MAX_RIGHE} more: see the Trophy Archive` }));
+        if (gruppo.vittorie.length > MAX_RIGHE) righe.push(h('span', { class: 'pp-tip-testo', testo: `+${gruppo.vittorie.length - MAX_RIGHE} more: see the Archive` }));
         const tip = h('span', { class: 'neubrutal-tooltip pp-tip' }, h('span', { class: 'pp-tip-nome', testo: gruppo.etichetta.toUpperCase() }), righe);
         return h('div', { class: `pp-coppa-gruppo pp-tipo-${gruppo.tipo}` },
             h('div', { class: 'pp-coppa pp-tip-host', tabindex: '0' }, ...immagini, tip),

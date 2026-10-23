@@ -1,5 +1,5 @@
 'use strict';
-// docs/palmares.js: la pagina Trophy Archive (tutte le stagioni e le cup, chiuse e in corso, con il vincitore).
+// docs/palmares.js: la pagina Archive (tutte le stagioni e le cup, chiuse e in corso, con il vincitore).
 //
 //   npm test        (dalla cartella principale)
 const test = require('node:test');
@@ -29,6 +29,7 @@ test('html: card con tipo, nome, vincitore e data; il testo è protetto; in cors
     const v = P.voci(INFO);
     const h = P.html(v.filter(x => x.stato === 'closed'), GIOCATORI);
     assert.match(h, /palm-cup/);
+    assert.ok(!/palm-tipo/.test(h), 'nessun tag di tipo');
     assert.match(h, /Christmas &lt;Cup&gt;/);
     assert.ok(!h.includes('<Cup>'), 'il testo di chi scrive non entra come HTML');
     assert.match(h, /href="public\.html\?player=lu"/);
@@ -54,6 +55,6 @@ test('la pagina e il menu: palmares.html carica i suoi file e ogni pagina con il
     assert.ok(pagina.includes('style-palmares.css'));
     for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.html'))) {
         const t = doc(f);
-        if (t.includes('href="stats.html" class="menu-item"')) assert.ok(t.includes('href="palmares.html" class="menu-item"'), `${f}: link al Trophy Archive nel menu`);
+        if (t.includes('href="stats.html" class="menu-item"')) assert.ok(t.includes('href="palmares.html" class="menu-item"'), `${f}: link al Archive nel menu`);
     }
 });

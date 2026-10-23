@@ -1,4 +1,4 @@
-/* Trophy Archive: le card di ogni stagione e cup chiusa (palmares.js), nello stile neubrutalista del sito */
+/* Archive: le card di ogni stagione e cup chiusa (palmares.js), nello stile neubrutalista del sito */
 body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
 @media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { margin-left: 0; padding: 30px 16px 70px; } }
 .palm-filtri { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
@@ -12,22 +12,20 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 .palm-titolo { margin: 26px 0 14px; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; }
 .palm-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
 .palm-card {
-    position: relative; display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 14px;
-    background: var(--nb-carta, #fff); color: #000;
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 16px 14px;
+    background: var(--palm-col, #fff); color: #000; text-align: center;
     border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
 }
-.palm-tipo { align-self: flex-start; padding: 2px 8px; background: #000; color: #fff; font: 800 .62rem sans-serif; letter-spacing: .14em; text-transform: uppercase; }
-.palm-league .palm-tipo { background: #de3a1d; }
-.palm-monoformat .palm-tipo { background: #2b78d4; }
-.palm-random .palm-tipo { background: #2aa779; }
-.palm-cup .palm-tipo { background: #8a4ad6; }
-.palm-nome { margin: 0; font: 900 1.25rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.palm-nome { margin: 0; font: 900 1.15rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.palm-cerchio { position: relative; display: flex; align-items: center; justify-content: center; margin-right: 34px; }
+.palm-avatar { width: 84px; height: 84px; object-fit: contain; border-radius: 50%; background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
+.palm-senza { display: flex; align-items: center; justify-content: center; font: 900 2rem sans-serif; }
+.palm-trofeo { position: absolute; right: -52px; top: 50%; transform: translateY(-50%); width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); }
+.palm-live { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px; }
 .palm-vincitore {
-    display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 4px 10px 4px 4px;
-    background: var(--palm-col, #31c489); color: #000; text-decoration: none;
-    border: 2px solid var(--nb-ink, #000); box-shadow: 3px 3px 0 #000; font: 800 .95rem sans-serif;
+    display: inline-block; padding: 6px 20px; background: #fff; color: #000; text-decoration: none; text-transform: uppercase;
+    border: 3px solid var(--nb-ink, #000); box-shadow: 4px 4px 0 #000; font: 800 .95rem 'Montserrat', sans-serif; letter-spacing: 1px;
 }
-.palm-avatar { width: 30px; height: 30px; object-fit: contain; background: #fff; border: 2px solid #000; }
 .palm-stato { font: 700 .85rem sans-serif; opacity: .7; }
 .palm-data { font: 700 .78rem sans-serif; opacity: .75; }
 .palm-vuoto { font-weight: 700; opacity: .7; }
