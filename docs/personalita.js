@@ -150,9 +150,11 @@
         const migliore = Object.entries(famiglie).sort((a, b) => b[1] - a[1])[0];
         const tipo = migliore[1] >= SOGLIA_TIPO ? FAMIGLIE[migliore[0]] : FAMIGLIE.equilibrata;
 
-        // gli assi che si notano di più (in più o in meno), per le frasi
-        const spiccano = assi.filter(a => Math.abs(a.scartoPerc) >= 15)
-            .sort((a, b) => Math.abs(b.z) - Math.abs(a.z)).slice(0, 3);
+        // le frasi spiegano PERCHÉ ha quel tipo: gli assi della sua famiglia in cui è sopra la media (i più forti per primi).
+        // Per chi è equilibrato, invece, si mostrano gli assi che si notano di più (in più o in meno)
+        const spiccano = tipo.id === 'equilibrata'
+            ? assi.filter(a => Math.abs(a.scartoPerc) >= 15).sort((a, b) => Math.abs(b.z) - Math.abs(a.z)).slice(0, 3)
+            : assi.filter(a => a.famiglia === tipo.id && a.z > 0).sort((a, b) => b.z - a.z).slice(0, 3);
         const frasi = spiccano.map(a => `${a.nome}: ${arrotonda(a.quota * 100, 0)}% of your choices against ${arrotonda(a.quotaLega * 100, 0)}% for the league (${a.scartoPerc > 0 ? '+' : ''}${a.scartoPerc}%).`);
 
         return { ...base, stato: 'pronta', assi, famiglie, tipo, frasi };
