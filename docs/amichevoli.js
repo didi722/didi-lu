@@ -23,7 +23,7 @@
 (function () {
     'use strict';
 
-    const REGIONE = 'europe-west4';
+    const REGIONE = 'europe-west1';
     const SDK_FUNZIONI = 'https://www.gstatic.com/firebasejs/9.17.1/firebase-functions-compat.js';
     const UN_GIORNO = 24 * 3600 * 1000;
     const PERCORSO_SFIDE = 'sfide/amichevoli';

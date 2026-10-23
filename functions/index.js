@@ -22,9 +22,7 @@ setTimeout(() => { try { partita(); } catch (e) { console.error('Caricamento di 
 
 initializeApp();
 
-// Le funzioni delle partite stanno in REGIONE_FUNZIONI; quella del salvataggio deve stare nella regione del database (REGIONE_DB)
-const REGIONE_DB = 'europe-west1';
-const REGIONE_FUNZIONI = 'europe-west4';
+const REGIONE = 'europe-west1';
 const ISTANZA_DB = 'pokemonsuite-didi-lu-default-rtdb';
 const BUCKET = 'pokemonsuite-didi-lu.firebasestorage.app';
 // Indirizzo del sito: serve ai replay per gli avatar salvati con un percorso relativo
@@ -69,7 +67,7 @@ function prendiServizio() {
 // Trasforma gli errori "per il giocatore" in messaggi leggibili dal sito
 function richiamabile(nome, opzioni = {}) {
     return onCall({ 
-        region: REGIONE_FUNZIONI, 
+        region: REGIONE, 
         // 1 GiB: a ogni scelta il server ricostruisce la battaglia dall'inizio con il simulatore completo, e con più partite in
         // corso la memoria da 512 MiB si esauriva: l'istanza veniva riavviata e le richieste fallivano (nel browser: "CORS policy")
         memory: '1GiB', 
@@ -99,7 +97,7 @@ exports.rispondiAmichevole = richiamabile('rispondiAmichevole');
 
 // Quando l'ultimo set finisce, il match si salva da solo
 exports.salvaPartitaConclusa = onValueWritten(
-    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE_DB, memory: '1GiB', timeoutSeconds: 300 },
+    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '1GiB', timeoutSeconds: 300 },
     async evento => {
         if (evento.data.after.val() !== 'da_salvare') return;
         await prendiServizio().salvaPartita(evento.params.id);
