@@ -180,8 +180,12 @@ test('un formato Random non si usa dove servono i team (Team Builder del Box), m
     // l'admin lo offre tra i formati di una stagione (nessun team da iscrivere: li dà Showdown a ogni set)
     const admin = leggi('docs/admin.html');
     assert.match(admin, /<script src="formato-random\.js"><\/script>/);
-    assert.ok(!/nomeCat && !FormatoRandom\.eRandom\(regs\[idReg\]\)/.test(admin), 'non è più escluso dalle stagioni');
-    assert.match(admin, /FormatoRandom\.eRandom\(regs\[idReg\]\) \? ' \(Random\)' : ''/);
+    assert.ok(!/nomeCat && !FormatoRandom\.eRandom\(reg\)/.test(admin), 'non è più escluso dalle stagioni');
+    assert.match(admin, /FormatoRandom\.eRandom\(reg\);/);
+    assert.match(admin, /\$\{random \? ' \(Random\)' : ''\}/, 'si riconosce nel menu');
+    // la stagione Randomize usa solo formati Random, la Monoformat nessuno (tipo-stagione.js: formatoRandom)
+    assert.match(admin, /regole\.formatoRandom === true && !random\) return;/);
+    assert.match(admin, /regole\.formatoRandom === false && random\) return;/);
 });
 
 test('battle.html: il Random Battle contro la CPU parte da ?cpu=1&random=ID con due team di Showdown e senza anteprima', () => {

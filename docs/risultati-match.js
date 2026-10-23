@@ -8,6 +8,12 @@
 // =====================================================
 
 
+// Le CUP (info.tipo === 'cup') non fanno statistica: né allenatore, né team, né Pokémon, né Elo, né serie. Danno solo un trofeo.
+// È la stessa regola di tipo-stagione.js (TipoStagione.faStatistica): qui è scritta per intero perché questo file gira anche nelle Cloud
+// Functions, senza gli altri moduli del sito (un test controlla che le due regole dicano la stessa cosa).
+const eUnaCup = info => String((info && info.tipo) || '').toLowerCase().trim() === 'cup';
+
+
 // Punti classifica in base ai set vinti.
 // NB: si giocano sempre tutti i set (3 o 5).
 function calcolaPuntiMatch(setVinti, isBO3) {
@@ -137,9 +143,13 @@ async function registraRisultatoMatch(r) {
     // Prima la classifica della stagione e le statistiche dei due giocatori: poi si decide se la stagione è finita, così il vincitore
     // si calcola su una classifica che comprende anche quest'ultimo match.
     await aggiornaLeaderboard(stagione);
-    await ricalcolaEloGiocatori();        // l'Elo di tutti, in ordine cronologico (la beta non lo cambia), anche se il ricalcolo completo qui sotto va storto
-    await ricalcolaStatisticheGlobali(p1Id);
-    await ricalcolaStatisticheGlobali(p2Id);
+    // una cup non fa statistica: niente Elo e niente statistiche dei giocatori (la classifica serve solo a decidere chi vince la cup)
+    const infoStagione = (await db.ref(`seasons/${stagione}/info`).once('value')).val() || {};
+    if (!eUnaCup(infoStagione)) {
+        await ricalcolaEloGiocatori();        // l'Elo di tutti, in ordine cronologico (la beta non lo cambia), anche se il ricalcolo completo qui sotto va storto
+        await ricalcolaStatisticheGlobali(p1Id);
+        await ricalcolaStatisticheGlobali(p2Id);
+    }
 
     // --- 6. CHIUSURA AUTOMATICA STAGIONE ---
     // Quando ogni giocatore ha giocato tutti gli showdown contro tutti gli altri (vedi avanzamentoStagione) la stagione passa a
@@ -314,8 +324,8 @@ async function salvaVincitoreStagione(seasonId) {
         return { name, dbPath: name.toLowerCase(), points: Number(d.points || 0), won: Number(d.won || 0), setW: Number(d.setW || 0) };
     }).sort(confrontaClassifica);
 
-    // --- C. PROFILI ---
-    for (let i = 0; i < classifica.length; i++) {
+    // --- C. PROFILI --- (una cup non fa statistica: niente stagioni vinte e storico nel profilo, solo il vincitore nelle info)
+    for (let i = 0; i < classifica.length && !eUnaCup(info); i++) {
         const p = classifica[i];
         const rank = i + 1;
         const isWinner = (rank === 1 && p.points > 0);
@@ -337,7 +347,8 @@ async function salvaVincitoreStagione(seasonId) {
     }
 
     const winnerName = classifica[0] && classifica[0].points > 0 ? classifica[0].name : "Nessun Vincitore";
-    await seasonRef.child('info').update({ winner: winnerName });
+    // il vincitore e la fine della stagione stanno nelle info: i trofei si ricavano da lì (tipo-stagione.js)
+    await seasonRef.child('info').update({ winner: winnerName, endDate });
     return winnerName;
 }
 
@@ -528,6 +539,7 @@ function dataPerElo(testo) {
 function calcolaEloCronologico(seasons) {
     const elenco = [];
     for (const [sId, stagione] of Object.entries(seasons || {})) {
+        if (eUnaCup(stagione && stagione.info)) continue;                 // le cup non fanno Elo
         for (const [sdId, sd] of Object.entries((stagione && stagione.showdowns) || {})) {
             const infoData = sd && sd.info && (sd.info.data || sd.info.lastEdit);
             for (const [mKey, m] of Object.entries((sd && sd.matches) || {})) {
@@ -692,8 +704,8 @@ async function ricalcolaStatisticheGlobali(pId) {
 
         // 1. ESTRAZIONE DATI
         Object.entries(seasons).forEach(([sId, stagione]) => {
-            // 🚫 ESCLUSIONE STAGIONE BETA
-            if (sId === 'sbeta') return;
+            // 🚫 ESCLUSIONE STAGIONE BETA e CUP (non fanno statistica)
+            if (sId === 'sbeta' || eUnaCup(stagione && stagione.info)) return;
 
             if (stagione.leaderboard && stagione.leaderboard[pId]) {
                 const s = stagione.leaderboard[pId];

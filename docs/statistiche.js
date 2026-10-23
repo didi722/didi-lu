@@ -34,6 +34,9 @@
     const MIN_SD_CLASSIFICA = 3;     // con meno showdown giocati un allenatore è unranked: l'Elo si mostra come N/A
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
+    // Le CUP non fanno statistica (tipo-stagione.js: TipoStagione.faStatistica): è come se non ci fossero. Non entrano nei match, nelle serie,
+    // nell'Elo, nelle stagioni vinte e non compaiono tra le stagioni da scegliere.
+    const senzaCup = seasons => Object.fromEntries(Object.entries(seasons || {}).filter(([, s]) => idDi(s && s.info && s.info.tipo) !== 'cup'));
     const idSpecie = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]+/g, '');
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const valori = x => (x && typeof x === 'object' ? Object.values(x) : []);
@@ -221,7 +224,7 @@
      *        formato:  'all' oppure il nome di una categoria (es. "VGC")
      */
     function calcola(dati, filtro = {}) {
-        const seasons = dati?.seasons || {};
+        const seasons = senzaCup(dati?.seasons);
         const players = dati?.players || {};
         const stagioneScelta = filtro.stagione && filtro.stagione !== 'all' ? String(filtro.stagione) : 'all';
         const formatoScelto = filtro.formato && filtro.formato !== 'all' ? String(filtro.formato) : 'all';
