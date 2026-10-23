@@ -907,7 +907,7 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 /* la medaglia disegnata (badge-team.css) quando la PNG di un badge dell'allenatore non c'è ancora */
 .pp-medaglia .bt-finto { width: 100%; height: 100%; font-size: 1.5rem; box-sizing: border-box; }
 
-/* ---------- Personalità: il diagramma a ragnatela (personalita-grafico.js) e il nome ---------- */
+/* ---------- Personalità: il diagramma a ragnatela (personalita-grafico.js) ---------- */
 
 .pp-personalita { container-type: inline-size; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .pp-pers-corpo { align-self: stretch; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
@@ -920,31 +920,10 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 .pers-radar-punto { fill: #fff; stroke: #000; stroke-width: 2.5; }
 /* le etichette hanno sempre lo stesso carattere (non quello scelto per la carta: certi sono larghissimi) */
 .pers-radar-et { font: 900 21px 'Josefin Sans', 'Montserrat', sans-serif; letter-spacing: 0.04em; fill: currentColor; }
-.pp-pers-testo { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
-.pp-pers-tipo {
-    margin: 0;
-    max-width: 100%;
-    padding: 5px 12px 3px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    background: var(--pp-giocatore);
-    color: var(--pp-giocatore-ink);
-    border: 3px solid #000;
-    border-radius: calc(var(--pp-raggio) * 0.4);
-    box-shadow: 3px 3px 0 #000;
-    font: 900 1rem var(--pp-font);
-    letter-spacing: 0.06em;
-    transform: rotate(-1deg);
-    cursor: help;
-}
-/* la spiegazione sta solo dove c'è posto: nel blocco largo, a destra del diagramma */
-.pp-pers-desc { display: none; margin: 0; font-weight: 700; font-size: 0.82rem; line-height: 1.3; }
+/* con più posto il diagramma cresce un po', centrato */
 @container (min-width: 460px) {
-    .pp-pers-corpo { flex-direction: row; justify-content: center; gap: 22px; }
-    .pp-pers-grafico { flex: 0 1 46%; width: auto; }
-    .pp-pers-testo { flex: 1 1 0; align-items: flex-start; }
-    .pp-pers-desc { display: block; }
+    .pp-pers-corpo { justify-content: center; }
+    .pp-pers-grafico { max-width: 460px; }
 }
 
 /* ---------- Musica ---------- */
@@ -1393,7 +1372,6 @@ body.pp-fisso .pp-medaglie-riga { gap: 12px; }
 body.pp-fisso .pp-personalita { gap: 6px; }
 body.pp-fisso .pp-pers-corpo { gap: 6px; }
 body.pp-fisso .pp-pers-grafico { flex: 1 1 0; aspect-ratio: auto; min-height: 100px; max-width: none; }
-body.pp-fisso .pp-pers-tipo { font-size: 0.9rem; padding: 4px 10px 2px; }
 @container (min-width: 460px) {
     /* largo e basso: il diagramma prende l'altezza che c'è, il suo disegno sta intero e al centro della sua casella */
     body.pp-fisso .pp-pers-grafico { flex: 0 1 46%; min-height: 0; align-self: stretch; }

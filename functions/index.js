@@ -13,7 +13,12 @@ const { getDatabase } = require('firebase-admin/database');
 const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueWritten } = require('firebase-functions/v2/database');
-const { creaServizio, ErroreUtente } = require('./partita');
+// partita.js porta con sé il simulatore completo di Showdown (migliaia di file): si carica alla prima richiesta e non all'avvio,
+// così il contenitore apre subito la porta e supera il controllo di avvio di Cloud Run anche quando leggere i file è lento
+let moduloPartita = null;
+const partita = () => (moduloPartita ||= require('./partita'));
+// dopo l'avvio (la porta è già aperta) lo si carica comunque, così la prima partita non lo aspetta
+setTimeout(() => { try { partita(); } catch (e) { console.error('Caricamento di partita.js fallito', e); } }, 200).unref();
 
 initializeApp();
 
@@ -49,7 +54,7 @@ function prendiServizio() {
         return `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${encodeURIComponent(percorso)}?alt=media&token=${token}`;
     }
 
-    servizio = creaServizio({
+    servizio = partita().creaServizio({
         db,
         salvaReplay,
         registraRisultato: r => caricaRegistraRisultato(db)(r),
@@ -63,16 +68,18 @@ function prendiServizio() {
 function richiamabile(nome, opzioni = {}) {
     return onCall({ 
         region: REGIONE, 
-        memory: '512MiB', 
+        // 1 GiB: a ogni scelta il server ricostruisce la battaglia dall'inizio con il simulatore completo, e con più partite in
+        // corso la memoria da 512 MiB si esauriva: l'istanza veniva riavviata e le richieste fallivano (nel browser: "CORS policy")
+        memory: '1GiB', 
         timeoutSeconds: 60, 
-        cors: true, // <--- AGGIUNGI QUESTA RIGA
+        cors: true,
         ...opzioni 
     }, async richiesta => {
         if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
         try {
             return await prendiServizio()[nome](richiesta.auth.uid, richiesta.data || {});
         } catch (e) {
-            if (e instanceof ErroreUtente) throw new HttpsError('failed-precondition', e.message);
+            if (e instanceof partita().ErroreUtente) throw new HttpsError('failed-precondition', e.message);
             console.error(nome, e);
             throw new HttpsError('internal', 'Errore del server: riprova tra poco');
         }
@@ -90,7 +97,7 @@ exports.rispondiAmichevole = richiamabile('rispondiAmichevole');
 
 // Quando l'ultimo set finisce, il match si salva da solo
 exports.salvaPartitaConclusa = onValueWritten(
-    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '512MiB', timeoutSeconds: 300 },
+    { ref: '/partite/{id}/stato', instance: ISTANZA_DB, region: REGIONE, memory: '1GiB', timeoutSeconds: 300 },
     async evento => {
         if (evento.data.after.val() !== 'da_salvare') return;
         await prendiServizio().salvaPartita(evento.params.id);

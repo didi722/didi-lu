@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="risultati-match.js"></script>
     <script src="formato-random.js"></script>
+    <script src="iscrizioni-team.js"></script>
 </head>
 <body class="admin-page">
 
@@ -25,6 +26,8 @@
             <div class="header-buttons">
                 <button class="btn-add-season" onclick="apriModaleCreazione()">+ New Season</button>
                 <button class="btn-cancel" title="Recalculate everyone's Elo from the official matches (no official match: unranked, 0)" onclick="ricalcolaEloAdmin()">↻ Recalculate Elo</button>
+                <button class="btn-cancel" title="Align the teams enrolled in open and running seasons with the current teams in each trainer's Box (name, Pokémon); matches already saved follow a renamed team" onclick="sincronizzaIscrizioniAdmin()">↻ Sync enrolled teams</button>
+                <button class="btn-cancel" title="Rebuild every season's standings and everyone's statistics (points, wins, badges, Elo) from the saved matches" onclick="ricalcolaStatisticheAdmin()">↻ Recalculate stats</button>
                 <button class="btn-cancel" onclick="window.location.href='index.html'">Home</button>
             </div>
         </div>
@@ -360,6 +363,63 @@ async function ricalcolaEloAdmin() {
     } catch (e) {
         console.error("Error recalculating Elo:", e);
         alert("Unable to recalculate the Elo.");
+    }
+}
+
+// Rifà da zero, dai match salvati, la classifica di ogni stagione e le statistiche di TUTTI gli allenatori (punti, vittorie, badge, Elo).
+// Serve se un salvataggio si è fermato a metà (i punti restano a 0 pur avendo giocato) o dopo aver corretto un errore del server.
+async function ricalcolaStatisticheAdmin() {
+    if (!confirm("Rebuild the standings of every season and the statistics of ALL trainers (points, wins, badges, Elo) from the saved matches?\n\nIt can take a minute.")) return;
+    const bottone = document.querySelector('[onclick="ricalcolaStatisticheAdmin()"]');
+    if (bottone) bottone.disabled = true;
+    try {
+        const stagioni = Object.keys((await db.ref('seasons').once('value')).val() || {});
+        const giocatori = Object.keys((await db.ref('players').once('value')).val() || {});
+        for (let i = 0; i < stagioni.length; i++) {
+            if (bottone) bottone.textContent = `Standings ${i + 1}/${stagioni.length}...`;
+            await aggiornaLeaderboard(stagioni[i]);
+        }
+        if (bottone) bottone.textContent = 'Elo...';
+        await ricalcolaEloGiocatori();
+        for (let i = 0; i < giocatori.length; i++) {
+            if (bottone) bottone.textContent = `Stats ${i + 1}/${giocatori.length}...`;
+            await ricalcolaStatisticheGlobali(giocatori[i]);
+        }
+        alert(`Done: standings of ${stagioni.length} season(s) and statistics of ${giocatori.length} trainer(s) rebuilt.\n\nIf something still looks wrong, check the browser console for errors.`);
+    } catch (e) {
+        console.error("Error recalculating statistics:", e);
+        alert("Unable to recalculate everything: " + (e && e.message ? e.message : e));
+    } finally {
+        if (bottone) { bottone.disabled = false; bottone.textContent = '↻ Recalculate stats'; }
+    }
+}
+
+// Riallinea i team iscritti alle stagioni (in iscrizione e in corso) con quelli del Box di ogni allenatore: nome e Pokémon.
+// I match già salvati con il vecchio nome di un team rinominato prendono il nuovo; poi si rifanno classifica e statistiche di chi è coinvolto.
+async function sincronizzaIscrizioniAdmin() {
+    const [stagioniSnap, giocatoriSnap] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
+    const p = IscrizioniTeam.piano(stagioniSnap.val() || {}, giocatoriSnap.val() || {});
+    const n = Object.keys(p.iscrizioni).length;
+    if (!n) { alert("All enrolled teams already match the teams in the Boxes. Nothing to do."); return; }
+    const righe = p.rinomine.map(r => `- ${r.giocatore}, ${r.stagione}: "${r.da}" → "${r.a}"`);
+    if (!confirm(`${n} enrolled team(s) differ from the Box.\n${righe.length ? '\nRenamed:\n' + righe.join('\n') + '\n' : ''}\nMatches already saved: ${Object.keys(p.match).length} will take the new team name.\n\nProceed?`)) return;
+    const bottone = document.querySelector('[onclick="sincronizzaIscrizioniAdmin()"]');
+    if (bottone) bottone.disabled = true;
+    try {
+        await IscrizioniTeam.applica(db, p);
+        // classifiche e statistiche di chi ha avuto match rinominati
+        const stagioni = [...new Set(p.rinomine.map(r => r.stagione))];
+        const giocatori = [...new Set(p.rinomine.map(r => r.giocatore))];
+        if (Object.keys(p.match).length) {
+            for (const sid of stagioni) await aggiornaLeaderboard(sid);
+            for (const g of giocatori) await ricalcolaStatisticheGlobali(g);
+        }
+        alert(`Done: ${n} enrolled team(s) updated, ${Object.keys(p.match).length} match(es) renamed.`);
+    } catch (e) {
+        console.error("Error syncing enrolled teams:", e);
+        alert("Unable to sync: " + (e && e.message ? e.message : e));
+    } finally {
+        if (bottone) bottone.disabled = false;
     }
 }
 

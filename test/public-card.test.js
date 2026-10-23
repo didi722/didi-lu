@@ -464,15 +464,17 @@ test('editor: la scheda Content ha le targhette (nome, palco, nascoste) e il blo
     assert.match(editor, /pagina: P\.uguali\(daSalvare, P\.predefinita\(\)\) \? null : daSalvare/);
 });
 
-test('blocco Personality: lo stile ha la forma larga (diagramma e testo affiancati), quella stretta e quella a schermo intero', () => {
+test('blocco Personality: solo il diagramma (niente nome né descrizione: il nome sta già sul palco); forma stretta e a schermo intero', () => {
     assert.match(cssCard, /\.pp-personalita \{ container-type: inline-size;/);
-    assert.match(cssCard, /@container \(min-width: 460px\) \{\s*\.pp-pers-corpo \{ flex-direction: row;/);
-    assert.match(cssCard, /\.pp-pers-desc \{ display: none;/);
     assert.match(cssCard, /body\.pp-fisso \.pp-pers-grafico \{ flex: 1 1 0; aspect-ratio: auto; min-height: 100px;/);
     assert.match(cssCard, /\[data-layout="carta"\] \.pp-zona\[data-zona="c"\] > \.pp-personalita \{ flex: 1 1 260px; \}/);
-    // il disegno ha sempre lo stesso carattere (certi font della carta sono larghissimi) e il nome della personalità segue il suo
+    // il disegno ha sempre lo stesso carattere (certi font della carta sono larghissimi)
     assert.match(cssCard, /\.pers-radar-et \{[^}]*'Josefin Sans'/);
-    assert.match(cssCard, /\.pp-pers-tipo \{[^}]*font: 900 1rem var\(--pp-font\)/s);
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'public-card.js'), 'utf8');
+    const blocco = js.slice(js.indexOf('function costruisciPersonalita'), js.indexOf('// ---- Musica'));
+    assert.doesNotMatch(blocco, /pp-pers-tipo|pp-pers-desc|pp-pers-testo/, 'nel blocco non compaiono più il nome e la descrizione');
+    assert.match(blocco, /pp-pers-grafico/);
+    assert.doesNotMatch(cssCard, /pp-pers-tipo|pp-pers-desc|pp-pers-testo/);
 });
 
 test('statistiche con un solo riquadro: il blocco si stringe quanto lui (190) invece che quanto due (260), e il riquadro prende tutta la larghezza', () => {

@@ -125,16 +125,19 @@ test('matches.html: markup delle classifiche senza stili scritti a mano, ordine 
 });
 
 // ---------- replay ----------
-test('replay: una colonna nel flusso (intestazione compatta, console, set) e la console si scala anche sull\'altezza', () => {
+test('replay: intestazione, palco (console con i set a destra) e comandi nel flusso; la console si scala sullo spazio libero', () => {
     const fin = docs('finestre.css');
     assert.match(fin, /#replayModal\.replay-modal \{[^}]*flex-direction: column/);
     const intest = /#replayModal \.replay-mini-header \{[^}]*\}/.exec(fin)[0];
     assert.match(intest, /position: relative/, 'non più in assoluto sopra la console');
-    assert.match(intest, /width: min\(980px, 100%\)/);
+    assert.match(intest, /width: min\(1120px, 100%\)/);
+    assert.match(intest, /flex: 0 0 auto/, 'l\'intestazione non si schiaccia mai');
+    assert.match(fin, /#replayModal \.replay-palco \{[^}]*flex-direction: row/, 'la console e i set stanno su una riga');
     const set = /#replayModal \.set-selector \{[^}]*\}/.exec(fin)[0];
     assert.match(set, /position: static !important/);
-    assert.match(set, /order: 4/, 'i set stanno sotto i comandi');
-    // i comandi (pausa, avanti, 2x...) stanno fuori dalla scocca, tra la console e i set
+    assert.match(fin, /#replayModal \.set-lista \{[^}]*flex-direction: column/, 'i tasti dei set sono in verticale, a destra della console');
+    assert.match(fin, /#replayModal \.replay-palco \{ flex-direction: column;/, 'sul telefono i set vanno sotto');
+    // i comandi (pausa, avanti, 2x...) stanno fuori dalla scocca, sotto la console
     const comandi = /#replayModal \.replay-comandi \{[^}]*\}/.exec(fin)[0];
     assert.match(comandi, /order: 3/);
     // i set sono tasti piccoli
@@ -144,8 +147,9 @@ test('replay: una colonna nel flusso (intestazione compatta, console, set) e la 
     assert.match(fin, /#replayModal > \.close-replay \{[^}]*visibility: visible[^}]*background: var\(--nb-giallo/);
 
     const adatta = matches.slice(matches.indexOf('function adattaReplayAlloSchermo()'), matches.indexOf("window.addEventListener('resize', () => { if (document.getElementById('replayModal')"));
-    assert.match(adatta, /const perLarghezza = \(larghezza - 24\) \/ 1150;/);
-    assert.match(adatta, /const perAltezza = \(altezza - 230\) \/ 647;/);
+    assert.match(adatta, /const perLarghezza = \(larghezza - 24 - tastiSet\) \/ 1150;/, 'la larghezza dei tasti dei set a destra si toglie');
+    assert.match(adatta, /const riservato = alto\('\.replay-mini-header'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione e i comandi si misura');
+    assert.match(adatta, /const perAltezza = \(altezza - riservato\) \/ 647;/);
     assert.match(adatta, /Math\.min\(1, perLarghezza, Math\.max\(0\.5, perAltezza\)\)/);
     // l'immagine della console è 1920 × 1080: a 1150 px di larghezza è alta 647 px
     assert.equal(Math.round(1150 * 1080 / 1920), 647);
@@ -162,4 +166,17 @@ test('replay dentro la console: i comandi vanno fuori dalla scocca se la pagina 
     assert.doesNotMatch(rs, /barra-fuori|replay-turni|replay-vai/);
     assert.match(rs, /@media \(max-width: 719px\) \{[^]*\.velo-avvio p \{ display: none; \}/);
     assert.equal(rs, fs.readFileSync(path.join(__dirname, '..', 'functions', 'replay-sito.js'), 'utf8'), 'le due copie sono identiche');
+});
+
+test('classifica: il tasto VS sparisce quando contro quel giocatore non resta nulla da giocare', () => {
+    const sfide = docs('sfide.js');
+    const f = sfide.slice(sfide.indexOf('function dacoSfidare(D, nome)'), sfide.indexOf('// 5. Finestra per lanciare la sfida'));
+    assert.match(f, /if \(!dacoSfidare\(D, nome\)\) return '';/);
+    assert.match(f, /formatiOccupati\(D, D\.io, nome\)\.occupati\.size\) return true;\s*return formatiStagione\(D\)\.some\(f => rimasti\(D, D\.io, nome, f\) > 0\);/);
+    // la classifica è disegnata prima che arrivino gli showdown: i tasti già in pagina si aggiornano quando i dati cambiano
+    assert.match(f, /function aggiornaBottoniRanking\(\)[\s\S]*b\.hidden = !dacoSfidare\(D, b\.dataset\.nome\)/);
+    assert.match(sfide, /disegnaCampanella\(\);\s*aggiornaBottoniRanking\(\);\s*\}/);
+    assert.match(docs('style-sfide.css'), /\.sfida-rank-btn\[hidden\] \{ display: none !important; \}/);
+    // la stessa regola della finestra di sfida: "You have played every showdown against ..." quando non c'è nessun formato libero né occupato
+    assert.match(sfide, /You have played every showdown against/);
 });
