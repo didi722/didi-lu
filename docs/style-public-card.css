@@ -911,7 +911,12 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 
 .pp-personalita { container-type: inline-size; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .pp-pers-corpo { align-self: stretch; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
-.pp-pers-grafico { position: relative; width: 100%; max-width: 420px; aspect-ratio: 400 / 272; }
+.pp-pers-grafico { position: relative; width: 100%; max-width: 420px; aspect-ratio: 380 / 244; }
+/* l'etichetta non occupa una riga: sta sopra l'angolo del blocco e il diagramma prende tutto lo spazio.
+   Se il blocco è stretto finirebbe sopra la scritta ATTACK: allora sparisce (il diagramma ha già i nomi degli assi e, al
+   passaggio del mouse, la spiegazione; il nome della personalità sta sul palco) */
+.pp-personalita > .pp-chip { position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 0.62rem; padding: 3px 8px; }
+@container (max-width: 229px) { .pp-personalita > .pp-chip { display: none; } }
 .pp-pers-grafico .pers-radar { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
 .pers-radar-anello { fill: none; stroke: currentColor; stroke-width: 1; opacity: 0.25; }
 .pers-radar-media { fill: none; stroke: currentColor; stroke-width: 2; stroke-dasharray: 5 4; opacity: 0.7; }
@@ -919,7 +924,7 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
 .pers-radar-area { fill: var(--pp-giocatore); fill-opacity: 0.6; stroke: #000; stroke-width: 3; stroke-linejoin: round; }
 .pers-radar-punto { fill: #fff; stroke: #000; stroke-width: 2.5; }
 /* le etichette hanno sempre lo stesso carattere (non quello scelto per la carta: certi sono larghissimi) */
-.pers-radar-et { font: 900 21px 'Josefin Sans', 'Montserrat', sans-serif; letter-spacing: 0.04em; fill: currentColor; }
+.pers-radar-et { font: 900 19px 'Josefin Sans', 'Montserrat', sans-serif; letter-spacing: 0.04em; fill: currentColor; }
 /* con più posto il diagramma cresce un po', centrato */
 @container (min-width: 460px) {
     .pp-pers-corpo { justify-content: center; }

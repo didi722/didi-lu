@@ -72,8 +72,8 @@ test('la forma piccola ha solo i nomi, la sua classe e un disegno più largo che
             }
         }
         // le etichette partono dentro il disegno con spazio per il testo: a destra e a sinistra lo spazio che resta basta per il nome
-        // più lungo (sei lettere, larghe circa 0,68 della grandezza del carattere: 11 nel profilo, 21 nella carta)
-        const carattere = nome === 'piccolo' ? 21 : 11;
+        // più lungo (sei lettere, larghe circa 0,68 della grandezza del carattere: 11 nel profilo, 19 nella carta)
+        const carattere = nome === 'piccolo' ? 19 : 11;
         for (const e of con(svg, 'pers-radar-et')) {
             const x = Number(e.attrs.x), y = Number(e.attrs.y);
             assert.ok(Number.isFinite(x) && Number.isFinite(y), nome);
