@@ -70,7 +70,7 @@
             const nome = chi
                 ? `<span class="palm-vincitore">${esc(g.name || chi)}</span>`
                 : `<span class="palm-stato">${giocando ? 'In progress' : 'No winner'}</span>`;
-            return `<a class="palm-card palm-${esc(v.tipo)}" href="matches.html?id=${encodeURIComponent(v.stagione)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
+            return `<a class="palm-card palm-${esc(v.tipo)}${giocando ? ' palm-giocando' : ''}" href="matches.html?id=${encodeURIComponent(v.stagione)}" style="--palm-col:${esc(chi && g.color || '#fff')}">
                 <h3 class="palm-nome">${esc(v.nome)}</h3>
                 <div class="palm-cerchio">${cerchio}${segno}</div>
                 ${nome}

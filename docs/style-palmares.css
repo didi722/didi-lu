@@ -10,22 +10,46 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 }
 .palm-tasto.attivo { background: var(--nb-giallo, #ffbd44); }
 .palm-titolo { margin: 26px 0 14px; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; }
-.palm-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.palm-griglia { display: grid; grid-template-columns: repeat(auto-fill, 280px); justify-content: start; }
+/* La card come quella della home: stessa carta a pallini, titolo nero, tab dello stato a cavallo del bordo, avatar che saltella */
+.palm-griglia { gap: 44px 26px; padding-top: 14px; }
 .palm-card {
-    text-decoration: none; cursor: pointer; transition: transform .12s;
-    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 16px 14px;
-    background: var(--palm-col, #fff); color: #000; text-align: center;
-    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    min-height: 250px; padding: 22px 15px 16px; box-sizing: border-box;
+    background-color: var(--palm-col, #fff);
+    background-image: radial-gradient(rgba(0, 0, 0, .13) 1.4px, transparent 1.7px); background-size: 11px 11px;
+    color: #000 !important; text-align: center; text-decoration: none; cursor: pointer;
+    border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-l, 8px 8px 0 #000);
+    transform: rotate(-2deg); transition: transform .2s ease, box-shadow .2s ease;
 }
-.palm-nome { margin: 0; font: 900 1.15rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.palm-card:nth-child(even) { transform: rotate(2deg); }
+.palm-card:hover { transform: scale(1.03) translate(-3px, -3px); }
+.palm-card:active { transform: scale(.96) translate(4px, 5px); box-shadow: none; }
+.palm-card::before {
+    content: "FINISHED"; position: absolute; top: -17px; left: 14px; z-index: 3; padding: 3px 12px;
+    background: var(--nb-tab-bg, #000); color: var(--nb-tab-fg, #fff); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0);
+    font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .18em; text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -3deg)); box-shadow: var(--nb-sh-tag, none);
+}
+.palm-card.palm-giocando::before { content: "● LIVE NOW"; background: #ea1818; color: #fff; box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.palm-nome {
+    margin: 0; padding: 8px 12px; max-width: 100%; box-sizing: border-box; background: var(--nb-ink, #000); color: #fff;
+    border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s-scuro, 4px 4px 0 rgba(0,0,0,.3));
+    font: 700 1.1rem 'Montserrat', sans-serif; letter-spacing: 1px; text-transform: uppercase; overflow-wrap: anywhere;
+}
 .palm-cerchio { position: relative; display: flex; align-items: center; justify-content: center; margin-right: 34px; }
-.palm-avatar { width: 84px; height: 84px; object-fit: contain; border-radius: 50%; background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
-.palm-senza { display: flex; align-items: center; justify-content: center; font: 900 2rem sans-serif; }
-.palm-trofeo { position: absolute; right: -52px; top: 50%; transform: translateY(-50%); width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); }
-.palm-live { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px; }
+.palm-avatar {
+    width: 85px; height: 85px; object-fit: contain; border-radius: 50%; background: #fff; border: 3px solid #000; box-sizing: border-box;
+    filter: drop-shadow(3px 3px 0 #000); animation: palm-salto .8s steps(1) infinite;
+}
+@keyframes palm-salto { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.palm-senza { display: flex; align-items: center; justify-content: center; font: 900 2rem sans-serif; animation: none; }
+.palm-trofeo { position: absolute; right: -54px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); }
+.palm-live { position: absolute; right: -32px; top: 50%; transform: translateY(-50%); color: red; font-size: 26px; animation: palm-lampeggia .8s infinite steps(1); }
+@keyframes palm-lampeggia { 50% { opacity: 0; } }
 .palm-vincitore {
-    display: inline-block; padding: 6px 20px; background: #fff; color: #000; text-decoration: none; text-transform: uppercase;
-    border: 3px solid var(--nb-ink, #000); box-shadow: 4px 4px 0 #000; font: 800 .95rem 'Montserrat', sans-serif; letter-spacing: 1px;
+    display: inline-block; padding: 6px 20px; min-width: 70px; background: #fff; color: #000; text-transform: uppercase;
+    border: 3px solid var(--nb-ink, #000); box-shadow: 4px 4px 0 #000; font: 800 1rem 'Montserrat', sans-serif; letter-spacing: 1px;
 }
 .palm-stato { font: 700 .85rem sans-serif; opacity: .7; }
 .palm-data { font: 700 .78rem sans-serif; opacity: .75; }
