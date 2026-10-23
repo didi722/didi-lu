@@ -28,8 +28,8 @@
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
     // Formati in cui si è davvero forti: abbastanza match (MIN_MATCH_FORMATO) e almeno questa % di vittorie
-    const MIN_MATCH_FORMATO = 24;
-    const PERC_FORMATO = 60;
+    const MIN_MATCH_FORMATO = 12;     // un formato dà 12 match a stagione e non si ripete per ~3 stagioni: si padroneggia in una stagione intera
+    const PERC_FORMATO = 65;
     const formatiForti = g => Object.values((g && g.formati) || {}).filter(f => num(f.n) >= MIN_MATCH_FORMATO && (num(f.vinti) / num(f.n)) * 100 >= PERC_FORMATO).length;
 
     // -----------------------------------------------------
@@ -39,7 +39,7 @@
         { id: 'champion', nome: 'League Champion', icona: '👑', unita: 'seasons won', soglie: [2, 3, 5],
           descrizione: 'Seasons of the league won.',
           valore: c => num(c.g.stagioniVinte), immagini: tre('badge-allenatore-champion-{l}.png') },
-        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [3, 6, 10],
+        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [3, 8, 15],
           descrizione: 'Seasons of the league played.',
           valore: c => num(c.g.stagioniGiocate), immagini: tre('badge-allenatore-veteran-{l}.png') },
         { id: 'matchwinner', nome: 'Match Winner', icona: '🏆', unita: 'matches won', soglie: [30, 75, 160],
@@ -48,7 +48,7 @@
         { id: 'setcrusher', nome: 'Set Crusher', icona: '⚔️', unita: 'sets won', soglie: [80, 200, 420],
           descrizione: 'Sets won, in every format.',
           valore: c => num(c.g.set && c.g.set.vinti), immagini: tre('badge-allenatore-setcrusher-{l}.png') },
-        { id: 'showdown', nome: 'Showdown Victor', icona: '🎯', unita: 'showdowns won', soglie: [10, 25, 50],
+        { id: 'showdown', nome: 'Showdown Victor', icona: '🎯', unita: 'showdowns won', soglie: [10, 25, 70],
           descrizione: 'Showdowns won.',
           valore: c => num(c.g.showdown && c.g.showdown.vinti), immagini: tre('badge-allenatore-showdown-{l}.png') },
         { id: 'dominant', nome: 'Dominant', icona: '📈', unita: '% of matches won', soglie: [65, 75, 80], etichetta: 'Win rate', suffisso: '%',
@@ -61,10 +61,10 @@
         { id: 'untouchable', nome: 'Untouchable', icona: '🛡️', unita: 'flawless sets', soglie: [8, 22, 50],
           descrizione: 'Sets won without losing a single Pokémon.',
           valore: c => num(c.g.ko && c.g.ko.setPerfetti), immagini: tre('badge-allenatore-untouchable-{l}.png') },
-        { id: 'closecall', nome: 'Against All Odds', icona: '💪', unita: 'sets won on the last Pokémon', soglie: [15, 40, 90],
+        { id: 'closecall', nome: 'Against All Odds', icona: '💪', unita: 'sets won on the last Pokémon', soglie: [25, 60, 130],
           descrizione: 'Sets won with only one Pokémon left standing.',
           valore: c => num(c.g.ko && c.g.ko.setAlLimite), immagini: tre('badge-allenatore-closecall-{l}.png') },
-        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [2, 4, 6],
+        { id: 'formatmaster', nome: 'Format Master', icona: '🧭', unita: 'formats mastered', soglie: [3, 7, 12],
           descrizione: `Formats where you won at least ${PERC_FORMATO}% of your matches, with at least ${MIN_MATCH_FORMATO} played.`,
           valore: c => formatiForti(c.g), immagini: tre('badge-allenatore-formatmaster-{l}.png') },
         { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1200, 1300, 1375], partenza: 1000,
