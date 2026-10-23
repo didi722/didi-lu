@@ -58,7 +58,7 @@ test('trofei: le stagioni e le cup chiuse vinte dal giocatore (la beta e le stag
     assert.equal(t[0].nome, 'Christmas Cup');
     assert.equal(t[0].data, '2026-12-24');
     assert.equal(t[0].icona, 'immagini/coppe/natale.png', 'una cup può avere la sua icona');
-    assert.equal(t[1].icona, 'immagini/season-winner-color.png');
+    assert.equal(t[1].icona, 'immagini/season-winner.png');
     assert.deepEqual(T.trofei(STAGIONI, 'lu').map(x => x.nome), ['Friuli DOC I']);
     assert.deepEqual(T.trofei(STAGIONI, 'nessuno'), []);
     assert.deepEqual(T.trofei(STAGIONI, ''), []);

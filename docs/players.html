@@ -26,6 +26,7 @@
 <script src="sfide.js"></script>
 <script src="amichevoli.js"></script>
 <script src="titoli.js"></script>
+<script src="tipo-stagione.js"></script>
 <script src="statistiche.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
@@ -258,6 +259,10 @@ async function initTrainersPage() {
             return;
         }
 
+        // i trofei di ogni allenatore (league, monoformat, randomize, cup): le info delle stagioni chiuse, una lettura per pagina
+        let infoStagioni = null;
+        try { if (window.TipoStagione) infoStagioni = await TipoStagione.leggiInfo(db); } catch (e) { console.warn('Trophies not available:', e); }
+
         const playersList = [];
         for (let key in playersData) {
             const player = playersData[key];
@@ -292,6 +297,7 @@ async function initTrainersPage() {
                 ranking: indStats.ranking !== undefined ? Number(indStats.ranking) : 0,
                 classificato: Number(indStats.showdownsPlayed || 0) >= Statistiche.MIN_SD_CLASSIFICA,   // meno showdown: unranked, N/A
                 trophiesWon: trophiesWon,
+                trofei: infoStagioni ? TipoStagione.raggruppa(TipoStagione.trofei(infoStagioni, key)) : [],
                 badgesHTML: generaHTMLBadge(statsBadges, key) + badgeAllenatoreHTML
             });
         }
@@ -302,12 +308,24 @@ async function initTrainersPage() {
         gridContainer.innerHTML = playersList.map((player, index) => {
             const randomRotation = (Math.random() * 2 - 1).toFixed(2);
             
-            const htmlTrofeati = player.trophiesWon > 0 
-                ? `<div class="trainer-card-trophy" title="Seasons">
+            // una coppa per tipo (league, monoformat, randomize, cup) con il suo numero; al passaggio: quale e quando
+            const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : 'N/D'; };
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const htmlTrofeati = player.trofei.length
+                ? player.trofei.map(g => {
+                    const titolo = `${g.etichetta}\n` + g.vittorie.map(v => `${v.nome} · ${dataIt(v.data)}`).join('\n');
+                    const icona = g.tipo === 'league' ? 'immagini/season-winner-color.png' : (g.icona || '');
+                    return `<div class="trainer-card-trophy trofeo-${g.tipo}" title="${esc(titolo)}">
+                        <img src="${esc(icona)}" class="trophy-icon" alt="${esc(g.etichetta)}" onerror="this.onerror=null;this.src='immagini/season-winner-color.png';this.classList.add('trophy-segnaposto')">
+                        <span class="trophy-count">x${g.conteggio}</span>
+                       </div>`;
+                }).join('')
+                : (player.trophiesWon > 0
+                    ? `<div class="trainer-card-trophy" title="Seasons">
                     <img src="immagini/season-winner-color.png" class="trophy-icon" alt="Trophy">
                     <span class="trophy-count">x${player.trophiesWon}</span>
-                   </div>` 
-                : '';
+                   </div>`
+                    : '');
 
             // il tasto per la partita amichevole sta accanto alla card (non dentro: con i badge sarebbe troppo piena)
             return `

@@ -363,7 +363,46 @@
 
     // ---- Trofei e medaglie --------------------------------------------------------------------
 
+    // La data di una vittoria ("2026-09-30") come si scrive in Italia
+    const dataIt = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : 'N/D'; };
+
+    // Una coppa: l'immagine del tipo (PNG da caricare) o, finché manca, la coppa della league nel colore del tipo; quella della league
+    // è colorata con il colore dell'allenatore. Il fumetto dice di che coppa si tratta e, per ogni vittoria, quale e quando.
+    function costruisciCoppa(gruppo) {
+        const info = (window.TipoStagione && window.TipoStagione.TIPI[gruppo.tipo]) || {};
+        const colore = (colorePredefinito, mascheraUrl) => {
+            const c = h('div', { class: 'pp-coppa-colore' });
+            c.style.setProperty('-webkit-mask-image', `url('${mascheraUrl}')`);
+            c.style.setProperty('mask-image', `url('${mascheraUrl}')`);
+            if (colorePredefinito) c.style.setProperty('background-color', colorePredefinito);
+            return c;
+        };
+        const lega = (segnaposto) => [
+            colore(segnaposto, 'immagini/season-winner-color.png'),
+            h('img', { class: 'pp-coppa-img', src: 'immagini/season-winner.png', alt: '', decoding: 'async' })];
+        const immagini = gruppo.tipo === 'league'
+            ? lega(null)
+            : [h('img', {
+                class: 'pp-coppa-img', src: gruppo.icona || info.icona || '', alt: '', decoding: 'async',
+                onerror: ev => { const coppa = ev.target.parentNode; coppa.classList.add('pp-segnaposto'); ev.target.replaceWith(...lega(info.segnaposto || '#ccc')); }
+            })];
+        const MAX_RIGHE = 8;
+        const righe = gruppo.vittorie.slice(0, MAX_RIGHE).map(v => h('span', { class: 'pp-tip-riga' },
+            h('span', { testo: `🏆 ${v.nome}` }), h('span', { class: 'pp-tip-obiettivo', testo: dataIt(v.data) })));
+        if (gruppo.vittorie.length > MAX_RIGHE) righe.push(h('span', { class: 'pp-tip-testo', testo: `+${gruppo.vittorie.length - MAX_RIGHE} more: see the Trophy Archive` }));
+        const tip = h('span', { class: 'neubrutal-tooltip pp-tip' }, h('span', { class: 'pp-tip-nome', testo: gruppo.etichetta.toUpperCase() }), righe);
+        return h('div', { class: `pp-coppa-gruppo pp-tipo-${gruppo.tipo}` },
+            h('div', { class: 'pp-coppa pp-tip-host', tabindex: '0' }, ...immagini, tip),
+            h('span', { class: 'pp-coppa-conto', testo: `x${gruppo.conteggio}` }));
+    }
+
     function costruisciTrofei(d) {
+        // i trofei di tutte le coppe vinte (league, monoformat, randomize, cup), raggruppati per tipo (tipo-stagione.js)
+        if (Array.isArray(d.trofei) && d.trofei.length) {
+            return blocco('trofei', 'pp-trofei pp-trofei-gruppi',
+                h('span', { class: 'pp-chip', testo: 'TROPHIES' }),
+                h('div', { class: 'pp-coppe' }, d.trofei.map(costruisciCoppa)));
+        }
         const stagioni = d.stagioni || {};
         // il numero è quello dei badge (calcolato dalla classifica di ogni stagione chiusa): se la pagina non lo ha, il contatore salvato nel profilo
         const calcolate = d.stagioniVinte && Number.isFinite(Number(d.stagioniVinte.conteggio)) ? d.stagioniVinte : null;

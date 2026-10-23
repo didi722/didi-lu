@@ -972,3 +972,8 @@ body {
     padding: 2px 6px;
     white-space: nowrap;
 }
+/* le coppe di tipi diversi stanno una accanto all'altra; finché mancano le PNG delle altre coppe, la coppa della league cambia tinta */
+.trainer-card-trophy { margin-right: 10px; }
+.trofeo-monoformat .trophy-segnaposto { filter: hue-rotate(170deg) saturate(1.4) drop-shadow(1px 1px 0 #000); }
+.trofeo-random .trophy-segnaposto { filter: hue-rotate(80deg) saturate(1.3) drop-shadow(1px 1px 0 #000); }
+.trofeo-cup .trophy-segnaposto { filter: hue-rotate(-40deg) saturate(1.6) drop-shadow(1px 1px 0 #000); }

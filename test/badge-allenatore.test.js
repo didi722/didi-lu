@@ -129,7 +129,7 @@ test('immagini: dodici badge × tre livelli, tutti badge-allenatore-<id>-<livell
 });
 
 test('HTML: scaffale con tutti i badge, medagliette dei più alti, testi sicuri', () => {
-    const l = BA.calcola(risultato(giocatore({ match: { giocati: 130, vinti: 100, persi: 30 }, stagioniVinte: 2 })), 'didi');
+    const l = BA.calcola(risultato(giocatore({ match: { giocati: 130, vinti: 100, persi: 30 }, stagioniVinte: 3 })), 'didi');
     const scaffale = BA.htmlScaffale(l);
     assert.match(scaffale, /TRAINER BADGES <small class="bt-conto">2\/12<\/small>/);
     assert.equal((scaffale.match(/class="bt bt-/g) || []).length, 12);
@@ -165,16 +165,16 @@ test('i badge dei team non cambiano: stesso catalogo, stesse soglie, stessi file
 
 test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle schede dei badge delle serie', () => {
     const l = BA.calcola(risultato(giocatore({
-        stagioniVinte: 2, stagioniGiocate: 0, eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 70 }
+        stagioniVinte: 3, stagioniGiocate: 0, eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 }, showdown: { vinti: 70 }
     })), 'didi');
     const s = id => BA.scheda(per(l, id));
 
     // un badge a metà strada: bronzo preso, argento in vista
     const c = s('champion');
-    assert.deepEqual(c.livelli.map(x => [x.nome, x.soglia, x.stato]), [['Bronze', '2', 'done'], ['Silver', '3', 'next'], ['Gold', '5', '']]);
-    assert.deepEqual(c.numeri, [['Level', 'Bronze'], ['Now', '2']]);
-    assert.deepEqual(c.barra, { etichetta: 'Seasons won', valore: 2, obiettivo: 3, partenza: 0, suffisso: '' });
-    assert.equal(c.frase, '1 more to unlock Silver.');
+    assert.deepEqual(c.livelli.map(x => [x.nome, x.soglia, x.stato]), [['Bronze', '3', 'done'], ['Silver', '5', 'next'], ['Gold', '8', '']]);
+    assert.deepEqual(c.numeri, [['Level', 'Bronze'], ['Now', '3']]);
+    assert.deepEqual(c.barra, { etichetta: 'Seasons won', valore: 3, obiettivo: 5, partenza: 0, suffisso: '' });
+    assert.equal(c.frase, '2 more to unlock Silver.');
     assert.equal(c.classe, 'bronze');
     assert.equal(c.bloccato, false);
     assert.equal(c.immagine, 'immagini/badge-allenatore-champion-bronze.png');

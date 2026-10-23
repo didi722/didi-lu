@@ -80,7 +80,7 @@ test('BadgeAllenatore.carica restituisce le stagioni vinte come le contano i bad
 test('la pagina pubblica e la lista Trainers usano quel numero; il contatore del profilo è solo il ripiego', () => {
     const pub = docs('public.html');
     assert.match(pub, /if \(r\.dati\) stagioniVinte = \{ conteggio: r\.stagioniVinte, elenco: r\.elencoStagioniVinte \};/);
-    assert.match(pub, /stagioniVinte,\s*\n\s*tipi: tipi \|\| \{\}/);
+    assert.match(pub, /stagioniVinte,\s*\n\s*trofei,\s*\n\s*tipi: tipi \|\| \{\}/);
     const card = docs('public-card.js');
     assert.match(card, /const conteggio = calcolate \? Number\(calcolate\.conteggio\) : \(Number\(stagioni\.won\) \|\| 0\);/);
 

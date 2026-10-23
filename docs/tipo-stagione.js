@@ -39,11 +39,13 @@
 
     const BETA = 'sbeta';
     const TIPI = {
-        league:     { id: 'league',     etichetta: "Sant'Alvise League",              base: "Sant'Alvise",                       icona: 'immagini/season-winner-color.png', statistica: true,  trofeo: true },
-        monoformat: { id: 'monoformat', etichetta: 'Martiri di Marzabotto Memorial',  base: 'Martiri di Marzabotto Memorial',    icona: 'immagini/coppa-monoformat.png',    statistica: true,  trofeo: true },
-        random:     { id: 'random',     etichetta: 'Friuli DOC',                      base: 'Friuli DOC',                        icona: 'immagini/coppa-random.png',        statistica: true,  trofeo: true },
-        cup:        { id: 'cup',        etichetta: 'Cup',                             base: '',                                  icona: 'immagini/coppa-cup.png',           statistica: false, trofeo: true }
+        league:     { id: 'league',     etichetta: "Sant'Alvise League",              base: "Sant'Alvise",                       icona: 'immagini/season-winner.png',   statistica: true,  trofeo: true, segnaposto: null },
+        monoformat: { id: 'monoformat', etichetta: 'Martiri di Marzabotto Memorial',  base: 'Martiri di Marzabotto Memorial',    icona: 'immagini/coppa-monoformat.png', statistica: true,  trofeo: true, segnaposto: '#f4b942' },
+        random:     { id: 'random',     etichetta: 'Friuli DOC',                      base: 'Friuli DOC',                        icona: 'immagini/coppa-random.png',     statistica: true,  trofeo: true, segnaposto: '#4cc9a4' },
+        cup:        { id: 'cup',        etichetta: 'Cup',                             base: '',                                  icona: 'immagini/coppa-cup.png',        statistica: false, trofeo: true, segnaposto: '#e8685a' }
     };
+    // La coppa della league è l'immagine di sempre (colorata con il colore dell'allenatore). Le altre sono PNG da caricare
+    // (immagini/coppa-<tipo>.png, anche l'icona scelta per una cup): finché mancano, al loro posto c'è la coppa della league nel colore `segnaposto`.
     const ORDINE = ['league', 'monoformat', 'random', 'cup'];
 
     // Cosa fissa ogni tipo nella creazione di una stagione (admin.html):

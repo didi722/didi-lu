@@ -1392,3 +1392,19 @@ body.pp-fisso .pp-eq { height: 22px; }
 
 /* l'icona della personalità è l'oggetto (PNG), grande come il testo della targhetta */
 .pp-targa-personalita .pers-icona { width: 1.7em; height: 1.7em; margin: -0.35em 0.1em -0.35em -0.2em; vertical-align: middle; object-fit: contain; image-rendering: auto; }
+
+/* ---------- Più coppe: una per tipo (league, monoformat, randomize, cup), ognuna con il suo numero ---------- */
+.pp-trofei-gruppi { align-items: flex-start; }
+.pp-coppe { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; justify-content: center; max-width: 100%; }
+.pp-coppa-gruppo { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pp-coppa-gruppo .pp-coppa { width: 64px; height: 64px; }
+.pp-coppa-gruppo .pp-coppa-conto { font-size: 1.05rem; padding: 0 8px; border-width: 2px; box-shadow: 2px 2px 0 #000; }
+.pp-tip .pp-tip-nome + .pp-tip-riga { margin-top: 2px; }
+body.pp-fisso .pp-trofei.pp-trofei-gruppi { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+body.pp-fisso .pp-trofei.pp-trofei-gruppi > .pp-chip { align-self: flex-start; }
+body.pp-fisso .pp-coppa-gruppo .pp-coppa { width: 52px; height: 52px; }
+
+/* finché mancano le PNG delle altre coppe, la coppa della league cambia tinta: monoformat blu, randomize verde, cup rossa */
+.pp-tipo-monoformat .pp-segnaposto .pp-coppa-img { filter: hue-rotate(170deg) saturate(1.3); }
+.pp-tipo-random .pp-segnaposto .pp-coppa-img { filter: hue-rotate(80deg) saturate(1.2); }
+.pp-tipo-cup .pp-segnaposto .pp-coppa-img { filter: hue-rotate(-40deg) saturate(1.5); }

@@ -34,6 +34,7 @@
     <script src="personalita.js"></script>
     <script src="personalita-grafico.js"></script>
     <script src="pagina-pubblica.js"></script>
+    <script src="tipo-stagione.js"></script>
     <script src="public-card.js"></script>
 </head>
 <body class="pg-public">
@@ -432,6 +433,12 @@ async function initPublicProfile() {
             }
         } catch (e) { console.warn('Personality not available:', e); }
 
+        // i trofei: tutte le stagioni e le cup chiuse vinte (le info di ogni stagione, non le stagioni intere), raggruppati per tipo
+        let trofei = null;
+        try {
+            if (window.TipoStagione) trofei = TipoStagione.raggruppa(TipoStagione.trofei(await TipoStagione.leggiInfo(db), playerKey));
+        } catch (e) { console.warn('Trophies not available:', e); }
+
         PublicCard.monta({
             chiave: playerKey,
             nome,
@@ -442,6 +449,7 @@ async function initPublicProfile() {
             personalita,
             stagioni: stagioni || {},
             stagioniVinte,
+            trofei,
             tipi: tipi || {},
             pokemon: pokemon || {},
             teams,
