@@ -23,6 +23,8 @@
 //   TipoStagione.daTrofeo(info, id)             true per league, monoformat, random, cup
 //   TipoStagione.nomeProgressivo(tipo, stagioni)  il nome della prossima stagione di quel tipo (league/random/monoformat)
 //   TipoStagione.regoleDi(tipo)                 cosa fissa quel tipo nella creazione (nome automatico, n. formati, showdown, formato Random)
+//   TipoStagione.squadreMax(showdown)           squadre iscrivibili al massimo per quel numero di showdown per formato
+//   TipoStagione.estraiFormati(formati, n)      l'estrazione casuale dei formati di una League (tipi diversi)
 //   TipoStagione.romano(n)
 //   TipoStagione.trofei(stagioni, giocatore)    [{ stagione, tipo, nome, data, icona }] del giocatore, i più recenti per primi
 //   TipoStagione.raggruppa(trofei)              per tipo: [{ tipo, etichetta, icona, conteggio, vittorie: [...] }]
@@ -52,14 +54,43 @@
     //   nomeAutomatico  il nome è base + numero romano progressivo (le cup lo scrive l'admin)
     //   formati         numero di formati fisso (null = lo sceglie l'admin)
     //   showdowns       showdown per formato fissi (null = li sceglie l'admin)
-    //   formatoRandom   true = solo formati Random; false = niente formati Random; null = qualunque
+    //   formatoRandom   true = solo formati Random; false = niente formati Random; null = qualunque (le cup)
+//   formatoFisso    il formato è quello Random, scelto in automatico e non modificabile (Friuli DOC)
     const REGOLE = {
-        league:     { nomeAutomatico: true,  formati: null, showdowns: null, formatoRandom: null },
+        league:     { nomeAutomatico: true,  formati: null, showdowns: null, formatoRandom: false },
         monoformat: { nomeAutomatico: true,  formati: 1,    showdowns: null, formatoRandom: false },
-        random:     { nomeAutomatico: true,  formati: 1,    showdowns: null, formatoRandom: true },
+        random:     { nomeAutomatico: true,  formati: 1,    showdowns: null, formatoRandom: true, formatoFisso: true },
         cup:        { nomeAutomatico: false, formati: 1,    showdowns: 1,    formatoRandom: null }
     };
     const regoleDi = tipo => REGOLE[TIPI_VALIDI(tipo)] || REGOLE.league;
+
+    /** Squadre iscrivibili al massimo per ogni numero di showdown per formato (tabella del regolamento): 1→2, 2→3, 3→4, 4→6, 5 o più→7. */
+    function squadreMax(showdown) {
+        const n = Math.floor(Number(showdown) || 0);
+        if (n < 1) return 0;
+        return ({ 1: 2, 2: 3, 3: 4, 4: 6 })[n] || 7;
+    }
+
+    const STRUTTURE = ['anything_goes', 'custom', 'vgc'];
+    /**
+     * Estrae n formati da [{ nome, struttura }] per una Sant'Alvise League: da 3 in su almeno uno Anything Goose, uno Custom e uno VGC;
+     * con 2 due formati di struttura diversa; con 1 uno qualsiasi. I Random non si estraggono mai. `caso` è un Math.random sostituibile nei test.
+     */
+    function estraiFormati(formati, n, caso = Math.random) {
+        const mischia = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(caso() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+        const pool = mischia((formati || []).filter(f => f && f.nome && f.struttura !== 'random'));
+        const scelti = [];
+        const prendi = f => { if (f && !scelti.includes(f)) scelti.push(f); };
+        const dellaStruttura = st => pool.find(f => f.struttura === st && !scelti.includes(f));
+        n = Math.max(0, Math.floor(Number(n) || 0));
+        if (n >= 3) STRUTTURE.forEach(st => prendi(dellaStruttura(st)));
+        else if (n === 2) {
+            const disponibili = mischia(STRUTTURE.filter(st => dellaStruttura(st)));
+            disponibili.slice(0, 2).forEach(st => prendi(dellaStruttura(st)));
+        }
+        for (const f of pool) { if (scelti.length >= n) break; prendi(f); }
+        return scelti.slice(0, n).map(f => f.nome);
+    }
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const TIPI_VALIDI = t => (TIPI[idDi(t)] ? idDi(t) : 'league');
@@ -164,5 +195,5 @@
         return trovate;
     }
 
-    return { BETA, TIPI, ORDINE, REGOLE, regoleDi, tipoDi, faStatistica, daTrofeo, romano, nomeProgressivo, dataVittoria, trofei, raggruppa, palmares, leggiInfo };
+    return { BETA, TIPI, ORDINE, REGOLE, regoleDi, squadreMax, estraiFormati, tipoDi, faStatistica, daTrofeo, romano, nomeProgressivo, dataVittoria, trofei, raggruppa, palmares, leggiInfo };
 });

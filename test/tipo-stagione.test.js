@@ -152,3 +152,42 @@ test('la regola delle cup di ogni modulo è quella di TipoStagione.faStatistica'
         assert.equal(Object.keys(elo.match).length > 0, attesa, `Elo: ${tipo}`);
     }
 });
+
+test('squadreMax: la tabella del regolamento (showdown per formato → squadre iscrivibili)', () => {
+    const T = require('../docs/tipo-stagione.js');
+    assert.deepEqual([1, 2, 3, 4, 5, 6, 9].map(T.squadreMax), [2, 3, 4, 6, 7, 7, 7]);
+    assert.equal(T.squadreMax(0), 0);
+    assert.equal(T.squadreMax(''), 0);
+});
+
+test('estraiFormati: League con 3+ formati ha Anything Goose, Custom e VGC; con 2 due strutture diverse; mai Random', () => {
+    const T = require('../docs/tipo-stagione.js');
+    const f = [];
+    for (const st of ['anything_goes', 'custom', 'vgc']) for (let i = 0; i < 4; i++) f.push({ nome: `${st}${i}`, struttura: st });
+    f.push({ nome: 'rnd', struttura: 'random' });
+    const strutt = nomi => nomi.map(n => f.find(x => x.nome === n).struttura);
+    for (let prova = 0; prova < 300; prova++) {
+        const tre = strutt(T.estraiFormati(f, 3));
+        assert.deepEqual([...tre].sort(), ['anything_goes', 'custom', 'vgc']);
+        const quattro = T.estraiFormati(f, 5);
+        assert.equal(new Set(quattro).size, 5);
+        assert.ok(!quattro.includes('rnd'));
+        for (const st of ['anything_goes', 'custom', 'vgc']) assert.ok(strutt(quattro).includes(st));
+        const due = strutt(T.estraiFormati(f, 2));
+        assert.equal(new Set(due).size, 2);
+        assert.equal(T.estraiFormati(f, 1).length, 1);
+    }
+    // meno strutture di quante servono: si riempie con quello che c'è
+    assert.equal(T.estraiFormati([{ nome: 'a', struttura: 'vgc' }, { nome: 'b', struttura: 'vgc' }], 2).length, 2);
+});
+
+test('regole: League senza Random, Friuli DOC con formato Random fisso, un formato solo fuori dalla League', () => {
+    const T = require('../docs/tipo-stagione.js');
+    assert.equal(T.regoleDi('league').formatoRandom, false);
+    assert.equal(T.regoleDi('monoformat').formatoRandom, false);
+    assert.equal(T.regoleDi('random').formatoRandom, true);
+    assert.equal(T.regoleDi('random').formatoFisso, true);
+    assert.equal(T.regoleDi('cup').formatoRandom, null);
+    for (const t of ['monoformat', 'random', 'cup']) assert.equal(T.regoleDi(t).formati, 1);
+    assert.equal(T.regoleDi('league').formati, null);
+});

@@ -162,7 +162,7 @@
 </div>
             <div class="form-group">
                 <label>Showdowns per Format:</label>
-                <input type="number" id="num-showdowns-per-format" value="2" oninput="aggiornaCalcoloDinamico()">
+                <input type="number" id="num-showdowns-per-format" value="2" oninput="aggiornaSquadreMax(); aggiornaCalcoloDinamico()">
             </div>
             <div class="form-group">
                 <label>Best of:</label>
@@ -544,6 +544,18 @@ async function cambiaTipoStagione(conservaNome) {
     if (regole.showdowns) showdown.value = regole.showdowns;
     showdown.disabled = !!regole.showdowns;
 
+    // il numero di squadre iscrivibili segue gli showdown per formato (solo creando: in modifica restano quelli salvati)
+    if (!conservaNome) aggiornaSquadreMax();
+
+    // Friuli DOC: il formato è il Random, scelto in automatico e non modificabile
+    const fisso = !!regole.formatoFisso;
+    if (fisso) {
+        const random = Object.values(regolamentiCache).find(r => r && r.categoria && FormatoRandom.eRandom(r));
+        if (random && !conservaNome) formatiSelezionati = [random.categoria];
+    }
+    document.getElementById('select-regolamenti').disabled = fisso;
+    formatoBloccato = fisso;
+
     // con un formato solo non ha senso sorteggiarlo: lo sceglie l'admin
     const metodo = document.getElementById('metodo-selezione-tendina');
     if (regole.formati === 1) { metodo.value = 'manuale'; metodo.disabled = true; } else metodo.disabled = false;
@@ -559,6 +571,15 @@ async function cambiaTipoStagione(conservaNome) {
     disegnaOpzioniFormati();
     aggiornaCalcoloDinamico();
     aggiornaStatoConferma();
+}
+
+// Squadre iscrivibili al massimo in base agli showdown per formato (tabella del regolamento); l'admin può comunque cambiarle a mano
+function aggiornaSquadreMax() {
+    const max = TipoStagione.squadreMax(document.getElementById('num-showdowns-per-format').value);
+    if (!max) return;
+    const campo = document.getElementById('teams-per-formato');
+    campo.value = max;
+    checkNoLimit(campo);
 }
 
 function checkNoLimit(input) {
@@ -598,6 +619,7 @@ function aggiungiFormatoTag() {
 }
 
 // 3. Disegna i tag con la "X"
+let formatoBloccato = false; // Friuli DOC: il formato Random non si toglie
 function renderTags() {
     const container = document.getElementById('container-tags-formati');
     container.innerHTML = "";
@@ -607,7 +629,7 @@ function renderTags() {
         tag.className = 'format-tag';
         tag.innerHTML = `
             ${formato}
-            <span class="remove-tag" onclick="rimuoviTag(${index})">&times;</span>
+            ${formatoBloccato ? '' : `<span class="remove-tag" onclick="rimuoviTag(${index})">&times;</span>`}
         `;
         container.appendChild(tag);
     });
@@ -994,22 +1016,14 @@ async function creaNuovaStagione() {
                 return alert(`Please select at least ${numFormatiTarget} formats!`);
             }
         } else {
+            // League: almeno un Anything Goose, un Custom e un VGC da 3 formati in su; due di tipo diverso con 2 formati (mai Random)
             const regSnapshot = await db.ref('regolamenti').once('value');
-            const dataReg = regSnapshot.val();
-            const tuttiIFormati = [];
-            if (dataReg) {
-                Object.keys(dataReg).forEach(key => {
-                    tuttiIFormati.push(dataReg[key].categoria || key);
-                });
-            }
+            const dataReg = regSnapshot.val() || {};
+            const tuttiIFormati = Object.keys(dataReg).filter(k => !FormatoRandom.eRandom(dataReg[k])).map(k => ({ nome: dataReg[k].categoria || k, struttura: dataReg[k].strutturaSito || 'custom' }));
             if (tuttiIFormati.length < numFormatiTarget) {
                 return alert("Insufficient formats in the database!");
             }
-            for (let i = tuttiIFormati.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [tuttiIFormati[i], tuttiIFormati[j]] = [tuttiIFormati[j], tuttiIFormati[i]];
-            }
-            formatiFinali = tuttiIFormati.slice(0, numFormatiTarget);
+            formatiFinali = TipoStagione.estraiFormati(tuttiIFormati, numFormatiTarget);
         }
 
         const snapSeasons = await db.ref('seasons').once('value');
