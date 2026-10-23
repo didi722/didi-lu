@@ -86,6 +86,8 @@
                         stagione, sdId, sd: `${stagione}/${sdId}`,
                         numero: parseInt(String(chiave).replace(/\D/g, ''), 10) || 0,
                         data: String(m.data || info.data || ''),
+                        // quando è stato giocato lo showdown (ultimo match salvato): tra showdown dello stesso giorno, prima quello giocato prima
+                        quando: Object.values(sd?.matches || {}).reduce((max, mm) => Math.max(max, Date.parse(mm?.lastEdit) || 0), 0),
                         categoria: String(m.categoria || info.categoria || ''),
                         p1, p2,
                         nome1: m.player1 || p1, nome2: m.player2 || p2,
@@ -104,7 +106,8 @@
         // ordine cronologico (per le serie e per l'Elo)
         return out
             .map((p, i) => ({ p, i }))
-            .sort((x, y) => x.p.data.localeCompare(y.p.data) || x.p.numero - y.p.numero || x.i - y.i)
+            .sort((x, y) => x.p.data.localeCompare(y.p.data) || x.p.quando - y.p.quando
+                || x.p.sd.localeCompare(y.p.sd, undefined, { numeric: true }) || x.p.numero - y.p.numero || x.i - y.i)
             .map(x => x.p);
     }
 
