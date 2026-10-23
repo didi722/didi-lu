@@ -445,3 +445,14 @@ test('azioni: le scelte dei set si sommano per giocatore, i set senza azioni (pi
     assert.equal(senza.azioni.decisioni, 0);
     assert.doesNotThrow(() => JSON.stringify(r));
 });
+
+test('classificato: con meno di 3 showdown (come nel profilo) l\'allenatore è unranked, dal terzo in poi no', () => {
+    const conSd = n => {
+        const copia = JSON.parse(JSON.stringify(dati));
+        copia.players.didi.stats['individual-stats'].showdownsPlayed = n;
+        return trova(calcola(copia).players, p => p.id === 'didi');
+    };
+    assert.equal(conSd(2).classificato, false);
+    assert.equal(conSd(3).classificato, true);
+    assert.equal(require('../docs/statistiche.js').MIN_SD_CLASSIFICA, 3);
+});

@@ -82,17 +82,18 @@
                 const g = chiave ? giocatori[chiave] : null;
                 if (!g) continue;
                 const info = g.info || {}, individuali = (g.stats && g.stats['individual-stats']) || {};
-                let posizione = '';
+                let posizione = '', unranked = false;
                 if (PaginaPubblica && typeof PaginaPubblica.riepilogoStat === 'function') {
                     // "#3" se è in classifica (almeno tre showdown giocati), altrimenti niente: come nella sua scheda
                     const r = PaginaPubblica.riepilogoStat(chiave, giocatori).rank;
                     posizione = r && /^#\d+$/.test(r.grande) ? r.grande : '';
+                    unranked = !!r && r.grande === 'N/A';
                 }
                 const lista = BadgeAllenatore ? BadgeAllenatore.calcola(risultato, chiave) : null;
                 out[lato] = {
                     id: chiave, nome: info.name || chiave, colore: info.color || '',
                     titolo: titoloVisibile(info, PaginaPubblica),
-                    elo: Number(individuali.ranking) || 1000,
+                    elo: unranked ? 'N/A' : Number(individuali.ranking) || 1000,
                     posizione,
                     medaglie: medaglieAllenatore({ id: chiave, statsBadge: g.stats && g.stats.badges, lista }, d)
                 };

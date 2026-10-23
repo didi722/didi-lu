@@ -18,6 +18,8 @@
     const pct = n => (n == null ? '—' : `${fmt(n, Number.isInteger(n) ? 0 : 1)}%`);
     const segno = n => (n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '0');
     const ND = '<span class="nd">—</span>';
+    // allenatore con meno di 3 showdown (Statistiche.MIN_SD_CLASSIFICA): niente Elo
+    const NA = '<span class="nd">N/A</span>';
     const numero = (n, f = fmt) => (n == null ? ND : f(n));
 
     const PASSO = 36;                       // card mostrate per volta
@@ -156,10 +158,10 @@
     // -----------------------------------------------------
     const STAT = {
         players: () => [
-            { id: 'elo', titolo: 'Elo', val: p => p.elo, dir: -1,
-                tip: STATO.stagione === 'all' ? "The trainer's ranking" : 'Rating at the end of the season (change below)',
-                html: p => numero(p.elo),
-                sotto: p => (STATO.stagione === 'all' || !p.eloDelta ? '' : `<small class="sub ${p.eloDelta >= 0 ? 'v' : 'p'}">${segno(p.eloDelta)}</small>`) },
+            { id: 'elo', titolo: 'Elo', val: p => (p.classificato ? p.elo : null), dir: -1,
+                tip: (STATO.stagione === 'all' ? "The trainer's ranking" : 'Rating at the end of the season (change below)') + '. N/A until 3 showdowns are played',
+                html: p => (p.classificato ? numero(p.elo) : NA),
+                sotto: p => (!p.classificato || STATO.stagione === 'all' || !p.eloDelta ? '' : `<small class="sub ${p.eloDelta >= 0 ? 'v' : 'p'}">${segno(p.eloDelta)}</small>`) },
             { id: 'punti', titolo: 'Points', val: p => p.punti, dir: -1, tip: 'Match points + 1 for every showdown won',
                 html: p => numero(p.punti) },
             { id: 'stagioni', titolo: 'Seasons won', val: p => p.stagioniVinte * 1000 + p.stagioniGiocate, dir: -1, tip: 'Seasons won / seasons played',
@@ -598,8 +600,8 @@
         const formato = p.preferiti.formato;
         return `${testaScheda(p.nome, avatar(p, 'scheda-avatar'), chipStagione() + chipVinte(p.stagioniVinte), premiPlayer(p))}
             ${sezione('Ranking', griglia([
-                tessera(STATO.stagione === 'all' ? 'Elo' : 'Elo (end of season)', fmt(p.elo), STATO.stagione === 'all' || !p.eloDelta ? '' : `${segno(p.eloDelta)} in the season`),
-                tessera('Peak Elo', p.eloPicco == null ? '—' : fmt(p.eloPicco)),
+                tessera(STATO.stagione === 'all' ? 'Elo' : 'Elo (end of season)', p.classificato ? fmt(p.elo) : NA, !p.classificato || STATO.stagione === 'all' || !p.eloDelta ? '' : `${segno(p.eloDelta)} in the season`),
+                tessera('Peak Elo', p.eloPicco == null ? '—' : p.classificato ? fmt(p.eloPicco) : NA, p.classificato ? '' : 'needs 3 showdowns'),
                 tessera('Points', fmt(p.punti)),
                 tessera('Seasons', `${fmt(p.stagioniVinte)} <small>won of ${fmt(p.stagioniGiocate)}</small>`)
             ]))}

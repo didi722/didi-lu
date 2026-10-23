@@ -31,6 +31,7 @@
 
     const BETA = 'sbeta';
     const ELO_INIZIALE = 1000;
+    const MIN_SD_CLASSIFICA = 3;     // con meno showdown giocati un allenatore è unranked: l'Elo si mostra come N/A
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const idSpecie = t => String(t == null ? '' : t).toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -429,6 +430,7 @@
             const picco = g.eloDopo.length ? Math.max(...g.eloDopo) : null;
             const eloStagione = g.eloDopo.length ? g.eloDopo[g.eloDopo.length - 1] : null;
             const dbElo = players[g.id]?.stats?.['individual-stats']?.ranking;
+            const dbSd = players[g.id]?.stats?.['individual-stats']?.showdownsPlayed;
             // globali: il ranking salvato (lo stesso della pagina Trainers); per stagione: Elo a fine stagione
             const elo = stagioneScelta === 'all'
                 ? (dbElo != null ? num(dbElo) : ELO_INIZIALE + g.delta)
@@ -440,6 +442,8 @@
                 colore: info(g.id).color || '',
                 avatar: info(g.id).avatar || '',
                 elo, eloDelta: g.delta, eloPicco: picco,
+                // come la pagina pubblica: globali = showdown contati nel profilo, per stagione = quelli giocati nella stagione
+                classificato: (stagioneScelta === 'all' && dbSd != null ? num(dbSd) : g.showdown.giocati) >= MIN_SD_CLASSIFICA,
                 punti: g.punti,
                 stagioniGiocate: g.stagioni.size,
                 stagioniVinte: g.stagioniVinte.size,
@@ -543,5 +547,5 @@
         };
     }
 
-    return { calcola, idSpecie, BETA };
+    return { calcola, idSpecie, BETA, MIN_SD_CLASSIFICA };
 });
