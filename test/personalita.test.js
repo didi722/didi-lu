@@ -150,3 +150,12 @@ test('ogni famiglia ha la sua icona PNG (con l\'emoji come riserva) e il file es
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', f.immagine)), `${f.id}: manca ${f.immagine}`);
     }
 });
+
+test('le frasi spiegano il tipo: per chi è Aggressor parlano dell\'attacco, non degli assi in cui è sotto la media', () => {
+    const aggressivo = allenatore('g', 40, { attacco: 0.82, protezione: 0.05, recupero: 0.01, cambi: 0.03, potenziamento: 0, campo: 0.01, supporto: 0.01, disturbo: 0.01 });
+    const r = P.calcola(lega(aggressivo), 'g');
+    assert.equal(r.tipo.id, 'offensiva');
+    assert.equal(r.frasi.length, 1);
+    assert.match(r.frasi[0], /^Attack: /);
+    assert.match(r.frasi[0], /\(\+\d+%\)/);
+});
