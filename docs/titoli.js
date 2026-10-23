@@ -12,22 +12,22 @@
 // ogni set e per ogni tipo), "won" i set vinti con almeno uno di quel tipo in campo (due Pokémon dello
 // stesso tipo sono 2 presenze ma 1 vittoria), "ko" i KO fatti da quei Pokémon.
 //
-// SOGLIE. Si ragiona su una stagione tipica: 8 giocatori, 2 formati, 1 showdown per formato contro
-// ciascun avversario = 14 showdown da 3 match, al meglio dei 3 set (~2,5 set a match) = circa 105 set
-// a testa. In doppio ne scendono in campo 3 a set: ~315 presenze di Pokémon, e con 1,6 tipi a Pokémon ~500
-// presenze di tipo, cioè ~28 per tipo se fossero ripartite in parti uguali (45 per i tipi più usati).
-//   - chi gioca ogni set con un Pokémon di quel tipo (o della stessa specie): ~80-100 presenze, ~40 set vinti,
-//     ~50 KO a stagione;
-//   - un monotipo: ~300 presenze a stagione, ma sempre ~50 vittorie (si vince un set una volta sola).
-//   TIPI      base              30 presenze                    (un terzo di stagione con il tipo in squadra)
-//             Gym Leader      120 presenze + 40 vittorie       (una stagione di impegno)
-//             Elite Four      400 presenze + 140 vittorie + 180 KO
-//                              (circa 3 stagioni e mezza con un Pokémon fisso di quel tipo; un monotipo
-//                               ci mette comunque quasi 3 stagioni per le vittorie: a una stagione sola
-//                               non ci arriva nessuno)
-//   POKÉMON   Fan               25 presenze
-//             Specialist        80 presenze + 30 vittorie       (un Pokémon fisso per una stagione)
-//             Master           200 presenze + 80 vittorie + 100 KO   (due stagioni e mezza)
+// SOGLIE. Si ragiona su una stagione tipica: 5 giocatori, 3 formati, 1 showdown per formato contro ciascun avversario = 12 showdown a
+// testa, 36 match, 108 set (al meglio dei 3 set: si giocano sempre tutti). Ogni set scendono in campo circa 4 Pokémon, quindi ~420 presenze
+// di Pokémon a testa a stagione. Un team gioca un solo formato: 4 showdown, 12 match, 36 set a stagione.
+//   - un Pokémon fisso in un team di un formato: al massimo 36 presenze a stagione; il Pokémon più usato (in due formati, nel 65% dei set)
+//     fa ~70 presenze, ~50 set vinti e ~70 KO a stagione;
+//   - un tipo: un monotipo in un solo formato fa 4 presenze per set, quindi al massimo 144 a stagione (con ~25 set vinti se va molto bene);
+//     chi ha un solo Pokémon di quel tipo in tutti i formati ne fa ~100.
+// Il primo livello (bronzo / titolo base) si prende dopo UNA STAGIONE GIOCATA MOLTO BENE, il secondo dopo qualche stagione, l'ultimo dopo
+// molte: il gioco è fatto per durare tante stagioni, non per avere tutti i livelli in due o tre.
+//   TIPI      base            120 presenze + 25 vittorie     (un monotipo che gioca bene tutta la stagione; gli altri ci mettono di più)
+//             Gym Leader      500 presenze + 110 vittorie    (circa quattro stagioni)
+//             Elite Four     1300 presenze + 300 vittorie + 700 KO   (una decina di stagioni)
+//   POKÉMON   Fan              75 presenze + 35 vittorie     (il Pokémon più usato, per una stagione)
+//             Specialist      220 presenze + 110 vittorie    (circa tre stagioni)
+//             Master          550 presenze + 280 vittorie + 450 KO   (circa otto stagioni)
+//   SERIE     le soglie di Win / Clean / SD Streak (più sotto) vengono da una simulazione di una lega di 5 giocatori
 // Se la stagione tipica cambia, si cambia solo qui.
 //
 // Funziona nel browser (window.Titoli) e in Node (require).
@@ -67,14 +67,14 @@
 
     // Scaglioni: ognuno chiede presenze (played), vittorie (won) e KO (ko); 0 = non richiesto
     const LIVELLI_TIPO = [
-        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 50,  won: 0,   ko: 0 },
-        { chip: () => 'Gym Leader', nome: t => `${maiuscola(t)} Gym Leader`, played: 120, won: 40,  ko: 0 },
-        { chip: () => 'Elite Four', nome: t => `${maiuscola(t)} Elite Four`, played: 400, won: 140, ko: 180 }
+        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 120, won: 25,  ko: 0 },
+        { chip: () => 'Gym Leader', nome: t => `${maiuscola(t)} Gym Leader`, played: 500, won: 110, ko: 0 },
+        { chip: () => 'Elite Four', nome: t => `${maiuscola(t)} Elite Four`, played: 1300, won: 300, ko: 700 }
     ];
     const LIVELLI_POKEMON = [
-        { chip: () => 'Fan',        nome: s => `${s} Fan`,        played: 25,  won: 0,  ko: 0 },
-        { chip: () => 'Specialist', nome: s => `${s} Specialist`, played: 80,  won: 30, ko: 0 },
-        { chip: () => 'Master',     nome: s => `${s} Master`,     played: 200, won: 80, ko: 100 }
+        { chip: () => 'Fan',        nome: s => `${s} Fan`,        played: 75,  won: 35,  ko: 0 },
+        { chip: () => 'Specialist', nome: s => `${s} Specialist`, played: 220, won: 110, ko: 0 },
+        { chip: () => 'Master',     nome: s => `${s} Master`,     played: 550, won: 280, ko: 450 }
     ];
 
     const COMPONENTI = ['played', 'won', 'ko'];
@@ -187,22 +187,24 @@
     //     per questo il badge SD Streak restava a zero per tutti. Ora si leggono entrambi;
     //   - steps: i match (o gli showdown) di fila per bronzo, argento, oro. Sono ricalcolati sui numeri di una stagione tipica (14 showdown da
     //     3 match, 42 match a testa): una simulazione dà per ognuno quante stagioni servono a un giocatore da 50, 60, 70, 80 % di match vinti.
-    //     Win Streak 7 / 10 / 15, Clean Streak 4 / 6 / 8, SD Streak 5 / 7 / 10: il bronzo dopo una stagione o due per un buon giocatore, l'oro
-    //     dopo anni (o per un giocatore dominante). Prima erano 5 / 7 / 10, 3 / 5 / 7 e 3 / 5 / 7: il bronzo veniva quasi a tutti nella prima stagione.
+    //     Win Streak 10 / 16 / 24, Clean Streak 5 / 7 / 9, SD Streak 8 / 14 / 22. Lega di 5 giocatori, una stagione = 36 match e 12 showdown a
+    //     testa: il bronzo lo prende in una stagione solo chi domina (un giocatore molto forte, +150 Elo sugli altri, lo prende 1 volta su 2 per la
+    //     Win Streak e 1 su 4 per la Clean Streak; uno solo buono quasi mai); l'argento dopo alcune stagioni, l'oro dopo anni e solo se si domina.
+    //     Prima erano 7 / 10 / 15, 4 / 6 / 8 e 5 / 7 / 10: il bronzo veniva quasi a tutti nella prima stagione.
     // -----------------------------------------------------
     const LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
     const IMMAGINE_FONDATORE = 'immagini/badge-allenatore-founder.png';
     const immagineSerie = (b, livello) => `immagini/badge-allenatore-${b.file}-${livello}.png`;
     const BADGE = [
-        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [4, 6, 8],
+        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [5, 7, 9],
           testo: 'Win matches without dropping a single set, back to back.',
           descrizione: n => `${n} matches won without losing a set, in a row`,
           maxKeys: ['maxcleanstrike'], curKeys: ['cleanstrike'], dateKeys: ['maxcleanstrikedate'] },
-        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [7, 10, 15],
+        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [10, 16, 24],
           testo: 'Win matches back to back.',
           descrizione: n => `${n} matches won in a row`,
           maxKeys: ['maxwonstrike'], curKeys: ['wonstrike'], dateKeys: ['maxwonstrikedate'] },
-        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [5, 7, 10],
+        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [8, 14, 22],
           testo: 'Win showdowns back to back.',
           descrizione: n => `${n} showdowns won in a row`,
           maxKeys: ['maxshowdownstrike', 'maxsdstrike'], curKeys: ['showdownstrike', 'sdstrike'],
