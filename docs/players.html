@@ -276,11 +276,14 @@ async function initTrainersPage() {
             // si calcolano sui dati di tutta la lega (una sola lettura per pagina). Se non si riesce restano le serie e il contatore del profilo.
             let badgeAllenatoreHTML = '';
             let calcolate = null;
+            let serieBadges = statsBadges;
             try {
                 if (window.BadgeAllenatore && window.Fiocchi) {
                     const r = await BadgeAllenatore.carica(db, key);
                     badgeAllenatoreHTML = BadgeAllenatore.htmlMini(r.lista, 99);       // TUTTI quelli guadagnati
                     if (r.dati) calcolate = r.stagioniVinte;
+                    // le serie (Clean, Win, SD Streak) si leggono dai match veri, non dai numeri salvati dalle funzioni (titoli.js: serieAggiornate)
+                    if (r.risultato) serieBadges = Titoli.serieAggiornate(statsBadges, r.risultato, key);
                 }
             } catch (e) { console.warn('Trainer badges not available:', e); }
 
@@ -299,7 +302,7 @@ async function initTrainersPage() {
                 classificato: Number(indStats.showdownsPlayed || 0) >= Statistiche.MIN_SD_CLASSIFICA,   // meno showdown: unranked, N/A
                 trophiesWon: trophiesWon,
                 trofei: infoStagioni ? TipoStagione.raggruppa(TipoStagione.trofei(infoStagioni, key)) : [],
-                badgesHTML: generaHTMLBadge(statsBadges, key) + badgeAllenatoreHTML
+                badgesHTML: generaHTMLBadge(serieBadges, key) + badgeAllenatoreHTML
             });
         }
 

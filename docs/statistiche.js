@@ -106,10 +106,11 @@
                 }
             }
         }
-        // ordine cronologico (per le serie e per l'Elo)
+        // ordine cronologico (per le serie e per l'Elo); le date si confrontano come AAAA-MM-GG anche se salvate come GG/MM/AAAA
+        const giorno = d => { const m = /^(\d{1,2})[/.](\d{1,2})[/.](\d{4})/.exec(d); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : d; };
         return out
             .map((p, i) => ({ p, i }))
-            .sort((x, y) => x.p.data.localeCompare(y.p.data) || x.p.quando - y.p.quando
+            .sort((x, y) => giorno(x.p.data).localeCompare(giorno(y.p.data)) || x.p.quando - y.p.quando
                 || x.p.sd.localeCompare(y.p.sd, undefined, { numeric: true }) || x.p.numero - y.p.numero || x.i - y.i)
             .map(x => x.p);
     }
@@ -193,19 +194,20 @@
             .sort((a, b) => a.n - b.n);
     }
 
-    // Le serie di un giocatore o di un team, dai suoi match in ordine di data [{ vinto, setP }]:
-    // vittorieMax/vittorieAttuale = match vinti di fila; cleanSweep = match vinti senza perdere set; pulitaMax = quelli di fila
+    // Le serie di un giocatore o di un team, dai suoi match in ordine di data [{ vinto, setP, data? }]:
+    // vittorieMax/vittorieAttuale = match vinti di fila; cleanSweep = match vinti senza perdere set; pulitaMax = quelli di fila.
+    // vittorieMaxData / pulitaMaxData: il giorno del match che ha portato la serie al suo record (vuoto se i match non hanno la data).
     function serieDi(elenco) {
-        const serie = { vittorieMax: 0, vittorieAttuale: 0, cleanSweep: 0, pulitaMax: 0, pulitaAttuale: 0 };
+        const serie = { vittorieMax: 0, vittorieAttuale: 0, vittorieMaxData: '', cleanSweep: 0, pulitaMax: 0, pulitaAttuale: 0, pulitaMaxData: '' };
         let corrente = 0, pulita = 0;
         for (const m of elenco) {
             if (m.vinto) {
                 corrente++;
-                serie.vittorieMax = Math.max(serie.vittorieMax, corrente);
+                if (corrente > serie.vittorieMax) { serie.vittorieMax = corrente; serie.vittorieMaxData = m.data || ''; }
                 if (m.setP === 0) {
                     serie.cleanSweep++;
                     pulita++;
-                    serie.pulitaMax = Math.max(serie.pulitaMax, pulita);
+                    if (pulita > serie.pulitaMax) { serie.pulitaMax = pulita; serie.pulitaMaxData = m.data || ''; }
                 } else pulita = 0;
             } else { corrente = 0; pulita = 0; }
         }
@@ -263,7 +265,8 @@
         const giocatore = id => (giocatori[id] ||= {
             id, ...nuovoRisultati(), azioni: vuotoAzioni(),
             stagioni: new Set(), stagioniVinte: new Set(),
-            formati: {}, teams: {}, elenco: [], eloDopo: [], delta: 0
+            formati: {}, teams: {}, elenco: [], eloDopo: [], delta: 0,
+            sdAttuale: 0, sdMax: 0, sdMaxData: ''   // showdown vinti di fila (solo quelli decisi), come per i team
         });
         const info = id => players[id]?.info || {};
         const rosterDi = (id, nomeTeam) => {
@@ -329,14 +332,14 @@
                 g.formati[p.categoria] ||= { n: 0, vinti: 0 };
                 g.formati[p.categoria].n++;
                 if (vinto) g.formati[p.categoria].vinti++;
-                g.elenco.push({ vinto, setV, setP });
+                g.elenco.push({ vinto, setV, setP, data: p.data });
                 const eloPrima = mio ? p.elo1 : p.elo2, delta = mio ? p.delta1 : p.delta2;
                 g.delta += delta;
                 if (eloPrima != null) g.eloDopo.push(eloPrima + delta);
 
                 // showdown di questo giocatore
                 const k = `${io}|${p.sd}`;
-                const sdp = (sdDelPlayer[k] ||= { io, sd: p.sd, deciso: !!p.vincitoreSd, vinto: p.vincitoreSd === io, teams: new Set(), stagione: p.stagione });
+                const sdp = (sdDelPlayer[k] ||= { io, sd: p.sd, data: p.data, deciso: !!p.vincitoreSd, vinto: p.vincitoreSd === io, teams: new Set(), stagione: p.stagione });
                 if (nomeTeam) sdp.teams.add(nomeTeam);
 
                 // team
@@ -403,7 +406,11 @@
             const g = giocatore(s.io);
             g.showdown.giocati++;
             if (s.deciso) {
-                if (s.vinto) { g.showdown.vinti++; g.punti += 1; } else g.showdown.persi++;
+                if (s.vinto) {
+                    g.showdown.vinti++; g.punti += 1;
+                    g.sdAttuale++;
+                    if (g.sdAttuale > g.sdMax) { g.sdMax = g.sdAttuale; g.sdMaxData = s.data || ''; }
+                } else { g.showdown.persi++; g.sdAttuale = 0; }
             }
             for (const nome of s.teams) {
                 const t = squadra(s.io, nome, '');
@@ -441,7 +448,7 @@
             const elo = stagioneScelta === 'all'
                 ? (dbElo != null ? num(dbElo) : ELO_INIZIALE + g.delta)
                 : (eloStagione != null ? eloStagione : ELO_INIZIALE);
-            const serie = serieDi(g.elenco);
+            const serie = { ...serieDi(g.elenco), showdownMax: g.sdMax, showdownAttuale: g.sdAttuale, showdownMaxData: g.sdMaxData };
             return {
                 id: g.id,
                 nome: info(g.id).name || g.id,

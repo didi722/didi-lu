@@ -48,8 +48,10 @@ test('profile.html: la personalità si disegna con nodi (DOM e SVG), mai con HTM
 });
 
 test('profile.html: i badge dell\'allenatore stanno nella colonna Badges degli Achievements e aggiornano il conteggio', () => {
-    assert.match(profilo, /async function aggiungiBadgeAllenatore\(overlay, lista, summary\)/);
-    assert.match(profilo, /renderBadgeAchievements\(stats\.badges \|\| \{\}, badgeList, badgeSummary\);\s*aggiungiBadgeAllenatore\(overlay, badgeList, badgeSummary\);/);
+    assert.match(profilo, /async function aggiungiBadgeAllenatore\(overlay, lista, summary, badgeSalvati = \{\}\)/);
+    // le serie si disegnano con i numeri calcolati sui match veri (Titoli.serieAggiornate), non con quelli salvati dalle funzioni
+    assert.match(profilo, /renderBadgeAchievements\(stats\.badges \|\| \{\}, badgeList, badgeSummary, \{ disegna: false \}\);\s*aggiungiBadgeAllenatore\(overlay, badgeList, badgeSummary, stats\.badges \|\| \{\}\);/);
+    assert.match(profilo, /Titoli\.serieAggiornate\(badgeSalvati, esito\.risultato, playerID\)/);
     assert.match(profilo, /BadgeAllenatore\.carica\(db, playerID\)/);
     assert.match(profilo, /badge levels unlocked/);
 });

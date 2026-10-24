@@ -95,7 +95,8 @@
                     titolo: titoloVisibile(info, PaginaPubblica),
                     elo: unranked ? 'N/A' : Number(individuali.ranking) || 1000,
                     posizione,
-                    medaglie: medaglieAllenatore({ id: chiave, statsBadge: g.stats && g.stats.badges, lista }, d)
+                    // le serie (Clean, Win, SD Streak) dai match veri, non dai numeri salvati dalle funzioni (Titoli.serieAggiornate)
+                    medaglie: medaglieAllenatore({ id: chiave, statsBadge: d.Titoli ? d.Titoli.serieAggiornate(g.stats && g.stats.badges, risultato, chiave) : (g.stats && g.stats.badges), lista }, d)
                 };
             }
             return out;

@@ -124,7 +124,7 @@ test('collezionista: le specie diverse portate in campo (non i team, non le comp
     const lista = BA.calcola(risultato(giocatore(), pokemon), 'didi');
     assert.equal(per(lista, 'collector').valore, 2, 'garchomp (due volte) e gengar; kyurem non è mai sceso; zapdos è di Lu');
     assert.equal(per(lista, 'collector').livello, 0);
-    // i livelli alle soglie del catalogo (80 / 160 / 260 specie): un attimo prima non basta, alla soglia sì
+    // i livelli alle soglie del catalogo (80 / 160 / 280 / 450 specie): un attimo prima non basta, alla soglia sì
     const soglie = BA.CATALOGO.find(b => b.id === 'collector').soglie;
     const livelloCon = n => per(BA.calcola(risultato(giocatore(), Array.from({ length: n }, (_, i) => mostro('specie' + i, 1))), 'didi'), 'collector').livello;
     assert.deepEqual([soglie[0] - 1, soglie[0], soglie[1] - 1, soglie[1], soglie[2]].map(livelloCon), [0, 1, 1, 2, 3]);

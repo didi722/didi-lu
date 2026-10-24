@@ -207,6 +207,41 @@
     ];
     const interoDi = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 
+    // -----------------------------------------------------
+    // Le serie dai match veri, non dai numeri salvati
+    //   I numeri salvati in players/<id>/stats/badges li riscrive la Cloud Function a ogni match salvato online: finché le funzioni pubblicate
+    //   sono quelle vecchie (che ordinavano i match di un giorno senza distinguere gli showdown, e contavano anche le cup) il risultato può essere
+    //   sbagliato, e un badge compare senza che la serie ci sia mai stata. Statistiche.calcola le ricava ogni volta dai match, in ordine vero,
+    //   senza cup né beta: i sei numeri delle tre serie, nella forma di quelli salvati, si leggono da lì (con i salvati solo come ripiego).
+    // -----------------------------------------------------
+    /** { maxwonstrike, wonstrike, ... } dalla scheda di un allenatore di Statistiche.calcola(...).players (null se non ha le serie). */
+    function serieDaStatistiche(giocatore) {
+        const s = giocatore && giocatore.serie;
+        if (!s) return null;
+        const n = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+        return {
+            maxwonstrike: n(s.vittorieMax), wonstrike: n(s.vittorieAttuale), maxwonstrikedate: s.vittorieMaxData || '',
+            maxcleanstrike: n(s.pulitaMax), cleanstrike: n(s.pulitaAttuale), maxcleanstrikedate: s.pulitaMaxData || '',
+            maxshowdownstrike: n(s.showdownMax), showdownstrike: n(s.showdownAttuale), maxshowdownstrikedate: s.showdownMaxData || '',
+            // i vecchi nomi dello showdown non devono più vincere sui numeri veri (statoSerie prende il più alto dei due)
+            maxsdstrike: null, sdstrike: null, maxsdstrikedate: null, sdwonstrikedate: null
+        };
+    }
+
+    /**
+     * I numeri delle serie di un allenatore: quelli veri, calcolati da `risultato` (Statistiche.calcola(dati, { stagione: 'all' })), al posto dei salvati.
+     * Se l'allenatore non ha match che fanno statistica le serie sono a zero; senza `risultato` (lettura fallita) restano i numeri salvati.
+     * Il resto di `statsSalvati` (la data di altri badge, i contatori) non si tocca.
+     */
+    function serieAggiornate(statsSalvati, risultato, idGiocatore) {
+        const salvati = statsSalvati && typeof statsSalvati === 'object' ? statsSalvati : {};
+        if (!risultato || !Array.isArray(risultato.players)) return salvati;
+        const id = idDi(idGiocatore);
+        const g = risultato.players.find(p => idDi(p && p.id) === id);
+        const vere = serieDaStatistiche(g) || serieDaStatistiche({ serie: {} });
+        return { ...salvati, ...vere };
+    }
+
     /**
      * Lo stato di una serie dai numeri salvati del giocatore (`players/<id>/stats/badges`).
      * @returns {{ record, attuale, data, livello (0-4), completo, obiettivo (il prossimo traguardo, o l'ultimo se completo), progresso (0-1:
@@ -264,6 +299,6 @@
     return {
         TIPI, LIVELLI_TIPO, LIVELLI_POKEMON, MAX_POKEMON_ACHIEVEMENTS,
         livello, progresso, titoliSbloccati, descriviTitolo, pokemonPiuVicini, normalizzaTipi,
-        LIVELLI_BADGE, BADGE, IMMAGINE_FONDATORE, IMMAGINI, immagineSerie, statoSerie, badgeSbloccati, formattaData, maiuscola, idDi
+        LIVELLI_BADGE, BADGE, IMMAGINE_FONDATORE, IMMAGINI, immagineSerie, statoSerie, badgeSbloccati, serieDaStatistiche, serieAggiornate, formattaData, maiuscola, idDi
     };
 });

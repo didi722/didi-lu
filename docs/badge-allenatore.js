@@ -73,7 +73,7 @@
         { id: 'elopeak', nome: 'Elo Peak', icona: '📊', unita: 'peak Elo', soglie: [1120, 1170, 1225, 1260], partenza: 1000,
           descrizione: 'The highest Elo you have ever reached.',
           valore: c => num(c.g.eloPicco), immagini: perLivelli('badge-allenatore-elopeak-{l}.png') },
-        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [40, 90, 160, 260],
+        { id: 'collector', nome: 'Collector', icona: '🔎', unita: 'different Pokémon used', soglie: [80, 160, 280, 450],
           descrizione: 'Different Pokémon species you have brought into battle.',
           valore: c => num(c.specie), immagini: perLivelli('badge-allenatore-collector-{l}.png') }
     ];

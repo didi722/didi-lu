@@ -92,7 +92,10 @@ test('carica: titolo, ELO, posizione e medaglie di tutti e due; la CPU (senza id
     assert.equal(r.p1.titolo, 'Ghost Gym Leader');
     assert.equal(r.p1.elo, 1210);
     assert.equal(r.p1.posizione, '#1');
-    assert.ok(r.p1.medaglie.length >= 4);
+    // le serie vengono dai match veri (sei match vinti 2-0 di fila: 6 puliti = oro per la Clean Streak), non dai numeri salvati nel profilo
+    // (7 puliti, 10 vittorie, 8 showdown: sbagliati di proposito)
+    assert.deepEqual(r.p1.medaglie.filter(m => ['clean', 'won', 'sd'].includes(m.id)).map(m => `${m.id}:${m.livello}`), ['clean:gold']);
+    assert.deepEqual(r.p1.medaglie.slice(0, 2).map(m => m.id), ['founder', 'clean'], 'il fondatore per primo, poi la più alta');
     assert.equal(r.p2.titolo, '', 'Lu ha nascosto il titolo');
     assert.equal(r.p2.elo, 1100);
     assert.equal(r.p2.posizione, '#2');

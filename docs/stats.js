@@ -545,7 +545,10 @@
             </span>`);
         }
 
-        for (const b of Titoli.badgeSbloccati(stats.badges, p.id)) {
+        // le serie (Clean, Win, SD Streak): dai match veri di tutte le stagioni, non dai numeri salvati dalle funzioni
+        if (window.Statistiche) STATO.globale = STATO.globale || Statistiche.calcola(STATO.dati, { stagione: 'all' });
+        const serie = Titoli.serieAggiornate(stats.badges, STATO.globale, p.id);
+        for (const b of Titoli.badgeSbloccati(serie, p.id)) {
             const avanzamento = b.livello === 'founder' ? '' : `<span class="premio-barra-et">${barraPremio(b.pct)}<small>Current: ${fmt(b.attuale)} / ${fmt(b.obiettivo)}</small></span>`;
             pezzi.push(`<span class="premio premio-badge" tabindex="0">
                 <img src="${esc(b.img)}" alt="${esc(b.label)} ${esc(b.livello)}" width="44" height="44">

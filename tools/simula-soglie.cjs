@@ -18,7 +18,9 @@
 //     le frequenze vengono dalla stagione reale (s0): 10% di set vinti senza perdere nessuno, 24% vinti con un solo Pokémon rimasto.
 //   - un team gioca un formato e riappare con il suo nome quando il formato torna (70% delle volte che il giocatore lo gioca di nuovo); 6 Pokémon,
 //     ogni set ne scendono 4 (i 4 titolari quasi sempre, gli altri due poco). I formati non si ripetono per 3 stagioni di fila.
-//   - specie e tipi: un universo di 300 specie con 1 o 2 tipi; ognuno ha uno stile ("casual" o "dedicato": più tipi/specie preferiti).
+//   - specie e tipi: un universo di 700 specie (con le forme) con 1 o 2 tipi; ognuno ha uno stile ("casual" o "dedicato": più tipi/specie preferiti).
+//     Il Collector (specie diverse portate in campo) non dipende dalla forza ma da quanto si varia: nella stagione reale s0 due allenatori hanno già
+//     portato 29 specie diverse con 6 team in 4 showdown, quindi il bronzo a 40 era troppo facile; le soglie (80/160/280/450) puntano a qualche anno di gioco.
 //   - il vincitore di una stagione è chi ha più punti (2 per match vinto, poi set vinti).
 // =====================================================
 const fs = require('fs');
@@ -44,13 +46,13 @@ const SD_RANDOM = [[2, .5], [3, .5]];
 const POOL_FORMATI = 16, NON_RIPETERE = 3, RIUSO_TEAM = 0.7;
 const PESI_CAMPO = [.92, .88, .85, .80, .35, .20];      // chi scende in campo (la somma è 4)
 const KO_PERDENTE = [[0, .10], [1, .25], [2, .41], [3, .24]];   // KO che fa chi perde un set
-const SPECIE = 300;
+const SPECIE = 700;
 const TIPI = 18;
 const CHECK = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32].filter(c => c <= STAGIONI);
 
 const specie = Array.from({ length: SPECIE }, (_, i) => {
     const t1 = Math.floor(rnd() * TIPI); let t2 = rnd() < 0.55 ? Math.floor(rnd() * TIPI) : -1; if (t2 === t1) t2 = -1;
-    return { id: i, tipi: t2 < 0 ? [t1] : [t1, t2], peso: 1 / Math.pow(i + 1, 0.55) };
+    return { id: i, tipi: t2 < 0 ? [t1] : [t1, t2], peso: 1 / Math.pow(i + 1, 0.4) };
 });
 const pesoTot = specie.reduce((s, x) => s + x.peso, 0);
 const sorteggiaSpecie = (esclusi) => { for (;;) { let x = rnd() * pesoTot, i = 0; while (x > specie[i].peso && i < SPECIE - 1) { x -= specie[i].peso; i++; } if (!esclusi.has(i)) return i; } };

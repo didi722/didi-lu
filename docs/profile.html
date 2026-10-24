@@ -1069,8 +1069,12 @@ async function apriModaleAchievements() {
             overlay.querySelector('.ach-modal').style.setProperty('--ach-accent', info.color);
         }
 
-        renderBadgeAchievements(stats.badges || {}, badgeList, badgeSummary);
-        aggiungiBadgeAllenatore(overlay, badgeList, badgeSummary);
+        // le serie si disegnano insieme ai badge dell'allenatore, con i numeri calcolati sui match veri (aggiungiBadgeAllenatore): quelli salvati
+        // dalle funzioni possono essere sbagliati, e per un attimo comparirebbe un badge che non c'è
+        achElenco.catalogo = [];
+        achElenco.nota = '';
+        renderBadgeAchievements(stats.badges || {}, badgeList, badgeSummary, { disegna: false });
+        aggiungiBadgeAllenatore(overlay, badgeList, badgeSummary, stats.badges || {});
         renderTitoliAchievements(stats['team-stats']?.typeusage || {}, info.title || '', titleList, titleSummary);
         renderPokemonAchievements(stats['team-stats']?.pokemonusage || {}, info.title || '', pokemonList, pokemonSummary);
 
@@ -1099,12 +1103,16 @@ function achDisegnaElenco(lista, summary) {
     summary.textContent = `${sbloccati} of ${tutte.length * ACH_LIVELLI_BADGE.length} badge levels unlocked`;
 }
 
-async function aggiungiBadgeAllenatore(overlay, lista, summary) {
-    if (!window.BadgeAllenatore) return;
-    const { lista: badge, dati } = await BadgeAllenatore.carica(db, playerID);
+async function aggiungiBadgeAllenatore(overlay, lista, summary, badgeSalvati = {}) {
+    let esito = null;
+    try { if (window.BadgeAllenatore) esito = await BadgeAllenatore.carica(db, playerID); } catch (e) { console.warn('Trainer badges not available:', e); }
     if (!overlay.classList.contains('open') || !lista.isConnected) return;
-    achElenco.catalogo = badge.map(b => ({ prossima: b.prossima, progresso: b.progresso, livello: b.livello, html: achSchedaBadgeAllenatore(b) }));
-    achElenco.nota = dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>';
+    if (esito) {
+        achElenco.catalogo = esito.lista.map(b => ({ prossima: b.prossima, progresso: b.progresso, livello: b.livello, html: achSchedaBadgeAllenatore(b) }));
+        achElenco.nota = esito.dati ? '' : '<p class="bt-nota">No match data yet: these badges start from zero.</p>';
+        // le serie (Clean, Win, SD Streak) dai match veri, come i badge dell'allenatore: se non si riesce a leggerli restano i numeri salvati
+        if (esito.risultato) renderBadgeAchievements(Titoli.serieAggiornate(badgeSalvati, esito.risultato, playerID), lista, summary, { disegna: false });
+    }
     achDisegnaElenco(lista, summary);
 }
 
@@ -1190,14 +1198,12 @@ function achCartaSerie(b, st) {
         </div>`;
 }
 
-function renderBadgeAchievements(badges, lista, summary) {
-    achElenco.catalogo = [];
-    achElenco.nota = '';
+function renderBadgeAchievements(badges, lista, summary, { disegna = true } = {}) {
     achElenco.serie = ACH_BADGES.map(b => {
         const st = Titoli.statoSerie(badges, b);
         return { prossima: st.completo ? null : st.obiettivo, progresso: st.progresso, livello: st.livello, html: achCartaSerie(b, st) };
     });
-    achDisegnaElenco(lista, summary);
+    if (disegna) achDisegnaElenco(lista, summary);
 }
 
 // Barre di avanzamento di uno scaglione: presenze, vittorie e (solo al terzo scaglione) KO
