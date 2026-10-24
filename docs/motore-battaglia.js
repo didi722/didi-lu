@@ -284,7 +284,7 @@ export class StatoCampo {
             case 'player': if (p[2]) this.nomi[p[1]] = p[2]; break;
             case 'turn': this.turno = parseInt(p[1]); break;
             case 'poke': this.anteprima[p[1]].push(p[2].split(',')[0]); break;
-            case 'switch': case 'drag': case 'replace': {
+            case 'switch': case 'drag': {
                 const { lato, slot } = posizione(p[1]);
                 this.campo[lato][slot] = {
                     nome: p[1].split(': ')[1],
@@ -292,6 +292,22 @@ export class StatoCampo {
                     livello: leggiLivello(p[2]),
                     ...leggiHp(p[3]),
                     dinamax: false
+                };
+                break;
+            }
+            case 'replace': {
+                // Illusione svelata ("|replace|p2a: Zoroark|Zoroark, L50, M"): la riga non porta gli HP, perché il Pokémon è lo stesso che era
+                // già in campo sotto mentite spoglie. Si cambiano nome e specie e si tiene tutto il resto (HP, stato, dinamax): senza gli HP
+                // il Pokémon sembrava a 0 e non si poteva più scegliere come bersaglio.
+                const { lato, slot } = posizione(p[1]);
+                const prima = this.campo[lato][slot] || {};
+                this.campo[lato][slot] = {
+                    ...prima,
+                    nome: p[1].split(': ')[1],
+                    specie: p[2].split(',')[0],
+                    livello: leggiLivello(p[2]),
+                    ...(p[3] ? leggiHp(p[3]) : {}),
+                    dinamax: !!prima.dinamax
                 };
                 break;
             }
