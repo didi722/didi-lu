@@ -16,11 +16,12 @@
 //   stagioniVinteInCampo  stagioni vinte dal suo team in cui è sceso in campo
 //   stagioniInCampo       stagioni giocate dal suo team in cui è sceso in campo
 //
-// Ogni fiocco ha 3 livelli (bronzo, argento, oro) con le sue soglie qui sotto: se la stagione tipica cambia, si
+// Ogni fiocco ha 4 livelli (bronzo, argento, oro, platino) con le sue soglie qui sotto, calibrate con `node tools/simula-soglie.cjs` (il bronzo è una stagione
+// intera da titolare, il platino un Pokémon che dura anni): se la struttura delle stagioni cambia, si
 // cambiano solo i numeri di CATALOGO. Funzione pura, niente DOM e niente Firebase (carica() riceve il db):
 // funziona nel browser (window.Fiocchi) e in Node (test/fiocchi.test.js).
 //
-// Immagini: tutte in docs/immagini/ e tutte col prefisso "ribbon-": ribbon-<id>-<bronze|silver|gold>.png, un file per livello per ogni
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "ribbon-": ribbon-<id>-<bronze|silver|gold|platinum>.png, un file per livello per ogni
 // fiocco. Finché un file non c'è, al suo posto compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file che
 // il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
 // =====================================================
@@ -30,9 +31,9 @@
 })(typeof self !== 'undefined' ? self : this, function (finestra) {
     'use strict';
 
-    const LIVELLI = ['bronze', 'silver', 'gold'];
-    const NOMI_LIVELLO = ['Bronze', 'Silver', 'Gold'];
-    const ROMANI = ['I', 'II', 'III'];
+    const LIVELLI = ['bronze', 'silver', 'gold', 'platinum'];
+    const NOMI_LIVELLO = ['Bronze', 'Silver', 'Gold', 'Platinum'];
+    const ROMANI = ['I', 'II', 'III', 'IV'];
     const CARTELLA = 'immagini/';
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
@@ -42,43 +43,43 @@
         const m = /^(.*\S)\s*\(([^()]+)\)\s*$/.exec(String(nome || '').trim());
         return m ? m[2].trim() : String(nome || '').trim();
     };
-    const tre = base => LIVELLI.map(l => `${CARTELLA}${base.replace('{l}', l)}`);
+    const perLivelli = base => LIVELLI.map(l => `${CARTELLA}${base.replace('{l}', l)}`);
 
     // -----------------------------------------------------
     // Catalogo
-    //   soglie    valori per bronzo, argento, oro
-    //   immagini  3 file, uno per livello (bronzo, argento, oro)
+    //   soglie    valori per bronzo, argento, oro, platino
+    //   immagini  4 file, uno per livello (bronzo, argento, oro, platino)
     //   minimo    se presente, sotto questo numero di set in campo il valore non conta ancora (serve per le percentuali)
     // -----------------------------------------------------
     const CATALOGO = [
-        { id: 'regular', nome: 'Regular', icona: '🎖️', unita: 'sets fielded', soglie: [60, 150, 350],
+        { id: 'regular', nome: 'Regular', icona: '🎖️', unita: 'sets fielded', soglie: [75, 150, 230, 350],
           descrizione: 'Sent out in a set.',
-          valore: p => num(p.portato), immagini: tre('ribbon-regular-{l}.png') },
-        { id: 'ko', nome: 'Knockout', icona: '💥', unita: 'KOs', soglie: [60, 150, 350],
+          valore: p => num(p.portato), immagini: perLivelli('ribbon-regular-{l}.png') },
+        { id: 'ko', nome: 'Knockout', icona: '💥', unita: 'KOs', soglie: [65, 120, 185, 280],
           descrizione: 'Opposing Pokémon knocked out (direct and indirect).',
-          valore: p => num(p.koFatti), immagini: tre('ribbon-ko-{l}.png') },
-        { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'sets won', soglie: [30, 80, 180],
+          valore: p => num(p.koFatti), immagini: perLivelli('ribbon-ko-{l}.png') },
+        { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'sets won', soglie: [50, 85, 130, 200],
           descrizione: 'Sets won while on the field.',
-          valore: p => num(p.setPortatoVinti), immagini: tre('ribbon-winner-{l}.png') },
-        { id: 'laststand', nome: 'Last Stand', icona: '🛡️', unita: 'last-standing wins', soglie: [6, 12, 20],
+          valore: p => num(p.setPortatoVinti), immagini: perLivelli('ribbon-winner-{l}.png') },
+        { id: 'laststand', nome: 'Last Stand', icona: '🛡️', unita: 'last-standing wins', soglie: [6, 9, 13, 18],
           descrizione: 'Sets won as the very last Pokémon standing.',
-          valore: p => num(p.ultimoVinto), immagini: tre('ribbon-laststand-{l}.png') },
-        { id: 'survivor', nome: 'Survivor', icona: '❤️', unita: '% survival', soglie: [60, 70, 80],
+          valore: p => num(p.ultimoVinto), immagini: perLivelli('ribbon-laststand-{l}.png') },
+        { id: 'survivor', nome: 'Survivor', icona: '❤️', unita: '% survival', soglie: [38, 42, 46, 50],
           descrizione: 'Share of sets on the field without fainting.',
-          valore: p => num(p.sopravvivenza), minimo: { campo: 'portato', valore: 40, etichetta: 'sets fielded' },
-          immagini: tre('ribbon-survivor-{l}.png') },
-        { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [8, 12, 17],
+          valore: p => num(p.sopravvivenza), minimo: { campo: 'portato', valore: 60, etichetta: 'sets fielded' },
+          immagini: perLivelli('ribbon-survivor-{l}.png') },
+        { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [9, 12, 16, 20],
           descrizione: 'Matches won in a row.',
-          valore: p => num(p.serie && p.serie.vittorieMax), immagini: tre('ribbon-winstreak-{l}.png') },
-        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [4, 6, 8],
+          valore: p => num(p.serie && p.serie.vittorieMax), immagini: perLivelli('ribbon-winstreak-{l}.png') },
+        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [4, 5, 6, 7],
           descrizione: 'Matches won without dropping a set.',
-          valore: p => num(p.serie && p.serie.pulitaMax), immagini: tre('ribbon-cleanstreak-{l}.png') },
-        { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 4],
+          valore: p => num(p.serie && p.serie.pulitaMax), immagini: perLivelli('ribbon-cleanstreak-{l}.png') },
+        { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3, 5],
           descrizione: 'Seasons won with its team, with at least one presence.',
-          valore: p => num(p.stagioniVinteInCampo), immagini: tre('ribbon-champion-{l}.png') },
-        { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 4, 6],
+          valore: p => num(p.stagioniVinteInCampo), immagini: perLivelli('ribbon-champion-{l}.png') },
+        { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 3, 4, 6],
           descrizione: 'Seasons played.',
-          valore: p => num(p.stagioniInCampo), immagini: tre('ribbon-friendship-{l}.png') }
+          valore: p => num(p.stagioniInCampo), immagini: perLivelli('ribbon-friendship-{l}.png') }
     ];
 
     // Tutti i file che il catalogo usa (nomi, senza cartella). Quali ci sono davvero in docs/immagini/ lo dice tools/elenco-immagini.cjs
@@ -87,7 +88,7 @@
     // -----------------------------------------------------
     // Calcolo
     // -----------------------------------------------------
-    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro
+    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro, 4 = platino
     function livelloDi(valore, soglie) {
         let l = 0;
         for (let i = 0; i < soglie.length; i++) if (valore >= soglie[i]) l = i + 1;

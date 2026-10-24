@@ -18,7 +18,7 @@
     'use strict';
 
     const MAX_MEDAGLIE = 5;
-    const ORDINE_LIVELLO = { founder: 4, gold: 3, silver: 2, bronze: 1 };
+    const ORDINE_LIVELLO = { founder: 5, platinum: 4, gold: 3, silver: 2, bronze: 1 };
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const dipendenze = dip => Object.assign({}, finestra && {

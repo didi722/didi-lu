@@ -739,7 +739,7 @@
 /* =====================================================================
    FIOCCHI (scaffale nella scheda del Pokémon, medagliette sulle card)
    ===================================================================== */
-#pkmDetailModal .fiocchi-panel { --f-bronzo: #d98a3d; --f-argento: #cfd6de; --f-oro: #ffd23f; }
+#pkmDetailModal .fiocchi-panel { --f-bronzo: #d98a3d; --f-argento: #cfd6de; --f-oro: #ffd23f; --f-platino: #9ad9f5; }
 .fiocchi-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 18px 14px; padding-top: 4px; }
 .fiocchi-caricamento, .fiocchi-nota { margin: 6px 0 0; color: var(--dt-ink, #000); font: 700 .78rem/1.4 var(--dt-font, 'Josefin Sans', sans-serif); }
 .fiocchi-nota { margin-top: 14px; padding-top: 8px; border-top: 2px dashed var(--dt-ink, #000); opacity: .75; }
@@ -768,6 +768,7 @@
 .fiocco-bronze { --livello: var(--f-bronzo, #d98a3d); }
 .fiocco-silver { --livello: var(--f-argento, #cfd6de); }
 .fiocco-gold { --livello: var(--f-oro, #ffd23f); }
+.fiocco-platinum { --livello: var(--f-platino, #9ad9f5); }
 .fiocco-bloccato { background: color-mix(in srgb, var(--dt-calda, #fffdf6) 70%, #888); box-shadow: 2px 2px 0 var(--dt-ink, #000); }
 .fiocco:focus-visible { outline: 3px solid var(--dt-giallo, #ffbd44); outline-offset: 3px; }
 

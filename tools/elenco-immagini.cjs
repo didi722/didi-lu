@@ -2,7 +2,7 @@
 /* Controlla le immagini dei badge in docs/immagini/: quelle che il sito si aspetta e non trova (con i livelli che mancano badge per badge)
    e quelle che nessun catalogo usa (nome sbagliato, o file messi lì senza essere agganciati a niente).
    Tre gruppi, uno per prefisso: ribbon-* (fiocchi dei Pokémon), badge-team-* (badge dei team), badge-allenatore-* (badge degli allenatori,
-   comprese le serie di titoli.js e il fondatore). Ogni badge ha tre file, -bronze, -silver e -gold (solo il fondatore ne ha uno);
+   comprese le serie di titoli.js e il fondatore). Ogni badge ha quattro file, -bronze, -silver, -gold e -platinum (solo il fondatore ne ha uno);
    finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS.
    Uso:  node tools/elenco-immagini.cjs            (stampa il controllo)
          node tools/elenco-immagini.cjs --scrivi   (scrive anche IMMAGINI-DA-CARICARE.md nella cartella principale) */
@@ -17,8 +17,8 @@ const Titoli = require('../docs/titoli.js');
 const CARTELLA = path.join(__dirname, '..', 'docs', 'immagini');
 const nomi = lista => lista.map(p => p.replace(/^immagini\//, ''));
 const esiste = nome => fs.existsSync(path.join(CARTELLA, nome));
-const LIVELLO = /-(bronze|silver|gold)\.png$/;
-const LIVELLI = ['bronze', 'silver', 'gold'];
+const LIVELLO = /-(bronze|silver|gold|platinum)\.png$/;
+const LIVELLI = ['bronze', 'silver', 'gold', 'platinum'];
 
 // Gli elementi delle serie e del fondatore (titoli.js) hanno la stessa forma dei badge dei cataloghi
 const serie = Titoli.BADGE.map(b => ({ id: b.file, nome: b.label, descrizione: `Series badge: ${b.unita}.`, immagini: Titoli.LIVELLI_BADGE.map(l => Titoli.immagineSerie(b, l)) }));
@@ -35,7 +35,7 @@ const gruppi = [
 function controlla() {
     const righe = ['# Immagini dei badge', '',
         'Tutte in `docs/immagini/`, PNG con sfondo trasparente, quadrate, almeno 256×256 px (vengono mostrate fra 22 e 66 px, ma così restano nitide). ',
-        'Nomi: `ribbon-<badge>-<livello>.png` per i Pokémon, `badge-team-<badge>-<livello>.png` per i team, `badge-allenatore-<badge>-<livello>.png` per gli allenatori, con `-bronze`, `-silver` o `-gold`. ',
+        'Nomi: `ribbon-<badge>-<livello>.png` per i Pokémon, `badge-team-<badge>-<livello>.png` per i team, `badge-allenatore-<badge>-<livello>.png` per gli allenatori, con `-bronze`, `-silver`, `-gold` o `-platinum` (il platino si genera dall oro con `python3 tools/crea-platino.py`). ',
         'Finché un file manca il sito mostra al suo posto una medaglia disegnata con il CSS. Per rifare il controllo: `node tools/elenco-immagini.cjs --scrivi`.', ''];
     let totale = 0;
     const risultati = [];
@@ -43,7 +43,7 @@ function controlla() {
     for (const g of gruppi) {
         const attesi = [...new Set(g.catalogo.flatMap(b => nomi(b.immagini)))];
         const mancanti = attesi.filter(f => !esiste(f));
-        // un badge (il fondatore è l'unico speciale) deve avere i tre livelli; "parziali" sono quelli che ne hanno già qualcuno ma non tutti
+        // un badge (il fondatore è l'unico speciale) deve avere i quattro livelli; "parziali" sono quelli che ne hanno già qualcuno ma non tutti
         const senzaLivelli = g.catalogo.filter(b => b.id !== 'founder' && b.immagini.length !== LIVELLI.length);
         const parziali = g.catalogo.filter(b => b.id !== 'founder' && b.immagini.length === LIVELLI.length).map(b => {
             const presenti = LIVELLI.filter((l, i) => esiste(nomi(b.immagini)[i]));
@@ -71,7 +71,7 @@ function controlla() {
             righe.push('');
         }
         if (senzaLivelli.length) {
-            righe.push('Badge che NON hanno i tre livelli nel catalogo (devono averli):', '', ...senzaLivelli.map(b => `- ${b.nome}: ${b.immagini.length} immagini`), '');
+            righe.push('Badge che NON hanno i quattro livelli nel catalogo (devono averli):', '', ...senzaLivelli.map(b => `- ${b.nome}: ${b.immagini.length} immagini`), '');
         }
         if (orfani.length) righe.push('File con questo prefisso che nessun badge usa (nome sbagliato, o da cancellare):', '', ...orfani.map(f => `- \`${f}\``), '');
     }

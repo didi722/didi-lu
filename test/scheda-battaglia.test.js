@@ -39,7 +39,7 @@ const DATI = {
     players: {
         didi: {
             info: { name: 'Didi', color: '#31c489', title: 'Ghost Gym Leader' },
-            stats: { badges: { maxcleanstrike: 7, maxwonstrike: 10, maxsdstrike: 5 }, 'individual-stats': { ranking: 1210, showdownsPlayed: 5 } },
+            stats: { badges: { maxcleanstrike: 7, maxwonstrike: 10, maxsdstrike: 8 }, 'individual-stats': { ranking: 1210, showdownsPlayed: 5 } },
             teams: { t1: { nome: 'Alfa', categoria: 'VGC', pokemon: [{ nome: 'Garchomp' }, { nome: 'Garchomp' }, { nome: 'Rotom-Wash' }] } }
         },
         lu: {
@@ -78,7 +78,7 @@ test('titoloVisibile: quello scelto, a meno che nella pagina pubblica la targhet
 test('medaglieAllenatore: il fondatore per primo, poi per livello; senza badge, niente', () => {
     const m = SB.medaglieAllenatore({ id: 'didi', statsBadge: { maxcleanstrike: 7, maxwonstrike: 16, maxsdstrike: 8 }, lista: null }, DIP);
     assert.deepEqual(m.map(x => x.id), ['founder', 'clean', 'won', 'sd']);
-    assert.deepEqual(m.map(x => x.livello), ['founder', 'silver', 'silver', 'bronze']);
+    assert.deepEqual(m.map(x => x.livello), ['founder', 'platinum', 'silver', 'bronze']);
     assert.ok(m.every(x => x.nome && x.img && x.livelloNome), 'ogni medaglia ha nome, immagine e livello');
     assert.deepEqual(SB.medaglieAllenatore({ id: 'zed', statsBadge: {}, lista: null }, DIP), []);
     assert.deepEqual(SB.medaglieAllenatore({ id: 'zed' }, {}), [], 'senza moduli non si rompe');

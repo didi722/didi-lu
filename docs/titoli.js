@@ -12,23 +12,19 @@
 // ogni set e per ogni tipo), "won" i set vinti con almeno uno di quel tipo in campo (due Pokémon dello
 // stesso tipo sono 2 presenze ma 1 vittoria), "ko" i KO fatti da quei Pokémon.
 //
-// SOGLIE. Si ragiona su una stagione tipica: 5 giocatori, 3 formati, 1 showdown per formato contro ciascun avversario = 12 showdown a
-// testa, 36 match, 108 set (al meglio dei 3 set: si giocano sempre tutti). Ogni set scendono in campo circa 4 Pokémon, quindi ~420 presenze
-// di Pokémon a testa a stagione. Un team gioca un solo formato: 4 showdown, 12 match, 36 set a stagione.
-//   - un Pokémon fisso in un team di un formato: al massimo 36 presenze a stagione; il Pokémon più usato (in due formati, nel 65% dei set)
-//     fa ~70 presenze, ~50 set vinti e ~70 KO a stagione;
-//   - un tipo: un monotipo in un solo formato fa 4 presenze per set, quindi al massimo 144 a stagione (con ~25 set vinti se va molto bene);
-//     chi ha un solo Pokémon di quel tipo in tutti i formati ne fa ~100.
-// Il primo livello (bronzo / titolo base) si prende dopo UNA STAGIONE GIOCATA MOLTO BENE, il secondo dopo qualche stagione, l'ultimo dopo
-// molte: il gioco è fatto per durare tante stagioni, non per avere tutti i livelli in due o tre.
-//   TIPI      base            120 presenze + 25 vittorie     (un monotipo che gioca bene tutta la stagione; gli altri ci mettono di più)
-//             Gym Leader      500 presenze + 110 vittorie    (circa quattro stagioni)
-//             Elite Four     1300 presenze + 300 vittorie + 700 KO   (una decina di stagioni)
-//   POKÉMON   Fan              75 presenze + 35 vittorie     (il Pokémon più usato, per una stagione)
-//             Specialist      220 presenze + 110 vittorie    (circa tre stagioni)
-//             Master          550 presenze + 280 vittorie + 450 KO   (circa otto stagioni)
-//   SERIE     le soglie di Win / Clean / SD Streak (più sotto) vengono da una simulazione di una lega di 5 giocatori
-// Se la stagione tipica cambia, si cambia solo qui.
+// SOGLIE. Si ragiona sulle stagioni ufficiali (League, Monoformat; le Randomize non danno titoli perché non hanno i team; le cup non contano) e
+// sulla simulazione `node tools/simula-soglie.cjs`: una League ha 2-4 formati e da 1 a 5 showdown per formato contro ciascun avversario (in media
+// ~29 showdown, ~87 match, ~260 set a testa), ogni set scendono in campo 4 Pokémon (~1000 presenze di Pokémon a stagione). Un team gioca un solo
+// formato (4 showdown a stagione per ogni showdown per formato) e torna quando torna il formato. Il primo livello si prende dopo una stagione o due
+// giocate bene, il secondo dopo alcune stagioni, l'ultimo dopo molte: il gioco è fatto per durare tante stagioni.
+//   TIPI      base            400 presenze + 110 vittorie    (un giocatore che punta su un tipo: 1-2 stagioni; uno casual 1-2 stagioni)
+//             Gym Leader      1500 presenze + 400 vittorie   (5 stagioni per chi punta su un tipo, ~10 per un casual)
+//             Elite Four      4000 presenze + 1100 vittorie + 2800 KO   (14 stagioni per chi punta su un tipo, ~25 per un casual)
+//   POKÉMON   Fan             150 presenze + 85 vittorie     (la specie preferita: 1-2 stagioni)
+//             Specialist      450 presenze + 260 vittorie    (4-6 stagioni per chi la usa quasi ovunque, ~12 per un casual)
+//             Master          1200 presenze + 680 vittorie + 900 KO   (17 stagioni per chi la usa ovunque; un casual non ci arriva)
+//   SERIE     le soglie di Win / Clean / SD Streak (più sotto) vengono dalla stessa simulazione
+// Se la struttura delle stagioni cambia, si rifà la simulazione e si cambia solo qui.
 //
 // Funziona nel browser (window.Titoli) e in Node (require).
 // =====================================================
@@ -67,14 +63,14 @@
 
     // Scaglioni: ognuno chiede presenze (played), vittorie (won) e KO (ko); 0 = non richiesto
     const LIVELLI_TIPO = [
-        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 120, won: 25,  ko: 0 },
-        { chip: () => 'Gym Leader', nome: t => `${maiuscola(t)} Gym Leader`, played: 500, won: 110, ko: 0 },
-        { chip: () => 'Elite Four', nome: t => `${maiuscola(t)} Elite Four`, played: 1300, won: 300, ko: 700 }
+        { chip: t => TIPI[t].base, nome: t => TIPI[t].base,                  played: 400, won: 110, ko: 0 },
+        { chip: () => 'Gym Leader', nome: t => `${maiuscola(t)} Gym Leader`, played: 1500, won: 400, ko: 0 },
+        { chip: () => 'Elite Four', nome: t => `${maiuscola(t)} Elite Four`, played: 4000, won: 1100, ko: 2800 }
     ];
     const LIVELLI_POKEMON = [
-        { chip: () => 'Fan',        nome: s => `${s} Fan`,        played: 75,  won: 35,  ko: 0 },
-        { chip: () => 'Specialist', nome: s => `${s} Specialist`, played: 220, won: 110, ko: 0 },
-        { chip: () => 'Master',     nome: s => `${s} Master`,     played: 550, won: 280, ko: 450 }
+        { chip: () => 'Fan',        nome: s => `${s} Fan`,        played: 150,  won: 85,  ko: 0 },
+        { chip: () => 'Specialist', nome: s => `${s} Specialist`, played: 450,  won: 260, ko: 0 },
+        { chip: () => 'Master',     nome: s => `${s} Master`,     played: 1200, won: 680, ko: 900 }
     ];
 
     const COMPONENTI = ['played', 'won', 'ko'];
@@ -181,30 +177,29 @@
     // -----------------------------------------------------
     // Badge delle serie (clean streak, win streak, SD streak): l'unico posto dove stanno nomi, chiavi e soglie. Profilo, Trainers, pagina
     // pubblica e Stats li leggono da qui (BADGE, statoSerie).
-    //   - `file`: la parte del nome della PNG, docs/immagini/badge-allenatore-<file>-<bronze|silver|gold>.png;
+    //   - `file`: la parte del nome della PNG, docs/immagini/badge-allenatore-<file>-<bronze|silver|gold|platinum>.png;
     //   - maxKeys / curKeys / dateKeys: i campi di players/<id>/stats/badges che il server scrive (functions/risultati-match.js), nell'ordine in cui si
     //     cercano. Lo showdown ha DUE nomi: il server scrive maxshowdownstrike e compagni, la prima versione della pagina leggeva maxsdstrike:
     //     per questo il badge SD Streak restava a zero per tutti. Ora si leggono entrambi;
-    //   - steps: i match (o gli showdown) di fila per bronzo, argento, oro. Sono ricalcolati sui numeri di una stagione tipica (14 showdown da
-    //     3 match, 42 match a testa): una simulazione dà per ognuno quante stagioni servono a un giocatore da 50, 60, 70, 80 % di match vinti.
-    //     Win Streak 10 / 16 / 24, Clean Streak 5 / 7 / 9, SD Streak 8 / 14 / 22. Lega di 5 giocatori, una stagione = 36 match e 12 showdown a
-    //     testa: il bronzo lo prende in una stagione solo chi domina (un giocatore molto forte, +150 Elo sugli altri, lo prende 1 volta su 2 per la
-    //     Win Streak e 1 su 4 per la Clean Streak; uno solo buono quasi mai); l'argento dopo alcune stagioni, l'oro dopo anni e solo se si domina.
-    //     Prima erano 7 / 10 / 15, 4 / 6 / 8 e 5 / 7 / 10: il bronzo veniva quasi a tutti nella prima stagione.
+    //   - steps: i match (o gli showdown) di fila per bronzo, argento, oro, platino. Vengono da `node tools/simula-soglie.cjs` (League, Monoformat e
+    //     Randomize, anche in contemporanea: le serie attraversano le stagioni): un giocatore "forte" (~60% di match vinti) prende il bronzo in
+    //     una o due stagioni, l'argento dopo molte, l'oro solo dopo anni; il platino lo prende solo un giocatore dominante (~72%) dopo una ventina di
+    //     stagioni. Win Streak 10 / 14 / 18 / 24, Clean Streak 4 / 5 / 6 / 7, SD Streak 8 / 12 / 16 / 24.
+    //     Prima (tre livelli) erano 10 / 16 / 24, 5 / 7 / 9 e 8 / 14 / 22, tarati su una League da 12 showdown a testa.
     // -----------------------------------------------------
-    const LIVELLI_BADGE = ['bronze', 'silver', 'gold'];
+    const LIVELLI_BADGE = ['bronze', 'silver', 'gold', 'platinum'];
     const IMMAGINE_FONDATORE = 'immagini/badge-allenatore-founder.png';
     const immagineSerie = (b, livello) => `immagini/badge-allenatore-${b.file}-${livello}.png`;
     const BADGE = [
-        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [5, 7, 9],
+        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [4, 5, 6, 7],
           testo: 'Win matches without dropping a single set, back to back.',
           descrizione: n => `${n} matches won without losing a set, in a row`,
           maxKeys: ['maxcleanstrike'], curKeys: ['cleanstrike'], dateKeys: ['maxcleanstrikedate'] },
-        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [10, 16, 24],
+        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [10, 14, 18, 24],
           testo: 'Win matches back to back.',
           descrizione: n => `${n} matches won in a row`,
           maxKeys: ['maxwonstrike'], curKeys: ['wonstrike'], dateKeys: ['maxwonstrikedate'] },
-        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [8, 14, 22],
+        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [8, 12, 16, 24],
           testo: 'Win showdowns back to back.',
           descrizione: n => `${n} showdowns won in a row`,
           maxKeys: ['maxshowdownstrike', 'maxsdstrike'], curKeys: ['showdownstrike', 'sdstrike'],
@@ -214,7 +209,7 @@
 
     /**
      * Lo stato di una serie dai numeri salvati del giocatore (`players/<id>/stats/badges`).
-     * @returns {{ record, attuale, data, livello (0-3), completo, obiettivo (il prossimo traguardo, o l'ultimo se completo), progresso (0-1:
+     * @returns {{ record, attuale, data, livello (0-4), completo, obiettivo (il prossimo traguardo, o l'ultimo se completo), progresso (0-1:
      *             la serie in corso verso il prossimo traguardo, la barra che si vede; 1 se completo) }}
      */
     function statoSerie(stats, b) {
@@ -245,7 +240,7 @@
      * I badge che il giocatore ha già, come li mostra la pagina pubblica.
      * @param {object} stats       players/{id}/stats/badges
      * @param {string} idPlayer    per il badge dei fondatori
-     * -> [{ id, label, livello: 'bronze'|'silver'|'gold'|'founder', img, descrizione, data, attuale, obiettivo, pct }]
+     * -> [{ id, label, livello: 'bronze'|'silver'|'gold'|'platinum'|'founder', img, descrizione, data, attuale, obiettivo, pct }]
      */
     function badgeSbloccati(stats, idPlayer) {
         const out = [];

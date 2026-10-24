@@ -281,7 +281,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .bt-barra-mini { display: inline-flex; align-items: center; gap: 5px; }
 
 /* le medagliette (badge dei team e dei fiocchi): le stesse del resto del sito, con i colori di questa pagina */
-.bt-mini { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
+.bt-mini { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; --bt-platino: #9ad9f5; }
 .bt-mini {
     --livello: #999;
     display: inline-flex; align-items: center; justify-content: center;
@@ -294,6 +294,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .bt-mini.bt-bronze { --livello: var(--bt-bronzo); }
 .bt-mini.bt-silver { --livello: var(--bt-argento); }
 .bt-mini.bt-gold { --livello: var(--bt-oro); }
+.bt-mini.bt-platinum { --livello: var(--bt-platino); }
 .bt-mini-img { width: 18px; height: 18px; object-fit: contain; }
 .bt-mini .bt-finto { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: .78rem; }
 .bt-mini.bt-altri { width: auto; min-width: 28px; padding: 0 6px; border-radius: 14px; background: var(--carta); font: 900 .66rem/1 'Josefin Sans', sans-serif; color: var(--inchiostro); }
@@ -332,6 +333,7 @@ html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px
 .fiocco-t-riga.fiocco-bronze { --livello: var(--bt-bronzo); }
 .fiocco-t-riga.fiocco-silver { --livello: var(--bt-argento); }
 .fiocco-t-riga.fiocco-gold { --livello: var(--bt-oro); }
+.fiocco-t-riga.fiocco-platinum { --livello: var(--bt-platino); }
 .fiocco-t-valore { grid-column: 2 / -1; grid-row: 2; font-size: .66rem; font-weight: 800; }
 .fiocco-t-valore i { font-style: normal; opacity: .6; }
 html[data-modo="fit"] .lato-scheda { align-self: stretch; }

@@ -1159,7 +1159,7 @@ function achCartaSerie(b, st) {
 
     let progresso;
     if (completo) {
-        progresso = `<div class="ach-missing maxed">Gold reached: badge complete!</div>`;
+        progresso = `<div class="ach-missing maxed">${achMaiuscola(ACH_LIVELLI_BADGE[ACH_LIVELLI_BADGE.length - 1])} reached: badge complete!</div>`;
     } else {
         const mancano = Math.max(obiettivo - attuale, 0);
         progresso = `

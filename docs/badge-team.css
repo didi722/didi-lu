@@ -4,7 +4,7 @@
    Come i fiocchi dei Pokémon (dettagli.css) ma indipendente dalle schede: segue le variabili --nb-* del tema attivo,
    con i valori classici come ripiego. Bronzo, argento e oro sono i colori dei livelli; le misure non cambiano con il tema.
    ===================================================================== */
-.bt, .bt-mini, .bt-pop { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; }
+.bt, .bt-mini, .bt-pop { --bt-bronzo: #d98a3d; --bt-argento: #cfd6de; --bt-oro: #ffd23f; --bt-platino: #9ad9f5; }
 
 /* ---------- Lo scaffale: una riga per badge, dal più vicino al prossimo livello al più lontano ---------- */
 .bt-titolo { margin: 0 0 8px; font: 900 .86rem 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: inherit; }
@@ -35,6 +35,7 @@
 .bt-bronze { --livello: var(--bt-bronzo); }
 .bt-silver { --livello: var(--bt-argento); }
 .bt-gold { --livello: var(--bt-oro); }
+.bt-platinum { --livello: var(--bt-platino); }
 .bt-bloccato { background: color-mix(in srgb, var(--nb-tip-bg, #fffdf6) 72%, #888); box-shadow: none; }
 
 .bt-medaglia { position: relative; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin-top: 2px; }
@@ -83,6 +84,7 @@
 .bt-lv-bronze.done { background: var(--bt-bronzo); }
 .bt-lv-silver.done { background: var(--bt-argento); }
 .bt-lv-gold.done { background: var(--bt-oro); }
+.bt-lv-platinum.done { background: var(--bt-platino); }
 .bt-numeri { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; font: 800 .7rem/1.25 'Josefin Sans', sans-serif; }
 .bt-et { opacity: .75; }
 .bt-val i { font-style: normal; opacity: .6; }
@@ -92,6 +94,7 @@
 .bt-p-bronze .bt-barra > span { background: var(--bt-bronzo); }
 .bt-p-silver .bt-barra > span { background: var(--bt-argento); }
 .bt-p-gold .bt-barra > span { background: var(--bt-oro); }
+.bt-p-platinum .bt-barra > span { background: var(--bt-platino); }
 .bt-frase { margin-top: 5px; font: 800 .7rem/1.3 'Josefin Sans', sans-serif; }
 .bt-completo .bt-frase { color: #15803d; }
 .bt-nota { margin: 10px 0 0; font: 700 .72rem/1.35 'Josefin Sans', sans-serif; opacity: .75; }
@@ -110,6 +113,7 @@
 .bt-mini.bt-bronze { --livello: var(--bt-bronzo); }
 .bt-mini.bt-silver { --livello: var(--bt-argento); }
 .bt-mini.bt-gold { --livello: var(--bt-oro); }
+.bt-mini.bt-platinum { --livello: var(--bt-platino); }
 .bt-mini-img { width: 22px; height: 22px; object-fit: contain; }
 .bt-mini .bt-finto { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; background: none; font-size: .9rem; }
 .bt-mini:focus-visible { outline: 3px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }

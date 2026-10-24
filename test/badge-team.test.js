@@ -16,14 +16,14 @@ const team = (extra = {}) => ({
     ...extra
 });
 
-test('catalogo: dieci badge con tre soglie crescenti ciascuno', () => {
+test('catalogo: dieci badge con quattro soglie crescenti ciascuno (bronzo, argento, oro, platino)', () => {
     assert.equal(B.CATALOGO.length, 10);
     const ids = new Set();
     for (const b of B.CATALOGO) {
         assert.ok(!ids.has(b.id), `id doppio: ${b.id}`); ids.add(b.id);
-        assert.equal(b.soglie.length, 3, b.id);
-        assert.ok(b.soglie[0] < b.soglie[1] && b.soglie[1] < b.soglie[2], `soglie in ordine: ${b.id}`);
-        assert.ok(b.immagini.length === 1 || b.immagini.length === 3, b.id);
+        assert.equal(b.soglie.length, 4, b.id);
+        assert.ok(b.soglie.every((v, i) => i === 0 || v > b.soglie[i - 1]), `soglie in ordine: ${b.id}`);
+        assert.ok(b.immagini.length === 1 || b.immagini.length === 4, b.id);
     }
 });
 
@@ -36,41 +36,43 @@ test('un team che non ha mai giocato: nessun badge, barre a zero (senza errori)'
     }
 });
 
-test('livelli: bronzo, argento e oro alle soglie; al massimo la barra è piena e non c\'è un prossimo traguardo', () => {
-    const l = B.calcola(team({ match: { giocati: 40, vinti: 29, persi: 11 }, showdown: { giocati: 14, vinti: 12, persi: 2 }, stagioniVinte: 1, stagioniGiocate: 5 }));
-    assert.equal(perId(l, 'winner').livello, 2, '29 match vinti: argento (15), non ancora oro (30)');
-    assert.equal(perId(l, 'winner').prossima, 30);
-    assert.equal(perId(l, 'showdown').livello, 3);
+test('livelli: bronzo, argento, oro e platino alle soglie; al massimo la barra è piena e non c\'è un prossimo traguardo', () => {
+    const l = B.calcola(team({ match: { giocati: 40, vinti: 33, persi: 7 }, showdown: { giocati: 40, vinti: 35, persi: 5 }, stagioniVinte: 1, stagioniGiocate: 4 }));
+    assert.equal(perId(l, 'winner').livello, 2, '33 match vinti: argento (32), non ancora oro (52)');
+    assert.equal(perId(l, 'winner').prossima, 52);
+    assert.equal(perId(l, 'showdown').livello, 4, '35 showdown vinti: platino');
+    assert.equal(perId(l, 'showdown').livelloNome, 'Platinum');
+    assert.equal(perId(l, 'showdown').classeLivello, 'platinum');
     assert.equal(perId(l, 'showdown').prossima, null);
     assert.equal(perId(l, 'showdown').progresso, 1);
     assert.equal(perId(l, 'champion').livello, 1);
     assert.equal(perId(l, 'veteran').livelloNome, 'Gold');
-    assert.equal(perId(l, 'winner').progresso, 29 / 30, 'la barra è quella dei numeri "29 / 30"');
+    assert.equal(perId(l, 'winner').progresso, 33 / 52, 'la barra è quella dei numeri "33 / 52"');
     assert.deepEqual(B.guadagnati(l).map(b => b.id).slice(0, 2), ['showdown', 'veteran'], 'prima i più alti, a parità l\'ordine del catalogo');
 });
 
 test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del team', () => {
-    // soglie: vittorie di fila 7/10/14, match puliti 3/5/7, showdown di fila 3/5/8, KO 150/350/600, set perfetti 4/8/14
-    const l = B.calcola(team({ serie: { vittorieMax: 10, pulitaMax: 7, showdownMax: 5 }, ko: { fatti: 350, setPerfetti: 4, setConDati: 9 } }));
+    // soglie: vittorie di fila 8/11/14/18, match puliti 3/4/5/6, showdown di fila 6/8/11/15, KO 330/530/800/1250, set perfetti 8/13/20/30
+    const l = B.calcola(team({ serie: { vittorieMax: 11, pulitaMax: 6, showdownMax: 8 }, ko: { fatti: 530, setPerfetti: 8, setConDati: 9 } }));
     assert.equal(perId(l, 'winstreak').livello, 2);
-    assert.equal(perId(l, 'cleanstreak').livello, 3);
+    assert.equal(perId(l, 'cleanstreak').livello, 4);
     assert.equal(perId(l, 'sdstreak').livello, 2);
     assert.equal(perId(l, 'knockout').livello, 2);
     assert.equal(perId(l, 'flawless').livello, 1);
 });
 
-test('percentuale di match vinti: sotto i 12 match non conta, e dice quanto manca (come i fiocchi)', () => {
+test('percentuale di match vinti: sotto i 18 match non conta, e dice quanto manca (come i fiocchi)', () => {
     const poco = perId(B.calcola(team({ match: { giocati: 6, vinti: 6, persi: 0 }, percMatch: 100 })), 'winrate');
     assert.equal(poco.livello, 0);
     const minimo = B.CATALOGO.find(b => b.id === 'winrate').minimo.valore;
-    assert.equal(minimo, 12, 'servono dodici match giocati (una stagione)');
+    assert.equal(minimo, 18, 'servono diciotto match giocati (una stagione di un team, o più)');
     assert.equal(poco.progresso, 6 / minimo);
     assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 6, s: minimo });
-    assert.match(poco.nota, /needs 12 matches played \(now 6\)/);
-    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 12<\/i><\/span>/);
-    // soglie 65% / 75% / 80%
-    const abbastanza = perId(B.calcola(team({ match: { giocati: 12, vinti: 10, persi: 2 }, percMatch: 83 })), 'winrate');
-    assert.equal(abbastanza.livello, 3);
+    assert.match(poco.nota, /needs 18 matches played \(now 6\)/);
+    assert.match(B.htmlBadge(poco), /<span class="bt-et">Matches played<\/span><span class="bt-val"><b>6<\/b> <i>\/ 18<\/i><\/span>/);
+    // soglie 68% / 73% / 78% / 85%
+    const abbastanza = perId(B.calcola(team({ match: { giocati: 20, vinti: 18, persi: 2 }, percMatch: 90 })), 'winrate');
+    assert.equal(abbastanza.livello, 4);
     assert.equal(abbastanza.nota, '');
 });
 
@@ -81,16 +83,17 @@ test('immagini: tutte col prefisso badge-team-, un file per livello per ogni bad
     assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-bronze.png');
     assert.equal(perId(l, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-bronze.png');
     assert.equal(perId(l, 'champion').immagine, 'immagini/badge-team-champion-bronze.png');
-    const alto = B.calcola(team({ serie: { vittorieMax: 14, pulitaMax: 5, showdownMax: 8 }, match: { giocati: 40, vinti: 30, persi: 10 } }));
+    const alto = B.calcola(team({ serie: { vittorieMax: 14, pulitaMax: 4, showdownMax: 15 }, match: { giocati: 60, vinti: 52, persi: 8 } }));
     assert.equal(perId(alto, 'winstreak').immagine, 'immagini/badge-team-winstreak-gold.png');
     assert.equal(perId(alto, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-silver.png');
-    assert.equal(perId(alto, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-gold.png');
+    assert.equal(perId(alto, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-platinum.png');
     assert.equal(perId(alto, 'winner').immagine, 'immagini/badge-team-winner-gold.png');
-    // dieci badge × tre livelli
-    assert.equal(B.IMMAGINI.length, 30);
+    // dieci badge × quattro livelli
+    assert.equal(B.IMMAGINI.length, 40);
     assert.ok(B.IMMAGINI.includes('badge-team-knockout-silver.png'));
-    assert.ok(B.IMMAGINI.every(n => /^badge-team-[a-z]+-(bronze|silver|gold)\.png$/.test(n)), 'nomi sbagliati');
-    for (const b of B.CATALOGO) assert.equal(b.immagini.length, 3, b.id);
+    assert.ok(B.IMMAGINI.includes('badge-team-knockout-platinum.png'));
+    assert.ok(B.IMMAGINI.every(n => /^badge-team-[a-z]+-(bronze|silver|gold|platinum)\.png$/.test(n)), 'nomi sbagliati');
+    for (const b of B.CATALOGO) assert.equal(b.immagini.length, 4, b.id);
 });
 
 test('HTML: lo scaffale mostra tutti i badge, le medagliette solo i migliori (con "+n"), e il testo di chi scrive è protetto', () => {
@@ -98,7 +101,7 @@ test('HTML: lo scaffale mostra tutti i badge, le medagliette solo i migliori (co
     const scaffale = B.htmlScaffale(lista);
     assert.equal((scaffale.match(/class="bt bt-/g) || []).length, 10);
     assert.match(scaffale, /TEAM BADGES <small class="bt-conto">\d+\/10<\/small>/);
-    assert.match(B.htmlMini(lista, 3), /bt-altri" title="\d+ more badges">\+\d+<\/span>/);
+    assert.match(B.htmlMini(lista, 3), /bt-altri" title="\d+ more badges?">\+\d+<\/span>/);
     assert.equal((B.htmlMini(lista, 3).match(/class="bt-mini bt-(?!altri)/g) || []).length, 3);
     const strano = Object.assign(B.calcola(null)[0], { nome: '<img onerror=x>' });
     assert.doesNotMatch(B.htmlBadge(strano), /<img onerror/);
@@ -217,16 +220,16 @@ test('montaMini: la barra delle testate strette (il replay) è sempre solo medag
 // ---------- ordine per vicinanza al prossimo livello ----------
 test('perVicinanza: dal più vicino al prossimo livello al più lontano; a parità l\'ordine del catalogo; in fondo chi ha già l\'oro', () => {
     const l = B.calcola(team({
-        match: { giocati: 40, vinti: 29, persi: 11 },                 // Winner: 29 / 30 (argento preso), il più vicino
+        match: { giocati: 40, vinti: 31, persi: 9 },                  // Winner: 31 / 32 (bronzo preso), il più vicino
         stagioniGiocate: 2,                                              // Veteran: 2 / 3
         serie: { vittorieMax: 0, pulitaMax: 0, showdownMax: 0 },
-        showdown: { giocati: 14, vinti: 12, persi: 2 },                  // Showdown Winner: oro (12), in fondo
-        ko: { fatti: 150, setPerfetti: 0, setConDati: 9 }                // Knockout: bronzo, 150 / 350
+        showdown: { giocati: 40, vinti: 35, persi: 5 },                  // Showdown Winner: platino (35), in fondo
+        ko: { fatti: 330, setPerfetti: 0, setConDati: 9 }                // Knockout: bronzo, 330 / 530
     }));
     const ordine = B.perVicinanza(l).map(b => b.id);
-    assert.equal(ordine[0], 'winner', 'il più vicino: 29 su 30');
-    assert.ok(ordine.indexOf('veteran') < ordine.indexOf('knockout'), '2/3 prima di 150/250');
-    assert.equal(ordine[ordine.length - 1], 'showdown', 'chi ha già l\'oro va in fondo');
+    assert.equal(ordine[0], 'winner', 'il più vicino: 31 su 32');
+    assert.ok(ordine.indexOf('veteran') < ordine.indexOf('knockout'), '2/3 prima di 330/530');
+    assert.equal(ordine[ordine.length - 1], 'showdown', 'chi ha già il platino va in fondo');
     // chi è a zero resta nell'ordine del catalogo, tutti insieme, prima di chi ha già l'oro
     const azzerati = ordine.filter(id => perId(l, id).progresso === 0 && perId(l, id).prossima != null);
     assert.deepEqual(azzerati, B.CATALOGO.map(b => b.id).filter(id => azzerati.includes(id)));
@@ -243,30 +246,31 @@ test('htmlScaffale: i badge escono nell\'ordine di vicinanza (o in quello del ca
     const html = B.htmlScaffale(l, { titolo: 'TEAM BADGES' });
     assert.match(html, /TEAM BADGES <small class="bt-conto">\d+\/10<\/small>/);
     assert.match(html, /<b>\d+<\/b>\/10 badges/);
-    assert.match(html, /<b>\d+<\/b>\/30 levels/);
+    assert.match(html, /<b>\d+<\/b>\/40 levels/);
     assert.match(html, /Closest to the next level first\./);
     // niente fumetti nascosti: spiegazione, traguardi, barra e cosa manca sono sempre visibili
     assert.doesNotMatch(html, /bt-tip/);
     for (const parte of ['bt-desc', 'bt-livelli', 'bt-barra', 'bt-frase']) assert.ok(html.includes(parte), parte);
 });
 
-test('una riga di badge: i tre livelli con il prossimo evidenziato, la barra uguale ai numeri, e cosa manca', () => {
+test('una riga di badge: i quattro livelli con il prossimo evidenziato, la barra uguale ai numeri, e cosa manca', () => {
     const l = B.calcola(team({ stagioniGiocate: 2 }));
     const veteran = perId(l, 'veteran');                      // 2 stagioni: bronzo (2), prossimo argento (3)
     const riga = B.htmlBadge(veteran);
     assert.match(riga, /class="bt bt-bronze bt-p-silver"/, 'colore del livello preso e di quello in arrivo');
     assert.match(riga, /bt-lv bt-lv-bronze done">Bronze <b>2<\/b>/);
     assert.match(riga, /bt-lv bt-lv-silver next">Silver <b>3<\/b>/);
-    assert.match(riga, /bt-lv bt-lv-gold ">Gold <b>5<\/b>/);
+    assert.match(riga, /bt-lv bt-lv-gold ">Gold <b>4<\/b>/);
+    assert.match(riga, /bt-lv bt-lv-platinum ">Platinum <b>6<\/b>/);
     assert.match(riga, /<b>2<\/b> <i>\/ 3<\/i>/);
     assert.match(riga, /aria-valuenow="67"/);
     assert.match(riga, /1 more to unlock Silver\./);
     const oro = B.htmlBadge(perId(B.calcola(team({ stagioniGiocate: 6 })), 'veteran'));
     assert.match(oro, /bt-completo/);
-    assert.match(oro, /Gold reached: badge complete!/);
+    assert.match(oro, /Platinum reached: badge complete!/);
     assert.match(oro, /<i>MAX<\/i>/);
     // la percentuale ha il suo segno e la sua etichetta
-    const wr = B.htmlBadge(perId(B.calcola(team({ match: { giocati: 12, vinti: 9, persi: 3 }, percMatch: 75 })), 'winrate'));
+    const wr = B.htmlBadge(perId(B.calcola(team({ match: { giocati: 20, vinti: 15, persi: 5 }, percMatch: 75 })), 'winrate'));
     assert.match(wr, /Win rate<\/span><span class="bt-val"><b>75%<\/b>/);
 });
 

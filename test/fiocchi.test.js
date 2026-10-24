@@ -28,15 +28,15 @@ test('livelloDi: bronzo, argento e oro alle soglie (incluse)', () => {
     assert.equal(F.livelloDi(500, [10, 30, 60]), 3);
 });
 
-test('il catalogo ha nove fiocchi con tre soglie crescenti e almeno un\'immagine ciascuno', () => {
+test('il catalogo ha nove fiocchi con quattro soglie crescenti e almeno un\'immagine ciascuno', () => {
     assert.equal(F.CATALOGO.length, 9);
     const ids = new Set();
     for (const f of F.CATALOGO) {
         assert.ok(!ids.has(f.id), 'id doppio ' + f.id);
         ids.add(f.id);
-        assert.equal(f.soglie.length, 3, f.id);
-        assert.ok(f.soglie[0] < f.soglie[1] && f.soglie[1] < f.soglie[2], 'soglie non crescenti: ' + f.id);
-        assert.ok(f.immagini.length === 1 || f.immagini.length === 3, 'immagini: ' + f.id);
+        assert.equal(f.soglie.length, 4, f.id);
+        assert.ok(f.soglie.every((v, i) => i === 0 || v > f.soglie[i - 1]), 'soglie non crescenti: ' + f.id);
+        assert.ok(f.immagini.length === 1 || f.immagini.length === 4, 'immagini: ' + f.id);
         assert.ok(f.descrizione && f.unita && f.icona && f.nome, 'testi mancanti: ' + f.id);
     }
 });
@@ -52,77 +52,77 @@ test('un Pokémon che non ha mai giocato (o senza dati) non prende nulla e ha il
 
 test('calcola: i livelli dai numeri reali, con progresso verso il successivo', () => {
     const p = {
-        portato: 100, koFatti: 350, setPortatoVinti: 24, ultimoVinto: 12, sopravvivenza: 76,
+        portato: 100, koFatti: 350, setPortatoVinti: 40, ultimoVinto: 9, sopravvivenza: 45,
         serie: { vittorieMax: 12, pulitaMax: 1 }, stagioniVinteInCampo: 1, stagioniInCampo: 2
     };
     const l = F.calcola(p);
-    assert.equal(perId(l, 'regular').livello, 1);            // 100 set: bronzo (60), ne mancano 150 per l'argento
+    assert.equal(perId(l, 'regular').livello, 1);            // 100 set: bronzo (75), il prossimo traguardo è 150
     assert.equal(perId(l, 'regular').prossima, 150);
     assert.equal(perId(l, 'regular').progresso, 100 / 150);      // la barra è quella dei numeri "100 / 150"
-    assert.equal(perId(l, 'ko').livello, 3);                  // 350 KO: oro
+    assert.equal(perId(l, 'ko').livello, 4);                  // 350 KO: platino
     assert.equal(perId(l, 'ko').prossima, null);
     assert.equal(perId(l, 'ko').progresso, 1);
-    assert.equal(perId(l, 'winner').livello, 0);              // 24 set vinti: ne mancano 6 al bronzo
-    assert.equal(perId(l, 'winner').prossima, 30);
+    assert.equal(perId(l, 'winner').livello, 0);              // 40 set vinti: ne mancano 10 al bronzo
+    assert.equal(perId(l, 'winner').prossima, 50);
     assert.ok(Math.abs(perId(l, 'winner').progresso - 0.8) < 1e-9);
-    assert.equal(perId(l, 'laststand').livello, 2);           // 12 volte ultimo in piedi: argento
-    assert.equal(perId(l, 'survivor').livello, 2);            // 76% con 100 sets in campo
-    assert.equal(perId(l, 'winstreak').livello, 2);           // 12 di fila: argento
+    assert.equal(perId(l, 'laststand').livello, 2);           // 9 volte ultimo in piedi: argento
+    assert.equal(perId(l, 'survivor').livello, 2);            // 45% con 100 sets in campo: argento (44%)
+    assert.equal(perId(l, 'winstreak').livello, 2);           // 12 di fila: argento (12)
     assert.equal(perId(l, 'cleanstreak').livello, 0);
     assert.equal(perId(l, 'champion').livello, 1);
     assert.equal(perId(l, 'friendship').livello, 1);
-    assert.equal(perId(l, 'ko').livelloNome, 'Gold');
-    assert.equal(perId(l, 'ko').classeLivello, 'gold');
+    assert.equal(perId(l, 'ko').livelloNome, 'Platinum');
+    assert.equal(perId(l, 'ko').classeLivello, 'platinum');
 });
 
-test('percentuale di sopravvivenza: sotto i 40 set in campo non conta, e dice quanto manca', () => {
+test('percentuale di sopravvivenza: sotto i 60 set in campo non conta, e dice quanto manca', () => {
     const poco = perId(F.calcola({ portato: 8, sopravvivenza: 100 }), 'survivor');
     assert.equal(poco.livello, 0);
-    assert.equal(poco.progresso, 8 / 40, 'la barra mostra quanto manca ai 40 set');
-    assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 8, s: 40 });
-    assert.match(poco.nota, /needs 40 sets fielded \(now 8\)/);
+    assert.equal(poco.progresso, 8 / 60, 'la barra mostra quanto manca ai 60 set');
+    assert.deepEqual({ v: poco.sblocco.valore, s: poco.sblocco.serve }, { v: 8, s: 60 });
+    assert.match(poco.nota, /needs 60 sets fielded \(now 8\)/);
     // sulla scheda il valore è "8 / 15" come per gli altri fiocchi, la spiegazione sta solo nel tooltip
     const html = F.htmlFiocco(poco);
-    assert.match(html, /<div class="fiocco-valore">8 <i>\/ 40<\/i><\/div>/);
+    assert.match(html, /<div class="fiocco-valore">8 <i>\/ 60<\/i><\/div>/);
     assert.doesNotMatch(html.replace(/<div class="fiocco-tip[\s\S]*$/, ''), /needs/);
-    assert.match(html, /fiocco-tip-nota">needs 40 sets fielded \(now 8\)/);
-    const abbastanza = perId(F.calcola({ portato: 40, sopravvivenza: 100 }), 'survivor');
-    assert.equal(abbastanza.livello, 3);
+    assert.match(html, /fiocco-tip-nota">needs 60 sets fielded \(now 8\)/);
+    const abbastanza = perId(F.calcola({ portato: 60, sopravvivenza: 100 }), 'survivor');
+    assert.equal(abbastanza.livello, 4);
     assert.equal(abbastanza.nota, '');
 });
 
 test('amicizia assegnata a mano: almeno bronzo anche senza stagioni insieme', () => {
     assert.equal(perId(F.calcola({}, { amicizia: true }), 'friendship').livello, 1);
     assert.equal(perId(F.calcola({}, {}), 'friendship').livello, 0);
-    assert.equal(perId(F.calcola({ stagioniInCampo: 6 }, { amicizia: true }), 'friendship').livello, 3);   // l'automatico può andare oltre
+    assert.equal(perId(F.calcola({ stagioniInCampo: 6 }, { amicizia: true }), 'friendship').livello, 4);   // l'automatico può andare oltre
 });
 
 test('guadagnati: dal livello più alto, a parità nell\'ordine del catalogo', () => {
-    const l = F.calcola({ portato: 350, koFatti: 60, setPortatoVinti: 80, ultimoVinto: 6, serie: { vittorieMax: 17 } });
+    const l = F.calcola({ portato: 350, koFatti: 65, setPortatoVinti: 85, ultimoVinto: 6, serie: { vittorieMax: 16 } });
     assert.deepEqual(F.guadagnati(l).map(f => f.id), ['regular', 'winstreak', 'winner', 'ko', 'laststand']);
 });
 
 test('le immagini: ogni livello usa il suo file (anche le serie e l\'amicizia); il non preso mostra il bronzo', () => {
-    const l = F.calcola({ koFatti: 150, serie: { vittorieMax: 17, pulitaMax: 6 }, stagioniInCampo: 2 });
+    const l = F.calcola({ koFatti: 150, serie: { vittorieMax: 17, pulitaMax: 5 }, stagioniInCampo: 2 });
     assert.equal(perId(l, 'ko').immagine, 'immagini/ribbon-ko-silver.png');
-    assert.equal(perId(l, 'winstreak').immagine, 'immagini/ribbon-winstreak-gold.png');            // 17 match di fila: la soglia dell'oro
-    assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/ribbon-cleanstreak-silver.png');      // 6 di fila: argento
+    assert.equal(perId(l, 'winstreak').immagine, 'immagini/ribbon-winstreak-gold.png');            // 17 match di fila: oro (16)
+    assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/ribbon-cleanstreak-silver.png');      // 5 di fila: argento
     assert.equal(perId(l, 'friendship').immagine, 'immagini/ribbon-friendship-bronze.png');        // 2 stagioni: bronzo
     assert.equal(perId(l, 'winner').immagine, 'immagini/ribbon-winner-bronze.png');                // non preso: mostra il bronzo
     assert.equal(perId(l, 'champion').immagine, 'immagini/ribbon-champion-bronze.png');
 });
 
 // ---------- immagini ----------
-test('le immagini dei fiocchi si chiamano tutte ribbon-<id>-<livello>.png, tre per fiocco (i file che mancano li elenca tools/elenco-immagini.cjs)', () => {
+test('le immagini dei fiocchi si chiamano tutte ribbon-<id>-<livello>.png, quattro per fiocco (i file che mancano li elenca tools/elenco-immagini.cjs)', () => {
     const citate = new Set(F.CATALOGO.flatMap(f => f.immagini).map(p => p.replace(/^immagini\//, '')));
     assert.deepEqual([...citate].sort(), [...F.IMMAGINI].sort());
-    // nove fiocchi × tre livelli
-    assert.equal(F.IMMAGINI.length, 9 * 3);
-    for (const n of F.IMMAGINI) assert.match(n, /^ribbon-[a-z]+-(bronze|silver|gold)\.png$/);
-    for (const f of F.CATALOGO) assert.deepEqual(f.immagini.map(p => /-(bronze|silver|gold)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold'], f.id);
+    // nove fiocchi × quattro livelli
+    assert.equal(F.IMMAGINI.length, 9 * 4);
+    for (const n of F.IMMAGINI) assert.match(n, /^ribbon-[a-z]+-(bronze|silver|gold|platinum)\.png$/);
+    for (const f of F.CATALOGO) assert.deepEqual(f.immagini.map(p => /-(bronze|silver|gold|platinum)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold', 'platinum'], f.id);
     // quelli già caricati ci sono (con il loro nome): Winner, Survivor e Champion a tre livelli; le serie e l'amicizia, che avevano un file
     // solo, sono l'oro (le immagini sono gialle: argento e bronzo ancora da fare)
-    for (const n of ['ribbon-winner-bronze.png', 'ribbon-survivor-gold.png', 'ribbon-champion-silver.png', 'ribbon-winstreak-gold.png', 'ribbon-cleanstreak-gold.png', 'ribbon-friendship-gold.png']) {
+    for (const n of ['ribbon-winner-bronze.png', 'ribbon-survivor-gold.png', 'ribbon-champion-silver.png', 'ribbon-winstreak-gold.png', 'ribbon-cleanstreak-gold.png', 'ribbon-friendship-gold.png', 'ribbon-ko-platinum.png', 'ribbon-friendship-platinum.png']) {
         assert.ok(fs.existsSync(path.join(DOCS, 'immagini', n)), n);
     }
 });
@@ -213,15 +213,15 @@ test('chi non scende mai in campo non prende nulla dalla stagione del suo team',
 
 test('i fiocchi di un Pokémon vero: calcolati dalle sue statistiche', () => {
     const g = F.calcola(mostro('Garchomp')), r = F.calcola(mostro('Rotom-Wash'));
-    assert.equal(perId(g, 'winstreak').livello, 0);      // 3 match di fila: ne mancano 5 al bronzo (8)
-    assert.equal(perId(g, 'winstreak').prossima, 8);
+    assert.equal(perId(g, 'winstreak').livello, 0);      // 3 match di fila: ne mancano 6 al bronzo (9)
+    assert.equal(perId(g, 'winstreak').prossima, 9);
     assert.equal(perId(g, 'cleanstreak').livello, 0);    // massimo 1
     assert.equal(perId(r, 'cleanstreak').valore, 2);      // 2 puliti di fila (il match in panchina non li spezza): il bronzo ne chiede 4
     assert.equal(perId(r, 'cleanstreak').livello, 0);
-    assert.equal(perId(r, 'regular').livello, 0);        // 6 set su 60
+    assert.equal(perId(r, 'regular').livello, 0);        // 6 set su 75
     assert.equal(perId(r, 'regular').valore, 6);
     assert.equal(perId(g, 'champion').livello, 1);       // il suo team ha vinto la stagione e lui c'era
-    assert.equal(perId(g, 'survivor').livello, 0);       // 100%, ma solo 9 set in campo su 40 richiesti
+    assert.equal(perId(g, 'survivor').livello, 0);       // 100%, ma solo 9 set in campo su 60 richiesti
     assert.match(perId(g, 'survivor').nota, /now 9/);
 });
 
@@ -275,7 +275,7 @@ test('htmlScaffale: un blocco per fiocco, il conto di quelli presi, i non presi 
     assert.match(html, /fiocco-bloccato[^>]*data-fiocco="ko"/);
     assert.match(html, /<span class="fiocco-livello">II<\/span>/);
     assert.match(html, /style="width:0%"/);                       // KO: progresso a zero
-    assert.match(html, /Next level: 350 sets fielded\./);
+    assert.match(html, /Next level: 230 sets fielded\./);
     assert.match(html, /onerror="Fiocchi\.immagineMancante\(this,'💥'\)"/);
 });
 
@@ -292,26 +292,26 @@ test('htmlScaffale e htmlMini: il testo che entra nell\'HTML è protetto', () =>
 
 test('htmlMini: al massimo tre medagliette (le più alte) e "+n" per le altre; vuoto se non c\'è nulla', () => {
     assert.equal(F.htmlMini(F.calcola({})), '');
-    const tutti = F.calcola({ portato: 350, koFatti: 350, setPortatoVinti: 180, ultimoVinto: 20, serie: { vittorieMax: 17, pulitaMax: 8 }, stagioniVinteInCampo: 4, stagioniInCampo: 6 });
+    const tutti = F.calcola({ portato: 350, koFatti: 350, setPortatoVinti: 200, ultimoVinto: 20, serie: { vittorieMax: 17, pulitaMax: 8 }, stagioniVinteInCampo: 4, stagioniInCampo: 6 });
     const html = F.htmlMini(tutti, 3);
     // sono le medagliette dei badge del team (bt-mini, badge-team.css): un cerchio del colore del livello con l'immagine del fiocco
-    assert.equal((html.match(/class="bt-mini bt-gold"/g) || []).length, 3);
-    assert.equal((html.match(/<img class="bt-mini-img" src="immagini\/ribbon-[a-z]+-gold\.png"/g) || []).length, 3);
+    assert.equal((html.match(/class="bt-mini bt-platinum"/g) || []).length, 3);
+    assert.equal((html.match(/<img class="bt-mini-img" src="immagini\/ribbon-[a-z]+-platinum\.png"/g) || []).length, 3);
     assert.match(html, /class="bt-mini bt-altri" title="5 more ribbons">\+5</, 'otto fiocchi presi (il Survivor no): tre visibili e cinque nel "+5"');
     assert.doesNotMatch(F.htmlMini(tutti, 20), /bt-altri/, 'con posto per tutte nessun "+n"');
     assert.ok(!/fiocco-mini|fiocco-altri/.test(html), 'il vecchio aspetto non c\'è più');
 });
 
 test('htmlMini: la descrizione sta nel title (nome e livello, cosa premia, quanto ha fatto) e mai il progresso verso il livello dopo', () => {
-    const bronzo = F.htmlMini(F.calcola({ portato: 60 }), 3);
-    assert.match(bronzo, /title="Regular · Bronze\nSent out in a set\.\n60 sets fielded"/);
+    const bronzo = F.htmlMini(F.calcola({ portato: 75 }), 3);
+    assert.match(bronzo, /title="Regular · Bronze\nSent out in a set\.\n75 sets fielded"/);
     assert.match(bronzo, /role="img"/);
     assert.match(bronzo, /tabindex="0"/, 'si legge anche con la tastiera');
-    assert.match(bronzo, /aria-label="Regular · Bronze\. Sent out in a set\.\. 60 sets fielded"/);
+    assert.match(bronzo, /aria-label="Regular · Bronze\. Sent out in a set\.\. 75 sets fielded"/);
     assert.doesNotMatch(bronzo, /Next level|\/ 150|width:/, 'il progresso verso il livello dopo si vede solo nel Box del giocatore');
     // le percentuali si leggono attaccate al numero
-    const sopravvivenza = perId(F.calcola({ portato: 40, sopravvivenza: 80 }), 'survivor');
-    assert.equal(F.testoMedaglia(sopravvivenza), 'Survivor · Gold\nShare of sets on the field without fainting.\n80% survival');
+    const sopravvivenza = perId(F.calcola({ portato: 60, sopravvivenza: 80 }), 'survivor');
+    assert.equal(F.testoMedaglia(sopravvivenza), 'Survivor · Platinum\nShare of sets on the field without fainting.\n80% survival');
     // il testo si può cambiare (la pagina pubblica ne mette uno suo), e il testo entra nell'HTML già protetto
     const altro = F.htmlMedaglietta(sopravvivenza, 'Un "altro" <testo>');
     assert.match(altro, /title="Un &quot;altro&quot; &lt;testo&gt;"/);
@@ -339,14 +339,14 @@ test('immagineMancante: al posto della PNG compare la medaglia disegnata con l\'
 });
 
 // ---------- ordine per vicinanza al prossimo livello ----------
-test('perVicinanza: i fiocchi più vicini al prossimo livello in alto, i più lontani in basso, chi ha l\'oro in fondo', () => {
+test('perVicinanza: i fiocchi più vicini al prossimo livello in alto, i più lontani in basso, chi ha il platino in fondo', () => {
     const l = F.calcola({
-        portato: 100, koFatti: 350, setPortatoVinti: 29, ultimoVinto: 12, sopravvivenza: 62,
+        portato: 100, koFatti: 350, setPortatoVinti: 49, ultimoVinto: 12, sopravvivenza: 42,
         serie: { vittorieMax: 12, pulitaMax: 1 }, stagioniVinteInCampo: 1, stagioniInCampo: 2
     });
     const ordine = F.perVicinanza(l).map(f => f.id);
-    assert.equal(ordine[0], 'winner', '29 set vinti su 30 per il bronzo: il più vicino');
-    assert.equal(ordine[ordine.length - 1], 'ko', '350 KO: oro, non c\'è più niente da prendere');
+    assert.equal(ordine[0], 'winner', '49 set vinti su 50 per il bronzo: il più vicino');
+    assert.equal(ordine[ordine.length - 1], 'ko', '350 KO: platino, non c\'è più niente da prendere');
     for (let i = 1; i < ordine.length - 1; i++) {
         assert.ok(perId(l, ordine[i - 1]).progresso >= perId(l, ordine[i]).progresso, `${ordine[i - 1]} prima di ${ordine[i]}`);
     }
@@ -360,7 +360,7 @@ test('perVicinanza: i fiocchi più vicini al prossimo livello in alto, i più lo
 // ---------- le medagliette con l'elenco nel fumetto (la scheda dell'allenatore nel simulatore) ----------
 test('htmlMedaglieConElenco: le medagliette più alte e un fumetto che elenca tutti i fiocchi presi (niente se non ce n\'è nessuno)', () => {
     const lista = F.calcola({
-        portato: 100, koFatti: 350, setPortatoVinti: 24, ultimoVinto: 12, sopravvivenza: 76,
+        portato: 100, koFatti: 350, setPortatoVinti: 40, ultimoVinto: 9, sopravvivenza: 45,
         serie: { vittorieMax: 12, pulitaMax: 1 }, stagioniVinteInCampo: 1, stagioniInCampo: 2
     });
     const presi = F.guadagnati(lista);
@@ -368,8 +368,8 @@ test('htmlMedaglieConElenco: le medagliette più alte e un fumetto che elenca tu
     const html = F.htmlMedaglieConElenco(lista);
     assert.match(html, new RegExp(`<span class="fiocco-medaglie" tabindex="0" aria-label="${presi.length} ribbons">`));
     // le tre più alte come medagliette dei badge, "+4" per le altre
-    assert.equal((html.match(/<span class="bt-mini bt-(gold|silver|bronze)">/g) || []).length, 3);
-    assert.match(html, /<span class="bt-mini bt-gold"><img class="bt-mini-img" src="immagini\/ribbon-ko-gold\.png"/, 'la più alta per prima');
+    assert.equal((html.match(/<span class="bt-mini bt-(platinum|gold|silver|bronze)">/g) || []).length, 3);
+    assert.match(html, /<span class="bt-mini bt-platinum"><img class="bt-mini-img" src="immagini\/ribbon-ko-platinum\.png"/, 'la più alta per prima');
     assert.match(html, /<span class="bt-mini bt-altri">\+4<\/span>/);
     // il fumetto elenca tutti, con livello e numeri
     assert.match(html, new RegExp(`<strong>Ribbons ${presi.length}/${lista.length}</strong>`));
@@ -382,7 +382,7 @@ test('htmlMedaglieConElenco: le medagliette più alte e un fumetto che elenca tu
     assert.equal(F.htmlMedaglieConElenco(F.calcola({})), '');
     assert.equal(F.htmlMedaglieConElenco(F.calcola(null)), '');
     // un solo fiocco: singolare e nessun "+n"
-    const uno = F.htmlMedaglieConElenco(F.calcola({ portato: 60 }));
+    const uno = F.htmlMedaglieConElenco(F.calcola({ portato: 75 }));
     assert.match(uno, /aria-label="1 ribbon"/);
     assert.doesNotMatch(uno, /bt-altri/);
     // il vecchio tondino con il numero non c'è più

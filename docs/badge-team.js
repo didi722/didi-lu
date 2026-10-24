@@ -11,15 +11,16 @@
 //   serie.showdownMax                   showdown vinti di fila
 //   ko.setPerfetti, ko.fatti            set vinti senza perdere un Pokémon, KO fatti (solo set giocati sul sito)
 //
-// Ogni badge ha 3 livelli (bronzo, argento, oro) con le soglie di CATALOGO: se la stagione tipica cambia si cambiano solo
+// Ogni badge ha 4 livelli (bronzo, argento, oro, platino) con le soglie di CATALOGO, calibrate con `node tools/simula-soglie.cjs` (League con 1-5 showdown per
+// formato, Monoformat, team che tornano quando torna il formato; il bronzo è la stagione di un team forte, il platino un team di molti anni): se la struttura cambia si cambiano solo
 // quei numeri. Funzione pura, niente DOM e niente Firebase (le colle ricevono db e Fiocchi): funziona nel browser
 // (window.BadgeTeam) e in Node (test/badge-team.test.js).
 //
-// Immagini: tutte in docs/immagini/ e tutte col prefisso "badge-team-": badge-team-<id>-<bronze|silver|gold>.png, un file per livello per
+// Immagini: tutte in docs/immagini/ e tutte col prefisso "badge-team-": badge-team-<id>-<bronze|silver|gold|platinum>.png, un file per livello per
 // ogni badge. Finché un file non c'è, al suo posto compare una medaglia disegnata con il CSS (immagineMancante). IMMAGINI elenca i file
 // che il catalogo usa; `node tools/elenco-immagini.cjs` dice quali mancano.
 // Prima c'erano tre badge di serie solo nella pagina pubblica (7 vittorie di fila, 4 match puliti, 3 showdown): ora sono
-// qui, con tre livelli, e si vedono ovunque si apra un team.
+// qui, con quattro livelli, e si vedono ovunque si apra un team.
 //
 // Il meccanismo (soglie, livelli, scaffale, medagliette) è generico: costruisci(catalogo, opzioni) lo applica a un altro catalogo.
 // Lo usa badge-allenatore.js per i badge degli allenatori, con gli stessi stili (badge-team.css).
@@ -30,16 +31,16 @@
 })(typeof self !== 'undefined' ? self : this, function (finestra) {
     'use strict';
 
-    const LIVELLI = ['bronze', 'silver', 'gold'];
-    const NOMI_LIVELLO = ['Bronze', 'Silver', 'Gold'];
-    const ROMANI = ['I', 'II', 'III'];
+    const LIVELLI = ['bronze', 'silver', 'gold', 'platinum'];
+    const NOMI_LIVELLO = ['Bronze', 'Silver', 'Gold', 'Platinum'];
+    const ROMANI = ['I', 'II', 'III', 'IV'];
     const CARTELLA = 'immagini/';
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-    const tre = base => LIVELLI.map(l => `${CARTELLA}${base.replace('{l}', l)}`);
+    const perLivelli = base => LIVELLI.map(l => `${CARTELLA}${base.replace('{l}', l)}`);
 
-    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro
+    // 0 = non preso, 1 = bronzo, 2 = argento, 3 = oro, 4 = platino
     function livelloDi(valore, soglie) {
         let l = 0;
         for (let i = 0; i < soglie.length; i++) if (valore >= soglie[i]) l = i + 1;
@@ -65,8 +66,8 @@
 
     // =====================================================
     // Il meccanismo, per un catalogo qualunque
-    //   soglie    valori per bronzo, argento, oro
-    //   immagini  3 file, uno per livello (bronzo, argento, oro)
+    //   soglie    valori per bronzo, argento, oro, platino
+    //   immagini  4 file, uno per livello (bronzo, argento, oro, platino)
     //   minimo    se presente, sotto questo numero di base il valore non conta ancora (serve per le percentuali)
     //   valore    funzione del "contesto" (un team, un allenatore...) che dà il numero da confrontare con le soglie
     //   partenza  (opzionale) da dove parte la barra: l'Elo parte da 1000, non da zero
@@ -143,7 +144,7 @@
             const livelli = b.soglie.map((soglia, i) => ({
                 nome: NOMI_LIVELLO[i], classe: LIVELLI[i], soglia: `${soglia}${suffisso}`, stato: i < b.livello ? 'done' : (i === b.livello ? 'next' : '')
             }));
-            let barra = null, frase = 'Gold reached: badge complete!';
+            let barra = null, frase = `${NOMI_LIVELLO[NOMI_LIVELLO.length - 1]} reached: badge complete!`;
             if (!completo && b.sblocco) {
                 // una percentuale conta solo dopo abbastanza match: la barra è quella dei match giocati
                 barra = { etichetta: maiuscola(b.sblocco.etichetta), valore: b.sblocco.valore, obiettivo: b.sblocco.serve, partenza: 0, suffisso: '' };
@@ -166,7 +167,7 @@
         const htmlImmagine = (b, classe) =>
             `<img class="${classe}" src="${esc(b.immagine)}" alt="" loading="lazy" onerror="BadgeTeam.immagineMancante(this,'${esc(b.icona)}')">`;
 
-        // Una riga dello scaffale: medaglia, nome e livello preso, spiegazione, i tre livelli con i loro traguardi, la barra e cosa manca.
+        // Una riga dello scaffale: medaglia, nome e livello preso, spiegazione, i quattro livelli con i loro traguardi, la barra e cosa manca.
         // Tutto è sempre visibile (niente fumetti da cercare con il mouse: sul telefono non esistono).
         function htmlBadge(b) {
             const d = scheda(b);
@@ -235,37 +236,37 @@
     // I badge dei team
     // =====================================================
     const CATALOGO = [
-        { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 4],
+        { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3, 5],
           descrizione: 'Seasons won.',
-          valore: t => num(t.stagioniVinte), immagini: tre('badge-team-champion-{l}.png') },
-        { id: 'showdown', nome: 'Showdown Winner', icona: '⚔️', unita: 'showdowns won', soglie: [4, 8, 12],
+          valore: t => num(t.stagioniVinte), immagini: perLivelli('badge-team-champion-{l}.png') },
+        { id: 'showdown', nome: 'Showdown Winner', icona: '⚔️', unita: 'showdowns won', soglie: [8, 14, 22, 35],
           descrizione: 'Showdowns won.',
-          valore: t => num(t.showdown && t.showdown.vinti), immagini: tre('badge-team-showdown-{l}.png') },
-        { id: 'sdstreak', nome: 'SD Streak', icona: '🎯', unita: 'showdowns in a row', soglie: [3, 5, 8],
+          valore: t => num(t.showdown && t.showdown.vinti), immagini: perLivelli('badge-team-showdown-{l}.png') },
+        { id: 'sdstreak', nome: 'SD Streak', icona: '🎯', unita: 'showdowns in a row', soglie: [6, 8, 11, 15],
           descrizione: 'Showdowns won in a row.',
-          valore: t => num(t.serie && t.serie.showdownMax), immagini: tre('badge-team-sdstreak-{l}.png') },
-        { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'matches won', soglie: [8, 15, 30],
+          valore: t => num(t.serie && t.serie.showdownMax), immagini: perLivelli('badge-team-sdstreak-{l}.png') },
+        { id: 'winner', nome: 'Winner', icona: '🏆', unita: 'matches won', soglie: [20, 32, 52, 85],
           descrizione: 'Matches won.',
-          valore: t => num(t.match && t.match.vinti), immagini: tre('badge-team-winner-{l}.png') },
-        { id: 'winrate', nome: 'Win Rate', icona: '📈', unita: '% of matches won', soglie: [65, 75, 80], etichetta: 'Win rate', suffisso: '%',
+          valore: t => num(t.match && t.match.vinti), immagini: perLivelli('badge-team-winner-{l}.png') },
+        { id: 'winrate', nome: 'Win Rate', icona: '📈', unita: '% of matches won', soglie: [68, 73, 78, 85], etichetta: 'Win rate', suffisso: '%',
           descrizione: 'Share of matches won, once the team has played enough of them.',
-          valore: t => num(t.percMatch), minimo: { campo: p => num(p.match && p.match.giocati), valore: 12, etichetta: 'matches played' },
-          immagini: tre('badge-team-winrate-{l}.png') },
-        { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [7, 10, 14],
+          valore: t => num(t.percMatch), minimo: { campo: p => num(p.match && p.match.giocati), valore: 18, etichetta: 'matches played' },
+          immagini: perLivelli('badge-team-winrate-{l}.png') },
+        { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [8, 11, 14, 18],
           descrizione: 'Matches won in a row.',
-          valore: t => num(t.serie && t.serie.vittorieMax), immagini: tre('badge-team-winstreak-{l}.png') },
-        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [3, 5, 7],
+          valore: t => num(t.serie && t.serie.vittorieMax), immagini: perLivelli('badge-team-winstreak-{l}.png') },
+        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [3, 4, 5, 6],
           descrizione: 'Matches won in a row without dropping a set.',
-          valore: t => num(t.serie && t.serie.pulitaMax), immagini: tre('badge-team-cleanstreak-{l}.png') },
-        { id: 'flawless', nome: 'Flawless', icona: '🛡️', unita: 'flawless sets', soglie: [4, 8, 14],
+          valore: t => num(t.serie && t.serie.pulitaMax), immagini: perLivelli('badge-team-cleanstreak-{l}.png') },
+        { id: 'flawless', nome: 'Flawless', icona: '🛡️', unita: 'flawless sets', soglie: [8, 13, 20, 30],
           descrizione: 'Sets won without losing a single Pokémon.',
-          valore: t => num(t.ko && t.ko.setPerfetti), immagini: tre('badge-team-flawless-{l}.png') },
-        { id: 'knockout', nome: 'Knockout', icona: '💥', unita: 'KOs', soglie: [150, 350, 600],
+          valore: t => num(t.ko && t.ko.setPerfetti), immagini: perLivelli('badge-team-flawless-{l}.png') },
+        { id: 'knockout', nome: 'Knockout', icona: '💥', unita: 'KOs', soglie: [330, 530, 800, 1250],
           descrizione: 'Opposing Pokémon knocked out.',
-          valore: t => num(t.ko && t.ko.fatti), immagini: tre('badge-team-knockout-{l}.png') },
-        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [2, 3, 5],
+          valore: t => num(t.ko && t.ko.fatti), immagini: perLivelli('badge-team-knockout-{l}.png') },
+        { id: 'veteran', nome: 'Veteran', icona: '🎖️', unita: 'seasons played', soglie: [2, 3, 4, 6],
           descrizione: 'Seasons played.',
-          valore: t => num(t.stagioniGiocate), immagini: tre('badge-team-veteran-{l}.png') }
+          valore: t => num(t.stagioniGiocate), immagini: perLivelli('badge-team-veteran-{l}.png') }
     ];
 
     const squadra = costruisci(CATALOGO, { titolo: 'TEAM BADGES' });
@@ -360,6 +361,6 @@
         testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, immagineMancante,
         montaBarra, montaMini, riempiCard,
         // per altri cataloghi (badge-allenatore.js)
-        costruisci, tre, CARTELLA, esc
+        costruisci, perLivelli, CARTELLA, esc
     };
 });
