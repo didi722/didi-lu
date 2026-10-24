@@ -17,8 +17,12 @@ const { onValueWritten } = require('firebase-functions/v2/database');
 // così il contenitore apre subito la porta e supera il controllo di avvio di Cloud Run anche quando leggere i file è lento
 let moduloPartita = null;
 const partita = () => (moduloPartita ||= require('./partita'));
-// dopo l'avvio (la porta è già aperta) lo si carica comunque, così la prima partita non lo aspetta
-setTimeout(() => { try { partita(); } catch (e) { console.error('Caricamento di partita.js fallito', e); } }, 200).unref();
+// dopo l'avvio (la porta è già aperta) lo si carica comunque, così la prima partita non lo aspetta. Solo su Cloud Run (K_SERVICE c'è sempre):
+// durante `firebase deploy` il codice viene solo letto per elencare le funzioni, e caricare il simulatore (migliaia di file) in quel momento
+// può superare i 10 secondi del controllo ("User code failed to load. Cannot determine backend specification. Timeout after 10000")
+if (process.env.K_SERVICE) {
+    setTimeout(() => { try { partita(); } catch (e) { console.error('Caricamento di partita.js fallito', e); } }, 200).unref();
+}
 
 initializeApp();
 
