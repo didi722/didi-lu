@@ -383,6 +383,10 @@ if (process.argv[4] === 'prob') {
     probabilita('t.winrate%', [62, 65, 68, 70, 72, 75, 78, 80, 85, 88]);
     probabilita('p.survivor%', [36, 40, 44, 46, 48, 50, 52, 55]);
     probabilita('t.cleanstreak', [3, 4, 5, 6, 7]);
+    probabilita('t.winstreak', [6, 8, 10, 11, 12, 14, 16, 18, 20]);
+    probabilita('t.sdstreak', [4, 6, 8, 10, 11, 13, 15, 18]);
+    probabilita('p.winstreak', [6, 8, 9, 10, 12, 14, 16, 18, 20]);
+    probabilita('p.cleanstreak', [3, 4, 5, 6, 7, 8]);
 }
 
 // `tempi`: per ogni badge del sito, dopo quante stagioni ufficiali (mediana) un giocatore forte e uno elite arrivano a ogni livello

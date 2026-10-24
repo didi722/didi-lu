@@ -52,10 +52,10 @@ test('livelli: bronzo, argento, oro e platino alle soglie; al massimo la barra Ã
 });
 
 test('le serie (match, match puliti, showdown di fila) e i KO usano i numeri del team', () => {
-    // soglie: vittorie di fila 8/11/14/18, match puliti 3/4/5/6, showdown di fila 6/8/11/15, KO 330/530/800/1250, set perfetti 8/13/20/30
-    const l = B.calcola(team({ serie: { vittorieMax: 11, pulitaMax: 6, showdownMax: 8 }, ko: { fatti: 530, setPerfetti: 8, setConDati: 9 } }));
+    // soglie: vittorie di fila 8/11/14/18, match puliti 4/5/6/7, showdown di fila 6/8/11/15, KO 330/530/800/1250, set perfetti 8/13/20/30
+    const l = B.calcola(team({ serie: { vittorieMax: 11, pulitaMax: 5, showdownMax: 8 }, ko: { fatti: 530, setPerfetti: 8, setConDati: 9 } }));
     assert.equal(perId(l, 'winstreak').livello, 2);
-    assert.equal(perId(l, 'cleanstreak').livello, 4);
+    assert.equal(perId(l, 'cleanstreak').livello, 2);
     assert.equal(perId(l, 'sdstreak').livello, 2);
     assert.equal(perId(l, 'knockout').livello, 2);
     assert.equal(perId(l, 'flawless').livello, 1);
@@ -83,7 +83,7 @@ test('immagini: tutte col prefisso badge-team-, un file per livello per ogni bad
     assert.equal(perId(l, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-bronze.png');
     assert.equal(perId(l, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-bronze.png');
     assert.equal(perId(l, 'champion').immagine, 'immagini/badge-team-champion-bronze.png');
-    const alto = B.calcola(team({ serie: { vittorieMax: 14, pulitaMax: 4, showdownMax: 15 }, match: { giocati: 60, vinti: 52, persi: 8 } }));
+    const alto = B.calcola(team({ serie: { vittorieMax: 14, pulitaMax: 5, showdownMax: 15 }, match: { giocati: 60, vinti: 52, persi: 8 } }));
     assert.equal(perId(alto, 'winstreak').immagine, 'immagini/badge-team-winstreak-gold.png');
     assert.equal(perId(alto, 'cleanstreak').immagine, 'immagini/badge-team-cleanstreak-silver.png');
     assert.equal(perId(alto, 'sdstreak').immagine, 'immagini/badge-team-sdstreak-platinum.png');
