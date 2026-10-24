@@ -1714,7 +1714,9 @@ function disegnaMosse(lato, corpo) {
             : p.potenziamento === 'zmove' ? `zmove|${m.nome}|${attivo.slot}`
             : massima ? `maxmove|${m.nome}|${attivo.slot}${gmax}`
             : `move|${m.nome}|${attivo.slot}`;
-        const spenta = !eff || m.disabilitata || m.pp === 0;
+        // con il Dynamax (da fare adesso o già in corso) si sceglie tra le mosse Max: il blocco dello strumento Scelta non c'è più, valgono solo i limiti
+        // delle mosse Max (Gilet Assalto o Provocazione per quelle di stato, PP finiti)
+        const spenta = !eff || m.pp === 0 || (massima ? !!m.max.disabilitata : m.disabilitata);
         return el('button', {
             type: 'button',
             ...conTooltip(lato, codice, `mossa t-${tipo.toLowerCase()}` + (spenta ? ' spenta' : '')),

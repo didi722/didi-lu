@@ -221,7 +221,8 @@ export function leggiRichiesta(richiesta) {
                 ppMax: m.maxpp,
                 target: m.target,
                 disabilitata: !!m.disabled,
-                max: mosseMax && mosseMax[j] ? { nome: mosseMax[j].move, target: mosseMax[j].target } : null,
+                // la mossa Max ha le sue condizioni: il blocco dello strumento Scelta (Choice) non la tocca, mentre Gilet Assalto, Provocazione e i PP finiti sì
+                max: mosseMax && mosseMax[j] ? { nome: mosseMax[j].move, target: mosseMax[j].target, disabilitata: !!mosseMax[j].disabled } : null,
                 z: mosseZ && mosseZ[j] ? { nome: mosseZ[j].move, target: mosseZ[j].target } : null
             }))
         };
