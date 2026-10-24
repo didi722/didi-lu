@@ -238,7 +238,14 @@ html[data-modo="fit"] .lato-pkm { flex-basis: auto; grid-template-columns: repea
 .membro:nth-child(4n+4) { --tilt: -1deg; }
 /* GIF animate come nel resto del sito: contenute nel riquadro, con l'ombra nera di .modal-sprite */
 .membro > img { display: block; width: 100%; max-width: 48px; aspect-ratio: 1; height: auto; object-fit: contain; filter: drop-shadow(2px 2px 0 var(--inchiostro)); }
+/* La colonna ha un'altezza sola (quella dello schermo): quando è bassa i Pokémon si dispongono su tre colonne e più piccoli,
+   così in fondo resta sempre posto per i Side effects */
+html[data-modo="fit"] .lato { container-type: size; }
 html[data-modo="fit"] .membro > img { width: 64px; max-width: none; height: 64px; }
+@container (max-height: 620px) {
+    html[data-modo="fit"] .lato-pkm { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; }
+    html[data-modo="fit"] .membro > img { width: 38px; height: 38px; }
+}
 .membro-nome {
     max-width: 100%;
     font: 700 .6rem 'Josefin Sans', sans-serif; line-height: 1.1; text-transform: uppercase; text-align: center;
@@ -488,7 +495,7 @@ html[data-modo="fit"] .membro.ignoto > img { width: 34px; height: 34px; }
 
 /* Condizioni del lato di un player (Stealth Rock, Tailwind…): sotto i suoi Pokémon */
 .lato-condizioni { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 7px; padding: 4px 8px 8px 2px; }
-html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; overflow-y: auto; }
 .lato-condizioni:empty { display: none; }
 .lato-condizioni::before {
     content: 'Side effects'; flex: 0 0 100%;
