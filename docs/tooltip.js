@@ -4,7 +4,7 @@
    Il browser mostra l'attributo title con il suo fumetto grigio. Qui, dove c'è il mouse, quel testo esce nel fumetto
    "coach" del sito (stile in tooltip.css): al passaggio si sposta in un attributo di servizio (così il fumetto del
    browser non compare) e si rimette a posto appena il mouse esce. Sui dispositivi touch non fa nulla (non c'è
-   "passaggio"). Non tocca battle.html (ha i suoi fumetti) né i title di iframe e svg (servono ai lettori di schermo).
+   "passaggio"). Su battle.html i fumetti del client (#tooltipwrapper) restano i loro; non tocca i title di iframe e svg (servono ai lettori di schermo).
    La posizione è una funzione pura (posiziona), provata in test/tooltip.test.js.
    ===================================================================== */
 (function (radice, fabbrica) {

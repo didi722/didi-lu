@@ -31,7 +31,7 @@ test('le quattro pagine con la scheda squadra caricano dettagli.css (prima di mo
     }
 });
 
-test('ogni pagina del sito (non la battaglia) carica i tooltip coach, prima di mobile.css dove c\'è', () => {
+test('ogni pagina del sito e la battaglia caricano i tooltip coach, prima di mobile.css dove c\'è', () => {
     for (const p of ['index', 'hub', 'players', 'profile', 'stats', 'formats', 'rules', 'matches', 'box', 'admin', 'public']) {
         const html = docs(p + '.html');
         const fogli = locali(html);
@@ -39,7 +39,8 @@ test('ogni pagina del sito (non la battaglia) carica i tooltip coach, prima di m
         assert.ok(scriptLocali(html).includes('tooltip.js'), `${p}: manca tooltip.js`);
         if (fogli.includes('mobile.css')) assert.ok(fogli.indexOf('tooltip.css') < fogli.indexOf('mobile.css'), `${p}: tooltip.css prima di mobile.css`);
     }
-    assert.ok(!docs('battle.html').includes('tooltip.js'), 'la battaglia ha i suoi fumetti');
+    // la battaglia li carica per le medagliette dei badge e i suoi tasti; i fumetti del client (#tooltipwrapper) restano esclusi
+    assert.ok(scriptLocali(docs('battle.html')).includes('tooltip.js') && locali(docs('battle.html')).includes('tooltip.css'), 'la battaglia: manca tooltip');
 });
 
 test('Box e pagina pubblica caricano le statistiche e i fiocchi (statistiche.js prima di fiocchi.js)', () => {
