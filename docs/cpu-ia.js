@@ -285,7 +285,7 @@
                     if (cmd === 'replace' && !p[3]) {
                         // Illusione svelata: la riga non porta gli HP perché il Pokémon è quello che era già in campo travestito; si tengono i suoi
                         const travestito = l.attivi[pos.slot] && l.attivi[pos.slot] !== pos.nome ? l.mons[l.attivi[pos.slot]] : null;
-                        if (travestito) { m.pct = travestito.pct; m.stato = travestito.stato; }
+                        if (travestito) { m.pct = travestito.pct; m.stato = travestito.stato; m.boost = { ...travestito.boost }; m.dinamax = travestito.dinamax; m.posto = pos.slot; }
                         m.vivo = true;
                     } else { m.pct = h.pct != null ? h.pct : m.pct; m.stato = h.stato || ''; m.vivo = true; }
                     // chi è in campo: un solo Pokémon per posto

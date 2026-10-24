@@ -26,6 +26,7 @@ import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
 import './formato-random.js';   // self.FormatoRandom: i formati Random Battle di Showdown
 import './nomi-unici.js';       // self.NomiUnici
 import './nomi-log.js';         // self.NomiLog
+import './illusione-client.js'; // self.IllusioneClient: l'Illusione svelata non azzera i potenziamenti
 import './team-bloccati.js';    // self.TeamBloccati: quali team non si modificano più
 import './editor-team.js';      // self.EditorTeam: il Box aperto in una finestra per modificare il team
 import './note-team.js';        // self.NoteTeam: il bloc notes del team che si sta provando
@@ -1119,6 +1120,7 @@ function creaScena({ recupera = false } = {}) {
         $logFrame: jq('#log'),
         autoresize: true
     });
+    if (self.IllusioneClient && battle.p1) self.IllusioneClient.proteggiSostituzione(battle.p1.constructor);
     battle.setViewpoint(mioLato || 'p1');
     battle.setMute(audioSpento());
     if (squadraTooltip) battle.myPokemon = squadraPerTooltip(battle, squadraTooltip);
