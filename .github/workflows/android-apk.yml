@@ -160,3 +160,4 @@ jobs:
             Indirizzo fisso: https://github.com/${{ github.repository }}/releases/download/app-android/sant-alvise-league.apk
             Ultima costruzione: build ${{ github.run_number }}, commit ${{ github.sha }}.
           files: sant-alvise-league.apk
+          fail_on_unmatched_files: true
