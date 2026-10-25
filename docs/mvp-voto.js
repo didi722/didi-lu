@@ -290,17 +290,21 @@
     }
 
     /**
-     * Per stats.html: conta i voti di tutte le stagioni scadute che non hanno ancora il risultato. Restituisce { stagione: risultato } di quelle
+     * Per index.html e stats.html: conta i voti di tutte le stagioni scadute che non hanno ancora il risultato (`seasons` è il nodo seasons). Restituisce { stagione: risultato } di quelle
      * contate, da aggiungere ai dati in memoria prima di calcolare le statistiche.
      */
     async function concludiScadute(seasons, players) {
         const fatti = {};
+        // `players` può essere l'oggetto dei giocatori o una funzione che lo legge: così chi non ha niente da contare (quasi sempre) non lo legge affatto
+        let giocatori = typeof players === 'function' ? null : players;
         for (const [id, s] of Object.entries(seasons || {})) {
             if (!s || !s.info || !window.Mvp.stagioneConMvp(s.info, id)) continue;
             const f = window.Mvp.finestraVoto(s.info, { richiesti: 1, giocati: 1 }, id);
             if (!window.Mvp.daContare(f, s.mvp)) continue;
-            try { fatti[id] = await concludi({ stagione: id, info: s.info, showdowns: s.showdowns || {}, teamsIscritti: s.teams_iscritti || {}, players, iscritti: s.iscritti || {}, mvp: s.mvp }); }
-            catch (e) { console.warn(`MVP: conteggio della stagione ${id} non salvato`, e); }
+            try {
+                if (!giocatori) giocatori = await players();
+                fatti[id] = await concludi({ stagione: id, info: s.info, showdowns: s.showdowns || {}, teamsIscritti: s.teams_iscritti || {}, players: giocatori, iscritti: s.iscritti || {}, mvp: s.mvp });
+            } catch (e) { console.warn(`MVP: conteggio della stagione ${id} non salvato`, e); }
         }
         return fatti;
     }

@@ -401,6 +401,31 @@ test('stats.html carica gli script dell\'MVP prima di stats.js e conta le stagio
     assert.match(leggi('docs/stats.js'), /MvpVoto\.concludiScadute\(STATO\.dati\.seasons, STATO\.dati\.players\)/);
 });
 
+test("index.html conta i voti scaduti all'apertura: carica gli script e li avvia dopo il login e con le stagioni", () => {
+    const html = leggi('docs/index.html');
+    const sc = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+    for (const f of ['risultati-match.js', 'statistiche.js', 'mvp.js', 'mvp-voto.js']) assert.ok(sc.includes(f), f);
+    assert.ok(sc.indexOf('statistiche.js') < sc.indexOf('mvp.js') && sc.indexOf('mvp.js') < sc.indexOf('mvp-voto.js'));
+    assert.match(html, /MvpVoto\.concludiScadute\(datiStagioniMvp,/);
+    assert.match(html, /if \(user\) contaMvpScaduti\(\);/, 'dopo il login');
+    assert.match(html, /datiStagioniMvp = data;\s+contaMvpScaduti\(\);/, 'appena arrivano le stagioni');
+});
+
+test('concludiScadute con i giocatori come funzione: li legge solo se c\'è davvero qualcosa da contare', async () => {
+    let letture = 0;
+    const leggiGiocatori = async () => { letture++; return giocatori; };
+    const niente = { recente: stagioneScaduta(fa(5)), senzaVoti: { ...stagioneScaduta(fa(40)), mvp: undefined } };
+    const V = caricaVoto(creaDb({ seasons: copia(niente), players: giocatori }));
+    assert.deepEqual(copia(await V.concludiScadute(niente, leggiGiocatori)), {});
+    assert.equal(letture, 0, 'niente da contare: nessuna lettura dei giocatori');
+    const dacontare = { s1: stagioneScaduta(fa(30)), s2: stagioneScaduta(fa(31)) };
+    const db = creaDb({ seasons: copia(dacontare), players: giocatori });
+    const fatti = copia(await caricaVoto(db).concludiScadute(dacontare, leggiGiocatori));
+    assert.deepEqual(Object.keys(fatti).sort(), ['s1', 's2']);
+    assert.equal(letture, 1, 'una lettura sola per tutte le stagioni');
+    assert.equal(db.leggi('seasons/s2/mvp/risultato/vincitori/0/specie'), 'Garchomp');
+});
+
 test("la chiusura a mano dall'admin scrive chiusaIl: da lì partono le 24 ore del voto", () => {
     assert.match(leggi('docs/admin.html'), /info\/chiusaIl`\)\.set\(new Date\(\)\.toISOString\(\)\)/);
 });

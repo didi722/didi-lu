@@ -26,6 +26,10 @@
 <script src="menu-sito.js"></script>
 <script src="sfide.js"></script>
 <script src="tipo-stagione.js"></script>
+<script src="risultati-match.js"></script>
+<script src="statistiche.js"></script>
+<script src="mvp.js"></script>
+<script src="mvp-voto.js"></script>
 </head>
 <body class="nb pg-index">
 
@@ -386,6 +390,7 @@ auth.onAuthStateChanged(async (user) => {
     const authText = document.getElementById('auth-text');
     const topBar = document.querySelector('.top-bar');
 
+    if (user) contaMvpScaduti();      // le stagioni possono essere arrivate prima del login
     if (user) {
         try {
             const nameSnap = await db.ref(`users/${user.uid}/name`).once('value');
@@ -461,6 +466,17 @@ function nascondiPokeLoader() {
     }
 }
 
+// L'MVP delle stagioni: scaduto il tempo del voto (24 ore dopo la chiusura) i voti vanno contati e il risultato scritto (mvp.js). Lo fa la prima
+// apertura della home con un giocatore collegato dopo la scadenza: una volta per apertura, e solo se c'è davvero qualcosa da contare.
+let datiStagioniMvp = null;
+let mvpControllato = false;
+function contaMvpScaduti() {
+    if (mvpControllato || !datiStagioniMvp || !auth.currentUser || !window.MvpVoto) return;
+    mvpControllato = true;
+    MvpVoto.concludiScadute(datiStagioniMvp, async () => (await db.ref('players').once('value')).val() || {})
+        .catch(e => console.warn('MVP: stagioni scadute non contate', e));
+}
+
 function caricaStagioniHome() {
     console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
@@ -472,6 +488,9 @@ function caricaStagioniHome() {
             nascondiPokeLoader();
             return;
         }
+
+        datiStagioniMvp = data;
+        contaMvpScaduti();
 
         const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
         allKeys.sort((a, b) => {
