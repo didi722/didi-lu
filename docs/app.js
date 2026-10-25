@@ -30,6 +30,7 @@
     const CHIAVE_INVITO = 'invitoApp';                 // quando si è chiuso l'invito a installare
     const GIORNI_INVITO = 14;                          // dopo averlo chiuso, l'invito torna dopo tanti giorni
     const DISTANZA_TIRA = 90;                          // pixel da tirare giù per aggiornare
+    const CHIAVE_ORIENTAMENTO = 'orientamentoBloccato'; // '1' finché la battaglia tiene lo schermo in orizzontale: la prima pagina dopo lo sblocca
 
     // le pagine dove la barra non serve (battaglia a schermo intero, accesso, modello vuoto, pannello dell'amministratore)
     const SENZA_BARRA = ['battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
@@ -110,6 +111,66 @@
     /** Quanto si è tirato giù (con un po' di resistenza): 0 se non si sta tirando */
     const tirata = (partenza, attuale) => Math.max(0, Math.round((attuale - partenza) * 0.55));
 
+    // ---------- l'orientamento: la battaglia si gioca sempre in orizzontale ----------
+
+    /**
+     * Un plugin nativo di Capacitor (solo nell'APK), o null. Il sito arriva dalla rete e non porta con sé il pacchetto @capacitor/core: si usa il
+     * `Capacitor` che l'app inietta in ogni pagina. Se l'APK non ha quel plugin (è una versione vecchia) le chiamate falliscono e basta.
+     */
+    function pluginNativo(win, nome) {
+        const cap = win && win.Capacitor;
+        if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return null;
+        if (cap.Plugins && cap.Plugins[nome]) return cap.Plugins[nome];
+        if (typeof cap.registerPlugin === 'function') { try { return cap.registerPlugin(nome); } catch (e) { return null; } }
+        return null;
+    }
+
+    /**
+     * Blocca lo schermo in orizzontale (i due versi, secondo come si tiene il telefono). Nell'APK col plugin ScreenOrientation, che funziona anche con la
+     * rotazione automatica spenta; nelle app installate dal browser con l'API del browser (solo Android: su iPhone non esiste, e lì resta il layout in piedi).
+     * Restituisce 'nativo', 'web' o '' (non si è riusciti: la pagina si adatta a come sta il telefono).
+     */
+    async function bloccaOrizzontale(win) {
+        const nativo = pluginNativo(win, 'ScreenOrientation');
+        if (nativo && typeof nativo.lock === 'function') {
+            try { await nativo.lock({ orientation: 'landscape' }); return 'nativo'; } catch (e) { /* APK senza il plugin: si prova con il browser */ }
+        }
+        const so = win && win.screen && win.screen.orientation;
+        if (so && typeof so.lock === 'function') {
+            try { await so.lock('landscape'); return 'web'; } catch (e) { /* non permesso (serve un'app installata) o non supportato */ }
+        }
+        return '';
+    }
+
+    /** Rimette lo schermo com'era: segue di nuovo il telefono e la rotazione automatica del sistema (in piedi o girato, come prima della battaglia) */
+    async function sbloccaOrientamento(win) {
+        const nativo = pluginNativo(win, 'ScreenOrientation');
+        if (nativo && typeof nativo.unlock === 'function') { try { await nativo.unlock(); } catch (e) { /* niente plugin */ } }
+        const so = win && win.screen && win.screen.orientation;
+        if (so && typeof so.unlock === 'function') { try { so.unlock(); } catch (e) { /* non era bloccato */ } }
+    }
+
+    /**
+     * Nella battaglia lo schermo si blocca in orizzontale (si riprova qualche volta: all'apertura l'app può non essere ancora pronta); in ogni altra pagina
+     * si sblocca, se la battaglia l'aveva bloccato, anche tornando indietro (la pagina rimessa dalla cache del browser non riesegue gli script).
+     */
+    function orientamentoDellaPagina(win, pagina, leggi, scrivi) {
+        if (nomePagina(pagina) === 'battle.html') {
+            const prova = restanti => bloccaOrizzontale(win).then(modo => {
+                if (modo) scrivi(CHIAVE_ORIENTAMENTO, '1');
+                else if (restanti > 0 && typeof win.setTimeout === 'function') win.setTimeout(() => prova(restanti - 1), 500);
+            });
+            prova(4);
+            // uscendo si sblocca subito, senza aspettare che si apra la pagina dopo; tornando qui dalla cache si blocca di nuovo
+            win.addEventListener('pagehide', () => { sbloccaOrientamento(win); });
+            win.addEventListener('pageshow', e => { if (e && e.persisted) prova(1); });
+            return;
+        }
+        const sblocca = () => { if (leggi(CHIAVE_ORIENTAMENTO) === '1') sbloccaOrientamento(win).then(() => scrivi(CHIAVE_ORIENTAMENTO, null)); };
+        sblocca();
+        win.addEventListener('pageshow', e => { if (e && e.persisted) sblocca(); });
+    }
+
     // ---------- la pagina ----------
 
     function avvia(win) {
@@ -150,6 +211,7 @@
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
         registraServiceWorker(win, modo, os);
+        if (modo && os) orientamentoDellaPagina(win, pagina, leggi, scrivi);
         if (modo) quandoPronto(() => avviaApp(win, doc, pagina));
         else quandoPronto(() => avviaInvito(win, doc, { os, pagina, ua: nav.userAgent, leggi, scrivi }));
         return { modo };
@@ -323,5 +385,5 @@
         doc.addEventListener('touchcancel', () => { partenza = null; nascondi(); }, { passive: true });
     }
 
-    return { TOKEN_APK, VOCI, SENZA_BARRA, CON_TIRA, DISTANZA_TIRA, GIORNI_INVITO, nomePagina, modoApp, sistema, dentroUnaApp, voceAttiva, haBarra, puoTirare, proporreInstallazione, tirata, avvia };
+    return { TOKEN_APK, VOCI, SENZA_BARRA, CON_TIRA, DISTANZA_TIRA, GIORNI_INVITO, CHIAVE_ORIENTAMENTO, pluginNativo, bloccaOrizzontale, sbloccaOrientamento, orientamentoDellaPagina, nomePagina, modoApp, sistema, dentroUnaApp, voceAttiva, haBarra, puoTirare, proporreInstallazione, tirata, avvia };
 });

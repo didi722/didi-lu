@@ -677,3 +677,124 @@ test('app.css: ogni regola riguarda l\'app (html.app…) o i suoi elementi; l\'u
     assert.match(css, /html\.app-con-barra body\s*\{[^}]*padding-bottom:\s*calc\(var\(--app-nav-h\)\s*\+\s*env\(safe-area-inset-bottom, 0px\)\)/);
     assert.match(css, /@keyframes app-gira/);
 });
+
+// ---------- l'orientamento: la battaglia si gioca sempre in orizzontale ----------
+
+const passaUnGiro = () => new Promise(ok => setImmediate(ok));
+
+function finestraOrientamento({ nativo, plugin, web, funzioneRegistra } = {}) {
+    const chiamate = [];
+    const ascoltatori = {};
+    const win = {
+        chiamate,
+        ascoltatori,
+        addEventListener: (tipo, fn) => { (ascoltatori[tipo] ||= []).push(fn); }
+    };
+    if (nativo) {
+        win.Capacitor = { isNativePlatform: () => true, Plugins: plugin ? { ScreenOrientation: plugin } : {} };
+        if (funzioneRegistra) win.Capacitor.registerPlugin = funzioneRegistra;
+    }
+    if (web) win.screen = { orientation: web };
+    return win;
+}
+
+const pluginFinto = (chiamate, { rifiuta = false } = {}) => ({
+    lock: async o => { chiamate.push(['nativo lock', o.orientation]); if (rifiuta) throw new Error('not implemented'); },
+    unlock: async () => { chiamate.push(['nativo unlock']); if (rifiuta) throw new Error('not implemented'); }
+});
+const webFinto = (chiamate, { rifiuta = false } = {}) => ({
+    lock: async o => { chiamate.push(['web lock', o]); if (rifiuta) throw new Error('SecurityError'); },
+    unlock: () => { chiamate.push(['web unlock']); }
+});
+
+test('bloccaOrizzontale: nell\'APK col plugin ScreenOrientation, nelle app installate con l\'API del browser, altrimenti non fa niente', async () => {
+    const c = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(c) })), 'nativo');
+    assert.deepEqual(c, [['nativo lock', 'landscape']]);
+
+    // APK vecchio, senza il plugin: la chiamata fallisce e si prova con il browser
+    const d = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(d, { rifiuta: true }), web: webFinto(d) })), 'web');
+    assert.deepEqual(d, [['nativo lock', 'landscape'], ['web lock', 'landscape']]);
+
+    // app installata da Chrome: solo l'API del browser
+    const e = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto(e) })), 'web');
+    assert.deepEqual(e, [['web lock', 'landscape']]);
+
+    // il browser non lo permette (o iPhone, dove non esiste): resta com'è
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto([], { rifiuta: true }) })), '');
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({})), '');
+    assert.equal(await A.bloccaOrizzontale(null), '');
+});
+
+test('pluginNativo: solo dentro l\'app nativa; il pacchetto non c\'è (il sito arriva dalla rete), si usa il Capacitor che l\'app inietta', () => {
+    assert.equal(A.pluginNativo({}, 'ScreenOrientation'), null);
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => false, Plugins: { ScreenOrientation: {} } } }, 'ScreenOrientation'), null, 'nel browser il Capacitor non è nativo');
+    const gia = {};
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: { ScreenOrientation: gia } } }, 'ScreenOrientation'), gia);
+    const registrato = {};
+    const chiesti = [];
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: n => { chiesti.push(n); return registrato; } } }, 'ScreenOrientation'), registrato);
+    assert.deepEqual(chiesti, ['ScreenOrientation']);
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: () => { throw new Error('no'); } } }, 'ScreenOrientation'), null);
+});
+
+test('sbloccaOrientamento: rimette lo schermo com\'era (plugin e browser), senza errori se non c\'è niente da sbloccare', async () => {
+    const c = [];
+    await A.sbloccaOrientamento(finestraOrientamento({ nativo: true, plugin: pluginFinto(c), web: webFinto(c) }));
+    assert.deepEqual(c, [['nativo unlock'], ['web unlock']]);
+    await A.sbloccaOrientamento(finestraOrientamento({ nativo: true, plugin: pluginFinto([], { rifiuta: true }) }));
+    await A.sbloccaOrientamento(finestraOrientamento({}));
+    await A.sbloccaOrientamento(null);
+});
+
+test('orientamentoDellaPagina: la battaglia blocca e lo ricorda; la pagina dopo (o "indietro") sblocca una volta sola', async () => {
+    const memoria = {};
+    const leggi = k => (k in memoria ? memoria[k] : null);
+    const scrivi = (k, v) => { if (v == null) delete memoria[k]; else memoria[k] = v; };
+
+    // nella battaglia
+    const c = [];
+    const battaglia = finestraOrientamento({ nativo: true, plugin: pluginFinto(c) });
+    A.orientamentoDellaPagina(battaglia, '/didi-lu/battle.html', leggi, scrivi);
+    await passaUnGiro();
+    assert.deepEqual(c, [['nativo lock', 'landscape']]);
+    assert.equal(memoria[A.CHIAVE_ORIENTAMENTO], '1');
+    // uscendo (anche con "indietro") si sblocca subito
+    battaglia.ascoltatori.pagehide.forEach(f => f());
+    await passaUnGiro();
+    assert.deepEqual(c.slice(1), [['nativo unlock']]);
+    // tornando alla battaglia dalla cache del browser si blocca di nuovo; un normale "pageshow" no
+    battaglia.ascoltatori.pageshow.forEach(f => f({ persisted: false }));
+    await passaUnGiro();
+    assert.equal(c.length, 2);
+    battaglia.ascoltatori.pageshow.forEach(f => f({ persisted: true }));
+    await passaUnGiro();
+    assert.deepEqual(c.slice(2), [['nativo lock', 'landscape']]);
+
+    // la pagina dopo: sblocca e dimentica
+    const d = [];
+    const box = finestraOrientamento({ nativo: true, plugin: pluginFinto(d) });
+    A.orientamentoDellaPagina(box, '/didi-lu/box.html', leggi, scrivi);
+    await passaUnGiro();
+    assert.deepEqual(d, [['nativo unlock']]);
+    assert.equal(A.CHIAVE_ORIENTAMENTO in memoria, false);
+
+    // senza battaglia prima non tocca niente (nemmeno il plugin)
+    const e = [];
+    const home = finestraOrientamento({ nativo: true, plugin: pluginFinto(e) });
+    A.orientamentoDellaPagina(home, '/didi-lu/index.html', leggi, scrivi);
+    await passaUnGiro();
+    assert.deepEqual(e, []);
+    // ma se la battaglia ha lasciato il segno e si torna a questa pagina dalla cache, la sblocca
+    scrivi(A.CHIAVE_ORIENTAMENTO, '1');
+    home.ascoltatori.pageshow.forEach(f => f({ persisted: true }));
+    await passaUnGiro();
+    assert.deepEqual(e, [['nativo unlock']]);
+});
+
+test('orientamento nel cablaggio: solo come app e solo dal telefono (non su PC con ?app=1)', () => {
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app.js'), 'utf8');
+    assert.match(js, /if \(modo && os\) orientamentoDellaPagina\(win, pagina, leggi, scrivi\);/);
+});

@@ -152,6 +152,55 @@ test('modificaManifest: niente copia di sicurezza nel cloud; se il modello cambi
     assert.equal((P.modificaManifest(giaCol).match(/POST_NOTIFICATIONS/g) || []).length, 1, 'se c\'è già non si ripete');
 });
 
+// il punto del plugin ufficiale @capacitor/screen-orientation (ScreenOrientation.java) che modificaOrientamento cambia
+const JAVA_PLUGIN = `public class ScreenOrientation {
+    private int fromOrientationTypeToEnum(String orientationType) {
+        switch (orientationType) {
+            case "any":
+                return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+            case "landscape":
+            case "landscape-primary":
+                return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+            case "landscape-secondary":
+                return ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+            default:
+                return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        }
+    }
+}`;
+
+test('modificaOrientamento: "landscape" segue il sensore (tutti e due i versi), gli altri tipi restano; ripetuta non cambia nulla; se il plugin cambia, si ferma', () => {
+    const fatto = P.modificaOrientamento(JAVA_PLUGIN);
+    assert.match(fatto, /case "landscape":\s*return ActivityInfo\.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;/);
+    assert.match(fatto, /case "landscape-primary":\s*return ActivityInfo\.SCREEN_ORIENTATION_LANDSCAPE;/, 'un verso preciso resta fisso');
+    assert.match(fatto, /case "landscape-secondary":\s*return ActivityInfo\.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;/);
+    assert.match(fatto, /case "any":\s*return ActivityInfo\.SCREEN_ORIENTATION_UNSPECIFIED;/, 'sbloccare resta sbloccare');
+    assert.equal(P.modificaOrientamento(fatto), fatto);
+    assert.throws(() => P.modificaOrientamento('class ScreenOrientation {}'), /Non trovo la scelta di "landscape"/);
+});
+
+test('il plugin ScreenOrientation installato ha il punto che modificaOrientamento si aspetta (cambiando versione si accorge se il codice è diverso)', () => {
+    const file = path.join(RADICE, 'node_modules', '@capacitor', 'screen-orientation', 'android', 'src', 'main', 'java', 'com', 'capacitorjs', 'plugins', 'screenorientation', 'ScreenOrientation.java');
+    assert.ok(fs.existsSync(file), 'manca il plugin: npm ci');
+    assert.ok(P.modificaOrientamento(fs.readFileSync(file, 'utf8')).includes('SCREEN_ORIENTATION_SENSOR_LANDSCAPE'));
+    const pkg = JSON.parse(leggi('package.json'));
+    assert.match(pkg.dependencies['@capacitor/screen-orientation'], /^\^8\./, 'stessa versione maggiore di Capacitor');
+    const lock = JSON.parse(leggi('package-lock.json'));
+    assert.equal(lock.packages[''].dependencies['@capacitor/screen-orientation'], pkg.dependencies['@capacitor/screen-orientation']);
+});
+
+test('preparaPlugin: senza "npm ci" avvisa; col plugin presente lo ritocca', () => {
+    const d = cartellaProva();
+    try {
+        assert.throws(() => P.preparaPlugin(d), /npm ci/);
+        const dir = path.join(d, 'node_modules', '@capacitor', 'screen-orientation', 'android', 'src', 'main', 'java', 'com', 'capacitorjs', 'plugins', 'screenorientation');
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'ScreenOrientation.java'), JAVA_PLUGIN);
+        P.preparaPlugin(d);
+        assert.match(fs.readFileSync(path.join(dir, 'ScreenOrientation.java'), 'utf8'), /SCREEN_ORIENTATION_SENSOR_LANDSCAPE/);
+    } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
 function cartellaProva() {
     const d = fs.mkdtempSync(path.join(os.tmpdir(), 'app-android-'));
     fs.mkdirSync(path.join(d, 'docs'), { recursive: true });
@@ -215,7 +264,7 @@ test('workflow: parte dai file dell\'app su main, a mano, e con Node 22 e Java 2
 
 test('workflow: i passi stanno nell\'ordine giusto (www, progetto, icone, ritocchi, sincronizzazione, Gradle, firma, release)', () => {
     const ordine = [
-        'npm ci --ignore-scripts', 'node tools/android/prepara.cjs web', 'npx cap add android', 'generate --android',
+        'npm ci --ignore-scripts', 'node tools/android/prepara.cjs plugin', 'node tools/android/prepara.cjs web', 'npx cap add android', 'generate --android',
         'node tools/android/prepara.cjs android', 'npx cap sync android', 'assembleRelease', 'zipalign', 'apksigner" sign', 'apksigner" verify', 'softprops/action-gh-release'
     ];
     let da = 0;

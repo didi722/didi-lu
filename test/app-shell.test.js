@@ -335,9 +335,17 @@ test('app-battaglia.css: ogni regola riguarda l\'app (html.app) ed è solo per t
     assert.match(medie[0], /max-width:\s*700px\),\s*\(max-height:\s*520px/);
     assert.match(medie[1], /orientation:\s*landscape\)\s*and\s*\(max-height:\s*520px\)/);
     assert.match(medie[2], /orientation:\s*portrait\)\s*and\s*\(max-width:\s*700px\)/);
-    // lo schermo di Showdown non si toglie mai: è 16:9 e resta intero, solo più piccolo; a destra restano almeno 270px per i comandi
-    assert.match(css, /--wc:\s*min\(calc\(\(100dvh - 28px\) \* 16 \/ 9\), calc\(100vw - 290px/);
+    // lo schermo di Showdown non si toglie mai: è 16:9 e resta intero, solo più piccolo; ai due lati restano almeno 112px per i tasti
+    assert.match(css, /--wc:\s*min\(calc\(\(100dvh - 32px\) \* 16 \/ 9 \+ 8px\), calc\(100vw - 2 \* 112px/);
     assert.doesNotMatch(css, /\.palco(-box)?\s*\{[^}]*display:\s*none/);
+    // girato: tre colonne (sinistra | schermo | destra), lo schermo al centro, POKÉMON a sinistra e FIGHT a destra
+    assert.match(css, /grid-template-columns: minmax\(0, 1fr\) var\(--wc\) minmax\(0, 1fr\);/);
+    assert.match(css, /\.palco-box \{ grid-column: 2; grid-row: 1 \/ -1;/);
+    assert.match(css, /\.ab-squadra \{ grid-column: 1; grid-row: 2 \/ 4; \}/);
+    assert.match(css, /\.ab-lotta \{ grid-column: 3; grid-row: 2 \/ 4; \}/);
+    // le mosse come nei giochi (1 2 / 3 4): le dispari a sinistra, le pari a destra
+    assert.match(css, /\.mossa:nth-child\(odd\) \{ grid-column: 1; \}/);
+    assert.match(css, /\.mossa:nth-child\(even\) \{ grid-column: 3; \}/);
     // niente player ai lati, cronaca, tooltip, prove (bot, note) e schermo intero
     assert.match(css, /html\.app :is\(\.lato, \.colonna-log, \.opzione-bot, \.btn-note, \.btn-schermo-intero, #note-team\) \{ display: none !important; \}/);
     assert.match(css, /html\.app #tooltipwrapper \{ display: none !important; \}/);
