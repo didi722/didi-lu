@@ -475,7 +475,10 @@
         position: static !important; width: 100% !important; max-width: none !important; min-width: 0; margin: 0 !important; box-sizing: border-box; flex: none !important;
         transform: none !important; grid-area: auto !important; border-left: 0 !important; border-right: 0 !important; border-top: 3px solid var(--nb-ink, #000) !important;
     }
-    html.app-shell #pp-carta .pp-palco { order: 1; border-top: 0 !important; height: min(78vw, 320px); }
+    html.app-shell #pp-carta .pp-palco { order: 1; border-top: 0 !important; }
+    /* gli adesivi sono messi dal proprietario sulla SUA disposizione (in percentuale sulla carta): nella disposizione dell'app finirebbero sopra a numeri e nomi */
+    html.app-shell body:not(.pp-modifica) #pp-adesivi { display: none; }
+    html.app-shell #pp-carta .pp-linea { display: contents !important; }
     html.app-shell #pp-carta .pp-identita { order: 2; }
     html.app-shell #pp-carta .pp-statistiche { order: 3; }
     html.app-shell #pp-carta .pp-party { order: 4; }
