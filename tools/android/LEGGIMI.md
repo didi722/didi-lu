@@ -1,7 +1,7 @@
 # App Android (APK)
 
 L'app è un guscio [Capacitor](https://capacitorjs.com) che apre il sito vero (`capacitor.config.json` > `server.url`): ogni modifica al sito
-arriva subito, senza rifare l'APK. Il sito la riconosce dallo user agent (`SantAlviseApp`) e accende l'aspetto da app (barra in basso, tira per aggiornare).
+arriva subito, senza rifare l'APK. Il sito la riconosce dallo user agent (`SantAlviseApp`) e accende l'aspetto da app (barra in basso e in alto compatte, pagine ridisegnate per il telefono, battaglie in orizzontale, tira per aggiornare).
 Senza rete l'app mostra `docs/offline.html`.
 
 ## Per gli amici
@@ -10,7 +10,7 @@ Senza rete l'app mostra `docs/offline.html`.
   poi aprire il file scaricato. La prima volta Android chiede di permettere l'installazione da quella fonte (Chrome o il gestore file); se Play Protect
   avvisa che l'app è di uno sviluppatore sconosciuto, si sceglie "Installa comunque". Gli aggiornamenti si installano sopra la versione precedente.
 - **iPhone / iPad**: un'app vera richiede un account Apple Developer a pagamento. Gratis: aprire il sito in **Safari**, Condividi, **Aggiungi alla schermata Home**.
-  Si apre a schermo intero come un'app, con la stessa barra in basso, sempre aggiornata (anche da Chrome su iOS 16.4+: Condividi, Aggiungi a Home).
+  Si apre a schermo intero come un'app, con le stesse pagine ridisegnate per il telefono, sempre aggiornate (anche da Chrome su iOS 16.4+: Condividi, Aggiungi a Home).
 - Android senza APK: da Chrome, menù, **Installa app** (o l'invito che compare sulla home).
 
 ## Come si costruisce

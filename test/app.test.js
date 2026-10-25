@@ -77,7 +77,7 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('voceAttiva: Home accende Home (anche l\'hub di una stagione), le cinque pagine hanno la loro voce, il resto accende Menu', () => {
+test('voceAttiva: Home accende Home (anche l\'hub di una stagione), le cinque pagine hanno la loro voce, il resto non ne accende nessuna', () => {
     assert.equal(A.voceAttiva('/didi-lu/'), 'home');
     assert.equal(A.voceAttiva('/didi-lu/index.html'), 'home');
     assert.equal(A.voceAttiva('/didi-lu/hub.html'), 'home');
@@ -85,7 +85,8 @@ test('voceAttiva: Home accende Home (anche l\'hub di una stagione), le cinque pa
     assert.equal(A.voceAttiva('/didi-lu/box.html'), 'box');
     assert.equal(A.voceAttiva('/didi-lu/players.html'), 'trainers');
     assert.equal(A.voceAttiva('/didi-lu/stats.html'), 'stats');
-    for (const p of ['profile.html', 'palmares.html', 'formats.html', 'rules.html', 'public.html']) assert.equal(A.voceAttiva('/didi-lu/' + p), 'menu', p);
+    // Profile, Archive, Formats, Rulebook e le pagine dei giocatori si aprono dal foglio dell'account (app-shell.js): nella barra non c'è una voce per loro
+    for (const p of ['profile.html', 'palmares.html', 'formats.html', 'rules.html', 'public.html']) assert.equal(A.voceAttiva('/didi-lu/' + p), '', p);
 });
 
 test('haBarra / puoTirare: niente barra in battaglia, accesso, amministrazione e modello vuoto; tirare solo dove non si modifica nulla', () => {
@@ -96,11 +97,12 @@ test('haBarra / puoTirare: niente barra in battaglia, accesso, amministrazione e
     for (const p of ['box.html', 'profile.html', 'public.html', 'battle.html', 'admin.html', 'login.html']) assert.equal(A.puoTirare(p), false, p);
 });
 
-test('le voci della barra: sei, con pagine vere; le pagine citate esistono e hanno la barra', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['home', 'matches', 'box', 'trainers', 'stats', 'menu']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 6);
+test('le voci della barra: cinque, con pagine vere; le pagine citate esistono e hanno la barra', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['home', 'matches', 'box', 'trainers', 'stats']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5);
     for (const v of A.VOCI) {
-        if (v.href) { assert.ok(esiste(v.href), `${v.id}: manca ${v.href}`); assert.ok(A.haBarra(v.href), v.href); }
+        assert.ok(esiste(v.href), `${v.id}: manca ${v.href}`);
+        assert.ok(A.haBarra(v.href), v.href);
         for (const p of v.pagine) assert.ok(esiste(p), `${v.id}: manca ${p}`);
     }
     for (const p of [...A.SENZA_BARRA, ...A.CON_TIRA]) assert.ok(esiste(p), `manca ${p}`);
@@ -234,62 +236,42 @@ test('service worker: solo da telefono o tablet, su https o localhost, solo se i
     assert.deepEqual(registra({ ua: UA.apk }), [], 'nell\'APK il sito arriva sempre dalla rete');
 });
 
-test('dall\'icona sulla Home dell\'iPhone: classe app, barra a sei voci con quella della pagina accesa, nessun invito', () => {
+test('dall\'icona sulla Home dell\'iPhone: classi app e app-shell, barra a cinque voci con quella della pagina accesa, nessun invito', () => {
     const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/matches.html', punti: 5 });
     assert.deepEqual(s.risultato, { modo: 'installata' });
-    assert.deepEqual(s.classi(), ['app', 'app-con-barra', 'app-installata', 'os-ios']);
+    assert.deepEqual(s.classi(), ['app', 'app-con-barra', 'app-installata', 'app-shell', 'os-ios']);
     const barra = s.barra();
     assert.ok(barra);
     assert.equal(barra.className, 'app-nav');
     assert.equal(barra.attributi['aria-label'], 'App navigation');
     const html = barra.innerHTML;
-    assert.equal((html.match(/app-nav-voce/g) || []).length, 6);
+    assert.equal((html.match(/app-nav-voce/g) || []).length, 5);
     for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html']) assert.match(html, new RegExp(`href="${p}"`));
-    for (const et of ['Home', 'Matches', 'Box', 'Trainers', 'Stats', 'Menu']) assert.match(html, new RegExp(`<span>${et}</span>`));
+    for (const et of ['Home', 'Matches', 'Box', 'Trainers', 'Stats']) assert.match(html, new RegExp(`<span>${et}</span>`));
     // una sola voce accesa, segnalata anche ai lettori di schermo
     assert.equal((html.match(/app-nav-voce attiva/g) || []).length, 1);
     assert.match(html, /<a class="app-nav-voce attiva" href="matches\.html" aria-current="page">/);
     assert.equal((html.match(/aria-current/g) || []).length, 1);
-    assert.match(html, /<button type="button" class="app-nav-voce" data-app-menu="1" aria-haspopup="true">/);
+    assert.doesNotMatch(html, /<button/, 'nessun pulsante Menu: le altre pagine stanno nel foglio dell\'account in alto');
     assert.equal(s.invito(), null);
 });
 
-test('la voce accesa segue la pagina: l\'hub accende Home, Profile e le altre accendono Menu', () => {
+test('la voce accesa segue la pagina: l\'hub accende Home, Profile e le altre pagine non ne accendono nessuna', () => {
     const accesa = pagina => {
         const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/' + pagina });
-        return (s.barra().innerHTML.match(/class="app-nav-voce attiva"[^>]*>/g) || []).map(m => (m.match(/href="([^"]+)"/) || [, 'menu'])[1]);
+        return (s.barra().innerHTML.match(/class="app-nav-voce attiva"[^>]*>/g) || []).map(m => m.match(/href="([^"]+)"/)[1]);
     };
     assert.deepEqual(accesa('hub.html'), ['index.html']);
     assert.deepEqual(accesa('index.html'), ['index.html']);
     assert.deepEqual(accesa('players.html'), ['players.html']);
-    assert.deepEqual(accesa('profile.html'), ['menu']);
-    assert.deepEqual(accesa('palmares.html'), ['menu']);
-});
-
-test('il pulsante Menu apre il menù del sito (o l\'accesso), lo stesso del nome in alto a destra', () => {
-    const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/stats.html' });
-    const menu = s.barra().querySelector('[data-app-menu]');
-    assert.ok(menu);
-    menu.click();
-    assert.equal(s.menu, 1);
-    menu.click();
-    assert.equal(s.menu, 2);
-    // senza handleAuthClick (pagina che non lo ha) si tocca il pulsante del nome
-    const t = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/stats.html', menuDelSito: false });
-    const nome = elemento('div');
-    nome.id = 'auth-content';
-    t.doc.body.appendChild(nome);
-    t.barra().querySelector('[data-app-menu]').click();
-    assert.equal(nome.clic, 1);
-    // e se non c'è nemmeno quello, non succede niente (e nessun errore)
-    const u = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/stats.html', menuDelSito: false });
-    assert.doesNotThrow(() => u.barra().querySelector('[data-app-menu]').click());
+    assert.deepEqual(accesa('profile.html'), []);
+    assert.deepEqual(accesa('palmares.html'), []);
 });
 
 test('dentro l\'APK: classe app-apk, nessun service worker, la stessa barra', () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5 });
     assert.deepEqual(s.risultato, { modo: 'apk' });
-    assert.deepEqual(s.classi(), ['app', 'app-apk', 'app-con-barra', 'os-android']);
+    assert.deepEqual(s.classi(), ['app', 'app-apk', 'app-con-barra', 'app-shell', 'os-android']);
     s.sulla(s.win, 'load');
     assert.deepEqual(s.registrazioni, []);
     assert.match(s.barra().innerHTML, /<a class="app-nav-voce attiva" href="box\.html" aria-current="page">/);
@@ -307,7 +289,7 @@ test('battaglia, accesso, amministrazione e modello vuoto: classe app ma niente 
 
 test('con il documento ancora in caricamento le classi arrivano subito (niente sfarfallio), la barra appena la pagina è pronta', () => {
     const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/stats.html', caricamento: true });
-    assert.deepEqual(s.classi(), ['app', 'app-installata', 'os-ios']);
+    assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell', 'os-ios']);
     assert.equal(s.barra(), null);
     s.finisciCaricamento();
     assert.ok(s.barra());
@@ -686,10 +668,10 @@ test('app.css: ogni regola riguarda l\'app (html.app…) o i suoi elementi; l\'u
     const css = docs('app.css');
     const lista = selettori(css);
     assert.ok(lista.length >= 25, 'selettori trovati: ' + lista.length);
-    for (const s of lista) assert.match(s, /^(html\.app(-[a-z]+)*(\s|$|:)|\.app-(nav|tira|invito))|^html$/, `regola che tocca il sito intero: "${s}"`);
+    for (const s of lista) assert.match(s, /^(html\.app(-[a-z]+)*(\s|$|:|\[)|\.app-[a-z])|^html$/, `regola che tocca il sito intero: "${s}"`);
     assert.equal(regola(css, 'html').trim(), 'touch-action: manipulation;');
-    // la barra e l'indicatore non esistono finché l'app non li accende
-    assert.match(regola(css, '.app-nav'), /display:\s*none/);
+    // la barra, l'intestazione e i fogli non esistono finché l'app non li accende (il selettore è uno dei quattro della regola che li nasconde)
+    assert.match(css, /\.app-nav,\s*\.app-bar,\s*\.app-velo,\s*\.app-foglio\s*\{\s*display:\s*none/);
     assert.match(css, /html\.app-con-barra \.app-nav\s*\{[^}]*display:\s*flex/);
     // lo spazio per la barra (e per la tacca dei telefoni) è riservato in fondo alla pagina
     assert.match(css, /html\.app-con-barra body\s*\{[^}]*padding-bottom:\s*calc\(var\(--app-nav-h\)\s*\+\s*env\(safe-area-inset-bottom, 0px\)\)/);

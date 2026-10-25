@@ -7,7 +7,8 @@
      - "apk": dentro l'app Android costruita con Capacitor (android-apk.yml): il suo user agent finisce con SantAlviseApp;
      - nel browser: tutto come prima, tranne un invito a installare (una volta, sulla home, dal telefono).
    Come app (installata o apk) la pagina prende la classe "app" su <html> e compaiono i ritocchi di app.css:
-     - la barra in basso (Home, Matches, Box, Trainers, Stats, Menu) al posto del solo pulsante in alto a destra;
+     - lo scheletro da telefono (app-shell.js + app.css): barra in alto compatta, foglio dell'account, finestre che salgono dal basso;
+     - la barra in basso (Home, Matches, Box, Trainers, Stats);
      - "tira per aggiornare" (nelle app non c'è il tasto Ricarica; non nelle pagine dove si modifica qualcosa, né in battaglia);
      - niente selezione e menu di tocco prolungato sui pulsanti, nessun ritardo e zoom al doppio tocco.
    Per vedere l'aspetto da app nel browser (anche da PC): aggiungi ?app=1 a un indirizzo del sito; ?app=0 per tornare indietro.
@@ -35,22 +36,21 @@
     // le pagine dove tirare per aggiornare è innocuo: dove si modifica qualcosa (Box, profilo, pagina pubblica, amministrazione) o si gioca si ricarica col solo tasto
     const CON_TIRA = ['index.html', 'matches.html', 'hub.html', 'players.html', 'stats.html', 'palmares.html', 'rules.html', 'formats.html'];
 
-    // I sei punti della barra. `pagine`: le pagine che la tengono accesa (il resto del menù, come Profilo o Archive, accende "Menu").
+    // I cinque punti della barra. `pagine`: le pagine che la tengono accesa (le altre, come Profile o Archive, si aprono dal foglio dell'account in alto:
+    // app-shell.js).
     const ICONE = {
         home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/>',
         matches: '<path d="M5 19 19 5"/><path d="M19 19 5 5"/><path d="M14.5 5H19v4.5"/><path d="M9.5 5H5v4.5"/>',
         box: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5"/><path d="M12 12 4 7.5"/><path d="M12 12v9"/>',
         trainers: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16.6 14.3c2.9.3 4.9 2 4.9 5.2"/>',
-        stats: '<path d="M5 20v-9"/><path d="M12 20V4"/><path d="M19 20v-6"/>',
-        menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>'
+        stats: '<path d="M5 20v-9"/><path d="M12 20V4"/><path d="M19 20v-6"/>'
     };
     const VOCI = [
         { id: 'home', et: 'Home', href: 'index.html', pagine: ['index.html', 'hub.html'] },
         { id: 'matches', et: 'Matches', href: 'matches.html', pagine: ['matches.html'] },
         { id: 'box', et: 'Box', href: 'box.html', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', pagine: ['players.html'] },
-        { id: 'stats', et: 'Stats', href: 'stats.html', pagine: ['stats.html'] },
-        { id: 'menu', et: 'Menu', href: null, pagine: [] }
+        { id: 'stats', et: 'Stats', href: 'stats.html', pagine: ['stats.html'] }
     ];
 
     // ---------- parti pure ----------
@@ -85,11 +85,11 @@
     /** I browser incorporati nelle app (Facebook, Instagram...) non possono installare nulla: lì l'invito non serve */
     const dentroUnaApp = ua => /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|; wv\)/.test(String(ua || ''));
 
-    /** La voce della barra accesa per questa pagina ('menu' per tutte le altre) */
+    /** La voce della barra accesa per questa pagina ('' per le pagine che non ci sono: Profile, Archive...) */
     function voceAttiva(pagina) {
         const p = nomePagina(pagina);
         const v = VOCI.find(x => x.pagine.includes(p));
-        return v ? v.id : 'menu';
+        return v ? v.id : '';
     }
 
     const haBarra = pagina => !SENZA_BARRA.includes(nomePagina(pagina));
@@ -140,6 +140,10 @@
         const html = doc.documentElement;
         if (os) html.classList.add('os-' + os);
         if (modo) html.classList.add('app', 'app-' + modo);
+        // nelle pagine con la barra in basso l'intestazione da sito per PC lascia il posto allo scheletro da telefono (app-shell.js, app.css)
+        if (modo && haBarra(pagina)) { html.classList.add('app-shell'); caricaFogliDiStile(doc, 'app-pagine.css'); caricaScheletro(doc); }
+        // la battaglia non ha la barra, ma ha il suo foglio: in orizzontale lo schermo sta a sinistra e i comandi a destra (app-battaglia.css)
+        else if (modo && pagina === 'battle.html') caricaFogliDiStile(doc, 'app-battaglia.css');
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
@@ -147,6 +151,29 @@
         if (modo) quandoPronto(() => avviaApp(win, doc, pagina));
         else quandoPronto(() => avviaInvito(win, doc, { os, pagina, ua: nav.userAgent, leggi, scrivi }));
         return { modo };
+    }
+
+    // le pagine ridisegnate per il telefono (app-pagine.css, app-battaglia.css) stanno in fogli a parte, scaricato solo dalle app. Va scritto subito, mentre la pagina
+    // si legge (document.write), così blocca il primo disegno e non si vede mai il sito "da PC" lampeggiare prima dell'app.
+    function caricaFogliDiStile(doc, nome) {
+        const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
+        const href = mio ? mio.getAttribute('src').replace(/app\.js/, nome) : nome;
+        if (doc.readyState === 'loading' && typeof doc.write === 'function') { doc.write('<link rel="stylesheet" href="' + href + '">'); return; }
+        if (!doc.head) return;
+        const l = doc.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = href;
+        doc.head.appendChild(l);
+    }
+
+    // lo scheletro da telefono sta in un file a parte: lo scaricano solo le app, il sito nel browser non lo carica
+    function caricaScheletro(doc) {
+        if (!doc.head) return;
+        const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
+        const s = doc.createElement('script');
+        s.src = mio ? mio.getAttribute('src').replace(/app\.js/, 'app-shell.js') : 'app-shell.js';
+        s.async = true;
+        doc.head.appendChild(s);
     }
 
     // il service worker serve solo a rendere il sito installabile (e alla pagina "offline"): da PC non serve (nessuna differenza per chi usa il sito
@@ -216,20 +243,10 @@
         barra.innerHTML = VOCI.map(v => {
             const icona = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONE[v.id] + '</svg>';
             const classe = 'app-nav-voce' + (v.id === attiva ? ' attiva' : '');
-            return v.href
-                ? '<a class="' + classe + '" href="' + v.href + '"' + (v.id === attiva ? ' aria-current="page"' : '') + '>' + icona + '<span>' + v.et + '</span></a>'
-                : '<button type="button" class="' + classe + '" data-app-menu="1" aria-haspopup="true">' + icona + '<span>' + v.et + '</span></button>';
+            return '<a class="' + classe + '" href="' + v.href + '"' + (v.id === attiva ? ' aria-current="page"' : '') + '>' + icona + '<span>' + v.et + '</span></a>';
         }).join('');
         doc.body.appendChild(barra);
         html.classList.add('app-con-barra');
-
-        // "Menu" apre il menù del sito (o l'accesso, se non si è collegati): lo stesso del pulsante col nome in alto a destra
-        const menu = barra.querySelector('[data-app-menu]');
-        menu.addEventListener('click', e => {
-            e.stopPropagation();
-            if (typeof win.handleAuthClick === 'function') win.handleAuthClick();
-            else { const chip = doc.getElementById('auth-content'); if (chip) chip.click(); }
-        });
     }
 
     // ---------- tira per aggiornare ----------
