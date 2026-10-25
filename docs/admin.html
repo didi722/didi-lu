@@ -355,6 +355,8 @@ async function ciclaStatoStagione(idStagione, statoCorrente) {
         // 2. SE IL NUOVO STATO È "CLOSED", CALCOLA E SALVA IL VINCITORE (con la classifica rifatta da capo)
         if (nuovoStato === 'closed') {
             console.log(`CLOSED state detected for ${idStagione}. Calculating winner...`);
+            // il momento della chiusura: da lì partono le 24 ore in cui si può ancora votare l'MVP (mvp.js)
+            await db.ref(`seasons/${idStagione}/info/chiusaIl`).set(new Date().toISOString());
             await aggiornaLeaderboard(idStagione);
             const vincitore = await salvaVincitoreStagione(idStagione);
             alert(`Season Closed! Winner saved: ${vincitore}`);

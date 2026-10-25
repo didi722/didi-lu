@@ -853,6 +853,13 @@
         try {
             const [seasons, players] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
             STATO.dati = { seasons: seasons.val() || {}, players: players.val() || {} };
+            // le stagioni chiuse da più di 24 ore con i voti dell'MVP non ancora contati: si contano ora (mvp-voto.js) e il titolo compare subito
+            if (window.MvpVoto && auth.currentUser) {
+                try {
+                    const fatti = await MvpVoto.concludiScadute(STATO.dati.seasons, STATO.dati.players);
+                    for (const [id, risultato] of Object.entries(fatti)) STATO.dati.seasons[id].mvp = { ...(STATO.dati.seasons[id].mvp || {}), risultato };
+                } catch (e) { console.warn('MVP: stagioni scadute non contate', e); }
+            }
             STATO.globale = null;
             disegna();
         } catch (errore) {

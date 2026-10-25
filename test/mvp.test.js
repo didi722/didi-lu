@@ -1,7 +1,7 @@
 'use strict';
 // L'MVP della stagione: un singolo Pokémon (quel team, quell'individuo, non la specie) votato dai giocatori a fine stagione.
 //   - mvp.js: punteggio e classifica dei Pokémon, quando si apre il voto, cosa è un voto valido;
-//   - risultati-match.js (anche nelle Cloud Functions): lo spoglio alla chiusura della stagione;
+//   - mvp.js e mvp-voto.js: le 24 ore di voto dopo la chiusura, lo spoglio con lo spareggio sulla classifica, il conteggio delle stagioni scadute;
 //   - statistiche.js: i titoli MVP di Pokémon, team e allenatore; fiocchi.js: il fiocco "Season MVP".
 //
 //   npm test        (dalla cartella principale)
@@ -70,12 +70,13 @@ test('soglia del voto: gli ultimi 3 showdown, ma mai più di un terzo della stag
     assert.deepEqual([30, 9, 6, 5, 3, 2, 1, 0].map(Mvp.sogliaVoto), [3, 3, 2, 1, 1, 1, 1, 1]);
 });
 
-test('finestraVoto: apre quando mancano pochi showdown, mai prima di iniziare, mai a stagione chiusa o senza calendario', () => {
+test('finestraVoto: apre quando mancano pochi showdown, mai prima di iniziare, mai senza calendario', () => {
     const info = { status: 'playing', tipo: 'league' };
     const f = (giocati, richiesti, i = info, id = 's1') => Mvp.finestraVoto(i, { giocati, richiesti }, id);
     assert.equal(f(26, 30).aperta, false);
     assert.equal(f(26, 30).motivo, 'presto');
     assert.equal(f(27, 30).aperta, true, 'mancano 3');
+    assert.equal(f(27, 30).fase, 'durante');
     assert.equal(f(27, 30).mancano, 3);
     assert.equal(f(29, 30).aperta, true);
     assert.equal(f(0, 3).aperta, false, 'non è ancora iniziata');
@@ -84,14 +85,42 @@ test('finestraVoto: apre quando mancano pochi showdown, mai prima di iniziare, m
     assert.equal(f(1, 6).aperta, false, '5 mancanti su 6: soglia 2');
     assert.equal(f(4, 6).aperta, true);
     assert.equal(f(5, 0).motivo, 'senza-calendario');
-    const chiusa = f(30, 30, { status: 'closed', tipo: 'league' });
-    assert.equal(chiusa.aperta, false);
-    assert.equal(chiusa.chiusa, true);
     assert.equal(f(27, 30, { status: 'playing', tipo: 'random' }).aperta, false, 'le Random non hanno i Pokémon');
     assert.equal(f(27, 30, { status: 'playing', tipo: 'cup' }).aperta, false);
     assert.equal(f(27, 30, info, 'sbeta').aperta, false);
     assert.equal(f(27, 30, { status: 'playing' }).aperta, true, 'senza tipo è una League');
     assert.equal(f(27, 30, { status: 'playing', tipo: 'monoformat' }).aperta, true);
+});
+
+test('finestraVoto: dopo la chiusura si vota ancora per 24 ore; poi è scaduta e si contano i voti', () => {
+    const chiusaIl = '2026-10-24T20:00:00.000Z';
+    const t = ore => Date.parse(chiusaIl) + ore * 3600000;
+    const f = (ore, info = { status: 'closed', tipo: 'league', chiusaIl }) => Mvp.finestraVoto(info, { giocati: 30, richiesti: 30 }, 's1', t(ore));
+    const subito = f(0);
+    assert.equal(subito.aperta, true);
+    assert.equal(subito.fase, 'dopo');
+    assert.equal(subito.chiusa, true);
+    assert.equal(subito.scaduta, false);
+    assert.equal(subito.scade, t(24));
+    assert.equal(f(23.9).aperta, true);
+    const scaduta = f(24);
+    assert.equal(scaduta.aperta, false, 'allo scadere delle 24 ore si ferma');
+    assert.equal(scaduta.scaduta, true);
+    assert.equal(f(300).scaduta, true);
+    // chiusa senza data (a mano, in passato): niente tempo supplementare e niente conteggio
+    const senzaData = f(1, { status: 'closed', tipo: 'league' });
+    assert.equal(senzaData.aperta, false);
+    assert.equal(senzaData.scaduta, false);
+    assert.equal(Mvp.finestraVoto({ status: 'closed', tipo: 'random', chiusaIl }, {}, 's1', t(1)).aperta, false, 'le Random no');
+    assert.equal(Mvp.finestraVoto({ status: 'closed', tipo: 'league', chiusaIl }, {}, 'sbeta', t(1)).aperta, false);
+    assert.equal(Mvp.finestraVoto({ status: 'playing', tipo: 'league', chiusaIl }, { giocati: 10, richiesti: 30 }, 's1', t(1)).aperta, false, 'riaperta: conta la stagione, non la vecchia data');
+    assert.equal(Mvp.ORE_DOPO_CHIUSURA, 24);
+    // quando contare: scaduta, con voti e senza risultato
+    const mvpConVoti = { voti: { didi: {} } };
+    assert.equal(Mvp.daContare(f(25), mvpConVoti), true);
+    assert.equal(Mvp.daContare(f(23), mvpConVoti), false, 'ancora aperta');
+    assert.equal(Mvp.daContare(f(25), {}), false, 'nessun voto: niente da scrivere');
+    assert.equal(Mvp.daContare(f(25), { ...mvpConVoti, risultato: { vincitori: [] } }), false, 'già contata');
 });
 
 // ---------- 3. cosa è un voto valido ----------
@@ -127,83 +156,73 @@ test('vincitoriDi legge i vincitori registrati (lista o oggetto numerato di Fire
     assert.deepEqual(Mvp.vincitoriDi(null), []);
 });
 
-// ---------- 4. lo spoglio (risultati-match.js, anche nelle Cloud Functions) ----------
+// ---------- 4. lo spoglio ----------
 const voto = (...scelte) => ({ ts: 1, scelte: scelte.map(([chiave, player, specie]) => ({ chiave, player, team: 'T', specie, specieId: specie.toLowerCase() })) });
 const A = ['lu::T::garchomp', 'lu', 'Garchomp'], B = ['tom::T::dragonite', 'tom', 'Dragonite'], C = ['didi::T::kyogre', 'didi', 'Kyogre'];
+// la classifica dell'MVP a stagione finita: Garchomp, poi Dragonite, poi Kyogre
+const ranking = [A, B, C].map(([chiave, player, specie], i) => ({ chiave, player, specie, posizione: i + 1, punteggio: 90 - i * 10 }));
 
-test('spoglio: vince chi ha più voti; a parità vincono tutti i primi; nessun voto = nessun MVP', () => {
-    const { spoglioMvp } = caricaSito(creaDb());
+test('spoglio: vince chi ha più voti, uno solo; nessun voto = nessun MVP', () => {
     const iscritti = { Didi: {}, Lu: {}, Tom: {} };
-    const uno = copia(spoglioMvp({ didi: voto(A, B), tom: voto(A) }, iscritti));
+    const uno = copia(Mvp.spoglio({ didi: voto(B, A), tom: voto(A) }, iscritti, ranking));
     assert.deepEqual(uno.vincitori.map(v => [v.specie, v.voti]), [['Garchomp', 2]]);
     assert.equal(uno.votanti, 2);
+    assert.equal(uno.spareggio, false);
     assert.deepEqual(uno.classifica.map(v => v.specie), ['Garchomp', 'Dragonite']);
-    const pari = copia(spoglioMvp({ didi: voto(A), lu: voto(B) }, iscritti));
-    assert.deepEqual(pari.vincitori.map(v => v.specie).sort(), ['Dragonite', 'Garchomp'], 'a pari merito');
-    const nessuno = copia(spoglioMvp({}, iscritti));
+    // la classifica dell'MVP serve solo a pari voti: qui Dragonite ha più voti pur essendo dietro
+    const dietro = copia(Mvp.spoglio({ didi: voto(B), lu: voto(B), tom: voto(A) }, iscritti, ranking));
+    assert.deepEqual(dietro.vincitori.map(v => v.specie), ['Dragonite']);
+    const nessuno = copia(Mvp.spoglio({}, iscritti, ranking));
     assert.deepEqual(nessuno.vincitori, []);
     assert.equal(nessuno.votanti, 0);
-    assert.deepEqual(copia(spoglioMvp(null, null)).vincitori, []);
+    assert.deepEqual(copia(Mvp.spoglio(null, null, null)).vincitori, []);
+});
+
+test('spoglio: a parità di voti vince il Pokémon avanti nella classifica dell\'MVP', () => {
+    const iscritti = ['didi', 'lu', 'tom'];
+    // un voto a Garchomp (didi) e uno a Dragonite (lu): Garchomp è primo in classifica
+    const r = copia(Mvp.spoglio({ didi: voto(A), lu: voto(B) }, iscritti, ranking));
+    assert.deepEqual(r.vincitori.map(v => v.specie), ['Garchomp']);
+    assert.equal(r.spareggio, true);
+    assert.deepEqual(r.pari.sort(), [A[0], B[0]].sort());
+    // cambia la classifica, cambia il vincitore: non dipende dall'ordine dei voti né da chi ha votato per primo
+    const rovescia = ranking.map(v => ({ ...v, posizione: 4 - v.posizione }));
+    const r2 = copia(Mvp.spoglio({ lu: voto(B), didi: voto(A) }, iscritti, rovescia));
+    assert.deepEqual(r2.vincitori.map(v => v.specie), ['Dragonite']);
+    // Garchomp e Kyogre a pari voti (Dragonite, con 1 voto, non è nemmeno in questa classifica)
+    const tre = copia(Mvp.spoglio({ didi: voto(B, A), lu: voto(C), tom: voto(C, A) }, iscritti, [ranking[2], ranking[0]]));
+    const voti = Object.fromEntries(tre.classifica.map(v => [v.specie, v.voti]));
+    assert.deepEqual(voti, { Garchomp: 2, Kyogre: 2, Dragonite: 1 });
+    assert.deepEqual(tre.vincitori.map(v => v.specie), ['Garchomp'], 'Garchomp (1°) e Kyogre (3°) a pari voti: vince il primo in classifica');
+    const senzaRanking = copia(Mvp.spoglio({ didi: voto(A), lu: voto(B) }, iscritti, []));
+    assert.equal(senzaRanking.vincitori.length, 1, 'senza classifica decide comunque il nome, mai due vincitori');
 });
 
 test('spoglio: non contano i voti dei non iscritti, quelli per un proprio Pokémon, i doppioni e il terzo voto', () => {
-    const { spoglioMvp } = caricaSito(creaDb());
     const iscritti = ['didi', 'lu', 'tom'];
-    const r = copia(spoglioMvp({
+    const r = copia(Mvp.spoglio({
         didi: voto(C, A),                       // C è suo: salta; A vale
         lu: voto(A, A, B, C),                   // A (il suo: salta); il doppione salta; B vale, C è il secondo voto valido
         intruso: voto(B, B),                    // non iscritto
         tom: voto(A, A)                         // doppione: un voto solo
-    }, iscritti));
+    }, iscritti, ranking));
     const voti = Object.fromEntries(r.classifica.map(v => [v.specie, v.voti]));
     assert.deepEqual(voti, { Garchomp: 2, Dragonite: 1, Kyogre: 1 }, 'didi→A, lu→B e C, tom→A');
     assert.deepEqual(r.vincitori.map(v => v.specie), ['Garchomp']);
     assert.equal(r.votanti, 3);
 });
 
-test('stagioneConMvp: lo stesso verdetto in risultati-match.js e in mvp.js', () => {
-    const sito = caricaSito(creaDb());
-    for (const info of [{}, { tipo: 'league' }, { tipo: 'monoformat' }, { tipo: 'random' }, { tipo: 'cup' }, { tipo: 'LEAGUE ' }, null]) {
-        for (const id of ['s1', 'sbeta']) assert.equal(sito.stagioneConMvp(info, id), Mvp.stagioneConMvp(info, id), `${JSON.stringify(info)} ${id}`);
-    }
-    assert.equal(vm.runInContext('VOTI_MVP_PER_GIOCATORE', sito), Mvp.VOTI);
+test('il risultato si può scrivere su Firebase: niente undefined, solo testo, numeri e liste', () => {
+    const r = Mvp.spoglio({ didi: voto(A) }, ['didi'], ranking);
+    const db = creaDb();
+    return db.ref('seasons/s1/mvp/risultato').set(JSON.parse(JSON.stringify(r))).then(() => assert.equal(db.leggi('seasons/s1/mvp/risultato/vincitori/0/specie'), 'Garchomp'));
 });
 
-const stagioneConVoti = (extraInfo = {}) => ({
-    info: { name: 'S', status: 'playing', showdowns_per_format: 1, selected_formats: ['OU'], ...extraInfo },
-    iscritti: { Didi: {}, Lu: {}, Tom: {} },
-    mvp: { voti: { didi: voto(A), tom: voto(A, B) } }
-});
-
-test('salvaMvpStagione: scrive il risultato nella stagione; le Random, le cup e la beta non hanno MVP', async () => {
-    const db = creaDb({ seasons: { s1: stagioneConVoti(), s2: stagioneConVoti({ tipo: 'random' }), s3: stagioneConVoti({ tipo: 'cup' }), sbeta: stagioneConVoti() } });
-    const sito = caricaSito(db);
-    const r = await sito.salvaMvpStagione('s1');
-    assert.deepEqual(copia(r.vincitori).map(v => v.specie), ['Garchomp']);
-    const salvato = db.leggi('seasons/s1/mvp/risultato');
-    assert.equal(salvato.vincitori[0].chiave, 'lu::T::garchomp');
-    assert.equal(salvato.vincitori[0].voti, 2);
-    assert.equal(salvato.votanti, 2);
-    assert.ok(salvato.contatoIl);
-    assert.deepEqual(db.leggi('seasons/s1/mvp/voti').didi.scelte.length, 1, 'i voti restano');
-    for (const id of ['s2', 's3', 'sbeta']) {
-        assert.equal(await sito.salvaMvpStagione(id), null, id);
-        assert.equal(db.leggi(`seasons/${id}/mvp/risultato`), null, id);
-    }
-});
-
-test('la chiusura della stagione conta i voti; riaprendola il risultato si toglie ma i voti restano', async () => {
-    const lb = { Didi: { points: 4, won: 2, setW: 4 }, Lu: { points: 3, won: 1, setW: 3 }, Tom: { points: 1, won: 0, setW: 1 } };
-    const db = creaDb({ seasons: { s1: { ...stagioneConVoti(), leaderboard: lb } }, players: { didi: {}, lu: {}, tom: {} } });
-    const sito = caricaSito(db);
-    assert.equal(await sito.salvaVincitoreStagione('s1'), 'Didi');
-    assert.equal(db.leggi('seasons/s1/mvp/risultato/vincitori/0/specie'), 'Garchomp');
-    await sito.ritiraVincitoreStagione('s1');
+test('riaprire una stagione toglie il risultato dell\'MVP ma non i voti; lo script delle funzioni è la copia di quello del sito', async () => {
+    const db = creaDb({ seasons: { s1: { info: { status: 'closed' }, mvp: { voti: { didi: voto(A) }, risultato: { vincitori: [{ chiave: 'x' }] } } } }, players: { didi: {} } });
+    await caricaSito(db).ritiraVincitoreStagione('s1');
     assert.equal(db.leggi('seasons/s1/mvp/risultato'), null);
     assert.ok(db.leggi('seasons/s1/mvp/voti/didi'));
-});
-
-test('lo script delle funzioni è la copia identica di quello del sito', () => {
     assert.equal(leggi('functions/risultati-match.js'), leggi('docs/risultati-match.js'));
 });
 
@@ -251,6 +270,58 @@ test('statistiche: contano le stagioni chiuse nel perimetro scelto; la beta e qu
     assert.equal(senza.pokemon.find(m => m.specieId === 'garchomp').mvpVinti, 0);
 });
 
+// ---------- 5b. il conteggio delle stagioni scadute (mvp-voto.js) ----------
+function caricaVoto(db) {
+    const finestra = {};
+    const contesto = vm.createContext({ console: { log() {}, warn() {}, error() {} }, window: finestra, document: { addEventListener() {}, getElementById: () => null, querySelector: () => null }, db });
+    finestra.Mvp = Mvp;
+    finestra.Statistiche = { calcola };
+    finestra.SpritePkm = { id: x => x, gif: x => x, riserva() {} };
+    vm.runInContext(leggi('docs/mvp-voto.js'), contesto, { filename: 'mvp-voto.js' });
+    return finestra.MvpVoto;
+}
+const fa = ore => new Date(Date.now() - ore * 3600000).toISOString();
+const votoPer = (...k) => ({ ts: 1, scelte: k.map(([chiave, player, specie]) => ({ chiave, player, team: 'T', specie, specieId: specie.toLowerCase() })) });
+const GARCHOMP = ['didi::ALPHA::garchomp', 'didi', 'Garchomp'], DRAGONITE = ['lu::GAMMA::dragonite', 'lu', 'Dragonite'];
+const stagioneScaduta = (chiusaIl, voti = { lu: votoPer(GARCHOMP), didi: votoPer(DRAGONITE) }) => ({
+    ...stagioneStat('closed', { voti }), info: { name: 'S', status: 'closed', tipo: 'league', chiusaIl }, iscritti: { Didi: {}, Lu: {} }
+});
+
+test('concludiScadute: dopo le 24 ore conta i voti una volta sola; a pari voti vince chi è avanti nella classifica della stagione', async () => {
+    const seasons = { s1: stagioneScaduta(fa(30)) };
+    const db = creaDb({ seasons: copia(seasons), players: giocatori });
+    const V = caricaVoto(db);
+    const fatti = copia(await V.concludiScadute(seasons, giocatori));
+    assert.deepEqual(Object.keys(fatti), ['s1']);
+    assert.deepEqual(fatti.s1.vincitori.map(v => v.specie), ['Garchomp'], '1 voto a testa: Garchomp è davanti in classifica (più KO e set vinti)');
+    assert.equal(fatti.s1.spareggio, true);
+    const salvato = db.leggi('seasons/s1/mvp/risultato');
+    assert.equal(salvato.vincitori[0].chiave, 'didi::ALPHA::garchomp');
+    assert.ok(salvato.contatoIl);
+    // il risultato c'è: la seconda volta non si conta né si riscrive
+    const dopo = copia(db.leggi('seasons/s1'));
+    assert.deepEqual(copia(await V.concludiScadute(dopo, giocatori)), {});
+    // due pagine che contano insieme: vale il primo risultato
+    const db2 = creaDb({ seasons: copia(seasons), players: giocatori });
+    const V2 = caricaVoto(db2);
+    const r = await Promise.all([V2.concludiScadute(seasons, giocatori), V2.concludiScadute(seasons, giocatori)]);
+    assert.equal(r.filter(x => Object.keys(x).length).length >= 1, true);
+    assert.equal(db2.leggi('seasons/s1/mvp/risultato/vincitori/0/specie'), 'Garchomp');
+});
+
+test('concludiScadute: non tocca le stagioni ancora nelle 24 ore, quelle senza voti, quelle riaperte e quelle senza MVP', async () => {
+    const seasons = {
+        recente: stagioneScaduta(fa(5)),                                    // si vota ancora
+        senzaVoti: { ...stagioneScaduta(fa(40)), mvp: undefined },          // niente da contare
+        riaperta: { ...stagioneScaduta(fa(40)), info: { name: 'S', status: 'playing', tipo: 'league', chiusaIl: fa(40) } },
+        random: { ...stagioneScaduta(fa(40)), info: { name: 'S', status: 'closed', tipo: 'random', chiusaIl: fa(40) } },
+        senzaData: { ...stagioneScaduta(fa(40)), info: { name: 'S', status: 'closed', tipo: 'league' } }   // chiusa a mano in passato
+    };
+    const db = creaDb({ seasons: copia(seasons), players: giocatori });
+    assert.deepEqual(copia(await caricaVoto(db).concludiScadute(seasons, giocatori)), {});
+    for (const id of Object.keys(seasons)) assert.equal(db.leggi(`seasons/${id}/mvp/risultato`), null, id);
+});
+
 // ---------- 6. il fiocco ----------
 test('il fiocco Season MVP: bronzo al primo titolo, poi 2, 3 e 4', () => {
     const mvp = p => Fiocchi.calcola(p).find(f => f.id === 'mvp');
@@ -269,6 +340,16 @@ test('il fiocco Season MVP: bronzo al primo titolo, poi 2, 3 e 4', () => {
 });
 
 // ---------- 7. la pagina ----------
+test('stats.html carica gli script dell\'MVP prima di stats.js e conta le stagioni scadute', () => {
+    const s = [...leggi('docs/stats.html').matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+    assert.ok(s.indexOf('statistiche.js') < s.indexOf('mvp.js') && s.indexOf('mvp.js') < s.indexOf('mvp-voto.js') && s.indexOf('mvp-voto.js') < s.indexOf('stats.js'));
+    assert.match(leggi('docs/stats.js'), /MvpVoto\.concludiScadute\(STATO\.dati\.seasons, STATO\.dati\.players\)/);
+});
+
+test("la chiusura a mano dall'admin scrive chiusaIl: da lì partono le 24 ore del voto", () => {
+    assert.match(leggi('docs/admin.html'), /info\/chiusaIl`\)\.set\(new Date\(\)\.toISOString\(\)\)/);
+});
+
 test('matches.html carica mvp.css e gli script dell\'MVP (dopo le statistiche) e li avvia a ogni disegno', () => {
     const html = leggi('docs/matches.html');
     const s = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
