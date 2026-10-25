@@ -488,3 +488,13 @@
     html.app-shell #pp-carta .pp-stat { min-height: 0; }
     html.app-shell #pp-carta .pp-nome { font-size: clamp(2rem, 14vw, 3.4rem); }
 }
+
+/* ---------- 13. Replay nell'app: senza la console Game Boy Advance (occupava mezzo schermo): lo schermo del replay da solo, ingrandito dalla pagina ---------- */
+@media (max-width: 900px), (max-height: 500px) {
+    html.app-shell #replayModal .gba-shell { display: none; }
+    html.app-shell #replayModal .gba-container { width: 314px; margin: 0; }
+    html.app-shell #replayModal .gba-screen-area {
+        position: static; transform: none; width: 314px; height: 300px; border-radius: 0;
+        box-shadow: var(--nb-sh-m); outline: 3px solid var(--nb-ink, #000);
+    }
+}

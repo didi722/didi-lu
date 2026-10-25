@@ -2609,6 +2609,12 @@ function adattaReplayAlloSchermo() {
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
     const riservato = alto('.replay-mini-header') + alto('.replay-campo') + alto('.replay-comandi') + sotto + 54;
+    // nell'app da telefono non c'è la console: lo schermo del replay (314 × 300) sta da solo, ingrandito quanto basta per la larghezza e l'altezza
+    if (document.documentElement.classList.contains('app-shell') && (larghezza <= 900 || altezza <= 500)) {
+        const k = Math.min((larghezza - 16 - tastiSet) / 314, (altezza - riservato + 54 - 20) / 300, 1.6);
+        modal.style.setProperty('--gba-scala', Math.max(0.6, k).toFixed(3));
+        return;
+    }
     const perLarghezza = (larghezza - 24 - tastiSet) / 1150;
     const perAltezza = (altezza - riservato) / 647;
     const scala = Math.min(1, perLarghezza, Math.max(0.5, perAltezza));
