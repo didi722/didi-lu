@@ -3,10 +3,11 @@
 //
 // matches.html chiama MvpVoto.avvia({ stagione, info, showdowns, teamsIscritti, players, votante }) a ogni disegno della pagina.
 //   - quando mancano pochi showdown alla fine (Mvp.finestraVoto), e per 24 ore dopo la chiusura della stagione, compare in alto il tasto "VOTE MVP";
-//   - il tasto apre un modale con i primi 5 Pokémon della classifica dell'MVP (punteggio pesato sulle statistiche della stagione);
+//   - il tasto apre un modale con i primi 5 Pokémon della classifica dell'MVP (punteggio pesato sulle statistiche della stagione), CONGELATA al
+//     momento in cui si è aperto il voto: i set giocati dopo non la cambiano, e vale anche per gli spareggi;
 //     ogni giocatore della stagione ha 2 voti, su Pokémon diversi e non suoi; si può cambiare idea finché la stagione è aperta;
 //   - passate le 24 ore, sotto la classifica compare l'MVP con i suoi voti. Il conteggio (Mvp.spoglio, con la classifica dell'MVP a stagione
-//     finita per gli spareggi) lo scrive in seasons/{id}/mvp/risultato la prima pagina che lo trova scaduto: matches.html per la stagione
+//     congelata per gli spareggi) lo scrive in seasons/{id}/mvp/risultato la prima pagina che lo trova scaduto: matches.html per la stagione
 //     che mostra, stats.html per tutte (concludiScadute).
 // I voti stanno in seasons/{id}/mvp/voti/{giocatore}.
 // La parte che decide cosa è valido è in mvp.js (provata in test/mvp.test.js); qui c'è solo la pagina.
@@ -27,6 +28,16 @@
         const id = window.SpritePkm.id(specie);
         return `<img class="mvp-sprite" src="${esc(window.SpritePkm.gif(specie))}" alt="" loading="lazy" onerror="SpritePkm.riserva(this,'${esc(id)}')">`;
     };
+
+    /**
+     * La classifica dell'MVP congelata al momento in cui si è aperto il voto (Mvp.showdownAllApertura): le statistiche dei soli showdown giocati fino a lì.
+     * Se per qualche motivo il momento non si trova, si usano tutti gli showdown.
+     */
+    function classificaCongelata({ stagione, info, showdowns, teamsIscritti, iscritti, players }) {
+        const apertura = window.Mvp.showdownAllApertura(info, iscritti, showdowns, teamsIscritti, avanzamentoStagione);
+        const r = window.Statistiche.calcola({ players, seasons: { [stagione]: { info, showdowns: apertura ? apertura.showdowns : showdowns } } }, { stagione });
+        return window.Mvp.classifica(r.pokemon);
+    }
 
     // "3 more hours" / "40 more minutes"
     function tempoRimasto(scade) {
@@ -197,9 +208,8 @@
         const m = v.querySelector('.mvp-modale');
         m.innerHTML = '<p class="mvp-nota">Loading the ranking…</p>';
         try {
-            // la classifica dell'MVP è quella delle statistiche della sola stagione (stesse regole di stats.html)
-            const r = window.Statistiche.calcola({ players: ctx.players, seasons: { [ctx.stagione]: { info: ctx.info, showdowns: ctx.showdowns } } }, { stagione: ctx.stagione });
-            const tutti = window.Mvp.classifica(r.pokemon);
+            // la classifica dell'MVP è quella delle statistiche della sola stagione, congelata all'apertura del voto: uguale per tutti
+            const tutti = classificaCongelata({ ...ctx, iscritti: ctx.iscrittiGrezzi });
             const candidati = tutti.slice(0, window.Mvp.TOP);
             // un Pokémon già votato che nel frattempo è uscito dai primi 5 resta nell'elenco, così il voto si vede e si può togliere
             for (const k of ctx.mioVoto || []) { const x = tutti.find(t => t.chiave === k); if (x && !candidati.includes(x)) candidati.push(x); }
@@ -207,8 +217,8 @@
                 candidati, scelte: new Set((ctx.mioVoto || []).filter(k => candidati.some(c => c.chiave === k))),
                 puoVotare: !!ctx.votante && ctx.iscritti.has(idDi(ctx.votante)) && ctx.finestra.aperta,
                 intro: ctx.finestra.fase === 'dopo'
-                    ? `The season is over, but you can still vote for ${tempoRimasto(ctx.finestra.scade)}. The MVP is the Pokémon with the most votes; a tie goes to the one ahead in the ranking.`
-                    : 'The top 5 Pokémon of the season so far. The ranking updates after every set; the MVP is the Pokémon with the most votes (a tie goes to the one ahead in the ranking). Voting stays open for 24 hours after the season ends.',
+                    ? `The season is over, but you can still vote for ${tempoRimasto(ctx.finestra.scade)}. These are the top 5 when voting opened. The MVP is the Pokémon with the most votes; a tie goes to the one ahead in this ranking.`
+                    : 'The top 5 Pokémon when voting opened: the ranking is frozen, so everyone votes on the same numbers. The MVP is the Pokémon with the most votes (a tie goes to the one ahead in this ranking). Voting stays open for 24 hours after the season ends.',
                 salvato: !!(ctx.mioVoto && ctx.mioVoto.length), occupato: false, errore: ''
             };
             disegnaModale();
@@ -250,14 +260,14 @@
         const votante = idDi(dati.votante);
         const mio = votante && mvp.voti && mvp.voti[votante] ? valori(mvp.voti[votante].scelte).map(c => c && c.chiave).filter(Boolean) : [];
         ctx = {
-            stagione, info, showdowns: dati.showdowns || {}, players: dati.players || {}, votante,
-            iscritti: new Set(Object.keys(iscritti).map(idDi)), mioVoto: mio,
+            stagione, info, showdowns: dati.showdowns || {}, players: dati.players || {}, votante, teamsIscritti: dati.teamsIscritti || {},
+            iscritti: new Set(Object.keys(iscritti).map(idDi)), mioVoto: mio, iscrittiGrezzi: iscritti,
             finestra: window.Mvp.finestraVoto(info, avanzamento, stagione)
         };
         aggiornaTasto();
         // scaduto il tempo del voto: si contano i voti (se non l'ha già fatto qualcun altro) e l'MVP compare sotto la classifica
         if (window.Mvp.daContare(ctx.finestra, mvp) && dati.votante) {
-            try { mvp.risultato = await concludi({ stagione, info, showdowns: ctx.showdowns, players: ctx.players, iscritti, mvp }); }
+            try { mvp.risultato = await concludi({ stagione, info, showdowns: ctx.showdowns, teamsIscritti: ctx.teamsIscritti, players: ctx.players, iscritti, mvp }); }
             catch (e) { console.warn('MVP: conteggio non salvato', e); }
         }
         const vincitori = ctx.finestra.scaduta && mvp.risultato ? window.Mvp.vincitoriDi({ mvp }) : null;
@@ -269,11 +279,11 @@
 
     /**
      * Conta i voti di una stagione scaduta e li scrive (una volta sola, anche se due pagine ci provano insieme). Restituisce il risultato.
-     * Lo spareggio usa la classifica dell'MVP calcolata sulle statistiche definitive della stagione.
+     * Lo spareggio usa la classifica dell'MVP congelata all'apertura del voto, la stessa da cui si è scelta la top 5.
      */
-    async function concludi({ stagione, info, showdowns, players, iscritti, mvp }) {
-        const r = window.Statistiche.calcola({ players, seasons: { [stagione]: { info, showdowns } } }, { stagione });
-        const esito = window.Mvp.spoglio(mvp.voti, iscritti, window.Mvp.classifica(r.pokemon));
+    async function concludi({ stagione, info, showdowns, teamsIscritti, players, iscritti, mvp }) {
+        const ranking = classificaCongelata({ stagione, info, showdowns, teamsIscritti, iscritti, players });
+        const esito = window.Mvp.spoglio(mvp.voti, iscritti, ranking);
         const nuovo = JSON.parse(JSON.stringify({ ...esito, contatoIl: new Date().toISOString() }));
         const tx = await db.ref(`seasons/${stagione}/mvp/risultato`).transaction(corrente => (corrente ? undefined : nuovo));
         return tx.committed ? nuovo : tx.snapshot.val();
@@ -289,7 +299,7 @@
             if (!s || !s.info || !window.Mvp.stagioneConMvp(s.info, id)) continue;
             const f = window.Mvp.finestraVoto(s.info, { richiesti: 1, giocati: 1 }, id);
             if (!window.Mvp.daContare(f, s.mvp)) continue;
-            try { fatti[id] = await concludi({ stagione: id, info: s.info, showdowns: s.showdowns || {}, players, iscritti: s.iscritti || {}, mvp: s.mvp }); }
+            try { fatti[id] = await concludi({ stagione: id, info: s.info, showdowns: s.showdowns || {}, teamsIscritti: s.teams_iscritti || {}, players, iscritti: s.iscritti || {}, mvp: s.mvp }); }
             catch (e) { console.warn(`MVP: conteggio della stagione ${id} non salvato`, e); }
         }
         return fatti;

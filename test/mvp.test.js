@@ -123,6 +123,34 @@ test('finestraVoto: dopo la chiusura si vota ancora per 24 ore; poi è scaduta e
     assert.equal(Mvp.daContare(f(25), { ...mvpConVoti, risultato: { vincitori: [] } }), false, 'già contata');
 });
 
+// ---------- 2b. la top 5 si congela all'apertura del voto ----------
+const sdCongelato = (a, b, data, ultimo = '') => ({
+    info: { categoria: 'VGC', player1: a, player1Id: a.toLowerCase(), player2: b, player2Id: b.toLowerCase(), data },
+    matches: Object.fromEntries([1, 2, 3].map(n => [`match${n}`, { p1score: 2, p2score: 0, winnerId: a.toLowerCase(), lastEdit: ultimo || `${data}T2${n}:00:00.000Z` }]))
+});
+const stagioneTre = { info: { status: 'playing', tipo: 'league', showdowns_per_format: 1, selected_formats: ['VGC'] }, iscritti: { Didi: {}, Lu: {}, Tom: {} },
+    teams_iscritti: { VGC: Object.fromEntries(['didi', 'lu', 'tom'].map(g => [g, { count: 1, datiTeams: { t: { nome: 'T' } } }])) } };
+
+test('congelamento: la top 5 è quella di quando si è aperto il voto, anche se dopo si sono giocati altri showdown', () => {
+    const { avanzamentoStagione } = caricaSito(creaDb());
+    const avanza = (...a) => avanzamentoStagione(...a);
+    const apri = showdowns => Mvp.showdownAllApertura(stagioneTre.info, stagioneTre.iscritti, showdowns, stagioneTre.teams_iscritti, avanza);
+    // tre coppie, un formato, un showdown ciascuna: 3 richiesti, il voto si apre quando ne manca 1 (dopo il secondo)
+    const tutti = { zeta: sdCongelato('Lu', 'Tom', '2026-10-23'), alfa: sdCongelato('Didi', 'Lu', '2026-10-21'), mu: sdCongelato('Didi', 'Tom', '2026-10-22') };
+    const f = apri(tutti);
+    assert.deepEqual(Object.keys(f.showdowns).sort(), ['alfa', 'mu'], 'conta l\'ordine in cui si sono giocati, non quello delle chiavi: il terzo (zeta) è dopo');
+    assert.equal(f.ultimo, 'mu');
+    // stessa cosa quando i primi due sono quelli che esistono già: l'apertura non si sposta
+    assert.deepEqual(Object.keys(apri({ alfa: tutti.alfa, mu: tutti.mu }).showdowns).sort(), ['alfa', 'mu']);
+    assert.equal(apri({ alfa: tutti.alfa }), null, 'ne mancano 2 su 3: il voto non è ancora aperto');
+    assert.equal(apri({}), null);
+    // due showdown dello stesso giorno: vale l'ultimo match salvato
+    const stessoGiorno = { primo: sdCongelato('Didi', 'Lu', '2026-10-21', '2026-10-21T10:00:00.000Z'), secondo: sdCongelato('Didi', 'Tom', '2026-10-21', '2026-10-21T18:00:00.000Z'), terzo: sdCongelato('Lu', 'Tom', '2026-10-21', '2026-10-21T20:00:00.000Z') };
+    assert.deepEqual(Object.keys(apri(stessoGiorno).showdowns).sort(), ['primo', 'secondo']);
+    // senza calendario (nessun showdown per formato) non c'è un momento di apertura
+    assert.equal(Mvp.showdownAllApertura({ status: 'playing' }, stagioneTre.iscritti, tutti, stagioneTre.teams_iscritti, avanza), null);
+});
+
 // ---------- 3. cosa è un voto valido ----------
 test('controllaScelte: solo tra i candidati, mai due volte lo stesso, mai i propri, al massimo 2', () => {
     const cand = Mvp.classifica([
@@ -302,6 +330,7 @@ function caricaVoto(db) {
     finestra.Mvp = Mvp;
     finestra.Statistiche = { calcola };
     finestra.SpritePkm = { id: x => x, gif: x => x, riserva() {} };
+    vm.runInContext(leggi('docs/risultati-match.js'), contesto, { filename: 'risultati-match.js' });   // avanzamentoStagione, come nella pagina
     vm.runInContext(leggi('docs/mvp-voto.js'), contesto, { filename: 'mvp-voto.js' });
     return finestra.MvpVoto;
 }
@@ -367,6 +396,7 @@ test('il fiocco Season MVP: bronzo al primo titolo, poi 2, 3 e 4', () => {
 // ---------- 7. la pagina ----------
 test('stats.html carica gli script dell\'MVP prima di stats.js e conta le stagioni scadute', () => {
     const s = [...leggi('docs/stats.html').matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+    assert.ok(s.includes('risultati-match.js') && s.indexOf('risultati-match.js') < s.indexOf('mvp-voto.js'), 'serve avanzamentoStagione');
     assert.ok(s.indexOf('statistiche.js') < s.indexOf('mvp.js') && s.indexOf('mvp.js') < s.indexOf('mvp-voto.js') && s.indexOf('mvp-voto.js') < s.indexOf('stats.js'));
     assert.match(leggi('docs/stats.js'), /MvpVoto\.concludiScadute\(STATO\.dati\.seasons, STATO\.dati\.players\)/);
 });

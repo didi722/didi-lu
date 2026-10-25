@@ -7,10 +7,11 @@
 //      (Statistiche.calcola(dati, { stagione }).pokemon). Si aggiorna da sola a ogni set giocato.
 //   2. Quando mancano pochi showdown alla fine (finestraVoto(): gli ultimi 3, o meno nelle stagioni corte) compare in matches.html il tasto
 //      per votare. Si apre un modale con i primi 5; ogni giocatore della stagione ha 2 voti, su Pokémon diversi e non suoi.
+//      La top 5 è CONGELATA al momento in cui si apre il voto (showdownAllApertura): i set giocati dopo non la cambiano, per tutti i votanti.
 //   3. Il voto resta aperto anche per 24 ore DOPO la chiusura della stagione (info.chiusaIl): chi aveva già finito i suoi showdown mentre gli
 //      altri giocavano non perde il voto se la stagione si chiude in una sera.
 //   4. Passate le 24 ore i voti si contano (spoglio()): vince il Pokémon con più voti; a parità, quello che era più avanti nella classifica
-//      dell'MVP (la stessa da cui si è scelta la top 5, con le statistiche definitive della stagione). Nessun voto = nessun MVP.
+//      dell'MVP congelata da cui si è scelta la top 5 (stesse statistiche mostrate a chi ha votato). Nessun voto = nessun MVP.
 //      Il conteggio lo scrive la prima pagina del sito che lo trova scaduto (mvp-voto.js) in seasons/{id}/mvp/risultato; il titolo conta nelle
 //      statistiche (Statistiche: mvpVinti) e dà il fiocco "Season MVP" al Pokémon (fiocchi.js).
 //
@@ -100,6 +101,44 @@
     /** Quanti showdown devono mancare perché si apra il voto (almeno 1). */
     const sogliaVoto = richiesti => Math.max(1, Math.min(SHOWDOWN_FINALI, Math.floor(num(richiesti) / FRAZIONE_MASSIMA)));
 
+    // Quando si è concluso uno showdown: il giorno e poi l'ultimo match salvato (come ordine-showdown.js, qui in ordine cronologico)
+    const giornoDi = d => {
+        const t = String(d == null ? '' : d).trim();
+        let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t);
+        if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+        m = /^(\d{1,2})[/.](\d{1,2})[/.](\d{4})/.exec(t);
+        return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+    };
+    const orarioDi = t => { const n = Date.parse(t); return Number.isFinite(n) ? n : 0; };
+    const ultimoMatch = sd => {
+        const info = (sd && sd.info) || {};
+        const salvati = Object.values((sd && sd.matches) || {}).map(m => orarioDi(m && m.lastEdit));
+        return Math.max(0, ...salvati) || Math.max(orarioDi(info.ultimoAggiornamento), orarioDi(info.lastUpdate), orarioDi(info.timestamp));
+    };
+
+    /**
+     * Gli showdown della stagione com'erano nel momento in cui si è aperto il voto: la top 5 si CONGELA lì, anche se mancano ancora 3 showdown, così
+     * per tutti (e per lo spareggio) è la stessa. Non si salva nulla: è sempre lo stesso risultato dai dati, perché si rigiocano gli showdown in
+     * ordine cronologico finché ne mancano pochi alla fine. `avanzamento` è avanzamentoStagione di risultati-match.js.
+     * Restituisce { showdowns: { id: showdown }, ultimo: id dello showdown che ha aperto il voto } o null se il voto non si apre mai.
+     */
+    function showdownAllApertura(info, iscritti, showdowns, teamsIscritti, avanzamento) {
+        const totale = avanzamento(info, iscritti, showdowns, teamsIscritti);
+        const richiesti = num(totale && totale.richiesti);
+        if (!richiesti) return null;
+        const soglia = sogliaVoto(richiesti);
+        const ids = Object.keys(showdowns || {}).filter(id => showdowns[id])
+            .map(id => ({ id, giorno: giornoDi((showdowns[id].info || {}).data), mossa: ultimoMatch(showdowns[id]) }))
+            .sort((a, b) => a.giorno.localeCompare(b.giorno) || a.mossa - b.mossa || a.id.localeCompare(b.id)).map(x => x.id);
+        const finora = {};
+        for (const id of ids) {
+            finora[id] = showdowns[id];
+            const a = avanzamento(info, iscritti, finora, teamsIscritti);
+            if (num(a.giocati) > 0 && richiesti - num(a.giocati) <= soglia) return { showdowns: { ...finora }, ultimo: id };
+        }
+        return null;
+    }
+
     /** Il momento (ms) in cui si chiude la stagione, se è chiusa e lo sappiamo (info.chiusaIl lo scrivono la chiusura automatica e l'amministratore). */
     function chiusuraDi(info) {
         const t = Date.parse(info && info.chiusaIl);
@@ -154,7 +193,7 @@
 
     /**
      * Il conteggio dei voti. `voti` è seasons/{id}/mvp/voti, `iscritti` i giocatori della stagione (nomi o chiavi),
-     * `ranking` la classifica dell'MVP a stagione finita (classifica(), tutti i Pokémon).
+     * `ranking` la classifica dell'MVP congelata all'apertura del voto (classifica(), tutti i Pokémon).
      * Contano solo i voti degli iscritti, mai per un proprio Pokémon (se VOTA_I_PROPRI è falso), un Pokémon una volta sola per votante e al
      * massimo VOTI voti a testa. Vince chi ha più voti; a parità, chi è più avanti in `ranking` (chi non c'è sta dietro a tutti).
      * Restituisce { vincitori: [uno o nessuno], classifica: [{ chiave, player, team, specie, specieId, voti, posizione, punteggio }], votanti, spareggio }
@@ -201,5 +240,5 @@
         return (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : [])).filter(x => x && x.chiave);
     }
 
-    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, sogliaVoto, chiusuraDi, finestraVoto, STAT_VOTO, statVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
+    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, sogliaVoto, chiusuraDi, finestraVoto, showdownAllApertura, STAT_VOTO, statVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
 });
