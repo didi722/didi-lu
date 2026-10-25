@@ -1,0 +1,117 @@
+/* =====================================================================
+   IL SITO COME APP (app.js)
+   ---------------------------------------------------------------------
+   Le regole di "html.app" valgono solo quando il sito è aperto come app: dall'icona sulla schermata Home (PWA) o dentro l'APK Android. Nel browser
+   cambia soltanto l'invito a installare (sulla home, da telefono) e il doppio tocco senza zoom. Stile del sito: nero + giallo, bordi netti e ombra piena;
+   i colori usano le variabili --nb-* del tema attivo con i valori classici come ripiego.
+   ===================================================================== */
+
+/* sempre: niente ritardo né zoom al doppio tocco sui pulsanti e sui link (lo zoom con le due dita resta) */
+html { touch-action: manipulation; }
+
+/* ---------- Solo come app ---------- */
+html.app {
+    --app-nav-h: 58px;
+    overscroll-behavior-y: contain;                 /* niente "ricarica" del browser tirando giù: c'è quello del sito (app.js) */
+    -webkit-tap-highlight-color: transparent;
+}
+html.app body { -webkit-touch-callout: none; }
+html.app :is(a, button, summary, [role="button"], label, nav, .btn) { -webkit-user-select: none; user-select: none; }
+html.app img { -webkit-user-drag: none; }
+
+/* ---------- La barra in basso ---------- */
+/* Solo dove il sito ha il layout da telefono (sotto i 900px, come mobile.css) o il telefono è in orizzontale (basso): in una finestra larga (app installata dal PC) resta il sito di sempre */
+.app-nav { display: none; }
+@media (max-width: 900px), (max-height: 500px) {
+    html.app-con-barra body { padding-bottom: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px)) !important; }
+    html.app-con-barra .app-nav {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;        /* sopra la pagina, sotto le finestre del sito (999 e oltre: coprono la barra) */
+        display: flex; align-items: stretch; justify-content: space-around;
+        box-sizing: border-box;
+        height: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px));
+        padding: 0 4px env(safe-area-inset-bottom, 0px);
+        background: #000;
+        border-top: 3px solid var(--nb-ink, #000);
+        box-shadow: 0 -2px 0 rgba(255, 255, 255, .14);
+        font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    }
+    html.app-tastiera .app-nav { display: none; }       /* con la tastiera aperta la barra starebbe sopra i campi */
+    html.app-tastiera body { padding-bottom: 0 !important; }
+
+    /* Il menù del sito si apre sopra la barra (nell'app non sta più in alto a destra) */
+    html.app-con-barra .user-dropdown {
+        top: auto !important; bottom: calc(var(--app-nav-h) + 10px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 10px !important; left: auto !important;
+        max-height: calc(100vh - var(--app-nav-h) - 90px) !important;
+        z-index: 3001;
+    }
+}
+
+.app-nav-voce {
+    position: relative; flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    margin: 0; padding: 6px 2px 4px;
+    background: none; border: 0; border-radius: 0;
+    color: #c8c8c8; text-decoration: none; text-transform: uppercase; cursor: pointer;
+    font: 800 .6rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em;
+    -webkit-appearance: none; appearance: none;
+}
+.app-nav-voce svg {
+    width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;
+    transition: transform .12s ease;
+}
+.app-nav-voce span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-nav-voce:active svg { transform: scale(.88); }
+.app-nav-voce.attiva { color: var(--nb-giallo, #ffbd44); }
+.app-nav-voce.attiva::before {
+    content: ''; position: absolute; top: -3px; left: 22%; right: 22%; height: 4px;
+    background: var(--nb-giallo, #ffbd44);
+}
+.app-nav-voce:focus-visible { outline: 2px dashed var(--nb-giallo, #ffbd44); outline-offset: -4px; }
+
+/* telefono in orizzontale: la barra più bassa, senza le scritte */
+@media (orientation: landscape) and (max-height: 500px) {
+    html.app { --app-nav-h: 42px; }
+    .app-nav-voce span { display: none; }
+    .app-nav-voce svg { width: 22px; height: 22px; }
+}
+
+/* ---------- Tira per aggiornare ---------- */
+.app-tira {
+    position: fixed; top: -46px; left: 50%; z-index: 3500;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px 6px;
+    background: #fff; color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 4px 4px 0 var(--nb-shcol, #000);
+    font: 900 .72rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    transform: translate(-50%, 0); opacity: 0; pointer-events: none;
+}
+.app-tira svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
+.app-tira.pronto { background: var(--nb-giallo, #ffbd44); }
+.app-tira.pronto svg { transform: rotate(180deg); }
+.app-tira.gira svg { animation: app-gira .8s linear infinite; }
+@keyframes app-gira { to { transform: rotate(360deg); } }
+
+/* ---------- L'invito a installare (solo browser da telefono, sulla home) ---------- */
+.app-invito {
+    position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 900;
+    box-sizing: border-box; max-width: 520px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 10px 10px 10px;
+    background: #fff; color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 5px 5px 0 var(--nb-shcol, #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+.app-invito img { flex: none; width: 48px; height: 48px; border-radius: 10px; }
+.app-invito-testo { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.app-invito-testo b:first-child { font-size: .95rem; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+.app-invito-testo span { font: 600 .74rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.app-invito-share { display: inline-block; width: 16px; height: 16px; vertical-align: -3px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.app-invito-si, .app-invito-no {
+    flex: none; box-sizing: border-box; min-height: 40px; cursor: pointer;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    font: 900 .8rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase;
+}
+.app-invito-si { padding: 6px 14px 4px; background: var(--nb-giallo, #ffbd44); color: #000; box-shadow: 3px 3px 0 var(--nb-shcol, #000); }
+.app-invito-no { width: 40px; padding: 0; background: #fff; color: #000; }
+.app-invito-si:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--nb-shcol, #000); }
