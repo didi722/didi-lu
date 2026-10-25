@@ -119,7 +119,17 @@ body.mvp-aperto { overflow: hidden; }
 .mvp-testi { display: grid; gap: 2px; min-width: 0; }
 .mvp-nome { font: 900 1.05rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
 .mvp-sub { font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
-.mvp-numeri { font: 700 .7rem/1.2 var(--nb-font-testi, 'Montserrat', sans-serif); }
+/* le statistiche in evidenza: una fila di riquadri sotto il Pokémon; il migliore dei cinque di ogni statistica è rosa */
+.mvp-stat { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.mvp-dato {
+    display: grid; justify-items: center; align-content: start; gap: 1px; min-width: 0; text-align: center;
+    padding: 4px 4px 3px; background: #fff; color: #000;
+    border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+}
+.mvp-dato.migliore { background: var(--nb-rosa, #ff90e8); box-shadow: 2px 2px 0 var(--nb-shcol, #000); }
+.mvp-dato-et { font: 800 .56rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .03em; }
+.mvp-dato b { font: 900 1rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.mvp-dato small { font: 700 .58rem/1.1 var(--nb-font-testi, 'Montserrat', sans-serif); opacity: .75; }
 .mvp-punti { display: grid; justify-items: center; padding: 5px 10px 4px; background: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); }
 .mvp-punti b { font: 900 1.25rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
 .mvp-punti small { font: 800 .6rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
@@ -164,6 +174,7 @@ body.mvp-aperto { overflow: hidden; }
     .mvp-testa, .mvp-intro, .mvp-regola, .mvp-nota, .mvp-azioni { padding-left: 14px; padding-right: 14px; }
     .mvp-elenco { padding: 12px 12px 4px; }
     .mvp-riga { grid-template-columns: auto 52px minmax(0, 1fr) auto; }
+    .mvp-stat { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .mvp-sprite { width: 52px; height: 52px; }
     .mvp-vota { grid-column: 1 / -1; width: 100%; }
     .mvp-riga .mvp-punti { padding: 4px 8px 3px; }

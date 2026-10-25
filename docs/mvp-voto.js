@@ -114,7 +114,7 @@
     }
     function chiudi() { const v = document.getElementById('modal-mvp'); if (v) v.hidden = true; document.body.classList.remove('mvp-aperto'); }
 
-    function rigaHtml(c) {
+    function rigaHtml(c, stat) {
         const mio = !window.Mvp.VOTA_I_PROPRI && idDi(c.player) === idDi(ctx.votante);
         const scelto = stato.scelte.has(c.chiave);
         const colore = colorePulito(c.colore) || '#31c489';
@@ -127,10 +127,10 @@
             <span class="mvp-testi">
                 <b class="mvp-nome">${esc(c.specie)}</b>
                 <span class="mvp-sub">${esc(c.playerNome)} · ${esc(c.team)}</span>
-                <span class="mvp-numeri">${esc(c.ko)} KOs · ${esc(c.setVinti)} sets won · ${esc(c.presenze)} played</span>
             </span>
             <span class="mvp-punti"><b>${esc(c.punteggio)}</b><small>pts</small></span>
             <button type="button" class="mvp-vota" data-chiave="${esc(c.chiave)}" ${disabilitato ? 'disabled' : ''} aria-pressed="${scelto}">${etichetta}</button>
+            <ul class="mvp-stat" aria-label="Season stats of ${esc(c.specie)}">${stat.map(x => `<li class="mvp-dato${x.migliore ? ' migliore' : ''}"${x.migliore ? ' title="Best of the top 5"' : ''}><span class="mvp-dato-et">${esc(x.et)}</span><b>${esc(x.testo)}</b><small>${esc(x.sub)}</small></li>`).join('')}</ul>
         </li>`;
     }
 
@@ -147,8 +147,8 @@
             <button type="button" class="mvp-x" aria-label="Close">✖</button>
             <div class="mvp-testa"><h2 id="mvp-titolo" class="mvp-titolo">MVP VOTE</h2><span class="mvp-stagione">${esc(ctx.info.name || ctx.stagione)}</span></div>
             <p class="mvp-intro">${esc(stato.intro)}</p>
-            ${stato.candidati.length ? `<ol class="mvp-elenco">${stato.candidati.map(rigaHtml).join('')}</ol>` : '<p class="mvp-nessuno">No Pokémon has played yet.</p>'}
-            <p class="mvp-regola">Score: KO ×${P.ko} · set won ×${P.setVinto} · set played ×${P.presenza} · set survived ×${P.sopravvissuto} · last Pokémon standing ×${P.ultimoRimasto} · match won ×${P.matchVinto}</p>
+            ${stato.candidati.length ? `<ol class="mvp-elenco">${(() => { const stat = window.Mvp.statVoto(stato.candidati); return stato.candidati.map((c, i) => rigaHtml(c, stat[i])).join(''); })()}</ol>` : '<p class="mvp-nessuno">No Pokémon has played yet.</p>'}
+            <p class="mvp-regola">Highlighted: the best of the top 5 in each stat. Score: KO ×${P.ko} · set won ×${P.setVinto} · set played ×${P.presenza} · set survived ×${P.sopravvissuto} · last Pokémon standing ×${P.ultimoRimasto} · match won ×${P.matchVinto}</p>
             <p class="mvp-nota" role="status">${esc(stato.errore || nota)}</p>
             <div class="mvp-azioni">
                 <button type="button" class="mvp-conferma" ${stato.puoVotare && stato.scelte.size && !stato.occupato ? '' : 'disabled'}>${stato.occupato ? 'SAVING…' : stato.salvato ? 'UPDATE VOTE' : 'CONFIRM VOTE'}</button>

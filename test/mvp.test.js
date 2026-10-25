@@ -149,6 +149,31 @@ test('controllaScelte: solo tra i candidati, mai due volte lo stesso, mai i prop
     assert.ok(Object.values(Mvp.candidato({ chiave: 'k' })).every(v => typeof v === 'string'));
 });
 
+test('statVoto: le statistiche in evidenza, con il migliore di ognuna (solo se davvero sta davanti a qualcuno)', () => {
+    const c = Mvp.classifica([
+        pk('a::T::uno', { portato: 4, koFatti: 8, setPortatoVinti: 3, svenuto: 1, ultimoVinto: 1, serie: { matchVinti: 2, matchPortato: 2 } }),
+        pk('b::T::due', { portato: 2, koFatti: 3, setPortatoVinti: 2, svenuto: 0, ultimoVinto: 0, serie: { matchVinti: 2, matchPortato: 2 } })
+    ]);
+    const st = Mvp.statVoto(c);
+    assert.deepEqual(Mvp.STAT_VOTO.map(s => s.id), ['ko', 'set', 'vivo', 'ultimo', 'match']);
+    const uno = Object.fromEntries(st[0].map(x => [x.id, x]));
+    const due = Object.fromEntries(st[1].map(x => [x.id, x]));
+    assert.equal(uno.ko.testo, '8');
+    assert.equal(uno.ko.sub, '2 per set');
+    assert.equal(uno.set.testo, '3/4');
+    assert.equal(uno.set.sub, '75% won');
+    assert.equal(uno.vivo.testo, '3/4');
+    assert.equal(due.vivo.sub, '100% of sets');
+    assert.deepEqual([uno.ko.migliore, due.ko.migliore], [true, false]);
+    assert.deepEqual([uno.set.migliore, due.set.migliore], [true, false]);
+    assert.deepEqual([uno.vivo.migliore, due.vivo.migliore], [false, true], 'conta la percentuale di set in cui è rimasto in piedi');
+    assert.deepEqual([uno.ultimo.migliore, due.ultimo.migliore], [true, false]);
+    assert.deepEqual([uno.match.migliore, due.match.migliore], [false, false], 'pari: nessuno è il migliore');
+    // tutti a zero: niente evidenziato; un candidato solo: nemmeno
+    assert.ok(Mvp.statVoto(Mvp.classifica([pk('a::T::x', { portato: 1 }), pk('b::T::y', { portato: 1 })])).flat().every(x => x.id === 'vivo' || !x.migliore));
+    assert.ok(Mvp.statVoto(c.slice(0, 1)).flat().every(x => !x.migliore));
+});
+
 test('vincitoriDi legge i vincitori registrati (lista o oggetto numerato di Firebase)', () => {
     assert.deepEqual(Mvp.vincitoriDi({ mvp: { risultato: { vincitori: [{ chiave: 'a' }] } } }).map(v => v.chiave), ['a']);
     assert.deepEqual(Mvp.vincitoriDi({ mvp: { risultato: { vincitori: { 0: { chiave: 'a' }, 1: { chiave: 'b' } } } } }).map(v => v.chiave), ['a', 'b']);

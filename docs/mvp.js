@@ -59,17 +59,42 @@
 
     /**
      * La classifica dell'MVP: i Pokémon scesi in campo, dal punteggio più alto. `max` limita l'elenco (di solito TOP).
-     * Ogni voce: { posizione, chiave, player, playerNome, colore, team, formato, specie, specieId, punteggio, ko, presenze, setVinti }.
+     * Ogni voce: { posizione, chiave, player, playerNome, colore, team, formato, specie, specieId, punteggio, ko, koPerSet, presenze, setVinti, setPersi,
+     * sopravvissuti, ultimoVinto, matchVinti, matchPortato }.
      */
     function classifica(pokemon, max = 0) {
         const voci = (pokemon || []).filter(m => m && num(m.portato) > 0).map(m => ({
             chiave: m.chiave, player: m.player, playerNome: m.playerNome || m.player, colore: m.colore || '',
             team: m.team, formato: m.formato || '', specie: m.specie, specieId: m.specieId,
-            punteggio: punteggio(m), ko: num(m.koFatti), presenze: num(m.portato), setVinti: num(m.setPortatoVinti)
+            punteggio: punteggio(m), ko: num(m.koFatti), presenze: num(m.portato), setVinti: num(m.setPortatoVinti),
+            // i numeri che dicono perché votarlo (la scheda del voto ne mostra i più importanti)
+            setPersi: num(m.setPortatoPersi), koPerSet: num(m.portato) ? arrotonda(num(m.koFatti) / num(m.portato)) : 0,
+            sopravvissuti: Math.max(0, num(m.portato) - num(m.svenuto)), ultimoVinto: num(m.ultimoVinto), matchVinti: num(m.serie && m.serie.matchVinti),
+            matchPortato: num(m.serie && m.serie.matchPortato)
         })).sort((a, b) => b.punteggio - a.punteggio || b.ko - a.ko || b.presenze - a.presenze
             || String(a.specie).localeCompare(String(b.specie)) || String(a.chiave).localeCompare(String(b.chiave)));
         voci.forEach((v, i) => { v.posizione = i + 1; });
         return max > 0 ? voci.slice(0, max) : voci;
+    }
+
+    // Le statistiche che la scheda del voto mette in evidenza, nell'ordine: id, etichetta, valore da confrontare (più alto = meglio), come si scrive
+    const STAT_VOTO = [
+        { id: 'ko', et: 'KOs', val: v => v.ko, testo: v => String(v.ko), sub: v => `${v.koPerSet} per set` },
+        { id: 'set', et: 'Sets won', val: v => v.setVinti, testo: v => `${v.setVinti}/${v.presenze}`, sub: v => (v.presenze ? `${Math.round(100 * v.setVinti / v.presenze)}% won` : '') },
+        { id: 'vivo', et: 'Survived', val: v => (v.presenze ? v.sopravvissuti / v.presenze : 0), testo: v => `${v.sopravvissuti}/${v.presenze}`, sub: v => (v.presenze ? `${Math.round(100 * v.sopravvissuti / v.presenze)}% of sets` : '') },
+        { id: 'ultimo', et: 'Last standing', val: v => v.ultimoVinto, testo: v => String(v.ultimoVinto), sub: () => 'sets won alone' },
+        { id: 'match', et: 'Matches won', val: v => v.matchVinti, testo: v => `${v.matchVinti}/${v.matchPortato}`, sub: () => 'when brought' }
+    ];
+
+    /**
+     * Le statistiche in evidenza di ogni candidato, con chi è il migliore di ognuna (ex aequo compresi; nessuno se tutti hanno lo stesso valore o zero),
+     * così a colpo d'occhio si vede chi vince dove. Restituisce, per ogni candidato (nello stesso ordine), [{ id, et, testo, sub, migliore }].
+     */
+    function statVoto(candidati) {
+        const migliori = Object.fromEntries(STAT_VOTO.map(s => [s.id, Math.max(0, ...candidati.map(s.val))]));
+        // si evidenzia solo chi sta davanti a qualcuno: se tutti hanno lo stesso valore (o zero) nessuno è "il migliore"
+        const distingue = Object.fromEntries(STAT_VOTO.map(s => [s.id, migliori[s.id] > 0 && candidati.some(v => s.val(v) < migliori[s.id])]));
+        return candidati.map(v => STAT_VOTO.map(s => ({ id: s.id, et: s.et, testo: s.testo(v), sub: s.sub(v), migliore: distingue[s.id] && s.val(v) === migliori[s.id] })));
     }
 
     /** Quanti showdown devono mancare perché si apra il voto (almeno 1). */
@@ -176,5 +201,5 @@
         return (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : [])).filter(x => x && x.chiave);
     }
 
-    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, sogliaVoto, chiusuraDi, finestraVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
+    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, sogliaVoto, chiusuraDi, finestraVoto, STAT_VOTO, statVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
 });
