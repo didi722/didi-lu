@@ -131,6 +131,15 @@ jobs:
           "$strumenti/apksigner" verify --verbose --print-certs sant-alvise-league.apk | grep -E "Verifies|Number of signers|SHA-256"
           ls -l sant-alvise-league.apk
 
+      - name: Riepilogo dell'APK (nome, versione, permessi, cosa contiene)
+        run: |
+          set -euo pipefail
+          strumenti="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$strumenti/aapt2" dump badging sant-alvise-league.apk | grep -E "^package:|^sdkVersion|^targetSdkVersion|^application-label:|^uses-permission|^launchable-activity|application-debuggable" || true
+          "$strumenti/apksigner" verify --verbose sant-alvise-league.apk | grep -E "^Verified using"
+          unzip -l sant-alvise-league.apk | grep -E "assets/(capacitor.config.json|public/)|AndroidManifest|ic_launcher" | head -20 || true
+          unzip -p sant-alvise-league.apk assets/capacitor.config.json
+
       - name: Tiene l'APK tra gli artifact (14 giorni)
         uses: actions/upload-artifact@v4
         with:
