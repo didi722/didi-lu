@@ -78,9 +78,14 @@ function modificaGradle(testo, codice) {
     return t;
 }
 
-/** Niente copia di sicurezza nel cloud dei dati del WebView (accesso e preferenze restano sul telefono). */
+/**
+ * Niente copia di sicurezza nel cloud dei dati del WebView (accesso e preferenze restano sul telefono); e il permesso di mostrare notifiche
+ * (da Android 13 va chiesto: lo fa il sito quando si accendono dal foglio dell'account, vedi docs/push.js).
+ */
 function modificaManifest(xml) {
-    return sostituisci(xml, /android:allowBackup="true"/, 'android:allowBackup="false"', 'allowBackup in AndroidManifest.xml');
+    const t = sostituisci(xml, /android:allowBackup="true"/, 'android:allowBackup="false"', 'allowBackup in AndroidManifest.xml');
+    if (t.includes('android.permission.POST_NOTIFICATIONS')) return t;
+    return sostituisci(t, /<\/manifest>/, '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>', 'la fine di AndroidManifest.xml');
 }
 
 function ritocca(file, modifica) {

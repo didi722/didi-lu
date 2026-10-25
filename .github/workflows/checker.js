@@ -26,6 +26,32 @@ function caricaSito() {
 }
 const sito = caricaSito();
 
+// Notifiche push (functions/push.js): i promemoria di scadenza e l'apertura del voto MVP, che dipendono dall'ora e dai risultati e non da una scrittura.
+// Gli altri eventi (sfida ricevuta, iscrizioni aperte, stagione conclusa) li manda subito il database (functions/index.js).
+const { getMessaging } = require('firebase-admin/messaging');
+const push = require(path.join(__dirname, '..', '..', 'functions', 'push.js'));
+const Mvp = require(path.join(__dirname, '..', '..', 'docs', 'mvp.js'));
+
+async function notifiche(id, info, dati) {
+  try {
+    const ctx = { db, messaging: getMessaging(), stagione: id, info };
+    const ore = push.promemoriaDovuto(info);
+    if (ore) {
+      const r = await push.notificaPromemoria({ ...ctx, ore });
+      if (r && !r.saltata) console.log(`🔔 Promemoria (${ore} h) per [${id}]: ${r.inviate} notifiche inviate.`);
+    }
+    if (id !== 'sbeta' && ['playing', 'closed'].includes(String(info.status || '').toLowerCase())) {
+      const avanzamento = sito.avanzamentoStagione(info, dati.iscritti, dati.showdowns, dati.teams_iscritti);
+      if (Mvp.finestraVoto(info, avanzamento, id).aperta) {
+        const r = await push.notificaMvp(ctx);
+        if (r && !r.saltata) console.log(`🔔 Voto MVP aperto per [${id}]: ${r.inviate} notifiche inviate.`);
+      }
+    }
+  } catch (e) {
+    console.error(`⚠️ Notifiche push di [${id}] non inviate (il controllo prosegue):`, e.message);
+  }
+}
+
 async function runChecker() {
   try {
     console.log("🚀 Script avviato da GitHub. Controllo scadenze e conteggio showdown...");
@@ -78,6 +104,10 @@ async function runChecker() {
         console.log(`📌 La stagione chiusa [${id}] non aveva il vincitore: calcolato (${vincitore}).`);
         modificheFatte++;
       }
+
+      // Notifiche push: con lo stato com'è adesso (se sopra è cambiato, lo si rilegge)
+      const adesso = modificheFatte ? ((await db.ref(`seasons/${id}/info`).once('value')).val() || info) : info;
+      await notifiche(id, adesso, seasonData);
     }
 
     console.log(`✅ Controllo terminato con successo. Stati database modificati: ${modificheFatte}`);

@@ -66,9 +66,23 @@
     html.app .comandi:not(.doppio) .pannello-testa { top: -14px; right: 8px; }
     html.app .comandi:not(.doppio) .stato-avversario { padding: 3px 7px 1px; font-size: .66rem; }
 
+    /* meno cose in giro: i giocatori sono una riga (nome + i sei Pokémon in fila con la barra della vita), senza la scheda con titolo, ELO e medaglie;
+       l'opzione "Bot plays P2" è solo per le prove; i fumetti dei Pokémon stanno nella metà libera dello schermo e scorrono se sono lunghi */
+    html.app .lato { flex-wrap: wrap; gap: 6px 10px; padding: 0; }
+    html.app .lato-scheda, html.app .opzione-bot { display: none !important; }
+    html.app .lato-nome { font-size: 1rem; padding: 4px 10px 2px; }
+    html.app .lato-team { font-size: .66rem; }
+    html.app .lato-pkm { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; flex: 1 0 100%; }
+    html.app .membro { padding: 2px 1px; }
+    html.app .membro > img { max-width: 30px; }
+    html.app #tooltipwrapper { max-width: 48vw; }
+    html.app #tooltipwrapper .tooltip { max-width: 48vw; max-height: calc(100dvh - 16px); overflow-y: auto; }
+    html.app #tooltipwrapper .tooltip h2 { font-size: .9rem; padding: 4px 8px 3px; }
+    html.app #tooltipwrapper .tooltip p { padding: 2px 8px; font-size: .68rem; line-height: 1.25; }
+    html.app #tooltipwrapper .tooltip .tt-nota, html.app #tooltipwrapper .tooltip .tt-nota-lunga { display: none; }
+
     /* quello che le regole "schermo stretto" del simulatore fanno sotto i 700px di larghezza: qui la colonna di destra è larga come un telefono in verticale */
     html.app .lato.p2, :where(body.vista-p2) html.app .lato.p1 { flex-direction: row; }
-    html.app .lato-pkm { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     html.app .comandi.doppio, html.app .lobby-colonne { grid-template-columns: 1fr; }
     html.app .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
     html.app .mosse { grid-template-columns: 1fr 1fr; }

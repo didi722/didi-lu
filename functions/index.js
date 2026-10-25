@@ -12,7 +12,8 @@ const { initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onValueWritten } = require('firebase-functions/v2/database');
+const { onValueWritten, onValueCreated } = require('firebase-functions/v2/database');
+const { getMessaging } = require('firebase-admin/messaging');
 // partita.js porta con sé il simulatore completo di Showdown (migliaia di file): si carica alla prima richiesta e non all'avvio,
 // così il contenitore apre subito la porta e supera il controllo di avvio di Cloud Run anche quando leggere i file è lento
 let moduloPartita = null;
@@ -106,4 +107,45 @@ exports.salvaPartitaConclusa = onValueWritten(
         if (evento.data.after.val() !== 'da_salvare') return;
         await prendiServizio().salvaPartita(evento.params.id);
     }
+);
+
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// NOTIFICHE PUSH (push.js). Qui gli eventi che si vedono subito sul database; i promemoria e il voto MVP li manda il checker
+// (.github/workflows/checker.js, ogni 30 minuti). Leggere e scrivere a nome del server: chi ha acceso le notifiche ha i suoi token in pushTokens/{uid}.
+// Un errore nelle notifiche non deve mai far fallire il resto: si scrive nel log e basta.
+// ---------------------------------------------------------------------------------------------------------------------------------
+const push = require('./push');
+const OPZIONI_PUSH = { instance: ISTANZA_DB, region: REGIONE, memory: '256MiB' };
+async function conLog(nome, fn) {
+    try { return await fn(); } catch (e) { console.error(`Notifica push (${nome}) non inviata:`, e); return null; }
+}
+
+// Una sfida ricevuta: amichevole (sfide/amichevoli/{id}) o di stagione (sfide/{stagione}/{id})
+exports.pushSfidaRicevuta = onValueCreated(
+    { ...OPZIONI_PUSH, ref: '/sfide/{stagione}/{id}' },
+    evento => conLog('sfida', () => push.notificaSfida({
+        db: getDatabase(), messaging: getMessaging(), stagione: evento.params.stagione, id: evento.params.id, sfida: evento.data.val()
+    }))
+);
+
+// Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
+exports.pushStatoStagione = onValueWritten(
+    { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/info/status' },
+    evento => conLog('stagione', async () => {
+        const prima = String(evento.data.before.val() || '').toLowerCase();
+        const dopo = String(evento.data.after.val() || '').toLowerCase();
+        if (prima === dopo) return null;
+        const db = getDatabase();
+        const stagione = evento.params.stagione;
+        const info = (await db.ref(`seasons/${stagione}/info`).once('value')).val() || {};
+        if (dopo === 'open') return push.notificaIscrizioniAperte({ db, messaging: getMessaging(), stagione, info });
+        if (dopo === 'closed' && stagione !== 'sbeta') {
+            // il vincitore lo scrive il sito subito dopo lo stato: si aspetta un attimo, così la notifica lo può dire
+            await new Promise(ok => setTimeout(ok, 8000));
+            const aggiornata = (await db.ref(`seasons/${stagione}/info`).once('value')).val() || info;
+            return push.notificaStagioneConclusa({ db, messaging: getMessaging(), stagione, info: aggiornata });
+        }
+        return null;
+    })
 );

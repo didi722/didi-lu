@@ -623,6 +623,44 @@ async function getPlayersColors(p1, p2) {
 }
 
 
+// Le stagioni "in corso": iscrizioni chiuse (o scadenza passata) e non concluse. Come le sceglie la Home. Più recente per ultima: [{ id, nome }]
+async function trovaStagioniInCorso() {
+    const leggi = id => db.ref(`seasons/${id}/info`).once('value').then(x => [id, x.val()]).catch(() => [id, null]);
+    const tutte = [await leggi('sbeta')];
+    for (let da = 0; da < 200; da += 10) {
+        const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`s${da + i}`)));
+        tutte.push(...blocco);
+        if (!blocco[blocco.length - 1][1]) break;
+    }
+    return tutte.filter(([, info]) => {
+        if (!info) return false;
+        let st = String(info.status || 'open').toLowerCase();
+        if (st === 'open' && info.deadline && new Date() >= new Date(info.deadline)) st = 'playing';
+        return st === 'playing';
+    }).map(([id, info]) => ({ id, nome: info.name || `Season ${id}` }));
+}
+
+// Più stagioni in corso insieme (una League e una Cup, per esempio): si sceglie quale aprire. Ogni voce è un link alla stessa pagina con ?id=
+function sceltaStagione(elenco) {
+    const velo = document.createElement('div');
+    velo.id = 'scelta-stagione';
+    velo.setAttribute('role', 'dialog');
+    velo.setAttribute('aria-label', 'Choose a season');
+    velo.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:rgba(0,0,0,.6);';
+    const scheda = document.createElement('div');
+    scheda.style.cssText = 'width:100%;max-width:380px;box-sizing:border-box;padding:18px;background:var(--nb-carta,#fff);color:#000;border:4px solid var(--nb-ink,#000);border-radius:var(--nb-raggio,0);box-shadow:8px 8px 0 var(--nb-ink,#000);font-family:var(--nb-font-titoli,"Josefin Sans",sans-serif);';
+    scheda.innerHTML = '<h2 style="margin:0 0 14px;font-size:1.2rem;text-transform:uppercase;letter-spacing:.08em;">Which season?</h2>';
+    elenco.slice().reverse().forEach(x => {
+        const a = document.createElement('a');
+        a.href = `matches.html?id=${encodeURIComponent(x.id)}`;
+        a.textContent = x.nome;
+        a.style.cssText = 'display:block;margin:0 0 10px;padding:14px;text-align:center;text-decoration:none;color:#000;background:var(--nb-giallo,#ffbd44);border:3px solid var(--nb-ink,#000);border-radius:var(--nb-raggio,0);box-shadow:4px 4px 0 var(--nb-ink,#000);font-weight:900;text-transform:uppercase;letter-spacing:.05em;';
+        scheda.appendChild(a);
+    });
+    velo.appendChild(scheda);
+    document.body.appendChild(velo);
+}
+
 async function recuperaStagioneCorrente() {
     // 1. Leggiamo l'ID dall'URL (es: matches.html?id=-O123456)
     const urlParams = new URLSearchParams(window.location.search);
@@ -631,10 +669,14 @@ async function recuperaStagioneCorrente() {
     if (idStagioneURL) {
         stagioneAttiva = idStagioneURL;
     } else {
-        // Fallback ai settings se non c'è ID nell'URL
+        // Senza ID (la barra dell'app, un segnalibro): la stagione in corso (iscrizioni chiuse, non ancora finita; se sono più d'una si sceglie); poi le impostazioni
         try {
-            const snapSettings = await db.ref('settings/currentSeason').once('value');
-            if (snapSettings.exists()) {
+            const inCorso = await trovaStagioniInCorso();
+            const snapSettings = inCorso.length ? null : await db.ref('settings/currentSeason').once('value');
+            if (inCorso.length) {
+                stagioneAttiva = inCorso[inCorso.length - 1].id;      // la più recente; se sono più d'una si chiede
+                if (inCorso.length > 1) sceltaStagione(inCorso);
+            } else if (snapSettings.exists()) {
                 stagioneAttiva = snapSettings.val();
             } else {
                 stagioneAttiva = "sbeta"; // Fallback estremo se tutto fallisce
