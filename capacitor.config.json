@@ -1,8 +1,19 @@
 {
   "appId": "com.didilucabattles.app",
-  "appName": "Didi-Luca Battles",
+  "appName": "Sant'Alvise League",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "url": "https://didi722.github.io/didi-lu/",
+    "androidScheme": "https",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "appendUserAgent": "SantAlviseApp",
+    "backgroundColor": "#000000"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK"
+    }
   }
 }

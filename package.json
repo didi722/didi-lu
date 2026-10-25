@@ -19,9 +19,9 @@
   },
   "homepage": "https://github.com/didi722/didi-lu#readme",
   "dependencies": {
-    "@capacitor/android": "^8.1.0",
-    "@capacitor/cli": "^8.1.0",
-    "@capacitor/core": "^8.1.0",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "@firebase/app": "^0.16.0",
     "@pkmn/dex": "^0.10.11",
     "firebase-admin": "^14.2.0",
