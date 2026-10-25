@@ -57,8 +57,15 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Android SDK (quello già installato sulla macchina, più le parti che servono ad Android 16)
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$(ls -d "$sdk"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          echo "SDK: $sdk ($sdkmanager)"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
 
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
