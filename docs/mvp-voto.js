@@ -21,6 +21,7 @@
     const valori = x => (x && typeof x === 'object' ? Object.values(x) : []);
     const colorePulito = c => String(c || '').replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
 
+    let autoAperto = false;    // ?mvp=1 (dalla notifica) apre il voto una volta sola
     let ctx = null;            // l'ultimo contesto con cui è stata disegnata la pagina
     let stato = null;          // lo stato del modale aperto: { candidati, scelte (Set di chiavi), puoVotare, ... }
 
@@ -265,6 +266,7 @@
             finestra: window.Mvp.finestraVoto(info, avanzamento, stagione)
         };
         aggiornaTasto();
+        if (!autoAperto && new URLSearchParams(location.search).get('mvp') && ctx.finestra.aperta) { autoAperto = true; apriModale(); }
         // scaduto il tempo del voto: si contano i voti (se non l'ha già fatto qualcun altro) e l'MVP compare sotto la classifica
         if (window.Mvp.daContare(ctx.finestra, mvp) && dati.votante) {
             try { mvp.risultato = await concludi({ stagione, info, showdowns: ctx.showdowns, teamsIscritti: ctx.teamsIscritti, players: ctx.players, iscritti, mvp }); }

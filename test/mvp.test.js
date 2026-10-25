@@ -426,6 +426,18 @@ test('concludiScadute con i giocatori come funzione: li legge solo se c\'è davv
     assert.equal(db.leggi('seasons/s2/mvp/risultato/vincitori/0/specie'), 'Garchomp');
 });
 
+test('la campanella (sfide.js) avvisa del voto MVP aperto: carica gli script che servono, segue le chiuse da meno di 24 ore e porta al voto', () => {
+    const js = leggi('docs/sfide.js');
+    assert.match(js, /caricaScript\('risultati-match\.js'/);
+    assert.match(js, /caricaScript\('mvp\.js'/);
+    assert.match(js, /Date\.parse\(info\.chiusaIl\) > Date\.now\(\) - UN_GIORNO/, 'stagioni chiuse da meno di 24 ore');
+    assert.match(js, /window\.Mvp\.finestraVoto\(/);
+    assert.match(js, /matches\.html\?id=\$\{encodeURIComponent\(x\.id\)\}&mvp=1/);
+    assert.match(js, /seasons\/\$\{c\.id\}\/mvp\/voti\/\$\{S\.ioId\}/, 'votato = la notifica sparisce');
+    assert.match(js, /x\.tipo !== 'ricevuta' && x\.tipo !== 'mvp'/, 'non è una risposta a una sfida');
+    assert.match(leggi('docs/mvp-voto.js'), /get\('mvp'\) && ctx\.finestra\.aperta/, '?mvp=1 apre il voto');
+});
+
 test("la chiusura a mano dall'admin scrive chiusaIl: da lì partono le 24 ore del voto", () => {
     assert.match(leggi('docs/admin.html'), /info\/chiusaIl`\)\.set\(new Date\(\)\.toISOString\(\)\)/);
 });

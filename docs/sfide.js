@@ -50,7 +50,9 @@
         vistePendenti: new Set(), // "stagione/idSfida" mie viste in attesa in questa sessione
         inPartenza: false,
         nonLettePrima: 0,
-        battagliePrima: 0
+        battagliePrima: 0,
+        mvp: {},                  // id → stagione in cui votare l'MVP (vedi la sezione MVP)
+        recenti: []               // [id, info] delle stagioni chiuse da meno di 24 ore
     };
 
     const db = () => firebase.database();
@@ -277,7 +279,7 @@
         const campanella = $(CAMPANELLA[0]);
         if (campanella) {
             // La campanella serve a chi è iscritto ad almeno una stagione seguita
-            campanella.hidden = !(S.utente && elencoStagioni().some(D => D.io));
+            campanella.hidden = !(S.utente && (elencoStagioni().some(D => D.io) || Object.values(S.mvp).some(M => M.io)));
             if (campanella.hidden) $(CAMPANELLA[2]).hidden = true;
         }
         // Se la campanella non c'è, le spade prendono il suo posto
@@ -311,6 +313,8 @@
             if (!blocco[blocco.length - 1][1]) break;   // l'ultima del blocco non esiste: finito
         }
         if (corrente && !trovate.some(([id]) => id === corrente)) trovate.push(await leggi(corrente));
+        // chiuse da meno di 24 ore: non si seguono (niente sfide), ma l'MVP si può ancora votare (vedi la sezione MVP)
+        S.recenti = trovate.filter(([, info]) => info && chiusa(info) && Date.parse(info.chiusaIl) > Date.now() - UN_GIORNO);
         return trovate.filter(([, info]) => info && !chiusa(info));
     }
 
@@ -355,6 +359,7 @@
         const uid = utente?.uid || '';
         if (S.uidAscolti !== uid) {
             Object.keys(S.stagioni).forEach(stacca);
+            Object.keys(S.mvp).forEach(staccaMvp);
             S.uidAscolti = uid;
         }
         S.utente = utente;
@@ -375,6 +380,7 @@
 
         aggiornaVisibilita();
         ridisegna();
+        avviaMvp(giro);
     }
 
     function stacca(id) {
@@ -797,6 +803,7 @@
         }
         return elenco
             .map(n => ({ ...n, chiave: chiaveNotifica(n.id, n.s) }))
+            .concat(notificheMvp())
             .sort((x, y) => (y.quando || 0) - (x.quando || 0));
     }
 
@@ -813,6 +820,107 @@
             db().ref(`notifiche/${S.utente.uid}/${stagione}`).update(aggiornamento)
                 .catch(e => console.warn('Notifiche lette non salvate: controlla le regole del database', e));
         }
+    }
+
+
+    // -----------------------------------------------------
+    // 7b. MVP: il voto aperto è una notifica
+    //
+    // Quando mancano pochi showdown alla fine di una stagione (e per 24 ore dopo la chiusura) chi è iscritto e non ha ancora votato trova in
+    // campanella "Vote for the ... MVP", con il tasto che apre il voto in matches.html (mvp.js decide quando si può votare). Si guardano le
+    // stagioni aperte che si seguono già e quelle chiuse da meno di 24 ore. mvp.js e risultati-match.js (avanzamentoStagione) non stanno su
+    // tutte le pagine: si caricano da qui, solo se c'è una stagione dove votare. Votato, la notifica sparisce; letta o no, resta finché si può votare.
+    // -----------------------------------------------------
+    const stagioneConMvpPossibile = (info, id) => id !== 'sbeta' && ['', 'league', 'monoformat'].includes(String(info?.tipo || '').toLowerCase().trim());
+
+    const promesseScript = {};
+    function caricaScript(src, giaCaricato) {
+        if (giaCaricato()) return Promise.resolve(true);
+        if (!promesseScript[src]) {
+            promesseScript[src] = new Promise(ok => {
+                const sc = document.createElement('script');
+                sc.src = src;
+                sc.onload = () => ok(giaCaricato());
+                sc.onerror = () => { delete promesseScript[src]; ok(false); };
+                document.head.append(sc);
+            });
+        }
+        return promesseScript[src];
+    }
+    async function preparaMvp() {
+        const a = await caricaScript('risultati-match.js', () => typeof window.avanzamentoStagione === 'function');
+        const b = await caricaScript('mvp.js', () => !!window.Mvp);
+        return a && b;
+    }
+
+    async function avviaMvp(giro) {
+        try {
+            const candidati = [];
+            for (const D of elencoStagioni()) {
+                if (!D.amichevole && D.io && stagioneConMvpPossibile(D.info, D.id)) candidati.push({ id: D.id, info: D.info, iscritti: D.iscritti, io: D.io });
+            }
+            const visti = new Set(candidati.map(c => c.id));
+            if (S.ioId) {
+                for (const [id, info] of S.recenti) {
+                    if (visti.has(id) || !stagioneConMvpPossibile(info, id)) continue;
+                    const iscritti = Object.keys((await db().ref(`seasons/${id}/iscritti`).once('value')).val() || {});
+                    const io = iscritti.find(p => idDi(p) === S.ioId);
+                    if (io) candidati.push({ id, info, iscritti, io });
+                }
+            }
+            if (giro !== S.giro) return;
+            if (!candidati.length) { Object.keys(S.mvp).forEach(staccaMvp); disegnaCampanella(); return; }
+            if (!(await preparaMvp())) return;
+            await Promise.all(candidati.map(async c => { c.teams = (await db().ref(`seasons/${c.id}/teams_iscritti`).once('value')).val() || null; }));
+            if (giro !== S.giro) return;
+            sincronizzaMvp(candidati);
+            disegnaCampanella();
+        } catch (e) {
+            console.warn('Voto MVP: notifica non disponibile', e);
+        }
+    }
+
+    function sincronizzaMvp(candidati) {
+        const ids = new Set(candidati.map(c => c.id));
+        Object.keys(S.mvp).filter(id => !ids.has(id)).forEach(staccaMvp);
+        for (const c of candidati) {
+            const nuova = !S.mvp[c.id];
+            const M = S.mvp[c.id] || (S.mvp[c.id] = { id: c.id, lette: {}, votato: false, pronti: { sfide: true, lette: false } });
+            Object.assign(M, { info: c.info, iscritti: c.iscritti, io: c.io, teams: c.teams });
+            if (!nuova) continue;
+            const refs = S.ascolti[`mvp:${c.id}`] = [];
+            const segui = (percorso, cb, errore) => {
+                const ref = db().ref(percorso);
+                const fn = snap => { if (S.mvp[c.id] === M) cb(snap); };
+                ref.on('value', fn, errore);
+                refs.push([ref, fn]);
+            };
+            segui(`notifiche/${S.utente.uid}/${c.id}`, snap => { M.lette = snap.val() || {}; M.pronti.lette = true; disegnaCampanella(); },
+                () => { M.pronti.lette = true; disegnaCampanella(); });
+            segui(`seasons/${c.id}/mvp/voti/${S.ioId}`, snap => { M.votato = snap.exists(); disegnaCampanella(); }, () => {});
+        }
+    }
+
+    function staccaMvp(id) {
+        (S.ascolti[`mvp:${id}`] || []).forEach(([ref, cb]) => ref.off('value', cb));
+        delete S.ascolti[`mvp:${id}`];
+        delete S.mvp[id];
+    }
+
+    // Le stagioni in cui il voto è aperto e non ho ancora votato, come voci di notifica
+    function notificheMvp() {
+        if (!S.ioId || !window.Mvp || typeof window.avanzamentoStagione !== 'function') return [];
+        const elenco = [];
+        for (const M of Object.values(S.mvp)) {
+            if (!M.io || M.votato || !M.info) continue;
+            const showdowns = S.stagioni[M.id]?.showdowns || {};
+            const f = window.Mvp.finestraVoto(M.info, window.avanzamentoStagione(M.info, M.iscritti, showdowns, M.teams), M.id);
+            if (!f.aperta) continue;
+            const ultimo = Object.values(showdowns).flatMap(sd => Object.values(sd?.matches || {})).map(m => Date.parse(m?.lastEdit) || 0);
+            elenco.push({ D: M, id: M.id, tipo: 'mvp', f, nome: M.info.name || M.id, chiave: 'mvp-aperto',
+                quando: f.fase === 'dopo' ? Date.parse(M.info.chiusaIl) : (Math.max(0, ...ultimo) || Date.now()) });
+        }
+        return elenco;
     }
 
 
@@ -925,7 +1033,7 @@
         }));
 
         // Solo l'avviso: la battaglia in corso si apre dal bottone con le spade (le amichevoli accettate stanno nella sezione sotto)
-        const risposte = tutte.filter(x => x.tipo !== 'ricevuta' && !(x.D.amichevole && x.tipo === 'accettata')).map(x => voce({
+        const risposte = tutte.filter(x => x.tipo !== 'ricevuta' && x.tipo !== 'mvp' && !(x.D.amichevole && x.tipo === 'accettata')).map(x => voce({
             classe: x.tipo === 'rifiutata' ? 'rifiutata' : 'accettata',
             tag: x.D.amichevole ? 'Friendly' : x.s.categoria, quando: x.quando, nuova: nuova(x),
             testo: `<strong>${esc(x.s.a)}</strong> ${x.tipo === 'rifiutata' ? 'declined' : 'accepted'} your ${x.D.amichevole ? 'friendly ' : ''}challenge`
@@ -957,8 +1065,19 @@
                 azioni: [collegamento('Play', 'si', linkAmichevole(id))]
             }));
 
+        // Il voto dell'MVP è aperto e non ho ancora votato: dice quanto manca e porta dritto al voto
+        const votiMvp = tutte.filter(x => x.tipo === 'mvp').map(x => voce({
+            classe: 'ricevuta', tag: 'MVP', quando: x.quando, nuova: nuova(x),
+            testo: `Vote for the <strong>${esc(x.nome)}</strong> MVP`,
+            dettagli: x.f.fase === 'dopo'
+                ? `The season is over · voting closes ${new Date(x.f.scade).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`
+                : `${x.f.mancano} showdown${x.f.mancano === 1 ? '' : 's'} to the end · 2 votes among the top 5 Pokémon`,
+            azioni: [collegamento('Vote', 'si', `matches.html?id=${encodeURIComponent(x.id)}&mvp=1`)]
+        }));
+
         box.replaceChildren(...menuConSezioni('Notifications', [
             ['Waiting for you', ricevute],
+            ['MVP voting', votiMvp],
             ['Friendly matches in progress', inCorso],
             ['Replies', risposte],
             ['Sent', inviate]
