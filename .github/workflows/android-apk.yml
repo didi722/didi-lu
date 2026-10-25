@@ -75,7 +75,7 @@ jobs:
       - name: Dipendenze
         run: npm ci --ignore-scripts
 
-      - name: Orientamento (il plugin segue il sensore: la battaglia va bene girata da entrambi i lati)
+      - name: Orientamento (il plugin segue il sensore, la battaglia va bene girata da entrambi i lati)
         run: node tools/android/prepara.cjs plugin
 
       - name: Sito dell'app (www/)

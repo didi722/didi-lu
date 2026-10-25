@@ -262,6 +262,14 @@ test('workflow: parte dai file dell\'app su main, a mano, e con Node 22 e Java 2
     assert.match(workflow, /@capacitor\/assets@3\.0\.5/, 'versione dello strumento delle icone fissata');
 });
 
+test('workflow: i nomi dei passi sono YAML valido (un due punti seguito da spazio, senza virgolette, rompe tutto il file e GitHub non fa partire niente)', () => {
+    for (const riga of workflow.split('\n')) {
+        const m = riga.match(/^\s*- name: (.*)$/);
+        if (!m || /^["']/.test(m[1])) continue;
+        assert.doesNotMatch(m[1], /: |\s#/, `nome del passo non valido in YAML: ${m[1]}`);
+    }
+});
+
 test('workflow: i passi stanno nell\'ordine giusto (www, progetto, icone, ritocchi, sincronizzazione, Gradle, firma, release)', () => {
     const ordine = [
         'npm ci --ignore-scripts', 'node tools/android/prepara.cjs plugin', 'node tools/android/prepara.cjs web', 'npx cap add android', 'generate --android',
