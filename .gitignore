@@ -2,7 +2,9 @@
 node_modules/
 
 # Android Studio e file generati (PESANTISSIMI)
-android/
+/android/
+# pagina di ingresso e pagina offline dell'app: le rifà tools/android/prepara.cjs a ogni build (vedi .github/workflows/android-apk.yml)
+/www/
 *.iml
 .gradle/
 local.properties

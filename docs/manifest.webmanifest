@@ -1,0 +1,26 @@
+{
+  "name": "Sant'Alvise PKMN League",
+  "short_name": "Sant'Alvise",
+  "description": "The Sant'Alvise Pokémon league: seasons, showdowns, rankings, teams and battles.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "entertainment", "sports"],
+  "icons": [
+    { "src": "immagini/app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "immagini/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "immagini/app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Matches", "short_name": "Matches", "url": "matches.html" },
+    { "name": "My Box", "short_name": "Box", "url": "box.html" },
+    { "name": "Trainers", "short_name": "Trainers", "url": "players.html" },
+    { "name": "Stats", "short_name": "Stats", "url": "stats.html" }
+  ]
+}

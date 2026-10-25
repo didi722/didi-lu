@@ -1,0 +1,465 @@
+/* =====================================================================
+   LE PAGINE COME APP (app.js lo scarica solo quando il sito è aperto come app, nelle pagine con la barra in basso)
+   ---------------------------------------------------------------------
+   Qui ogni pagina è ripensata per il telefono invece di essere la versione stretta di quella per PC: via le cornici da finestra del computer
+   (pallini, titoli a adesivo, scritte giganti dietro), liste e card più dense, le informazioni principali per prime, finestre che salgono dal
+   basso come fogli. La linea del sito resta: bordi neri, ombre piene, caratteri e colori del tema scelto dal giocatore.
+   Tutto sta dentro "html.app-shell" e nella media query dello schermo stretto: in una finestra larga (app installata dal computer) il sito
+   resta quello di sempre.
+   Indice: 1 comuni · 2 Home · 3 Matches · 4 Trainers · 5 Stats · 6 Box · 7 Profile · 8 Hub · 9 Formats, Rulebook, Archive · 10 fogli (finestre)
+   ===================================================================== */
+@media (max-width: 900px), (max-height: 500px) {
+
+    /* ---------- 1. Comuni ---------- */
+    /* niente scritta gigante dietro alla pagina né puntini fissi che si muovono sotto il dito */
+    html.app-shell body.nb::before { content: none !important; }
+    html.app-shell body.nb { overflow-x: hidden; }
+    html.app-shell body.nb .main-wrapper, html.app-shell body.nb main { margin-top: 0 !important; }
+    /* il tasto d'azione in basso a destra (Team builder, nuovo formato...) è solo l'icona: un quadrato, senza la scritta che usciva dallo schermo */
+    html.app-shell body.nb #tasti-alto > :not(.sfide-btn) { width: 52px !important; padding: 0 !important; display: inline-flex; align-items: center; justify-content: center; }
+    html.app-shell #tasti-alto > :not(.sfide-btn) .tasto-testo { display: none; }
+    /* se la pagina ha il tondo d'azione in basso a destra, in fondo resta spazio perché non copra l'ultima riga */
+    html.app-shell body.nb:has(#tasti-alto > :not(.sfide-btn)) { padding-bottom: calc(var(--app-nav-h) + 84px + env(safe-area-inset-bottom, 0px)) !important; }
+    /* i tasti d'azione che le pagine mettevano accanto al tasto utente (Registered teams, Withdraw...) scorrono con la pagina, in cima */
+    html.app-shell .top-auth-bar > :not(#auth-content):not(#user-menu):not([style*="position: relative"]):not([style*="display: none"]):not([hidden]) {
+        position: static !important; display: inline-flex !important; align-items: center; justify-content: center; margin: 12px 14px 0 !important; height: 42px !important;
+        padding: 0 16px !important; transform: none !important; font-size: .78rem !important; letter-spacing: .06em !important; box-sizing: border-box; vertical-align: top;
+    }
+
+    /* ---------- 2. Home: le stagioni come righe, la più importante per prima ---------- */
+    html.app-shell body.pg-index { overflow-y: auto !important; display: block !important; }
+    html.app-shell body.pg-index .main-wrapper { width: 100%; }
+    html.app-shell body.pg-index .home-seasons-container {
+        display: flex; flex-direction: column; align-items: stretch; gap: 30px;
+        width: 100%; min-height: 0; margin: 0; padding: 28px 14px 24px; box-sizing: border-box;
+    }
+    html.app-shell body.pg-index .card-link-wrapper { display: block; width: 100%; order: 5; text-decoration: none; }
+    /* da fare per prima: iscriversi; poi quella in corso; poi l'ultima conclusa; per ultima quella ancora da annunciare */
+    html.app-shell body.pg-index .card-link-wrapper:has(.status-open) { order: 1; }
+    html.app-shell body.pg-index .card-link-wrapper:has(.status-playing) { order: 2; }
+    html.app-shell body.pg-index .card-link-wrapper:has(.status-closed), html.app-shell body.pg-index .card-link-wrapper:has(.status-terminata) { order: 3; }
+    html.app-shell body.pg-index .card-link-wrapper:has(.status-empty) { order: 4; }
+
+    html.app-shell body.pg-index .season-card {
+        /* tutto quello che la card di PC scrive nello stile della singola carta (colore, quadrato, colonna) si rifà qui */
+        display: grid !important; width: 100% !important; max-width: none !important; aspect-ratio: auto !important; box-sizing: border-box;
+        grid-template-columns: 84px minmax(0, 1fr) auto; grid-template-areas: "av t tr" "av n tr"; align-items: center; column-gap: 14px; row-gap: 4px;
+        min-height: 104px; padding: 14px 16px 14px 14px; margin: 0; transform: none !important;
+        border-width: 3px; box-shadow: var(--nb-sh-4); background-size: 10px 10px;
+    }
+    html.app-shell body.pg-index .season-card:active { transform: translate(2px, 2px) !important; box-shadow: var(--nb-sh-s) !important; }
+    html.app-shell body.pg-index .season-card::before { top: -15px; left: 12px; font-size: .64rem; padding: 2px 9px; transform: rotate(calc(var(--nb-rot) * -2deg)); }
+    html.app-shell body.pg-index .season-card h3 {
+        grid-area: t; align-self: end; justify-self: start; margin: 0; max-width: 100%; box-sizing: border-box;
+        font-size: 1.15rem; line-height: 1.1; padding: 6px 12px 4px; transform: rotate(calc(var(--nb-rot) * -1deg)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* il contenitore del vincitore sparisce dal disegno: avatar, nome, trofeo e pallino diventano pezzi della griglia */
+    html.app-shell body.pg-index .season-card :is(.rules-preview, .winner-content-wrapper, .winner-content-wrapper > div:first-child) { display: contents !important; }
+    html.app-shell body.pg-index .season-card img.winner-avatar-home {
+        grid-area: av; justify-self: center; width: 84px !important; height: 84px !important; position: static; border-width: 3px; box-shadow: var(--nb-sh-s);
+    }
+    html.app-shell body.pg-index .season-card .winner-avatar-home:not(img) { grid-area: av; justify-self: center; width: 84px !important; height: 84px !important; font-size: 34px !important; }
+    html.app-shell body.pg-index .season-card .winner-display-box {
+        grid-area: n; justify-self: start; align-self: start; min-width: 0 !important; margin: 0 !important; padding: 4px 12px 3px; font-size: .95rem;
+        transform: rotate(calc(var(--nb-rot) * -1deg)); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    html.app-shell body.pg-index .season-card img[alt="Winner"] {
+        grid-area: tr; position: static !important; transform: none !important; right: auto !important; top: auto !important; width: 46px !important; height: 46px !important;
+    }
+    html.app-shell body.pg-index .season-card .live-dot { grid-area: tr; position: static !important; transform: none !important; right: auto !important; top: auto !important; font-size: 22px !important; }
+    /* iscrizioni aperte: è la cosa da fare, quindi grande: titolo, scritta e conto alla rovescia a tutta larghezza */
+    html.app-shell body.pg-index .season-card.status-open {
+        grid-template-columns: 1fr; grid-template-areas: "t" "c" "tm"; justify-items: stretch; row-gap: 10px; padding: 22px 16px 16px; min-height: 0;
+    }
+    html.app-shell body.pg-index .season-card.status-open h3 { align-self: start; font-size: 1.5rem; padding: 8px 14px 6px; }
+    html.app-shell body.pg-index .season-card .countdown-box { grid-area: c; justify-self: start; margin: 0 !important; font-size: .8rem; padding: 4px 12px 3px; }
+    html.app-shell body.pg-index .season-card .timer-display { grid-area: tm; margin: 0 !important; text-align: center; font-size: 1.7rem; padding: 10px 8px 7px; transform: none; }
+    /* in corso: un po' più grande delle altre */
+    html.app-shell body.pg-index .season-card.status-playing { min-height: 126px; }
+    html.app-shell body.pg-index .season-card.status-empty { min-height: 78px; grid-template-columns: 1fr; grid-template-areas: "t"; }
+    html.app-shell body.pg-index .season-card .card-footer { display: none !important; }
+
+    /* ---------- 3. Matches: classifica, poi le sfide; le partite come tabelloni ---------- */
+    html.app-shell body.pg-matches .hub-container, html.app-shell .hub-container { padding: 12px 14px 20px !important; margin: 0 !important; max-width: none !important; }
+    html.app-shell .hub-main-layout { display: flex !important; flex-direction: column; gap: 22px !important; }
+    html.app-shell .hub-left-column { display: contents !important; }
+    html.app-shell .hub-right-column { display: contents !important; }
+    /* in cima quello che serve subito: i match in diretta; poi la classifica; poi le partite */
+    html.app-shell #liveList { order: 1; }
+    html.app-shell .info-summary-card { order: 2; }
+    html.app-shell .hub-right-column > .cl-finestra { order: 3; }
+    html.app-shell #matchList { order: 4; }
+    html.app-shell .info-summary-card:has(.summary-grid:empty) { display: none; }
+
+    /* la classifica: niente finestra col suo bordo e i pallini; un titolo, le righe, il tasto per sfidare a destra */
+    html.app-shell .cl-finestra { background: none !important; border: 0 !important; box-shadow: none !important; }
+    html.app-shell .cl-barra { height: auto; padding: 0 0 10px; background: none; color: var(--nb-testo, #000); align-items: flex-end; }
+    html.app-shell .cl-barra-titolo { font: 900 1.05rem/1 var(--nb-font-titoli); letter-spacing: .1em; }
+    html.app-shell .cl-apri { height: 32px; rotate: 0deg; box-shadow: var(--nb-sh-s); }
+    html.app-shell .cl-corpo, html.app-shell .cl-laterale .cl-corpo { padding: 0; }
+    html.app-shell .participants-card #participants-list { padding-left: 0 !important; display: grid; gap: 10px; }
+    html.app-shell .cl-laterale .rank-riga { margin: 0; display: flex; align-items: stretch; gap: 8px; }
+    html.app-shell .rank-riga .cl-riga { flex: 1 1 auto; min-width: 0; rotate: 0deg; padding: 8px 10px; }
+    html.app-shell .cl-avatar { width: 38px; height: 38px; }
+    html.app-shell .sfida-rank-btn {
+        position: static; order: 2; flex: none; width: 52px; height: auto; margin: 0; padding: 0; transform: none; box-shadow: var(--nb-sh-s);
+        font: 900 .8rem/1 var(--nb-font-titoli); letter-spacing: .06em; border-radius: var(--nb-raggio, 0);
+    }
+    html.app-shell .sfida-rank-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+    /* le partite: tabellone "A [3 - 0] B" in due righe sottili invece di una pila alta */
+    html.app-shell #matchList.showdown-grid-double { display: grid !important; grid-template-columns: 1fr; gap: 14px; padding: 0; }
+    html.app-shell .showdown-summary-card {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "bar foot" "con con"; align-items: center; row-gap: 0;
+        box-shadow: var(--nb-sh-4); background: var(--nb-carta, #fff);
+    }
+    html.app-shell .showdown-summary-card .sd-card-barra { grid-area: bar; height: auto; padding: 8px 0 0 12px; background: none; justify-content: flex-start; }
+    html.app-shell .showdown-summary-card .sd-category-tag { background: var(--nb-ink); color: #fff; font-size: .72rem; padding: 3px 9px 1px; }
+    html.app-shell .showdown-summary-card .sd-card-footer { grid-area: foot; border: 0; padding: 8px 12px 0 0; }
+    html.app-shell .showdown-summary-card .sd-card-content {
+        grid-area: con; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 12px 12px;
+    }
+    html.app-shell .showdown-summary-card .sd-lato { min-height: 54px; margin: 0 !important; padding: 5px; }
+    html.app-shell .showdown-summary-card .sd-lato-2 { flex-direction: row-reverse; }
+    html.app-shell .showdown-summary-card.vince-1 .sd-lato-1, html.app-shell .showdown-summary-card.vince-2 .sd-lato-2 { translate: 0 0; }
+    html.app-shell .showdown-summary-card .sd-win { top: -11px; right: auto; left: 8px; }
+    html.app-shell .showdown-summary-card .sd-lato-2 .sd-win { left: auto; right: 8px; }
+    html.app-shell .showdown-summary-card .sd-nome { font-size: .84rem; padding: 4px 6px 2px; }
+    html.app-shell .showdown-summary-card .sd-punti { width: 34px; height: 34px; font-size: 1.3rem; }
+    html.app-shell .showdown-summary-card:active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s); }
+
+    html.app-shell #matchList.showdown-grid-double:has(.showdown-summary-card)::before {
+        content: "SHOWDOWNS"; grid-column: 1 / -1; font: 900 1.05rem/1 var(--nb-font-titoli); letter-spacing: .1em; color: var(--nb-testo, #000); margin-bottom: -2px;
+    }
+    /* match in diretta: righe a tutta larghezza, il tasto per giocare ben visibile */
+    html.app-shell .live-list { margin: 0; }
+    html.app-shell .live-chip { width: 100%; box-sizing: border-box; min-height: 52px; }
+    html.app-shell .live-chip .live-vs { flex: 1 1 auto; }
+
+    /* ---------- 4. Trainers: la classifica Elo come lista di righe basse, con la posizione appiccicata all'angolo dell'avatar ---------- */
+    html.app-shell body.pg-players .wrapper { margin: 0; width: 100%; padding: 16px 14px 20px; box-sizing: border-box; }
+    html.app-shell body.pg-players .trainers-grid { max-width: none; margin: 0; padding: 0; gap: 16px; }
+    html.app-shell body.pg-players .trainers-grid::before {
+        content: "ELO RANKING"; position: static; padding: 0 0 2px; background: none; color: var(--nb-testo, #000); border: 0; box-shadow: none; transform: none;
+        font: 900 1.05rem/1 var(--nb-font-titoli); letter-spacing: .1em;
+    }
+    html.app-shell body.pg-players .trainer-riga { gap: 8px; align-items: stretch; }
+    html.app-shell body.pg-players .trainer-card {
+        display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 3px;
+        min-height: 68px; padding: 9px 10px 9px 12px; border-width: 3px; box-shadow: var(--nb-sh-4); transform: none; background-size: 10px 10px;
+    }
+    html.app-shell body.pg-players .trainer-card:hover { transform: none; box-shadow: var(--nb-sh-4); }
+    html.app-shell body.pg-players .trainer-card:active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s); }
+    /* i contenitori sono solo scatole: avatar, nome e punti diventano pezzi della griglia */
+    html.app-shell body.pg-players :is(.trainer-left-group, .trainer-info-block) { display: contents; }
+    html.app-shell body.pg-players .trainer-rank-text {
+        position: absolute; top: -9px; left: -7px; z-index: 1; min-width: 24px; height: 24px; padding: 0 4px; font-size: .78rem; box-shadow: none; transform: none;
+    }
+    html.app-shell body.pg-players .trainer-avatar-box { grid-column: 1; grid-row: 1 / 3; width: 50px; height: 50px; padding: 2px; border-width: 3px; box-shadow: var(--nb-sh-s); }
+    html.app-shell body.pg-players .trainer-name {
+        grid-column: 2; grid-row: 1; align-self: end; font-size: 1.12rem; letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal;
+    }
+    html.app-shell body.pg-players .trainer-achievements-group { grid-column: 2; grid-row: 2; align-self: start; margin: 0; min-height: 0; justify-content: flex-start; gap: 6px; }
+    html.app-shell body.pg-players .trainer-achievements-group:not(:has(.trainer-card-trophy, .bt-mini)) { display: none; }
+    html.app-shell body.pg-players .trainer-card:not(:has(.trainer-card-trophy, .bt-mini)) .trainer-name { grid-row: 1 / 3; align-self: center; }
+    html.app-shell body.pg-players .trainer-card-trophy { margin-right: 4px; gap: 3px; }
+    html.app-shell body.pg-players .trainer-card-trophy .trophy-icon { width: 20px; height: 20px; }
+    html.app-shell body.pg-players .trainer-badges-container { gap: 3px; }
+    html.app-shell body.pg-players .trainer-points-box {
+        grid-column: 3; grid-row: 1 / 3; min-width: 54px; padding: 8px 8px 6px; font-size: 1.2rem; transform: none; box-shadow: var(--nb-sh-s-scuro);
+    }
+    html.app-shell body.pg-players .trainer-points-box::before { content: none; }
+    /* il tasto per sfidare: una colonna alta quanto la riga, facile da prendere col pollice */
+    html.app-shell body.pg-players .trainer-riga .tasto-amichevole { align-self: stretch; height: auto; min-width: 46px; padding: 0; box-shadow: var(--nb-sh-4); }
+    html.app-shell body.pg-players .trainer-riga .tasto-amichevole:hover { transform: none; }
+    html.app-shell body.pg-players .trainer-riga .tasto-amichevole:active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s); }
+    html.app-shell body.pg-players .tasto-amichevole svg { width: 24px; height: 24px; }
+
+    /* ---------- 5. Stats: schede in alto che restano, filtri in due righe, chip di ordinamento che scorrono di lato, card a "figurina" ---------- */
+    html.app-shell .stats-pagina { margin: 0; max-width: none; padding: 0 14px 24px; gap: 12px; }
+    html.app-shell .stats-controlli { display: contents; }
+    /* le quattro schede restano sotto la barra mentre la lista scorre (e salgono con lei quando la barra si nasconde) */
+    html.app-shell .stats-tag {
+        position: sticky; top: var(--app-bar-h); z-index: 50; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+        margin: 0 -14px; padding: 10px 14px 10px; background: var(--nb-sfondo, #fff); border-bottom: 3px solid var(--nb-ink, #000); transition: top .2s ease;
+    }
+    html.app-bar-nascosta.app-shell .stats-tag { top: 0; }
+    html.app-shell .stats-tag .tag { padding: 10px 2px 8px; font-size: .78rem; letter-spacing: .03em; box-shadow: var(--nb-sh-s); transform: none; min-width: 0; }
+    html.app-shell .stats-tag .tag:hover { transform: none; box-shadow: var(--nb-sh-s); }
+    html.app-shell .stats-tag .tag.attivo { transform: translate(2px, 2px); box-shadow: none; }
+    html.app-shell .stats-filtri { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; margin-top: 4px; }
+    html.app-shell .stats-filtri .filtro:first-child { grid-column: 1 / -1; }
+    html.app-shell .filtro select, html.app-shell .filtro input { min-width: 0; width: 100%; height: 42px; padding: 7px 10px 0; font-size: .86rem; box-shadow: var(--nb-sh-s); }
+    html.app-shell .filtro select { padding-right: 28px; background-position: right 10px center; text-overflow: ellipsis; }
+    html.app-shell .filtro select:hover, html.app-shell .filtro input:hover, html.app-shell .filtro select:focus, html.app-shell .filtro input:focus { transform: none; }
+    html.app-shell .filtro > span { margin: 0 0 -9px 8px; padding: 3px 7px 1px; font-size: .58rem; transform: none; }
+    html.app-shell .filtro-cerca input { min-width: 0; }
+    /* chip del riepilogo e dell'ordinamento: una sola riga che scorre di lato, a tutto schermo */
+    html.app-shell :is(.stats-riepilogo, .stats-ordina) {
+        flex-wrap: nowrap; gap: 8px; margin: 0 -14px; padding: 4px 14px 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; min-height: 0; align-items: center;
+    }
+    html.app-shell :is(.stats-riepilogo, .stats-ordina)::-webkit-scrollbar { display: none; }
+    html.app-shell .stats-riepilogo .chip { flex: none; padding: 5px 10px 3px; font-size: .68rem; box-shadow: var(--nb-sh-s); transform: none; white-space: nowrap; }
+    html.app-shell .stats-ordina-et { flex: none; margin: 0 2px 0 0; font-size: .7rem; }
+    html.app-shell .ordina-chip { flex: none; padding: 8px 12px 6px; font-size: .72rem; box-shadow: var(--nb-sh-s); white-space: nowrap; }
+    html.app-shell .ordina-chip:hover { transform: none; }
+    html.app-shell .ordina-chip[aria-pressed="true"] { transform: none; box-shadow: 3px 3px 0 var(--giallo, #ffbd44); }
+    /* le card: una colonna, la testa (avatar, nome, punteggio) e le altre cifre in una griglia fitta di caselline */
+    html.app-shell .stats-griglia, html.app-shell .stats-griglia.vista-players { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 12px 0 4px 6px; }
+    html.app-shell .carta { padding: 16px 12px 12px; gap: 10px; transform: none; box-shadow: var(--nb-sh-4); }
+    html.app-shell .carta:hover { transform: none; box-shadow: var(--nb-sh-4); }
+    html.app-shell .carta:active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s); }
+    html.app-shell .carta-pos { top: -11px; left: -9px; min-width: 28px; padding: 4px 7px 2px; font-size: .9rem; transform: none; }
+    html.app-shell .carta-pos.pos-1 { font-size: 1rem; }
+    html.app-shell .carta-av-box { width: 54px; height: 54px; }
+    html.app-shell .carta-sprite-box { width: 64px; height: 60px; }
+    html.app-shell .carta-players .carta-nome, html.app-shell .carta-nome { font-size: 1.25rem; }
+    html.app-shell .carta-punteggio { min-width: 58px; padding: 5px 8px 4px; transform: none; box-shadow: var(--nb-sh-s); align-self: center; }
+    html.app-shell .carta-punteggio-va { font-size: 1.3rem; }
+    html.app-shell .carta-dati { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    html.app-shell .dato { padding: 4px 6px 3px; box-shadow: none; gap: 1px; }
+    html.app-shell .dato-et { font-size: .52rem; letter-spacing: 0; }
+    html.app-shell .dato-va { font-size: .88rem; }
+    html.app-shell .dato .sub { display: none; }
+    html.app-shell .carta-mini { width: 34px; height: 31px; }
+
+    /* ---------- 6. Box: ogni team è una scheda bassa (categoria e bilancio, nome, barra, i sei Pokémon in fila, badge e azioni) ---------- */
+    html.app-shell #teamsGrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100%; margin: 0; padding: 14px 14px 20px; box-sizing: border-box; }
+    html.app-shell #teamsGrid .card {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cat st" "nm nm" "wr wr" "pk pk" "bd ac";
+        align-items: center; gap: 8px 10px; padding: 12px 12px 10px !important; border-width: 3px !important; box-shadow: var(--nb-sh-4) !important;
+        rotate: 0deg; translate: 0 0; min-width: 0;
+    }
+    html.app-shell #teamsGrid .card:hover { translate: 0 0; box-shadow: var(--nb-sh-4) !important; }
+    html.app-shell #teamsGrid .card:active { translate: 2px 2px; box-shadow: var(--nb-sh-s) !important; }
+    /* la striscia nera col computer sparisce: i suoi pezzi stanno nella griglia della scheda */
+    html.app-shell #teamsGrid .card-header { display: contents; }
+    html.app-shell #teamsGrid .card-header .category {
+        grid-area: cat; justify-self: start; max-width: 100%; padding: 3px 9px 1px; background: var(--nb-ink, #000); color: #fff; font: 800 .64rem/1.4 var(--nb-font-titoli); letter-spacing: .1em;
+    }
+    html.app-shell #teamsGrid .card-header .stats { grid-area: st; rotate: 0deg; font-size: .66rem; box-shadow: none; }
+    html.app-shell #teamsGrid .card h3 { grid-area: nm; margin: 0; max-width: 100%; justify-self: start; font-size: 1.2rem; line-height: 1.2; rotate: 0deg; box-shadow: var(--nb-sh-s); }
+    html.app-shell #teamsGrid .card-winrate { grid-area: wr; margin: 0; height: 16px; }
+    html.app-shell #teamsGrid .card .pkm-grid { grid-area: pk; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin: 2px 0 0; }
+    html.app-shell #teamsGrid .card .pkm-box { padding: 5px 1px 3px; gap: 2px; min-width: 0; min-height: 0; height: auto; border-width: 2px; box-shadow: none; rotate: 0deg; translate: 0 0; }
+    html.app-shell #teamsGrid .card .pkm-sprite-container { width: 40px; height: 40px; margin: 0 auto; border-width: 2px; box-shadow: 2px 2px 0 var(--nb-ink, #000); }
+    html.app-shell #teamsGrid .card .pkm-sprite { max-width: 32px; max-height: 32px; }
+    html.app-shell #teamsGrid .card .pkm-info { padding: 0; min-height: 0; height: auto; flex-grow: 0; }
+    html.app-shell #teamsGrid .card .pkm-name, html.app-shell #teamsGrid .card .pkm-item { display: none !important; }
+    html.app-shell #teamsGrid .card .item-container { justify-content: center; margin: 0; }
+    html.app-shell #teamsGrid .card .item-icon { width: 18px; height: 18px; }
+    html.app-shell #teamsGrid .card .bt-card { grid-area: bd; justify-self: start; }
+    html.app-shell #teamsGrid .card-actions { grid-area: ac; gap: 8px; }
+    html.app-shell #teamsGrid .card-azione {
+        width: 42px; height: 38px; font-size: 18px; scale: 1; rotate: 0deg; background: var(--nb-carta, #fff); color: #000;
+        border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s);
+    }
+    html.app-shell #teamsGrid .card-azione:active { translate: 2px 2px; box-shadow: none; }
+    /* ---------- 7. Profilo: in alto le scorciatoie (carta, pagina pubblica, tema, traguardi) come tasti, sotto una scheda alla volta ---------- */
+    /* le schede (le crea app-shell.js) restano sotto la barra mentre la pagina scorre; le usa anche Stats con le sue */
+    html.app-shell .app-schede {
+        position: sticky; top: var(--app-bar-h); z-index: 50; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px;
+        padding: 10px 14px; background: var(--nb-sfondo, #fff); border-bottom: 3px solid var(--nb-ink, #000); transition: top .2s ease;
+    }
+    html.app-bar-nascosta.app-shell .app-schede { top: 0; }
+    html.app-shell .app-scheda-tasto {
+        min-width: 0; padding: 10px 2px 8px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0);
+        box-shadow: var(--nb-sh-s); font: 900 .76rem/1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    html.app-shell .app-scheda-tasto.attivo { background: var(--nb-giallo, #ffbd44); transform: translate(2px, 2px); box-shadow: none; }
+    html.app-shell main[class] > section.pf-sezione:not(.app-scheda-attiva) { display: none !important; }
+    html.app-shell .pf-sezione > .section-title { display: none; }
+
+    html.app-shell body.pg-profile .hub-hero, html.app-shell .hub-hero:has(~ main.pf-main) {
+        display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch; width: 100%; min-height: 0 !important; height: auto !important;
+        margin: 0 !important; padding: 14px 14px 16px !important; box-sizing: border-box;
+    }
+    html.app-shell .hub-hero:has(~ main.pf-main) :is(.hub-hero-content, .pf-hero-link) { display: contents; }
+    html.app-shell .hub-hero:has(~ main.pf-main) .hub-title-display { display: none; }
+    html.app-shell .hub-hero:has(~ main.pf-main) :is(.customize-public-btn, .pf-link-secondario, .ach-open-btn) {
+        position: static !important; display: flex !important; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; min-height: 46px; width: auto !important; margin: 0 !important;
+        padding: 6px 4px !important; background: var(--nb-carta, #fff); color: #000 !important; border: 3px solid var(--nb-ink, #000) !important; border-radius: var(--nb-raggio, 0);
+        box-shadow: var(--nb-sh-s); text-decoration: none; text-align: center; font: 900 .72rem/1.1 var(--nb-font-titoli) !important; letter-spacing: .04em !important; text-transform: uppercase; transform: none !important; rotate: 0deg;
+    }
+    html.app-shell .hub-hero:has(~ main.pf-main) .customize-public-btn { grid-column: 1 / -1; order: 0; min-height: 52px; background: var(--nb-giallo, #ffbd44); font-size: .86rem !important; }
+    html.app-shell .hub-hero:has(~ main.pf-main) #view-public-link { order: 1; }
+    html.app-shell .hub-hero:has(~ main.pf-main) .pf-link-secondario:not(#view-public-link) { order: 2; }
+    html.app-shell .hub-hero:has(~ main.pf-main) .ach-open-btn { order: 3; }
+    html.app-shell .hub-hero:has(~ main.pf-main) .ach-open-btn i { display: none; }
+    html.app-shell .hub-hero:has(~ main.pf-main) :is(.customize-public-btn, .pf-link-secondario, .ach-open-btn):active { transform: translate(2px, 2px) !important; box-shadow: none; }
+    html.app-shell .hub-hero:has(~ main.pf-main) .ach-btn-label { font: inherit; }
+    html.app-shell main.pf-main { padding: 14px 14px 20px !important; margin: 0 !important; max-width: none !important; width: 100% !important; box-sizing: border-box; }
+    html.app-shell main.pf-main > .pf-sezione { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: none !important; background: none !important; border: 0 !important; box-shadow: none !important; rotate: 0deg; }
+
+    /* "Change password" sta con il tema (le impostazioni), non in fondo a ogni scheda */
+    html.app-shell body:has(#pf-tema:not(.app-scheda-attiva)) .bar-reset-pw-btn { display: none !important; }
+    /* i quattro contatori in una riga: il numero grande, sotto che cos'è */
+    html.app-shell .pf-contatori { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; }
+    html.app-shell .pf-contatore {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 72px; margin: 0; padding: 8px 3px 6px;
+        text-align: center; transform: none; rotate: 0deg; box-shadow: var(--nb-sh-s); border-width: 3px;
+    }
+    html.app-shell .pf-contatore b { font-size: 1.7rem; line-height: 1; }
+    html.app-shell .pf-contatore span { font-size: .58rem; line-height: 1.15; letter-spacing: .02em; overflow-wrap: anywhere; }
+
+    /* rivali: le quattro tessere in una riga, i filtri che scorrono; tema: i quattro stili in due colonne, solo anteprima e nome */
+    html.app-shell .pf-filtri { flex-wrap: nowrap; overflow-x: auto; margin: 0 -14px 12px; padding: 2px 14px 6px; scrollbar-width: none; }
+    html.app-shell .pf-filtri::-webkit-scrollbar { display: none; }
+    html.app-shell .pf-filtro { flex: none; }
+    html.app-shell .pf-tessere { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+    html.app-shell .pf-tessera { min-width: 0; min-height: 0; padding: 7px 5px 6px; box-shadow: var(--nb-sh-s); transform: none; rotate: 0deg; }
+    html.app-shell .pf-tessera-titolo { font-size: .5rem; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell .pf-tessera b { font-size: 1.15rem; line-height: 1.1; white-space: nowrap; }
+    html.app-shell .pf-tessera small { font-size: .52rem; line-height: 1.1; }
+    html.app-shell .pf-tema-intro { margin: 0 0 12px; font-size: .86rem; }
+    html.app-shell .tm-lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+    html.app-shell .tm-opzione { min-width: 0; width: auto; margin: 0; transform: none; rotate: 0deg; box-shadow: var(--nb-sh-4); }
+    html.app-shell .tm-frase { display: none; }
+
+    /* un rivale: avatar, nome e record sulla prima riga, poi barra, set/showdown e ultime partite affiancati, formati; via la riga "ultima partita" */
+    html.app-shell .pf-griglia { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    html.app-shell .pf-rivale {
+        display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; grid-template-areas: "av nm rec" "bar bar bar" "mini mini fo" "fmt fmt fmt";
+        align-items: center; gap: 8px 10px; margin: 0; padding: 18px 12px 12px; transform: none; rotate: 0deg; box-shadow: var(--nb-sh-4);
+    }
+    html.app-shell .pf-rivale-testa { display: contents; }
+    html.app-shell .pf-rivale .pf-avatar { grid-area: av; width: 54px; height: 54px; }
+    html.app-shell .pf-rivale-nome { grid-area: nm; min-width: 0; }
+    html.app-shell .pf-rivale-nome strong { font-size: 1.1rem; }
+    html.app-shell .pf-record { grid-area: rec; margin: 0; align-items: baseline; gap: 4px; }
+    html.app-shell .pf-record b { font-size: 1.7rem; line-height: 1; }
+    html.app-shell .pf-record small { display: none; }
+    html.app-shell .pf-rivale .pf-barra { grid-area: bar; margin: 0; }
+    html.app-shell .pf-rivale .pf-mini { grid-area: mini; margin: 0; font-size: .74rem; gap: 10px; flex-wrap: wrap; }
+    html.app-shell .pf-rivale .pf-forma { grid-area: fo; margin: 0; justify-self: end; gap: 3px; }
+    html.app-shell .pf-rivale .pf-forma span { width: 22px; height: 22px; font-size: .62rem; }
+    html.app-shell .pf-rivale .pf-formati { grid-area: fmt; margin: 0; }
+    html.app-shell .pf-rivale .pf-ultimo { display: none; }
+
+    /* ---------- 8. Hub della stagione: prima il conto alla rovescia, poi i formati come righe, le due cifre affiancate, i giocatori iscritti ---------- */
+    html.app-shell body.pg-hub .hub-container { display: block; width: 100%; min-height: 0; margin: 0 !important; padding: 16px 14px 20px !important; box-sizing: border-box; }
+    html.app-shell body.pg-hub .hub-new-layout { display: flex !important; flex-direction: column; gap: 18px; width: 100%; max-width: none; margin: 0 !important; padding: 0 !important; }
+    html.app-shell body.pg-hub :is(.hub-new-layout > .hub-center-zone, #season-summary-content, #season-summary-content .hub-center-zone) { display: contents; }
+    html.app-shell body.pg-hub .hub-column-right { order: 9; width: 100%; max-width: none; margin: 0; }
+    html.app-shell body.pg-hub .countdown-main-container { order: 1; display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: 100%; max-width: none; margin: 0; padding: 0; aspect-ratio: auto; }
+    html.app-shell body.pg-hub .countdown-label { align-self: flex-start; margin: 0; padding: 6px 12px 4px; font-size: .78rem; line-height: 1.2; transform: none; box-shadow: var(--nb-sh-s-scuro); }
+    html.app-shell body.pg-hub .countdown-label br { display: none; }
+    html.app-shell body.pg-hub .countdown-digits { width: 100% !important; margin: 0; padding: 16px 6px 12px; font-size: 1.9rem; transform: none; box-shadow: var(--nb-sh-4-scuro, var(--nb-sh-4)); }
+    html.app-shell body.pg-hub #registration-column { order: 2; display: grid; gap: 12px; width: 100%; margin: 0; padding: 0; }
+    html.app-shell body.pg-hub #registration-column::before, html.app-shell body.pg-hub .hub-column-right::before {
+        position: static; display: block; padding: 0; background: none; color: var(--nb-testo, #000); border: 0; box-shadow: none; transform: none; font: 900 1.05rem/1 var(--nb-font-titoli); letter-spacing: .1em;
+    }
+    html.app-shell body.pg-hub .hub-column-right::before { margin-bottom: 12px; }
+    html.app-shell body.pg-hub .btn-team {
+        display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 60px; margin: 0; padding: 10px 14px; box-sizing: border-box;
+        transform: none !important; box-shadow: var(--nb-sh-4); border-width: 3px;
+    }
+    html.app-shell body.pg-hub .btn-team:active { transform: translate(2px, 2px) !important; box-shadow: var(--nb-sh-s); }
+    html.app-shell body.pg-hub .btn-team-label { flex: 1 1 auto; min-width: 0; text-align: left; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell body.pg-hub .btn-team-counter { flex: none; transform: none; font-size: .95rem; }
+    html.app-shell body.pg-hub .btn-team-info { position: static !important; inset: auto !important; flex: none; display: grid; place-items: center; width: 32px !important; height: 32px !important; margin: 0 !important; transform: none !important; }
+    html.app-shell body.pg-hub .hub-stats-row { order: 3; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: 100%; margin: 0; padding: 0; }
+    html.app-shell body.pg-hub .neubru-badge-white { width: auto; min-width: 0; margin: 12px 0 0; transform: none !important; box-shadow: var(--nb-sh-4) !important; }
+    html.app-shell body.pg-hub #participants-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    html.app-shell body.pg-hub #participants-list .player-tag { width: auto; min-width: 0; margin: 0; transform: none; }
+    html.app-shell body.pg-hub .neubru-badge-white .badge-title { font-size: .6rem; letter-spacing: .08em; white-space: nowrap; }
+    html.app-shell body.pg-hub .neubru-badge-white .badge-title br { display: none; }
+
+    /* ---------- 9. Formati, Regolamento, Archivio ---------- */
+    /* Formats: ogni formato è una riga (nome a sinistra, chi guida la classifica a destra); matita e cestino (solo admin) sotto, in fila */
+    html.app-shell .formats-neubrutalist-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100% !important; margin: 0 !important; padding: 16px 14px 20px; box-sizing: border-box; }
+    html.app-shell .format-card-nb {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t l" "a a"; align-items: center; gap: 10px; min-height: 0; padding: 14px 14px 14px;
+        border-width: 3px; box-shadow: var(--nb-sh-4); transform: none !important;
+    }
+    html.app-shell .format-card-nb:active { transform: translate(2px, 2px) !important; box-shadow: var(--nb-sh-s); }
+    html.app-shell .format-card-nb::before { content: none; }
+    html.app-shell .format-nb-title-badge { grid-area: t; justify-self: start; font-size: 1.1rem; transform: none; }
+    html.app-shell .format-nb-leader-box { grid-area: l; position: static; width: 52px; height: 52px; padding: 6px; transform: none; box-shadow: var(--nb-sh-s); }
+    html.app-shell .format-nb-leader-box img { transform: none; }
+    html.app-shell .format-card-nb .fmt-azioni { grid-area: a; position: static; flex-direction: row; gap: 10px; }
+    html.app-shell .format-card-nb .fmt-azioni:empty { display: none; }
+    html.app-shell .fmt-azione { width: 44px; height: 40px; }
+
+    /* Regolamento: un testo lungo; l'indice dei capitoli (chip che scorrono di lato) resta sotto la barra, e i salti ai capitoli non finiscono dietro di lui */
+    html.app-shell .rules-wrapper { width: 100%; min-width: 0; padding: 0 12px 24px; gap: 0; box-sizing: border-box; }
+    html.app-shell :is(.rules-sidebar, .rules-content) { min-width: 0; }
+    html.app-shell .rules-sidebar {
+        position: sticky !important; top: var(--app-bar-h); z-index: 50; margin: 0 -12px 14px; width: calc(100% + 24px); max-width: none; align-self: stretch; background: var(--nb-sfondo, #fff);
+        border-bottom: 3px solid var(--nb-ink, #000); transition: top .2s ease;
+    }
+    html.app-bar-nascosta.app-shell .rules-sidebar { top: 0; }
+    html.app-shell .rules-sidebar .toc-container { padding: 8px 12px 2px; background: none; border: 0; box-shadow: none; }
+    html.app-shell .rules-sidebar .toc-title { display: none; }
+    html.app-shell .rules-sidebar .toc-nav { padding: 2px 0 10px; margin: 0; scrollbar-width: none; }
+    html.app-shell .rules-sidebar .toc-nav::-webkit-scrollbar { display: none; }
+    html.app-shell .rules-sidebar .toc-link { padding: 9px 12px 7px; font-size: .78rem; box-shadow: var(--nb-sh-s); }
+    html.app-shell .rule-card { scroll-margin-top: calc(var(--app-bar-h) + 70px); box-shadow: var(--nb-sh-4); }
+
+    /* Archivio: i filtri scorrono di lato, ogni stagione o coppa è una riga col cerchio del vincitore (come nella Home) */
+    html.app-shell .palm-pagina { width: 100%; min-width: 0; padding: 14px 14px 20px; margin: 0; max-width: none; gap: 26px; box-sizing: border-box; }
+    html.app-shell .palm-controlli { min-width: 0; margin: 0 -14px; padding: 2px 14px 8px; overflow-x: auto; scrollbar-width: none; }
+    html.app-shell .palm-controlli::-webkit-scrollbar { display: none; }
+    html.app-shell .palm-filtri { flex-wrap: nowrap; gap: 8px; width: max-content; margin: 0; padding-right: 14px; }
+    html.app-shell .palm-tasto { flex: none; white-space: nowrap; }
+    html.app-shell .palm-titolo { margin: 0 0 22px; }
+    html.app-shell .palm-griglia { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 6px 0 0; }
+    html.app-shell .palm-card {
+        display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; grid-template-areas: "c n l" "c w l"; align-items: center; justify-items: start; column-gap: 12px; row-gap: 4px;
+        width: 100%; min-height: 88px; padding: 14px 14px 14px 12px; transform: none !important; box-shadow: var(--nb-sh-4); border-width: 3px; text-align: left;
+    }
+    html.app-shell .palm-card:active { transform: translate(2px, 2px) !important; box-shadow: var(--nb-sh-s); }
+    html.app-shell .palm-card::before { top: -14px; left: 12px; font-size: .62rem; padding: 2px 9px; }
+    html.app-shell .palm-nome { grid-area: n; align-self: end; max-width: 100%; padding: 5px 10px 3px; font-size: .95rem; letter-spacing: .04em; }
+    html.app-shell .palm-cerchio { display: contents; }
+    html.app-shell .palm-avatar { grid-area: c; justify-self: center; width: 64px; height: 64px; }
+    html.app-shell .palm-avatar img { width: 48px; height: 48px; }
+    html.app-shell .palm-live { grid-area: l; position: static; transform: none; font-size: 22px; }
+    html.app-shell .palm-trofeo { grid-area: l; position: static; transform: none; width: 44px; height: 44px; }
+    html.app-shell .palm-vincitore { grid-area: w; align-self: start; justify-self: start; max-width: 100%; margin: 0; padding: 3px 10px 2px; font-size: .86rem; }
+
+    /* Pagina dell'allenatore: la sua carta è già pensata per lo schermo stretto; resta solo il tasto per personalizzarla (indietro c'è nella barra) */
+    html.app-shell body #pp-nav { padding: 12px 14px 0; margin: 0; justify-content: flex-end; }
+    html.app-shell body #pp-nav .pp-indietro { display: none; }
+    html.app-shell body #pp-pagina { padding-top: 0; }
+
+    /* ---------- 10. Fogli: le finestre del sito salgono dal basso, a tutta larghezza, e si chiudono trascinandole giù ---------- */
+    @keyframes app-su { from { transform: translateY(100%); } to { transform: none; } }
+    /* il contenitore scuro: la finestra in fondo, con un po' di pagina visibile sopra; se la finestra è più alta dello schermo scorre tutto */
+    html.app-shell :is(#modal-registered-teams, #sd-modal-overlay, #teamModal, #pkmDetailModal, #stats-modal, #ach-overlay, #helper-modal-overlay, #format-modal-overlay, #format-modal, #sfida-overlay, #modal-rank-details, #modal-iscrizione) {
+        flex-direction: column !important; align-items: stretch !important; justify-content: flex-start !important; padding: 44px 0 0 !important; box-sizing: border-box;
+    }
+    html.app-shell :is(#modal-registered-teams > *, #sd-modal-overlay .sd-finestra, #teamModal .modal-content, #pkmDetailModal .modal-content, #stats-modal .stats-modal-card, #ach-overlay .ach-modal,
+        #helper-modal-overlay .format-modal-wrapper, #format-modal-overlay .fmt-finestra, #format-modal .format-modal-content, #sfida-overlay .sfida-card, #modal-rank-details .cl-finestra) {
+        margin: auto 0 0 !important; width: 100% !important; max-width: none !important; box-sizing: border-box; transform: none !important; rotate: 0deg !important;
+        border-width: 4px 0 0 !important; border-radius: 0 !important; box-shadow: 0 -10px 0 rgba(0, 0, 0, .25) !important;
+        animation: app-su .28s cubic-bezier(.2, .8, .2, 1) both !important; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transition: translate .2s ease;
+    }
+    /* il login e le finestre che il sito centra con position/transform: fisse in fondo */
+    html.app-shell #login-modal .modal-content, html.app-shell #modal-select-team, html.app-shell #modalCreazione.admin-panel-modern {
+        position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; transform: none !important;
+        width: 100% !important; max-width: none !important; max-height: 92vh !important; margin: 0 !important; overflow-y: auto !important; box-sizing: border-box;
+        border-width: 4px 0 0 !important; border-radius: 0 !important; box-shadow: 0 -10px 0 rgba(0, 0, 0, .25) !important; animation: app-su .28s cubic-bezier(.2, .8, .2, 1) both;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    html.app-shell #modal-iscrizione .iscr-finestra { width: 100% !important; max-width: none !important; margin: 0 !important; border-width: 4px 0 0 !important; border-radius: 0 !important; }
+    /* la striscia nera in cima: via i tre pallini del computer, resta il titolo */
+    html.app-shell :is(.fmt-finestra, #format-modal .format-modal-content, #login-modal .modal-content, .modal-neubrutal, #modalCreazione.admin-panel-modern, .sfida-card,
+        #modal-iscrizione .iscr-finestra, #replayModal .replay-mini-header, #teamModal .modal-content, #pkmDetailModal .modal-content, .mvp-modale, #sd-modal-overlay .sd-finestra,
+        #modal-registered-teams .pokemon-theme-modal, #helper-modal-overlay .format-modal-wrapper)::before { background: var(--nb-ink, #000) !important; padding-left: 18px !important; letter-spacing: .14em !important; }
+    html.app-shell .cl-barra { background: var(--nb-ink, #000) !important; padding-left: 16px !important; color: #fff; }
+    html.app-shell :is(.close-modal, .iscr-chiudi, .close-modal-btn, .cl-chiudi, .sd-chiudi, .close-replay, .ach-close, .format-close-btn, .fmt-chiudi, #teamModal .close, #pkmDetailModal .close) {
+        width: 36px !important; height: 36px !important; font-size: 24px !important;
+    }
+}
+
+/* ---------- 11. In orizzontale (telefono): le liste di card diventano due colonne, perché la riga è larga e l'altezza poca ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+    html.app-shell :is(#teamsGrid, .stats-griglia, .stats-griglia.vista-players, .formats-neubrutalist-grid, .palm-griglia, .pf-griglia, .trainers-grid) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    html.app-shell .trainers-grid { display: grid; }
+    html.app-shell body.pg-players .trainers-grid::before { grid-column: 1 / -1; }
+    html.app-shell body.pg-hub .hub-new-layout #registration-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    html.app-shell body.pg-hub #registration-column::before { grid-column: 1 / -1; }
+}

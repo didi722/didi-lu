@@ -31,10 +31,10 @@ test('ogni pagina dichiara la larghezza del dispositivo e non blocca lo zoom', (
     }
 });
 
-test('mobile.css è collegato nelle dieci pagine che lo usano, dopo ogni altro foglio locale', () => {
+test('mobile.css è collegato nelle dieci pagine che lo usano, dopo ogni altro foglio locale (tranne app.css, lo strato "da app" sopra a tutto)', () => {
     for (const p of CON_MOBILE_CSS) {
         const html = docs(p);
-        const fogli = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map(m => m[1]).filter(h => !/^https?:/.test(h));
+        const fogli = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map(m => m[1]).filter(h => !/^https?:/.test(h) && h !== 'app.css');
         assert.ok(fogli.includes('mobile.css'), `${p}: manca mobile.css`);
         assert.equal(fogli[fogli.length - 1], 'mobile.css', `${p}: mobile.css deve venire per ultimo (fogli: ${fogli.join(', ')})`);
         assert.equal(fogli.filter(f => f === 'mobile.css').length, 1, `${p}: mobile.css collegato più volte`);

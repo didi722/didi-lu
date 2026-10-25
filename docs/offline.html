@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <title>Offline | Sant'Alvise PKMN League</title>
+    <!-- La pagina che si vede quando manca la rete (service worker del sito e APK). Niente file esterni, nemmeno l'immagine (è inclusa qui sotto): deve funzionare proprio quando non c'è nulla. -->
+    <style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            display: grid; place-items: center; padding: 24px;
+            background: #000 radial-gradient(rgba(255, 255, 255, .09) 1.3px, transparent 1.6px) 0 0 / 14px 14px;
+            color: #fff; font-family: 'Josefin Sans', 'Trebuchet MS', system-ui, sans-serif; text-align: center;
+        }
+        main { max-width: 420px; }
+        .pesce {
+            display: block; width: 112px; height: 112px; margin: 0 auto 20px; border-radius: 24px;
+            filter: grayscale(.9) brightness(.8); box-shadow: 5px 5px 0 rgba(255, 255, 255, .25);
+        }
+        h1 {
+            display: inline-block; margin: 0 0 14px; padding: 8px 20px 5px;
+            background: #31c489; color: #000; border: 4px solid #fff; box-shadow: 6px 6px 0 rgba(255, 255, 255, .25);
+            font-size: 1.6rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; transform: rotate(-1.5deg);
+        }
+        p { margin: 0 0 22px; font-size: 1rem; line-height: 1.45; color: #ddd; }
+        button {
+            min-height: 46px; padding: 10px 26px 8px; cursor: pointer;
+            background: #ffbd44; color: #000; border: 3px solid #fff; box-shadow: 4px 4px 0 rgba(255, 255, 255, .25);
+            font: 900 1rem 'Josefin Sans', 'Trebuchet MS', system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase;
+        }
+        button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(255, 255, 255, .25); }
+    </style>
+</head>
+<body>
+    <main>
+        <img class="pesce" src="data:image/png;base64,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" alt="" width="112" height="112">
+        <h1>No connection</h1>
+        <p>The league needs the internet to show seasons, rankings and battles. Check your connection and try again.</p>
+        <button type="button" id="riprova">Try again</button>
+    </main>
+    <script>
+        // Nel sito si ricarica la pagina; nell'APK questa pagina sta nell'app e il sito vero è all'indirizzo che l'app apre di solito
+        document.getElementById('riprova').addEventListener('click', function () {
+            var sito = 'https://didi722.github.io/didi-lu/';
+            if (location.hostname === 'localhost' && location.protocol === 'https:' && !location.port) location.href = sito;
+            else location.href = location.pathname.replace(/offline\.html$/, '') || './';
+        });
+        window.addEventListener('online', function () { document.getElementById('riprova').click(); });
+    </script>
+</body>
+</html>

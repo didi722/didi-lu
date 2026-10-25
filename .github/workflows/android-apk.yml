@@ -1,0 +1,163 @@
+name: Android APK
+
+# Costruisce l'app Android (un guscio Capacitor che apre il sito) e la pubblica come APK nella release "app-android":
+#   https://github.com/didi722/didi-lu/releases/download/app-android/sant-alvise-league.apk      <- indirizzo fisso, da mandare agli amici
+# L'app apre il sito vero (capacitor.config.json > server.url): ogni modifica al sito arriva subito, l'APK si rifà solo se cambia l'app stessa
+# (icone, nome, tema, indirizzo). Parte da sola quando su main cambiano i file dell'app, oppure a mano: Actions > Android APK > Run workflow.
+# Sugli altri rami costruisce e basta (l'APK resta tra gli "artifact" della prova): la release la aggiorna solo main.
+#
+# Firma: gli aggiornamenti si installano sopra la versione precedente solo se l'APK è firmato sempre con la stessa chiave.
+# Di base si usa tools/android/firma-apk.p12, una chiave messa nel repository APPOSTA (password pubblica, come la chiave "debug" di Android):
+# basta per un'app tra amici. Per una chiave privata: creare un keystore e mettere nei Secrets del repository
+# ANDROID_KEYSTORE_BASE64 (base64 del file), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD (cambiando chiave, chi ha
+# già l'app deve disinstallarla e reinstallarla una volta).
+# Se il sito cambia indirizzo: variabile del repository SITO_URL (Settings > Secrets and variables > Actions > Variables) e rilancio a mano.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/affectionate-brown-t474uz
+    paths:
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'assets/**'
+      - 'tools/android/**'
+      - 'docs/offline.html'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write        # serve a creare/aggiornare la release con l'APK
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SITO_URL: ${{ vars.SITO_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22 (lo vuole Capacitor 8)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Java 21 (lo vuole Capacitor 8)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android SDK (quello già installato sulla macchina, più le parti che servono ad Android 16)
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$(ls -d "$sdk"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          echo "SDK: $sdk ($sdkmanager)"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Dipendenze
+        run: npm ci --ignore-scripts
+
+      - name: Sito dell'app (www/)
+        run: node tools/android/prepara.cjs web
+
+      - name: Progetto Android
+        run: npx cap add android
+
+      - name: Icone e schermata di avvio
+        run: npx --yes @capacitor/assets@3.0.5 generate --android
+
+      - name: Ritocchi al progetto
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: node tools/android/prepara.cjs android
+
+      - name: Sincronizza
+        run: npx cap sync android
+
+      - name: Controlla la configurazione finita dentro l'app
+        run: |
+          cat android/app/src/main/assets/capacitor.config.json
+          grep -q '"url": "https://' android/app/src/main/assets/capacitor.config.json
+          grep -q '"appendUserAgent": "SantAlviseApp"' android/app/src/main/assets/capacitor.config.json
+          grep -q '"errorPath": "offline.html"' android/app/src/main/assets/capacitor.config.json
+          test -f android/app/src/main/assets/public/offline.html
+
+      - name: Costruisce l'APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Allinea e firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chiave="tools/android/firma-apk.p12"; pass_chiave="santalvise"; alias_chiave="santalvise"; pass_alias="santalvise"
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/firma.p12"
+            chiave="$RUNNER_TEMP/firma.p12"; pass_chiave="$KEYSTORE_PASSWORD"; alias_chiave="$KEY_ALIAS"; pass_alias="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+            echo "Firma con la chiave privata dei Secrets"
+          else
+            echo "Firma con la chiave del repository (tools/android/firma-apk.p12)"
+          fi
+          strumenti="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "Build-tools: $strumenti"
+          non_firmato="$(ls android/app/build/outputs/apk/release/*.apk | head -1)"
+          "$strumenti/zipalign" -p -f 4 "$non_firmato" "$RUNNER_TEMP/allineato.apk"
+          "$strumenti/apksigner" sign --ks "$chiave" --ks-pass "pass:$pass_chiave" --ks-key-alias "$alias_chiave" --key-pass "pass:$pass_alias" \
+            --out sant-alvise-league.apk "$RUNNER_TEMP/allineato.apk"
+          "$strumenti/apksigner" verify --verbose --print-certs sant-alvise-league.apk | grep -E "Verifies|Number of signers|SHA-256"
+          ls -l sant-alvise-league.apk
+
+      - name: Riepilogo dell'APK (nome, versione, permessi, cosa contiene)
+        run: |
+          set -euo pipefail
+          strumenti="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$strumenti/aapt2" dump badging sant-alvise-league.apk | grep -E "^package:|^sdkVersion|^targetSdkVersion|^application-label:|^uses-permission|^launchable-activity|application-debuggable" || true
+          "$strumenti/apksigner" verify --verbose sant-alvise-league.apk | grep -E "^Verified using"
+          unzip -l sant-alvise-league.apk | grep -E "assets/(capacitor.config.json|public/)|AndroidManifest|ic_launcher" | head -20 || true
+          unzip -p sant-alvise-league.apk assets/capacitor.config.json
+
+      - name: Tiene l'APK tra gli artifact (14 giorni)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sant-alvise-league-apk
+          path: sant-alvise-league.apk
+          retention-days: 14
+
+      - name: Pubblica nella release "app-android" (solo main)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-android
+          name: App Android (APK)
+          make_latest: false
+          body: |
+            App Android della lega: un guscio che apre il sito, sempre aggiornato.
+            Scarica `sant-alvise-league.apk` dal telefono Android e aprilo (alla prima volta Android chiede di permettere l'installazione da questa fonte).
+            Indirizzo fisso: https://github.com/${{ github.repository }}/releases/download/app-android/sant-alvise-league.apk
+            Ultima costruzione: build ${{ github.run_number }}, commit ${{ github.sha }}.
+          files: sant-alvise-league.apk
+          fail_on_unmatched_files: true
