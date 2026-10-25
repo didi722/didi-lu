@@ -349,6 +349,8 @@ async function salvaVincitoreStagione(seasonId) {
     const winnerName = classifica[0] && classifica[0].points > 0 ? classifica[0].name : "Nessun Vincitore";
     // il vincitore e la fine della stagione stanno nelle info: i trofei si ricavano da lì (tipo-stagione.js)
     await seasonRef.child('info').update({ winner: winnerName, endDate });
+    // l'MVP della stagione: si contano i voti dati dai giocatori (mvp.js nel sito). Un errore qui non deve far perdere il vincitore
+    try { await salvaMvpStagione(seasonId); } catch (err) { console.error(`MVP della stagione ${seasonId} non salvato:`, err); }
     return winnerName;
 }
 
@@ -363,6 +365,65 @@ async function ritiraVincitoreStagione(seasonId) {
         if (Number(storico.rank) === 1) await ref.child('won').transaction(current => Math.max(0, (current || 1) - 1));
         await ref.child(`history/${seasonId}`).remove();
     }
+    await db.ref(`seasons/${seasonId}/mvp/risultato`).remove();
+}
+
+// =====================================================
+// MVP DELLA STAGIONE (un singolo Pokémon)
+//
+// Quando mancano pochi showdown alla fine ogni giocatore della stagione vota fino a 2 Pokémon tra i primi 5 della classifica dell'MVP
+// (mvp.js e matches.html). I voti stanno in seasons/{id}/mvp/voti/{giocatore} = { ts, scelte: [{ chiave, player, team, specie, specieId }] }.
+// Alla chiusura della stagione si contano e il risultato va in seasons/{id}/mvp/risultato = { vincitori: [...], classifica: [...], votanti }.
+// Vince il Pokémon con più voti; a parità vincono tutti i primi (MVP a pari merito); nessun voto = nessun MVP.
+// Chi vota deve essere iscritto alla stagione e non può votare un proprio Pokémon; ogni voto vale una volta per Pokémon (massimo 2 voti a testa).
+// Solo le stagioni con Pokémon veri contano: League e Monoformat (le Random non hanno i team, le cup e la beta non fanno statistica).
+// =====================================================
+const VOTI_MVP_PER_GIOCATORE = 2;
+function stagioneConMvp(info, idStagione) {
+    if (idStagione === 'sbeta') return false;
+    const tipo = String((info && info.tipo) || 'league').toLowerCase().trim();
+    return tipo === 'league' || tipo === 'monoformat';
+}
+
+/**
+ * Il conteggio dei voti. `voti` è seasons/{id}/mvp/voti, `iscritti` i giocatori della stagione (nomi o chiavi).
+ * Restituisce { vincitori: [{ chiave, player, team, specie, specieId, voti }], classifica: [...stessi campi, tutti i votati], votanti }.
+ */
+function spoglioMvp(voti, iscritti) {
+    const ammessi = new Set((Array.isArray(iscritti) ? iscritti : Object.keys(iscritti || {})).map(idGiocatoreStagione).filter(Boolean));
+    const per = new Map();
+    let votanti = 0;
+    for (const [votante, voto] of Object.entries(voti || {})) {
+        const id = idGiocatoreStagione(votante);
+        if (!ammessi.has(id) || !voto) continue;
+        const visti = new Set();
+        let validi = 0;
+        for (const c of valoriStagione(voto.scelte)) {
+            if (validi >= VOTI_MVP_PER_GIOCATORE) break;
+            if (!c || !c.chiave || visti.has(c.chiave) || idGiocatoreStagione(c.player) === id) continue;      // un Pokémon una volta sola, mai il proprio
+            visti.add(c.chiave);
+            validi++;
+            const voce = per.get(c.chiave) || { chiave: String(c.chiave), player: String(c.player || ''), team: String(c.team || ''), specie: String(c.specie || ''), specieId: String(c.specieId || ''), voti: 0 };
+            voce.voti++;
+            per.set(c.chiave, voce);
+        }
+        if (validi) votanti++;
+    }
+    const classifica = [...per.values()].sort((a, b) => b.voti - a.voti || a.specie.localeCompare(b.specie) || a.chiave.localeCompare(b.chiave));
+    const massimo = classifica.length ? classifica[0].voti : 0;
+    return { vincitori: classifica.filter(v => v.voti === massimo && massimo > 0), classifica, votanti };
+}
+
+/** Conta i voti dell'MVP e li registra nella stagione (si può rifare quando si vuole). Restituisce il risultato, o null se la stagione non ha l'MVP. */
+async function salvaMvpStagione(seasonId) {
+    const base = db.ref(`seasons/${seasonId}`);
+    const [i, isc, v] = await Promise.all([base.child('info').once('value'), base.child('iscritti').once('value'), base.child('mvp/voti').once('value')]);
+    const info = i.val() || {};
+    if (!stagioneConMvp(info, seasonId)) return null;
+    const risultato = spoglioMvp(v.val(), isc.val());
+    await base.child('mvp/risultato').set({ ...risultato, contatoIl: new Date().toISOString() });
+    console.log(`MVP della stagione ${seasonId}: ${risultato.vincitori.map(x => `${x.specie} (${x.voti})`).join(', ') || 'nessun voto'}.`);
+    return risultato;
 }
 
 

@@ -1,0 +1,238 @@
+// =====================================================
+// MVP DELLA STAGIONE: il voto e il risultato in matches.html
+//
+// matches.html chiama MvpVoto.avvia({ stagione, info, showdowns, teamsIscritti, players, votante }) a ogni disegno della pagina.
+//   - quando mancano pochi showdown alla fine (Mvp.finestraVoto) compare in alto il tasto "VOTE MVP";
+//   - il tasto apre un modale con i primi 5 Pokémon della classifica dell'MVP (punteggio pesato sulle statistiche della stagione);
+//     ogni giocatore della stagione ha 2 voti, su Pokémon diversi e non suoi; si può cambiare idea finché la stagione è aperta;
+//   - a stagione chiusa, sotto la classifica compare l'MVP (o i due, se pari) con i suoi voti.
+// I voti stanno in seasons/{id}/mvp/voti/{giocatore}; il conteggio lo fa spoglioMvp (risultati-match.js) alla chiusura.
+// La parte che decide cosa è valido è in mvp.js (provata in test/mvp.test.js); qui c'è solo la pagina.
+// Richiede: db, firebase, Mvp, Statistiche, SpritePkm, avanzamentoStagione (risultati-match.js).
+// =====================================================
+(function () {
+    'use strict';
+
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
+    const valori = x => (x && typeof x === 'object' ? Object.values(x) : []);
+    const colorePulito = c => String(c || '').replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
+
+    let ctx = null;            // l'ultimo contesto con cui è stata disegnata la pagina
+    let stato = null;          // lo stato del modale aperto: { candidati, scelte (Set di chiavi), puoVotare, ... }
+
+    const gif = specie => {
+        const id = window.SpritePkm.id(specie);
+        return `<img class="mvp-sprite" src="${esc(window.SpritePkm.gif(specie))}" alt="" loading="lazy" onerror="SpritePkm.riserva(this,'${esc(id)}')">`;
+    };
+
+    // ---------- il tasto in alto ----------
+    function tasto() {
+        let b = document.getElementById('btn-mvp');
+        if (b) return b;
+        const barra = document.querySelector('.top-auth-bar');
+        if (!barra) return null;
+        b = document.createElement('button');
+        b.type = 'button';
+        b.id = 'btn-mvp';
+        b.className = 'btn-mvp blur-target';
+        b.hidden = true;
+        b.addEventListener('click', apriModale);
+        const dopo = barra.querySelector('.btn-registered-teams');
+        if (dopo && dopo.nextSibling) barra.insertBefore(b, dopo.nextSibling); else barra.insertBefore(b, barra.firstChild);
+        return b;
+    }
+
+    // ---------- il risultato sotto la classifica ----------
+    function schedaRisultato(vincitori) {
+        let s = document.getElementById('mvp-risultato');
+        if (!vincitori) { if (s) s.remove(); return; }
+        if (!s) {
+            const colonna = document.querySelector('.hub-right-column');
+            if (!colonna) return;
+            s = document.createElement('section');
+            s.id = 'mvp-risultato';
+            s.className = 'cl-finestra cl-laterale mvp-risultato';
+            s.setAttribute('aria-label', 'Season MVP');
+            colonna.appendChild(s);
+        }
+        const corpo = vincitori.length ? vincitori.map(v => `
+            <div class="mvp-vincitore">
+                ${gif(v.specie)}
+                <span class="mvp-vincitore-testi">
+                    <b class="mvp-vincitore-nome">${esc(v.specie)}</b>
+                    <span class="mvp-vincitore-sub">${esc(nomeGiocatore(v.player))} · ${esc(v.team)}</span>
+                </span>
+                <span class="mvp-vincitore-voti"><b>${esc(v.voti)}</b>${v.voti === 1 ? ' vote' : ' votes'}</span>
+            </div>`).join('')
+            : '<p class="mvp-nessuno">Nobody voted: no MVP this season.</p>';
+        s.innerHTML = `<div class="cl-barra"><span class="cl-barra-titolo">${vincitori.length > 1 ? 'SEASON MVPs' : 'SEASON MVP'}</span></div>
+            <div class="cl-corpo">${corpo}${vincitori.length && vincitori.length > 1 ? '<p class="mvp-nota">Tied on votes.</p>' : ''}</div>`;
+    }
+
+    const nomeGiocatore = id => (ctx && ctx.players && ctx.players[idDi(id)] && ctx.players[idDi(id)].info && ctx.players[idDi(id)].info.name) || id;
+
+    // ---------- il modale ----------
+    function velo() {
+        let v = document.getElementById('modal-mvp');
+        if (v) return v;
+        v = document.createElement('div');
+        v.id = 'modal-mvp';
+        v.className = 'mvp-velo';
+        v.hidden = true;
+        v.innerHTML = '<div class="mvp-modale" role="dialog" aria-modal="true" aria-labelledby="mvp-titolo"></div>';
+        v.addEventListener('click', e => { if (e.target === v) chiudi(); });
+        document.body.appendChild(v);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudi(); });
+        return v;
+    }
+    function chiudi() { const v = document.getElementById('modal-mvp'); if (v) v.hidden = true; document.body.classList.remove('mvp-aperto'); }
+
+    function rigaHtml(c) {
+        const mio = !window.Mvp.VOTA_I_PROPRI && idDi(c.player) === idDi(ctx.votante);
+        const scelto = stato.scelte.has(c.chiave);
+        const colore = colorePulito(c.colore) || '#31c489';
+        const pieno = !scelto && stato.scelte.size >= window.Mvp.VOTI;
+        const disabilitato = !stato.puoVotare || mio || pieno;
+        const etichetta = scelto ? 'VOTED ✓' : mio ? 'YOURS' : 'VOTE';
+        return `<li class="mvp-riga${scelto ? ' scelto' : ''}${mio ? ' mio' : ''}" style="--mvp-colore:${colore}">
+            <span class="mvp-pos">#${esc(c.posizione)}</span>
+            ${gif(c.specie)}
+            <span class="mvp-testi">
+                <b class="mvp-nome">${esc(c.specie)}</b>
+                <span class="mvp-sub">${esc(c.playerNome)} · ${esc(c.team)}</span>
+                <span class="mvp-numeri">${esc(c.ko)} KOs · ${esc(c.setVinti)} sets won · ${esc(c.presenze)} played</span>
+            </span>
+            <span class="mvp-punti"><b>${esc(c.punteggio)}</b><small>pts</small></span>
+            <button type="button" class="mvp-vota" data-chiave="${esc(c.chiave)}" ${disabilitato ? 'disabled' : ''} aria-pressed="${scelto}">${etichetta}</button>
+        </li>`;
+    }
+
+    function disegnaModale() {
+        const m = document.querySelector('#modal-mvp .mvp-modale');
+        const P = window.Mvp.PESI;
+        const restanti = window.Mvp.VOTI - stato.scelte.size;
+        let nota;
+        if (stato.salvato) nota = `Your vote is in. You can change it until the season closes.`;
+        else if (!ctx.votante) nota = 'Log in to vote.';
+        else if (!stato.puoVotare) nota = 'Only the players of this season can vote.';
+        else nota = `You have ${restanti} vote${restanti === 1 ? '' : 's'} left. Not for your own Pokémon, and one vote per Pokémon.`;
+        m.innerHTML = `
+            <button type="button" class="mvp-x" aria-label="Close">✖</button>
+            <div class="mvp-testa"><h2 id="mvp-titolo" class="mvp-titolo">MVP VOTE</h2><span class="mvp-stagione">${esc(ctx.info.name || ctx.stagione)}</span></div>
+            <p class="mvp-intro">The top 5 Pokémon of the season so far. The ranking updates after every set; the MVP is the Pokémon with the most votes when the season ends.</p>
+            ${stato.candidati.length ? `<ol class="mvp-elenco">${stato.candidati.map(rigaHtml).join('')}</ol>` : '<p class="mvp-nessuno">No Pokémon has played yet.</p>'}
+            <p class="mvp-regola">Score: KO ×${P.ko} · set won ×${P.setVinto} · set played ×${P.presenza} · set survived ×${P.sopravvissuto} · last Pokémon standing ×${P.ultimoRimasto} · match won ×${P.matchVinto}</p>
+            <p class="mvp-nota" role="status">${esc(stato.errore || nota)}</p>
+            <div class="mvp-azioni">
+                <button type="button" class="mvp-conferma" ${stato.puoVotare && stato.scelte.size && !stato.occupato ? '' : 'disabled'}>${stato.occupato ? 'SAVING…' : stato.salvato ? 'UPDATE VOTE' : 'CONFIRM VOTE'}</button>
+                <button type="button" class="mvp-chiudi">CLOSE</button>
+            </div>`;
+        m.querySelector('.mvp-x').onclick = chiudi;
+        m.querySelector('.mvp-chiudi').onclick = chiudi;
+        m.querySelectorAll('.mvp-vota').forEach(b => {
+            b.onclick = () => {
+                const k = b.dataset.chiave;
+                if (stato.scelte.has(k)) stato.scelte.delete(k); else if (stato.scelte.size < window.Mvp.VOTI) stato.scelte.add(k);
+                stato.errore = ''; stato.salvato = false;
+                disegnaModale();
+            };
+        });
+        m.querySelector('.mvp-conferma').onclick = salva;
+    }
+
+    async function salva() {
+        if (stato.occupato) return;
+        const esito = window.Mvp.controllaScelte([...stato.scelte], stato.candidati, ctx.votante);
+        if (!esito.ok) { stato.errore = esito.errore; disegnaModale(); return; }
+        stato.occupato = true; disegnaModale();
+        try {
+            // la stagione può essersi chiusa nel frattempo: dopo la chiusura i voti sono già stati contati
+            const st = (await db.ref(`seasons/${ctx.stagione}/info/status`).once('value')).val();
+            if (idDi(st) === 'closed') throw new Error('The season is closed: voting is over.');
+            await db.ref(`seasons/${ctx.stagione}/mvp/voti/${idDi(ctx.votante)}`).set({ ts: Date.now(), scelte: esito.scelte.map(window.Mvp.candidato) });
+            stato.salvato = true; stato.errore = '';
+            ctx.mioVoto = esito.scelte.map(c => c.chiave);
+            aggiornaTasto();
+        } catch (e) {
+            console.error('MVP: voto non salvato', e);
+            stato.errore = e && e.message ? e.message : 'Could not save your vote. Try again.';
+        }
+        stato.occupato = false;
+        disegnaModale();
+    }
+
+    async function apriModale() {
+        if (!ctx) return;
+        const v = velo();
+        v.hidden = false;
+        document.body.classList.add('mvp-aperto');
+        const m = v.querySelector('.mvp-modale');
+        m.innerHTML = '<p class="mvp-nota">Loading the ranking…</p>';
+        try {
+            // la classifica dell'MVP è quella delle statistiche della sola stagione (stesse regole di stats.html)
+            const r = window.Statistiche.calcola({ players: ctx.players, seasons: { [ctx.stagione]: { info: ctx.info, showdowns: ctx.showdowns } } }, { stagione: ctx.stagione });
+            const tutti = window.Mvp.classifica(r.pokemon);
+            const candidati = tutti.slice(0, window.Mvp.TOP);
+            // un Pokémon già votato che nel frattempo è uscito dai primi 5 resta nell'elenco, così il voto si vede e si può togliere
+            for (const k of ctx.mioVoto || []) { const x = tutti.find(t => t.chiave === k); if (x && !candidati.includes(x)) candidati.push(x); }
+            stato = {
+                candidati, scelte: new Set((ctx.mioVoto || []).filter(k => candidati.some(c => c.chiave === k))),
+                puoVotare: !!ctx.votante && ctx.iscritti.has(idDi(ctx.votante)) && !ctx.finestra.chiusa,
+                salvato: !!(ctx.mioVoto && ctx.mioVoto.length), occupato: false, errore: ''
+            };
+            disegnaModale();
+        } catch (e) {
+            console.error('MVP: classifica non calcolata', e);
+            m.innerHTML = '<button type="button" class="mvp-x" aria-label="Close">✖</button><p class="mvp-nota">Could not build the ranking. Reload the page.</p>';
+            m.querySelector('.mvp-x').onclick = chiudi;
+        }
+    }
+
+    function aggiornaTasto() {
+        const b = tasto();
+        if (!b || !ctx) return;
+        b.hidden = !ctx.finestra.aperta;
+        const votato = !!(ctx.mioVoto && ctx.mioVoto.length);
+        b.textContent = votato ? 'MVP VOTE ✓' : 'VOTE MVP';
+        b.title = votato ? 'You voted. Open to change your vote.' : `${ctx.finestra.mancano} showdown${ctx.finestra.mancano === 1 ? '' : 's'} to the end: vote for the season MVP`;
+        b.classList.toggle('votato', votato);
+    }
+
+    /**
+     * Si chiama a ogni disegno di matches.html.
+     * @param {{ stagione: string, info: object, showdowns: object, teamsIscritti: object, players: object, votante?: string }} dati
+     */
+    async function avvia(dati) {
+        const stagione = dati.stagione, info = dati.info || {};
+        if (!window.Mvp || !window.Mvp.stagioneConMvp(info, stagione)) {
+            ctx = null; schedaRisultato(null);
+            const b = document.getElementById('btn-mvp'); if (b) b.hidden = true;
+            return;
+        }
+        const [iscrSnap, mvpSnap] = await Promise.all([
+            db.ref(`seasons/${stagione}/iscritti`).once('value'),
+            db.ref(`seasons/${stagione}/mvp`).once('value')
+        ]);
+        const iscritti = iscrSnap.val() || {};
+        const mvp = mvpSnap.val() || {};
+        const avanzamento = avanzamentoStagione(info, iscritti, dati.showdowns, dati.teamsIscritti);
+        const votante = idDi(dati.votante);
+        const mio = votante && mvp.voti && mvp.voti[votante] ? valori(mvp.voti[votante].scelte).map(c => c && c.chiave).filter(Boolean) : [];
+        ctx = {
+            stagione, info, showdowns: dati.showdowns || {}, players: dati.players || {}, votante,
+            iscritti: new Set(Object.keys(iscritti).map(idDi)), mioVoto: mio,
+            finestra: window.Mvp.finestraVoto(info, avanzamento, stagione)
+        };
+        aggiornaTasto();
+        // a stagione chiusa: l'MVP sotto la classifica. Di solito il conteggio lo ha già fatto la chiusura (Cloud Functions o amministratore);
+        // se ci sono voti ma non il risultato (stagione chiusa prima che le funzioni sapessero dell'MVP) lo conta chi apre la pagina
+        const chiusa = ctx.finestra.chiusa;
+        if (chiusa && !mvp.risultato && mvp.voti && dati.votante && typeof salvaMvpStagione === 'function') {
+            try { mvp.risultato = await salvaMvpStagione(stagione); } catch (e) { console.warn('MVP: conteggio non salvato', e); }
+        }
+        schedaRisultato(chiusa && mvp.risultato ? window.Mvp.vincitoriDi({ mvp }) : null);
+    }
+
+    window.MvpVoto = { avvia, apriModale };
+})();

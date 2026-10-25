@@ -1,0 +1,186 @@
+/* =====================================================================
+   MVP DELLA STAGIONE (Matches): il tasto per votare, il modale con i primi 5 e il risultato sotto la classifica
+   ---------------------------------------------------------------------
+   Stessa famiglia delle altre finestre (classifica.css, showdown.css): striscia nera con i tre pallini e la X gialla, carta calda con la
+   mezzatinta, bordo e ombra del tema. Usa le variabili --nb-* del tema attivo (con i valori classici come ripiego): i temi cambiano colori,
+   ombre, rotazioni, angoli e caratteri, mai larghezze, altezze o spessori dei bordi. Il markup lo scrive mvp-voto.js.
+   ===================================================================== */
+
+/* ---------- Il tasto in alto, accanto a REGISTERED TEAMS ---------- */
+.btn-mvp {
+    box-sizing: border-box;
+    height: 38px;
+    padding: 6px 14px;
+    background: var(--nb-rosa, #ff90e8);
+    color: #000;
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: 4px 4px 0 var(--nb-shcol, #000);
+    font: 900 .8rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .1s ease, box-shadow .1s ease;
+}
+.btn-mvp[hidden] { display: none; }
+.btn-mvp:hover, .btn-mvp:focus-visible { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--nb-shcol, #000); outline: none; }
+.btn-mvp.votato { background: var(--nb-verde, #31c489); }
+
+/* ---------- Il modale ---------- */
+.mvp-velo {
+    position: fixed; inset: 0; z-index: 10050;
+    display: flex; align-items: flex-start; justify-content: center;
+    box-sizing: border-box;
+    padding: 18px 14px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, .46) radial-gradient(rgba(255, 255, 255, .13) 1.3px, transparent 1.6px) 0 0 / 14px 14px;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+.mvp-velo[hidden] { display: none; }
+body.mvp-aperto { overflow: hidden; }
+.mvp-modale {
+    position: relative;
+    box-sizing: border-box;
+    width: min(760px, 100%);
+    margin: auto;
+    padding: 36px 0 18px;
+    background: var(--nb-motivo, radial-gradient(rgba(0, 0, 0, .13) 1.3px, transparent 1.6px)) 0 0 / var(--nb-motivo-dim, 14px 14px), var(--nb-tip-bg, #fffdf6);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-l, 9px 9px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+/* la striscia nera con i tre pallini */
+.mvp-modale::before {
+    content: "MVP · SEASON VOTE";
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 36px; box-sizing: border-box;
+    padding: 0 56px 0 92px;
+    background:
+        radial-gradient(circle at 24px 50%, #ff5f57 0 6px, transparent 6.6px),
+        radial-gradient(circle at 44px 50%, #febc2e 0 6px, transparent 6.6px),
+        radial-gradient(circle at 64px 50%, #28c840 0 6px, transparent 6.6px),
+        var(--nb-ink, #000);
+    color: #fff;
+    font: 800 11px/36px var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: .2em; white-space: nowrap; overflow: hidden;
+    pointer-events: none;
+}
+.mvp-x {
+    position: absolute; top: 5px; right: 12px; z-index: 5;
+    box-sizing: border-box; width: 26px; height: 26px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--nb-giallo, #ffbd44); color: #000;
+    border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: 2px 2px 0 rgba(255, 255, 255, .35);
+    font: 900 14px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    cursor: pointer;
+}
+.mvp-x:hover, .mvp-x:focus-visible { background: var(--nb-rosso, #ff4444); color: #fff; outline: none; }
+.mvp-testa { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 16px 24px 4px; }
+.mvp-titolo {
+    display: inline-block; margin: 0; padding: 7px 22px 5px;
+    background: var(--nb-ink, #000); color: #fff;
+    border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-titolo, 8px 8px 0 rgba(0, 0, 0, .3));
+    font: 900 clamp(1.3rem, 2.4vw, 1.8rem)/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase;
+    transform: rotate(calc(var(--nb-rot, 1) * -1.5deg));
+}
+.mvp-stagione { font: 800 .9rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
+.mvp-intro, .mvp-regola, .mvp-nota { margin: 0; padding: 8px 24px 0; font: 600 .8rem/1.4 var(--nb-font-testi, 'Montserrat', sans-serif); }
+.mvp-regola { font-size: .7rem; opacity: .75; }
+.mvp-nota { font-weight: 800; }
+.mvp-nessuno { margin: 0; padding: 16px 24px; font: 700 .9rem var(--nb-font-testi, 'Montserrat', sans-serif); }
+
+/* ---------- Le righe dei candidati ---------- */
+.mvp-elenco { list-style: none; margin: 0; padding: 14px 24px 4px; display: grid; gap: 12px; }
+.mvp-riga {
+    --mvp-colore: #31c489;
+    display: grid;
+    grid-template-columns: auto 64px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px 12px;
+    box-sizing: border-box;
+    padding: 8px 12px 8px 8px;
+    background: var(--mvp-colore);
+    border: 3px solid var(--nb-ink, #000);
+    border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+.mvp-riga.scelto { outline: 4px solid var(--nb-ink, #000); outline-offset: 2px; background: color-mix(in srgb, var(--mvp-colore) 70%, #ffe45c); }
+.mvp-riga.mio { opacity: .8; }
+.mvp-pos { padding: 5px 8px 3px; background: var(--nb-ink, #000); color: #fff; font: 900 .85rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.mvp-riga:first-child .mvp-pos { background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid var(--nb-ink, #000); }
+.mvp-sprite { display: block; width: 64px; height: 64px; object-fit: contain; image-rendering: auto; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, .55)); }
+.mvp-testi { display: grid; gap: 2px; min-width: 0; }
+.mvp-nome { font: 900 1.05rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.mvp-sub { font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.mvp-numeri { font: 700 .7rem/1.2 var(--nb-font-testi, 'Montserrat', sans-serif); }
+.mvp-punti { display: grid; justify-items: center; padding: 5px 10px 4px; background: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); }
+.mvp-punti b { font: 900 1.25rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.mvp-punti small { font: 800 .6rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.mvp-vota, .mvp-conferma, .mvp-chiudi {
+    box-sizing: border-box; min-height: 38px; padding: 6px 14px 4px;
+    background: var(--nb-giallo, #ffbd44); color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .8rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase;
+    cursor: pointer; transition: transform .1s ease, box-shadow .1s ease;
+}
+.mvp-vota { min-width: 96px; }
+.mvp-riga.scelto .mvp-vota { background: var(--nb-ink, #000); color: #fff; }
+.mvp-vota:hover:not(:disabled), .mvp-conferma:hover:not(:disabled), .mvp-chiudi:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--nb-shcol, #000); }
+.mvp-vota:disabled, .mvp-conferma:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.mvp-vota:focus-visible, .mvp-conferma:focus-visible, .mvp-chiudi:focus-visible { outline: 3px dashed var(--nb-ink, #000); outline-offset: 3px; }
+.mvp-azioni { display: flex; flex-wrap: wrap; gap: 12px; padding: 14px 24px 0; }
+.mvp-conferma { background: var(--nb-verde, #31c489); }
+.mvp-chiudi { background: #fff; }
+
+/* ---------- Il risultato sotto la classifica ---------- */
+.mvp-risultato { margin-top: 18px; }
+.mvp-risultato .cl-corpo { padding: 12px 12px 14px; display: grid; gap: 10px; }
+.mvp-vincitore {
+    display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 8px 10px 8px 6px;
+    background: var(--nb-giallo, #ffbd44);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+.mvp-vincitore .mvp-sprite { width: 56px; height: 56px; }
+.mvp-vincitore-testi { display: grid; gap: 2px; min-width: 0; }
+.mvp-vincitore-nome { font: 900 1rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.mvp-vincitore-sub { font: 800 .7rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.mvp-vincitore-voti { padding: 4px 8px 3px; background: #fff; border: 2px solid var(--nb-ink, #000); font: 800 .7rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; text-align: center; }
+.mvp-vincitore-voti b { display: block; font-size: 1.2rem; }
+.mvp-risultato .mvp-nota, .mvp-risultato .mvp-nessuno { padding: 0; font-size: .75rem; }
+
+/* ---------- Telefono ---------- */
+@media (max-width: 620px) {
+    .mvp-velo { padding: 8px 8px 12px; }
+    .mvp-testa, .mvp-intro, .mvp-regola, .mvp-nota, .mvp-azioni { padding-left: 14px; padding-right: 14px; }
+    .mvp-elenco { padding: 12px 12px 4px; }
+    .mvp-riga { grid-template-columns: auto 52px minmax(0, 1fr) auto; }
+    .mvp-sprite { width: 52px; height: 52px; }
+    .mvp-vota { grid-column: 1 / -1; width: 100%; }
+    .mvp-riga .mvp-punti { padding: 4px 8px 3px; }
+}
+
+/* Telefono e tablet: la barra in alto si scioglie (temi.css) e i tasti stanno in una fila sotto il titolo: REGISTERED TEAMS a sinistra, la
+   campanella a destra; il tasto dell'MVP sta tra i due, a sinistra della campanella */
+@media (max-width: 900px) {
+    body.nb:not(.pg-profile) .btn-mvp {
+        position: absolute !important;
+        top: 114px;
+        right: 66px;
+        left: auto;
+        height: 42px !important;
+        padding: 0 12px !important;
+        font-size: .74rem !important;
+        transform: none !important;
+        z-index: 120;
+    }
+}

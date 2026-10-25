@@ -25,6 +25,8 @@
 <link rel="stylesheet" href="nome-scorrevole.css">
 <script src="dati-gen.js"></script>
 <script src="statistiche.js"></script>
+<script src="mvp.js"></script>
+<script src="mvp-voto.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="nome-scorrevole.js"></script>
@@ -34,6 +36,7 @@
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="classifica.css">
+<link rel="stylesheet" href="mvp.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -701,6 +704,7 @@ async function inizializzaPaginaArchivio() {
     let userColor = "#FFA500"; 
     let isLoggedIn = !!user; 
     let isAdmin = false;    
+    let idVotanteMvp = '';   // il giocatore collegato (per votare l'MVP)
 
     if (user) {
         const userSnap = await db.ref(`users/${user.uid}`).once('value');
@@ -708,6 +712,7 @@ async function inizializzaPaginaArchivio() {
         
         isAdmin = (userData.role === 'admin'); 
         const playerName = userData.name;
+        idVotanteMvp = String(playerName || '').toLowerCase().trim();
 
         if (playerName) {
             const colorSnap = await db.ref(`players/${playerName.toLowerCase().trim()}/info/color`).once('value');
@@ -824,6 +829,13 @@ async function inizializzaPaginaArchivio() {
     // --- 6. RENDER RANKINGS ---
     if (typeof renderRankings === 'function') {
         await renderRankings(dataLeaderboard);
+    }
+
+    // --- 7. MVP DELLA STAGIONE: il tasto per votare (quando mancano pochi showdown) e il risultato a stagione chiusa ---
+    if (window.MvpVoto) {
+        try {
+            await MvpVoto.avvia({ stagione: stagioneAttiva, info: dataSeasonInfo, showdowns: dataShowdowns, teamsIscritti: dataIscritti, players: dataPlayers, votante: idVotanteMvp });
+        } catch (e) { console.error('MVP non disponibile:', e); }
     }
 }
 

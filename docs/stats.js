@@ -136,6 +136,9 @@
 
     const trofei = (vinti, giocate) => `<span class="trofei${vinti ? ' ha' : ''}"><img src="immagini/season-winner-color.png" alt="" width="18" height="18"><b>${fmt(vinti)}</b>${giocate != null ? `<small>/ ${fmt(giocate)}</small>` : ''}</span>`;
 
+    // i titoli di MVP della stagione: una stella e il numero (mvp.js: il Pokémon votato dai giocatori a fine stagione)
+    const mvp = n => `<span class="mvp-stella${n ? ' ha' : ''}"><b aria-hidden="true">⭐</b>${fmt(n)}</span>`;
+
     const avatar = (p, classe) => `<img class="${classe}" src="${esc(p.avatar || 'immagini/magikarp.png')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='immagini/magikarp.png'">`;
 
     // le medagliette dei badge del team (badge-team.js) sulla sua card
@@ -166,6 +169,8 @@
                 html: p => numero(p.punti) },
             { id: 'stagioni', titolo: 'Seasons won', val: p => p.stagioniVinte * 1000 + p.stagioniGiocate, dir: -1, tip: 'Seasons won / seasons played',
                 html: p => trofei(p.stagioniVinte, p.stagioniGiocate) },
+            { id: 'mvp', titolo: 'MVP titles', val: p => p.mvpVinti, dir: -1, tip: 'Seasons in which one of its Pokémon was voted MVP',
+                html: p => mvp(p.mvpVinti) },
             { id: 'showdown', titolo: 'Showdowns', val: p => p.showdown.vinti * 1000 - p.showdown.persi, dir: -1, tip: 'Won – lost',
                 html: p => wl(p.showdown) },
             { id: 'match', titolo: 'Matches', val: p => p.match.vinti * 1000 - p.match.persi, dir: -1, tip: 'Won – lost',
@@ -191,6 +196,8 @@
                 html: t => wl(t.set) },
             { id: 'stagioni', titolo: 'Seasons won', val: t => t.stagioniVinte * 1000 + t.stagioniGiocate, dir: -1, tip: 'Seasons won / seasons played',
                 html: t => trofei(t.stagioniVinte, t.stagioniGiocate) },
+            { id: 'mvp', titolo: 'MVP titles', val: t => t.mvpVinti, dir: -1, tip: 'Seasons in which one of its Pokémon was voted MVP',
+                html: t => mvp(t.mvpVinti) },
             { id: 'ko', titolo: 'KOs', val: t => (t.ko.setConDati ? t.ko.differenza : null), dir: -1, tip: "Opponents KO'd – own Pokémon KO'd",
                 html: t => koWl(t.ko), sotto: t => koDiff(t.ko) },
             { id: 'nome', titolo: 'Name', val: t => t.nome.toLowerCase(), dir: 1, testo: true },
@@ -215,6 +222,8 @@
                 html: m => wl(m.showdown) },
             { id: 'stagioni', titolo: 'Seasons won', val: m => m.stagioniVinte, dir: -1, tip: 'Seasons won',
                 html: m => trofei(m.stagioniVinte) },
+            { id: 'mvp', titolo: 'MVP titles', val: m => m.mvpVinti, dir: -1, tip: 'Seasons in which this very Pokémon (not its species) was voted MVP',
+                html: m => mvp(m.mvpVinti) },
             { id: 'nome', titolo: 'Name', val: m => m.specie.toLowerCase(), dir: 1, testo: true },
             { id: 'player', titolo: 'Trainer', val: m => m.playerNome.toLowerCase(), dir: 1, testo: true }
         ],
@@ -606,7 +615,8 @@
                 tessera(STATO.stagione === 'all' ? 'Elo' : 'Elo (end of season)', p.classificato ? fmt(p.elo) : NA, !p.classificato || STATO.stagione === 'all' || !p.eloDelta ? '' : `${segno(p.eloDelta)} in the season`),
                 tessera('Peak Elo', p.eloPicco == null ? '—' : p.classificato ? fmt(p.eloPicco) : NA, p.classificato ? '' : 'needs 3 showdowns'),
                 tessera('Points', fmt(p.punti)),
-                tessera('Seasons', `${fmt(p.stagioniVinte)} <small>won of ${fmt(p.stagioniGiocate)}</small>`)
+                tessera('Seasons', `${fmt(p.stagioniVinte)} <small>won of ${fmt(p.stagioniGiocate)}</small>`),
+                tessera('MVP titles', mvp(p.mvpVinti), 'one of its Pokémon voted MVP')
             ]))}
             ${sezione('Results', tessereRisultati(p))}
             ${sezione('Streaks', griglia([
@@ -638,6 +648,7 @@
             ${sezione('Results', tessereRisultati(t) + griglia([
                 tessera('Points', fmt(t.punti), 'from its matches'),
                 tessera('Seasons', `${fmt(t.stagioniVinte)} <small>won of ${fmt(t.stagioniGiocate)}</small>`),
+                tessera('MVP titles', mvp(t.mvpVinti), 'one of its Pokémon voted MVP'),
                 tessera('Last used', t.ultimoUso ? esc(t.ultimoUso) : '—')
             ]))}
             ${window.BadgeTeam ? sezione('Badges', badgeVintiDelTeam(t)) : ''}
@@ -660,6 +671,7 @@
         return `${testaScheda(m.specie, sprite(m.specie, 'scheda-grande'), chip)}
             ${sezione('With its team', griglia([
                 tessera('Seasons won', trofei(m.stagioniVinte)),
+                tessera('Season MVP', mvp(m.mvpVinti), m.mvpVinti ? 'voted by the players' : 'voted by the players at the end of a season'),
                 tessera('Showdowns', wl(m.showdown)),
                 tessera('Matches', wl(m.match)),
                 tessera('Sets', wl(m.set))

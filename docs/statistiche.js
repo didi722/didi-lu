@@ -45,6 +45,11 @@
         const m = /^(.*\S)\s*\(([^()]+)\)\s*$/.exec(String(nome || '').trim());
         return m ? m[2].trim() : String(nome || '').trim();
     };
+    // I vincitori dell'MVP di una stagione (seasons/{id}/mvp/risultato/vincitori, scritti alla chiusura: vedi mvp.js e spoglioMvp in risultati-match.js)
+    const vincitoriMvp = stagioneDati => {
+        const v = stagioneDati && stagioneDati.mvp && stagioneDati.mvp.risultato && stagioneDati.mvp.risultato.vincitori;
+        return valori(v).filter(x => x && x.chiave);
+    };
     // percentuale con un decimale; null se non c'è nulla su cui calcolarla
     const perc = (parte, tutto) => (tutto > 0 ? Math.round((parte / tutto) * 1000) / 10 : null);
     const media = (somma, n) => (n > 0 ? Math.round((somma / n) * 10) / 10 : null);
@@ -241,6 +246,13 @@
             if (!stagioneChiusa(stagioneDati?.info)) continue;
             const classifica = classificaStagione(perStagione[id] || []);
             if (classifica.length) vincitoreStagione[id] = classifica[0].id;
+        }
+
+        // MVP delle stagioni chiuse nel perimetro scelto: chiave del Pokémon (squadra::specie) -> stagioni in cui è stato MVP
+        const mvpDelPokemon = {};
+        for (const [id, stagioneDati] of Object.entries(seasons)) {
+            if (!stagioneChiusa(stagioneDati?.info) || (stagioneScelta === 'all' ? id === BETA : id !== stagioneScelta)) continue;
+            for (const v of vincitoriMvp(stagioneDati)) (mvpDelPokemon[v.chiave] ||= new Set()).add(id);
         }
 
         const stagioni = Object.keys(seasons).sort(ordineStagioni).map(id => ({
@@ -509,6 +521,9 @@
                 // a differenza dei due numeri qui sopra (del team), contano solo le stagioni in cui è sceso in campo
                 stagioniInCampo: m.stagioniInCampo.size,
                 stagioniVinteInCampo: [...m.stagioniInCampo].filter(id => vincitoreStagione[id] === m.player).length,
+                // le stagioni in cui QUESTO Pokémon (non la sua specie) è stato eletto MVP
+                mvpVinti: mvpDelPokemon[m.chiave] ? mvpDelPokemon[m.chiave].size : 0,
+                mvpStagioni: mvpDelPokemon[m.chiave] ? [...mvpDelPokemon[m.chiave]] : [],
                 showdown: t ? t.showdown : { giocati: 0, vinti: 0, persi: 0 },
                 match: t ? t.match : { giocati: 0, vinti: 0, persi: 0 },
                 set: t ? t.set : { giocati: 0, vinti: 0, persi: 0 },
@@ -530,6 +545,10 @@
                 percVintiPortato: perc(m.setPortatoVinti, m.setPortatoVinti + m.setPortatoPersi)
             };
         });
+
+        // i titoli MVP dei Pokémon contano anche per il loro team e per il loro allenatore
+        for (const t of elencoTeams) t.mvpVinti = elencoPokemon.filter(m => m.squadra === t.chiave).reduce((n, m) => n + m.mvpVinti, 0);
+        for (const pl of elencoPlayers) pl.mvpVinti = elencoPokemon.filter(m => m.player === pl.id).reduce((n, m) => n + m.mvpVinti, 0);
 
         // Il Pokémon con più KO di ogni giocatore
         for (const pl of elencoPlayers) {

@@ -77,6 +77,9 @@
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3, 5],
           descrizione: 'Seasons won with its team, with at least one presence.',
           valore: p => num(p.stagioniVinteInCampo), immagini: perLivelli('ribbon-champion-{l}.png') },
+        { id: 'mvp', nome: 'Season MVP', icona: '⭐', unita: 'seasons as MVP', soglie: [1, 2, 3, 4],
+          descrizione: 'Voted MVP of a season by the players. It is this very Pokémon, not its species.',
+          valore: p => num(p.mvpVinti), immagini: perLivelli('ribbon-mvp-{l}.png') },
         { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 3, 4, 6],
           descrizione: 'Seasons played.',
           valore: p => num(p.stagioniInCampo), immagini: perLivelli('ribbon-friendship-{l}.png') }

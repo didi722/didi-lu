@@ -28,8 +28,8 @@ test('livelloDi: bronzo, argento e oro alle soglie (incluse)', () => {
     assert.equal(F.livelloDi(500, [10, 30, 60]), 3);
 });
 
-test('il catalogo ha nove fiocchi con quattro soglie crescenti e almeno un\'immagine ciascuno', () => {
-    assert.equal(F.CATALOGO.length, 9);
+test('il catalogo ha dieci fiocchi con quattro soglie crescenti e almeno un\'immagine ciascuno', () => {
+    assert.equal(F.CATALOGO.length, 10);
     const ids = new Set();
     for (const f of F.CATALOGO) {
         assert.ok(!ids.has(f.id), 'id doppio ' + f.id);
@@ -44,7 +44,7 @@ test('il catalogo ha nove fiocchi con quattro soglie crescenti e almeno un\'imma
 test('un Pokémon che non ha mai giocato (o senza dati) non prende nulla e ha il progresso a zero', () => {
     for (const p of [null, undefined, {}]) {
         const lista = F.calcola(p);
-        assert.equal(lista.length, 9);
+        assert.equal(lista.length, 10);
         assert.ok(lista.every(f => f.livello === 0 && f.progresso === 0 && f.classeLivello === 'locked'));
         assert.deepEqual(F.guadagnati(lista), []);
     }
@@ -116,8 +116,8 @@ test('le immagini: ogni livello usa il suo file (anche le serie e l\'amicizia); 
 test('le immagini dei fiocchi si chiamano tutte ribbon-<id>-<livello>.png, quattro per fiocco (i file che mancano li elenca tools/elenco-immagini.cjs)', () => {
     const citate = new Set(F.CATALOGO.flatMap(f => f.immagini).map(p => p.replace(/^immagini\//, '')));
     assert.deepEqual([...citate].sort(), [...F.IMMAGINI].sort());
-    // nove fiocchi × quattro livelli
-    assert.equal(F.IMMAGINI.length, 9 * 4);
+    // dieci fiocchi × quattro livelli
+    assert.equal(F.IMMAGINI.length, 10 * 4);
     for (const n of F.IMMAGINI) assert.match(n, /^ribbon-[a-z]+-(bronze|silver|gold|platinum)\.png$/);
     for (const f of F.CATALOGO) assert.deepEqual(f.immagini.map(p => /-(bronze|silver|gold|platinum)\.png$/.exec(p)[1]), ['bronze', 'silver', 'gold', 'platinum'], f.id);
     // quelli già caricati ci sono (con il loro nome): Winner, Survivor e Champion a tre livelli; le serie e l'amicizia, che avevano un file
@@ -269,8 +269,8 @@ test('carica: se la lettura fallisce l\'errore arriva e la prossima richiesta ri
 // ---------- HTML ----------
 test('htmlScaffale: un blocco per fiocco, il conto di quelli presi, i non presi in grigio con il progresso', () => {
     const html = F.htmlScaffale(F.calcola({ portato: 150, koFatti: 0 }));
-    assert.equal((html.match(/class="fiocco /g) || []).length, 9);
-    assert.match(html, /RIBBONS <small class="fiocchi-conto">1\/9<\/small>/);
+    assert.equal((html.match(/class="fiocco /g) || []).length, 10);
+    assert.match(html, /RIBBONS <small class="fiocchi-conto">1\/10<\/small>/);
     assert.match(html, /fiocco-silver[^>]*data-fiocco="regular"/);
     assert.match(html, /fiocco-bloccato[^>]*data-fiocco="ko"/);
     assert.match(html, /<span class="fiocco-livello">II<\/span>/);
