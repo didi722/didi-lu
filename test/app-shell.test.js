@@ -231,10 +231,12 @@ test('i fogli di stile dell\'app esistono e li scarica solo l\'app: app-pagine.c
     const js = docs('app.js');
     assert.match(js, /caricaFogliDiStile\(doc, 'app-pagine\.css'\)/);
     assert.match(js, /pagina === 'battle\.html'\) caricaFogliDiStile\(doc, 'app-battaglia\.css'\)/);
+    assert.match(js, /pagina === 'battle\.html'\) caricaScript\(doc, 'app-battaglia\.js'\)/);
+    assert.ok(fs.existsSync(path.join(DOCS, 'app-battaglia.js')));
     // nessuna pagina li collega: arrivano solo da app.js, quando il sito è aperto come app
     for (const f of fs.readdirSync(DOCS).filter(x => x.endsWith('.html'))) {
         const h = docs(f);
-        assert.doesNotMatch(h, /app-pagine\.css|app-battaglia\.css|app-shell\.js/, `${f} non deve collegare i fogli dell'app`);
+        assert.doesNotMatch(h, /app-pagine\.css|app-battaglia\.(css|js)|app-shell\.js/, `${f} non deve collegare i fogli dell'app`);
     }
 });
 
@@ -322,19 +324,53 @@ test('app-pagine.css: ogni regola riguarda l\'app ("html.app-shell") e sta dentr
     for (const m of css.matchAll(/@media[^{]+/g)) assert.match(m[0], /max-width:\s*900px|max-height:\s*500px/, m[0]);
 });
 
-test('app-battaglia.css: ogni regola riguarda l\'app (html.app) e la battaglia in orizzontale è solo per telefoni (altezza ≤ 520px)', () => {
+test('app-battaglia.css: ogni regola riguarda l\'app (html.app) ed è solo per telefoni; lo schermo di Showdown resta intero; via cronaca, player e tooltip', () => {
     const css = docs('app-battaglia.css');
     const lista = selettori(css);
-    assert.ok(lista.length >= 40, 'selettori trovati: ' + lista.length);
-    for (const s of lista) assert.match(s, /^html\.app[\s.:]|^:where\(body\.vista-p2\) html\.app/, `regola che tocca il sito intero: "${s}"`);
+    assert.ok(lista.length >= 80, 'selettori trovati: ' + lista.length);
+    for (const s of lista) assert.match(s, /^html\.app([\s.:]|$)/, `regola che tocca il sito intero: "${s}"`);
     assert.deepEqual(fuoriDalleCondizioni(css), []);
     const medie = [...css.matchAll(/@media[^{]+/g)].map(m => m[0].trim());
-    assert.equal(medie.length, 2);
-    assert.match(medie[0], /orientation:\s*portrait/);
+    assert.equal(medie.length, 3);
+    assert.match(medie[0], /max-width:\s*700px\),\s*\(max-height:\s*520px/);
     assert.match(medie[1], /orientation:\s*landscape\)\s*and\s*\(max-height:\s*520px\)/);
-    // lo schermo di Showdown non si toglie mai: è 16:9 e resta intero, solo più piccolo
-    assert.match(css, /--wc:\s*min\(calc\(\(100dvh - 60px\) \* 16 \/ 9 \+ 20px\), calc\(100vw - 292px\)\)/);
-    assert.doesNotMatch(css, /\.palco\s*\{[^}]*display:\s*none/);
+    assert.match(medie[2], /orientation:\s*portrait\)\s*and\s*\(max-width:\s*700px\)/);
+    // lo schermo di Showdown non si toglie mai: è 16:9 e resta intero, solo più piccolo; a destra restano almeno 270px per i comandi
+    assert.match(css, /--wc:\s*min\(calc\(\(100dvh - 28px\) \* 16 \/ 9\), calc\(100vw - 290px/);
+    assert.doesNotMatch(css, /\.palco(-box)?\s*\{[^}]*display:\s*none/);
+    // niente player ai lati, cronaca, tooltip, prove (bot, note) e schermo intero
+    assert.match(css, /html\.app :is\(\.lato, \.colonna-log, \.opzione-bot, \.btn-note, \.btn-schermo-intero, #note-team\) \{ display: none !important; \}/);
+    assert.match(css, /html\.app #tooltipwrapper \{ display: none !important; \}/);
+    // i due passi: menu -> (mosse | cambi)
+    for (const passo of ['menu', 'mosse', 'cambi']) assert.match(css, new RegExp(`\\.corpo\\[data-ab="${passo}"\\]`));
+    assert.match(css, /\.ab-menu \{ display: grid; grid-template-columns: 1fr 1fr/);
+});
+
+test('app-battaglia.js: il pannello a due passi (Fight / Pokémon) si ricorda a che punto sei solo finché la domanda è la stessa', () => {
+    const B = require(path.join(DOCS, 'app-battaglia.js'));
+    assert.equal(B.CONDIZIONE_TELEFONO, '(max-width: 700px), (max-height: 520px)');
+    assert.equal(B.passoDa({ chiave: 'What will A do?', precedente: null }), 'menu');
+    assert.equal(B.passoDa({ chiave: 'What will A do?', precedente: { chiave: 'What will A do?', passo: 'mosse' } }), 'mosse');
+    assert.equal(B.passoDa({ chiave: 'What will B do?', precedente: { chiave: 'What will A do?', passo: 'mosse' } }), 'menu', 'altra domanda (altro Pokémon, altro turno): si riparte dal menu');
+    assert.equal(B.passoDa({ chiave: '', precedente: { chiave: '', passo: '' } }), 'menu');
+    // si può cambiare solo se c'è almeno un compagno non spento
+    const corpo = n => ({ querySelectorAll: sel => (sel === '.cambi .btn-pkm:not(.spento)' ? new Array(n).fill({}) : []) });
+    assert.equal(B.puoCambiare(corpo(2)), true);
+    assert.equal(B.puoCambiare(corpo(0)), false);
+    // la condizione è la stessa di app-battaglia.css e di battle-layout.js (lì sta scritta per esteso)
+    assert.match(docs('app-battaglia.css'), /@media \(max-width: 700px\), \(max-height: 520px\)/);
+    assert.match(docs('battle-layout.js'), /matchMedia\('\(max-width: 700px\), \(max-height: 520px\)'\)/);
+});
+
+test('app-battaglia.js: nel sito (non-app) non fa niente; i tasti sono quelli del simulatore (non scelgono niente da soli)', () => {
+    const B = require(path.join(DOCS, 'app-battaglia.js'));
+    const radice = { classList: { contains: () => false } };
+    assert.equal(B.avvia({ document: { documentElement: radice } }), null);
+    const js = docs('app-battaglia.js');
+    assert.doesNotMatch(js, /\.click\(\)|dispatchEvent|innerHTML/);
+    // Back e i due tasti grandi: solo cambiano il passo (data-ab), non mandano scelte
+    assert.match(js, /tasto\('ab-btn ab-lotta', 'Fight', \(\) => vai\(corpo, 'mosse'\)\)/);
+    assert.match(js, /tasto\('ab-indietro', 'Back', \(\) => vai\(corpo, 'menu'\)\)/);
 });
 
 test('app.css: la barra in alto e i fogli non si vedono fuori dall\'app; il foglio dell\'account sta sopra la barra, sotto non c\'è niente di più alto', () => {

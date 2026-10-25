@@ -1,93 +1,153 @@
 /* =====================================================================
-   LA BATTAGLIA COME APP (app.js lo scarica solo quando battle.html è aperta come app)
+   LA BATTAGLIA COME UN GIOCO POKÉMON (app.js lo scarica solo quando battle.html è aperta come app, sul telefono)
    ---------------------------------------------------------------------
-   Le battaglie si giocano in orizzontale: lo schermo di Showdown (16:9) resta fisso a sinistra, grande quanto l'altezza del telefono permette;
-   a destra scorrono, con la pagina, i comandi (le mosse sono la prima cosa che si vede), i due giocatori e la cronaca.
-   In verticale la pagina è quella di sempre (una colonna) con un invito a girare il telefono. L'orientamento non si blocca (iPhone e le WebView
-   non lo permettono in modo affidabile): si gira il telefono e basta.
-   Il resto della pagina (colori, ombre, bordi) è quello del sito; qui cambia solo come sono disposti i pezzi.
+   Lo schermo di Showdown (16:9) è la cosa più grande; accanto (telefono girato) o sotto (telefono in piedi) c'è il pannello dei comandi, a due passi
+   come nei giochi: "What will X do?" con FIGHT e POKÉMON; FIGHT apre le quattro mosse, POKÉMON la squadra (app-battaglia.js decide quale mostrare,
+   qui c'è lo stile). Non ci sono i due player ai lati, la cronaca e i tooltip: resta solo quello che serve per giocare.
+   Il resto della pagina (colori, ombre, bordi) è quello del sito; qui cambia solo come sono disposti e quanto sono grandi i pezzi.
+   Ogni regola è dentro una media query da telefono: sui tablet e sul computer la pagina è quella di sempre.
    ===================================================================== */
 
-/* ---------- In verticale: un invito a girare il telefono, sopra la colonna ---------- */
-@media (orientation: portrait) and (max-width: 700px) {
-    html.app .pagina::before {
-        content: "↻  Turn your phone sideways for a bigger screen";
-        display: block; padding: 8px 12px 6px; box-sizing: border-box;
-        background: var(--inchiostro); color: var(--carta); border: 3px solid var(--inchiostro);
-        font: 700 .72rem/1.3 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; text-align: center;
-        box-shadow: 3px 3px 0 rgba(0, 0, 0, .25);
-    }
-}
+/* ---------- Telefono, in piedi e girato ---------- */
+@media (max-width: 700px), (max-height: 520px) {
+    html.app, html.app body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+    html.app body { min-height: 0; }
+    html.app .scala { position: static; transform: none; width: auto; height: 100%; }
+    html.app .pagina { box-sizing: border-box; height: 100%; max-width: none; margin: 0; gap: 0; }
+    html.app .pagina .tavolo { box-sizing: border-box; flex: 1 1 auto; min-height: 0; display: grid; grid-template-areas: none; align-items: start; justify-content: stretch; }
 
-/* ---------- In orizzontale (telefono) ---------- */
-@media (orientation: landscape) and (max-height: 520px) {
-    html.app body { min-height: 0; overflow-x: hidden; }
-    html.app .pagina {
-        max-width: none; gap: 0; box-sizing: border-box;
-        padding: 6px max(10px, env(safe-area-inset-right, 0px)) 10px max(10px, env(safe-area-inset-left, 0px));
-    }
-    /* sinistra: lo schermo (sempre in vista, resta fermo mentre il resto scorre); destra: tutto il resto, una cosa sotto l'altra */
-    html.app .tavolo {
-        --wc: min(calc((100dvh - 60px) * 16 / 9 + 20px), calc(100vw - 292px));     /* larghezza dello schermo + cornice: l'altezza resta dentro il telefono e a destra restano almeno 260px per i comandi */
-        grid-template-columns: var(--wc) minmax(0, 1fr) auto;
-        grid-template-areas: none; grid-auto-rows: auto; align-items: start; gap: 8px 10px;
-    }
-    html.app .console { display: contents; grid-area: auto; }
-    html.app .cab-schermo {
-        grid-column: 1; grid-row: 1 / span 6; position: sticky; top: 6px; align-self: start; box-sizing: border-box; width: var(--wc);
-        padding: 6px; border: var(--bordo-forte); box-shadow: 6px 6px 0 var(--inchiostro);
-    }
-    html.app .palco-box { width: calc(var(--wc) - 20px); max-width: none; }
-    html.app .cab-campo { height: 26px; margin-top: 4px; }
-    html.app .cab-campo .campo-voce { padding: 3px 7px 1px; font-size: .64rem; }
+    /* via tutto quello che non serve a giocare: i due player, la cronaca, i tooltip, le prove (bot, note), lo schermo intero */
+    html.app :is(.lato, .colonna-log, .opzione-bot, .btn-note, .btn-schermo-intero, #note-team) { display: none !important; }
+    html.app #tooltipwrapper { display: none !important; }
+    html.app .titolo { display: none; }
+    html.app .cab-schermo, html.app .console { display: contents; }
+    html.app .cab-campo:has(.campo-vuoto) { display: none; }
 
-    html.app .btn-hub, html.app #link-hub { grid-area: auto; grid-column: 2; grid-row: 1; justify-self: start; padding: 6px 10px 4px; font-size: .74rem; }
-    html.app .servizi { grid-area: auto; grid-column: 3; grid-row: 1; flex-wrap: nowrap; gap: 8px; }
-    html.app .opzione-bot { font-size: .64rem; }
-    html.app .btn-audio { width: 36px; height: 36px; }
-    html.app .cab-insegna { grid-column: 2 / 4; grid-row: 2; padding: 6px 8px 5px; gap: 6px 8px; border: var(--bordo-forte); box-shadow: 4px 4px 0 var(--inchiostro); }
-    html.app .info-turno { min-height: 0; gap: 6px 8px; }
-    html.app .ins-formato { padding: 5px 9px 3px; font-size: .95rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); }
-    html.app .ins-match { padding: 3px 7px 1px; font-size: .64rem; }
-    html.app .ins-punti { min-width: 26px; font-size: 1.1rem; }
-    html.app .ins-set { padding: 3px 6px 1px; font-size: .64rem; }
-    html.app .comandi { grid-column: 2 / 4; grid-row: 3; border: var(--bordo-forte); box-shadow: 5px 5px 0 var(--inchiostro); }
-    html.app .lato.p1 { grid-column: 2 / 4; grid-row: 4; }
-    html.app .lato.p2 { grid-column: 2 / 4; grid-row: 5; }
-    html.app .colonna-log { grid-column: 2 / 4; grid-row: 6; }
-    html.app .cronaca.battle-log { height: 150px; box-shadow: 5px 5px 0 var(--inchiostro); }
+    /* lo schermo di Showdown: una cornice sola, grande quanto il suo spazio */
+    html.app .palco-box { position: relative; max-width: none; margin: 0; box-sizing: content-box; border: 4px solid var(--inchiostro); background: var(--inchiostro); box-shadow: 5px 5px 0 rgba(0, 0, 0, .35); }
+    html.app .palco-box::before { content: none; }
+    html.app .palco { width: 100%; max-width: none; }
 
-    /* i comandi, più compatti: la fascia deve far stare mosse e cambi nei ~260px di destra senza scorrere */
-    html.app .corpo { min-height: 0; padding: 8px 10px 10px; gap: 6px; }
-    html.app .mosse { gap: 8px; }
-    html.app .testa-scelta { gap: 6px; }
-    html.app .testa-scelta .btn.nascosto { display: none; }
-    html.app .domanda { font-size: .8rem; }
-    html.app .comandi:not(.doppio) .pannello-testa { top: -14px; right: 8px; }
-    html.app .comandi:not(.doppio) .stato-avversario { padding: 3px 7px 1px; font-size: .66rem; }
+    /* intestazione: indietro, il formato e il punteggio, il suono */
+    html.app .btn-hub, html.app #link-hub { position: relative; z-index: 60; grid-area: auto; justify-self: start; align-self: center; padding: 6px 9px 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .72rem; transform: none; }
+    html.app .servizi { position: relative; z-index: 60; grid-area: auto; justify-self: end; align-self: center; flex-wrap: nowrap; gap: 8px; }
+    html.app .btn-audio { width: 36px; height: 36px; padding: 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); transform: none; }
+    html.app .cab-insegna { position: relative; z-index: 60; min-width: 0; align-self: center; flex-wrap: nowrap; gap: 6px; padding: 3px 6px; border: 3px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro); overflow: hidden; }
+    html.app .info-turno { min-height: 0; flex-wrap: nowrap; gap: 6px; min-width: 0; }
+    html.app .ins-formato { min-width: 0; padding: 4px 8px 2px; font-size: .9rem; transform: none; box-shadow: 2px 2px 0 rgba(0, 0, 0, .3); }
+    html.app .ins-match { flex: none; padding: 3px 6px 1px; font-size: .64rem; }
+    html.app .ins-tabellone { flex: none; }
+    html.app .ins-punti { min-width: 24px; font-size: 1rem; }
+    html.app .ins-set { padding: 3px 6px 1px; font-size: .62rem; }
+    html.app .badge-live { flex: none; padding: 3px 6px 1px; font-size: .6rem; transform: none; }
+    html.app .cab-campo { height: auto; min-height: 0; margin: 0; flex-wrap: wrap; overflow: visible; }
+    html.app .cab-campo .campo-voce { padding: 3px 7px 1px; font-size: .62rem; }
 
-    /* meno cose in giro: i giocatori sono una riga (nome + i sei Pokémon in fila con la barra della vita), senza la scheda con titolo, ELO e medaglie;
-       l'opzione "Bot plays P2" è solo per le prove; i fumetti dei Pokémon stanno nella metà libera dello schermo e scorrono se sono lunghi */
-    html.app .lato { flex-wrap: wrap; gap: 6px 10px; padding: 0; }
-    html.app .lato-scheda, html.app .opzione-bot { display: none !important; }
-    html.app .lato-nome { font-size: 1rem; padding: 4px 10px 2px; }
-    html.app .lato-team { font-size: .66rem; }
-    html.app .lato-pkm { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; flex: 1 0 100%; }
-    html.app .membro { padding: 2px 1px; }
-    html.app .membro > img { max-width: 30px; }
-    html.app #tooltipwrapper { max-width: 48vw; }
-    html.app #tooltipwrapper .tooltip { max-width: 48vw; max-height: calc(100dvh - 16px); overflow-y: auto; }
-    html.app #tooltipwrapper .tooltip h2 { font-size: .9rem; padding: 4px 8px 3px; }
-    html.app #tooltipwrapper .tooltip p { padding: 2px 8px; font-size: .68rem; line-height: 1.25; }
-    html.app #tooltipwrapper .tooltip .tt-nota, html.app #tooltipwrapper .tooltip .tt-nota-lunga { display: none; }
-
-    /* quello che le regole "schermo stretto" del simulatore fanno sotto i 700px di larghezza: qui la colonna di destra è larga come un telefono in verticale */
-    html.app .lato.p2, :where(body.vista-p2) html.app .lato.p1 { flex-direction: row; }
-    html.app .comandi.doppio, html.app .lobby-colonne { grid-template-columns: 1fr; }
+    /* il pannello dei comandi: una scatola che si riempie, col contenuto al centro (se è troppo, scorre dentro la scatola) */
+    html.app .comandi { box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; min-width: 0; align-self: stretch; overflow-x: hidden; overflow-y: auto; border: 4px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro); }
+    html.app .comandi.doppio { display: flex; }
     html.app .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
-    html.app .mosse { grid-template-columns: 1fr 1fr; }
-    html.app .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    html.app .riga-azioni.azioni-cpu { display: flex; }
+    html.app .pannello { flex: 1 0 auto; }
+    html.app .comandi:not(.doppio) .pannello-testa { position: static; padding: 0; background: none; border: 0; justify-content: flex-end; }
+    html.app .comandi:not(.doppio) .stato-avversario { margin: 6px 8px 0; padding: 2px 6px 0; border-width: 2px; box-shadow: none; font-size: .62rem; transform: none; }
+    html.app .corpo { box-sizing: border-box; flex: 1 0 auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 0; padding: 8px 10px 10px; }
+    html.app .corpo::before, html.app .corpo::after { content: ''; flex: 1 1 0; min-height: 0; }
+    html.app .messaggio { font-size: .8rem; text-align: center; }
+    html.app .errore { margin: 0; font-size: .7rem; }
+
+    /* niente inclinazioni: tutto dritto, pulito. Al tocco il tasto si abbassa */
+    html.app :is(.btn, .btn-pkm, .mossa, .tessera, .ab-btn):not(:active) { transition: none; }
+    html.app :is(.btn, .btn-pkm, .mossa, .tessera):is(:hover, :active, :focus) { transform: none; }
+    html.app :is(.btn, .btn-pkm, .mossa, .tessera) { transform: none; }
+    html.app :is(.btn, .btn-pkm, .mossa, .tessera, .ab-btn):active:not(.spento, .spenta, [aria-disabled="true"]) { translate: 3px 3px; box-shadow: 0 0 0 var(--inchiostro); }
+    html.app .btn { padding: 7px 11px 5px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .72rem; }
+    html.app .btn.piccolo { padding: 4px 8px 2px; font-size: .64rem; }
+
+    /* la domanda e, nel secondo passo, il tasto per tornare indietro */
+    html.app .testa-scelta { flex-wrap: nowrap; justify-content: flex-start; gap: 8px; }
+    html.app .testa-scelta .btn.nascosto { display: none; }
+    html.app .testa-scelta .btn:not(.ab-indietro) { margin-left: auto; flex: none; }
+    html.app .domanda { flex: 1 1 auto; min-width: 0; font-size: .8rem; line-height: 1.15; }
+    html.app .domanda small { font-size: .62rem; }
+    html.app .ab-indietro {
+        flex: none; padding: 5px 10px 3px 8px; background: var(--carta); color: var(--inchiostro);
+        border: 3px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
+        font: 700 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase; cursor: pointer;
+    }
+    html.app .ab-indietro::before { content: '‹'; margin-right: 5px; font-size: 1.1em; line-height: 1; }
+
+    /* passo 1: la domanda in un riquadro e i due tasti grandi */
+    html.app .corpo[data-ab="menu"] .testa-scelta { justify-content: center; }
+    html.app .corpo[data-ab="menu"] .domanda {
+        flex: 0 1 auto; padding: 7px 12px 5px; text-align: center; font-size: .95rem;
+        background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
+    }
+    html.app .corpo[data-ab="menu"] .ab-indietro { display: none; }
+    html.app .corpo[data-ab="menu"] :is(.mosse, .piede-mosse) { display: none; }
+    html.app .corpo[data-ab="mosse"] .ab-menu, html.app .corpo[data-ab="cambi"] .ab-menu { display: none; }
+    html.app .corpo[data-ab="mosse"] .cambi { display: none; }
+    html.app .corpo[data-ab="cambi"] :is(.mosse, .meccaniche) { display: none; }
+    html.app .ab-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    html.app .ab-btn {
+        position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+        min-height: 62px; padding: 8px 6px 6px; color: var(--inchiostro);
+        border: 4px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro);
+        font: 700 1.05rem 'Josefin Sans', sans-serif; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
+    }
+    html.app .ab-lotta { background: color-mix(in srgb, var(--pericolo) 55%, #fff); }
+    html.app .ab-squadra { background: color-mix(in srgb, var(--conferma) 60%, #fff); }
+    html.app .ab-btn.spento { opacity: .4; box-shadow: none; cursor: not-allowed; }
+    html.app .ab-btn[data-nota]::after { content: attr(data-nota); font-size: .6rem; letter-spacing: .08em; }
+    /* le icone sono disegnate con i bordi: una stella per FIGHT, una Poké Ball per POKÉMON */
+    html.app .ab-btn::before { content: ''; flex: none; width: 24px; height: 24px; }
+    html.app .ab-lotta::before { background: var(--inchiostro); clip-path: polygon(50% 0, 62% 34%, 98% 36%, 70% 58%, 80% 94%, 50% 73%, 20% 94%, 30% 58%, 2% 36%, 38% 34%); }
+    html.app .ab-squadra::before {
+        border: 3px solid var(--inchiostro); border-radius: 50%; box-sizing: border-box;
+        background: radial-gradient(circle at 50% 50%, var(--carta) 0 18%, var(--inchiostro) 19% 32%, transparent 33%), linear-gradient(to bottom, #ea1818 0 42%, var(--inchiostro) 42% 58%, var(--carta) 58%);
+    }
+
+    /* passo 2, FIGHT: le quattro mosse, due per riga, col colore del tipo; sotto, Mega / Tera / Dynamax se ci sono */
+    html.app .mosse, html.app .comandi.doppio .mosse { grid-template-columns: 1fr 1fr; gap: 8px; }
+    html.app .mossa { min-height: 50px; gap: 2px; padding: 5px 8px 4px; border-width: 3px; border-left-width: 9px; box-shadow: 3px 3px 0 var(--inchiostro); }
+    html.app .mossa-nome { font-size: .88rem; }
+    html.app .mossa-info { font-size: .62rem; }
+    html.app .piede-mosse { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 8px; }
+    html.app .meccaniche { flex-wrap: wrap; gap: 8px; }
+    html.app .btn.meccanica { padding: 5px 9px 3px; font-size: .64rem; }
+
+    /* passo 2, POKÉMON: la squadra, due per riga: l'icona, il nome e la barra della vita uno sotto l'altro. Vale anche per il cambio obbligato */
+    html.app .corpo[data-ab="cambi"] .domanda { display: none; }
+    html.app .cambi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    html.app .cambi .etichetta { display: none; }
+    html.app .btn-pkm {
+        box-sizing: border-box; width: 100%; min-width: 0; min-height: 56px; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
+        padding: 3px 6px 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .68rem; text-align: center;
+    }
+    html.app .btn-pkm .picon { flex: none; }
+    html.app .btn-pkm-testo { align-items: center; width: 100%; min-width: 0; gap: 3px; }
+    html.app .btn-pkm-nome { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app .btn-pkm-hp, html.app .btn-pkm.grande .btn-pkm-hp { width: 100%; height: 6px; border-width: 2px; }
+    /* i bottoni "compatti" del primo passo (solo icona e barra) qui hanno anche il nome */
+    html.app .btn-pkm.compatto .picon { order: 1; }
+    html.app .btn-pkm.compatto::after { order: 2; content: attr(aria-label); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app .btn-pkm.compatto :is(.btn-pkm-hp, .btn-pkm-ko) { order: 3; width: 100%; }
+    html.app .btn-pkm.compatto .btn-pkm-ko { text-align: center; }
+    html.app .btn-pkm.compatto .tag-stato { top: -8px; right: -6px; }
+    html.app .btn-pkm.alleato { box-shadow: 3px 3px 0 #9a9a9a; }
+
+    /* bersagli (doppie): gli avversari grandi, il compagno piccolo */
+    html.app .bersagli { gap: 8px 16px; }
+    html.app .bersagli-riga { gap: 8px; }
+
+    /* anteprima: i sei Pokémon, tre per riga, da toccare nell'ordine in cui scendono in campo */
+    html.app .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 4px 4px 2px; }
+    html.app .tessera { height: 66px; padding: 4px 3px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); }
+    html.app .tessera-sprite img { max-height: 44px; }
+    html.app .testa-scelta:has(.riga-azioni) { flex-wrap: wrap; }
+    html.app .testa-scelta .riga-azioni { margin-left: auto; gap: 6px; }
+
+    /* fine partita: i pulsanti stanno nel pannello, non nel cartello sullo schermo */
+    html.app .riga-azioni.azioni-cpu { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
     html.app body.prova-cpu #azioni-vittoria { display: none; }
     html.app .pannello .rivincita { display: grid; }
     html.app .esito-card .rivincita { display: none; }
@@ -96,4 +156,62 @@
     html.app .esito-card p { margin: 6px 0 0; font-size: .74rem; }
     html.app .esito-card .riga-azioni { margin-top: 8px; gap: 6px; }
     html.app .esito-card .riga-azioni .btn { padding: 5px 9px 3px; font-size: .68rem; }
+
+    /* scelta del team prima di giocare (partite online): a tutto schermo, sotto l'intestazione, così le schede stanno comode */
+    html.app .velo.lobby { position: fixed; inset: 0; z-index: 50; padding: 56px max(12px, env(safe-area-inset-right, 0px)) 14px max(12px, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
+    html.app .lobby-colonne { grid-template-columns: 1fr; }
+    html.app .schede-team { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+/* ---------- Telefono girato: lo schermo a sinistra, il pannello a destra ---------- */
+@media (orientation: landscape) and (max-height: 520px) {
+    html.app .pagina { padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px)); }
+    html.app .pagina .tavolo {
+        --wc: min(calc((100dvh - 28px) * 16 / 9), calc(100vw - 290px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));   /* schermo + cornice: l'altezza resta dentro il telefono e a destra restano 270px */
+        height: 100dvh; padding: 8px 0 12px;
+        grid-template-columns: var(--wc) auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        gap: 8px 10px;
+    }
+    html.app .palco-box { grid-column: 1; grid-row: 1 / -1; align-self: center; width: calc(var(--wc) - 8px); }
+    html.app .btn-hub, html.app #link-hub { grid-column: 2; grid-row: 1; }
+    html.app .cab-insegna { grid-column: 3; grid-row: 1; }
+    html.app .servizi { grid-column: 4; grid-row: 1; }
+    html.app .cab-campo { grid-column: 2 / -1; grid-row: 2; }
+    html.app .comandi { grid-column: 2 / -1; grid-row: 3; margin-right: 5px; }
+    html.app .corpo[data-ab="menu"] .ab-btn { min-height: 56px; }
+    html.app .ab-menu { gap: 10px; }
+    html.app .esito-card { padding: 6px 8px 8px; }
+}
+
+/* ---------- Telefono in piedi: lo schermo sopra, il pannello sotto ---------- */
+@media (orientation: portrait) and (max-width: 700px) {
+    html.app .pagina { padding: 0 max(10px, env(safe-area-inset-right, 0px)) 0 max(10px, env(safe-area-inset-left, 0px)); }
+    html.app .pagina .tavolo {
+        height: 100dvh; padding: max(8px, env(safe-area-inset-top, 0px)) 0 max(12px, env(safe-area-inset-bottom, 0px));
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+        gap: 8px 8px;
+    }
+    html.app .btn-hub, html.app #link-hub { grid-column: 1; grid-row: 1; }
+    html.app .cab-insegna { grid-column: 2; grid-row: 1; }
+    html.app .servizi { grid-column: 3; grid-row: 1; }
+    html.app .palco-box { grid-column: 1 / -1; grid-row: 2; width: auto; margin-right: 5px; }
+    html.app .cab-campo { grid-column: 1 / -1; grid-row: 3; }
+    html.app .comandi { grid-column: 1 / -1; grid-row: 4; margin-right: 5px; }
+    html.app .corpo { padding: 12px 12px 14px; gap: 12px; }
+    html.app .domanda { font-size: .95rem; }
+    html.app .corpo[data-ab="menu"] .domanda { font-size: 1.1rem; }
+    html.app .ab-menu { gap: 14px; }
+    html.app .ab-btn { min-height: 92px; gap: 8px; font-size: 1.3rem; }
+    html.app .ab-btn::before { width: 32px; height: 32px; }
+    html.app .mosse, html.app .comandi.doppio .mosse { gap: 12px; }
+    html.app .mossa { min-height: 66px; padding: 7px 10px 6px; }
+    html.app .mossa-nome { font-size: 1rem; }
+    html.app .mossa-info { font-size: .7rem; }
+    html.app .cambi { gap: 10px; }
+    html.app .btn-pkm { min-height: 78px; padding: 6px 8px 6px; font-size: .8rem; }
+    html.app .tessera { height: 92px; }
+    html.app .tessera-sprite img { max-height: 62px; }
+    html.app .ab-indietro { padding: 7px 12px 5px 10px; font-size: .78rem; }
 }
