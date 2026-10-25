@@ -144,6 +144,8 @@
         if (modo && haBarra(pagina)) { html.classList.add('app-shell'); caricaFogliDiStile(doc, 'app-pagine.css'); caricaScheletro(doc); }
         // la battaglia non ha la barra, ma ha il suo foglio: in orizzontale lo schermo sta a sinistra e i comandi a destra (app-battaglia.css)
         else if (modo && pagina === 'battle.html') caricaFogliDiStile(doc, 'app-battaglia.css');
+        // e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.js
+        if (modo && pagina === 'battle.html') caricaScript(doc, 'app-battaglia.js');
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
@@ -164,6 +166,16 @@
         l.rel = 'stylesheet';
         l.href = href;
         doc.head.appendChild(l);
+    }
+
+    // uno script dell'app (app-battaglia.js) che nel sito da PC non si scarica
+    function caricaScript(doc, nome) {
+        if (!doc.head) return;
+        const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
+        const s = doc.createElement('script');
+        s.src = mio ? mio.getAttribute('src').replace(/app\.js/, nome) : nome;
+        s.async = true;
+        doc.head.appendChild(s);
     }
 
     // lo scheletro da telefono sta in un file a parte: lo scaricano solo le app, il sito nel browser non lo carica

@@ -29,6 +29,9 @@
     var palcoBox = document.querySelector('.palco-box');
     if (!scala) return;
 
+    // L'app sul telefono ha il suo layout (app-battaglia.css): mai "tutto in una schermata" scalato, e lo schermo di Showdown può ingrandirsi oltre i 640px
+    var daTelefono = () => radice.classList.contains('app') && !!window.matchMedia && window.matchMedia('(max-width: 700px), (max-height: 520px)').matches;
+
     var inFit = () => radice.getAttribute('data-modo') === 'fit';
 
     // Schermo intero: quello chiesto dal bottone (Fullscreen API) o dal browser con F11
@@ -42,7 +45,7 @@
         var riuscito = false;
 
         // In verticale (tablet, telefono) l'insieme sarebbe minuscolo: meglio la colonna, che scorre
-        if (W >= MIN_LARGHEZZA && W >= H) {
+        if (W >= MIN_LARGHEZZA && W >= H && !daTelefono()) {
             // Prova del layout "fit": se poi non va bene la pagina torna dov'era (anche lo scorrimento)
             var scorrimento = window.pageYOffset;
             radice.setAttribute('data-modo', 'fit');
@@ -66,7 +69,7 @@
 
         // Layout a colonna: lo schermo di Showdown segue la larghezza del contenitore
         if (palcoBox) {
-            var f = inFit() ? 1 : Math.min(1, palcoBox.clientWidth / 640);
+            var f = inFit() ? 1 : Math.min(daTelefono() ? 2 : 1, palcoBox.clientWidth / 640);
             palcoBox.style.setProperty('--scala-campo', f.toFixed(4));
         }
         radice.setAttribute('data-pronto', '');
