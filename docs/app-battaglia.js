@@ -3,9 +3,13 @@
 // ---------------------------------------------------------------------
 // Solo nell'app, solo sul telefono (app.js lo scarica per battle.html). Il simulatore (battle-ui.js) disegna come sempre le mosse e i cambi, tutti insieme;
 // qui il pannello diventa a due passi, come nei giochi:
-//   1. "What will X do?"  con due tasti grandi: FIGHT e POKÉMON
+//   1. "What will X do?"  con due tasti grandi: POKÉMON (a sinistra) e FIGHT (a destra)
 //   2. FIGHT -> le quattro mosse (e Mega/Tera/Dynamax, se ci sono);  POKÉMON -> la squadra.  "Back" torna al passo 1.
-// Non cambia niente nelle scelte: i tasti sono sempre quelli del simulatore, qui si decide solo quali mostrare (data-ab sul .corpo, lo stile è in app-battaglia.css).
+// Non cambia niente nelle scelte: i tasti sono sempre quelli del simulatore, qui si decide solo quali mostrare e dove. Lo fa lo stile (app-battaglia.css)
+// guardando data-ab sul .corpo di ogni pannello, e su <body> quello del pannello che si vede:
+//   menu | mosse | cambi            i due passi di sopra
+//   anteprima | bersagli | cambio   scelta dei Pokémon prima della partita, del bersaglio (doppie), del Pokémon che entra dopo un KO
+//   anim | messaggio | fine | rivincita   il turno che si sta giocando, un'attesa ("Waiting for…"), fine partita contro la CPU, "Play again?"
 // Il pannello si ridisegna da solo a ogni cambio di stato: l'osservatore rimette i tasti, e ricorda a che passo eri finché la domanda è la stessa.
 // =====================================================
 (function (radice, fabbrica) {
@@ -29,6 +33,20 @@
         return corpo.querySelectorAll('.cambi .btn-pkm:not(.spento)').length > 0;
     }
 
+    /**
+     * Lo stato di un pannello che non è la scelta della mossa: cosa ci sta dentro, dal più specifico.
+     * `ha(selettore)`: c'è un figlio diretto del pannello così; `testoMessaggio`: il testo del messaggio (se c'è).
+     */
+    function statoAltro({ ha, testoMessaggio, haAzioniCpu }) {
+        if (ha('.anteprima-griglia')) return 'anteprima';
+        if (ha('.bersagli')) return 'bersagli';
+        if (ha('.cambi.grandi')) return 'cambio';
+        if (ha('.rivincita')) return 'rivincita';
+        if (testoMessaggio == null) return '';
+        if (haAzioniCpu) return 'fine';
+        return /playing out/i.test(testoMessaggio) ? 'anim' : 'messaggio';
+    }
+
     function avvia(win) {
         const doc = win.document;
         const radice = doc.documentElement;
@@ -49,8 +67,7 @@
             const d = corpo.querySelector('.testa-scelta .domanda');
             ricorda.set(corpo, { chiave: d ? d.textContent : '', passo });
             corpo.dataset.ab = passo;
-            const v = corpo.querySelector('.mosse');
-            if (v && passo === 'mosse') v.scrollTop = 0;
+            aggiornaCorpo();
         }
 
         function pulisci(corpo) {
@@ -63,8 +80,23 @@
             if (!mq.matches) { if (corpo.dataset.ab || corpo.querySelector('.ab-menu')) pulisci(corpo); return; }
             const testa = corpo.querySelector(':scope > .testa-scelta');
             const haMosse = !!corpo.querySelector(':scope > .mosse');
-            // niente mosse da scegliere (messaggi, cambio forzato, bersagli, anteprima…): il pannello resta quello del simulatore
-            if (!testa || !haMosse) { if (corpo.dataset.ab || corpo.querySelector('.ab-menu')) pulisci(corpo); return; }
+
+            // il "Back" del simulatore (scelta del bersaglio) è un tasto indietro come gli altri: sta dove c'è "← Box"
+            if (testa) for (const b of testa.querySelectorAll(':scope > .btn')) if (/^back$/i.test(b.textContent.trim())) b.classList.add('ab-indietro');
+
+            if (!testa || !haMosse) {
+                // niente mosse da scegliere: il pannello resta quello del simulatore, e lo stile sa di che cosa si tratta
+                if (corpo.querySelector('.ab-menu')) pulisci(corpo);
+                ricorda.delete(corpo);
+                const m = corpo.querySelector(':scope > .messaggio');
+                const stato = statoAltro({
+                    ha: s => !!corpo.querySelector(':scope > ' + s),
+                    testoMessaggio: m ? m.textContent : null,
+                    haAzioniCpu: !!(m && m.querySelector('.azioni-cpu'))
+                });
+                if (stato) corpo.dataset.ab = stato; else delete corpo.dataset.ab;
+                return;
+            }
             if (corpo.querySelector(':scope > .ab-menu')) return;      // già pronto: è il nostro stesso inserimento che ha fatto scattare l'osservatore
 
             const d = testa.querySelector('.domanda');
@@ -80,13 +112,24 @@
                 const et = corpo.querySelector('.cambi .etichetta');
                 if (et && /trapped/i.test(et.textContent)) squadra.dataset.nota = 'Trapped';
             }
+            // a sinistra POKÉMON, a destra FIGHT (l'ordine nel DOM è quello di lettura: Fight, poi Pokémon; lo stile li mette ai due lati)
             menu.append(lotta, squadra);
             testa.after(menu);
             testa.prepend(tasto('ab-indietro', 'Back', () => vai(corpo, 'menu')));
             vai(corpo, passo);
         }
 
-        function tutti() { doc.querySelectorAll('#comandi .corpo').forEach(elabora); }
+        // il passo del pannello che si vede, anche su <body>: serve allo stile per i pezzi che stanno fuori dal pannello (il tasto "← Box", l'insegna)
+        function aggiornaCorpo() {
+            const visibile = doc.querySelector('#comandi .pannello:not([hidden]) .corpo');
+            const v = visibile && visibile.dataset.ab;
+            if (v) doc.body.dataset.ab = v; else delete doc.body.dataset.ab;
+        }
+
+        function tutti() {
+            doc.querySelectorAll('#comandi .corpo').forEach(elabora);
+            aggiornaCorpo();
+        }
 
         const comandi = doc.getElementById('comandi');
         if (!comandi) return null;
@@ -97,5 +140,5 @@
         return { osservatore, tutti };
     }
 
-    return { CONDIZIONE_TELEFONO, passoDa, puoCambiare, avvia };
+    return { CONDIZIONE_TELEFONO, passoDa, puoCambiare, statoAltro, avvia };
 });

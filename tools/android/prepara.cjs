@@ -1,5 +1,6 @@
 'use strict';
-// Prepara l'app Android (Capacitor) per la build di GitHub Actions (.github/workflows/android-apk.yml). Due fasi:
+// Prepara l'app Android (Capacitor) per la build di GitHub Actions (.github/workflows/android-apk.yml). Tre fasi:
+//   node tools/android/prepara.cjs plugin    dopo "npm ci": il plugin dell'orientamento segue il sensore (vedi modificaOrientamento)
 //   node tools/android/prepara.cjs web       prima di "cap add android": rifà www/ (pagina di ingresso + offline.html presa dal sito) e applica SITO_URL
 //   node tools/android/prepara.cjs android   dopo "cap add android": sfondo nero dietro le barre di sistema, numero di versione, niente backup del WebView
 // L'app è solo un guscio: apre il sito vero (capacitor.config.json > server.url), quindi ogni modifica al sito arriva subito, senza rifare l'APK.
@@ -88,9 +89,29 @@ function modificaManifest(xml) {
     return sostituisci(t, /<\/manifest>/, '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>', 'la fine di AndroidManifest.xml');
 }
 
-function ritocca(file, modifica) {
-    if (!fs.existsSync(file)) throw new Error(`Manca ${file}: prima va eseguito "npx cap add android"`);
+/**
+ * Lo schermo della battaglia si blocca in orizzontale (docs/app.js, bloccaOrizzontale). Il plugin ufficiale ScreenOrientation traduce "landscape" in
+ * SCREEN_ORIENTATION_LANDSCAPE, che tiene un verso solo: chi tiene il telefono girato dall'altra parte vedrebbe tutto a testa in giù. Con
+ * SCREEN_ORIENTATION_SENSOR_LANDSCAPE vanno bene tutti e due i versi, anche con la rotazione automatica spenta. Se una versione nuova del plugin
+ * cambia quel punto, lo script si ferma (meglio nessun APK che un APK storto).
+ */
+function modificaOrientamento(java) {
+    if (java.includes('SCREEN_ORIENTATION_SENSOR_LANDSCAPE')) return java;
+    return sostituisci(java,
+        /case "landscape":\s*case "landscape-primary":\s*return ActivityInfo\.SCREEN_ORIENTATION_LANDSCAPE;/,
+        'case "landscape":\n                return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;\n            case "landscape-primary":\n                return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;',
+        'la scelta di "landscape" in ScreenOrientation.java (plugin @capacitor/screen-orientation)');
+}
+
+function ritocca(file, modifica, rimedio = 'prima va eseguito "npx cap add android"') {
+    if (!fs.existsSync(file)) throw new Error(`Manca ${file}: ${rimedio}`);
     fs.writeFileSync(file, modifica(fs.readFileSync(file, 'utf8')));
+}
+
+function preparaPlugin(radice) {
+    const file = path.join(radice, 'node_modules', '@capacitor', 'screen-orientation', 'android', 'src', 'main', 'java', 'com', 'capacitorjs', 'plugins', 'screenorientation', 'ScreenOrientation.java');
+    ritocca(file, modificaOrientamento, 'prima va eseguito "npm ci"');
+    return { file };
 }
 
 function preparaWeb(radice, env) {
@@ -119,15 +140,16 @@ function preparaAndroid(radice, env) {
     return { codice };
 }
 
-module.exports = { sostituisci, indirizzoSito, codiceVersione, paginaIngresso, paginaOffline, modificaStili, modificaGradle, modificaManifest, preparaWeb, preparaAndroid };
+module.exports = { sostituisci, indirizzoSito, codiceVersione, paginaIngresso, paginaOffline, modificaStili, modificaGradle, modificaManifest, modificaOrientamento, preparaWeb, preparaAndroid, preparaPlugin };
 
 if (require.main === module) {
     const radice = path.resolve(__dirname, '..', '..');
     const fase = process.argv[2];
     try {
         if (fase === 'web') { const r = preparaWeb(radice, process.env); console.log(`www/ pronta: l'app aprirà ${r.url}`); }
+        else if (fase === 'plugin') { const r = preparaPlugin(radice); console.log(`plugin dell'orientamento ritoccato: ${path.relative(radice, r.file)}`); }
         else if (fase === 'android') { const r = preparaAndroid(radice, process.env); console.log(`android/ ritoccata: versione 1.${r.codice} (codice ${r.codice})`); }
-        else throw new Error('Uso: node tools/android/prepara.cjs web|android');
+        else throw new Error('Uso: node tools/android/prepara.cjs plugin|web|android');
     } catch (e) {
         console.error('ERRORE: ' + e.message);
         process.exit(1);

@@ -2,6 +2,7 @@
 
 L'app è un guscio [Capacitor](https://capacitorjs.com) che apre il sito vero (`capacitor.config.json` > `server.url`): ogni modifica al sito
 arriva subito, senza rifare l'APK. Il sito la riconosce dallo user agent (`SantAlviseApp`) e accende l'aspetto da app (barra in basso e in alto compatte, pagine ridisegnate per il telefono, battaglie in orizzontale, tira per aggiornare).
+Le battaglie bloccano lo schermo in orizzontale (plugin `@capacitor/screen-orientation`, anche con la rotazione automatica spenta) e lo sbloccano uscendo: il telefono torna com'era, in piedi o girato. Chi ha un APK costruito prima di questo plugin deve scaricare e installare quello nuovo (sopra il vecchio) per avere il blocco; senza, la battaglia si adatta a come tieni il telefono.
 Senza rete l'app mostra `docs/offline.html`.
 
 ## Per gli amici
@@ -19,7 +20,7 @@ Senza rete l'app mostra `docs/offline.html`.
 `tools/android/`, `docs/offline.html`, dipendenze), oppure a mano da GitHub: **Actions > Android APK > Run workflow**. Pubblica `sant-alvise-league.apk`
 nella release `app-android`. Sugli altri rami costruisce e basta (l'APK resta tra gli artifact della prova).
 
-I passi sono quelli del workflow, nell'ordine: `node tools/android/prepara.cjs web` (rifà `www/`), `npx cap add android`, `npx @capacitor/assets generate --android`
+I passi sono quelli del workflow, nell'ordine: `node tools/android/prepara.cjs plugin` (il plugin dell'orientamento segue il sensore, così la battaglia va bene girata da tutti e due i lati), `node tools/android/prepara.cjs web` (rifà `www/`), `npx cap add android`, `npx @capacitor/assets generate --android`
 (icone e schermata di avvio da `assets/`, che si rifanno con `python3 tools/crea-icone-app.py`), `node tools/android/prepara.cjs android` (sfondo nero, versione),
 `npx cap sync android`, Gradle `assembleRelease`, `zipalign` e `apksigner`. Il progetto `android/` e `www/` sono generati e non stanno nel repository.
 
