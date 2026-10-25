@@ -397,7 +397,7 @@
     html.app-shell .rule-card { scroll-margin-top: calc(var(--app-bar-h) + 70px); box-shadow: var(--nb-sh-4); }
 
     /* Archivio: i filtri scorrono di lato, ogni stagione o coppa è una riga col cerchio del vincitore (come nella Home) */
-    html.app-shell .palm-pagina { width: 100%; min-width: 0; padding: 14px 14px 20px; margin: 0; max-width: none; gap: 26px; box-sizing: border-box; }
+    html.app-shell .palm-pagina { width: 100%; min-width: 0; padding: 14px 14px 20px; margin: 0; max-width: none; gap: 40px; box-sizing: border-box; }
     html.app-shell .palm-controlli { min-width: 0; margin: 0 -14px; padding: 2px 14px 8px; overflow-x: auto; scrollbar-width: none; }
     html.app-shell .palm-controlli::-webkit-scrollbar { display: none; }
     html.app-shell .palm-filtri { flex-wrap: nowrap; gap: 8px; width: max-content; margin: 0; padding-right: 14px; }
@@ -462,4 +462,29 @@
     html.app-shell body.pg-players .trainers-grid::before { grid-column: 1 / -1; }
     html.app-shell body.pg-hub .hub-new-layout #registration-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     html.app-shell body.pg-hub #registration-column::before { grid-column: 1 / -1; }
+}
+
+/* ---------- 12. La Trainer Card come app: stessa disposizione per tutti (il palco, il nome, i numeri, la squadra, i trofei, le medaglie), qualunque layout
+   abbia scelto il proprietario; colori, font e contenuti restano i suoi. Su PC la carta è quella di sempre. ---------- */
+@media (max-width: 900px), (max-height: 500px) {
+    html.app-shell #pp-pagina { padding: 0 0 24px; }
+    html.app-shell #pp-carta { width: 100%; max-width: none; margin: 0; border-left: 0; border-right: 0; transform: none !important; rotate: 0deg; }
+    html.app-shell #pp-carta .pp-corpo { display: flex !important; flex-direction: column; gap: 0 !important; padding: 0 !important; grid-template-columns: none !important; }
+    html.app-shell #pp-carta :is(.pp-fila, .pp-zona) { display: contents !important; }
+    html.app-shell #pp-carta .pp-blocco {
+        position: static !important; width: 100% !important; max-width: none !important; min-width: 0; margin: 0 !important; box-sizing: border-box; flex: none !important;
+        transform: none !important; grid-area: auto !important; border-left: 0 !important; border-right: 0 !important; border-top: 3px solid var(--nb-ink, #000) !important;
+    }
+    html.app-shell #pp-carta .pp-palco { order: 1; border-top: 0 !important; height: min(78vw, 320px); }
+    html.app-shell #pp-carta .pp-identita { order: 2; }
+    html.app-shell #pp-carta .pp-statistiche { order: 3; }
+    html.app-shell #pp-carta .pp-party { order: 4; }
+    html.app-shell #pp-carta .pp-trofei { order: 5; }
+    html.app-shell #pp-carta .pp-medaglie { order: 6; }
+    html.app-shell #pp-carta .pp-personalita { order: 7; }
+    html.app-shell #pp-carta .pp-musica { order: 8; }
+    html.app-shell #pp-carta .pp-blocco:is([hidden], .pp-spento, .pp-vuoto) { display: none !important; }
+    html.app-shell #pp-carta .pp-stat-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    html.app-shell #pp-carta .pp-stat { min-height: 0; }
+    html.app-shell #pp-carta .pp-nome { font-size: clamp(2rem, 14vw, 3.4rem); }
 }

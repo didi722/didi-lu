@@ -145,6 +145,11 @@ test('modificaGradle: versione = numero della build; se il modello cambia, si fe
 test('modificaManifest: niente copia di sicurezza nel cloud; se il modello cambia, si ferma', () => {
     assert.match(P.modificaManifest(MANIFESTO), /android:allowBackup="false"/);
     assert.throws(() => P.modificaManifest('<manifest/>'), /Non trovo allowBackup/);
+    // e il permesso per le notifiche (Android 13+), una volta sola
+    const fatto = P.modificaManifest(MANIFESTO);
+    assert.equal((fatto.match(/android\.permission\.POST_NOTIFICATIONS/g) || []).length, 1);
+    const giaCol = MANIFESTO.replace('</manifest>', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" /></manifest>');
+    assert.equal((P.modificaManifest(giaCol).match(/POST_NOTIFICATIONS/g) || []).length, 1, 'se c\'è già non si ripete');
 });
 
 function cartellaProva() {

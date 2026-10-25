@@ -623,6 +623,24 @@ async function getPlayersColors(p1, p2) {
 }
 
 
+// L'ultima stagione "in corso": iscrizioni chiuse (o scadenza passata) e non conclusa. Come la sceglie la Home. null se non ce n'è.
+async function trovaStagioneInCorso() {
+    const leggi = id => db.ref(`seasons/${id}/info`).once('value').then(x => [id, x.val()]).catch(() => [id, null]);
+    const tutte = [await leggi('sbeta')];
+    for (let da = 0; da < 200; da += 10) {
+        const blocco = await Promise.all(Array.from({ length: 10 }, (_, i) => leggi(`s${da + i}`)));
+        tutte.push(...blocco);
+        if (!blocco[blocco.length - 1][1]) break;
+    }
+    const inCorso = tutte.filter(([, info]) => {
+        if (!info) return false;
+        let st = String(info.status || 'open').toLowerCase();
+        if (st === 'open' && info.deadline && new Date() >= new Date(info.deadline)) st = 'playing';
+        return st === 'playing';
+    });
+    return inCorso.length ? inCorso[inCorso.length - 1][0] : null;
+}
+
 async function recuperaStagioneCorrente() {
     // 1. Leggiamo l'ID dall'URL (es: matches.html?id=-O123456)
     const urlParams = new URLSearchParams(window.location.search);
@@ -631,10 +649,13 @@ async function recuperaStagioneCorrente() {
     if (idStagioneURL) {
         stagioneAttiva = idStagioneURL;
     } else {
-        // Fallback ai settings se non c'è ID nell'URL
+        // Senza ID (la barra dell'app, un segnalibro): la stagione in corso, cioè l'ultima con le iscrizioni chiuse e non ancora finita; poi le impostazioni
         try {
-            const snapSettings = await db.ref('settings/currentSeason').once('value');
-            if (snapSettings.exists()) {
+            const inCorso = await trovaStagioneInCorso();
+            const snapSettings = inCorso ? null : await db.ref('settings/currentSeason').once('value');
+            if (inCorso) {
+                stagioneAttiva = inCorso;
+            } else if (snapSettings.exists()) {
                 stagioneAttiva = snapSettings.val();
             } else {
                 stagioneAttiva = "sbeta"; // Fallback estremo se tutto fallisce

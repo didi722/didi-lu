@@ -84,6 +84,18 @@ jobs:
       - name: Icone e schermata di avvio
         run: npx --yes @capacitor/assets@3.0.5 generate --android
 
+      - name: Notifiche push (google-services.json dai Secrets, se c'è)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            grep -q '"package_name": "com.didilucabattles.app"' android/app/google-services.json || { echo "google-services.json non è per com.didilucabattles.app"; exit 1; }
+            echo "Notifiche push: google-services.json presente"
+          else
+            echo "Notifiche push: nessun google-services.json (Secret GOOGLE_SERVICES_JSON): l'APK si costruisce senza notifiche"
+          fi
+
       - name: Ritocchi al progetto
         env:
           VERSION_CODE: ${{ github.run_number }}

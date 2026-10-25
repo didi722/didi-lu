@@ -113,6 +113,7 @@
         utente: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-4 3.4-6.4 7.5-6.4s7.5 2.4 7.5 6.4"/></svg>',
         chiudi: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>',
         suono: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+        campana: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
         ricarica: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>',
         esci: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4"/><path d="M9 12h10"/></svg>'
     };
@@ -199,11 +200,31 @@
         const musica = doc.getElementById('music-control');
         const suonoAcceso = () => !!musica && !musica.classList.contains('muted');
 
+        // notifiche push (push.js): si caricano solo qui, quando l'app è aperta; la tessera compare solo se questo telefono può riceverle
+        let statoPush = '', occupatoPush = false, avvisoPush = '';
+        const caricaPush = () => {
+            const mio = Array.from(doc.scripts || []).find(x => /(^|\/)app-shell\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
+            const aggiorna = () => win.Push.stato().then(st => { statoPush = st; if (aperto) disegnaFoglio(); }).catch(() => {});
+            if (win.Push) { aggiorna(); return; }
+            const sc = doc.createElement('script');
+            sc.src = mio ? mio.getAttribute('src').replace(/app-shell\.js/, 'push.js') : 'push.js';
+            sc.onload = () => { win.Push.ripristina(); aggiorna(); };
+            doc.head.appendChild(sc);
+        };
+        const tesseraPush = () => {
+            if (!statoPush || statoPush === 'non-supportato') return '';
+            const etichetta = occupatoPush ? '…' : statoPush === 'acceso' ? 'on' : statoPush === 'negato' ? 'blocked' : 'off';
+            return '<button type="button" class="app-tessera" data-azione="notifiche"' + (statoPush === 'negato' ? ' aria-disabled="true"' : '') + '>' + ICONE.campana +
+                '<span>Alerts <b>' + etichetta + '</b></span></button>' +
+                (avvisoPush ? '<p class="app-menu-avviso">' + avvisoPush.replace(/[<>&]/g, '') + '</p>' : '');
+        };
+
         const disegnaFoglio = () => {
             const n = nomeUtente();
             const tessere = vociMenu(vociDelSito()).map(v =>
                 '<a class="app-tessera" href="' + v.href + '"><i class="' + v.icona + '" aria-hidden="true"></i><span>' + v.etichetta + '</span></a>').join('');
             const azioni = (musica ? '<button type="button" class="app-tessera" data-azione="suono">' + ICONE.suono + '<span>Sound <b>' + (suonoAcceso() ? 'on' : 'off') + '</b></span></button>' : '') +
+                (n ? tesseraPush() : '') +
                 '<button type="button" class="app-tessera" data-azione="ricarica">' + ICONE.ricarica + '<span>Refresh</span></button>';
             foglio.innerHTML =
                 '<div class="app-foglio-maniglia" aria-hidden="true"></div>' +
@@ -258,10 +279,20 @@
             }
             const azione = x.getAttribute('data-azione');
             if (azione === 'suono' && musica) { musica.click(); disegnaFoglio(); }
+            else if (azione === 'notifiche' && win.Push && !occupatoPush) {
+                if (statoPush === 'negato') { avvisoPush = 'Alerts are blocked: allow them for this app in the phone settings.'; return disegnaFoglio(); }
+                occupatoPush = true; avvisoPush = ''; disegnaFoglio();
+                (statoPush === 'acceso' ? win.Push.disattiva() : win.Push.attiva())
+                    .then(st => { statoPush = st; })
+                    .catch(err => { avvisoPush = String((err && err.message) || 'Could not turn alerts on'); })
+                    .then(() => { occupatoPush = false; disegnaFoglio(); });
+            }
             else if (azione === 'ricarica') win.location.reload();
             else if (azione === 'esci' && typeof win.logout === 'function') win.logout();
             else if (azione === 'entra') { chiudi(); if (typeof win.handleAuthClick === 'function') win.handleAuthClick(); }
         });
+
+        caricaPush();
 
         // ----- la barra in alto si nasconde scorrendo verso il basso -----
         let ultimo = win.pageYOffset || 0, nascosta = false, ferma = false;
