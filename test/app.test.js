@@ -210,24 +210,27 @@ function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', proto
 
 // ---------- come si presenta la pagina ----------
 
-test('nel browser da PC: nessuna classe, nessuna barra, nessun invito; il service worker si registra a pagina caricata', () => {
+test('nel browser da PC: nessuna classe, nessuna barra, nessun invito, nessun service worker (il sito è quello di sempre)', () => {
     const s = apri({ ua: UA.pc, percorso: '/didi-lu/matches.html' });
     assert.deepEqual(s.risultato, { modo: '' });
     assert.deepEqual(s.classi(), []);
     assert.equal(s.barra(), null);
     assert.equal(s.invito(), null);
     assert.equal(s.doc.body.figli.length, 0);
-    assert.deepEqual(s.registrazioni, []);
     s.sulla(s.win, 'load');
-    assert.deepEqual(s.registrazioni, ['sw.js']);
+    assert.deepEqual(s.registrazioni, []);
 });
 
-test('service worker: solo su https o localhost, solo se il browser lo ha, mai dentro l\'APK', () => {
-    const registra = opz => { const s = apri(opz); s.sulla(s.win, 'load'); return s.registrazioni; };
+test('service worker: solo da telefono o tablet, su https o localhost, solo se il browser lo ha, mai dentro l\'APK', () => {
+    const registra = opz => { const s = apri(opz); assert.deepEqual(s.registrazioni, [], 'non prima che la pagina sia caricata'); s.sulla(s.win, 'load'); return s.registrazioni; };
     assert.deepEqual(registra({ ua: UA.android }), ['sw.js']);
-    assert.deepEqual(registra({ ua: UA.pc, protocollo: 'http:', host: 'localhost' }), ['sw.js'], 'localhost va bene anche senza https');
-    assert.deepEqual(registra({ ua: UA.pc, protocollo: 'http:', host: '192.168.1.20' }), [], 'http in rete: il browser non lo permetterebbe');
-    assert.deepEqual(registra({ ua: UA.pc, serviceWorker: false }), []);
+    assert.deepEqual(registra({ ua: UA.iphone }), ['sw.js']);
+    assert.deepEqual(registra({ ua: UA.ipad, punti: 5 }), ['sw.js'], 'anche l\'iPad che si spaccia per Mac');
+    assert.deepEqual(registra({ ua: UA.android, protocollo: 'http:', host: 'localhost' }), ['sw.js'], 'localhost va bene anche senza https');
+    assert.deepEqual(registra({ ua: UA.android, protocollo: 'http:', host: '192.168.1.20' }), [], 'http in rete: il browser non lo permetterebbe');
+    assert.deepEqual(registra({ ua: UA.pc }), [], 'da PC non serve');
+    assert.deepEqual(registra({ ua: UA.pc, search: '?app=1' }), [], 'nemmeno guardando l\'aspetto da app dal PC');
+    assert.deepEqual(registra({ ua: UA.android, serviceWorker: false }), []);
     assert.deepEqual(registra({ ua: UA.apk }), [], 'nell\'APK il sito arriva sempre dalla rete');
 });
 
@@ -553,16 +556,17 @@ test('manifest: app a schermo intero, indirizzi relativi (il sito sta in una sot
 
 // ---------- il service worker e la pagina offline ----------
 
-function serviceWorker({ rete = true, cache = [] } = {}) {
+function serviceWorker({ rete = true, cache = [], preload = true } = {}) {
     const ascoltatori = {};
     const casse = new Map(cache.map(n => [n, new Map()]));
-    const log = { skipWaiting: 0, claim: 0 };
+    const log = { skipWaiting: 0, claim: 0, preload: 0 };
     class Request { constructor(url, opzioni) { this.url = url; this.opzioni = opzioni; } }
     const sandbox = {
         self: {
             addEventListener: (ev, f) => { ascoltatori[ev] = f; },
             skipWaiting: () => { log.skipWaiting++; return Promise.resolve(); },
-            clients: { claim: () => { log.claim++; return Promise.resolve(); } }
+            clients: { claim: () => { log.claim++; return Promise.resolve(); } },
+            registration: preload ? { navigationPreload: { enable: () => { log.preload++; return Promise.resolve(); } } } : {}
         },
         caches: {
             open: async nome => { if (!casse.has(nome)) casse.set(nome, new Map()); const c = casse.get(nome); return { add: async r => { c.set(r.url, 'PAGINA-OFFLINE'); } }; },
@@ -588,6 +592,11 @@ test('service worker: all\'installazione tiene solo la pagina offline, e le cach
     await sw.evento('activate');
     assert.deepEqual([...sw.casse.keys()].sort(), ['altro-sito-v7', 'sant-alvise-offline-v1']);
     assert.equal(sw.log.claim, 1);
+    assert.equal(sw.log.preload, 1, 'la pagina si chiede alla rete mentre il service worker si sveglia');
+    // un browser senza "navigation preload" attiva il service worker lo stesso
+    const senza = serviceWorker({ preload: false });
+    await senza.evento('activate');
+    assert.equal(senza.log.claim, 1);
 });
 
 test('service worker: le pagine passano dalla rete; senza rete compare offline.html; tutto il resto non lo tocca', async () => {
@@ -605,6 +614,19 @@ test('service worker: le pagine passano dalla rete; senza rete compare offline.h
     // senza nemmeno la pagina offline in cache: l'errore normale del browser
     const vuoto = serviceWorker({ rete: false });
     assert.equal(await vuoto.evento('fetch', { request: pagina }), 'ERRORE-DI-RETE');
+});
+
+test('service worker: usa la pagina già chiesta in anticipo dal browser (navigation preload) invece di chiederla due volte; se quella fallisce, offline.html', async () => {
+    const sw = serviceWorker();
+    await sw.evento('install');
+    let richieste = 0;
+    sw.sandbox.fetch = async () => { richieste++; return 'DALLA-RETE'; };
+    const pagina = { mode: 'navigate', url: 'https://x.test/didi-lu/box.html' };
+    assert.equal(await sw.evento('fetch', { request: pagina, preloadResponse: Promise.resolve('GIA-ARRIVATA') }), 'GIA-ARRIVATA');
+    assert.equal(richieste, 0, 'la pagina non si chiede una seconda volta');
+    assert.equal(await sw.evento('fetch', { request: pagina, preloadResponse: Promise.resolve(undefined) }), 'DALLA-RETE', 'preload non attivo: si chiede ora');
+    assert.equal(richieste, 1);
+    assert.equal(await sw.evento('fetch', { request: pagina, preloadResponse: Promise.reject(new TypeError('Failed to fetch')) }), 'PAGINA-OFFLINE', 'senza rete');
 });
 
 test('service worker: non mette in cache pagine, script o stili (gli aggiornamenti del sito arrivano subito)', () => {

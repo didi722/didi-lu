@@ -26,6 +26,8 @@ self.addEventListener('activate', evento => {
     evento.waitUntil(
         caches.keys()
             .then(chiavi => Promise.all(chiavi.filter(k => k.startsWith(PREFISSO) && k !== CACHE).map(k => caches.delete(k))))
+            // "navigation preload": la pagina si chiede alla rete mentre il service worker si sveglia, così aprirla non costa niente in più
+            .then(() => (self.registration && self.registration.navigationPreload ? self.registration.navigationPreload.enable() : null))
             .then(() => self.clients.claim())
     );
 });
@@ -34,7 +36,11 @@ self.addEventListener('fetch', evento => {
     const richiesta = evento.request;
     // solo l'apertura di una pagina: scripts, immagini, Firebase, Showdown... vanno in rete come se il service worker non ci fosse
     if (richiesta.mode !== 'navigate') return;
-    evento.respondWith(
-        fetch(richiesta).catch(() => caches.match(OFFLINE).then(risposta => risposta || Response.error()))
-    );
+    evento.respondWith((async () => {
+        try {
+            return (await evento.preloadResponse) || await fetch(richiesta);
+        } catch (errore) {
+            return (await caches.match(OFFLINE)) || Response.error();
+        }
+    })());
 });

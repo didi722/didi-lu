@@ -143,15 +143,16 @@
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
-        registraServiceWorker(win, modo);
+        registraServiceWorker(win, modo, os);
         if (modo) quandoPronto(() => avviaApp(win, doc, pagina));
         else quandoPronto(() => avviaInvito(win, doc, { os, pagina, ua: nav.userAgent, leggi, scrivi }));
         return { modo };
     }
 
-    // il service worker serve solo a rendere il sito installabile (e alla pagina "offline"): nell'APK non serve
-    function registraServiceWorker(win, modo) {
-        if (modo === 'apk' || !win.navigator || !('serviceWorker' in win.navigator)) return;
+    // il service worker serve solo a rendere il sito installabile (e alla pagina "offline"): da PC non serve (nessuna differenza per chi usa il sito
+    // dal computer), nell'APK nemmeno (il sito arriva sempre dalla rete)
+    function registraServiceWorker(win, modo, os) {
+        if (modo === 'apk' || !os || !win.navigator || !('serviceWorker' in win.navigator)) return;
         const sicuro = win.location.protocol === 'https:' || win.location.hostname === 'localhost' || win.location.hostname === '127.0.0.1';
         if (!sicuro) return;
         win.addEventListener('load', () => { win.navigator.serviceWorker.register('sw.js').catch(() => { /* senza: il sito funziona uguale */ }); });
