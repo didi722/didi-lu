@@ -818,6 +818,7 @@ async function inizializzaPaginaArchivio() {
         container.innerHTML = "<p style='color:black; text-align:center; padding:20px;'>No showdowns yet. Start battling with your friends!</p>";
     }
 
+    const perAppSd = [];    // gli stessi showdown come dati: l'app li mostra a locandine (app-matches.js)
     sortedSdKeys.forEach(sdId => {
         const sd = dataShowdowns[sdId];
         const info = sd.info || {};
@@ -874,7 +875,10 @@ async function inizializzaPaginaArchivio() {
     </div>
 `;
         container.appendChild(sdCard);
+        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', vinti }; };
+        perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
+    if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd });
 
        await Sfide.avvia({ stagione: stagioneAttiva, infoStagione: dataSeasonInfo });
 

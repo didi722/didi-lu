@@ -49,7 +49,7 @@
     function htmlBarra(m) {
         const opz = (lista, scelto) => (lista || []).map(o => `<option value="${esc(o.valore)}"${String(o.valore) === String(scelto) ? ' selected' : ''}>${esc(o.testo)}</option>`).join('');
         return `<div class="as-tab" role="tablist" aria-label="Statistics category">${(m.tabs || []).map(t =>
-            `<button type="button" role="tab" class="as-t${t.id === m.tab ? ' attivo' : ''}" aria-selected="${t.id === m.tab}" data-tab="${esc(t.id)}" data-suono="scegli">${esc(t.titolo)}</button>`).join('')}</div>
+            `<button type="button" role="tab" class="as-t${t.id === m.tab ? ' attivo' : ''}" aria-selected="${t.id === m.tab}" data-tab="${esc(t.id)}" data-suono="scegli"><span>${esc(t.titolo)}</span></button>`).join('')}</div>
             <div class="as-filtri"><select class="as-sel" id="as-stagione" aria-label="Season">${opz(m.stagioni, m.stagione)}</select>
             <select class="as-sel" id="as-formato" aria-label="Format">${opz(m.formati, m.formato)}</select></div>`;
     }

@@ -99,39 +99,37 @@ html.app .gx-st-punti { flex: none; display: flex; flex-direction: column; gap: 
 html.app .gx-st-punti i { width: calc(5 * var(--u)); height: calc(5 * var(--u)); border-radius: 50%; background: rgba(0, 0, 0, .25); }
 html.app .gx-st-punti i.su { background: #000; }
 
-/* ----- le tessere ----- */
-html.app .gx-tessere { grid-row: 2; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr); gap: calc(11 * var(--u)) calc(10 * var(--u)); min-height: 0; padding-bottom: calc(6 * var(--u)); }
-html.app .gx-t-matches { grid-column: 1 / 8; grid-row: 1; }
-html.app .gx-t-practice { grid-column: 8 / 13; grid-row: 1; }
-html.app .gx-t-box { grid-column: 1 / 5; grid-row: 2; }
-html.app .gx-t-trainers { grid-column: 5 / 9; grid-row: 2; }
-html.app .gx-t-stats { grid-column: 9 / 13; grid-row: 2; }
-html.app .gx-tessera {
-    position: relative; box-sizing: border-box; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(2 * var(--u)); padding: calc(6 * var(--u)) calc(4 * var(--u));
-    overflow: hidden; text-decoration: none; text-align: center; color: #000; cursor: pointer;
-    background: linear-gradient(172deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 84%, #000) 100%);
-    border: calc(3.2 * var(--u)) solid var(--gx-ink); border-radius: var(--gx-r);
-    box-shadow: 0 calc(5 * var(--u)) 0 var(--gx-ink), inset 0 calc(2.5 * var(--u)) 0 rgba(255, 255, 255, .5);
-    transition: transform .08s ease, box-shadow .08s ease; animation: gx-entra .5s cubic-bezier(.2, 1.35, .4, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms + 120ms);
+/* ----- le carte: un carosello di locandine, una al centro e le vicine ai lati; si scorre di lato seguendo il dito ----- */
+html.app .gx-tessere { grid-row: 2; position: relative; min-height: 0; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+html.app .gx-pista { position: absolute; inset: 0 0 calc(20 * var(--u)) 0; }
+html.app .gx-carta {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: calc(236 * var(--u)); margin-left: calc(-118 * var(--u)); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: calc(2 * var(--u));
+    text-decoration: none; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none;
+    translate: calc(var(--x, 0) * 205 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1);
+    transition: translate .4s cubic-bezier(.2, .9, .3, 1), scale .4s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
 }
-html.app .gx-tessera::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
-    background: radial-gradient(rgba(255, 255, 255, .5) calc(1.2 * var(--u)), transparent calc(1.7 * var(--u))) 0 0 / calc(9 * var(--u)) calc(9 * var(--u)); mask-image: linear-gradient(135deg, #000, transparent 60%); -webkit-mask-image: linear-gradient(135deg, #000, transparent 60%); }
-/* un lampo di luce che la attraversa, ogni tanto */
-html.app .gx-tessera::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; pointer-events: none; rotate: 18deg;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: gx-lampo 6.5s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 700ms + 2s); }
-html.app .gx-tessera:active { transform: translateY(calc(4 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink), inset 0 calc(2.5 * var(--u)) 0 rgba(255, 255, 255, .5); }
-html.app .gx-ico { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: calc(46 * var(--u)); height: calc(46 * var(--u)); background: #fff; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .5); }
-html.app .gx-ico svg { width: calc(27 * var(--u)); height: calc(27 * var(--u)); fill: none; stroke: #000; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-html.app .gx-tessera b { position: relative; z-index: 1; font: 900 calc(17 * var(--u))/1.05 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 calc(1.5 * var(--u)) 0 rgba(255, 255, 255, .55); }
-html.app .gx-tessera small { display: none; position: relative; z-index: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 calc(9.5 * var(--u))/1.15 var(--gx-font-testo); opacity: .78; }
-/* la grande: le partite */
-html.app :is(.gx-t-matches, .gx-t-practice) { gap: calc(5 * var(--u)); }
-html.app :is(.gx-t-matches, .gx-t-practice) .gx-ico { width: calc(66 * var(--u)); height: calc(66 * var(--u)); border-width: calc(4 * var(--u)); }
-html.app :is(.gx-t-matches, .gx-t-practice) .gx-ico svg { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
-html.app .gx-t-matches b { font-size: calc(30 * var(--u)); letter-spacing: .08em; }
-html.app .gx-t-practice b { font-size: calc(24 * var(--u)); letter-spacing: .07em; }
-html.app :is(.gx-t-matches, .gx-t-practice) small { font-size: calc(11.5 * var(--u)); }
-html.app .gx-t-matches > .gx-ico::after { content: ''; }
+html.app .gx-pista.trascinando .gx-carta { transition: none; }
+html.app .gx-carta:not(.gx-centro) .gx-tag { opacity: .72; }
+/* l'immagine (o l'arte di prima) sta libera, senza riquadro, su un alone nel colore della carta */
+html.app .gx-arte { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+html.app .gx-alone { position: absolute; left: 50%; bottom: 0; width: calc(230 * var(--u)); height: calc(230 * var(--u)); translate: -50% 4%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, color-mix(in srgb, var(--c) 78%, #fff) 0%, color-mix(in srgb, var(--c) 42%, transparent) 42%, transparent 70%); animation: gx-respira 3.6s ease-in-out infinite; }
+html.app .gx-immagine { position: relative; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+html.app .gx-immagine[hidden] { display: none; }
+html.app .gx-arte.ha-immagine > :not(.gx-alone, .gx-immagine) { display: none; }
+html.app .gx-spr { position: relative; image-rendering: pixelated; height: calc(104 * var(--u)); width: auto; margin-bottom: calc(18 * var(--u)); filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.4s ease-in-out infinite; }
+html.app .gx-spr-a { scale: -1 1; margin-right: calc(-6 * var(--u)); }
+html.app .gx-spr-b { margin-left: calc(-6 * var(--u)); animation-delay: -1.2s; }
+html.app .gx-ico-grande { position: relative; display: flex; align-items: center; justify-content: center; width: calc(110 * var(--u)); height: calc(110 * var(--u)); margin-bottom: calc(28 * var(--u)); background: #fff; border: calc(5 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(6 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-ico-grande svg { width: calc(64 * var(--u)); height: calc(64 * var(--u)); fill: none; stroke: #000; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+/* il tag: una targhetta d'arcade, storta, col nome grande */
+html.app .gx-tag { position: relative; z-index: 2; display: block; padding: calc(7 * var(--u)) calc(26 * var(--u)) calc(4 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--gx-ink); border-radius: calc(5 * var(--u));
+    box-shadow: 0 calc(6 * var(--u)) 0 var(--gx-ink), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); transition: opacity .3s ease; }
+html.app .gx-tag span { display: block; transform: skewX(9deg); font: 900 calc(30 * var(--u))/1.05 var(--gx-font); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
+html.app .gx-carta:active .gx-tag { transform: skewX(-9deg) translateY(calc(3 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 var(--gx-ink), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
+html.app .gx-punti-nav { position: absolute; left: 0; right: 0; bottom: calc(2 * var(--u)); display: flex; justify-content: center; gap: calc(7 * var(--u)); }
+html.app .gx-punti-nav i { width: calc(8 * var(--u)); height: calc(8 * var(--u)); border-radius: 50%; background: rgba(255, 255, 255, .28); border: calc(1.5 * var(--u)) solid rgba(0, 0, 0, .5); transition: scale .2s ease, background .2s ease; }
+html.app .gx-punti-nav i.su { background: var(--gx-giallo); scale: 1.35; }
 
 
 /* ---------- 2. La schermata del titolo ---------- */

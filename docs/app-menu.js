@@ -11,15 +11,16 @@
 // La parte pura (quale stagione mostrare, il tempo che manca, quando annunciarla) è provata in test/app-menu.test.js; funziona nel browser (window.MenuApp) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    const comune = typeof module === 'object' && module.exports ? require('./app-comune.js') : radice.AppComune;
-    const M = fabbrica(comune);
+    const inNode = typeof module === 'object' && module.exports;
+    const comune = inNode ? require('./app-comune.js') : radice.AppComune;
+    const M = fabbrica(comune, inNode ? require('./app-carosello.js') : radice.AppCarosello);
     if (typeof module === 'object' && module.exports) module.exports = M;
     else {
         radice.MenuApp = M;
         const d = radice.document;
         if (d) { if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', () => M.avvia(radice)); else M.avvia(radice); }
     }
-})(typeof self !== 'undefined' ? self : this, function (C) {
+})(typeof self !== 'undefined' ? self : this, function (C, Car) {
     'use strict';
 
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
@@ -122,6 +123,31 @@
         return { id: stagione.id, nome: r.nome, tempo: tempoCheManca(stagione.mancano), href: r.href };
     }
 
+    // ---------- le carte del menù ----------
+
+    const SPRITE = 'https://play.pokemonshowdown.com/sprites/ani/';
+    const CHIAVE_CARTA = 'menuCarta';                 // sessionStorage: la carta guardata, per ritrovarla tornando dalle pagine
+
+    /**
+     * Cosa si vede in una carta finché non c'è la sua immagine (immagini/app/tessera-<id>.png o .webp, vedi LEGGIMI): per Play due Pokémon che si fronteggiano, per le altre
+     * l'icona grande. Se l'immagine c'è, prende il posto di tutto questo.
+     */
+    function arteDi(id, svgDi) {
+        if (id === 'play') return '<img class="gx-spr gx-spr-a" src="' + SPRITE + 'pikachu.gif" alt=""><img class="gx-spr gx-spr-b" src="' + SPRITE + 'lucario.gif" alt="">';
+        return '<span class="gx-ico-grande">' + svgDi(id) + '</span>';
+    }
+
+    /** Una carta del menù: l'immagine (o l'arte di prima), l'alone nel suo colore e il tag col nome. Sono tutte link; chi non è al centro, toccata, ci porta il carosello (lo fa la pagina). */
+    function htmlCarta(v, indice, svgDi, esc) {
+        return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
+            '<span class="gx-arte"><span class="gx-alone" aria-hidden="true"></span>' + arteDi(v.id, svgDi) +
+            '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden></span>' +
+            '<b class="gx-tag"><span>' + esc(v.et) + '</span></b></a>';
+    }
+
+    /** Gli indirizzi da provare, in ordine, per l'immagine di una carta */
+    const immaginiDi = id => ['immagini/app/tessera-' + id + '.png', 'immagini/app/tessera-' + id + '.webp'];
+
     // ---------- il menù nella pagina ----------
 
     function avvia(win) {
@@ -145,11 +171,58 @@
 
         // ----- le tessere -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
-            $('gx-tessere').innerHTML = voci.map((v, i) =>
-            '<a class="gx-tessera gx-t-' + v.id + '" href="' + esc(v.href) + '" style="--c:' + esc(v.colore) + ';--i:' + i + '" data-suono="scegli">' +
-                '<span class="gx-ico">' + svg(v.id) + '</span>' +
-                '<b>' + esc(v.et) + '</b>' +
-            '</a>').join('');
+        const svgIcona = id => svg(id);
+        $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, svgIcona, esc)).join('') + '</div>' +
+            '<div class="gx-punti-nav" aria-hidden="true">' + voci.map((v, i) => '<i data-i="' + i + '"></i>').join('') + '</div>';
+        // le immagini delle carte, se ci sono (se manca una .png si prova la .webp, se mancano tutte resta l'arte di prima)
+        $('gx-tessere').querySelectorAll('.gx-immagine').forEach(img => {
+            const prove = immaginiDi(img.dataset.id);
+            let k = 0;
+            img.addEventListener('load', () => { img.hidden = false; img.parentNode.classList.add('ha-immagine'); });
+            img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
+            img.src = prove[0];
+        });
+
+        // ----- il carosello: si scorre di lato, seguendo il dito; la carta al centro si apre toccandola, le altre toccandole ci vengono in mezzo -----
+        const stato = { corrente: 0 };
+        const pista = $('gx-tessere').querySelector('.gx-pista');
+        const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
+        try { const salvata = Number(win.sessionStorage.getItem(CHIAVE_CARTA)); if (Number.isInteger(salvata) && salvata >= 0 && salvata < carte.length) stato.corrente = salvata; } catch (e) { /* si parte dalla prima */ }
+        const posiziona = (frac = 0) => {
+            const n = carte.length;
+            carte.forEach((el, i) => {
+                const d = Car.distanza(i, stato.corrente, n, true);
+                const a = Car.aspetto(d + frac);
+                el.style.setProperty('--x', a.x);
+                el.style.setProperty('--s', a.scala);
+                el.style.setProperty('--o', a.opacita);
+                el.style.zIndex = a.z;
+                el.classList.toggle('gx-centro', i === stato.corrente);
+                el.tabIndex = i === stato.corrente ? 0 : -1;
+            });
+            $('gx-tessere').querySelectorAll('.gx-punti-nav i').forEach((p, i) => p.classList.toggle('su', i === stato.corrente));
+        };
+        const vai = i => {
+            const n = Car.dentro(i, carte.length);
+            if (n === stato.corrente) return;
+            stato.corrente = n;
+            try { win.sessionStorage.setItem(CHIAVE_CARTA, String(n)); } catch (e) { /* non si ricorda */ }
+            posiziona();
+            fai('scegli');
+        };
+        const passo = verso => vai(Car.passo(stato.corrente, carte.length, verso, true));
+        if (carte.length) {
+            posiziona();
+            Car.collegaGesti($('gx-tessere'), {
+                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 205 * Car.unitaPx(win),
+                trascina: (f, fine) => { pista.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); }
+            });
+            $('gx-tessere').addEventListener('click', e => {
+                const c = e.target.closest ? e.target.closest('.gx-carta') : null;
+                if (c && !c.classList.contains('gx-centro')) { e.preventDefault(); vai(Number(c.dataset.i)); }
+            });
+            doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
+        }
 
         // ----- barra in alto: suono e impostazioni -----
         const suonoAcceso = () => leggi(C.CHIAVE_SUONO) !== 'off';
@@ -397,5 +470,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlCarta, arteDi, immaginiDi, avvia };
 });

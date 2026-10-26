@@ -119,7 +119,7 @@ html.app.gx-dialogo-aperto body.gx-menu .gx-lobby { filter: blur(2px); }
 @keyframes gx-pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
 @keyframes gx-dissolve { from { opacity: 0; } to { opacity: 1; } }
 /* finché la schermata del titolo non è andata via, il menù sta fermo (entra dopo) */
-html.app:not(.gx-pronto) .gx-tessera { animation-play-state: paused; opacity: 0; }
+html.app:not(.gx-pronto) .gx-carta { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-aura, html.app .gx-avatar, html.app .gx-tessera::after, html.app .gx-splash::before { animation: none; }
+    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-aura, html.app .gx-avatar, html.app .gx-splash::before { animation: none; }
 }

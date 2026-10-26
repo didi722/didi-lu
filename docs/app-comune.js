@@ -21,12 +21,12 @@
 
     // le icone: tratti spessi, come il resto dell'app; il disegno sta dentro un viewBox 24x24
     const ICONE = {
+        play: '<path d="M8 4.5v15l12-7.5z"/>',
         matches: '<path d="M5 19 19 5"/><path d="M19 19 5 5"/><path d="M14.5 5H19v4.5"/><path d="M9.5 5H5v4.5"/>',
         box: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5"/><path d="M12 12 4 7.5"/><path d="M12 12v9"/>',
         trainers: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16.6 14.3c2.9.3 4.9 2 4.9 5.2"/>',
         stats: '<path d="M5 20v-9"/><path d="M12 20V4"/><path d="M19 20v-6"/>',
         medaglia: '<circle cx="12" cy="9" r="5.2"/><path d="M8.6 13.4 7 21l5-2.7 5 2.7-1.6-7.6"/><path d="M12 6.8v4.4"/>',
-        practice: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
         cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx=".8"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
         amici: '<circle cx="12" cy="12" r="9"/><path d="M8 14c1 1.6 2.4 2.4 4 2.4s3-.8 4-2.4"/><path d="M9 9.5h.01M15 9.5h.01"/>',
         suonoOn: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',

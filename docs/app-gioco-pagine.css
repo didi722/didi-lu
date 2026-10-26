@@ -161,23 +161,40 @@
 
     /* ---------- 3. Matches: due colonne, le partite a sinistra e la classifica sempre in vista a destra ---------- */
     html.app-shell body.pg-matches .hub-container { padding: calc(10 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(20 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px)) !important; margin: 0 !important; max-width: none !important; }
-    html.app-shell body.pg-matches .hub-main-layout { display: grid !important; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: calc(14 * var(--u)) !important; align-items: start; }
-    html.app-shell body.pg-matches .hub-left-column { display: flex !important; flex-direction: column; gap: calc(14 * var(--u)); min-width: 0; }
-    html.app-shell body.pg-matches .hub-right-column {
-        display: block !important; position: sticky; top: calc(var(--gx-sopra) + 10 * var(--u)); transition: top .22s ease; min-width: 0; max-height: calc(100vh - var(--gx-sopra) - 20 * var(--u)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
-    }
-    html.app-shell body.pg-matches .hub-right-column::-webkit-scrollbar { display: none; }
-    html.app-shell body.pg-matches .info-summary-card:has(.summary-grid:empty) { display: none; }
-    /* partite in diretta: la scritta sopra, il riquadro a tutta larghezza con il tasto per giocare */
-    html.app-shell body.pg-matches .live-list { display: flex; flex-direction: column; align-items: flex-start; gap: calc(8 * var(--u)); margin: 0; }
-    html.app-shell body.pg-matches .live-riga { width: 100%; }
-    html.app-shell body.pg-matches .live-chip { width: 100%; box-sizing: border-box; min-height: calc(46 * var(--u)); gap: calc(8 * var(--u)); }
-    html.app-shell body.pg-matches .live-chip .live-vs { flex: 1 1 auto; min-width: 0; }
-    html.app-shell body.pg-matches .live-chip .live-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell body.pg-matches .hub-main-layout { display: block !important; }
+    html.app-shell body.pg-matches .hub-left-column { display: flex !important; flex-direction: column; gap: 0; min-width: 0; }
+    html.app-shell body.pg-matches .hub-right-column { display: block !important; min-width: 0; }
+    /* una schermata alla volta: SHOWDOWNS (la colonna delle partite) oppure RANKINGS (la classifica), come dicono i due tag in alto */
+    html.app-shell[data-mt="sd"] body.pg-matches .hub-right-column, html.app-shell[data-mt="rk"] body.pg-matches .hub-left-column { display: none !important; }
+    html.app-shell body.pg-matches .info-summary-card { display: none !important; }
+    html.app-shell body.pg-matches #matchList { display: none !important; }
+    /* i due tag in alto, e a destra la fila delle partite in diretta (un solo chip, che scorre) */
+    html.app-shell body.pg-matches .mt-barra { display: flex; align-items: center; gap: calc(8 * var(--u)); margin: 0 0 calc(6 * var(--u)); min-height: calc(40 * var(--u)); }
+    html.app-shell body.pg-matches .mt-tab { position: relative; flex: none; padding: calc(6 * var(--u)) calc(18 * var(--u)) calc(4 * var(--u)); cursor: pointer; color: rgba(255, 255, 255, .8); background: rgba(0, 0, 0, .5); border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(6 * var(--u)); transform: skewX(-9deg); transition: background .15s ease, color .15s ease, translate .1s ease; -webkit-tap-highlight-color: transparent; }
+    html.app-shell body.pg-matches .mt-tab span { display: block; transform: skewX(9deg); font: 900 calc(15 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+    html.app-shell body.pg-matches .mt-tab i { display: inline-block; margin-left: calc(4 * var(--u)); padding: 0 calc(6 * var(--u)); background: var(--gx-giallo); color: #000; border-radius: calc(8 * var(--u)); font: 900 calc(11 * var(--u))/1.5 var(--nb-font-titoli); font-style: normal; letter-spacing: 0; }
+    html.app-shell body.pg-matches .mt-tab.su { color: #000; background: var(--gx-giallo); border-color: var(--nb-ink, #000); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
+    html.app-shell body.pg-matches .mt-tab.su i { background: #000; color: var(--gx-giallo); }
+    html.app-shell body.pg-matches .mt-tab:active { translate: 0 calc(3 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-list { flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; gap: calc(8 * var(--u)); align-items: center; justify-content: flex-end; --h-slide: calc(40 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-list[hidden] { display: none !important; }
+    html.app-shell body.pg-matches .mt-barra .live-testa { padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); border-width: calc(2.5 * var(--u)); font-size: calc(11 * var(--u)); gap: calc(5 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .mt-barra .live-testa b { font-size: calc(10 * var(--u)); padding: 0 calc(5 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-punto { width: calc(8 * var(--u)); height: calc(8 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-riga { width: auto; padding: 0; gap: calc(6 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-chip { width: auto; max-width: 100%; box-sizing: border-box; min-height: 0; gap: calc(7 * var(--u)); padding: calc(3 * var(--u)) calc(4 * var(--u)) calc(3 * var(--u)) calc(8 * var(--u)); border-width: calc(2.5 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); border-radius: calc(7 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-chip { background: #1b1740 !important; color: #fff !important; }
+    html.app-shell body.pg-matches .mt-barra .live-fmt { background: rgba(255, 255, 255, .16); }
+    html.app-shell body.pg-matches .mt-barra .live-vs b { background: var(--gx-giallo); color: #000; }
+    html.app-shell body.pg-matches .mt-barra .live-vai { background: #09ca49; color: #000; }
+    html.app-shell body.pg-matches .mt-barra .live-chip .live-vs { flex: 1 1 auto; min-width: 0; font-size: calc(12 * var(--u)); gap: calc(5 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-chip .live-n { max-width: calc(70 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell body.pg-matches .mt-barra .live-fmt { font-size: calc(9 * var(--u)); max-width: calc(60 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-m { font-size: calc(9 * var(--u)); border-width: calc(2 * var(--u)); }
+    html.app-shell body.pg-matches .mt-barra .live-vai { padding: calc(3 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)); font-size: calc(10 * var(--u)); border-width: calc(2 * var(--u)); border-radius: calc(5 * var(--u)); }
     /* la classifica: niente finestra col suo bordo e i pallini; un titolo, le righe basse, il tasto per sfidare a destra */
     html.app-shell body.pg-matches .cl-laterale { background: none !important; border: 0 !important; box-shadow: none !important; }
-    html.app-shell body.pg-matches .cl-laterale .cl-barra { height: auto; padding: 0 0 calc(8 * var(--u)); background: none !important; color: var(--nb-testo, #000); align-items: flex-end; }
-    html.app-shell body.pg-matches .cl-laterale .cl-barra-titolo { font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; }
+    html.app-shell body.pg-matches .cl-laterale .cl-barra { display: none; }
     html.app-shell body.pg-matches .cl-laterale .cl-apri { display: none !important; }
     html.app-shell body.pg-matches .cl-laterale .cl-corpo { padding: 0; }
     html.app-shell body.pg-matches .participants-card #participants-list { padding-left: 0 !important; display: grid; gap: calc(9 * var(--u)); }
@@ -227,35 +244,37 @@
     html.app-shell body.pg-matches .ac-carta:not(.ac-centro) .ac-vs { display: none; }
     /* "Registered teams" non c'è nell'app: i team si guardano dalla partita */
     html.app-shell body.pg-matches .btn-registered-teams { display: none !important; }
-    /* i showdown: una fila di schede che si scorre di lato (niente scroll verticale); ogni scheda non ha sfondo: i due allenatori in piedi sul loro palco tondo, in mezzo il formato e la data */
-    html.app-shell body.pg-matches #matchList.showdown-grid-double { display: flex !important; flex-wrap: nowrap; gap: calc(6 * var(--u)); padding: calc(22 * var(--u)) calc(14 * var(--u)) calc(6 * var(--u)); margin: calc(-8 * var(--u)) calc(-14 * var(--u)) calc(-6 * var(--u)); -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); scroll-padding-left: calc(14 * var(--u)); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x; overscroll-behavior-x: contain; }
-    html.app-shell body.pg-matches #matchList.showdown-grid-double::-webkit-scrollbar { display: none; }
-    html.app-shell body.pg-matches .showdown-summary-card {
-        position: relative; flex: 0 0 min(calc(330 * var(--u)), 86%); scroll-snap-align: start; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "l1 bar l2" "l1 foot l2"; align-items: center; row-gap: 0; column-gap: calc(4 * var(--u));
-        background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; transform: none !important; color: #fff; cursor: pointer; overflow: visible !important;
+    /* il tasto per votare l'MVP (compare quando mancano pochi showdown): in Matches fluttua in basso a destra, senza rubare una riga alla pagina */
+    html.app-shell body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#btn-mvp { position: fixed !important; top: auto !important; left: auto !important; right: max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) !important; bottom: calc(10 * var(--u)) !important; z-index: 40; margin: 0 !important; height: calc(30 * var(--u)) !important; padding: 0 calc(14 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    /* i showdown: locandine "VS" in un carosello (app-matches.js); ognuna senza sfondo, i due allenatori sul loro palco tondo e in mezzo il punteggio */
+    html.app-shell body.pg-matches .mp { position: relative; height: calc(228 * var(--u)); touch-action: pan-y; user-select: none; -webkit-user-select: none; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+    html.app-shell body.pg-matches .mp :is(img, a) { -webkit-user-drag: none; user-drag: none; }
+    html.app-shell body.pg-matches .mp-vuoto { margin: calc(60 * var(--u)) 0 0; text-align: center; color: rgba(255, 255, 255, .85); font: 800 calc(15 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .mp-pista { position: absolute; inset: 0; }
+    html.app-shell body.pg-matches .mp-carta {
+        position: absolute; left: 50%; top: 0; width: calc(400 * var(--u)); height: 100%; margin-left: calc(-200 * var(--u)); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: calc(4 * var(--u)); cursor: pointer; outline: none; color: #fff; -webkit-tap-highlight-color: transparent;
+        translate: calc(var(--x, 0) * 380 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); transition: translate .4s cubic-bezier(.2, .9, .3, 1), scale .4s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
     }
-    html.app-shell body.pg-matches .showdown-summary-card::before, html.app-shell body.pg-matches .showdown-summary-card::after { content: none !important; display: none !important; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-content { display: contents; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-barra { grid-area: bar; align-self: end; height: auto; padding: 0 0 calc(2 * var(--u)); background: none !important; border: 0 !important; justify-content: center; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-badge-label { display: none; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-category-tag { background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font-size: calc(13 * var(--u)); padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); transform: none; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-footer { grid-area: foot; align-self: start; border: 0 !important; background: none !important; padding: calc(4 * var(--u)) 0 0; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-date-text { color: #fff; font: 800 calc(10 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .06em; opacity: .8; text-align: center; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-view-action { display: none; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato {
-        position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); min-width: 0; min-height: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; transform: none !important; rotate: 0deg !important; translate: 0 0 !important;
-        --c: var(--lato1); --pw: 112;
-    }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-1 { grid-area: l1; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 { grid-area: l2; --c: var(--lato2); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-palco { position: relative; align-self: stretch; height: calc(104 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-avatar { position: absolute; left: 50%; bottom: calc(10 * var(--u)); translate: -50% 0; height: calc(86 * var(--u)); width: auto; max-width: calc(100 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-nome { max-width: 100%; box-sizing: border-box; padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #000 !important; color: color-mix(in srgb, var(--c) 70%, #fff) !important; border-radius: calc(7 * var(--u)); font-size: calc(13 * var(--u)); letter-spacing: .04em; text-transform: uppercase; border: 0 !important; box-shadow: none !important; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-punti { width: auto; height: auto; min-width: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; color: #fff; font: 900 calc(30 * var(--u))/1 var(--nb-font-titoli); text-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .45); }
-    html.app-shell body.pg-matches .showdown-summary-card.vince-1 .sd-lato-1 .sd-punti, html.app-shell body.pg-matches .showdown-summary-card.vince-2 .sd-lato-2 .sd-punti { color: var(--gx-giallo); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-win { position: absolute; top: calc(2 * var(--u)); left: calc(4 * var(--u)); right: auto; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 .sd-win { left: auto; right: calc(4 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card:active { opacity: .85; }
+    html.app-shell body.pg-matches .mp.trascinando .mp-carta { transition: none; }
+    html.app-shell body.pg-matches .mp-carta:not(.mp-centro-carta) .mp-formato { opacity: .6; }
+    html.app-shell body.pg-matches .mp-formato { position: relative; z-index: 2; display: block; padding: calc(4 * var(--u)) calc(20 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); max-width: 92%; }
+    html.app-shell body.pg-matches .mp-formato span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: skewX(9deg); font: 900 calc(16 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 calc(1.5 * var(--u)) 0 rgba(255, 255, 255, .5); }
+    html.app-shell body.pg-matches .mp-scena { flex: 1 1 auto; min-height: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) calc(104 * var(--u)) minmax(0, 1fr); align-items: end; column-gap: 0; }
+    html.app-shell body.pg-matches .mp-lato { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); --pw: 128; transition: filter .3s ease, opacity .3s ease; }
+    html.app-shell body.pg-matches .mp-perde { filter: saturate(.55) brightness(.85); opacity: .85; }
+    html.app-shell body.pg-matches .mp-palco { position: relative; align-self: stretch; height: calc(140 * var(--u)); }
+    html.app-shell body.pg-matches .mp-avatar { position: absolute; left: 50%; bottom: calc(14 * var(--u)); translate: -50% 0; height: calc(112 * var(--u)); width: auto; max-width: calc(120 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell body.pg-matches .mp-vince .pal-aura { filter: brightness(1.35) saturate(1.2); scale: 1.12; }
+    html.app-shell body.pg-matches .mp-vince .mp-avatar { animation-duration: 1.8s; }
+    html.app-shell body.pg-matches .mp-nome { max-width: 100%; box-sizing: border-box; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(7 * var(--u)); font: 900 calc(14 * var(--u))/1.25 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .mp-win { position: absolute; z-index: 2; top: calc(6 * var(--u)); left: 50%; translate: -50% 0; padding: calc(2 * var(--u)) calc(10 * var(--u)) 0; background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); transform: skewX(-9deg) rotate(-3deg); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.5 var(--nb-font-titoli); font-style: normal; letter-spacing: .1em; }
+    html.app-shell body.pg-matches .mp-centro { display: flex; flex-direction: column; align-items: center; gap: calc(6 * var(--u)); padding-bottom: calc(46 * var(--u)); }
+    html.app-shell body.pg-matches .mp-vs { padding: calc(2 * var(--u)) calc(11 * var(--u)) 0; background: #000; color: #fff; border-radius: calc(6 * var(--u)); transform: skewX(-9deg); font: 900 calc(14 * var(--u))/1.4 var(--nb-font-titoli); font-style: normal; letter-spacing: .14em; }
+    html.app-shell body.pg-matches .mp-punti { display: flex; align-items: center; gap: calc(3 * var(--u)); font: 900 calc(54 * var(--u))/1 var(--nb-font-titoli); text-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .55); }
+    html.app-shell body.pg-matches .mp-punti u { text-decoration: none; font-size: calc(34 * var(--u)); opacity: .55; }
+    html.app-shell body.pg-matches .mp-punti b.mp-avanti { color: var(--gx-giallo); }
+    html.app-shell body.pg-matches .mp-data { max-width: 96%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: rgba(0, 0, 0, .5); border-radius: calc(6 * var(--u)); font: 800 calc(10 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .mp-carta:not(.mp-centro-carta) :is(.mp-data, .mp-win) { opacity: 0; }
 
     /* ---------- 4. Trainers: la scelta del personaggio, una figurina per allenatore ---------- */
     html.app-shell body.pg-players .wrapper { margin: 0; width: 100%; padding: calc(12 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-right, 0px)) calc(20 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-left, 0px)); box-sizing: border-box; }
@@ -593,18 +612,27 @@
     html.app-shell #sd-modal-overlay .sd-testa { flex: none; }
     html.app-shell #sd-modal-overlay .sd-corpo { flex: 1 1 auto; min-height: 0; display: flex !important; flex-direction: column; justify-content: space-evenly; gap: calc(6 * var(--u)) !important; padding: calc(10 * var(--u)) calc(14 * var(--u)) calc(12 * var(--u)) !important; overflow: hidden !important; }
     html.app-shell #sd-modal-overlay .sd-match {
-        display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: center; gap: calc(8 * var(--u)) calc(10 * var(--u)) !important; padding: calc(12 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)) !important;
+        display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: center; gap: calc(6 * var(--u)) calc(8 * var(--u)) !important; padding: calc(12 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u)) !important;
         rotate: 0deg !important; background: none !important; border: 0 !important; border-bottom: calc(2.5 * var(--u)) dashed rgba(255, 255, 255, .22) !important; border-radius: 0 !important; box-shadow: none !important; animation: none !important;
     }
     html.app-shell #sd-modal-overlay .sd-match:last-child { border-bottom: 0 !important; }
     html.app-shell #sd-modal-overlay .sd-numero { top: calc(-2 * var(--u)) !important; left: calc(6 * var(--u)) !important; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)) !important; font-size: calc(9.5 * var(--u)) !important; rotate: 0deg !important; box-shadow: none !important; }
-    html.app-shell #sd-modal-overlay .sd-team { flex-direction: row !important; min-height: calc(36 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)) !important; rotate: 0deg !important; translate: 0 0; background: none !important; border: 0 !important; box-shadow: none !important; }
+    /* ogni match: da una parte e dall'altra il team col suo nome e i suoi sei Pokémon (animati), in mezzo il punteggio, a destra il replay */
+    html.app-shell #sd-modal-overlay .sd-team { position: relative; flex-direction: column !important; align-items: center; justify-content: center; gap: calc(3 * var(--u)); min-height: calc(36 * var(--u)); min-width: 0; padding: calc(2 * var(--u)) calc(4 * var(--u)) !important; rotate: 0deg !important; translate: 0 0; background: none !important; border: 0 !important; box-shadow: none !important; }
     html.app-shell #sd-modal-overlay .sd-team:active { translate: 0 calc(2 * var(--u)); }
-    html.app-shell #sd-modal-overlay .sd-team-nome { box-shadow: 0 calc(4 * var(--u)) 0 var(--c, #888) !important; }
-    html.app-shell #sd-modal-overlay .sd-perde { opacity: .72; }
-    html.app-shell #sd-modal-overlay .sd-team-nome { font-size: calc(13 * var(--u)) !important; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    html.app-shell #sd-modal-overlay .sd-lineup { display: none !important; }
+    html.app-shell #sd-modal-overlay .sd-team-nome { box-shadow: 0 calc(4 * var(--u)) 0 var(--c, #888) !important; font-size: calc(13 * var(--u)) !important; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell #sd-modal-overlay .sd-perde { opacity: .78; }
+    html.app-shell #sd-modal-overlay .sd-perde .sd-lineup { filter: saturate(.55); }
+    html.app-shell #sd-modal-overlay .sd-lineup { display: flex !important; flex-wrap: nowrap; align-items: flex-end; justify-content: center; gap: 0 calc(1 * var(--u)); min-height: calc(30 * var(--u)); }
+    html.app-shell #sd-modal-overlay .sd-lineup:empty { display: none !important; }
+    html.app-shell #sd-modal-overlay .sd-lineup .mini-gif { height: calc(32 * var(--u)); max-width: calc(40 * var(--u)); width: auto; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .4)); }
+    html.app-shell #sd-modal-overlay .sd-vincitore .sd-lineup .mini-gif { animation: gx-bob 2.4s ease-in-out infinite; }
+    html.app-shell #sd-modal-overlay .sd-vincitore .sd-lineup .mini-gif:nth-child(2n) { animation-delay: -.8s; }
     html.app-shell #sd-modal-overlay .sd-win { top: calc(-9 * var(--u)) !important; right: calc(6 * var(--u)) !important; padding: calc(2 * var(--u)) calc(8 * var(--u)) 0 !important; font-size: calc(9 * var(--u)) !important; rotate: 0deg !important; }
+    /* nella testata ogni allenatore ha il suo avatar (lo aggiunge app-matches.js) al posto del pallino colorato */
+    html.app-shell #sd-modal-overlay .sd-nome:has(.mp-testa-avatar)::before { display: none !important; }
+    html.app-shell #sd-modal-overlay .sd-nome { display: inline-flex; align-items: flex-end; gap: calc(6 * var(--u)); }
+    html.app-shell #sd-modal-overlay .mp-testa-avatar { height: calc(34 * var(--u)); width: auto; max-width: calc(40 * var(--u)); margin: calc(-8 * var(--u)) 0 calc(-3 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .4)); }
     html.app-shell #sd-modal-overlay .sd-punteggio { padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) !important; font-size: calc(20 * var(--u)) !important; rotate: 0deg !important; }
     html.app-shell #sd-modal-overlay .sd-punteggio b { font-size: calc(22 * var(--u)) !important; }
     html.app-shell #sd-modal-overlay .sd-replay { grid-column: auto !important; width: auto !important; padding: calc(9 * var(--u)) calc(14 * var(--u)) calc(7 * var(--u)) !important; white-space: nowrap; font-size: calc(12 * var(--u)) !important; rotate: 0deg !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
@@ -621,6 +649,15 @@
     }
     html.app-shell #login-modal h2 { margin: 0 0 calc(8 * var(--u)) !important; font-size: calc(22 * var(--u)) !important; }
     html.app-shell #login-modal .input-group { margin-bottom: calc(8 * var(--u)) !important; }
+
+    /* l'accesso come le altre finestre: scuro, con i campi e il tasto da cabinato */
+    html.app-shell #login-modal .modal-content { background: #1b1740 !important; color: #fff !important; border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell #login-modal h2 { color: #fff !important; border-bottom-color: var(--gx-giallo) !important; }
+    html.app-shell #login-modal :is(label, .input-group label) { color: rgba(255, 255, 255, .85) !important; font-family: var(--nb-font-titoli) !important; letter-spacing: .08em; text-transform: uppercase; font-size: calc(11 * var(--u)) !important; }
+    html.app-shell #login-modal input { color-scheme: dark; background: rgba(0, 0, 0, .45) !important; color: #fff !important; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .35) !important; border-radius: calc(9 * var(--u)) !important; box-shadow: none !important; }
+    html.app-shell #login-modal input:focus { border-color: var(--gx-giallo) !important; outline: none; }
+    html.app-shell #login-modal :is(.btn-login, button[type="submit"]) { width: 100%; padding: calc(8 * var(--u)) 0 calc(6 * var(--u)) !important; cursor: pointer; background: linear-gradient(180deg, #9af7ae, #47ea6a) !important; color: #000 !important; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(11 * var(--u)) !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli) !important; letter-spacing: .1em; text-transform: uppercase; }
+    html.app-shell #login-modal .error-msg { color: #ff9a9a !important; }
 
     /* la finestra di accesso di Practice (le altre pagine hanno già il loro foglio per .modal) */
     html.app-shell body.pg-practice #login-modal.modal { display: none; position: fixed; inset: 0; z-index: 2000; overflow-y: auto; background: rgba(5, 4, 15, .72); }
@@ -680,14 +717,18 @@
     html.app-shell .as { position: fixed; left: 0; right: 0; top: var(--gx-barra); bottom: 0; display: flex; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
     html.app-shell .as-barra { flex: none; display: flex; align-items: center; justify-content: space-between; gap: calc(8 * var(--u)); padding: calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(4 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); }
     html.app-shell .as-tab { display: flex; gap: calc(6 * var(--u)); }
-    html.app-shell .as-t { padding: calc(5 * var(--u)) calc(13 * var(--u)) calc(3 * var(--u)); cursor: pointer; background: rgba(255, 255, 255, .12); color: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
-    html.app-shell .as-t.attivo { background: var(--gx-voce, #b388eb); color: #000; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    /* i tag della categoria: targhette storte da cabinato (come SHOWDOWNS e RANKINGS di Matches); quello acceso si riempie col colore di Stats */
+    html.app-shell .as-t { position: relative; padding: calc(6 * var(--u)) calc(16 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: rgba(255, 255, 255, .8); border: calc(3 * var(--u)) solid rgba(255, 255, 255, .3); border-radius: calc(6 * var(--u)); transform: skewX(-9deg); transition: background .15s ease, color .15s ease, translate .1s ease; -webkit-tap-highlight-color: transparent; }
+    html.app-shell .as-t span { display: block; transform: skewX(9deg); font: 900 calc(13 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+    html.app-shell .as-t.attivo { background: var(--gx-voce, #b388eb); color: #000; border-color: var(--nb-ink, #000); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
+    html.app-shell .as-t:active { translate: 0 calc(3 * var(--u)); }
     html.app-shell .as-filtri { display: flex; gap: calc(6 * var(--u)); min-width: 0; }
-    html.app-shell .as-sel { max-width: calc(150 * var(--u)); height: calc(28 * var(--u)); padding: 0 calc(8 * var(--u)); background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); font: 800 calc(11 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .as-sel { max-width: calc(150 * var(--u)); height: calc(28 * var(--u)); padding: 0 calc(8 * var(--u)); color-scheme: dark; background: rgba(0, 0, 0, .55); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(7 * var(--u)); font: 800 calc(11 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .03em; }
+    html.app-shell .as-sel:focus { border-color: var(--gx-giallo); outline: none; }
     html.app-shell .as-param { flex: none; display: flex; gap: calc(6 * var(--u)); padding: calc(3 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
     html.app-shell .as-param::-webkit-scrollbar { display: none; }
-    html.app-shell .as-p { flex: none; display: inline-flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(11 * var(--u)); font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .03em; white-space: nowrap; }
-    html.app-shell .as-p.attivo { background: var(--gx-giallo); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-p { flex: none; display: inline-flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(11 * var(--u)); font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; transition: background .15s ease, color .15s ease; }
+    html.app-shell .as-p.attivo { background: var(--gx-giallo); color: #000; border-color: var(--nb-ink, #000); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .45); }
     html.app-shell .as-p i { font-style: normal; font-size: calc(8 * var(--u)); }
     html.app-shell .as-pista { position: relative; flex: 1 1 auto; min-height: 0; touch-action: pan-y; }
     html.app-shell .as-vuoto { margin: auto; padding: calc(10 * var(--u)); text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
@@ -956,23 +997,52 @@
     html.app-shell #amic-overlay .sfida-azioni { grid-area: az; margin: calc(2 * var(--u)) 0 0 !important; gap: calc(10 * var(--u)); flex-wrap: nowrap !important; }
     html.app-shell #amic-overlay :is(.amic-invia, .amic-annulla) { flex: 1 1 0 !important; min-width: 0 !important; padding: calc(7 * var(--u)) 0 calc(5 * var(--u)) !important; font-size: calc(14 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; }
 
+    /* le finestre delle sfide (di stagione e amichevole): scure come tutte le altre finestre dell'app, con le scelte in giallo quando sono accese */
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-card { background: #1b1740 !important; color: #fff !important; border-color: var(--nb-ink, #000) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-card :is(h2, h2 small, .sfida-sotto, .amic-gruppo-nome, .amic-nota) { color: #fff !important; text-shadow: none; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-card :is(.sfida-sotto, .amic-nota, .amic-gruppo-nome) { opacity: .85; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-messaggio { background: rgba(255, 255, 255, .1) !important; color: #fff !important; border-color: rgba(255, 255, 255, .3) !important; box-shadow: none !important; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) :is(.sfida-formato, .amic-scelta) { background: rgba(255, 255, 255, .08) !important; color: #fff !important; border-color: rgba(255, 255, 255, .4) !important; box-shadow: 0 calc(3 * var(--u)) 0 #000 !important; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) :is(.sfida-formato.scelto, .amic-scelta.scelta) { background: var(--gx-giallo) !important; color: #000 !important; border-color: var(--nb-ink, #000) !important; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-formato:disabled { opacity: .4; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) .sfida-azioni { background: transparent !important; border-top-color: rgba(255, 255, 255, .22) !important; }
+    html.app-shell :is(#sfida-overlay, #amic-overlay) :is(.btn-cancel, .amic-annulla) { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .45) !important; }
+    /* la sfida di stagione: larga come lo schermo e con i formati affiancati, così titolo, formati e tasti stanno insieme senza scorrere */
+    html.app-shell #sfida-overlay { align-items: center !important; padding: calc(6 * var(--u)) !important; overflow: hidden !important; }
+    html.app-shell #sfida-overlay .sfida-card { width: min(calc(700 * var(--u)), 100%) !important; max-width: none !important; max-height: calc(100vh - 12 * var(--u)) !important; box-sizing: border-box; overflow-y: auto; padding: calc(10 * var(--u)) calc(16 * var(--u)) calc(12 * var(--u)) !important; scrollbar-width: none; }
+    html.app-shell #sfida-overlay .sfida-card::-webkit-scrollbar { display: none; }
+    html.app-shell #sfida-overlay .sfida-sticker { position: static !important; margin: 0 !important; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; }
+    html.app-shell #sfida-overlay .sfida-card h2 { margin: calc(6 * var(--u)) 0 calc(2 * var(--u)) !important; font-size: calc(22 * var(--u)) !important; }
+    html.app-shell #sfida-overlay .sfida-sotto { margin: 0 0 calc(8 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; }
+    html.app-shell #sfida-overlay .sfida-messaggio { margin: 0 0 calc(6 * var(--u)) !important; padding: calc(6 * var(--u)) calc(10 * var(--u)) !important; font-size: calc(11.5 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; }
+    html.app-shell #sfida-overlay .sfida-formati { display: flex !important; flex-wrap: wrap; gap: calc(8 * var(--u)) !important; }
+    html.app-shell #sfida-overlay .sfida-formato { flex: 1 1 calc(180 * var(--u)); min-width: 0; margin: 0 !important; padding: calc(7 * var(--u)) calc(12 * var(--u)) calc(5 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(11 * var(--u)); font-size: calc(14 * var(--u)) !important; rotate: 0deg !important; transform: none !important; }
+    html.app-shell #sfida-overlay .btn-save { background: linear-gradient(180deg, #9af7ae, #47ea6a) !important; color: #000 !important; border-color: var(--nb-ink, #000) !important; }
+    html.app-shell #sfida-overlay .btn-save:disabled { opacity: .4; }
+    html.app-shell #sfida-overlay .sfida-azioni { margin: calc(10 * var(--u)) 0 0 !important; gap: calc(10 * var(--u)); flex-wrap: nowrap !important; }
+    html.app-shell #sfida-overlay :is(.btn-save, .btn-cancel) { font-family: var(--nb-font-titoli) !important; font-weight: 900 !important; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; flex: 1 1 0 !important; min-width: 0 !important; padding: calc(7 * var(--u)) 0 calc(5 * var(--u)) !important; font-size: calc(14 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; }
     /* ---------- 12. Practice: due grandi tessere, poi i team (contro la CPU) o gli allenatori (amichevole) ---------- */
     html.app-shell:has(body.pg-practice), html.app-shell body.pg-practice { overflow: hidden !important; }
     html.app-shell body.pg-practice { height: 100vh; box-sizing: border-box; margin: 0 !important; padding: var(--gx-barra) 0 0 !important; }
     html.app-shell body.pg-practice .pr { box-sizing: border-box; height: calc(100vh - var(--gx-barra)); padding: calc(10 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(12 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; overflow: hidden; }
     html.app-shell body.pg-practice .pr-vista { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-    html.app-shell body.pg-practice .pr-corpo { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(6 * var(--u)); overflow: hidden; }    html.app-shell body.pg-practice .pr-home { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(14 * var(--u)); padding: calc(4 * var(--u)) 0 calc(6 * var(--u)); }    html.app-shell body.pg-practice .pr-tessera {
-        position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(8 * var(--u)); padding: calc(10 * var(--u)); overflow: hidden; text-align: center; color: #000; cursor: pointer;
-        background: linear-gradient(172deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 84%, #000) 100%);
-        border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(7 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .5); font: inherit;
-        transition: transform .08s ease, box-shadow .08s ease; animation: gx-ac-avanti .34s cubic-bezier(.2, 1.2, .4, 1) backwards;
-    }
-    html.app-shell body.pg-practice .pr-tessera:nth-child(2) { animation-delay: .07s; }
-    html.app-shell body.pg-practice .pr-tessera:active { transform: translateY(calc(5 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .5); }
-    html.app-shell body.pg-practice .pr-ico { display: grid; place-items: center; width: calc(78 * var(--u)); height: calc(78 * var(--u)); background: #fff; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: 50%; box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .5); }
-    html.app-shell body.pg-practice .pr-ico svg { width: calc(46 * var(--u)); height: calc(46 * var(--u)); fill: none; stroke: #000; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
-    html.app-shell body.pg-practice .pr-tessera b { font: 900 calc(34 * var(--u))/1.05 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .55); }
-    html.app-shell body.pg-practice .pr-tessera small { max-width: 90%; font: 700 calc(13 * var(--u))/1.3 var(--nb-font-testo); opacity: .8; }
+    html.app-shell body.pg-practice .pr-corpo { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(6 * var(--u)); overflow: hidden; }
+    /* la scelta: tre locandine affiancate (ranked, unranked, vs cpu), ognuna con la sua immagine, l'alone nel suo colore e il tag storto col nome */
+    html.app-shell body.pg-practice .pr-home { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(8 * var(--u)); padding: calc(4 * var(--u)) 0 calc(6 * var(--u)); }
+    html.app-shell body.pg-practice .pr-poster { position: relative; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: calc(3 * var(--u)); padding: 0; cursor: pointer; color: #fff; background: none; border: 0; font: inherit; -webkit-tap-highlight-color: transparent; animation: gx-pop .38s cubic-bezier(.2, 1.2, .4, 1) backwards; animation-delay: calc(var(--i, 0) * .07s); }
+    html.app-shell body.pg-practice .pr-arte { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    html.app-shell body.pg-practice .pr-alone { position: absolute; left: 50%; bottom: 0; width: calc(210 * var(--u)); height: calc(210 * var(--u)); translate: -50% 6%; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--c) 78%, #fff) 0%, color-mix(in srgb, var(--c) 42%, transparent) 42%, transparent 70%); animation: gx-respira 3.6s ease-in-out infinite; }
+    html.app-shell body.pg-practice .pr-ico { position: relative; display: grid; place-items: center; width: calc(104 * var(--u)); height: calc(104 * var(--u)); margin-bottom: calc(20 * var(--u)); background: #fff; border: calc(5 * var(--u)) solid var(--nb-ink, #000); border-radius: 50%; box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-ico svg { width: calc(60 * var(--u)); height: calc(60 * var(--u)); fill: none; stroke: #000; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell body.pg-practice .pr-img { position: relative; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+    html.app-shell body.pg-practice .pr-img[hidden] { display: none; }
+    html.app-shell body.pg-practice .pr-arte.ha-immagine > .pr-ico { display: none; }
+    html.app-shell body.pg-practice .pr-poster .pr-tag { position: relative; z-index: 2; display: block; max-width: none; overflow: visible; padding: calc(7 * var(--u)) calc(22 * var(--u)) calc(4 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); transition: transform .1s ease, box-shadow .1s ease; }
+    html.app-shell body.pg-practice .pr-poster .pr-tag { max-width: 94%; }
+    html.app-shell body.pg-practice .pr-poster .pr-tag span { display: block; overflow: hidden; text-overflow: ellipsis; transform: skewX(9deg); font: 900 calc(26 * var(--u))/1.05 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); white-space: nowrap; }
+    html.app-shell body.pg-practice .pr-poster:active .pr-tag { transform: skewX(-9deg) translateY(calc(3 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
+    html.app-shell body.pg-practice .pr-sotto-tag { max-width: 96%; margin-top: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0, 0, 0, .55); border-radius: calc(6 * var(--u)); font: 800 calc(10 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-bolla { position: absolute; left: 50%; bottom: calc(112 * var(--u)); margin-left: calc(34 * var(--u)); z-index: 3; min-width: calc(26 * var(--u)); height: calc(26 * var(--u)); box-sizing: border-box; padding: 0 calc(6 * var(--u)); display: grid; place-items: center; background: #ff4d4d; color: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); font-style: normal; animation: gx-bob 1.8s ease-in-out infinite; }
     html.app-shell body.pg-practice .pr-vista { animation: gx-pagina-entra .3s cubic-bezier(.2, .9, .3, 1) backwards; }
     html.app-shell body.pg-practice .pr-testa { display: flex; align-items: center; gap: calc(10 * var(--u)); margin: 0 0 calc(12 * var(--u)); }
     html.app-shell body.pg-practice .pr-testa h2 { margin: 0; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; rotate: -1deg; }
@@ -1014,6 +1084,44 @@
     html.app-shell body.pg-practice .pr-accedi b { font: 900 calc(24 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-accedi small { font: 700 calc(13 * var(--u))/1.3 var(--nb-font-testo); opacity: .8; }
     html.app-shell body.pg-practice .pr-bottone { margin-top: calc(6 * var(--u)); padding: calc(9 * var(--u)) calc(26 * var(--u)) calc(7 * var(--u)); cursor: pointer; background: linear-gradient(180deg, #9af7ae, #47ea6a); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(16 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+
+    /* ----- Ranked: la stagione (avanzamento, showdown e classifica) e le schede di chi sfidare, riprendere o rispondere ----- */
+    html.app-shell body.pg-practice .pr-barra-stagione { display: flex; align-items: center; justify-content: space-between; gap: calc(12 * var(--u)); margin: calc(-4 * var(--u)) 0 calc(6 * var(--u)); }
+    html.app-shell body.pg-practice .pr-avanza { display: flex; align-items: center; gap: calc(9 * var(--u)); min-width: 0; color: #fff; }
+    html.app-shell body.pg-practice .pr-avanza b { white-space: nowrap; font: 900 calc(16 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell body.pg-practice .pr-avanza b small, html.app-shell body.pg-practice .pr-resto { font: 800 calc(10 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+    html.app-shell body.pg-practice .pr-resto { padding: calc(3 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)); background: rgba(0, 0, 0, .5); border-radius: calc(6 * var(--u)); opacity: 1; }
+    html.app-shell body.pg-practice .pr-barra { flex: none; width: calc(150 * var(--u)); height: calc(12 * var(--u)); overflow: hidden; background: rgba(0, 0, 0, .55); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(7 * var(--u)); }
+    html.app-shell body.pg-practice .pr-barra i { display: block; height: 100%; background: linear-gradient(180deg, #ffe08a, var(--gx-giallo)); border-radius: calc(5 * var(--u)); transition: width .5s ease; }
+    html.app-shell body.pg-practice .pr-bottone-g { flex: none; padding: calc(7 * var(--u)) calc(16 * var(--u)) calc(5 * var(--u)); background: var(--gx-giallo); color: #000; text-decoration: none; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-bottone-g:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-g-sfide > * { flex-basis: calc(146 * var(--u)); }
+    html.app-shell body.pg-practice .pr-g-sfide { padding-top: calc(46 * var(--u)); margin-top: calc(-42 * var(--u)); padding-left: calc(30 * var(--u)); padding-right: calc(30 * var(--u)); }
+    html.app-shell body.pg-practice .pr-sfida { position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); min-width: 0; color: #fff; --pw: 112; }
+    html.app-shell body.pg-practice .pr-sfida .pr-palco { height: calc(98 * var(--u)); }
+    html.app-shell body.pg-practice .pr-sfida .pr-avatar { height: calc(82 * var(--u)); max-width: calc(96 * var(--u)); bottom: calc(10 * var(--u)); }
+    html.app-shell body.pg-practice .pr-sfida .pr-nome { padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(7 * var(--u)); font-size: calc(13 * var(--u)); }
+    html.app-shell body.pg-practice .pr-etichetta { position: absolute; z-index: 2; top: calc(-6 * var(--u)); left: 50%; translate: -50% 0; white-space: nowrap; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #fff; color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); transform: skewX(-9deg); font: 900 calc(9 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-s-ricevuta .pr-etichetta { background: #ff7b6b; }
+    html.app-shell body.pg-practice .pr-s-inCorso .pr-etichetta { background: #6fa8ff; }
+    html.app-shell body.pg-practice .pr-s-mancano .pr-etichetta { background: var(--gx-giallo); }
+    html.app-shell body.pg-practice .pr-s-inviata .pr-etichetta { background: #c9c9d6; }
+    html.app-shell body.pg-practice .pr-formati { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(3 * var(--u)); max-width: 100%; }
+    html.app-shell body.pg-practice .pr-fm { padding: calc(1 * var(--u)) calc(7 * var(--u)); background: rgba(0, 0, 0, .55); border-radius: calc(6 * var(--u)); font: 800 calc(9 * var(--u))/1.5 var(--nb-font-titoli); font-style: normal; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    html.app-shell body.pg-practice .pr-fm b { color: var(--gx-giallo); }
+    html.app-shell body.pg-practice .pr-fm-su { opacity: .45; }
+    html.app-shell body.pg-practice .pr-azione { display: inline-block; box-sizing: border-box; margin-top: calc(2 * var(--u)); padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); cursor: pointer; text-align: center; text-decoration: none; background: linear-gradient(180deg, #9af7ae, #47ea6a); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(11 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-azione:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-azione:disabled { opacity: .5; }
+    html.app-shell body.pg-practice .pr-azione.pr-no { background: linear-gradient(180deg, #ffc1b8, #ff7b6b); }
+    html.app-shell body.pg-practice .pr-doppia { display: flex; gap: calc(5 * var(--u)); }
+    html.app-shell body.pg-practice .pr-doppia .pr-azione { padding-left: calc(8 * var(--u)); padding-right: calc(8 * var(--u)); }
+    html.app-shell body.pg-practice .pr-nota { margin-top: calc(2 * var(--u)); color: rgba(255, 255, 255, .8); font: 800 calc(10 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-home-stagioni { grid-template-columns: repeat(var(--n, 2), minmax(0, calc(246 * var(--u)))); justify-content: center; }
+    html.app-shell body.pg-practice .pr-ico-num { align-content: center; gap: calc(2 * var(--u)); color: #000; text-align: center; }
+    html.app-shell body.pg-practice .pr-ico-num b { font: 900 calc(34 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .02em; }
+    html.app-shell body.pg-practice .pr-ico-num b small { font-size: calc(16 * var(--u)); opacity: .55; }
+    html.app-shell body.pg-practice .pr-ico-num em { font: 800 calc(10 * var(--u))/1 var(--nb-font-titoli); font-style: normal; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
 
     /* ---------- 13. Il movimento: la pagina entra con un balzo, e il passaggio tra pagine scorre (dove il browser sa farlo) ---------- */
     @keyframes gx-pagina-entra { from { opacity: 0; translate: calc(18 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }

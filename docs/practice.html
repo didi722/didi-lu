@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Practice | Sant'Alvise League</title>
+    <title>Play | Sant'Alvise League</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -22,6 +22,7 @@
     <script src="amichevoli.js"></script>
     <script src="formato-random.js"></script>
     <script src="sprite-pkm.js"></script>
+    <script src="profilo-personale.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e interfaccia da gioco (app-gioco.css, app-gioco-pagine.css e app-practice.js, li carica app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -32,7 +33,7 @@
     <link rel="apple-touch-icon" href="immagini/app/apple-touch-icon.png">
     <link rel="stylesheet" href="app.css">
     <script src="app.js"></script>
-    <!-- Practice è una pagina dell'app: dal sito da PC (o dal browser) si torna alla home -->
+    <!-- Play (ex Practice) è una pagina dell'app: dal sito da PC (o dal browser) si torna alla home -->
     <script>if (!document.documentElement.classList.contains('app')) location.replace('index.html');</script>
 </head>
 <body class="nb pg-practice senza-ads">
@@ -63,7 +64,7 @@
         </div>
     </div>
 
-    <!-- Le tre schermate (scelta, contro la CPU, amichevole) le disegna app-practice.js -->
+    <!-- Le schermate (scelta, ranked, unranked, contro la CPU) le disegna app-practice.js -->
     <main id="practice" class="pr" aria-live="polite"></main>
 
 <script>
