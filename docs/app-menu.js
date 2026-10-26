@@ -123,7 +123,7 @@
 
         // ----- le tessere -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
-        const sottotitoli = { matches: 'Play & watch the showdowns', box: 'Your teams', trainers: 'Rankings & challenges', stats: 'League numbers' };
+        const sottotitoli = { matches: 'Play & watch the showdowns', practice: 'CPU or friendly', box: 'Your teams', trainers: 'Meet the league', stats: 'League numbers' };
         $('gx-tessere').innerHTML = voci.map((v, i) =>
             '<a class="gx-tessera gx-t-' + v.id + '" href="' + esc(v.href) + '" style="--c:' + esc(v.colore) + ';--i:' + i + '" data-suono="scegli">' +
                 '<span class="gx-ico">' + svg(v.id) + '</span>' +
@@ -180,7 +180,7 @@
         const apriLogin = () => { const el = $('gx-login'); el.hidden = false; aggiornaClasse(); win.setTimeout(() => $('gx-email').focus(), 60); };
         const chiudiLogin = () => { $('gx-login').hidden = true; aggiornaClasse(); };
         $('gx-login').addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === $('gx-login')) chiudiLogin(); });
-        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); } });
+        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); chiudiAch(); } });
         const errore = $('gx-login-errore');
         const mostraErrore = t => { errore.textContent = t; errore.hidden = !t; };
         $('gx-login-form').addEventListener('submit', e => {
@@ -198,6 +198,7 @@
 
         // ----- il giocatore -----
         let giocatore = null;           // riassunto, o null se non si è collegati
+        let ach = null;                 // gli achievements del giocatore ({ voci, sbloccati, totale }), una volta caricati; false se non si sono potuti leggere
         let utente = null;
         let admin = false;
         let stagione = null;
@@ -215,7 +216,8 @@
                 '<li><b>' + (giocatore.elo == null ? 'N/A' : giocatore.elo) + '</b><span>Elo</span></li>',
                 '<li><b>' + giocatore.vinte + '</b><span>Seasons won</span></li>'
             ].join('');
-            return '<div class="gx-palco"><span class="gx-aura"></span><img class="gx-avatar" src="' + esc(giocatore.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'immagini/magikarp.png\'"><span class="gx-piattaforma"></span></div>' +
+            const medaglia = '<button type="button" class="gx-ach-apri" data-ach="1" aria-label="Achievements" data-suono="apri">' + svg('medaglia') + (ach ? '<b>' + ach.sbloccati + '</b>' : '') + '</button>';
+            return '<div class="gx-palco"><span class="gx-aura"></span><img class="gx-avatar" src="' + esc(giocatore.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'immagini/magikarp.png\'"><span class="gx-piattaforma"></span>' + medaglia + '</div>' +
                 '<div class="gx-targa"><b class="gx-nome">' + esc(giocatore.nome) + '</b>' + (giocatore.titolo ? '<small class="gx-titolo-g">' + esc(giocatore.titolo) + '</small>' : '') + '</div>' +
                 '<ul class="gx-numeri">' + numeri + '</ul>' + nastro;
         };
@@ -226,15 +228,47 @@
         };
         disegnaGiocatore();
 
+        // ----- gli achievements: un tasto accanto all'avatar, una finestra con i badge (app-achievements.js) -----
+        const dialogoAch = $('gx-ach');
+        const disegnaAch = () => {
+            const A = win.AppAchievements;
+            $('gx-ach-somma').textContent = ach && A ? A.somma(ach) : '';
+            $('gx-ach-lista').innerHTML = ach && A ? A.htmlElenco(ach.voci) : '<p class="ach-vuoto">' + (ach === false ? 'Could not load your achievements. Try again later.' : 'Loading…') + '</p>';
+        };
+        const apriAch = () => {
+            if (!dialogoAch) return;
+            disegnaAch();
+            dialogoAch.hidden = false;
+            aggiornaClasse();
+            if (ach === null) caricaAch();
+        };
+        function chiudiAch() { if (!dialogoAch || dialogoAch.hidden) return; dialogoAch.hidden = true; aggiornaClasse(); }
+        if (dialogoAch) dialogoAch.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === dialogoAch) chiudiAch(); });
+        $('gx-giocatore').addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-ach]')) apriAch(); });
+        async function caricaAch() {
+            const per = giocatore;
+            if (!per || !win.AppAchievements) return;
+            ach = null;
+            try {
+                const r = await win.AppAchievements.carica(win, per.id);
+                if (giocatore !== per) return;
+                ach = r;
+            } catch (e) { if (giocatore === per) ach = false; }
+            disegnaGiocatore();
+            if (dialogoAch && !dialogoAch.hidden) disegnaAch();
+        }
+
         const caricaGiocatore = async user => {
             utente = user;
             giocatore = null;
+            ach = null;
             admin = false;
             const r = user ? await C.leggiGiocatore(win, user) : null;
             if (r) { giocatore = r.giocatore; admin = r.admin; }
             disegnaGiocatore();
             if (opzioni && opzioni.aperta()) opzioni.aggiorna();
             provaAnnuncio();
+            if (giocatore) caricaAch();
         };
 
         // ----- la stagione -----

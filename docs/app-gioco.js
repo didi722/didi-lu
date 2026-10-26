@@ -4,7 +4,7 @@
    Lo carica app.js solo quando il sito è aperto come app (icona sulla Home o APK), nelle pagine con l'interfaccia da gioco (tutte tranne menù, battaglia, accesso
    e amministrazione). Al posto dell'intestazione da sito per PC (striscia nera con i tre pallini, adesivo del titolo, tasto utente, tasti sparsi) mette quella
    di un gioco:
-     - la barra in alto: indietro, il menù principale (la griglia), il titolo della pagina sul nastro del suo colore, e a destra campanella, battaglie
+     - la barra in alto: il menù principale (la griglia; non c'è la freccia indietro: si torna sempre al menù), il titolo della pagina sul nastro del suo colore, e a destra campanella, battaglie
        (quelle di sempre, di sfide.js: qui si sistemano solo, in app-gioco.css) e il giocatore, che apre le impostazioni (le stesse del menù);
      - la barra si nasconde scorrendo verso il basso e torna scorrendo verso l'alto;
      - le pagine cambiano con una transizione (transizioni tra documenti, dove il browser le ha).
@@ -78,6 +78,21 @@
         return d > 0;
     }
 
+    /** Le finestre del sito (team, Pokémon, classifica, accesso, iscrizione...): contenitori a tutto schermo che si aprono sopra la pagina. */
+    const FINESTRE = '.modal, [id^="modal-"], [id$="Modal"], [id$="-overlay"], .format-modal-backdrop, .stats-modal, .ach-modal, .sfide-dropdown';
+    const NON_FINESTRE = ['menu-overlay'];
+
+    /** C'è una finestra del sito aperta? (visibile e a tutto schermo: `display` e `visibility` si leggono dallo stile calcolato) */
+    function finestraAperta(doc, win) {
+        for (const e of doc.querySelectorAll(FINESTRE)) {
+            if (!e || NON_FINESTRE.includes(e.id) || (e.classList && e.classList.contains('gx-dialogo'))) continue;
+            const cs = win.getComputedStyle(e);
+            if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position !== 'fixed' || Number(cs.opacity) === 0) continue;
+            return true;
+        }
+        return false;
+    }
+
     // ---------- la pagina ----------
 
     function avvia(win) {
@@ -105,11 +120,6 @@
         const barra = el('header', 'gx-barra');
         barra.setAttribute('role', 'banner');
         html.style.setProperty('--gx-voce', coloreDi(pagina));          // il colore della pagina: quello della sua tessera nel menù (barra, sfondo, tasti)
-        const indietro = el('button', 'gx-tondo gx-indietro', svg('indietro'));
-        indietro.type = 'button';
-        indietro.setAttribute('aria-label', 'Back');
-        indietro.setAttribute('data-suono', 'indietro');
-        indietro.addEventListener('click', () => { if (win.history.length > 1) win.history.back(); else win.location.href = 'menu.html'; });
         const casa = el('a', 'gx-tondo gx-casa', svg('casa'));
         casa.href = 'menu.html';
         casa.setAttribute('aria-label', 'Main menu');
@@ -119,7 +129,7 @@
         account.type = 'button';
         account.setAttribute('aria-haspopup', 'dialog');
         account.setAttribute('data-suono', 'apri');
-        barra.append(indietro, casa, h1, account);
+        barra.append(casa, h1, account);
         doc.body.appendChild(barra);
 
         // il titolo segue quello della pagina (alcune lo scrivono dopo aver caricato i dati)
@@ -191,6 +201,16 @@
             });
         }, { passive: true });
 
+        // ----- con una finestra del sito aperta (team, Pokémon, classifica...) la pagina dietro sta ferma -----
+        let controllo = false;
+        const segnaFinestre = () => {
+            if (controllo) return;
+            controllo = true;
+            win.requestAnimationFrame(() => { controllo = false; html.classList.toggle('gx-dialogo-aperto', finestraAperta(doc, win)); });
+        };
+        if (win.MutationObserver) new win.MutationObserver(segnaFinestre).observe(doc.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+        segnaFinestre();
+
         // ----- le pagine cambiano con una transizione (dove il browser sa farla) -----
         const stile = doc.createElement('style');
         stile.textContent = '@view-transition { navigation: auto; }';
@@ -199,5 +219,5 @@
         return { barra, opzioni };
     }
 
-    return { TITOLI, COLORI, CON_SOTTOTITOLO, CON_NOME_STAGIONE, SOGLIA_SCORRIMENTO, nomePagina, titolo, sottotitolo, sottotitoloDa, coloreDi, iniziale, barraNascosta, avvia };
+    return { TITOLI, COLORI, CON_SOTTOTITOLO, CON_NOME_STAGIONE, SOGLIA_SCORRIMENTO, FINESTRE, finestraAperta, nomePagina, titolo, sottotitolo, sottotitoloDa, coloreDi, iniziale, barraNascosta, avvia };
 });

@@ -942,6 +942,7 @@ async function renderRankings(leaderboardData) {
     }
 
     // Generiamo l'HTML con i colori dinamici recuperati da players: una riga per giocatore (classifica.css), niente stili qui dentro
+    const perApp = [];      // gli stessi giocatori come dati: l'app disegna la classifica a modo suo (app-classifica.js)
     const htmlRows = await Promise.all(sortedPlayers.map(async (player, index) => {
         const nameClean = player.name.toLowerCase().trim();
         const snapInfo = await db.ref(`players/${nameClean}/info`).once('value');
@@ -954,6 +955,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">
@@ -972,6 +974,7 @@ async function renderRankings(leaderboardData) {
     }));
 
     listContainer.innerHTML = htmlRows.join('');
+    if (window.AppSito) AppSito.pubblica('classifica', { stagione, giocatori: perApp });
 }
 
 async function renderClassificaDettagliata(stagione) {
@@ -2609,10 +2612,11 @@ function adattaReplayAlloSchermo() {
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
     const riservato = alto('.replay-mini-header') + alto('.replay-campo') + alto('.replay-comandi') + sotto + 54;
-    // nell'app da telefono non c'è la console: lo schermo del replay (314 × 300) sta da solo, ingrandito quanto basta per la larghezza e l'altezza
+    // nell'app da telefono non c'è la console né l'intestazione: la scena del replay (640 × 360) sta da sola al centro, ingrandita quanto ci sta;
+    // ai lati restano due colonne strette, i tasti dei set a sinistra e i comandi a destra
     if (document.documentElement.classList.contains('app-shell') && (larghezza <= 900 || altezza <= 500)) {
-        const k = Math.min((larghezza - 16 - tastiSet) / 314, (altezza - riservato + 54 - 20) / 300, 1.6);
-        modal.style.setProperty('--gba-scala', Math.max(0.6, k).toFixed(3));
+        const k = Math.min((larghezza - 140) / 640, (altezza - 14) / 360, 1.6);
+        modal.style.setProperty('--gba-scala', Math.max(0.4, k).toFixed(3));
         return;
     }
     const perLarghezza = (larghezza - 24 - tastiSet) / 1150;

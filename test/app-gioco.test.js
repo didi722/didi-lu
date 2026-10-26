@@ -53,7 +53,8 @@ test('sottotitolo: Matches (e l\'iscrizione) mostrano accanto al nastro il nome 
 test('coloreDi: il nastro ha il colore della tessera nel menù (la pagina dell\'allenatore con Trainers); l\'iscrizione il verde della lega; le altre pagine il giallo del sito', () => {
     for (const v of A.VOCI) assert.equal(G.coloreDi(v.href), v.colore, v.href);
     assert.equal(G.coloreDi('hub.html'), '#31c489');
-    assert.equal(G.coloreDi('public.html'), A.VOCI.find(v => v.id === 'trainers').colore);
+    assert.equal(G.coloreDi('practice.html'), A.VOCI.find(v => v.id === 'practice').colore);
+    assert.equal(G.coloreDi('public.html'), '#ffbd44', 'la pagina pubblica nell\'app non c\'è più (porta a Trainers): niente tessera');
     assert.equal(G.coloreDi('battle.html'), '#ffbd44');
     assert.equal(G.coloreDi('/didi-lu/'), '#ffbd44', 'la radice (le stagioni) nell\'app non ha una tessera');
     assert.deepEqual(Object.keys(G.COLORI), ['hub.html']);
@@ -94,7 +95,7 @@ test('avvia: fuori dall\'app (senza app-shell), nel frame del simulatore o senza
 test('ogni pagina del gioco ha la sua classe sul body (pg-...), con cui il foglio la riconosce', () => {
     // le pagine che nell'app esistono (le altre, del solo sito, rimandano al menù)
     const attese = {
-        'hub.html': 'pg-hub', 'matches.html': 'pg-matches', 'players.html': 'pg-players', 'stats.html': 'pg-stats', 'box.html': 'pg-box', 'public.html': 'pg-public'
+        'hub.html': 'pg-hub', 'matches.html': 'pg-matches', 'players.html': 'pg-players', 'stats.html': 'pg-stats', 'box.html': 'pg-box', 'practice.html': 'pg-practice'
     };
     const css = docs('app-gioco-pagine.css');
     for (const [pagina, classe] of Object.entries(attese)) {
@@ -104,13 +105,13 @@ test('ogni pagina del gioco ha la sua classe sul body (pg-...), con cui il fogli
     for (const classe of Object.values(attese)) assert.ok(css.includes(`body.${classe}`), `il foglio non conosce ${classe}`);
     // le pagine del solo sito non hanno più un posto nell'app (né un foglio): chi le apre dal telefono finisce nel menù
     for (const p of A.FUORI_APP) assert.ok(!Object.keys(attese).includes(p), p);
-    for (const classe of ['pg-index', 'pg-profile', 'pg-palmares', 'pg-formats', 'pg-rules']) assert.ok(!css.includes(`body.${classe}`), `${classe}: pagina fuori dall'app`);
+    for (const classe of ['pg-index', 'pg-profile', 'pg-palmares', 'pg-formats', 'pg-rules', 'pg-public']) assert.ok(!css.includes(`body.${classe}`), `${classe}: pagina fuori dall'app`);
 });
 
 test('le pagine ridisegnate usano i nomi veri delle loro classi (se una pagina cambia nome, il foglio va aggiornato)', () => {
     const css = senzaCommenti(docs('app-gioco-pagine.css'));
     // il foglio nomina le classi di ogni pagina dopo "body.pg-...": ognuna deve esistere ancora nella pagina, nei suoi script o nei suoi fogli
-    const sorgenti = fs.readdirSync(DOCS).filter(f => /\.(html|js|css)$/.test(f) && !/^app-/.test(f)).map(docs).join('\n');
+    const sorgenti = fs.readdirSync(DOCS).filter(f => /\.(html|js|css)$/.test(f) && !/^app-.*\.css$/.test(f)).map(docs).join('\n');
     const perPagina = {};
     for (const m of css.matchAll(/([^{}]+)\{/g)) {
         const pre = m[1].trim();
@@ -122,7 +123,7 @@ test('le pagine ridisegnate usano i nomi veri delle loro classi (se una pagina c
             (perPagina[pg[1]] ||= new Set()).add(c[1]);
         }
     }
-    assert.deepEqual(Object.keys(perPagina).sort(), ['box', 'hub', 'matches', 'players', 'stats']);
+    assert.deepEqual(Object.keys(perPagina).sort(), ['box', 'hub', 'matches', 'players', 'practice', 'stats']);
     for (const [pagina, classi] of Object.entries(perPagina)) {
         assert.ok(classi.size >= 5, `${pagina}: classi trovate ${classi.size}`);
         const mancano = [...classi].filter(c => !sorgenti.includes(c));
@@ -182,7 +183,7 @@ test('app-gioco-pagine.css: ogni regola riguarda l\'app ("html.app-shell") e sta
     const lista = selettori(css);
     assert.ok(lista.length >= 300, 'selettori trovati: ' + lista.length);
     for (const s of lista) {
-        assert.match(s, /^(html\.app-shell|html\.gx-barra-nascosta\.app-shell|html\.gx-dialogo-aperto body$|::view-transition-(old|new|group)\(|\.gx-barra$)/, `regola che tocca il sito intero: "${s}"`);
+        assert.match(s, /^(html\.app-shell|html\.gx-barra-nascosta\.app-shell|html\.gx-dialogo-aperto( body)?$|::view-transition-(old|new|group)\(|\.gx-barra$)/, `regola che tocca il sito intero: "${s}"`);
     }
     // l'unica regola fuori dalle @media nasconde la barra dove non serve (non esiste nemmeno finché l'app non la crea)
     assert.deepEqual(fuoriDalleCondizioni(css), ['.gx-barra']);
@@ -207,11 +208,12 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
 
 test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --i le scrive il menù tessera per tessera', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
-    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'dettagli.js'].map(docs).join('\n');
+    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'dettagli.js'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
     const usate = new Set([...fogli.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
     for (const m of js.matchAll(/setProperty\('(--[a-z0-9-]+)'/g)) definite.add(m[1]);
+    for (const m of js.matchAll(/(--[a-z0-9-]+):\$\{/g)) definite.add(m[1]);                // scritte nello stile inline dei pezzi (--c, --cols...)
     for (const m of tema.matchAll(/(--[a-z0-9-]+)\s*:/gi)) definite.add(m[1]);
     const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i'].includes(v));
     assert.deepEqual(senza, [], 'proprietà usate ma mai definite');

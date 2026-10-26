@@ -387,6 +387,7 @@
         if (!righe.length) {
             griglia.innerHTML = messaggioVuoto();
             altri.innerHTML = '';
+            pubblicaApp(righe);
             return;
         }
 
@@ -402,6 +403,38 @@
         altri.innerHTML = resto > 0
             ? `<button type="button" class="btn-altri" id="btn-altri">Show ${fmt(Math.min(PASSO, resto))} more<small>${fmt(visibili.length)} of ${fmt(righe.length)}</small></button>`
             : '';
+        pubblicaApp(righe);
+    }
+
+    // L'app (app-stats.js) mostra un elemento alla volta: gli stessi dati della griglia (stesso ordine, stesse statistiche, già in HTML) come un modello da disegnare a modo suo.
+    // I controlli dell'app (categoria, stagione, formato, ordinamento) fanno scattare quelli della pagina, che ridisegna e pubblica di nuovo.
+    const MAX_APP = 120;
+    function pubblicaApp(righe) {
+        if (!window.AppSito) return;
+        const tab = STATO.tab;
+        const stats = STAT[tab]();
+        const ord = ordineAttuale(tab);
+        const attiva = stats.find(s => s.id === ord.id);
+        const grande = attiva && !attiva.testo ? attiva : stats.find(s => s.id === ordinePredefinito(tab).id);
+        const numeriche = stats.filter(s => !s.testo);
+        const opzioni = el => (el ? [...el.options].map(o => ({ valore: o.value, testo: o.textContent })) : []);
+        const testa = x => {
+            if (tab === 'players') return avatar(x, 'as-avatar');
+            if (tab === 'teams') return x.specie.slice(0, 6).map(s => sprite(s, 'as-mini')).join('');
+            return sprite(tab === 'pokemon' ? x.specie : x.nome, 'as-sprite');
+        };
+        const sotto = x => (tab === 'teams' ? `${x.playerNome} · ${x.formato || '—'}` : tab === 'pokemon' ? `${x.team} · ${x.playerNome}` : tab === 'usage' ? x.formati.slice(0, 2).map(f => `${f.formato} ${pct(f.perc)}`).join(' · ') : '');
+        AppSito.pubblica('stats', {
+            tab, tabs: Object.keys(TITOLO_TAB).map(id => ({ id, titolo: TITOLO_TAB[id] })),
+            stagione: STATO.stagione, stagioni: opzioni($('sel-stagione')), formato: STATO.formato, formati: opzioni($('sel-formato')),
+            ordine: { id: ord.id, dir: ord.dir }, grande: grande.id, tessere: TESSERE[tab].filter(id => id !== grande.id),
+            parametri: numeriche.map(s => ({ id: s.id, titolo: s.titolo, tip: s.tip || '' })),
+            titolo: nomeStagione(), vuoto: righe.length ? '' : messaggioVuoto(), totale: righe.length,
+            righe: righe.slice(0, MAX_APP).map((x, i) => ({
+                chiave: x[CHIAVE[tab]], posizione: i + 1, nome: tab === 'pokemon' ? x.specie : x.nome, colore: coloreSicuro(x.colore) || COLORE_BASE[tab], testa: testa(x), sotto: sotto(x),
+                valori: Object.fromEntries(numeriche.map(s => [s.id, { titolo: s.titolo, html: s.html(x), sotto: s.sotto ? s.sotto(x) : '' }]))
+            }))
+        });
     }
 
     function messaggioVuoto() {

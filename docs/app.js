@@ -10,10 +10,12 @@
    vedere i risultati (non una copia del sito):
      - lo schermo si blocca in orizzontale (plugin dell'APK o API del browser) e, nell'APK, le barre di sistema si nascondono; dove l'orientamento non
        si può bloccare (iPhone) un avviso chiede di girare il telefono;
-     - all'apertura si arriva al menù principale (menu.html): l'avatar del giocatore e poche tessere (Matches, Box, Trainers, Stats). Le pagine del sito che
-       nell'app non servono (stagioni, profilo, archivio, formati, regolamento) rimandano al menù: le stagioni aperte si annunciano lì;
+     - all'apertura si arriva al menù principale (menu.html): l'avatar del giocatore, i suoi achievements e poche tessere (Matches, Practice, Box, Trainers,
+       Stats). Le pagine del sito che nell'app non servono (stagioni, profilo, archivio, formati, regolamento) rimandano al menù: le stagioni aperte si
+       annunciano lì; la pagina pubblica di un allenatore (public.html) è la sua scheda nella pagina Trainers;
      - lo stile è uno solo, quello dell'app: il tema e il colore che il giocatore ha scelto per il sito non contano;
-     - le altre pagine hanno l'interfaccia da gioco (app-gioco.css, app-gioco.js): indietro, menù, campanella, account in alto, niente barre del sito.
+     - le altre pagine hanno l'interfaccia da gioco (app-gioco.css, app-gioco.js): il menù principale, il titolo, campanella e account in alto, niente
+       barre del sito né freccia indietro (si torna sempre al menù).
    Per vedere l'aspetto da app nel browser (anche da PC): aggiungi ?app=1 a un indirizzo del sito; ?app=0 per tornare indietro.
    Non fa niente dentro un altro frame (il Box incorporato nel simulatore). Le parti pure (riconoscimento, pagine, orientamento...) sono provate in
    test/app.test.js; funziona nel browser (window.AppSito) e in Node (require).
@@ -38,15 +40,28 @@
     const SENZA_HUD = ['menu.html', 'battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
 
     // le pagine del sito che nell'app non servono: dal telefono rimandano al menù (le stagioni aperte si annunciano lì, l'iscrizione è hub.html)
-    const FUORI_APP = ['index.html', 'profile.html', 'palmares.html', 'formats.html', 'rules.html'];
+    // e, per la pagina pubblica di un allenatore, alla sua scheda nella pagina Trainers (che ha già tutto: Pokémon, badge, trofei, Elo)
+    const FUORI_APP = ['index.html', 'profile.html', 'palmares.html', 'formats.html', 'rules.html', 'public.html'];
+    const RIMANDI = { 'public.html': 'players.html' };
+
+    // gli script che una pagina dell'app carica oltre a quelli comuni (app-comune.js, app-gioco.js): ognuno disegna a modo suo i dati che la pagina del sito ha
+    // appena calcolato (vedi pubblica), così il sito da PC non cambia di una riga
+    const SCRIPT_PAGINE = {
+        'matches.html': ['app-carosello.js', 'app-classifica.js'],
+        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'app-trainers.js'],
+        'stats.html': ['app-carosello.js', 'app-stats.js'],
+        'box.html': ['app-teambuilder.js'],
+        'practice.html': ['app-practice.js']
+    };
 
     // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
     // Il colore è anche quello del titolo in alto nella pagina (app-gioco.js), così si capisce da dove si arriva.
     const VOCI = [
         { id: 'matches', et: 'Matches', href: 'matches.html', colore: '#ffbd44', pagine: ['matches.html'] },
+        { id: 'practice', et: 'Practice', href: 'practice.html', colore: '#31c489', pagine: ['practice.html'] },
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
-        { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html', 'public.html'] },
+        { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html'] },
         { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] }
     ];
 
@@ -91,8 +106,38 @@
     /** La pagina ha l'interfaccia da gioco in alto (indietro, menù, campanella, account)? */
     const haHud = pagina => !SENZA_HUD.includes(nomePagina(pagina));
 
-    /** La pagina del sito non ha posto nell'app (stagioni, profilo, archivio, formati, regolamento)? Dal telefono si va al menù. */
+    /** La pagina del sito non ha posto nell'app (stagioni, profilo, archivio, formati, regolamento, pagina pubblica)? Dal telefono si va altrove. */
     const fuoriApp = pagina => FUORI_APP.includes(nomePagina(pagina));
+
+    /**
+     * Dove si va dalla pagina che nell'app non c'è: al menù principale, o (la pagina pubblica di un allenatore) alla pagina Trainers sullo stesso allenatore.
+     * `ricerca`: la parte dell'indirizzo dopo il punto interrogativo, con o senza "?".
+     */
+    function destinazioneFuoriApp(pagina, ricerca) {
+        const p = nomePagina(pagina);
+        if (!RIMANDI[p]) return 'menu.html';
+        let giocatore = '';
+        try { giocatore = new URLSearchParams(String(ricerca || '')).get('player') || ''; } catch (e) { giocatore = ''; }
+        return RIMANDI[p] + (giocatore ? '?player=' + encodeURIComponent(giocatore) : '');
+    }
+
+    // ---------- i dati che la pagina passa all'app ----------
+
+    const DATI_PAGINA = {};
+
+    /**
+     * Le pagine del sito (classifica di Matches, allenatori, statistiche...) passano qui i dati che hanno calcolato: l'app li disegna a modo suo (app-classifica.js,
+     * app-trainers.js, app-stats.js). Si può chiamare sempre, anche da PC: lì non ascolta nessuno. Chi arriva dopo i dati li trova con datiPagina; chi c'era già
+     * sente l'evento "app-dati" sul documento.
+     */
+    function pubblica(nome, dati) {
+        DATI_PAGINA[nome] = dati;
+        try {
+            const d = typeof document !== 'undefined' ? document : null;
+            if (d && typeof CustomEvent === 'function') d.dispatchEvent(new CustomEvent('app-dati', { detail: nome }));
+        } catch (e) { /* niente: i dati restano disponibili */ }
+    }
+    const datiPagina = nome => DATI_PAGINA[nome];
 
     /**
      * Va mostrato l'invito a installare? Solo dal telefono, nel browser, sulla home, se non è stato chiuso da poco.
@@ -231,8 +276,9 @@
         if (modo) {
             fissaStile(doc);
             if (os && fuoriApp(pagina) && win.location && typeof win.location.replace === 'function') {
-                win.location.replace('menu.html');
-                return { modo, menu: true };
+                const dove = destinazioneFuoriApp(pagina, win.location.search);
+                win.location.replace(dove);
+                return { modo, menu: dove === 'menu.html', verso: dove };
             }
         }
 
@@ -247,6 +293,7 @@
             html.classList.add('app-shell');
             caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-gioco-pagine.css');
             caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
+            for (const nome of SCRIPT_PAGINE[pagina] || []) caricaScript(doc, nome);
         }
         // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js
         else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-battaglia.js'); }
@@ -342,8 +389,8 @@
     }
 
     return {
-        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO,
-        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, fissaStile, proporreInstallazione,
+        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO,
+        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, destinazioneFuoriApp, pubblica, datiPagina, fissaStile, proporreInstallazione,
         pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
     };
 });

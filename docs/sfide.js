@@ -970,6 +970,14 @@
 
     function menuConSezioni(titolo, sezioni, vuoto) {
         const parti = [el('h3', '', esc(titolo))];
+        // nell'app il menu è una finestra al centro dello schermo: ha la sua X per chiuderla
+        if (document.documentElement.classList.contains('app')) {
+            const x = el('button', 'sfide-chiudi', '&times;');
+            x.type = 'button';
+            x.setAttribute('aria-label', 'Close');
+            x.addEventListener('click', () => chiudiMenu());
+            parti[0].append(x);
+        }
         for (const [nome, voci] of sezioni) {
             if (voci.length) parti.push(el('div', 'sfide-sezione', esc(nome)), ...voci);
         }

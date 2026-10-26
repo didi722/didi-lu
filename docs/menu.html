@@ -88,6 +88,15 @@
         </div>
     </div>
 
+    <!-- Gli achievements dell'allenatore (i badge del sito: livello, traguardi, cosa manca) -->
+    <div class="gx-dialogo gx-ach" id="gx-ach" role="dialog" aria-modal="true" aria-labelledby="gx-ach-titolo" hidden>
+        <div class="gx-pannello gx-ach-pannello">
+            <button type="button" class="gx-chiudi" data-chiudi aria-label="Close" data-suono="chiudi"></button>
+            <header class="gx-ach-testa"><h2 id="gx-ach-titolo">Achievements</h2><span class="gx-ach-somma" id="gx-ach-somma"></span></header>
+            <div class="gx-ach-lista" id="gx-ach-lista"></div>
+        </div>
+    </div>
+
     <!-- Le impostazioni (suono, vibrazione, avvisi...) le crea app-comune.js alla prima apertura -->
 
     <script>
@@ -102,7 +111,13 @@
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     </script>
+    <script src="statistiche.js"></script>
+    <script src="titoli.js"></script>
+    <script src="fiocchi.js"></script>
+    <script src="badge-team.js"></script>
+    <script src="badge-allenatore.js"></script>
     <script src="app-comune.js"></script>
+    <script src="app-achievements.js"></script>
     <script src="app-menu.js"></script>
 </body>
 </html>
