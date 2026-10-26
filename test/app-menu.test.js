@@ -12,6 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const M = require('../docs/app-menu.js');
 const A = require('../docs/app.js');
+const S = require('../docs/app-scena.js');
 const C = require('../docs/app-comune.js');
 
 const DOCS = path.join(__dirname, '..', 'docs');
@@ -142,7 +143,7 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<script src="sfide\.js"><\/script>/);
     assert.match(html, /<body class="gx-menu">/);
     // gli Achievements usano i moduli dei badge del sito (prima dello script dell'app), che a loro volta vogliono Statistiche e Titoli
-    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-carosello\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
+    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-carosello\.js"><\/script>\s*<script src="app-scena\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
     // il menù non è una pagina per i motori di ricerca né per il browser da PC: dal browser si torna alla home (provato sotto)
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
@@ -154,52 +155,34 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /document\.getElementById\('gx-splash'\)\.addEventListener\('click'/);
     // le scene: il palco e i tasti per saltare dall'una all'altra
     assert.match(html, /<nav class="gx-tessere" id="gx-tessere"/);
-    assert.match(html, /<div class="gx-nav" id="gx-nav" role="tablist"/);
+    assert.doesNotMatch(html, /gx-nav/, 'niente tasti in basso per saltare da una scena all\'altra: si scorre col dito');
     assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1\.0">/, 'il viewport del sito: nell\'app lo riscrive app.js (niente zoom)');
 });
 
-test('le scene: una per voce del gioco, con cielo, figure ed effetti propri; la prima è Play (Pikachu contro Mega Lucario); le immagini vere (tessera-<id>) si cercano in png e webp', () => {
+test('le scene del menù: una per voce, con il tag in basso al centro e la riga sotto; niente tasti in basso; il palco ritaglia tutto (niente zoom né scorrimento) e la schermata del titolo si vede da subito', () => {
     const js = docs('app-menu.js');
-    assert.doesNotMatch(js, /sottotitoli/, 'le carte non hanno più il sottotitolo');
+    assert.doesNotMatch(js, /sottotitoli|htmlNav|gx-nav/, 'niente tasti in basso');
     for (const v of A.VOCI) assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
     assert.equal(A.VOCI[0].id, 'play');
     assert.deepEqual(M.immaginiDi('box'), ['immagini/app/tessera-box.png', 'immagini/app/tessera-box.webp'], 'le immagini da mettere (png o webp)');
-    // ogni voce ha la sua scena
-    assert.deepEqual(Object.keys(M.SCENE), A.VOCI.map(v => v.id));
-    for (const [id, sc] of Object.entries(M.SCENE)) {
-        assert.match(sc.cielo, /^cielo-[a-z]+$/, id);
-        assert.ok(sc.eroi.length >= 1 && sc.sotto, id);
-        assert.ok(['folgori', 'palla', 'riflettori', 'radar'].includes(sc.fx), id);
-    }
-    assert.equal(new Set(Object.values(M.SCENE).map(sc => sc.cielo)).size, A.VOCI.length, 'ogni scena ha un cielo diverso');
-    assert.deepEqual(M.SCENE.play.eroi.map(e => [e.pkm, e.c]), [[25, 'e-pika'], [10059, 'e-luca']], 'Play: Pikachu contro Mega Lucario');
-    assert.equal(M.ARTE(25), 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/25.png');
-    const eroi = M.htmlEroi('play', C.esc);
-    assert.equal((eroi.match(/<img class="gx-eroe e-(pika|luca)"/g) || []).length, 2);
-    assert.match(eroi, /alt="Mega Lucario" src="https:\/\/raw\.githubusercontent\.com\/[^"]+\/10059\.png" onerror="this\.style\.display='none'"/, 'se l\'immagine non arriva sparisce, il resto della scena resta');
-    assert.match(M.htmlEroi('trainers', C.esc), /src="immagini\/profile\/\d+\.png"/, 'gli allenatori usano i loro avatar');
-    assert.equal(M.htmlEroi('nonesiste', C.esc), '');
-    // le scintille: stesse a ogni apertura (nascono da un seme), una scena diversa dall'altra
-    assert.equal(M.htmlScintille(14, 3), M.htmlScintille(14, 3));
-    assert.notEqual(M.htmlScintille(14, 3), M.htmlScintille(14, 4));
-    assert.equal((M.htmlScintille(14, 3).match(/<i style="--l:\d+%;--z:\d;--d:[\d.]+s;--r:-?[\d.]+s"><\/i>/g) || []).length, 14);
-    // i tasti in basso: un'icona per scena, quella guardata accesa col suo nome
-    const nav = M.htmlNav(A.VOCI, id => `<svg ${id}>`, C.esc, 1);
-    assert.equal((nav.match(/<button type="button" class="gx-nav-v/g) || []).length, A.VOCI.length);
-    assert.equal((nav.match(/aria-selected="true"/g) || []).length, 1);
-    assert.match(nav, /<button type="button" class="gx-nav-v su" role="tab" aria-selected="true" data-i="1" style="--c:#6fa8ff" aria-label="Box" data-suono="scegli"><svg box><span>Box<\/span><\/button>/);
-    assert.equal(M.htmlNav(null, () => '', C.esc, 0), '');
+    assert.deepEqual(Object.keys(S.SCENE), A.VOCI.map(v => v.id), 'ogni voce ha la sua scena (app-scena.js)');
+    const h = M.htmlCarta(A.VOCI[1], 1, C.esc);
+    assert.match(h, /^<a class="gx-carta gx-c-box" href="box\.html" data-i="1" data-id="box" style="--c:#6fa8ff" data-suono="scegli"><span class="gx-sf">/);
+    assert.match(h, /<img class="gx-immagine" data-id="box" alt="" hidden><span class="gx-vignetta"/);
+    assert.match(h, /<span class="gx-blocco"><b class="gx-tag"><span>Box<\/span><\/b><small class="gx-sotto">Your teams &amp; Pokémon<\/small><\/span><\/a>$/);
 
     const css = docs('app-menu.css');
     assert.doesNotMatch(css, /@@/, 'nessun segnaposto rimasto nel foglio');
-    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-sf', 'gx-cielo', 'gx-raggi', 'gx-nuvole', 'gx-scintille', 'gx-eroi', 'gx-eroe', 'gx-fx', 'gx-folgori', 'gx-impatto', 'gx-aura-l', 'gx-linee', 'gx-palla',
-        'gx-riflettore', 'gx-podio', 'gx-radar', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-nav', 'gx-nav-v', 'gx-vignetta', 'cielo-blu', 'cielo-viola', 'cielo-tramonto', 'cielo-notte',
-        'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
-    assert.doesNotMatch(css, /\.gx-tessera\b/, 'le tessere a griglia non ci sono più');
+    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-ferma', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
+    assert.doesNotMatch(css, /\.gx-nav\b|\.gx-tessera\b|\.gx-riflettore|\.gx-podio/, 'né tasti in basso, né tessere a griglia, né podio');
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
-    // una scena alla volta: il palco ritaglia tutto e ogni scena sta in un posto che dipende da --x (0 = al centro, ±1 = fuori dallo schermo)
+    // una scena alla volta: il palco ritaglia tutto e ogni scena è uno strato suo che sta in un posto dipendente da --x (0 = al centro, ±1 = fuori dallo schermo)
     assert.match(css, /html\.app \.gx-tessere \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
-    assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*translate: calc\(var\(--x, 0\) \* 100%\) 0;/);
+    assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*translate: calc\(var\(--x, 0\) \* 100%\) 0;[^}]*will-change: translate;/);
+    // scorrere è fluido: mentre si scorre (e per un attimo dopo) le animazioni stanno ferme, restano solo strati che si spostano
+    assert.match(css, /\.gx-pista\.gx-ferma :is\(\*, \*::before, \*::after\) \{ animation-play-state: paused !important; \}/);
+    // il tag sta in basso, al centro della scena
+    assert.match(css, /html\.app \.gx-blocco \{[^}]*bottom: calc\(14 \* var\(--u\)\);[^}]*align-items: center;/);
     // niente zoom né scorrimento: la pagina è un riquadro fisso e nessun livello enorme che gira (appesantisce il telefono)
     assert.match(css, /html\.app body\.gx-menu \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
     assert.match(css, /html\.app \.gx-lobby \{ overflow: hidden; touch-action: pan-y; \}/);
@@ -208,7 +191,9 @@ test('le scene: una per voce del gioco, con cielo, figure ed effetti propri; la 
     assert.match(css, /html\.app:not\(\.gx-pronto\) \.gx-splash, html\.app:not\(\.gx-pronto\) \.gx-splash\[hidden\] \{ display: flex; \}/);
     assert.match(css, /html\.app:not\(\.gx-pronto\) \.gx-lobby, html\.app:not\(\.gx-pronto\) \.gx-fondo \{ visibility: hidden; \}/);
     // le animazioni che si muovono sempre stanno su trasformazioni e trasparenza (le fa la scheda grafica), non su misure che costringono a ridisegnare
-    for (const m of css.matchAll(/@keyframes ([\w-]+) \{([\s\S]*?)\n?\}(?=\n|$)/g)) assert.doesNotMatch(m[2], /\b(left|top|width|height|margin|background-position):/, `@keyframes ${m[1]} anima una misura`);
+    for (const f of ['app-menu.css', 'app-scena.css']) {
+        for (const m of docs(f).matchAll(/@keyframes ([\w-]+) \{([\s\S]*?)\n?\}(?=\n|$)/g)) assert.doesNotMatch(m[2], /\b(left|top|width|height|margin|background-position):/, `${f}: @keyframes ${m[1]} anima una misura`);
+    }
     // il logo (Magikarp + Sant'Alvise League) c'è, ma libero: nessuno sfondo, né semitrasparente né sfocato, dietro la testata
     assert.match(docs('menu.html'), /<h1 class="gx-logo">/);
     const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
@@ -353,10 +338,6 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
         assert.equal(t[5], v.colore);
         assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}" alt="" hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b><small class="gx-sotto">[^<]+</small></span>$`));
     });
-    // i tasti in basso: uno per scena, quello guardato acceso
-    const nav = p.id('gx-nav').innerHTML;
-    assert.equal((nav.match(/class="gx-nav-v/g) || []).length, A.VOCI.length);
-    assert.match(nav, /class="gx-nav-v su"[^>]* data-i="0"/);
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     assert.equal(el.length, A.VOCI.length);
     assert.ok(el[0].classi.has('gx-centro'), 'la prima al centro');
@@ -368,32 +349,28 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
     // tornando dalle pagine si ritrova la scena di prima
     const q = paginaMenu({ sessione: { menuCarta: '2' } });
     assert.ok(q.id('gx-tessere').querySelectorAll('.gx-carta')[2].classi.has('gx-centro'));
-    assert.match(q.id('gx-nav').innerHTML, /class="gx-nav-v su"[^>]* data-i="2"/);
 });
 
-test('le scene: i tasti in basso saltano alla scena scelta, toccare una scena di lato la porta al centro (quella al centro apre la pagina), le frecce da tastiera; la scena ricordata e il suono', () => {
+test('le scene: toccare una scena di lato la porta al centro (quella al centro apre la pagina), le frecce da tastiera; la scena si ricorda e fa il suono', () => {
     const p = paginaMenu();
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
-    const tasto = i => ({ target: { closest: () => ({ dataset: { i: String(i) } }) } });
-    p.id('gx-nav').scatta('click', tasto(2));
+    let fermati = 0;
+    const tocca = i => p.id('gx-tessere').scatta('click', { target: { closest: () => el[i] }, preventDefault: () => { fermati++; } });
+    tocca(2);
+    assert.equal(fermati, 1, 'toccare una scena di lato non apre la pagina');
     assert.deepEqual(el.map(c => c.classi.has('gx-centro')), [false, false, true, false]);
     assert.deepEqual(el.slice(1).map(c => c.proprieta['--x']), [-1, 0, 1], 'le vicine appena fuori dallo schermo, ai due lati');
     assert.equal(p.sessione.menuCarta, '2', 'la scena si ricorda per quando si torna dalle pagine');
     assert.deepEqual(p.suoni, ['scegli']);
-    assert.match(p.id('gx-nav').innerHTML, /class="gx-nav-v su"[^>]* data-i="2"/);
-    // lo stesso tasto un'altra volta: niente di nuovo
-    p.id('gx-nav').scatta('click', tasto(2));
-    assert.deepEqual(p.suoni, ['scegli']);
-    // toccare una scena di lato non apre la pagina: la porta al centro
-    let fermati = 0;
-    p.id('gx-tessere').scatta('click', { target: { closest: () => el[3] }, preventDefault: () => { fermati++; } });
-    assert.equal(fermati, 1);
-    assert.ok(el[3].classi.has('gx-centro'));
+    assert.deepEqual(el.map(c => c.attributi['aria-hidden']), ['true', 'true', 'false', 'true']);
     // toccare quella al centro lascia andare il link
-    p.id('gx-tessere').scatta('click', { target: { closest: () => el[3] }, preventDefault: () => { fermati++; } });
+    tocca(2);
     assert.equal(fermati, 1, 'il link della scena al centro funziona');
+    assert.deepEqual(p.suoni, ['scegli']);
     // le frecce da tastiera (e Esc non sposta niente)
     const tasti = k => (p.doc.ascoltatori.keydown || []).forEach(f => f({ key: k }));
+    tasti('ArrowRight');
+    assert.ok(el[3].classi.has('gx-centro'));
     tasti('ArrowRight');
     assert.ok(el[0].classi.has('gx-centro'), 'dall\'ultima si torna alla prima: il giro si chiude');
     tasti('ArrowLeft');
@@ -405,7 +382,7 @@ test('le scene: i tasti in basso saltano alla scena scelta, toccare una scena di
 test('le scene: la scena che passa dall\'altra parte del giro salta senza attraversare lo schermo (senza animarsi per due fotogrammi), le altre scorrono', () => {
     const p = paginaMenu();
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
-    p.id('gx-nav').scatta('click', { target: { closest: () => ({ dataset: { i: '2' } }) } });
+    p.id('gx-tessere').scatta('click', { target: { closest: () => el[2] }, preventDefault() {} });
     // dalla prima alla terza: la prima esce da un lato e la terza entra dall'altro (scorrono); la seconda e la quarta cambiano lato fuori dallo schermo: saltano
     assert.deepEqual(el.map(c => c.classi.has('gx-salta')), [false, true, false, true]);
     assert.equal(el[1].style.transition, 'none');
@@ -418,7 +395,7 @@ test('le scene: la scena che passa dall\'altra parte del giro salta senza attrav
     // un passo solo (anche dall'ultima alla prima) è un giro normale: scorrono tutte quelle che si vedono
     const q = paginaMenu({ sessione: { menuCarta: '3' } });
     const e2 = q.id('gx-tessere').querySelectorAll('.gx-carta');
-    q.id('gx-nav').scatta('click', { target: { closest: () => ({ dataset: { i: '0' } }) } });
+    q.id('gx-tessere').scatta('click', { target: { closest: () => e2[0] }, preventDefault() {} });
     assert.ok(!e2[0].classi.has('gx-salta') && !e2[3].classi.has('gx-salta'), 'la scena che entra e quella che esce scorrono');
     assert.ok(e2[0].classi.has('gx-centro'));
 });

@@ -121,5 +121,5 @@ html.app.gx-dialogo-aperto body.gx-menu .gx-lobby { filter: blur(2px); }
 /* chi ha chiesto meno movimento ha il menù (giocatore, scene, schermata del titolo) fermo */
 @media (prefers-reduced-motion: reduce) {
     html.app .gx-aura, html.app .gx-avatar { animation: none; }
-    html.app :is(.gx-raggi, .gx-nuvole::before, .gx-scintille i, .gx-eroe, .gx-immagine, .gx-folgori, .gx-folgori polyline, .gx-impatto, .gx-aura-l, .gx-linee i, .gx-palla, .gx-riflettore, .gx-tag::before, .gx-splash-raggi, .gx-splash-eroe) { animation: none !important; }
+    html.app :is(.gx-raggi, .gx-nuvole::before, .gx-scintille i, .gx-folgori, .gx-folgori polyline, .gx-impatto, .gx-onda, .gx-aura-l, .gx-aura-r, .gx-linee i, .gx-palla, .gx-sole, .gx-cuori i, .gx-griglia, .gx-scansione, .gx-tag::before, .gx-splash-raggi, .gx-splash-eroe) { animation: none !important; }
 }

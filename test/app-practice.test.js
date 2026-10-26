@@ -51,6 +51,19 @@ test('gli indirizzi: contro la CPU col proprio team o con un Random Battle; il n
     assert.deepEqual(P.VISTE, ['home', 'ranked', 'cpu', 'amichevole']);
 });
 
+test('htmlHome: ogni locandina è una scena (come quelle del menù): cielo, figure, effetti; l\'immagine propria (play-<id>) sta dentro la scena e il tag sopra', () => {
+    const h = P.htmlHome();
+    for (const [id, cielo] of [['ranked', 'cielo-oro'], ['unranked', 'cielo-rosa'], ['cpu', 'cielo-tech']]) {
+        const m = new RegExp(`<button type="button" class="pr-poster pr-p-${id}"[\\s\\S]*?</button>`).exec(h);
+        assert.ok(m, id);
+        assert.match(m[0], new RegExp(`<span class="pr-arte"><span class="gx-sf"><span class="gx-cielo ${cielo}"`));
+        assert.match(m[0], new RegExp(`<img class="pr-img" data-id="${id}" alt="" hidden><span class="gx-vignetta"`));
+        assert.match(m[0], /<\/span>\s*<b class="pr-tag">/, 'il tag viene dopo la scena');
+        assert.doesNotMatch(m[0], /pr-ico|pr-alone/, 'niente più icona e disco di ripiego');
+    }
+    assert.match(h, /e-ray/); assert.match(h, /e-pika/); assert.match(h, /e-pory/);
+});
+
 test('htmlHome: tre locandine affiancate (ranked, unranked, vs CPU), ognuna col suo tag, il suo colore e lo spazio per l\'immagine; ranked dice com\'è la stagione', () => {
     const h = P.htmlHome();
     assert.equal((h.match(/class="pr-poster /g) || []).length, 3);
@@ -219,7 +232,7 @@ test('practice.html: solo nell\'app (dal browser si torna alla home), con Fireba
     for (const s of ['sfide.js', 'amichevoli.js', 'formato-random.js', 'sprite-pkm.js', 'profilo-personale.js', 'controlli.js']) assert.match(html, new RegExp(`<script src="${s}"></script>`), s);
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
     assert.equal(new Set(ids).size, ids.length, 'id ripetuti');
-    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['practice.html'], ['app-practice.js'], 'sprite-pkm.js lo carica la pagina stessa');
+    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['practice.html'], ['app-scena.js', 'app-practice.js'], 'le scene (app-scena.js) prima delle locandine; sprite-pkm.js lo carica la pagina stessa');
 });
 
 test('in app non si prova più un team dal Box e non si sfida più dalla scheda di un allenatore: si parte da Play', () => {

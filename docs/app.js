@@ -53,8 +53,10 @@
         'players.html': ['sprite-pkm.js', 'app-carosello.js', 'scala-pkm.js', 'app-trainers.js'],
         'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js'],
         'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
-        'practice.html': ['app-practice.js']
+        'practice.html': ['app-scena.js', 'app-practice.js']
     };
+
+    const FOGLI_SCENA = ['practice.html'];            // le pagine che, oltre al foglio comune, vogliono quello delle scene (app-scena.css)
 
     // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
@@ -312,12 +314,14 @@
         if (modo && pagina === 'menu.html') {
             // la schermata del titolo si vede dal primo disegno (senza che il menù lampeggi sotto prima che parta lo script): se in questa visita è già passata, il menù è pronto
             try { if (win.sessionStorage.getItem(CHIAVE_SPLASH)) html.classList.add('gx-pronto'); } catch (e) { /* senza memoria si rivede il titolo */ }
-            caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-menu.css');
+            caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-scena.css'); caricaFogliDiStile(doc, 'app-menu.css');
         }
         // le pagine con l'interfaccia da gioco in alto (app-gioco.js) al posto dell'intestazione da sito per PC; i fogli: l'aspetto comune e le pagine una per una
         else if (modo && haHud(pagina)) {
             html.classList.add('app-shell');
-            caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-gioco-pagine.css');
+            caricaFogliDiStile(doc, 'app-gioco.css');
+            if (FOGLI_SCENA.includes(pagina)) caricaFogliDiStile(doc, 'app-scena.css');                  // le pagine con scene a tutto schermo (le locandine di Play)
+            caricaFogliDiStile(doc, 'app-gioco-pagine.css');
             caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
             for (const nome of SCRIPT_PAGINE[pagina] || []) caricaScript(doc, nome);
         }
@@ -415,7 +419,7 @@
     }
 
     return {
-        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO, VIEWPORT_APP, CHIAVE_SPLASH,
+        TOKEN_APK, VOCI, FOGLI_SCENA, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO, VIEWPORT_APP, CHIAVE_SPLASH,
         nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, destinazioneFuoriApp, pubblica, datiPagina, fissaStile, bloccaZoom, proporreInstallazione,
         pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
     };

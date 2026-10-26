@@ -13,14 +13,14 @@
 (function (radice, fabbrica) {
     const inNode = typeof module === 'object' && module.exports;
     const comune = inNode ? require('./app-comune.js') : radice.AppComune;
-    const M = fabbrica(comune, inNode ? require('./app-carosello.js') : radice.AppCarosello);
+    const M = fabbrica(comune, inNode ? require('./app-carosello.js') : radice.AppCarosello, inNode ? require('./app-scena.js') : radice.AppScena);
     if (typeof module === 'object' && module.exports) module.exports = M;
     else {
         radice.MenuApp = M;
         const d = radice.document;
         if (d) { if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', () => M.avvia(radice)); else M.avvia(radice); }
     }
-})(typeof self !== 'undefined' ? self : this, function (C, Car) {
+})(typeof self !== 'undefined' ? self : this, function (C, Car, S) {
     'use strict';
 
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
@@ -126,79 +126,23 @@
     // ---------- le scene del menù ----------
 
     const CHIAVE_CARTA = 'menuCarta';                 // sessionStorage: la scena guardata, per ritrovarla tornando dalle pagine
-    /** Le immagini dei Pokémon di ripiego (finché non ci sono quelle tue): i render di Pokémon HOME, da PokeAPI */
-    const ARTE = id => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/' + id + '.png';
+    const PAUSA_SCORRIMENTO = 460;                    // ms: dopo aver scorso, le animazioni ripartono quando la scena è arrivata
+    const SCINTILLE = 10;                             // quante ne sale per scena (poche: ogni scena ha le sue)
 
     /**
-     * Cosa c'è in ogni scena (una per voce del menù) finché non si mette l'immagine vera (immagini/app/tessera-<id>.png o .webp, vedi LEGGIMI):
-     *   - `eroi`: le immagini grandi, ognuna col suo posto (classe), a partire dai render dei Pokémon (`pkm`: il numero nel Pokédex) o da una figura (`img`);
-     *   - `fx`: gli effetti sopra e in mezzo (folgori, aura, quadrante...); `sotto`: la riga sotto il tag.
-     * Il cielo, i raggi, le nuvole e le scintille sono comuni a tutte (cambia il colore).
+     * Una scena del menù (com'è fatta: app-scena.js e app-scena.css): un cielo colorato con raggi, nuvole e scintille, le figure grandi ferme in primo piano con gli
+     * effetti che si muovono (folgori, onde d'urto, Poké Ball che gira, quadrante...), il tag storto col nome in basso al centro e la riga sotto. È un link (tutta la
+     * scena): toccata, apre la pagina. L'immagine vera (tessera-<id>) prende il posto delle figure di ripiego.
      */
-    const SCENE = {
-        play: { cielo: 'cielo-blu', fx: 'folgori', sotto: 'Ranked · Unranked · VS CPU', eroi: [{ pkm: 25, c: 'e-pika', alt: 'Pikachu' }, { pkm: 10059, c: 'e-luca', alt: 'Mega Lucario' }] },
-        box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
-        trainers: { cielo: 'cielo-tramonto', fx: 'riflettori', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-2', alt: '' }, { img: 'immagini/profile/2.png', c: 't-3', alt: '' }, { img: 'immagini/profile/1.png', c: 't-1', alt: '' }] },
-        stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] }
-    };
-
-    /** Le scintille che salgono: `n` puntini con posto, grandezza e tempi diversi ma sempre gli stessi (generati da un seme, così la pagina è uguale a ogni apertura) */
-    function htmlScintille(n, seme) {
-        let r = (Number(seme) || 1) * 9301 + 49297;
-        const casuale = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
-        let h = '';
-        for (let k = 0; k < n; k++) {
-            const sinistra = Math.round(casuale() * 100), dim = 3 + Math.round(casuale() * 5), durata = (4 + casuale() * 4).toFixed(1), ritardo = (-casuale() * 8).toFixed(1);
-            h += '<i style="--l:' + sinistra + '%;--z:' + dim + ';--d:' + durata + 's;--r:' + ritardo + 's"></i>';
-        }
-        return h;
-    }
-
-    const FOLGORI = '<svg class="gx-fx gx-folgori" viewBox="0 0 520 300" aria-hidden="true">' +
-        '<polyline points="196,184 214,172 210,190 232,178 228,198 252,186 250,204 276,194 274,208 302,198" /><polyline points="200,160 220,150 216,166 238,156 236,172 258,164" />' +
-        '<polyline points="262,0 252,30 272,34 258,66 278,70 266,104 284,108 274,140" /></svg>' +
-        '<span class="gx-impatto" aria-hidden="true"></span><span class="gx-aura-l" aria-hidden="true"></span>' +
-        '<span class="gx-linee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
-    const PALLA = '<svg class="gx-fx gx-palla" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="15"/><circle cx="50" cy="50" r="6"/></svg>';
-    const RIFLETTORI = '<span class="gx-riflettore gx-rf1" aria-hidden="true"></span><span class="gx-riflettore gx-rf2" aria-hidden="true"></span><span class="gx-riflettore gx-rf3" aria-hidden="true"></span>' +
-        '<span class="gx-podio gx-p2" aria-hidden="true"><b>2</b></span><span class="gx-podio gx-p1" aria-hidden="true"><b>1</b></span><span class="gx-podio gx-p3" aria-hidden="true"><b>3</b></span>';
-    const RADAR = '<svg class="gx-fx gx-radar" viewBox="0 0 200 200" aria-hidden="true"><polygon class="gx-r-gr" points="100,14 174,57 174,143 100,186 26,143 26,57"/>' +
-        '<polygon class="gx-r-gr" points="100,43 149,71 149,129 100,157 51,129 51,71"/><polygon class="gx-r-gr" points="100,72 124,86 124,114 100,128 76,114 76,86"/>' +
-        '<path class="gx-r-assi" d="M100 100V14M100 100 174 57M100 100 174 143M100 100V186M100 100 26 143M100 100 26 57"/>' +
-        '<polygon class="gx-r-val" points="100,34 160,64 150,132 100,170 52,128 44,66"><animate attributeName="points" dur="6s" repeatCount="indefinite" values="100,34 160,64 150,132 100,170 52,128 44,66;100,24 168,60 140,138 100,176 40,120 56,72;100,34 160,64 150,132 100,170 52,128 44,66"/></polygon></svg>';
-    const EFFETTI = { folgori: FOLGORI, palla: PALLA, riflettori: RIFLETTORI, radar: RADAR };
-
-    /** Le immagini grandi di una scena (render dei Pokémon o figure), ognuna col suo posto; se non si caricano spariscono e resta il resto */
-    function htmlEroi(id, esc) {
-        const sc = SCENE[id];
-        if (!sc) return '';
-        return sc.eroi.map(e => '<img class="gx-eroe ' + esc(e.c) + '" draggable="false" decoding="async" alt="' + esc(e.alt) + '" src="' + esc(e.pkm ? ARTE(e.pkm) : e.img) + '" onerror="this.style.display=\'none\'">').join('');
-    }
-
-    /**
-     * Una scena del menù: un cielo colorato con raggi, nuvole e scintille, le immagini grandi in primo piano con gli effetti (folgori, aura, quadrante...), il tag
-     * storto col nome e la riga sotto. È un link (tutta la scena): toccata, apre la pagina. L'immagine vera (tessera-<id>) prende il posto di quella di ripiego.
-     */
-    function htmlCarta(v, indice, svgDi, esc) {
-        const sc = SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
+    function htmlCarta(v, indice, esc) {
+        const sc = S.SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
         return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
-            '<span class="gx-sf">' +
-            '<span class="gx-cielo ' + esc(sc.cielo) + '" aria-hidden="true"></span><span class="gx-raggi" aria-hidden="true"></span><span class="gx-nuvole" aria-hidden="true"></span>' +
-            '<span class="gx-scintille" aria-hidden="true">' + htmlScintille(14, indice + 3) + '</span>' +
-            '<span class="gx-eroi">' + htmlEroi(v.id, esc) + (EFFETTI[sc.fx] || '') + '</span>' +
-            '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden>' +
-            '<span class="gx-vignetta" aria-hidden="true"></span></span>' +
+            S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden>' }) +
             '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b><small class="gx-sotto">' + esc(sc.sotto) + '</small></span></a>';
     }
 
-    /** I tasti per saltare da una scena all'altra, in basso: l'icona di ognuna e, per quella guardata, anche il nome */
-    function htmlNav(voci, svgDi, esc, corrente) {
-        return (voci || []).map((v, i) => '<button type="button" class="gx-nav-v' + (i === corrente ? ' su' : '') + '" role="tab" aria-selected="' + (i === corrente) + '" data-i="' + i + '" style="--c:' + esc(v.colore) + '" aria-label="' + esc(v.et) + '" data-suono="scegli">' +
-            svgDi(v.id) + '<span>' + esc(v.et) + '</span></button>').join('');
-    }
-
     /** Gli indirizzi da provare, in ordine, per l'immagine di una scena */
-    const immaginiDi = id => ['immagini/app/tessera-' + id + '.png', 'immagini/app/tessera-' + id + '.webp'];
+    const immaginiDi = id => S.proveDi('tessera-' + id);
 
     // ---------- il menù nella pagina ----------
 
@@ -223,8 +167,7 @@
 
         // ----- le scene -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
-        const svgIcona = id => svg(id);
-        $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, svgIcona, esc)).join('') + '</div>';
+        $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, esc)).join('') + '</div>';
         // le immagini vere, se ci sono (se manca una .png si prova la .webp; se mancano tutte resta la scena di ripiego)
         $('gx-tessere').querySelectorAll('.gx-immagine').forEach(img => {
             const prove = immaginiDi(img.dataset.id);
@@ -233,6 +176,10 @@
             img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
             img.src = prove[0];
         });
+        // e quelle delle singole figure (per ora gli allenatori: trainers-1 e trainers-2), al posto degli avatar di ripiego
+        S.cercaImmagini($('gx-tessere'), '.gx-eroe[data-prova]', (el, src) => { el.src = src; el.classList.add('propria'); });
+        // le figure si decodificano subito: così scorrendo la scena vicina è già pronta, senza scatti
+        $('gx-tessere').querySelectorAll('.gx-eroe').forEach(img => { if (typeof img.decode === 'function') img.decode().catch(() => { /* non si è caricata: sparisce da sola */ }); });
 
         // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
@@ -240,9 +187,8 @@
         const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
         const xPrima = new Map();
         const raf = f => (typeof win.requestAnimationFrame === 'function' ? win.requestAnimationFrame(f) : f());
-        const nav = $('gx-nav');
         try { const salvata = Number(win.sessionStorage.getItem(CHIAVE_CARTA)); if (Number.isInteger(salvata) && salvata >= 0 && salvata < carte.length) stato.corrente = salvata; } catch (e) { /* si parte dalla prima */ }
-        const disegnaNav = () => { if (nav) nav.innerHTML = htmlNav(voci, svgIcona, esc, stato.corrente); };
+        /** Dove sta ogni scena (--x: 0 al centro, ±1 appena fuori): è l'unica cosa che cambia mentre il dito si muove */
         const posiziona = (frac = 0) => {
             const n = carte.length;
             carte.forEach((el, i) => {
@@ -254,34 +200,47 @@
                 xPrima.set(el, x);
                 el.style.setProperty('--x', x);
                 el.style.visibility = Math.abs(x) <= 1.02 ? 'visible' : 'hidden';
-                el.classList.toggle('gx-centro', i === stato.corrente);
-                el.tabIndex = i === stato.corrente ? 0 : -1;
-                el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
         };
+        /** Quale scena è quella guardata (per chi scorre da tastiera e per chi legge lo schermo): si aggiorna solo quando cambia */
+        const segnaCentro = () => carte.forEach((el, i) => {
+            el.classList.toggle('gx-centro', i === stato.corrente);
+            el.tabIndex = i === stato.corrente ? 0 : -1;
+            el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
+        });
         const vai = i => {
             const n = Car.dentro(i, carte.length);
             if (n === stato.corrente) return;
             stato.corrente = n;
             try { win.sessionStorage.setItem(CHIAVE_CARTA, String(n)); } catch (e) { /* non si ricorda */ }
+            segnaCentro();
             posiziona();
-            disegnaNav();
             fai('scegli');
         };
         const passo = verso => vai(Car.passo(stato.corrente, carte.length, verso, true));
-        disegnaNav();
         if (carte.length) {
+            segnaCentro();
             posiziona();
+            // mentre il dito si muove si aggiorna una volta per fotogramma (non a ogni evento: ce ne sono di più) e si tocca solo --x
+            let ultima = null, inAttesa = false, timerFerma = null;
+            const segui = (f, fine) => {
+                pista.classList.toggle('trascinando', !fine);
+                if (!fine) {
+                    pista.classList.add('gx-ferma');
+                    if (timerFerma !== null) { win.clearTimeout(timerFerma); timerFerma = null; }
+                } else timerFerma = win.setTimeout(() => { timerFerma = null; pista.classList.remove('gx-ferma'); }, PAUSA_SCORRIMENTO);
+                if (fine) { ultima = null; posiziona(0); return; }
+                ultima = f;
+                if (!inAttesa) { inAttesa = true; raf(() => { inAttesa = false; if (ultima !== null) posiziona(ultima); }); }
+            };
             // si scorre da qualunque punto dello schermo (anche sopra il giocatore), non solo sulla scena
             Car.collegaGesti($('gx-lobby') || $('gx-tessere'), {
-                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => doc.documentElement.clientWidth || 740 * Car.unitaPx(win),
-                trascina: (f, fine) => { pista.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); }
+                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => doc.documentElement.clientWidth || 740 * Car.unitaPx(win), trascina: segui
             });
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
                 if (c && !c.classList.contains('gx-centro')) { e.preventDefault(); vai(Number(c.dataset.i)); }
             });
-            if (nav) nav.addEventListener('click', e => { const b = e.target.closest ? e.target.closest('.gx-nav-v') : null; if (b) vai(Number(b.dataset.i)); });
             doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
         }
 
@@ -326,7 +285,7 @@
         };
         if (splash && !giaVisto) {
             const scintilleSplash = $('gx-splash-scintille');
-            if (scintilleSplash) scintilleSplash.innerHTML = htmlScintille(16, 11);
+            if (scintilleSplash) scintilleSplash.innerHTML = S.htmlScintille(16, 11);
             splash.hidden = false;
             splash.addEventListener('click', chiudiSplash);
             splash.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') chiudiSplash(); });
@@ -533,5 +492,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, SCENE, ARTE, htmlScintille, htmlEroi, htmlCarta, htmlNav, immaginiDi, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlCarta, immaginiDi, avvia };
 });
