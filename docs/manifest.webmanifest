@@ -6,7 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "en",
@@ -18,9 +19,9 @@
     { "src": "immagini/app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Main menu", "short_name": "Menu", "url": "menu.html" },
     { "name": "Matches", "short_name": "Matches", "url": "matches.html" },
     { "name": "My Box", "short_name": "Box", "url": "box.html" },
-    { "name": "Trainers", "short_name": "Trainers", "url": "players.html" },
-    { "name": "Stats", "short_name": "Stats", "url": "stats.html" }
+    { "name": "Trainers", "short_name": "Trainers", "url": "players.html" }
   ]
 }

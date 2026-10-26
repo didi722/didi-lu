@@ -3,16 +3,16 @@
    ---------------------------------------------------------------------
    Il sito si può usare come app in tre modi, e questo file è uguale per tutti:
      - "installata": aperto dall'icona sulla schermata Home (iPhone: Condividi > Aggiungi a Home; Android: Installa app). Si riconosce da
-       display-mode: standalone (e da navigator.standalone su iOS);
+       display-mode: standalone o fullscreen (e da navigator.standalone su iOS);
      - "apk": dentro l'app Android costruita con Capacitor (android-apk.yml): il suo user agent finisce con SantAlviseApp;
      - nel browser: tutto come prima, tranne un invito a installare (una volta, sulla home, dal telefono).
-   Come app (installata o apk) la pagina prende la classe "app" su <html> e compaiono i ritocchi di app.css:
-     - lo scheletro da telefono (app-shell.js + app.css): barra in alto compatta, foglio dell'account, finestre che salgono dal basso;
-     - la barra in basso (Home, Matches, Box, Trainers, Stats);
-     - "tira per aggiornare" (nelle app non c'è il tasto Ricarica; non nelle pagine dove si modifica qualcosa, né in battaglia);
-     - niente selezione e menu di tocco prolungato sui pulsanti, nessun ritardo e zoom al doppio tocco.
+   Come app (installata o apk) la pagina prende la classe "app" su <html> e il sito diventa un GIOCO da telefono, sempre in orizzontale:
+     - lo schermo si blocca in orizzontale (plugin dell'APK o API del browser) e, nell'APK, le barre di sistema si nascondono; dove l'orientamento non
+       si può bloccare (iPhone) un avviso chiede di girare il telefono;
+     - all'apertura si arriva al menù principale (menu.html): l'avatar del giocatore e le pagine del gioco;
+     - le altre pagine hanno l'interfaccia da gioco (app-gioco.css, app-gioco.js): indietro, menù, campanella, account in alto, niente barre del sito.
    Per vedere l'aspetto da app nel browser (anche da PC): aggiungi ?app=1 a un indirizzo del sito; ?app=0 per tornare indietro.
-   Non fa niente dentro un altro frame (il Box incorporato nel simulatore). Le parti pure (riconoscimento, quale voce è attiva...) sono provate in
+   Non fa niente dentro un altro frame (il Box incorporato nel simulatore). Le parti pure (riconoscimento, pagine, orientamento...) sono provate in
    test/app.test.js; funziona nel browser (window.AppSito) e in Node (require).
    ===================================================================== */
 (function (radice, fabbrica) {
@@ -28,30 +28,26 @@
     const TOKEN_APK = 'SantAlviseApp';                 // lo aggiunge l'APK allo user agent (capacitor.config.json: android.appendUserAgent)
     const CHIAVE_FORZATA = 'appForzata';               // ?app=1 / ?app=0, ricordato in questo browser
     const CHIAVE_INVITO = 'invitoApp';                 // quando si è chiuso l'invito a installare
+    const CHIAVE_AVVIATA = 'appAvviata';               // (sessionStorage) l'app è già stata aperta in questa visita: la home non riporta più al menù
     const GIORNI_INVITO = 14;                          // dopo averlo chiuso, l'invito torna dopo tanti giorni
-    const DISTANZA_TIRA = 90;                          // pixel da tirare giù per aggiornare
-    const CHIAVE_ORIENTAMENTO = 'orientamentoBloccato'; // '1' finché la battaglia tiene lo schermo in orizzontale: la prima pagina dopo lo sblocca
+    const CONDIZIONE_TELEFONO = '(max-width: 700px), (max-height: 520px)';   // com'è fatto uno schermo da telefono (la stessa degli stili)
 
-    // le pagine dove la barra non serve (battaglia a schermo intero, accesso, modello vuoto, pannello dell'amministratore)
-    const SENZA_BARRA = ['battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
-    // le pagine dove tirare per aggiornare è innocuo: dove si modifica qualcosa (Box, profilo, pagina pubblica, amministrazione) o si gioca si ricarica col solo tasto
-    const CON_TIRA = ['index.html', 'matches.html', 'hub.html', 'players.html', 'stats.html', 'palmares.html', 'rules.html', 'formats.html'];
+    // le pagine che non hanno l'interfaccia da gioco in alto: il menù principale, la battaglia (ha la sua), accesso, modello vuoto, amministrazione
+    const SENZA_HUD = ['menu.html', 'battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
 
-    // I cinque punti della barra. `pagine`: le pagine che la tengono accesa (le altre, come Profile o Archive, si aprono dal foglio dell'account in alto:
-    // app-shell.js).
-    const ICONE = {
-        home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/>',
-        matches: '<path d="M5 19 19 5"/><path d="M19 19 5 5"/><path d="M14.5 5H19v4.5"/><path d="M9.5 5H5v4.5"/>',
-        box: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5"/><path d="M12 12 4 7.5"/><path d="M12 12v9"/>',
-        trainers: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16.6 14.3c2.9.3 4.9 2 4.9 5.2"/>',
-        stats: '<path d="M5 20v-9"/><path d="M12 20V4"/><path d="M19 20v-6"/>'
-    };
+    // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
+    // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
+    // Il colore è anche quello del titolo in alto nella pagina (app-gioco.js), così si capisce da dove si arriva.
     const VOCI = [
-        { id: 'home', et: 'Home', href: 'index.html', pagine: ['index.html', 'hub.html'] },
-        { id: 'matches', et: 'Matches', href: 'matches.html', pagine: ['matches.html'] },
-        { id: 'box', et: 'Box', href: 'box.html', pagine: ['box.html'] },
-        { id: 'trainers', et: 'Trainers', href: 'players.html', pagine: ['players.html'] },
-        { id: 'stats', et: 'Stats', href: 'stats.html', pagine: ['stats.html'] }
+        { id: 'matches', et: 'Matches', href: 'matches.html', colore: '#ffbd44', pagine: ['matches.html'] },
+        { id: 'stagioni', et: 'Seasons', href: 'index.html', colore: '#31c489', pagine: ['index.html', 'hub.html'] },
+        { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
+        { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html', 'public.html'] },
+        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] },
+        { id: 'profilo', et: 'Profile', href: 'profile.html', colore: '#f78fb3', pagine: ['profile.html'] },
+        { id: 'archivio', et: 'Archive', href: 'palmares.html', colore: '#ffd23f', pagine: ['palmares.html'] },
+        { id: 'formati', et: 'Formats', href: 'formats.html', colore: '#4fd1c5', pagine: ['formats.html'] },
+        { id: 'regole', et: 'Rules', href: 'rules.html', colore: '#ff6b6b', pagine: ['rules.html'] }
     ];
 
     // ---------- parti pure ----------
@@ -64,7 +60,7 @@
 
     /**
      * Com'è aperto il sito: 'apk' (app Android), 'installata' (icona sulla schermata Home) o '' (browser).
-     * env: { ua, standalone (matchMedia display-mode), iosStandalone (navigator.standalone), referrer, forzata ('1' | '0' | '') }
+     * env: { ua, standalone (matchMedia display-mode: standalone o fullscreen), iosStandalone (navigator.standalone), referrer, forzata ('1' | '0' | '') }
      */
     function modoApp(env) {
         const e = env || {};
@@ -86,15 +82,20 @@
     /** I browser incorporati nelle app (Facebook, Instagram...) non possono installare nulla: lì l'invito non serve */
     const dentroUnaApp = ua => /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|; wv\)/.test(String(ua || ''));
 
-    /** La voce della barra accesa per questa pagina ('' per le pagine che non ci sono: Profile, Archive...) */
-    function voceAttiva(pagina) {
+    /** La voce del gioco a cui appartiene la pagina (null per le pagine che non ne hanno: battaglia, accesso...) */
+    function voceDi(pagina) {
         const p = nomePagina(pagina);
-        const v = VOCI.find(x => x.pagine.includes(p));
-        return v ? v.id : '';
+        return VOCI.find(x => x.pagine.includes(p)) || null;
     }
 
-    const haBarra = pagina => !SENZA_BARRA.includes(nomePagina(pagina));
-    const puoTirare = pagina => CON_TIRA.includes(nomePagina(pagina));
+    /** La pagina ha l'interfaccia da gioco in alto (indietro, menù, campanella, account)? */
+    const haHud = pagina => !SENZA_HUD.includes(nomePagina(pagina));
+
+    /**
+     * Va aperto il menù principale al posto della pagina? Solo la prima apertura dell'app di questa visita, e solo se si apre la home:
+     * dopo, "Seasons" è la home vera. `giaAvviata`: l'app era già stata aperta (sessionStorage).
+     */
+    const vaAlMenu = (pagina, giaAvviata) => !giaAvviata && nomePagina(pagina) === 'index.html';
 
     /**
      * Va mostrato l'invito a installare? Solo dal telefono, nel browser, sulla home, se non è stato chiuso da poco.
@@ -108,10 +109,7 @@
         return !chiuso || (Number(e.adesso) || Date.now()) - chiuso > GIORNI_INVITO * 86400000;
     }
 
-    /** Quanto si è tirato giù (con un po' di resistenza): 0 se non si sta tirando */
-    const tirata = (partenza, attuale) => Math.max(0, Math.round((attuale - partenza) * 0.55));
-
-    // ---------- l'orientamento: la battaglia si gioca sempre in orizzontale ----------
+    // ---------- l'orientamento: tutta l'app si gioca in orizzontale ----------
 
     /**
      * Un plugin nativo di Capacitor (solo nell'APK), o null. Il sito arriva dalla rete e non porta con sé il pacchetto @capacitor/core: si usa il
@@ -126,9 +124,10 @@
     }
 
     /**
-     * Blocca lo schermo in orizzontale (i due versi, secondo come si tiene il telefono). Nell'APK col plugin ScreenOrientation, che funziona anche con la
-     * rotazione automatica spenta; nelle app installate dal browser con l'API del browser (solo Android: su iPhone non esiste, e lì resta il layout in piedi).
-     * Restituisce 'nativo', 'web' o '' (non si è riusciti: la pagina si adatta a come sta il telefono).
+     * Blocca lo schermo in orizzontale (i due versi, secondo come si tiene il telefono). Nell'APK il manifest lo fa già dall'avvio; qui si ripete col plugin
+     * ScreenOrientation (anche per gli APK vecchi) o, nelle app installate dal browser, con l'API del browser (solo Android: su iPhone non esiste, e lì un
+     * avviso chiede di girare il telefono).
+     * Restituisce 'nativo', 'web' o '' (non si è riusciti).
      */
     async function bloccaOrizzontale(win) {
         const nativo = pluginNativo(win, 'ScreenOrientation');
@@ -142,33 +141,45 @@
         return '';
     }
 
-    /** Rimette lo schermo com'era: segue di nuovo il telefono e la rotazione automatica del sistema (in piedi o girato, come prima della battaglia) */
-    async function sbloccaOrientamento(win) {
-        const nativo = pluginNativo(win, 'ScreenOrientation');
-        if (nativo && typeof nativo.unlock === 'function') { try { await nativo.unlock(); } catch (e) { /* niente plugin */ } }
-        const so = win && win.screen && win.screen.orientation;
-        if (so && typeof so.unlock === 'function') { try { so.unlock(); } catch (e) { /* non era bloccato */ } }
+    /** Lo blocca a ogni pagina (si riprova qualche volta: all'apertura l'app può non essere ancora pronta; e tornando dalla cache del browser) */
+    function orientamentoDellaPagina(win) {
+        const prova = restanti => bloccaOrizzontale(win).then(modo => {
+            if (!modo && restanti > 0 && typeof win.setTimeout === 'function') win.setTimeout(() => prova(restanti - 1), 500);
+        });
+        prova(4);
+        win.addEventListener('pageshow', e => { if (e && e.persisted) prova(1); });
     }
 
     /**
-     * Nella battaglia lo schermo si blocca in orizzontale (si riprova qualche volta: all'apertura l'app può non essere ancora pronta); in ogni altra pagina
-     * si sblocca, se la battaglia l'aveva bloccato, anche tornando indietro (la pagina rimessa dalla cache del browser non riesegue gli script).
+     * Schermo intero da gioco nell'APK: via la barra di stato e quella dei gesti (si rivedono con uno scorrimento dal bordo dello schermo).
+     * Il plugin le nasconde una volta: se tornano (le si è richiamate) si rinascondono dopo un attimo.
      */
-    function orientamentoDellaPagina(win, pagina, leggi, scrivi) {
-        if (nomePagina(pagina) === 'battle.html') {
-            const prova = restanti => bloccaOrizzontale(win).then(modo => {
-                if (modo) scrivi(CHIAVE_ORIENTAMENTO, '1');
-                else if (restanti > 0 && typeof win.setTimeout === 'function') win.setTimeout(() => prova(restanti - 1), 500);
-            });
-            prova(4);
-            // uscendo si sblocca subito, senza aspettare che si apra la pagina dopo; tornando qui dalla cache si blocca di nuovo
-            win.addEventListener('pagehide', () => { sbloccaOrientamento(win); });
-            win.addEventListener('pageshow', e => { if (e && e.persisted) prova(1); });
-            return;
-        }
-        const sblocca = () => { if (leggi(CHIAVE_ORIENTAMENTO) === '1') sbloccaOrientamento(win).then(() => scrivi(CHIAVE_ORIENTAMENTO, null)); };
-        sblocca();
-        win.addEventListener('pageshow', e => { if (e && e.persisted) sblocca(); });
+    function barreNascoste(win) {
+        const sb = pluginNativo(win, 'SystemBars');
+        if (!sb || typeof sb.hide !== 'function') return null;
+        const nascondi = () => { try { const r = sb.hide(); if (r && typeof r.catch === 'function') r.catch(() => { /* APK vecchio */ }); } catch (e) { /* niente */ } };
+        nascondi();
+        let attesa = 0;
+        win.addEventListener('resize', () => {
+            if (typeof win.setTimeout !== 'function') return;
+            if (attesa) win.clearTimeout(attesa);
+            attesa = win.setTimeout(() => { attesa = 0; nascondi(); }, 1800);
+        });
+        win.addEventListener('pageshow', nascondi);
+        return { nascondi };
+    }
+
+    /** L'avviso "gira il telefono": si vede solo con lo schermo da telefono in verticale (lo stile è in app.css) */
+    function creaAvvisoRuota(doc) {
+        if (!doc.body || doc.getElementById('app-ruota')) return null;
+        const d = doc.createElement('div');
+        d.id = 'app-ruota';
+        d.className = 'app-ruota';
+        d.setAttribute('role', 'alert');
+        d.innerHTML = '<svg class="app-ruota-telefono" viewBox="0 0 64 64" aria-hidden="true"><rect x="22" y="6" width="20" height="52" rx="5"/><path d="M30 12h4"/><circle cx="32" cy="51" r="2"/></svg>' +
+            '<b>Turn your phone sideways</b><span>This game is played in landscape.</span>';
+        doc.body.appendChild(d);
+        return d;
     }
 
     // ---------- la pagina ----------
@@ -180,6 +191,8 @@
 
         const leggi = k => { try { return win.localStorage.getItem(k); } catch (e) { return null; } };
         const scrivi = (k, v) => { try { if (v == null) win.localStorage.removeItem(k); else win.localStorage.setItem(k, v); } catch (e) { /* storage bloccato */ } };
+        const leggiVisita = k => { try { return win.sessionStorage.getItem(k); } catch (e) { return null; } };
+        const scriviVisita = (k, v) => { try { win.sessionStorage.setItem(k, v); } catch (e) { /* senza memoria della visita il menù si riapre dalla home */ } };
 
         // ?app=1 / ?app=0: per vedere (o togliere) l'aspetto da app anche nel browser; si ricorda per le pagine dopo
         let forzata = leggi(CHIAVE_FORZATA) || '';
@@ -189,9 +202,10 @@
         } catch (e) { /* indirizzo strano: niente */ }
 
         const nav = win.navigator || {};
+        const dm = q => !!(win.matchMedia && win.matchMedia('(display-mode: ' + q + ')').matches);
         const modo = modoApp({
             ua: nav.userAgent,
-            standalone: !!(win.matchMedia && win.matchMedia('(display-mode: standalone)').matches),
+            standalone: dm('standalone') || dm('fullscreen'),
             iosStandalone: nav.standalone === true,
             referrer: doc.referrer,
             forzata
@@ -201,23 +215,42 @@
         const html = doc.documentElement;
         if (os) html.classList.add('os-' + os);
         if (modo) html.classList.add('app', 'app-' + modo);
-        // nelle pagine con la barra in basso l'intestazione da sito per PC lascia il posto allo scheletro da telefono (app-shell.js, app.css)
-        if (modo && haBarra(pagina)) { html.classList.add('app-shell'); caricaFogliDiStile(doc, 'app-pagine.css'); caricaScheletro(doc); }
-        // la battaglia non ha la barra, ma ha il suo foglio: in orizzontale lo schermo sta a sinistra e i comandi a destra (app-battaglia.css)
-        else if (modo && pagina === 'battle.html') caricaFogliDiStile(doc, 'app-battaglia.css');
-        // e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.js
-        if (modo && pagina === 'battle.html') caricaScript(doc, 'app-battaglia.js');
+
+        // la prima apertura dell'app (dal telefono) è il menù principale; da lì ogni pagina ha il suo posto
+        if (modo) {
+            const giaAvviata = !!leggiVisita(CHIAVE_AVVIATA);
+            scriviVisita(CHIAVE_AVVIATA, '1');
+            if (os && vaAlMenu(pagina, giaAvviata) && win.location && typeof win.location.replace === 'function') {
+                win.location.replace('menu.html');
+                return { modo, menu: true };
+            }
+        }
+
+        // i suoni e la vibrazione dei tasti (app-suoni.js) valgono per ogni pagina dell'app, battaglia compresa
+        if (modo) caricaScript(doc, 'app-suoni.js');
+
+        // il menù principale: l'aspetto da gioco comune (app-gioco.css: colori, tasti, finestre) e il suo (app-menu.css: sfondo, avatar, tessere); la logica
+        // (app-comune.js, app-menu.js) la carica la pagina
+        if (modo && pagina === 'menu.html') { caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-menu.css'); }
+        // le pagine con l'interfaccia da gioco in alto (app-gioco.js) al posto dell'intestazione da sito per PC; i fogli: l'aspetto comune e le pagine una per una
+        else if (modo && haHud(pagina)) {
+            html.classList.add('app-shell');
+            caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-gioco-pagine.css');
+            caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
+        }
+        // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js
+        else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-battaglia.js'); }
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
         registraServiceWorker(win, modo, os);
-        if (modo && os) orientamentoDellaPagina(win, pagina, leggi, scrivi);
-        if (modo) quandoPronto(() => avviaApp(win, doc, pagina));
+        if (modo && os) { orientamentoDellaPagina(win); barreNascoste(win); }
+        if (modo) quandoPronto(() => avviaApp(win, doc, os));
         else quandoPronto(() => avviaInvito(win, doc, { os, pagina, ua: nav.userAgent, leggi, scrivi }));
         return { modo };
     }
 
-    // le pagine ridisegnate per il telefono (app-pagine.css, app-battaglia.css) stanno in fogli a parte, scaricato solo dalle app. Va scritto subito, mentre la pagina
+    // le pagine ridisegnate per il gioco (app-gioco.css, app-battaglia.css) stanno in fogli a parte, scaricati solo dalle app. Va scritto subito, mentre la pagina
     // si legge (document.write), così blocca il primo disegno e non si vede mai il sito "da PC" lampeggiare prima dell'app.
     function caricaFogliDiStile(doc, nome) {
         const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
@@ -230,23 +263,13 @@
         doc.head.appendChild(l);
     }
 
-    // uno script dell'app (app-battaglia.js) che nel sito da PC non si scarica
+    // uno script dell'app (app-gioco.js, app-battaglia.js) che nel sito da PC non si scarica
     function caricaScript(doc, nome) {
         if (!doc.head) return;
         const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
         const s = doc.createElement('script');
         s.src = mio ? mio.getAttribute('src').replace(/app\.js/, nome) : nome;
-        s.async = true;
-        doc.head.appendChild(s);
-    }
-
-    // lo scheletro da telefono sta in un file a parte: lo scaricano solo le app, il sito nel browser non lo carica
-    function caricaScheletro(doc) {
-        if (!doc.head) return;
-        const mio = Array.from(doc.scripts || []).find(s => /(^|\/)app\.js(\?|#|$)/.test(s.getAttribute('src') || ''));
-        const s = doc.createElement('script');
-        s.src = mio ? mio.getAttribute('src').replace(/app\.js/, 'app-shell.js') : 'app-shell.js';
-        s.async = true;
+        s.async = false;                       // gli script aggiunti dalla pagina partono nell'ordine in cui sono stati aggiunti
         doc.head.appendChild(s);
     }
 
@@ -296,94 +319,21 @@
         win.addEventListener('appinstalled', () => { const b = doc.getElementById('app-invito'); if (b) b.remove(); });
     }
 
-    // ---------- come app: barra in basso, tira per aggiornare ----------
-    function avviaApp(win, doc, pagina) {
+    // ---------- come app ----------
+    function avviaApp(win, doc, os) {
         const html = doc.documentElement;
-        if (haBarra(pagina)) creaBarra(win, doc, pagina);
-        if (puoTirare(pagina)) abilitaTira(win, doc);
+        // dal telefono, in verticale, un avviso chiede di girare lo schermo (dove non si riesce a bloccarlo: iPhone, app installate senza il permesso)
+        if (os) creaAvvisoRuota(doc);
 
-        // con la tastiera aperta la barra sparirebbe sopra i campi: la si nasconde finché si scrive
+        // con la tastiera aperta l'interfaccia in alto starebbe sopra i campi: la si nasconde finché si scrive
         const campo = el => !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !/^(checkbox|radio|button|submit|range|color|file)$/i.test(el.type || '');
         doc.addEventListener('focusin', e => { if (campo(e.target)) html.classList.add('app-tastiera'); });
         doc.addEventListener('focusout', () => html.classList.remove('app-tastiera'));
     }
 
-    function creaBarra(win, doc, pagina) {
-        const html = doc.documentElement;
-        const attiva = voceAttiva(pagina);
-        const barra = doc.createElement('nav');
-        barra.className = 'app-nav';
-        barra.setAttribute('aria-label', 'App navigation');
-        barra.innerHTML = VOCI.map(v => {
-            const icona = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONE[v.id] + '</svg>';
-            const classe = 'app-nav-voce' + (v.id === attiva ? ' attiva' : '');
-            return '<a class="' + classe + '" href="' + v.href + '"' + (v.id === attiva ? ' aria-current="page"' : '') + '>' + icona + '<span>' + v.et + '</span></a>';
-        }).join('');
-        doc.body.appendChild(barra);
-        html.classList.add('app-con-barra');
-    }
-
-    // ---------- tira per aggiornare ----------
-    function abilitaTira(win, doc) {
-        let indicatore = null, partenza = null, ricarica = false;
-        const html = doc.documentElement;
-
-        const inCima = () => Math.max(win.pageYOffset || 0, html.scrollTop || 0, doc.body ? doc.body.scrollTop || 0 : 0) <= 0;
-        // se il tocco inizia dentro qualcosa che scorre da solo, o dentro una finestra aperta, non è per la pagina
-        const dentroAltro = el => {
-            for (let n = el; n && n.nodeType === 1 && n !== doc.body && n !== html; n = n.parentElement) {
-                if (n.scrollTop > 0) return true;
-                if (n.matches && n.matches('[role="dialog"], .modal, .custom-modal-backdrop, .mvp-velo, .sfide-dropdown, .user-dropdown, input, textarea, select')) return true;
-            }
-            return false;
-        };
-        const crea = () => {
-            if (indicatore) return indicatore;
-            indicatore = doc.createElement('div');
-            indicatore.className = 'app-tira';
-            indicatore.setAttribute('aria-hidden', 'true');
-            indicatore.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg><span>Pull to refresh</span>';
-            doc.body.appendChild(indicatore);
-            return indicatore;
-        };
-        const mostra = d => {
-            const i = crea();
-            const pronto = d >= DISTANZA_TIRA;
-            i.style.transform = 'translate(-50%, ' + Math.min(d, DISTANZA_TIRA + 30) + 'px)';
-            i.style.opacity = String(Math.min(1, d / 50));
-            i.classList.toggle('pronto', pronto);
-            i.querySelector('span').textContent = pronto ? 'Release to refresh' : 'Pull to refresh';
-        };
-        const nascondi = () => { if (indicatore) { indicatore.style.opacity = '0'; indicatore.style.transform = 'translate(-50%, 0)'; indicatore.classList.remove('pronto'); } };
-
-        doc.addEventListener('touchstart', e => {
-            partenza = null;
-            if (ricarica || e.touches.length !== 1 || !inCima() || dentroAltro(e.target)) return;
-            partenza = e.touches[0].clientY;
-        }, { passive: true });
-        doc.addEventListener('touchmove', e => {
-            if (partenza == null || ricarica) return;
-            const d = tirata(partenza, e.touches[0].clientY);
-            if (d <= 0) { nascondi(); return; }
-            if (!inCima()) { partenza = null; nascondi(); return; }
-            mostra(d);
-        }, { passive: true });
-        const fine = e => {
-            if (partenza == null) return;
-            const y = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : partenza;
-            const d = tirata(partenza, y);
-            partenza = null;
-            if (d >= DISTANZA_TIRA && inCima()) {
-                ricarica = true;
-                const i = crea();
-                i.classList.add('gira', 'pronto');
-                i.querySelector('span').textContent = 'Refreshing…';
-                win.location.reload();
-            } else nascondi();
-        };
-        doc.addEventListener('touchend', fine, { passive: true });
-        doc.addEventListener('touchcancel', () => { partenza = null; nascondi(); }, { passive: true });
-    }
-
-    return { TOKEN_APK, VOCI, SENZA_BARRA, CON_TIRA, DISTANZA_TIRA, GIORNI_INVITO, CHIAVE_ORIENTAMENTO, pluginNativo, bloccaOrizzontale, sbloccaOrientamento, orientamentoDellaPagina, nomePagina, modoApp, sistema, dentroUnaApp, voceAttiva, haBarra, puoTirare, proporreInstallazione, tirata, avvia };
+    return {
+        TOKEN_APK, VOCI, SENZA_HUD, GIORNI_INVITO, CONDIZIONE_TELEFONO, CHIAVE_AVVIATA,
+        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, vaAlMenu, proporreInstallazione,
+        pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
+    };
 });

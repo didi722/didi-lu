@@ -1,27 +1,19 @@
 /* =====================================================================
-   IL SITO COME APP (app.js, app-shell.js)
+   IL SITO COME APP (app.js)
    ---------------------------------------------------------------------
    Le regole di "html.app" valgono solo quando il sito è aperto come app: dall'icona sulla schermata Home (PWA) o dentro l'APK Android. Nel browser
-   cambia soltanto l'invito a installare (sulla home, da telefono) e il doppio tocco senza zoom. Stile del sito: nero + giallo, bordi netti e ombra piena;
-   i colori usano le variabili --nb-* del tema attivo con i valori classici come ripiego.
-   Come app il sito NON è la versione piccola di quello per PC: nelle pagine con la barra in basso (html.app-shell) l'intestazione da PC sparisce
-   e al suo posto c'è lo scheletro da telefono (barra in alto, foglio dell'account, finestre che salgono dal basso). Tutto dentro la media query
-   dello schermo stretto: in una finestra larga (app installata dal computer) il sito resta quello di sempre.
-   Indice: 1 base · 2 barra in basso · 3 scheletro (barra in alto, tasti, fogli) · 4 tira per aggiornare e invito
+   cambia soltanto l'invito a installare (sulla home, da telefono) e il doppio tocco senza zoom.
+   Qui c'è solo la base che serve a ogni pagina dell'app (comprese la battaglia e il menù): niente selezione e menù di tocco prolungato, e l'avviso che
+   chiede di girare il telefono. L'interfaccia da gioco (menù principale, interfaccia in alto, pagine) è in app-gioco.css e app-gioco-pagine.css,
+   la battaglia in app-battaglia.css.
    ===================================================================== */
 
-/* ---------- 1. Base ---------- */
 /* sempre: niente ritardo né zoom al doppio tocco sui pulsanti e sui link (lo zoom con le due dita resta) */
 html { touch-action: manipulation; }
 
 html.app {
-    --app-nav-h: 60px;
-    --app-rail-w: 0px;
-    --app-bar-h: 56px;
-    --app-bordo: var(--nb-ink, #000);
-    --app-accento: var(--nb-accento, #31c489);
-    overscroll-behavior-y: contain;                 /* niente "ricarica" del browser tirando giù: c'è quello del sito (app.js) */
     -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;                       /* niente "ricarica" del browser tirando giù, niente rimbalzo: è un gioco */
 }
 html.app body { -webkit-touch-callout: none; }
 html.app :is(a, button, summary, [role="button"], label, nav, .btn) { -webkit-user-select: none; user-select: none; }
@@ -31,241 +23,29 @@ html.app img { -webkit-user-drag: none; }
     html.app :is(a, button, [role="button"], .btn, label):active { transition-duration: .05s; }
 }
 
-/* ---------- 2. La barra in basso ---------- */
-/* Solo dove il sito ha il layout da telefono (sotto i 900px, come mobile.css) o il telefono è in orizzontale (basso) */
-.app-nav, .app-bar, .app-velo, .app-foglio { display: none; }
-/* le schede delle pagine lunghe (le crea app-shell.js) ci sono solo nello schermo da telefono; in una finestra larga la pagina è quella di sempre, tutta intera */
-.app-schede { display: none; }
-@media (max-width: 900px), (max-height: 500px) {
-    html.app-con-barra body { padding-bottom: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px)) !important; }
-    html.app-con-barra .app-nav {
-        position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;        /* sopra la pagina, sotto le finestre del sito (999 e oltre: coprono la barra) */
-        display: flex; align-items: stretch; justify-content: space-around;
-        box-sizing: border-box;
-        height: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px));
-        padding: 0 2px env(safe-area-inset-bottom, 0px);
-        background: #000;
-        border-top: 3px solid var(--app-bordo);
-        box-shadow: 0 -2px 0 rgba(255, 255, 255, .14);
-        font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+/* ---------- "Gira il telefono": col telefono in piedi (dove l'orientamento non si è potuto bloccare) ---------- */
+.app-ruota { display: none; }
+@media (orientation: portrait) and (max-width: 700px) {
+    html.app .app-ruota {
+        position: fixed; inset: 0; z-index: 2147483000; box-sizing: border-box;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px;
+        background: #0c0a1c radial-gradient(circle at 50% 38%, rgba(255, 189, 68, .22), transparent 60%);
+        color: #fff; text-align: center; font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
     }
-    html.app-tastiera .app-nav { display: none; }       /* con la tastiera aperta la barra starebbe sopra i campi */
-    html.app-tastiera body { padding-bottom: 0 !important; }
+    html.app .app-ruota b { font-size: 1.35rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    html.app .app-ruota span { font: 600 .9rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+    html.app .app-ruota-telefono {
+        width: 96px; height: 96px; fill: #ffbd44; stroke: #000; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round;
+        filter: drop-shadow(4px 4px 0 rgba(255, 255, 255, .25)); animation: app-ruota-gira 2.4s ease-in-out infinite;
+    }
+    html.app .app-ruota-telefono circle { fill: #000; stroke: none; }
+    html.app body > *:not(.app-ruota) { visibility: hidden; }
 }
-
-.app-nav-voce {
-    position: relative; flex: 1 1 0; min-width: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    margin: 0; padding: 7px 2px 5px;
-    background: none; border: 0; border-radius: 0;
-    color: #bdbdbd; text-decoration: none; text-transform: uppercase; cursor: pointer;
-    font: 800 .64rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em;
-    -webkit-appearance: none; appearance: none;
+@keyframes app-ruota-gira {
+    0%, 20% { transform: rotate(0deg); }
+    55%, 80% { transform: rotate(-90deg); }
+    100% { transform: rotate(0deg); }
 }
-.app-nav-voce svg {
-    width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;
-    transition: transform .12s ease;
-}
-.app-nav-voce span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-nav-voce:active svg { transform: scale(.86); }
-.app-nav-voce.attiva { color: var(--nb-giallo, #ffbd44); }
-.app-nav-voce.attiva::before {
-    content: ''; position: absolute; top: -3px; left: 24%; right: 24%; height: 4px;
-    background: var(--nb-giallo, #ffbd44);
-}
-.app-nav-voce:focus-visible { outline: 2px dashed var(--nb-giallo, #ffbd44); outline-offset: -4px; }
-
-/* telefono in orizzontale: la barra diventa una colonna a sinistra (si perde meno altezza) */
-@media (orientation: landscape) and (max-height: 500px) {
-    html.app { --app-nav-h: 0px; --app-rail-w: 64px; --app-bar-h: 46px; }
-    html.app-con-barra body { padding-bottom: 0 !important; padding-left: calc(var(--app-rail-w) + env(safe-area-inset-left, 0px)) !important; }
-    html.app-con-barra .app-nav {
-        top: 0; right: auto; width: calc(var(--app-rail-w) + env(safe-area-inset-left, 0px)); height: auto;
-        flex-direction: column; justify-content: center; gap: 4px;
-        padding: 0 0 0 env(safe-area-inset-left, 0px);
-        border-top: 0; border-right: 3px solid var(--app-bordo); box-shadow: 2px 0 0 rgba(255, 255, 255, .14);
-    }
-    .app-nav-voce { flex: 0 0 auto; padding: 8px 2px 6px; }
-    .app-nav-voce span { font-size: .56rem; }
-    .app-nav-voce.attiva::before { top: 18%; bottom: 18%; left: -1px; right: auto; width: 4px; height: auto; }
-}
-
-/* ---------- 3. Lo scheletro da telefono ---------- */
-@media (max-width: 900px), (max-height: 500px) {
-    html.app { --app-ico: 40px; }
-
-    /* 3a. via l'intestazione da sito per PC: striscia nera coi pallini, adesivo del titolo, tasto utente, suono, pubblicità, bottoni sparsi */
-    html.app-shell :is(.top-bar, .ads-sidebar, #menu-overlay, #music-control, .btn-global-rules, .btn-global-archive) { display: none !important; }
-    /* il tasto utente e il menù a tendina li sostituisce il foglio dell'account; quello che la pagina ci aveva messo accanto (Registered teams...) resta */
-    html.app-shell .top-auth-bar { display: contents !important; }
-    html.app-shell .top-auth-bar > :is(#auth-content, #user-menu, :has(> #auth-content)) { display: none !important; }
-    html.app-shell body { padding-top: var(--app-bar-h) !important; }
-    /* le carte quasi dritte: l'inclinazione da adesivo ruba spazio e sul telefono sembra un errore (ogni tema tiene un po' del suo carattere) */
-    html.app-shell { --nb-rot: .3; }
-    html.app-shell[data-tema="sticker"] { --nb-rot: .9; }
-    html.app-shell[data-tema="morbido"] { --nb-rot: .1; }
-
-    /* 3b. la barra in alto */
-    html.app-shell .app-bar {
-        position: fixed; top: 0; left: var(--app-rail-w, 0px); right: 0; z-index: 900;
-        display: flex; align-items: center; gap: 10px;
-        box-sizing: border-box; height: var(--app-bar-h); padding: 0 10px 0 12px;
-        background: #000; color: #fff;
-        border-bottom: 3px solid var(--app-accento);
-        font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
-        transition: transform .22s ease;
-    }
-    html.app-bar-nascosta .app-bar, html.app-bar-nascosta .sfide-btn { transform: translateY(-130%) !important; }
-    .app-bar-logo { flex: none; display: block; line-height: 0; }
-    .app-bar-logo img { display: block; width: 34px; height: 34px; border-radius: 9px; }
-    .app-bar-indietro, .app-bar-utente {
-        flex: none; box-sizing: border-box; width: var(--app-ico); height: var(--app-ico); padding: 0; margin: 0;
-        display: inline-flex; align-items: center; justify-content: center;
-        background: transparent; color: #fff; border: 2px solid #fff; border-radius: var(--nb-raggio, 0);
-        cursor: pointer; -webkit-appearance: none; appearance: none;
-    }
-    .app-bar-indietro svg, .app-bar-utente svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-    .app-bar-indietro:active, .app-bar-utente:active { background: rgba(255, 255, 255, .22); }
-    .app-bar-utente.collegato { background: var(--app-accento); color: #000; border-color: #fff; font: 900 1.15rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
-    .app-bar-utente.collegato:active { filter: brightness(.9); background: var(--app-accento); }
-    .app-bar-titolo {
-        flex: 1 1 auto; min-width: 0; margin: 0; padding-top: 3px;
-        font: 900 1.12rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    /* 3c. i tasti che il sito mette in alto (campanella, battaglie, "Team Builder"...): ognuno al suo posto, nessuno sopra l'altro */
-    html.app-shell #tasti-alto { display: contents; }
-    html.app-shell body.nb #tasti-alto > .sfide-btn {
-        position: fixed !important; top: calc((var(--app-bar-h) - 3px - var(--app-ico)) / 2) !important; bottom: auto !important; left: auto !important;
-        width: var(--app-ico) !important; height: var(--app-ico) !important; min-width: 0 !important; padding: 0 !important; margin: 0;
-        z-index: 901; background: transparent; color: #fff; border: 2px solid #fff; border-radius: var(--nb-raggio, 0);
-        box-shadow: none; transform: none; transition: transform .22s ease, background-color .12s ease;
-    }
-    html.app-shell body.nb #tasti-alto > .sfide-campanella { right: 58px !important; }
-    html.app-shell body.nb #tasti-alto > .sfide-live-btn { right: 104px !important; }
-    html.app-shell body.nb #tasti-alto > .sfide-live-btn.senza-campanella { right: 58px !important; }
-    html.app-shell body.nb #tasti-alto > .sfide-btn:hover, html.app-shell body.nb #tasti-alto > .sfide-btn:focus-visible { background: transparent; color: #fff; transform: none; box-shadow: none; }
-    html.app-shell body.nb #tasti-alto > .sfide-btn:active { background: rgba(255, 255, 255, .22); }
-    html.app-shell body.nb #tasti-alto > .sfide-live-btn.mia { background: var(--nb-giallo, #ffbd44); color: #000; border-color: var(--nb-giallo, #ffbd44); }
-    html.app-shell body.nb #tasti-alto > .sfide-btn svg { width: 22px; height: 22px; }
-    html.app-shell .sfide-badge { top: -8px; right: -8px; }
-    /* i tasti d'azione della pagina diventano il tondo "+" in basso a destra, sopra la barra */
-    html.app-shell body.nb #tasti-alto > :not(.sfide-btn) {
-        position: fixed !important; top: auto !important; left: auto !important; z-index: 890;
-        right: 14px !important; bottom: calc(var(--app-nav-h) + 16px + env(safe-area-inset-bottom, 0px)) !important;
-        height: 52px !important; min-width: 52px !important; padding: 0 16px !important;
-        background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid var(--app-bordo); border-radius: var(--nb-raggio, 0);
-        box-shadow: var(--nb-sh-m); transform: none;
-    }
-    html.app-shell body.nb #tasti-alto > .btn-floating-admin { bottom: calc(var(--app-nav-h) + 84px + env(safe-area-inset-bottom, 0px)) !important; padding: 0 !important; width: 52px !important; }
-    html.app-shell body.nb #tasti-alto > :not(.sfide-btn):hover, html.app-shell body.nb #tasti-alto > :not(.sfide-btn):focus-visible { transform: none; box-shadow: var(--nb-sh-m); background: var(--nb-giallo, #ffbd44); }
-    html.app-shell body.nb #tasti-alto > :not(.sfide-btn):active { transform: translate(2px, 2px); box-shadow: var(--nb-sh-s); }
-
-    /* 3d. campanella e battaglie: il pannello scende sotto la barra a tutta larghezza */
-    html.app-shell .sfide-dropdown {
-        top: var(--app-bar-h) !important; right: 0 !important; left: var(--app-rail-w, 0px) !important; width: auto !important; max-width: none !important; box-sizing: border-box;
-        max-height: calc(100vh - var(--app-bar-h) - var(--app-nav-h) - 12px) !important; border-width: 0 0 4px; z-index: 880;
-        box-shadow: 0 10px 0 rgba(0, 0, 0, .28); overscroll-behavior: contain;
-    }
-
-    /* 3e. il velo e il foglio dell'account (tessere come nel menù del sito, a griglia) */
-    html.app-shell .app-velo {
-        display: block; position: fixed; inset: 0; z-index: 3200; background: rgba(0, 0, 0, .58);
-        opacity: 0; pointer-events: none; transition: opacity .2s ease;
-    }
-    html.app-shell .app-velo.aperto { opacity: 1; pointer-events: auto; }
-    html.app-shell .app-foglio {
-        display: block; position: fixed; left: var(--app-rail-w, 0px); right: 0; bottom: 0; z-index: 3201; box-sizing: border-box;
-        max-height: 88vh; overflow-y: auto; overscroll-behavior: contain;
-        padding: 6px 14px calc(16px + env(safe-area-inset-bottom, 0px));
-        background: var(--nb-sfondo, #efe9da); color: var(--nb-testo, #000);
-        border-top: 4px solid var(--app-bordo); box-shadow: 0 -8px 0 rgba(0, 0, 0, .22);
-        transform: translateY(108%); transition: transform .26s cubic-bezier(.2, .8, .2, 1);
-        font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
-    }
-    html.app-shell .app-foglio.aperto { transform: none; }
-    .app-foglio-maniglia { width: 46px; height: 5px; margin: 4px auto 10px; background: var(--app-bordo); opacity: .55; }
-    .app-menu-intesta { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .app-avatar {
-        flex: none; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; box-sizing: border-box;
-        background: var(--app-accento); color: #000; border: 3px solid var(--app-bordo); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s);
-        font: 900 1.5rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif);
-    }
-    .app-avatar svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-    .app-menu-nome { flex: 1 1 auto; min-width: 0; display: grid; gap: 3px; }
-    .app-menu-nome b { font-size: 1.25rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .app-menu-nome small { font: 600 .74rem/1.2 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
-    .app-foglio-chiudi {
-        flex: none; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
-        background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 3px solid var(--app-bordo); border-radius: var(--nb-raggio, 0); cursor: pointer;
-    }
-    .app-foglio-chiudi svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
-    .app-menu-griglia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .app-tessera {
-        position: relative; box-sizing: border-box; min-height: 92px; padding: 10px 6px 8px; margin: 0;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-        background: var(--nb-carta, #fff); color: var(--nb-ink, #000); text-decoration: none; text-align: center; cursor: pointer;
-        border: 3px solid var(--app-bordo); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s);
-        font: 800 .7rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase;
-        -webkit-appearance: none; appearance: none; transition: transform .1s ease, box-shadow .1s ease;
-    }
-    .app-tessera:active { transform: translate(2px, 2px); box-shadow: none; }
-    .app-tessera i, .app-tessera svg { flex: none; width: 40px; height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
-        font-size: 1.15rem; border: 3px solid var(--app-bordo); background: #ffbd44; color: #000; border-radius: var(--nb-raggio, 0); padding: 7px; }
-    .app-tessera svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-    .app-tessera b { font-weight: 900; }
-    .app-tessera[href="profile.html"] i { background: #f78fb3; }
-    .app-tessera[href="palmares.html"] i { background: #b388eb; }
-    .app-tessera[href="formats.html"] i { background: #4fd1c5; }
-    .app-tessera[href="rules.html"] i { background: #ff6b6b; }
-    .app-tessera[href="admin.html"] i { background: #ffd23f; }
-    .app-tessera[data-azione="suono"] svg { background: #7ee787; }
-    .app-tessera[data-azione="ricarica"] svg { background: #74c0fc; }
-    .app-menu-avviso { grid-column: 1 / -1; margin: 0; font: 600 .74rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
-    .app-tessera[aria-disabled="true"] { opacity: .55; }
-    .app-menu-esci, .app-menu-entra {
-        width: 100%; margin: 14px 0 0; min-height: 50px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
-        border: 3px solid var(--app-bordo); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s);
-        font: 900 .95rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase;
-    }
-    .app-menu-esci { background: #ff4444; color: #fff; }
-    .app-menu-entra { background: var(--nb-verde, #47ea6a); color: #000; }
-    .app-menu-esci svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-    .app-menu-esci:active, .app-menu-entra:active { transform: translate(2px, 2px); box-shadow: none; }
-    html.app-foglio-aperto body { overflow: hidden; }
-
-    /* in orizzontale: barra e tasti più bassi */
-    @media (orientation: landscape) and (max-height: 500px) {
-        html.app { --app-ico: 34px; }
-        .app-bar-titolo { font-size: 1rem; }
-        .app-bar-logo img { width: 30px; height: 30px; }
-        html.app-shell body.nb #tasti-alto > .sfide-campanella { right: 52px !important; }
-        html.app-shell body.nb #tasti-alto > .sfide-live-btn { right: 94px !important; }
-        html.app-shell body.nb #tasti-alto > .sfide-live-btn.senza-campanella { right: 52px !important; }
-        html.app-shell body.nb #tasti-alto > :not(.sfide-btn) { right: 14px !important; bottom: 14px !important; }
-        html.app-shell body.nb #tasti-alto > .btn-floating-admin { bottom: 76px !important; }
-        html.app-shell .app-foglio { max-height: 96vh; }
-        .app-menu-griglia { grid-template-columns: repeat(6, 1fr); }
-        .app-tessera { min-height: 78px; }
-    }
-}
-
-/* ---------- Tira per aggiornare ---------- */
-.app-tira {
-    position: fixed; top: -46px; left: 50%; z-index: 3500;
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 14px 6px;
-    background: #fff; color: #000;
-    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: 4px 4px 0 var(--nb-shcol, #000);
-    font: 900 .72rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
-    transform: translate(-50%, 0); opacity: 0; pointer-events: none;
-}
-.app-tira svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
-.app-tira.pronto { background: var(--nb-giallo, #ffbd44); }
-.app-tira.pronto svg { transform: rotate(180deg); }
-.app-tira.gira svg { animation: app-gira .8s linear infinite; }
-@keyframes app-gira { to { transform: rotate(360deg); } }
 
 /* ---------- L'invito a installare (solo browser da telefono, sulla home) ---------- */
 .app-invito {

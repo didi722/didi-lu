@@ -324,8 +324,8 @@ test('cablaggio: i trigger ci sono, il checker manda promemoria e voto MVP, il s
     // il checker e le functions usano lo stesso file e la stessa chiave dei token del sito
     assert.equal(P.PERCORSO_TOKEN, 'pushTokens');
     assert.match(leggi('docs', 'push.js'), /`pushTokens\/\$\{uid\}\/\$\{chiaveToken\(token\)\}`/);
-    // il sito carica push.js dallo scheletro dell'app, mai dalle pagine
-    assert.match(leggi('docs', 'app-shell.js'), /replace\(\/app-shell\\\.js\/, 'push\.js'\)/);
+    // il sito carica push.js dalle impostazioni dell'app (app-comune.js), mai dalle pagine
+    assert.match(leggi('docs', 'app-comune.js'), /replace\(\/app-comune\\\.js\/, 'push\.js'\)/);
     for (const f of fs.readdirSync(path.join(RADICE, 'docs')).filter(x => x.endsWith('.html'))) assert.doesNotMatch(leggi('docs', f), /push\.js/, f);
     // il file non tira dentro niente di pesante (lo carica anche il checker, che ha solo firebase-admin)
     assert.doesNotMatch(leggi('functions', 'push.js'), /require\((?!['"]\.\/)/);

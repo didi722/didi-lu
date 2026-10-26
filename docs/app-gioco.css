@@ -1,0 +1,101 @@
+/* =====================================================================
+   L'APP COME UN GIOCO — l'aspetto comune (Poké-Tournament)
+   ---------------------------------------------------------------------
+   Lo carica app.js solo quando il sito è aperto come app (icona sulla Home o APK): nel browser non c'è. Qui l'app smette di essere "il sito sul telefono":
+   si gioca sempre con lo schermo girato, si parte da un menù con l'avatar del giocatore, ogni pagina ha l'interfaccia da gioco (indietro, menù, campanella,
+   account) e tutto — tasti, tessere, finestre — è fatto per il pollice. L'identità resta quella del sito: bordi neri spessi, ombre piene, giallo e verde della
+   lega, i caratteri e i colori del tema scelto dal giocatore (--nb-*, vedi temi.css), il suo colore (--nb-accento) che tinge lo sfondo.
+   Le misure sono in "u" (--u): 1u = 1px su uno schermo di 740x340, e cresce o cala con lo schermo: il menù e le finestre stanno sempre intere.
+   Questo foglio serve al menù principale (app-menu.css) e alle pagine (app-gioco-pagine.css); la battaglia ha il suo (app-battaglia.css).
+   Indice: 1 base e variabili · 2 tondi e interfaccia in alto · 3 finestre e tasti · animazioni
+   ===================================================================== */
+
+/* ---------- 1. Base e variabili ---------- */
+html.app {
+    --u: min(.294vh, .1351vw);
+    --gx-acc: var(--nb-accento, #31c489);                 /* il colore del giocatore */
+    --gx-ink: var(--nb-ink, #000);
+    --gx-giallo: var(--nb-giallo, #ffbd44);
+    --gx-carta: var(--nb-carta, #fff);
+    --gx-testo: var(--nb-testo, #000);
+    --gx-r: calc(10 * var(--u));                          /* angoli */
+    --gx-font: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    --gx-font-testo: var(--nb-font-testo, 'Montserrat', sans-serif);
+    /* lo sfondo del menù: nero violaceo tinto dal colore del giocatore; "su" è il colore delle scritte scritte direttamente sullo sfondo */
+    --gx-b0: #0d0b1d;
+    --gx-b1: color-mix(in srgb, var(--gx-acc) 58%, #0d0b1d);
+    --gx-b2: color-mix(in srgb, #ffbd44 26%, #0d0b1d);
+    --gx-su: #fff;
+    --gx-punti: rgba(255, 255, 255, .11);
+}
+html.app[data-tema="sticker"] { --gx-r: calc(12 * var(--u)); --gx-b0: #ff9d3c; --gx-b1: #ffe14d; --gx-b2: #ff6f61; --gx-su: #000; --gx-punti: rgba(255, 255, 255, .5); }
+html.app[data-tema="morbido"] { --gx-r: calc(18 * var(--u)); --gx-b0: #dfe5fb; --gx-b1: color-mix(in srgb, var(--gx-acc) 38%, #eceffd); --gx-b2: #ffd9e8; --gx-su: #2b2a4c; --gx-punti: rgba(43, 42, 76, .08); }
+html.app[data-tema="arcade"] { --gx-r: calc(4 * var(--u)); --gx-b0: #070916; --gx-b1: color-mix(in srgb, var(--gx-acc) 38%, #070916); --gx-b2: #1a0f33; --gx-su: #dff9ee; --gx-punti: rgba(80, 255, 196, .12); }
+
+/* ---------- 2. I tondi dei comandi e l'interfaccia in alto ---------- */
+/* i tondi dei comandi in alto (anche campanella e battaglie del sito, che arrivano da sfide.js) */
+html.app .gx-tondo {
+    position: relative; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: calc(38 * var(--u)); height: calc(38 * var(--u)); min-width: 0; margin: 0; padding: 0; cursor: pointer;
+    background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: 50%;
+    box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink); transition: transform .08s ease, box-shadow .08s ease; -webkit-appearance: none; appearance: none;
+}
+html.app .gx-tondo:active { transform: translateY(calc(3 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-icona { width: calc(22 * var(--u)); height: calc(22 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- 3. Finestre (accesso, impostazioni) e tasti ---------- */
+html.app .gx-dialogo { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: calc(10 * var(--u)); background: rgba(5, 4, 15, .72); animation: gx-dissolve .2s ease backwards; }
+html.app .gx-dialogo[hidden] { display: none; }
+html.app .gx-pannello { position: relative; box-sizing: border-box; width: min(calc(300 * var(--u)), 92vw); max-height: 94vh; overflow-y: auto; display: flex; flex-direction: column; gap: calc(9 * var(--u)); padding: calc(14 * var(--u));
+    background: var(--gx-carta); color: var(--gx-testo); border: calc(4 * var(--u)) solid var(--gx-ink); border-radius: var(--gx-r); box-shadow: 0 calc(8 * var(--u)) 0 var(--gx-ink); animation: gx-pop .3s cubic-bezier(.2, 1.4, .4, 1) backwards; font-family: var(--gx-font-testo); }
+html.app .gx-largo { width: min(calc(430 * var(--u)), 94vw); }
+html.app .gx-pannello h2 { display: inline-block; align-self: flex-start; margin: 0; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: #000; color: #fff; border-radius: calc(5 * var(--u)); rotate: -1.5deg;
+    font: 900 calc(17 * var(--u))/1.1 var(--gx-font); letter-spacing: .08em; text-transform: uppercase; }
+html.app .gx-pannello label { display: flex; flex-direction: column; gap: calc(3 * var(--u)); font: 800 calc(10 * var(--u))/1 var(--gx-font); letter-spacing: .08em; text-transform: uppercase; }
+html.app .gx-pannello input { box-sizing: border-box; width: 100%; min-height: calc(40 * var(--u)); padding: calc(6 * var(--u)) calc(10 * var(--u)); background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); font: 600 calc(14 * var(--u))/1.2 var(--gx-font-testo); }
+html.app .gx-pannello input:focus { outline: calc(3 * var(--u)) solid var(--gx-giallo); outline-offset: 0; }
+html.app .gx-errore, html.app .gx-avviso { margin: 0; padding: calc(6 * var(--u)) calc(9 * var(--u)); background: #ffe3e3; color: #7a0c0c; border: calc(2.5 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); font: 700 calc(10.5 * var(--u))/1.3 var(--gx-font-testo); }
+html.app .gx-errore[hidden], html.app .gx-avviso[hidden] { display: none; }
+html.app .gx-avviso { background: #fff3c4; color: #000; }
+html.app .gx-righe { display: flex; align-items: center; justify-content: space-between; gap: calc(8 * var(--u)); }
+html.app .gx-chiudi { position: absolute; top: calc(8 * var(--u)); right: calc(8 * var(--u)); width: calc(30 * var(--u)); height: calc(30 * var(--u)); padding: 0; cursor: pointer; background: #fff; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-chiudi::before, html.app .gx-chiudi::after { content: ''; position: absolute; left: 50%; top: 50%; width: calc(14 * var(--u)); height: calc(3 * var(--u)); margin: calc(-1.5 * var(--u)) 0 0 calc(-7 * var(--u)); background: #000; border-radius: 2px; rotate: 45deg; }
+html.app .gx-chiudi::after { rotate: -45deg; }
+html.app .gx-chiudi:active { transform: translateY(calc(2 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-bottone { box-sizing: border-box; min-height: calc(40 * var(--u)); display: inline-flex; align-items: center; justify-content: center; gap: calc(7 * var(--u)); padding: calc(7 * var(--u)) calc(16 * var(--u)) calc(5 * var(--u)); cursor: pointer;
+    background: #fff; color: #000; border: calc(3.2 * var(--u)) solid var(--gx-ink); border-radius: var(--gx-r); box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink); font: 900 calc(13 * var(--u))/1 var(--gx-font); letter-spacing: .07em; text-transform: uppercase; -webkit-appearance: none; appearance: none; }
+html.app .gx-bottone:active { transform: translateY(calc(3 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-primario { background: linear-gradient(180deg, color-mix(in srgb, var(--gx-giallo) 70%, #fff), var(--gx-giallo)); }
+html.app .gx-secondario { background: transparent; box-shadow: none; border-color: transparent; text-decoration: underline; font-size: calc(10.5 * var(--u)); padding-left: 0; padding-right: 0; }
+html.app .gx-icona-pic { width: calc(18 * var(--u)); height: calc(18 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+/* le impostazioni: tessere piccole */
+html.app .gx-opzioni-griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(9 * var(--u)); }
+html.app .gx-opzione { box-sizing: border-box; min-height: calc(74 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(3 * var(--u)); padding: calc(6 * var(--u)) calc(4 * var(--u)); cursor: pointer; text-decoration: none; color: #000;
+    background: #fff; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: var(--gx-r); box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink); font-family: var(--gx-font); -webkit-appearance: none; appearance: none; }
+html.app .gx-opzione:active { transform: translateY(calc(3 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+html.app .gx-opzione b { font: 900 calc(12 * var(--u))/1 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; }
+html.app .gx-opzione small { font: 800 calc(9.5 * var(--u))/1 var(--gx-font); letter-spacing: .08em; opacity: .7; text-transform: uppercase; }
+html.app .gx-icona-opz { width: calc(26 * var(--u)); height: calc(26 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html.app .gx-verde { background: #8cf2a4; }
+html.app .gx-rossa { background: #ff8d8d; }
+html.app .gx-spenta { opacity: .55; }
+html.app.gx-dialogo-aperto body.gx-menu .gx-lobby { filter: blur(2px); }
+
+/* ---------- animazioni ---------- */
+@keyframes gx-scorri { to { background-position: calc(150 * var(--u)) calc(75 * var(--u)); } }
+@keyframes gx-ruota { to { rotate: 360deg; } }
+@keyframes gx-fluttua { 0%, 100% { translate: 0 0; rotate: 0deg; } 50% { translate: calc(14 * var(--u)) calc(-22 * var(--u)); rotate: 40deg; } }
+@keyframes gx-respira { 0%, 100% { scale: 1; opacity: .85; } 50% { scale: 1.12; opacity: 1; } }
+@keyframes gx-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 calc(-6 * var(--u)); } }
+@keyframes gx-lampeggia { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes gx-pulsa { 0%, 100% { scale: 1; } 50% { scale: 1.1; } }
+@keyframes gx-entra { from { opacity: 0; scale: .6; translate: 0 calc(16 * var(--u)); } to { opacity: 1; scale: 1; translate: 0 0; } }
+@keyframes gx-lampo { 0%, 70% { left: -60%; } 100% { left: 160%; } }
+@keyframes gx-alone { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 224, 80, 0)); } 50% { filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 224, 80, .95)); } }
+@keyframes gx-pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+@keyframes gx-dissolve { from { opacity: 0; } to { opacity: 1; } }
+/* finché la schermata del titolo non è andata via, il menù sta fermo (entra dopo) */
+html.app:not(.gx-pronto) .gx-tessera { animation-play-state: paused; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-forma, html.app .gx-aura, html.app .gx-avatar, html.app .gx-tessera::after, html.app .gx-splash::before { animation: none; }
+}

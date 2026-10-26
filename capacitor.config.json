@@ -13,7 +13,8 @@
   },
   "plugins": {
     "SystemBars": {
-      "style": "DARK"
+      "style": "DARK",
+      "hidden": true
     },
     "PushNotifications": {
       "presentationOptions": [

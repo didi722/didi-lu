@@ -35,6 +35,8 @@ test('capacitor.config.json: l\'app apre il sito vero (https), mostra offline.ht
     // nero come la barra del sito, con icone chiare nelle barre di sistema
     assert.equal(config.android.backgroundColor, '#000000');
     assert.equal(config.plugins.SystemBars.style, 'DARK');
+    // da gioco: barra di stato e barra dei gesti nascoste (si rivedono con uno scorrimento dal bordo)
+    assert.equal(config.plugins.SystemBars.hidden, true);
 });
 
 test('offline.html del sito e capacitor.config.json indicano lo stesso indirizzo (il pulsante "Try again" dell\'app)', () => {
@@ -118,6 +120,10 @@ const MANIFESTO = `<manifest xmlns:android="http://schemas.android.com/apk/res/a
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name">
+        <activity
+            android:exported="true"
+            android:name=".MainActivity">
+        </activity>
     </application>
 </manifest>`;
 
@@ -142,14 +148,23 @@ test('modificaGradle: versione = numero della build; se il modello cambia, si fe
     assert.throws(() => P.modificaGradle('versionCode 1', 1), /Non trovo versionName/);
 });
 
-test('modificaManifest: niente copia di sicurezza nel cloud; se il modello cambia, si ferma', () => {
-    assert.match(P.modificaManifest(MANIFESTO), /android:allowBackup="false"/);
-    assert.throws(() => P.modificaManifest('<manifest/>'), /Non trovo allowBackup/);
-    // e il permesso per le notifiche (Android 13+), una volta sola
+test('modificaManifest: niente copia di sicurezza nel cloud, notifiche, vibrazione e schermo sempre in orizzontale; se il modello cambia, si ferma', () => {
     const fatto = P.modificaManifest(MANIFESTO);
-    assert.equal((fatto.match(/android\.permission\.POST_NOTIFICATIONS/g) || []).length, 1);
-    const giaCol = MANIFESTO.replace('</manifest>', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" /></manifest>');
-    assert.equal((P.modificaManifest(giaCol).match(/POST_NOTIFICATIONS/g) || []).length, 1, 'se c\'è già non si ripete');
+    assert.match(fatto, /android:allowBackup="false"/);
+    assert.throws(() => P.modificaManifest('<manifest/>'), /Non trovo allowBackup/);
+    // il permesso per le notifiche (Android 13+) e quello per far vibrare il telefono (i tasti del gioco), una volta sola
+    for (const permesso of ['POST_NOTIFICATIONS', 'VIBRATE']) {
+        assert.equal((fatto.match(new RegExp(`android\\.permission\\.${permesso}`, 'g')) || []).length, 1, permesso);
+        const giaCol = MANIFESTO.replace('</manifest>', `<uses-permission android:name="android.permission.${permesso}" /></manifest>`);
+        assert.equal((P.modificaManifest(giaCol).match(new RegExp(permesso, 'g')) || []).length, 1, `${permesso}: se c'è già non si ripete`);
+    }
+    // l'app si gioca in orizzontale da qualunque lato si tenga il telefono, anche con la rotazione automatica spenta (sensorLandscape): lo dice il manifest, quindi vale dal primo istante
+    assert.equal((fatto.match(/android:screenOrientation="sensorLandscape"/g) || []).length, 1);
+    assert.match(fatto, /<activity\s+android:screenOrientation="sensorLandscape"\s+android:exported="true"/, 'sta sull\'attività principale');
+    assert.equal(P.modificaManifest(fatto), fatto, 'rifatta non cambia nulla');
+    const conUnaScelta = MANIFESTO.replace('<activity', '<activity android:screenOrientation="portrait"');
+    assert.match(P.modificaManifest(conUnaScelta), /screenOrientation="portrait"/, 'una scelta già scritta nel modello non si tocca (si vedrebbe nel test del plugin)');
+    assert.throws(() => P.modificaManifest(MANIFESTO.replace(/<activity[\s\S]*<\/activity>/, '')), /Non trovo l'<activity>/);
 });
 
 // il punto del plugin ufficiale @capacitor/screen-orientation (ScreenOrientation.java) che modificaOrientamento cambia

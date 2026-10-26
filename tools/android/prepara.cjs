@@ -80,13 +80,20 @@ function modificaGradle(testo, codice) {
 }
 
 /**
- * Niente copia di sicurezza nel cloud dei dati del WebView (accesso e preferenze restano sul telefono); e il permesso di mostrare notifiche
- * (da Android 13 va chiesto: lo fa il sito quando si accendono dal foglio dell'account, vedi docs/push.js).
+ * Niente copia di sicurezza nel cloud dei dati del WebView (accesso e preferenze restano sul telefono); il permesso di mostrare notifiche
+ * (da Android 13 va chiesto: lo fa il sito quando si accendono dalle impostazioni dell'app, vedi docs/push.js); quello di far vibrare il telefono
+ * (i tasti del gioco); e lo schermo sempre in orizzontale, da qualunque lato lo si tenga e anche con la rotazione automatica spenta: è un gioco.
  */
 function modificaManifest(xml) {
-    const t = sostituisci(xml, /android:allowBackup="true"/, 'android:allowBackup="false"', 'allowBackup in AndroidManifest.xml');
-    if (t.includes('android.permission.POST_NOTIFICATIONS')) return t;
-    return sostituisci(t, /<\/manifest>/, '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>', 'la fine di AndroidManifest.xml');
+    let t = /android:allowBackup="false"/.test(xml) ? xml : sostituisci(xml, /android:allowBackup="true"/, 'android:allowBackup="false"', 'allowBackup in AndroidManifest.xml');
+    if (!/android:screenOrientation=/.test(t)) {
+        t = sostituisci(t, /<activity\b/, '<activity\n            android:screenOrientation="sensorLandscape"', "l'<activity> in AndroidManifest.xml");
+    }
+    for (const permesso of ['POST_NOTIFICATIONS', 'VIBRATE']) {
+        if (t.includes(`android.permission.${permesso}`)) continue;
+        t = sostituisci(t, /<\/manifest>/, `    <uses-permission android:name="android.permission.${permesso}" />\n</manifest>`, 'la fine di AndroidManifest.xml');
+    }
+    return t;
 }
 
 /**
