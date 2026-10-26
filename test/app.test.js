@@ -343,7 +343,7 @@ test('il menù dal telefono solo dove ha senso: non dal computer (app installata
 test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-menu.css); niente interfaccia in alto', () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5 });
     assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android']);
-    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-menu.css']);
+    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-scena.css', 'app-menu.css']);
     assert.deepEqual(s.script(), ['app-suoni.js'], 'i suoni dei tasti ci sono; il resto lo collega la pagina (app-comune.js, app-menu.js)');
     assert.deepEqual(s.reindirizzato, []);
 });

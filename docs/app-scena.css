@@ -1,0 +1,132 @@
+/* =====================================================================
+   LE SCENE A TUTTO SCHERMO (app-scena.js): menù principale e locandine di Play
+   ---------------------------------------------------------------------
+   Una scena è fatta a strati: un cielo colorato, raggi di luce, nuvole e scintille che si muovono piano; davanti, le figure grandi (render di Pokémon HOME o
+   figure) che stanno FERME, e gli effetti che si muovono (folgori, onde d'urto, Poké Ball che gira, quadrante, cuori, griglia...). Le animazioni usano solo
+   spostamenti, rotazioni e trasparenza (le fa la scheda grafica, il telefono non fatica) e nessun livello è enorme. Il palco dove le scene stanno (e come si
+   scorrono nel menù) è in app-menu.css; le locandine di Play sono qui sotto.
+   Indice: 1 strati comuni · 2 figure ed effetti del menù · 3 locandine di Play
+   ===================================================================== */
+
+/* ---------- 1. Gli strati comuni: cielo, raggi, nuvole, scintille, figure ---------- */
+html.app .gx-sf { position: absolute; inset: 0; overflow: hidden; }
+html.app .gx-sf > * { position: absolute; }
+html.app .gx-cielo { inset: 0; }
+html.app .cielo-blu { background: radial-gradient(54% 80% at 66% 30%, rgba(255, 255, 255, .4), transparent 62%), linear-gradient(176deg, #0a4fd6 0%, #1f86ff 42%, #4cb6ff 74%, #a8e0ff 100%); }
+html.app .cielo-viola { background: radial-gradient(55% 78% at 66% 42%, rgba(150, 172, 255, .6), transparent 64%), linear-gradient(176deg, #1f2bb0 0%, #5a3bd0 48%, #26166c 100%); }
+html.app .cielo-tramonto { background: radial-gradient(62% 82% at 66% 56%, rgba(255, 224, 140, .68), transparent 62%), linear-gradient(176deg, #ff9552 0%, #ff4682 46%, #542688 100%); }
+html.app .cielo-notte { background: radial-gradient(55% 78% at 64% 46%, rgba(170, 120, 255, .55), transparent 64%), linear-gradient(176deg, #0d0938 0%, #34208a 52%, #100a3a 100%); }
+html.app .cielo-oro { background: radial-gradient(60% 55% at 50% 52%, rgba(255, 255, 255, .55), transparent 70%), linear-gradient(176deg, #c2410c 0%, #ff9a3c 40%, #ffd35a 76%, #fff2b0 100%); }
+html.app .cielo-rosa { background: radial-gradient(60% 55% at 50% 56%, rgba(255, 255, 255, .5), transparent 70%), linear-gradient(176deg, #c42a7c 0%, #ff7fbe 48%, #ffd0e8 100%); }
+html.app .cielo-tech { background: radial-gradient(60% 55% at 50% 56%, rgba(70, 220, 255, .45), transparent 70%), linear-gradient(176deg, #04122e 0%, #0a3a8a 55%, #13a6d8 100%); }
+/* una striscia di luce obliqua nel colore della scena (--c), dietro le figure */
+html.app .gx-cielo::after { content: ''; position: absolute; left: 36%; top: -10%; width: 56%; height: 124%; transform: skewX(-14deg);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c, #fff) 46%, transparent), transparent 82%); opacity: .75; }
+html.app .gx-raggi { inset: -8% -10% 0 -10%; opacity: .8;
+    background: repeating-conic-gradient(from 186deg at 74% -16%, rgba(255, 255, 255, .26) 0deg 4.5deg, transparent 4.5deg 12deg);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 82%); mask-image: linear-gradient(180deg, #000 0%, transparent 82%); animation: gx-luce 6s ease-in-out infinite; }
+@keyframes gx-luce { 0%, 100% { opacity: .5; } 50% { opacity: .95; } }
+html.app .gx-nuvole { left: -10%; top: 0; width: 120%; height: 66%; }
+html.app .gx-nuvole::before { content: ''; position: absolute; left: 0; top: 0; width: 200%; height: 100%; animation: gx-nuvola 100s linear infinite; background-size: 50% 100%; background-repeat: repeat-x;
+    background-image:
+        radial-gradient(ellipse 5% 12% at 6% 58%, rgba(255, 255, 255, .62), transparent 72%), radial-gradient(ellipse 8% 14% at 10% 52%, rgba(255, 255, 255, .5), transparent 72%),
+        radial-gradient(ellipse 7% 14% at 24% 30%, rgba(255, 255, 255, .5), transparent 72%), radial-gradient(ellipse 5% 11% at 29% 36%, rgba(255, 255, 255, .55), transparent 72%),
+        radial-gradient(ellipse 8% 14% at 42% 66%, rgba(255, 255, 255, .56), transparent 72%), radial-gradient(ellipse 5% 11% at 47% 62%, rgba(255, 255, 255, .5), transparent 72%),
+        radial-gradient(ellipse 7% 13% at 62% 28%, rgba(255, 255, 255, .5), transparent 72%), radial-gradient(ellipse 5% 11% at 67% 34%, rgba(255, 255, 255, .55), transparent 72%),
+        radial-gradient(ellipse 8% 14% at 82% 60%, rgba(255, 255, 255, .6), transparent 72%), radial-gradient(ellipse 5% 11% at 87% 56%, rgba(255, 255, 255, .5), transparent 72%); }
+@keyframes gx-nuvola { to { translate: -50% 0; } }
+html.app .gx-c-box .gx-nuvole, html.app .gx-c-stats .gx-nuvole, html.app .pr-p-cpu .gx-nuvole { opacity: .22; }
+html.app .gx-c-trainers .gx-nuvole { opacity: .4; }
+html.app .gx-scintille { inset: 0; pointer-events: none; }
+html.app .gx-scintille i { position: absolute; left: var(--l); bottom: calc(-12 * var(--u)); width: calc(var(--z) * var(--u)); height: calc(var(--z) * var(--u)); border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--c, #ffe27a) 55%, #fff) 46%, transparent 74%); animation: gx-sale var(--d) linear var(--r) infinite; }
+@keyframes gx-sale { 0% { translate: 0 0; opacity: 0; } 12% { opacity: .95; } 100% { translate: 0 calc(-330 * var(--u)); opacity: 0; } }
+html.app .gx-vignetta { inset: 0; pointer-events: none; background: radial-gradient(120% 100% at 62% 50%, transparent 52%, rgba(6, 4, 24, .5) 100%); }
+
+/* le figure stanno ferme; gli effetti stanno nel loro contenitore, che ha la misura della scena */
+html.app .gx-eroe { position: absolute; width: auto; max-width: none; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+html.app .gx-fx { position: absolute; pointer-events: none; }
+html.app .gx-eroe.propria { image-rendering: auto; }
+html.app .gx-carta.ha-immagine .gx-eroi { display: none; }
+
+/* gli effetti che servono a più scene */
+html.app .gx-onda { position: absolute; width: calc(100 * var(--u)); height: calc(100 * var(--u)); box-sizing: border-box; border: calc(3 * var(--u)) solid rgba(255, 255, 255, .85); border-radius: 50%; z-index: 3; opacity: 0; animation: gx-onda 1.9s ease-out infinite; }
+html.app .gx-onda2 { animation-delay: -.95s; }
+@keyframes gx-onda { 0% { scale: .3; opacity: .95; } 100% { scale: 1.7; opacity: 0; } }
+html.app .gx-impatto { position: absolute; width: calc(100 * var(--u)); height: calc(100 * var(--u)); z-index: 3; animation: gx-urto 1.9s ease-in-out infinite;
+    background: radial-gradient(circle, #fff 0%, rgba(255, 244, 150, .95) 22%, rgba(255, 200, 40, .5) 44%, transparent 68%); clip-path: polygon(50% 0, 60% 30%, 90% 10%, 72% 38%, 100% 50%, 72% 60%, 90% 90%, 60% 70%, 50% 100%, 40% 70%, 10% 90%, 28% 60%, 0 50%, 28% 38%, 10% 10%, 40% 30%); }
+@keyframes gx-urto { 0%, 100% { scale: .8; rotate: -4deg; opacity: .8; } 50% { scale: 1.12; rotate: 5deg; opacity: 1; } }
+html.app .gx-aura-l, html.app .gx-aura-r { position: absolute; width: calc(250 * var(--u)); height: calc(250 * var(--u)); border-radius: 50%; animation: gx-respira 2.6s ease-in-out infinite; }
+html.app .gx-aura-r { animation-delay: -1.3s; }
+html.app .gx-linee { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+html.app .gx-linee i { position: absolute; left: 0; height: calc(2.5 * var(--u)); width: calc(150 * var(--u)); border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .85)); opacity: 0; transform: skewX(-35deg); animation: gx-vento 1.5s linear infinite; }
+html.app .gx-linee i:nth-child(1) { top: 14%; animation-delay: -.2s; } html.app .gx-linee i:nth-child(2) { top: 30%; animation-delay: -.7s; width: calc(110 * var(--u)); }
+html.app .gx-linee i:nth-child(3) { top: 48%; animation-delay: -1.1s; } html.app .gx-linee i:nth-child(4) { top: 66%; animation-delay: -.45s; width: calc(120 * var(--u)); } html.app .gx-linee i:nth-child(5) { top: 82%; animation-delay: -.95s; }
+@keyframes gx-vento { 0% { translate: calc(560 * var(--u)) 0; opacity: 0; } 15% { opacity: .75; } 100% { translate: calc(-200 * var(--u)); opacity: 0; } }
+
+/* ---------- 2. Le figure e gli effetti del menù (il contenitore è alto e largo quanto basta, in basso a destra) ---------- */
+html.app .gx-carta .gx-eroi { position: absolute; right: 0; bottom: 0; width: calc(540 * var(--u)); height: calc(312 * var(--u)); }
+html.app .gx-carta .gx-eroi::before { content: ''; position: absolute; left: 16%; right: -4%; bottom: calc(-40 * var(--u)); height: calc(110 * var(--u)); border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .5), transparent); }
+
+/* PLAY: Mega Charizard X a sinistra e Mega Lucario a destra si guardano; in mezzo folgori, onde d'urto e l'urto, e le due aure */
+html.app .gx-c-play .e-luca { height: calc(292 * var(--u)); right: calc(-10 * var(--u)); bottom: calc(-24 * var(--u)); z-index: 2;
+    filter: drop-shadow(0 0 calc(16 * var(--u)) rgba(80, 215, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(0, 20, 60, .4)); }
+html.app .gx-c-play .e-char { height: calc(214 * var(--u)); left: calc(96 * var(--u)); bottom: calc(-8 * var(--u)); z-index: 2;
+    filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(90, 170, 255, .9)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 20, 60, .4)); }
+html.app .gx-c-play .gx-aura-l { left: calc(60 * var(--u)); bottom: calc(-10 * var(--u)); background: radial-gradient(circle, rgba(120, 190, 255, .75) 0%, rgba(60, 120, 255, .3) 42%, transparent 70%); }
+html.app .gx-c-play .gx-aura-r { right: calc(40 * var(--u)); bottom: calc(10 * var(--u)); background: radial-gradient(circle, rgba(190, 245, 255, .8) 0%, rgba(70, 190, 255, .34) 42%, transparent 70%); }
+html.app .gx-folgori { left: 0; top: 0; width: 100%; height: 100%; z-index: 3; overflow: visible; fill: none; stroke: #e6fcff; stroke-width: 3.2; stroke-linejoin: miter; stroke-linecap: round;
+    filter: drop-shadow(0 0 calc(5 * var(--u)) #5fd8ff) drop-shadow(0 0 calc(10 * var(--u)) rgba(60, 170, 255, .8)); animation: gx-scossa 1.9s steps(1) infinite; }
+html.app .gx-f2 { animation-delay: -.6s; } html.app .gx-f3 { animation-delay: -1.2s; }
+@keyframes gx-scossa { 0% { opacity: 1; } 9% { opacity: .15; } 14% { opacity: 1; } 52% { opacity: 1; } 57% { opacity: 0; } 63% { opacity: 1; } 100% { opacity: 1; } }
+html.app .gx-c-play .gx-impatto, html.app .gx-c-play .gx-onda { left: calc(246 * var(--u)); top: calc(138 * var(--u)); }
+
+/* BOX: i tre Pokémon in fila (fermi) davanti a una Poké Ball che gira piano */
+html.app .gx-palla { right: calc(90 * var(--u)); bottom: calc(4 * var(--u)); width: calc(300 * var(--u)); height: calc(300 * var(--u)); fill: none; stroke: rgba(255, 255, 255, .34); stroke-width: 2.4; stroke-linecap: round; animation: gx-ruota 60s linear infinite; z-index: 0; }
+html.app .gx-c-box .e-cn { height: calc(262 * var(--u)); right: calc(118 * var(--u)); bottom: calc(-16 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(170, 190, 255, .75)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .45)); }
+html.app .gx-c-box .e-sx { height: calc(166 * var(--u)); right: calc(300 * var(--u)); bottom: calc(26 * var(--u)); z-index: 1; transform: rotate(-6deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(190, 120, 255, .8)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); }
+html.app .gx-c-box .e-dx { height: calc(192 * var(--u)); right: calc(-12 * var(--u)); bottom: calc(24 * var(--u)); z-index: 1; transform: rotate(5deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 190, 90, .75)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); }
+
+/* TRAINERS: due allenatori uno di fronte all'altro (le figure di ripiego sono i loro avatar; se c'è l'immagine propria, trainers-1 e trainers-2, la usa) */
+html.app .gx-c-trainers .gx-eroe { image-rendering: pixelated; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+html.app .gx-c-trainers .gx-eroe.propria { image-rendering: auto; filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 255, 255, .5)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(40, 0, 40, .5)); }
+html.app .gx-c-trainers .t-1 { height: calc(200 * var(--u)); left: calc(112 * var(--u)); bottom: calc(52 * var(--u)); z-index: 2; }
+html.app .gx-c-trainers .t-2 { height: calc(200 * var(--u)); right: calc(110 * var(--u)); bottom: calc(52 * var(--u)); z-index: 2; }
+html.app .gx-c-trainers .gx-aura-l { left: calc(70 * var(--u)); bottom: calc(30 * var(--u)); width: calc(230 * var(--u)); height: calc(230 * var(--u)); background: radial-gradient(circle, rgba(255, 200, 90, .7) 0%, rgba(255, 120, 60, .3) 42%, transparent 70%); }
+html.app .gx-c-trainers .gx-aura-r { right: calc(70 * var(--u)); bottom: calc(30 * var(--u)); width: calc(230 * var(--u)); height: calc(230 * var(--u)); background: radial-gradient(circle, rgba(200, 160, 255, .7) 0%, rgba(120, 80, 255, .3) 42%, transparent 70%); }
+html.app .gx-c-trainers .gx-impatto, html.app .gx-c-trainers .gx-onda { left: calc(232 * var(--u)); top: calc(110 * var(--u)); }
+
+/* STATS: Mewtwo (fermo) davanti a un quadrante che si muove */
+html.app .gx-c-stats .e-mew { height: calc(292 * var(--u)); right: calc(20 * var(--u)); bottom: calc(-18 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(190, 130, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .5)); }
+html.app .gx-radar { right: calc(236 * var(--u)); bottom: calc(22 * var(--u)); width: calc(222 * var(--u)); height: calc(222 * var(--u)); z-index: 1; overflow: visible; }
+html.app .gx-r-gr { fill: rgba(150, 120, 255, .08); stroke: rgba(190, 170, 255, .55); stroke-width: 1.2; }
+html.app .gx-r-assi { stroke: rgba(190, 170, 255, .4); stroke-width: 1; fill: none; }
+html.app .gx-r-val { fill: rgba(80, 230, 255, .32); stroke: #6ff0ff; stroke-width: 2.4; stroke-linejoin: round; animation: gx-radar 6s ease-in-out infinite; }
+html.app .gx-r-val2 { fill: none; stroke: rgba(160, 250, 255, .6); stroke-width: 1.4; animation-delay: -3s; }
+@keyframes gx-radar { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* ---------- 3. Le tre locandine di Play: la scena riempie la locandina, il tag e la riga stanno sopra, in basso ---------- */
+html.app .pr-poster .gx-eroi { position: absolute; inset: 0; }
+html.app .pr-poster .gx-eroe { z-index: 2; }
+html.app .pr-poster .gx-vignetta { background: radial-gradient(110% 90% at 50% 45%, transparent 55%, rgba(6, 4, 24, .45) 100%); }
+/* RANKED: Rayquaza davanti a un sole di raggi che gira piano */
+html.app .pr-p-ranked .e-ray { height: calc(206 * var(--u)); left: 50%; margin-left: calc(-103 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(255, 240, 120, .9)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(80, 20, 0, .5)); }
+html.app .gx-sole { left: 50%; bottom: calc(40 * var(--u)); width: calc(250 * var(--u)); height: calc(250 * var(--u)); margin-left: calc(-125 * var(--u)); border-radius: 50%; animation: gx-ruota 40s linear infinite;
+    background: repeating-conic-gradient(rgba(255, 255, 255, .5) 0deg 6deg, transparent 6deg 18deg); -webkit-mask-image: radial-gradient(closest-side, #000 20%, transparent 100%); mask-image: radial-gradient(closest-side, #000 20%, transparent 100%); }
+/* UNRANKED: Pikachu ed Eevee uno di fronte all'altro, cuori che salgono */
+html.app .pr-p-unranked .e-pika { height: calc(130 * var(--u)); left: calc(4 * var(--u)); bottom: calc(66 * var(--u)); transform: scaleX(-1); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 228, 60, .95)) drop-shadow(0 calc(6 * var(--u)) calc(5 * var(--u)) rgba(80, 0, 40, .4)); }
+html.app .pr-p-unranked .e-evee { height: calc(124 * var(--u)); right: calc(2 * var(--u)); bottom: calc(66 * var(--u)); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 190, 110, .9)) drop-shadow(0 calc(6 * var(--u)) calc(5 * var(--u)) rgba(80, 0, 40, .4)); }
+html.app .gx-cuori { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+html.app .gx-cuori i { position: absolute; bottom: calc(-20 * var(--u)); font-style: normal; font-size: calc(18 * var(--u)); color: #fff; opacity: 0; text-shadow: 0 0 calc(8 * var(--u)) rgba(255, 60, 150, .9); animation: gx-cuore 4.4s ease-in infinite; }
+html.app .gx-cuori i:nth-child(1) { left: 12%; animation-delay: -.2s; } html.app .gx-cuori i:nth-child(2) { left: 30%; animation-delay: -1.5s; font-size: calc(26 * var(--u)); }
+html.app .gx-cuori i:nth-child(3) { left: 48%; animation-delay: -2.6s; } html.app .gx-cuori i:nth-child(4) { left: 64%; animation-delay: -.9s; font-size: calc(22 * var(--u)); }
+html.app .gx-cuori i:nth-child(5) { left: 80%; animation-delay: -3.4s; } html.app .gx-cuori i:nth-child(6) { left: 90%; animation-delay: -2s; font-size: calc(14 * var(--u)); }
+@keyframes gx-cuore { 0% { translate: 0 0; opacity: 0; } 15% { opacity: .95; } 100% { translate: 0 calc(-250 * var(--u)); opacity: 0; } }
+/* VS CPU: Porygon-Z sopra una griglia che scorre, con una riga di scansione */
+html.app .pr-p-cpu .e-pory { height: calc(190 * var(--u)); left: 50%; margin-left: calc(-95 * var(--u)); bottom: calc(62 * var(--u)); filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(70, 220, 255, .9)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 10, 40, .5)); }
+html.app .gx-griglia { left: 0; right: 0; top: calc(-20 * var(--u)); bottom: 0; opacity: .55; animation: gx-griglia 2.4s linear infinite;
+    background: repeating-linear-gradient(0deg, rgba(90, 230, 255, .5) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u))), repeating-linear-gradient(90deg, rgba(90, 230, 255, .35) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(20 * var(--u)));
+    -webkit-mask-image: linear-gradient(180deg, transparent 15%, #000 100%); mask-image: linear-gradient(180deg, transparent 15%, #000 100%); }
+@keyframes gx-griglia { to { translate: 0 calc(20 * var(--u)); } }
+html.app .gx-scansione { left: 0; right: 0; top: 0; height: calc(26 * var(--u)); z-index: 3; background: linear-gradient(180deg, transparent, rgba(120, 240, 255, .45), transparent); animation: gx-scansiona 3s linear infinite; }
+@keyframes gx-scansiona { from { translate: 0 calc(-30 * var(--u)); } to { translate: 0 calc(300 * var(--u)); } }

@@ -7,19 +7,19 @@
 //   - UNRANKED: le partite amichevoli con un altro allenatore, senza punti. Toccarne uno apre la finestra di sempre (amichevoli.js);
 //   - VS CPU: i tuoi team (ognuno gioca nel suo formato) e i Random Battle di Showdown. Si apre battle.html come prima.
 // I calcoli sulle stagioni (cosa manca contro chi) sono quelli del profilo (profilo-personale.js); le sfide si lanciano con sfide.js (Sfide.apriSfida).
-// Le immagini delle locandine si mettono in immagini/app/play-<ranked|unranked|cpu>.png (o .webp); finché mancano c'è un'icona grande.
+// Ogni locandina è una scena come quelle del menù (app-scena.js: cielo, figure ferme, effetti che si muovono). Un'immagine propria si mette in immagini/app/play-<ranked|unranked|cpu>.png (o .webp) e prende il posto delle figure.
 // La parte pura (cosa mostrare, gli indirizzi, l'HTML) è provata in test/app-practice.test.js; funziona nel browser (window.AppPractice) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
     const inNode = typeof module === 'object' && module.exports;
-    const P = fabbrica(inNode ? require('./app-comune.js') : radice.AppComune, inNode ? require('./profilo-personale.js') : radice.ProfiloPersonale);
+    const P = fabbrica(inNode ? require('./app-comune.js') : radice.AppComune, inNode ? require('./profilo-personale.js') : radice.ProfiloPersonale, inNode ? require('./app-scena.js') : radice.AppScena);
     if (inNode) module.exports = P;
     else {
         radice.AppPractice = P;
         const d = radice.document;
         if (d) { if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', () => P.avvia(radice)); else P.avvia(radice); }
     }
-})(typeof self !== 'undefined' ? self : this, function (C, PP) {
+})(typeof self !== 'undefined' ? self : this, function (C, PP, S) {
     'use strict';
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -146,7 +146,7 @@
             const sotto = l.id === 'ranked' ? (ranked ? sottoRanked(ranked) : 'Seasons') : l.sotto;
             const n = l.id === 'ranked' && ranked ? ranked.reduce((t, s) => t + s.ricevute.length + s.inCorso.length, 0) : 0;
             return `<button type="button" class="pr-poster pr-p-${l.id}" data-vista="${l.vista}"${l.id === 'ranked' ? ' data-stagione=""' : ''} style="--c:${l.colore}; --i:${i}" data-suono="scegli">
-                <span class="pr-arte"><span class="pr-alone" aria-hidden="true"></span><span class="pr-ico">${ICONA(l.icona)}</span><img class="pr-img" data-id="${l.id}" alt="" hidden>${n ? `<i class="pr-bolla" aria-label="${n} waiting">${n}</i>` : ''}</span>
+                <span class="pr-arte">${S.htmlScena(S.LOCANDINE[l.id], { indice: i, scintille: 8, escF: esc, immagine: `<img class="pr-img" data-id="${l.id}" alt="" hidden>` })}${n ? `<i class="pr-bolla" aria-label="${n} waiting">${n}</i>` : ''}</span>
                 <b class="pr-tag"><span>${esc(l.et)}</span></b><small class="pr-sotto-tag">${esc(sotto)}</small>
             </button>`;
         }).join('') + '</div>';
@@ -297,7 +297,7 @@
             pagina.querySelectorAll('.pr-img').forEach(img => {
                 const prove = immaginiDi(img.dataset.id);
                 let k = 0;
-                img.addEventListener('load', () => { img.hidden = false; img.parentNode.classList.add('ha-immagine'); });
+                img.addEventListener('load', () => { img.hidden = false; img.closest('.pr-arte').classList.add('ha-immagine'); });
                 img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
                 img.src = prove[0];
             });
