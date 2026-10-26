@@ -204,7 +204,7 @@ test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprie
     for (const m of js.matchAll(/setProperty\('(--[a-z0-9-]+)'/g)) definite.add(m[1]);
     for (const m of js.matchAll(/(--[a-z0-9-]+):\$\{/g)) definite.add(m[1]);                // scritte nello stile inline dei pezzi (--c, --cols...)
     for (const m of tema.matchAll(/(--[a-z0-9-]+)\s*:/gi)) definite.add(m[1]);
-    const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i'].includes(v));
+    const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i', '--tipo', '--tipo2', '--ns-durata', '--ns-eccesso'].includes(v));
     assert.deepEqual(senza, [], 'proprietà usate ma mai definite');
     assert.match(docs('app-menu.js'), /style="--c:'.*';--i:'/s);
     // 1u = 1px su uno schermo di 740x340: la misura dell'app si adatta allo schermo

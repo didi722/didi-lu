@@ -382,7 +382,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
     let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
     assert.equal(s.risultato.modo, 'installata');
     assert.equal(memoria.appForzata, '1');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-stats.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'app-stats.js']);
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
     assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });

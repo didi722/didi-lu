@@ -955,7 +955,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">

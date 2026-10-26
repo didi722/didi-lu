@@ -40,7 +40,7 @@ test('htmlCarta: posizione, nome e SOLO il numero scelto, in grande; niente tess
     const h = S.htmlCarta(m.righe[0], m, 0);
     assert.match(h, /class="as-carta" data-i="0" style="--c:#31c489"/);
     assert.match(h, /<span class="as-pos">#1<\/span>/);
-    assert.match(h, /<b class="as-nome">Didi<\/b>/);
+    assert.match(h, /<b class="as-nome nome-scorrevole">Didi<\/b>/);
     assert.match(h, /<small class="as-sotto">Champion<\/small>/);
     assert.match(h, /<span class="as-et">Elo<\/span><span class="as-val">1,032<\/span>/);
     assert.match(h, /<span class="pal-aura"/);
@@ -95,4 +95,15 @@ test('niente frecce né conto: si scorre col dito; il foglio: nell\'app la pagin
 test('avvia: fuori dall\'app non fa niente', () => {
     assert.equal(S.avvia({ document: { documentElement: { classList: { contains: () => false } } } }), null);
     assert.equal(S.avvia({}), null);
+});
+
+test('team: un Pokémon alla volta, che passa al successivo e dopo l\'ultimo riparte dal primo; i nomi lunghi scorrono', () => {
+    assert.equal(S.prossimoMini(0, 6), 1);
+    assert.equal(S.prossimoMini(5, 6), 0);
+    assert.equal(S.prossimoMini(3, 0), 0);
+    assert.ok(S.PASSO_TEAM >= 1500);
+    const css = docs('app-gioco-pagine.css');
+    assert.match(css, /\.as-mini \{ display: none;/);
+    assert.match(css, /\.as-mini\.attivo \{ display: block;/);
+    assert.match(css, /\.nome-scorrevole\.ns-attivo > \.ns-testo \{ animation: nomeScorrevole/);
 });

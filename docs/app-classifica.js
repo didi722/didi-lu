@@ -39,11 +39,12 @@
     const RIPRENDI_DOPO = 9000;
 
     /** Un giocatore: niente sfondo, lui sul palco tondo nel suo colore, sotto il nome, il posto, i punti e i numeri; `vs` è il tasto per sfidarlo (già HTML) */
-    function htmlCarta(p, indice, vs) {
+    function htmlCarta(p, indice, vs, gif) {
         const d = righeDati(p);
+        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
         return `<article class="ac-carta" data-i="${indice}" style="--c:${coloreSicuro(p.colore)}">
             <a class="ac-link" draggable="false" href="${esc(indirizzo(p.nome))}" aria-label="${esc(p.nome)}: open the trainer card" data-suono="apri">
-                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>${avatar(p, 'ac-avatar')}</span>
+                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>${avatar(p, 'ac-avatar')}${pkm}</span>
                 <span class="ac-testi">
                     <span class="ac-riga"><span class="ac-pos">#${numero(p.posizione)}</span><b class="ac-nome">${esc(p.nome)}</b></span>
                     <span class="ac-punti"><b>${numero(p.punti)}</b><small>PTS</small></span>
@@ -54,10 +55,10 @@
     }
 
     /** Tutta la classifica: una scheda per giocatore (se ne vede una alla volta, le altre stanno ai lati). `vs(nome)` dà l'HTML del tasto per sfidare. */
-    function html(giocatori, { vs } = {}) {
+    function html(giocatori, { vs, gif } = {}) {
         const lista = Array.isArray(giocatori) ? giocatori : [];
         if (!lista.length) return '<p class="ac-vuoto">No players registered in this season</p>';
-        return `<div class="ac-pista">${lista.map((p, i) => htmlCarta(p, i, typeof vs === 'function' ? vs(p.nome) : '')).join('')}</div>`;
+        return `<div class="ac-pista">${lista.map((p, i) => htmlCarta(p, i, typeof vs === 'function' ? vs(p.nome) : '', gif)).join('')}</div>`;
     }
 
     /**
@@ -154,7 +155,7 @@
             decoraShowdown();
             stato = { giocatori, corrente: stato ? Car.dentro(stato.corrente, giocatori.length || 1) : 0, scheda, pista: null };
             doc.documentElement.classList.add('app-classifica');
-            scheda.innerHTML = html(giocatori, { vs });
+            scheda.innerHTML = html(giocatori, { vs, gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.ac-pista');
             posiziona();
             avviaAuto();

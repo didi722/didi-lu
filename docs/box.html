@@ -978,7 +978,7 @@ async function renderizza(lista) {
                     }, 50);
 
                     return `
-                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]};"` : ''}
+                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]}; --tipo2: ${(window.coloriPokemonNoti2 || {})[nomePkm] || window.coloriPokemonNoti[nomePkm]};"` : ''}
                              onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
                             <div class="pkm-sprite-container">
                                 <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
@@ -1516,11 +1516,15 @@ async function applicaColoreBordo(pokemonNome, elemento) {
         // Il primo tipo dà il colore al disco dello sprite (variabile --tipo, vedi box-team.css)
         const primoTipo = data.types && data.types[0] && data.types[0].type && data.types[0].type.name;
         const colore = primoTipo && typeof Dettagli !== 'undefined' && Dettagli.coloreTipo ? Dettagli.coloreTipo(primoTipo) : null;
+        // il secondo tipo (se c'è) dà l'altra metà del colore all'app (--tipo2); con un tipo solo è lo stesso colore
+        const secondoTipo = data.types && data.types[1] && data.types[1].type && data.types[1].type.name;
+        const colore2 = (secondoTipo && typeof Dettagli !== 'undefined' && Dettagli.coloreTipo ? Dettagli.coloreTipo(secondoTipo) : null) || colore;
         const tessera = typeof elemento === 'string' ? document.getElementById(elemento) : elemento;
         if (colore) {
             // si ricorda: al prossimo disegno (ricerca, filtri) la tessera nasce già colorata, senza lampeggiare
             (window.coloriPokemonNoti = window.coloriPokemonNoti || {})[pokemonNome] = colore;
-            if (tessera) tessera.style.setProperty('--tipo', colore);
+            (window.coloriPokemonNoti2 = window.coloriPokemonNoti2 || {})[pokemonNome] = colore2;
+            if (tessera) { tessera.style.setProperty('--tipo', colore); tessera.style.setProperty('--tipo2', colore2); }
         }
 
     } catch (err) {

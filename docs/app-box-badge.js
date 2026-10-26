@@ -19,7 +19,7 @@
     'use strict';
 
     /** Gli elementi che si toccano: le medagliette (`.bt-mini`, con la descrizione nel title) e i fiocchi dello scaffale (`.fiocco`, con il fumetto dentro) */
-    const SELETTORE = '.bt-mini[title]:not(.bt-altri), #pkm-fiocchi .fiocco';
+    const SELETTORE = '.bt-mini[title]:not(.bt-altri), #pkm-fiocchi .fiocco, #teamModal .bt-pop .bt';
 
     /** Dal testo "Nome · Livello\nCosa premia\n12 KO" alla nota: titolo e descrizione (il numero fatto e il progresso non servono) */
     function notaDaTitolo(testo) {
@@ -30,6 +30,12 @@
     /** La nota di un elemento già nella pagina: dal title di una medaglietta o dal fumetto di un fiocco (senza la riga "Next level: ...", che è avanzamento) */
     function notaDiElemento(el) {
         if (!el) return null;
+        // un badge dello scaffale del team: nome e livello, e cosa premia
+        const corpo = el.querySelector ? el.querySelector('.bt-corpo') : null;
+        if (corpo) {
+            const nome = corpo.querySelector('.bt-nome'), stato = corpo.querySelector('.bt-stato'), desc = corpo.querySelector('.bt-desc');
+            return { titolo: [nome && nome.textContent.trim(), stato && stato.textContent.trim()].filter(Boolean).join(' · '), descrizione: desc ? desc.textContent.trim() : '' };
+        }
         const tip = el.querySelector ? el.querySelector('.fiocco-tip') : null;
         if (tip) {
             const t = tip.querySelector('strong');
@@ -60,6 +66,10 @@
             if (el) e.stopPropagation();
         }, true);
         const legame = Car.collegaPressione(doc.body, SELETTORE, { mostra, nascondi });
+        // toccando altrove la spiegazione si chiude subito (non resta ad aspettare lo scadere dei secondi)
+        doc.addEventListener('pointerdown', e => {
+            if (!(e.target && e.target.closest && e.target.closest(SELETTORE))) legame.chiudi();
+        }, true);
         return { mostra, nascondi, legame };
     }
 

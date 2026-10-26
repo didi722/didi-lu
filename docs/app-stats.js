@@ -33,12 +33,16 @@
         return `<article class="as-carta" data-i="${indice}" style="--c:${coloreSicuro(r.colore)}">
             <div class="as-palco as-v-${esc(m.tab)}"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><div class="as-testa">${r.testa || ''}</div></div>
             <div class="as-info">
-                <div class="as-riga"><span class="as-pos">#${Number(r.posizione) || indice + 1}</span><b class="as-nome">${esc(r.nome)}</b></div>
+                <div class="as-riga"><span class="as-pos">#${Number(r.posizione) || indice + 1}</span><b class="as-nome nome-scorrevole">${esc(r.nome)}</b></div>
                 ${r.sotto ? `<small class="as-sotto">${esc(r.sotto)}</small>` : ''}
                 <div class="as-grande"><span class="as-et">${esc(grande.titolo)}</span><span class="as-val">${grande.html}</span>${grande.sotto || ''}</div>
             </div>
         </article>`;
     }
+
+    /** Nei team si vede un Pokémon alla volta: dopo l'ultimo si riparte dal primo */
+    const prossimoMini = (k, n) => (n > 0 ? (Number(k) + 1) % n : 0);
+    const PASSO_TEAM = 2600;      // quanto resta a schermo un Pokémon del team (ms)
 
     /** I controlli in alto: la categoria, la stagione e il formato */
     function htmlBarra(m) {
@@ -82,7 +86,20 @@
                 el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
         };
-        const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); } };
+        // i team: un Pokémon alla volta, che passa al successivo da solo; i team ai lati restano sul primo finché non arrivano al centro
+        let giroTeam = null, mostrato = 0;
+        const mostraMini = (carta, k) => carta.querySelectorAll('.as-mini').forEach((m, j) => m.classList.toggle('attivo', j === k));
+        const avviaGiroTeam = () => {
+            if (giroTeam) { win.clearInterval(giroTeam); giroTeam = null; }
+            if (!stato || stato.m.tab !== 'teams') return;
+            stato.pista.querySelectorAll('.as-carta').forEach(c => mostraMini(c, 0));
+            mostrato = 0;
+            const centro = stato.pista.querySelector('.as-carta.as-centro');
+            const n = centro ? centro.querySelectorAll('.as-mini').length : 0;
+            if (n < 2) return;
+            giroTeam = win.setInterval(() => { mostrato = prossimoMini(mostrato, n); mostraMini(centro, mostrato); }, PASSO_TEAM);
+        };
+        const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); avviaGiroTeam(); } };
         const passo = verso => { if (stato) vai(Car.passo(stato.corrente, stato.m.righe.length, verso, true)); };
 
         // i controlli della pagina (nascosti) che la schermata dell'app fa scattare
@@ -128,6 +145,9 @@
             const attiva = radice.querySelector('.as-p.attivo');
             if (attiva && attiva.scrollIntoView) { try { attiva.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* senza: resta dov'è */ } }
             if (n) posiziona();
+            avviaGiroTeam();
+            // i nomi troppo lunghi per il loro riquadro scorrono (nome-scorrevole.js, se c'è)
+            if (win.NomeScorrevole && n) win.requestAnimationFrame(() => win.NomeScorrevole.applicaTutti('.as-nome'));
         };
 
         doc.addEventListener('app-dati', e => { if (e && e.detail === 'stats' && ponte) monta(ponte.datiPagina('stats')); });
@@ -136,5 +156,5 @@
         return { monta, vai, passo };
     }
 
-    return { firma, htmlCarta, htmlBarra, htmlParametri, avvia };
+    return { firma, htmlCarta, htmlBarra, htmlParametri, prossimoMini, PASSO_TEAM, avvia };
 });

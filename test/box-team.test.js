@@ -139,7 +139,7 @@ test('renderizza: una tessera il cui colore è già noto nasce colorata (niente 
     const sorgente = box.slice(inizio, box.indexOf('async function caricaInfoAbilita')) + '\nreturn renderizza;';
     const amb = { window: finestra, document: { getElementById: () => griglia }, caricaTeamBloccati: async () => {}, applicaColoreBordo() {}, setTimeout: () => 0, formattaEffettoNatura: () => '', SpritePkm: require('../docs/sprite-pkm.js') };
     await new Function(...Object.keys(amb), sorgente)(...Object.values(amb))([squadra('t1', 'A', 1, 0)]);
-    assert.match(griglia.innerHTML, /id="box-t1-0" style="--tipo: #ff5599;"/);
+    assert.match(griglia.innerHTML, /id="box-t1-0" style="--tipo: #ff5599; --tipo2: #ff5599;"/);
     assert.ok(!/id="box-t1-1" style=/.test(griglia.innerHTML), 'il Pokémon di cui non si sa il tipo non ha stile');
 });
 
