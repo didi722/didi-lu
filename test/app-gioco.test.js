@@ -69,17 +69,6 @@ test('iniziale: la prima lettera o cifra in maiuscolo, "?" senza nome', () => {
     assert.equal(G.iniziale(undefined), '?');
 });
 
-test('barraNascosta: scorrendo giù si nasconde, su torna; vicino alla cima c\'è sempre; piccoli movimenti non cambiano nulla', () => {
-    assert.equal(G.barraNascosta(0, 300, false), true);
-    assert.equal(G.barraNascosta(300, 200, true), false);
-    assert.equal(G.barraNascosta(300, 20, true), false, 'in cima c\'è sempre');
-    assert.equal(G.barraNascosta(0, 24, false), false, 'a 24 pixel dalla cima ancora');
-    assert.equal(G.barraNascosta(0, 40, false), true);
-    assert.equal(G.barraNascosta(100, 103, false), false, 'tre pixel non contano');
-    assert.equal(G.barraNascosta(300, 303, true), true, 'e non la riportano fuori');
-    assert.equal(G.SOGLIA_SCORRIMENTO, 8);
-});
-
 test('avvia: fuori dall\'app (senza app-shell), nel frame del simulatore o senza il resto dell\'app non fa niente', () => {
     const html = { classList: { contains: () => false } };
     const finestra = extra => ({ document: { documentElement: html, body: {} }, ...extra });
@@ -183,7 +172,7 @@ test('app-gioco-pagine.css: ogni regola riguarda l\'app ("html.app-shell") e sta
     const lista = selettori(css);
     assert.ok(lista.length >= 300, 'selettori trovati: ' + lista.length);
     for (const s of lista) {
-        assert.match(s, /^(html\.app-shell|html\.gx-barra-nascosta\.app-shell|html\.gx-dialogo-aperto( body)?$|::view-transition-(old|new|group)\(|\.gx-barra$)/, `regola che tocca il sito intero: "${s}"`);
+        assert.match(s, /^(html\.app-shell|html\.gx-dialogo-aperto( body)?$|::view-transition-(old|new|group)\(|\.gx-barra$)/, `regola che tocca il sito intero: "${s}"`);
     }
     // l'unica regola fuori dalle @media nasconde la barra dove non serve (non esiste nemmeno finché l'app non la crea)
     assert.deepEqual(fuoriDalleCondizioni(css), ['.gx-barra']);
@@ -208,7 +197,7 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
 
 test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --i le scrive il menù tessera per tessera', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
-    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'dettagli.js'].map(docs).join('\n');
+    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
     const usate = new Set([...fogli.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
@@ -251,4 +240,10 @@ test('transizioni tra pagine: attive solo nell\'app (la regola @view-transition 
     // le animazioni delle pagine non lasciano blocchi "contenitore" attorno ai tasti fissi (fill-mode both li terrebbe per sempre)
     const css = senzaCommenti(docs('app-gioco-pagine.css')).replace(/::view-transition-[^{]*\{[^}]*\}/g, '');       // i pezzi della transizione vivono su uno strato a parte
     assert.doesNotMatch(css, /animation(-fill-mode)?:[^;}]*\bboth\b/, 'animation con fill-mode "both" (usa "backwards")');
+});
+
+test('la barra in alto (menù e titolo) resta sempre in vista: scorrendo non si nasconde più', () => {
+    assert.equal(G.barraNascosta, undefined);
+    assert.doesNotMatch(docs('app-gioco.js'), /gx-barra-nascosta|addEventListener\('scroll'/);
+    assert.doesNotMatch(docs('app-gioco-pagine.css'), /gx-barra-nascosta/);
 });

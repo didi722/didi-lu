@@ -71,14 +71,24 @@ test('htmlCpu: i team come carte con le specie, i Random Battle come chip; senza
     assert.doesNotThrow(() => P.htmlCpu());
 });
 
-test('htmlAmichevole: una carta per allenatore col suo colore e l\'Elo (N/A senza); senza nessuno lo dice', () => {
-    const h = P.htmlAmichevole({ giocatori: [{ nome: 'Anna', colore: '#ff0000', elo: 1200 }, { nome: 'Bea <b>', colore: 'x', elo: null }] });
+test('htmlAmichevole: ogni allenatore in piedi sul suo palco tondo, col suo colore, il nome e l\'Elo (N/A senza); niente sfondo; senza nessuno lo dice', () => {
+    const h = P.htmlAmichevole({ giocatori: [{ nome: 'Anna', colore: '#ff0000', elo: 1200, avatar: 'a.png' }, { nome: 'Bea <b>', colore: 'x', elo: null }] });
     assert.match(h, /data-sfida="Anna" style="--c:#ff0000"/);
+    assert.match(h, /<span class="pr-palco" aria-hidden="true"><span class="pal-aura"><\/span><span class="pal-pedana"><\/span><img class="pr-avatar" draggable="false" src="a\.png"/);
     assert.match(h, /1200 <small>Elo<\/small>/);
     assert.match(h, /data-sfida="Bea &lt;b&gt;" style="--c:#31c489"/);
     assert.match(h, /<span class="pr-elo">N\/A<\/span>/);
+    assert.match(h, /src="immagini\/magikarp\.png"/);
     assert.match(P.htmlAmichevole({ giocatori: [] }), /There is nobody to play with yet/);
     assert.match(P.htmlAccedi(), /data-accedi="1"/);
+});
+
+test('Practice non scorre in verticale: pagina ferma, i team e i Random Battle scorrono di lato; i Pokémon dei team sono GIF animate', () => {
+    const css = docs('app-gioco-pagine.css');
+    assert.match(css, /html\.app-shell:has\(body\.pg-practice\), html\.app-shell body\.pg-practice \{ overflow: hidden !important; \}/);
+    assert.match(css, /body\.pg-practice \.pr-griglia \{ display: flex; flex-wrap: nowrap;[^}]*overflow-x: auto; overflow-y: hidden;/);
+    assert.match(css, /body\.pg-practice \.pr-chips \{ display: flex; flex-wrap: nowrap;[^}]*overflow-x: auto;/);
+    assert.match(docs('app-practice.js'), /typeof win\.SpritePkm\.gif === 'function' \? win\.SpritePkm\.gif\(s\)/);
 });
 
 test('practice.html: solo nell\'app (dal browser si torna alla home), con Firebase, l\'accesso e gli script delle sfide; gli id che servono ci sono', () => {

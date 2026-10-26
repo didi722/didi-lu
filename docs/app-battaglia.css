@@ -21,7 +21,11 @@
 
     /* via tutto quello che non serve a giocare: i due player, la cronaca, i tooltip, le prove (bot, note), lo schermo intero */
     html.app :is(.lato, .colonna-log, .opzione-bot, .btn-note, .btn-schermo-intero, #note-team) { display: none !important; }
-    html.app #tooltipwrapper { display: none !important; }
+    /* le schede dei Pokémon e delle mosse (i tooltip di Showdown): compaiono tenendo premuto, al centro dello schermo, e spariscono lasciando (app-battaglia.js) */
+    html.app #tooltipwrapper { position: fixed !important; inset: 0 !important; z-index: 2000; display: flex !important; align-items: center; justify-content: center; margin: 0 !important; padding: 8px; box-sizing: border-box; pointer-events: none !important; }
+    html.app #tooltipwrapper .tooltipinner { position: static !important; }
+    html.app #tooltipwrapper .tooltip { position: static !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; transform: none !important; margin: 0 !important; max-height: calc(100vh - 16px); overflow: hidden; }
+    html.app .has-tooltip { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     html.app .titolo, html.app .pannello-testa h2 { display: none; }
     html.app .cab-schermo, html.app .console { display: contents; }
     html.app .cab-campo:has(.campo-vuoto) { display: none; }

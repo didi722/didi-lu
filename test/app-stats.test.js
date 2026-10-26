@@ -24,14 +24,6 @@ const modello = () => ({
     ]
 });
 
-test('colonne: due colonne di tessere fino a sei numeri, tre oltre (la carta è bassa: al massimo tre righe)', () => {
-    assert.equal(S.colonne(0), 2);
-    assert.equal(S.colonne(4), 2);
-    assert.equal(S.colonne(6), 2);
-    assert.equal(S.colonne(7), 3);
-    assert.equal(S.colonne(9), 3);
-});
-
 test('firma: cambiando categoria, stagione, formato o ordinamento si riparte dal primo; con gli stessi si resta dov\'si è', () => {
     const m = modello();
     const f = S.firma(m);
@@ -43,22 +35,23 @@ test('firma: cambiando categoria, stagione, formato o ordinamento si riparte dal
     assert.doesNotThrow(() => S.firma({}));
 });
 
-test('htmlCarta: posizione, nome, numero scelto in grande e gli altri nelle tessere; il testo del sito non apre tag; colori sicuri', () => {
+test('htmlCarta: posizione, nome e SOLO il numero scelto, in grande; niente tessere con gli altri; il testo del sito non apre tag; colori sicuri', () => {
     const m = modello();
     const h = S.htmlCarta(m.righe[0], m, 0);
-    assert.match(h, /class="as-carta" data-i="0" style="--c:#31c489;--cols:2"/);
+    assert.match(h, /class="as-carta" data-i="0" style="--c:#31c489"/);
     assert.match(h, /<span class="as-pos">#1<\/span>/);
     assert.match(h, /<b class="as-nome">Didi<\/b>/);
     assert.match(h, /<small class="as-sotto">Champion<\/small>/);
     assert.match(h, /<span class="as-et">Elo<\/span><span class="as-val">1,032<\/span>/);
-    assert.equal((h.match(/class="as-dato"/g) || []).length, 3, 'le tre tessere');
-    assert.match(h, /<span class="as-det">Sets<\/span><span class="as-dva">23 - 16<\/span><small class="sub">\+7<\/small>/);
+    assert.match(h, /<span class="pal-aura"/);
+    assert.match(h, /class="as-palco as-v-players"/);
+    assert.doesNotMatch(h, /as-dato|as-dati|Points|Sets|Win %/, 'gli altri numeri non ci sono: si guarda quello scelto');
     const b = S.htmlCarta(m.righe[1], m, 1);
     assert.match(b, /&lt;b&gt;Lukiani&lt;\/b&gt;/, 'il nome è testo, non HTML');
     assert.match(b, /--c:#b388eb/, 'un colore che non è un colore torna quello di base');
-    assert.equal((b.match(/class="as-dato"/g) || []).length, 1, 'le tessere senza numero non si disegnano');
     assert.doesNotMatch(b, /as-sotto/);
     assert.match(S.htmlCarta({ nome: 'X' }, m, 5), /data-i="5"[\s\S]*#6/, 'senza posizione si conta dal posto');
+    assert.doesNotMatch(S.htmlCarta({ nome: 'X' }, { grande: 'zz', tab: 'players' }, 0), /undefined/, 'senza il numero scelto non rompe');
 });
 
 test('htmlBarra e htmlParametri: la categoria, la stagione e il formato in alto; i numeri con cui ordinare, quello attivo col verso', () => {
@@ -89,12 +82,13 @@ test('stats.js pubblica il modello a ogni cambiamento (e stats.html carica gli s
     assert.match(docs('app-stats.js'), /'#stats-ordina \[data-ordina="' \+ id \+ '"\]'/);
 });
 
-test('il foglio: nell\'app la pagina del sito si nasconde e resta nella pagina (i controlli si azionano da codice); regole solo sotto html.app-shell', () => {
+test('niente frecce né conto: si scorre col dito; il foglio: nell\'app la pagina del sito si nasconde e resta nella pagina (i controlli si azionano da codice); regole solo sotto html.app-shell', () => {
     const css = docs('app-gioco-pagine.css');
+    assert.doesNotMatch(docs('app-stats.js'), /as-pie|as-freccia|data-passo|as-conta/);
     assert.match(css, /html\.app-shell\.app-stats body\.pg-stats main\.stats-pagina \{ display: none !important; \}/);
     assert.match(css, /html\.app-shell\.app-stats, html\.app-shell\.app-stats body \{ overflow: hidden !important; \}/);
     const righe = css.split('\n').filter(r => /\.as-/.test(r) && /\{/.test(r) && !/^\s+[a-z-]+:/.test(r));
-    assert.ok(righe.length >= 25, 'regole trovate: ' + righe.length);
+    assert.ok(righe.length >= 20, 'regole trovate: ' + righe.length);
     for (const r of righe) assert.match(r.trim(), /^html\.app-shell /, r.trim().slice(0, 80));
 });
 

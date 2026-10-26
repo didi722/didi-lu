@@ -18,34 +18,40 @@ test('indirizzo e righeDati: dove porta e cosa si legge sotto il nome', () => {
     assert.deepEqual(K.righeDati({}), { sd: 'SD 0-0', match: 'MATCH 0-0' });
 });
 
-test('htmlGrande: posizione, avatar, nome, numeri e punti; il tasto per sfidare solo se c\'è; il nome è testo', () => {
-    const h = K.htmlGrande(lista[3], '<button class="vs">VS</button>');
+test('htmlCarta: posizione, avatar sul palco, nome, punti e numeri; il tasto per sfidare solo se c\'è; il nome è testo; niente sfondo (la scheda non ha classi di riquadro)', () => {
+    const h = K.htmlCarta(lista[3], 3, '<button class="vs">VS</button>');
+    assert.match(h, /class="ac-carta" data-i="3" style="--c:#31c489"/);
     assert.match(h, /href="players\.html\?player=Bea%20%3Cx%3E"/);
     assert.match(h, /Bea &lt;x&gt;/);
+    assert.match(h, /<span class="pal-aura"/);
+    assert.match(h, /<span class="pal-pedana"/);
+    assert.match(h, /<img class="ac-avatar"/);
     assert.match(h, /<span class="ac-pos">#4<\/span>/);
-    assert.match(h, /<small>SD 2-1<\/small><small>MATCH 7-3<\/small>/);
     assert.match(h, /<span class="ac-punti"><b>10<\/b><small>PTS<\/small><\/span>/);
+    assert.match(h, /SD 2-1 · MATCH 7-3/);
     assert.match(h, /<span class="ac-vs"><button class="vs">VS<\/button><\/span>/);
-    assert.doesNotMatch(K.htmlGrande(lista[0], ''), /ac-vs/);
-    assert.match(K.htmlGrande({ nome: 'X', colore: 'no' }, ''), /--c:#31c489/);
-    assert.match(K.htmlGrande({ nome: 'X' }, ''), /src="immagini\/magikarp\.png"/);
+    assert.doesNotMatch(K.htmlCarta(lista[0], 0, ''), /ac-vs/);
+    assert.match(K.htmlCarta({ nome: 'X', colore: 'no' }, 0, ''), /--c:#31c489/);
+    assert.match(K.htmlCarta({ nome: 'X' }, 0, ''), /src="immagini\/magikarp\.png"/);
 });
 
-test('html: il giocatore al centro, i due successivi sotto (dall\'ultimo si ricomincia), il conto e le frecce se sono più di uno', () => {
-    const h = K.html(lista, 0);
-    assert.match(h, /class="ac-grande"[\s\S]*Didi/);
-    assert.deepEqual([...h.matchAll(/data-vai="(\d+)"/g)].map(m => Number(m[1])), [1, 2]);
-    assert.match(h, /<span class="ac-conta" aria-live="polite">1 \/ 4<\/span>/);
-    const fine = K.html(lista, 3);
-    assert.deepEqual([...fine.matchAll(/data-vai="(\d+)"/g)].map(m => Number(m[1])), [0, 1], 'dopo l\'ultimo c\'è il primo');
-    assert.match(fine, /4 \/ 4/);
-    assert.deepEqual([...K.html(lista, -1).matchAll(/data-vai="(\d+)"/g)].map(m => Number(m[1])), [0, 1], 'un indice fuori fila torna dentro');
-    const due = K.html(lista.slice(0, 2), 0);
-    assert.deepEqual([...due.matchAll(/data-vai="(\d+)"/g)].map(m => Number(m[1])), [1], 'con due giocatori ne compare uno sotto');
-    const solo = K.html(lista.slice(0, 1), 0);
-    assert.doesNotMatch(solo, /ac-piccoli|ac-nav/, 'da soli niente comandi');
-    assert.match(K.html([], 0), /No players registered in this season/);
-    assert.match(K.html(lista, 0, { vs: n => `<i>${n}</i>` }), /<span class="ac-vs"><i>Didi<\/i><\/span>/);
+test('html: una scheda per giocatore, tutte nella pista (se ne vede una, le altre stanno ai lati); senza giocatori lo dice; niente conto e niente frecce', () => {
+    const h = K.html(lista, { vs: n => `<i>${n}</i>` });
+    assert.equal((h.match(/class="ac-carta"/g) || []).length, 4);
+    assert.match(h, /^<div class="ac-pista">/);
+    assert.match(h, /<span class="ac-vs"><i>Didi<\/i><\/span>/);
+    assert.doesNotMatch(h, /ac-nav|ac-freccia|ac-conta|data-passo/, 'niente frecce né 1 / 4: si scorre col dito');
+    assert.match(K.html([]), /No players registered in this season/);
+    assert.match(K.html(null), /No players registered in this season/);
+});
+
+test('scorre da sola ogni pochi secondi (e dopo un gesto a mano aspetta di più); un avatar per ogni lato delle schede dei showdown', () => {
+    assert.ok(K.PASSO_AUTO >= 3000 && K.PASSO_AUTO <= 8000);
+    assert.ok(K.RIPRENDI_DOPO > K.PASSO_AUTO, 'dopo un gesto l\'automatismo aspetta più di un giro');
+    assert.equal(K.avatarDi(lista, ' ANNA '), 'Anna.png', 'senza badare alle maiuscole');
+    assert.equal(K.avatarDi(lista, 'nessuno'), 'immagini/magikarp.png');
+    const h = K.htmlPalcoShowdown(lista, 'Didi');
+    assert.match(h, /<span class="sd-palco" aria-hidden="true"><span class="pal-aura"><\/span><span class="pal-pedana"><\/span><img class="sd-avatar" draggable="false" src="Didi\.png"/);
 });
 
 test('matches.html pubblica la classifica; nell\'app l\'elenco del sito si nasconde e "Registered teams" non si vede', () => {
@@ -53,6 +59,8 @@ test('matches.html pubblica la classifica; nell\'app l\'elenco del sito si nasco
     assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['matches.html'], ['app-carosello.js', 'app-classifica.js']);
     const css = docs('app-gioco-pagine.css');
     assert.match(css, /html\.app-shell\.app-classifica body\.pg-matches #participants-list\{display:none\}|html\.app-shell\.app-classifica body\.pg-matches #participants-list \{ ?display: none/);
+    assert.match(css, /\.cl-laterale \.cl-apri \{ display: none !important; \}/, 'via "Full table"');
+    assert.match(css, /#matchList\.showdown-grid-double \{ display: flex !important; flex-wrap: nowrap;[^}]*scroll-snap-type: x mandatory/, 'i showdown scorrono di lato');
     assert.match(css, /\.btn-registered-teams[^{]*\{[^}]*display: none/);
     const righe = css.split('\n').filter(r => /\.ac-/.test(r) && /\{/.test(r) && !/^\s+[a-z-]+:/.test(r));
     assert.ok(righe.length >= 10, 'regole trovate: ' + righe.length);

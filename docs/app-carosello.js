@@ -97,14 +97,16 @@
     }
 
     /**
-     * Collega i gesti a un elemento: dito o mouse. `avanti` e `indietro` sono chiamati a gesto finito (una volta sola per gesto).
+     * Collega i gesti a un elemento: dito o mouse. `avanti` e `indietro` sono chiamati a gesto finito (una volta sola per gesto). `ignora`: selettore degli elementi
+     * interni su cui un gesto non vale (cursori, menù a tendina...).
      * Scorrere in verticale resta alla pagina (touch-action: pan-y). Un trascinamento non fa scattare il clic che lo chiude.
      * Restituisce { stacca } per toglierli.
      */
-    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO } = {}) {
+    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO, ignora } = {}) {
         let inizio = null, mosso = false;
         const giu = e => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (ignora && e.target && e.target.closest && e.target.closest(ignora)) { inizio = null; return; }      // es. i cursori: lì il dito serve a loro
             inizio = { x: e.clientX, y: e.clientY };
             mosso = false;
         };
@@ -140,5 +142,59 @@
         };
     }
 
-    return { SOGLIA_GESTO, SOGLIA_CLIC, PREVALENZA, dentro, distanza, passo, visibili, seguenti, aspetto, gesto, collegaGesti };
+    /**
+     * Le spiegazioni dei piccoli elementi (i badge): un tocco la mostra per qualche secondo (o la toglie se c'è già); tenendo premuto resta finché il dito non si alza.
+     * `selettore`: quali elementi dentro `radice`; `mostra(el, lungo)` e `nascondi()` disegnano la nota. Se il dito scorre (un gesto di lato) non conta né l'uno né l'altro.
+     * `tempi`: { set, clear } (per le prove: di norma i timer del browser). Restituisce { stacca }.
+     */
+    function collegaPressione(radice, selettore, { mostra, nascondi, ms = 350, durata = 3200, tempi } = {}) {
+        const T = tempi || { set: (f, t) => setTimeout(f, t), clear: id => clearTimeout(id) };
+        let attivo = null, inizio = null, lungo = false, tenere = null, chiudere = null, aperto = null;
+        const trova = e => (e.target && e.target.closest ? e.target.closest(selettore) : null);
+        const chiudi = () => { if (chiudere) { T.clear(chiudere); chiudere = null; } if (aperto) { aperto = null; if (nascondi) nascondi(); } };
+        const giu = e => {
+            const el = trova(e);
+            if (!el) return;
+            attivo = el; inizio = { x: e.clientX, y: e.clientY }; lungo = false;
+            if (tenere) T.clear(tenere);
+            tenere = T.set(() => { tenere = null; if (!attivo) return; lungo = true; if (chiudere) { T.clear(chiudere); chiudere = null; } aperto = attivo; if (mostra) mostra(attivo, true); }, ms);
+        };
+        const muovi = e => {
+            if (!attivo || !inizio || lungo) return;
+            if (Math.abs(e.clientX - inizio.x) > SOGLIA_CLIC || Math.abs(e.clientY - inizio.y) > SOGLIA_CLIC) { T.clear(tenere); tenere = null; attivo = null; }
+        };
+        const su = () => {
+            const el = attivo;
+            if (tenere) { T.clear(tenere); tenere = null; }
+            attivo = null;
+            if (!el) return;
+            if (lungo) { lungo = false; chiudi(); return; }
+            // un tocco: la nota compare per qualche secondo; toccando di nuovo lo stesso elemento sparisce
+            if (aperto === el) { chiudi(); return; }
+            chiudi();
+            aperto = el;
+            if (mostra) mostra(el, false);
+            chiudere = T.set(() => { chiudere = null; chiudi(); }, durata);
+        };
+        const annulla = () => { if (tenere) { T.clear(tenere); tenere = null; } const eraLungo = lungo; attivo = null; lungo = false; if (eraLungo) chiudi(); };
+        const menu = e => { if (trova(e)) e.preventDefault(); };
+        radice.addEventListener('pointerdown', giu);
+        radice.addEventListener('pointermove', muovi);
+        radice.addEventListener('pointerup', su);
+        radice.addEventListener('pointercancel', annulla);
+        radice.addEventListener('contextmenu', menu);
+        return {
+            stacca() {
+                radice.removeEventListener('pointerdown', giu);
+                radice.removeEventListener('pointermove', muovi);
+                radice.removeEventListener('pointerup', su);
+                radice.removeEventListener('pointercancel', annulla);
+                radice.removeEventListener('contextmenu', menu);
+                if (tenere) T.clear(tenere);
+                chiudi();
+            }
+        };
+    }
+
+    return { SOGLIA_GESTO, SOGLIA_CLIC, PREVALENZA, dentro, distanza, passo, visibili, seguenti, aspetto, gesto, collegaGesti, collegaPressione };
 });

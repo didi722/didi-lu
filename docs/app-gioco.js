@@ -29,7 +29,6 @@
     // le pagine il cui titolo cambia con quello che si guarda (la stagione): il nastro porta il nome della tessera, accanto va quello della stagione
     const CON_SOTTOTITOLO = ['matches.html'];
     const CON_NOME_STAGIONE = ['hub.html'];
-    const SOGLIA_SCORRIMENTO = 8;           // pixel di scorrimento che contano come "sta scorrendo"
 
     // ---------- parti pure ----------
 
@@ -68,14 +67,6 @@
     function iniziale(nome) {
         const m = String(nome || '').match(/[0-9A-Za-zÀ-ÿ]/);
         return m ? m[0].toUpperCase() : '?';
-    }
-
-    /** Scorrendo verso il basso la barra si nasconde, verso l'alto torna; vicino alla cima c'è sempre. */
-    function barraNascosta(precedente, attuale, nascostaOra) {
-        if (attuale <= 24) return false;
-        const d = attuale - precedente;
-        if (Math.abs(d) < SOGLIA_SCORRIMENTO) return !!nascostaOra;
-        return d > 0;
     }
 
     /** Le finestre del sito (team, Pokémon, classifica, accesso, iscrizione...): contenitori a tutto schermo che si aprono sopra la pagina. */
@@ -187,19 +178,7 @@
         });
         account.addEventListener('click', () => opzioni.apri());
 
-        // ----- la barra si nasconde scorrendo verso il basso -----
-        let ultimo = win.pageYOffset || 0, nascosta = false, ferma = false;
-        win.addEventListener('scroll', () => {
-            if (ferma) return;
-            ferma = true;
-            win.requestAnimationFrame(() => {
-                ferma = false;
-                const y = Math.max(0, win.pageYOffset || 0);
-                const n = barraNascosta(ultimo, y, nascosta);
-                if (Math.abs(y - ultimo) >= SOGLIA_SCORRIMENTO || y <= 24) ultimo = y;
-                if (n !== nascosta) { nascosta = n; html.classList.toggle('gx-barra-nascosta', n); }
-            });
-        }, { passive: true });
+        // (la barra con il menù e il titolo resta sempre in vista, anche scorrendo la pagina)
 
         // ----- con una finestra del sito aperta (team, Pokémon, classifica...) la pagina dietro sta ferma -----
         let controllo = false;
@@ -219,5 +198,5 @@
         return { barra, opzioni };
     }
 
-    return { TITOLI, COLORI, CON_SOTTOTITOLO, CON_NOME_STAGIONE, SOGLIA_SCORRIMENTO, FINESTRE, finestraAperta, nomePagina, titolo, sottotitolo, sottotitoloDa, coloreDi, iniziale, barraNascosta, avvia };
+    return { TITOLI, COLORI, CON_SOTTOTITOLO, CON_NOME_STAGIONE, FINESTRE, finestraAperta, nomePagina, titolo, sottotitolo, sottotitoloDa, coloreDi, iniziale, avvia };
 });

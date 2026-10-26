@@ -126,3 +126,61 @@ test('collegaGesti: il clic che chiude un trascinamento non vale (scorrere sopra
     const tocco = clic();
     assert.ok(!tocco.fermato && !tocco.annullato, 'sotto gli 8 pixel è un tocco');
 });
+
+test('collegaGesti con `ignora`: un gesto che parte da un cursore o da un campo non fa scorrere', () => {
+    const el = elementoFinto();
+    const chiamate = [];
+    Car.collegaGesti(el, { avanti: () => chiamate.push('avanti'), indietro: () => chiamate.push('indietro'), ignora: 'input, .tb-ev-row' });
+    const su = (dentro) => { const target = { closest: sel => (dentro && sel.includes('input') ? {} : null) }; el.manda('pointerdown', { clientX: 200, clientY: 100, pointerType: 'touch', button: 0, target }); el.manda('pointerup', { clientX: 60, clientY: 100 }); };
+    su(true);
+    assert.deepEqual(chiamate, [], 'sul cursore il dito serve al cursore');
+    su(false);
+    assert.deepEqual(chiamate, ['avanti']);
+});
+
+// timer finti per le prove: si fanno scattare a mano
+function tempiFinti() {
+    const attivi = new Map(); let n = 0;
+    return { set: (f, ms) => { attivi.set(++n, { f, ms }); return n; }, clear: id => attivi.delete(id), scatta: ms => { for (const [id, t] of [...attivi]) if (t.ms <= ms) { attivi.delete(id); t.f(); } }, quanti: () => attivi.size };
+}
+
+test('collegaPressione: un tocco mostra la spiegazione per qualche secondo (e toccando di nuovo sparisce); tenendo premuto resta finché non si lascia; scorrere non vale', () => {
+    const el = elementoFinto();
+    const t = tempiFinti();
+    const log = [];
+    const badge = { id: 'b1' };
+    const target = { closest: sel => (sel === '.at-badge' ? badge : null) };
+    const c = Car.collegaPressione(el, '.at-badge', { mostra: (b, lungo) => log.push(['mostra', b.id, lungo]), nascondi: () => log.push(['nascondi']), ms: 350, durata: 3000, tempi: t });
+    // tocco breve
+    el.manda('pointerdown', { clientX: 10, clientY: 10, target }); el.manda('pointerup', { clientX: 10, clientY: 10, target });
+    assert.deepEqual(log, [['mostra', 'b1', false]]);
+    t.scatta(3000);
+    assert.deepEqual(log.slice(1), [['nascondi']], 'dopo qualche secondo sparisce da sola');
+    // tocco, poi di nuovo lo stesso: la toglie
+    log.length = 0;
+    el.manda('pointerdown', { clientX: 10, clientY: 10, target }); el.manda('pointerup', { clientX: 10, clientY: 10, target });
+    el.manda('pointerdown', { clientX: 10, clientY: 10, target }); el.manda('pointerup', { clientX: 10, clientY: 10, target });
+    assert.deepEqual(log, [['mostra', 'b1', false], ['nascondi']]);
+    // tenuto premuto: compare e resta; lasciando sparisce
+    log.length = 0;
+    el.manda('pointerdown', { clientX: 10, clientY: 10, target });
+    t.scatta(350);
+    assert.deepEqual(log, [['mostra', 'b1', true]]);
+    el.manda('pointerup', { clientX: 10, clientY: 10, target });
+    assert.deepEqual(log, [['mostra', 'b1', true], ['nascondi']], 'lasciando, sparisce');
+    // il dito scorre (un gesto di lato): né tocco né tenuta
+    log.length = 0;
+    el.manda('pointerdown', { clientX: 10, clientY: 10, target }); el.manda('pointermove', { clientX: 90, clientY: 12 });
+    t.scatta(350); el.manda('pointerup', { clientX: 90, clientY: 12, target });
+    assert.ok(!log.some(x => x[2] === true));
+    // fuori dagli elementi non succede niente
+    log.length = 0;
+    el.manda('pointerdown', { clientX: 1, clientY: 1, target: { closest: () => null } }); el.manda('pointerup', { clientX: 1, clientY: 1 });
+    assert.deepEqual(log, []);
+    // il menu contestuale (la pressione lunga di Android) sugli elementi non si apre
+    let fermato = false;
+    el.manda('contextmenu', { target, preventDefault: () => { fermato = true; } });
+    assert.ok(fermato);
+    c.stacca();
+    assert.equal(el.quanti('pointerdown'), 0);
+});

@@ -47,10 +47,51 @@
         return /playing out/i.test(testoMessaggio) ? 'anim' : 'messaggio';
     }
 
+    /** Quanto si tiene premuto (ms) prima che compaia la scheda del Pokémon o della mossa */
+    const TENUTA_MS = 450;
+    /** Dopo un tocco il telefono manda anche i "mouseover" finti: per questo tempo (ms) non contano */
+    const FINESTRA_MOUSE_FINTO_MS = 800;
+
+    /** Un "mouseover" è un'eco di un tocco (e non va fatto vedere ai tooltip di Showdown)? */
+    const eEcoDelTocco = (adesso, ultimoTocco) => (adesso - ultimoTocco) < FINESTRA_MOUSE_FINTO_MS;
+
+    /**
+     * La scheda di un Pokémon o di una mossa (i tooltip di Showdown) si vede solo TENENDO PREMUTO e al centro dello schermo (lo mette il foglio); lasciando, sparisce.
+     * Un semplice tocco sceglie (la mossa, il Pokémon) e basta: niente scheda che compare e resta lì.
+     */
+    function collegaSchede(win) {
+        const doc = win.document;
+        let ultimoTocco = 0, timer = null;
+        const tooltips = () => win.PSClient && win.PSClient.BattleTooltips || win.BattleTooltips || null;
+        const nascondi = () => {
+            const T = tooltips();
+            if (T && typeof T.hideTooltip === 'function') { try { T.hideTooltip(); } catch (e) { /* niente da nascondere */ } }
+        };
+        const ferma = () => { if (timer) { win.clearTimeout(timer); timer = null; } };
+        doc.addEventListener('touchstart', e => {
+            ultimoTocco = Date.now();
+            const el = e.target && e.target.closest ? e.target.closest('.has-tooltip') : null;
+            ferma();
+            if (!el) return;
+            timer = win.setTimeout(() => {
+                timer = null;
+                const vuoto = !doc.querySelector('#tooltipwrapper .tooltip');
+                const istanza = win.AppTooltips;           // l'istanza di Showdown, messa a disposizione da battle-ui.js
+                if (vuoto && istanza && typeof istanza.showTooltip === 'function') { try { istanza.showTooltip(el); } catch (err) { /* resta com'è */ } }
+            }, TENUTA_MS);
+        }, { capture: true, passive: true });
+        ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach(t => doc.addEventListener(t, () => { ultimoTocco = Date.now(); ferma(); nascondi(); }, true));
+        // l'eco del tocco (mouseover e click finti) non deve far comparire o bloccare la scheda
+        doc.addEventListener('mouseover', e => { if (eEcoDelTocco(Date.now(), ultimoTocco)) e.stopImmediatePropagation(); }, true);
+        doc.addEventListener('click', () => { win.setTimeout(nascondi, 0); }, true);
+        doc.addEventListener('contextmenu', e => { if (e.target && e.target.closest && e.target.closest('.has-tooltip')) e.preventDefault(); }, true);
+    }
+
     function avvia(win) {
         const doc = win.document;
         const radice = doc.documentElement;
         if (!radice.classList.contains('app')) return null;
+        collegaSchede(win);
         const ricorda = new WeakMap();      // .corpo -> { chiave, passo }
         const mq = win.matchMedia ? win.matchMedia(CONDIZIONE_TELEFONO) : { matches: false };
 
@@ -140,5 +181,5 @@
         return { osservatore, tutti };
     }
 
-    return { CONDIZIONE_TELEFONO, passoDa, puoCambiare, statoAltro, avvia };
+    return { CONDIZIONE_TELEFONO, TENUTA_MS, FINESTRA_MOUSE_FINTO_MS, eEcoDelTocco, passoDa, puoCambiare, statoAltro, avvia };
 });

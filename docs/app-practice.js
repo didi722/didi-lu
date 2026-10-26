@@ -104,10 +104,10 @@
             </div></div>`;
     }
 
-    /** Amichevole: gli altri allenatori, ognuno una carta del suo colore */
+    /** Amichevole: gli altri allenatori, ognuno in piedi sul suo palco tondo (niente sfondo), col nome e l'Elo; si scorre di lato */
     function htmlAmichevole({ giocatori } = {}) {
         const carte = (giocatori || []).map(g => `<button type="button" class="pr-giocatore" data-sfida="${esc(g.nome)}" style="--c:${coloreSicuro(g.colore)}" data-suono="scegli">
-                <img class="pr-avatar" src="${esc(g.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">
+                <span class="pr-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span><img class="pr-avatar" draggable="false" src="${esc(g.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'"></span>
                 <b class="pr-nome">${esc(g.nome)}</b><span class="pr-elo">${g.elo != null ? g.elo + ' <small>Elo</small>' : 'N/A'}</span>
             </button>`).join('');
         return `<div class="pr-vista">${testa('Friendly', 'Pick a trainer')}
@@ -126,7 +126,7 @@
         const pagina = doc && doc.getElementById('practice');
         if (!pagina || !doc.documentElement.classList.contains('app-shell')) return null;
         const db = () => win.firebase.database();
-        const dex = win.SpritePkm ? s => win.SpritePkm.dex(s) : null;
+        const dex = win.SpritePkm ? s => (typeof win.SpritePkm.gif === 'function' ? win.SpritePkm.gif(s) : win.SpritePkm.dex(s)) : null;      // i Pokémon si muovono (GIF), non figurine ferme
         const stato = { vista: 'home', io: null, utente: false, pronto: false, team: null, giocatori: null };
 
         const disegna = () => {

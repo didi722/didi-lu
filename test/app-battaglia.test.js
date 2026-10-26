@@ -69,7 +69,9 @@ test('app-battaglia.css: ogni regola riguarda l\'app (html.app) ed è solo per t
     assert.match(css, /\.mossa:nth-child\(even\) \{ grid-column: 3; \}/);
     // niente player ai lati, cronaca, tooltip, prove (bot, note) e schermo intero
     assert.match(css, /html\.app :is\(\.lato, \.colonna-log, \.opzione-bot, \.btn-note, \.btn-schermo-intero, #note-team\) \{ display: none !important; \}/);
-    assert.match(css, /html\.app #tooltipwrapper \{ display: none !important; \}/);
+    // le schede dei Pokémon compaiono tenendo premuto, al centro dello schermo (non sono più nascoste)
+    assert.match(css, /html\.app #tooltipwrapper \{ position: fixed !important; inset: 0 !important;[^}]*display: flex !important; align-items: center; justify-content: center;/);
+    assert.match(css, /html\.app #tooltipwrapper \.tooltip \{ position: static !important; left: auto !important; top: auto !important;/);
     // i due passi: menu -> (mosse | cambi)
     for (const passo of ['menu', 'mosse', 'cambi']) assert.match(css, new RegExp(`\\.corpo\\[data-ab="${passo}"\\]`));
     assert.match(css, /\.ab-menu \{ display: grid; grid-template-columns: 1fr 1fr/);
@@ -101,4 +103,15 @@ test('app-battaglia.js: nel sito (non-app) non fa niente; i tasti sono quelli de
     // Back e i due tasti grandi: solo cambiano il passo (data-ab), non mandano scelte
     assert.match(js, /tasto\('ab-btn ab-lotta', 'Fight', \(\) => vai\(corpo, 'mosse'\)\)/);
     assert.match(js, /tasto\('ab-indietro', 'Back', \(\) => vai\(corpo, 'menu'\)\)/);
+});
+
+test('app-battaglia.js: le schede (tooltip) si vedono tenendo premuto e spariscono lasciando; l\'eco finta del tocco non le fa comparire', () => {
+    const B = require(path.join(DOCS, 'app-battaglia.js'));
+    assert.ok(B.TENUTA_MS >= 300 && B.TENUTA_MS <= 700, 'si tiene premuto un po\', non basta un tocco');
+    assert.equal(B.eEcoDelTocco(1000, 500), true, 'il mouseover che il telefono manda subito dopo un tocco è un\'eco');
+    assert.equal(B.eEcoDelTocco(1000 + B.FINESTRA_MOUSE_FINTO_MS, 1000), false, 'passata la finestra è un mouse vero');
+    const js = docs('app-battaglia.js');
+    for (const ev of ['touchend', 'touchcancel', 'pointerup', 'pointercancel']) assert.ok(js.includes(`'${ev}'`), ev);
+    assert.match(js, /hideTooltip/);
+    assert.match(docs('battle-ui.js'), /if \(inApp\(\)\) window\.AppTooltips = tooltips;/);
 });

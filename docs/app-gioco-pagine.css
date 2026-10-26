@@ -16,7 +16,6 @@
 .gx-barra { display: none; }
 @media (max-width: 900px), (max-height: 520px) {
     html.app-shell { --gx-barra: calc(40 * var(--u)); --gx-sopra: var(--gx-barra); --gx-tondo-h: calc(32 * var(--u)); --gx-giro: calc(7 * var(--u)); --gx-lato: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); }
-    html.gx-barra-nascosta.app-shell { --gx-sopra: 0px; }      /* le cose appiccicate (schede, classifica, palco) salgono quando la barra si nasconde */
 
     /* via l'intestazione da sito per PC: striscia nera coi pallini, adesivo del titolo, tasto utente, suono, pubblicità, bottoni sparsi */
     html.app-shell :is(.top-bar, .ads-sidebar, #menu-overlay, #music-control, .btn-global-rules, .btn-global-archive) { display: none !important; }
@@ -69,7 +68,6 @@
     html.app-shell .gx-account { overflow: hidden; background: #fff; font: 900 calc(15 * var(--u))/1 var(--gx-font); }
     html.app-shell .gx-account img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
     html.app-shell .gx-account svg { width: calc(18 * var(--u)); height: calc(18 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-    html.gx-barra-nascosta.app-shell .gx-barra, html.gx-barra-nascosta.app-shell .sfide-btn { transform: translateY(-140%) !important; }
 
     /* campanella e battaglie (le crea sfide.js): tondi nella barra, a sinistra del giocatore; nessuno sopra l'altro */
     html.app-shell #tasti-alto { display: contents; }
@@ -180,7 +178,7 @@
     html.app-shell body.pg-matches .cl-laterale { background: none !important; border: 0 !important; box-shadow: none !important; }
     html.app-shell body.pg-matches .cl-laterale .cl-barra { height: auto; padding: 0 0 calc(8 * var(--u)); background: none !important; color: var(--nb-testo, #000); align-items: flex-end; }
     html.app-shell body.pg-matches .cl-laterale .cl-barra-titolo { font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; }
-    html.app-shell body.pg-matches .cl-laterale .cl-apri { height: calc(32 * var(--u)); rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .cl-laterale .cl-apri { display: none !important; }
     html.app-shell body.pg-matches .cl-laterale .cl-corpo { padding: 0; }
     html.app-shell body.pg-matches .participants-card #participants-list { padding-left: 0 !important; display: grid; gap: calc(9 * var(--u)); }
     html.app-shell body.pg-matches .cl-laterale .rank-riga { margin: 0; display: flex; align-items: stretch; gap: calc(8 * var(--u)); }
@@ -194,70 +192,65 @@
     html.app-shell body.pg-matches .cl-laterale .sfida-rank-btn:active { transform: translateY(calc(2 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
     /* la classifica come carosello (app-classifica.js): il giocatore grande, sotto più piccoli i due che lo seguono, i comandi per scorrere; l'elenco di sempre resta nascosto */
     html.app-shell.app-classifica body.pg-matches #participants-list { display: none; }
-    html.app-shell body.pg-matches .ac { display: flex; flex-direction: column; gap: calc(8 * var(--u)); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    html.app-shell body.pg-matches .ac { position: relative; height: calc(214 * var(--u)); touch-action: pan-y; user-select: none; -webkit-user-select: none; overflow: hidden; }
     html.app-shell body.pg-matches .ac :is(img, a) { -webkit-user-drag: none; user-drag: none; }
     html.app-shell body.pg-matches .ac-vuoto { margin: 0; padding: calc(10 * var(--u)); color: rgba(255, 255, 255, .8); font: 700 calc(12 * var(--u))/1.3 var(--nb-font-testo); }
-    html.app-shell body.pg-matches .ac-grande {
-        position: relative; box-sizing: border-box; min-height: calc(92 * var(--u)); background: var(--c); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000);
-        border-radius: calc(14 * var(--u)); box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000); overflow: hidden;
-        animation: gx-ac-avanti .26s cubic-bezier(.2, .9, .3, 1) backwards;
+    html.app-shell body.pg-matches .ac-pista { position: absolute; inset: 0; }
+    /* un giocatore: niente sfondo; il palco tondo con lui sopra, sotto il posto e il nome, i punti e i numeri */
+    html.app-shell body.pg-matches .ac-carta {
+        position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(220 * var(--u)); margin-left: calc(-110 * var(--u)); color: #fff; --pw: 120;
+        translate: calc(var(--x, 0) * 205 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
+        transition: translate .45s cubic-bezier(.2, .9, .3, 1), scale .45s cubic-bezier(.2, .9, .3, 1), opacity .35s ease;
     }
-    html.app-shell body.pg-matches .ac[data-verso="indietro"] .ac-grande { animation-name: gx-ac-indietro; }
-    html.app-shell body.pg-matches .ac[data-verso=""] .ac-grande { animation: none; }
-    @keyframes gx-ac-avanti { from { opacity: 0; translate: calc(34 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }
-    @keyframes gx-ac-indietro { from { opacity: 0; translate: calc(-34 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }
-    html.app-shell body.pg-matches .ac-link { display: grid; grid-template-columns: calc(66 * var(--u)) minmax(0, 1fr) auto; grid-template-areas: "av pos pun" "av tes pun"; align-items: center; align-content: center; gap: calc(2 * var(--u)) calc(10 * var(--u)); min-height: calc(92 * var(--u)); box-sizing: border-box; padding: calc(7 * var(--u)) calc(10 * var(--u)) calc(7 * var(--u)) calc(8 * var(--u)); color: inherit; text-decoration: none; -webkit-user-drag: none; }
-    html.app-shell body.pg-matches .ac-grande .ac-pos { grid-area: pos; justify-self: start; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .04em; }
-    html.app-shell body.pg-matches .ac-grande .ac-avatar { grid-area: av; width: calc(66 * var(--u)); height: calc(66 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .28)); }
-    html.app-shell body.pg-matches .ac-grande .ac-testi { grid-area: tes; display: flex; flex-direction: column; gap: calc(2 * var(--u)); min-width: 0; }
-    html.app-shell body.pg-matches .ac-grande .ac-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(20 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
-    html.app-shell body.pg-matches .ac-grande .ac-testi small { font: 800 calc(10 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .06em; opacity: .75; }
-    html.app-shell body.pg-matches .ac-grande .ac-punti { grid-area: pun; align-self: start; margin-bottom: calc(30 * var(--u)); display: flex; flex-direction: column; align-items: center; min-width: calc(52 * var(--u)); padding: calc(5 * var(--u)) calc(8 * var(--u)) calc(4 * var(--u)); background: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-matches .ac-grande .ac-punti b { font: 900 calc(26 * var(--u))/1 var(--nb-font-titoli); }
-    html.app-shell body.pg-matches .ac-grande .ac-punti small { font: 800 calc(8 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .1em; opacity: .6; }
-    html.app-shell body.pg-matches .ac-vs { position: absolute; right: calc(10 * var(--u)); bottom: calc(8 * var(--u)); }
-    html.app-shell body.pg-matches .ac-vs .sfida-rank-btn { position: static; width: calc(54 * var(--u)); height: calc(26 * var(--u)); margin: 0; padding: 0; transform: none; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; cursor: pointer; }
+    html.app-shell body.pg-matches .ac-carta.ac-centro { pointer-events: auto; }
+    html.app-shell body.pg-matches .ac-carta:not(.ac-centro) { cursor: pointer; pointer-events: auto; }
+    html.app-shell body.pg-matches .ac-carta:not(.ac-centro) .ac-testi { opacity: 0; }
+    html.app-shell body.pg-matches .ac-link { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; color: inherit; text-decoration: none; }
+    html.app-shell body.pg-matches .ac-palco { position: relative; flex: none; width: 100%; height: calc(142 * var(--u)); }
+    html.app-shell body.pg-matches .ac-avatar { position: absolute; left: 50%; bottom: calc(16 * var(--u)); translate: -50% 0; height: calc(108 * var(--u)); width: auto; max-width: calc(130 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell body.pg-matches .ac-testi { display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); margin-top: calc(6 * var(--u)); transition: opacity .25s ease; min-width: 0; max-width: 100%; }
+    html.app-shell body.pg-matches .ac-riga { display: flex; align-items: center; gap: calc(6 * var(--u)); min-width: 0; max-width: 100%; }
+    html.app-shell body.pg-matches .ac-pos { flex: none; padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(7 * var(--u)); font: 900 calc(14 * var(--u))/1.2 var(--nb-font-titoli); }
+    html.app-shell body.pg-matches .ac-nome { min-width: 0; box-sizing: border-box; padding: calc(3 * var(--u)) calc(12 * var(--u)) calc(1 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .ac-punti { display: flex; align-items: baseline; gap: calc(4 * var(--u)); }
+    html.app-shell body.pg-matches .ac-punti b { font: 900 calc(24 * var(--u))/1 var(--nb-font-titoli); text-shadow: 0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .4); }
+    html.app-shell body.pg-matches .ac-punti small { font: 800 calc(10 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .12em; opacity: .75; }
+    html.app-shell body.pg-matches .ac-dati { font: 800 calc(9.5 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .06em; opacity: .75; white-space: nowrap; }
+    html.app-shell body.pg-matches .ac-vs { position: absolute; right: calc(2 * var(--u)); top: calc(4 * var(--u)); z-index: 2; }
+    html.app-shell body.pg-matches .ac-vs .sfida-rank-btn { position: static; width: calc(46 * var(--u)); height: calc(24 * var(--u)); margin: 0; padding: 0; transform: none; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(11 * var(--u))/1 var(--nb-font-titoli); }
     html.app-shell body.pg-matches .ac-vs .sfida-rank-btn:active { transform: translateY(calc(2 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-matches .ac-piccoli { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); }
-    html.app-shell body.pg-matches .ac-piccolo {
-        position: relative; display: grid; grid-template-columns: calc(36 * var(--u)) minmax(0, 1fr) auto; grid-template-areas: "pos pos pos" "av nom pun"; align-items: center; gap: calc(1 * var(--u)) calc(6 * var(--u)); box-sizing: border-box; min-height: calc(58 * var(--u));
-        padding: calc(4 * var(--u)) calc(7 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)); background: var(--c); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000);
-        font: inherit; text-align: left; cursor: pointer; opacity: .92; transition: translate .1s, box-shadow .1s;
-    }
-    html.app-shell body.pg-matches .ac-piccolo:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-matches .ac-piccolo .ac-pos { grid-area: pos; justify-self: start; padding: calc(1 * var(--u)) calc(7 * var(--u)) 0; background: var(--nb-ink, #000); color: #fff; border-radius: calc(6 * var(--u)); font: 900 calc(11 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .04em; }
-    html.app-shell body.pg-matches .ac-piccolo .ac-avatar { grid-area: av; width: calc(36 * var(--u)); height: calc(36 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; }
-    html.app-shell body.pg-matches .ac-piccolo .ac-nome { grid-area: nom; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(13 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
-    html.app-shell body.pg-matches .ac-piccolo .ac-punti { grid-area: pun; display: grid; place-items: center; min-width: calc(26 * var(--u)); padding: calc(3 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); background: #fff; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font: 900 calc(15 * var(--u))/1.1 var(--nb-font-titoli); }
-    html.app-shell body.pg-matches .ac-nav { display: flex; align-items: center; justify-content: center; gap: calc(12 * var(--u)); }
-    html.app-shell body.pg-matches .ac-conta { min-width: calc(54 * var(--u)); text-align: center; color: var(--nb-testo, #fff); font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .12em; }
-    html.app-shell body.pg-matches .ac-freccia { display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(30 * var(--u)); padding: 0; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); cursor: pointer; }
-    html.app-shell body.pg-matches .ac-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-matches .ac-freccia svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-    html.app-shell body.pg-matches .ac-succ svg { transform: scaleX(-1); }
+    html.app-shell body.pg-matches .ac-carta:not(.ac-centro) .ac-vs { display: none; }
     /* "Registered teams" non c'è nell'app: i team si guardano dalla partita */
     html.app-shell body.pg-matches .btn-registered-teams { display: none !important; }
-    /* le partite: tabellone "A [3 - 0] B" in due righe sottili invece di una pila alta */
-    html.app-shell body.pg-matches #matchList.showdown-grid-double { display: grid !important; grid-template-columns: 1fr; gap: calc(14 * var(--u)); padding: 0; }
-    html.app-shell body.pg-matches #matchList.showdown-grid-double:has(.showdown-summary-card)::before {
-        content: "SHOWDOWNS"; grid-column: 1 / -1; font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; color: var(--nb-testo, #000); margin-bottom: calc(-2 * var(--u));
-    }
+    /* i showdown: una fila di schede che si scorre di lato (niente scroll verticale); ogni scheda non ha sfondo: i due allenatori in piedi sul loro palco tondo, in mezzo il formato e la data */
+    html.app-shell body.pg-matches #matchList.showdown-grid-double { display: flex !important; flex-wrap: nowrap; gap: calc(6 * var(--u)); padding: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x; overscroll-behavior-x: contain; }
+    html.app-shell body.pg-matches #matchList.showdown-grid-double::-webkit-scrollbar { display: none; }
     html.app-shell body.pg-matches .showdown-summary-card {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "bar foot" "con con"; align-items: center; row-gap: 0;
-        box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); background: var(--nb-carta, #fff);
+        position: relative; flex: 0 0 min(calc(330 * var(--u)), 86%); scroll-snap-align: start; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "l1 bar l2" "l1 foot l2"; align-items: center; row-gap: 0; column-gap: calc(4 * var(--u));
+        background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; transform: none !important; color: #fff; cursor: pointer;
     }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-barra { grid-area: bar; height: auto; padding: calc(8 * var(--u)) 0 0 calc(12 * var(--u)); background: none; justify-content: flex-start; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-category-tag { background: var(--nb-ink); color: #fff; font-size: calc(11 * var(--u)); padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-footer { grid-area: foot; border: 0; padding: calc(8 * var(--u)) calc(12 * var(--u)) 0 0; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-card-content { grid-area: con; display: grid; grid-template-columns: 1fr 1fr; gap: calc(8 * var(--u)); padding: calc(10 * var(--u)) calc(12 * var(--u)) calc(12 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato { min-height: calc(54 * var(--u)); margin: 0 !important; padding: calc(5 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 { flex-direction: row-reverse; }
-    html.app-shell body.pg-matches .showdown-summary-card.vince-1 .sd-lato-1, html.app-shell body.pg-matches .showdown-summary-card.vince-2 .sd-lato-2 { translate: 0 0; }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-win { top: calc(-11 * var(--u)); right: auto; left: calc(8 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 .sd-win { left: auto; right: calc(8 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-nome { font-size: calc(13 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card .sd-punti { width: calc(34 * var(--u)); height: calc(34 * var(--u)); font-size: calc(20 * var(--u)); }
-    html.app-shell body.pg-matches .showdown-summary-card:active { transform: translateY(calc(4 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .showdown-summary-card::before, html.app-shell body.pg-matches .showdown-summary-card::after { content: none !important; display: none !important; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-card-content { display: contents; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-card-barra { grid-area: bar; align-self: end; height: auto; padding: 0 0 calc(2 * var(--u)); background: none !important; border: 0 !important; justify-content: center; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-badge-label { display: none; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-category-tag { background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font-size: calc(13 * var(--u)); padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); transform: none; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-card-footer { grid-area: foot; align-self: start; border: 0 !important; background: none !important; padding: calc(4 * var(--u)) 0 0; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-date-text { color: #fff; font: 800 calc(10 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .06em; opacity: .8; text-align: center; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-view-action { display: none; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-lato {
+        position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); min-width: 0; min-height: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; transform: none !important; rotate: 0deg !important; translate: 0 0 !important;
+        --c: var(--lato1); --pw: 112;
+    }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-1 { grid-area: l1; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 { grid-area: l2; --c: var(--lato2); }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-palco { position: relative; align-self: stretch; height: calc(104 * var(--u)); }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-avatar { position: absolute; left: 50%; bottom: calc(10 * var(--u)); translate: -50% 0; height: calc(86 * var(--u)); width: auto; max-width: calc(100 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-nome { max-width: 100%; box-sizing: border-box; padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #000 !important; color: color-mix(in srgb, var(--c) 70%, #fff) !important; border-radius: calc(7 * var(--u)); font-size: calc(13 * var(--u)); letter-spacing: .04em; text-transform: uppercase; border: 0 !important; box-shadow: none !important; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-punti { width: auto; height: auto; min-width: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; color: #fff; font: 900 calc(30 * var(--u))/1 var(--nb-font-titoli); text-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .45); }
+    html.app-shell body.pg-matches .showdown-summary-card.vince-1 .sd-lato-1 .sd-punti, html.app-shell body.pg-matches .showdown-summary-card.vince-2 .sd-lato-2 .sd-punti { color: var(--gx-giallo); }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-win { position: absolute; top: calc(2 * var(--u)); left: calc(4 * var(--u)); right: auto; }
+    html.app-shell body.pg-matches .showdown-summary-card .sd-lato-2 .sd-win { left: auto; right: calc(4 * var(--u)); }
+    html.app-shell body.pg-matches .showdown-summary-card:active { opacity: .85; }
 
     /* ---------- 4. Trainers: la scelta del personaggio, una figurina per allenatore ---------- */
     html.app-shell body.pg-players .wrapper { margin: 0; width: 100%; padding: calc(12 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-right, 0px)) calc(20 * var(--u)) max(calc(14 * var(--u)), env(safe-area-inset-left, 0px)); box-sizing: border-box; }
@@ -453,10 +446,10 @@
     html.app-shell #teamModal .modal-pkm-card:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000) !important; }
     html.app-shell #teamModal .modal-pkm-card :is(.modal-left-column, .modal-pkm-info) { display: contents !important; }
     html.app-shell #teamModal .modal-pkm-card .modal-sprite { grid-area: sp; justify-self: center; align-self: center; width: calc(62 * var(--u)) !important; height: calc(62 * var(--u)) !important; max-width: none; margin: 0 !important; object-fit: contain; }
-    html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(1) { grid-area: nm; display: block; min-width: 0; overflow: hidden; margin: 0 !important; padding: 0 !important; }
+    html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(1) { grid-area: nm; display: block; min-width: 0; overflow: hidden; margin: 0 !important; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(1 * var(--u)) calc(3 * var(--u)) !important; }
     html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(1) strong {
-        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; overflow-wrap: anywhere; white-space: normal; margin: 0 !important; padding: 0 !important; background: none !important; color: #000 !important; border: 0 !important; box-shadow: none !important; transform: none !important;
-        font: 900 calc(12.5 * var(--u))/1.15 var(--nb-font-titoli) !important; letter-spacing: .02em; text-transform: uppercase;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; overflow-wrap: anywhere; white-space: normal; margin: 0 !important; padding: calc(1 * var(--u)) calc(1 * var(--u)) 0 calc(2 * var(--u)) !important; background: none !important; color: #000 !important; border: 0 !important; box-shadow: none !important; transform: none !important;
+        font: 900 calc(12.5 * var(--u))/1.25 var(--nb-font-titoli) !important; letter-spacing: .02em; text-transform: uppercase;
     }
     html.app-shell #teamModal .modal-pkm-card .modal-types { grid-area: ty; display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: calc(3 * var(--u)) !important; width: auto; height: auto; margin: 0 !important; padding: 0; order: 0; }
     html.app-shell #teamModal .modal-pkm-card .modal-types .type-container { display: block; width: auto !important; margin: 0; padding: 0; }
@@ -535,9 +528,9 @@
     }
 
     /* il Showdown aperto (Matches): in alto chi gioca, il formato e il punteggio; sotto una riga per partita: team, risultato, team, replay */
-    html.app-shell #sd-modal-overlay { align-items: center; padding: calc(8 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay { align-items: center; padding: calc(8 * var(--u)) !important; overflow: hidden !important; }
     html.app-shell #sd-modal-overlay .sd-finestra {
-        width: min(calc(700 * var(--u)), 100%) !important; max-height: calc(100vh - 16 * var(--u)) !important; margin: 0 auto !important; padding-top: 0 !important; background: #1b1740 !important; color: #fff;
+        width: min(calc(700 * var(--u)), 100%) !important; max-height: calc(100vh - 16 * var(--u)) !important; margin: 0 auto !important; padding: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column; background: #1b1740 !important; color: #fff;
         border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important;
     }
     html.app-shell #sd-modal-overlay .sd-finestra::before { content: none !important; display: none !important; }
@@ -546,14 +539,18 @@
     html.app-shell #sd-modal-overlay .sd-titolo { margin: 0 !important; padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(5 * var(--u)) !important; font-size: calc(17 * var(--u)) !important; box-shadow: 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .18) !important; transform: none !important; rotate: 0deg; }
     html.app-shell #sd-modal-overlay .sd-nome { font-size: calc(17 * var(--u)) !important; }
     html.app-shell #sd-modal-overlay :is(.sd-chip, .sd-serie) { font-size: calc(13 * var(--u)) !important; transform: none !important; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell #sd-modal-overlay .sd-corpo { gap: calc(16 * var(--u)) !important; padding: calc(14 * var(--u)) calc(14 * var(--u)) calc(14 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-testa { flex: none; }
+    html.app-shell #sd-modal-overlay .sd-corpo { flex: 1 1 auto; min-height: 0; display: flex !important; flex-direction: column; justify-content: space-evenly; gap: calc(6 * var(--u)) !important; padding: calc(10 * var(--u)) calc(14 * var(--u)) calc(12 * var(--u)) !important; overflow: hidden !important; }
     html.app-shell #sd-modal-overlay .sd-match {
-        display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: center; gap: calc(8 * var(--u)) calc(10 * var(--u)) !important; padding: calc(16 * var(--u)) calc(10 * var(--u)) calc(9 * var(--u)) !important;
-        rotate: 0deg !important; box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000) !important; animation: none !important;
+        display: grid !important; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: center; gap: calc(8 * var(--u)) calc(10 * var(--u)) !important; padding: calc(12 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)) !important;
+        rotate: 0deg !important; background: none !important; border: 0 !important; border-bottom: calc(2.5 * var(--u)) dashed rgba(255, 255, 255, .22) !important; border-radius: 0 !important; box-shadow: none !important; animation: none !important;
     }
-    html.app-shell #sd-modal-overlay .sd-numero { top: calc(-11 * var(--u)) !important; left: calc(12 * var(--u)) !important; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)) !important; font-size: calc(9.5 * var(--u)) !important; rotate: 0deg !important; box-shadow: none !important; }
-    html.app-shell #sd-modal-overlay .sd-team { flex-direction: row !important; min-height: calc(40 * var(--u)); padding: calc(7 * var(--u)) calc(9 * var(--u)) calc(5 * var(--u)) !important; rotate: 0deg !important; translate: 0 0; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
-    html.app-shell #sd-modal-overlay .sd-team:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell #sd-modal-overlay .sd-match:last-child { border-bottom: 0 !important; }
+    html.app-shell #sd-modal-overlay .sd-numero { top: calc(-2 * var(--u)) !important; left: calc(6 * var(--u)) !important; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)) !important; font-size: calc(9.5 * var(--u)) !important; rotate: 0deg !important; box-shadow: none !important; }
+    html.app-shell #sd-modal-overlay .sd-team { flex-direction: row !important; min-height: calc(36 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)) !important; rotate: 0deg !important; translate: 0 0; background: none !important; border: 0 !important; box-shadow: none !important; }
+    html.app-shell #sd-modal-overlay .sd-team:active { translate: 0 calc(2 * var(--u)); }
+    html.app-shell #sd-modal-overlay .sd-team-nome { box-shadow: 0 calc(4 * var(--u)) 0 var(--c, #888) !important; }
+    html.app-shell #sd-modal-overlay .sd-perde { opacity: .72; }
     html.app-shell #sd-modal-overlay .sd-team-nome { font-size: calc(13 * var(--u)) !important; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html.app-shell #sd-modal-overlay .sd-lineup { display: none !important; }
     html.app-shell #sd-modal-overlay .sd-win { top: calc(-9 * var(--u)) !important; right: calc(6 * var(--u)) !important; padding: calc(2 * var(--u)) calc(8 * var(--u)) 0 !important; font-size: calc(9 * var(--u)) !important; rotate: 0deg !important; }
@@ -580,45 +577,50 @@
     html.app-shell.app-trainers body.pg-players #wrapper, html.app-shell.app-trainers body.pg-players #trainers-grid { display: none !important; }
     html.app-shell.app-trainers, html.app-shell.app-trainers body { overflow: hidden !important; }
     html.app-shell .at { position: fixed; left: 0; right: 0; top: var(--gx-barra); bottom: 0; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-    html.app-shell .at-pista { position: absolute; inset: calc(10 * var(--u)) 0 calc(42 * var(--u)) 0; }
+    html.app-shell .at-pista { position: absolute; inset: calc(6 * var(--u)) 0 calc(4 * var(--u)) 0; }
     html.app-shell .at-vuoto { margin: calc(40 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 800 calc(16 * var(--u))/1.3 var(--nb-font-testo); }
+    /* il palco tondo (lo stesso della home, in Trainers, Stats e nella classifica di Matches): un alone e la pedana; sopra, chi ci sta in piedi */
+    html.app-shell .pal-aura { position: absolute; left: 50%; bottom: calc(var(--pw, 210) * .12 * var(--u)); width: calc(var(--pw, 210) * 1.05 * var(--u)); height: calc(var(--pw, 210) * 1.05 * var(--u)); translate: -50% 0; border-radius: 50%; pointer-events: none;
+        background: radial-gradient(circle, color-mix(in srgb, var(--c) 78%, #fff) 0%, color-mix(in srgb, var(--c) 44%, transparent) 42%, transparent 70%); }
+    html.app-shell .pal-pedana { position: absolute; left: 50%; bottom: calc(var(--pw, 210) * .065 * var(--u)); width: calc(var(--pw, 210) * var(--u)); height: calc(var(--pw, 210) * .18 * var(--u)); translate: -50% 0; border-radius: 50%; pointer-events: none;
+        background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--c) 70%, #fff) 0%, var(--c) 55%, color-mix(in srgb, var(--c) 70%, #000) 100%); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); box-shadow: 0 calc(var(--pw, 210) * .03 * var(--u)) 0 var(--nb-ink, #000); }
+    /* la scheda: niente sfondo, il palco a sinistra e di fianco i numeri; i vicini mostrano solo il palco */
     html.app-shell .at-carta {
-        position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(430 * var(--u)); margin-left: calc(-215 * var(--u)); display: grid; grid-template-columns: calc(170 * var(--u)) minmax(0, 1fr); overflow: hidden;
-        background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000);
-        translate: calc(var(--x, 0) * 450 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
+        position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(560 * var(--u)); margin-left: calc(-280 * var(--u)); display: grid; grid-template-columns: calc(270 * var(--u)) minmax(0, 1fr); align-items: stretch; column-gap: calc(8 * var(--u));
+        color: #fff; translate: calc(var(--x, 0) * 500 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
         transition: translate .38s cubic-bezier(.2, .9, .3, 1), scale .38s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
     }
     html.app-shell .at-carta:is(.at-centro, .at-vicino) { pointer-events: auto; }
-    html.app-shell .at-carta:not(.at-centro) { cursor: pointer; filter: saturate(.8) brightness(.9); }
-    html.app-shell .at-carta:not(.at-centro) .at-info { opacity: .85; }
-    html.app-shell .at-palco { position: relative; overflow: hidden; background: color-mix(in srgb, var(--c) 55%, #fff); border-right: calc(4 * var(--u)) solid var(--nb-ink, #000); }
-    html.app-shell .at-raggi { position: absolute; left: 50%; top: 56%; width: 250%; aspect-ratio: 1; translate: -50% -50%; background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .42) 0deg 9deg, transparent 9deg 24deg); mask-image: radial-gradient(circle, #000 0%, transparent 62%); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%); animation: gx-ruota 50s linear infinite; }
-    html.app-shell .at-pedana { position: absolute; left: 50%; bottom: calc(22 * var(--u)); translate: -50% 0; width: calc(138 * var(--u)); height: calc(26 * var(--u)); border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #fff 0%, color-mix(in srgb, var(--c) 60%, #fff) 60%, var(--c) 100%); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .at-allenatore { position: absolute; left: calc(8 * var(--u)); bottom: calc(34 * var(--u)); height: calc(112 * var(--u)); width: auto; max-width: calc(88 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3)); }
-    html.app-shell .at-pkm { position: absolute; right: calc(4 * var(--u)); bottom: calc(32 * var(--u)); max-height: calc(92 * var(--u)); max-width: calc(88 * var(--u)); width: auto; height: auto; object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3)); }
-    html.app-shell .at-info { min-width: 0; display: flex; flex-direction: column; gap: calc(6 * var(--u)); padding: calc(12 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)) calc(14 * var(--u)); }
+    html.app-shell .at-carta:not(.at-centro) { cursor: pointer; }
+    html.app-shell .at-carta:not(.at-centro) .at-info { opacity: 0; pointer-events: none; }
+    html.app-shell .at-carta.at-prima { grid-template-columns: minmax(0, 1fr) calc(270 * var(--u)); }
+    html.app-shell .at-carta.at-prima .at-palco { grid-column: 2; grid-row: 1; }
+    html.app-shell .at-carta.at-prima .at-info { grid-column: 1; grid-row: 1; }
+    html.app-shell .at-info { transition: opacity .2s ease; }
+    html.app-shell .at-palco { position: relative; min-height: 0; }
+    html.app-shell .at-allenatore { position: absolute; left: calc(18 * var(--u)); bottom: calc(34 * var(--u)); height: min(calc(185 * var(--u)), calc(100% - 36 * var(--u))); width: auto; max-width: calc(150 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell .at-pkm { position: absolute; right: calc(8 * var(--u)); bottom: calc(32 * var(--u)); max-height: calc(115 * var(--u)); max-width: calc(110 * var(--u)); width: auto; height: auto; object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+    html.app-shell .at-info { min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: calc(7 * var(--u)); padding: calc(14 * var(--u)) 0 calc(14 * var(--u)); }
     html.app-shell .at-testa { display: flex; align-items: center; gap: calc(9 * var(--u)); min-width: 0; }
-    html.app-shell .at-pos { flex: none; padding: calc(3 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(20 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .04em; }
-    html.app-shell .at-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(27 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
-    html.app-shell .at-titolo { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); font: 800 calc(10 * var(--u))/1.5 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
-    html.app-shell .at-elo { display: flex; align-items: baseline; gap: calc(6 * var(--u)); }
-    html.app-shell .at-elo b { font: 900 calc(40 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .01em; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
-    html.app-shell .at-elo .at-na { font-size: calc(28 * var(--u)); opacity: .6; }
-    html.app-shell .at-elo small { font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .14em; text-transform: uppercase; opacity: .65; }
-    html.app-shell .at-trofei, html.app-shell .at-badge-riga { display: flex; flex-wrap: wrap; align-items: center; gap: calc(5 * var(--u)); }
-    html.app-shell .at-badge-riga { margin-top: auto; }
-    html.app-shell .at-coppa { display: inline-flex; align-items: center; gap: calc(2 * var(--u)); padding: calc(2 * var(--u)) calc(7 * var(--u)) calc(2 * var(--u)) calc(3 * var(--u)); background: rgba(255, 255, 255, .72); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); }
-    html.app-shell .at-coppa img { width: calc(22 * var(--u)); height: calc(22 * var(--u)); object-fit: contain; }
-    html.app-shell .at-coppa b { font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); }
-    html.app-shell .at-nulla { font: 700 calc(11 * var(--u))/1.2 var(--nb-font-testo); opacity: .6; }
-    html.app-shell .at-badge { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(38 * var(--u)); font-size: calc(22 * var(--u)); }
-    html.app-shell .at-badge img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .3)); }
-    html.app-shell .at-freccia { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(30 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .at-freccia:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .at-freccia svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-    html.app-shell .at-succ svg { transform: scaleX(-1); }
-    html.app-shell .at-pie { position: absolute; left: 0; right: 0; bottom: calc(6 * var(--u)); z-index: 5; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--u)); }
-    html.app-shell .at-conta { min-width: calc(60 * var(--u)); text-align: center; color: #fff; font: 900 calc(13 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .14em; }
+    html.app-shell .at-nome { min-width: 0; box-sizing: border-box; padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(8 * var(--u)); font: 900 calc(24 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; box-shadow: 0 calc(4 * var(--u)) 0 rgba(255, 255, 255, .2); }
+    html.app-shell .at-titolo { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); font: 800 calc(10 * var(--u))/1.5 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell .at-numeri { display: flex; gap: calc(7 * var(--u)); margin: 0; padding: 0; list-style: none; }
+    html.app-shell .at-numeri li { min-width: calc(84 * var(--u)); box-sizing: border-box; padding: calc(5 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)); text-align: center; background: rgba(0, 0, 0, .5); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(9 * var(--u)); }
+    html.app-shell .at-numeri b { display: block; font: 900 calc(24 * var(--u))/1.1 var(--nb-font-titoli); }
+    html.app-shell .at-numeri span { font: 700 calc(9 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+    html.app-shell .at-trofei, html.app-shell .at-badge-riga { display: flex; flex-wrap: wrap; align-items: center; gap: calc(6 * var(--u)); }
+    html.app-shell .at-coppa { display: inline-flex; align-items: center; gap: calc(3 * var(--u)); padding: calc(2 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u)) calc(4 * var(--u)); background: rgba(0, 0, 0, .5); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .28); border-radius: calc(12 * var(--u)); }
+    html.app-shell .at-coppa img { width: calc(24 * var(--u)); height: calc(24 * var(--u)); object-fit: contain; }
+    html.app-shell .at-coppa b { font: 900 calc(14 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .at-badge { display: grid; place-items: center; width: calc(42 * var(--u)); height: calc(42 * var(--u)); padding: 0; cursor: pointer; background: none; border: 0; font-size: calc(24 * var(--u)); -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    html.app-shell .at-badge img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .4)); transition: scale .12s ease; }
+    html.app-shell .at-badge:active img { scale: 1.18; }
+    /* la spiegazione di un badge: in basso, al centro */
+    html.app-shell .at-nota { position: fixed; left: 50%; bottom: calc(8 * var(--u)); z-index: 50; translate: -50% 0; box-sizing: border-box; width: min(calc(380 * var(--u)), 90vw); display: flex; flex-direction: column; gap: calc(2 * var(--u)); padding: calc(6 * var(--u)) calc(14 * var(--u)) calc(7 * var(--u)); pointer-events: none; text-align: center;
+        background: #fff; color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); animation: gx-pop .22s cubic-bezier(.2, 1.4, .4, 1) backwards; }
+    html.app-shell .at-nota[hidden] { display: none; }
+    html.app-shell .at-nota b { font: 900 calc(13 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell .at-nota span { font: 700 calc(11.5 * var(--u))/1.35 var(--nb-font-testo); }
 
     /* ---------- 5b. Stats come carosello (app-stats.js): si sceglie categoria, stagione, formato e il numero da guardare; poi un elemento alla volta, ai lati i vicini ---------- */
     html.app-shell.app-stats body.pg-stats main.stats-pagina { display: none !important; }
@@ -637,45 +639,38 @@
     html.app-shell .as-p i { font-style: normal; font-size: calc(8 * var(--u)); }
     html.app-shell .as-pista { position: relative; flex: 1 1 auto; min-height: 0; touch-action: pan-y; }
     html.app-shell .as-vuoto { margin: auto; padding: calc(10 * var(--u)); text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
+    /* una carta: niente sfondo, il palco tondo con lui sopra e di fianco il nome e il numero scelto (come Trainers); i vicini mostrano solo il palco */
     html.app-shell .as-carta {
-        position: absolute; left: 50%; top: calc(4 * var(--u)); bottom: calc(10 * var(--u)); box-sizing: border-box; width: calc(570 * var(--u)); margin-left: calc(-285 * var(--u)); display: grid; grid-template-columns: minmax(0, 1fr) calc(var(--cols, 3) * 82 * var(--u)); align-items: center; gap: calc(10 * var(--u)); overflow: hidden;
-        padding: calc(9 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(7 * var(--u)) 0 var(--nb-ink, #000);
-        translate: calc(var(--x, 0) * 530 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
+        position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(560 * var(--u)); margin-left: calc(-280 * var(--u)); display: grid; grid-template-columns: calc(260 * var(--u)) minmax(0, 1fr); align-items: stretch; column-gap: calc(8 * var(--u)); color: #fff;
+        translate: calc(var(--x, 0) * 500 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none; --pw: 200;
         transition: translate .38s cubic-bezier(.2, .9, .3, 1), scale .38s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
     }
     html.app-shell .as-carta:is(.as-centro, .as-vicino) { pointer-events: auto; }
-    html.app-shell .as-carta:not(.as-centro) { cursor: pointer; filter: saturate(.8) brightness(.9); }
-    html.app-shell .as-alto { position: relative; display: grid; grid-template-columns: calc(96 * var(--u)) minmax(0, 1fr); gap: calc(8 * var(--u)); align-items: center; min-height: 0; }
-    html.app-shell .as-pos { position: absolute; left: calc(-2 * var(--u)); top: calc(-2 * var(--u)); z-index: 2; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(7 * var(--u)); font: 900 calc(16 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .04em; }
-    html.app-shell .as-visual { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: 0; height: calc(96 * var(--u)); margin-top: calc(6 * var(--u)); background: radial-gradient(circle, rgba(255, 255, 255, .85), rgba(255, 255, 255, .3) 70%, transparent 100%); border-radius: 50%; overflow: hidden; }
-    html.app-shell .as-v-teams { border-radius: calc(14 * var(--u)); background: rgba(255, 255, 255, .45); padding: calc(4 * var(--u)); }
-    html.app-shell .as-avatar { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; image-rendering: pixelated; }
-    html.app-shell .as-sprite { max-width: 90%; max-height: 90%; object-fit: contain; image-rendering: pixelated; }
-    html.app-shell .as-mini { width: calc(34 * var(--u)); height: calc(34 * var(--u)); object-fit: contain; image-rendering: pixelated; }
-    html.app-shell .as-titoli { min-width: 0; display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
-    html.app-shell .as-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(19 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
-    html.app-shell .as-sotto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 calc(10.5 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; opacity: .7; }
-    html.app-shell .as-grande { display: flex; flex-direction: column; gap: calc(1 * var(--u)); margin-top: calc(3 * var(--u)); }
-    html.app-shell .as-et { font: 900 calc(11 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .12em; text-transform: uppercase; opacity: .65; }
-    html.app-shell .as-val { font: 900 calc(32 * var(--u))/1.05 var(--nb-font-titoli); text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
-    html.app-shell .as-val .wl { gap: calc(5 * var(--u)); } html.app-shell .as-val .wl i { font-size: .7em; }
+    html.app-shell .as-carta:not(.as-centro) { cursor: pointer; }
+    html.app-shell .as-carta:not(.as-centro) .as-info { opacity: 0; }
+    html.app-shell .as-carta.as-prima { grid-template-columns: minmax(0, 1fr) calc(260 * var(--u)); }
+    html.app-shell .as-carta.as-prima .as-palco { grid-column: 2; grid-row: 1; }
+    html.app-shell .as-carta.as-prima .as-info { grid-column: 1; grid-row: 1; }
+    html.app-shell .as-palco { position: relative; min-height: 0; }
+    html.app-shell .as-testa { position: absolute; left: 0; right: 0; bottom: calc(26 * var(--u)); top: calc(8 * var(--u)); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; align-content: flex-end; }
+    html.app-shell .as-avatar { height: 100%; width: auto; max-width: 80%; object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell .as-sprite { max-height: 88%; max-width: 80%; width: auto; height: auto; object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+    html.app-shell .as-v-teams .as-testa { align-items: center; align-content: center; padding: 0 calc(30 * var(--u)) calc(14 * var(--u)); gap: calc(2 * var(--u)); }
+    html.app-shell .as-mini { width: calc(56 * var(--u)); height: calc(56 * var(--u)); object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+    html.app-shell .as-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(7 * var(--u)); padding: calc(6 * var(--u)) 0 calc(18 * var(--u)); transition: opacity .2s ease; }
+    html.app-shell .as-riga { display: flex; align-items: center; gap: calc(8 * var(--u)); min-width: 0; }
+    html.app-shell .as-pos { flex: none; padding: calc(3 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell .as-nome { min-width: 0; box-sizing: border-box; padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(8 * var(--u)); font: 900 calc(21 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell .as-sotto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; opacity: .75; }
+    html.app-shell .as-grande { display: flex; flex-direction: column; gap: calc(1 * var(--u)); margin-top: calc(6 * var(--u)); }
+    html.app-shell .as-et { font: 900 calc(13 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+    html.app-shell .as-val { font: 900 calc(52 * var(--u))/1.05 var(--nb-font-titoli); text-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4); }
+    html.app-shell .as-val .wl { gap: calc(8 * var(--u)); } html.app-shell .as-val .wl i { font-size: .7em; }
+    html.app-shell .as-val .wl b.v { color: #6ef28f; } html.app-shell .as-val .wl b.p { color: #ff8f8f; } html.app-shell .as-val .wl i { color: rgba(255, 255, 255, .6); }
     html.app-shell .as-val small { font-size: .45em; }
-    html.app-shell .as-val .trofei img, html.app-shell .as-val .mvp-stella b { width: calc(28 * var(--u)); height: calc(28 * var(--u)); }
-    html.app-shell .as-val .barra { display: block; width: calc(120 * var(--u)); height: calc(8 * var(--u)); margin-top: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--nb-ink, #000); background: rgba(255, 255, 255, .6); }
-    html.app-shell .as-dati { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: calc(5 * var(--u)); align-content: center; }
-    html.app-shell .as-dato { display: flex; flex-direction: column; gap: calc(1 * var(--u)); min-width: 0; padding: calc(3 * var(--u)) calc(6 * var(--u)) calc(3 * var(--u)); background: rgba(255, 255, 255, .55); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); }
-    html.app-shell .as-det { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 calc(8 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; opacity: .65; }
-    html.app-shell .as-dva { font: 900 calc(14 * var(--u))/1.15 var(--nb-font-titoli); }
-    html.app-shell .as-dva .trofei img { width: calc(15 * var(--u)); height: calc(15 * var(--u)); }
-    html.app-shell .as-dva .mvp-stella b { font-size: calc(13 * var(--u)); }
-    html.app-shell .as-dva small, html.app-shell .as-dato .sub { font-size: calc(9 * var(--u)); }
-    html.app-shell .as-dva .barra, html.app-shell .as-dato .barra { display: none; }
-    html.app-shell .as-pie { flex: none; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--u)); height: calc(36 * var(--u)); padding-bottom: calc(4 * var(--u)); }
-    html.app-shell .as-conta { min-width: calc(60 * var(--u)); text-align: center; color: #fff; font: 900 calc(13 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .14em; }
-    html.app-shell .as-freccia { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(28 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .as-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .as-freccia svg { width: calc(18 * var(--u)); height: calc(18 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-    html.app-shell .as-succ svg { transform: scaleX(-1); }
+    html.app-shell .as-val .trofei img, html.app-shell .as-val .mvp-stella b { width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
+    html.app-shell .as-val .barra { display: block; width: calc(160 * var(--u)); height: calc(10 * var(--u)); margin-top: calc(4 * var(--u)); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); background: rgba(255, 255, 255, .6); }
+    html.app-shell .as-grande .sub, html.app-shell .as-grande > small { font: 800 calc(12 * var(--u))/1.3 var(--nb-font-titoli); opacity: .8; }
 
     /* ---------- 6b. Team Builder a step (app-teambuilder.js): un menù in alto, a sinistra i sei posti, al centro UNA parte alla volta; niente scroll della pagina ---------- */
     html.app-shell .tb-overlay { padding: 0 !important; align-items: stretch !important; overflow: hidden !important; background: var(--gx-b0, #1b1033) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
@@ -693,7 +688,7 @@
     html.app-shell .tb-overlay .tb-close { flex: 0 0 auto; width: calc(32 * var(--u)) !important; height: calc(32 * var(--u)) !important; margin-left: 0 !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(10 * var(--u)); font-size: calc(18 * var(--u)) !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; }
     /* il menù delle tappe */
     html.app-shell .tbw-menu { display: flex; align-items: center; justify-content: center; gap: calc(6 * var(--u)); padding: calc(6 * var(--u)) 0 calc(6 * var(--u)); min-width: 0; }
-    html.app-shell .tbw-passi { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 0; overflow-x: auto; scrollbar-width: none; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(5 * var(--u)); }
+    html.app-shell .tbw-passi { flex: 0 1 auto; max-width: 100%; min-width: 0; display: flex; align-items: center; gap: 0; overflow-x: auto; scrollbar-width: none; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(5 * var(--u)); }
     html.app-shell .tbw-passi::-webkit-scrollbar { display: none; }
     html.app-shell .tbw-filo { flex: none; width: calc(10 * var(--u)); height: calc(3 * var(--u)); background: rgba(255, 255, 255, .35); }
     html.app-shell .tbw-passo { flex: none; display: inline-flex; align-items: center; gap: calc(5 * var(--u)); padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(3 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(255, 255, 255, .14); color: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(99 * var(--u)); font: 900 calc(11 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
@@ -701,10 +696,6 @@
     html.app-shell .tbw-passo.fatto b { background: #31c489; }
     html.app-shell .tbw-passo.attivo { background: var(--gx-giallo); color: #000; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell .tbw-passo:disabled { opacity: .4; cursor: default; }
-    html.app-shell .tbw-freccia { flex: none; display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(26 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell .tbw-freccia:disabled { opacity: .35; box-shadow: none; }
-    html.app-shell .tbw-freccia svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-    html.app-shell .tbw-avanti svg { transform: scaleX(-1); }
     html.app-shell .tb-overlay .tbw-cambia { grid-column: 2; grid-row: 4; justify-self: start; margin-top: calc(6 * var(--u)); padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); font: 900 calc(10 * var(--u))/1.3 var(--nb-font-titoli); text-transform: uppercase; letter-spacing: .05em; }
     /* sotto il menù: i sei posti a sinistra, la tappa a destra */
     html.app-shell .tb-overlay .tb-content-container { display: grid !important; grid-template-columns: calc(52 * var(--u)) minmax(0, 1fr); gap: calc(10 * var(--u)) !important; align-items: stretch !important; min-height: 0; overflow: visible !important; }
@@ -769,6 +760,7 @@
     html.app-shell .tb-overlay[data-tb-step="ev"] .tb-side { display: none !important; }
     html.app-shell .tb-overlay[data-tb-step="ev"] .tb-fields { display: flex !important; flex-direction: column; min-height: 0; flex: 1; }
     html.app-shell .tb-overlay[data-tb-step="ev"] .tb-fields > :not(.tb-field:nth-child(3)) { display: none !important; }
+    html.app-shell .tb-overlay input[type="range"] { touch-action: none; }
     html.app-shell .tb-overlay[data-tb-step="ev"] .tb-evs { padding: calc(4 * var(--u)) calc(8 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; box-shadow: none !important; }
     html.app-shell .tb-overlay[data-tb-step="ev"] :is(.tb-ev-head, .tb-ev-row) { grid-template-columns: calc(34 * var(--u)) calc(30 * var(--u)) minmax(0, 1fr) calc(52 * var(--u)) calc(44 * var(--u)) calc(52 * var(--u)) calc(38 * var(--u)) !important; gap: calc(8 * var(--u)) !important; }
     html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-row { height: calc(21 * var(--u)); padding: 0 !important; font-size: calc(11 * var(--u)); }
@@ -804,10 +796,70 @@
     html.app-shell .tb-overlay .tb-combo-list.open { top: calc(100% + 5 * var(--u)) !important; max-height: calc(100vh - 62 * var(--u)) !important; max-height: calc(100dvh - 62 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(12 * var(--u)); }
     html.app-shell .tb-overlay .tb-opt { font-size: calc(11 * var(--u)); }
 
+    /* ---------- 6c. L'assistente del Team Builder (Box, tasto "Team builder"): il formato si sceglie con i tasti, tutto in una schermata, niente scroll verticale ---------- */
+    html.app-shell #helper-modal-overlay { align-items: center !important; padding: calc(6 * var(--u)) !important; overflow: hidden !important; }
+    html.app-shell #helper-modal-overlay .format-modal-wrapper { display: flex !important; flex-direction: column; width: min(calc(716 * var(--u)), 100%) !important; height: calc(100vh - 12 * var(--u)) !important; max-height: none !important; margin: 0 auto !important; padding: calc(8 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)) !important; overflow: hidden !important; }
+    html.app-shell #helper-modal-overlay .format-modal-header { flex: none; display: flex !important; align-items: center; gap: calc(12 * var(--u)); margin: 0 !important; padding: 0 calc(44 * var(--u)) calc(6 * var(--u)) 0 !important; border: 0 !important; }
+    html.app-shell #helper-modal-overlay .format-modal-header h2 { margin: 0 !important; padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)) !important; font-size: calc(16 * var(--u)) !important; transform: none !important; box-shadow: none !important; }
+    html.app-shell #helper-modal-overlay .format-modal-hint { margin: 0 !important; font-size: calc(10 * var(--u)) !important; line-height: 1.3; max-width: none !important; }
+    html.app-shell #helper-modal-overlay .format-close-btn { top: calc(6 * var(--u)) !important; right: calc(8 * var(--u)) !important; }
+    html.app-shell .tbf-formati { flex: none; display: flex; gap: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(7 * var(--u)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell .tbf-formati::-webkit-scrollbar { display: none; }
+    html.app-shell .tbf-chip { flex: none; padding: calc(5 * var(--u)) calc(13 * var(--u)) calc(3 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(99 * var(--u)); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+    html.app-shell .tbf-chip.attivo { background: var(--gx-giallo); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .tbf-vuoto { font: 700 calc(11 * var(--u))/1.2 var(--nb-font-testo); opacity: .7; }
+    html.app-shell #helper-modal-overlay .format-input-group { display: none !important; }
+    html.app-shell #helper-modal-overlay .format-modal-container { flex: 1 1 auto; min-height: 0; display: grid !important; grid-template-columns: calc(210 * var(--u)) minmax(0, 1fr); gap: calc(10 * var(--u)); margin: 0 !important; padding: 0 !important; }
+    html.app-shell #helper-modal-overlay .format-modal-card-left { min-height: 0; display: flex; flex-direction: column; margin: 0 !important; padding: calc(6 * var(--u)) calc(8 * var(--u)) !important; overflow: visible; }
+    html.app-shell #helper-modal-overlay .format-optional-box { flex: 1 1 auto; min-height: 0; margin: 0 !important; padding: calc(16 * var(--u)) 0 0 !important; overflow: hidden; font-size: calc(10 * var(--u)); }
+    html.app-shell #helper-modal-overlay .format-optional-box * { font-size: calc(10 * var(--u)) !important; line-height: 1.3; }
+    html.app-shell #helper-modal-overlay .mandatory-title { font-size: calc(10 * var(--u)) !important; }
+    html.app-shell #helper-modal-overlay .tb-open-btn { flex: none; width: 100%; margin: calc(6 * var(--u)) 0 0 !important; padding: calc(8 * var(--u)) 0 calc(6 * var(--u)) !important; font-size: calc(15 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(12 * var(--u)); }
+    html.app-shell #helper-modal-overlay .format-modal-card-right { min-height: 0; display: flex; flex-direction: column; margin: 0 !important; padding: calc(6 * var(--u)) calc(8 * var(--u)) !important; overflow: hidden; }
+    html.app-shell #helper-modal-overlay .rules-header-badge-container { flex: none; display: flex; align-items: center; gap: calc(8 * var(--u)); margin: 0 0 calc(4 * var(--u)) !important; }
+    html.app-shell #helper-modal-overlay .rules-header-badge-container h3 { margin: 0 !important; font-size: calc(12 * var(--u)) !important; }
+    html.app-shell #helper-modal-overlay .clause-badge { font-size: calc(10 * var(--u)) !important; white-space: nowrap; }
+    /* i Pokémon del formato: una griglia di due righe che scorre di lato, non in verticale; cerca e ordina stanno sulla stessa riga del titolo */
+    html.app-shell #helper-modal-overlay .rules-header-badge-container { flex-wrap: nowrap !important; }
+    html.app-shell #helper-modal-overlay #helper-pkm-controls { flex: 1 1 auto !important; min-width: 0; max-width: none !important; margin: 0 calc(6 * var(--u)) !important; gap: calc(6 * var(--u)) !important; }
+    html.app-shell #helper-modal-overlay #helper-pkm-controls :is(input, select) { min-width: 0 !important; height: calc(26 * var(--u)); padding: 0 calc(8 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)) !important; box-shadow: none !important; }
+    html.app-shell #helper-modal-overlay #helper-pkm-grid { flex: 1 1 auto; min-height: 0; display: grid !important; grid-template-columns: none !important; grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-flow: column; grid-auto-columns: calc(72 * var(--u)); gap: calc(6 * var(--u)) !important; padding: calc(2 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u)) !important; overflow-x: auto !important; overflow-y: hidden !important; max-height: none !important; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell #helper-modal-overlay #helper-pkm-grid::-webkit-scrollbar { display: none; }
+    html.app-shell #helper-modal-overlay .helper-pkm-card { aspect-ratio: auto !important; min-height: 0; padding: calc(3 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: 0 calc(2.5 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell #helper-modal-overlay .helper-pkm-gif-container { min-height: 0; }
+    html.app-shell #helper-modal-overlay .helper-pkm-gif { max-width: calc(36 * var(--u)); max-height: calc(36 * var(--u)); }
+    html.app-shell #helper-modal-overlay .helper-pkm-name { font-size: calc(9 * var(--u)) !important; margin-top: calc(1 * var(--u)); }
+    html.app-shell #helper-modal-overlay #helper-pkm-grid > :is(.helper-placeholder-row, .tb-empty) { grid-row: 1 / -1; grid-column: 1 / span 8; align-self: center; margin: 0; padding: calc(10 * var(--u)); font-size: calc(12 * var(--u)); text-align: center; }
+
+    /* ---------- 6d. La sfida amichevole (amichevoli.js): una finestra sola, senza scroll: formato a tasti che scorrono di lato, poi serie e team ---------- */
+    html.app-shell #amic-overlay { align-items: center !important; padding: calc(6 * var(--u)) !important; overflow: hidden !important; }
+    html.app-shell #amic-overlay .sfida-card {
+        box-sizing: border-box; width: min(calc(700 * var(--u)), 100%) !important; max-width: none !important; max-height: calc(100vh - 12 * var(--u)) !important; margin: 0 auto !important; padding: calc(10 * var(--u)) calc(14 * var(--u)) calc(10 * var(--u)) !important; overflow: hidden !important;
+        display: grid !important; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "st ti" "co co" "az az"; align-items: center; column-gap: calc(12 * var(--u)); row-gap: calc(6 * var(--u));
+    }
+    html.app-shell #amic-overlay .sfida-sticker { grid-area: st; position: static !important; margin: 0 !important; padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; rotate: 0deg !important; transform: none !important; }
+    html.app-shell #amic-overlay .sfida-card h2 { grid-area: ti; margin: 0 !important; font-size: calc(20 * var(--u)) !important; line-height: 1.1; }
+    html.app-shell #amic-overlay .sfida-card h2 small { font-size: calc(12 * var(--u)); }
+    html.app-shell #amic-overlay .sfida-card > .sfida-sotto { display: none; }
+    html.app-shell #amic-overlay .amic-corpo { grid-area: co; display: grid; gap: calc(6 * var(--u)); min-width: 0; min-height: 0; }
+    html.app-shell #amic-overlay .amic-formati { display: flex !important; flex-wrap: nowrap; gap: calc(7 * var(--u)); max-height: none !important; margin: 0 !important; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(7 * var(--u)) !important; overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell #amic-overlay .amic-formati::-webkit-scrollbar { display: none; }
+    html.app-shell #amic-overlay .sfida-formato { flex: none; display: flex !important; flex-direction: column; align-items: flex-start; gap: calc(2 * var(--u)); width: auto !important; min-width: calc(112 * var(--u)); margin: 0 !important; padding: calc(6 * var(--u)) calc(11 * var(--u)) calc(5 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; rotate: 0deg !important; transform: none !important; font-size: calc(14 * var(--u)) !important; }
+    html.app-shell #amic-overlay .sfida-formato .sfida-rimasti { position: static !important; font-size: calc(8.5 * var(--u)) !important; padding: calc(1 * var(--u)) calc(5 * var(--u)) !important; }
+    html.app-shell #amic-overlay .amic-opzioni { display: grid; gap: calc(4 * var(--u)); }
+    html.app-shell #amic-overlay .amic-gruppo { flex-wrap: nowrap; gap: calc(6 * var(--u)); overflow-x: auto; scrollbar-width: none; }
+    html.app-shell #amic-overlay .amic-gruppo-nome { flex: none; width: calc(60 * var(--u)); font-size: calc(10 * var(--u)) !important; }
+    html.app-shell #amic-overlay .amic-scelta { flex: none; padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)) !important; font-size: calc(11 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: none !important; rotate: 0deg !important; transform: none !important; white-space: nowrap; }
+    html.app-shell #amic-overlay :is(.amic-nota, .sfida-messaggio) { margin: 0 !important; font-size: calc(10 * var(--u)) !important; line-height: 1.3; }
+    html.app-shell #amic-overlay .sfida-azioni { grid-area: az; margin: calc(2 * var(--u)) 0 0 !important; gap: calc(10 * var(--u)); flex-wrap: nowrap !important; }
+    html.app-shell #amic-overlay :is(.amic-invia, .amic-annulla) { flex: 1 1 0 !important; min-width: 0 !important; padding: calc(7 * var(--u)) 0 calc(5 * var(--u)) !important; font-size: calc(14 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; }
+
     /* ---------- 12. Practice: due grandi tessere, poi i team (contro la CPU) o gli allenatori (amichevole) ---------- */
-    html.app-shell body.pg-practice .pr { box-sizing: border-box; min-height: calc(100vh - var(--gx-barra)); padding: calc(12 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(18 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; }
-    html.app-shell body.pg-practice .pr-home { flex: 1 1 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(14 * var(--u)); padding: calc(4 * var(--u)) 0 calc(10 * var(--u)); min-height: calc(100vh - var(--gx-barra) - 36 * var(--u)); }
-    html.app-shell body.pg-practice .pr-tessera {
+    html.app-shell:has(body.pg-practice), html.app-shell body.pg-practice { overflow: hidden !important; }
+    html.app-shell body.pg-practice { height: 100vh; box-sizing: border-box; margin: 0 !important; padding: var(--gx-barra) 0 0 !important; }
+    html.app-shell body.pg-practice .pr { box-sizing: border-box; height: calc(100vh - var(--gx-barra)); padding: calc(10 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(12 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; overflow: hidden; }
+    html.app-shell body.pg-practice .pr-vista { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    html.app-shell body.pg-practice .pr-corpo { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(6 * var(--u)); overflow: hidden; }    html.app-shell body.pg-practice .pr-home { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(14 * var(--u)); padding: calc(4 * var(--u)) 0 calc(6 * var(--u)); }    html.app-shell body.pg-practice .pr-tessera {
         position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(8 * var(--u)); padding: calc(10 * var(--u)); overflow: hidden; text-align: center; color: #000; cursor: pointer;
         background: linear-gradient(172deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 84%, #000) 100%);
         border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(7 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .5); font: inherit;
@@ -826,9 +878,9 @@
     html.app-shell body.pg-practice .pr-torna { display: inline-flex; align-items: center; gap: calc(4 * var(--u)); height: calc(30 * var(--u)); padding: 0 calc(12 * var(--u)) 0 calc(6 * var(--u)); cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(15 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-torna svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
     html.app-shell body.pg-practice .pr-torna:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-practice .pr-griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(11 * var(--u)); }
-    html.app-shell body.pg-practice .pr-g-giocatori { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    html.app-shell body.pg-practice .pr-carta, html.app-shell body.pg-practice .pr-giocatore {
+    html.app-shell body.pg-practice .pr-griglia { display: flex; flex-wrap: nowrap; gap: calc(11 * var(--u)); padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(8 * var(--u)); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell body.pg-practice .pr-griglia::-webkit-scrollbar { display: none; }
+    html.app-shell body.pg-practice .pr-griglia > * { flex: 0 0 calc(224 * var(--u)); scroll-snap-align: start; }    html.app-shell body.pg-practice .pr-g-giocatori > * { flex-basis: calc(132 * var(--u)); }    html.app-shell body.pg-practice .pr-carta, html.app-shell body.pg-practice .pr-giocatore {
         box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: calc(5 * var(--u)); min-width: 0; padding: calc(9 * var(--u)) calc(10 * var(--u)); cursor: pointer; text-align: left; color: #000; font: inherit;
         background: var(--c); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); transition: translate .08s, box-shadow .08s;
     }
@@ -836,14 +888,18 @@
     html.app-shell body.pg-practice .pr-nome { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(15 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 800 calc(9.5 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-mini-riga { display: flex; gap: 0; margin-top: calc(2 * var(--u)); }
-    html.app-shell body.pg-practice .pr-mini { width: calc(30 * var(--u)); height: calc(30 * var(--u)); object-fit: contain; image-rendering: pixelated; }
-    html.app-shell body.pg-practice .pr-giocatore { align-items: center; text-align: center; }
-    html.app-shell body.pg-practice .pr-avatar { width: calc(58 * var(--u)); height: calc(58 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .25)); }
+    html.app-shell body.pg-practice .pr-mini { width: calc(34 * var(--u)); height: calc(34 * var(--u)); object-fit: contain; image-rendering: pixelated; }
+    html.app-shell body.pg-practice .pr-giocatore { align-items: center; text-align: center; gap: calc(3 * var(--u)); padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; color: #fff; --pw: 118; }
+    html.app-shell body.pg-practice .pr-palco { position: relative; align-self: stretch; height: calc(120 * var(--u)); }
+    html.app-shell body.pg-practice .pr-giocatore .pr-nome { padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(7 * var(--u)); font-size: calc(14 * var(--u)); }
+    html.app-shell body.pg-practice .pr-giocatore .pr-elo { background: rgba(0, 0, 0, .5); color: #fff; border-color: rgba(255, 255, 255, .28); }    html.app-shell body.pg-practice .pr-avatar { position: absolute; left: 50%; bottom: calc(12 * var(--u)); translate: -50% 0; height: calc(96 * var(--u)); width: auto; max-width: calc(100 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); }
     html.app-shell body.pg-practice .pr-elo { padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #fff; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font: 900 calc(12 * var(--u))/1.3 var(--nb-font-titoli); }
     html.app-shell body.pg-practice .pr-elo small { font-size: calc(8 * var(--u)); letter-spacing: .08em; opacity: .6; }
-    html.app-shell body.pg-practice .pr-titolo { margin: calc(16 * var(--u)) 0 calc(8 * var(--u)); color: #fff; font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-titolo { margin: calc(6 * var(--u)) 0 calc(2 * var(--u)); color: #fff; font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-titolo small { margin-left: calc(6 * var(--u)); color: rgba(255, 255, 255, .7); font-size: calc(10 * var(--u)); letter-spacing: .06em; }
-    html.app-shell body.pg-practice .pr-chips { display: flex; flex-wrap: wrap; gap: calc(8 * var(--u)); }
+    html.app-shell body.pg-practice .pr-chips { display: flex; flex-wrap: nowrap; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(8 * var(--u)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell body.pg-practice .pr-chips::-webkit-scrollbar { display: none; }
+    html.app-shell body.pg-practice .pr-chip { flex: none; white-space: nowrap; }
     html.app-shell body.pg-practice .pr-chip { padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .03em; }
     html.app-shell body.pg-practice .pr-chip:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
     html.app-shell body.pg-practice .pr-vuoto, html.app-shell body.pg-practice .pr-carico { margin: calc(24 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }

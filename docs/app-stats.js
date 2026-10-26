@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------
 // Nell'app le statistiche non sono una griglia di card: si sceglie cosa guardare (allenatori, team, Pokémon, uso), la stagione e il formato, e il numero con cui
 // ordinare (Elo, punti, KO, percentuale di vittorie...); poi si vede un allenatore, un team o un Pokémon alla volta, a partire dal primo di quella classifica,
-// con il numero scelto in grande e sotto gli altri. Ai lati si intravedono il precedente e il successivo: si scorre di lato (o con le frecce).
+// con SOLO il numero scelto, in grande (niente tessere con gli altri). Niente sfondi e niente frecce: lui sul palco tondo, come in Trainers; ai lati si
+// intravedono il precedente e il successivo e si scorre di lato col dito.
 // I numeri sono quelli della pagina (stats.js: stesso calcolo, stesso ordine): la pagina li pubblica (AppSito.pubblica('stats', modello)) a ogni cambiamento, e i
 // controlli di qui (categoria, stagione, formato, ordinamento) fanno scattare quelli della pagina, che li ricalcola e li pubblica di nuovo.
 // La parte pura (l'HTML a partire dal modello) è provata in test/app-stats.test.js; funziona nel browser (window.AppStats) e in Node (require).
@@ -22,29 +23,20 @@
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const coloreSicuro = c => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#b388eb');
-    const FRECCIA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-
-    /** Le colonne delle tessere a lato della carta: due fino a sei, altrimenti tre (al massimo tre righe: la carta è bassa) */
-    const colonne = n => (n <= 6 ? 2 : 3);
 
     /** Cosa distingue una vista dall'altra: cambiando una di queste cose si riparte dal primo */
     const firma = m => [m.tab, m.stagione, m.formato, m.ordine && m.ordine.id, m.ordine && m.ordine.dir].join('|');
 
-    /** La carta di un elemento: il numero scelto in grande, gli altri sotto */
+    /** La carta di un elemento: niente sfondo. Sul palco tondo lui (l'allenatore, i Pokémon del team o il Pokémon); di fianco il nome, il posto e SOLO il numero scelto */
     function htmlCarta(r, m, indice) {
         const grande = (r.valori || {})[m.grande] || { titolo: '', html: '', sotto: '' };
-        const tessere = (m.tessere || []).filter(id => r.valori && r.valori[id]);
-        return `<article class="as-carta" data-i="${indice}" style="--c:${coloreSicuro(r.colore)};--cols:${colonne(tessere.length)}">
-            <div class="as-alto">
-                <span class="as-pos">#${Number(r.posizione) || indice + 1}</span>
-                <div class="as-visual as-v-${esc(m.tab)}">${r.testa || ''}</div>
-                <div class="as-titoli">
-                    <b class="as-nome">${esc(r.nome)}</b>
-                    ${r.sotto ? `<small class="as-sotto">${esc(r.sotto)}</small>` : ''}
-                    <div class="as-grande"><span class="as-et">${esc(grande.titolo)}</span><span class="as-val">${grande.html}</span>${grande.sotto || ''}</div>
-                </div>
+        return `<article class="as-carta" data-i="${indice}" style="--c:${coloreSicuro(r.colore)}">
+            <div class="as-palco as-v-${esc(m.tab)}"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><div class="as-testa">${r.testa || ''}</div></div>
+            <div class="as-info">
+                <div class="as-riga"><span class="as-pos">#${Number(r.posizione) || indice + 1}</span><b class="as-nome">${esc(r.nome)}</b></div>
+                ${r.sotto ? `<small class="as-sotto">${esc(r.sotto)}</small>` : ''}
+                <div class="as-grande"><span class="as-et">${esc(grande.titolo)}</span><span class="as-val">${grande.html}</span>${grande.sotto || ''}</div>
             </div>
-            <div class="as-dati">${tessere.map(id => `<div class="as-dato"><span class="as-det">${esc(r.valori[id].titolo)}</span><span class="as-dva">${r.valori[id].html}</span>${r.valori[id].sotto || ''}</div>`).join('')}</div>
         </article>`;
     }
 
@@ -71,7 +63,7 @@
         const doc = win.document;
         if (!doc || !doc.documentElement || !doc.documentElement.classList.contains('app-shell')) return null;
         const ponte = win.AppSito;
-        let stato = null;     // { m, corrente, pista, conta, firma }
+        let stato = null;     // { m, corrente, pista, firma }
 
         const posiziona = () => {
             if (!stato) return;
@@ -86,9 +78,9 @@
                 el.style.zIndex = a.z;
                 el.classList.toggle('as-centro', i === stato.corrente);
                 el.classList.toggle('as-vicino', Math.abs(d) === 1);
+                el.classList.toggle('as-prima', d < 0);
                 el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
-            if (stato.conta) stato.conta.textContent = (stato.corrente + 1) + ' / ' + n + (stato.m.totale > n ? '+' : '');
         };
         const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); } };
         const passo = verso => { if (stato) vai(Car.passo(stato.corrente, stato.m.righe.length, verso, true)); };
@@ -113,8 +105,6 @@
                     if (t) return scatta.tab(t.dataset.tab);
                     const p = e.target.closest ? e.target.closest('[data-ordina]') : null;
                     if (p) return scatta.ordina(p.dataset.ordina);
-                    const pa = e.target.closest ? e.target.closest('[data-passo]') : null;
-                    if (pa) return passo(Number(pa.dataset.passo));
                     const c = e.target.closest ? e.target.closest('.as-vicino') : null;
                     if (c) vai(Number(c.dataset.i));
                 });
@@ -131,12 +121,9 @@
             const n = m.righe.length;
             radice.innerHTML = `<div class="as-barra">${htmlBarra(m)}</div>
                 <div class="as-param" role="group" aria-label="Sort by">${htmlParametri(m)}</div>
-                ${n ? `<div class="as-pista">${m.righe.map((r, i) => htmlCarta(r, m, i)).join('')}</div>
-                <div class="as-pie"><button type="button" class="as-freccia" data-passo="-1" aria-label="Previous" data-suono="scegli">${FRECCIA}</button>
-                    <span class="as-conta" aria-live="polite"></span>
-                    <button type="button" class="as-freccia as-succ" data-passo="1" aria-label="Next" data-suono="scegli">${FRECCIA}</button></div>`
+                ${n ? `<div class="as-pista">${m.righe.map((r, i) => htmlCarta(r, m, i)).join('')}</div>`
         : `<div class="as-vuoto">${m.vuoto || 'Nothing to show here yet.'}</div>`}`;
-            stato = { m, corrente, firma: f, pista: radice.querySelector('.as-pista'), conta: radice.querySelector('.as-conta') };
+            stato = { m, corrente, firma: f, pista: radice.querySelector('.as-pista') };
             // la chip attiva resta in vista (l'elenco dei numeri scorre di lato)
             const attiva = radice.querySelector('.as-p.attivo');
             if (attiva && attiva.scrollIntoView) { try { attiva.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* senza: resta dov'è */ } }
@@ -149,5 +136,5 @@
         return { monta, vai, passo };
     }
 
-    return { colonne, firma, htmlCarta, htmlBarra, htmlParametri, avvia };
+    return { firma, htmlCarta, htmlBarra, htmlParametri, avvia };
 });
