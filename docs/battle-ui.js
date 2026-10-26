@@ -54,6 +54,8 @@ const PS = window.PSClient || null;
 const jq = window.jQuery;
 
 const $ = id => document.getElementById(id);
+// nell'app (classe "app" su <html>, la mette app.js) si arriva e si torna da Practice
+const inApp = () => document.documentElement.classList.contains('app');
 let config = null;          // { formato, etichetta, p1: { nome, team }, p2: { nome, team } }
 let battaglia, stato, pannelli, finita;
 
@@ -189,8 +191,8 @@ async function preparaDaSito(chiavi) {
 async function preparaCpu(chiaveTeam) {
     $('opzione-bot').hidden = true;
     const ritorno = $('link-hub');
-    ritorno.href = 'box.html';
-    ritorno.textContent = '← Box';
+    ritorno.href = inApp() ? 'practice.html' : 'box.html';
+    ritorno.textContent = inApp() ? '← Practice' : '← Box';
     mostraMessaggioCampo('Loading your team…');
 
     let dati, primo;
@@ -268,8 +270,8 @@ async function profiloDiChiGioca() {
 async function preparaCpuRandom(idFormato) {
     $('opzione-bot').hidden = true;
     const ritorno = $('link-hub');
-    ritorno.href = 'formats.html';
-    ritorno.textContent = '← Formats';
+    ritorno.href = inApp() ? 'practice.html' : 'formats.html';
+    ritorno.textContent = inApp() ? '← Practice' : '← Formats';
     const formato = self.FormatoRandom.trova(idFormato);
     if (!formato || !DexSim.formats.get(formato.id).exists) {
         return mostraMessaggioCampo(`"${idFormato}" isn't a Random Battle this site can play.`);
@@ -418,7 +420,7 @@ function azioniCpu() {
     }
     // Come nel Box, il team si modifica solo se non è già iscritto a una stagione iniziata (team-bloccati.js)
     if (cpu.modificabile === true) azioni.push(el('button', { type: 'button', class: 'btn secondario', onclick: apriEditorTeam }, 'Edit my team'));
-    azioni.push(el('a', { class: 'btn secondario', href: 'box.html' }, 'Back to Box'));
+    azioni.push(el('a', { class: 'btn secondario', href: inApp() ? 'practice.html' : 'box.html' }, inApp() ? 'Back to Practice' : 'Back to Box'));
     return azioni;
 }
 
@@ -603,8 +605,8 @@ async function preparaOnline(chiavi) {
 async function preparaAmichevole(idSfida) {
     $('opzione-bot').hidden = true;
     const ritorno = $('link-hub');
-    ritorno.href = 'players.html';
-    ritorno.textContent = '← Trainers';
+    ritorno.href = inApp() ? 'practice.html' : 'players.html';
+    ritorno.textContent = inApp() ? '← Practice' : '← Trainers';
     mostraMessaggioCampo('Connecting to the friendly match…');
 
     if (!window.firebase || !firebase.functions) {
@@ -933,7 +935,7 @@ function mostraEsitoAmichevole() {
     const titolo = serie ? `${nomeDi('p1')} ${s1} – ${s2} ${nomeDi('p2')}` : (vincitore ? `${vincitore} wins!` : "It's a tie!");
     mostraEsito(titolo, {
         sotto: 'Friendly match over: no points, nothing saved.',
-        azioni: [...rivincitaUi(), el('a', { class: `btn ${mioLato ? 'secondario' : 'primario'}`, href: 'players.html' }, 'Back to Trainers')]
+        azioni: [...rivincitaUi(), el('a', { class: `btn ${mioLato ? 'secondario' : 'primario'}`, href: inApp() ? 'practice.html' : 'players.html' }, inApp() ? 'Back to Practice' : 'Back to Trainers')]
     });
     ridisegnaComandi();      // la rivincita sta anche nel pannello sotto lo schermo (sui telefoni è solo lì)
 }

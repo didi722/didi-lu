@@ -23,8 +23,8 @@ const passaUnGiro = () => new Promise(ok => setImmediate(ok));
 test('icone: ogni nome che l\'app usa esiste; sono disegni 24x24 fatti di tratti semplici; svg() sa come scriverle', () => {
     // le tessere del menù e della finestra delle impostazioni, la barra in alto
     for (const v of A.VOCI) assert.ok(C.ICONE[v.id], `manca l'icona della tessera ${v.id}`);
-    const sorgenti = ['app-gioco.js', 'app-menu.js', 'app-comune.js'].map(docs).join('\n');
-    const usate = new Set([...sorgenti.matchAll(/svg\('(\w+)'/g)].map(m => m[1]));
+    const sorgenti = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-practice.js'].map(docs).join('\n');
+    const usate = new Set([...sorgenti.matchAll(/(?:svg|ICONA)\('(\w+)'/g)].map(m => m[1]));
     for (const m of sorgenti.matchAll(/icona:\s*([^,}]+)[,}]/g)) for (const n of m[1].matchAll(/'(\w+)'/g)) usate.add(n[1]);
     for (const m of sorgenti.matchAll(/svg\(([^)]*\?[^)]*)\)/g)) for (const n of m[1].matchAll(/'(\w+)'/g)) usate.add(n[1]);
     for (const v of A.VOCI) usate.add(v.id);                // le tessere del menù le disegna app-menu.js con svg(v.id)

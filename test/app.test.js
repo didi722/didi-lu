@@ -78,10 +78,10 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('le tessere del menù (VOCI): quattro (giocare e vedere i risultati), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['matches', 'box', 'trainers', 'stats']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 4, 'nomi diversi');
-    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 4, 'colori diversi: ogni schermata ha il suo');
+test('le tessere del menù (VOCI): cinque (giocare, allenarsi e vedere i risultati), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['matches', 'practice', 'box', 'trainers', 'stats']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5, 'nomi diversi');
+    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 5, 'colori diversi: ogni schermata ha il suo');
     const viste = [];
     for (const v of A.VOCI) {
         assert.match(v.colore, /^#[0-9a-f]{6}$/i, `${v.id}: colore`);
@@ -96,13 +96,13 @@ test('le tessere del menù (VOCI): quattro (giocare e vedere i risultati), con c
     for (const p of A.FUORI_APP) { assert.ok(esiste(p), `manca ${p}`); assert.ok(!viste.includes(p), `${p} è fuori dall'app ma ha una tessera`); }
 });
 
-test('voceDi: a quale tessera appartiene la pagina (la scheda di un allenatore sta con Trainers); iscrizione, battaglia, accesso, menù e pagine fuori dall\'app a nessuna', () => {
+test('voceDi: a quale tessera appartiene la pagina (Practice ha la sua); iscrizione, battaglia, accesso, menù e pagine fuori dall\'app (anche la pagina pubblica) a nessuna', () => {
     assert.equal(A.voceDi('/didi-lu/matches.html').id, 'matches');
     assert.equal(A.voceDi('/didi-lu/box.html').id, 'box');
     assert.equal(A.voceDi('/didi-lu/players.html').id, 'trainers');
-    assert.equal(A.voceDi('/didi-lu/public.html?player=didi').id, 'trainers');
+    assert.equal(A.voceDi('/didi-lu/practice.html').id, 'practice');
     assert.equal(A.voceDi('/didi-lu/stats.html').id, 'stats');
-    for (const p of ['hub.html', 'index.html', 'palmares.html', 'battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
+    for (const p of ['hub.html', 'index.html', 'palmares.html', 'public.html', 'battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
 });
 
 test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, battaglia, accesso, amministrazione e modello vuoto no', () => {
@@ -110,9 +110,9 @@ test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, batt
     for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html', 'profile.html', 'public.html', 'hub.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.haHud(p), true, p);
 });
 
-test('fuoriApp: stagioni (home), profilo, archivio, formati e regolamento non hanno posto nell\'app e rimandano al menù; il resto si apre dov\'è', () => {
-    for (const p of ['/didi-lu/index.html', '/didi-lu/', '/didi-lu/profile.html', '/didi-lu/palmares.html?x=1', '/didi-lu/formats.html', '/didi-lu/rules.html#a']) assert.equal(A.fuoriApp(p), true, p);
-    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'public.html', 'stats.html', 'menu.html', 'battle.html']) assert.equal(A.fuoriApp('/didi-lu/' + p), false, p);
+test('fuoriApp: stagioni (home), profilo, archivio, formati, regolamento e pagina pubblica non hanno posto nell\'app; il resto si apre dov\'è', () => {
+    for (const p of ['/didi-lu/index.html', '/didi-lu/', '/didi-lu/profile.html', '/didi-lu/palmares.html?x=1', '/didi-lu/formats.html', '/didi-lu/rules.html#a', '/didi-lu/public.html?player=didi']) assert.equal(A.fuoriApp(p), true, p);
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'practice.html', 'stats.html', 'menu.html', 'battle.html']) assert.equal(A.fuoriApp('/didi-lu/' + p), false, p);
 });
 
 test('fissaStile: lo stile è quello dell\'app: tema predefinito sul sito, via il colore del giocatore e i caratteri del tema scelto', () => {
@@ -277,7 +277,7 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
     assert.deepEqual(s.reindirizzato, [], 'una pagina diversa dalla home si apre dov\'è');
     assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css'], 'l\'aspetto comune e quello delle pagine');
     // suoni (per ogni pagina dell'app), poi le parti comuni e l'interfaccia in alto: nell'ordine in cui servono (async = false: partono uno dopo l'altro)
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-classifica.js'], 'poi quelli della pagina (Matches: il carosello della classifica)');
     for (const f of s.doc.head.figli.filter(x => x.tagName === 'SCRIPT')) assert.equal(f.async, false, `${f.src}: async = false per l'ordine`);
     assert.equal(s.invito(), null);
 });
@@ -285,11 +285,11 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
 test('i fogli e gli script dell\'app ereditano l\'indirizzo di app.js (anche con un numero di versione), a pagina letta si aggiungono alla testa', () => {
     const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', srcApp: 'app.js?v=7' });
     assert.deepEqual(s.fogli(), ['app-gioco.css?v=7', 'app-gioco-pagine.css?v=7']);
-    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7']);
+    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7', 'app-teambuilder.js?v=7']);
     // mentre la pagina si legge i fogli si scrivono subito (document.write): il sito "da PC" non lampeggia prima dell'app
     const l = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', caricamento: true });
     assert.deepEqual(l.doc.scritture, ['<link rel="stylesheet" href="app-gioco.css">', '<link rel="stylesheet" href="app-gioco-pagine.css">']);
-    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-teambuilder.js']);
     assert.deepEqual(l.classi(), ['app', 'app-installata', 'app-shell', 'os-android'], 'le classi arrivano subito (niente sfarfallio)');
     assert.equal(l.avviso(), null, 'l\'avviso "gira il telefono" aspetta la pagina pronta');
 });
@@ -308,15 +308,18 @@ test('dentro l\'APK, in una pagina del gioco: classe app-apk, nessun service wor
 
 test('dall\'app (telefono) le pagine che nell\'app non servono portano al menù, ogni volta: la home (stagioni), profilo, archivio, formati e regolamento', () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 });
-    assert.deepEqual(s.risultato, { modo: 'apk', menu: true });
+    assert.deepEqual(s.risultato, { modo: 'apk', menu: true, verso: 'menu.html' });
     assert.deepEqual(s.reindirizzato, ['menu.html']);
     assert.deepEqual(s.script(), [], 'la pagina che sta per essere sostituita non carica niente');
     assert.deepEqual(s.fogli(), []);
     // sempre, non solo la prima volta (non c\'è più una pagina "Seasons")
     assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 }).reindirizzato, ['menu.html']);
     for (const p of ['profile.html', 'palmares.html', 'formats.html', 'rules.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, ['menu.html'], p);
+    // la pagina pubblica è stata fusa in Trainers: porta alla scheda dello stesso allenatore (o alla pagina, senza nome)
+    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/public.html', search: '?player=Didi', punti: 5 }).reindirizzato, ['players.html?player=Didi']);
+    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/public.html', punti: 5 }).reindirizzato, ['players.html']);
     // le pagine del gioco (anche l\'iscrizione, dove porta il messaggio delle stagioni aperte) si aprono dove sono
-    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'public.html', 'stats.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, [], p);
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'practice.html', 'stats.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, [], p);
 });
 
 test('lo stile è uno solo: dall\'app il tema e il colore del giocatore (già messi dal sito) si tolgono; nel browser restano', () => {
@@ -379,7 +382,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
     let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
     assert.equal(s.risultato.modo, 'installata');
     assert.equal(memoria.appForzata, '1');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-stats.js']);
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
     assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });
@@ -393,7 +396,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
 test('con lo storage del browser bloccato (navigazione privata...) il sito funziona uguale', () => {
     const s = apri({ ua: UA.iphone, percorso: '/didi-lu/matches.html', storageRotto: true, search: '?app=1' });
     assert.equal(s.risultato.modo, 'installata');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-classifica.js']);
     // senza memoria della visita la home si riconosce come prima apertura: si va al menù (che non rimanda da nessuna parte, quindi nessun ciclo)
     const m = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true, search: '?app=1', punti: 5 });
     assert.deepEqual(m.reindirizzato, ['menu.html']);
@@ -892,4 +895,42 @@ test('app.css: l\'invito a installare (solo browser da telefono) non è tra le r
     const css = docs('app.css');
     for (const c of ['.app-invito', '.app-invito-testo', '.app-invito-si', '.app-invito-no']) assert.ok(css.includes(c), c);
     assert.doesNotMatch(css, /app-nav|app-bar|app-velo|app-foglio|app-con-barra|app-tira/, 'rimasugli della barra in basso');
+});
+
+// ---------- la pagina pubblica è fusa in Trainers; le pagine passano i dati all'app ----------
+
+test('destinazioneFuoriApp: le pagine senza posto nell\'app portano al menù; la pagina pubblica di un allenatore alla sua scheda in Trainers', () => {
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/index.html', ''), 'menu.html');
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/profile.html', '?player=didi'), 'menu.html', 'solo la pagina pubblica ha un rimando');
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/public.html', '?player=didi'), 'players.html?player=didi');
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/public.html', 'player=Lukiani'), 'players.html?player=Lukiani', 'con o senza il punto interrogativo');
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/public.html', '?player=Anna Maria'), 'players.html?player=Anna%20Maria');
+    assert.equal(A.destinazioneFuoriApp('/didi-lu/public.html', ''), 'players.html');
+    for (const [pagina, dove] of Object.entries(A.RIMANDI)) { assert.ok(A.FUORI_APP.includes(pagina), pagina); assert.ok(A.VOCI.some(v => v.pagine.includes(dove)), `${pagina} rimanda a una pagina che ha la sua tessera`); }
+});
+
+test('SCRIPT_PAGINE: gli script che una pagina dell\'app carica oltre a quelli comuni esistono e la pagina li può usare', () => {
+    assert.deepEqual(Object.keys(A.SCRIPT_PAGINE).sort(), ['box.html', 'matches.html', 'players.html', 'practice.html', 'stats.html']);
+    for (const [pagina, lista] of Object.entries(A.SCRIPT_PAGINE)) {
+        assert.ok(esiste(pagina), pagina);
+        assert.ok(A.voceDi(pagina), `${pagina}: è una pagina dell'app`);
+        for (const f of lista) assert.ok(esiste(f), `${pagina}: manca ${f}`);
+        // il carosello va prima di chi lo usa
+        const i = lista.indexOf('app-carosello.js');
+        if (i >= 0) assert.equal(i, lista.findIndex(x => x !== 'sprite-pkm.js'), `${pagina}: il carosello viene prima delle schermate che lo usano`);
+    }
+});
+
+test('pubblica / datiPagina: la pagina del sito lascia i dati calcolati e l\'app li legge; chi ascolta li riceve all\'evento; fuori dal browser non lancia', () => {
+    assert.equal(A.datiPagina('classifica'), undefined);
+    assert.doesNotThrow(() => A.pubblica('classifica', [{ nome: 'Didi' }]));
+    assert.deepEqual(A.datiPagina('classifica'), [{ nome: 'Didi' }]);
+    A.pubblica('classifica', []);
+    assert.deepEqual(A.datiPagina('classifica'), [], 'l\'ultima pubblicazione sostituisce la precedente');
+    const eventi = [];
+    const prima = global.document;
+    global.document = { dispatchEvent: e => eventi.push(e.detail) };
+    try { A.pubblica('trainers', [1]); } finally { global.document = prima; }
+    assert.deepEqual(eventi, ['trainers']);
+    assert.deepEqual(A.datiPagina('trainers'), [1]);
 });

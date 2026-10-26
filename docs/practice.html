@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice | Sant'Alvise League</title>
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="style-sfide.css">
+    <link rel="stylesheet" href="temi.css">
+    <link rel="stylesheet" href="controlli.css">
+    <link rel="stylesheet" href="nb-pagine.css">
+    <link rel="stylesheet" href="finestre.css">
+    <link rel="stylesheet" href="tooltip.css">
+    <link rel="stylesheet" href="mobile.css">
+    <script src="temi.js"></script>
+    <script src="sfide.js"></script>
+    <script src="amichevoli.js"></script>
+    <script src="formato-random.js"></script>
+    <script src="sprite-pkm.js"></script>
+    <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e interfaccia da gioco (app-gioco.css, app-gioco-pagine.css e app-practice.js, li carica app.js) -->
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Sant'Alvise">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="immagini/app/apple-touch-icon.png">
+    <link rel="stylesheet" href="app.css">
+    <script src="app.js"></script>
+    <!-- Practice è una pagina dell'app: dal sito da PC (o dal browser) si torna alla home -->
+    <script>if (!document.documentElement.classList.contains('app')) location.replace('index.html');</script>
+</head>
+<body class="nb pg-practice senza-ads">
+
+    <div class="top-auth-bar">
+        <div id="auth-content" class="auth-interaction" onclick="handleAuthClick()">
+            <i id="auth-icon" class="fas fa-lock"></i>
+            <span id="auth-text"></span>
+        </div>
+    </div>
+
+    <div id="login-modal" class="modal">
+        <div class="modal-content glass-card">
+            <span class="close-modal" onclick="toggleLoginModal()">&times;</span>
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" required placeholder="Your email">
+                </div>
+                <div class="input-group" style="margin-bottom: 5px;">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-login">Login</button>
+                <div id="login-error" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Le tre schermate (scelta, contro la CPU, amichevole) le disegna app-practice.js -->
+    <main id="practice" class="pr" aria-live="polite"></main>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+    authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+    databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pokemonsuite-didi-lu",
+    storageBucket: "pokemonsuite-didi-lu.appspot.com",
+    messagingSenderId: "333119159516",
+    appId: "1:333119159516:web:689a9f5d3791093f66878b"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+function toggleLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
+function handleAuthClick() {
+    if (!auth.currentUser) toggleLoginModal();
+}
+document.getElementById('login-modal').addEventListener('click', e => { if (e.target.id === 'login-modal') toggleLoginModal(); });
+
+// il nome accanto all'icona (l'interfaccia in alto lo legge da qui)
+auth.onAuthStateChanged(async user => {
+    const testo = document.getElementById('auth-text');
+    if (!user) { if (testo) testo.innerText = 'Login'; return; }
+    try {
+        const nome = (await db.ref(`users/${user.uid}/name`).once('value')).val();
+        if (testo) testo.innerText = nome || '';
+    } catch (e) { console.error(e); }
+});
+
+document.getElementById('login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const errore = document.getElementById('login-error');
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value))
+        .then(() => toggleLoginModal())
+        .catch(() => { errore.innerText = 'Wrong email or password.'; });
+});
+
+function logout() { auth.signOut().then(() => location.reload()); }
+</script>
+<script src="controlli.js"></script>
+</body>
+</html>

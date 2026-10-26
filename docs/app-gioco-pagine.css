@@ -37,7 +37,7 @@
     html.app-shell body.nb { overflow-x: hidden; }
     html.app-shell body.nb .main-wrapper, html.app-shell body.nb main { margin-top: 0 !important; }
     /* i tasti d'azione che le pagine mettevano accanto al tasto utente (Registered teams, Withdraw...) scorrono con la pagina, in cima */
-    html.app-shell .top-auth-bar > :not(#auth-content):not(#user-menu):not([style*="position: relative"]):not([style*="display: none"]):not([hidden]) {
+    html.app-shell .top-auth-bar > :not(#auth-content):not(#user-menu):not(.btn-registered-teams):not([style*="position: relative"]):not([style*="display: none"]):not([hidden]) {
         position: static !important; display: inline-flex !important; align-items: center; justify-content: center; margin: calc(8 * var(--u)) calc(10 * var(--u)) 0 !important; height: calc(34 * var(--u)) !important;
         padding: 0 calc(14 * var(--u)) !important; transform: none !important; font-size: .78rem !important; letter-spacing: .06em !important; box-sizing: border-box; vertical-align: top;
     }
@@ -87,11 +87,26 @@
     html.app-shell body.nb #tasti-alto > .sfide-live-btn.mia { background: var(--gx-giallo); }
     html.app-shell body.nb #tasti-alto > .sfide-btn svg { width: 100%; height: 100%; }
     html.app-shell .sfide-badge { top: auto; bottom: calc(-6 * var(--u)); right: calc(-7 * var(--u)); min-width: calc(18 * var(--u)); height: calc(18 * var(--u)); font-size: calc(10.5 * var(--u)); border-width: calc(2.5 * var(--u)); }
-    /* il pannello di campanella e battaglie scende sotto la barra, a destra */
+    /* campanella e battaglie in corso: una finestra al centro dello schermo, con lo sfondo scurito (non un fumetto sotto la barra); si chiude con la X o toccando fuori */
     html.app-shell .sfide-dropdown {
-        top: calc(var(--gx-barra) + 6 * var(--u)) !important; right: var(--gx-lato) !important; left: auto !important; width: min(calc(330 * var(--u)), 64vw) !important; max-width: none !important;
-        max-height: calc(100vh - var(--gx-barra) - 16 * var(--u)) !important; overflow-y: auto; overscroll-behavior: contain; z-index: 905; box-sizing: border-box;
+        position: fixed !important; inset: 0 !important; margin: auto !important; width: min(calc(520 * var(--u)), calc(100% - 24 * var(--u))) !important; max-width: none !important; height: fit-content !important;
+        max-height: calc(100vh - 24 * var(--u)) !important; overflow-y: auto; overscroll-behavior: contain; z-index: 905; box-sizing: border-box; padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(6 * var(--u)) !important;
+        background: #1b1740 !important; color: #fff; border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important;
+        animation: gx-finestra .26s cubic-bezier(.2, 1.3, .4, 1) backwards;
     }
+    html.app-shell body:has(.sfide-dropdown:not([hidden]))::after { content: ""; position: fixed; inset: 0; z-index: 904; background: rgba(8, 6, 20, .62); pointer-events: none; }
+    html.app-shell .sfide-dropdown h3 {
+        display: flex; align-items: center; justify-content: space-between; gap: calc(10 * var(--u)); margin: 0 0 calc(8 * var(--u)); padding: 0; background: none; box-shadow: none; transform: none; color: #fff;
+        font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase;
+    }
+    html.app-shell .sfide-chiudi {
+        flex: none; display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(34 * var(--u)); padding: 0 0 calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000);
+        border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(22 * var(--u))/1 var(--nb-font-titoli); cursor: pointer;
+    }
+    html.app-shell .sfide-chiudi:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .sfide-dropdown .sfide-sezione { margin: calc(10 * var(--u)) 0 calc(6 * var(--u)); color: var(--gx-giallo); font-size: calc(11 * var(--u)); letter-spacing: .1em; }
+    html.app-shell .sfide-dropdown .sfide-voce { margin-bottom: calc(9 * var(--u)); padding: calc(9 * var(--u)) calc(11 * var(--u)); color: #000; border-radius: var(--nb-raggio); transform: none !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell .sfide-dropdown .sfide-vuoto { margin: calc(8 * var(--u)) 0 calc(12 * var(--u)); color: rgba(255, 255, 255, .8); font-size: calc(12 * var(--u)); line-height: 1.4; }
     /* i tasti d'azione della pagina ("Team Builder", "New format"...): tondi in basso a destra, come i tasti d'azione di un gioco; solo l'icona */
     html.app-shell body.nb #tasti-alto > :not(.sfide-btn) {
         position: fixed !important; top: auto !important; left: auto !important; z-index: 890;
@@ -107,7 +122,7 @@
     html.app-shell body.nb #tasti-alto > .btn-floating-admin .plus-icon { font-size: calc(26 * var(--u)); }
     html.app-shell body.nb:has(#tasti-alto > :not(.sfide-btn):not([hidden])) { padding-bottom: calc(66 * var(--u)) !important; }
 
-    html.gx-dialogo-aperto body { overflow: hidden; }
+    html.gx-dialogo-aperto, html.gx-dialogo-aperto body { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* =====================================================================
@@ -177,6 +192,51 @@
         font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .06em; border-radius: var(--nb-raggio, 0);
     }
     html.app-shell body.pg-matches .cl-laterale .sfida-rank-btn:active { transform: translateY(calc(2 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    /* la classifica come carosello (app-classifica.js): il giocatore grande, sotto più piccoli i due che lo seguono, i comandi per scorrere; l'elenco di sempre resta nascosto */
+    html.app-shell.app-classifica body.pg-matches #participants-list { display: none; }
+    html.app-shell body.pg-matches .ac { display: flex; flex-direction: column; gap: calc(8 * var(--u)); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    html.app-shell body.pg-matches .ac :is(img, a) { -webkit-user-drag: none; user-drag: none; }
+    html.app-shell body.pg-matches .ac-vuoto { margin: 0; padding: calc(10 * var(--u)); color: rgba(255, 255, 255, .8); font: 700 calc(12 * var(--u))/1.3 var(--nb-font-testo); }
+    html.app-shell body.pg-matches .ac-grande {
+        position: relative; box-sizing: border-box; min-height: calc(92 * var(--u)); background: var(--c); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000);
+        border-radius: calc(14 * var(--u)); box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000); overflow: hidden;
+        animation: gx-ac-avanti .26s cubic-bezier(.2, .9, .3, 1) backwards;
+    }
+    html.app-shell body.pg-matches .ac[data-verso="indietro"] .ac-grande { animation-name: gx-ac-indietro; }
+    html.app-shell body.pg-matches .ac[data-verso=""] .ac-grande { animation: none; }
+    @keyframes gx-ac-avanti { from { opacity: 0; translate: calc(34 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }
+    @keyframes gx-ac-indietro { from { opacity: 0; translate: calc(-34 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }
+    html.app-shell body.pg-matches .ac-link { display: grid; grid-template-columns: calc(66 * var(--u)) minmax(0, 1fr) auto; grid-template-areas: "av pos pun" "av tes pun"; align-items: center; align-content: center; gap: calc(2 * var(--u)) calc(10 * var(--u)); min-height: calc(92 * var(--u)); box-sizing: border-box; padding: calc(7 * var(--u)) calc(10 * var(--u)) calc(7 * var(--u)) calc(8 * var(--u)); color: inherit; text-decoration: none; -webkit-user-drag: none; }
+    html.app-shell body.pg-matches .ac-grande .ac-pos { grid-area: pos; justify-self: start; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell body.pg-matches .ac-grande .ac-avatar { grid-area: av; width: calc(66 * var(--u)); height: calc(66 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .28)); }
+    html.app-shell body.pg-matches .ac-grande .ac-testi { grid-area: tes; display: flex; flex-direction: column; gap: calc(2 * var(--u)); min-width: 0; }
+    html.app-shell body.pg-matches .ac-grande .ac-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(20 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .ac-grande .ac-testi small { font: 800 calc(10 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .06em; opacity: .75; }
+    html.app-shell body.pg-matches .ac-grande .ac-punti { grid-area: pun; align-self: start; margin-bottom: calc(30 * var(--u)); display: flex; flex-direction: column; align-items: center; min-width: calc(52 * var(--u)); padding: calc(5 * var(--u)) calc(8 * var(--u)) calc(4 * var(--u)); background: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .ac-grande .ac-punti b { font: 900 calc(26 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell body.pg-matches .ac-grande .ac-punti small { font: 800 calc(8 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .1em; opacity: .6; }
+    html.app-shell body.pg-matches .ac-vs { position: absolute; right: calc(10 * var(--u)); bottom: calc(8 * var(--u)); }
+    html.app-shell body.pg-matches .ac-vs .sfida-rank-btn { position: static; width: calc(54 * var(--u)); height: calc(26 * var(--u)); margin: 0; padding: 0; transform: none; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; cursor: pointer; }
+    html.app-shell body.pg-matches .ac-vs .sfida-rank-btn:active { transform: translateY(calc(2 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .ac-piccoli { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); }
+    html.app-shell body.pg-matches .ac-piccolo {
+        position: relative; display: grid; grid-template-columns: calc(36 * var(--u)) minmax(0, 1fr) auto; grid-template-areas: "pos pos pos" "av nom pun"; align-items: center; gap: calc(1 * var(--u)) calc(6 * var(--u)); box-sizing: border-box; min-height: calc(58 * var(--u));
+        padding: calc(4 * var(--u)) calc(7 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)); background: var(--c); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000);
+        font: inherit; text-align: left; cursor: pointer; opacity: .92; transition: translate .1s, box-shadow .1s;
+    }
+    html.app-shell body.pg-matches .ac-piccolo:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .ac-piccolo .ac-pos { grid-area: pos; justify-self: start; padding: calc(1 * var(--u)) calc(7 * var(--u)) 0; background: var(--nb-ink, #000); color: #fff; border-radius: calc(6 * var(--u)); font: 900 calc(11 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell body.pg-matches .ac-piccolo .ac-avatar { grid-area: av; width: calc(36 * var(--u)); height: calc(36 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; }
+    html.app-shell body.pg-matches .ac-piccolo .ac-nome { grid-area: nom; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(13 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
+    html.app-shell body.pg-matches .ac-piccolo .ac-punti { grid-area: pun; display: grid; place-items: center; min-width: calc(26 * var(--u)); padding: calc(3 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u)); background: #fff; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font: 900 calc(15 * var(--u))/1.1 var(--nb-font-titoli); }
+    html.app-shell body.pg-matches .ac-nav { display: flex; align-items: center; justify-content: center; gap: calc(12 * var(--u)); }
+    html.app-shell body.pg-matches .ac-conta { min-width: calc(54 * var(--u)); text-align: center; color: var(--nb-testo, #fff); font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .12em; }
+    html.app-shell body.pg-matches .ac-freccia { display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(30 * var(--u)); padding: 0; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); cursor: pointer; }
+    html.app-shell body.pg-matches .ac-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .ac-freccia svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell body.pg-matches .ac-succ svg { transform: scaleX(-1); }
+    /* "Registered teams" non c'è nell'app: i team si guardano dalla partita */
+    html.app-shell body.pg-matches .btn-registered-teams { display: none !important; }
     /* le partite: tabellone "A [3 - 0] B" in due righe sottili invece di una pila alta */
     html.app-shell body.pg-matches #matchList.showdown-grid-double { display: grid !important; grid-template-columns: 1fr; gap: calc(14 * var(--u)); padding: 0; }
     html.app-shell body.pg-matches #matchList.showdown-grid-double:has(.showdown-summary-card)::before {
@@ -320,7 +380,6 @@
     /* ---------- 11. Pagina dell'allenatore: a sinistra il palco con lui, a destra nome, numeri, squadra, trofei e medaglie ---------- */
     html.app-shell :is(.pp-testata, .pp-piede) { display: none !important; }
     /* il corpo non deve diventare un contenitore che scorre (col "nascondi" orizzontale lo diventava): il palco appiccicato non si appiccicherebbe */
-    html.app-shell body.pg-public { overflow-x: clip !important; overflow-y: visible !important; }
     html.app-shell body #pp-nav { position: fixed; bottom: max(calc(12 * var(--u)), env(safe-area-inset-bottom, 0px)); right: max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)); z-index: 40; padding: 0; margin: 0; }
     html.app-shell body #pp-nav :is(.pp-indietro, .pp-modifica-btn) { display: none !important; }          /* personalizzare la carta è roba da sito */
     html.app-shell body #pp-nav .pp-modifica-btn, html.app-shell body #pp-nav a, html.app-shell body #pp-nav button { box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
@@ -351,76 +410,82 @@
     html.app-shell #pp-carta .pp-stat-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); }
     html.app-shell #pp-carta .pp-stat { min-height: 0; }
 
-    /* ---------- 7. Il team aperto (Box, iscrizione, Matches, pagina dell'allenatore): solo i sei Pokémon, in una schermata, senza scorrere ---------- */
-    /* niente riepiloghi da sito (bilancio, debolezze, copertura, ruoli, avanzamento dei badge, note, percentuale): nell'app si guarda la squadra e si gioca. Resta il tasto
-       per provarla contro la CPU, dove c'è. Chi vuole i dettagli di un Pokémon lo tocca. */
-    html.app-shell #teamModal.modal { align-items: center; justify-content: center; padding: calc(8 * var(--u)); box-sizing: border-box; }
-    html.app-shell #teamModal .modal-content {
-        position: relative !important; top: auto !important; left: auto !important; transform: none !important; box-sizing: border-box; width: min(calc(700 * var(--u)), 100%) !important; max-width: none !important; height: auto !important; max-height: calc(100vh - 16 * var(--u));
-        margin: 0 !important; padding: calc(10 * var(--u)) calc(12 * var(--u)) calc(12 * var(--u)) !important; display: flex; flex-direction: column; gap: calc(8 * var(--u)); overflow: hidden auto;
-        background: #1b1740 !important; border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important; color: #fff;
+    /* "Practice vs CPU" (nella card del team e nel dettaglio) non c'è più: si pratica dal menù principale, tessera Practice */
+    html.app-shell :is(.azione-cpu, .tb-prova-cpu) { display: none !important; }
+
+    /* ---------- 7. Il team aperto e il Pokémon (Box, iscrizione, Matches, scheda dell'allenatore): due finestre della stessa misura, al centro dello schermo, senza scorrere ---------- */
+    /* niente riepiloghi da sito (bilancio, debolezze, copertura, ruoli, avanzamento dei badge, note, percentuale): nell'app si guarda la squadra e si gioca. Chi vuole i dettagli di un
+       Pokémon lo tocca. dettagli.css scrive molte di queste regole con !important (allineamento in alto, riempimenti, scorrimento): qui le stesse proprietà vanno ribadite. */
+    html.app-shell :is(#teamModal, #pkmDetailModal).modal {
+        align-items: center !important; justify-content: center !important; padding: calc(8 * var(--u)) !important; box-sizing: border-box !important; overflow: hidden !important; overscroll-behavior: contain;
     }
-    html.app-shell #teamModal .modal-content::before { content: none !important; display: none !important; }
-    html.app-shell #teamModal :is(.palette-container, #teamDetailContent, #modalBody) { display: flex; flex-direction: column; gap: calc(8 * var(--u)); width: 100%; margin: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; }
-    /* in cima: il nome del team, e a destra le azioni (provare contro la CPU) */
+    html.app-shell :is(#teamModal, #pkmDetailModal) .modal-content {
+        position: relative !important; top: auto !important; left: auto !important; transform: none !important; zoom: 1 !important; box-sizing: border-box !important;
+        width: min(calc(672 * var(--u)), 100%) !important; max-width: none !important; height: min(calc(318 * var(--u)), 100%) !important; max-height: none !important;
+        margin: 0 !important; padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(14 * var(--u)) !important; display: flex !important; flex-direction: column; gap: calc(8 * var(--u)); overflow: hidden !important;
+        background: #1b1740 !important; border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important; color: #fff !important;
+    }
+    html.app-shell :is(#teamModal, #pkmDetailModal) .modal-content::before { content: none !important; display: none !important; }
+    html.app-shell :is(#teamModal, #pkmDetailModal) :is(.close, .close-modal, .close-replay) { position: absolute !important; top: calc(8 * var(--u)) !important; right: calc(10 * var(--u)) !important; left: auto !important; z-index: 3; margin: 0 !important; }
+    html.app-shell :is(#modalBody, #pkmModalBody) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; width: 100%; margin: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; }
+
+    /* il team: in cima il nome, sotto i sei Pokémon, tre per due, a riempire la finestra: ognuno col suo sprite, il nome, i tipi e lo strumento */
+    html.app-shell #teamModal :is(.palette-container, #teamDetailContent) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: calc(8 * var(--u)); width: 100%; margin: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; }
     html.app-shell #teamModal .modal-header-container {
-        display: flex !important; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: calc(10 * var(--u)); margin: 0 !important; padding: 0 calc(44 * var(--u)) 0 0 !important; border: 0 !important; background: none !important; box-shadow: none !important;
+        flex: none; display: flex !important; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: calc(10 * var(--u)); margin: 0 !important; padding: 0 calc(44 * var(--u)) 0 0 !important; border: 0 !important; background: none !important; box-shadow: none !important;
     }
     html.app-shell #teamModal .modal-header-container h2 {
-        flex: 0 1 auto; justify-self: auto; min-width: 0; max-width: 58%; margin: 0 !important; padding: calc(6 * var(--u)) calc(14 * var(--u)) calc(4 * var(--u)) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        flex: 0 1 auto; justify-self: auto; min-width: 0; max-width: 100%; margin: 0 !important; padding: calc(6 * var(--u)) calc(14 * var(--u)) calc(4 * var(--u)) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         background: var(--gx-voce, #6fa8ff) !important; color: #000 !important; border: calc(3 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: var(--nb-raggio) !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important;
         transform: none !important; font: 900 calc(17 * var(--u))/1.15 var(--nb-font-titoli) !important; letter-spacing: .05em; text-transform: uppercase; text-shadow: none;
     }
-    html.app-shell #teamModal .modal-header-container > :not(h2):not(.box-coach-tags) { display: none !important; }
-    html.app-shell #teamModal .box-coach-tags { display: flex !important; align-items: center; flex: none; gap: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
-    html.app-shell #teamModal .box-coach-tags > :not(.tb-prova-cpu) { display: none !important; }
-    html.app-shell #teamModal .tb-prova-cpu {
-        position: static; margin: 0 !important; padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(5 * var(--u)) !important; white-space: nowrap; font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli) !important; letter-spacing: .06em; text-transform: uppercase;
-        transform: none !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important;
+    html.app-shell #teamModal .modal-header-container > :not(h2) { display: none !important; }
+    html.app-shell #teamModal .modal-grid {
+        flex: 1 1 auto; min-height: 0; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; grid-template-rows: repeat(2, minmax(0, 1fr)) !important; gap: calc(10 * var(--u)) !important;
+        width: 100%; margin: 0 !important; padding: 0 0 calc(4 * var(--u)) !important; max-height: none !important; overflow: visible !important; border: 0 !important;
     }
-    html.app-shell #teamModal :is(.close-modal, .close-replay) { position: absolute !important; top: calc(8 * var(--u)) !important; right: calc(10 * var(--u)) !important; left: auto !important; z-index: 3; margin: 0 !important; }
-    /* i sei Pokémon: tre per due, ognuno col suo sprite, il nome, i tipi e lo strumento */
-    html.app-shell #teamModal .modal-grid { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: calc(8 * var(--u)) !important; width: 100%; margin: 0 !important; padding: 0 !important; max-height: none; overflow: visible !important; border: 0 !important; }
     html.app-shell #teamModal .modal-pkm-card {
-        display: grid !important; grid-template-columns: calc(54 * var(--u)) minmax(0, 1fr) !important; grid-template-areas: "sp nm" "sp ty" "sp it"; align-items: center !important; align-content: center; gap: calc(3 * var(--u)) calc(8 * var(--u)) !important;
-        min-width: 0; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: calc(7 * var(--u)) calc(8 * var(--u)) calc(7 * var(--u)) calc(7 * var(--u)) !important; transform: none !important; rotate: 0deg; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; overflow: hidden;
+        display: grid !important; grid-template-columns: calc(66 * var(--u)) minmax(0, 1fr) !important; grid-template-areas: "sp nm" "sp ty" "sp it"; align-items: center !important; align-content: center; gap: calc(5 * var(--u)) calc(8 * var(--u)) !important;
+        min-width: 0; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: calc(8 * var(--u)) calc(9 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)) !important; transform: none !important; rotate: 0deg; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; overflow: hidden;
         background: color-mix(in srgb, var(--tipo, #fff) 26%, #fff) !important; border: calc(3 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: var(--nb-raggio) !important;
     }
     html.app-shell #teamModal .modal-pkm-card::before, html.app-shell #teamModal .modal-pkm-card::after { content: none !important; }
     html.app-shell #teamModal .modal-pkm-card:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000) !important; }
     html.app-shell #teamModal .modal-pkm-card :is(.modal-left-column, .modal-pkm-info) { display: contents !important; }
-    html.app-shell #teamModal .modal-pkm-card .modal-sprite { grid-area: sp; justify-self: center; align-self: center; width: calc(50 * var(--u)) !important; height: calc(50 * var(--u)) !important; max-width: none; margin: 0 !important; }
+    html.app-shell #teamModal .modal-pkm-card .modal-sprite { grid-area: sp; justify-self: center; align-self: center; width: calc(62 * var(--u)) !important; height: calc(62 * var(--u)) !important; max-width: none; margin: 0 !important; object-fit: contain; }
     html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(1) { grid-area: nm; display: block; min-width: 0; overflow: hidden; margin: 0 !important; padding: 0 !important; }
     html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(1) strong {
-        display: block; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 !important; padding: 0 !important; background: none !important; color: #000 !important; border: 0 !important; box-shadow: none !important; transform: none !important;
-        font: 900 calc(12.5 * var(--u))/1.2 var(--nb-font-titoli) !important; letter-spacing: .02em; text-transform: uppercase;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; overflow-wrap: anywhere; white-space: normal; margin: 0 !important; padding: 0 !important; background: none !important; color: #000 !important; border: 0 !important; box-shadow: none !important; transform: none !important;
+        font: 900 calc(12.5 * var(--u))/1.15 var(--nb-font-titoli) !important; letter-spacing: .02em; text-transform: uppercase;
     }
     html.app-shell #teamModal .modal-pkm-card .modal-types { grid-area: ty; display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: calc(3 * var(--u)) !important; width: auto; height: auto; margin: 0 !important; padding: 0; order: 0; }
     html.app-shell #teamModal .modal-pkm-card .modal-types .type-container { display: block; width: auto !important; margin: 0; padding: 0; }
-    html.app-shell #teamModal .modal-pkm-card .modal-types .type-badge { width: calc(48 * var(--u)) !important; padding: calc(1 * var(--u)) calc(2 * var(--u)) !important; font: 800 calc(8 * var(--u))/1.5 var(--nb-font-titoli) !important; letter-spacing: .04em; transform: none !important; box-shadow: none !important; border-width: calc(2 * var(--u)); }
+    html.app-shell #teamModal .modal-pkm-card .modal-types .type-badge { width: calc(52 * var(--u)) !important; padding: calc(1 * var(--u)) calc(2 * var(--u)) !important; font: 800 calc(8.5 * var(--u))/1.5 var(--nb-font-titoli) !important; letter-spacing: .04em; transform: none !important; box-shadow: none !important; border-width: calc(2 * var(--u)); }
     html.app-shell #teamModal .modal-pkm-card .info-container:nth-of-type(3) { grid-area: it; display: flex; align-items: center; min-width: 0; margin: 0 !important; padding: 0 !important; }
-    html.app-shell #teamModal .modal-pkm-card .modal-item { display: flex; align-items: center; gap: calc(3 * var(--u)); min-width: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; transform: none !important; font: 700 calc(9 * var(--u))/1.2 var(--nb-font-testo) !important; color: #000 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    html.app-shell #teamModal .modal-pkm-card .modal-item img { width: calc(16 * var(--u)) !important; height: calc(16 * var(--u)) !important; flex: none; }
+    html.app-shell #teamModal .modal-pkm-card .modal-item { display: flex; align-items: center; gap: calc(4 * var(--u)); min-width: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; transform: none !important; font: 700 calc(10 * var(--u))/1.2 var(--nb-font-testo) !important; color: #000 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.app-shell #teamModal .modal-pkm-card .modal-item img { width: calc(18 * var(--u)) !important; height: calc(18 * var(--u)) !important; flex: none; }
     html.app-shell #teamModal .modal-pkm-card :is(.info-container:nth-of-type(2), .modal-moves, .pkm-badges-overlay, .generic-tooltip, .modal-pkm-info > p) { display: none !important; }
     html.app-shell #teamModal .modal-pkm-card-apri { cursor: pointer; }
 
-    /* il Pokémon toccato: a sinistra lui (sprite, nome, tipi), a destra abilità e strumento, le quattro mosse e gli EV; niente statistiche base, debolezze, fiocchi né descrizioni */
-    html.app-shell #pkmDetailModal.modal { align-items: center; justify-content: center; padding: calc(8 * var(--u)); box-sizing: border-box; }
-    html.app-shell #pkmDetailModal .modal-content {
-        position: relative !important; top: auto !important; left: auto !important; transform: none !important; box-sizing: border-box; width: min(calc(660 * var(--u)), 100%) !important; max-width: none !important; height: auto !important; max-height: calc(100vh - 16 * var(--u));
-        margin: 0 !important; padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(14 * var(--u)) !important; overflow: hidden auto; background: #1b1740 !important; color: #fff;
-        border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000) !important;
-    }
-    html.app-shell #pkmDetailModal .modal-content::before { content: none !important; display: none !important; }
-    html.app-shell #pkmDetailModal :is(.close, .close-modal) { position: absolute !important; top: calc(8 * var(--u)) !important; right: calc(10 * var(--u)) !important; left: auto !important; z-index: 3; margin: 0 !important; }
+    /* il Pokémon toccato: a sinistra lui al centro del suo cerchio, con nome e tipi; a destra abilità e strumento, le quattro mosse, le statistiche base a barre e gli EV; niente debolezze, fiocchi né descrizioni */
     html.app-shell #pkmDetailModal .pkm-modal-grid {
-        display: grid !important; grid-template-columns: calc(190 * var(--u)) minmax(0, 1fr) !important; grid-template-areas: "hd inf" "hd mv" "hd ev" !important; grid-template-rows: auto auto 1fr !important; gap: calc(8 * var(--u)) calc(14 * var(--u)) !important;
-        width: 100%; margin: 0 !important; padding: 0 calc(40 * var(--u)) 0 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; align-items: start;
+        flex: 1 1 auto; min-height: 0; display: grid !important; grid-template-columns: calc(184 * var(--u)) minmax(0, 1fr) !important; grid-template-areas: "hd inf" "hd mv" "hd st" !important; grid-template-rows: auto auto minmax(0, 1fr) !important; gap: calc(9 * var(--u)) calc(16 * var(--u)) !important;
+        width: 100%; height: 100%; margin: 0 !important; padding: 0 calc(38 * var(--u)) 0 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; align-items: stretch;
     }
-    html.app-shell #pkmDetailModal .area-header { grid-area: hd !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: calc(6 * var(--u)); min-width: 0; margin: 0 !important; padding: 0 !important; align-self: center; }
-    html.app-shell #pkmDetailModal #pkm-hero-sprite { order: 1; width: calc(96 * var(--u)) !important; height: calc(96 * var(--u)) !important; max-width: none !important; margin: 0 !important; }
-    html.app-shell #pkmDetailModal .pkm-name-banner { order: 2; max-width: 100%; margin: 0 !important; padding: calc(5 * var(--u)) calc(12 * var(--u)) calc(3 * var(--u)) !important; font: 900 calc(15 * var(--u))/1.15 var(--nb-font-titoli) !important; letter-spacing: .04em; transform: none !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--gx-voce, #6fa8ff) !important; color: #000 !important; border: calc(3 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: var(--nb-raggio) !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; text-transform: uppercase; }
-    html.app-shell #pkmDetailModal .types-centered { order: 3; display: flex !important; justify-content: center; gap: calc(5 * var(--u)); margin: 0 !important; }
+    /* il cerchio e il suo sprite occupano la stessa cella: lo sprite sta sempre esattamente al centro del cerchio */
+    html.app-shell #pkmDetailModal .area-header {
+        grid-area: hd !important; position: relative !important; display: grid !important; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; justify-items: center; align-items: center; gap: calc(6 * var(--u));
+        min-width: 0; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+    }
+    html.app-shell #pkmDetailModal .area-header::before {
+        content: "" !important; position: static !important; transform: none !important; grid-area: 1 / 1; align-self: center; justify-self: center; height: 100%; max-height: calc(176 * var(--u)); width: auto; aspect-ratio: 1; max-width: 100%;
+        border: calc(4 * var(--u)) solid var(--nb-ink, #000) !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important;
+    }
+    html.app-shell #pkmDetailModal #pkm-hero-sprite {
+        grid-area: 1 / 1; z-index: 1; align-self: center; justify-self: center; order: 0; box-sizing: border-box; width: auto !important; height: auto !important; max-width: 62% !important; max-height: 62% !important; margin: 0 !important; padding: 0 !important; object-fit: contain; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3));
+    }
+    html.app-shell #pkmDetailModal .pkm-name-banner { grid-area: 2 / 1; order: 0; max-width: 100%; margin: 0 !important; padding: calc(5 * var(--u)) calc(10 * var(--u)) calc(3 * var(--u)) !important; font: 900 calc(12.5 * var(--u))/1.15 var(--nb-font-titoli) !important; letter-spacing: .02em; transform: none !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--gx-voce, #6fa8ff) !important; color: #000 !important; border: calc(3 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: var(--nb-raggio) !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; text-transform: uppercase; }
+    html.app-shell #pkmDetailModal .types-centered { grid-area: 3 / 1; order: 0; display: flex !important; justify-content: center; gap: calc(5 * var(--u)); margin: 0 !important; }
     html.app-shell #pkmDetailModal .types-centered .type-badge { transform: none !important; font-size: calc(10 * var(--u)) !important; padding: calc(2 * var(--u)) calc(9 * var(--u)) !important; box-shadow: none !important; }
     html.app-shell #pkmDetailModal .type-effectiveness-tooltip { display: none !important; }
     html.app-shell #pkmDetailModal .area-info-strips { grid-area: inf !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); margin: 0 !important; padding: 0 !important; }
@@ -431,13 +496,21 @@
     html.app-shell #pkmDetailModal .area-moves { grid-area: mv !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; }
     html.app-shell #pkmDetailModal .area-moves .panel-title { display: none; }
     html.app-shell #pkmDetailModal .moves-list-compact { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: calc(8 * var(--u)) !important; margin: 0 !important; padding: 0 !important; height: auto !important; }
-    html.app-shell #pkmDetailModal .move-row-mini { display: flex !important; align-items: center; justify-content: space-between; gap: calc(6 * var(--u)); min-width: 0; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: calc(8 * var(--u)) calc(9 * var(--u)) calc(7 * var(--u)) !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; border-radius: var(--nb-raggio) !important; }
+    html.app-shell #pkmDetailModal .move-row-mini { display: flex !important; align-items: center; justify-content: space-between; gap: calc(6 * var(--u)); min-width: 0; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: calc(7 * var(--u)) calc(9 * var(--u)) calc(6 * var(--u)) !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; border-radius: var(--nb-raggio) !important; }
     html.app-shell #pkmDetailModal .move-row-mini .move-desc-inline { display: none !important; }
     html.app-shell #pkmDetailModal .move-row-mini :is(.move-left-part, .move-right-part) { min-width: 0; margin: 0 !important; padding: 0 !important; }
     html.app-shell #pkmDetailModal .move-row-mini .move-right-part { display: none !important; }
-    html.app-shell #pkmDetailModal .area-stats { grid-area: ev !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; align-self: end; }
-    html.app-shell #pkmDetailModal .area-stats #single-stats { display: none !important; }
-    html.app-shell #pkmDetailModal .evs-footer { margin: 0 !important; padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) !important; border: 0 !important; background: rgba(255, 255, 255, .1); color: #fff !important; border-radius: calc(8 * var(--u)); font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli) !important; }
+    /* le statistiche base: sei barre, due colonne per tre righe, e sotto gli EV */
+    html.app-shell #pkmDetailModal .area-stats { grid-area: st !important; display: flex; flex-direction: column; justify-content: space-between; gap: calc(6 * var(--u)); min-height: 0; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; }
+    html.app-shell #pkmDetailModal .area-stats .panel-title { display: none !important; }
+    html.app-shell #pkmDetailModal .area-stats #single-stats { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); flex: 1 1 auto; align-content: stretch; gap: calc(5 * var(--u)) calc(14 * var(--u)); min-height: 0; margin: 0 !important; padding: 0 !important; color: #fff; font: 800 calc(10.5 * var(--u))/1.2 var(--nb-font-titoli); }
+    html.app-shell #pkmDetailModal .area-stats .stat-row { display: flex !important; align-items: center; gap: calc(6 * var(--u)) !important; min-width: 0; margin: 0 !important; padding: 0 !important; font: 800 calc(10.5 * var(--u))/1.2 var(--nb-font-titoli) !important; color: #fff !important; letter-spacing: .03em; }
+    html.app-shell #pkmDetailModal .area-stats .stat-row > span { flex: none; width: auto !important; min-width: calc(28 * var(--u)); color: inherit; }
+    html.app-shell #pkmDetailModal .area-stats .stat-row > span:nth-child(2) { min-width: calc(24 * var(--u)); text-align: right; }
+    html.app-shell #pkmDetailModal .area-stats .stat-bar-bg { flex: 1 1 auto; min-width: 0; height: calc(11 * var(--u)) !important; margin: 0 !important; background: rgba(255, 255, 255, .16) !important; border: calc(2 * var(--u)) solid var(--nb-ink, #000) !important; border-radius: calc(6 * var(--u)) !important; overflow: hidden; box-shadow: none !important; }
+    html.app-shell #pkmDetailModal .area-stats .stat-bar-fill { height: 100%; border-right: calc(2 * var(--u)) solid var(--nb-ink, #000); box-sizing: border-box; }
+    html.app-shell #pkmDetailModal .area-stats .stat-total { display: none !important; }
+    html.app-shell #pkmDetailModal .evs-footer { flex: none; margin: 0 !important; padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) !important; border: 0 !important; background: rgba(255, 255, 255, .1); color: #fff !important; border-radius: calc(8 * var(--u)); font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli) !important; }
     html.app-shell #pkmDetailModal :is(.area-weakness, .area-ribbons, #pkm-fiocchi, .fiocchi-panel) { display: none !important; }
 
     /* la finestra per scegliere i team (iscrizione): titolo, l'elenco che scorre, i due tasti affiancati in fondo */
@@ -501,6 +574,285 @@
     html.app-shell #login-modal h2 { margin: 0 0 calc(8 * var(--u)) !important; font-size: calc(22 * var(--u)) !important; }
     html.app-shell #login-modal .input-group { margin-bottom: calc(8 * var(--u)) !important; }
 
+    /* la finestra di accesso di Practice (le altre pagine hanno già il loro foglio per .modal) */
+    html.app-shell body.pg-practice #login-modal.modal { display: none; position: fixed; inset: 0; z-index: 2000; overflow-y: auto; background: rgba(5, 4, 15, .72); }
+    /* ---------- 4b. Trainers come carosello (app-trainers.js): l'allenatore al centro con il suo Pokémon, i trofei, i badge e l'Elo; ai lati si intravedono i vicini ---------- */
+    html.app-shell.app-trainers body.pg-players #wrapper, html.app-shell.app-trainers body.pg-players #trainers-grid { display: none !important; }
+    html.app-shell.app-trainers, html.app-shell.app-trainers body { overflow: hidden !important; }
+    html.app-shell .at { position: fixed; left: 0; right: 0; top: var(--gx-barra); bottom: 0; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    html.app-shell .at-pista { position: absolute; inset: calc(10 * var(--u)) 0 calc(42 * var(--u)) 0; }
+    html.app-shell .at-vuoto { margin: calc(40 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 800 calc(16 * var(--u))/1.3 var(--nb-font-testo); }
+    html.app-shell .at-carta {
+        position: absolute; left: 50%; top: 0; bottom: 0; box-sizing: border-box; width: calc(430 * var(--u)); margin-left: calc(-215 * var(--u)); display: grid; grid-template-columns: calc(170 * var(--u)) minmax(0, 1fr); overflow: hidden;
+        background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(8 * var(--u)) 0 var(--nb-ink, #000);
+        translate: calc(var(--x, 0) * 450 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
+        transition: translate .38s cubic-bezier(.2, .9, .3, 1), scale .38s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
+    }
+    html.app-shell .at-carta:is(.at-centro, .at-vicino) { pointer-events: auto; }
+    html.app-shell .at-carta:not(.at-centro) { cursor: pointer; filter: saturate(.8) brightness(.9); }
+    html.app-shell .at-carta:not(.at-centro) .at-info { opacity: .85; }
+    html.app-shell .at-palco { position: relative; overflow: hidden; background: color-mix(in srgb, var(--c) 55%, #fff); border-right: calc(4 * var(--u)) solid var(--nb-ink, #000); }
+    html.app-shell .at-raggi { position: absolute; left: 50%; top: 56%; width: 250%; aspect-ratio: 1; translate: -50% -50%; background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .42) 0deg 9deg, transparent 9deg 24deg); mask-image: radial-gradient(circle, #000 0%, transparent 62%); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%); animation: gx-ruota 50s linear infinite; }
+    html.app-shell .at-pedana { position: absolute; left: 50%; bottom: calc(22 * var(--u)); translate: -50% 0; width: calc(138 * var(--u)); height: calc(26 * var(--u)); border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #fff 0%, color-mix(in srgb, var(--c) 60%, #fff) 60%, var(--c) 100%); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .at-allenatore { position: absolute; left: calc(8 * var(--u)); bottom: calc(34 * var(--u)); height: calc(112 * var(--u)); width: auto; max-width: calc(88 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3)); }
+    html.app-shell .at-pkm { position: absolute; right: calc(4 * var(--u)); bottom: calc(32 * var(--u)); max-height: calc(92 * var(--u)); max-width: calc(88 * var(--u)); width: auto; height: auto; object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3)); }
+    html.app-shell .at-info { min-width: 0; display: flex; flex-direction: column; gap: calc(6 * var(--u)); padding: calc(12 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)) calc(14 * var(--u)); }
+    html.app-shell .at-testa { display: flex; align-items: center; gap: calc(9 * var(--u)); min-width: 0; }
+    html.app-shell .at-pos { flex: none; padding: calc(3 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(20 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell .at-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(27 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
+    html.app-shell .at-titolo { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(1 * var(--u)); background: var(--gx-giallo); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); font: 800 calc(10 * var(--u))/1.5 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell .at-elo { display: flex; align-items: baseline; gap: calc(6 * var(--u)); }
+    html.app-shell .at-elo b { font: 900 calc(40 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .01em; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
+    html.app-shell .at-elo .at-na { font-size: calc(28 * var(--u)); opacity: .6; }
+    html.app-shell .at-elo small { font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .14em; text-transform: uppercase; opacity: .65; }
+    html.app-shell .at-trofei, html.app-shell .at-badge-riga { display: flex; flex-wrap: wrap; align-items: center; gap: calc(5 * var(--u)); }
+    html.app-shell .at-badge-riga { margin-top: auto; }
+    html.app-shell .at-coppa { display: inline-flex; align-items: center; gap: calc(2 * var(--u)); padding: calc(2 * var(--u)) calc(7 * var(--u)) calc(2 * var(--u)) calc(3 * var(--u)); background: rgba(255, 255, 255, .72); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); }
+    html.app-shell .at-coppa img { width: calc(22 * var(--u)); height: calc(22 * var(--u)); object-fit: contain; }
+    html.app-shell .at-coppa b { font: 900 calc(13 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .at-nulla { font: 700 calc(11 * var(--u))/1.2 var(--nb-font-testo); opacity: .6; }
+    html.app-shell .at-badge { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(38 * var(--u)); font-size: calc(22 * var(--u)); }
+    html.app-shell .at-badge img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .3)); }
+    html.app-shell .at-freccia { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(30 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .at-freccia:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .at-freccia svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell .at-succ svg { transform: scaleX(-1); }
+    html.app-shell .at-pie { position: absolute; left: 0; right: 0; bottom: calc(6 * var(--u)); z-index: 5; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--u)); }
+    html.app-shell .at-conta { min-width: calc(60 * var(--u)); text-align: center; color: #fff; font: 900 calc(13 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .14em; }
+
+    /* ---------- 5b. Stats come carosello (app-stats.js): si sceglie categoria, stagione, formato e il numero da guardare; poi un elemento alla volta, ai lati i vicini ---------- */
+    html.app-shell.app-stats body.pg-stats main.stats-pagina { display: none !important; }
+    html.app-shell.app-stats, html.app-shell.app-stats body { overflow: hidden !important; }
+    html.app-shell .as { position: fixed; left: 0; right: 0; top: var(--gx-barra); bottom: 0; display: flex; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
+    html.app-shell .as-barra { flex: none; display: flex; align-items: center; justify-content: space-between; gap: calc(8 * var(--u)); padding: calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(4 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); }
+    html.app-shell .as-tab { display: flex; gap: calc(6 * var(--u)); }
+    html.app-shell .as-t { padding: calc(5 * var(--u)) calc(13 * var(--u)) calc(3 * var(--u)); cursor: pointer; background: rgba(255, 255, 255, .12); color: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell .as-t.attivo { background: var(--gx-voce, #b388eb); color: #000; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-filtri { display: flex; gap: calc(6 * var(--u)); min-width: 0; }
+    html.app-shell .as-sel { max-width: calc(150 * var(--u)); height: calc(28 * var(--u)); padding: 0 calc(8 * var(--u)); background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); font: 800 calc(11 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .as-param { flex: none; display: flex; gap: calc(6 * var(--u)); padding: calc(3 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+    html.app-shell .as-param::-webkit-scrollbar { display: none; }
+    html.app-shell .as-p { flex: none; display: inline-flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)) calc(11 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(11 * var(--u)); font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .03em; white-space: nowrap; }
+    html.app-shell .as-p.attivo { background: var(--gx-giallo); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-p i { font-style: normal; font-size: calc(8 * var(--u)); }
+    html.app-shell .as-pista { position: relative; flex: 1 1 auto; min-height: 0; touch-action: pan-y; }
+    html.app-shell .as-vuoto { margin: auto; padding: calc(10 * var(--u)); text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
+    html.app-shell .as-carta {
+        position: absolute; left: 50%; top: calc(4 * var(--u)); bottom: calc(10 * var(--u)); box-sizing: border-box; width: calc(570 * var(--u)); margin-left: calc(-285 * var(--u)); display: grid; grid-template-columns: minmax(0, 1fr) calc(var(--cols, 3) * 82 * var(--u)); align-items: center; gap: calc(10 * var(--u)); overflow: hidden;
+        padding: calc(9 * var(--u)) calc(12 * var(--u)) calc(10 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(7 * var(--u)) 0 var(--nb-ink, #000);
+        translate: calc(var(--x, 0) * 530 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
+        transition: translate .38s cubic-bezier(.2, .9, .3, 1), scale .38s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
+    }
+    html.app-shell .as-carta:is(.as-centro, .as-vicino) { pointer-events: auto; }
+    html.app-shell .as-carta:not(.as-centro) { cursor: pointer; filter: saturate(.8) brightness(.9); }
+    html.app-shell .as-alto { position: relative; display: grid; grid-template-columns: calc(96 * var(--u)) minmax(0, 1fr); gap: calc(8 * var(--u)); align-items: center; min-height: 0; }
+    html.app-shell .as-pos { position: absolute; left: calc(-2 * var(--u)); top: calc(-2 * var(--u)); z-index: 2; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(7 * var(--u)); font: 900 calc(16 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .04em; }
+    html.app-shell .as-visual { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: 0; height: calc(96 * var(--u)); margin-top: calc(6 * var(--u)); background: radial-gradient(circle, rgba(255, 255, 255, .85), rgba(255, 255, 255, .3) 70%, transparent 100%); border-radius: 50%; overflow: hidden; }
+    html.app-shell .as-v-teams { border-radius: calc(14 * var(--u)); background: rgba(255, 255, 255, .45); padding: calc(4 * var(--u)); }
+    html.app-shell .as-avatar { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; image-rendering: pixelated; }
+    html.app-shell .as-sprite { max-width: 90%; max-height: 90%; object-fit: contain; image-rendering: pixelated; }
+    html.app-shell .as-mini { width: calc(34 * var(--u)); height: calc(34 * var(--u)); object-fit: contain; image-rendering: pixelated; }
+    html.app-shell .as-titoli { min-width: 0; display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
+    html.app-shell .as-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(19 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
+    html.app-shell .as-sotto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 calc(10.5 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; opacity: .7; }
+    html.app-shell .as-grande { display: flex; flex-direction: column; gap: calc(1 * var(--u)); margin-top: calc(3 * var(--u)); }
+    html.app-shell .as-et { font: 900 calc(11 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .12em; text-transform: uppercase; opacity: .65; }
+    html.app-shell .as-val { font: 900 calc(32 * var(--u))/1.05 var(--nb-font-titoli); text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
+    html.app-shell .as-val .wl { gap: calc(5 * var(--u)); } html.app-shell .as-val .wl i { font-size: .7em; }
+    html.app-shell .as-val small { font-size: .45em; }
+    html.app-shell .as-val .trofei img, html.app-shell .as-val .mvp-stella b { width: calc(28 * var(--u)); height: calc(28 * var(--u)); }
+    html.app-shell .as-val .barra { display: block; width: calc(120 * var(--u)); height: calc(8 * var(--u)); margin-top: calc(3 * var(--u)); border: calc(2 * var(--u)) solid var(--nb-ink, #000); background: rgba(255, 255, 255, .6); }
+    html.app-shell .as-dati { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: calc(5 * var(--u)); align-content: center; }
+    html.app-shell .as-dato { display: flex; flex-direction: column; gap: calc(1 * var(--u)); min-width: 0; padding: calc(3 * var(--u)) calc(6 * var(--u)) calc(3 * var(--u)); background: rgba(255, 255, 255, .55); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(9 * var(--u)); }
+    html.app-shell .as-det { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 calc(8 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; opacity: .65; }
+    html.app-shell .as-dva { font: 900 calc(14 * var(--u))/1.15 var(--nb-font-titoli); }
+    html.app-shell .as-dva .trofei img { width: calc(15 * var(--u)); height: calc(15 * var(--u)); }
+    html.app-shell .as-dva .mvp-stella b { font-size: calc(13 * var(--u)); }
+    html.app-shell .as-dva small, html.app-shell .as-dato .sub { font-size: calc(9 * var(--u)); }
+    html.app-shell .as-dva .barra, html.app-shell .as-dato .barra { display: none; }
+    html.app-shell .as-pie { flex: none; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--u)); height: calc(36 * var(--u)); padding-bottom: calc(4 * var(--u)); }
+    html.app-shell .as-conta { min-width: calc(60 * var(--u)); text-align: center; color: #fff; font: 900 calc(13 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .14em; }
+    html.app-shell .as-freccia { display: grid; place-items: center; width: calc(38 * var(--u)); height: calc(28 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(11 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .as-freccia svg { width: calc(18 * var(--u)); height: calc(18 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell .as-succ svg { transform: scaleX(-1); }
+
+    /* ---------- 6b. Team Builder a step (app-teambuilder.js): un menù in alto, a sinistra i sei posti, al centro UNA parte alla volta; niente scroll della pagina ---------- */
+    html.app-shell .tb-overlay { padding: 0 !important; align-items: stretch !important; overflow: hidden !important; background: var(--gx-b0, #1b1033) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    html.app-shell .tb-overlay .tb-wrapper {
+        position: absolute; inset: 0; max-width: none !important; width: auto !important; gap: 0 !important; display: grid !important;
+        grid-template-rows: auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+        padding: calc(6 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)) calc(8 * var(--u)) max(calc(10 * var(--u)), env(safe-area-inset-left, 0px));
+    }
+    /* testata: nome del team, formato, note, chiudi */
+    html.app-shell .tb-overlay .tb-header { margin: 0 !important; gap: calc(8 * var(--u)) !important; flex-wrap: nowrap !important; align-items: center; min-width: 0; }
+    html.app-shell .tb-overlay .tb-title { flex: 1 1 0 !important; min-width: 0 !important; margin: 0; padding: calc(3 * var(--u)) calc(12 * var(--u)) !important; font-size: calc(16 * var(--u)) !important; line-height: 1.3; transform: none !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: none !important; }
+    html.app-shell .tb-overlay .tb-format-badge { flex: 0 1 auto !important; max-width: 38%; padding: calc(2 * var(--u)) calc(8 * var(--u)) !important; font-size: calc(8.5 * var(--u)) !important; line-height: 1.2; transform: none !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(8 * var(--u)); box-shadow: none !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap !important; }
+    html.app-shell .tb-overlay .tb-header .nt-barra-team { flex: 0 0 auto; order: 3 !important; transform: scale(.8); transform-origin: right center; }
+    html.app-shell .tb-overlay .tb-title { order: 1 !important; } html.app-shell .tb-overlay .tb-format-badge { order: 2 !important; } html.app-shell .tb-overlay .tb-close { order: 4 !important; }
+    html.app-shell .tb-overlay .tb-close { flex: 0 0 auto; width: calc(32 * var(--u)) !important; height: calc(32 * var(--u)) !important; margin-left: 0 !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(10 * var(--u)); font-size: calc(18 * var(--u)) !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    /* il menù delle tappe */
+    html.app-shell .tbw-menu { display: flex; align-items: center; justify-content: center; gap: calc(6 * var(--u)); padding: calc(6 * var(--u)) 0 calc(6 * var(--u)); min-width: 0; }
+    html.app-shell .tbw-passi { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 0; overflow-x: auto; scrollbar-width: none; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(5 * var(--u)); }
+    html.app-shell .tbw-passi::-webkit-scrollbar { display: none; }
+    html.app-shell .tbw-filo { flex: none; width: calc(10 * var(--u)); height: calc(3 * var(--u)); background: rgba(255, 255, 255, .35); }
+    html.app-shell .tbw-passo { flex: none; display: inline-flex; align-items: center; gap: calc(5 * var(--u)); padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(3 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(255, 255, 255, .14); color: #fff; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(99 * var(--u)); font: 900 calc(11 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+    html.app-shell .tbw-passo b { display: grid; place-items: center; width: calc(19 * var(--u)); height: calc(19 * var(--u)); border-radius: 50%; background: #fff; color: #000; font: 900 calc(11 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell .tbw-passo.fatto b { background: #31c489; }
+    html.app-shell .tbw-passo.attivo { background: var(--gx-giallo); color: #000; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .tbw-passo:disabled { opacity: .4; cursor: default; }
+    html.app-shell .tbw-freccia { flex: none; display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(26 * var(--u)); padding: 0; cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .tbw-freccia:disabled { opacity: .35; box-shadow: none; }
+    html.app-shell .tbw-freccia svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell .tbw-avanti svg { transform: scaleX(-1); }
+    html.app-shell .tb-overlay .tbw-cambia { grid-column: 2; grid-row: 4; justify-self: start; margin-top: calc(6 * var(--u)); padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); font: 900 calc(10 * var(--u))/1.3 var(--nb-font-titoli); text-transform: uppercase; letter-spacing: .05em; }
+    /* sotto il menù: i sei posti a sinistra, la tappa a destra */
+    html.app-shell .tb-overlay .tb-content-container { display: grid !important; grid-template-columns: calc(52 * var(--u)) minmax(0, 1fr); gap: calc(10 * var(--u)) !important; align-items: stretch !important; min-height: 0; overflow: visible !important; }
+    html.app-shell .tb-overlay .tb-slots { width: auto !important; min-height: 0; display: flex !important; flex-direction: column; justify-content: center; gap: calc(5 * var(--u)) !important; padding: calc(2 * var(--u)) 0 !important; overflow: visible !important; }
+    html.app-shell .tb-overlay .tb-slot { flex: 1 1 0; width: calc(48 * var(--u)) !important; height: auto !important; min-height: 0; padding: 0 !important; justify-content: center; border-width: calc(3 * var(--u)) !important; border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; }
+    html.app-shell .tb-overlay .tb-slot.active { background: var(--gx-giallo) !important; }
+    html.app-shell .tb-overlay .tb-slot img { width: calc(30 * var(--u)) !important; height: calc(30 * var(--u)) !important; }
+    html.app-shell .tb-overlay .tb-slot-plus { font-size: calc(22 * var(--u)) !important; line-height: 1 !important; }
+    html.app-shell .tb-overlay .tb-btn-change-pkmn { display: none !important; }
+    html.app-shell .tb-overlay .tb-body { min-height: 0 !important; max-height: none !important; padding: calc(8 * var(--u)) calc(12 * var(--u)) !important; overflow: hidden !important; border-width: calc(3.5 * var(--u)) !important; border-radius: calc(14 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000) !important; display: flex; flex-direction: column; }
+    html.app-shell .tb-overlay .tb-body > * { min-height: 0; }
+    html.app-shell .tb-overlay .tb-loading { margin: auto; }
+    /* campi, etichette e scritte di questa schermata: più piccoli, da telefono */
+    html.app-shell .tb-overlay :is(.tb-input, .tb-select) { font-size: calc(12 * var(--u)) !important; height: calc(28 * var(--u)); padding: 0 calc(9 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: none !important; }
+    html.app-shell .tb-overlay .tb-label { font-size: calc(10 * var(--u)) !important; padding: calc(1 * var(--u)) calc(7 * var(--u)) !important; margin-bottom: calc(3 * var(--u)) !important; border-width: calc(2 * var(--u)) !important; box-shadow: none !important; }
+    html.app-shell .tb-overlay .tb-desc { margin: calc(3 * var(--u)) 0 0; font-size: calc(10 * var(--u)) !important; line-height: 1.3; }
+    html.app-shell .tb-overlay .tb-msg:empty { display: none; }
+
+    /* -- tappa 1: Pokémon. Senza Pokémon nello slot, l'elenco da cui sceglierlo (cerca e filtri in una riga, la griglia scorre da sola) -- */
+    html.app-shell .tb-overlay .tb-picker-top { flex: none; display: flex; flex-wrap: nowrap !important; align-items: center; gap: calc(6 * var(--u)) !important; margin: 0 0 calc(6 * var(--u)) !important; }
+    html.app-shell .tb-overlay .tb-picker-top .tb-label { display: none; }
+    html.app-shell .tb-overlay .tb-picker-top .tb-input { flex: 1 1 0; min-width: 0; max-width: none !important; }
+    html.app-shell .tb-overlay .tb-picker-top #tb-picker-search { flex: 2 1 0; }
+    html.app-shell .tb-overlay .tb-picker-count { flex: none; font-size: calc(9 * var(--u)) !important; white-space: nowrap; }
+    html.app-shell .tb-overlay .tb-picker-top .tb-actions { display: none !important; }
+    html.app-shell .tb-overlay .tb-picker-grid { flex: 1 1 auto; min-height: 0; max-height: none !important; grid-template-columns: repeat(auto-fill, minmax(calc(72 * var(--u)), 1fr)) !important; gap: calc(6 * var(--u)) !important; padding: calc(2 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u)) !important; overscroll-behavior: contain; }
+    html.app-shell .tb-overlay .tb-pick { padding: calc(3 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: 0 calc(2.5 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell .tb-overlay .tb-pick img { width: calc(38 * var(--u)) !important; height: calc(38 * var(--u)) !important; margin-bottom: calc(2 * var(--u)) !important; }
+    html.app-shell .tb-overlay .tb-pick-name { font-size: calc(9 * var(--u)) !important; }
+    /* con il Pokémon scelto: lo sprite grande, il nome, i tipi e le statistiche base */
+    html.app-shell .tb-overlay .tb-editor { flex: 1 1 auto; display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: 0 !important; min-height: 0; }
+    html.app-shell .tb-overlay .tb-side { display: grid !important; grid-template-columns: calc(150 * var(--u)) minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: calc(18 * var(--u)); align-items: center; justify-items: center; min-height: 0; }
+    html.app-shell .tb-overlay .tb-side-sprite { grid-column: 1; grid-row: 1 / span 4; width: calc(150 * var(--u)) !important; height: calc(150 * var(--u)) !important; max-height: 100%; }
+    html.app-shell .tb-overlay .tb-side-name { grid-column: 2; grid-row: 1; margin: 0 !important; justify-self: start; font-size: calc(18 * var(--u)) !important; transform: none !important; }
+    html.app-shell .tb-overlay .tb-types { grid-column: 2; grid-row: 2; justify-self: start; margin: calc(4 * var(--u)) 0 !important; }
+    html.app-shell .tb-overlay .tb-base-stats { grid-column: 2; grid-row: 3; align-self: start; justify-self: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: calc(4 * var(--u)) calc(14 * var(--u)); }
+    html.app-shell .tb-overlay .tb-base-row { display: grid; grid-template-columns: calc(28 * var(--u)) minmax(0, 1fr) calc(24 * var(--u)); align-items: center; gap: calc(5 * var(--u)); font-size: calc(10 * var(--u)) !important; }
+    html.app-shell .tb-overlay .tb-base-bar { height: calc(8 * var(--u)); }
+    html.app-shell .tb-overlay .tb-side .tb-actions { display: none !important; }
+    html.app-shell .tb-overlay .tb-fields { display: none !important; }
+
+    /* -- tappa 2: strumento e abilità (e Tera, se il formato lo ha) -- */
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-side { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-fields { display: flex !important; flex-direction: column; justify-content: center; gap: calc(8 * var(--u)) !important; min-height: 0; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-fields > .tb-field:nth-child(n+2) { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-row { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: calc(10 * var(--u)) calc(14 * var(--u)) !important; align-items: start; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-row > .tb-field::before { display: block; margin-bottom: calc(3 * var(--u)); font: 900 calc(10 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; color: #555; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-row > .tb-field:nth-child(1)::before { content: 'Held item'; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-row > .tb-field:nth-child(2)::before { content: 'Ability'; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-row > .tb-field:nth-child(3)::before { display: none; }
+    html.app-shell .tb-overlay[data-tb-step="oggetto"] .tb-desc { min-height: calc(26 * var(--u)); }
+
+    /* -- tappa 3: le quattro mosse, in due colonne -- */
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-side { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-fields { display: flex !important; flex-direction: column; justify-content: center; min-height: 0; flex: 1; }
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-fields > :not(.tb-field:nth-child(2)) { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-moves { grid-template-columns: 1fr 1fr !important; gap: calc(12 * var(--u)) calc(14 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-moves .tb-input { height: calc(46 * var(--u)); font-size: calc(15 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="mosse"] .tb-move-desc { font-size: calc(9 * var(--u)) !important; }
+
+    /* -- tappa 4: EV, IV e natura -- */
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-side { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-fields { display: flex !important; flex-direction: column; min-height: 0; flex: 1; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-fields > :not(.tb-field:nth-child(3)) { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-evs { padding: calc(4 * var(--u)) calc(8 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; box-shadow: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] :is(.tb-ev-head, .tb-ev-row) { grid-template-columns: calc(34 * var(--u)) calc(30 * var(--u)) minmax(0, 1fr) calc(52 * var(--u)) calc(44 * var(--u)) calc(52 * var(--u)) calc(38 * var(--u)) !important; gap: calc(8 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-row { height: calc(21 * var(--u)); padding: 0 !important; font-size: calc(11 * var(--u)); }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-head { font-size: calc(8 * var(--u)) !important; margin-bottom: 0 !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-num { height: calc(18 * var(--u)) !important; line-height: 1; font-size: calc(11 * var(--u)) !important; padding: 0 calc(3 * var(--u)) !important; text-align: center; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-nat-btn { width: calc(21 * var(--u)); height: calc(17 * var(--u)); font-size: calc(11 * var(--u)); line-height: 1; padding: 0; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] :is(.tb-guess-title, .tb-guess-hint) { font-size: calc(9 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-guess-btn { padding: calc(2 * var(--u)) calc(8 * var(--u)) !important; font-size: calc(10 * var(--u)) !important; min-height: 0 !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-footer { display: flex; justify-content: space-between; margin: calc(2 * var(--u)) 0 0 !important; padding: 0 !important; border: 0 !important; font-size: calc(10 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-guess { margin: calc(3 * var(--u)) 0 0 !important; padding: 0 !important; border: 0 !important; }
+    html.app-shell .tb-overlay[data-tb-step="ev"] .tb-ev-guess :is(button, .tb-guess) { font-size: calc(10 * var(--u)) !important; padding: calc(3 * var(--u)) calc(8 * var(--u)) !important; }
+
+    /* -- tappa 5: il team (salva, importa, esporta, controlli): si vedono solo i comandi -- */
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-fields { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-picker-top > :not(.tb-actions), html.app-shell .tb-overlay[data-tb-step="team"] .tb-picker-grid { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-side > :not(.tb-actions) { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] :is(.tb-picker-top, .tb-side) { display: flex !important; flex: 1; align-items: center; justify-content: center; margin: 0 !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions, html.app-shell .tb-overlay[data-tb-step="team"] .tb-side .tb-actions, html.app-shell .tb-overlay[data-tb-step="team"] .tb-picker-top .tb-actions {
+        display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: auto; gap: calc(9 * var(--u)) calc(10 * var(--u)); width: min(100%, calc(500 * var(--u))); margin: auto !important; padding: 0 !important; position: static !important;
+    }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions-io { display: contents !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions-io .tb-btn { grid-column: span 3; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-actions .tb-btn { height: calc(34 * var(--u)); font-size: calc(12 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(10 * var(--u)); }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-save-wrap { grid-column: 1 / -1; position: relative; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-cov-wrap { grid-column: span 2; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-btn-save { width: 100%; height: calc(40 * var(--u)) !important; font-size: calc(15 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-bubble { position: static !important; display: block; max-width: none; margin-top: calc(6 * var(--u)); font-size: calc(10 * var(--u)) !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-bubble::after { display: none !important; }
+    html.app-shell .tb-overlay[data-tb-step="team"] .tb-cov-tag { display: block; text-align: center; font-size: calc(9 * var(--u)) !important; line-height: 1.25; transform: none !important; padding: calc(4 * var(--u)) calc(4 * var(--u)) calc(2 * var(--u)) !important; border-width: calc(2.5 * var(--u)) !important; border-radius: calc(9 * var(--u)); box-shadow: none !important; }
+
+    /* -- le liste di scelta (strumenti e mosse): il campo che si sta usando sale in cima allo schermo e l'elenco gli sta sotto, a tutta altezza -- */
+    html.app-shell .tb-overlay .tb-combo:has(.tb-combo-list.open) { position: fixed !important; z-index: 60; top: calc(8 * var(--u)); left: 14%; right: 14%; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .62); }
+    html.app-shell .tb-overlay .tb-combo-list.open { top: calc(100% + 5 * var(--u)) !important; max-height: calc(100vh - 62 * var(--u)) !important; max-height: calc(100dvh - 62 * var(--u)) !important; border-width: calc(3 * var(--u)) !important; border-radius: calc(12 * var(--u)); }
+    html.app-shell .tb-overlay .tb-opt { font-size: calc(11 * var(--u)); }
+
+    /* ---------- 12. Practice: due grandi tessere, poi i team (contro la CPU) o gli allenatori (amichevole) ---------- */
+    html.app-shell body.pg-practice .pr { box-sizing: border-box; min-height: calc(100vh - var(--gx-barra)); padding: calc(12 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(18 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; }
+    html.app-shell body.pg-practice .pr-home { flex: 1 1 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(14 * var(--u)); padding: calc(4 * var(--u)) 0 calc(10 * var(--u)); min-height: calc(100vh - var(--gx-barra) - 36 * var(--u)); }
+    html.app-shell body.pg-practice .pr-tessera {
+        position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(8 * var(--u)); padding: calc(10 * var(--u)); overflow: hidden; text-align: center; color: #000; cursor: pointer;
+        background: linear-gradient(172deg, color-mix(in srgb, var(--c) 72%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 84%, #000) 100%);
+        border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(16 * var(--u)); box-shadow: 0 calc(7 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .5); font: inherit;
+        transition: transform .08s ease, box-shadow .08s ease; animation: gx-ac-avanti .34s cubic-bezier(.2, 1.2, .4, 1) backwards;
+    }
+    html.app-shell body.pg-practice .pr-tessera:nth-child(2) { animation-delay: .07s; }
+    html.app-shell body.pg-practice .pr-tessera:active { transform: translateY(calc(5 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .5); }
+    html.app-shell body.pg-practice .pr-ico { display: grid; place-items: center; width: calc(78 * var(--u)); height: calc(78 * var(--u)); background: #fff; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: 50%; box-shadow: 0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .5); }
+    html.app-shell body.pg-practice .pr-ico svg { width: calc(46 * var(--u)); height: calc(46 * var(--u)); fill: none; stroke: #000; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell body.pg-practice .pr-tessera b { font: 900 calc(34 * var(--u))/1.05 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .55); }
+    html.app-shell body.pg-practice .pr-tessera small { max-width: 90%; font: 700 calc(13 * var(--u))/1.3 var(--nb-font-testo); opacity: .8; }
+    html.app-shell body.pg-practice .pr-vista { animation: gx-pagina-entra .3s cubic-bezier(.2, .9, .3, 1) backwards; }
+    html.app-shell body.pg-practice .pr-testa { display: flex; align-items: center; gap: calc(10 * var(--u)); margin: 0 0 calc(12 * var(--u)); }
+    html.app-shell body.pg-practice .pr-testa h2 { margin: 0; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 900 calc(18 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; rotate: -1deg; }
+    html.app-shell body.pg-practice .pr-sotto { color: rgba(255, 255, 255, .8); font: 800 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-torna { display: inline-flex; align-items: center; gap: calc(4 * var(--u)); height: calc(30 * var(--u)); padding: 0 calc(12 * var(--u)) 0 calc(6 * var(--u)); cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(15 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-torna svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    html.app-shell body.pg-practice .pr-torna:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(11 * var(--u)); }
+    html.app-shell body.pg-practice .pr-g-giocatori { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    html.app-shell body.pg-practice .pr-carta, html.app-shell body.pg-practice .pr-giocatore {
+        box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: calc(5 * var(--u)); min-width: 0; padding: calc(9 * var(--u)) calc(10 * var(--u)); cursor: pointer; text-align: left; color: #000; font: inherit;
+        background: var(--c); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); transition: translate .08s, box-shadow .08s;
+    }
+    html.app-shell body.pg-practice .pr-carta:active, html.app-shell body.pg-practice .pr-giocatore:active { translate: 0 calc(4 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-nome { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(15 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .03em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(8 * var(--u)); font: 800 calc(9.5 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-mini-riga { display: flex; gap: 0; margin-top: calc(2 * var(--u)); }
+    html.app-shell body.pg-practice .pr-mini { width: calc(30 * var(--u)); height: calc(30 * var(--u)); object-fit: contain; image-rendering: pixelated; }
+    html.app-shell body.pg-practice .pr-giocatore { align-items: center; text-align: center; }
+    html.app-shell body.pg-practice .pr-avatar { width: calc(58 * var(--u)); height: calc(58 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .25)); }
+    html.app-shell body.pg-practice .pr-elo { padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #fff; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(8 * var(--u)); font: 900 calc(12 * var(--u))/1.3 var(--nb-font-titoli); }
+    html.app-shell body.pg-practice .pr-elo small { font-size: calc(8 * var(--u)); letter-spacing: .08em; opacity: .6; }
+    html.app-shell body.pg-practice .pr-titolo { margin: calc(16 * var(--u)) 0 calc(8 * var(--u)); color: #fff; font: 900 calc(15 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-titolo small { margin-left: calc(6 * var(--u)); color: rgba(255, 255, 255, .7); font-size: calc(10 * var(--u)); letter-spacing: .06em; }
+    html.app-shell body.pg-practice .pr-chips { display: flex; flex-wrap: wrap; gap: calc(8 * var(--u)); }
+    html.app-shell body.pg-practice .pr-chip { padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .03em; }
+    html.app-shell body.pg-practice .pr-chip:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
+    html.app-shell body.pg-practice .pr-vuoto, html.app-shell body.pg-practice .pr-carico { margin: calc(24 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
+    html.app-shell body.pg-practice .pr-vuoto a { color: var(--gx-giallo); }
+    html.app-shell body.pg-practice .pr-accedi { margin: auto; display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--u)); text-align: center; color: #fff; }
+    html.app-shell body.pg-practice .pr-accedi b { font: 900 calc(24 * var(--u))/1.1 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-accedi small { font: 700 calc(13 * var(--u))/1.3 var(--nb-font-testo); opacity: .8; }
+    html.app-shell body.pg-practice .pr-bottone { margin-top: calc(6 * var(--u)); padding: calc(9 * var(--u)) calc(26 * var(--u)) calc(7 * var(--u)); cursor: pointer; background: linear-gradient(180deg, #9af7ae, #47ea6a); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(16 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
+
     /* ---------- 13. Il movimento: la pagina entra con un balzo, e il passaggio tra pagine scorre (dove il browser sa farlo) ---------- */
     @keyframes gx-pagina-entra { from { opacity: 0; translate: calc(18 * var(--u)) 0; } to { opacity: 1; translate: 0 0; } }
     @keyframes gx-barra-entra { from { translate: 0 -100%; } to { translate: 0 0; } }
@@ -513,12 +865,32 @@
     @keyframes gx-vt-entra { from { opacity: 0; translate: calc(18 * var(--u)) 0; } }
 }
 
-/* ---------- C. Replay nell'app: senza la console Game Boy Advance (occupava mezzo schermo): lo schermo del replay da solo, ingrandito dalla pagina ---------- */
+/* ---------- C. Replay nell'app: solo la partita, grande, al centro dello schermo; a sinistra i tasti dei set, a destra i comandi. Niente console, intestazione né condizioni del campo ---------- */
+/* La scena del replay è larga 640 e alta 360 (la pagina nell'iframe la mette a 22px dall'alto quando è stretta come l'iframe); matches.html la ingrandisce con --gba-scala (zoom) quanto ci sta. */
 @media (max-width: 900px), (max-height: 520px) {
+    html.app-shell #replayModal.replay-modal { flex-direction: row; align-items: center; justify-content: center; gap: 0; padding: 0 !important; overflow: hidden; background: rgba(8, 6, 20, .97); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    html.app-shell #replayModal :is(.replay-mini-header, .replay-campo) { display: none !important; }
     html.app-shell #replayModal .gba-shell { display: none; }
-    html.app-shell #replayModal .gba-container { width: 314px; margin: 0; }
+    html.app-shell #replayModal .replay-palco { order: 0; flex-direction: row; align-items: center; justify-content: center; gap: calc(14 * var(--u)); max-width: none; }
+    html.app-shell #replayModal .gba-container { width: 640px; margin: 0; }
     html.app-shell #replayModal .gba-screen-area {
-        position: static; transform: none; width: 314px; height: 300px; border-radius: 0;
-        box-shadow: var(--nb-sh-m); outline: 3px solid var(--nb-ink, #000);
+        position: static; transform: none; width: 640px; height: 360px; border-radius: 8px;
+        outline: 4px solid var(--nb-ink, #000); box-shadow: 0 8px 0 var(--nb-ink, #000);
     }
+    html.app-shell #replayModal .replay-content { width: 640px; height: 360px; box-shadow: none; }
+    html.app-shell #replayModal #replayFrame { top: -22px; left: 0; width: 640px; height: 382px; }
+    /* i set: una colonna di tasti rotondi a sinistra della partita */
+    html.app-shell #replayModal .set-selector { order: -1; width: auto !important; }
+    html.app-shell #replayModal .set-lista { flex-direction: column; flex-wrap: nowrap; align-items: center; gap: calc(10 * var(--u)); padding: 0; background: none; border: 0; box-shadow: none; }
+    html.app-shell #replayModal .set-lista::before { display: none; }
+    html.app-shell #replayModal button.btn-set { width: calc(40 * var(--u)); height: calc(40 * var(--u)); padding: 0 0 calc(4 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(11 * var(--u)); font-size: calc(17 * var(--u)); transform: none !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    html.app-shell #replayModal button.btn-set.is-selected, html.app-shell #replayModal button.btn-set.is-selected:hover { transform: translateY(calc(2 * var(--u))) !important; box-shadow: none !important; }
+    html.app-shell #replayModal .btn-set .set-num { top: calc(-7 * var(--u)); left: calc(-7 * var(--u)); width: calc(16 * var(--u)); height: calc(16 * var(--u)); font-size: calc(9 * var(--u)); }
+    html.app-shell #replayModal .set-messaggio { padding: calc(5 * var(--u)) calc(9 * var(--u)) calc(3 * var(--u)); font-size: calc(11 * var(--u)); }
+    /* i comandi: una colonna a destra, sotto la X */
+    html.app-shell #replayModal .replay-comandi { position: fixed; right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); top: calc(50 * var(--u)); bottom: calc(10 * var(--u)); order: 0; flex-direction: column; justify-content: center; gap: calc(8 * var(--u)); padding: 0; background: none; border: 0; box-shadow: none; }
+    html.app-shell #replayModal .rc-tasto, html.app-shell #replayModal .rc-play, html.app-shell #replayModal .rc-velocita { width: calc(40 * var(--u)); height: calc(36 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(11 * var(--u)); transform: none !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(12 * var(--u)); }
+    html.app-shell #replayModal .rc-tasto:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
+    html.app-shell #replayModal .rc-tasto svg { width: calc(17 * var(--u)); height: calc(17 * var(--u)); }
+    html.app-shell #replayModal > .close-replay { top: calc(8 * var(--u)); right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); width: calc(34 * var(--u)); height: calc(34 * var(--u)); font-size: calc(22 * var(--u)); border-width: calc(3 * var(--u)); border-radius: 50%; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
 }

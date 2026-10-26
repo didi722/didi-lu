@@ -2,7 +2,7 @@
    L'APP COME UN GIOCO — l'aspetto comune (Poké-Tournament)
    ---------------------------------------------------------------------
    Lo carica app.js solo quando il sito è aperto come app (icona sulla Home o APK): nel browser non c'è. Qui l'app smette di essere "il sito sul telefono":
-   si gioca sempre con lo schermo girato, si parte da un menù con l'avatar del giocatore, ogni pagina ha l'interfaccia da gioco (indietro, menù, campanella,
+   si gioca sempre con lo schermo girato, si parte da un menù con l'avatar del giocatore, ogni pagina ha l'interfaccia da gioco (menù, campanella,
    account) e tutto — tasti, tessere, finestre — è fatto per il pollice. L'identità resta quella del sito: bordi neri spessi, ombre piene, giallo e verde della
    lega, i caratteri del sito. Lo stile è uno solo per tutti (non quello scelto dal giocatore per il sito).
    Le misure sono in "u" (--u): 1u = 1px su uno schermo di 740x340, e cresce o cala con lo schermo: il menù e le finestre stanno sempre intere.

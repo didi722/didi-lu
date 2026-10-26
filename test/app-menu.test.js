@@ -141,7 +141,8 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<script src="temi\.js"><\/script>/);
     assert.match(html, /<script src="sfide\.js"><\/script>/);
     assert.match(html, /<body class="gx-menu">/);
-    assert.match(html, /<script src="app-comune\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
+    // gli Achievements usano i moduli dei badge del sito (prima dello script dell'app), che a loro volta vogliono Statistiche e Titoli
+    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
     // il menù non è una pagina per i motori di ricerca né per il browser da PC: dal browser si torna alla home (provato sotto)
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
@@ -557,7 +558,7 @@ test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) 
     const attesa = p.intervalli.find(i => i.ms === 150);
     assert.ok(attesa);
     // le tessere e il pannello "Welcome!" ci sono comunque
-    assert.equal((p.id('gx-tessere').innerHTML.match(/gx-tessera /g) || []).length, 4);
+    assert.equal((p.id('gx-tessere').innerHTML.match(/gx-tessera /g) || []).length, 5);
     assert.match(p.id('gx-giocatore').innerHTML, /Welcome!/);
     // Firebase arriva
     p.win.firebase.apps.push({});
