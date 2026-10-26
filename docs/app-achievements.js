@@ -28,9 +28,12 @@
         const { Titoli, BadgeAllenatore, BadgeTeam } = M;
         const catalogo = ((esito && esito.lista) || []).map(b => {
             const d = BadgeAllenatore.scheda(b);
+            // cosa serve per il livello dopo (e non quanto manca): il traguardo del prossimo livello; se conta solo dopo un minimo di match, la frase del sito lo dice già
+            const prossimo = (d.livelli || []).find(l => l.stato === 'next');
+            const frase = prossimo && !d.completo && !/^Counts after/.test(d.frase || '') ? `Next level, ${prossimo.nome}: ${prossimo.soglia}${d.suffisso ? '' : ' ' + String(d.etichetta || '').toLowerCase()}.` : d.frase;
             return {
                 tipo: 'badge', id: d.id, nome: d.nome, immagine: d.immagine, icona: d.icona, livello: d.livello, classe: d.classe, completo: d.completo, bloccato: d.bloccato,
-                livelli: d.livelli, barra: d.barra, frase: d.frase, prossima: b.prossima, progresso: b.progresso
+                descrizione: d.descrizione || '', livelli: d.livelli, barra: d.barra, frase, prossima: b.prossima, progresso: b.progresso
             };
         });
         // le serie (Clean, Win, SD Streak) dai match veri, se si riesce a leggerli; altrimenti restano i numeri salvati
@@ -39,20 +42,20 @@
         const serie = Titoli.BADGE.map(b => {
             const st = Titoli.statoSerie(serieBadge, b);
             const nomeProssimo = st.completo ? '' : maiuscola(LIVELLI[st.livello]);
-            const mancano = Math.max(st.obiettivo - st.attuale, 0);
             return {
                 tipo: 'serie', id: 'serie-' + b.id, nome: b.label, icona: b.icona, livello: st.livello, classe: st.livello ? LIVELLI[st.livello - 1] : 'locked', completo: st.completo, bloccato: st.livello === 0,
                 immagine: Titoli.immagineSerie(b, LIVELLI[Math.max(st.livello, 1) - 1]),
                 livelli: b.steps.map((s, i) => ({ nome: maiuscola(LIVELLI[i]), classe: LIVELLI[i], soglia: String(s), stato: i < st.livello ? 'done' : (i === st.livello ? 'next' : '') })),
                 barra: st.completo ? null : { etichetta: 'Current streak', valore: st.attuale, obiettivo: st.obiettivo },
-                frase: st.completo ? `${maiuscola(LIVELLI[LIVELLI.length - 1])} reached: badge complete!` : `${mancano} more ${b.unita} in a row to unlock ${nomeProssimo}.`,
+                descrizione: b.testo || '',
+                frase: st.completo ? `${maiuscola(LIVELLI[LIVELLI.length - 1])} reached: badge complete!` : `Next level, ${nomeProssimo}: ${st.obiettivo} ${b.unita} in a row.`,
                 prossima: st.completo ? null : st.obiettivo, progresso: st.progresso
             };
         });
         const tutte = catalogo.concat(serie);
         const ordinate = BadgeTeam && BadgeTeam.perVicinanza ? BadgeTeam.perVicinanza(tutte) : tutte;
         const fondatore = FONDATORI.includes(String(id || '').toLowerCase().trim())
-            ? [{ tipo: 'fondatore', id: 'founder', nome: 'League Founder', immagine: Titoli.IMMAGINE_FONDATORE, icona: '👑', livello: LIVELLI.length, classe: 'founder', completo: true, bloccato: false, livelli: [], barra: null, frase: 'Hail to the kings.' }]
+            ? [{ tipo: 'fondatore', id: 'founder', nome: 'League Founder', immagine: Titoli.IMMAGINE_FONDATORE, icona: '👑', livello: LIVELLI.length, classe: 'founder', completo: true, bloccato: false, livelli: [], barra: null, descrizione: 'Given to the founders of the League.', frase: 'Hail to the kings.' }]
             : [];
         return { voci: fondatore.concat(ordinate), sbloccati: tutte.reduce((n, v) => n + (v.livello || 0), 0), totale: tutte.length * LIVELLI.length };
     }
@@ -67,6 +70,7 @@
             <img class="ach-img" src="${esc(v.immagine)}" alt="" loading="lazy" onerror="window.BadgeTeam&&BadgeTeam.immagineMancante(this,'${esc(v.icona)}')">
             <div class="ach-testi">
                 <b class="ach-nome">${esc(v.nome)}</b>
+                ${v.descrizione ? `<small class="ach-desc">${esc(v.descrizione)}</small>` : ''}
                 ${v.livelli && v.livelli.length ? `<span class="ach-pips">${pips(v)}</span>` : ''}
                 ${v.barra ? `<span class="ach-barra"><i style="width:${pct.toFixed(0)}%"></i></span>` : ''}
                 <small class="ach-frase">${esc(v.frase)}</small>

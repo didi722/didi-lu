@@ -14,7 +14,7 @@ const moduli = () => ({
     BadgeAllenatore: { scheda: b => ({ id: b.id, nome: b.nome, immagine: 'b/' + b.id + '.png', icona: '🏅', livello: b.livello, classe: b.livello ? ['bronze', 'silver', 'gold', 'platinum'][b.livello - 1] : 'locked', completo: b.livello === 4, bloccato: b.livello === 0, livelli: [], barra: b.livello < 4 ? { etichetta: 'x', valore: 3, obiettivo: 10 } : null, frase: 'Frase ' + b.nome }) },
     BadgeTeam: { perVicinanza: v => v.slice().sort((a, b) => (b.progresso || 0) - (a.progresso || 0)) },
     Titoli: {
-        BADGE: [{ id: 'clean', label: 'Clean', icona: '🧹', unita: 'clean wins', steps: [2, 4, 6, 8] }],
+        BADGE: [{ id: 'clean', label: 'Clean', icona: '🧹', unita: 'clean wins', testo: 'Win matches without dropping a set.', steps: [2, 4, 6, 8] }],
         serieAggiornate: (salvati, risultato) => (risultato ? { clean: 5 } : salvati),
         statoSerie: (serie, b) => { const a = serie[b.id] || 0; const livello = b.steps.filter(s => a >= s).length; return { livello, attuale: a, obiettivo: b.steps[Math.min(livello, 3)], completo: livello === 4, progresso: a / 8 }; },
         immagineSerie: (b, liv) => `s/${b.id}-${liv}.png`,
@@ -42,7 +42,8 @@ test('elenco: senza le partite vere restano i numeri salvati; senza niente, ness
     assert.equal(e.voci.length, 1);
     assert.equal(e.voci[0].tipo, 'serie');
     assert.equal(e.voci[0].livello, 1, 'dai numeri salvati');
-    assert.match(e.voci[0].frase, /more clean wins in a row to unlock Silver/);
+    assert.match(e.voci[0].frase, /Next level, Silver: \d+ clean wins in a row/);
+    assert.ok(e.voci[0].descrizione, 'cos\'è il badge');
     assert.deepEqual(e.voci[0].livelli.map(l => l.stato), ['done', 'next', '', '']);
     const vuoto = A.elenco(null, null, 'anna', M);
     assert.equal(vuoto.voci.length, 1);

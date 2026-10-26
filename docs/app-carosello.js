@@ -184,6 +184,7 @@
         radice.addEventListener('pointercancel', annulla);
         radice.addEventListener('contextmenu', menu);
         return {
+            chiudi,
             stacca() {
                 radice.removeEventListener('pointerdown', giu);
                 radice.removeEventListener('pointermove', muovi);

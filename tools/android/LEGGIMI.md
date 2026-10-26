@@ -59,3 +59,5 @@ repository (chi ha già l'app la deve disinstallare e reinstallare una volta sol
 ## Provare in locale
 
 Serve Node 22, Java 21 e l'Android SDK (non c'è nell'ambiente di sviluppo del sito): gli stessi comandi del workflow, poi `cd android && ./gradlew assembleDebug`.
+
+**Ritocchi v6 (solo app):** Achievements = tasto tondo con la medaglia a destra dell'avatar, e nella finestra ogni badge dice cos'è e cosa serve per il livello dopo (barra verde compresa); raggi del fondo e pokéball senza tagli; Stats con GIF grandi, team a un Pokémon alla volta (`app-stats.js`, ogni ~2,6 s; i team ai lati restano sul primo) e nomi lunghi che scorrono (`nome-scorrevole.js`); Matches con bordi sfumati e il Pokémon compagno nei Rankings; Box: la spiegazione dei badge si chiude toccando altrove, il team aperto mostra tutti i suoi badge (i non presi in grigio), nelle schede i Pokémon stanno su un podio col colore del tipo (due metà se doppio tipo) e niente tooltip al passaggio; Practice con team tutti uguali; l'assistente del Team Builder è solo scelta del formato (e della lettera iniziale dove serve) + «Build Team»; l'ingranaggio di Item & ability apre una finestra al centro.

@@ -41,10 +41,28 @@ test('nel Box dell\'app i badge ci sono e senza avanzamento', () => {
     // team: la scheda e la testata mostrano le medagliette, senza tasto "Badges x/10" né scaffale
     assert.match(css, /#teamsGrid \.card \.bt-card \{ grid-area: bd;/);
     assert.doesNotMatch(css, /#teamsGrid \.card :is\(\.bt-card, \.bt-barra-team\)/);
-    assert.match(css, /\[data-badge-team\] :is\(\.bt-apri, \.bt-pop\) \{ display: none/);
+    assert.match(css, /\[data-badge-team\] :is\(\.bt-apri, \.bt-barra-mini\) \{ display: none/);
+    assert.match(css, /\[data-badge-team\] \.bt-pop \{ position: static !important; display: block !important;/, 'tutti i badge del team in fila, anche quelli non ancora presi');
     // Pokémon: le medagliette sulla carta del team e i fiocchi nella scheda, senza barre né valori né fumetto da sito
     assert.doesNotMatch(css, /\.modal-moves, \.pkm-badges-overlay,/);
     assert.match(css, /#pkm-fiocchi :is\([^)]*\.fiocco-barra, \.fiocco-valore, \.fiocco-tip\) \{ display: none/);
     assert.doesNotMatch(css, /#pkmDetailModal :is\(\.area-weakness, \.area-ribbons, #pkm-fiocchi/);
     assert.match(css, /\.ab-nota \{/);
+});
+
+test('toccando altrove la spiegazione si chiude subito, e i badge del team (anche grigi) si spiegano', () => {
+    const js = docs('app-box-badge.js');
+    assert.match(js, /addEventListener\('pointerdown'[^]*legame\.chiudi\(\)/);
+    assert.match(B.SELETTORE, /#teamModal \.bt-pop \.bt/);
+    const corpo = { querySelector: s => ({ '.bt-nome': { textContent: 'Win Rate' }, '.bt-stato': { textContent: 'Locked' }, '.bt-desc': { textContent: 'Share of matches won.' } })[s] };
+    const el = { querySelector: s => (s === '.bt-corpo' ? corpo : null), getAttribute: () => '' };
+    assert.deepEqual(B.notaDiElemento(el), { titolo: 'Win Rate · Locked', descrizione: 'Share of matches won.' });
+});
+
+test('nel Box il Pokémon sta su un podio nel colore del suo tipo (due se ha due tipi), senza riquadro né tooltip al passaggio', () => {
+    const css = docs('app-gioco-pagine.css');
+    assert.match(css, /#teamsGrid \.card \.pkm-box::before[^}]*var\(--tipo2/);
+    assert.match(css, /#teamsGrid \.card \.pkm-box::after[^}]*var\(--tipo2/);
+    assert.match(css, /\.pkm-hover-card \{ display: none !important; \}/);
+    assert.match(docs('box.html'), /coloriPokemonNoti2/, 'il secondo tipo arriva dalla pagina');
 });

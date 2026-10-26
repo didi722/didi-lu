@@ -215,6 +215,22 @@
         }, true);
         doc.addEventListener('focusout', e => { if (stato.campo === e.target && !(e.target.dataset && e.target.dataset.tienilista)) stato.campo = null; });
 
+        // ----- l'ingranaggio di "Item & ability" (altri dettagli): il tocco apre o chiude la finestra; toccare fuori dal suo contenuto la chiude -----
+        doc.addEventListener('click', e => {
+            const t = e.target;
+            if (!t || !t.closest) return;
+            const trigger = t.closest('.tb-dropdown-trigger');
+            const aperti = doc.querySelectorAll('.tb-dropdown-wrapper.aperto');
+            if (trigger) {
+                const w = trigger.closest('.tb-dropdown-wrapper');
+                const eraAperto = w.classList.contains('aperto');
+                aperti.forEach(x => x.classList.remove('aperto'));
+                if (!eraAperto) w.classList.add('aperto');
+                return;
+            }
+            if (aperti.length && !t.closest('.tb-dropdown-content')) aperti.forEach(x => x.classList.remove('aperto'));
+        });
+
         // ----- l'assistente del Box: il formato si sceglie con i tasti, non con il menù a tendina del browser -----
         const montaFormati = () => {
             const sel = doc.getElementById('helper-format-select');
