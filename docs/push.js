@@ -1,7 +1,7 @@
 // =====================================================
 // NOTIFICHE PUSH — Poké-Tournament (lato app)
 // ---------------------------------------------------------------------
-// Si accendono dal foglio dell'account ("Notifications", app-shell.js). Il telefono dà un "token" (Firebase Cloud Messaging) che il sito scrive in
+// Si accendono dalle impostazioni dell'app ("Alerts", app-comune.js). Il telefono dà un "token" (Firebase Cloud Messaging) che il sito scrive in
 // pushTokens/{uid}/{chiave}: il server (functions/push.js, .github/workflows/checker.js) lo usa per mandare sfide ricevute, iscrizioni aperte,
 // promemoria, voto MVP e stagione conclusa.
 //   - sul web (icona sulla Home): service worker del sito (sw.js) + firebase-messaging; serve la chiave VAPID qui sotto (Firebase > Impostazioni del

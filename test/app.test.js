@@ -1,8 +1,9 @@
 'use strict';
-// Il sito come app (docs/app.js, app.css, manifest.webmanifest, sw.js, offline.html): installabile su iPhone e Android, e con i ritocchi "da app"
-// (barra in basso, tira per aggiornare) solo quando è aperto dall'icona sulla Home o dentro l'APK.
-//   - la parte pura: come è aperto il sito, quale voce della barra è accesa, quando proporre di installare;
-//   - il comportamento con una finestra finta: classi su <html>, barra, menù, tastiera, tira per aggiornare, invito a installare, service worker;
+// Il sito come app (docs/app.js, app.css, manifest.webmanifest, sw.js, offline.html): installabile su iPhone e Android, e come app (icona sulla Home o APK)
+// diventa un gioco da telefono: sempre in orizzontale, si parte dal menù principale, le altre pagine hanno l'interfaccia da gioco.
+//   - la parte pura: come è aperto il sito, a quale tessera del menù appartiene una pagina, quando proporre di installare;
+//   - il comportamento con una finestra finta: classi su <html>, fogli e script che arrivano solo all'app, il menù alla prima apertura, l'orientamento,
+//     le barre di sistema, l'avviso "gira il telefono", la tastiera, l'invito a installare, il service worker;
 //   - il cablaggio: ogni pagina collega manifest, icona, app.css e app.js; il manifest punta a icone vere; il service worker non tiene pagine in cache;
 //   - app.css: fuori dall'app non cambia nulla (a parte il doppio tocco e l'invito a installare).
 //
@@ -77,36 +78,43 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('voceAttiva: Home accende Home (anche l\'hub di una stagione), le cinque pagine hanno la loro voce, il resto non ne accende nessuna', () => {
-    assert.equal(A.voceAttiva('/didi-lu/'), 'home');
-    assert.equal(A.voceAttiva('/didi-lu/index.html'), 'home');
-    assert.equal(A.voceAttiva('/didi-lu/hub.html'), 'home');
-    assert.equal(A.voceAttiva('/didi-lu/matches.html'), 'matches');
-    assert.equal(A.voceAttiva('/didi-lu/box.html'), 'box');
-    assert.equal(A.voceAttiva('/didi-lu/players.html'), 'trainers');
-    assert.equal(A.voceAttiva('/didi-lu/stats.html'), 'stats');
-    // Profile, Archive, Formats, Rulebook e le pagine dei giocatori si aprono dal foglio dell'account (app-shell.js): nella barra non c'è una voce per loro
-    for (const p of ['profile.html', 'palmares.html', 'formats.html', 'rules.html', 'public.html']) assert.equal(A.voceAttiva('/didi-lu/' + p), '', p);
-});
-
-test('haBarra / puoTirare: niente barra in battaglia, accesso, amministrazione e modello vuoto; tirare solo dove non si modifica nulla', () => {
-    for (const p of ['battle.html', 'login.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.haBarra(p), false, p);
-    for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html', 'profile.html', 'public.html', 'hub.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.haBarra(p), true, p);
-    for (const p of ['index.html', 'matches.html', 'hub.html', 'players.html', 'stats.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.puoTirare(p), true, p);
-    // dove si modifica o si gioca si ricarica solo col tasto: tirare per sbaglio perderebbe il lavoro
-    for (const p of ['box.html', 'profile.html', 'public.html', 'battle.html', 'admin.html', 'login.html']) assert.equal(A.puoTirare(p), false, p);
-});
-
-test('le voci della barra: cinque, con pagine vere; le pagine citate esistono e hanno la barra', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['home', 'matches', 'box', 'trainers', 'stats']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 5);
+test('le tessere del menù (VOCI): nove, con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['matches', 'stagioni', 'box', 'trainers', 'stats', 'profilo', 'archivio', 'formati', 'regole']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 9, 'nomi diversi');
+    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 9, 'colori diversi: ogni schermata ha il suo');
+    const viste = [];
     for (const v of A.VOCI) {
+        assert.match(v.colore, /^#[0-9a-f]{6}$/i, `${v.id}: colore`);
         assert.ok(esiste(v.href), `${v.id}: manca ${v.href}`);
-        assert.ok(A.haBarra(v.href), v.href);
-        for (const p of v.pagine) assert.ok(esiste(p), `${v.id}: manca ${p}`);
+        assert.ok(v.pagine.includes(v.href), `${v.id}: la sua pagina principale (${v.href}) è tra le pagine`);
+        for (const p of v.pagine) { assert.ok(esiste(p), `${v.id}: manca ${p}`); assert.ok(A.haHud(p), `${p} ha l'interfaccia da gioco`); viste.push(p); }
     }
-    for (const p of [...A.SENZA_BARRA, ...A.CON_TIRA]) assert.ok(esiste(p), `manca ${p}`);
-    assert.deepEqual(A.CON_TIRA.filter(p => A.SENZA_BARRA.includes(p)), []);
+    assert.equal(new Set(viste).size, viste.length, 'una pagina in due tessere');
+    assert.ok(!viste.includes('menu.html'));
+    for (const p of A.SENZA_HUD) assert.ok(esiste(p), `manca ${p}`);
+});
+
+test('voceDi: a quale tessera appartiene la pagina (la scheda di un allenatore e l\'hub stanno con la loro); battaglia, accesso e menù a nessuna', () => {
+    assert.equal(A.voceDi('/didi-lu/matches.html').id, 'matches');
+    assert.equal(A.voceDi('/didi-lu/index.html').id, 'stagioni');
+    assert.equal(A.voceDi('/didi-lu/hub.html').id, 'stagioni');
+    assert.equal(A.voceDi('/didi-lu/').id, 'stagioni');
+    assert.equal(A.voceDi('/didi-lu/players.html').id, 'trainers');
+    assert.equal(A.voceDi('/didi-lu/public.html?player=didi').id, 'trainers');
+    assert.equal(A.voceDi('/didi-lu/palmares.html').id, 'archivio');
+    for (const p of ['battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
+});
+
+test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, battaglia, accesso, amministrazione e modello vuoto no', () => {
+    for (const p of ['menu.html', 'battle.html', 'login.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.haHud(p), false, p);
+    for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html', 'profile.html', 'public.html', 'hub.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.haHud(p), true, p);
+});
+
+test('vaAlMenu: la prima apertura dell\'app dalla home porta al menù; dopo, "Seasons" è la home vera; le altre pagine (un avviso, un link) si aprono dove sono', () => {
+    assert.equal(A.vaAlMenu('/didi-lu/index.html', false), true);
+    assert.equal(A.vaAlMenu('/didi-lu/', false), true);
+    assert.equal(A.vaAlMenu('/didi-lu/index.html', true), false);
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'menu.html']) assert.equal(A.vaAlMenu('/didi-lu/' + p, false), false, p);
 });
 
 test('proporreInstallazione: solo dal telefono, nel browser, sulla home; chiuso, torna dopo 14 giorni', () => {
@@ -126,15 +134,6 @@ test('proporreInstallazione: solo dal telefono, nel browser, sulla home; chiuso,
     assert.equal(A.GIORNI_INVITO, 14);
 });
 
-test('tirata: la distanza ha un po\' di resistenza e verso l\'alto non conta', () => {
-    assert.equal(A.tirata(100, 100), 0);
-    assert.equal(A.tirata(100, 40), 0);
-    assert.equal(A.tirata(0, 100), 55);
-    assert.equal(A.tirata(0, 200), 110);
-    assert.ok(A.tirata(0, 300) >= A.DISTANZA_TIRA);
-    assert.ok(A.tirata(0, 100) < A.DISTANZA_TIRA, 'un tocco corto non aggiorna');
-});
-
 // ---------- una finestra finta, quanto basta ----------
 
 function elemento(tag) {
@@ -151,6 +150,7 @@ function elemento(tag) {
     Object.defineProperty(e, 'className', { get: () => [...e.classi].join(' '), set: v => { e.classi = new Set(String(v).split(/\s+/).filter(Boolean)); } });
     Object.defineProperty(e, 'innerHTML', { get: () => e._html, set: v => { e._html = String(v); e._trovati = {}; } });
     e.setAttribute = (k, v) => { e.attributi[k] = String(v); };
+    e.getAttribute = k => (k in e.attributi ? e.attributi[k] : null);
     e.appendChild = f => { f.parentElement = e; e.figli.push(f); return f; };
     e.remove = () => { if (e.parentElement) e.parentElement.figli = e.parentElement.figli.filter(x => x !== e); e.parentElement = null; };
     e.addEventListener = (ev, f) => { (e.ascoltatori[ev] = e.ascoltatori[ev] || []).push(f); };
@@ -174,51 +174,72 @@ function cerca(radice, id) {
     return null;
 }
 
-/** Apre una pagina finta e fa partire app.js. Con `stato` si guardano classi, barra, invito, ricariche... */
-function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', protocollo = 'https:', host = 'didi722.github.io', standalone = false, iosStandalone,
-    referrer = '', memoria = {}, caricamento = false, inFrame = false, punti = 0, serviceWorker = true, menuDelSito = true, storageRotto = false } = {}) {
-    const doc = { readyState: caricamento ? 'loading' : 'complete', referrer, documentElement: elemento('html'), body: elemento('body'), ascoltatori: {} };
+/**
+ * Apre una pagina finta e fa partire app.js. Con `stato` si guardano classi, fogli e script caricati, reindirizzamenti, orientamento, barre, invito...
+ * `srcApp`: come la pagina scrive l'indirizzo di app.js (con un numero di versione si vede che i file dell'app lo ereditano).
+ */
+function apri({ ua = UA.pc, percorso = '/didi-lu/index.html', search = '', protocollo = 'https:', host = 'didi722.github.io', standalone = false, fullscreen = false, iosStandalone,
+    referrer = '', memoria = {}, sessione = {}, caricamento = false, inFrame = false, punti = 0, serviceWorker = true, storageRotto = false, nativo = null, srcApp = 'app.js' } = {}) {
+    const doc = { readyState: caricamento ? 'loading' : 'complete', referrer, documentElement: elemento('html'), body: elemento('body'), head: elemento('head'), ascoltatori: {}, scritture: [] };
+    doc.scripts = [{ getAttribute: k => (k === 'src' ? srcApp : null) }];
     doc.createElement = tag => elemento(tag);
     doc.getElementById = id => cerca(doc.body, id);
     doc.addEventListener = (ev, f) => { (doc.ascoltatori[ev] = doc.ascoltatori[ev] || []).push(f); };
-    const stato = { memoria, ricariche: 0, menu: 0, registrazioni: [], doc };
+    doc.write = h => { doc.scritture.push(h); };
+    const stato = { memoria, sessione, doc, registrazioni: [], reindirizzato: [], timer: [], blocchi: [], barre: 0 };
     const navigator = { userAgent: ua, maxTouchPoints: punti, standalone: iosStandalone };
     if (serviceWorker) navigator.serviceWorker = { register: url => { stato.registrazioni.push(url); return Promise.resolve(); } };
+    const memo = (m, rotto) => (rotto
+        ? { getItem() { throw new Error('storage bloccato'); }, setItem() { throw new Error('storage bloccato'); }, removeItem() { throw new Error('storage bloccato'); } }
+        : { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; } });
     const win = {
-        document: doc, navigator, pageYOffset: 0, ascoltatori: {},
-        location: { search, pathname: percorso, protocol: protocollo, hostname: host, reload() { stato.ricariche++; } },
-        localStorage: storageRotto
-            ? { getItem() { throw new Error('storage bloccato'); }, setItem() { throw new Error('storage bloccato'); }, removeItem() { throw new Error('storage bloccato'); } }
-            : { getItem: k => (k in memoria ? memoria[k] : null), setItem: (k, v) => { memoria[k] = String(v); }, removeItem: k => { delete memoria[k]; } },
-        matchMedia: q => ({ matches: standalone && /standalone/.test(q) }),
+        document: doc, navigator, ascoltatori: {},
+        location: { search, pathname: percorso, protocol: protocollo, hostname: host, replace(url) { stato.reindirizzato.push(url); } },
+        localStorage: memo(memoria, storageRotto), sessionStorage: memo(sessione, storageRotto),
+        matchMedia: q => ({ matches: (standalone && /standalone/.test(q)) || (fullscreen && /fullscreen/.test(q)) }),
         URLSearchParams,
+        setTimeout: (f, ms) => { stato.timer.push({ f, ms }); return stato.timer.length; },
+        clearTimeout: n => { if (stato.timer[n - 1]) stato.timer[n - 1].f = null; },
         addEventListener: (ev, f) => { (win.ascoltatori[ev] = win.ascoltatori[ev] || []).push(f); }
     };
+    if (nativo) {
+        win.Capacitor = {
+            isNativePlatform: () => true,
+            Plugins: {
+                ScreenOrientation: { lock: async o => { stato.blocchi.push(o.orientation); } },
+                SystemBars: { hide: async () => { stato.barre++; } }
+            }
+        };
+    }
     win.self = win;
     win.top = inFrame ? {} : win;
-    if (menuDelSito) win.handleAuthClick = () => { stato.menu++; };
     stato.win = win;
     stato.html = doc.documentElement;
     stato.risultato = A.avvia(win);
     stato.classi = () => [...stato.html.classi].sort();
-    stato.barra = () => doc.body.figli.find(f => f.tagName === 'NAV') || null;
     stato.invito = () => doc.getElementById('app-invito');
+    stato.avviso = () => doc.getElementById('app-ruota');
     stato.sulla = (oggetto, ev, dati) => (oggetto.ascoltatori[ev] || []).forEach(f => f(dati));
-    stato.tocco = (ev, y, bersaglio = elemento('div')) => stato.sulla(doc, ev, { target: bersaglio, touches: ev === 'touchend' ? [] : [{ clientY: y }], changedTouches: [{ clientY: y }] });
     stato.finisciCaricamento = () => { doc.readyState = 'complete'; stato.sulla(doc, 'DOMContentLoaded'); };
+    // gli script e i fogli che l'app ha aggiunto alla pagina (nell'ordine), e quelli scritti mentre la pagina si legge
+    stato.script = () => doc.head.figli.filter(f => f.tagName === 'SCRIPT').map(f => f.src);
+    stato.fogli = () => [...doc.scritture.map(h => (h.match(/href="([^"]+)"/) || [])[1]), ...doc.head.figli.filter(f => f.tagName === 'LINK').map(f => f.href)].filter(Boolean);
     return stato;
 }
 
 
 // ---------- come si presenta la pagina ----------
 
-test('nel browser da PC: nessuna classe, nessuna barra, nessun invito, nessun service worker (il sito è quello di sempre)', () => {
+test('nel browser da PC: nessuna classe, nessun foglio né script dell\'app, nessun invito, nessun service worker (il sito è quello di sempre)', () => {
     const s = apri({ ua: UA.pc, percorso: '/didi-lu/matches.html' });
     assert.deepEqual(s.risultato, { modo: '' });
     assert.deepEqual(s.classi(), []);
-    assert.equal(s.barra(), null);
+    assert.equal(s.avviso(), null);
     assert.equal(s.invito(), null);
     assert.equal(s.doc.body.figli.length, 0);
+    assert.deepEqual(s.script(), []);
+    assert.deepEqual(s.fogli(), []);
+    assert.deepEqual(s.reindirizzato, []);
     s.sulla(s.win, 'load');
     assert.deepEqual(s.registrazioni, []);
 });
@@ -236,71 +257,101 @@ test('service worker: solo da telefono o tablet, su https o localhost, solo se i
     assert.deepEqual(registra({ ua: UA.apk }), [], 'nell\'APK il sito arriva sempre dalla rete');
 });
 
-test('dall\'icona sulla Home dell\'iPhone: classi app e app-shell, barra a cinque voci con quella della pagina accesa, nessun invito', () => {
+test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e app-shell, i fogli e gli script dell\'interfaccia da gioco nell\'ordine, nessun invito', () => {
     const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/matches.html', punti: 5 });
     assert.deepEqual(s.risultato, { modo: 'installata' });
-    assert.deepEqual(s.classi(), ['app', 'app-con-barra', 'app-installata', 'app-shell', 'os-ios']);
-    const barra = s.barra();
-    assert.ok(barra);
-    assert.equal(barra.className, 'app-nav');
-    assert.equal(barra.attributi['aria-label'], 'App navigation');
-    const html = barra.innerHTML;
-    assert.equal((html.match(/app-nav-voce/g) || []).length, 5);
-    for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html']) assert.match(html, new RegExp(`href="${p}"`));
-    for (const et of ['Home', 'Matches', 'Box', 'Trainers', 'Stats']) assert.match(html, new RegExp(`<span>${et}</span>`));
-    // una sola voce accesa, segnalata anche ai lettori di schermo
-    assert.equal((html.match(/app-nav-voce attiva/g) || []).length, 1);
-    assert.match(html, /<a class="app-nav-voce attiva" href="matches\.html" aria-current="page">/);
-    assert.equal((html.match(/aria-current/g) || []).length, 1);
-    assert.doesNotMatch(html, /<button/, 'nessun pulsante Menu: le altre pagine stanno nel foglio dell\'account in alto');
+    assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell', 'os-ios']);
+    assert.deepEqual(s.reindirizzato, [], 'una pagina diversa dalla home si apre dov\'è');
+    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css'], 'l\'aspetto comune e quello delle pagine');
+    // suoni (per ogni pagina dell'app), poi le parti comuni e l'interfaccia in alto: nell'ordine in cui servono (async = false: partono uno dopo l'altro)
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    for (const f of s.doc.head.figli.filter(x => x.tagName === 'SCRIPT')) assert.equal(f.async, false, `${f.src}: async = false per l'ordine`);
     assert.equal(s.invito(), null);
 });
 
-test('la voce accesa segue la pagina: l\'hub accende Home, Profile e le altre pagine non ne accendono nessuna', () => {
-    const accesa = pagina => {
-        const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/' + pagina });
-        return (s.barra().innerHTML.match(/class="app-nav-voce attiva"[^>]*>/g) || []).map(m => m.match(/href="([^"]+)"/)[1]);
-    };
-    assert.deepEqual(accesa('hub.html'), ['index.html']);
-    assert.deepEqual(accesa('index.html'), ['index.html']);
-    assert.deepEqual(accesa('players.html'), ['players.html']);
-    assert.deepEqual(accesa('profile.html'), []);
-    assert.deepEqual(accesa('palmares.html'), []);
+test('i fogli e gli script dell\'app ereditano l\'indirizzo di app.js (anche con un numero di versione), a pagina letta si aggiungono alla testa', () => {
+    const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', srcApp: 'app.js?v=7' });
+    assert.deepEqual(s.fogli(), ['app-gioco.css?v=7', 'app-gioco-pagine.css?v=7']);
+    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7']);
+    // mentre la pagina si legge i fogli si scrivono subito (document.write): il sito "da PC" non lampeggia prima dell'app
+    const l = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', caricamento: true });
+    assert.deepEqual(l.doc.scritture, ['<link rel="stylesheet" href="app-gioco.css">', '<link rel="stylesheet" href="app-gioco-pagine.css">']);
+    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    assert.deepEqual(l.classi(), ['app', 'app-installata', 'app-shell', 'os-android'], 'le classi arrivano subito (niente sfarfallio)');
+    assert.equal(l.avviso(), null, 'l\'avviso "gira il telefono" aspetta la pagina pronta');
 });
 
-test('dentro l\'APK: classe app-apk, nessun service worker, la stessa barra', () => {
-    const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5 });
+test('dentro l\'APK, in una pagina del gioco: classe app-apk, nessun service worker, orientamento bloccato e barre di sistema nascoste', async () => {
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5, nativo: true });
     assert.deepEqual(s.risultato, { modo: 'apk' });
-    assert.deepEqual(s.classi(), ['app', 'app-apk', 'app-con-barra', 'app-shell', 'os-android']);
+    assert.deepEqual(s.classi(), ['app', 'app-apk', 'app-shell', 'os-android']);
     s.sulla(s.win, 'load');
     assert.deepEqual(s.registrazioni, []);
-    assert.match(s.barra().innerHTML, /<a class="app-nav-voce attiva" href="box\.html" aria-current="page">/);
+    await new Promise(r => setImmediate(r));
+    assert.deepEqual(s.blocchi, ['landscape']);
+    assert.equal(s.barre, 1);
     assert.equal(s.invito(), null, 'dentro l\'app non si invita a installare l\'app');
 });
 
-test('battaglia, accesso, amministrazione e modello vuoto: classe app ma niente barra né "tira per aggiornare"', () => {
-    for (const p of ['battle.html', 'login.html', 'admin.html', 'schermata-base-vuota.html']) {
-        const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p });
-        assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android'], p);
-        assert.equal(s.barra(), null, p);
-        assert.equal((s.doc.ascoltatori.touchstart || []).length, 0, p);
-    }
+test('la prima apertura dell\'app dalla home porta al menù (una volta per visita); il menù ricorda che l\'app è stata aperta', () => {
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 });
+    assert.deepEqual(s.risultato, { modo: 'apk', menu: true });
+    assert.deepEqual(s.reindirizzato, ['menu.html']);
+    assert.equal(s.sessione[A.CHIAVE_AVVIATA], '1');
+    assert.deepEqual(s.script(), [], 'la pagina che sta per essere sostituita non carica niente');
+    // la visita continua: "Seasons" porta alla home vera, senza rimbalzare al menù
+    const t = apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5, sessione: s.sessione });
+    assert.deepEqual(t.reindirizzato, []);
+    assert.deepEqual(t.classi(), ['app', 'app-apk', 'app-shell', 'os-android']);
+    // un avviso o un link che aprono una pagina qualsiasi non passano dal menù, ma contano come "aperta"
+    const u = apri({ ua: UA.apk, percorso: '/didi-lu/matches.html', punti: 5 });
+    assert.deepEqual(u.reindirizzato, []);
+    assert.equal(u.sessione[A.CHIAVE_AVVIATA], '1');
+    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5, sessione: u.sessione }).reindirizzato, []);
 });
 
-test('con il documento ancora in caricamento le classi arrivano subito (niente sfarfallio), la barra appena la pagina è pronta', () => {
-    const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/stats.html', caricamento: true });
-    assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell', 'os-ios']);
-    assert.equal(s.barra(), null);
+test('il menù dal telefono solo dove ha senso: non dal computer (app installata sul PC), non nel browser, non nella battaglia', () => {
+    assert.deepEqual(apri({ ua: UA.pc, search: '?app=1', percorso: '/didi-lu/index.html' }).reindirizzato, [], 'PC con ?app=1: resta la home');
+    assert.deepEqual(apri({ ua: UA.android, percorso: '/didi-lu/index.html' }).reindirizzato, [], 'nel browser del telefono: il sito di sempre');
+    assert.deepEqual(apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/index.html', punti: 5 }).reindirizzato, ['menu.html'], 'dall\'icona dell\'iPhone sì');
+    assert.deepEqual(apri({ ua: UA.android, fullscreen: true, percorso: '/didi-lu/index.html' }).reindirizzato, ['menu.html'], 'app installata a schermo intero (display-mode: fullscreen) sì');
+});
+
+test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-menu.css); niente interfaccia in alto', () => {
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5, sessione: { [A.CHIAVE_AVVIATA]: '1' } });
+    assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android']);
+    assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-menu.css']);
+    assert.deepEqual(s.script(), ['app-suoni.js'], 'i suoni dei tasti ci sono; il resto lo collega la pagina (app-comune.js, app-menu.js)');
+    assert.deepEqual(s.reindirizzato, []);
+});
+
+test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna interfaccia in alto; la battaglia ha il suo foglio e il suo script', () => {
+    for (const p of ['login.html', 'admin.html', 'schermata-base-vuota.html']) {
+        const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p, sessione: { [A.CHIAVE_AVVIATA]: '1' } });
+        assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android'], p);
+        assert.deepEqual(s.fogli(), [], p);
+        assert.deepEqual(s.script(), ['app-suoni.js'], p);
+    }
+    const b = apri({ ua: UA.apk, percorso: '/didi-lu/battle.html' });
+    assert.deepEqual(b.classi(), ['app', 'app-apk', 'os-android']);
+    assert.deepEqual(b.fogli(), ['app-battaglia.css']);
+    assert.deepEqual(b.script(), ['app-suoni.js', 'app-battaglia.js']);
+});
+
+test('il desktop installato come app (display-mode standalone, senza telefono): classe app e interfaccia da gioco, ma niente menù né avviso "gira il telefono"', () => {
+    const s = apri({ ua: UA.pc, standalone: true, percorso: '/didi-lu/index.html' });
+    assert.deepEqual(s.classi(), ['app', 'app-installata', 'app-shell']);
+    assert.deepEqual(s.reindirizzato, []);
     s.finisciCaricamento();
-    assert.ok(s.barra());
-    assert.ok(s.html.classi.has('app-con-barra'));
+    assert.equal(s.avviso(), null);
+    assert.deepEqual(s.timer, [], 'niente da bloccare né da nascondere');
 });
 
 test('dentro un altro frame (il Box incorporato nel simulatore) non fa niente', () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', inFrame: true });
     assert.equal(s.risultato, null);
     assert.deepEqual(s.classi(), []);
-    assert.equal(s.barra(), null);
+    assert.deepEqual(s.script(), []);
     assert.deepEqual(s.registrazioni, []);
 });
 
@@ -309,30 +360,47 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
     let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
     assert.equal(s.risultato.modo, 'installata');
     assert.equal(memoria.appForzata, '1');
-    assert.ok(s.barra());
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
     assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });
     assert.equal(s.risultato.modo, '');
     assert.equal(memoria.appForzata, '0');
-    assert.equal(s.barra(), null);
+    assert.deepEqual(s.script(), []);
     s = apri({ ua: UA.pc, search: '?app=boh', memoria: {} });
     assert.equal(s.risultato.modo, '');
 });
 
 test('con lo storage del browser bloccato (navigazione privata...) il sito funziona uguale', () => {
-    const s = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true, search: '?app=1' });
+    const s = apri({ ua: UA.iphone, percorso: '/didi-lu/matches.html', storageRotto: true, search: '?app=1' });
     assert.equal(s.risultato.modo, 'installata');
-    assert.ok(s.barra());
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js']);
+    // senza memoria della visita la home si riconosce come prima apertura: si va al menù (che non rimanda da nessuna parte, quindi nessun ciclo)
+    const m = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true, search: '?app=1', punti: 5 });
+    assert.deepEqual(m.reindirizzato, ['menu.html']);
     const t = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true });
     assert.ok(t.invito());
     assert.doesNotThrow(() => t.invito().querySelector('.app-invito-no').click());
     assert.equal(t.invito(), null);
 });
 
-// ---------- la tastiera e il "tira per aggiornare" ----------
+// ---------- l'avviso "gira il telefono" e la tastiera ----------
 
-test('con la tastiera aperta la barra si nasconde: campi di testo sì, caselle e pulsanti no', () => {
+test('avviso "gira il telefono": una volta sola, a pagina pronta, dal telefono (dove l\'orientamento non si riesce a bloccare)', () => {
+    const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/stats.html', caricamento: true, punti: 5 });
+    assert.equal(s.avviso(), null);
+    s.finisciCaricamento();
+    const a = s.avviso();
+    assert.ok(a);
+    assert.equal(a.className, 'app-ruota');
+    assert.equal(a.attributi.role, 'alert');
+    assert.match(a.innerHTML, /Turn your phone sideways/);
+    assert.equal(A.creaAvvisoRuota(s.doc), null, 'non si crea due volte');
+    assert.equal(s.doc.body.figli.filter(f => f.id === 'app-ruota').length, 1);
+    assert.equal(A.creaAvvisoRuota({ body: null, getElementById: () => null }), null, 'senza body non si può');
+});
+
+test('con la tastiera aperta la classe app-tastiera sta su <html>: campi di testo sì, caselle e pulsanti no', () => {
     const s = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/players.html' });
     const campo = (tag, type) => { const c = elemento(tag); c.type = type; return c; };
     const entra = el => s.sulla(s.doc, 'focusin', { target: el });
@@ -350,71 +418,6 @@ test('con la tastiera aperta la barra si nasconde: campi di testo sì, caselle e
         entra(campo(tag, type));
         assert.ok(!attiva(), `${tag}/${type} non apre la tastiera`);
     }
-});
-
-test('tira per aggiornare: abbastanza giù ricarica; un tocco corto, la pagina già scorsa o due dita no; una volta sola', () => {
-    const nuova = (p = 'index.html') => apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/' + p });
-    // tirata lunga: l'indicatore compare, poi la pagina si ricarica
-    let s = nuova();
-    s.tocco('touchstart', 100);
-    s.tocco('touchmove', 200);
-    const indicatore = s.doc.body.figli.find(f => f.classi.has('app-tira'));
-    assert.ok(indicatore, 'compare l\'indicatore');
-    assert.equal(s.ricariche, 0);
-    assert.match(indicatore.querySelector('span').textContent, /Pull to refresh/);
-    s.tocco('touchmove', 300);
-    assert.ok(indicatore.classi.has('pronto'));
-    assert.match(indicatore.querySelector('span').textContent, /Release/);
-    s.tocco('touchend', 300);
-    assert.equal(s.ricariche, 1);
-    assert.ok(indicatore.classi.has('gira'));
-    // una volta sola, anche se il dito continua
-    s.tocco('touchstart', 100);
-    s.tocco('touchend', 400);
-    assert.equal(s.ricariche, 1);
-
-    // tocco corto: niente, e l'indicatore sparisce
-    s = nuova();
-    s.tocco('touchstart', 100);
-    s.tocco('touchmove', 180);
-    s.tocco('touchend', 180);
-    assert.equal(s.ricariche, 0);
-    assert.equal(s.doc.body.figli.find(f => f.classi.has('app-tira')).style.opacity, '0');
-
-    // la pagina non è in cima: è uno scorrimento, non un aggiornamento
-    s = nuova();
-    s.win.pageYOffset = 300;
-    s.tocco('touchstart', 100);
-    s.tocco('touchmove', 300);
-    s.tocco('touchend', 400);
-    assert.equal(s.ricariche, 0);
-
-    // due dita (pizzico per lo zoom)
-    s = nuova();
-    s.sulla(s.doc, 'touchstart', { target: elemento('div'), touches: [{ clientY: 100 }, { clientY: 120 }] });
-    s.tocco('touchend', 400);
-    assert.equal(s.ricariche, 0);
-
-    // il tocco inizia dentro qualcosa che scorre da solo, o dentro una finestra aperta
-    s = nuova();
-    const elenco = elemento('div');
-    elenco.scrollTop = 20;
-    s.tocco('touchstart', 100, elenco);
-    s.tocco('touchend', 400);
-    assert.equal(s.ricariche, 0, 'un elenco che scorre');
-    const finestra = elemento('div');
-    finestra.matches = () => true;
-    const dentro = elemento('div');
-    finestra.appendChild(dentro);
-    s.tocco('touchstart', 100, dentro);
-    s.tocco('touchend', 400);
-    assert.equal(s.ricariche, 0, 'una finestra aperta');
-    s.sulla(s.doc, 'touchcancel', {});
-});
-
-test('tira per aggiornare: solo nelle pagine dove non si modifica nulla', () => {
-    for (const p of A.CON_TIRA) assert.equal((apri({ ua: UA.apk, percorso: '/didi-lu/' + p }).doc.ascoltatori.touchstart || []).length, 1, p);
-    for (const p of ['box.html', 'profile.html', 'public.html']) assert.equal((apri({ ua: UA.apk, percorso: '/didi-lu/' + p }).doc.ascoltatori.touchstart || []).length, 0, p);
 });
 
 // ---------- l'invito a installare ----------
@@ -490,7 +493,8 @@ test('invito su Android: chiuderlo lo ricorda; a installazione fatta sparisce; s
 // ---------- il cablaggio nelle pagine ----------
 
 test('ogni pagina collega manifest, icona e aspetto da app; app.js è uno script normale (le classi arrivano prima del primo disegno)', () => {
-    assert.ok(PAGINE.length >= 14, 'pagine trovate: ' + PAGINE.join(', '));
+    assert.ok(PAGINE.length >= 15, 'pagine trovate: ' + PAGINE.join(', '));
+    assert.ok(PAGINE.includes('menu.html'));
     for (const p of PAGINE) {
         const h = docs(p);
         const conta = re => (h.match(re) || []).length;
@@ -510,9 +514,28 @@ test('ogni pagina collega manifest, icona e aspetto da app; app.js è uno script
     }
 });
 
-test('manifest: app a schermo intero, indirizzi relativi (il sito sta in una sottocartella), icone vere delle misure dichiarate', () => {
+test('i fogli e gli script dell\'app esistono e li scarica solo l\'app (da app.js): nessuna pagina li collega, tranne il menù che porta i suoi script', () => {
+    const js = docs('app.js');
+    for (const f of ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css', 'app-battaglia.css', 'app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-menu.js', 'app-battaglia.js']) {
+        assert.ok(esiste(f), `manca ${f}`);
+        assert.ok(js.includes(`'${f}'`) || f === 'app-menu.js', `app.js non cita ${f}`);
+    }
+    assert.ok(!esiste('app-pagine.css') && !esiste('app-shell.js'), 'i vecchi file della barra in basso sono stati tolti');
+    for (const f of PAGINE) {
+        const h = docs(f).replace(/<!--[\s\S]*?-->/g, '');
+        assert.doesNotMatch(h, /app-(gioco|gioco-pagine|menu|battaglia)\.css|app-(gioco|battaglia)\.js|app-suoni\.js/, `${f} non deve collegare i fogli dell'app`);
+        if (f !== 'menu.html') assert.doesNotMatch(h, /app-comune\.js|app-menu\.js/, `${f}: solo il menù collega queste`);
+    }
+    // il menù: le parti comuni prima della sua logica
+    const m = docs('menu.html');
+    assert.ok(m.indexOf('app-comune.js') > 0 && m.indexOf('app-comune.js') < m.indexOf('app-menu.js'));
+});
+
+test('manifest: app a schermo intero in orizzontale, indirizzi relativi (il sito sta in una sottocartella), icone vere delle misure dichiarate, il menù tra le scorciatoie', () => {
     const m = JSON.parse(docs('manifest.webmanifest'));
     assert.equal(m.display, 'standalone');
+    assert.deepEqual(m.display_override, ['fullscreen', 'standalone'], 'dove si può, a schermo intero (senza barra di stato)');
+    assert.equal(m.orientation, 'landscape');
     for (const k of ['id', 'start_url', 'scope']) assert.equal(m[k], './', k);
     assert.equal(m.background_color, '#000000');
     assert.equal(m.theme_color, '#000000');
@@ -534,6 +557,166 @@ test('manifest: app a schermo intero, indirizzi relativi (il sito sta in una sot
         assert.ok(esiste(s.url), `scorciatoia verso ${s.url}`);
     }
     assert.ok(m.shortcuts.length >= 1 && m.shortcuts.length <= 4, 'Android mostra al massimo quattro scorciatoie');
+    assert.equal(m.shortcuts[0].url, 'menu.html', 'la prima scorciatoia è il menù principale');
+});
+
+// ---------- l'orientamento: tutta l'app si gioca in orizzontale ----------
+
+const passaUnGiro = () => new Promise(ok => setImmediate(ok));
+
+function finestraOrientamento({ nativo, plugin, web, funzioneRegistra } = {}) {
+    const ascoltatori = {};
+    const win = {
+        ascoltatori,
+        addEventListener: (tipo, fn) => { (ascoltatori[tipo] ||= []).push(fn); }
+    };
+    if (nativo) {
+        win.Capacitor = { isNativePlatform: () => true, Plugins: plugin ? { ScreenOrientation: plugin } : {} };
+        if (funzioneRegistra) win.Capacitor.registerPlugin = funzioneRegistra;
+    }
+    if (web) win.screen = { orientation: web };
+    return win;
+}
+
+const pluginFinto = (chiamate, { rifiuta = false } = {}) => ({
+    lock: async o => { chiamate.push(['nativo lock', o.orientation]); if (rifiuta) throw new Error('not implemented'); }
+});
+const webFinto = (chiamate, { rifiuta = false } = {}) => ({
+    lock: async o => { chiamate.push(['web lock', o]); if (rifiuta) throw new Error('SecurityError'); }
+});
+
+test('bloccaOrizzontale: nell\'APK col plugin ScreenOrientation, nelle app installate con l\'API del browser, altrimenti non fa niente', async () => {
+    const c = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(c) })), 'nativo');
+    assert.deepEqual(c, [['nativo lock', 'landscape']]);
+
+    // APK vecchio, senza il plugin: la chiamata fallisce e si prova con il browser
+    const d = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(d, { rifiuta: true }), web: webFinto(d) })), 'web');
+    assert.deepEqual(d, [['nativo lock', 'landscape'], ['web lock', 'landscape']]);
+
+    // app installata da Chrome: solo l'API del browser
+    const e = [];
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto(e) })), 'web');
+    assert.deepEqual(e, [['web lock', 'landscape']]);
+
+    // il browser non lo permette (o iPhone, dove non esiste): resta com'è
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto([], { rifiuta: true }) })), '');
+    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({})), '');
+    assert.equal(await A.bloccaOrizzontale(null), '');
+});
+
+test('pluginNativo: solo dentro l\'app nativa; il pacchetto non c\'è (il sito arriva dalla rete), si usa il Capacitor che l\'app inietta', () => {
+    assert.equal(A.pluginNativo({}, 'ScreenOrientation'), null);
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => false, Plugins: { ScreenOrientation: {} } } }, 'ScreenOrientation'), null, 'nel browser il Capacitor non è nativo');
+    const gia = {};
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: { ScreenOrientation: gia } } }, 'ScreenOrientation'), gia);
+    const registrato = {};
+    const chiesti = [];
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: n => { chiesti.push(n); return registrato; } } }, 'ScreenOrientation'), registrato);
+    assert.deepEqual(chiesti, ['ScreenOrientation']);
+    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: () => { throw new Error('no'); } } }, 'ScreenOrientation'), null);
+});
+
+test('orientamentoDellaPagina: blocca subito e non insiste se ci riesce; tornando dalla cache del browser (pageshow persisted) blocca di nuovo', async () => {
+    const c = [];
+    const win = finestraOrientamento({ nativo: true, plugin: pluginFinto(c) });
+    const timer = [];
+    win.setTimeout = (f, ms) => { timer.push(ms); };
+    A.orientamentoDellaPagina(win);
+    await passaUnGiro();
+    assert.deepEqual(c, [['nativo lock', 'landscape']]);
+    assert.deepEqual(timer, [], 'riuscito: nessun nuovo tentativo');
+    win.ascoltatori.pageshow.forEach(f => f({ persisted: false }));
+    await passaUnGiro();
+    assert.equal(c.length, 1, 'una pagina normale non ripete');
+    win.ascoltatori.pageshow.forEach(f => f({ persisted: true }));
+    await passaUnGiro();
+    assert.equal(c.length, 2, 'tornando dalla cache sì');
+    assert.doesNotThrow(() => win.ascoltatori.pageshow.forEach(f => f()), 'un pageshow senza dati non rompe niente');
+});
+
+test('orientamentoDellaPagina: se all\'apertura non ci riesce (l\'app non è ancora pronta) riprova ogni mezzo secondo, al massimo quattro volte', async () => {
+    const c = [];
+    let aperta = false;
+    const plugin = { lock: async o => { c.push(o.orientation); if (!aperta) throw new Error('non ancora'); } };
+    const win = finestraOrientamento({ nativo: true, plugin });
+    const timer = [];
+    win.setTimeout = (f, ms) => { timer.push({ f, ms }); };
+    A.orientamentoDellaPagina(win);
+    await passaUnGiro();
+    assert.equal(c.length, 1);
+    assert.deepEqual(timer.map(t => t.ms), [500]);
+    // il secondo tentativo riesce: finito
+    aperta = true;
+    timer.shift().f();
+    await passaUnGiro();
+    assert.equal(c.length, 2);
+    assert.deepEqual(timer, []);
+
+    // se non riesce mai (iPhone) i tentativi sono quattro e poi basta
+    const iphone = finestraOrientamento({});
+    let tentativi = 0;
+    iphone.setTimeout = (f, ms) => { tentativi++; assert.equal(ms, 500); f(); };
+    A.orientamentoDellaPagina(iphone);
+    await passaUnGiro();
+    assert.equal(tentativi, 4);
+});
+
+function finestraBarre({ nativo = true, plugin } = {}) {
+    const ascoltatori = {};
+    const timer = [];
+    const win = {
+        ascoltatori, timer,
+        addEventListener: (tipo, fn) => { (ascoltatori[tipo] ||= []).push(fn); },
+        setTimeout: (f, ms) => { timer.push({ f, ms, attivo: true }); return timer.length; },
+        clearTimeout: n => { if (timer[n - 1]) timer[n - 1].attivo = false; }
+    };
+    if (nativo) win.Capacitor = { isNativePlatform: () => true, Plugins: plugin ? { SystemBars: plugin } : {} };
+    return win;
+}
+
+test('barreNascoste: nell\'APK nasconde barra di stato e dei gesti; se tornano (cambia la misura dello schermo) le rinasconde dopo un attimo; altrove non fa niente', () => {
+    assert.equal(A.barreNascoste(finestraBarre({ nativo: false })), null, 'nel browser');
+    assert.equal(A.barreNascoste(finestraBarre({})), null, 'APK vecchio, senza il plugin');
+    let nascoste = 0;
+    const win = finestraBarre({ plugin: { hide: () => { nascoste++; return Promise.resolve(); } } });
+    assert.ok(A.barreNascoste(win));
+    assert.equal(nascoste, 1, 'subito');
+    // la barra è tornata (un gesto dal bordo): dopo un attimo si rinasconde, e più cambi di misura di fila contano come uno
+    win.ascoltatori.resize.forEach(f => f());
+    win.ascoltatori.resize.forEach(f => f());
+    assert.deepEqual(win.timer.map(t => [t.ms, t.attivo]), [[1800, false], [1800, true]]);
+    assert.equal(nascoste, 1, 'non prima del tempo');
+    win.timer[1].f();
+    assert.equal(nascoste, 2);
+    win.ascoltatori.resize.forEach(f => f());
+    assert.equal(win.timer.length, 3, 'si può ripetere');
+    // tornando alla pagina dalla cache del browser: subito
+    win.ascoltatori.pageshow.forEach(f => f());
+    assert.equal(nascoste, 3);
+});
+
+test('barreNascoste: se il plugin si lamenta (APK vecchio) non succede niente', async () => {
+    assert.doesNotThrow(() => A.barreNascoste(finestraBarre({ plugin: { hide() { throw new Error('no'); } } })));
+    const win = finestraBarre({ plugin: { hide: () => Promise.reject(new Error('not implemented')) } });
+    assert.doesNotThrow(() => A.barreNascoste(win));
+    await passaUnGiro();          // se l'errore non fosse gestito, il test runner lo segnalerebbe qui
+    assert.equal(A.barreNascoste(finestraBarre({ plugin: {} })), null, 'plugin senza hide');
+});
+
+test('orientamento e barre nel cablaggio: solo come app e solo dal telefono (non su PC con ?app=1)', async () => {
+    const pc = apri({ ua: UA.pc, search: '?app=1', percorso: '/didi-lu/box.html', nativo: true });
+    await passaUnGiro();
+    assert.deepEqual(pc.blocchi, []);
+    assert.equal(pc.barre, 0);
+    const browser = apri({ ua: UA.android, percorso: '/didi-lu/box.html', nativo: true });
+    await passaUnGiro();
+    assert.deepEqual(browser.blocchi, [], 'nel browser del telefono l\'orientamento è libero');
+    const iphone = apri({ ua: UA.iphone, iosStandalone: true, percorso: '/didi-lu/box.html', punti: 5 });
+    await passaUnGiro();
+    assert.equal(iphone.timer.length, 1, 'senza plugin né API: un nuovo tentativo a distanza (poi l\'avviso "gira il telefono")');
+    assert.ok(iphone.win.ascoltatori.pageshow, 'e si ricontrolla quando la pagina torna dalla cache');
 });
 
 // ---------- il service worker e la pagina offline ----------
@@ -667,134 +850,27 @@ function regola(css, selettore) {
 test('app.css: ogni regola riguarda l\'app (html.app…) o i suoi elementi; l\'unica regola per tutti è il doppio tocco senza zoom', () => {
     const css = docs('app.css');
     const lista = selettori(css);
-    assert.ok(lista.length >= 25, 'selettori trovati: ' + lista.length);
-    for (const s of lista) assert.match(s, /^(html\.app(-[a-z]+)*(\s|$|:|\[)|\.app-[a-z])|^html$/, `regola che tocca il sito intero: "${s}"`);
+    assert.ok(lista.length >= 20, 'selettori trovati: ' + lista.length);
+    for (const s of lista) assert.match(s, /^(html\.app(\s|$|:|\[)|\.app-[a-z])|^html$/, `regola che tocca il sito intero: "${s}"`);
     assert.equal(regola(css, 'html').trim(), 'touch-action: manipulation;');
-    // la barra, l'intestazione e i fogli non esistono finché l'app non li accende (il selettore è uno dei quattro della regola che li nasconde)
-    assert.match(css, /\.app-nav,\s*\.app-bar,\s*\.app-velo,\s*\.app-foglio\s*\{\s*display:\s*none/);
-    assert.match(css, /html\.app-con-barra \.app-nav\s*\{[^}]*display:\s*flex/);
-    // lo spazio per la barra (e per la tacca dei telefoni) è riservato in fondo alla pagina
-    assert.match(css, /html\.app-con-barra body\s*\{[^}]*padding-bottom:\s*calc\(var\(--app-nav-h\)\s*\+\s*env\(safe-area-inset-bottom, 0px\)\)/);
-    assert.match(css, /@keyframes app-gira/);
+    // niente rimbalzo né "ricarica tirando giù" dentro l'app: è un gioco
+    assert.match(regola(css, 'html.app'), /overscroll-behavior:\s*none/);
 });
 
-// ---------- l'orientamento: la battaglia si gioca sempre in orizzontale ----------
-
-const passaUnGiro = () => new Promise(ok => setImmediate(ok));
-
-function finestraOrientamento({ nativo, plugin, web, funzioneRegistra } = {}) {
-    const chiamate = [];
-    const ascoltatori = {};
-    const win = {
-        chiamate,
-        ascoltatori,
-        addEventListener: (tipo, fn) => { (ascoltatori[tipo] ||= []).push(fn); }
-    };
-    if (nativo) {
-        win.Capacitor = { isNativePlatform: () => true, Plugins: plugin ? { ScreenOrientation: plugin } : {} };
-        if (funzioneRegistra) win.Capacitor.registerPlugin = funzioneRegistra;
-    }
-    if (web) win.screen = { orientation: web };
-    return win;
-}
-
-const pluginFinto = (chiamate, { rifiuta = false } = {}) => ({
-    lock: async o => { chiamate.push(['nativo lock', o.orientation]); if (rifiuta) throw new Error('not implemented'); },
-    unlock: async () => { chiamate.push(['nativo unlock']); if (rifiuta) throw new Error('not implemented'); }
-});
-const webFinto = (chiamate, { rifiuta = false } = {}) => ({
-    lock: async o => { chiamate.push(['web lock', o]); if (rifiuta) throw new Error('SecurityError'); },
-    unlock: () => { chiamate.push(['web unlock']); }
+test('app.css: l\'avviso "gira il telefono" non si vede mai, tranne con il telefono in verticale dentro l\'app; il resto della pagina sparisce sotto', () => {
+    const css = docs('app.css');
+    assert.match(css, /\.app-ruota\s*\{\s*display:\s*none;\s*\}/);
+    const media = css.match(/@media \(orientation: portrait\) and \(max-width: 700px\) \{([\s\S]*?)\n\}\n/);
+    assert.ok(media, 'manca la condizione "telefono in verticale"');
+    assert.match(media[1], /html\.app \.app-ruota \{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*display:\s*flex/);
+    assert.match(media[1], /html\.app body > \*:not\(\.app-ruota\) \{ visibility: hidden; \}/);
+    assert.match(css, /@keyframes app-ruota-gira/);
+    // la stessa soglia di larghezza dello schermo da telefono (app.js: CONDIZIONE_TELEFONO)
+    assert.equal(A.CONDIZIONE_TELEFONO, '(max-width: 700px), (max-height: 520px)');
 });
 
-test('bloccaOrizzontale: nell\'APK col plugin ScreenOrientation, nelle app installate con l\'API del browser, altrimenti non fa niente', async () => {
-    const c = [];
-    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(c) })), 'nativo');
-    assert.deepEqual(c, [['nativo lock', 'landscape']]);
-
-    // APK vecchio, senza il plugin: la chiamata fallisce e si prova con il browser
-    const d = [];
-    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ nativo: true, plugin: pluginFinto(d, { rifiuta: true }), web: webFinto(d) })), 'web');
-    assert.deepEqual(d, [['nativo lock', 'landscape'], ['web lock', 'landscape']]);
-
-    // app installata da Chrome: solo l'API del browser
-    const e = [];
-    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto(e) })), 'web');
-    assert.deepEqual(e, [['web lock', 'landscape']]);
-
-    // il browser non lo permette (o iPhone, dove non esiste): resta com'è
-    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({ web: webFinto([], { rifiuta: true }) })), '');
-    assert.equal(await A.bloccaOrizzontale(finestraOrientamento({})), '');
-    assert.equal(await A.bloccaOrizzontale(null), '');
-});
-
-test('pluginNativo: solo dentro l\'app nativa; il pacchetto non c\'è (il sito arriva dalla rete), si usa il Capacitor che l\'app inietta', () => {
-    assert.equal(A.pluginNativo({}, 'ScreenOrientation'), null);
-    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => false, Plugins: { ScreenOrientation: {} } } }, 'ScreenOrientation'), null, 'nel browser il Capacitor non è nativo');
-    const gia = {};
-    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: { ScreenOrientation: gia } } }, 'ScreenOrientation'), gia);
-    const registrato = {};
-    const chiesti = [];
-    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: n => { chiesti.push(n); return registrato; } } }, 'ScreenOrientation'), registrato);
-    assert.deepEqual(chiesti, ['ScreenOrientation']);
-    assert.equal(A.pluginNativo({ Capacitor: { isNativePlatform: () => true, Plugins: {}, registerPlugin: () => { throw new Error('no'); } } }, 'ScreenOrientation'), null);
-});
-
-test('sbloccaOrientamento: rimette lo schermo com\'era (plugin e browser), senza errori se non c\'è niente da sbloccare', async () => {
-    const c = [];
-    await A.sbloccaOrientamento(finestraOrientamento({ nativo: true, plugin: pluginFinto(c), web: webFinto(c) }));
-    assert.deepEqual(c, [['nativo unlock'], ['web unlock']]);
-    await A.sbloccaOrientamento(finestraOrientamento({ nativo: true, plugin: pluginFinto([], { rifiuta: true }) }));
-    await A.sbloccaOrientamento(finestraOrientamento({}));
-    await A.sbloccaOrientamento(null);
-});
-
-test('orientamentoDellaPagina: la battaglia blocca e lo ricorda; la pagina dopo (o "indietro") sblocca una volta sola', async () => {
-    const memoria = {};
-    const leggi = k => (k in memoria ? memoria[k] : null);
-    const scrivi = (k, v) => { if (v == null) delete memoria[k]; else memoria[k] = v; };
-
-    // nella battaglia
-    const c = [];
-    const battaglia = finestraOrientamento({ nativo: true, plugin: pluginFinto(c) });
-    A.orientamentoDellaPagina(battaglia, '/didi-lu/battle.html', leggi, scrivi);
-    await passaUnGiro();
-    assert.deepEqual(c, [['nativo lock', 'landscape']]);
-    assert.equal(memoria[A.CHIAVE_ORIENTAMENTO], '1');
-    // uscendo (anche con "indietro") si sblocca subito
-    battaglia.ascoltatori.pagehide.forEach(f => f());
-    await passaUnGiro();
-    assert.deepEqual(c.slice(1), [['nativo unlock']]);
-    // tornando alla battaglia dalla cache del browser si blocca di nuovo; un normale "pageshow" no
-    battaglia.ascoltatori.pageshow.forEach(f => f({ persisted: false }));
-    await passaUnGiro();
-    assert.equal(c.length, 2);
-    battaglia.ascoltatori.pageshow.forEach(f => f({ persisted: true }));
-    await passaUnGiro();
-    assert.deepEqual(c.slice(2), [['nativo lock', 'landscape']]);
-
-    // la pagina dopo: sblocca e dimentica
-    const d = [];
-    const box = finestraOrientamento({ nativo: true, plugin: pluginFinto(d) });
-    A.orientamentoDellaPagina(box, '/didi-lu/box.html', leggi, scrivi);
-    await passaUnGiro();
-    assert.deepEqual(d, [['nativo unlock']]);
-    assert.equal(A.CHIAVE_ORIENTAMENTO in memoria, false);
-
-    // senza battaglia prima non tocca niente (nemmeno il plugin)
-    const e = [];
-    const home = finestraOrientamento({ nativo: true, plugin: pluginFinto(e) });
-    A.orientamentoDellaPagina(home, '/didi-lu/index.html', leggi, scrivi);
-    await passaUnGiro();
-    assert.deepEqual(e, []);
-    // ma se la battaglia ha lasciato il segno e si torna a questa pagina dalla cache, la sblocca
-    scrivi(A.CHIAVE_ORIENTAMENTO, '1');
-    home.ascoltatori.pageshow.forEach(f => f({ persisted: true }));
-    await passaUnGiro();
-    assert.deepEqual(e, [['nativo unlock']]);
-});
-
-test('orientamento nel cablaggio: solo come app e solo dal telefono (non su PC con ?app=1)', () => {
-    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app.js'), 'utf8');
-    assert.match(js, /if \(modo && os\) orientamentoDellaPagina\(win, pagina, leggi, scrivi\);/);
+test('app.css: l\'invito a installare (solo browser da telefono) non è tra le regole dell\'app; i vecchi pezzi (barra in basso, foglio dell\'account) non ci sono più', () => {
+    const css = docs('app.css');
+    for (const c of ['.app-invito', '.app-invito-testo', '.app-invito-si', '.app-invito-no']) assert.ok(css.includes(c), c);
+    assert.doesNotMatch(css, /app-nav|app-bar|app-velo|app-foglio|app-con-barra|app-tira/, 'rimasugli della barra in basso');
 });

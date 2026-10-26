@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu | Sant'Alvise League</title>
+    <link rel="icon" type="image/png" href="immagini/magikarp.png">
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="style-sfide.css">
+    <link rel="stylesheet" href="temi.css">
+    <script src="temi.js"></script>
+    <script src="sfide.js"></script>
+    <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e menù da gioco (app-gioco.css e app-menu.css, li carica app.js) -->
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Sant'Alvise">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="immagini/app/apple-touch-icon.png">
+    <link rel="stylesheet" href="app.css">
+    <script src="app.js"></script>
+</head>
+<body class="gx-menu">
+
+    <!-- Lo sfondo: sfumatura nel colore del giocatore, mezzatinta che scorre, qualche forma che galleggia -->
+    <div class="gx-fondo" aria-hidden="true">
+        <span class="gx-raggi"></span>
+        <span class="gx-forma f1"></span><span class="gx-forma f2"></span><span class="gx-forma f3"></span>
+        <span class="gx-forma f4"></span><span class="gx-forma f5"></span><span class="gx-forma f6"></span>
+    </div>
+
+    <audio id="bg-music-home" loop preload="none"></audio>
+
+    <!-- La prima volta di ogni visita: schermata del titolo -->
+    <div class="gx-splash" id="gx-splash" role="button" tabindex="0" aria-label="Tap to start" hidden>
+        <div class="gx-splash-logo">
+            <img src="immagini/magikarp.png" alt="" width="84" height="84">
+            <h1><span>Sant'Alvise</span><b>League</b></h1>
+        </div>
+        <p class="gx-splash-tocca">Tap to start</p>
+    </div>
+
+    <main class="gx-lobby" id="gx-lobby">
+        <header class="gx-testa">
+            <h1 class="gx-logo"><img src="immagini/magikarp.png" alt="" width="34" height="34"><span>Sant'Alvise</span><b>League</b></h1>
+            <div class="gx-hud" id="gx-hud">
+                <button type="button" class="gx-tondo" id="gx-suono" aria-label="Sound" data-suono="scegli"></button>
+                <button type="button" class="gx-tondo" id="gx-opzioni-apri" aria-label="Settings" aria-haspopup="dialog" data-suono="apri"></button>
+            </div>
+        </header>
+
+        <section class="gx-giocatore" id="gx-giocatore" aria-label="Player"></section>
+
+        <nav class="gx-tessere" id="gx-tessere" aria-label="Game menu"></nav>
+    </main>
+
+    <!-- Accesso -->
+    <div class="gx-dialogo" id="gx-login" role="dialog" aria-modal="true" aria-labelledby="gx-login-titolo" hidden>
+        <form class="gx-pannello" id="gx-login-form" autocomplete="on">
+            <button type="button" class="gx-chiudi" data-chiudi aria-label="Close" data-suono="chiudi"></button>
+            <h2 id="gx-login-titolo">Log in</h2>
+            <label>Email<input type="email" id="gx-email" required autocomplete="username" placeholder="Your email"></label>
+            <label>Password<input type="password" id="gx-password" required autocomplete="current-password" placeholder="••••••••"></label>
+            <p class="gx-errore" id="gx-login-errore" role="alert" hidden></p>
+            <div class="gx-righe">
+                <button type="button" class="gx-bottone gx-secondario" id="gx-password-dimenticata">Forgot password?</button>
+                <button type="submit" class="gx-bottone gx-primario">Log in</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Le impostazioni (suono, vibrazione, avvisi...) le crea app-comune.js alla prima apertura -->
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsReygP9TcC9jdqBcYN6Gz5--DOtsasNI",
+            authDomain: "pokemonsuite-didi-lu.firebaseapp.com",
+            databaseURL: "https://pokemonsuite-didi-lu-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "pokemonsuite-didi-lu",
+            storageBucket: "pokemonsuite-didi-lu.appspot.com",
+            messagingSenderId: "333119159516",
+            appId: "1:333119159516:web:689a9f5d3791093f66878b"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    </script>
+    <script src="app-comune.js"></script>
+    <script src="app-menu.js"></script>
+</body>
+</html>

@@ -9,7 +9,7 @@
 | Voto MVP aperto | quando si apre la finestra di voto | gli iscritti che non hanno ancora votato | checker (ogni 30 minuti) |
 | Stagione conclusa | la stagione passa a "closed" | gli iscritti, col nome del vincitore | Cloud Function `pushStatoStagione` |
 
-Ognuno le accende dal foglio dell'account dell'app (tessera **Alerts**). Ogni notifica "di stato" parte una volta sola (`pushInviati/…`).
+Ognuno le accende dalle impostazioni dell'app (l'ingranaggio nel menù principale o il tondino del giocatore in alto nelle pagine, tessera **Alerts**). Ogni notifica "di stato" parte una volta sola (`pushInviati/…`).
 
 ## Da fare una volta sola (servono i tuoi accessi: io non posso farlo)
 
@@ -28,6 +28,6 @@ Ognuno le accende dal foglio dell'account dell'app (tessera **Alerts**). Ogni no
 5. Il checker usa già `FIREBASE_SERVICE_ACCOUNT` (Secret esistente): non serve altro, il suo account ha già il permesso di mandare messaggi.
 
 ## Come controllare che funzioni
-- Accendi *Alerts* dal foglio dell'account: in Firebase → Realtime Database deve comparire `pushTokens/<tuo uid>/<chiave>`.
+- Accendi *Alerts* dalle impostazioni dell'app: in Firebase → Realtime Database deve comparire `pushTokens/<tuo uid>/<chiave>`.
 - Fai partire a mano una sfida amichevole verso un account con le notifiche accese: la notifica arriva in pochi secondi.
 - I log: Firebase → Functions → Log (per le due funzioni) e Actions → *Firebase Deadlines Checker* (per promemoria e MVP: righe che iniziano con 🔔).
