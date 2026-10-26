@@ -196,7 +196,7 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
     assert.match(comune, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation(-duration)?:\s*(none|\.01ms|0\.01ms)/);
 });
 
-test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c lo scrive il menù carta per carta, --i e --n le locandine di Play', () => {
+test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --x li scrive il menù scena per scena, le scintille portano --l --z --d --r, --i e --n le locandine di Play', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
     const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'scala-pkm.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
@@ -204,6 +204,7 @@ test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprie
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
     for (const m of js.matchAll(/setProperty\('(--[a-z0-9-]+)'/g)) definite.add(m[1]);
     for (const m of js.matchAll(/(--[a-z0-9-]+):\$\{/g)) definite.add(m[1]);                // scritte nello stile inline dei pezzi (--c, --cols...)
+    for (const m of js.matchAll(/(--[a-z0-9-]+):'\s*\+/g)) definite.add(m[1]);               // e quelle scritte a pezzi di stringa (le scintille del menù: --l, --z, --d, --r)
     for (const m of tema.matchAll(/(--[a-z0-9-]+)\s*:/gi)) definite.add(m[1]);
     const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i', '--n', '--tipo', '--tipo2', '--ns-durata', '--ns-eccesso'].includes(v));
     assert.deepEqual(senza, [], 'proprietà usate ma mai definite');

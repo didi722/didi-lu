@@ -21,9 +21,10 @@ const sd = (id, extra = {}) => ({
 test('htmlPoster: formato in alto, i due allenatori sul palco tondo nel loro colore, in mezzo VS e punteggio, la data in fondo; il vincitore ha il WIN, chi perde si spegne', () => {
     const h = K.htmlPoster(sd('a1'), 0);
     assert.match(h, /^<article class="mp-carta" data-i="0" data-id="a1" tabindex="-1">/);
-    assert.match(h, /<b class="mp-formato"><span>VGC<\/span><\/b>/);
+    assert.match(h, /<b class="mp-formato"><span>VGC<\/span><\/b>\s*<span class="mp-fila">/);
     assert.match(h, /class="mp-lato mp-l1 mp-vince" style="--c:#31c489"/);
-    assert.match(h, /<span class="pal-aura"><\/span><span class="pal-pedana"><\/span><img class="mp-avatar" draggable="false" src="immagini\/profile\/3\.png"/);
+    assert.match(h, /<span class="mp-palco" aria-hidden="true"><span class="pal-aura"><\/span><span class="pal-pedana"><\/span><span class="mp-scena"><img class="mp-avatar" draggable="false" src="immagini\/profile\/3\.png"/);
+    assert.equal((h.match(/class="mp-scena"/g) || []).length, 2, 'una scena per lato (allenatore e compagno insieme)');
     assert.match(h, /class="mp-lato mp-l2 mp-perde" style="--c:#8e44ad"/, 'senza colore valido, il viola');
     assert.match(h, /src="immagini\/magikarp\.png"/, 'senza avatar il Magikarp');
     assert.match(h, /<b class="mp-nome nome-scorrevole">Lu &lt;b&gt;<\/b>/, 'il nome è testo');
@@ -39,6 +40,21 @@ test('htmlPoster: formato in alto, i due allenatori sul palco tondo nel loro col
     assert.match(K.htmlPoster(sd('b', { vince: 2 }), 0), /mp-l2 mp-vince[\s\S]*mp-l1 mp-perde|mp-l1 mp-perde[\s\S]*mp-l2 mp-vince/);
 });
 
+test('htmlLato / htmlPoster con il compagno: il Pokémon preferito sta sullo stesso palco dell\'allenatore (nella stessa scena, così si scalano insieme); senza gif o senza Pokémon no', () => {
+    const gif = n => 'gif/' + n.toLowerCase() + '.gif';
+    const conPkm = sd('a1', { p1: { nome: 'Didi', colore: '#31c489', avatar: 'a.png', pkm: 'Gengar', vinti: 2 } });
+    const h = K.htmlPoster(conPkm, 0, gif);
+    assert.match(h, /<span class="mp-scena"><img class="mp-avatar"[^>]*><img class="mp-pkm" draggable="false" src="gif\/gengar\.gif" data-pkm="Gengar" alt="" onerror="this\.style\.display='none'"><\/span>/);
+    assert.equal((h.match(/class="mp-pkm"/g) || []).length, 1, 'solo chi ha un Pokémon preferito');
+    assert.doesNotMatch(K.htmlPoster(conPkm, 0), /mp-pkm/, 'senza la funzione delle gif niente compagno');
+    assert.doesNotMatch(K.htmlPoster(sd('a1'), 0, gif), /mp-pkm/, 'senza Pokémon preferito niente compagno');
+    // il nome della specie è testo, non HTML
+    assert.match(K.htmlLato(2, { nome: 'Lu', pkm: 'a"<b>' }, false, false, n => 'g/' + n), /data-pkm="a&quot;&lt;b&gt;"/);
+    // la pista porta le gif a ogni locandina
+    const pista = K.html([conPkm, sd('b', { p2: { nome: 'Lu', pkm: 'Mew' } })], { gif });
+    assert.equal((pista.match(/class="mp-pkm"/g) || []).length, 2);
+});
+
 test('html: una pista di locandine; senza showdown lo dice', () => {
     const h = K.html([sd('a'), null, sd('b')]);
     assert.match(h, /^<div class="mp-pista">/);
@@ -46,6 +62,16 @@ test('html: una pista di locandine; senza showdown lo dice', () => {
     assert.match(h, /data-i="1" data-id="b"/);
     assert.match(K.html([]), /No showdowns yet/);
     assert.match(K.html(null), /No showdowns yet/);
+});
+
+test('htmlPager: le frecce e un pallino per match, quello guardato acceso (la finestra del showdown mostra un match alla volta)', () => {
+    const h = K.htmlPager(3, 1);
+    assert.match(h, /^<button type="button" class="sd-freccia sd-prec" aria-label="Previous match"/);
+    assert.match(h, /<span class="sd-punti" aria-hidden="true"><i><\/i><i class="su"><\/i><i><\/i><\/span>/);
+    assert.match(h, /<button type="button" class="sd-freccia sd-succ" aria-label="Next match"[^>]*>›<\/button>$/);
+    assert.equal((K.htmlPager(0, 0).match(/<i/g) || []).length, 0);
+    assert.equal((K.htmlPager('x', 0).match(/<i/g) || []).length, 0);
+    assert.equal((K.htmlPager(1, 0).match(/<i class="su">/g) || []).length, 1);
 });
 
 test('htmlTabs / tabValido: SHOWDOWNS e RANKINGS, quello guardato acceso; sul primo il numero dei showdown; una scelta sconosciuta torna ai showdown', () => {
@@ -85,7 +111,7 @@ test('il foglio: una schermata alla volta, le schede del sito spente, le locandi
     const css = docs('app-gioco-pagine.css');
     assert.match(css, /html\.app-shell\[data-mt="sd"\] body\.pg-matches \.hub-right-column, html\.app-shell\[data-mt="rk"\] body\.pg-matches \.hub-left-column \{ display: none !important; \}/);
     assert.match(css, /body\.pg-matches #matchList \{ display: none !important; \}/);
-    for (const c of ['mt-barra', 'mt-tab', 'mp-carta', 'mp-pista', 'mp-formato', 'mp-scena', 'mp-lato', 'mp-palco', 'mp-avatar', 'mp-nome', 'mp-win', 'mp-vs', 'mp-punti', 'mp-data', 'mp-vuoto', 'mp-testa-avatar']) {
+    for (const c of ['mt-barra', 'mt-tab', 'mp-carta', 'mp-pista', 'mp-formato', 'mp-scena', 'mp-lato', 'mp-palco', 'mp-avatar', 'mp-nome', 'mp-win', 'mp-vs', 'mp-punti', 'mp-data', 'mp-vuoto', 'mp-testa-avatar', 'mp-fila', 'mp-pkm', 'sd-pista', 'sd-pager', 'sd-freccia', 'sd-punti']) {
         assert.ok(css.includes('.' + c), `il foglio non conosce ${c}`);
     }
     assert.match(css, /#sd-modal-overlay \.sd-lineup \{ display: flex !important;/, 'i Pokémon dei team si vedono');

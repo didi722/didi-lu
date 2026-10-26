@@ -348,6 +348,44 @@ test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-m
     assert.deepEqual(s.reindirizzato, []);
 });
 
+test('niente zoom: nell\'app il viewport lo vieta (pizzico e doppio tocco) e i gesti di pizzico dell\'iPhone si fermano; nel browser il viewport del sito non si tocca', () => {
+    for (const v of ['width=device-width', 'initial-scale=1', 'minimum-scale=1', 'maximum-scale=1', 'user-scalable=no']) assert.ok(A.VIEWPORT_APP.includes(v), v);
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5 });
+    const meta = s.doc.head.figli.filter(f => f.tagName === 'META');
+    assert.equal(meta.length, 1);
+    assert.equal(meta[0].attributi.name, 'viewport');
+    assert.equal(meta[0].attributi.content, A.VIEWPORT_APP);
+    let fermati = 0;
+    const ev = (n, dati = {}) => { s.sulla(s.doc, n, { preventDefault: () => { fermati++; }, ...dati }); };
+    for (const n of ['gesturestart', 'gesturechange', 'gestureend']) ev(n);
+    assert.equal(fermati, 3, 'i gesti di pizzico (iPhone) si fermano');
+    ev('touchmove', { touches: [{}, {}] });
+    assert.equal(fermati, 4, 'due dita che si muovono: fermo');
+    ev('touchmove', { touches: [{}] });
+    ev('touchmove', {});
+    assert.equal(fermati, 4, 'un dito solo (scorrere, trascinare) non si ferma');
+    // il viewport che la pagina ha già si riscrive (non se ne aggiunge un altro)
+    const mia = elemento('meta');
+    const registro = [];
+    const doc = { querySelector: sel => (sel === 'meta[name="viewport"]' ? mia : null), addEventListener: n => registro.push(n) };
+    assert.equal(A.bloccaZoom(doc), A.VIEWPORT_APP);
+    assert.equal(mia.attributi.content, A.VIEWPORT_APP);
+    assert.deepEqual(registro.sort(), ['gesturechange', 'gestureend', 'gesturestart', 'touchmove']);
+    // nel browser: niente
+    const b = apri({ ua: UA.android, percorso: '/didi-lu/box.html', punti: 5 });
+    assert.equal(b.doc.head.figli.length, 0);
+    assert.deepEqual(Object.keys(b.doc.ascoltatori), []);
+});
+
+test('il menù: la schermata del titolo si vede dal primo disegno e, se in questa visita è già passata, il menù è pronto subito (classe gx-pronto); le altre pagine non c\'entrano', () => {
+    assert.equal(A.CHIAVE_SPLASH, 'menuSplashVisto');
+    assert.match(docs('app-menu.js'), /CHIAVE_SPLASH = 'menuSplashVisto'/, 'la chiave è quella che scrive il menù');
+    assert.ok(!apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5 }).classi().includes('gx-pronto'), 'prima volta: c\'è il titolo, il menù aspetta');
+    assert.ok(apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5, sessione: { menuSplashVisto: '1' } }).classi().includes('gx-pronto'), 'già visto: il menù subito');
+    assert.ok(!apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5, sessione: { menuSplashVisto: '1' } }).classi().includes('gx-pronto'));
+    assert.doesNotThrow(() => apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5, storageRotto: true }), 'senza memoria si rivede il titolo');
+});
+
 test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna interfaccia in alto; la battaglia ha il suo foglio e il suo script', () => {
     for (const p of ['login.html', 'admin.html', 'schermata-base-vuota.html']) {
         const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p });
@@ -878,6 +916,9 @@ test('app.css: ogni regola riguarda l\'app (html.app…) o i suoi elementi; l\'u
     assert.equal(regola(css, 'html').trim(), 'touch-action: manipulation;');
     // niente rimbalzo né "ricarica tirando giù" dentro l'app: è un gioco
     assert.match(regola(css, 'html.app'), /overscroll-behavior:\s*none/);
+    // niente zoom col pizzico: la pagina si sposta solo in verticale e in orizzontale (il testo non si ingrandisce da solo)
+    assert.match(regola(css, 'html.app'), /touch-action:\s*pan-x pan-y/);
+    assert.match(regola(css, 'html.app'), /text-size-adjust:\s*100%/);
 });
 
 test('app.css: l\'avviso "gira il telefono" non si vede mai, tranne con il telefono in verticale dentro l\'app; il resto della pagina sparisce sotto', () => {

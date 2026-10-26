@@ -30,36 +30,40 @@
 
     // ---------- parti pure ----------
 
-    /** Un lato della locandina: l'allenatore sul palco tondo, col nome sotto; `vince` lo fa brillare con il WIN, `perde` lo spegne un po' */
-    function htmlLato(n, lato, vince, perde) {
+    /**
+     * Un lato della locandina: l'allenatore e il suo Pokémon compagno insieme sul palco tondo (in scala tra loro: li mette a posto scalaPoster), col nome sotto;
+     * `vince` lo fa brillare con il WIN, `perde` lo spegne un po'. `gif(specie)` dà l'immagine del compagno (senza, o senza Pokémon preferito, c'è solo l'allenatore).
+     */
+    function htmlLato(n, lato, vince, perde, gif) {
         const l = lato || {};
+        const pkm = l.pkm && typeof gif === 'function' ? `<img class="mp-pkm" draggable="false" src="${esc(gif(l.pkm))}" data-pkm="${esc(l.pkm)}" alt="" onerror="this.style.display='none'">` : '';
         return `<span class="mp-lato mp-l${n}${vince ? ' mp-vince' : ''}${perde ? ' mp-perde' : ''}" style="--c:${coloreSicuro(l.colore, n === 1 ? '#31c489' : '#8e44ad')}">
-            <span class="mp-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span><img class="mp-avatar" draggable="false" src="${esc(l.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'"></span>
+            <span class="mp-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span><span class="mp-scena"><img class="mp-avatar" draggable="false" src="${esc(l.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">${pkm}</span></span>
             <b class="mp-nome nome-scorrevole">${esc(l.nome || 'TBD')}</b>${vince ? '<i class="mp-win">WIN</i>' : ''}
         </span>`;
     }
 
     /** Una locandina: formato in alto, i due allenatori ai lati, in mezzo VS e punteggio, in fondo la data. */
-    function htmlPoster(s, indice) {
+    function htmlPoster(s, indice, gif) {
         const p1 = numero(s.p1 && s.p1.vinti), p2 = numero(s.p2 && s.p2.vinti);
         const vince = s.vince === 1 || s.vince === 2 ? s.vince : 0;
         const partite = numero(s.partite);
         return `<article class="mp-carta" data-i="${indice}" data-id="${esc(s.id)}" tabindex="-1">
             <b class="mp-formato"><span>${esc(s.formato || 'OU')}</span></b>
-            <span class="mp-scena">
-                ${htmlLato(1, s.p1, vince === 1, vince === 2)}
+            <span class="mp-fila">
+                ${htmlLato(1, s.p1, vince === 1, vince === 2, gif)}
                 <span class="mp-centro"><i class="mp-vs">VS</i><span class="mp-punti"><b class="${vince === 1 ? 'mp-avanti' : ''}">${p1}</b><u>:</u><b class="${vince === 2 ? 'mp-avanti' : ''}">${p2}</b></span></span>
-                ${htmlLato(2, s.p2, vince === 2, vince === 1)}
+                ${htmlLato(2, s.p2, vince === 2, vince === 1, gif)}
             </span>
             <small class="mp-data">${esc(s.data || 'No date')}${partite ? ` · ${partite} ${partite === 1 ? 'match' : 'matches'}` : ''}</small>
         </article>`;
     }
 
     /** Tutte le locandine, in una pista (se ne vede una al centro, le altre ai lati); senza showdown lo dice */
-    function html(lista) {
+    function html(lista, { gif } = {}) {
         const l = Array.isArray(lista) ? lista.filter(Boolean) : [];
         if (!l.length) return '<p class="mp-vuoto">No showdowns yet.<br>Challenge a friend and make some history!</p>';
-        return `<div class="mp-pista">${l.map((s, i) => htmlPoster(s, i)).join('')}</div>`;
+        return `<div class="mp-pista">${l.map((s, i) => htmlPoster(s, i, gif)).join('')}</div>`;
     }
 
     /** I due tag in alto; `su` è quello guardato, `quanti` il numero di showdown (sul primo) */
@@ -82,6 +86,13 @@
     /** L'avatar da mettere in testa al nome (già HTML), o '' se non lo conosciamo */
     function htmlAvatarTesta(avatar) {
         return avatar ? `<img class="mp-testa-avatar" draggable="false" src="${esc(avatar)}" alt="" onerror="this.remove()">` : '';
+    }
+
+    /** Sotto la finestra del showdown, per passare da un match all'altro: le frecce e un pallino per match (`su` quello guardato) */
+    function htmlPager(quanti, su) {
+        const n = Math.max(0, Number(quanti) || 0);
+        const punti = Array.from({ length: n }, (_, i) => `<i${i === su ? ' class="su"' : ''}></i>`).join('');
+        return `<button type="button" class="sd-freccia sd-prec" aria-label="Previous match" data-suono="scegli">‹</button><span class="sd-punti" aria-hidden="true">${punti}</span><button type="button" class="sd-freccia sd-succ" aria-label="Next match" data-suono="scegli">›</button>`;
     }
 
     /** La schermata da mostrare: quella ricordata se è una delle due, altrimenti i showdown */
@@ -148,6 +159,19 @@
         };
         const passo = verso => vai(stato.corrente + verso);
 
+        // l'allenatore e il suo Pokémon compagno, in scala tra loro (scala-pkm.js) e dentro il cerchio del palco, come nella classifica
+        const scalaPoster = () => {
+            const S = win.ScalaPkm;
+            if (!S || !stato.scheda) return;
+            stato.scheda.querySelectorAll('.mp-lato').forEach(l => {
+                const a = l.querySelector('.mp-avatar'), p = l.querySelector('.mp-pkm'), palco = l.querySelector('.mp-palco'), ped = l.querySelector('.pal-pedana'), sc = l.querySelector('.mp-scena');
+                if (!a || !p || !palco || !ped || !sc) return;
+                const sotto = parseFloat(win.getComputedStyle(sc).bottom) || 0;
+                S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(30, palco.clientHeight - sotto - 4), larghezzaMax: ped.offsetWidth * 0.94 });
+            });
+        };
+        win.addEventListener('resize', () => { if (stato.scheda) stato.scheda.querySelectorAll('.mp-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scalaPoster(); });
+
         const monta = dati => {
             const lista = dati && Array.isArray(dati.lista) ? dati.lista.filter(Boolean) : [];
             let scheda = doc.getElementById('app-showdown');
@@ -168,15 +192,49 @@
                 Car.collegaGesti(scheda, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 380 * Car.unitaPx(win), trascina: (f, fine) => { scheda.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
             }
             stato = { lista, corrente: Math.min(stato.corrente, Math.max(0, lista.length - 1)), scheda, pista: null };
-            scheda.innerHTML = html(lista);
+            scheda.innerHTML = html(lista, { gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.mp-pista');
             posiziona();
+            scalaPoster();
             disegnaTabs();
             if (win.NomeScorrevole && typeof win.NomeScorrevole.installa === 'function') win.NomeScorrevole.installa('.mp-nome');
         };
 
-        // la finestra del showdown la fa matches.html (quando serve): quando compare, ogni allenatore in testata prende il suo avatar
+        // la finestra del showdown: un match alla volta (si scorre di lato, le vicine si avvicinano mentre si trascina), con le frecce e i pallini sotto
+        const montaMatch = f => {
+            const corpo = f.querySelector('.sd-corpo');
+            const match = corpo ? Array.from(corpo.querySelectorAll('.sd-match')) : [];
+            if (match.length < 2 || corpo.classList.contains('sd-pista')) return;
+            corpo.classList.add('sd-pista');
+            let corrente = 0;
+            const pager = doc.createElement('div');
+            pager.className = 'sd-pager';
+            pager.innerHTML = htmlPager(match.length, corrente);
+            f.appendChild(pager);
+            const punti = () => Array.from(pager.querySelectorAll('.sd-punti i'));
+            const posiziona = (frac = 0) => {
+                match.forEach((el, i) => {
+                    const x = i - corrente + frac;
+                    el.style.setProperty('--x', x);
+                    el.style.visibility = Math.abs(x) <= 1.02 ? 'visible' : 'hidden';
+                    el.classList.toggle('sd-corrente', i === corrente);
+                });
+                punti().forEach((p, i) => p.classList.toggle('su', i === corrente));
+            };
+            const vai = i => { const n = Math.max(0, Math.min(match.length - 1, i)); if (n !== corrente) { corrente = n; posiziona(); } };
+            posiziona();
+            pager.addEventListener('click', e => {
+                const b = e.target.closest ? e.target.closest('.sd-freccia') : null;
+                if (b) vai(corrente + (b.classList.contains('sd-succ') ? 1 : -1));
+            });
+            Car.collegaGesti(corpo, { avanti: () => vai(corrente + 1), indietro: () => vai(corrente - 1), passoPx: () => corpo.clientWidth || 600 * Car.unitaPx(win),
+                trascina: (fr, fine) => { corpo.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : fr); } });
+        };
+
+        // la finestra del showdown la fa matches.html (quando serve): quando compare, ogni allenatore in testata prende il suo avatar e i match si scorrono uno alla volta
         const decoraFinestra = fin => {
+            const f = fin.querySelector ? fin.querySelector('.sd-finestra') : null;
+            if (f) montaMatch(f);
             const avatar = avatarPerNome(stato.lista);
             fin.querySelectorAll('.sd-titolo .sd-nome').forEach(n => {
                 if (n.querySelector('.mp-testa-avatar')) return;
@@ -198,5 +256,5 @@
         return { monta, vai, passo, mostra };
     }
 
-    return { CHIAVE_TAB, TABS, htmlLato, htmlPoster, html, htmlTabs, tabValido, avatarPerNome, htmlAvatarTesta, avvia };
+    return { CHIAVE_TAB, TABS, htmlLato, htmlPoster, html, htmlTabs, htmlPager, tabValido, avatarPerNome, htmlAvatarTesta, avvia };
 });

@@ -147,20 +147,68 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
     assert.match(html, /<div class="gx-dialogo" id="gx-login"[^>]* hidden>/);
+    // la schermata del titolo ha Pikachu e Mega Lucario (render di Pokémon HOME), entrano appena l'immagine è arrivata; se l'immagine non c'è, spariscono
+    assert.match(html, /class="gx-splash-eroe gx-splash-sx" src="https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/other\/home\/25\.png"[^>]*onload="this\.classList\.add\('pronta'\)" onerror="this\.style\.display='none'"/);
+    assert.match(html, /class="gx-splash-eroe gx-splash-dx" src="https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/other\/home\/10059\.png"/);
+    // si vede dal primo disegno (con il CSS) anche prima dello script del menù: se quello non parte, un tocco la chiude lo stesso
+    assert.match(html, /document\.getElementById\('gx-splash'\)\.addEventListener\('click'/);
+    // le scene: il palco e i tasti per saltare dall'una all'altra
+    assert.match(html, /<nav class="gx-tessere" id="gx-tessere"/);
+    assert.match(html, /<div class="gx-nav" id="gx-nav" role="tablist"/);
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1\.0">/, 'il viewport del sito: nell\'app lo riscrive app.js (niente zoom)');
 });
 
-test('le carte: una per pagina del gioco, con nome e icona (senza sottotitolo); la prima è Play; la grafica è quella del carosello di locandine', () => {
+test('le scene: una per voce del gioco, con cielo, figure ed effetti propri; la prima è Play (Pikachu contro Mega Lucario); le immagini vere (tessera-<id>) si cercano in png e webp', () => {
     const js = docs('app-menu.js');
     assert.doesNotMatch(js, /sottotitoli/, 'le carte non hanno più il sottotitolo');
     for (const v of A.VOCI) assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
-    const css = docs('app-menu.css');
     assert.equal(A.VOCI[0].id, 'play');
     assert.deepEqual(M.immaginiDi('box'), ['immagini/app/tessera-box.png', 'immagini/app/tessera-box.webp'], 'le immagini da mettere (png o webp)');
-    assert.match(M.arteDi('play', () => ''), /pikachu\.gif[\s\S]*lucario\.gif/, 'finché non c\'è l\'immagine, Play ha due Pokémon che si fronteggiano');
-    assert.match(M.arteDi('box', id => `<svg ${id}>`), /^<span class="gx-ico-grande"><svg box>/, 'le altre l\'icona grande');
-    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-tag', 'gx-alone', 'gx-immagine', 'gx-punti-nav', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
+    // ogni voce ha la sua scena
+    assert.deepEqual(Object.keys(M.SCENE), A.VOCI.map(v => v.id));
+    for (const [id, sc] of Object.entries(M.SCENE)) {
+        assert.match(sc.cielo, /^cielo-[a-z]+$/, id);
+        assert.ok(sc.eroi.length >= 1 && sc.sotto, id);
+        assert.ok(['folgori', 'palla', 'riflettori', 'radar'].includes(sc.fx), id);
+    }
+    assert.equal(new Set(Object.values(M.SCENE).map(sc => sc.cielo)).size, A.VOCI.length, 'ogni scena ha un cielo diverso');
+    assert.deepEqual(M.SCENE.play.eroi.map(e => [e.pkm, e.c]), [[25, 'e-pika'], [10059, 'e-luca']], 'Play: Pikachu contro Mega Lucario');
+    assert.equal(M.ARTE(25), 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/25.png');
+    const eroi = M.htmlEroi('play', C.esc);
+    assert.equal((eroi.match(/<img class="gx-eroe e-(pika|luca)"/g) || []).length, 2);
+    assert.match(eroi, /alt="Mega Lucario" src="https:\/\/raw\.githubusercontent\.com\/[^"]+\/10059\.png" onerror="this\.style\.display='none'"/, 'se l\'immagine non arriva sparisce, il resto della scena resta');
+    assert.match(M.htmlEroi('trainers', C.esc), /src="immagini\/profile\/\d+\.png"/, 'gli allenatori usano i loro avatar');
+    assert.equal(M.htmlEroi('nonesiste', C.esc), '');
+    // le scintille: stesse a ogni apertura (nascono da un seme), una scena diversa dall'altra
+    assert.equal(M.htmlScintille(14, 3), M.htmlScintille(14, 3));
+    assert.notEqual(M.htmlScintille(14, 3), M.htmlScintille(14, 4));
+    assert.equal((M.htmlScintille(14, 3).match(/<i style="--l:\d+%;--z:\d;--d:[\d.]+s;--r:-?[\d.]+s"><\/i>/g) || []).length, 14);
+    // i tasti in basso: un'icona per scena, quella guardata accesa col suo nome
+    const nav = M.htmlNav(A.VOCI, id => `<svg ${id}>`, C.esc, 1);
+    assert.equal((nav.match(/<button type="button" class="gx-nav-v/g) || []).length, A.VOCI.length);
+    assert.equal((nav.match(/aria-selected="true"/g) || []).length, 1);
+    assert.match(nav, /<button type="button" class="gx-nav-v su" role="tab" aria-selected="true" data-i="1" style="--c:#6fa8ff" aria-label="Box" data-suono="scegli"><svg box><span>Box<\/span><\/button>/);
+    assert.equal(M.htmlNav(null, () => '', C.esc, 0), '');
+
+    const css = docs('app-menu.css');
+    assert.doesNotMatch(css, /@@/, 'nessun segnaposto rimasto nel foglio');
+    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-sf', 'gx-cielo', 'gx-raggi', 'gx-nuvole', 'gx-scintille', 'gx-eroi', 'gx-eroe', 'gx-fx', 'gx-folgori', 'gx-impatto', 'gx-aura-l', 'gx-linee', 'gx-palla',
+        'gx-riflettore', 'gx-podio', 'gx-radar', 'gx-blocco', 'gx-tag', 'gx-sotto', 'gx-immagine', 'gx-nav', 'gx-nav-v', 'gx-vignetta', 'cielo-blu', 'cielo-viola', 'cielo-tramonto', 'cielo-notte',
+        'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-splash-raggi', 'gx-splash-eroe', 'gx-lobby']) assert.ok(css.includes('.' + c), `app-menu.css non conosce ${c}`);
     assert.doesNotMatch(css, /\.gx-tessera\b/, 'le tessere a griglia non ci sono più');
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
+    // una scena alla volta: il palco ritaglia tutto e ogni scena sta in un posto che dipende da --x (0 = al centro, ±1 = fuori dallo schermo)
+    assert.match(css, /html\.app \.gx-tessere \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
+    assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*translate: calc\(var\(--x, 0\) \* 100%\) 0;/);
+    // niente zoom né scorrimento: la pagina è un riquadro fisso e nessun livello enorme che gira (appesantisce il telefono)
+    assert.match(css, /html\.app body\.gx-menu \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
+    assert.match(css, /html\.app \.gx-lobby \{ overflow: hidden; touch-action: pan-y; \}/);
+    assert.doesNotMatch(css, /\d{3,}vmax/, 'nessun livello gigante');
+    // niente lampi: la schermata del titolo si vede dal primo disegno (anche prima dello script) e il menù sta nascosto finché non è pronto
+    assert.match(css, /html\.app:not\(\.gx-pronto\) \.gx-splash, html\.app:not\(\.gx-pronto\) \.gx-splash\[hidden\] \{ display: flex; \}/);
+    assert.match(css, /html\.app:not\(\.gx-pronto\) \.gx-lobby, html\.app:not\(\.gx-pronto\) \.gx-fondo \{ visibility: hidden; \}/);
+    // le animazioni che si muovono sempre stanno su trasformazioni e trasparenza (le fa la scheda grafica), non su misure che costringono a ridisegnare
+    for (const m of css.matchAll(/@keyframes ([\w-]+) \{([\s\S]*?)\n?\}(?=\n|$)/g)) assert.doesNotMatch(m[2], /\b(left|top|width|height|margin|background-position):/, `@keyframes ${m[1]} anima una misura`);
     // il logo (Magikarp + Sant'Alvise League) c'è, ma libero: nessuno sfondo, né semitrasparente né sfocato, dietro la testata
     assert.match(docs('menu.html'), /<h1 class="gx-logo">/);
     const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
@@ -230,7 +278,7 @@ function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, gioc
     }
     const classiHtml = new Set();
     const proprieta = {};
-    const registroEventi = { suoni: [], sostituzioni: [], timer: [], intervalli: [], accessi: [], uscite: [], reset: [], head: [] };
+    const registroEventi = { suoni: [], sostituzioni: [], timer: [], intervalli: [], accessi: [], uscite: [], reset: [], head: [], fotogrammi: [] };
     const doc = {
         ascoltatori: {}, body: nuovo('body'),
         documentElement: { classList: { add: c => classiHtml.add(c), contains: c => classiHtml.has(c), toggle: (c, on) => { if (on) classiHtml.add(c); else classiHtml.delete(c); } }, style: { setProperty: (k, v) => { proprieta[k] = v; } } },
@@ -271,6 +319,7 @@ function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, gioc
         setTimeout: (f, ms) => { registroEventi.timer.push({ f, ms }); return registroEventi.timer.length; },
         setInterval: (f, ms) => { registroEventi.intervalli.push({ f, ms }); return registroEventi.intervalli.length; },
         clearInterval: () => {},
+        requestAnimationFrame: f => { registroEventi.fotogrammi.push(f); return registroEventi.fotogrammi.length; },
         addEventListener: () => {},
         history: { state: null, pushState() {}, back() {} }
     };
@@ -291,7 +340,7 @@ test('dal browser (senza la classe app) il menù non c\'è: si torna alla home d
     assert.equal(M.avvia({ document: null }), null);
 });
 
-test('le carte: una per voce del gioco, nell\'ordine, con link, colore, immagine da trovare e tag col nome; la prima sta al centro, o quella ricordata', () => {
+test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine da trovare e tag col nome; la prima sta al centro, o quella ricordata', () => {
     const p = paginaMenu();
     const h = p.id('gx-tessere').innerHTML;
     const carte = [...h.matchAll(/<a class="gx-carta gx-c-(\w+)" href="([^"]+)" data-i="(\d+)" data-id="(\w+)" style="--c:(#[0-9a-f]{6})" data-suono="scegli">([\s\S]*?)<\/a>/g)];
@@ -302,23 +351,83 @@ test('le carte: una per voce del gioco, nell\'ordine, con link, colore, immagine
         assert.equal(t[3], String(i));
         assert.equal(t[4], v.id);
         assert.equal(t[5], v.colore);
-        assert.match(t[6], new RegExp(`<span class="gx-arte"><span class="gx-alone" aria-hidden="true"></span>.+<img class="gx-immagine" data-id="${v.id}" alt="" hidden></span><b class="gx-tag"><span>${v.et}</span></b>$`));
+        assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}" alt="" hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b><small class="gx-sotto">[^<]+</small></span>$`));
     });
-    assert.equal((h.match(/<i data-i="\d+"><\/i>/g) || []).length, A.VOCI.length, 'un punto per carta');
+    // i tasti in basso: uno per scena, quello guardato acceso
+    const nav = p.id('gx-nav').innerHTML;
+    assert.equal((nav.match(/class="gx-nav-v/g) || []).length, A.VOCI.length);
+    assert.match(nav, /class="gx-nav-v su"[^>]* data-i="0"/);
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     assert.equal(el.length, A.VOCI.length);
     assert.ok(el[0].classi.has('gx-centro'), 'la prima al centro');
     assert.equal(el[0].proprieta['--x'], 0);
-    assert.ok(el[1].proprieta['--x'] > 0, 'le altre di lato');
-    // tornando dalle pagine si ritrova la carta di prima
+    assert.equal(el[1].proprieta['--x'], 1, 'la seguente appena fuori, a destra');
+    assert.equal(el[3].proprieta['--x'], -1, 'l\'ultima appena fuori, a sinistra (il giro si chiude)');
+    assert.deepEqual(el.map(c => c.style.visibility), ['visible', 'visible', 'hidden', 'visible'], 'quella dall\'altra parte del giro non si disegna');
+    assert.deepEqual(el.map(c => c.attributi['aria-hidden']), ['false', 'true', 'true', 'true'], 'per chi legge lo schermo c\'è solo la scena guardata');
+    // tornando dalle pagine si ritrova la scena di prima
     const q = paginaMenu({ sessione: { menuCarta: '2' } });
     assert.ok(q.id('gx-tessere').querySelectorAll('.gx-carta')[2].classi.has('gx-centro'));
+    assert.match(q.id('gx-nav').innerHTML, /class="gx-nav-v su"[^>]* data-i="2"/);
+});
+
+test('le scene: i tasti in basso saltano alla scena scelta, toccare una scena di lato la porta al centro (quella al centro apre la pagina), le frecce da tastiera; la scena ricordata e il suono', () => {
+    const p = paginaMenu();
+    const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
+    const tasto = i => ({ target: { closest: () => ({ dataset: { i: String(i) } }) } });
+    p.id('gx-nav').scatta('click', tasto(2));
+    assert.deepEqual(el.map(c => c.classi.has('gx-centro')), [false, false, true, false]);
+    assert.deepEqual(el.slice(1).map(c => c.proprieta['--x']), [-1, 0, 1], 'le vicine appena fuori dallo schermo, ai due lati');
+    assert.equal(p.sessione.menuCarta, '2', 'la scena si ricorda per quando si torna dalle pagine');
+    assert.deepEqual(p.suoni, ['scegli']);
+    assert.match(p.id('gx-nav').innerHTML, /class="gx-nav-v su"[^>]* data-i="2"/);
+    // lo stesso tasto un'altra volta: niente di nuovo
+    p.id('gx-nav').scatta('click', tasto(2));
+    assert.deepEqual(p.suoni, ['scegli']);
+    // toccare una scena di lato non apre la pagina: la porta al centro
+    let fermati = 0;
+    p.id('gx-tessere').scatta('click', { target: { closest: () => el[3] }, preventDefault: () => { fermati++; } });
+    assert.equal(fermati, 1);
+    assert.ok(el[3].classi.has('gx-centro'));
+    // toccare quella al centro lascia andare il link
+    p.id('gx-tessere').scatta('click', { target: { closest: () => el[3] }, preventDefault: () => { fermati++; } });
+    assert.equal(fermati, 1, 'il link della scena al centro funziona');
+    // le frecce da tastiera (e Esc non sposta niente)
+    const tasti = k => (p.doc.ascoltatori.keydown || []).forEach(f => f({ key: k }));
+    tasti('ArrowRight');
+    assert.ok(el[0].classi.has('gx-centro'), 'dall\'ultima si torna alla prima: il giro si chiude');
+    tasti('ArrowLeft');
+    assert.ok(el[3].classi.has('gx-centro'));
+    tasti('Escape');
+    assert.ok(el[3].classi.has('gx-centro'));
+});
+
+test('le scene: la scena che passa dall\'altra parte del giro salta senza attraversare lo schermo (senza animarsi per due fotogrammi), le altre scorrono', () => {
+    const p = paginaMenu();
+    const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
+    p.id('gx-nav').scatta('click', { target: { closest: () => ({ dataset: { i: '2' } }) } });
+    // dalla prima alla terza: la prima esce da un lato e la terza entra dall'altro (scorrono); la seconda e la quarta cambiano lato fuori dallo schermo: saltano
+    assert.deepEqual(el.map(c => c.classi.has('gx-salta')), [false, true, false, true]);
+    assert.equal(el[1].style.transition, 'none');
+    assert.equal(el[0].style.transition, undefined, 'chi esce scorre');
+    assert.ok(p.fotogrammi.length >= 2);
+    // dopo due fotogrammi si torna alle animazioni
+    for (let giro = 0; giro < 3; giro++) p.fotogrammi.splice(0).forEach(f => f());
+    assert.deepEqual(el.map(c => c.classi.has('gx-salta')), [false, false, false, false]);
+    assert.equal(el[1].style.transition, '');
+    // un passo solo (anche dall'ultima alla prima) è un giro normale: scorrono tutte quelle che si vedono
+    const q = paginaMenu({ sessione: { menuCarta: '3' } });
+    const e2 = q.id('gx-tessere').querySelectorAll('.gx-carta');
+    q.id('gx-nav').scatta('click', { target: { closest: () => ({ dataset: { i: '0' } }) } });
+    assert.ok(!e2[0].classi.has('gx-salta') && !e2[3].classi.has('gx-salta'), 'la scena che entra e quella che esce scorrono');
+    assert.ok(e2[0].classi.has('gx-centro'));
 });
 
 test('la schermata del titolo: la prima volta di ogni visita c\'è ("Tap to start"); toccarla suona l\'avvio, fa partire la musica e la toglie; poi non torna', () => {
     const p = paginaMenu({});
     const splash = p.id('gx-splash');
     assert.equal(splash.hidden, false, 'si vede');
+    assert.equal((p.id('gx-splash-scintille').innerHTML.match(/<i style=/g) || []).length, 16, 'le scintille che salgono');
     assert.ok(!p.classiHtml.has('gx-pronto'), 'il menù aspetta');
     splash.click();
     assert.deepEqual(p.suoni, ['avvio']);

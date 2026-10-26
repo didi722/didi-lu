@@ -118,8 +118,8 @@ html.app.gx-dialogo-aperto body.gx-menu .gx-lobby { filter: blur(2px); }
 @keyframes gx-alone { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 224, 80, 0)); } 50% { filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 224, 80, .95)); } }
 @keyframes gx-pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
 @keyframes gx-dissolve { from { opacity: 0; } to { opacity: 1; } }
-/* finché la schermata del titolo non è andata via, il menù sta fermo (entra dopo) */
-html.app:not(.gx-pronto) .gx-carta { opacity: 0; }
+/* chi ha chiesto meno movimento ha il menù (giocatore, scene, schermata del titolo) fermo */
 @media (prefers-reduced-motion: reduce) {
-    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-aura, html.app .gx-avatar, html.app .gx-splash::before { animation: none; }
+    html.app .gx-aura, html.app .gx-avatar { animation: none; }
+    html.app :is(.gx-raggi, .gx-nuvole::before, .gx-scintille i, .gx-eroe, .gx-immagine, .gx-folgori, .gx-folgori polyline, .gx-impatto, .gx-aura-l, .gx-linee i, .gx-palla, .gx-riflettore, .gx-tag::before, .gx-splash-raggi, .gx-splash-eroe) { animation: none !important; }
 }

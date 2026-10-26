@@ -35,6 +35,8 @@
     const CHIAVE_INVITO = 'invitoApp';                 // quando si è chiuso l'invito a installare
     const GIORNI_INVITO = 14;                          // dopo averlo chiuso, l'invito torna dopo tanti giorni
     const CONDIZIONE_TELEFONO = '(max-width: 700px), (max-height: 520px)';   // com'è fatto uno schermo da telefono (la stessa degli stili)
+    const VIEWPORT_APP = 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no';   // in un gioco niente zoom, né col pizzico né col doppio tocco
+    const CHIAVE_SPLASH = 'menuSplashVisto';           // sessionStorage: la schermata del titolo del menù è già passata in questa visita (la scrive app-menu.js)
 
     // le pagine che non hanno l'interfaccia da gioco in alto: il menù principale, la battaglia (ha la sua), accesso, modello vuoto, amministrazione
     const SENZA_HUD = ['menu.html', 'battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
@@ -223,6 +225,26 @@
         return d;
     }
 
+    // ---------- niente zoom ----------
+
+    /**
+     * Un gioco non si ingrandisce: via lo zoom col pizzico e col doppio tocco (viewport) e, dove il browser non rispetta il viewport (iPhone), anche i gesti
+     * di pizzico. Senza zoom la pagina non può nemmeno spostarsi "da ingrandita" né allargarsi oltre lo schermo. Restituisce il viewport scritto.
+     */
+    function bloccaZoom(doc) {
+        let m = typeof doc.querySelector === 'function' ? doc.querySelector('meta[name="viewport"]') : null;
+        if (!m && typeof doc.createElement === 'function' && doc.head) {
+            m = doc.createElement('meta');
+            m.setAttribute('name', 'viewport');
+            doc.head.appendChild(m);
+        }
+        if (m) m.setAttribute('content', VIEWPORT_APP);
+        const ferma = e => { if (e && typeof e.preventDefault === 'function') e.preventDefault(); };
+        for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) doc.addEventListener(ev, ferma, { passive: false });
+        doc.addEventListener('touchmove', e => { if (e && e.touches && e.touches.length > 1) ferma(e); }, { passive: false });
+        return VIEWPORT_APP;
+    }
+
     // ---------- lo stile: uno solo ----------
 
     const TEMA_APP = 'neubrutal';
@@ -274,6 +296,7 @@
         // lo stile dell'app è uno solo; le pagine del sito che nell'app non servono rimandano al menù principale (che annuncia le stagioni aperte)
         if (modo) {
             fissaStile(doc);
+            bloccaZoom(doc);
             if (os && fuoriApp(pagina) && win.location && typeof win.location.replace === 'function') {
                 const dove = destinazioneFuoriApp(pagina, win.location.search);
                 win.location.replace(dove);
@@ -286,7 +309,11 @@
 
         // il menù principale: l'aspetto da gioco comune (app-gioco.css: colori, tasti, finestre) e il suo (app-menu.css: sfondo, avatar, tessere); la logica
         // (app-comune.js, app-menu.js) la carica la pagina
-        if (modo && pagina === 'menu.html') { caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-menu.css'); }
+        if (modo && pagina === 'menu.html') {
+            // la schermata del titolo si vede dal primo disegno (senza che il menù lampeggi sotto prima che parta lo script): se in questa visita è già passata, il menù è pronto
+            try { if (win.sessionStorage.getItem(CHIAVE_SPLASH)) html.classList.add('gx-pronto'); } catch (e) { /* senza memoria si rivede il titolo */ }
+            caricaFogliDiStile(doc, 'app-gioco.css'); caricaFogliDiStile(doc, 'app-menu.css');
+        }
         // le pagine con l'interfaccia da gioco in alto (app-gioco.js) al posto dell'intestazione da sito per PC; i fogli: l'aspetto comune e le pagine una per una
         else if (modo && haHud(pagina)) {
             html.classList.add('app-shell');
@@ -388,8 +415,8 @@
     }
 
     return {
-        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO,
-        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, destinazioneFuoriApp, pubblica, datiPagina, fissaStile, proporreInstallazione,
+        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, RIMANDI, SCRIPT_PAGINE, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO, VIEWPORT_APP, CHIAVE_SPLASH,
+        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, destinazioneFuoriApp, pubblica, datiPagina, fissaStile, bloccaZoom, proporreInstallazione,
         pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
     };
 });
