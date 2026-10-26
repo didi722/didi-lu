@@ -41,10 +41,10 @@
     /** Un giocatore: niente sfondo, lui sul palco tondo nel suo colore, sotto il nome, il posto, i punti e i numeri; `vs` è il tasto per sfidarlo (già HTML) */
     function htmlCarta(p, indice, vs, gif) {
         const d = righeDati(p);
-        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
+        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" data-pkm="${esc(p.pkm)}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
         return `<article class="ac-carta" data-i="${indice}" style="--c:${coloreSicuro(p.colore)}">
             <a class="ac-link" draggable="false" href="${esc(indirizzo(p.nome))}" aria-label="${esc(p.nome)}: open the trainer card" data-suono="apri">
-                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>${avatar(p, 'ac-avatar')}${pkm}</span>
+                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><span class="ac-scena">${avatar(p, 'ac-avatar')}${pkm}</span></span>
                 <span class="ac-testi">
                     <span class="ac-riga"><span class="ac-pos">#${numero(p.posizione)}</span><b class="ac-nome">${esc(p.nome)}</b></span>
                     <span class="ac-punti"><b>${numero(p.punti)}</b><small>PTS</small></span>
@@ -130,6 +130,19 @@
         const lista = doc.getElementById('matchList');
         if (lista && win.MutationObserver) new win.MutationObserver(decoraShowdown).observe(lista, { childList: true });
 
+        // il giocatore e il suo Pokémon compagno, in scala tra loro (scala-pkm.js) e dentro il cerchio del palco
+        const scalaCarte = () => {
+            const S = win.ScalaPkm;
+            if (!S || !stato) return;
+            stato.scheda.querySelectorAll('.ac-carta').forEach(c => {
+                const a = c.querySelector('.ac-avatar'), p = c.querySelector('.ac-pkm'), palco = c.querySelector('.ac-palco'), ped = c.querySelector('.pal-pedana'), sc = c.querySelector('.ac-scena');
+                if (!a || !p || !palco || !ped || !sc) return;
+                const sotto = parseFloat(win.getComputedStyle(sc).bottom) || 0;
+                S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(30, palco.clientHeight - sotto - 4), larghezzaMax: ped.offsetWidth * 0.94 });
+            });
+        };
+        win.addEventListener('resize', () => { if (stato) stato.scheda.querySelectorAll('.ac-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scalaCarte(); });
+
         const monta = dati => {
             const giocatori = dati && Array.isArray(dati.giocatori) ? dati.giocatori.filter(Boolean) : [];
             const corpo = doc.querySelector('.participants-card .cl-corpo');
@@ -158,6 +171,7 @@
             scheda.innerHTML = html(giocatori, { vs, gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.ac-pista');
             posiziona();
+            scalaCarte();
             avviaAuto();
         };
 

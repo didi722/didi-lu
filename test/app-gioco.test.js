@@ -197,7 +197,7 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
 
 test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --i le scrive il menù tessera per tessera', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
-    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
+    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'scala-pkm.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
     const usate = new Set([...fogli.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));

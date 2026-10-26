@@ -106,9 +106,8 @@ test('avvia: fuori dall\'app non fa niente', () => {
     assert.equal(T.avvia({}), null);
 });
 
-test('scalaCompagno: il Pokémon ha i pixel grandi come quelli dell\'allenatore', () => {
-    const T = require('../docs/app-trainers.js');
-    assert.equal(T.scalaCompagno(200, 200, 80, 80), 2.5);
-    assert.equal(T.scalaCompagno(100, 300, 100, 100), 1, 'vale il lato più stretto');
-    assert.equal(T.scalaCompagno(0, 100, 50, 50), 0);
+test('il compagno è in scala con l\'allenatore (scala-pkm.js) e a terra o fluttuante: l\'immagine porta il nome per la misura', () => {
+    const h = T.htmlCarta({ nome: 'Ada', colore: '#31c489', avatar: 'a.png', pkm: 'Gengar' }, 0, { gif: s => 'g/' + s + '.gif' });
+    assert.match(h, /<img class="at-pkm"[^>]*data-pkm="Gengar"/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'app.js'), 'utf8'), /'players\.html': \[[^\]]*'scala-pkm\.js'/);
 });

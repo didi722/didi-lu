@@ -42,7 +42,8 @@
 
     /** Nei team si vede un Pokémon alla volta: dopo l'ultimo si riparte dal primo */
     const prossimoMini = (k, n) => (n > 0 ? (Number(k) + 1) % n : 0);
-    const PASSO_TEAM = 2600;      // quanto resta a schermo un Pokémon del team (ms)
+    const PASSO_TEAM = 1500;      // quanto resta a schermo un Pokémon del team prima che scorra il successivo (ms)
+    const DURATA_SCORRE = 450;    // quanto dura lo scorrimento (ms)
 
     /** I controlli in alto: la categoria, la stagione e il formato */
     function htmlBarra(m) {
@@ -86,20 +87,41 @@
                 el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
         };
-        // i team: un Pokémon alla volta, che passa al successivo da solo; i team ai lati restano sul primo finché non arrivano al centro
-        let giroTeam = null, mostrato = 0;
-        const mostraMini = (carta, k) => carta.querySelectorAll('.as-mini').forEach((m, j) => m.classList.toggle('attivo', j === k));
-        const avviaGiroTeam = () => {
-            if (giroTeam) { win.clearInterval(giroTeam); giroTeam = null; }
-            if (!stato || stato.m.tab !== 'teams') return;
-            stato.pista.querySelectorAll('.as-carta').forEach(c => mostraMini(c, 0));
-            mostrato = 0;
-            const centro = stato.pista.querySelector('.as-carta.as-centro');
-            const n = centro ? centro.querySelectorAll('.as-mini').length : 0;
-            if (n < 2) return;
-            giroTeam = win.setInterval(() => { mostrato = prossimoMini(mostrato, n); mostraMini(centro, mostrato); }, PASSO_TEAM);
+        // i team: i sei Pokémon scorrono di lato, uno dopo l'altro (l'ultimo lascia posto al primo, che è anche in coda come copia); i team ai lati restano sul primo
+        let giroTeam = null, ritorno = null, mostrato = 0;
+        const fermaGiro = () => { if (giroTeam) { win.clearInterval(giroTeam); giroTeam = null; } if (ritorno) { win.clearTimeout(ritorno); ritorno = null; } };
+        const vaiA = (fila, k, conTransizione) => {
+            fila.style.transition = conTransizione ? '' : 'none';
+            fila.style.setProperty('--k', String(k));
+            if (!conTransizione) { void fila.offsetWidth; fila.style.transition = ''; }
         };
-        const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); avviaGiroTeam(); } };
+        const avviaGiroTeam = () => {
+            fermaGiro();
+            if (!stato || stato.m.tab !== 'teams') return;
+            stato.pista.querySelectorAll('.as-fila').forEach(f => vaiA(f, 0, false));
+            mostrato = 0;
+            const centro = stato.pista.querySelector('.as-carta.as-centro .as-fila');
+            const n = centro ? centro.querySelectorAll('.as-slot:not(.as-copia)').length : 0;
+            if (n < 2) return;
+            giroTeam = win.setInterval(() => {
+                mostrato = mostrato + 1;
+                vaiA(centro, mostrato, true);
+                if (mostrato >= n) ritorno = win.setTimeout(() => { mostrato = prossimoMini(mostrato, n + 1); vaiA(centro, mostrato, false); }, DURATA_SCORRE + 30);
+            }, PASSO_TEAM);
+        };
+        // Pokémon in scala (e a terra o fluttuanti): quelli della carta al centro e delle vicine, appena servono
+        const scala = () => {
+            const S = win.ScalaPkm;
+            if (!stato || !S) return;
+            const n = stato.m.righe.length;
+            stato.pista.querySelectorAll('.as-carta').forEach(el => {
+                if (Math.abs(Car.distanza(Number(el.dataset.i), stato.corrente, n, true)) > 2) return;
+                const palco = el.querySelector('.as-testa');
+                const H = palco ? palco.clientHeight : 0;
+                el.querySelectorAll('img[data-pkm]:not([data-sc])').forEach(img => { if (H > 0) S.dimensiona(img, H); });
+            });
+        };
+        const vai = i => { if (!stato || !stato.m.righe.length) return; const n = Car.dentro(i, stato.m.righe.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); avviaGiroTeam(); scala(); } };
         const passo = verso => { if (stato) vai(Car.passo(stato.corrente, stato.m.righe.length, verso, true)); };
 
         // i controlli della pagina (nascosti) che la schermata dell'app fa scattare
@@ -144,7 +166,22 @@
             // la chip attiva resta in vista (l'elenco dei numeri scorre di lato)
             const attiva = radice.querySelector('.as-p.attivo');
             if (attiva && attiva.scrollIntoView) { try { attiva.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* senza: resta dov'è */ } }
+            // nei team i Pokémon stanno in una fila che scorre: ognuno nel suo posto, più una copia del primo in fondo per il giro
+            radice.querySelectorAll('.as-v-teams .as-testa').forEach(t => {
+                const minis = [...t.querySelectorAll('.as-mini')];
+                if (!minis.length) return;
+                const fila = doc.createElement('div');
+                fila.className = 'as-fila';
+                minis.forEach(m => { const slot = doc.createElement('div'); slot.className = 'as-slot'; slot.appendChild(m); fila.appendChild(slot); });
+                const copia = doc.createElement('div');
+                copia.className = 'as-slot as-copia';
+                copia.setAttribute('aria-hidden', 'true');
+                copia.appendChild(minis[0].cloneNode(true));
+                fila.appendChild(copia);
+                t.replaceChildren(fila);
+            });
             if (n) posiziona();
+            scala();
             avviaGiroTeam();
             // i nomi troppo lunghi per il loro riquadro scorrono (nome-scorrevole.js, se c'è)
             if (win.NomeScorrevole && n) win.requestAnimationFrame(() => win.NomeScorrevole.applicaTutti('.as-nome'));

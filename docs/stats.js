@@ -97,7 +97,7 @@
     function sprite(specie, classe, animato = true) {
         const chiave = catenaSprite(specie, animato);
         const i = RIUSCITO.get(chiave) || 0;
-        return `<img class="${classe}" src="${esc(CATENE.get(chiave)[i])}" data-sprite="${esc(chiave)}" data-i="${i}" alt="" loading="lazy">`;
+        return `<img class="${classe}" src="${esc(CATENE.get(chiave)[i])}" data-sprite="${esc(chiave)}" data-i="${i}" data-pkm="${esc(specie)}" alt="" loading="lazy">`;
     }
 
     // Un'immagine che non si carica passa all'indirizzo successivo; quella che funziona viene ricordata

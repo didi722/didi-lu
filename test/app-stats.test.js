@@ -101,9 +101,10 @@ test('team: un Pokémon alla volta, che passa al successivo e dopo l\'ultimo rip
     assert.equal(S.prossimoMini(0, 6), 1);
     assert.equal(S.prossimoMini(5, 6), 0);
     assert.equal(S.prossimoMini(3, 0), 0);
-    assert.ok(S.PASSO_TEAM >= 1500);
+    assert.ok(S.PASSO_TEAM >= 800);
     const css = docs('app-gioco-pagine.css');
-    assert.match(css, /\.as-mini \{ display: none;/);
-    assert.match(css, /\.as-mini\.attivo \{ display: block;/);
+    assert.match(css, /\.as-fila \{ display: flex;[^}]*translate: calc\(var\(--k, 0\) \* -100%\) 0;/, 'i Pokémon del team scorrono di lato');
+    assert.match(css, /\.sc-vola \{ translate: 0 calc\(var\(--alza, 0px\) \* -1\);/, 'chi vola fluttua');
+    assert.ok(S.PASSO_TEAM <= 2000, 'scorrono in fretta');
     assert.match(css, /\.nome-scorrevole\.ns-attivo > \.ns-testo \{ animation: nomeScorrevole/);
 });
