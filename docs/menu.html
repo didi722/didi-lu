@@ -26,21 +26,30 @@
 </head>
 <body class="gx-menu">
 
-    <!-- Lo sfondo: sfumatura nel colore del giocatore, mezzatinta che scorre -->
-    <div class="gx-fondo" aria-hidden="true">
-        <span class="gx-raggi"></span>
-    </div>
+    <!-- Lo sfondo (dietro le scene): sfumatura nel colore del giocatore -->
+    <div class="gx-fondo" aria-hidden="true"></div>
 
     <audio id="bg-music-home" loop preload="none"></audio>
 
     <!-- La prima volta di ogni visita: schermata del titolo -->
     <div class="gx-splash" id="gx-splash" role="button" tabindex="0" aria-label="Tap to start" hidden>
+        <span class="gx-splash-raggi" aria-hidden="true"></span>
+        <span class="gx-scintille" id="gx-splash-scintille" aria-hidden="true"></span>
+        <img class="gx-splash-eroe gx-splash-sx" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/25.png" alt="" draggable="false" fetchpriority="high" onload="this.classList.add('pronta')" onerror="this.style.display='none'">
+        <img class="gx-splash-eroe gx-splash-dx" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/10059.png" alt="" draggable="false" fetchpriority="high" onload="this.classList.add('pronta')" onerror="this.style.display='none'">
         <div class="gx-splash-logo">
             <img src="immagini/magikarp.png" alt="" width="84" height="84">
             <h1><span>Sant'Alvise</span><b>League</b></h1>
         </div>
         <p class="gx-splash-tocca">Tap to start</p>
     </div>
+    <script>
+        // rete di sicurezza: la schermata del titolo si vede da subito (prima dello script del menù); se quello non parte, un tocco la chiude lo stesso
+        document.getElementById('gx-splash').addEventListener('click', function () {
+            var s = this;
+            setTimeout(function () { if (!s.classList.contains('esce')) { document.documentElement.classList.add('gx-pronto'); s.hidden = true; } }, 900);
+        });
+    </script>
 
     <main class="gx-lobby" id="gx-lobby">
         <header class="gx-testa">
@@ -54,6 +63,7 @@
         <section class="gx-giocatore" id="gx-giocatore" aria-label="Player"></section>
 
         <nav class="gx-tessere" id="gx-tessere" aria-label="Game menu"></nav>
+        <div class="gx-nav" id="gx-nav" role="tablist" aria-label="Sections"></div>
     </main>
 
     <!-- Accesso -->

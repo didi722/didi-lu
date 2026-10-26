@@ -123,29 +123,81 @@
         return { id: stagione.id, nome: r.nome, tempo: tempoCheManca(stagione.mancano), href: r.href };
     }
 
-    // ---------- le carte del menù ----------
+    // ---------- le scene del menù ----------
 
-    const SPRITE = 'https://play.pokemonshowdown.com/sprites/ani/';
-    const CHIAVE_CARTA = 'menuCarta';                 // sessionStorage: la carta guardata, per ritrovarla tornando dalle pagine
+    const CHIAVE_CARTA = 'menuCarta';                 // sessionStorage: la scena guardata, per ritrovarla tornando dalle pagine
+    /** Le immagini dei Pokémon di ripiego (finché non ci sono quelle tue): i render di Pokémon HOME, da PokeAPI */
+    const ARTE = id => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/' + id + '.png';
 
     /**
-     * Cosa si vede in una carta finché non c'è la sua immagine (immagini/app/tessera-<id>.png o .webp, vedi LEGGIMI): per Play due Pokémon che si fronteggiano, per le altre
-     * l'icona grande. Se l'immagine c'è, prende il posto di tutto questo.
+     * Cosa c'è in ogni scena (una per voce del menù) finché non si mette l'immagine vera (immagini/app/tessera-<id>.png o .webp, vedi LEGGIMI):
+     *   - `eroi`: le immagini grandi, ognuna col suo posto (classe), a partire dai render dei Pokémon (`pkm`: il numero nel Pokédex) o da una figura (`img`);
+     *   - `fx`: gli effetti sopra e in mezzo (folgori, aura, quadrante...); `sotto`: la riga sotto il tag.
+     * Il cielo, i raggi, le nuvole e le scintille sono comuni a tutte (cambia il colore).
      */
-    function arteDi(id, svgDi) {
-        if (id === 'play') return '<img class="gx-spr gx-spr-a" src="' + SPRITE + 'pikachu.gif" alt=""><img class="gx-spr gx-spr-b" src="' + SPRITE + 'lucario.gif" alt="">';
-        return '<span class="gx-ico-grande">' + svgDi(id) + '</span>';
+    const SCENE = {
+        play: { cielo: 'cielo-blu', fx: 'folgori', sotto: 'Ranked · Unranked · VS CPU', eroi: [{ pkm: 25, c: 'e-pika', alt: 'Pikachu' }, { pkm: 10059, c: 'e-luca', alt: 'Mega Lucario' }] },
+        box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
+        trainers: { cielo: 'cielo-tramonto', fx: 'riflettori', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-2', alt: '' }, { img: 'immagini/profile/2.png', c: 't-3', alt: '' }, { img: 'immagini/profile/1.png', c: 't-1', alt: '' }] },
+        stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] }
+    };
+
+    /** Le scintille che salgono: `n` puntini con posto, grandezza e tempi diversi ma sempre gli stessi (generati da un seme, così la pagina è uguale a ogni apertura) */
+    function htmlScintille(n, seme) {
+        let r = (Number(seme) || 1) * 9301 + 49297;
+        const casuale = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+        let h = '';
+        for (let k = 0; k < n; k++) {
+            const sinistra = Math.round(casuale() * 100), dim = 3 + Math.round(casuale() * 5), durata = (4 + casuale() * 4).toFixed(1), ritardo = (-casuale() * 8).toFixed(1);
+            h += '<i style="--l:' + sinistra + '%;--z:' + dim + ';--d:' + durata + 's;--r:' + ritardo + 's"></i>';
+        }
+        return h;
     }
 
-    /** Una carta del menù: l'immagine (o l'arte di prima), l'alone nel suo colore e il tag col nome. Sono tutte link; chi non è al centro, toccata, ci porta il carosello (lo fa la pagina). */
+    const FOLGORI = '<svg class="gx-fx gx-folgori" viewBox="0 0 520 300" aria-hidden="true">' +
+        '<polyline points="196,184 214,172 210,190 232,178 228,198 252,186 250,204 276,194 274,208 302,198" /><polyline points="200,160 220,150 216,166 238,156 236,172 258,164" />' +
+        '<polyline points="262,0 252,30 272,34 258,66 278,70 266,104 284,108 274,140" /></svg>' +
+        '<span class="gx-impatto" aria-hidden="true"></span><span class="gx-aura-l" aria-hidden="true"></span>' +
+        '<span class="gx-linee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
+    const PALLA = '<svg class="gx-fx gx-palla" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="15"/><circle cx="50" cy="50" r="6"/></svg>';
+    const RIFLETTORI = '<span class="gx-riflettore gx-rf1" aria-hidden="true"></span><span class="gx-riflettore gx-rf2" aria-hidden="true"></span><span class="gx-riflettore gx-rf3" aria-hidden="true"></span>' +
+        '<span class="gx-podio gx-p2" aria-hidden="true"><b>2</b></span><span class="gx-podio gx-p1" aria-hidden="true"><b>1</b></span><span class="gx-podio gx-p3" aria-hidden="true"><b>3</b></span>';
+    const RADAR = '<svg class="gx-fx gx-radar" viewBox="0 0 200 200" aria-hidden="true"><polygon class="gx-r-gr" points="100,14 174,57 174,143 100,186 26,143 26,57"/>' +
+        '<polygon class="gx-r-gr" points="100,43 149,71 149,129 100,157 51,129 51,71"/><polygon class="gx-r-gr" points="100,72 124,86 124,114 100,128 76,114 76,86"/>' +
+        '<path class="gx-r-assi" d="M100 100V14M100 100 174 57M100 100 174 143M100 100V186M100 100 26 143M100 100 26 57"/>' +
+        '<polygon class="gx-r-val" points="100,34 160,64 150,132 100,170 52,128 44,66"><animate attributeName="points" dur="6s" repeatCount="indefinite" values="100,34 160,64 150,132 100,170 52,128 44,66;100,24 168,60 140,138 100,176 40,120 56,72;100,34 160,64 150,132 100,170 52,128 44,66"/></polygon></svg>';
+    const EFFETTI = { folgori: FOLGORI, palla: PALLA, riflettori: RIFLETTORI, radar: RADAR };
+
+    /** Le immagini grandi di una scena (render dei Pokémon o figure), ognuna col suo posto; se non si caricano spariscono e resta il resto */
+    function htmlEroi(id, esc) {
+        const sc = SCENE[id];
+        if (!sc) return '';
+        return sc.eroi.map(e => '<img class="gx-eroe ' + esc(e.c) + '" draggable="false" decoding="async" alt="' + esc(e.alt) + '" src="' + esc(e.pkm ? ARTE(e.pkm) : e.img) + '" onerror="this.style.display=\'none\'">').join('');
+    }
+
+    /**
+     * Una scena del menù: un cielo colorato con raggi, nuvole e scintille, le immagini grandi in primo piano con gli effetti (folgori, aura, quadrante...), il tag
+     * storto col nome e la riga sotto. È un link (tutta la scena): toccata, apre la pagina. L'immagine vera (tessera-<id>) prende il posto di quella di ripiego.
+     */
     function htmlCarta(v, indice, svgDi, esc) {
+        const sc = SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
         return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
-            '<span class="gx-arte"><span class="gx-alone" aria-hidden="true"></span>' + arteDi(v.id, svgDi) +
-            '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden></span>' +
-            '<b class="gx-tag"><span>' + esc(v.et) + '</span></b></a>';
+            '<span class="gx-sf">' +
+            '<span class="gx-cielo ' + esc(sc.cielo) + '" aria-hidden="true"></span><span class="gx-raggi" aria-hidden="true"></span><span class="gx-nuvole" aria-hidden="true"></span>' +
+            '<span class="gx-scintille" aria-hidden="true">' + htmlScintille(14, indice + 3) + '</span>' +
+            '<span class="gx-eroi">' + htmlEroi(v.id, esc) + (EFFETTI[sc.fx] || '') + '</span>' +
+            '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden>' +
+            '<span class="gx-vignetta" aria-hidden="true"></span></span>' +
+            '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b><small class="gx-sotto">' + esc(sc.sotto) + '</small></span></a>';
     }
 
-    /** Gli indirizzi da provare, in ordine, per l'immagine di una carta */
+    /** I tasti per saltare da una scena all'altra, in basso: l'icona di ognuna e, per quella guardata, anche il nome */
+    function htmlNav(voci, svgDi, esc, corrente) {
+        return (voci || []).map((v, i) => '<button type="button" class="gx-nav-v' + (i === corrente ? ' su' : '') + '" role="tab" aria-selected="' + (i === corrente) + '" data-i="' + i + '" style="--c:' + esc(v.colore) + '" aria-label="' + esc(v.et) + '" data-suono="scegli">' +
+            svgDi(v.id) + '<span>' + esc(v.et) + '</span></button>').join('');
+    }
+
+    /** Gli indirizzi da provare, in ordine, per l'immagine di una scena */
     const immaginiDi = id => ['immagini/app/tessera-' + id + '.png', 'immagini/app/tessera-' + id + '.webp'];
 
     // ---------- il menù nella pagina ----------
@@ -169,38 +221,43 @@
         const db = () => win.firebase.database();
         const auth = () => win.firebase.auth();
 
-        // ----- le tessere -----
+        // ----- le scene -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
         const svgIcona = id => svg(id);
-        $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, svgIcona, esc)).join('') + '</div>' +
-            '<div class="gx-punti-nav" aria-hidden="true">' + voci.map((v, i) => '<i data-i="' + i + '"></i>').join('') + '</div>';
-        // le immagini delle carte, se ci sono (se manca una .png si prova la .webp, se mancano tutte resta l'arte di prima)
+        $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, svgIcona, esc)).join('') + '</div>';
+        // le immagini vere, se ci sono (se manca una .png si prova la .webp; se mancano tutte resta la scena di ripiego)
         $('gx-tessere').querySelectorAll('.gx-immagine').forEach(img => {
             const prove = immaginiDi(img.dataset.id);
             let k = 0;
-            img.addEventListener('load', () => { img.hidden = false; img.parentNode.classList.add('ha-immagine'); });
+            img.addEventListener('load', () => { img.hidden = false; img.closest('.gx-carta').classList.add('ha-immagine'); });
             img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
             img.src = prove[0];
         });
 
-        // ----- il carosello: si scorre di lato, seguendo il dito; la carta al centro si apre toccandola, le altre toccandole ci vengono in mezzo -----
+        // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
         const pista = $('gx-tessere').querySelector('.gx-pista');
         const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
+        const xPrima = new Map();
+        const raf = f => (typeof win.requestAnimationFrame === 'function' ? win.requestAnimationFrame(f) : f());
+        const nav = $('gx-nav');
         try { const salvata = Number(win.sessionStorage.getItem(CHIAVE_CARTA)); if (Number.isInteger(salvata) && salvata >= 0 && salvata < carte.length) stato.corrente = salvata; } catch (e) { /* si parte dalla prima */ }
+        const disegnaNav = () => { if (nav) nav.innerHTML = htmlNav(voci, svgIcona, esc, stato.corrente); };
         const posiziona = (frac = 0) => {
             const n = carte.length;
             carte.forEach((el, i) => {
                 const d = Car.distanza(i, stato.corrente, n, true);
-                const a = Car.aspetto(d + frac);
-                el.style.setProperty('--x', a.x);
-                el.style.setProperty('--s', a.scala);
-                el.style.setProperty('--o', a.opacita);
-                el.style.zIndex = a.z;
+                const x = Math.max(-2, Math.min(2, d + frac));
+                // una scena che passa dall'altra parte del giro (da -1 a +2) non deve attraversare lo schermo: salta senza animarsi (chi esce o entra da un lato scorre)
+                const prima = xPrima.get(el);
+                if (prima !== undefined && prima * x < 0 && Math.abs(x - prima) > 1.5) { el.style.transition = 'none'; el.classList.add('gx-salta'); raf(() => raf(() => { el.style.transition = ''; el.classList.remove('gx-salta'); })); }
+                xPrima.set(el, x);
+                el.style.setProperty('--x', x);
+                el.style.visibility = Math.abs(x) <= 1.02 ? 'visible' : 'hidden';
                 el.classList.toggle('gx-centro', i === stato.corrente);
                 el.tabIndex = i === stato.corrente ? 0 : -1;
+                el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
-            $('gx-tessere').querySelectorAll('.gx-punti-nav i').forEach((p, i) => p.classList.toggle('su', i === stato.corrente));
         };
         const vai = i => {
             const n = Car.dentro(i, carte.length);
@@ -208,19 +265,23 @@
             stato.corrente = n;
             try { win.sessionStorage.setItem(CHIAVE_CARTA, String(n)); } catch (e) { /* non si ricorda */ }
             posiziona();
+            disegnaNav();
             fai('scegli');
         };
         const passo = verso => vai(Car.passo(stato.corrente, carte.length, verso, true));
+        disegnaNav();
         if (carte.length) {
             posiziona();
-            Car.collegaGesti($('gx-tessere'), {
-                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 205 * Car.unitaPx(win),
+            // si scorre da qualunque punto dello schermo (anche sopra il giocatore), non solo sulla scena
+            Car.collegaGesti($('gx-lobby') || $('gx-tessere'), {
+                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => doc.documentElement.clientWidth || 740 * Car.unitaPx(win),
                 trascina: (f, fine) => { pista.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); }
             });
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
                 if (c && !c.classList.contains('gx-centro')) { e.preventDefault(); vai(Number(c.dataset.i)); }
             });
+            if (nav) nav.addEventListener('click', e => { const b = e.target.closest ? e.target.closest('.gx-nav-v') : null; if (b) vai(Number(b.dataset.i)); });
             doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
         }
 
@@ -264,6 +325,8 @@
             win.setTimeout(() => { splash.hidden = true; provaAnnuncio(); }, 520);
         };
         if (splash && !giaVisto) {
+            const scintilleSplash = $('gx-splash-scintille');
+            if (scintilleSplash) scintilleSplash.innerHTML = htmlScintille(16, 11);
             splash.hidden = false;
             splash.addEventListener('click', chiudiSplash);
             splash.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') chiudiSplash(); });
@@ -470,5 +533,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, htmlCarta, arteDi, immaginiDi, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, SCENE, ARTE, htmlScintille, htmlEroi, htmlCarta, htmlNav, immaginiDi, avvia };
 });

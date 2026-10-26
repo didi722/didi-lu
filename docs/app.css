@@ -14,6 +14,8 @@ html { touch-action: manipulation; }
 html.app {
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;                       /* niente "ricarica" del browser tirando giù, niente rimbalzo: è un gioco */
+    touch-action: pan-x pan-y;                       /* niente zoom, né col pizzico né col doppio tocco (anche il viewport lo vieta: vedi app.js, bloccaZoom) */
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
 }
 html.app body { -webkit-touch-callout: none; }
 html.app :is(a, button, summary, [role="button"], label, nav, .btn) { -webkit-user-select: none; user-select: none; }

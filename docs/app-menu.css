@@ -1,34 +1,28 @@
 /* =====================================================================
    IL MENÙ PRINCIPALE DELL'APP (menu.html, app-menu.js)
    ---------------------------------------------------------------------
-   La prima schermata del gioco: a sinistra il giocatore sul suo palco (avatar, nome, titolo, Elo, la stagione del momento), a destra le pagine come grandi
-   tessere: tutto in una sola schermata, senza scorrere. Lo sfondo è scuro e vivo, tinto dal colore del giocatore. Le variabili, i tondi dei comandi, i tasti e le
+   La prima schermata del gioco: a sinistra il giocatore sul suo palco (avatar, nome, titolo, Elo, la stagione del momento), a destra le pagine come scene a
+   tutto schermo, una alla volta (cielo, raggi, Pokémon grandi, effetti, il nome in un tag storto), che si cambiano scorrendo di lato. Tutto sta in una sola
+   schermata che non si scorre, non si sposta e non si ingrandisce: il palco delle scene ritaglia ogni cosa. Le variabili, i tondi dei comandi, i tasti e le
    finestre sono quelli comuni (app-gioco.css).
-   Indice: 1 sfondo e menù · 2 schermata del titolo
+   Indice: 1 sfondo, giocatore e scene · 2 schermata del titolo · 3 annuncio · 4 achievements
    ===================================================================== */
 
 /* ---------- 1. Lo sfondo e il menù principale ---------- */
+/* la pagina è un riquadro fisso grande quanto lo schermo: niente barre, niente scorrimento, niente rimbalzo ai bordi */
 html.app body.gx-menu {
-    margin: 0; height: 100vh; overflow: hidden; background: var(--gx-b0); color: var(--gx-su);
+    position: fixed; inset: 0; width: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; background: var(--gx-b0); color: var(--gx-su);
     font-family: var(--gx-font); -webkit-font-smoothing: antialiased;
 }
+html.app:has(body.gx-menu) { overflow: hidden; overscroll-behavior: none; }
 html.app .gx-fondo { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
     background:
         radial-gradient(110% 105% at 16% 30%, var(--gx-b1) 0%, transparent 64%),
         radial-gradient(85% 80% at 96% 100%, var(--gx-b2) 0%, transparent 62%),
         var(--gx-b0); }
-/* la mezzatinta del sito, grande e inclinata, che scorre piano */
-html.app .gx-fondo::before { content: ''; position: absolute; inset: -30%; rotate: -14deg; opacity: .9;
-    background: radial-gradient(var(--gx-punti) calc(1.9 * var(--u)), transparent calc(2.3 * var(--u))) 0 0 / calc(15 * var(--u)) calc(15 * var(--u));
-    animation: gx-scorri 26s linear infinite; }
-/* raggi che escono da dietro il giocatore */
-html.app .gx-raggi { position: absolute; left: 22%; top: 50%; width: 260vmax; height: 260vmax; margin: -130vmax 0 0 -130vmax;
-    background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .07) 0deg 6deg, transparent 6deg 18deg);
-    mask-image: radial-gradient(circle closest-side, #000 0%, transparent 34%); -webkit-mask-image: radial-gradient(circle closest-side, #000 0%, transparent 34%);
-    animation: gx-ruota 70s linear infinite; }
 
 html.app .gx-lobby {
-    position: relative; z-index: 1; box-sizing: border-box; height: 100vh;
+    position: relative; z-index: 1; box-sizing: border-box; height: 100%;
     display: grid; grid-template-columns: calc(212 * var(--u)) minmax(0, 1fr); grid-template-rows: calc(44 * var(--u)) minmax(0, 1fr); column-gap: calc(12 * var(--u)); row-gap: calc(6 * var(--u));
     padding: calc(8 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)) calc(12 * var(--u)) max(calc(12 * var(--u)), env(safe-area-inset-left, 0px));
 }
@@ -54,7 +48,7 @@ html.app body.gx-menu .sfide-live-btn.mia { background: var(--gx-giallo); }
 html.app body.gx-menu .sfide-badge { top: calc(-9 * var(--u)); right: calc(-9 * var(--u)); min-width: calc(20 * var(--u)); height: calc(20 * var(--u)); font-size: calc(11 * var(--u)); }
 
 /* ----- il giocatore ----- */
-html.app .gx-giocatore { grid-row: 2; display: flex; flex-direction: column; align-items: center; gap: calc(7 * var(--u)); min-height: 0; }
+html.app .gx-giocatore { position: relative; z-index: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; gap: calc(7 * var(--u)); min-height: 0; }
 html.app .gx-palco { position: relative; flex: 1 1 auto; min-height: calc(90 * var(--u)); width: 100%; display: flex; align-items: flex-end; justify-content: center; overflow: visible; }
 html.app .gx-aura { position: absolute; left: 50%; bottom: calc(14 * var(--u)); width: calc(176 * var(--u)); height: calc(176 * var(--u)); translate: -50% 0; border-radius: 50%;
     background: radial-gradient(circle, color-mix(in srgb, var(--gx-acc) 78%, #fff) 0%, color-mix(in srgb, var(--gx-acc) 44%, transparent) 42%, transparent 70%); animation: gx-respira 3.4s ease-in-out infinite; }
@@ -99,52 +93,174 @@ html.app .gx-st-punti { flex: none; display: flex; flex-direction: column; gap: 
 html.app .gx-st-punti i { width: calc(5 * var(--u)); height: calc(5 * var(--u)); border-radius: 50%; background: rgba(0, 0, 0, .25); }
 html.app .gx-st-punti i.su { background: #000; }
 
-/* ----- le carte: un carosello di locandine, una al centro e le vicine ai lati; si scorre di lato seguendo il dito ----- */
-html.app .gx-tessere { grid-row: 2; position: relative; min-height: 0; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-html.app .gx-pista { position: absolute; inset: 0 0 calc(20 * var(--u)) 0; }
+/* ----- le scene: una alla volta a tutto schermo (le altre stanno fuori); si scorre di lato seguendo il dito, la vicina entra mentre si trascina e i livelli si muovono a velocità diverse ----- */
+/* la scena sta in un palco fisso che ritaglia tutto: niente può sporgere, quindi la pagina non si allarga, non si sposta e non si ingrandisce */
+html.app .gx-lobby { overflow: hidden; touch-action: pan-y; }
+html.app .gx-tessere { position: fixed; inset: 0; z-index: 0; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; contain: strict; }
+html.app .gx-pista { position: absolute; inset: 0; }
+/* la zona del giocatore, a sinistra, sta su una sfumatura scura che lascia leggere ogni scena; in basso un'ombra per i comandi, in alto per la barra */
+html.app .gx-lobby::before { content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(9, 7, 28, .95) 0, rgba(9, 7, 28, .86) calc(150 * var(--u)), rgba(9, 7, 28, .4) calc(246 * var(--u)), transparent calc(330 * var(--u))),
+        linear-gradient(0deg, rgba(9, 7, 28, .78) 0, transparent calc(80 * var(--u))),
+        linear-gradient(180deg, rgba(9, 7, 28, .6) 0, transparent calc(58 * var(--u))); }
 html.app .gx-carta {
-    position: absolute; left: 50%; top: 0; bottom: 0; width: calc(236 * var(--u)); margin-left: calc(-118 * var(--u)); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: calc(2 * var(--u));
-    text-decoration: none; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none;
-    translate: calc(var(--x, 0) * 205 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1);
-    transition: translate .4s cubic-bezier(.2, .9, .3, 1), scale .4s cubic-bezier(.2, .9, .3, 1), opacity .3s ease;
+    position: absolute; inset: 0; display: block; overflow: hidden; color: #fff; text-decoration: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; -webkit-user-drag: none;
+    translate: calc(var(--x, 0) * 100%) 0; transition: translate .42s cubic-bezier(.2, .9, .3, 1);
 }
-html.app .gx-pista.trascinando .gx-carta { transition: none; }
-html.app .gx-carta:not(.gx-centro) .gx-tag { opacity: .72; }
-/* l'immagine (o l'arte di prima) sta libera, senza riquadro, su un alone nel colore della carta */
-html.app .gx-arte { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
-html.app .gx-alone { position: absolute; left: 50%; bottom: 0; width: calc(230 * var(--u)); height: calc(230 * var(--u)); translate: -50% 4%; border-radius: 50%; pointer-events: none;
-    background: radial-gradient(circle, color-mix(in srgb, var(--c) 78%, #fff) 0%, color-mix(in srgb, var(--c) 42%, transparent) 42%, transparent 70%); animation: gx-respira 3.6s ease-in-out infinite; }
-html.app .gx-immagine { position: relative; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
-html.app .gx-immagine[hidden] { display: none; }
-html.app .gx-arte.ha-immagine > :not(.gx-alone, .gx-immagine) { display: none; }
-html.app .gx-spr { position: relative; image-rendering: pixelated; height: calc(104 * var(--u)); width: auto; margin-bottom: calc(18 * var(--u)); filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.4s ease-in-out infinite; }
-html.app .gx-spr-a { scale: -1 1; margin-right: calc(-6 * var(--u)); }
-html.app .gx-spr-b { margin-left: calc(-6 * var(--u)); animation-delay: -1.2s; }
-html.app .gx-ico-grande { position: relative; display: flex; align-items: center; justify-content: center; width: calc(110 * var(--u)); height: calc(110 * var(--u)); margin-bottom: calc(28 * var(--u)); background: #fff; border: calc(5 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(6 * var(--u)) 0 var(--gx-ink); }
-html.app .gx-ico-grande svg { width: calc(64 * var(--u)); height: calc(64 * var(--u)); fill: none; stroke: #000; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-/* il tag: una targhetta d'arcade, storta, col nome grande */
-html.app .gx-tag { position: relative; z-index: 2; display: block; padding: calc(7 * var(--u)) calc(26 * var(--u)) calc(4 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--gx-ink); border-radius: calc(5 * var(--u));
-    box-shadow: 0 calc(6 * var(--u)) 0 var(--gx-ink), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); transition: opacity .3s ease; }
-html.app .gx-tag span { display: block; transform: skewX(9deg); font: 900 calc(30 * var(--u))/1.05 var(--gx-font); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
-html.app .gx-carta:active .gx-tag { transform: skewX(-9deg) translateY(calc(3 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 var(--gx-ink), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); }
-html.app .gx-punti-nav { position: absolute; left: 0; right: 0; bottom: calc(2 * var(--u)); display: flex; justify-content: center; gap: calc(7 * var(--u)); }
-html.app .gx-punti-nav i { width: calc(8 * var(--u)); height: calc(8 * var(--u)); border-radius: 50%; background: rgba(255, 255, 255, .28); border: calc(1.5 * var(--u)) solid rgba(0, 0, 0, .5); transition: scale .2s ease, background .2s ease; }
-html.app .gx-punti-nav i.su { background: var(--gx-giallo); scale: 1.35; }
+html.app .gx-sf { position: absolute; inset: 0; overflow: hidden; }
+html.app .gx-sf > * { position: absolute; }
+html.app .gx-sf > * { transition: translate .42s cubic-bezier(.2, .9, .3, 1); }
+html.app .gx-blocco { transition: translate .42s cubic-bezier(.2, .9, .3, 1), opacity .42s ease; }
+/* mentre si trascina i livelli seguono il dito senza ritardo; chi passa dall'altra parte del giro salta senza animarsi */
+html.app .gx-pista.trascinando :is(.gx-carta, .gx-sf > *, .gx-blocco), html.app .gx-carta.gx-salta, html.app .gx-carta.gx-salta * { transition: none !important; }
+/* le scene che non si guardano stanno ferme (meno lavoro per il telefono); durante il trascinamento si muovono tutte */
+html.app .gx-pista:not(.trascinando) .gx-carta:not(.gx-centro) :is(*, *::before, *::after) { animation-play-state: paused; }
 
+/* il cielo (ogni scena il suo), i raggi di luce, le nuvole che scorrono piano e le scintille che salgono */
+html.app .gx-cielo { inset: 0; scale: 1.12; translate: calc(var(--x, 0) * -30 * var(--u)) 0; }
+html.app .cielo-blu { background: radial-gradient(54% 80% at 66% 30%, rgba(255, 255, 255, .4), transparent 62%), linear-gradient(176deg, #0a4fd6 0%, #1f86ff 42%, #4cb6ff 74%, #a8e0ff 100%); }
+html.app .cielo-viola { background: radial-gradient(55% 78% at 66% 42%, rgba(150, 172, 255, .6), transparent 64%), linear-gradient(176deg, #1f2bb0 0%, #5a3bd0 48%, #26166c 100%); }
+html.app .cielo-tramonto { background: radial-gradient(62% 82% at 66% 56%, rgba(255, 224, 140, .68), transparent 62%), linear-gradient(176deg, #ff9552 0%, #ff4682 46%, #542688 100%); }
+html.app .cielo-notte { background: radial-gradient(55% 78% at 64% 46%, rgba(170, 120, 255, .55), transparent 64%), linear-gradient(176deg, #0d0938 0%, #34208a 52%, #100a3a 100%); }
+/* una striscia di luce obliqua nel colore della scena, dietro le figure */
+html.app .gx-cielo::after { content: ''; position: absolute; left: 36%; top: -10%; width: 56%; height: 124%; transform: skewX(-14deg);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 46%, transparent), transparent 82%); opacity: .75; }
+html.app .gx-raggi { inset: -8% -10% 0 -10%; translate: calc(var(--x, 0) * -16 * var(--u)) 0; opacity: .8;
+    background: repeating-conic-gradient(from 186deg at 74% -16%, rgba(255, 255, 255, .26) 0deg 4.5deg, transparent 4.5deg 12deg);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 82%); mask-image: linear-gradient(180deg, #000 0%, transparent 82%); animation: gx-luce 6s ease-in-out infinite; }
+@keyframes gx-luce { 0%, 100% { opacity: .5; } 50% { opacity: .95; } }
+html.app .gx-nuvole { left: -10%; top: 0; width: 120%; height: 66%; translate: calc(var(--x, 0) * -22 * var(--u)) 0; }
+html.app .gx-nuvole::before { content: ''; position: absolute; left: 0; top: 0; width: 200%; height: 100%; animation: gx-nuvola 100s linear infinite; background-size: 50% 100%; background-repeat: repeat-x;
+    background-image:
+        radial-gradient(ellipse 5% 12% at 6% 58%, rgba(255, 255, 255, .62), transparent 72%), radial-gradient(ellipse 8% 14% at 10% 52%, rgba(255, 255, 255, .5), transparent 72%),
+        radial-gradient(ellipse 7% 14% at 24% 30%, rgba(255, 255, 255, .5), transparent 72%), radial-gradient(ellipse 5% 11% at 29% 36%, rgba(255, 255, 255, .55), transparent 72%),
+        radial-gradient(ellipse 8% 14% at 42% 66%, rgba(255, 255, 255, .56), transparent 72%), radial-gradient(ellipse 5% 11% at 47% 62%, rgba(255, 255, 255, .5), transparent 72%),
+        radial-gradient(ellipse 7% 13% at 62% 28%, rgba(255, 255, 255, .5), transparent 72%), radial-gradient(ellipse 5% 11% at 67% 34%, rgba(255, 255, 255, .55), transparent 72%),
+        radial-gradient(ellipse 8% 14% at 82% 60%, rgba(255, 255, 255, .6), transparent 72%), radial-gradient(ellipse 5% 11% at 87% 56%, rgba(255, 255, 255, .5), transparent 72%); }
+@keyframes gx-nuvola { to { translate: -50% 0; } }
+html.app .gx-c-box .gx-nuvole, html.app .gx-c-stats .gx-nuvole { opacity: .22; }
+html.app .gx-c-trainers .gx-nuvole { opacity: .4; }
+html.app .gx-scintille { position: absolute; inset: 0; pointer-events: none; translate: calc(var(--x, 0) * 18 * var(--u)) 0; }
+html.app .gx-scintille i { position: absolute; left: var(--l); bottom: calc(-12 * var(--u)); width: calc(var(--z) * var(--u)); height: calc(var(--z) * var(--u)); border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--c, #ffe27a) 55%, #fff) 46%, transparent 74%); animation: gx-sale var(--d) linear var(--r) infinite; }
+@keyframes gx-sale { 0% { translate: 0 0; opacity: 0; } 12% { opacity: .95; } 100% { translate: 0 calc(-330 * var(--u)); opacity: 0; } }
+html.app .gx-vignetta { inset: 0; pointer-events: none; background: radial-gradient(120% 100% at 62% 50%, transparent 52%, rgba(6, 4, 24, .5) 100%); }
+
+/* le immagini grandi, in primo piano a destra: muovono più veloci del cielo (profondità) e fluttuano piano */
+html.app .gx-eroi { right: 0; bottom: 0; width: calc(540 * var(--u)); height: calc(312 * var(--u)); translate: calc(var(--x, 0) * 44 * var(--u)) 0; }
+html.app .gx-eroi::before { content: ''; position: absolute; left: 16%; right: -4%; bottom: calc(-40 * var(--u)); height: calc(110 * var(--u)); border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .5), transparent); }
+html.app .gx-eroe { position: absolute; width: auto; max-width: none; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+html.app .gx-fx { position: absolute; pointer-events: none; }
+html.app .gx-carta.ha-immagine .gx-eroi { display: none; }
+html.app .gx-immagine { right: 0; bottom: 0; height: min(100%, calc(320 * var(--u))); max-width: 78%; width: auto; object-fit: contain; object-position: right bottom; translate: calc(var(--x, 0) * 44 * var(--u)) 0;
+    filter: drop-shadow(0 calc(8 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, .35)); animation: gx-bob-t 3.4s ease-in-out infinite; }
+html.app .gx-immagine[hidden] { display: none; }
+@keyframes gx-bob-t { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(-6 * var(--u))); } }
+
+/* ----- PLAY: Pikachu contro Mega Lucario, folgori in mezzo, un'aura azzurra, linee di velocità e l'urto ----- */
+html.app .gx-c-play .e-luca { height: calc(292 * var(--u)); right: calc(-10 * var(--u)); bottom: calc(-24 * var(--u)); z-index: 2;
+    filter: drop-shadow(0 0 calc(16 * var(--u)) rgba(80, 215, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(0, 20, 60, .4)); animation: gx-bob 3.8s ease-in-out infinite; }
+html.app .gx-c-play .e-pika { height: calc(152 * var(--u)); left: calc(84 * var(--u)); bottom: calc(34 * var(--u)); z-index: 2; transform: scaleX(-1) rotate(8deg);
+    filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(255, 228, 60, .95)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(0, 20, 60, .4)); animation: gx-bob 2.9s -1.1s ease-in-out infinite; }
+html.app .gx-aura-l { position: absolute; right: calc(40 * var(--u)); bottom: calc(10 * var(--u)); width: calc(260 * var(--u)); height: calc(260 * var(--u)); border-radius: 50%;
+    background: radial-gradient(circle, rgba(190, 245, 255, .8) 0%, rgba(70, 190, 255, .34) 42%, transparent 70%); animation: gx-respira 2.6s ease-in-out infinite; }
+html.app .gx-folgori { left: 0; top: 0; width: 100%; height: 100%; z-index: 3; overflow: visible; fill: none; stroke: #fffbc2; stroke-width: 3.2; stroke-linejoin: miter; stroke-linecap: round;
+    filter: drop-shadow(0 0 calc(5 * var(--u)) #ffe23a) drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 200, 0, .8)); animation: gx-scossa 1.9s steps(1) infinite; }
+html.app .gx-folgori polyline:nth-child(2) { animation: gx-scossa 1.9s steps(1) -.6s infinite; }
+html.app .gx-folgori polyline:nth-child(3) { animation: gx-scossa 1.9s steps(1) -1.2s infinite; }
+@keyframes gx-scossa { 0% { opacity: 1; } 9% { opacity: .15; } 14% { opacity: 1; } 52% { opacity: 1; } 57% { opacity: 0; } 63% { opacity: 1; } 100% { opacity: 1; } }
+html.app .gx-impatto { position: absolute; left: calc(250 * var(--u)); top: calc(150 * var(--u)); width: calc(100 * var(--u)); height: calc(100 * var(--u)); z-index: 3; animation: gx-urto 1.9s ease-in-out infinite;
+    background: radial-gradient(circle, #fff 0%, rgba(255, 244, 150, .95) 22%, rgba(255, 200, 40, .5) 44%, transparent 68%); clip-path: polygon(50% 0, 60% 30%, 90% 10%, 72% 38%, 100% 50%, 72% 60%, 90% 90%, 60% 70%, 50% 100%, 40% 70%, 10% 90%, 28% 60%, 0 50%, 28% 38%, 10% 10%, 40% 30%); }
+@keyframes gx-urto { 0%, 100% { scale: .8; rotate: -4deg; opacity: .8; } 50% { scale: 1.12; rotate: 5deg; opacity: 1; } }
+html.app .gx-linee { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+html.app .gx-linee i { position: absolute; left: 0; height: calc(2.5 * var(--u)); width: calc(150 * var(--u)); border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .85)); opacity: 0; transform: skewX(-35deg); animation: gx-vento 1.5s linear infinite; }
+html.app .gx-linee i:nth-child(1) { top: 14%; animation-delay: -.2s; } html.app .gx-linee i:nth-child(2) { top: 30%; animation-delay: -.7s; width: calc(110 * var(--u)); }
+html.app .gx-linee i:nth-child(3) { top: 48%; animation-delay: -1.1s; } html.app .gx-linee i:nth-child(4) { top: 66%; animation-delay: -.45s; width: calc(120 * var(--u)); } html.app .gx-linee i:nth-child(5) { top: 82%; animation-delay: -.95s; }
+@keyframes gx-vento { 0% { translate: calc(560 * var(--u)) 0; opacity: 0; } 15% { opacity: .75; } 100% { translate: calc(-200 * var(--u)) 0; opacity: 0; } }
+
+/* ----- BOX: i Pokémon della squadra in ventaglio davanti a una Poké Ball che gira piano ----- */
+html.app .gx-palla { right: calc(90 * var(--u)); bottom: calc(4 * var(--u)); width: calc(300 * var(--u)); height: calc(300 * var(--u)); fill: none; stroke: rgba(255, 255, 255, .34); stroke-width: 2.4; stroke-linecap: round; animation: gx-ruota 60s linear infinite; z-index: 0; }
+html.app .gx-c-box .e-cn { height: calc(262 * var(--u)); right: calc(118 * var(--u)); bottom: calc(-16 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(170, 190, 255, .75)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .45)); animation: gx-bob 3.6s ease-in-out infinite; }
+html.app .gx-c-box .e-sx { height: calc(166 * var(--u)); right: calc(300 * var(--u)); bottom: calc(26 * var(--u)); z-index: 1; transform: rotate(-6deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(190, 120, 255, .8)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); animation: gx-bob 3s -1s ease-in-out infinite; }
+html.app .gx-c-box .e-dx { height: calc(192 * var(--u)); right: calc(-12 * var(--u)); bottom: calc(24 * var(--u)); z-index: 1; transform: rotate(5deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 190, 90, .75)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); animation: gx-bob 3.3s -1.8s ease-in-out infinite; }
+
+/* ----- TRAINERS: il podio, tre allenatori sotto i riflettori ----- */
+html.app .gx-c-trainers .gx-eroe { image-rendering: pixelated; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
+html.app .gx-c-trainers .t-1 { height: calc(118 * var(--u)); right: calc(214 * var(--u)); bottom: calc(104 * var(--u)); z-index: 3; animation: gx-bob 2.6s ease-in-out infinite; }
+html.app .gx-c-trainers .t-2 { height: calc(104 * var(--u)); right: calc(352 * var(--u)); bottom: calc(82 * var(--u)); z-index: 2; animation: gx-bob 2.9s -.8s ease-in-out infinite; }
+html.app .gx-c-trainers .t-3 { height: calc(98 * var(--u)); right: calc(82 * var(--u)); bottom: calc(66 * var(--u)); z-index: 2; animation: gx-bob 3.1s -1.6s ease-in-out infinite; }
+html.app .gx-riflettore { position: absolute; top: calc(-20 * var(--u)); width: calc(150 * var(--u)); height: calc(330 * var(--u)); z-index: 0; opacity: .75; transform-origin: 50% 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 92%); clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); animation: gx-oscilla 5s ease-in-out infinite; }
+html.app .gx-rf1 { right: calc(176 * var(--u)); } html.app .gx-rf2 { right: calc(332 * var(--u)); animation-delay: -1.6s; } html.app .gx-rf3 { right: calc(66 * var(--u)); animation-delay: -3.2s; }
+@keyframes gx-oscilla { 0%, 100% { rotate: -5deg; } 50% { rotate: 5deg; } }
+html.app .gx-podio { position: absolute; z-index: 1; display: flex; align-items: flex-start; justify-content: center; box-sizing: border-box; border: calc(4 * var(--u)) solid #000; border-bottom: 0; border-radius: calc(8 * var(--u)) calc(8 * var(--u)) 0 0; }
+html.app .gx-podio b { margin-top: calc(6 * var(--u)); font: 900 calc(28 * var(--u))/1 var(--gx-font); color: rgba(0, 0, 0, .55); text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .4); }
+html.app .gx-p1 { right: calc(194 * var(--u)); bottom: 0; width: calc(116 * var(--u)); height: calc(108 * var(--u)); background: linear-gradient(180deg, #ffe58a, #e0a915 60%, #a8760a); }
+html.app .gx-p2 { right: calc(332 * var(--u)); bottom: 0; width: calc(106 * var(--u)); height: calc(86 * var(--u)); background: linear-gradient(180deg, #eef1f7, #a9b2c3 60%, #7c859a); }
+html.app .gx-p3 { right: calc(62 * var(--u)); bottom: 0; width: calc(106 * var(--u)); height: calc(70 * var(--u)); background: linear-gradient(180deg, #f1b27a, #c07a3c 60%, #8a5224); }
+
+/* ----- STATS: Mewtwo davanti a un quadrante che si muove ----- */
+html.app .gx-c-stats .e-mew { height: calc(292 * var(--u)); right: calc(20 * var(--u)); bottom: calc(-18 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(190, 130, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .5)); animation: gx-bob 3.4s ease-in-out infinite; }
+html.app .gx-radar { right: calc(236 * var(--u)); bottom: calc(22 * var(--u)); width: calc(222 * var(--u)); height: calc(222 * var(--u)); z-index: 1; overflow: visible; }
+html.app .gx-r-gr { fill: rgba(150, 120, 255, .08); stroke: rgba(190, 170, 255, .55); stroke-width: 1.2; }
+html.app .gx-r-assi { stroke: rgba(190, 170, 255, .4); stroke-width: 1; fill: none; }
+html.app .gx-r-val { fill: rgba(80, 230, 255, .32); stroke: #6ff0ff; stroke-width: 2.4; stroke-linejoin: round; filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(90, 240, 255, .9)); }
+
+/* ----- il nome della scena: un grande tag storto che brilla, con la riga sotto ----- */
+html.app .gx-blocco { position: absolute; left: calc(238 * var(--u)); top: calc(56 * var(--u)); z-index: 5; display: flex; flex-direction: column; align-items: flex-start; gap: calc(9 * var(--u)); translate: calc(var(--x, 0) * 70 * var(--u)) 0; opacity: calc(1 - var(--x, 0) * var(--x, 0)); pointer-events: none; }
+html.app .gx-tag { position: relative; display: block; overflow: hidden; padding: calc(6 * var(--u)) calc(44 * var(--u)) calc(4 * var(--u)) calc(34 * var(--u)); color: #000; border: calc(5 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); transform: skewX(-9deg) rotate(-2deg);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c) 52%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 74%, #000) 100%);
+    box-shadow: 0 calc(7 * var(--u)) 0 var(--gx-ink), 0 0 calc(34 * var(--u)) color-mix(in srgb, var(--c) 75%, transparent), inset 0 calc(4 * var(--u)) 0 rgba(255, 255, 255, .55); }
+html.app .gx-tag span { display: block; transform: skewX(9deg); font: 900 calc(46 * var(--u))/1.04 var(--gx-font); letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .55); }
+html.app .gx-tag::after { content: '\25B6'; position: absolute; right: calc(13 * var(--u)); top: 50%; translate: 0 -48%; transform: skewX(9deg); font-size: calc(17 * var(--u)); animation: gx-lampeggia 1.2s ease-in-out infinite; }
+html.app .gx-tag::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .6), transparent); animation: gx-brilla 3.6s ease-in-out infinite; }
+@keyframes gx-brilla { 0%, 70% { translate: -120% 0; } 100% { translate: 290% 0; } }
+html.app .gx-sotto { padding: calc(3 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: rgba(8, 6, 26, .66); border: calc(2 * var(--u)) solid rgba(255, 255, 255, .22); border-radius: calc(8 * var(--u)); font: 800 calc(11 * var(--u))/1.4 var(--gx-font); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+html.app .gx-carta:active .gx-tag { transform: skewX(-9deg) rotate(-2deg) translateY(calc(4 * var(--u))); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink), 0 0 calc(22 * var(--u)) color-mix(in srgb, var(--c) 70%, transparent), inset 0 calc(4 * var(--u)) 0 rgba(255, 255, 255, .5); }
+
+/* ----- in basso, per saltare da una scena all'altra: l'icona di ognuna, e il nome di quella guardata ----- */
+html.app .gx-nav { position: fixed; z-index: 4; right: max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)); bottom: calc(8 * var(--u)); display: flex; align-items: center; gap: calc(6 * var(--u)); }
+html.app .gx-nav-v { display: inline-flex; align-items: center; justify-content: center; gap: calc(6 * var(--u)); height: calc(32 * var(--u)); min-width: calc(38 * var(--u)); padding: 0 calc(8 * var(--u)); box-sizing: border-box; cursor: pointer; color: #fff;
+    background: rgba(8, 6, 26, .62); border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .32); border-radius: calc(12 * var(--u)); -webkit-tap-highlight-color: transparent; transition: background .2s ease, color .2s ease, padding .2s ease; }
+html.app .gx-nav-v svg { width: calc(18 * var(--u)); height: calc(18 * var(--u)); fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html.app .gx-nav-v span { display: none; font: 900 calc(12 * var(--u))/1 var(--gx-font); letter-spacing: .1em; text-transform: uppercase; }
+html.app .gx-nav-v.su { padding: 0 calc(14 * var(--u)) 0 calc(11 * var(--u)); color: #000; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c)); border-color: var(--gx-ink); box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); }
+html.app .gx-nav-v.su span { display: inline; }
+html.app .gx-nav-v:active { translate: 0 calc(2 * var(--u)); }
+
+/* finché la schermata del titolo non è andata via il menù non si vede (nessun lampo di quello che c'è sotto) */
+html.app:not(.gx-pronto) .gx-lobby, html.app:not(.gx-pronto) .gx-fondo { visibility: hidden; }
 
 /* ---------- 2. La schermata del titolo ---------- */
-html.app .gx-splash { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(26 * var(--u)); cursor: pointer; color: #fff;
-    background: radial-gradient(90% 90% at 50% 40%, color-mix(in srgb, var(--gx-acc) 55%, #0d0b1d), #0d0b1d 70%); transition: opacity .45s ease, scale .45s ease; }
+/* si vede dal primo disegno della pagina (finché il menù non è pronto) senza aspettare lo script: così sotto non lampeggia mai il menù */
+html.app .gx-splash { position: fixed; inset: 0; z-index: 3000; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: calc(24 * var(--u)); cursor: pointer; color: #fff; touch-action: none;
+    user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(70% 95% at 50% 54%, #7a45e0 0%, #3a22a0 42%, #150f45 78%, #0d0b1d 100%); transition: opacity .45s ease, scale .45s ease; }
 html.app .gx-splash[hidden] { display: none; }
+html.app:not(.gx-pronto) .gx-splash, html.app:not(.gx-pronto) .gx-splash[hidden] { display: flex; }
 html.app .gx-splash.esce { opacity: 0; scale: 1.12; pointer-events: none; }
-html.app .gx-splash::before { content: ''; position: absolute; left: 50%; top: 44%; width: 300vmax; height: 300vmax; margin: -150vmax 0 0 -150vmax; background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .06) 0deg 7deg, transparent 7deg 20deg); animation: gx-ruota 60s linear infinite; }
-html.app .gx-splash-logo { position: relative; display: flex; align-items: center; gap: calc(16 * var(--u)); animation: gx-pop .7s cubic-bezier(.2, 1.4, .4, 1) backwards; }
-html.app .gx-splash-logo img { width: calc(84 * var(--u)); height: calc(84 * var(--u)); background: var(--gx-acc); border: calc(5 * var(--u)) solid #000; border-radius: 50%; box-shadow: 0 calc(7 * var(--u)) 0 #000; animation: gx-bob 2.6s ease-in-out infinite; }
+/* i raggi stanno fermi e si accendono e spengono (nessun livello enorme che gira) */
+html.app .gx-splash-raggi { position: absolute; inset: 0; animation: gx-luce 4.2s ease-in-out infinite;
+    background: repeating-conic-gradient(from 0deg at 50% 54%, rgba(255, 255, 255, .15) 0deg 5deg, transparent 5deg 15deg);
+    -webkit-mask-image: radial-gradient(60% 90% at 50% 54%, #000 0%, transparent 100%); mask-image: radial-gradient(60% 90% at 50% 54%, #000 0%, transparent 100%); }
+/* Pikachu e Mega Lucario, uno di fronte all'altro: entrano dai lati appena l'immagine è arrivata, poi fluttuano */
+html.app .gx-splash-eroe { position: absolute; bottom: calc(-12 * var(--u)); height: calc(262 * var(--u)); width: auto; max-width: none; opacity: 0; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+html.app .gx-splash-eroe.pronta { opacity: 1; }
+html.app .gx-splash-sx { left: calc(8 * var(--u)); transform: scaleX(-1) rotate(7deg); filter: drop-shadow(0 0 calc(16 * var(--u)) rgba(255, 228, 60, .95)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(0, 0, 30, .5)); }
+html.app .gx-splash-dx { right: 0; filter: drop-shadow(0 0 calc(16 * var(--u)) rgba(80, 215, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(0, 0, 30, .5)); }
+html.app .gx-splash-sx.pronta { animation: gx-eroe-sx .8s cubic-bezier(.2, 1, .3, 1) backwards, gx-bob 3.2s .8s ease-in-out infinite; }
+html.app .gx-splash-dx.pronta { animation: gx-eroe-dx .8s cubic-bezier(.2, 1, .3, 1) .12s backwards, gx-bob 3.6s .92s ease-in-out infinite; }
+@keyframes gx-eroe-sx { from { opacity: 0; translate: calc(-170 * var(--u)) 0; } }
+@keyframes gx-eroe-dx { from { opacity: 0; translate: calc(170 * var(--u)) 0; } }
+html.app .gx-splash-logo { position: relative; z-index: 2; display: flex; align-items: center; gap: calc(14 * var(--u)); animation: gx-pop .7s cubic-bezier(.2, 1.4, .4, 1) backwards; }
+html.app .gx-splash-logo img { width: calc(66 * var(--u)); height: calc(66 * var(--u)); background: var(--gx-acc); border: calc(5 * var(--u)) solid #000; border-radius: 50%; box-shadow: 0 calc(6 * var(--u)) 0 #000; animation: gx-bob 2.6s ease-in-out infinite; }
 html.app .gx-splash-logo h1 { display: flex; flex-direction: column; align-items: flex-start; gap: calc(4 * var(--u)); margin: 0; font-family: var(--gx-font); text-transform: uppercase; }
-html.app .gx-splash-logo h1 span { font-size: calc(46 * var(--u)); font-weight: 900; line-height: .95; letter-spacing: .05em; color: #fff;
+html.app .gx-splash-logo h1 span { font-size: calc(42 * var(--u)); font-weight: 900; line-height: .95; letter-spacing: .05em; color: #fff;
     text-shadow: 0 calc(3 * var(--u)) 0 #000, calc(3 * var(--u)) calc(6 * var(--u)) 0 #000, 0 calc(-2 * var(--u)) 0 #000, calc(-3 * var(--u)) 0 0 #000, calc(3 * var(--u)) 0 0 #000; }
-html.app .gx-splash-logo h1 b { padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(4 * var(--u)) solid #000; border-radius: calc(6 * var(--u)); font-size: calc(24 * var(--u)); font-weight: 900; letter-spacing: .24em; rotate: -2.5deg; box-shadow: 0 calc(5 * var(--u)) 0 #000; }
-html.app .gx-splash-tocca { position: relative; margin: 0; font: 900 calc(18 * var(--u))/1 var(--gx-font); letter-spacing: .24em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 #000; animation: gx-lampeggia 1.3s ease-in-out infinite; }
+html.app .gx-splash-logo h1 b { padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(4 * var(--u)) solid #000; border-radius: calc(6 * var(--u)); font-size: calc(22 * var(--u)); font-weight: 900; letter-spacing: .24em; rotate: -2.5deg; box-shadow: 0 calc(5 * var(--u)) 0 #000; }
+html.app .gx-splash-tocca { position: absolute; left: 0; right: 0; bottom: calc(24 * var(--u)); z-index: 2; margin: 0; text-align: center; font: 900 calc(20 * var(--u))/1 var(--gx-font); letter-spacing: .26em; text-transform: uppercase;
+    text-shadow: 0 calc(3 * var(--u)) 0 #000, 0 0 calc(14 * var(--u)) rgba(255, 255, 255, .7); animation: gx-lampeggia 1.3s ease-in-out infinite; }
 
 /* ---------- 3. L'annuncio delle iscrizioni aperte ---------- */
 html.app .gx-manifesto { position: relative; align-items: center; gap: calc(6 * var(--u)); width: min(calc(360 * var(--u)), 92vw); padding: calc(18 * var(--u)) calc(18 * var(--u)) calc(16 * var(--u)); text-align: center; overflow: hidden;

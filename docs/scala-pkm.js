@@ -24,8 +24,8 @@
     };
     const RIMPICCIOLISCI = ['kyogre', 'wailord'];
     const INGRANDISCI = ['charizard'];
-    const A_TERRA = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'lunala', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'gyarados', 'porygon', 'porygon-2', 'porygon-z', 'dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
-    const GALLEGGIANO = ['yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'haunter'];
+    const A_TERRA = ['regieleki', 'iron-moth', 'poipole', 'naganadel', 'nihilego', 'cosmog', 'cosmoem', 'hoopa', 'sinistea', 'polteageist', 'sinistcha', 'poltchageist', 'phantump', 'runerigus', 'lampent', 'chandelure', 'gyarados', 'porygon', 'porygon-2', 'porygon-z', 'dodrio', 'umbreon', 'garchomp', 'murkrow', 'honchkrow', 'bronzong', 'scyther', 'tyranitar'];
+    const GALLEGGIANO = ['yamask', 'cofagrigus', 'orbeetle', 'shedinja', 'castform', 'beedrill', 'dustox', 'venomoth', 'volcarona', 'ribombee', 'frosmoth', 'darkrai', 'celebi', 'jirachi', 'mew', 'reuniclus', 'florges', 'magnemite', 'magneton', 'magnezone', 'klefki', 'kyogre', 'haunter', 'lunala'];
 
     const ALTEZZA_ALLENATORE = 170;       // px di progetto
     const ALTEZZA_ALLENATORE_M = 1.7;

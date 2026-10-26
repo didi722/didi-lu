@@ -32,6 +32,8 @@ test('chi fluttua: Volante, Levitazione, la lista dei galleggianti, Rayquaza; ma
     assert.equal(S.fluttua('Rayquaza', ['dragon', 'flying'], []), true);
     assert.equal(S.fluttua('Gyarados', ['water', 'flying'], []), false, 'sta a terra per scelta');
     assert.equal(S.fluttua('Tyranitar', ['rock', 'dark'], []), false);
+    assert.equal(S.fluttua('Lunala', ['psychic', 'ghost'], []), true, 'Lunala galleggia (e non sta più tra quelli a terra)');
+    assert.ok(!S.A_TERRA.includes('lunala'));
     assert.equal(S.nomeApi('Mr. Mime'), 'mr-mime');
     assert.equal(S.nomeApi('Giratina'), 'giratina-altered');
 });

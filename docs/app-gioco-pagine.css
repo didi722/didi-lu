@@ -259,11 +259,14 @@
     html.app-shell body.pg-matches .mp-carta:not(.mp-centro-carta) .mp-formato { opacity: .6; }
     html.app-shell body.pg-matches .mp-formato { position: relative; z-index: 2; display: block; padding: calc(4 * var(--u)) calc(20 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); max-width: 92%; }
     html.app-shell body.pg-matches .mp-formato span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: skewX(9deg); font: 900 calc(16 * var(--u))/1.15 var(--nb-font-titoli); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 calc(1.5 * var(--u)) 0 rgba(255, 255, 255, .5); }
-    html.app-shell body.pg-matches .mp-scena { flex: 1 1 auto; min-height: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) calc(104 * var(--u)) minmax(0, 1fr); align-items: end; column-gap: 0; }
+    html.app-shell body.pg-matches .mp-fila { flex: 1 1 auto; min-height: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) calc(104 * var(--u)) minmax(0, 1fr); align-items: end; column-gap: 0; }
     html.app-shell body.pg-matches .mp-lato { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); --pw: 128; transition: filter .3s ease, opacity .3s ease; }
     html.app-shell body.pg-matches .mp-perde { filter: saturate(.55) brightness(.85); opacity: .85; }
     html.app-shell body.pg-matches .mp-palco { position: relative; align-self: stretch; height: calc(140 * var(--u)); }
-    html.app-shell body.pg-matches .mp-avatar { position: absolute; left: 50%; bottom: calc(14 * var(--u)); translate: -50% 0; height: calc(112 * var(--u)); width: auto; max-width: calc(120 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell body.pg-matches .mp-scena { position: absolute; left: 0; right: 0; bottom: calc(16 * var(--u)); display: flex; align-items: flex-end; justify-content: center; gap: calc(3 * var(--u)); }
+    html.app-shell body.pg-matches .mp-avatar { height: calc(100 * var(--u)); width: auto; max-width: calc(110 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.8s ease-in-out infinite; }
+    html.app-shell body.pg-matches .mp-pkm { height: calc(60 * var(--u)); width: auto; max-width: calc(80 * var(--u)); object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .35)); pointer-events: none; transition: opacity .25s ease; }
+    html.app-shell body.pg-matches .mp-pkm:not([data-sc]) { opacity: 0; }
     html.app-shell body.pg-matches .mp-vince .pal-aura { filter: brightness(1.35) saturate(1.2); scale: 1.12; }
     html.app-shell body.pg-matches .mp-vince .mp-avatar { animation-duration: 1.8s; }
     html.app-shell body.pg-matches .mp-nome { max-width: 100%; box-sizing: border-box; padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(7 * var(--u)); font: 900 calc(14 * var(--u))/1.25 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
@@ -386,6 +389,23 @@
     html.app-shell body.pg-box #teamsGrid .card .pkm-sprite-container { position: absolute; left: 50%; bottom: calc(9 * var(--u)); z-index: 1; translate: -50% 0; width: auto; height: auto; margin: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0; }
     html.app-shell body.pg-box #teamsGrid .card .pkm-sprite { max-width: calc(46 * var(--u)); max-height: calc(48 * var(--u)); filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .3)); }
     html.app-shell body.pg-box #teamsGrid .card .pkm-info, html.app-shell body.pg-box #teamsGrid .card .pkm-hover-card { display: none !important; }
+    /* la scheda è una carta da gioco, non un blocco chiaro del sito: fondo scuro tinto dal suo colore, bordo e bagliore nel colore, il nome sul suo nastro */
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n+1) { --cc: #ffbd44; }
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n+2) { --cc: #6fa8ff; }
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n+3) { --cc: #ff7b6b; }
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n+4) { --cc: #b388eb; }
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n+5) { --cc: #47ea6a; }
+    html.app-shell body.pg-box #teamsGrid .card:nth-child(6n) { --cc: #ff93c8; }
+    html.app-shell body.pg-box #teamsGrid .card {
+        --cc: #ffbd44; color: #fff !important; overflow: hidden;
+        background: radial-gradient(120% 90% at 50% 105%, color-mix(in srgb, var(--cc) 38%, transparent) 0%, transparent 62%), linear-gradient(168deg, color-mix(in srgb, var(--cc) 26%, #2a2468) 0%, #17133a 78%) !important;
+        border-color: color-mix(in srgb, var(--cc) 72%, #000) !important; border-radius: calc(16 * var(--u)) !important;
+        box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000), 0 0 calc(22 * var(--u)) color-mix(in srgb, var(--cc) 30%, transparent), inset 0 0 0 calc(1.5 * var(--u)) rgba(255, 255, 255, .12) !important;
+    }
+    html.app-shell body.pg-box #teamsGrid .card::before, html.app-shell body.pg-box #teamsGrid .card::after { display: none !important; }
+    html.app-shell body.pg-box #teamsGrid .card-header .category { background: var(--cc); color: #000; border-radius: calc(5 * var(--u)); transform: skewX(-9deg); padding-left: calc(12 * var(--u)); padding-right: calc(12 * var(--u)); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-box #teamsGrid .card h3 { background: rgba(0, 0, 0, .55) !important; color: #fff !important; border: 0 !important; border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 color-mix(in srgb, var(--cc) 80%, #000) !important; }
+    html.app-shell body.pg-box #teamsGrid .card .pkm-grid { padding-top: calc(4 * var(--u)); }
     /* i badge del team nella scheda: le medagliette (toccandole si legge la spiegazione, app-box-badge.js); niente avanzamento verso il livello dopo */
     html.app-shell body.pg-box #teamsGrid .card .bt-barra-team { display: none !important; }
     html.app-shell body.pg-box #teamsGrid .card .bt-card { grid-area: bd; justify-self: start; display: inline-flex; flex-wrap: wrap; gap: calc(5 * var(--u)); margin: 0; }
@@ -636,6 +656,31 @@
     html.app-shell #sd-modal-overlay .sd-punteggio { padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) !important; font-size: calc(20 * var(--u)) !important; rotate: 0deg !important; }
     html.app-shell #sd-modal-overlay .sd-punteggio b { font-size: calc(22 * var(--u)) !important; }
     html.app-shell #sd-modal-overlay .sd-replay { grid-column: auto !important; width: auto !important; padding: calc(9 * var(--u)) calc(14 * var(--u)) calc(7 * var(--u)) !important; white-space: nowrap; font-size: calc(12 * var(--u)) !important; rotate: 0deg !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
+    /* la finestra del showdown a un match per volta (app-matches.js): il match è una schermata sola, grande, e si scorre di lato; sotto le frecce e un pallino per match */
+    html.app-shell #sd-modal-overlay .sd-corpo.sd-pista { position: relative; display: block !important; flex: 1 1 auto; min-height: calc(200 * var(--u)); padding: 0 !important; overflow: hidden !important; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-match {
+        position: absolute !important; inset: 0; box-sizing: border-box; display: grid !important; grid-template-columns: minmax(0, 1fr) calc(150 * var(--u)) minmax(0, 1fr) !important; grid-template-rows: 1fr auto !important; align-items: center; gap: calc(4 * var(--u)) calc(6 * var(--u)) !important;
+        padding: calc(26 * var(--u)) calc(14 * var(--u)) calc(8 * var(--u)) !important; border: 0 !important; translate: calc(var(--x, 0) * 100%) 0; transition: translate .38s cubic-bezier(.2, .9, .3, 1);
+    }
+    html.app-shell #sd-modal-overlay .sd-pista.trascinando .sd-match { transition: none; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-numero { top: calc(8 * var(--u)) !important; left: calc(14 * var(--u)) !important; font-size: calc(12 * var(--u)) !important; padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-team-1 { grid-column: 1; grid-row: 1 / span 2; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-team-2 { grid-column: 3; grid-row: 1 / span 2; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-punteggio { grid-column: 2; grid-row: 1; align-self: end; justify-self: center; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-punteggio b { font-size: calc(40 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-replay { grid-column: 2 !important; grid-row: 2; align-self: start; justify-self: center; margin-top: calc(4 * var(--u)); font-size: calc(14 * var(--u)) !important; padding: calc(10 * var(--u)) calc(22 * var(--u)) calc(8 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-team { gap: calc(7 * var(--u)); justify-content: flex-start; padding-top: calc(10 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-team-nome { font-size: calc(17 * var(--u)) !important; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-win { top: calc(-12 * var(--u)) !important; right: auto !important; left: 50%; translate: -50% 0; font-size: calc(11 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-lineup { display: grid !important; grid-template-columns: repeat(3, auto); justify-content: center; gap: calc(3 * var(--u)) calc(8 * var(--u)); min-height: 0; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-lineup .mini-gif { height: calc(54 * var(--u)); max-width: calc(66 * var(--u)); }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-senza-team .sd-team-nome { font-size: calc(15 * var(--u)) !important; opacity: .8; }
+    html.app-shell #sd-modal-overlay .sd-pager { flex: none; display: flex; align-items: center; justify-content: center; gap: calc(16 * var(--u)); padding: 0 0 calc(10 * var(--u)); }
+    html.app-shell #sd-modal-overlay .sd-freccia { width: calc(46 * var(--u)); height: calc(28 * var(--u)); padding: 0 0 calc(3 * var(--u)); cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(20 * var(--u))/1 var(--nb-font-titoli); }
+    html.app-shell #sd-modal-overlay .sd-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell #sd-modal-overlay .sd-punti { display: flex; gap: calc(8 * var(--u)); }
+    html.app-shell #sd-modal-overlay .sd-punti i { width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-radius: 50%; background: rgba(255, 255, 255, .25); border: calc(1.5 * var(--u)) solid rgba(0, 0, 0, .5); transition: scale .2s ease, background .2s ease; }
+    html.app-shell #sd-modal-overlay .sd-punti i.su { background: var(--gx-giallo); scale: 1.4; }
     @keyframes gx-finestra { from { opacity: 0; scale: .86; } to { opacity: 1; scale: 1; } }
     html.app-shell :is(#login-modal .modal-content, #modal-iscrizione .iscr-finestra, #modal-registered-teams > *, #sd-modal-overlay .sd-finestra, #teamModal .modal-content, #pkmDetailModal .modal-content,
         #sfida-overlay > *, .stats-modal-contenuto, .stats-modal > *, .ach-modal, #helper-modal-overlay .format-modal-wrapper, #format-modal-overlay > *, #format-modal .format-modal-content, #modal-rank-details-content, #modal-select-team) {
@@ -1056,8 +1101,16 @@
         box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: calc(5 * var(--u)); min-width: 0; padding: calc(9 * var(--u)) calc(10 * var(--u)); cursor: pointer; text-align: left; color: #000; font: inherit;
         background: var(--c); border: calc(3.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(13 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); transition: translate .08s, box-shadow .08s;
     }
-    /* le carte dei team sono tutte uguali (bianche): i colori sono dei giocatori, non dei team */
-    html.app-shell body.pg-practice .pr-carta { background: #fff; }
+    /* le carte dei team (contro la CPU) sono carte da gioco: fondo scuro tinto dal loro colore, bordo e bagliore nel colore, formato su una targhetta storta */
+    html.app-shell body.pg-practice .pr-carta {
+        color: #fff; position: relative; overflow: hidden;
+        background: radial-gradient(120% 90% at 50% 112%, color-mix(in srgb, var(--c) 40%, transparent) 0%, transparent 62%), linear-gradient(168deg, color-mix(in srgb, var(--c) 26%, #2a2468) 0%, #17133a 78%);
+        border-color: color-mix(in srgb, var(--c) 72%, #000); border-radius: calc(16 * var(--u));
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000), 0 0 calc(20 * var(--u)) color-mix(in srgb, var(--c) 28%, transparent), inset 0 0 0 calc(1.5 * var(--u)) rgba(255, 255, 255, .12);
+    }
+    html.app-shell body.pg-practice .pr-carta .pr-nome { font-size: calc(17 * var(--u)); text-shadow: 0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .5); }
+    html.app-shell body.pg-practice .pr-carta .pr-tag { background: var(--c); color: #000; border-radius: calc(5 * var(--u)); transform: skewX(-9deg); padding-left: calc(12 * var(--u)); padding-right: calc(12 * var(--u)); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-carta .pr-mini { width: calc(38 * var(--u)); height: calc(38 * var(--u)); filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4)); }
     /* l'alone dei giocatori sfuma verso l'alto invece di tagliarsi, e ai lati si dissolve */
     html.app-shell body.pg-practice .pr-g-giocatori { padding-top: calc(34 * var(--u)); margin-top: calc(-30 * var(--u)); padding-left: calc(14 * var(--u)); padding-right: calc(14 * var(--u)); -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
     html.app-shell body.pg-practice .pr-carta:active, html.app-shell body.pg-practice .pr-giocatore:active { translate: 0 calc(4 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
@@ -1076,8 +1129,8 @@
     html.app-shell body.pg-practice .pr-chips { display: flex; flex-wrap: nowrap; padding: calc(2 * var(--u)) calc(2 * var(--u)) calc(8 * var(--u)); overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
     html.app-shell body.pg-practice .pr-chips::-webkit-scrollbar { display: none; }
     html.app-shell body.pg-practice .pr-chip { flex: none; white-space: nowrap; }
-    html.app-shell body.pg-practice .pr-chip { padding: calc(6 * var(--u)) calc(12 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .03em; }
-    html.app-shell body.pg-practice .pr-chip:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
+    html.app-shell body.pg-practice .pr-chip { padding: calc(6 * var(--u)) calc(14 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
+    html.app-shell body.pg-practice .pr-chip:active { translate: 0 calc(2 * var(--u)); box-shadow: none; background: var(--gx-giallo); color: #000; border-color: var(--nb-ink, #000); }
     html.app-shell body.pg-practice .pr-vuoto, html.app-shell body.pg-practice .pr-carico { margin: calc(24 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
     html.app-shell body.pg-practice .pr-vuoto a { color: var(--gx-giallo); }
     html.app-shell body.pg-practice .pr-accedi { margin: auto; display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--u)); text-align: center; color: #fff; }
@@ -1096,9 +1149,10 @@
     html.app-shell body.pg-practice .pr-bottone-g { flex: none; padding: calc(7 * var(--u)) calc(16 * var(--u)) calc(5 * var(--u)); background: var(--gx-giallo); color: #000; text-decoration: none; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .5); font: 900 calc(12 * var(--u))/1 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-bottone-g:active { translate: 0 calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell body.pg-practice .pr-g-sfide > * { flex-basis: calc(146 * var(--u)); }
-    html.app-shell body.pg-practice .pr-g-sfide { padding-top: calc(46 * var(--u)); margin-top: calc(-42 * var(--u)); padding-left: calc(30 * var(--u)); padding-right: calc(30 * var(--u)); }
+    html.app-shell body.pg-practice .pr-g-sfide { padding-top: calc(16 * var(--u)); margin-top: 0; padding-left: calc(30 * var(--u)); padding-right: calc(30 * var(--u)); }
     html.app-shell body.pg-practice .pr-sfida { position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); min-width: 0; color: #fff; --pw: 112; }
     html.app-shell body.pg-practice .pr-sfida .pr-palco { height: calc(98 * var(--u)); }
+    html.app-shell body.pg-practice .pr-sfida .pal-aura { width: calc(90 * var(--u)); height: calc(90 * var(--u)); bottom: calc(12 * var(--u)); }
     html.app-shell body.pg-practice .pr-sfida .pr-avatar { height: calc(82 * var(--u)); max-width: calc(96 * var(--u)); bottom: calc(10 * var(--u)); }
     html.app-shell body.pg-practice .pr-sfida .pr-nome { padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: #000; color: color-mix(in srgb, var(--c) 70%, #fff); border-radius: calc(7 * var(--u)); font-size: calc(13 * var(--u)); }
     html.app-shell body.pg-practice .pr-etichetta { position: absolute; z-index: 2; top: calc(-6 * var(--u)); left: 50%; translate: -50% 0; white-space: nowrap; padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); background: #fff; color: #000; border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); transform: skewX(-9deg); font: 900 calc(9 * var(--u))/1.4 var(--nb-font-titoli); letter-spacing: .08em; text-transform: uppercase; }
