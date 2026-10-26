@@ -103,13 +103,13 @@
         const scalaTutti = () => { if (stato) stato.pista.querySelectorAll('.at-carta').forEach(c => { c.querySelectorAll('.at-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scala(c); }); };
         win.addEventListener('resize', scalaTutti);
 
-        const posiziona = () => {
+        const posiziona = (frac = 0) => {
             if (!stato) return;
             const n = stato.lista.length;
             stato.pista.querySelectorAll('.at-carta').forEach(el => {
                 const i = Number(el.dataset.i);
                 const d = Car.distanza(i, stato.corrente, n, true);
-                const a = Car.aspetto(d);
+                const a = Car.aspetto(d + frac);
                 el.style.setProperty('--x', a.x);
                 el.style.setProperty('--s', a.scala);
                 el.style.setProperty('--o', a.opacita);
@@ -161,7 +161,7 @@
             });
             if (!radice.dataset.gesti) {              // una volta sola, anche se i dati arrivano di nuovo
                 radice.dataset.gesti = '1';
-                Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1) });
+                Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 500 * Car.unitaPx(win), trascina: (f, fine) => { radice.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
                 Car.collegaPressione(radice, '.at-carta.at-centro .at-badge', { mostra: b => nota(b), nascondi: () => nota(null) });
                 doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
             }

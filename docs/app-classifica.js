@@ -83,13 +83,13 @@
 
         const vs = nome => { try { return win.Sfide && typeof win.Sfide.bottoneRanking === 'function' ? win.Sfide.bottoneRanking(nome) : ''; } catch (e) { return ''; } };
 
-        const posiziona = () => {
+        const posiziona = (frac = 0) => {
             if (!stato || !stato.pista) return;
             const n = stato.giocatori.length;
             stato.pista.querySelectorAll('.ac-carta').forEach(el => {
                 const i = Number(el.dataset.i);
                 const d = Car.distanza(i, stato.corrente, n, true);
-                const a = Car.aspetto(d);
+                const a = Car.aspetto(d + frac);
                 el.style.setProperty('--x', a.x);
                 el.style.setProperty('--s', a.scala);
                 el.style.setProperty('--o', a.opacita);
@@ -162,7 +162,7 @@
                 scheda.addEventListener('pointerup', lascia);
                 scheda.addEventListener('pointercancel', lascia);
                 scheda.addEventListener('pointerleave', lascia);
-                Car.collegaGesti(scheda, { avanti: () => amano(1), indietro: () => amano(-1) });
+                Car.collegaGesti(scheda, { avanti: () => amano(1), indietro: () => amano(-1), passoPx: () => 205 * Car.unitaPx(win), trascina: (f, fine) => { ripresa = Date.now() + RIPRENDI_DOPO; scheda.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
             }
             ultimiGiocatori = giocatori;
             decoraShowdown();

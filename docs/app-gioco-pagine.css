@@ -202,6 +202,7 @@
         translate: calc(var(--x, 0) * 205 * var(--u)) 0; scale: var(--s, 1); opacity: var(--o, 1); pointer-events: none;
         transition: translate .45s cubic-bezier(.2, .9, .3, 1), scale .45s cubic-bezier(.2, .9, .3, 1), opacity .35s ease;
     }
+    html.app-shell .trascinando :is(.at-carta, .as-carta, .ac-carta) { transition: none !important; }
     html.app-shell body.pg-matches .ac-carta.ac-centro { pointer-events: auto; }
     html.app-shell body.pg-matches .ac-carta:not(.ac-centro) { cursor: pointer; pointer-events: auto; }
     html.app-shell body.pg-matches .ac-carta:not(.ac-centro) .ac-testi { opacity: 0; }

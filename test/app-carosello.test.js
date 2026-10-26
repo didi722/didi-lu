@@ -184,3 +184,38 @@ test('collegaPressione: un tocco mostra la spiegazione per qualche secondo (e to
     c.stacca();
     assert.equal(el.quanti('pointerdown'), 0);
 });
+
+test('aspetto è continuo: a metà strada gli elementi sono a metà tra i due aspetti, e agli interi è quello di sempre', () => {
+    const m = Car.aspetto(0.5), a = Car.aspetto(0), b = Car.aspetto(1);
+    assert.ok(m.scala < a.scala && m.scala > b.scala);
+    assert.ok(m.opacita < a.opacita && m.opacita > b.opacita);
+    assert.equal(m.x, 0.5);
+    const verso = Car.aspetto(1.5);
+    assert.ok(verso.opacita < 0.62 && verso.opacita > 0, 'il secondo vicino compare man mano che si avvicina');
+    assert.equal(Car.aspetto(-0.5).x, -0.5);
+    let prima = 2;
+    for (const d of [0, .2, .5, .8, 1, 1.4, 1.8, 2, 3]) { const o = Car.aspetto(d).opacita; assert.ok(o <= prima + 1e-9, `non cresce ${d}`); prima = o; }
+});
+
+test('frazione: quanto si è trascinato in passi, mai oltre un passo', () => {
+    assert.equal(Car.frazione(-100, 400), -0.25);
+    assert.equal(Car.frazione(900, 400), 1);
+    assert.equal(Car.frazione(-900, 400), -1);
+    assert.equal(Car.frazione(50, 0), 0);
+});
+
+test('collegaGesti con trascina: il dito di lato fa seguire gli elementi, il rilascio li rimette a posto prima di cambiare', () => {
+    const ev = {}; const el = { style: {}, addEventListener: (t, f) => { ev[t] = f; }, removeEventListener() {}, setPointerCapture() {} };
+    const chiamate = [];
+    Car.collegaGesti(el, { avanti: () => chiamate.push('avanti'), indietro: () => chiamate.push('indietro'), passoPx: 400, trascina: (f, fine) => chiamate.push(`t${f.toFixed(2)}${fine ? 'F' : ''}`) });
+    ev.pointerdown({ clientX: 300, clientY: 100, pointerId: 1, pointerType: 'touch', target: {} });
+    ev.pointermove({ clientX: 280, clientY: 104, pointerId: 1 });
+    ev.pointermove({ clientX: 200, clientY: 104, pointerId: 1 });
+    ev.pointerup({ clientX: 200, clientY: 104 });
+    assert.deepEqual(chiamate, ['t-0.05', 't-0.25', 't0.00F', 'avanti']);
+    chiamate.length = 0;
+    ev.pointerdown({ clientX: 300, clientY: 100, pointerId: 1, pointerType: 'touch', target: {} });
+    ev.pointermove({ clientX: 290, clientY: 190, pointerId: 1 });      // in verticale: niente trascinamento
+    ev.pointerup({ clientX: 290, clientY: 190 });
+    assert.deepEqual(chiamate, []);
+});
