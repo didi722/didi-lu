@@ -7,6 +7,7 @@
         che da quel momento vale anche per il browser.
    Il colore del giocatore (players/<nome>/info/color) diventa --nb-accento: tinge la carta della pagina.
    I caratteri di ogni tema sono in fonts/tema-<id>.css e prendono il posto di Josefin Sans e Montserrat.
+   Nell'app (classe "app" su <html>) niente di tutto questo: lo stile è uno solo, quello dell'app (app.js, app-gioco.css).
    Modulo UMD: la parte pura (elenco, normalizzazione, URL) si prova anche in Node (test/temi.test.js).
    ===================================================================== */
 (function (root, factory) {
@@ -79,6 +80,12 @@
     }
 
     // ---- applicazione alla pagina ----
+    /** Dentro l'app (classe "app" su <html>, la mette app.js) lo stile è uno solo, quello dell'app: tema e colore del giocatore non si applicano. */
+    function inApp(doc) {
+        const html = doc && doc.documentElement;
+        return !!(html && html.classList && typeof html.classList.contains === 'function' && html.classList.contains('app'));
+    }
+
     function linkCaratteri(doc) {
         let l = doc.getElementById('temi-caratteri');
         if (!l) {
@@ -94,7 +101,7 @@
     function applica(root, id) {
         const doc = root.document;
         const t = normalizza(id);
-        if (!doc || !doc.documentElement) return t;
+        if (!doc || !doc.documentElement || inApp(doc)) return t;
         doc.documentElement.setAttribute('data-tema', t);
         const css = cssCaratteri(t);
         const l = doc.getElementById('temi-caratteri');
@@ -110,7 +117,7 @@
     /** Il colore del giocatore come --nb-accento (null/non valido: il verde della lega, tolto l'inline). */
     function applicaColore(root, colore) {
         const doc = root.document;
-        if (!doc || !doc.documentElement) return;
+        if (!doc || !doc.documentElement || inApp(doc)) return;
         const c = coloreValido(colore);
         if (c) doc.documentElement.style.setProperty('--nb-accento', c);
         else doc.documentElement.style.removeProperty('--nb-accento');

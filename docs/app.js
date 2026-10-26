@@ -6,10 +6,13 @@
        display-mode: standalone o fullscreen (e da navigator.standalone su iOS);
      - "apk": dentro l'app Android costruita con Capacitor (android-apk.yml): il suo user agent finisce con SantAlviseApp;
      - nel browser: tutto come prima, tranne un invito a installare (una volta, sulla home, dal telefono).
-   Come app (installata o apk) la pagina prende la classe "app" su <html> e il sito diventa un GIOCO da telefono, sempre in orizzontale:
+   Come app (installata o apk) la pagina prende la classe "app" su <html> e il sito diventa un GIOCO da telefono, sempre in orizzontale, pensato per giocare e
+   vedere i risultati (non una copia del sito):
      - lo schermo si blocca in orizzontale (plugin dell'APK o API del browser) e, nell'APK, le barre di sistema si nascondono; dove l'orientamento non
        si può bloccare (iPhone) un avviso chiede di girare il telefono;
-     - all'apertura si arriva al menù principale (menu.html): l'avatar del giocatore e le pagine del gioco;
+     - all'apertura si arriva al menù principale (menu.html): l'avatar del giocatore e poche tessere (Matches, Box, Trainers, Stats). Le pagine del sito che
+       nell'app non servono (stagioni, profilo, archivio, formati, regolamento) rimandano al menù: le stagioni aperte si annunciano lì;
+     - lo stile è uno solo, quello dell'app: il tema e il colore che il giocatore ha scelto per il sito non contano;
      - le altre pagine hanno l'interfaccia da gioco (app-gioco.css, app-gioco.js): indietro, menù, campanella, account in alto, niente barre del sito.
    Per vedere l'aspetto da app nel browser (anche da PC): aggiungi ?app=1 a un indirizzo del sito; ?app=0 per tornare indietro.
    Non fa niente dentro un altro frame (il Box incorporato nel simulatore). Le parti pure (riconoscimento, pagine, orientamento...) sono provate in
@@ -28,26 +31,23 @@
     const TOKEN_APK = 'SantAlviseApp';                 // lo aggiunge l'APK allo user agent (capacitor.config.json: android.appendUserAgent)
     const CHIAVE_FORZATA = 'appForzata';               // ?app=1 / ?app=0, ricordato in questo browser
     const CHIAVE_INVITO = 'invitoApp';                 // quando si è chiuso l'invito a installare
-    const CHIAVE_AVVIATA = 'appAvviata';               // (sessionStorage) l'app è già stata aperta in questa visita: la home non riporta più al menù
     const GIORNI_INVITO = 14;                          // dopo averlo chiuso, l'invito torna dopo tanti giorni
     const CONDIZIONE_TELEFONO = '(max-width: 700px), (max-height: 520px)';   // com'è fatto uno schermo da telefono (la stessa degli stili)
 
     // le pagine che non hanno l'interfaccia da gioco in alto: il menù principale, la battaglia (ha la sua), accesso, modello vuoto, amministrazione
     const SENZA_HUD = ['menu.html', 'battle.html', 'login.html', 'schermata-base-vuota.html', 'admin.html'];
 
+    // le pagine del sito che nell'app non servono: dal telefono rimandano al menù (le stagioni aperte si annunciano lì, l'iscrizione è hub.html)
+    const FUORI_APP = ['index.html', 'profile.html', 'palmares.html', 'formats.html', 'rules.html'];
+
     // Le pagine del gioco, come le vede il menù principale: nome, colore e pagine che le tengono accese (`pagine`: una pagina del sito che non è
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
     // Il colore è anche quello del titolo in alto nella pagina (app-gioco.js), così si capisce da dove si arriva.
     const VOCI = [
         { id: 'matches', et: 'Matches', href: 'matches.html', colore: '#ffbd44', pagine: ['matches.html'] },
-        { id: 'stagioni', et: 'Seasons', href: 'index.html', colore: '#31c489', pagine: ['index.html', 'hub.html'] },
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html', 'public.html'] },
-        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] },
-        { id: 'profilo', et: 'Profile', href: 'profile.html', colore: '#f78fb3', pagine: ['profile.html'] },
-        { id: 'archivio', et: 'Archive', href: 'palmares.html', colore: '#ffd23f', pagine: ['palmares.html'] },
-        { id: 'formati', et: 'Formats', href: 'formats.html', colore: '#4fd1c5', pagine: ['formats.html'] },
-        { id: 'regole', et: 'Rules', href: 'rules.html', colore: '#ff6b6b', pagine: ['rules.html'] }
+        { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] }
     ];
 
     // ---------- parti pure ----------
@@ -91,11 +91,8 @@
     /** La pagina ha l'interfaccia da gioco in alto (indietro, menù, campanella, account)? */
     const haHud = pagina => !SENZA_HUD.includes(nomePagina(pagina));
 
-    /**
-     * Va aperto il menù principale al posto della pagina? Solo la prima apertura dell'app di questa visita, e solo se si apre la home:
-     * dopo, "Seasons" è la home vera. `giaAvviata`: l'app era già stata aperta (sessionStorage).
-     */
-    const vaAlMenu = (pagina, giaAvviata) => !giaAvviata && nomePagina(pagina) === 'index.html';
+    /** La pagina del sito non ha posto nell'app (stagioni, profilo, archivio, formati, regolamento)? Dal telefono si va al menù. */
+    const fuoriApp = pagina => FUORI_APP.includes(nomePagina(pagina));
 
     /**
      * Va mostrato l'invito a installare? Solo dal telefono, nel browser, sulla home, se non è stato chiuso da poco.
@@ -182,6 +179,22 @@
         return d;
     }
 
+    // ---------- lo stile: uno solo ----------
+
+    const TEMA_APP = 'neubrutal';
+
+    /**
+     * Nell'app lo stile è quello dell'app, uguale per tutti: il tema e il colore che il giocatore ha scelto per il sito (temi.js li mette su <html> prima
+     * di noi) si tolgono, e temi.js non li rimette (guarda la classe "app"). I colori e le forme dell'app stanno in app-gioco.css.
+     */
+    function fissaStile(doc) {
+        const html = doc.documentElement;
+        html.setAttribute('data-tema', TEMA_APP);
+        if (html.style && typeof html.style.removeProperty === 'function') html.style.removeProperty('--nb-accento');
+        const caratteri = doc.getElementById ? doc.getElementById('temi-caratteri') : null;
+        if (caratteri && typeof caratteri.remove === 'function') caratteri.remove();
+    }
+
     // ---------- la pagina ----------
 
     function avvia(win) {
@@ -191,8 +204,6 @@
 
         const leggi = k => { try { return win.localStorage.getItem(k); } catch (e) { return null; } };
         const scrivi = (k, v) => { try { if (v == null) win.localStorage.removeItem(k); else win.localStorage.setItem(k, v); } catch (e) { /* storage bloccato */ } };
-        const leggiVisita = k => { try { return win.sessionStorage.getItem(k); } catch (e) { return null; } };
-        const scriviVisita = (k, v) => { try { win.sessionStorage.setItem(k, v); } catch (e) { /* senza memoria della visita il menù si riapre dalla home */ } };
 
         // ?app=1 / ?app=0: per vedere (o togliere) l'aspetto da app anche nel browser; si ricorda per le pagine dopo
         let forzata = leggi(CHIAVE_FORZATA) || '';
@@ -216,11 +227,10 @@
         if (os) html.classList.add('os-' + os);
         if (modo) html.classList.add('app', 'app-' + modo);
 
-        // la prima apertura dell'app (dal telefono) è il menù principale; da lì ogni pagina ha il suo posto
+        // lo stile dell'app è uno solo; le pagine del sito che nell'app non servono rimandano al menù principale (che annuncia le stagioni aperte)
         if (modo) {
-            const giaAvviata = !!leggiVisita(CHIAVE_AVVIATA);
-            scriviVisita(CHIAVE_AVVIATA, '1');
-            if (os && vaAlMenu(pagina, giaAvviata) && win.location && typeof win.location.replace === 'function') {
+            fissaStile(doc);
+            if (os && fuoriApp(pagina) && win.location && typeof win.location.replace === 'function') {
                 win.location.replace('menu.html');
                 return { modo, menu: true };
             }
@@ -332,8 +342,8 @@
     }
 
     return {
-        TOKEN_APK, VOCI, SENZA_HUD, GIORNI_INVITO, CONDIZIONE_TELEFONO, CHIAVE_AVVIATA,
-        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, vaAlMenu, proporreInstallazione,
+        TOKEN_APK, VOCI, SENZA_HUD, FUORI_APP, TEMA_APP, GIORNI_INVITO, CONDIZIONE_TELEFONO,
+        nomePagina, modoApp, sistema, dentroUnaApp, voceDi, haHud, fuoriApp, fissaStile, proporreInstallazione,
         pluginNativo, bloccaOrizzontale, orientamentoDellaPagina, barreNascoste, creaAvvisoRuota, avvia
     };
 });

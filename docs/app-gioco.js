@@ -7,9 +7,8 @@
      - la barra in alto: indietro, il menù principale (la griglia), il titolo della pagina sul nastro del suo colore, e a destra campanella, battaglie
        (quelle di sempre, di sfide.js: qui si sistemano solo, in app-gioco.css) e il giocatore, che apre le impostazioni (le stesse del menù);
      - la barra si nasconde scorrendo verso il basso e torna scorrendo verso l'alto;
-     - le pagine lunghe divise in schede (il Profilo): una sezione alla volta, con i tasti di fianco;
      - le pagine cambiano con una transizione (transizioni tra documenti, dove il browser le ha).
-   La parte pura (titoli, direzione dello scorrimento, schede) è provata in test/app-gioco.test.js; funziona nel browser (window.AppGioco) e in Node (require).
+   La parte pura (titoli, direzione dello scorrimento) è provata in test/app-gioco.test.js; funziona nel browser (window.AppGioco) e in Node (require).
    ===================================================================== */
 (function (radice, fabbrica) {
     const inNode = typeof module === 'object' && module.exports;
@@ -24,18 +23,13 @@
     'use strict';
 
     // il titolo delle pagine che non sono una tessera del menù (le altre prendono il nome della loro tessera)
-    const TITOLI = { 'hub.html': 'Season hub', 'public.html': 'Trainer' };
+    const TITOLI = { 'hub.html': 'Sign up', 'public.html': 'Trainer' };
+    // il colore del nastro delle pagine che non sono una tessera del menù e non seguono quella da cui si arriva
+    const COLORI = { 'hub.html': '#31c489' };
     // le pagine il cui titolo cambia con quello che si guarda (la stagione): il nastro porta il nome della tessera, accanto va quello della stagione
     const CON_SOTTOTITOLO = ['matches.html'];
+    const CON_NOME_STAGIONE = ['hub.html'];
     const SOGLIA_SCORRIMENTO = 8;           // pixel di scorrimento che contano come "sta scorrendo"
-
-    // le pagine lunghe divise in schede (una sezione alla volta): contenitore, sezioni e nome breve di ciascuna
-    const SCHEDE = {
-        'profile.html': {
-            contenitore: 'main.pf-main', sezioni: ':scope > section[id]', testa: 'section.hub-hero',
-            nomi: { 'pf-todo': 'To do', 'pf-rivali': 'Rivals', 'pf-personalita': 'Personality', 'pf-tema': 'Theme' }
-        }
-    };
 
     // ---------- parti pure ----------
 
@@ -55,6 +49,11 @@
     /** Quello che sta accanto al nastro (il nome della stagione guardata, in Matches), o '' */
     function sottotitolo(pagina, testo) {
         if (!CON_SOTTOTITOLO.includes(nomePagina(pagina))) return '';
+        return sottotitoloDa(testo);
+    }
+
+    /** Il testo accanto al nastro, da un nome qualsiasi (ripulito; vuoto se manca o è troppo lungo) */
+    function sottotitoloDa(testo) {
         const t = String(testo == null ? '' : testo).replace(/\s+/g, ' ').trim();
         return t && t.length <= 28 && !/^loading/i.test(t) ? t : '';
     }
@@ -62,30 +61,13 @@
     /** Il colore del nastro del titolo: quello della voce del menù a cui appartiene la pagina (il giallo del sito per le altre). */
     function coloreDi(pagina) {
         const voce = S.voceDi(pagina);
-        return voce ? voce.colore : '#ffbd44';
+        return COLORI[nomePagina(pagina)] || (voce ? voce.colore : '#ffbd44');
     }
 
     /** L'iniziale per il tondino del giocatore ("?" se non c'è un nome). */
     function iniziale(nome) {
         const m = String(nome || '').match(/[0-9A-Za-zÀ-ÿ]/);
         return m ? m[0].toUpperCase() : '?';
-    }
-
-    /** Quale scheda mostrare all'apertura: quella nominata nell'indirizzo (#id), altrimenti l'ultima scelta in questa visita, altrimenti la prima. */
-    function schedaIniziale(ids, indirizzo, salvata) {
-        const lista = Array.isArray(ids) ? ids : [];
-        const h = String(indirizzo || '').replace(/^#/, '');
-        if (h && lista.includes(h)) return h;
-        if (salvata && lista.includes(salvata)) return salvata;
-        return lista[0] || '';
-    }
-
-    /** Il nome sul tasto di una scheda: quello scelto per la pagina, altrimenti il titolo della sezione (spazi ripuliti, prima lettera maiuscola). */
-    function nomeScheda(id, titoloSezione, nomi) {
-        const scelto = nomi && nomi[id];
-        if (scelto) return scelto;
-        const t = String(titoloSezione || '').replace(/\s+/g, ' ').trim().toLowerCase();
-        return t ? t.charAt(0).toUpperCase() + t.slice(1) : String(id || '');
     }
 
     /** Scorrendo verso il basso la barra si nasconde, verso l'alto torna; vicino alla cima c'è sempre. */
@@ -149,13 +131,24 @@
         };
         scriviTitolo();
         if (originale && win.MutationObserver) new win.MutationObserver(scriviTitolo).observe(originale, { childList: true, characterData: true, subtree: true });
+        // l'iscrizione non scrive il nome della stagione (la pagina ha solo "Season hub"): accanto al nastro lo si legge da Firebase
+        if (CON_NOME_STAGIONE.includes(pagina)) {
+            const id = (() => { try { return new win.URLSearchParams(win.location.search).get('id'); } catch (e) { return null; } })();
+            let n = 0;
+            const cerca = () => {
+                if (!id) return;
+                if (win.firebase && win.firebase.apps && win.firebase.apps.length) {
+                    win.firebase.database().ref('seasons/' + id + '/info/name').once('value').then(v => { h1.lastChild.textContent = sottotitoloDa(v.val()); }).catch(() => { /* senza nome resta il solo nastro */ });
+                } else if (++n < 60) win.setTimeout(cerca, 150);
+            };
+            cerca();
+        }
 
         // ----- il giocatore: l'avatar nel tondino, il suo colore nel bordo -----
         let giocatore = null, admin = false;
         const aggiornaAccount = () => {
             const n = nomeUtente();
             account.classList.toggle('collegato', !!n);
-            if (giocatore && giocatore.colore) account.style.setProperty('--gx-giocatore', giocatore.colore); else account.style.removeProperty('--gx-giocatore');
             account.innerHTML = giocatore && giocatore.avatar
                 ? '<img src="' + C.esc(giocatore.avatar) + '" alt="" onerror="this.remove()">'
                 : n ? '<span>' + iniziale(n) + '</span>' : svg('utente');
@@ -198,74 +191,13 @@
             });
         }, { passive: true });
 
-        // ----- le pagine lunghe a schede: una sezione alla volta, con i tasti di fianco -----
-        const schede = creaSchede(win, doc, pagina, el);
-
         // ----- le pagine cambiano con una transizione (dove il browser sa farla) -----
         const stile = doc.createElement('style');
         stile.textContent = '@view-transition { navigation: auto; }';
         doc.head.appendChild(stile);
 
-        return { barra, opzioni, schede };
+        return { barra, opzioni };
     }
 
-    /** Divide in schede le pagine lunghe (SCHEDE): i tasti stanno di fianco, la scheda scelta resta per la visita e si può nominare nell'indirizzo (#id). */
-    function creaSchede(win, doc, pagina, el) {
-        const conf = SCHEDE[pagina];
-        if (!conf) return null;
-        const contenitore = doc.querySelector(conf.contenitore);
-        if (!contenitore) return null;
-        const sezioni = Array.from(contenitore.querySelectorAll(conf.sezioni));
-        if (sezioni.length < 2) return null;
-        const chiave = 'app-scheda:' + pagina;
-        const leggi = () => { try { return win.sessionStorage.getItem(chiave) || ''; } catch (e) { return ''; } };
-        const scrivi = id => { try { win.sessionStorage.setItem(chiave, id); } catch (e) { /* senza memoria si riparte dalla prima */ } };
-
-        const nav = el('nav', 'gx-schede');
-        nav.setAttribute('role', 'tablist');
-        const tasti = sezioni.map(sez => {
-            const t = sez.querySelector('h2');
-            const b = el('button', 'gx-scheda-tasto');
-            b.type = 'button';
-            b.setAttribute('role', 'tab');
-            b.setAttribute('data-suono', 'scegli');
-            b.dataset.scheda = sez.id;
-            b.textContent = nomeScheda(sez.id, t ? t.textContent : '', conf.nomi);
-            nav.appendChild(b);
-            return b;
-        });
-        // a sinistra le schede, a destra la striscia delle scorciatoie (se la pagina ne ha) e la scheda scelta
-        const testa = conf.testa ? doc.querySelector(conf.testa) : null;
-        const quadro = el('div', 'gx-con-schede');
-        const corpo = el('div', 'gx-schede-corpo');
-        contenitore.parentNode.insertBefore(quadro, testa && testa.parentNode === contenitore.parentNode ? testa : contenitore);
-        quadro.append(nav, corpo);
-        if (testa && testa.parentNode !== corpo) corpo.appendChild(testa);
-        corpo.appendChild(contenitore);
-
-        const ids = sezioni.map(sez => sez.id);
-        const mostra = (id, scorri) => {
-            if (!ids.includes(id)) return;
-            sezioni.forEach(sez => sez.classList.toggle('gx-scheda-attiva', sez.id === id));
-            tasti.forEach(b => { const on = b.dataset.scheda === id; b.classList.toggle('attivo', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
-            scrivi(id);
-            if (scorri) win.scrollTo(0, 0);
-        };
-        nav.addEventListener('click', e => {
-            const b = e.target.closest ? e.target.closest('.gx-scheda-tasto') : null;
-            if (b) mostra(b.dataset.scheda, true);
-        });
-        // un collegamento a una sezione (#pf-tema) apre la sua scheda
-        const daIndirizzo = () => { const id = String(win.location.hash || '').replace(/^#/, ''); if (ids.includes(id)) mostra(id, true); };
-        win.addEventListener('hashchange', daIndirizzo);
-        doc.addEventListener('click', e => {
-            const a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
-            const id = a ? a.getAttribute('href').slice(1) : '';
-            if (ids.includes(id)) { e.preventDefault(); mostra(id, true); }
-        });
-        mostra(schedaIniziale(ids, win.location.hash, leggi()), false);
-        return { nav, mostra };
-    }
-
-    return { TITOLI, CON_SOTTOTITOLO, SCHEDE, SOGLIA_SCORRIMENTO, nomePagina, titolo, sottotitolo, coloreDi, iniziale, schedaIniziale, nomeScheda, barraNascosta, creaSchede, avvia };
+    return { TITOLI, COLORI, CON_SOTTOTITOLO, CON_NOME_STAGIONE, SOGLIA_SCORRIMENTO, nomePagina, titolo, sottotitolo, sottotitoloDa, coloreDi, iniziale, barraNascosta, avvia };
 });

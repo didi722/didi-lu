@@ -89,6 +89,38 @@ test('riassuntoStagione: iscrizioni aperte -> JOIN all\'hub; in corso -> PLAY ai
     assert.match(docs('matches.html'), /urlParams\.get\('id'\)/);
 });
 
+test('riassuntoStagione con le iscrizioni aperte: se sei già dentro il tasto porta ai team, non a iscriversi', () => {
+    const dentro = M.riassuntoStagione({ id: 's4', info: { name: 'Spring Cup' }, stato: 'open', mancano: GIORNO }, true);
+    assert.deepEqual(dentro, { nome: 'Spring Cup', stato: 'open', testo: 'You\'re in · closes in 1d 0h', azione: 'TEAMS', href: 'hub.html?id=s4' });
+    // per le altre stagioni "iscritto" non conta
+    assert.equal(M.riassuntoStagione({ id: 's5', info: {}, stato: 'playing' }, true).azione, 'PLAY');
+});
+
+test('giaIscritto: il nome del giocatore tra gli iscritti, senza guardare maiuscole e spazi; senza nome o senza elenco no', () => {
+    assert.equal(M.giaIscritto(['Didi', 'Luca'], 'didi'), true);
+    assert.equal(M.giaIscritto(['didi'], ' DIDI '), true);
+    assert.equal(M.giaIscritto(['Luca'], 'didi'), false);
+    assert.equal(M.giaIscritto([], 'didi'), false);
+    assert.equal(M.giaIscritto(undefined, 'didi'), false);
+    assert.equal(M.giaIscritto(['Didi'], ''), false);
+    assert.equal(M.giaIscritto(['Didi'], null), false);
+});
+
+test('daAnnunciare: solo con le iscrizioni aperte, a un giocatore collegato non ancora iscritto, una volta sola per stagione', () => {
+    const aperta = { id: 's7', info: { name: 'Christmas Cup' }, stato: 'open', mancano: 3 * GIORNO + 3600000 };
+    const base = { stagione: aperta, giocatoreId: 'didi', iscritti: ['luca'], vista: null };
+    assert.deepEqual(M.daAnnunciare(base), { id: 's7', nome: 'Christmas Cup', tempo: '3d 1h', href: 'hub.html?id=s7' });
+    assert.equal(M.daAnnunciare({ ...base, vista: 's7' }), null, 'già annunciata');
+    assert.equal(M.daAnnunciare({ ...base, vista: 's6' }).id, 's7', 'una stagione nuova si annuncia anche se una vecchia era già stata vista');
+    assert.equal(M.daAnnunciare({ ...base, iscritti: ['Luca', 'DIDI'] }), null, 'è già dentro');
+    assert.equal(M.daAnnunciare({ ...base, giocatoreId: '' }), null, 'senza account non si sa chi sei');
+    assert.equal(M.daAnnunciare({ ...base, iscritti: undefined }), null, 'se non si sa chi è iscritto, meglio tacere');
+    assert.equal(M.daAnnunciare({ ...base, stagione: { ...aperta, stato: 'playing' } }), null);
+    assert.equal(M.daAnnunciare({ ...base, stagione: { ...aperta, stato: 'closed' } }), null);
+    assert.equal(M.daAnnunciare({ ...base, stagione: null }), null);
+    assert.equal(M.daAnnunciare({ ...base, stagione: { id: 's8', info: {}, stato: 'open', mancano: 60000 } }).nome, 'Season 8', 'senza nome: Season N');
+});
+
 // ---------- il markup ----------
 
 test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al volo no); è una pagina dell\'app come le altre (manifest, icona, app.css, app.js)', () => {
@@ -121,7 +153,7 @@ test('le tessere: una per pagina del gioco, con nome, sottotitolo, icona, colore
     const sottotitoli = Object.fromEntries([...js.match(/const sottotitoli = \{([\s\S]*?)\};/)[1].matchAll(/(\w+):\s*'([^']+)'/g)].map(m => [m[1], m[2]]));
     for (const v of A.VOCI) {
         assert.ok(sottotitoli[v.id], `manca il sottotitolo della tessera ${v.id}`);
-        assert.ok(sottotitoli[v.id].length <= 22, `${v.id}: il sottotitolo deve stare nella tessera`);
+        assert.ok(sottotitoli[v.id].length <= (v.id === 'matches' ? 30 : 22), `${v.id}: il sottotitolo deve stare nella tessera`);
         assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
     }
     assert.deepEqual(Object.keys(sottotitoli).sort(), A.VOCI.map(v => v.id).sort(), 'né tessere senza sottotitolo né sottotitoli senza tessera');
@@ -313,7 +345,7 @@ test('senza account: pannello "Welcome!" con il tasto Log in; il tasto apre la f
     const g = p.id('gx-giocatore').innerHTML;
     assert.match(g, /<b class="gx-nome">Welcome!<\/b>/);
     assert.match(g, /id="gx-accedi"/);
-    assert.equal(p.proprieta['--nb-accento'], '', 'nessun colore del giocatore');
+    assert.equal(p.proprieta['--nb-accento'], undefined, 'nessun colore del giocatore: lo stile dell\'app è uno solo');
     const login = p.id('gx-login');
     assert.equal(login.hidden, true);
     p.id('gx-accedi').click();
@@ -368,7 +400,7 @@ test('accesso: email e password a Firebase; riuscito chiude la finestra e suona 
     assert.match(m.id('gx-login-errore').textContent, /Check your inbox/);
 });
 
-test('con l\'account: avatar, nome, titolo, Elo e stagioni vinte nel pannello; il colore del giocatore va sul menù; l\'amministratore trova Admin nelle impostazioni', async () => {
+test('con l\'account: avatar, nome, titolo, Elo e stagioni vinte nel pannello; il suo colore NON cambia l\'aspetto (lo stile è uno solo); l\'amministratore trova Admin nelle impostazioni', async () => {
     const p = paginaMenu({
         sessione: { menuSplashVisto: '1' },
         utenti: { u1: { name: 'Didi', role: 'admin' } },
@@ -383,7 +415,7 @@ test('con l\'account: avatar, nome, titolo, Elo e stagioni vinte nel pannello; i
     assert.match(g, /<li><b>1234<\/b><span>Elo<\/span><\/li>/);
     assert.match(g, /<li><b>2<\/b><span>Seasons won<\/span><\/li>/);
     assert.doesNotMatch(g, /gx-accedi/);
-    assert.equal(p.proprieta['--nb-accento'], '#e63946');
+    assert.equal(p.proprieta['--nb-accento'], undefined, 'il colore scelto per il sito non conta nell\'app');
     // le impostazioni: Admin e Log out
     p.id('gx-opzioni-apri').click();
     assert.ok(p.registro['gx-opzioni'], 'la finestra delle impostazioni è nata');
@@ -398,7 +430,7 @@ test('con l\'account: avatar, nome, titolo, Elo e stagioni vinte nel pannello; i
     p.accedi(null);
     await passaUnGiro();
     assert.match(p.id('gx-giocatore').innerHTML, /Welcome!/);
-    assert.equal(p.proprieta['--nb-accento'], '');
+    assert.equal(p.proprieta['--nb-accento'], undefined);
 });
 
 test('giocatore con pochi showdown: Elo "N/A"; senza titolo la riga del titolo non c\'è', async () => {
@@ -439,13 +471,93 @@ test('la stagione del momento: il nastro sotto il giocatore, col tempo che manca
     assert.doesNotMatch(vuoto.id('gx-giocatore').innerHTML, /gx-stagione/);
 });
 
+test('l\'annuncio delle iscrizioni aperte: dopo la schermata del titolo, a chi non è iscritto, con il nome della stagione e il tasto che porta a iscriversi; una volta sola per stagione', async () => {
+    const scade = new Date(Date.now() + 4 * GIORNO + 3600000 + 60000).toISOString();
+    const stagioni = {
+        sbeta: { info: { status: 'closed', name: 'Beta' } },
+        s1: { info: { status: 'open', name: 'Christmas Cup', deadline: scade }, iscritti: { Luca: true } }
+    };
+    const utenti = { u1: { name: 'Didi' } };
+    const giocatori = { didi: { info: { name: 'Didi' }, stats: {} } };
+    const carica = async opzioni => {
+        const p = paginaMenu({ stagioni, utenti, giocatori, ...opzioni });
+        p.accedi({ uid: 'u1', email: 'd@x.it' });
+        for (let i = 0; i < 6; i++) await passaUnGiro();
+        return p;
+    };
+    // la schermata del titolo è già passata: il messaggio compare appena si sa chi sei e quale stagione è aperta
+    const p = await carica({ sessione: { menuSplashVisto: '1' } });
+    const a = p.id('gx-annuncio');
+    assert.equal(a.hidden, false);
+    assert.equal(p.id('gx-annuncio-nome').textContent, 'Christmas Cup');
+    assert.equal(p.id('gx-annuncio-tempo').textContent, 'Closes in 4d 1h');
+    assert.equal(p.id('gx-annuncio-vai').attributi.href, 'hub.html?id=s1');
+    assert.ok(p.classiHtml.has('gx-dialogo-aperto'), 'la schermata dietro sta ferma');
+    assert.deepEqual(p.suoni.slice(-1), ['ok']);
+    assert.equal(p.memoria.appStagioneVista, 's1', 'la stagione annunciata si ricorda');
+    // si chiude con "Later", toccando lo sfondo e con Esc
+    a.scatta('click', { target: { closest: sel => (sel === '[data-chiudi]' ? {} : null) } });
+    assert.equal(a.hidden, true);
+    assert.ok(!p.classiHtml.has('gx-dialogo-aperto'));
+    // l'annuncio non torna nella stessa visita, né nelle prossime (la stagione è già stata annunciata)
+    const dopo = await carica({ sessione: { menuSplashVisto: '1' }, memoria: { appStagioneVista: 's1' } });
+    assert.equal(dopo.id('gx-annuncio').hidden, true);
+    // una stagione nuova si annuncia di nuovo
+    const nuova = await carica({ sessione: { menuSplashVisto: '1' }, memoria: { appStagioneVista: 's0' } });
+    assert.equal(nuova.id('gx-annuncio').hidden, false);
+    // c'è anche il nastro con "JOIN" sotto il giocatore, anche dopo aver chiuso il messaggio
+    assert.match(p.id('gx-giocatore').innerHTML, /<em>JOIN<\/em>/);
+    // sfondo e Esc
+    const q = await carica({ sessione: { menuSplashVisto: '1' } });
+    q.id('gx-annuncio').scatta('click', { target: q.id('gx-annuncio') });
+    assert.equal(q.id('gx-annuncio').hidden, true, 'toccando lo sfondo');
+    const r = await carica({ sessione: { menuSplashVisto: '1' } });
+    r.doc.ascoltatori.keydown.forEach(f => f({ key: 'Escape' }));
+    assert.equal(r.id('gx-annuncio').hidden, true, 'con Esc');
+});
+
+test('l\'annuncio delle iscrizioni aperte: aspetta la schermata del titolo; non compare a chi è già iscritto, a chi non ha un account, né con la stagione già iniziata', async () => {
+    const scade = new Date(Date.now() + 2 * GIORNO).toISOString();
+    const utenti = { u1: { name: 'Didi' } };
+    const giocatori = { didi: { info: { name: 'Didi' }, stats: {} } };
+    const aperta = { sbeta: { info: { status: 'closed' } }, s1: { info: { status: 'open', name: 'Spring Cup', deadline: scade }, iscritti: { Luca: true } } };
+    const giro = async () => { for (let i = 0; i < 6; i++) await passaUnGiro(); };
+    // con la schermata del titolo ancora sopra: aspetta; si mostra a fine animazione
+    const titolo = paginaMenu({ stagioni: aperta, utenti, giocatori });
+    titolo.accedi({ uid: 'u1' });
+    await giro();
+    assert.equal(titolo.id('gx-annuncio').hidden, true, 'prima il titolo');
+    titolo.id('gx-splash').click();
+    assert.equal(titolo.id('gx-annuncio').hidden, true, 'e finché l\'animazione non finisce');
+    titolo.timer.find(t => t.ms === 520).f();
+    assert.equal(titolo.id('gx-annuncio').hidden, false, 'poi il messaggio');
+    // già iscritto (anche con le maiuscole diverse)
+    const dentro = paginaMenu({ sessione: { menuSplashVisto: '1' }, utenti, giocatori, stagioni: { sbeta: aperta.sbeta, s1: { info: aperta.s1.info, iscritti: { DIDI: true } } } });
+    dentro.accedi({ uid: 'u1' });
+    await giro();
+    assert.equal(dentro.id('gx-annuncio').hidden, true);
+    assert.equal(dentro.memoria.appStagioneVista, undefined, 'e niente da ricordare');
+    assert.match(dentro.id('gx-giocatore').innerHTML, /<em>TEAMS<\/em>/, 'il nastro porta ai suoi team');
+    // senza account
+    const ospite = paginaMenu({ sessione: { menuSplashVisto: '1' }, utenti, giocatori, stagioni: aperta });
+    await giro();
+    assert.equal(ospite.id('gx-annuncio').hidden, true);
+    // stagione già in corso (iscrizioni chiuse)
+    const inCorso = paginaMenu({ sessione: { menuSplashVisto: '1' }, utenti, giocatori, stagioni: { sbeta: aperta.sbeta, s1: { info: { status: 'playing', name: 'Spring Cup' } } } });
+    inCorso.accedi({ uid: 'u1' });
+    await giro();
+    assert.equal(inCorso.id('gx-annuncio').hidden, true);
+    // il tasto dell'annuncio porta all'iscrizione: la pagina esiste e legge l'id
+    assert.match(docs('hub.html'), /urlParams\.get\('id'\)/);
+});
+
 test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) e poi legge giocatore e stagione', async () => {
     const p = paginaMenu({ sessione: { menuSplashVisto: '1' }, firebaseAttivo: false });
     assert.equal(p.intervalli.length, 2, 'il conto alla rovescia e l\'attesa di Firebase');
     const attesa = p.intervalli.find(i => i.ms === 150);
     assert.ok(attesa);
     // le tessere e il pannello "Welcome!" ci sono comunque
-    assert.equal((p.id('gx-tessere').innerHTML.match(/gx-tessera /g) || []).length, 9);
+    assert.equal((p.id('gx-tessere').innerHTML.match(/gx-tessera /g) || []).length, 4);
     assert.match(p.id('gx-giocatore').innerHTML, /Welcome!/);
     // Firebase arriva
     p.win.firebase.apps.push({});

@@ -78,10 +78,10 @@ test('dentroUnaApp: i browser incorporati (Instagram, Facebook, WebView) non pos
     assert.equal(A.dentroUnaApp(undefined), false);
 });
 
-test('le tessere del menù (VOCI): nove, con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
-    assert.deepEqual(A.VOCI.map(v => v.id), ['matches', 'stagioni', 'box', 'trainers', 'stats', 'profilo', 'archivio', 'formati', 'regole']);
-    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 9, 'nomi diversi');
-    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 9, 'colori diversi: ogni schermata ha il suo');
+test('le tessere del menù (VOCI): quattro (giocare e vedere i risultati), con colore, pagina e icona; le pagine citate esistono; ogni pagina appartiene a una sola tessera', () => {
+    assert.deepEqual(A.VOCI.map(v => v.id), ['matches', 'box', 'trainers', 'stats']);
+    assert.equal(new Set(A.VOCI.map(v => v.et)).size, 4, 'nomi diversi');
+    assert.equal(new Set(A.VOCI.map(v => v.colore)).size, 4, 'colori diversi: ogni schermata ha il suo');
     const viste = [];
     for (const v of A.VOCI) {
         assert.match(v.colore, /^#[0-9a-f]{6}$/i, `${v.id}: colore`);
@@ -92,17 +92,17 @@ test('le tessere del menù (VOCI): nove, con colore, pagina e icona; le pagine c
     assert.equal(new Set(viste).size, viste.length, 'una pagina in due tessere');
     assert.ok(!viste.includes('menu.html'));
     for (const p of A.SENZA_HUD) assert.ok(esiste(p), `manca ${p}`);
+    // le pagine del sito che nell'app non servono non stanno in nessuna tessera
+    for (const p of A.FUORI_APP) { assert.ok(esiste(p), `manca ${p}`); assert.ok(!viste.includes(p), `${p} è fuori dall'app ma ha una tessera`); }
 });
 
-test('voceDi: a quale tessera appartiene la pagina (la scheda di un allenatore e l\'hub stanno con la loro); battaglia, accesso e menù a nessuna', () => {
+test('voceDi: a quale tessera appartiene la pagina (la scheda di un allenatore sta con Trainers); iscrizione, battaglia, accesso, menù e pagine fuori dall\'app a nessuna', () => {
     assert.equal(A.voceDi('/didi-lu/matches.html').id, 'matches');
-    assert.equal(A.voceDi('/didi-lu/index.html').id, 'stagioni');
-    assert.equal(A.voceDi('/didi-lu/hub.html').id, 'stagioni');
-    assert.equal(A.voceDi('/didi-lu/').id, 'stagioni');
+    assert.equal(A.voceDi('/didi-lu/box.html').id, 'box');
     assert.equal(A.voceDi('/didi-lu/players.html').id, 'trainers');
     assert.equal(A.voceDi('/didi-lu/public.html?player=didi').id, 'trainers');
-    assert.equal(A.voceDi('/didi-lu/palmares.html').id, 'archivio');
-    for (const p of ['battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
+    assert.equal(A.voceDi('/didi-lu/stats.html').id, 'stats');
+    for (const p of ['hub.html', 'index.html', 'palmares.html', 'battle.html', 'login.html', 'menu.html', 'admin.html', 'schermata-base-vuota.html']) assert.equal(A.voceDi(p), null, p);
 });
 
 test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, battaglia, accesso, amministrazione e modello vuoto no', () => {
@@ -110,11 +110,24 @@ test('haHud: tutte le pagine del gioco hanno l\'interfaccia in alto; menù, batt
     for (const p of ['index.html', 'matches.html', 'box.html', 'players.html', 'stats.html', 'profile.html', 'public.html', 'hub.html', 'palmares.html', 'rules.html', 'formats.html']) assert.equal(A.haHud(p), true, p);
 });
 
-test('vaAlMenu: la prima apertura dell\'app dalla home porta al menù; dopo, "Seasons" è la home vera; le altre pagine (un avviso, un link) si aprono dove sono', () => {
-    assert.equal(A.vaAlMenu('/didi-lu/index.html', false), true);
-    assert.equal(A.vaAlMenu('/didi-lu/', false), true);
-    assert.equal(A.vaAlMenu('/didi-lu/index.html', true), false);
-    for (const p of ['matches.html', 'hub.html', 'box.html', 'menu.html']) assert.equal(A.vaAlMenu('/didi-lu/' + p, false), false, p);
+test('fuoriApp: stagioni (home), profilo, archivio, formati e regolamento non hanno posto nell\'app e rimandano al menù; il resto si apre dov\'è', () => {
+    for (const p of ['/didi-lu/index.html', '/didi-lu/', '/didi-lu/profile.html', '/didi-lu/palmares.html?x=1', '/didi-lu/formats.html', '/didi-lu/rules.html#a']) assert.equal(A.fuoriApp(p), true, p);
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'public.html', 'stats.html', 'menu.html', 'battle.html']) assert.equal(A.fuoriApp('/didi-lu/' + p), false, p);
+});
+
+test('fissaStile: lo stile è quello dell\'app: tema predefinito sul sito, via il colore del giocatore e i caratteri del tema scelto', () => {
+    const html = elemento('html');
+    html.attributi['data-tema'] = 'arcade';
+    const tolte = [];
+    html.style.removeProperty = k => tolte.push(k);
+    let carattere = 0;
+    A.fissaStile({ documentElement: html, getElementById: id => (id === 'temi-caratteri' ? { remove: () => { carattere++; } } : null) });
+    assert.equal(html.attributi['data-tema'], 'neubrutal');
+    assert.equal(A.TEMA_APP, 'neubrutal');
+    assert.deepEqual(tolte, ['--nb-accento']);
+    assert.equal(carattere, 1);
+    // senza il foglio dei caratteri (tema predefinito) e senza style: non lancia
+    assert.doesNotThrow(() => A.fissaStile({ documentElement: elemento('html'), getElementById: () => null }));
 });
 
 test('proporreInstallazione: solo dal telefono, nel browser, sulla home; chiuso, torna dopo 14 giorni', () => {
@@ -293,21 +306,27 @@ test('dentro l\'APK, in una pagina del gioco: classe app-apk, nessun service wor
     assert.equal(s.invito(), null, 'dentro l\'app non si invita a installare l\'app');
 });
 
-test('la prima apertura dell\'app dalla home porta al menù (una volta per visita); il menù ricorda che l\'app è stata aperta', () => {
+test('dall\'app (telefono) le pagine che nell\'app non servono portano al menù, ogni volta: la home (stagioni), profilo, archivio, formati e regolamento', () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 });
     assert.deepEqual(s.risultato, { modo: 'apk', menu: true });
     assert.deepEqual(s.reindirizzato, ['menu.html']);
-    assert.equal(s.sessione[A.CHIAVE_AVVIATA], '1');
     assert.deepEqual(s.script(), [], 'la pagina che sta per essere sostituita non carica niente');
-    // la visita continua: "Seasons" porta alla home vera, senza rimbalzare al menù
-    const t = apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5, sessione: s.sessione });
-    assert.deepEqual(t.reindirizzato, []);
-    assert.deepEqual(t.classi(), ['app', 'app-apk', 'app-shell', 'os-android']);
-    // un avviso o un link che aprono una pagina qualsiasi non passano dal menù, ma contano come "aperta"
-    const u = apri({ ua: UA.apk, percorso: '/didi-lu/matches.html', punti: 5 });
-    assert.deepEqual(u.reindirizzato, []);
-    assert.equal(u.sessione[A.CHIAVE_AVVIATA], '1');
-    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5, sessione: u.sessione }).reindirizzato, []);
+    assert.deepEqual(s.fogli(), []);
+    // sempre, non solo la prima volta (non c\'è più una pagina "Seasons")
+    assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/index.html', punti: 5 }).reindirizzato, ['menu.html']);
+    for (const p of ['profile.html', 'palmares.html', 'formats.html', 'rules.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, ['menu.html'], p);
+    // le pagine del gioco (anche l\'iscrizione, dove porta il messaggio delle stagioni aperte) si aprono dove sono
+    for (const p of ['matches.html', 'hub.html', 'box.html', 'players.html', 'public.html', 'stats.html']) assert.deepEqual(apri({ ua: UA.apk, percorso: '/didi-lu/' + p, punti: 5 }).reindirizzato, [], p);
+});
+
+test('lo stile è uno solo: dall\'app il tema e il colore del giocatore (già messi dal sito) si tolgono; nel browser restano', () => {
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/matches.html', punti: 5 });
+    assert.equal(s.html.attributi['data-tema'], 'neubrutal');
+    const b = apri({ ua: UA.android, percorso: '/didi-lu/matches.html', punti: 5 });
+    assert.equal(b.html.attributi['data-tema'], undefined, 'nel browser nessuno tocca il tema');
+    // anche nel menù e nella battaglia
+    assert.equal(apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5 }).html.attributi['data-tema'], 'neubrutal');
+    assert.equal(apri({ ua: UA.apk, percorso: '/didi-lu/battle.html' }).html.attributi['data-tema'], 'neubrutal');
 });
 
 test('il menù dal telefono solo dove ha senso: non dal computer (app installata sul PC), non nel browser, non nella battaglia', () => {
@@ -318,7 +337,7 @@ test('il menù dal telefono solo dove ha senso: non dal computer (app installata
 });
 
 test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-menu.css); niente interfaccia in alto', () => {
-    const s = apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5, sessione: { [A.CHIAVE_AVVIATA]: '1' } });
+    const s = apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5 });
     assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android']);
     assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-menu.css']);
     assert.deepEqual(s.script(), ['app-suoni.js'], 'i suoni dei tasti ci sono; il resto lo collega la pagina (app-comune.js, app-menu.js)');
@@ -327,7 +346,7 @@ test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-m
 
 test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna interfaccia in alto; la battaglia ha il suo foglio e il suo script', () => {
     for (const p of ['login.html', 'admin.html', 'schermata-base-vuota.html']) {
-        const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p, sessione: { [A.CHIAVE_AVVIATA]: '1' } });
+        const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p });
         assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android'], p);
         assert.deepEqual(s.fogli(), [], p);
         assert.deepEqual(s.script(), ['app-suoni.js'], p);

@@ -2,7 +2,7 @@
 // Le parti che il menù principale e le pagine dell'app hanno in comune (docs/app-comune.js):
 //   - le icone (ogni nome usato dall'app c'è, ogni disegno è ben fatto);
 //   - il giocatore per l'app (avatar, nome, colore, titolo, Elo solo se classificato, stagioni vinte) e la sua lettura da Firebase;
-//   - le tessere della finestra delle impostazioni (suono, vibrazione, avvisi, tema, ricarica, amministrazione, esci/entra);
+//   - le tessere della finestra delle impostazioni (suono, vibrazione, avvisi, ricarica, amministrazione, esci/entra: il tema non si sceglie, nell'app lo stile è uno solo);
 //   - la finestra in sé, con una pagina finta: apre e chiude (X, sfondo, Esc, tasto indietro), ogni tessera fa la sua cosa.
 //
 //   npm test        (dalla cartella principale)
@@ -28,7 +28,7 @@ test('icone: ogni nome che l\'app usa esiste; sono disegni 24x24 fatti di tratti
     for (const m of sorgenti.matchAll(/icona:\s*([^,}]+)[,}]/g)) for (const n of m[1].matchAll(/'(\w+)'/g)) usate.add(n[1]);
     for (const m of sorgenti.matchAll(/svg\(([^)]*\?[^)]*)\)/g)) for (const n of m[1].matchAll(/'(\w+)'/g)) usate.add(n[1]);
     for (const v of A.VOCI) usate.add(v.id);                // le tessere del menù le disegna app-menu.js con svg(v.id)
-    assert.ok(usate.size >= 20, 'icone usate trovate: ' + [...usate].join(', '));
+    assert.ok(usate.size >= 14, 'icone usate trovate: ' + [...usate].join(', '));
     for (const n of usate) assert.ok(C.ICONE[n], `l'icona "${n}" è usata ma non esiste`);
     // niente icone orfane (si perdono nel file)
     for (const n of Object.keys(C.ICONE)) assert.ok(usate.has(n), `l'icona "${n}" non la usa nessuno`);
@@ -115,13 +115,13 @@ test('leggiGiocatore: dall\'account (users/<uid>) alla scheda (players/<nome>); 
 
 test('tessereOpzioni: suono e vibrazione sempre; gli avvisi solo per chi è collegato e se il telefono li può avere; Admin solo agli amministratori; in fondo esci/entra', () => {
     const etichette = s => C.tessereOpzioni(s).map(t => t.etichetta);
-    assert.deepEqual(etichette({}), ['Sound', 'Vibration', 'Theme', 'Refresh', 'Log in']);
-    assert.deepEqual(etichette(null), ['Sound', 'Vibration', 'Theme', 'Refresh', 'Log in']);
-    assert.deepEqual(etichette({ utente: true, nome: 'Didi', push: 'spento' }), ['Sound', 'Vibration', 'Alerts', 'Theme', 'Refresh', 'Log out']);
-    assert.deepEqual(etichette({ utente: true, push: 'non-supportato' }), ['Sound', 'Vibration', 'Theme', 'Refresh', 'Log out']);
-    assert.deepEqual(etichette({ utente: true, push: '' }), ['Sound', 'Vibration', 'Theme', 'Refresh', 'Log out'], 'finché non si sa se può averli, niente tessera');
-    assert.deepEqual(etichette({ utente: false, push: 'acceso' }), ['Sound', 'Vibration', 'Theme', 'Refresh', 'Log in'], 'senza account niente avvisi');
-    assert.deepEqual(etichette({ utente: true, admin: true, push: 'acceso' }), ['Sound', 'Vibration', 'Alerts', 'Theme', 'Refresh', 'Admin', 'Log out']);
+    assert.deepEqual(etichette({}), ['Sound', 'Vibration', 'Refresh', 'Log in']);
+    assert.deepEqual(etichette(null), ['Sound', 'Vibration', 'Refresh', 'Log in']);
+    assert.deepEqual(etichette({ utente: true, nome: 'Didi', push: 'spento' }), ['Sound', 'Vibration', 'Alerts', 'Refresh', 'Log out']);
+    assert.deepEqual(etichette({ utente: true, push: 'non-supportato' }), ['Sound', 'Vibration', 'Refresh', 'Log out']);
+    assert.deepEqual(etichette({ utente: true, push: '' }), ['Sound', 'Vibration', 'Refresh', 'Log out'], 'finché non si sa se può averli, niente tessera');
+    assert.deepEqual(etichette({ utente: false, push: 'acceso' }), ['Sound', 'Vibration', 'Refresh', 'Log in'], 'senza account niente avvisi');
+    assert.deepEqual(etichette({ utente: true, admin: true, push: 'acceso' }), ['Sound', 'Vibration', 'Alerts', 'Refresh', 'Admin', 'Log out']);
     // gli stati
     const t = s => Object.fromEntries(C.tessereOpzioni(s).map(x => [x.etichetta, x]));
     assert.equal(t({ suono: true }).Sound.stato, 'ON');
@@ -140,7 +140,7 @@ test('tessereOpzioni: suono e vibrazione sempre; gli avvisi solo per chi è coll
     assert.equal(t({}).Sound.azione, 'suono');
     assert.equal(t({}).Vibration.azione, 'vibra');
     assert.equal(t({}).Refresh.azione, 'ricarica');
-    assert.equal(t({}).Theme.href, 'profile.html#pf-tema', 'il tema si sceglie nella scheda del Profile');
+    assert.equal(t({}).Theme, undefined, 'nell\'app il tema non si sceglie');
     assert.equal(t({ utente: true, admin: true }).Admin.href, 'admin.html');
     assert.deepEqual([t({ utente: true, nome: 'Didi' })['Log out'].azione, t({ utente: true, nome: 'Didi' })['Log out'].stato, t({ utente: true })['Log out'].classe], ['esci', 'Didi', 'gx-rossa']);
     assert.deepEqual([t({})['Log in'].azione, t({})['Log in'].classe], ['entra', 'gx-verde']);
@@ -152,7 +152,6 @@ test('tessereOpzioni: suono e vibrazione sempre; gli avvisi solo per chi è coll
             if (x.href) assert.ok(fs.existsSync(path.join(DOCS, x.href.split('#')[0])), x.href);
         }
     }
-    assert.ok(docs('profile.html').includes('id="pf-tema"'), 'la scheda del tema c\'è nel Profile');
 });
 
 // ---------- la finestra delle impostazioni, con una pagina finta ----------
@@ -232,12 +231,12 @@ test('finestra delle impostazioni: nasce alla prima apertura (con le classi dell
     assert.equal(p.opzioni.aperta(), true);
     assert.ok(p.classiHtml.has('gx-dialogo-aperto'), 'la pagina sotto non scorre');
     assert.deepEqual(p.registro.pushState.map(s => s.appOpzioni), [1], 'il tasto indietro del telefono chiude la finestra');
-    // senza account: suono, vibrazione, tema, ricarica, accedi
+    // senza account: suono, vibrazione, ricarica, accedi
     const g = p.griglia();
-    assert.equal((g.match(/class="gx-opzione/g) || []).length, 5);
+    assert.equal((g.match(/class="gx-opzione/g) || []).length, 4);
     assert.match(g, /data-azione="suono"/);
     assert.match(g, /<small>ON<\/small>/);
-    assert.match(g, /<a class="gx-opzione" href="profile\.html#pf-tema" data-suono="scegli">/);
+    assert.doesNotMatch(g, /pf-tema|Theme/);
     assert.match(g, /class="gx-opzione gx-verde" data-azione="entra"/);
     assert.doesNotMatch(g, /Admin|Alerts/);
     // una seconda apertura riusa la stessa finestra
