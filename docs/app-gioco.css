@@ -71,9 +71,9 @@ html.app .gx-icona { width: calc(22 * var(--u)); height: calc(22 * var(--u)); fi
 html.app .gx-dialogo { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: calc(10 * var(--u)); background: rgba(5, 4, 15, .72); animation: gx-dissolve .2s ease backwards; }
 html.app .gx-dialogo[hidden] { display: none; }
 html.app .gx-pannello { position: relative; box-sizing: border-box; width: min(calc(300 * var(--u)), 92vw); max-height: 94vh; overflow-y: auto; display: flex; flex-direction: column; gap: calc(9 * var(--u)); padding: calc(14 * var(--u));
-    background: var(--gx-carta); color: var(--gx-testo); border: calc(4 * var(--u)) solid var(--gx-ink); border-radius: var(--gx-r); box-shadow: 0 calc(8 * var(--u)) 0 var(--gx-ink); animation: gx-pop .3s cubic-bezier(.2, 1.4, .4, 1) backwards; font-family: var(--gx-font-testo); }
+    background: radial-gradient(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%); color: #fff; border: calc(4 * var(--u)) solid var(--gx-ink); border-radius: calc(14 * var(--u)); box-shadow: 0 calc(8 * var(--u)) 0 var(--gx-ink), inset 0 0 0 calc(2 * var(--u)) rgba(255, 255, 255, .1); animation: gx-pop .3s cubic-bezier(.2, 1.4, .4, 1) backwards; font-family: var(--gx-font-testo); }
 html.app .gx-largo { width: min(calc(430 * var(--u)), 94vw); }
-html.app .gx-pannello h2 { display: inline-block; align-self: flex-start; margin: 0; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: #000; color: #fff; border-radius: calc(5 * var(--u)); rotate: -1.5deg;
+html.app .gx-pannello h2 { display: inline-block; align-self: flex-start; margin: 0; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--gx-ink); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink); border-radius: calc(5 * var(--u)); rotate: -1.5deg;
     font: 900 calc(17 * var(--u))/1.1 var(--gx-font); letter-spacing: .08em; text-transform: uppercase; }
 html.app .gx-pannello label { display: flex; flex-direction: column; gap: calc(3 * var(--u)); font: 800 calc(10 * var(--u))/1 var(--gx-font); letter-spacing: .08em; text-transform: uppercase; }
 html.app .gx-pannello input { box-sizing: border-box; width: 100%; min-height: calc(40 * var(--u)); padding: calc(6 * var(--u)) calc(10 * var(--u)); background: #fff; color: #000; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); font: 600 calc(14 * var(--u))/1.2 var(--gx-font-testo); }
@@ -119,7 +119,7 @@ html.app.gx-dialogo-aperto body.gx-menu .gx-lobby { filter: blur(2px); }
 @keyframes gx-pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
 @keyframes gx-dissolve { from { opacity: 0; } to { opacity: 1; } }
 /* finché la schermata del titolo non è andata via, il menù sta fermo (entra dopo) */
-html.app:not(.gx-pronto) .gx-tessera { animation-play-state: paused; opacity: 0; }
+html.app:not(.gx-pronto) .gx-carta { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-forma, html.app .gx-aura, html.app .gx-avatar, html.app .gx-tessera::after, html.app .gx-splash::before { animation: none; }
+    html.app .gx-fondo::before, html.app .gx-raggi, html.app .gx-aura, html.app .gx-avatar, html.app .gx-splash::before { animation: none; }
 }

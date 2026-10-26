@@ -62,16 +62,10 @@
         return `<ul class="at-numeri"><li><b>${ok && g.posizione ? '#' + g.posizione : 'N/A'}</b><span>Ranking</span></li><li><b>${ok ? Math.round(Number(g.elo) || 0) : 'N/A'}</b><span>Elo</span></li></ul>`;
     }
 
-    /** Quanto ingrandire il Pokémon compagno perché stia in scala con l'allenatore: i pixel dello sprite hanno la stessa grandezza (pixel mostrati / pixel veri dell'allenatore) */
-    function scalaCompagno(mostrataL, mostrataA, veraL, veraA) {
-        if (!(veraL > 0) || !(veraA > 0) || !(mostrataL > 0) || !(mostrataA > 0)) return 0;
-        return Math.min(mostrataL / veraL, mostrataA / veraA);
-    }
-
     /** La scheda di un allenatore: niente sfondo. Al centro lui e il suo Pokémon compagno sul palco tondo; di fianco il nome, il ranking, l'Elo, i trofei e i badge. `gif(specie)` dà l'indirizzo del Pokémon animato. */
     function htmlCarta(g, indice, { gif } = {}) {
         const c = coloreSicuro(g.colore);
-        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
+        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}" data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
         const trofei = htmlTrofei(g), badge = htmlBadge(g);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
@@ -97,23 +91,25 @@
         const gif = win.SpritePkm ? s => win.SpritePkm.gif(s) : null;
         let stato = null;      // { lista, corrente, pista }
 
-        // il compagno in scala con l'allenatore (stessa grandezza dei pixel); si rifà quando le immagini arrivano e quando lo schermo cambia
+        // il compagno in scala con l'allenatore (le formule della pagina pubblica, scala-pkm.js) e a terra o fluttuante; si rifà quando le immagini arrivano e lo schermo cambia
         const scala = carta => {
+            const S = win.ScalaPkm;
             const a = carta.querySelector('.at-allenatore'), p = carta.querySelector('.at-pkm');
-            if (!a || !p || !a.naturalWidth || !p.naturalWidth) return;
-            const k = scalaCompagno(a.offsetWidth, a.offsetHeight, a.naturalWidth, a.naturalHeight);
-            if (k > 0) { p.style.width = Math.round(p.naturalWidth * k) + 'px'; p.style.height = 'auto'; }
+            const palco = carta.querySelector('.at-palco');
+            if (!S || !a || !p || !palco) return;
+            const sotto = parseFloat(win.getComputedStyle(p).bottom) || 0;
+            S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(40, palco.clientHeight - sotto - 6), larghezzaMax: Math.max(60, palco.clientWidth - 24) });
         };
-        const scalaTutti = () => { if (stato) stato.pista.querySelectorAll('.at-carta').forEach(scala); };
+        const scalaTutti = () => { if (stato) stato.pista.querySelectorAll('.at-carta').forEach(c => { c.querySelectorAll('.at-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scala(c); }); };
         win.addEventListener('resize', scalaTutti);
 
-        const posiziona = () => {
+        const posiziona = (frac = 0) => {
             if (!stato) return;
             const n = stato.lista.length;
             stato.pista.querySelectorAll('.at-carta').forEach(el => {
                 const i = Number(el.dataset.i);
                 const d = Car.distanza(i, stato.corrente, n, true);
-                const a = Car.aspetto(d);
+                const a = Car.aspetto(d + frac);
                 el.style.setProperty('--x', a.x);
                 el.style.setProperty('--s', a.scala);
                 el.style.setProperty('--o', a.opacita);
@@ -158,14 +154,14 @@
             const corrente = stato ? Car.dentro(stato.corrente, lista.length) : indiceIniziale(lista, richiesto);
             radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif })).join('')}</div>`;
             stato = { lista, corrente, pista: radice.querySelector('.at-pista') };
-            stato.pista.querySelectorAll('.at-carta img').forEach(im => { if (im.complete) scala(im.closest('.at-carta')); else im.addEventListener('load', () => scala(im.closest('.at-carta'))); });
+            stato.pista.querySelectorAll('.at-carta').forEach(scala);
             stato.pista.addEventListener('click', e => {
                 const carta = e.target.closest ? e.target.closest('.at-carta') : null;
                 if (carta && !carta.classList.contains('at-centro')) vai(Number(carta.dataset.i));
             });
             if (!radice.dataset.gesti) {              // una volta sola, anche se i dati arrivano di nuovo
                 radice.dataset.gesti = '1';
-                Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1) });
+                Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 500 * Car.unitaPx(win), trascina: (f, fine) => { radice.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
                 Car.collegaPressione(radice, '.at-carta.at-centro .at-badge', { mostra: b => nota(b), nascondi: () => nota(null) });
                 doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
             }
@@ -178,5 +174,5 @@
         return { monta, vai, passo };
     }
 
-    return { scalaCompagno, indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlCarta, avvia };
+    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlCarta, avvia };
 });

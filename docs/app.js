@@ -47,9 +47,9 @@
     // gli script che una pagina dell'app carica oltre a quelli comuni (app-comune.js, app-gioco.js): ognuno disegna a modo suo i dati che la pagina del sito ha
     // appena calcolato (vedi pubblica), così il sito da PC non cambia di una riga
     const SCRIPT_PAGINE = {
-        'matches.html': ['app-carosello.js', 'app-classifica.js'],
-        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'app-trainers.js'],
-        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'app-stats.js'],
+        'matches.html': ['app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'],
+        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'scala-pkm.js', 'app-trainers.js'],
+        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js'],
         'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
         'practice.html': ['app-practice.js']
     };
@@ -58,8 +58,7 @@
     // nel menù, per esempio la scheda pubblica di un allenatore, appartiene alla voce da cui ci si arriva).
     // Il colore è anche quello del titolo in alto nella pagina (app-gioco.js), così si capisce da dove si arriva.
     const VOCI = [
-        { id: 'matches', et: 'Matches', href: 'matches.html', colore: '#ffbd44', pagine: ['matches.html'] },
-        { id: 'practice', et: 'Practice', href: 'practice.html', colore: '#31c489', pagine: ['practice.html'] },
+        { id: 'play', et: 'Play', href: 'practice.html', colore: '#ffbd44', pagine: ['practice.html', 'matches.html'] },
         { id: 'box', et: 'Box', href: 'box.html', colore: '#6fa8ff', pagine: ['box.html'] },
         { id: 'trainers', et: 'Trainers', href: 'players.html', colore: '#ff7b6b', pagine: ['players.html'] },
         { id: 'stats', et: 'Stats', href: 'stats.html', colore: '#b388eb', pagine: ['stats.html'] }

@@ -55,7 +55,7 @@
         const tutte = catalogo.concat(serie);
         const ordinate = BadgeTeam && BadgeTeam.perVicinanza ? BadgeTeam.perVicinanza(tutte) : tutte;
         const fondatore = FONDATORI.includes(String(id || '').toLowerCase().trim())
-            ? [{ tipo: 'fondatore', id: 'founder', nome: 'League Founder', immagine: Titoli.IMMAGINE_FONDATORE, icona: '👑', livello: LIVELLI.length, classe: 'founder', completo: true, bloccato: false, livelli: [], barra: null, descrizione: 'Given to the founders of the League.', frase: 'Hail to the kings.' }]
+            ? [{ tipo: 'fondatore', id: 'founder', nome: 'League Founder', immagine: Titoli.IMMAGINE_FONDATORE, icona: '👑', livello: LIVELLI.length, classe: 'founder', completo: true, bloccato: false, livelli: [], barra: null, descrizione: '', frase: 'Hail to the kings' }]
             : [];
         return { voci: fondatore.concat(ordinate), sbloccati: tutte.reduce((n, v) => n + (v.livello || 0), 0), totale: tutte.length * LIVELLI.length };
     }
@@ -72,8 +72,8 @@
                 <b class="ach-nome">${esc(v.nome)}</b>
                 ${v.descrizione ? `<small class="ach-desc">${esc(v.descrizione)}</small>` : ''}
                 ${v.livelli && v.livelli.length ? `<span class="ach-pips">${pips(v)}</span>` : ''}
-                ${v.barra ? `<span class="ach-barra"><i style="width:${pct.toFixed(0)}%"></i></span>` : ''}
-                <small class="ach-frase">${esc(v.frase)}</small>
+                ${v.barra ? `<span class="ach-riga-barra"><span class="ach-barra"><i style="width:${pct.toFixed(0)}%"></i></span><small class="ach-num">${esc(v.barra.valore)} / ${esc(v.barra.obiettivo)}</small></span>` : ''}
+                ${v.tipo === 'fondatore' ? `<small class="ach-frase">${esc(v.frase)}</small>` : ''}
             </div>
         </article>`;
     }

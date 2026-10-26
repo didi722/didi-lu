@@ -229,7 +229,16 @@
                 (resto > 0 ? `<span class="bt-mini bt-altri" title="${resto} more badge${resto > 1 ? 's' : ''}">+${resto}</span>` : '');
         }
 
-        return { CATALOGO, IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini };
+        // Tutte le medagliette, anche quelle ancora da prendere (in grigio, con la spiegazione di cosa premiano e nessun numero di progresso):
+        // prima i badge presi, dal livello più alto, poi gli altri nell'ordine del catalogo. Serve all'app.
+        function htmlTutti(lista) {
+            const presi = lista.filter(b => b.livello > 0).sort((x, y) => y.livello - x.livello);
+            const altri = lista.filter(b => !(b.livello > 0));
+            return presi.map(b => htmlMedaglietta(b)).join('') +
+                altri.map(b => htmlMedaglietta(b, `${b.nome} · Locked\n${b.descrizione}`)).join('');
+        }
+
+        return { CATALOGO, IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, htmlTutti };
     }
 
     // =====================================================
@@ -270,7 +279,7 @@
     ];
 
     const squadra = costruisci(CATALOGO, { titolo: 'TEAM BADGES' });
-    const { IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini } = squadra;
+    const { IMMAGINI, calcola, guadagnati, perVicinanza, scheda, testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, htmlTutti } = squadra;
 
     // Il team di un giocatore tra quelli di Statistiche.calcola(...).teams
     function trova(risultato, { player, team } = {}) {
@@ -340,7 +349,7 @@
     }
 
     // Le medagliette sulle card dei team nel Box: ogni .bt-card[data-team-badge="<id del team>"]
-    async function riempiCard(db, contenitore, { giocatore, squadre, valido } = {}) {
+    async function riempiCard(db, contenitore, { giocatore, squadre, valido, tutti = false } = {}) {
         if (!contenitore || !giocatore) return false;
         const caselle = [...contenitore.querySelectorAll('.bt-card[data-team-badge]')];
         if (!caselle.length) return false;
@@ -350,7 +359,8 @@
         for (const casella of caselle) {
             const t = (squadre || []).find(x => String(x.id) === casella.dataset.teamBadge);
             if (!t) continue;
-            casella.innerHTML = htmlMini(calcola(trova(risultato, { player: giocatore, team: t.nome })), 2);
+            const lista = calcola(trova(risultato, { player: giocatore, team: t.nome }));
+            casella.innerHTML = tutti ? htmlTutti(lista) : htmlMini(lista, 2);
         }
         return true;
     }
@@ -358,7 +368,7 @@
     return {
         CATALOGO, LIVELLI, NOMI_LIVELLO, IMMAGINI,
         livelloDi, calcola, guadagnati, perVicinanza, scheda, trova,
-        testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, immagineMancante,
+        testoMedaglia, htmlBadge, htmlScaffale, htmlMedaglietta, htmlMini, htmlTutti, immagineMancante,
         montaBarra, montaMini, riempiCard,
         // per altri cataloghi (badge-allenatore.js)
         costruisci, perLivelli, CARTELLA, esc

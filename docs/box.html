@@ -1011,7 +1011,7 @@ async function renderizza(lista) {
 
     // le medagliette dei badge sulle card (arrivano appena sono pronte le statistiche reali)
     if (typeof BadgeTeam !== 'undefined' && typeof Fiocchi !== 'undefined' && playerID) {
-        BadgeTeam.riempiCard(db, grid, { giocatore: playerID, squadre: lista, valido: () => grid.isConnected });
+        BadgeTeam.riempiCard(db, grid, { giocatore: playerID, squadre: lista, valido: () => grid.isConnected, tutti: document.documentElement.classList.contains('app') });
     }
 }
 
@@ -3935,6 +3935,15 @@ function renderizzaListaPiatta(pokemonList) {
     // 1. Salviamo la lista originale come proprietà del nodo DOM per accedervi durante i filtri
     grid.originalPokemonList = pokemonList;
         aggiornaBottoneBuildTeam(pokemonList);
+
+    // Nell'app l'assistente è solo la scelta del formato (e delle eventuali scelte ulteriori) e il tasto "Build Team": l'elenco dei Pokémon non si vede,
+    // quindi non si disegnano le centinaia di carte (è quello che faceva aspettare tanto prima del tasto)
+    if (document.documentElement.classList.contains('app')) {
+        const conta = document.getElementById('helper-count');
+        if (conta) conta.textContent = pokemonList.length;
+        grid.innerHTML = '';
+        return;
+    }
 
     // 2. Creazione dinamica della barra dei controlli (Cerca + Ordina) SE non esiste già
     let controlsContainer = document.getElementById('helper-pkm-controls');

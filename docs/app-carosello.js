@@ -78,13 +78,37 @@
     /**
      * Come si presenta un elemento a distanza `d` dal centro in una fila "a scheda" (quello al centro grande, i vicini più piccoli e un po' trasparenti
      * ai lati, gli altri nascosti dietro): { x (in unità di passo, da -2 a 2), scala, opacita, z }.
+     * `d` può avere la virgola: mentre il dito trascina, ogni elemento è a metà strada tra il suo posto e quello dopo, e cambia grandezza e trasparenza di pari passo.
+     * Con `d` intero il risultato è quello di sempre.
      */
     function aspetto(d, vicini = 1) {
-        const a = Math.abs(d);
+        const t = Math.abs(d);
         const x = Math.max(-2, Math.min(2, d));
-        if (a === 0) return { x: 0, scala: 1, opacita: 1, z: 3 };
-        if (a <= vicini) return { x, scala: 0.82, opacita: 0.62, z: 2 };
-        return { x, scala: 0.7, opacita: 0, z: 1 };
+        let scala, opacita;
+        if (t <= 1) { scala = 1 - 0.18 * t; opacita = 1 - 0.38 * t; }
+        else if (t <= vicini) { scala = 0.82; opacita = 0.62; }
+        else if (t <= vicini + 1) { scala = 0.82 - 0.12 * (t - vicini); opacita = 0.62 * (vicini + 1 - t); }
+        else { scala = 0.7; opacita = 0; }
+        const arrotonda = v => Math.round(v * 1000) / 1000;
+        return { x: arrotonda(x), scala: arrotonda(scala), opacita: arrotonda(opacita), z: t < 0.5 ? 3 : t <= vicini + 0.5 ? 2 : 1 };
+    }
+
+    /** Di quanto si è trascinato, in passi (-1..1): il dito ha fatto `dx` pixel e un passo è lungo `passoPx` */
+    function frazione(dx, passoPx) {
+        if (!(passoPx > 0)) return 0;
+        return Math.max(-1, Math.min(1, dx / passoPx));
+    }
+
+    /** I pixel di una "unità" (u) del foglio dell'app: serve a sapere quanto è lungo un passo, che il CSS scrive in u. Si misura con un elemento invisibile. */
+    function unitaPx(win) {
+        const doc = win && win.document;
+        if (!doc || !doc.body) return 1;
+        const sonda = doc.createElement('div');
+        sonda.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:calc(1000 * var(--u, 1px));height:1px';
+        doc.body.appendChild(sonda);
+        const px = sonda.offsetWidth / 1000;
+        sonda.remove();
+        return px > 0 ? px : 1;
     }
 
     /**
@@ -102,27 +126,38 @@
      * Scorrere in verticale resta alla pagina (touch-action: pan-y). Un trascinamento non fa scattare il clic che lo chiude.
      * Restituisce { stacca } per toglierli.
      */
-    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO, ignora } = {}) {
-        let inizio = null, mosso = false;
+    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO, ignora, trascina, passoPx } = {}) {
+        let inizio = null, mosso = false, orizzontale = false;
+        const passoVero = () => (typeof passoPx === 'function' ? passoPx() : passoPx) || 0;
         const giu = e => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             if (ignora && e.target && e.target.closest && e.target.closest(ignora)) { inizio = null; return; }      // es. i cursori: lì il dito serve a loro
             inizio = { x: e.clientX, y: e.clientY };
             mosso = false;
+            orizzontale = false;
         };
         const muovi = e => {
             if (!inizio) return;
-            if (Math.abs(e.clientX - inizio.x) > SOGLIA_CLIC || Math.abs(e.clientY - inizio.y) > SOGLIA_CLIC) mosso = true;
+            const dx = e.clientX - inizio.x, dy = e.clientY - inizio.y;
+            if (Math.abs(dx) > SOGLIA_CLIC || Math.abs(dy) > SOGLIA_CLIC) mosso = true;
+            // il trascinamento è graduale: appena il dito va chiaramente di lato, gli elementi lo seguono (`trascina(frazione di passo, finito)`)
+            if (trascina && (orizzontale || (Math.abs(dx) > SOGLIA_CLIC && Math.abs(dx) >= Math.abs(dy) * PREVALENZA))) {
+                if (!orizzontale) { orizzontale = true; try { el.setPointerCapture(e.pointerId); } catch (err) { /* il dito resta dov'è */ } }
+                trascina(frazione(dx, passoVero()), false);
+            }
         };
         const su = e => {
             if (!inizio) return;
             const dx = e.clientX - inizio.x, dy = e.clientY - inizio.y;
             inizio = null;
             const g = gesto(dx, dy, soglia);
+            // prima si smette di seguire il dito (gli elementi tornano al loro posto con la transizione), poi si cambia: finiscono dove devono, senza salti
+            if (orizzontale && trascina) trascina(0, true);
+            orizzontale = false;
             if (g > 0 && avanti) avanti();
             else if (g < 0 && indietro) indietro();
         };
-        const annulla = () => { inizio = null; };
+        const annulla = () => { inizio = null; if (orizzontale && trascina) trascina(0, true); orizzontale = false; };
         // il clic che chiude un trascinamento non vale (altrimenti scorrere sopra una scheda la aprirebbe)
         const clic = e => { if (mosso) { e.stopPropagation(); e.preventDefault(); mosso = false; } };
         el.addEventListener('pointerdown', giu);
@@ -197,5 +232,5 @@
         };
     }
 
-    return { SOGLIA_GESTO, SOGLIA_CLIC, PREVALENZA, dentro, distanza, passo, visibili, seguenti, aspetto, gesto, collegaGesti, collegaPressione };
+    return { SOGLIA_GESTO, SOGLIA_CLIC, PREVALENZA, dentro, distanza, passo, visibili, seguenti, aspetto, frazione, unitaPx, gesto, collegaGesti, collegaPressione };
 });

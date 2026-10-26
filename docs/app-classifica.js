@@ -1,7 +1,7 @@
 // =====================================================
 // APP — la classifica di Matches come un carosello
 // ---------------------------------------------------------------------
-// Nell'app la classifica della stagione (a destra, in Matches) non è un elenco e le schede non hanno sfondo: ogni giocatore sta in piedi sul suo palco tondo (come
+// Nell'app la classifica della stagione (la schermata RANKINGS di Matches) non è un elenco e le schede non hanno sfondo: ogni giocatore sta in piedi sul suo palco tondo (come
 // in Trainers), con sotto il posto, il nome, i punti e i numeri. Si vede un giocatore alla volta, a cominciare dal primo; ai lati si intravedono i vicini.
 // Scorre da sola (ogni pochi secondi, sempre in avanti: dall'ultimo si torna al primo) e si può scorrere anche a mano col dito (o toccare un vicino): dopo
 // un gesto l'automatismo aspetta un po'. Il giocatore al centro si tocca per aprire la sua scheda (Trainers) e porta il tasto VS per sfidarlo.
@@ -41,10 +41,10 @@
     /** Un giocatore: niente sfondo, lui sul palco tondo nel suo colore, sotto il nome, il posto, i punti e i numeri; `vs` è il tasto per sfidarlo (già HTML) */
     function htmlCarta(p, indice, vs, gif) {
         const d = righeDati(p);
-        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
+        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" data-pkm="${esc(p.pkm)}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
         return `<article class="ac-carta" data-i="${indice}" style="--c:${coloreSicuro(p.colore)}">
             <a class="ac-link" draggable="false" href="${esc(indirizzo(p.nome))}" aria-label="${esc(p.nome)}: open the trainer card" data-suono="apri">
-                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>${avatar(p, 'ac-avatar')}${pkm}</span>
+                <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><span class="ac-scena">${avatar(p, 'ac-avatar')}${pkm}</span></span>
                 <span class="ac-testi">
                     <span class="ac-riga"><span class="ac-pos">#${numero(p.posizione)}</span><b class="ac-nome">${esc(p.nome)}</b></span>
                     <span class="ac-punti"><b>${numero(p.punti)}</b><small>PTS</small></span>
@@ -61,17 +61,6 @@
         return `<div class="ac-pista">${lista.map((p, i) => htmlCarta(p, i, typeof vs === 'function' ? vs(p.nome) : '', gif)).join('')}</div>`;
     }
 
-    /**
-     * Le schede dei showdown (a sinistra in Matches) non hanno sfondo: ogni lato mostra l'allenatore in piedi sul suo palco tondo. Il sito le scrive senza avatar;
-     * qui se ne aggiunge uno a ogni lato, preso dalla classifica (stesso nome, senza badare alle maiuscole).
-     */
-    function avatarDi(giocatori, nome) {
-        const n = String(nome || '').toLowerCase().trim();
-        const g = (giocatori || []).find(x => x && String(x.nome || '').toLowerCase().trim() === n);
-        return (g && g.avatar) || AVATAR_VUOTO;
-    }
-    const htmlPalcoShowdown = (giocatori, nome) => `<span class="sd-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span>${avatar({ avatar: avatarDi(giocatori, nome) }, 'sd-avatar')}</span>`;
-
     // ---------- nella pagina ----------
 
     function avvia(win) {
@@ -83,13 +72,13 @@
 
         const vs = nome => { try { return win.Sfide && typeof win.Sfide.bottoneRanking === 'function' ? win.Sfide.bottoneRanking(nome) : ''; } catch (e) { return ''; } };
 
-        const posiziona = () => {
+        const posiziona = (frac = 0) => {
             if (!stato || !stato.pista) return;
             const n = stato.giocatori.length;
             stato.pista.querySelectorAll('.ac-carta').forEach(el => {
                 const i = Number(el.dataset.i);
                 const d = Car.distanza(i, stato.corrente, n, true);
-                const a = Car.aspetto(d);
+                const a = Car.aspetto(d + frac);
                 el.style.setProperty('--x', a.x);
                 el.style.setProperty('--s', a.scala);
                 el.style.setProperty('--o', a.opacita);
@@ -116,19 +105,18 @@
             }, PASSO_AUTO);
         };
 
-        let ultimiGiocatori = [];
-        const decoraShowdown = () => {
-            doc.querySelectorAll('.showdown-summary-card').forEach(carta => {
-                carta.querySelectorAll('.sd-lato').forEach(lato => {
-                    const vecchio = lato.querySelector('.sd-palco');
-                    if (vecchio) vecchio.remove();               // ridisegnato quando arriva la classifica (prima gli avatar non si conoscono)
-                    const nome = lato.getAttribute('title') || (lato.querySelector('.sd-nome') ? lato.querySelector('.sd-nome').textContent : '');
-                    lato.insertAdjacentHTML('afterbegin', htmlPalcoShowdown(ultimiGiocatori, nome));
-                });
+        // il giocatore e il suo Pokémon compagno, in scala tra loro (scala-pkm.js) e dentro il cerchio del palco
+        const scalaCarte = () => {
+            const S = win.ScalaPkm;
+            if (!S || !stato) return;
+            stato.scheda.querySelectorAll('.ac-carta').forEach(c => {
+                const a = c.querySelector('.ac-avatar'), p = c.querySelector('.ac-pkm'), palco = c.querySelector('.ac-palco'), ped = c.querySelector('.pal-pedana'), sc = c.querySelector('.ac-scena');
+                if (!a || !p || !palco || !ped || !sc) return;
+                const sotto = parseFloat(win.getComputedStyle(sc).bottom) || 0;
+                S.scena({ allenatore: a, pokemon: p, spazioPx: Math.max(30, palco.clientHeight - sotto - 4), larghezzaMax: ped.offsetWidth * 0.94 });
             });
         };
-        const lista = doc.getElementById('matchList');
-        if (lista && win.MutationObserver) new win.MutationObserver(decoraShowdown).observe(lista, { childList: true });
+        win.addEventListener('resize', () => { if (stato) stato.scheda.querySelectorAll('.ac-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scalaCarte(); });
 
         const monta = dati => {
             const giocatori = dati && Array.isArray(dati.giocatori) ? dati.giocatori.filter(Boolean) : [];
@@ -149,15 +137,14 @@
                 scheda.addEventListener('pointerup', lascia);
                 scheda.addEventListener('pointercancel', lascia);
                 scheda.addEventListener('pointerleave', lascia);
-                Car.collegaGesti(scheda, { avanti: () => amano(1), indietro: () => amano(-1) });
+                Car.collegaGesti(scheda, { avanti: () => amano(1), indietro: () => amano(-1), passoPx: () => 205 * Car.unitaPx(win), trascina: (f, fine) => { ripresa = Date.now() + RIPRENDI_DOPO; scheda.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
             }
-            ultimiGiocatori = giocatori;
-            decoraShowdown();
             stato = { giocatori, corrente: stato ? Car.dentro(stato.corrente, giocatori.length || 1) : 0, scheda, pista: null };
             doc.documentElement.classList.add('app-classifica');
             scheda.innerHTML = html(giocatori, { vs, gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.ac-pista');
             posiziona();
+            scalaCarte();
             avviaAuto();
         };
 
@@ -167,5 +154,5 @@
         return { monta, vai, passo };
     }
 
-    return { PASSO_AUTO, RIPRENDI_DOPO, indirizzo, righeDati, avatarDi, htmlPalcoShowdown, htmlCarta, html, avvia };
+    return { PASSO_AUTO, RIPRENDI_DOPO, indirizzo, righeDati, htmlCarta, html, avvia };
 });

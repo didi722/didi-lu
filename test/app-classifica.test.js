@@ -45,22 +45,18 @@ test('html: una scheda per giocatore, tutte nella pista (se ne vede una, le altr
     assert.match(K.html(null), /No players registered in this season/);
 });
 
-test('scorre da sola ogni pochi secondi (e dopo un gesto a mano aspetta di più); un avatar per ogni lato delle schede dei showdown', () => {
+test('scorre da sola ogni pochi secondi (e dopo un gesto a mano aspetta di più)', () => {
     assert.ok(K.PASSO_AUTO >= 3000 && K.PASSO_AUTO <= 8000);
     assert.ok(K.RIPRENDI_DOPO > K.PASSO_AUTO, 'dopo un gesto l\'automatismo aspetta più di un giro');
-    assert.equal(K.avatarDi(lista, ' ANNA '), 'Anna.png', 'senza badare alle maiuscole');
-    assert.equal(K.avatarDi(lista, 'nessuno'), 'immagini/magikarp.png');
-    const h = K.htmlPalcoShowdown(lista, 'Didi');
-    assert.match(h, /<span class="sd-palco" aria-hidden="true"><span class="pal-aura"><\/span><span class="pal-pedana"><\/span><img class="sd-avatar" draggable="false" src="Didi\.png"/);
 });
 
-test('matches.html pubblica la classifica; nell\'app l\'elenco del sito si nasconde e "Registered teams" non si vede', () => {
+test('matches.html pubblica la classifica; nell\'app l\'elenco del sito si nasconde, "Registered teams" non si vede e i showdown li disegna app-matches.js', () => {
     assert.match(docs('matches.html'), /AppSito\.pubblica\('classifica'/);
-    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['matches.html'], ['app-carosello.js', 'app-classifica.js']);
+    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['matches.html'], ['app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
     const css = docs('app-gioco-pagine.css');
     assert.match(css, /html\.app-shell\.app-classifica body\.pg-matches #participants-list\{display:none\}|html\.app-shell\.app-classifica body\.pg-matches #participants-list \{ ?display: none/);
     assert.match(css, /\.cl-laterale \.cl-apri \{ display: none !important; \}/, 'via "Full table"');
-    assert.match(css, /#matchList\.showdown-grid-double \{ display: flex !important; flex-wrap: nowrap;[^}]*scroll-snap-type: x mandatory/, 'i showdown scorrono di lato');
+    assert.match(css, /body\.pg-matches #matchList \{ display: none !important; \}/, 'le schede del sito non si vedono: ci sono le locandine');
     assert.match(css, /\.btn-registered-teams[^{]*\{[^}]*display: none/);
     const righe = css.split('\n').filter(r => /\.ac-/.test(r) && /\{/.test(r) && !/^\s+[a-z-]+:/.test(r));
     assert.ok(righe.length >= 10, 'regole trovate: ' + righe.length);

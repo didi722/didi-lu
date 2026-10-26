@@ -142,30 +142,33 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<script src="sfide\.js"><\/script>/);
     assert.match(html, /<body class="gx-menu">/);
     // gli Achievements usano i moduli dei badge del sito (prima dello script dell'app), che a loro volta vogliono Statistiche e Titoli
-    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
+    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-carosello\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
     // il menù non è una pagina per i motori di ricerca né per il browser da PC: dal browser si torna alla home (provato sotto)
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
     assert.match(html, /<div class="gx-dialogo" id="gx-login"[^>]* hidden>/);
 });
 
-test('le tessere: una per pagina del gioco, con nome e icona (senza sottotitolo); la prima (Matches) è la grande', () => {
+test('le carte: una per pagina del gioco, con nome e icona (senza sottotitolo); la prima è Play; la grafica è quella del carosello di locandine', () => {
     const js = docs('app-menu.js');
-    assert.doesNotMatch(js, /sottotitoli/, 'le tessere non hanno più il sottotitolo');
+    assert.doesNotMatch(js, /sottotitoli/, 'le carte non hanno più il sottotitolo');
     for (const v of A.VOCI) assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
     const css = docs('app-menu.css');
-    assert.equal(A.VOCI[0].id, 'matches');
-    assert.match(css, /\.gx-t-matches/, 'la tessera grande');
-    assert.match(css, /\.gx-tessera small \{ display: none;/, 'se un sottotitolo ricomparisse, non si vede');
-    for (const c of ['gx-tessera', 'gx-tessere', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
+    assert.equal(A.VOCI[0].id, 'play');
+    assert.deepEqual(M.immaginiDi('box'), ['immagini/app/tessera-box.png', 'immagini/app/tessera-box.webp'], 'le immagini da mettere (png o webp)');
+    assert.match(M.arteDi('play', () => ''), /pikachu\.gif[\s\S]*lucario\.gif/, 'finché non c\'è l\'immagine, Play ha due Pokémon che si fronteggiano');
+    assert.match(M.arteDi('box', id => `<svg ${id}>`), /^<span class="gx-ico-grande"><svg box>/, 'le altre l\'icona grande');
+    for (const c of ['gx-carta', 'gx-tessere', 'gx-pista', 'gx-tag', 'gx-alone', 'gx-immagine', 'gx-punti-nav', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
+    assert.doesNotMatch(css, /\.gx-tessera\b/, 'le tessere a griglia non ci sono più');
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
     // il logo (Magikarp + Sant'Alvise League) c'è, ma libero: nessuno sfondo, né semitrasparente né sfocato, dietro la testata
     assert.match(docs('menu.html'), /<h1 class="gx-logo">/);
     const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
     assert.ok(testata, 'la regola della testata');
     assert.doesNotMatch(testata, /background|backdrop-filter|rgba/, 'la testata non ha sfondo');
-    // le forme che galleggiano sono pokéball (metà rossa, metà bianca, bottone al centro), non cerchi barrati
-    assert.match(css, /\.gx-forma \{[^}]*linear-gradient\(180deg, rgba\(255, 82, 72/);
+    // lo sfondo non ha più forme che galleggiano (le pokéball sono state tolte)
+    assert.doesNotMatch(docs('menu.html'), /gx-forma/);
+    assert.doesNotMatch(css, /\.gx-forma/);
 });
 
 // ---------- il menù con una pagina finta ----------
@@ -186,7 +189,8 @@ function elemento(id) {
     e.play = () => { e.paused = false; return Promise.resolve(); };
     e.pause = () => { e.paused = true; };
     e.closest = () => null;
-    e.querySelector = sel => (sel.startsWith('#') && e._cerca ? e._cerca(sel.slice(1)) : null);
+    e.querySelector = sel => (sel.startsWith('#') && e._cerca ? e._cerca(sel.slice(1)) : (e._trova ? e._trova(sel) : null));
+    e.querySelectorAll = sel => (e._trovaTutti ? e._trovaTutti(sel) : []);
     e.scatta = (ev, dati = {}) => (e.ascoltatori[ev] || []).forEach(f => f({ target: e, preventDefault() {}, ...dati }));
     e.click = () => e.scatta('click');
     return e;
@@ -204,8 +208,17 @@ function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, gioc
         e._cerca = i => registro[i] || null;
         Object.defineProperty(e, 'innerHTML', {
             get: () => e._html,
-            set: v => { e._html = String(v); for (const m of e._html.matchAll(/\bid="([^"]+)"/g)) registro[m[1]] = nuovo(m[1]); }
+            set: v => { e._html = String(v); e._carte = null; for (const m of e._html.matchAll(/\bid="([^"]+)"/g)) registro[m[1]] = nuovo(m[1]); }
         });
+        // il carosello: le carte (<a class="gx-carta ...">) e la pista come elementi finti, con le proprietà che lo script scrive
+        e._pista = null;
+        e._trovaTutti = sel => {
+            if (sel !== '.gx-carta') return [];
+            if (!e._carte) e._carte = [...e._html.matchAll(/<a class="gx-carta[^"]*"[^>]*data-i="(\d+)" data-id="(\w+)"/g)].map(m => Object.assign(elemento('carta' + m[1]), { dataset: { i: m[1], id: m[2] }, proprieta: {} }));
+            e._carte.forEach(c => { c.style.setProperty = (k, v) => { c.proprieta[k] = v; }; });
+            return e._carte;
+        };
+        e._trova = sel => (sel === '.gx-pista' ? (e._pista || (e._pista = elemento('pista'))) : null);
         return e;
     };
     const html = docs('menu.html');
@@ -278,18 +291,28 @@ test('dal browser (senza la classe app) il menù non c\'è: si torna alla home d
     assert.equal(M.avvia({ document: null }), null);
 });
 
-test('le tessere: una per voce del gioco, nell\'ordine, con link, colore, posto, nome e sottotitolo', () => {
+test('le carte: una per voce del gioco, nell\'ordine, con link, colore, immagine da trovare e tag col nome; la prima sta al centro, o quella ricordata', () => {
     const p = paginaMenu();
     const h = p.id('gx-tessere').innerHTML;
-    const tessere = [...h.matchAll(/<a class="gx-tessera gx-t-(\w+)" href="([^"]+)" style="--c:(#[0-9a-f]{6});--i:(\d+)" data-suono="scegli">([\s\S]*?)<\/a>/g)];
-    assert.deepEqual(tessere.map(t => t[1]), A.VOCI.map(v => v.id));
+    const carte = [...h.matchAll(/<a class="gx-carta gx-c-(\w+)" href="([^"]+)" data-i="(\d+)" data-id="(\w+)" style="--c:(#[0-9a-f]{6})" data-suono="scegli">([\s\S]*?)<\/a>/g)];
+    assert.deepEqual(carte.map(t => t[1]), A.VOCI.map(v => v.id));
     A.VOCI.forEach((v, i) => {
-        const t = tessere[i];
+        const t = carte[i];
         assert.equal(t[2], v.href);
-        assert.equal(t[3], v.colore);
-        assert.equal(t[4], String(i));
-        assert.match(t[5], new RegExp(`^<span class="gx-ico"><svg class="gx-icona"[^>]*>.+</svg></span><b>${v.et}</b>$`));
+        assert.equal(t[3], String(i));
+        assert.equal(t[4], v.id);
+        assert.equal(t[5], v.colore);
+        assert.match(t[6], new RegExp(`<span class="gx-arte"><span class="gx-alone" aria-hidden="true"></span>.+<img class="gx-immagine" data-id="${v.id}" alt="" hidden></span><b class="gx-tag"><span>${v.et}</span></b>$`));
     });
+    assert.equal((h.match(/<i data-i="\d+"><\/i>/g) || []).length, A.VOCI.length, 'un punto per carta');
+    const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
+    assert.equal(el.length, A.VOCI.length);
+    assert.ok(el[0].classi.has('gx-centro'), 'la prima al centro');
+    assert.equal(el[0].proprieta['--x'], 0);
+    assert.ok(el[1].proprieta['--x'] > 0, 'le altre di lato');
+    // tornando dalle pagine si ritrova la carta di prima
+    const q = paginaMenu({ sessione: { menuCarta: '2' } });
+    assert.ok(q.id('gx-tessere').querySelectorAll('.gx-carta')[2].classi.has('gx-centro'));
 });
 
 test('la schermata del titolo: la prima volta di ogni visita c\'è ("Tap to start"); toccarla suona l\'avvio, fa partire la musica e la toglie; poi non torna', () => {
@@ -562,8 +585,8 @@ test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) 
     assert.equal(p.intervalli.length, 3, 'il conto alla rovescia, il nastro delle stagioni e l\'attesa di Firebase');
     const attesa = p.intervalli.find(i => i.ms === 150);
     assert.ok(attesa);
-    // le tessere e il pannello "Welcome!" ci sono comunque
-    assert.equal((p.id('gx-tessere').innerHTML.match(/gx-tessera /g) || []).length, 5);
+    // le carte e il pannello "Welcome!" ci sono comunque
+    assert.equal((p.id('gx-tessere').innerHTML.match(/<a class="gx-carta /g) || []).length, A.VOCI.length);
     assert.match(p.id('gx-giocatore').innerHTML, /Welcome!/);
     // Firebase arriva
     p.win.firebase.apps.push({});

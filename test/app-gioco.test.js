@@ -22,7 +22,7 @@ const senzaCommenti = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
 test('titolo: il nastro porta il nome della tessera del menù; hub e pagina dell\'allenatore hanno il loro; le altre il testo della pagina, ripulito', () => {
     // ogni pagina del menù mostra il nome della sua tessera, qualunque cosa scriva la pagina
     for (const v of A.VOCI) assert.equal(G.titolo('/didi-lu/' + v.href, 'Qualcosa di lungo e diverso'), v.et, v.href);
-    assert.equal(G.titolo('/didi-lu/matches.html', 'Season 3'), 'Matches');
+    assert.equal(G.titolo('/didi-lu/matches.html', 'Season 3'), 'Ranked', 'showdown e classifica stanno sotto Play, ma hanno il loro titolo');
     assert.equal(G.titolo('/didi-lu/hub.html', 'Season hub'), 'Sign up');
     assert.equal(G.titolo('/didi-lu/public.html?player=didi', 'DIDI'), 'Trainer');
     // una pagina senza tessera né titolo suo: il testo scritto dalla pagina (spazi ripuliti), se è ragionevole
@@ -53,7 +53,8 @@ test('sottotitolo: Matches (e l\'iscrizione) mostrano accanto al nastro il nome 
 test('coloreDi: il nastro ha il colore della tessera nel menù (la pagina dell\'allenatore con Trainers); l\'iscrizione il verde della lega; le altre pagine il giallo del sito', () => {
     for (const v of A.VOCI) assert.equal(G.coloreDi(v.href), v.colore, v.href);
     assert.equal(G.coloreDi('hub.html'), '#31c489');
-    assert.equal(G.coloreDi('practice.html'), A.VOCI.find(v => v.id === 'practice').colore);
+    assert.equal(G.coloreDi('practice.html'), A.VOCI.find(v => v.id === 'play').colore);
+    assert.equal(G.coloreDi('matches.html'), A.VOCI.find(v => v.id === 'play').colore, 'Matches sta sotto Play');
     assert.equal(G.coloreDi('public.html'), '#ffbd44', 'la pagina pubblica nell\'app non c\'è più (porta a Trainers): niente tessera');
     assert.equal(G.coloreDi('battle.html'), '#ffbd44');
     assert.equal(G.coloreDi('/didi-lu/'), '#ffbd44', 'la radice (le stagioni) nell\'app non ha una tessera');
@@ -122,7 +123,7 @@ test('le pagine ridisegnate usano i nomi veri delle loro classi (se una pagina c
     const chiave = {
         'players.html': ['trainers-grid', 'trainer-riga', 'trainer-card'], 'stats.html': ['stats-tag', 'stats-griglia', 'carta-dati'],
         'box.html': ['card-header', 'pkm-grid', 'card-actions'], 'hub.html': ['btn-team', 'countdown-main-container'],
-        'matches.html': ['showdown-summary-card', 'hub-main-layout']
+        'matches.html': ['hub-main-layout', 'hub-left-column', 'hub-right-column']
     };
     for (const [pagina, classi] of Object.entries(chiave)) {
         const sorg = docs(pagina) + fs.readdirSync(DOCS).filter(f => f.endsWith('.js') && !/^app-/.test(f)).map(docs).join('\n');
@@ -195,18 +196,18 @@ test('app-gioco.css e app-menu.css: ogni regola riguarda l\'app (html.app…); l
     assert.match(comune, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation(-duration)?:\s*(none|\.01ms|0\.01ms)/);
 });
 
-test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c e --i le scrive il menù tessera per tessera', () => {
+test('le misure e i colori dell\'app sono definiti: --u, i --gx-… e le proprietà del tema; --c lo scrive il menù carta per carta, --i e --n le locandine di Play', () => {
     const fogli = ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css'].map(f => senzaCommenti(docs(f))).join('\n');
-    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
+    const js = ['app-gioco.js', 'app-menu.js', 'app-comune.js', 'app-classifica.js', 'app-trainers.js', 'app-stats.js', 'scala-pkm.js', 'dettagli.js', 'matches.html'].map(docs).join('\n');
     const tema = docs('temi.css') + docs('nb-pagine.css');
     const usate = new Set([...fogli.matchAll(/var\((--[a-z0-9-]+)/gi)].map(m => m[1]));
     const definite = new Set([...fogli.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map(m => m[1]));
     for (const m of js.matchAll(/setProperty\('(--[a-z0-9-]+)'/g)) definite.add(m[1]);
     for (const m of js.matchAll(/(--[a-z0-9-]+):\$\{/g)) definite.add(m[1]);                // scritte nello stile inline dei pezzi (--c, --cols...)
     for (const m of tema.matchAll(/(--[a-z0-9-]+)\s*:/gi)) definite.add(m[1]);
-    const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i', '--tipo', '--tipo2', '--ns-durata', '--ns-eccesso'].includes(v));
+    const senza = [...usate].filter(v => !definite.has(v) && !['--c', '--i', '--n', '--tipo', '--tipo2', '--ns-durata', '--ns-eccesso'].includes(v));
     assert.deepEqual(senza, [], 'proprietà usate ma mai definite');
-    assert.match(docs('app-menu.js'), /style="--c:'.*';--i:'/s);
+    assert.match(docs('app-menu.js'), /style="--c:' \+ esc\(v\.colore\) \+ '"/);
     // 1u = 1px su uno schermo di 740x340: la misura dell'app si adatta allo schermo
     assert.match(fogli, /--u:\s*min\(\.294vh,\s*\.1351vw\)/);
 });
