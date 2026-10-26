@@ -159,8 +159,11 @@ test('le tessere: una per pagina del gioco, con nome e icona (senza sottotitolo)
     assert.match(css, /\.gx-tessera small \{ display: none;/, 'se un sottotitolo ricomparisse, non si vede');
     for (const c of ['gx-tessera', 'gx-tessere', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
-    // niente barra in alto col logo: il giocatore sta a tutta altezza e i comandi restano a destra
-    assert.doesNotMatch(docs('menu.html'), /class="gx-logo"/);
+    // il logo (Magikarp + Sant'Alvise League) c'è, ma libero: nessuno sfondo, né semitrasparente né sfocato, dietro la testata
+    assert.match(docs('menu.html'), /<h1 class="gx-logo">/);
+    const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
+    assert.ok(testata, 'la regola della testata');
+    assert.doesNotMatch(testata, /background|backdrop-filter|rgba/, 'la testata non ha sfondo');
     // le forme che galleggiano sono pokéball (metà rossa, metà bianca, bottone al centro), non cerchi barrati
     assert.match(css, /\.gx-forma \{[^}]*linear-gradient\(180deg, rgba\(255, 82, 72/);
 });

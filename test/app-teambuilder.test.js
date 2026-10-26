@@ -101,7 +101,7 @@ test('il foglio: ogni tappa ha le sue regole, tutte sotto html.app-shell; il sit
 
 test('app.js carica lo script solo nel Box; lo script non fa niente fuori dall\'app', () => {
     const A = require('../docs/app.js');
-    assert.deepEqual(A.SCRIPT_PAGINE['box.html'], ['app-carosello.js', 'app-teambuilder.js']);
+    assert.deepEqual(A.SCRIPT_PAGINE['box.html'], ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js']);
     const finto = { documentElement: { classList: { contains: () => false } } };
     assert.equal(T.avvia({ document: finto }), null, 'senza html.app-shell non tocca la pagina');
     assert.equal(T.avvia({}), null);
