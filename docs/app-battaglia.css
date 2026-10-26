@@ -24,7 +24,29 @@
     /* le schede dei Pokémon e delle mosse (i tooltip di Showdown): compaiono tenendo premuto, al centro dello schermo, e spariscono lasciando (app-battaglia.js) */
     html.app #tooltipwrapper { position: fixed !important; inset: 0 !important; z-index: 2000; display: flex !important; align-items: center; justify-content: center; margin: 0 !important; padding: 8px; box-sizing: border-box; pointer-events: none !important; }
     html.app #tooltipwrapper .tooltipinner { position: static !important; }
-    html.app #tooltipwrapper .tooltip { position: static !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; transform: none !important; margin: 0 !important; max-height: calc(100vh - 16px); overflow: hidden; }
+    html.app #tooltipwrapper .tooltip { position: static !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; transform: none !important; margin: 0 !important; }
+    /* la scheda è piccola, in due colonne e senza il superfluo (natura, note lunghe, suggerimenti): deve stare tutta nello schermo (se serve, app-battaglia.js la rimpicciolisce) */
+    html.app #tooltipwrapper .tooltip { width: min(calc(100vw - 24px), 500px) !important; max-width: none !important; box-sizing: border-box; transform: none !important; font-size: max(9px, 2.8vh) !important; }
+    html.app #tooltipwrapper .tooltip h2 { margin: 0 !important; padding: 4px 10px 3px !important; font-size: 1.15em !important; line-height: 1.15; }
+    html.app #tooltipwrapper .tooltip p { margin: 0 !important; padding: 2px 10px !important; font-size: 1em !important; line-height: 1.25 !important; }
+    html.app #tooltipwrapper .tooltip p.tooltip-section { margin-top: 1px !important; padding-top: 3px !important; }
+    html.app #tooltipwrapper .tooltip :is(.movetag, .tt-nota-lunga, .tt-sub, .tt-barra-range) { display: none !important; }
+    html.app #tooltipwrapper .tt-testa { padding: 4px 10px 4px !important; }
+    html.app #tooltipwrapper .tt-nome { font-size: 1.15em !important; }
+    html.app #tooltipwrapper .tt-tipo { font-size: .8em !important; padding: 1px 6px 0 !important; }
+    html.app #tooltipwrapper .tt-tipi { margin-top: 2px !important; }
+    html.app #tooltipwrapper .tt-corpo { display: block !important; padding: 4px 10px 6px !important; font-size: 1em !important; }
+    html.app #tooltipwrapper .tt-griglia-stat { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 3px !important; }
+    html.app #tooltipwrapper .tt-sezione:has(.tt-mossa) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; }
+    html.app #tooltipwrapper .tt-sezione:has(.tt-mossa) > .tt-titolo { grid-column: 1 / -1; }
+    html.app #tooltipwrapper .tt-sezione { margin-top: 3px !important; padding-top: 3px !important; }
+    html.app #tooltipwrapper .tt-titolo { margin-bottom: 2px !important; font-size: .85em !important; }
+    html.app #tooltipwrapper .tt-riga { padding: 1px 0 !important; }
+    html.app #tooltipwrapper .tt-etichetta, html.app #tooltipwrapper .tt-cella span { font-size: .85em !important; }
+    html.app #tooltipwrapper .tt-cella b { font-size: 1em !important; }
+    html.app #tooltipwrapper .tt-grande { font-size: 1.3em !important; }
+    html.app #tooltipwrapper .tt-barra { height: 5px !important; }
+    html.app #tooltipwrapper .tt-mossa { padding: 0 !important; }
     html.app .has-tooltip { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     html.app .titolo, html.app .pannello-testa h2 { display: none; }
     html.app .cab-schermo, html.app .console { display: contents; }
