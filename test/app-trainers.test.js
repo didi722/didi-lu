@@ -105,3 +105,10 @@ test('avvia: fuori dall\'app non fa niente', () => {
     assert.equal(T.avvia({ document: { documentElement: { classList: { contains: () => false } } } }), null);
     assert.equal(T.avvia({}), null);
 });
+
+test('scalaCompagno: il Pokémon ha i pixel grandi come quelli dell\'allenatore', () => {
+    const T = require('../docs/app-trainers.js');
+    assert.equal(T.scalaCompagno(200, 200, 80, 80), 2.5);
+    assert.equal(T.scalaCompagno(100, 300, 100, 100), 1, 'vale il lato più stretto');
+    assert.equal(T.scalaCompagno(0, 100, 50, 50), 0);
+});

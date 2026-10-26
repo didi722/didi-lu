@@ -111,7 +111,15 @@ test('app-battaglia.js: le schede (tooltip) si vedono tenendo premuto e sparisco
     assert.equal(B.eEcoDelTocco(1000, 500), true, 'il mouseover che il telefono manda subito dopo un tocco è un\'eco');
     assert.equal(B.eEcoDelTocco(1000 + B.FINESTRA_MOUSE_FINTO_MS, 1000), false, 'passata la finestra è un mouse vero');
     const js = docs('app-battaglia.js');
-    for (const ev of ['touchend', 'touchcancel', 'pointerup', 'pointercancel']) assert.ok(js.includes(`'${ev}'`), ev);
+    for (const ev of ['touchend', 'touchcancel']) assert.ok(js.includes(`'${ev}'`), ev);
     assert.match(js, /hideTooltip/);
     assert.match(docs('battle-ui.js'), /if \(inApp\(\)\) window\.AppTooltips = tooltips;/);
+});
+
+test('le schede si aprono solo tenendo premuto: a Showdown non arrivano i suoi eventi di tocco/focus/mouse, e la scheda sta nello schermo', () => {
+    const B2 = require('../docs/app-battaglia.js');
+    for (const t of ['touchstart', 'touchend', 'mouseover', 'focus', 'focusin', 'pointerdown']) assert.ok(B2.EVENTI_SHOWDOWN.includes(t), t);
+    assert.ok(B2.SCARTA_CLICK_MS > 0 && B2.TOLLERANZA_PX > 0);
+    assert.equal(B2.zoomPer(200, 300, 340, 740), 1);
+    assert.ok(B2.zoomPer(600, 300, 340, 740) < .6 + 1e-9 && B2.zoomPer(600, 300, 340, 740) >= .5);
 });

@@ -55,36 +55,85 @@
     /** Un "mouseover" è un'eco di un tocco (e non va fatto vedere ai tooltip di Showdown)? */
     const eEcoDelTocco = (adesso, ultimoTocco) => (adesso - ultimoTocco) < FINESTRA_MOUSE_FINTO_MS;
 
+    /** Di quanto rimpicciolire una scheda alta `h` e larga `w` per farla stare in uno schermo `H` x `W` (con un po' di margine); 1 se ci sta già */
+    function zoomPer(h, w, H, W, margine = 12) {
+        if (!(h > 0) || !(w > 0)) return 1;
+        return Math.max(.5, Math.min(1, (H - margine) / h, (W - margine) / w));
+    }
+
+    /** Quanto si può muovere il dito (px) restando una pressione: oltre è uno scorrimento */
+    const TOLLERANZA_PX = 10;
+    /** Dopo una pressione lunga il telefono manda comunque il "click" al rilascio: per questo tempo (ms) va scartato, o sceglierebbe il Pokémon/la mossa */
+    const SCARTA_CLICK_MS = 700;
+    /** Gli eventi con cui Showdown apre, blocca o chiude le sue schede da solo: nell'app non devono arrivargli (le fa vedere solo la pressione lunga) */
+    const EVENTI_SHOWDOWN = ['touchstart', 'touchend', 'touchcancel', 'touchleave', 'pointerdown', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'focus', 'focusin', 'blur', 'focusout'];
+
     /**
      * La scheda di un Pokémon o di una mossa (i tooltip di Showdown) si vede solo TENENDO PREMUTO e al centro dello schermo (lo mette il foglio); lasciando, sparisce.
-     * Un semplice tocco sceglie (la mossa, il Pokémon) e basta: niente scheda che compare e resta lì.
+     * Un semplice tocco sceglie (la mossa, il Pokémon) e basta: niente scheda che compare e resta lì, nemmeno con un tocco un po' lento.
+     * Showdown da solo la apre al primo contatto, al "focus" e al passaggio del mouse (anche quello finto che il telefono manda dopo un tocco), e la blocca se il dito resta
+     * appena più a lungo: qui quegli eventi non gli arrivano (si ferma la propagazione in cattura, prima dei suoi), e la apriamo noi, chiamando la sua funzione.
      */
     function collegaSchede(win) {
         const doc = win.document;
-        let ultimoTocco = 0, timer = null;
+        let timer = null, inizio = null, lungo = false, scartaFinoA = 0;
         const tooltips = () => win.PSClient && win.PSClient.BattleTooltips || win.BattleTooltips || null;
         const nascondi = () => {
             const T = tooltips();
             if (T && typeof T.hideTooltip === 'function') { try { T.hideTooltip(); } catch (e) { /* niente da nascondere */ } }
         };
         const ferma = () => { if (timer) { win.clearTimeout(timer); timer = null; } };
-        doc.addEventListener('touchstart', e => {
-            ultimoTocco = Date.now();
-            const el = e.target && e.target.closest ? e.target.closest('.has-tooltip') : null;
+        const dellaScheda = e => (e.target && e.target.closest ? e.target.closest('.has-tooltip') : null);
+        const rilascia = () => {
             ferma();
-            if (!el) return;
-            timer = win.setTimeout(() => {
-                timer = null;
-                const vuoto = !doc.querySelector('#tooltipwrapper .tooltip');
-                const istanza = win.AppTooltips;           // l'istanza di Showdown, messa a disposizione da battle-ui.js
-                if (vuoto && istanza && typeof istanza.showTooltip === 'function') { try { istanza.showTooltip(el); } catch (err) { /* resta com'è */ } }
-            }, TENUTA_MS);
+            inizio = null;
+            if (lungo) { lungo = false; scartaFinoA = Date.now() + SCARTA_CLICK_MS; }
+            nascondi();
+        };
+        EVENTI_SHOWDOWN.forEach(tipo => win.addEventListener(tipo, e => {
+            const el = dellaScheda(e);
+            if (tipo === 'touchstart' && el) {
+                const t = e.touches && e.touches[0];
+                inizio = t ? { x: t.clientX, y: t.clientY } : null;
+                lungo = false;
+                ferma();
+                timer = win.setTimeout(() => {
+                    timer = null;
+                    const istanza = win.AppTooltips;           // l'istanza di Showdown, messa a disposizione da battle-ui.js
+                    if (istanza && typeof istanza.showTooltip === 'function') { try { nascondi(); istanza.showTooltip(el); lungo = true; } catch (err) { /* resta com'è */ } }
+                }, TENUTA_MS);
+            }
+            if (tipo === 'touchend' || tipo === 'touchcancel') rilascia();
+            if (el) e.stopImmediatePropagation();
+        }, true));
+        // il dito che scorre (i pannelli scorrono di lato) non è una pressione
+        win.addEventListener('touchmove', e => {
+            const t = e.touches && e.touches[0];
+            if (timer && inizio && t && (Math.abs(t.clientX - inizio.x) > TOLLERANZA_PX || Math.abs(t.clientY - inizio.y) > TOLLERANZA_PX)) ferma();
         }, { capture: true, passive: true });
-        ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach(t => doc.addEventListener(t, () => { ultimoTocco = Date.now(); ferma(); nascondi(); }, true));
-        // l'eco del tocco (mouseover e click finti) non deve far comparire o bloccare la scheda
-        doc.addEventListener('mouseover', e => { if (eEcoDelTocco(Date.now(), ultimoTocco)) e.stopImmediatePropagation(); }, true);
-        doc.addEventListener('click', () => { win.setTimeout(nascondi, 0); }, true);
-        doc.addEventListener('contextmenu', e => { if (e.target && e.target.closest && e.target.closest('.has-tooltip')) e.preventDefault(); }, true);
+        // dopo una pressione lunga il click del rilascio non deve scegliere niente
+        win.addEventListener('click', e => {
+            if (Date.now() < scartaFinoA && dellaScheda(e)) { e.preventDefault(); e.stopImmediatePropagation(); scartaFinoA = 0; }
+        }, true);
+        doc.addEventListener('contextmenu', e => { if (dellaScheda(e)) e.preventDefault(); }, true);
+        // la scheda deve stare tutta nello schermo: se è più alta, si rimpicciolisce di quanto serve (niente tagli)
+        const adatta = () => {
+            const t = doc.querySelector('#tooltipwrapper .tooltip');
+            if (!t) return;
+            // la natura non serve per giocare: via
+            t.querySelectorAll('.tt-riga').forEach(r => { const e = r.querySelector('.tt-etichetta'); if (e && /^nature$/i.test(e.textContent.trim())) r.remove(); });
+            t.style.zoom = '';
+            const r = t.getBoundingClientRect();
+            const f = zoomPer(Math.max(r.height, t.scrollHeight), Math.max(r.width, t.scrollWidth), win.innerHeight, win.innerWidth);
+            if (f < 1) t.style.zoom = String(f);
+        };
+        const cerca = () => {
+            const w = doc.getElementById('tooltipwrapper');
+            if (!w) return false;
+            new win.MutationObserver(adatta).observe(w, { childList: true, subtree: true });
+            return true;
+        };
+        if (cerca()) adatta(); else { const o = new win.MutationObserver(() => { if (cerca()) { o.disconnect(); adatta(); } }); o.observe(doc.body, { childList: true }); }
     }
 
     function avvia(win) {
@@ -181,5 +230,5 @@
         return { osservatore, tutti };
     }
 
-    return { CONDIZIONE_TELEFONO, TENUTA_MS, FINESTRA_MOUSE_FINTO_MS, eEcoDelTocco, passoDa, puoCambiare, statoAltro, avvia };
+    return { CONDIZIONE_TELEFONO, zoomPer, TENUTA_MS, TOLLERANZA_PX, SCARTA_CLICK_MS, EVENTI_SHOWDOWN, FINESTRA_MOUSE_FINTO_MS, eEcoDelTocco, passoDa, puoCambiare, statoAltro, avvia };
 });
