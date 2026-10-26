@@ -1137,6 +1137,7 @@ function creaScena({ recupera = false } = {}) {
     const tooltips = battle.scene.tooltips;
     tooltips.listen($('comandi'));
     scena = { battle, tooltips, righe: 0, turnoVisto: false };
+    if (inApp()) window.AppTooltips = tooltips;      // nell'app le schede si fanno vedere tenendo premuto (app-battaglia.js)
        seguiBattaglia(battle);
     // Chi arriva a set iniziato non rivede tutte le animazioni: si salta al turno in corso
     if (recupera) {

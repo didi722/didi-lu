@@ -50,7 +50,7 @@
         'matches.html': ['app-carosello.js', 'app-classifica.js'],
         'players.html': ['sprite-pkm.js', 'app-carosello.js', 'app-trainers.js'],
         'stats.html': ['app-carosello.js', 'app-stats.js'],
-        'box.html': ['app-teambuilder.js'],
+        'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
         'practice.html': ['app-practice.js']
     };
 

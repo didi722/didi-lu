@@ -285,11 +285,11 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
 test('i fogli e gli script dell\'app ereditano l\'indirizzo di app.js (anche con un numero di versione), a pagina letta si aggiungono alla testa', () => {
     const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', srcApp: 'app.js?v=7' });
     assert.deepEqual(s.fogli(), ['app-gioco.css?v=7', 'app-gioco-pagine.css?v=7']);
-    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7', 'app-teambuilder.js?v=7']);
+    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7', 'app-carosello.js?v=7', 'app-teambuilder.js?v=7', 'app-box-badge.js?v=7']);
     // mentre la pagina si legge i fogli si scrivono subito (document.write): il sito "da PC" non lampeggia prima dell'app
     const l = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', caricamento: true });
     assert.deepEqual(l.doc.scritture, ['<link rel="stylesheet" href="app-gioco.css">', '<link rel="stylesheet" href="app-gioco-pagine.css">']);
-    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-teambuilder.js']);
+    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js']);
     assert.deepEqual(l.classi(), ['app', 'app-installata', 'app-shell', 'os-android'], 'le classi arrivano subito (niente sfarfallio)');
     assert.equal(l.avviso(), null, 'l\'avviso "gira il telefono" aspetta la pagina pronta');
 });

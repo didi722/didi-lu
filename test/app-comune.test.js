@@ -389,3 +389,15 @@ test('finestra delle impostazioni: se push.js non c\'è ancora lo carica dalla s
     q.opzioni.apri();
     assert.equal(q.doc.head.figli[0].src, 'push.js');
 });
+
+test('posizioneInClassifica: il posto per Elo tra i classificati (almeno 3 showdown); null se non lo sei o non ci sei; ids senza badare alle maiuscole', () => {
+    const g = (elo, sd) => ({ stats: { 'individual-stats': { ranking: elo, showdownsPlayed: sd } } });
+    const players = { didi: g(1000, 5), Anna: g(1200.5, 4), zeno: g(1500, 1), bea: g(900, 3), nuovo: {}, vuoto: null };
+    assert.equal(C.posizioneInClassifica(players, 'anna'), 1, 'zeno ha un solo showdown: non è classificato');
+    assert.equal(C.posizioneInClassifica(players, ' DIDI '), 2);
+    assert.equal(C.posizioneInClassifica(players, 'bea'), 3);
+    assert.equal(C.posizioneInClassifica(players, 'zeno'), null);
+    assert.equal(C.posizioneInClassifica(players, 'nuovo'), null);
+    assert.equal(C.posizioneInClassifica(players, 'sconosciuto'), null);
+    assert.equal(C.posizioneInClassifica(null, 'didi'), null);
+});

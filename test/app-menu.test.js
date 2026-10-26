@@ -127,7 +127,7 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     const html = docs('menu.html');
     const js = docs('app-menu.js');
     const cercati = new Set([...js.matchAll(/\$\('([\w-]+)'\)/g)].map(m => m[1]));
-    const dinamici = new Set(['gx-accedi']);                // il tasto "Log in" lo disegna lo script dentro il pannello del giocatore
+    const dinamici = new Set(['gx-accedi', 'gx-nastro']);                // il tasto "Log in" lo disegna lo script dentro il pannello del giocatore
     assert.ok(cercati.size >= 12, 'id cercati: ' + [...cercati].join(', '));
     for (const id of cercati) {
         if (dinamici.has(id)) assert.ok(!html.includes(`id="${id}"`), `${id} lo crea lo script`);
@@ -149,20 +149,23 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<div class="gx-dialogo" id="gx-login"[^>]* hidden>/);
 });
 
-test('le tessere: una per pagina del gioco, con nome, sottotitolo, icona, colore e posto; la prima (Matches) è la grande', () => {
+test('le tessere: una per pagina del gioco, con nome e icona (senza sottotitolo); la prima (Matches) è la grande', () => {
     const js = docs('app-menu.js');
-    const sottotitoli = Object.fromEntries([...js.match(/const sottotitoli = \{([\s\S]*?)\};/)[1].matchAll(/(\w+):\s*'([^']+)'/g)].map(m => [m[1], m[2]]));
-    for (const v of A.VOCI) {
-        assert.ok(sottotitoli[v.id], `manca il sottotitolo della tessera ${v.id}`);
-        assert.ok(sottotitoli[v.id].length <= (v.id === 'matches' ? 30 : 22), `${v.id}: il sottotitolo deve stare nella tessera`);
-        assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
-    }
-    assert.deepEqual(Object.keys(sottotitoli).sort(), A.VOCI.map(v => v.id).sort(), 'né tessere senza sottotitolo né sottotitoli senza tessera');
+    assert.doesNotMatch(js, /sottotitoli/, 'le tessere non hanno più il sottotitolo');
+    for (const v of A.VOCI) assert.ok(C.ICONE[v.id], `manca l'icona ${v.id}`);
     const css = docs('app-menu.css');
     assert.equal(A.VOCI[0].id, 'matches');
     assert.match(css, /\.gx-t-matches/, 'la tessera grande');
-    for (const c of ['gx-tessera', 'gx-tessere', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
+    assert.match(css, /\.gx-tessera small \{ display: none;/, 'se un sottotitolo ricomparisse, non si vede');
+    for (const c of ['gx-tessera', 'gx-tessere', 'gx-giocatore', 'gx-palco', 'gx-avatar', 'gx-stagione', 'gx-nastro', 'gx-splash', 'gx-lobby']) assert.ok(css.includes(c), `app-menu.css non conosce ${c}`);
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
+    // il logo (Magikarp + Sant'Alvise League) c'è, ma libero: nessuno sfondo, né semitrasparente né sfocato, dietro la testata
+    assert.match(docs('menu.html'), /<h1 class="gx-logo">/);
+    const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
+    assert.ok(testata, 'la regola della testata');
+    assert.doesNotMatch(testata, /background|backdrop-filter|rgba/, 'la testata non ha sfondo');
+    // le forme che galleggiano sono pokéball (metà rossa, metà bianca, bottone al centro), non cerchi barrati
+    assert.match(css, /\.gx-forma \{[^}]*linear-gradient\(180deg, rgba\(255, 82, 72/);
 });
 
 // ---------- il menù con una pagina finta ----------
@@ -285,7 +288,7 @@ test('le tessere: una per voce del gioco, nell\'ordine, con link, colore, posto,
         assert.equal(t[2], v.href);
         assert.equal(t[3], v.colore);
         assert.equal(t[4], String(i));
-        assert.match(t[5], new RegExp(`<span class="gx-ico"><svg class="gx-icona"[^>]*>.+</svg></span><b>${v.et}</b><small>[A-Za-z &;]+</small>`));
+        assert.match(t[5], new RegExp(`^<span class="gx-ico"><svg class="gx-icona"[^>]*>.+</svg></span><b>${v.et}</b>$`));
     });
 });
 
@@ -414,7 +417,9 @@ test('con l\'account: avatar, nome, titolo, Elo e stagioni vinte nel pannello; i
     assert.match(g, /<b class="gx-nome">Didi<\/b>/);
     assert.match(g, /<small class="gx-titolo-g">Champion &lt;b&gt;<\/small>/, 'il titolo non può aprire tag');
     assert.match(g, /<li><b>1234<\/b><span>Elo<\/span><\/li>/);
-    assert.match(g, /<li><b>2<\/b><span>Seasons won<\/span><\/li>/);
+    assert.match(g, /<li><b>#1<\/b><span>Ranking<\/span><\/li>/, 'il posto in classifica, non le stagioni vinte');
+    assert.doesNotMatch(g, /Seasons won/);
+    assert.match(g, /<span>Achievements<\/span>/, 'il tasto dice cos\'è');
     assert.doesNotMatch(g, /gx-accedi/);
     assert.equal(p.proprieta['--nb-accento'], undefined, 'il colore scelto per il sito non conta nell\'app');
     // le impostazioni: Admin e Log out
@@ -443,8 +448,7 @@ test('giocatore con pochi showdown: Elo "N/A"; senza titolo la riga del titolo n
     p.accedi({ uid: 'u1' });
     await passaUnGiro(); await passaUnGiro();
     const g = p.id('gx-giocatore').innerHTML;
-    assert.match(g, /<li><b>N\/A<\/b><span>Elo<\/span><\/li>/);
-    assert.match(g, /<li><b>0<\/b><span>Seasons won<\/span><\/li>/);
+    assert.match(g, /<li><b>N\/A<\/b><span>Ranking<\/span><\/li><li><b>N\/A<\/b><span>Elo<\/span><\/li>/);
     assert.doesNotMatch(g, /gx-titolo-g/);
     assert.match(g, /src="immagini\/magikarp\.png"/, 'avatar di riserva');
 });
@@ -464,8 +468,9 @@ test('la stagione del momento: il nastro sotto il giocatore, col tempo che manca
     assert.match(g, /<b>Spring Cup<\/b><small>Sign-ups close in 2d 1h<\/small>/);
     assert.match(g, /<em>JOIN<\/em>/);
     // il conto alla rovescia si aggiorna da solo, ogni mezzo minuto
-    assert.equal(p.intervalli.length, 1);
-    assert.equal(p.intervalli[0].ms, 30000);
+    assert.equal(p.intervalli.length, 2);
+    assert.ok(p.intervalli.some(i => i.ms === 30000), 'il conto alla rovescia, ogni mezzo minuto');
+    assert.ok(p.intervalli.some(i => i.ms === M.PASSO_NASTRO || i.ms === 4000), 'il nastro che passa da una stagione all\'altra');
     // senza nessuna stagione: niente nastro
     const vuoto = paginaMenu({ sessione: { menuSplashVisto: '1' } });
     await passaUnGiro(); await passaUnGiro();
@@ -554,7 +559,7 @@ test('l\'annuncio delle iscrizioni aperte: aspetta la schermata del titolo; non 
 
 test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) e poi legge giocatore e stagione', async () => {
     const p = paginaMenu({ sessione: { menuSplashVisto: '1' }, firebaseAttivo: false });
-    assert.equal(p.intervalli.length, 2, 'il conto alla rovescia e l\'attesa di Firebase');
+    assert.equal(p.intervalli.length, 3, 'il conto alla rovescia, il nastro delle stagioni e l\'attesa di Firebase');
     const attesa = p.intervalli.find(i => i.ms === 150);
     assert.ok(attesa);
     // le tessere e il pannello "Welcome!" ci sono comunque
@@ -565,4 +570,21 @@ test('Firebase che parte dopo la pagina: il menù aspetta (senza mai bloccarsi) 
     attesa.f();
     await passaUnGiro();
     assert.ok(p.accedi, 'ora ascolta l\'accesso');
+});
+
+test('stagioniDaMostrare: tutte le aperte (la più vicina alla scadenza prima) e tutte quelle in corso; se non c\'è altro, l\'ultima conclusa', () => {
+    const adesso = Date.UTC(2026, 9, 5, 12);
+    const info = (status, deadline) => ({ info: { status, ...(deadline ? { deadline } : {}) } });
+    const lista = M.stagioniDaMostrare([
+        { id: 's1', ...info('closed') }, { id: 's2', ...info('playing') }, { id: 's3', ...info('playing') },
+        { id: 's4', ...info('open', new Date(adesso + 5 * 86400000).toISOString()) }, { id: 's5', ...info('open', new Date(adesso + 2 * 86400000).toISOString()) },
+        { id: 'sbeta', ...info('playing') }, { id: 's9' }
+    ], adesso);
+    assert.deepEqual(lista.map(x => x.id), ['s5', 's4', 's3', 's2'], 'prima le aperte per scadenza, poi le in corso dalla più recente; senza beta');
+    assert.equal(lista[0].mancano, 2 * 86400000);
+    assert.equal(lista[2].mancano, null);
+    assert.deepEqual(M.stagioniDaMostrare([{ id: 's1', ...info('closed') }, { id: 's2', ...info('closed') }], adesso).map(x => x.id), ['s2'], 'solo l\'ultima conclusa');
+    assert.deepEqual(M.stagioniDaMostrare([], adesso), []);
+    assert.deepEqual(M.stagioniDaMostrare([{ id: 'sbeta', ...info('playing') }], adesso).map(x => x.id), ['sbeta'], 'la beta solo se non c\'è altro');
+    assert.equal(M.stagioneDaMostrare([{ id: 's1', ...info('playing') }], adesso).id, 's1', 'quella di prima resta valida');
 });

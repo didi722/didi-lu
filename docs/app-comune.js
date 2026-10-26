@@ -74,6 +74,23 @@
     }
 
     /**
+     * La posizione di un giocatore nella classifica della lega (1 = il primo per Elo) o null se non è classificato (servono almeno MIN_SD_CLASSIFICA showdown).
+     * Stessa regola della pagina Trainers: prima i classificati, per Elo dal più alto. `players`: il nodo players di Firebase.
+     */
+    function posizioneInClassifica(players, id) {
+        const mio = idDi(id);
+        const classificati = [];
+        for (const [k, g] of Object.entries(players || {})) {
+            const ind = (g && g.stats && g.stats['individual-stats']) || {};
+            if (ind.ranking === undefined || Number(ind.showdownsPlayed || 0) < MIN_SD_CLASSIFICA) continue;
+            classificati.push({ id: idDi(k), elo: Number(ind.ranking) || 0 });
+        }
+        classificati.sort((x, y) => y.elo - x.elo);
+        const i = classificati.findIndex(x => x.id === mio);
+        return i < 0 ? null : i + 1;
+    }
+
+    /**
      * Le tessere della finestra delle impostazioni, dallo stato di quel momento.
      * `s`: { suono, vibra, push ('', 'acceso', 'spento', 'negato', 'non-supportato'), occupato, utente (collegato), nome, admin }
      * Una tessera ha `azione` (un tasto) oppure `href` (un collegamento); `classe` la colora.
@@ -119,6 +136,14 @@
                 db.ref('players/' + id + '/stats/seasons').once('value')
             ]);
             return { giocatore: riassuntoGiocatore(id, { info: info.val() || { name: nome }, stats: { 'individual-stats': ind.val() || {}, seasons: stagioni.val() || {} } }), admin };
+        } catch (e) { return null; }
+    }
+
+    /** La posizione in classifica letta da Firebase (null se non classificato o se non si riesce a leggere) */
+    async function leggiPosizione(win, id) {
+        try {
+            const v = (await win.firebase.database().ref('players').once('value')).val();
+            return posizioneInClassifica(v, id);
         } catch (e) { return null; }
     }
 
@@ -229,5 +254,5 @@
         return { apri, chiudi, aggiorna: disegna, aperta };
     }
 
-    return { CHIAVE_SUONO, CHIAVE_VIBRA, MIN_SD_CLASSIFICA, ICONE, idDi, esc, svg, riassuntoGiocatore, tessereOpzioni, leggiGiocatore, creaOpzioni };
+    return { CHIAVE_SUONO, CHIAVE_VIBRA, MIN_SD_CLASSIFICA, ICONE, idDi, esc, svg, riassuntoGiocatore, posizioneInClassifica, tessereOpzioni, leggiGiocatore, leggiPosizione, creaOpzioni };
 });

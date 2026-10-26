@@ -24,6 +24,7 @@
 
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
     const CHIAVE_ANNUNCIO = 'appStagioneVista';       // localStorage: l'ultima stagione annunciata (il messaggio compare una volta per stagione)
+    const PASSO_NASTRO = 4000;                        // ms: ogni quanto il nastro passa alla stagione dopo
     const LINK_MP3 = 'https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3';
 
     // ---------- parti pure ----------
@@ -54,6 +55,27 @@
         if (!scelta) return null;
         const scad = Date.parse(scelta.info.deadline);
         return { ...scelta, mancano: scelta.stato === 'open' && Number.isFinite(scad) ? Math.max(0, scad - ora) : null };
+    }
+
+    /**
+     * Le stagioni da mostrare nel menù, tutte quelle che contano ora: prima le aperte (la più vicina alla scadenza), poi quelle in corso (la più recente prima);
+     * se non c'è né l'una né l'altra, l'ultima conclusa. Con più di una il nastro del menù scorre da solo tra loro.
+     */
+    function stagioniDaMostrare(elenco, adesso) {
+        const ora = adesso || Date.now();
+        const tutte = (elenco || []).filter(x => x && x.info).map(x => ({ id: x.id, info: x.info, stato: statoStagione(x.info, ora) }));
+        const vere = tutte.filter(x => x.id !== 'sbeta');
+        const lista = vere.length ? vere : tutte;
+        const numero = id => { const m = /(\d+)$/.exec(String(id)); return m ? Number(m[1]) : -1; };
+        const piuRecente = (a, b) => numero(b.id) - numero(a.id);
+        const aperte = lista.filter(x => x.stato === 'open').sort((a, b) => (Date.parse(a.info.deadline) || Infinity) - (Date.parse(b.info.deadline) || Infinity));
+        const incorso = lista.filter(x => x.stato === 'playing').sort(piuRecente);
+        const scelte = aperte.concat(incorso);
+        if (!scelte.length) { const ultima = lista.filter(x => x.stato === 'closed').sort(piuRecente)[0] || lista.slice().sort(piuRecente)[0]; if (ultima) scelte.push(ultima); }
+        return scelte.map(x => {
+            const scad = Date.parse(x.info.deadline);
+            return { ...x, mancano: x.stato === 'open' && Number.isFinite(scad) ? Math.max(0, scad - ora) : null };
+        });
     }
 
     /** "2d 23h", "5h 12m", "12m", "now": il tempo che manca, scritto corto */
@@ -123,11 +145,10 @@
 
         // ----- le tessere -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
-        const sottotitoli = { matches: 'Play & watch the showdowns', practice: 'CPU or friendly', box: 'Your teams', trainers: 'Meet the league', stats: 'League numbers' };
-        $('gx-tessere').innerHTML = voci.map((v, i) =>
+            $('gx-tessere').innerHTML = voci.map((v, i) =>
             '<a class="gx-tessera gx-t-' + v.id + '" href="' + esc(v.href) + '" style="--c:' + esc(v.colore) + ';--i:' + i + '" data-suono="scegli">' +
                 '<span class="gx-ico">' + svg(v.id) + '</span>' +
-                '<b>' + esc(v.et) + '</b><small>' + esc(sottotitoli[v.id] || '') + '</small>' +
+                '<b>' + esc(v.et) + '</b>' +
             '</a>').join('');
 
         // ----- barra in alto: suono e impostazioni -----
@@ -201,22 +222,30 @@
         let ach = null;                 // gli achievements del giocatore ({ voci, sbloccati, totale }), una volta caricati; false se non si sono potuti leggere
         let utente = null;
         let admin = false;
-        let stagione = null;
+        let stagione = null;            // la stagione principale (la prima della lista: serve all'annuncio)
+        let stagioni = [];              // tutte quelle da mostrare nel nastro
+        let indiceNastro = 0;
+        let posizione = null;           // il posto nella classifica della lega (null: non classificato o non ancora letto)
+        let posizioneLetta = false;
+        const htmlNastro = () => {
+            const st = stagioni[indiceNastro % (stagioni.length || 1)];
+            if (!st) return '';
+            const s = riassuntoStagione(st, !!giocatore && giaIscritto(st.iscritti, giocatore.id));
+            const punti = stagioni.length > 1 ? '<span class="gx-st-punti" aria-hidden="true">' + stagioni.map((x, k) => '<i' + (k === indiceNastro % stagioni.length ? ' class="su"' : '') + '></i>').join('') + '</span>' : '';
+            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b><small>' + esc(s.testo) + '</small></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
+        };
         const pannelloGiocatore = () => {
-            const s = stagione ? riassuntoStagione(stagione, !!giocatore && giaIscritto(stagione.iscritti, giocatore.id)) : null;
-            const nastro = s
-                ? '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b><small>' + esc(s.testo) + '</small></span><em>' + esc(s.azione) + '</em></a>'
-                : '';
+            const nastro = '<div class="gx-nastro" id="gx-nastro">' + htmlNastro() + '</div>';
             if (!giocatore) {
                 return '<div class="gx-palco gx-ospite"><span class="gx-aura"></span><span class="gx-avatar gx-sagoma" aria-hidden="true">?</span><span class="gx-piattaforma"></span></div>' +
                     '<div class="gx-targa"><b class="gx-nome">Welcome!</b><small class="gx-titolo-g">Log in to play and vote</small></div>' +
                     '<button type="button" class="gx-bottone gx-primario gx-largo-b" id="gx-accedi" data-suono="apri">' + svg('entra', 'gx-icona-pic') + 'Log in</button>' + nastro;
             }
             const numeri = [
-                '<li><b>' + (giocatore.elo == null ? 'N/A' : giocatore.elo) + '</b><span>Elo</span></li>',
-                '<li><b>' + giocatore.vinte + '</b><span>Seasons won</span></li>'
+                '<li><b>' + (giocatore.elo == null ? 'N/A' : (posizioneLetta ? (posizione ? '#' + posizione : 'N/A') : '…')) + '</b><span>Ranking</span></li>',
+                '<li><b>' + (giocatore.elo == null ? 'N/A' : giocatore.elo) + '</b><span>Elo</span></li>'
             ].join('');
-            const medaglia = '<button type="button" class="gx-ach-apri" data-ach="1" aria-label="Achievements" data-suono="apri">' + svg('medaglia') + (ach ? '<b>' + ach.sbloccati + '</b>' : '') + '</button>';
+            const medaglia = '<button type="button" class="gx-ach-apri" data-ach="1" aria-label="Achievements" data-suono="apri">' + svg('medaglia') + '<span>Achievements</span>' + (ach ? '<b>' + ach.sbloccati + '</b>' : '') + '</button>';
             return '<div class="gx-palco"><span class="gx-aura"></span><img class="gx-avatar" src="' + esc(giocatore.avatar) + '" alt="" onerror="this.onerror=null;this.src=\'immagini/magikarp.png\'"><span class="gx-piattaforma"></span>' + medaglia + '</div>' +
                 '<div class="gx-targa"><b class="gx-nome">' + esc(giocatore.nome) + '</b>' + (giocatore.titolo ? '<small class="gx-titolo-g">' + esc(giocatore.titolo) + '</small>' : '') + '</div>' +
                 '<ul class="gx-numeri">' + numeri + '</ul>' + nastro;
@@ -265,7 +294,12 @@
             admin = false;
             const r = user ? await C.leggiGiocatore(win, user) : null;
             if (r) { giocatore = r.giocatore; admin = r.admin; }
+            posizione = null; posizioneLetta = false;
             disegnaGiocatore();
+            if (giocatore) {
+                const per = giocatore;
+                C.leggiPosizione(win, per.id).then(n => { if (giocatore !== per) return; posizione = n; posizioneLetta = true; disegnaGiocatore(); });
+            }
             if (opzioni && opzioni.aperta()) opzioni.aggiorna();
             provaAnnuncio();
             if (giocatore) caricaAch();
@@ -281,15 +315,17 @@
                     trovate.push(...blocco);
                     if (!blocco[blocco.length - 1].info) break;
                 }
-                stagione = stagioneDaMostrare(trovate, Date.now());
+                stagioni = stagioniDaMostrare(trovate, Date.now());
+                stagione = stagioni[0] || null;
                 // con le iscrizioni aperte serve sapere chi è già dentro (per il tasto del nastro e per l'annuncio)
-                if (stagione && stagione.stato === 'open') {
+                for (const st of stagioni.filter(x => x.stato === 'open')) {
                     try {
-                        const v = (await db().ref('seasons/' + stagione.id + '/iscritti').once('value')).val();
-                        stagione.iscritti = v ? Object.keys(v) : [];
-                    } catch (e) { stagione.iscritti = undefined; }
+                        const v = (await db().ref('seasons/' + st.id + '/iscritti').once('value')).val();
+                        st.iscritti = v ? Object.keys(v) : [];
+                    } catch (e) { st.iscritti = undefined; }
                 }
-            } catch (e) { stagione = null; }
+            } catch (e) { stagione = null; stagioni = []; }
+            indiceNastro = 0;
             disegnaGiocatore();
             provaAnnuncio();
         };
@@ -317,13 +353,23 @@
         }
         // il conto alla rovescia sta al minuto
         win.setInterval(() => {
-            if (!stagione || stagione.stato !== 'open') return;
-            const scad = Date.parse(stagione.info.deadline);
-            if (!Number.isFinite(scad)) return;
-            stagione.mancano = Math.max(0, scad - Date.now());
-            const t = doc.querySelector('.gx-stagione small');
-            if (t) t.textContent = riassuntoStagione(stagione, !!giocatore && giaIscritto(stagione.iscritti, giocatore.id)).testo;
+            for (const st of stagioni) {
+                if (st.stato !== 'open') continue;
+                const scad = Date.parse(st.info.deadline);
+                if (Number.isFinite(scad)) st.mancano = Math.max(0, scad - Date.now());
+            }
+            const nastro = $('gx-nastro');
+            if (nastro && stagioni.length) nastro.innerHTML = htmlNastro();
         }, 30000);
+        // con più stagioni da mostrare il nastro passa da una all'altra da solo (ogni quattro secondi, con una piccola animazione)
+        win.setInterval(() => {
+            if (stagioni.length < 2 || doc.hidden) return;
+            indiceNastro = (indiceNastro + 1) % stagioni.length;
+            const nastro = $('gx-nastro');
+            if (!nastro) return;
+            nastro.innerHTML = htmlNastro();
+            nastro.classList.remove('cambia'); void nastro.offsetWidth; nastro.classList.add('cambia');
+        }, PASSO_NASTRO);
 
         // ----- impostazioni -----
         const opzioni = C.creaOpzioni(win, {
@@ -351,5 +397,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, avvia };
+    return { statoStagione, stagioneDaMostrare, stagioniDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, avvia };
 });

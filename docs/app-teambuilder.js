@@ -10,14 +10,14 @@
 // funziona nel browser (window.AppTeamBuilder) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    const T = fabbrica();
+    const T = fabbrica(typeof module === 'object' && module.exports ? require('./app-carosello.js') : radice.AppCarosello);
     if (typeof module === 'object' && module.exports) module.exports = T;
     else {
         radice.AppTeamBuilder = T;
         const d = radice.document;
         if (d) { if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', () => T.avvia(radice)); else T.avvia(radice); }
     }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (Car) {
     'use strict';
 
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -65,16 +65,44 @@
         return abilitato(passo, true) ? passo : 'pokemon';
     }
 
-    /** Il menù in alto: ‹ tappe › (la tappa attiva evidenziata, quelle chiuse spente) */
+    /** Il menù in alto: le tappe (quella attiva evidenziata, quelle chiuse spente); si passa dall'una all'altra toccandole o scorrendo di lato, senza frecce */
     function htmlMenu(passo, haPokemon) {
         const attivo = indice(passo);
         const voci = PASSI.map((p, i) => {
             const aperto = abilitato(p.id, haPokemon);
             return `<button type="button" class="tbw-passo${p.id === passo ? ' attivo' : ''}${i < attivo && aperto ? ' fatto' : ''}" data-tbw-passo="${esc(p.id)}"${aperto ? '' : ' disabled'} aria-current="${p.id === passo ? 'step' : 'false'}" data-suono="scegli"><b>${i + 1}</b><span>${esc(p.titolo)}</span></button>`;
         }).join('<i class="tbw-filo" aria-hidden="true"></i>');
-        return `<button type="button" class="tbw-freccia" data-tbw-verso="-1" aria-label="Previous step" data-suono="scegli"${prossimo(passo, -1, haPokemon) === passo ? ' disabled' : ''}>${FRECCIA}</button>
-            <div class="tbw-passi" role="tablist" aria-label="Team Builder steps">${voci}</div>
-            <button type="button" class="tbw-freccia tbw-avanti" data-tbw-verso="1" aria-label="Next step" data-suono="scegli"${prossimo(passo, 1, haPokemon) === passo ? ' disabled' : ''}>${FRECCIA}</button>`;
+        return `<div class="tbw-passi" role="tablist" aria-label="Team Builder steps">${voci}</div>`;
+    }
+
+    /** La scelta del formato nell'assistente del Box: un tasto per formato, al posto del menù a tendina del browser */
+    function htmlFormati(opzioni, scelto) {
+        const lista = (opzioni || []).filter(o => o && String(o.valore) !== '');
+        if (!lista.length) return '<span class="tbf-vuoto">No formats yet</span>';
+        return lista.map(o => `<button type="button" class="tbf-chip${String(o.valore) === String(scelto) ? ' attivo' : ''}" data-tbf="${esc(o.valore)}" aria-pressed="${String(o.valore) === String(scelto)}" data-suono="scegli">${esc(o.testo)}</button>`).join('');
+    }
+
+    /** La tastiera del telefono è aperta? Lo si capisce dall'altezza visibile: molto più bassa della massima vista. */
+    function tastieraAperta(altezza, massima, soglia = 90) {
+        return Number(massima) > 0 && Number(altezza) > 0 && Number(massima) - Number(altezza) > soglia;
+    }
+
+    /**
+     * Cosa fare a un tocco mentre si sceglie uno strumento o una mossa (campi che hanno l'elenco e anche il testo da scrivere):
+     *  - 'apri-lista': primo tocco sul campo: si apre l'elenco, senza far comparire la tastiera;
+     *  - 'tastiera': tocco sul campo già aperto (la casella di testo): ora sì, la tastiera;
+     *  - 'chiudi-tastiera': tocco fuori dal campo con la tastiera aperta: prima si chiude la tastiera (l'elenco resta);
+     *  - 'normale': tutto il resto (anche il tocco fuori a tastiera chiusa, che chiude l'elenco come sempre).
+     * `s`: { suCampo (tocco sul campo di testo), campoAttivo (è già quello aperto), tastiera (aperta), listaAperta }
+     */
+    function azioneTocco(s) {
+        const x = s || {};
+        if (x.suCampo) {
+            if (x.tastiera && x.campoAttivo) return 'normale';
+            if (x.campoAttivo && x.listaAperta) return 'tastiera';
+            return 'apri-lista';
+        }
+        return x.tastiera && x.listaAperta ? 'chiudi-tastiera' : 'normale';
     }
 
     // ---------- nella pagina ----------
@@ -125,6 +153,12 @@
             });
             const corpo = doc.getElementById('tb-body');
             if (corpo) {
+                // si passa da una tappa all'altra anche scorrendo di lato (non sui cursori, i campi e le liste: lì il dito serve a loro)
+                if (Car) Car.collegaGesti(corpo, {
+                    avanti: () => vai(prossimo(passo, 1, overlay.dataset.tbHa === '1')),
+                    indietro: () => vai(prossimo(passo, -1, overlay.dataset.tbHa === '1')),
+                    ignora: 'input, select, textarea, .tb-combo-list, .tb-picker-grid, .tb-ev-row'
+                });
                 new win.MutationObserver(() => aggiorna(true)).observe(corpo, { childList: true });
                 corpo.addEventListener('click', e => {
                     const b = e.target.closest ? e.target.closest('[data-tbw-cambia]') : null;
@@ -141,6 +175,68 @@
             aggiorna(false);
         };
 
+        // ----- strumenti e mosse: il primo tocco apre l'elenco (senza tastiera); la tastiera compare solo toccando di nuovo la casella di testo;
+        //       con la tastiera aperta, un tocco fuori chiude prima la tastiera, poi (al tocco dopo) l'elenco -----
+        const stato = { campo: null, massima: win.innerHeight || 0, blocca: 0 };
+        const altezzaVisibile = () => (win.visualViewport && win.visualViewport.height) || win.innerHeight;
+        win.addEventListener('resize', () => { if (win.innerHeight > stato.massima) stato.massima = win.innerHeight; });
+        const origBlur = win.tbBlurCombo;
+        if (typeof origBlur === 'function') {
+            // mentre si nasconde la tastiera il campo perde e riprende il fuoco: l'elenco non deve chiudersi
+            win.tbBlurCombo = function (campo) { if (campo && campo.dataset && campo.dataset.tienilista) return undefined; return origBlur.apply(this, arguments); };
+        }
+        const senzaChiudere = (campo, f) => {
+            campo.dataset.tienilista = '1';
+            f();
+            win.setTimeout(() => { delete campo.dataset.tienilista; }, 450);
+        };
+        const tastieraOra = () => !!stato.campo && tastieraAperta(altezzaVisibile(), stato.massima);
+        // tbCombo è una costante del Box (box.html): sta nello spazio comune degli script, non su window
+        const campoOra = () => { try { return tbCombo.input || null; } catch (e) { return null; } };
+        const listaOra = () => !!campoOra();
+        const fermaSe = e => { if (Date.now() < stato.blocca) { e.preventDefault(); e.stopPropagation(); } };
+        ['mousedown', 'click', 'touchstart', 'pointerup'].forEach(t => doc.addEventListener(t, fermaSe, true));
+        doc.addEventListener('pointerdown', e => {
+            if (!overlay || !overlay.classList.contains('open') || !e.target || !e.target.closest) return;
+            const campo = e.target.closest('.tb-combo input.tb-input');
+            const dentro = !!e.target.closest('.tb-combo');
+            const azione = azioneTocco({ suCampo: !!campo, campoAttivo: !!campo && campoOra() === campo, tastiera: tastieraOra(), listaAperta: listaOra() });
+            if (azione === 'apri-lista') { campo.inputMode = 'none'; stato.campo = null; }
+            else if (azione === 'tastiera') {
+                campo.inputMode = 'text'; stato.campo = campo;
+                win.setTimeout(() => senzaChiudere(campo, () => { campo.blur(); campo.focus(); }), 0);       // perché il telefono mostri la tastiera
+            } else if (azione === 'chiudi-tastiera' && !dentro) {
+                const c = stato.campo;
+                e.preventDefault(); e.stopPropagation();
+                stato.blocca = Date.now() + 500;
+                stato.campo = null;
+                if (c) senzaChiudere(c, () => { c.inputMode = 'none'; c.blur(); c.focus({ preventScroll: true }); });
+            }
+        }, true);
+        doc.addEventListener('focusout', e => { if (stato.campo === e.target && !(e.target.dataset && e.target.dataset.tienilista)) stato.campo = null; });
+
+        // ----- l'assistente del Box: il formato si sceglie con i tasti, non con il menù a tendina del browser -----
+        const montaFormati = () => {
+            const sel = doc.getElementById('helper-format-select');
+            const contenitore = doc.querySelector('#helper-modal-overlay .format-modal-container');
+            if (!sel || !contenitore || doc.getElementById('tbf-formati')) return;
+            const barra = doc.createElement('div');
+            barra.id = 'tbf-formati';
+            barra.className = 'tbf-formati';
+            contenitore.parentNode.insertBefore(barra, contenitore);
+            const disegna = () => { barra.innerHTML = htmlFormati([...sel.options].map(o => ({ valore: o.value, testo: o.textContent })), sel.value); };
+            barra.addEventListener('click', e => {
+                const b = e.target.closest ? e.target.closest('[data-tbf]') : null;
+                if (!b) return;
+                sel.value = b.dataset.tbf;
+                sel.dispatchEvent(new win.Event('change', { bubbles: true }));
+                disegna();
+            });
+            new win.MutationObserver(disegna).observe(sel, { childList: true });
+            disegna();
+        };
+        montaFormati();
+
         const cerca = () => { const el = doc.getElementById('tb-overlay'); if (el) monta(el); return !!el; };
         if (!cerca()) {
             const o = new win.MutationObserver(() => { if (cerca()) o.disconnect(); });
@@ -149,5 +245,5 @@
         return { vai, aggiorna };
     }
 
-    return { PASSI, indice, abilitato, prossimo, dopoRender, htmlMenu, avvia };
+    return { PASSI, indice, abilitato, prossimo, dopoRender, htmlMenu, htmlFormati, tastieraAperta, azioneTocco, avvia };
 });

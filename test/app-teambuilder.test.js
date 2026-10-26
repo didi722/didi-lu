@@ -46,7 +46,7 @@ test('dopoRender: scelto il Pokémon si passa a strumento e abilità; uno slot v
     assert.equal(T.dopoRender('editor', 'altro', 'ev'), 'ev', 'durante un caricamento non cambia niente');
 });
 
-test('htmlMenu: cinque tappe numerate con quella attiva, le chiuse spente, le frecce ai lati', () => {
+test('htmlMenu: cinque tappe numerate con quella attiva, le chiuse spente; niente frecce (si scorre col dito)', () => {
     const h = T.htmlMenu('mosse', true);
     assert.equal((h.match(/class="tbw-passo/g) || []).length, 5);
     assert.match(h, /class="tbw-passo attivo" data-tbw-passo="mosse"[^>]*aria-current="step"/);
@@ -54,12 +54,35 @@ test('htmlMenu: cinque tappe numerate con quella attiva, le chiuse spente, le fr
     assert.match(h, /class="tbw-passo fatto" data-tbw-passo="oggetto"/);
     assert.doesNotMatch(h, /class="tbw-passo fatto" data-tbw-passo="ev"/);
     assert.match(h, /<b>3<\/b><span>Moves<\/span>/);
-    assert.equal((h.match(/data-tbw-verso="-1"/g) || []).length, 1);
-    assert.equal((h.match(/data-tbw-verso="1"/g) || []).length, 1);
+    assert.doesNotMatch(h, /tbw-freccia|data-tbw-verso/, 'le frecce gialle non ci sono più');
     const vuoto = T.htmlMenu('pokemon', false);
     for (const id of ['oggetto', 'mosse', 'ev']) assert.match(vuoto, new RegExp(`data-tbw-passo="${id}"[^>]* disabled`), `${id} chiuso senza Pokémon`);
-    assert.match(vuoto, /data-tbw-verso="-1"[^>]* disabled/, 'dalla prima tappa non si torna indietro');
-    assert.match(T.htmlMenu('team', true), /data-tbw-verso="1"[^>]* disabled/, 'dall\'ultima non si va avanti');
+});
+
+test('htmlFormati: un tasto per formato (quello scelto evidenziato), al posto del menù a tendina; senza formati lo dice', () => {
+    const h = T.htmlFormati([{ valore: '', testo: 'Choose format...' }, { valore: 'r1', testo: 'OU' }, { valore: 'r2', testo: 'VGC <Reg G>' }], 'r2');
+    assert.equal((h.match(/class="tbf-chip/g) || []).length, 2, 'la voce vuota non è un formato');
+    assert.match(h, /class="tbf-chip attivo" data-tbf="r2" aria-pressed="true"/);
+    assert.match(h, /VGC &lt;Reg G&gt;/);
+    assert.match(T.htmlFormati([], ''), /No formats yet/);
+    assert.match(T.htmlFormati(null, ''), /No formats yet/);
+});
+
+test('tastieraAperta: l\'altezza visibile molto più bassa della massima vuol dire tastiera aperta', () => {
+    assert.equal(T.tastieraAperta(340, 340), false);
+    assert.equal(T.tastieraAperta(180, 340), true);
+    assert.equal(T.tastieraAperta(300, 340), false, 'una barra di sistema non è una tastiera');
+    assert.equal(T.tastieraAperta(0, 0), false);
+});
+
+test('azioneTocco: il primo tocco su un campo apre l\'elenco (senza tastiera); toccando la casella aperta compare la tastiera; con la tastiera aperta un tocco fuori la chiude prima dell\'elenco', () => {
+    assert.equal(T.azioneTocco({ suCampo: true }), 'apri-lista');
+    assert.equal(T.azioneTocco({ suCampo: true, campoAttivo: false, listaAperta: true }), 'apri-lista', 'un altro campo');
+    assert.equal(T.azioneTocco({ suCampo: true, campoAttivo: true, listaAperta: true }), 'tastiera');
+    assert.equal(T.azioneTocco({ suCampo: true, campoAttivo: true, listaAperta: true, tastiera: true }), 'normale', 'già a tastiera: si scrive');
+    assert.equal(T.azioneTocco({ suCampo: false, tastiera: true, listaAperta: true }), 'chiudi-tastiera');
+    assert.equal(T.azioneTocco({ suCampo: false, tastiera: false, listaAperta: true }), 'normale', 'a tastiera chiusa il tocco fuori chiude l\'elenco come sempre');
+    assert.equal(T.azioneTocco({}), 'normale');
 });
 
 test('il foglio: ogni tappa ha le sue regole, tutte sotto html.app-shell; il sito resta com\'è', () => {
@@ -68,6 +91,8 @@ test('il foglio: ogni tappa ha le sue regole, tutte sotto html.app-shell; il sit
     // niente regole del Team Builder fuori dall'app: ogni riga che nomina .tb- o .tbw- parte da html.app-shell
     const righe = css.split('\n').filter(r => /\.tbw?-/.test(r) && /\{/.test(r) && !/^\s*(\/\*|\*)/.test(r) && !/^\s+[a-z-]+:/.test(r));
     assert.ok(righe.length >= 30, 'regole trovate: ' + righe.length);
+    assert.match(css, /#helper-modal-overlay #helper-pkm-grid \{[^}]*grid-auto-flow: column;[^}]*overflow-x: auto !important; overflow-y: hidden !important;/, 'l\'assistente: i Pokémon scorrono di lato');
+    assert.match(css, /#amic-overlay \.amic-formati \{ display: flex !important; flex-wrap: nowrap;/, 'la sfida amichevole: i formati scorrono di lato');
     for (const r of righe) assert.match(r.trim(), /^html\.app-shell /, r.trim().slice(0, 80));
     // gli id e le classi che il foglio nomina esistono ancora in box.html
     const box = docs('box.html');
@@ -76,7 +101,7 @@ test('il foglio: ogni tappa ha le sue regole, tutte sotto html.app-shell; il sit
 
 test('app.js carica lo script solo nel Box; lo script non fa niente fuori dall\'app', () => {
     const A = require('../docs/app.js');
-    assert.deepEqual(A.SCRIPT_PAGINE['box.html'], ['app-teambuilder.js']);
+    assert.deepEqual(A.SCRIPT_PAGINE['box.html'], ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js']);
     const finto = { documentElement: { classList: { contains: () => false } } };
     assert.equal(T.avvia({ document: finto }), null, 'senza html.app-shell non tocca la pagina');
     assert.equal(T.avvia({}), null);

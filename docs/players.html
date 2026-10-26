@@ -318,8 +318,8 @@ async function initTrainersPage() {
                 // per l'app: il Pokémon preferito, il titolo e i badge presi (prima le serie e il fondatore, poi quelli del catalogo)
                 pkmPreferito: info.pkmPreferito || '',
                 titolo: info.title && info.title !== 'No Title' ? info.title : '',
-                badgeApp: Titoli.badgeSbloccati(serieBadges, key).map(b => ({ img: b.img, nome: b.label, livello: b.livello, icona: b.livello === 'founder' ? '👑' : '🏅' }))
-                    .concat(guadagnatiApp.map(b => ({ img: b.immagine, nome: b.nome, livello: b.classeLivello, icona: b.icona })))
+                badgeApp: Titoli.badgeSbloccati(serieBadges, key).map(b => ({ img: b.img, nome: b.label, livello: b.livello, icona: b.livello === 'founder' ? '👑' : '🏅', descrizione: b.descrizione }))
+                    .concat(guadagnatiApp.map(b => ({ img: b.immagine, nome: b.nome, livello: b.classeLivello, icona: b.icona, descrizione: b.descrizione })))
             });
         }
 

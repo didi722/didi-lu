@@ -36,38 +36,48 @@
 
     const livelloNome = l => ({ bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum', founder: 'Founder' }[l] || '');
 
-    /** I trofei come piccole coppe con il numero: una per tipo di stagione; senza il dettaglio per tipo, una sola con le stagioni vinte */
+    /** I trofei come piccole coppe con il numero: una per tipo di stagione; senza il dettaglio per tipo, una sola con le stagioni vinte. Niente trofei: niente (nessuna scritta). */
     function htmlTrofei(g) {
         const gruppi = Array.isArray(g.trofei) && g.trofei.length
             ? g.trofei.map(t => ({ icona: t.tipo === 'league' ? COPPA : (t.icona || COPPA), n: t.conteggio, titolo: t.etichetta }))
             : (Number(g.stagioniVinte) > 0 ? [{ icona: COPPA, n: Number(g.stagioniVinte), titolo: 'Seasons won' }] : []);
-        if (!gruppi.length) return '<span class="at-nulla">No trophies yet</span>';
-        return gruppi.map(t => `<span class="at-coppa" title="${esc(t.titolo)}"><img src="${esc(t.icona)}" alt="" onerror="this.onerror=null;this.src='${COPPA}'"><b>x${Number(t.n) || 0}</b></span>`).join('');
+        return gruppi.map(t => `<span class="at-coppa" title="${esc(t.titolo)}"><img src="${esc(t.icona)}" alt="" draggable="false" onerror="this.onerror=null;this.src='${COPPA}'"><b>x${Number(t.n) || 0}</b></span>`).join('');
     }
 
-    /** I badge presi, come medaglie con l'immagine del livello (senza immagine, l'icona) */
+    /** Il testo che spiega un badge: titolo (nome e livello) e descrizione */
+    function testoBadge(b) {
+        const lv = livelloNome(b && b.livello);
+        return { titolo: `${(b && b.nome) || ''}${lv ? ' · ' + lv : ''}`, descrizione: String((b && b.descrizione) || '').trim() };
+    }
+
+    /** I badge presi, come medaglie con l'immagine del livello (senza immagine, l'icona): si toccano per leggere cosa sono. Nessun badge: niente (nessuna scritta). */
     function htmlBadge(g) {
         const lista = Array.isArray(g.badge) ? g.badge : [];
-        if (!lista.length) return '<span class="at-nulla">No badges yet</span>';
-        return lista.map(b => `<span class="at-badge at-lv-${esc(b.livello)}" title="${esc(b.nome)}${livelloNome(b.livello) ? ' · ' + esc(livelloNome(b.livello)) : ''}"><img src="${esc(b.img)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(b.icona || '🏅')}'))"></span>`).join('');
+        return lista.map((b, i) => `<button type="button" class="at-badge at-lv-${esc(b.livello)}" data-badge="${i}" aria-label="${esc(testoBadge(b).titolo)}"><img src="${esc(b.img)}" alt="" draggable="false" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(b.icona || '🏅')}'))"></button>`).join('');
     }
 
-    /** La scheda di un allenatore. `gif(specie)` dà l'indirizzo del suo Pokémon animato. */
+    /** Ranking ed Elo, come sulla home */
+    function htmlNumeri(g) {
+        const ok = !!g.classificato;
+        return `<ul class="at-numeri"><li><b>${ok && g.posizione ? '#' + g.posizione : 'N/A'}</b><span>Ranking</span></li><li><b>${ok ? Math.round(Number(g.elo) || 0) : 'N/A'}</b><span>Elo</span></li></ul>`;
+    }
+
+    /** La scheda di un allenatore: niente sfondo. Al centro lui e il suo Pokémon compagno sul palco tondo; di fianco il nome, il ranking, l'Elo, i trofei e i badge. `gif(specie)` dà l'indirizzo del Pokémon animato. */
     function htmlCarta(g, indice, { gif } = {}) {
         const c = coloreSicuro(g.colore);
         const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
-        const elo = g.classificato ? `<b>${Math.round(Number(g.elo) || 0)}</b><small>Elo</small>` : '<b class="at-na">N/A</b><small>Elo</small>';
+        const trofei = htmlTrofei(g), badge = htmlBadge(g);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
-                <span class="at-raggi" aria-hidden="true"></span><span class="at-pedana" aria-hidden="true"></span>
+                <span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span>
                 <img class="at-allenatore" draggable="false" src="${esc(g.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">${pkm}
             </div>
             <div class="at-info">
-                <header class="at-testa"><span class="at-pos">${g.posizione ? '#' + g.posizione : '–'}</span><b class="at-nome">${esc(g.nome)}</b></header>
+                <header class="at-testa"><b class="at-nome">${esc(g.nome)}</b></header>
                 ${g.titolo ? `<span class="at-titolo">${esc(g.titolo)}</span>` : ''}
-                <div class="at-elo">${elo}</div>
-                <div class="at-trofei">${htmlTrofei(g)}</div>
-                <div class="at-badge-riga">${htmlBadge(g)}</div>
+                ${htmlNumeri(g)}
+                ${trofei ? `<div class="at-trofei">${trofei}</div>` : ''}
+                ${badge ? `<div class="at-badge-riga">${badge}</div>` : ''}
             </div>
         </article>`;
     }
@@ -79,26 +89,42 @@
         if (!doc || !doc.documentElement || !doc.documentElement.classList.contains('app-shell')) return null;
         const ponte = win.AppSito;
         const gif = win.SpritePkm ? s => win.SpritePkm.gif(s) : null;
-        let stato = null;      // { lista, corrente, pista, conta }
+        let stato = null;      // { lista, corrente, pista }
 
         const posiziona = () => {
             if (!stato) return;
             const n = stato.lista.length;
             stato.pista.querySelectorAll('.at-carta').forEach(el => {
                 const i = Number(el.dataset.i);
-                const a = Car.aspetto(Car.distanza(i, stato.corrente, n, true));
+                const d = Car.distanza(i, stato.corrente, n, true);
+                const a = Car.aspetto(d);
                 el.style.setProperty('--x', a.x);
                 el.style.setProperty('--s', a.scala);
                 el.style.setProperty('--o', a.opacita);
                 el.style.zIndex = a.z;
                 el.classList.toggle('at-centro', i === stato.corrente);
-                el.classList.toggle('at-vicino', Math.abs(Car.distanza(i, stato.corrente, n, true)) === 1);
+                el.classList.toggle('at-vicino', Math.abs(d) === 1);
+                el.classList.toggle('at-prima', d < 0);           // chi sta a sinistra mostra il palco dal lato dello schermo
                 el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
             });
-            if (stato.conta) stato.conta.textContent = (stato.corrente + 1) + ' / ' + n;
+            nota(null);
         };
         const vai = i => { if (!stato) return; const n = Car.dentro(i, stato.lista.length); if (n !== stato.corrente) { stato.corrente = n; posiziona(); } };
         const passo = verso => { if (stato) vai(Car.passo(stato.corrente, stato.lista.length, verso, true)); };
+
+        // la spiegazione di un badge: la nota in basso (un tocco: per qualche secondo; tenendo premuto: finché non si lascia)
+        const nota = badge => {
+            let el = doc.getElementById('at-nota');
+            if (!badge) { if (el) el.hidden = true; return; }
+            const carta = badge.closest('.at-carta');
+            const g = stato && carta ? stato.lista[Number(carta.dataset.i)] : null;
+            const b = g && g.badge ? g.badge[Number(badge.dataset.badge)] : null;
+            if (!b) return;
+            if (!el) { el = doc.createElement('div'); el.id = 'at-nota'; el.className = 'at-nota'; el.setAttribute('role', 'status'); doc.body.appendChild(el); }
+            const t = testoBadge(b);
+            el.innerHTML = `<b>${esc(t.titolo)}</b>${t.descrizione ? `<span>${esc(t.descrizione)}</span>` : ''}`;
+            el.hidden = false;
+        };
 
         const monta = dati => {
             const lista = Array.isArray(dati) ? dati.filter(Boolean) : [];
@@ -114,15 +140,8 @@
             let richiesto = '';
             try { richiesto = new win.URLSearchParams(win.location.search).get('player') || ''; } catch (e) { richiesto = ''; }
             const corrente = stato ? Car.dentro(stato.corrente, lista.length) : indiceIniziale(lista, richiesto);
-            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif })).join('')}</div>
-                <div class="at-pie">
-                    <button type="button" class="at-freccia at-prec" aria-label="Previous trainer" data-suono="scegli">${FRECCIA}</button>
-                    <span class="at-conta" aria-live="polite"></span>
-                    <button type="button" class="at-freccia at-succ" aria-label="Next trainer" data-suono="scegli">${FRECCIA}</button>
-                </div>`;
-            stato = { lista, corrente, pista: radice.querySelector('.at-pista'), conta: radice.querySelector('.at-conta') };
-            radice.querySelector('.at-prec').addEventListener('click', () => passo(-1));
-            radice.querySelector('.at-succ').addEventListener('click', () => passo(1));
+            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif })).join('')}</div>`;
+            stato = { lista, corrente, pista: radice.querySelector('.at-pista') };
             stato.pista.addEventListener('click', e => {
                 const carta = e.target.closest ? e.target.closest('.at-carta') : null;
                 if (carta && !carta.classList.contains('at-centro')) vai(Number(carta.dataset.i));
@@ -130,6 +149,7 @@
             if (!radice.dataset.gesti) {              // una volta sola, anche se i dati arrivano di nuovo
                 radice.dataset.gesti = '1';
                 Car.collegaGesti(radice, { avanti: () => passo(1), indietro: () => passo(-1) });
+                Car.collegaPressione(radice, '.at-carta.at-centro .at-badge', { mostra: b => nota(b), nascondi: () => nota(null) });
                 doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
             }
             posiziona();
@@ -141,5 +161,5 @@
         return { monta, vai, passo };
     }
 
-    return { indiceIniziale, htmlTrofei, htmlBadge, htmlCarta, avvia };
+    return { indiceIniziale, htmlTrofei, testoBadge, htmlBadge, htmlNumeri, htmlCarta, avvia };
 });
