@@ -164,6 +164,22 @@ test('applica: cambiare tema cambia l\'attributo, porta il foglio dei caratteri 
     assert.equal(w.doc.getElementById('temi-caratteri'), null);
 });
 
+test('nell\'app (html.app) il tema e il colore del giocatore non si applicano: lo stile è uno solo; nel sito e nel browser sì', () => {
+    const w = nuovoMondo();
+    w.html.classList.toggle('app', true);
+    assert.equal(T.applica(w.root, 'sticker'), 'sticker', 'ritorna comunque il tema normalizzato');
+    assert.equal(w.html.getAttribute('data-tema'), null, 'ma non lo mette sulla pagina');
+    assert.equal(w.doc.getElementById('temi-caratteri'), null, 'né porta i suoi caratteri');
+    T.applicaColore(w.root, '#4D9DE0');
+    assert.equal(w.html.style.getPropertyValue('--nb-accento'), '', 'il colore del giocatore resta fuori');
+    // fuori dall'app (sito per PC, browser) tutto come prima
+    const sito = nuovoMondo();
+    T.applica(sito.root, 'arcade');
+    T.applicaColore(sito.root, '#4D9DE0');
+    assert.equal(sito.html.getAttribute('data-tema'), 'arcade');
+    assert.equal(sito.html.style.getPropertyValue('--nb-accento'), '#4d9de0');
+});
+
 test('scegli senza essere collegati: si salva nel browser e basta', async () => {
     const w = nuovoMondo();
     T.avvia(w.root);

@@ -4,7 +4,7 @@
 // Lo carica app.js (nelle pagine) e menu.html (nel menù), solo quando il sito è aperto come app:
 //   - le icone (tratti spessi, viewBox 24x24);
 //   - il giocatore: users/<uid>/name -> players/<nome>/info (avatar, colore, titolo), stats/individual-stats (Elo) e stats/seasons (stagioni vinte);
-//   - la finestra delle impostazioni ("Settings": suono, vibrazione, avvisi, tema, ricarica, amministrazione, esci/entra), la stessa dal menù e da ogni pagina.
+//   - la finestra delle impostazioni ("Settings": suono, vibrazione, avvisi, ricarica, amministrazione, esci/entra), la stessa dal menù e da ogni pagina.
 // Le parti pure (il giocatore per il menù, le tessere delle impostazioni) sono provate in test/app-comune.test.js;
 // funziona nel browser (window.AppComune) e in Node (require).
 // =====================================================
@@ -22,14 +22,9 @@
     // le icone: tratti spessi, come il resto dell'app; il disegno sta dentro un viewBox 24x24
     const ICONE = {
         matches: '<path d="M5 19 19 5"/><path d="M19 19 5 5"/><path d="M14.5 5H19v4.5"/><path d="M9.5 5H5v4.5"/>',
-        stagioni: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 14h3"/><path d="M13 14h3"/><path d="M8 17h3"/>',
         box: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5"/><path d="M12 12 4 7.5"/><path d="M12 12v9"/>',
         trainers: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16.6 14.3c2.9.3 4.9 2 4.9 5.2"/>',
         stats: '<path d="M5 20v-9"/><path d="M12 20V4"/><path d="M19 20v-6"/>',
-        profilo: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2.3"/><path d="M5.6 16.5c.6-1.9 2-2.7 3.4-2.7s2.8.8 3.4 2.7"/><path d="M14.5 10h4"/><path d="M14.5 13.5h3"/>',
-        archivio: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4"/><path d="M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4"/><path d="M8.5 20h7"/><path d="M10 17h4"/>',
-        formati: '<path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/>',
-        regole: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/><path d="M9 8h5"/>',
         suonoOn: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
         suonoOff: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M16 9l6 6"/><path d="M22 9l-6 6"/>',
         ingranaggio: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
@@ -38,7 +33,6 @@
         ricarica: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
         esci: '<path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4"/><path d="M9 12h10"/>',
         entra: '<path d="M14 4h5v16h-5"/><path d="M9 8l-4 4 4 4"/><path d="M5 12h10"/>',
-        tema: '<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.4-2.1-.7-1.3.1-2.9 1.6-2.9H17a4 4 0 0 0 4-4C21 6.7 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7.3" r="1.2"/><circle cx="14.5" cy="7.3" r="1.2"/>',
         admin: '<path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
         indietro: '<path d="M15 5l-7 7 7 7"/>',
         casa: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
@@ -92,7 +86,6 @@
                 stato: x.occupato ? '…' : x.push === 'acceso' ? 'ON' : x.push === 'negato' ? 'BLOCKED' : 'OFF'
             });
         }
-        t.push({ href: 'profile.html#pf-tema', icona: 'tema', etichetta: 'Theme', stato: 'Colors & style' });
         t.push({ azione: 'ricarica', icona: 'ricarica', etichetta: 'Refresh', stato: '' });
         if (x.admin) t.push({ href: 'admin.html', icona: 'admin', etichetta: 'Admin', stato: '' });
         t.push(x.utente

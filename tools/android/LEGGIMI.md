@@ -2,8 +2,14 @@
 
 L'app è un guscio [Capacitor](https://capacitorjs.com) che apre il sito vero (`capacitor.config.json` > `server.url`): ogni modifica al sito
 arriva subito, senza rifare l'APK. Il sito la riconosce dallo user agent (`SantAlviseApp`) e diventa un gioco da telefono: si apre sul **menù principale**
-(`docs/menu.html`: l'avatar del giocatore e le pagine del gioco come grandi tessere), le altre pagine hanno un'interfaccia da gioco (indietro, menù, campanella, account in alto)
-e ogni tocco fa un suono e una vibrazione leggera (spegnibili dalle impostazioni, l'ingranaggio del menù).
+(`docs/menu.html`: l'avatar del giocatore e quattro grandi tessere, **Matches** (giocare e guardare i showdown), **Box**, **Trainers** e **Stats**), le altre pagine hanno un'interfaccia da gioco
+(indietro, menù, campanella, account in alto) e ogni tocco fa un suono e una vibrazione leggera (spegnibili dalle impostazioni, l'ingranaggio del menù).
+L'app è accessoria al sito, non una sua copia: stagioni (home), profilo, archivio, formati e regolamento restano solo sul sito (dal telefono, nell'app, rimandano al menù).
+Lo **stile è uno solo** per tutti, quello del menù: il tema e il colore che il giocatore sceglie per il sito non contano nell'app (`app.js` > `fissaStile`, `temi.js` resta fermo,
+`app-gioco.css` rimette a mano le variabili `--nb-*`). Le stagioni non hanno una pagina: quella con le iscrizioni aperte compare come nastro sotto il giocatore e, la prima volta
+che si apre il menù dopo il suo arrivo (e se il giocatore non è ancora iscritto), come messaggio "Sign-ups are open" col tasto **Join now** verso l'iscrizione (`hub.html?id=…`);
+la stagione annunciata si ricorda (`appStagioneVista`), così il messaggio non torna.
+Nel Box il dettaglio del team mostra solo i Pokémon (niente debolezze né avanzamento dei badge del team): è tutto CSS dell'app, le pagine del sito non cambiano.
 Tutta l'app è **sempre in orizzontale**: l'APK la blocca da sé (`android:screenOrientation="sensorLandscape"` nel manifest, impostato da `prepara.cjs`, più il plugin
 `@capacitor/screen-orientation` per sicurezza), anche con la rotazione automatica spenta, e nasconde le barre di sistema (plugin `SystemBars`, `capacitor.config.json`: si rivedono con uno scorrimento dal bordo).
 Il permesso `VIBRATE` è nel manifest. Chi ha un APK costruito prima di questo giro deve scaricare e installare quello nuovo (sopra il vecchio) per avere

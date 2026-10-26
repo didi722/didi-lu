@@ -69,9 +69,10 @@ html.app .gx-aura { position: absolute; left: 50%; bottom: calc(14 * var(--u)); 
 html.app .gx-piattaforma { position: absolute; left: 50%; bottom: calc(6 * var(--u)); translate: -50% 0; width: calc(150 * var(--u)); height: calc(28 * var(--u)); border-radius: 50%;
     background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--gx-acc) 70%, #fff) 0%, var(--gx-acc) 55%, color-mix(in srgb, var(--gx-acc) 70%, #000) 100%);
     border: calc(3.5 * var(--u)) solid var(--gx-ink); box-shadow: 0 calc(6 * var(--u)) 0 var(--gx-ink); }
-html.app .gx-avatar { position: relative; z-index: 2; width: calc(116 * var(--u)); height: calc(116 * var(--u)); margin-bottom: calc(20 * var(--u)); object-fit: contain; image-rendering: pixelated;
-    filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.6s ease-in-out infinite; }
-html.app .gx-sagoma { display: flex; align-items: center; justify-content: center; font: 900 calc(86 * var(--u))/1 var(--gx-font); color: rgba(0, 0, 0, .55); text-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 rgba(255, 255, 255, .25); }
+/* l'avatar sta sempre intero nel palco, qualunque sia la sua misura: i piedi sulla piattaforma e tutta l'altezza che resta (mai oltre i 132u) */
+html.app .gx-avatar { position: absolute; z-index: 2; left: 0; right: 0; margin: 0 auto; bottom: calc(17 * var(--u)); box-sizing: border-box; height: min(calc(132 * var(--u)), calc(100% - 17 * var(--u))); width: auto; max-width: 100%; aspect-ratio: 1;
+    object-fit: contain; object-position: center bottom; image-rendering: pixelated; filter: drop-shadow(0 calc(4 * var(--u)) 0 rgba(0, 0, 0, .35)); animation: gx-bob 2.6s ease-in-out infinite; }
+html.app .gx-sagoma { display: flex; align-items: center; justify-content: center; font: 900 calc(86 * var(--u))/1 var(--gx-font); animation: none; color: rgba(0, 0, 0, .55); text-shadow: calc(3 * var(--u)) calc(3 * var(--u)) 0 rgba(255, 255, 255, .25); }
 html.app .gx-targa { display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--u)); max-width: 100%; }
 html.app .gx-nome { max-width: 100%; box-sizing: border-box; padding: calc(5 * var(--u)) calc(16 * var(--u)) calc(3 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     background: #000; color: color-mix(in srgb, var(--gx-acc) 70%, #fff); border-radius: var(--gx-r); font: 900 calc(21 * var(--u))/1.1 var(--gx-font); letter-spacing: .06em; text-transform: uppercase;
@@ -101,8 +102,8 @@ html.app .gx-st-open em { animation: gx-pulsa 1.1s ease-in-out infinite; }
 html.app .gx-largo-b { width: 100%; }
 
 /* ----- le tessere ----- */
-html.app .gx-tessere { grid-row: 2; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: calc(10 * var(--u)) calc(9 * var(--u)); min-height: 0; padding-bottom: calc(6 * var(--u)); }
-html.app .gx-t-matches { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+html.app .gx-tessere { grid-row: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr); gap: calc(11 * var(--u)) calc(10 * var(--u)); min-height: 0; padding-bottom: calc(6 * var(--u)); }
+html.app .gx-t-matches { grid-column: 1 / -1; grid-row: 1; }
 html.app .gx-tessera {
     position: relative; box-sizing: border-box; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(2 * var(--u)); padding: calc(6 * var(--u)) calc(4 * var(--u));
     overflow: hidden; text-decoration: none; text-align: center; color: #000; cursor: pointer;
@@ -117,16 +118,16 @@ html.app .gx-tessera::before { content: ''; position: absolute; inset: 0; pointe
 html.app .gx-tessera::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; pointer-events: none; rotate: 18deg;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: gx-lampo 6.5s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 700ms + 2s); }
 html.app .gx-tessera:active { transform: translateY(calc(4 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink), inset 0 calc(2.5 * var(--u)) 0 rgba(255, 255, 255, .5); }
-html.app .gx-ico { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: calc(36 * var(--u)); height: calc(36 * var(--u)); background: #fff; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .5); }
-html.app .gx-ico svg { width: calc(21 * var(--u)); height: calc(21 * var(--u)); fill: none; stroke: #000; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-html.app .gx-tessera b { position: relative; z-index: 1; font: 900 calc(14 * var(--u))/1.05 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 calc(1.5 * var(--u)) 0 rgba(255, 255, 255, .55); }
-html.app .gx-tessera small { position: relative; z-index: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 calc(8.5 * var(--u))/1.15 var(--gx-font-testo); opacity: .78; }
+html.app .gx-ico { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: calc(46 * var(--u)); height: calc(46 * var(--u)); background: #fff; border: calc(3 * var(--u)) solid var(--gx-ink); border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .5); }
+html.app .gx-ico svg { width: calc(27 * var(--u)); height: calc(27 * var(--u)); fill: none; stroke: #000; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+html.app .gx-tessera b { position: relative; z-index: 1; font: 900 calc(17 * var(--u))/1.05 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 calc(1.5 * var(--u)) 0 rgba(255, 255, 255, .55); }
+html.app .gx-tessera small { position: relative; z-index: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 calc(9.5 * var(--u))/1.15 var(--gx-font-testo); opacity: .78; }
 /* la grande: le partite */
 html.app .gx-t-matches { gap: calc(5 * var(--u)); }
-html.app .gx-t-matches .gx-ico { width: calc(66 * var(--u)); height: calc(66 * var(--u)); border-width: calc(4 * var(--u)); }
-html.app .gx-t-matches .gx-ico svg { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
-html.app .gx-t-matches b { font-size: calc(27 * var(--u)); letter-spacing: .08em; }
-html.app .gx-t-matches small { font-size: calc(11 * var(--u)); }
+html.app .gx-t-matches .gx-ico { width: calc(76 * var(--u)); height: calc(76 * var(--u)); border-width: calc(4 * var(--u)); }
+html.app .gx-t-matches .gx-ico svg { width: calc(46 * var(--u)); height: calc(46 * var(--u)); }
+html.app .gx-t-matches b { font-size: calc(32 * var(--u)); letter-spacing: .08em; }
+html.app .gx-t-matches small { font-size: calc(12.5 * var(--u)); }
 html.app .gx-t-matches > .gx-ico::after { content: ''; }
 
 
@@ -143,3 +144,19 @@ html.app .gx-splash-logo h1 span { font-size: calc(46 * var(--u)); font-weight: 
     text-shadow: 0 calc(3 * var(--u)) 0 #000, calc(3 * var(--u)) calc(6 * var(--u)) 0 #000, 0 calc(-2 * var(--u)) 0 #000, calc(-3 * var(--u)) 0 0 #000, calc(3 * var(--u)) 0 0 #000; }
 html.app .gx-splash-logo h1 b { padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(4 * var(--u)) solid #000; border-radius: calc(6 * var(--u)); font-size: calc(24 * var(--u)); font-weight: 900; letter-spacing: .24em; rotate: -2.5deg; box-shadow: 0 calc(5 * var(--u)) 0 #000; }
 html.app .gx-splash-tocca { position: relative; margin: 0; font: 900 calc(18 * var(--u))/1 var(--gx-font); letter-spacing: .24em; text-transform: uppercase; text-shadow: 0 calc(2 * var(--u)) 0 #000; animation: gx-lampeggia 1.3s ease-in-out infinite; }
+
+/* ---------- 3. L'annuncio delle iscrizioni aperte ---------- */
+html.app .gx-manifesto { position: relative; align-items: center; gap: calc(6 * var(--u)); width: min(calc(360 * var(--u)), 92vw); padding: calc(18 * var(--u)) calc(18 * var(--u)) calc(16 * var(--u)); text-align: center; overflow: hidden;
+    background: linear-gradient(172deg, #ffe39a 0%, #ffbd44 55%, #f0a21e 100%); }
+html.app .gx-manifesto-raggi { position: absolute; left: 50%; top: 42%; width: 240%; aspect-ratio: 1; translate: -50% -50%; pointer-events: none;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .34) 0deg 8deg, transparent 8deg 22deg); animation: gx-ruota 40s linear infinite; mask-image: radial-gradient(circle, #000 0%, transparent 60%); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 60%); }
+html.app .gx-manifesto > :not(.gx-manifesto-raggi) { position: relative; margin: 0; }
+html.app .gx-man-sopra { padding: calc(3 * var(--u)) calc(11 * var(--u)) calc(1 * var(--u)); background: #000; color: var(--gx-giallo); border-radius: calc(5 * var(--u)); rotate: -2deg;
+    font: 900 calc(11 * var(--u))/1.4 var(--gx-font); letter-spacing: .22em; text-transform: uppercase; animation: gx-pulsa 1.4s ease-in-out infinite; }
+html.app .gx-manifesto h2 { align-self: center; padding: 0; background: none; color: #000; rotate: 0deg; font: 900 calc(26 * var(--u))/1.05 var(--gx-font); letter-spacing: .04em; text-shadow: 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .6); }
+html.app .gx-man-nome { max-width: 100%; box-sizing: border-box; padding: calc(7 * var(--u)) calc(16 * var(--u)) calc(5 * var(--u)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    background: #000; color: #fff; border-radius: var(--gx-r); font: 900 calc(24 * var(--u))/1.1 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 calc(5 * var(--u)) 0 rgba(0, 0, 0, .35); animation: gx-pop .6s cubic-bezier(.2, 1.5, .4, 1) .15s backwards; }
+html.app .gx-man-tempo { margin-bottom: calc(6 * var(--u)); font: 800 calc(12 * var(--u))/1.2 var(--gx-font); letter-spacing: .06em; text-transform: uppercase; }
+html.app .gx-manifesto .gx-righe { width: 100%; justify-content: center; }
+html.app a.gx-bottone { text-decoration: none; }
+html.app .gx-manifesto .gx-primario { background: linear-gradient(180deg, #9af7ae, #47ea6a); }

@@ -2,12 +2,13 @@
 // APP — il menù principale (menu.html)
 // ---------------------------------------------------------------------
 // La prima schermata dell'app: a sinistra il giocatore (avatar, nome, titolo, Elo, la stagione del momento), a destra le pagine del gioco come grandi
-// tessere. Prima volta di ogni visita: la schermata del titolo ("Tap to start", che serve anche a sbloccare l'audio del telefono).
+// tessere (poche: giocare e vedere i risultati). Prima volta di ogni visita: la schermata del titolo ("Tap to start", che serve anche a sbloccare l'audio
+// del telefono). Se c'è una stagione con le iscrizioni aperte a cui il giocatore non è ancora iscritto, un messaggio la annuncia (una volta per stagione).
 // Dal browser (senza la classe "app" su <html>) non c'è: si torna alla home del sito.
 //   - il giocatore: app-comune.js (users/<uid>/name -> players/<nome>: avatar, colore, titolo, Elo, stagioni vinte);
-//   - la stagione: la prima con le iscrizioni aperte, altrimenti quella in corso, altrimenti l'ultima conclusa (seasons/<id>/info);
+//   - la stagione: la prima con le iscrizioni aperte, altrimenti quella in corso, altrimenti l'ultima conclusa (seasons/<id>/info, e gli iscritti se aperta);
 //   - accesso e impostazioni (suono, vibrazione, avvisi, ricarica, esci) in due finestre.
-// La parte pura (quale stagione mostrare, il tempo che manca) è provata in test/app-menu.test.js; funziona nel browser (window.MenuApp) e in Node (require).
+// La parte pura (quale stagione mostrare, il tempo che manca, quando annunciarla) è provata in test/app-menu.test.js; funziona nel browser (window.MenuApp) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
     const comune = typeof module === 'object' && module.exports ? require('./app-comune.js') : radice.AppComune;
@@ -22,6 +23,7 @@
     'use strict';
 
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
+    const CHIAVE_ANNUNCIO = 'appStagioneVista';       // localStorage: l'ultima stagione annunciata (il messaggio compare una volta per stagione)
     const LINK_MP3 = 'https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3';
 
     // ---------- parti pure ----------
@@ -64,14 +66,38 @@
         return `${Math.max(1, m)}m`;
     }
 
-    /** La riga della stagione per il menù: titolo, stato in parole, dove porta il tasto. */
-    function riassuntoStagione(s) {
+    /** La riga della stagione per il menù: titolo, stato in parole, dove porta il tasto. `iscritto`: il giocatore è già dentro (con le iscrizioni aperte). */
+    function riassuntoStagione(s, iscritto) {
         if (!s) return null;
         const nome = (s.info && s.info.name) || `Season ${String(s.id).replace(/^s/, '')}`;
-        if (s.stato === 'open') return { nome, stato: 'open', testo: `Sign-ups close in ${tempoCheManca(s.mancano)}`, azione: 'JOIN', href: `hub.html?id=${encodeURIComponent(s.id)}` };
+        if (s.stato === 'open') {
+            const chiude = tempoCheManca(s.mancano);
+            return {
+                nome, stato: 'open', testo: iscritto ? `You're in · closes in ${chiude}` : `Sign-ups close in ${chiude}`,
+                azione: iscritto ? 'TEAMS' : 'JOIN', href: `hub.html?id=${encodeURIComponent(s.id)}`
+            };
+        }
         if (s.stato === 'playing') return { nome, stato: 'playing', testo: 'Showdowns in progress', azione: 'PLAY', href: `matches.html?id=${encodeURIComponent(s.id)}` };
         const vincitore = s.info && s.info.winner ? ` · ${s.info.winner} won` : '';
         return { nome, stato: 'closed', testo: `Season over${vincitore}`, azione: 'VIEW', href: `matches.html?id=${encodeURIComponent(s.id)}` };
+    }
+
+    /** Il giocatore è tra gli iscritti della stagione? `iscritti`: i nomi (come sono scritti nel database); il confronto non guarda le maiuscole. */
+    function giaIscritto(iscritti, giocatoreId) {
+        const id = String(giocatoreId == null ? '' : giocatoreId).toLowerCase().trim();
+        return !!id && (iscritti || []).some(n => String(n).toLowerCase().trim() === id);
+    }
+
+    /**
+     * Va annunciata una stagione con le iscrizioni aperte? Sì se: c'è un giocatore collegato, la stagione è aperta, lui non è ancora iscritto e non gliel'abbiamo già
+     * annunciata (`vista`: l'id dell'ultima annunciata). Restituisce { id, nome, testo, href } per il messaggio, o null.
+     */
+    function daAnnunciare({ stagione, giocatoreId, iscritti, vista }) {
+        if (!stagione || stagione.stato !== 'open' || !giocatoreId || !Array.isArray(iscritti)) return null;
+        if (vista && String(vista) === String(stagione.id)) return null;
+        if (giaIscritto(iscritti, giocatoreId)) return null;
+        const r = riassuntoStagione(stagione, false);
+        return { id: stagione.id, nome: r.nome, tempo: tempoCheManca(stagione.mancano), href: r.href };
     }
 
     // ---------- il menù nella pagina ----------
@@ -97,10 +123,7 @@
 
         // ----- le tessere -----
         const voci = (win.AppSito && win.AppSito.VOCI) || [];
-        const sottotitoli = {
-            matches: 'Showdowns & live', stagioni: 'Sign up & seasons', box: 'Your teams', trainers: 'Rankings', stats: 'League numbers',
-            profilo: 'Look & rivals', archivio: 'Past seasons', formati: 'Rulesets', regole: 'The rulebook'
-        };
+        const sottotitoli = { matches: 'Play & watch the showdowns', box: 'Your teams', trainers: 'Rankings & challenges', stats: 'League numbers' };
         $('gx-tessere').innerHTML = voci.map((v, i) =>
             '<a class="gx-tessera gx-t-' + v.id + '" href="' + esc(v.href) + '" style="--c:' + esc(v.colore) + ';--i:' + i + '" data-suono="scegli">' +
                 '<span class="gx-ico">' + svg(v.id) + '</span>' +
@@ -144,7 +167,7 @@
             avviaMusica();
             splash.classList.add('esce');
             html.classList.add('gx-pronto');
-            win.setTimeout(() => { splash.hidden = true; }, 520);
+            win.setTimeout(() => { splash.hidden = true; provaAnnuncio(); }, 520);
         };
         if (splash && !giaVisto) {
             splash.hidden = false;
@@ -157,7 +180,7 @@
         const apriLogin = () => { const el = $('gx-login'); el.hidden = false; aggiornaClasse(); win.setTimeout(() => $('gx-email').focus(), 60); };
         const chiudiLogin = () => { $('gx-login').hidden = true; aggiornaClasse(); };
         $('gx-login').addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === $('gx-login')) chiudiLogin(); });
-        doc.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiLogin(); });
+        doc.addEventListener('keydown', e => { if (e.key === 'Escape') { chiudiLogin(); chiudiAnnuncio(); } });
         const errore = $('gx-login-errore');
         const mostraErrore = t => { errore.textContent = t; errore.hidden = !t; };
         $('gx-login-form').addEventListener('submit', e => {
@@ -179,7 +202,7 @@
         let admin = false;
         let stagione = null;
         const pannelloGiocatore = () => {
-            const s = stagione ? riassuntoStagione(stagione) : null;
+            const s = stagione ? riassuntoStagione(stagione, !!giocatore && giaIscritto(stagione.iscritti, giocatore.id)) : null;
             const nastro = s
                 ? '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b><small>' + esc(s.testo) + '</small></span><em>' + esc(s.azione) + '</em></a>'
                 : '';
@@ -198,7 +221,6 @@
         };
         const disegnaGiocatore = () => {
             $('gx-giocatore').innerHTML = pannelloGiocatore();
-            html.style.setProperty('--nb-accento', giocatore && giocatore.colore ? giocatore.colore : '');
             const accedi = $('gx-accedi');
             if (accedi) accedi.addEventListener('click', apriLogin);
         };
@@ -212,6 +234,7 @@
             if (r) { giocatore = r.giocatore; admin = r.admin; }
             disegnaGiocatore();
             if (opzioni && opzioni.aperta()) opzioni.aggiorna();
+            provaAnnuncio();
         };
 
         // ----- la stagione -----
@@ -225,9 +248,39 @@
                     if (!blocco[blocco.length - 1].info) break;
                 }
                 stagione = stagioneDaMostrare(trovate, Date.now());
+                // con le iscrizioni aperte serve sapere chi è già dentro (per il tasto del nastro e per l'annuncio)
+                if (stagione && stagione.stato === 'open') {
+                    try {
+                        const v = (await db().ref('seasons/' + stagione.id + '/iscritti').once('value')).val();
+                        stagione.iscritti = v ? Object.keys(v) : [];
+                    } catch (e) { stagione.iscritti = undefined; }
+                }
             } catch (e) { stagione = null; }
             disegnaGiocatore();
+            provaAnnuncio();
         };
+
+        // ----- l'annuncio delle iscrizioni aperte: una volta per stagione, a chi non è ancora iscritto, dopo la schermata del titolo -----
+        const annuncio = $('gx-annuncio');
+        let annunciato = false;
+        function provaAnnuncio() {
+            if (annunciato || !annuncio || !giocatore || !stagione) return;
+            if (splash && !splash.hidden) return;
+            const a = daAnnunciare({ stagione, giocatoreId: giocatore.id, iscritti: stagione.iscritti, vista: leggi(CHIAVE_ANNUNCIO) });
+            if (!a) return;
+            annunciato = true;
+            scrivi(CHIAVE_ANNUNCIO, String(a.id));
+            $('gx-annuncio-nome').textContent = a.nome;
+            $('gx-annuncio-tempo').textContent = 'Closes in ' + a.tempo;
+            $('gx-annuncio-vai').setAttribute('href', a.href);
+            annuncio.hidden = false;
+            aggiornaClasse();
+            fai('ok');
+        }
+        function chiudiAnnuncio() { if (!annuncio || annuncio.hidden) return; annuncio.hidden = true; aggiornaClasse(); }
+        if (annuncio) {
+            annuncio.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === annuncio) chiudiAnnuncio(); });
+        }
         // il conto alla rovescia sta al minuto
         win.setInterval(() => {
             if (!stagione || stagione.stato !== 'open') return;
@@ -235,7 +288,7 @@
             if (!Number.isFinite(scad)) return;
             stagione.mancano = Math.max(0, scad - Date.now());
             const t = doc.querySelector('.gx-stagione small');
-            if (t) t.textContent = riassuntoStagione(stagione).testo;
+            if (t) t.textContent = riassuntoStagione(stagione, !!giocatore && giaIscritto(stagione.iscritti, giocatore.id)).testo;
         }, 30000);
 
         // ----- impostazioni -----
@@ -264,5 +317,5 @@
         return { opzioni, disegnaGiocatore };
     }
 
-    return { statoStagione, stagioneDaMostrare, tempoCheManca, riassuntoStagione, avvia };
+    return { statoStagione, stagioneDaMostrare, tempoCheManca, riassuntoStagione, giaIscritto, daAnnunciare, avvia };
 });
