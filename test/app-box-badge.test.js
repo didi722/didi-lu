@@ -61,7 +61,9 @@ test('toccando altrove la spiegazione si chiude subito, e i badge del team (anch
 
 test('nel Box il Pokémon sta su un podio nel colore del suo tipo (due se ha due tipi), senza riquadro né tooltip al passaggio', () => {
     const css = docs('app-gioco-pagine.css');
-    assert.match(css, /#teamsGrid \.card \.pkm-box::before[^}]*var\(--tipo2/);
+    assert.doesNotMatch(css, /#teamsGrid \.card \.pkm-box::before/, 'niente alone tondo dietro al Pokémon');
+    assert.match(css, /\.bt-mini\.bt-locked \{/, 'i badge da prendere sono in grigio');
+    assert.match(css, /#pkmDetailModal \.info-box-compact::before \{ content: none/, 'via le etichette ABILITY e ITEM');
     assert.match(css, /#teamsGrid \.card \.pkm-box::after[^}]*var\(--tipo2/);
     assert.match(css, /\.pkm-hover-card \{ display: none !important; \}/);
     assert.match(docs('box.html'), /coloriPokemonNoti2/, 'il secondo tipo arriva dalla pagina');

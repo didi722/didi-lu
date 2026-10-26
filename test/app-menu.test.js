@@ -164,8 +164,9 @@ test('le tessere: una per pagina del gioco, con nome e icona (senza sottotitolo)
     const testata = (css.match(/html\.app \.gx-testa \{[^}]*\}/) || [''])[0];
     assert.ok(testata, 'la regola della testata');
     assert.doesNotMatch(testata, /background|backdrop-filter|rgba/, 'la testata non ha sfondo');
-    // le forme che galleggiano sono pokéball (metà rossa, metà bianca, bottone al centro), non cerchi barrati
-    assert.match(css, /\.gx-forma \{[^}]*linear-gradient\(180deg, rgba\(255, 82, 72/);
+    // lo sfondo non ha più forme che galleggiano (le pokéball sono state tolte)
+    assert.doesNotMatch(docs('menu.html'), /gx-forma/);
+    assert.doesNotMatch(css, /\.gx-forma/);
 });
 
 // ---------- il menù con una pagina finta ----------

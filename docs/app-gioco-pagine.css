@@ -359,9 +359,7 @@
     html.app-shell body.pg-box #teamsGrid .card .pkm-grid { grid-area: pk; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: calc(4 * var(--u)); margin: calc(2 * var(--u)) 0 0; }
     html.app-shell body.pg-box #teamsGrid .card .pkm-box { position: relative; display: block; height: calc(64 * var(--u)); padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; rotate: 0deg; translate: 0 0; overflow: visible; cursor: pointer; }
     html.app-shell body.pg-box #teamsGrid .card .pkm-box:hover { translate: 0 0; box-shadow: none !important; }
-    /* niente riquadro: il Pokémon sta su un podio con l'alone nel colore del suo tipo (metà e metà se ne ha due), come nelle Stats */
-    html.app-shell body.pg-box #teamsGrid .card .pkm-box::before { content: ''; position: absolute; left: 50%; bottom: calc(9 * var(--u)); width: calc(60 * var(--u)); height: calc(60 * var(--u)); translate: -50% 0; border-radius: 50%; pointer-events: none;
-        background: radial-gradient(circle at 36% 50%, color-mix(in srgb, var(--tipo, #9aa0c8) 70%, #fff) 0%, color-mix(in srgb, var(--tipo, #9aa0c8) 40%, transparent) 40%, transparent 68%), radial-gradient(circle at 64% 50%, color-mix(in srgb, var(--tipo2, var(--tipo, #9aa0c8)) 70%, #fff) 0%, color-mix(in srgb, var(--tipo2, var(--tipo, #9aa0c8)) 40%, transparent) 40%, transparent 68%); }
+    /* niente riquadro né alone tondo: il Pokémon sta su un podio nel colore del suo tipo (metà e metà se ne ha due) */
     html.app-shell body.pg-box #teamsGrid .card .pkm-box::after { content: ''; position: absolute; left: 50%; bottom: calc(4 * var(--u)); width: calc(52 * var(--u)); height: calc(12 * var(--u)); translate: -50% 0; box-sizing: border-box; border-radius: 50%; pointer-events: none;
         background: linear-gradient(90deg, var(--tipo, #9aa0c8) 0 50%, var(--tipo2, var(--tipo, #9aa0c8)) 50% 100%); border: calc(2.5 * var(--u)) solid var(--nb-ink, #000); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell body.pg-box #teamsGrid .card .pkm-sprite-container { position: absolute; left: 50%; bottom: calc(9 * var(--u)); z-index: 1; translate: -50% 0; width: auto; height: auto; margin: 0; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0; }
@@ -372,6 +370,9 @@
     html.app-shell body.pg-box #teamsGrid .card .bt-card { grid-area: bd; justify-self: start; display: inline-flex; flex-wrap: wrap; gap: calc(5 * var(--u)); margin: 0; }
     html.app-shell body.pg-box #teamsGrid .card .bt-card:empty { display: none; }
     html.app-shell body.pg-box #teamsGrid .card .bt-card .bt-mini { width: calc(26 * var(--u)); height: calc(26 * var(--u)); border-width: calc(2 * var(--u)); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell .bt-mini.bt-locked { background: #6d6a86; filter: grayscale(1); opacity: .6; }
+    html.app-shell body.pg-box #teamsGrid .card .bt-card { flex-wrap: nowrap; gap: calc(3 * var(--u)); }
+    html.app-shell body.pg-box #teamsGrid .card .bt-card .bt-mini { width: calc(22 * var(--u)); height: calc(22 * var(--u)); }
     html.app-shell body.pg-box #teamsGrid .card .bt-card .bt-mini-img { width: calc(17 * var(--u)); height: calc(17 * var(--u)); }
     html.app-shell body.pg-box #teamsGrid .card .bt-card .bt-mini.bt-altri { width: auto; min-width: calc(26 * var(--u)); padding: 0 calc(5 * var(--u)); font-size: calc(9 * var(--u)); }
     html.app-shell body.pg-box #teamsGrid .card-actions { grid-area: ac; display: flex; flex-direction: row; align-self: center; justify-content: flex-end; gap: calc(5 * var(--u)); margin: 0; }
@@ -509,6 +510,9 @@
     html.app-shell #pkmDetailModal .types-centered { grid-area: 3 / 1; order: 0; display: flex !important; justify-content: center; gap: calc(5 * var(--u)); margin: 0 !important; }
     html.app-shell #pkmDetailModal .types-centered .type-badge { transform: none !important; font-size: calc(10 * var(--u)) !important; padding: calc(2 * var(--u)) calc(9 * var(--u)) !important; box-shadow: none !important; }
     html.app-shell #pkmDetailModal .type-effectiveness-tooltip { display: none !important; }
+    /* nella scheda del Pokémon niente etichette ABILITY e ITEM sopra ai riquadri: bastano l'abilità e lo strumento */
+    html.app-shell #pkmDetailModal .info-box-compact::before { content: none !important; display: none !important; }
+    html.app-shell #pkmDetailModal .info-box-compact { padding-top: calc(8 * var(--u)) !important; }
     html.app-shell #pkmDetailModal .area-info-strips { grid-area: inf !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(8 * var(--u)); margin: 0 !important; padding: 0 !important; }
     html.app-shell #pkmDetailModal .info-box-compact { min-width: 0; margin: 0 !important; padding: calc(8 * var(--u)) calc(10 * var(--u)) calc(7 * var(--u)) !important; min-height: 0 !important; height: auto !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; transform: none !important; border-radius: var(--nb-raggio) !important; background: #fff; }
     html.app-shell #pkmDetailModal .info-box-compact .info-content-clean { display: block; padding: 0 !important; margin: 0 !important; }
@@ -903,8 +907,21 @@
     html.app-shell #helper-modal-overlay #helper-build-team-btn { transform: none !important; rotate: 0deg; }
     html.app-shell #helper-modal-overlay .format-modal-card-left { width: min(calc(360 * var(--u)), 100%); align-items: stretch; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; }
     html.app-shell #helper-modal-overlay .format-optional-box { flex: none; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; overflow: visible; }
-    html.app-shell #helper-modal-overlay .format-optional-box:not(:has(#helper-player-initial-container)) { display: none !important; }
-    html.app-shell #helper-modal-overlay #helper-dynamic-filters > :not(#helper-player-initial-container) { display: none !important; }
+    html.app-shell #helper-modal-overlay .format-optional-box:not(:has(#helper-player-initial-container, #helper-same-across-container)) { display: none !important; }
+    html.app-shell #helper-modal-overlay #helper-dynamic-filters > :not(#helper-player-initial-container, #helper-same-across-container) { display: none !important; }
+    html.app-shell #helper-modal-overlay #helper-same-across-container { margin: 0 !important; gap: calc(6 * var(--u)) !important; align-items: center; text-align: center; }
+    html.app-shell #helper-modal-overlay #helper-same-across-container > div { align-items: center; }
+    html.app-shell #helper-modal-overlay :is(#helper-same-across-container, #helper-player-initial-container) label { font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli) !important; color: inherit !important; letter-spacing: .04em; }
+    html.app-shell .tbf-scelta { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--u)), 1fr)); width: calc(660 * var(--u)); max-width: 88vw; gap: calc(5 * var(--u)); max-height: calc(124 * var(--u)); overflow-y: auto; scrollbar-width: none; padding: calc(5 * var(--u)) calc(4 * var(--u)) calc(7 * var(--u)); }
+    html.app-shell .tbf-scelta .tbf-chip { text-align: center; padding-left: calc(4 * var(--u)); padding-right: calc(4 * var(--u)); }
+    /* l'assistente è una finestra da gioco: scura, con il titolo giallo */
+    html.app-shell #helper-modal-overlay .format-modal-wrapper { background: radial-gradient(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%) !important; color: #fff !important; border-color: #000 !important; }
+    html.app-shell #helper-modal-overlay .format-modal-header h2 { background: var(--gx-giallo, #ffbd44) !important; color: #000 !important; border: calc(3 * var(--u)) solid #000 !important; box-shadow: 0 calc(3 * var(--u)) 0 #000 !important; }
+    html.app-shell .tbf-scelta::-webkit-scrollbar { display: none; }
+    html.app-shell .tbf-chip.tbf-piccolo { padding: calc(3 * var(--u)) calc(9 * var(--u)) calc(1 * var(--u)); font-size: calc(10.5 * var(--u)); border-width: calc(2.5 * var(--u)); }
+    html.app-shell .tbf-stato { margin: 0; text-align: center; font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli); letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+    html.app-shell .tbf-stato[hidden] { display: none; }
+    html.app-shell .tbf-stato[data-stato="carica"]::before { content: ''; display: inline-block; width: calc(10 * var(--u)); height: calc(10 * var(--u)); margin-right: calc(7 * var(--u)); vertical-align: -1px; border: calc(2.5 * var(--u)) solid currentColor; border-right-color: transparent; border-radius: 50%; animation: gx-ruota .8s linear infinite; }
     html.app-shell #helper-modal-overlay #helper-player-initial-container { margin: 0 !important; align-items: center; text-align: center; }
     html.app-shell #helper-modal-overlay #helper-player-initial-container label { font: 800 calc(11 * var(--u))/1.3 var(--nb-font-titoli) !important; color: inherit !important; letter-spacing: .04em; }
     html.app-shell #helper-modal-overlay #helper-player-initial-select { height: calc(32 * var(--u)); padding: 0 calc(14 * var(--u)) !important; font: 800 calc(13 * var(--u))/1 var(--nb-font-titoli) !important; box-shadow: none !important; border-radius: calc(12 * var(--u)) !important; }

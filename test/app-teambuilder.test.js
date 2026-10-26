@@ -106,3 +106,15 @@ test('app.js carica lo script solo nel Box; lo script non fa niente fuori dall\'
     assert.equal(T.avvia({ document: finto }), null, 'senza html.app-shell non tocca la pagina');
     assert.equal(T.avvia({}), null);
 });
+
+test('assistente del Box: le scelte ulteriori sono tasti, e si sa cosa si aspetta prima del tasto "Build Team"', () => {
+    const h = T.htmlScelte([{ valore: '', testo: 'Select Type...' }, { valore: 'ghost', testo: 'Ghost • 66' }, { valore: 'fire<', testo: 'Fire' }], 'ghost');
+    assert.equal((h.match(/tbf-chip/g) || []).length, 2, 'la voce vuota non è un tasto');
+    assert.match(h, /data-tbs="ghost" aria-pressed="true"/);
+    assert.match(h, /data-tbs="fire&lt;"/);
+    assert.equal(T.statoAssistente({ formato: '' }), 'formato');
+    assert.equal(T.statoAssistente({ formato: 'r3', scelteMancanti: 1, tasto: false }), 'scelta');
+    assert.equal(T.statoAssistente({ formato: 'r2', scelteMancanti: 0, tasto: false }), 'carica');
+    assert.equal(T.statoAssistente({ formato: 'r2', scelteMancanti: 0, tasto: true }), 'pronto');
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'box.html'), 'utf8'), /classList\.contains\('app'\)\) \{\s*const conta/, 'nell\'app non si disegnano le centinaia di carte');
+});

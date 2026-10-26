@@ -82,6 +82,24 @@
         return lista.map(o => `<button type="button" class="tbf-chip${String(o.valore) === String(scelto) ? ' attivo' : ''}" data-tbf="${esc(o.valore)}" aria-pressed="${String(o.valore) === String(scelto)}" data-suono="scegli">${esc(o.testo)}</button>`).join('');
     }
 
+    /** Le scelte ulteriori di un formato (la lettera iniziale, il tipo, il colore...): un tasto per valore, al posto del menù a tendina */
+    function htmlScelte(opzioni, scelto) {
+        const lista = (opzioni || []).filter(o => o && String(o.valore) !== '');
+        return lista.map(o => `<button type="button" class="tbf-chip tbf-piccolo${String(o.valore) === String(scelto) ? ' attivo' : ''}" data-tbs="${esc(o.valore)}" aria-pressed="${String(o.valore) === String(scelto)}" data-suono="scegli">${esc(o.testo)}</button>`).join('');
+    }
+
+    /**
+     * Cosa dice l'assistente sotto ai formati, finché il tasto "Build Team" non c'è:
+     *  - 'formato': nessun formato scelto; - 'scelta': manca una scelta ulteriore (lettera, tipo...); - 'carica': si sta preparando l'elenco; - 'pronto': il tasto c'è.
+     * `s`: { formato (scelto), scelteMancanti (quante), tasto (visibile) }
+     */
+    function statoAssistente(s) {
+        const x = s || {};
+        if (!x.formato) return 'formato';
+        if (x.tasto) return 'pronto';
+        return x.scelteMancanti > 0 ? 'scelta' : 'carica';
+    }
+
     /** La tastiera del telefono è aperta? Lo si capisce dall'altezza visibile: molto più bassa della massima vista. */
     function tastieraAperta(altezza, massima, soglia = 90) {
         return Number(massima) > 0 && Number(altezza) > 0 && Number(massima) - Number(altezza) > soglia;
@@ -253,6 +271,49 @@
         };
         montaFormati();
 
+        // ----- le scelte ulteriori (lettera iniziale, tipo, colore...) a tasti, e cosa si aspetta prima del tasto "Build Team" -----
+        const filtri = doc.getElementById('helper-dynamic-filters');
+        const tasto = doc.getElementById('helper-build-team-btn');
+        const messaggio = doc.createElement('p');
+        messaggio.id = 'tbf-stato';
+        messaggio.className = 'tbf-stato';
+        const contenitoreFormati = doc.querySelector('#helper-modal-overlay .format-modal-container');
+        if (contenitoreFormati && contenitoreFormati.parentNode) contenitoreFormati.parentNode.insertBefore(messaggio, contenitoreFormati.nextSibling);
+        const selezioni = () => filtri ? [...filtri.querySelectorAll('#helper-same-across-container select, #helper-player-initial-select')] : [];
+        const aggiornaStato = () => {
+            const sel = doc.getElementById('helper-format-select');
+            const mancanti = selezioni().filter(x => !x.value).length;
+            const s2 = statoAssistente({ formato: sel && sel.value, scelteMancanti: mancanti, tasto: !!tasto && tasto.style.display !== 'none' && !!tasto.style.display });
+            messaggio.dataset.stato = s2;
+            messaggio.textContent = s2 === 'scelta' ? 'Pick an option to continue' : s2 === 'carica' ? 'Getting the Pokémon ready…' : '';
+            messaggio.hidden = s2 === 'pronto' || s2 === 'formato';
+        };
+        const chipsPer = select => {
+            if (select.dataset.chips) return;
+            select.dataset.chips = '1';
+            const zona = doc.createElement('div');
+            zona.className = 'tbf-scelta';
+            select.parentNode.insertBefore(zona, select.nextSibling);
+            select.hidden = true;
+            const disegna = () => { zona.innerHTML = htmlScelte([...select.options].map(o => ({ valore: o.value, testo: o.textContent })), select.value); };
+            zona.addEventListener('click', e => {
+                const b = e.target.closest ? e.target.closest('[data-tbs]') : null;
+                if (!b) return;
+                select.value = b.dataset.tbs;
+                select.dispatchEvent(new win.Event('change', { bubbles: true }));
+                disegna();
+                aggiornaStato();
+            });
+            select.addEventListener('change', () => { disegna(); aggiornaStato(); });
+            disegna();
+        };
+        if (filtri) {
+            new win.MutationObserver(() => { selezioni().forEach(chipsPer); aggiornaStato(); }).observe(filtri, { childList: true, subtree: true });
+            doc.getElementById('helper-format-select').addEventListener('change', () => win.setTimeout(aggiornaStato, 0));
+            if (tasto) new win.MutationObserver(aggiornaStato).observe(tasto, { attributes: true, attributeFilter: ['style'] });
+            aggiornaStato();
+        }
+
         const cerca = () => { const el = doc.getElementById('tb-overlay'); if (el) monta(el); return !!el; };
         if (!cerca()) {
             const o = new win.MutationObserver(() => { if (cerca()) o.disconnect(); });
@@ -261,5 +322,5 @@
         return { vai, aggiorna };
     }
 
-    return { PASSI, indice, abilitato, prossimo, dopoRender, htmlMenu, htmlFormati, tastieraAperta, azioneTocco, avvia };
+    return { htmlScelte, statoAssistente, PASSI, indice, abilitato, prossimo, dopoRender, htmlMenu, htmlFormati, tastieraAperta, azioneTocco, avvia };
 });
