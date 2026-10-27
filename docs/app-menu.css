@@ -116,7 +116,6 @@ html.app .gx-pista.trascinando .gx-carta, html.app .gx-carta.gx-salta { transiti
 html.app .gx-pista .gx-carta:not(.gx-centro) :is(*, *::before, *::after), html.app .gx-pista.gx-ferma :is(*, *::before, *::after) { animation-play-state: paused !important; }
 /* l'immagine propria (tessera-<id>) prende il posto delle figure; sotto resta la scena */
 html.app .gx-immagine { position: absolute; z-index: 2; right: 0; bottom: 0; height: min(88%, calc(300 * var(--u))); max-width: 82%; width: auto; object-fit: contain; object-position: right bottom; filter: drop-shadow(0 calc(8 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, .35)); }
-html.app .gx-c-stats .gx-immagine { right: calc(150 * var(--u)); }       /* Mewtwo più verso il centro della scena, non contro il bordo */
 html.app .gx-immagine.gx-bordo { right: calc(-70 * var(--u)); height: 100%; max-height: none; max-width: none; filter: none; }
 html.app .gx-immagine[hidden] { display: none; }
 
