@@ -1112,3 +1112,14 @@ test('service worker, simulatore: le GIF di Showdown che la lega ha già nel sit
     assert.equal(await sw.chiedi('https://sito.test/didi-lu/app.js', { destination: 'script' }), 'NON-GESTITA', 'gli script del sito (app.js, pagine) non si tengono: gli aggiornamenti arrivano subito');
 });
 
+
+test('app.css: la schermata di caricamento con la Poké Ball (quella bianca di ogni pagina del sito) nell\'app è scura dal primo disegno — sta nel foglio che si carica subito', () => {
+    const css = docs('app.css');
+    assert.match(regola(css, 'html.app .poke-loader-overlay'), /background:\s*radial-gradient\([^;]*#1d1842[^;]*#05040d/);
+    assert.match(regola(css, 'html.app .poke-loader-overlay .loading-text'), /color:\s*#fff/);
+    assert.match(regola(css, 'html.app .pokeball-spinner'), /border-color:\s*#fff/);
+    // le pagine del sito (PC) la tengono com'era: nessun altro foglio la schiarisce e il bianco resta nei loro fogli
+    assert.match(docs('style-matches.css'), /\.poke-loader-overlay \{[^}]*background-color: #f7f7f7/);
+    // il menù principale ha il suo titolo scuro e non usa questa schermata
+    assert.ok(!docs('menu.html').includes('poke-loader'));
+});

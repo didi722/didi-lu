@@ -129,6 +129,9 @@
             html_.setAttribute('data-mt', tab);
             try { win.sessionStorage.setItem(CHIAVE_TAB, tab); } catch (e) { /* non si ricorda */ }
             disegnaTabs();
+            // l'altra schermata sta nascosta (display: none): chi ha bisogno di sapere quando si apre e quando si chiude (la classifica, che scorre da sola e deve ricominciare
+            // dal primo, e le misure dei Pokémon compagni, che nascosti non si possono prendere) lo sente da qui
+            try { if (typeof win.CustomEvent === 'function') doc.dispatchEvent(new win.CustomEvent('app-tab', { detail: tab })); } catch (e) { /* niente */ }
         };
         barra.addEventListener('click', e => {
             const b = e.target.closest ? e.target.closest('.mt-tab') : null;
@@ -171,6 +174,8 @@
             });
         };
         win.addEventListener('resize', () => { if (stato.scheda) stato.scheda.querySelectorAll('.mp-pkm[data-sc]').forEach(p => p.removeAttribute('data-sc')); scalaPoster(); });
+        // le locandine messe in scala mentre la schermata era nascosta (si parte dai Rankings, ricordati dall'ultima volta) non hanno misure: si rifà appena si vedono
+        doc.addEventListener('app-tab', e => { if (e && e.detail === 'sd') scalaPoster(); });
 
         const monta = dati => {
             const lista = dati && Array.isArray(dati.lista) ? dati.lista.filter(Boolean) : [];

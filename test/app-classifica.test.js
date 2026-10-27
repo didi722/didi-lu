@@ -67,3 +67,97 @@ test('avvia: fuori dall\'app non fa niente', () => {
     assert.equal(K.avvia({ document: { documentElement: { classList: { contains: () => false } } } }), null);
     assert.equal(K.avvia({}), null);
 });
+
+// ---------- la classifica sta in una delle due schermate di Matches (SHOWDOWNS | RANKINGS): scorre e si mette in scala solo da aperta ----------
+
+/** Una pagina finta quanto basta per far partire avvia(): la classifica con le sue schede, i ticchettii del timer, gli eventi del documento */
+function paginaClassifica({ tab }) {
+    const ascoltatori = {};
+    const timer = new Map();
+    let idTimer = 0;
+    const registro = { scale: 0, centro: null };
+    const pezzo = (extra = {}) => ({ style: { setProperty() {} }, dataset: {}, classList: { toggle() {}, add() {}, remove() {}, contains: () => false }, addEventListener() {}, setAttribute() {}, removeAttribute() {}, querySelector: () => null, querySelectorAll: () => [], clientHeight: 100, offsetWidth: 100, ...extra });
+    const carte = [0, 1, 2].map(i => pezzo({
+        dataset: { i: String(i) },
+        classList: { toggle: (c, v) => { if (c === 'ac-centro' && v) registro.centro = i; }, add() {}, contains: () => false },
+        querySelector: sel => ({ '.ac-avatar': pezzo(), '.ac-pkm': pezzo(), '.ac-palco': pezzo(), '.pal-pedana': pezzo(), '.ac-scena': pezzo() }[sel] || null)
+    }));
+    const pista = pezzo({ querySelectorAll: () => carte });
+    const scheda = pezzo({ querySelector: sel => (sel === '.ac-pista' ? pista : null), querySelectorAll: () => carte });
+    const corpo = pezzo({ appendChild() {} });
+    const doc = {
+        documentElement: { classList: { contains: c => c === 'app-shell', add() {} }, getAttribute: n => (n === 'data-mt' ? tab.valore : null) },
+        hidden: false,
+        querySelector: sel => (sel === '.participants-card .cl-corpo' ? corpo : null),
+        getElementById: () => null,
+        createElement: () => scheda,
+        addEventListener: (t, f) => { (ascoltatori[t] = ascoltatori[t] || []).push(f); }
+    };
+    const win = {
+        document: doc,
+        AppSito: { datiPagina: () => null },
+        ScalaPkm: { scena: () => { registro.scale++; return Promise.resolve(); } },
+        SpritePkm: { gif: s => `sprites/ani/${s}.gif` },
+        getComputedStyle: () => ({ bottom: '0px' }),
+        addEventListener() {},
+        setInterval: f => { timer.set(++idTimer, f); return idTimer; },
+        clearInterval: id => { timer.delete(id); }
+    };
+    const dati = { giocatori: [0, 1, 2].map(i => ({ nome: 'P' + i, posizione: i + 1, pkm: 'Gengar' })) };
+    return {
+        win, registro, timer, dati,
+        evento: (tipo, detail) => (ascoltatori[tipo] || []).forEach(f => f({ detail })),
+        tic: () => [...timer.values()].forEach(f => f())
+    };
+}
+
+test('classifica nascosta (l\'app apre SHOWDOWNS): niente scala (senza misure i Pokémon compagni resterebbero invisibili) e niente scorrimento; si apre RANKINGS: si mette in scala e scorre da adesso', () => {
+    const tab = { valore: 'sd' };
+    const p = paginaClassifica({ tab });
+    const c = K.avvia(p.win);
+    c.monta(p.dati);
+    assert.equal(p.registro.scale, 0, 'nascosta non si misura');
+    assert.equal(p.timer.size, 0, 'nascosta non scorre');
+    assert.equal(p.registro.centro, 0);
+    tab.valore = 'rk';
+    p.evento('app-tab', 'rk');
+    assert.equal(p.registro.scale, 3, 'ora i Pokémon compagni (uno per scheda) si mettono in scala');
+    assert.equal(p.timer.size, 1, 'lo scorrimento comincia');
+    p.tic();
+    assert.equal(p.registro.centro, 1, 'dopo un giro passa al secondo');
+});
+
+test('classifica: lasciata RANKINGS lo scorrimento si ferma, e a ogni ritorno si riparte dal primo in classifica', () => {
+    const tab = { valore: 'rk' };
+    const p = paginaClassifica({ tab });
+    const c = K.avvia(p.win);
+    c.monta(p.dati);
+    assert.equal(p.registro.scale, 3, 'già aperta all\'avvio (la schermata ricordata): si mette in scala subito');
+    assert.equal(p.timer.size, 1);
+    p.tic(); p.tic();
+    assert.equal(p.registro.centro, 2);
+    tab.valore = 'sd';
+    p.evento('app-tab', 'sd');
+    assert.equal(p.timer.size, 0, 'sui showdown la classifica sta ferma');
+    p.tic();
+    assert.equal(p.registro.centro, 2, 'e non va avanti da nascosta');
+    tab.valore = 'rk';
+    p.evento('app-tab', 'rk');
+    assert.equal(p.registro.centro, 0, 'riparte dal primo');
+    assert.equal(p.timer.size, 1);
+    p.evento('app-tab', 'rk');
+    assert.equal(p.timer.size, 1, 'un solo timer, anche se l\'evento arriva due volte');
+    p.tic();
+    assert.equal(p.registro.centro, 1);
+    // dati nuovi mentre si guarda un'altra schermata non rimettono in moto niente
+    tab.valore = 'sd'; p.evento('app-tab', 'sd');
+    c.monta(p.dati);
+    assert.equal(p.timer.size, 0);
+});
+
+test('app-matches.js: cambiando schermata dice "app-tab" (la classifica e le misure dei compagni lo ascoltano), e aprendo i SHOWDOWNS le locandine si rimettono in scala', () => {
+    const m = docs('app-matches.js');
+    assert.match(m, /doc\.dispatchEvent\(new win\.CustomEvent\('app-tab', \{ detail: tab \}\)\)/);
+    assert.match(m, /doc\.addEventListener\('app-tab', e => \{ if \(e && e\.detail === 'sd'\) scalaPoster\(\); \}\)/);
+    assert.match(docs('app-classifica.js'), /doc\.addEventListener\('app-tab', e => \{ if \(!e\) return; if \(e\.detail === 'rk'\) entra\(\); else fermaAuto\(\); \}\)/);
+});
