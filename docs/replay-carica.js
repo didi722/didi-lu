@@ -6,7 +6,8 @@
 // condivide la cache con il sito, il service worker non lo vede, e le immagini arrivano tutte e solo da Showdown, senza riprovare se una si impunta.
 // Qui il file si scarica (Storage lo permette), se ne leggono i dati (ReplaySito.leggiReplay) e il replay si ricostruisce DENTRO la pagina (srcdoc: stessa origine del
 // sito, quindi ha la sua cache e il service worker del telefono) con:
-//   - il motore preso dalla cache del browser (Cache API): si scarica una volta sola, poi è subito lì; si rinfresca in silenzio una volta al giorno;
+//   - il motore preso dalla cache del browser (Cache API): si scarica una volta sola, poi è subito lì; si rinfresca in silenzio una volta al giorno. Si scarica dal
+//     sito (docs/motore-replay/, copiato da Showdown dal workflow "Sprites": Showdown non manda il CORS e il browser non lo lascerebbe tenere), altrimenti da Showdown;
 //   - le immagini dei Pokémon dal sito, quando ci sono (sprites/, le scrive il workflow "Sprites"), scaricate prima di partire e riprovate se non arrivano
 //     (ReplaySito.immaginiReplay).
 // Dal file si prende solo il contenuto (log, giocatori, testata): il codice del replay è sempre quello di replay-sito.js.
@@ -51,11 +52,22 @@
         return r;
     }
 
+    /**
+     * Un file del motore: dal sito (docs/motore-replay/, lo copia il workflow "Sprites") e, se non c'è, da Showdown. Showdown non manda il CORS: da lì il browser
+     * rifiuta di scaricarlo per tenerlo, ed è proprio quello che faceva ripartire da zero ogni replay.
+     */
+    async function scaricaMotore(win, indirizzo, opzioni) {
+        let locale = null;
+        try { locale = new win.URL(`motore-replay${new win.URL(indirizzo).pathname}`, new win.URL('.', win.location.href)).href; } catch (e) { /* senza: solo Showdown */ }
+        if (locale) { try { return await scarica(win, locale, opzioni); } catch (e) { /* non c'è ancora: Showdown */ } }
+        return scarica(win, indirizzo, opzioni);
+    }
+
     /** Ogni giorno, in silenzio: i file nuovi del motore al posto di quelli tenuti. Solo se arrivano TUTTI: versioni che non si accordano fra loro fanno più danni di una vecchia */
     function rinfresca(win, cache, indirizzi, adesso) {
         if (adesso - leggiControllo(win) < VALIDITA_MS) return;
         scriviControllo(win, adesso);            // subito: se non riesce si riprova alla prossima pagina, non a ogni replay
-        Promise.all(indirizzi.map(async u => [u, await scarica(win, u, { cache: 'no-cache' })]))
+        Promise.all(indirizzi.map(async u => [u, await scaricaMotore(win, u, { cache: 'no-cache' })]))
             .then(async coppie => { for (const [u, r] of coppie) await cache.put(u, r); })
             .catch(() => { /* resta quello che c'è */ });
     }
@@ -82,7 +94,7 @@
             let r = await cache.match(u);
             if (!r) {
                 tuttoDallaCache = false;
-                r = await scarica(win, u);
+                r = await scaricaMotore(win, u);
                 try { await cache.put(u, r.clone()); } catch (e) { /* senza spazio il replay parte lo stesso */ }
             }
             return r.text();
