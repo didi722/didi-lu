@@ -188,6 +188,11 @@ async function preparaDaSito(chiavi) {
 // -----------------------------------------------------
 // Il team della CPU lo compone cpu-partita.js dal pool del formato quando inizia la sfida, a caso, quindi esiste per ogni
 // formato, anche nuovo. La CPU sceglie le mosse con cpu-ia.js. A fine partita: stesso team della CPU, uno nuovo a caso, o ritorno al Box.
+/** Il titolo della prova contro la CPU: nell'app, dove sotto lo schermo c'è poco posto, solo "Practice" */
+function etichettaPractice(formato) {
+    return document.documentElement.classList.contains('app') ? 'Practice' : `Practice vs CPU · ${formato}`;
+}
+
 /** Scarica in anticipo le GIF (davanti e di schiena) dei Pokémon di un team (testo da importare, impacchettato o lista di set): il browser le tiene, il service worker le serve dal sito */
 function scaldaGif(team) {
     try {
@@ -239,7 +244,7 @@ async function preparaCpu(chiaveTeam) {
     };
     config = {
         formato: dati.formato,
-        etichetta: `Practice vs CPU · ${dati.categoria}`,
+        etichetta: etichettaPractice(dati.categoria),
         p1: { nome: dati.nome, id: dati.id, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
         p2: { nome: 'CPU', team: '', nomeTeam: '' }
     };
@@ -308,7 +313,7 @@ async function preparaCpuRandom(idFormato) {
     };
     config = {
         formato: formato.id,
-        etichetta: `Practice vs CPU · ${formato.nome}`,
+        etichetta: etichettaPractice(formato.nome),
         p1: { nome: io.nome, id: io.id, team: [], nomeTeam: 'Random team', avatar: io.avatar },
         p2: { nome: 'CPU', team: [], nomeTeam: 'Random team' }
     };

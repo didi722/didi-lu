@@ -258,3 +258,11 @@ test('avvia: fuori dall\'app, o senza la pagina, non fa niente', () => {
     assert.equal(P.avvia({ document: { getElementById: () => null, documentElement: { classList: { contains: () => true } } } }), null);
     assert.equal(P.avvia({ document: { getElementById: () => ({}), documentElement: { classList: { contains: () => false } } } }), null);
 });
+
+test('Play: la scelta (le tre locandine) si disegna una volta sola quando i dati ci sono; il caricamento è un cerchio che gira; un ridisegno identico non tocca la pagina', () => {
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'app-practice.js'), 'utf8');
+    assert.match(src, /class="pr-ball"/);
+    assert.match(src, /const metti = html => \{ if \(html === ultimo\) return false;/);
+    assert.match(src, /if \(stato\.io && !stato\.ranked\) \{ metti\(htmlCarico\(\)\); return; \}/);
+    assert.doesNotMatch(src.slice(src.indexOf('const disegna = () => {'), src.indexOf('const staccaAscolti')), /pagina\.innerHTML = /);
+});

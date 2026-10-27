@@ -141,6 +141,8 @@
             '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b></span></a>';
     }
 
+    const MINIMO_CARICAMENTO_MS = 1800;
+
     /** Gli indirizzi da provare, in ordine, per l'immagine di una scena */
     const immaginiDi = id => S.proveDi('tessera-' + id);
 
@@ -305,10 +307,22 @@
             // la barra di caricamento: le immagini delle scene (un quinto) e le GIF dei Pokémon (il resto) si scaricano ora, così scorrere, aprire Play, Stats o una stagione è subito pronto
             const tocca = splash.querySelector ? splash.querySelector('.gx-splash-tocca') : null, barra = splash.querySelector ? splash.querySelector('.gx-splash-carica') : null;
             const testo = tocca ? tocca.textContent : '';
-            const mostra = f => { if (barra) barra.style.setProperty('--p', String(Math.min(1, f))); if (tocca) tocca.textContent = 'Loading ' + Math.round(Math.min(1, f) * 100) + '%'; };
+            // il caricamento ha la sua schermata scura sopra al titolo (gx-avvio); il titolo mostra "Tap to start" solo quando quella si dissolve
+            const avvio = $('gx-avvio');
+            const bAvvio = avvio && avvio.querySelector ? avvio.querySelector('.gx-avvio-barra') : null, tAvvio = avvio && avvio.querySelector ? avvio.querySelector('.gx-avvio-testo') : null;
+            const mostra = f => { const v = Math.min(1, f); if (bAvvio) bAvvio.style.setProperty('--p', String(v)); if (tAvvio) tAvvio.textContent = 'Loading ' + Math.round(v * 100) + '%'; };
             const parte = { scene: 0, gif: 0 }, finito = { scene: false, gif: false };
             const aggiorna = () => mostra(.2 * parte.scene + .8 * parte.gif);
-            const prova = () => { if (finito.scene && finito.gif && caricando) { caricando = false; splash.classList.remove('carica'); if (tocca) tocca.textContent = testo; } };
+            const inizio = Date.now();
+            const prova = () => {
+                if (finito.scene && finito.gif && caricando) {
+                    caricando = false; splash.classList.remove('carica');
+                    if (avvio) {                    // dissolvenza, poi "Tap to start" (anche se è già tutto pronto la schermata si vede un attimo: non è un lampo)
+                        const resta = Math.max(0, MINIMO_CARICAMENTO_MS - (Date.now() - inizio));
+                        win.setTimeout(() => { avvio.classList.add('esce'); win.setTimeout(() => { avvio.hidden = true; }, 800); }, resta);
+                    }
+                }
+            };
             caricando = true; splash.classList.add('carica'); mostra(0);
             S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms), avanza: f => { parte.scene = f; aggiorna(); }, fine: () => { finito.scene = true; parte.scene = 1; aggiorna(); prova(); } });
             barraGif = { avanza: f => { parte.gif = f; aggiorna(); }, fine: () => { finito.gif = true; parte.gif = 1; aggiorna(); prova(); } };

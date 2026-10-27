@@ -232,3 +232,20 @@ html.app .gx-carta:not(.gx-centro) *::after,
 html.app .gx-pista.trascinando .gx-carta *,
 html.app .gx-pista.trascinando .gx-carta *::before,
 html.app .gx-pista.trascinando .gx-carta *::after { animation-play-state: paused !important; }
+
+/* ---------- la schermata di caricamento dell'avvio: fondo scuro, logo, barra; sopra al titolo, che compare quando lei si dissolve ---------- */
+html.app .gx-avvio { position: fixed; inset: 0; z-index: 3500; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(18 * var(--u));
+    background: radial-gradient(120% 100% at 50% 40%, #1d1842 0%, #0d0b1d 70%, #05040d 100%); color: #fff; font-family: var(--gx-font); transition: opacity .75s ease; }
+html.app .gx-avvio[hidden], html.app.gx-pronto .gx-avvio { display: none; }
+html.app .gx-avvio.esce { opacity: 0; pointer-events: none; }
+html.app .gx-avvio-logo { display: flex; align-items: center; gap: calc(14 * var(--u)); }
+html.app .gx-avvio-logo img { width: calc(52 * var(--u)); height: calc(52 * var(--u)); border: calc(4 * var(--u)) solid #fff; border-radius: 50%; background: var(--gx-acc, #31c489); }
+html.app .gx-avvio-logo b { font-size: calc(26 * var(--u)); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+html.app .gx-avvio-barra { width: calc(260 * var(--u)); height: calc(12 * var(--u)); box-sizing: border-box; overflow: hidden; border: calc(2.5 * var(--u)) solid #fff; border-radius: calc(8 * var(--u)); background: rgba(255, 255, 255, .1); }
+html.app .gx-avvio-barra i { display: block; width: 100%; height: 100%; background: linear-gradient(180deg, #fff3a8, var(--gx-giallo, #ffbd44) 55%, #e89a10); transform-origin: left center; transform: scaleX(var(--p, 0)); transition: transform .25s ease-out; }
+html.app .gx-avvio-testo { margin: 0; font-size: calc(14 * var(--u)); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; opacity: .85; }
+/* il titolo sotto non mostra più la sua barra, e mentre si carica non si anima (meno cose insieme: l'app parte più liscia) */
+html.app .gx-splash.carica .gx-splash-carica { display: none; }
+html.app .gx-splash.carica :is(*, *::before, *::after) { animation-play-state: paused !important; }
+/* --x si legge solo dalla scena: non deve passare ai figli (ogni scorrimento li ricalcolava tutti, a ogni fotogramma) */
+@property --x { syntax: '<number>'; inherits: false; initial-value: 0; }
