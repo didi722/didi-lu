@@ -307,7 +307,7 @@
         }
 
         // i suoni e la vibrazione dei tasti (app-suoni.js) valgono per ogni pagina dell'app, battaglia compresa
-        if (modo) caricaScript(doc, 'app-suoni.js');
+        if (modo) { caricaScript(doc, 'app-suoni.js'); caricaScript(doc, 'app-musica.js'); }      // la musica continua da una pagina all'altra (app-musica.js)
 
         // il menù principale: l'aspetto da gioco comune (app-gioco.css: colori, tasti, finestre) e il suo (app-menu.css: sfondo, avatar, tessere); la logica
         // (app-comune.js, app-menu.js) la carica la pagina

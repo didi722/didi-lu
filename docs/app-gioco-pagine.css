@@ -1217,3 +1217,9 @@
     html.app-shell #replayModal .rc-tasto svg { width: calc(17 * var(--u)); height: calc(17 * var(--u)); }
     html.app-shell #replayModal > .close-replay { top: calc(8 * var(--u)); right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); width: calc(34 * var(--u)); height: calc(34 * var(--u)); font-size: calc(22 * var(--u)); border-width: calc(3 * var(--u)); border-radius: 50%; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
 }
+
+/* le schermate di caricamento con la Poké Ball (quelle del sito): scure come il resto dell'app, non bianche */
+@media (max-width: 900px), (max-height: 520px) {
+    html.app-shell #loading-screen, html.app-shell .poke-loader-blur { background: radial-gradient(120% 100% at 50% 40%, #1d1842 0%, #0d0b1d 70%, #05040d 100%) !important; }
+    html.app-shell #loading-screen p, html.app-shell #loading-screen .loading-text, html.app-shell .poke-loader-blur .loading-text { color: #fff !important; }
+}
