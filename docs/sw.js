@@ -41,7 +41,7 @@ function tipoImmagine(richiesta) {
     try { u = new URL(richiesta.url); } catch (e) { return null; }
     if (SPRITE.some(s => u.hostname === s.host && u.pathname.startsWith(s.percorso))) return 'sprite';
     // le immagini dei Pokémon che stanno nel sito (sprites/: le scrive il workflow "Sprites") non cambiano mai, come quelle di Showdown
-    if (self.location && u.origin === self.location.origin && /\/sprites\/(ani|dex)\//.test(u.pathname)) return 'sprite';
+    if (self.location && u.origin === self.location.origin && /\/sprites\/(ani|ani-back|dex)\//.test(u.pathname)) return 'sprite';
     if (self.location && u.origin === self.location.origin && u.pathname.includes('/immagini/')) return 'sito';
     return null;
 }

@@ -43,9 +43,9 @@ function eImmagine(byte, tipo) {
 }
 
 /** Il contenuto di sprites/indice.js dai file che ci sono */
-function indiceDa({ ani, dex }) {
+function indiceDa({ ani, dex, back = [] }) {
     const lista = l => JSON.stringify([...l].sort());
-    return `// Elenco delle immagini dei Pokémon che stanno nel sito (sprites/ani, sprites/dex): lo riscrive il workflow "Sprites" (tools/sprites/scarica.cjs). Non si modifica a mano.\nwindow.SpriteLocali = { ani: ${lista(ani)}, dex: ${lista(dex)} };\n`;
+    return `// Elenco delle immagini dei Pokémon che stanno nel sito (sprites/ani, sprites/dex e, di schiena, sprites/ani-back): lo riscrive il workflow "Sprites" (tools/sprites/scarica.cjs). Non si modifica a mano.\nwindow.SpriteLocali = { ani: ${lista(ani)}, dex: ${lista(dex)}, back: ${lista(back)} };\n`;
 }
 
 const idsIn = (cartella, estensione) => (fs.existsSync(cartella) ? fs.readdirSync(cartella).filter(f => f.endsWith(estensione)).map(f => f.slice(0, -estensione.length)) : []);
@@ -95,7 +95,7 @@ async function principale(specie, { fetchFn = fetch, concorrenza = 6, log = cons
     }));
     fs.writeFileSync(fileAssenti, JSON.stringify([...assenti].sort()));
     log(`di schiena: nuove ${retroNuove}`);
-    fs.writeFileSync(path.join(CARTELLA, 'indice.js'), indiceDa({ ani: idsIn(path.join(CARTELLA, 'ani'), '.gif'), dex: idsIn(path.join(CARTELLA, 'dex'), '.png') }));
+    fs.writeFileSync(path.join(CARTELLA, 'indice.js'), indiceDa({ ani: idsIn(path.join(CARTELLA, 'ani'), '.gif'), dex: idsIn(path.join(CARTELLA, 'dex'), '.png'), back: idsIn(path.join(CARTELLA, 'ani-back'), '.gif') }));
     log(`specie: ${specie.length}, nuove: ${nuove}, senza immagine: ${senza.length}${senza.length ? ' (' + senza.join(', ') + ')' : ''}`);
     return { nuove, senza };
 }

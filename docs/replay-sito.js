@@ -478,6 +478,71 @@ ${barreSalute('.palco')}
 
 
     // -------------------------------------------------
+    // Le immagini dei Pokémon del replay.
+    // Viene copiata nel file così com'è (toString): niente variabili esterne. È una funzione a parte per poterla provare senza browser.
+    //   - Se la pagina che apre il replay (matches.html) ha le immagini dei Pokémon nel sito (dati.sprites: l'indirizzo della cartella e l'elenco di
+    //     quelle che ci sono, scritto dal workflow "Sprites"), il motore le chiede al sito invece che a Showdown: stesso indirizzo della pagina, molto
+    //     più veloci e non si impuntano. Quelle che non ci sono restano di Showdown, come prima.
+    //   - All'apertura si scaricano tutte quelle che servono (davanti e di schiena, lette dal log), così non compaiono a spizzichi durante la partita.
+    //   - Un'immagine che non arriva si riprova: prima passando dal sito a Showdown, poi due volte la stessa (dopo 0,6 s e dopo 1,8 s).
+    // -------------------------------------------------
+    function immaginiReplay(win, dati) {
+        const Dex = win.Dex;
+        const doc = win.document;
+        const SHOWDOWN_IMMAGINI = 'https://play.pokemonshowdown.com/sprites/';
+        const locali = dati.sprites && dati.sprites.base ? dati.sprites : null;
+        const percorso = /\/sprites\/(ani|ani-back)\/([a-z0-9-]+)\.gif$/;
+        const haGetSpriteData = !!(Dex && typeof Dex.getSpriteData === 'function');
+
+        if (locali && haGetSpriteData && !Dex.getSpriteData.sito) {
+            const insiemi = { 'ani': new Set(locali.ani || []), 'ani-back': new Set(locali.back || []) };
+            const originale = Dex.getSpriteData;
+            Dex.getSpriteData = function () {
+                const d = originale.apply(this, arguments);
+                try {
+                    const m = d && typeof d.url === 'string' ? percorso.exec(d.url) : null;
+                    if (m && insiemi[m[1]].has(m[2])) d.url = locali.base + 'sprites/' + m[1] + '/' + m[2] + '.gif';
+                } catch (e) { /* resta l'indirizzo di Showdown */ }
+                return d;
+            };
+            Dex.getSpriteData.sito = true;
+        }
+
+        // un'immagine che non arriva: il motore non lo sa (e la lascia vuota), qui si riprova. L'evento "error" non risale: si ascolta in cattura
+        doc.addEventListener('error', evento => {
+            const img = evento.target;
+            if (!img || img.tagName !== 'IMG' || !img.src || img.src.indexOf('/sprites/') === -1) return;
+            const url = img.src;
+            // la copia nel sito non c'è o non arriva: subito Showdown (non conta come tentativo)
+            if (locali && url.indexOf(locali.base + 'sprites/') === 0) { img.src = SHOWDOWN_IMMAGINI + url.slice((locali.base + 'sprites/').length); return; }
+            const tentativo = Number(img.getAttribute('data-riprova') || 0);
+            if (tentativo >= 2) return;
+            img.setAttribute('data-riprova', String(tentativo + 1));
+            win.setTimeout(() => { img.src = url; }, tentativo === 0 ? 600 : 1800);
+        }, true);
+
+        if (!haGetSpriteData) return;
+        const nomi = [];
+        let gen = 0;
+        for (const riga of dati.log) {
+            const p = riga.split('|');
+            if (p[1] === 'gen') gen = parseInt(p[2], 10) || gen;
+            if (['poke', 'switch', 'drag', 'replace', 'detailschange', '-formechange'].indexOf(p[1]) === -1 || !p[3]) continue;
+            const nome = p[3].split(',')[0].trim();
+            if (nome && nomi.indexOf(nome) === -1) nomi.push(nome);
+        }
+        const viste = {};
+        for (const nome of nomi.slice(0, 40)) {
+            for (const davanti of [true, false]) {
+                try {
+                    const url = Dex.getSpriteData(nome, davanti, { gen: gen || 9 }).url;
+                    if (url && !viste[url]) { viste[url] = true; new win.Image().src = url; }
+                } catch (e) { /* un nome che il motore non conosce: si salta */ }
+            }
+        }
+    }
+
+    // -------------------------------------------------
     // Codice che gira nella pagina del replay.
     // Viene copiato nel file così com'è (toString): niente variabili esterne.
     // -------------------------------------------------
@@ -518,6 +583,9 @@ ${barreSalute('.palco')}
         if (!window.Battle || !window.jQuery) {
             return errore("Showdown's battle engine didn't load. Check your connection and reload.");
         }
+
+        // Immagini dei Pokémon: dal sito se ci sono, scaricate prima di partire, riprovate se non arrivano
+        try { immaginiReplay(window, dati); } catch (e) { console.warn(e); }
 
         // Avatar del sito: un indirizzo d'immagine passa così com'è (come in battle-extra.js)
         const Dex = window.Dex;
@@ -866,8 +934,12 @@ ${barreSalute('.palco')}
      *  match, set numeri del match e del set
      *  sito       indirizzo del sito (es. "https://pokemonsuite-didi-lu.web.app"):
      *             serve solo per gli avatar con un percorso relativo
+     *  motore     (solo da matches.html, dove il replay si apre nella pagina stessa) { stili: {indirizzo: testo del CSS}, script: {indirizzo: blob:...} }:
+     *             il motore di Showdown già scaricato e tenuto dal browser. Quello che c'è si mette nel file al posto del <link>/<script> verso
+     *             play.pokemonshowdown.com, quello che manca si chiede a Showdown come sempre
+     *  sprites    (idem) { base, ani, back }: l'indirizzo della cartella del sito e le immagini dei Pokémon che ci sono (vedi immaginiReplay)
      */
-    function creaReplayHtml({ log, p1, p2, etichetta = '', match = '', set = '', sito = '' } = {}) {
+    function creaReplayHtml({ log, p1, p2, etichetta = '', match = '', set = '', sito = '', motore = null, sprites = null } = {}) {
         const righe = righeDi(log);
         if (!righe.length) throw new Error('creaReplayHtml: il log del set è vuoto');
 
@@ -894,10 +966,22 @@ ${barreSalute('.palco')}
             p2: g2,
             icone: { play: ICONE.play, pausa: ICONE.pausa, audio: ICONE.audio, muto: ICONE.muto },
         };
+        if (sprites && typeof sprites.base === 'string' && sprites.base) {
+            dati.sprites = { base: sprites.base, ani: Array.isArray(sprites.ani) ? sprites.ani : [], back: Array.isArray(sprites.back) ? sprites.back : [] };
+        }
 
-        const stili = STILI.map(s => `<link rel="stylesheet" href="${SHOWDOWN}${s}">`).join('\n');
-        const script = SCRIPT.map(s => `<script src="${SHOWDOWN}${s}"></script>`).join('\n');
-        const codice = `(${giocaReplay.toString()})();`;
+        const proprio = motore || {};
+        const stili = STILI.map(s => {
+            const url = SHOWDOWN + s;
+            const css = proprio.stili && proprio.stili[url];
+            return typeof css === 'string' && css ? `<style data-origine="${url}">${css.replace(/<\/style/gi, '<\\/style')}</style>` : `<link rel="stylesheet" href="${url}">`;
+        }).join('\n');
+        const script = SCRIPT.map(s => {
+            const url = SHOWDOWN + s;
+            const locale = proprio.script && proprio.script[url];
+            return `<script src="${typeof locale === 'string' && locale.startsWith('blob:') ? locale : url}"></script>`;
+        }).join('\n');
+        const codice = `${immaginiReplay.toString()}\n(${giocaReplay.toString()})();`;
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -907,7 +991,8 @@ ${barreSalute('.palco')}
 <meta name="generator" content="Poke-Tournament replay 1">
 <title>${escHtml(titolo)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- i caratteri non bloccano la pagina: un foglio di stile in testa ferma anche gli script che lo seguono -->
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <!-- Motore grafico di Pokémon Showdown (la parte battle-* del client è sotto licenza MIT) -->
 ${stili}
 <style>${CSS}</style>
@@ -1006,5 +1091,43 @@ ${barreSalute('.battle')}
         return testo + aggiunta;
     }
 
-    return { creaReplayHtml, adattaReplayShowdown };
+    // -------------------------------------------------
+    // Riaprire un replay già salvato (matches.html)
+    // -------------------------------------------------
+    const decodifica = t => String(t).replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': '\'' }[e]));
+    const SOLO_TESTO = v => (typeof v === 'string' ? v : '');
+    // l'avatar è una parola di Showdown ("cynthia") o l'indirizzo di un'immagine: altro (virgolette, javascript:...) non entra nel file
+    const avatarSicuro = v => { const a = SOLO_TESTO(v).trim(); return /^[a-z0-9-]*$/i.test(a) || /^https?:\/\/[^\s"'()<>\\]+$/i.test(a) ? a : ''; };
+    const coloreSicuro = v => (/^#[0-9a-f]{3,8}$/i.test(SOLO_TESTO(v)) ? v : '');
+    const MASSIMO_RIGHE = 20000;
+
+    /**
+     * I dati di un replay creato da creaReplayHtml (il file salvato su Storage): il log, i due giocatori e la testata (categoria, match, set), oppure null se
+     * il testo non è uno di quei replay (per esempio un replay scaricato da Showdown). Serve a matches.html per riaprirlo nella pagina del sito, con il
+     * motore e le immagini già in cache, invece che nel file: dal file si prende solo il contenuto, mai codice, che resta quello di questo modulo.
+     */
+    function leggiReplay(html) {
+        const testo = String(html == null ? '' : html);
+        const m = /<script type="application\/json" id="dati-replay">([\s\S]*?)<\/script>/.exec(testo);
+        if (!m) return null;
+        let dati;
+        try { dati = JSON.parse(m[1]); } catch (e) { return null; }
+        if (!dati || !Array.isArray(dati.log) || !dati.log.length || dati.log.length > MASSIMO_RIGHE || !dati.log.every(r => typeof r === 'string')) return null;
+        const giocatoreDa = g => ({ nome: SOLO_TESTO(g && g.nome).slice(0, 60), colore: coloreSicuro(g && g.colore), avatar: avatarSicuro(g && g.avatar) });
+
+        // la testata: <span>Little Cup</span><span>Match 1</span><span>Set 2</span>
+        const info = /<div class="replay-info">([\s\S]*?)<\/div>/.exec(testo);
+        let etichetta = '', match = '', set = '';
+        for (const v of info ? [...info[1].matchAll(/<span>([\s\S]*?)<\/span>/g)].map(x => decodifica(x[1])) : []) {
+            const nm = /^Match (\S+)$/.exec(v);
+            const ns = /^Set (\S+)$/.exec(v);
+            if (nm) match = nm[1]; else if (ns) set = ns[1]; else if (!etichetta) etichetta = v;
+        }
+        return { log: dati.log, p1: giocatoreDa(dati.p1), p2: giocatoreDa(dati.p2), etichetta, match, set };
+    }
+
+    // gli indirizzi del motore di Showdown che un replay del sito carica: matches.html li scarica una volta e li tiene (replay-carica.js)
+    const MOTORE = { stili: STILI.map(s => SHOWDOWN + s), script: SCRIPT.map(s => SHOWDOWN + s) };
+
+    return { creaReplayHtml, adattaReplayShowdown, leggiReplay, immaginiReplay, MOTORE };
 });
