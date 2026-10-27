@@ -11,6 +11,7 @@
 //   anteprima | bersagli | cambio   scelta dei Pokémon prima della partita, del bersaglio (doppie), del Pokémon che entra dopo un KO
 //   anim | messaggio | fine | rivincita   il turno che si sta giocando, un'attesa ("Waiting for…"), fine partita contro la CPU, "Play again?"
 // Il pannello si ridisegna da solo a ogni cambio di stato: l'osservatore rimette i tasti, e ricorda a che passo eri finché la domanda è la stessa.
+// Tenendo premuto un Pokémon o una mossa compare la sua scheda: il tooltip di Showdown, rifatto come una carta da gioco da app-schede.js (che si scarica prima di questo file).
 // =====================================================
 (function (radice, fabbrica) {
     const B = fabbrica();
@@ -100,7 +101,7 @@
                 timer = win.setTimeout(() => {
                     timer = null;
                     const istanza = win.AppTooltips;           // l'istanza di Showdown, messa a disposizione da battle-ui.js
-                    if (istanza && typeof istanza.showTooltip === 'function') { try { nascondi(); istanza.showTooltip(el); lungo = true; } catch (err) { /* resta com'è */ } }
+                    if (istanza && typeof istanza.showTooltip === 'function') { try { nascondi(); istanza.showTooltip(el); lungo = true; if (win.navigator && typeof win.navigator.vibrate === 'function') win.navigator.vibrate(12); } catch (err) { /* resta com'è */ } }
                 }, TENUTA_MS);
             }
             if (tipo === 'touchend' || tipo === 'touchcancel') rilascia();
@@ -117,9 +118,16 @@
         }, true);
         doc.addEventListener('contextmenu', e => { if (dellaScheda(e)) e.preventDefault(); }, true);
         // la scheda deve stare tutta nello schermo: se è più alta, si rimpicciolisce di quanto serve (niente tagli)
+        const telefono = () => !!(win.matchMedia && win.matchMedia(CONDIZIONE_TELEFONO).matches);
         const adatta = () => {
             const t = doc.querySelector('#tooltipwrapper .tooltip');
             if (!t) return;
+            // il tooltip di Showdown diventa una scheda da gioco (app-schede.js); se non la sa fare, resta com'è
+            const S = win.AppSchede;
+            if (S && !t.dataset.sc && telefono()) {
+                const SP = win.SpritePkm;
+                S.trasforma(t, { gif: SP ? s => SP.gif(s) : null, id: SP ? s => SP.id(s) : null, riserva: SP && typeof SP.riserva === 'function' ? (img, id) => SP.riserva(img, id) : null });
+            }
             // la natura non serve per giocare: via
             t.querySelectorAll('.tt-riga').forEach(r => { const e = r.querySelector('.tt-etichetta'); if (e && /^nature$/i.test(e.textContent.trim())) r.remove(); });
             t.style.zoom = '';

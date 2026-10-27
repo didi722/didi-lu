@@ -325,8 +325,9 @@
             caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
             for (const nome of SCRIPT_PAGINE[pagina] || []) caricaScript(doc, nome);
         }
-        // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js
-        else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-battaglia.js'); }
+        // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js; le schede
+        // (Pokémon, mosse) che sostituiscono i tooltip di Showdown le fa app-schede.js, che deve esserci prima
+        else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-schede.js'); caricaScript(doc, 'app-battaglia.js'); }
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 

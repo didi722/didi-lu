@@ -6,26 +6,38 @@
    in vista. In piedi (dove l'orientamento non si può bloccare, come su iPhone) lo schermo sta sopra e i comandi sotto.
    app-battaglia.js decide a che passo è il pannello (data-ab sul .corpo): "What will X do?" con FIGHT e POKÉMON; FIGHT apre le mosse, POKÉMON la
    squadra, Back torna al menu. Il testo (la domanda, i messaggi) è una fascia scura in fondo allo schermo, come la casella di testo dei giochi.
-   Non ci sono i due player ai lati, la cronaca e i tooltip: resta solo quello che serve per giocare.
-   Il resto della pagina (colori, ombre, bordi) è quello del sito; qui cambia solo come sono disposti e quanto sono grandi i pezzi.
+   Non ci sono i due player ai lati e la cronaca: resta solo quello che serve per giocare. Tenendo premuto un Pokémon o una mossa compare la sua scheda
+   (app-schede.js la rifà dal tooltip di Showdown; qui sta com'è fatta).
+   L'aspetto è quello del resto dell'app (app-gioco.css): sfondo nero, pannelli viola scuro, tasti gialli e colorati dai bordi neri e l'ombra dritta sotto. Il nero
+   intorno allo schermo è voluto: niente bianco né grigio, così non c'è altro che la partita.
    Ogni regola è dentro una media query da telefono: sui tablet e sul computer la pagina è quella di sempre.
    ===================================================================== */
 
 /* ---------- Telefono, in piedi e girato: quello che vale sempre ---------- */
 @media (max-width: 700px), (max-height: 520px) {
-    html.app, html.app body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
-    html.app body { min-height: 0; }
+    html.app {
+        --u: min(.294vh, .1351vw);                       /* come nel resto dell'app: 1u = 1px su uno schermo di 740x340 */
+        --bt-pannello: radial-gradient(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%);
+        --bt-giallo: #ffbd44;
+        --bt-luce: rgba(255, 255, 255, .13);             /* il filo di luce dentro i bordi neri */
+        --bt-testo: #fff;
+    }
+    html.app, html.app body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; background: #000; color: var(--bt-testo); }
+    html.app body { min-height: 0; background: radial-gradient(120% 110% at 50% 45%, #15112f 0%, #0a0818 58%, #000 100%) no-repeat fixed; }
     html.app .scala { position: static; transform: none; width: auto; height: 100%; }
     html.app .pagina { box-sizing: border-box; height: 100%; max-width: none; margin: 0; gap: 0; }
     html.app .pagina .tavolo { box-sizing: border-box; display: grid; grid-template-areas: none; align-items: start; justify-content: stretch; }
 
-    /* via tutto quello che non serve a giocare: i due player, la cronaca, i tooltip, le prove (bot, note), lo schermo intero */
+    /* via tutto quello che non serve a giocare: i due player, la cronaca, le prove (bot, note), lo schermo intero */
     html.app :is(.lato, .colonna-log, .opzione-bot, .btn-note, .btn-schermo-intero, #note-team) { display: none !important; }
-    /* le schede dei Pokémon e delle mosse (i tooltip di Showdown): compaiono tenendo premuto, al centro dello schermo, e spariscono lasciando (app-battaglia.js) */
+
+    /* le schede dei Pokémon e delle mosse (i tooltip di Showdown): compaiono tenendo premuto, al centro dello schermo, e spariscono lasciando (app-battaglia.js).
+       Dietro, lo schermo si abbuia e sfuoca: la scheda è la sola cosa da guardare */
     html.app #tooltipwrapper { position: fixed !important; inset: 0 !important; z-index: 2000; display: flex !important; align-items: center; justify-content: center; margin: 0 !important; padding: 8px; box-sizing: border-box; pointer-events: none !important; }
-    html.app #tooltipwrapper .tooltipinner { position: static !important; }
+    html.app #tooltipwrapper:has(.tooltip)::before { content: ''; position: absolute; inset: 0; z-index: 0; background: radial-gradient(75% 95% at 50% 50%, rgba(13, 11, 29, .2), rgba(0, 0, 0, .8)); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: sc-vela .16s ease backwards; }
+    html.app #tooltipwrapper .tooltipinner { position: relative !important; z-index: 1; }
     html.app #tooltipwrapper .tooltip { position: static !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; transform: none !important; margin: 0 !important; }
-    /* la scheda è piccola, in due colonne e senza il superfluo (natura, note lunghe, suggerimenti): deve stare tutta nello schermo (se serve, app-battaglia.js la rimpicciolisce) */
+    /* il tooltip che non sappiamo rifare resta quello di Showdown, piccolo, in due colonne e senza il superfluo (natura, note lunghe, suggerimenti): deve stare tutto nello schermo (se serve, app-battaglia.js lo rimpicciolisce) */
     html.app #tooltipwrapper .tooltip { width: min(calc(100vw - 24px), 500px) !important; max-width: none !important; box-sizing: border-box; transform: none !important; font-size: max(9px, 2.8vh) !important; }
     html.app #tooltipwrapper .tooltip h2 { margin: 0 !important; padding: 4px 10px 3px !important; font-size: 1.15em !important; line-height: 1.15; }
     html.app #tooltipwrapper .tooltip p { margin: 0 !important; padding: 2px 10px !important; font-size: 1em !important; line-height: 1.25 !important; }
@@ -52,45 +64,66 @@
     html.app .cab-schermo, html.app .console { display: contents; }
     html.app .cab-campo:has(.campo-vuoto) { display: none; }
 
-    /* lo schermo di Showdown: una cornice sola, grande quanto il suo spazio */
-    html.app .palco-box { position: relative; max-width: none; margin: 0; box-sizing: content-box; border: 4px solid var(--inchiostro); background: var(--inchiostro); box-shadow: 5px 5px 0 rgba(0, 0, 0, .35); }
+    /* lo schermo di Showdown: una cornice sola, grande quanto il suo spazio. Nera, con un filo di luce: nel buio del resto è l'unica cosa accesa */
+    html.app .palco-box { position: relative; max-width: none; margin: 0; box-sizing: content-box; overflow: hidden; border: 4px solid #000; border-radius: 12px; background: #000; box-shadow: 0 0 0 1px var(--bt-luce), 0 0 28px rgba(49, 196, 137, .16); }
     html.app .palco-box::before { content: none; }
     html.app .palco { width: 100%; max-width: none; }
 
-    /* intestazione: indietro, il formato e il punteggio, il suono */
-    html.app .btn-hub, html.app #link-hub { position: relative; z-index: 60; grid-area: auto; align-self: start; padding: 6px 9px 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .72rem; transform: none; }
+    /* intestazione: indietro, il formato e il punteggio, il suono. Gialli e scuri come i tasti in alto del resto dell'app */
+    html.app .btn-hub, html.app #link-hub {
+        position: relative; z-index: 60; grid-area: auto; align-self: start; padding: 6px 10px 4px; transform: none;
+        background: var(--bt-giallo); color: #000; border: 3px solid #000; border-radius: 9px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .35);
+        font-size: .72rem;
+    }
     html.app .servizi { position: relative; z-index: 60; grid-area: auto; align-self: start; flex-wrap: nowrap; gap: 8px; }
-    html.app .btn-audio { width: 36px; height: 36px; padding: 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); transform: none; }
-    html.app .cab-insegna { position: relative; z-index: 60; min-width: 0; align-self: center; flex-wrap: nowrap; gap: 6px; padding: 3px 6px; border: 3px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro); overflow: hidden; }
+    html.app .btn-audio { width: 36px; height: 36px; padding: 5px; transform: none; background: var(--bt-giallo); border: 3px solid #000; border-radius: 50%; box-shadow: 0 4px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .35); }
+    html.app .cab-insegna {
+        position: relative; z-index: 60; min-width: 0; align-self: center; flex-wrap: nowrap; gap: 6px; padding: 4px 6px; overflow: hidden;
+        background: var(--bt-pannello); color: #fff; border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce);
+    }
     html.app .info-turno { min-height: 0; flex-wrap: nowrap; gap: 6px; min-width: 0; }
-    html.app .ins-formato { min-width: 0; padding: 4px 8px 2px; font-size: .9rem; transform: none; box-shadow: 2px 2px 0 rgba(0, 0, 0, .3); }
-    html.app .ins-match { flex: none; padding: 3px 6px 1px; font-size: .64rem; }
-    html.app .ins-tabellone { flex: none; }
-    html.app .ins-punti { min-width: 24px; font-size: 1rem; }
-    html.app .ins-set { padding: 3px 6px 1px; font-size: .62rem; }
-    html.app .badge-live { flex: none; padding: 3px 6px 1px; font-size: .6rem; transform: none; }
+    html.app .ins-formato { min-width: 0; padding: 4px 8px 2px; font-size: .9rem; transform: none; background: var(--bt-giallo); color: #000; border-radius: 6px; box-shadow: none; }
+    html.app .ins-match { flex: none; padding: 3px 6px 1px; font-size: .64rem; transform: none; background: rgba(0, 0, 0, .4); color: #fff; border: 2px solid #000; border-radius: 6px; box-shadow: none; }
+    html.app .ins-tabellone { flex: none; transform: none; background: rgba(0, 0, 0, .4); color: #fff; border: 2px solid #000; border-radius: 6px; box-shadow: none; overflow: hidden; }
+    html.app .ins-punti { min-width: 24px; font-size: 1rem; color: #000; }
+    html.app .ins-punti:first-child { border-right: 2px solid #000; }
+    html.app .ins-punti:last-child { border-left: 2px solid #000; }
+    html.app .ins-set { padding: 3px 6px 1px; font-size: .62rem; color: #fff; }
+    html.app .badge-live { flex: none; padding: 3px 6px 1px; font-size: .6rem; transform: none; border-radius: 6px; box-shadow: none; }
     html.app .cab-campo { height: auto; min-height: 0; margin: 0; flex-wrap: wrap; overflow: visible; }
-    html.app .cab-campo .campo-voce { padding: 3px 7px 1px; font-size: .62rem; }
+    html.app .cab-campo .campo-voce { padding: 3px 7px 1px; font-size: .62rem; color: #000; border: 2px solid #000; border-radius: 6px; }
+    html.app .campo-vuoto { color: rgba(255, 255, 255, .45); }
 
     html.app .messaggio { font-size: .8rem; text-align: center; }
-    html.app .errore { margin: 0; font-size: .7rem; }
+    html.app .errore {
+        margin: 0; font-size: .7rem; background: #3a0f1a; color: #ffd9d9; border: 3px solid #000; border-radius: 8px;
+        box-shadow: 0 3px 0 #000, inset 0 0 0 2px rgba(255, 100, 100, .45);
+    }
+    html.app .avviso { background: #3a300f; color: #ffe9a8; border: 3px solid #000; border-radius: 8px; box-shadow: inset 0 0 0 2px rgba(255, 189, 68, .4); }
 
-    /* niente inclinazioni: tutto dritto, pulito. Al tocco il tasto si abbassa */
+    /* niente inclinazioni: tutto dritto, pulito. Al tocco il tasto si abbassa (l'ombra è il suo spessore) */
     html.app :is(.btn, .btn-pkm, .mossa, .tessera, .ab-btn):not(:active) { transition: none; }
     html.app :is(.btn, .btn-pkm, .mossa, .tessera):is(:hover, :active, :focus) { transform: none; }
     html.app :is(.btn, .btn-pkm, .mossa, .tessera) { transform: none; }
-    html.app :is(.btn, .btn-pkm, .mossa, .tessera, .ab-btn):active:not(.spento, .spenta, [aria-disabled="true"], :disabled) { translate: 3px 3px; box-shadow: 0 0 0 var(--inchiostro); }
-    html.app .btn { padding: 7px 11px 5px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .72rem; }
+    html.app :is(.btn, .btn-pkm, .mossa, .tessera, .ab-btn, .btn-hub, .ab-indietro):active:not(.spento, .spenta, [aria-disabled="true"], :disabled) { translate: 0 3px; box-shadow: 0 1px 0 #000; }
+    html.app .btn {
+        padding: 7px 11px 5px; font-size: .72rem; background: var(--bt-giallo); color: #000;
+        border: 3px solid #000; border-radius: 9px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .35);
+    }
+    html.app .btn.primario, html.app .btn.primario:hover:not(:disabled) { background: #8cf2a4; color: #000; }
+    html.app .btn.scelto { background: var(--colore-mio, var(--bt-giallo)); }
+    html.app .btn.meccanica[aria-pressed="true"] { background: #ff6a6a; color: #000; }
     html.app .btn.piccolo { padding: 4px 8px 2px; font-size: .64rem; }
+    html.app .btn:disabled { box-shadow: none; }
 
     /* la domanda e, nel secondo passo, il tasto per tornare indietro */
     html.app .testa-scelta .btn.nascosto { display: none; }
     html.app .domanda { font-size: .8rem; line-height: 1.15; }
     html.app .domanda small { font-size: .62rem; }
     html.app .ab-indietro {
-        flex: none; padding: 5px 10px 3px 8px; background: var(--carta); color: var(--inchiostro);
-        border: 3px solid var(--inchiostro); box-shadow: 2px 2px 0 var(--inchiostro);
-        font: 700 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase; cursor: pointer;
+        flex: none; padding: 5px 10px 3px 8px; background: var(--bt-giallo); color: #000;
+        border: 3px solid #000; border-radius: 9px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .35);
+        font: 800 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase; cursor: pointer;
     }
     html.app .ab-indietro::before { content: '‹'; margin-right: 5px; font-size: 1.1em; line-height: 1; }
 
@@ -106,26 +139,31 @@
     /* i due tasti grandi: FIGHT (rosso, una stella) e POKÉMON (verde, una Poké Ball); le icone sono disegnate con i bordi */
     html.app .ab-btn {
         position: relative; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-        min-height: 62px; padding: 8px 6px 6px; color: var(--inchiostro);
-        border: 4px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro);
-        font: 700 1.05rem 'Josefin Sans', sans-serif; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
+        min-height: 62px; padding: 8px 6px 6px; color: #000;
+        border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .4);
+        font: 900 1.05rem 'Josefin Sans', sans-serif; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
     }
-    html.app .ab-lotta { background: color-mix(in srgb, var(--pericolo) 55%, #fff); }
-    html.app .ab-squadra { background: color-mix(in srgb, var(--conferma) 60%, #fff); }
+    html.app .ab-lotta { background: linear-gradient(180deg, #ffa3a3 0%, #ff5252 55%, #e63a3a 100%); }
+    html.app .ab-squadra { background: linear-gradient(180deg, #a6f7b9 0%, #3fd36d 55%, #26b955 100%); }
     html.app .ab-btn.spento { opacity: .4; box-shadow: none; cursor: not-allowed; }
     html.app .ab-btn[data-nota]::after { content: attr(data-nota); font-size: .6rem; letter-spacing: .08em; }
     html.app .ab-btn::before { content: ''; flex: none; width: 26px; height: 26px; }
-    html.app .ab-lotta::before { background: var(--inchiostro); clip-path: polygon(50% 0, 62% 34%, 98% 36%, 70% 58%, 80% 94%, 50% 73%, 20% 94%, 30% 58%, 2% 36%, 38% 34%); }
+    html.app .ab-lotta::before { background: #000; clip-path: polygon(50% 0, 62% 34%, 98% 36%, 70% 58%, 80% 94%, 50% 73%, 20% 94%, 30% 58%, 2% 36%, 38% 34%); }
     html.app .ab-squadra::before {
-        border: 3px solid var(--inchiostro); border-radius: 50%; box-sizing: border-box;
-        background: radial-gradient(circle at 50% 50%, var(--carta) 0 18%, var(--inchiostro) 19% 32%, transparent 33%), linear-gradient(to bottom, #ea1818 0 42%, var(--inchiostro) 42% 58%, var(--carta) 58%);
+        border: 3px solid #000; border-radius: 50%; box-sizing: border-box;
+        background: radial-gradient(circle at 50% 50%, #fff 0 18%, #000 19% 32%, transparent 33%), linear-gradient(to bottom, #ea1818 0 42%, #000 42% 58%, #fff 58%);
     }
 
-    /* passo FIGHT: le mosse col colore del tipo; sotto, Mega / Tera / Dynamax se ci sono */
+    /* passo FIGHT: le mosse col colore del tipo (scure, con la banda del tipo a sinistra); sotto, Mega / Tera / Dynamax se ci sono */
     html.app .mosse, html.app .comandi.doppio .mosse { grid-template-columns: 1fr 1fr; gap: 8px; }
-    html.app .mossa { min-height: 50px; gap: 2px; padding: 5px 8px 4px; border-width: 3px; border-left-width: 9px; box-shadow: 3px 3px 0 var(--inchiostro); }
-    html.app .mossa-nome { font-size: .88rem; }
-    html.app .mossa-info { font-size: .62rem; }
+    html.app .mossa {
+        min-height: 50px; gap: 2px; padding: 5px 8px 4px; color: #fff;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--tipo) 34%, #2c2766) 0%, color-mix(in srgb, var(--tipo) 12%, #15112f) 100%);
+        border: 3px solid #000; border-left: 9px solid var(--tipo); border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce);
+    }
+    html.app .mossa-nome { font-size: .88rem; text-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+    html.app .mossa-info { font-size: .62rem; color: rgba(255, 255, 255, .78); }
+    html.app .mossa.spenta { box-shadow: none; }
     html.app .piede-mosse { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 8px; }
     html.app .meccaniche { flex-wrap: wrap; gap: 8px; }
     html.app .btn.meccanica { padding: 5px 9px 3px; font-size: .64rem; }
@@ -133,29 +171,42 @@
     /* passo POKÉMON: la squadra. L'icona, il nome e la barra della vita uno sotto l'altro. Vale anche per il cambio obbligato */
     html.app .cambi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     html.app .cambi .etichetta { display: none; }
-    html.app .btn-pkm {
+    html.app .btn-pkm, html.app .btn-pkm:hover:not(.spento) {
         box-sizing: border-box; width: 100%; min-width: 0; min-height: 56px; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
-        padding: 3px 6px 4px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); font-size: .68rem; text-align: center;
+        padding: 3px 6px 4px; font-size: .68rem; text-align: center; color: #fff;
+        background: var(--bt-pannello); border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce);
     }
     html.app .btn-pkm .picon { flex: none; }
     html.app .btn-pkm-testo { align-items: center; width: 100%; min-width: 0; gap: 3px; }
     html.app .btn-pkm-nome { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    html.app .btn-pkm-hp, html.app .btn-pkm.grande .btn-pkm-hp { width: 100%; height: 6px; border-width: 2px; }
+    html.app .btn-pkm-hp, html.app .btn-pkm.grande .btn-pkm-hp { width: 100%; height: 7px; border: 2px solid #000; border-radius: 4px; background: rgba(0, 0, 0, .55); overflow: hidden; }
+    html.app .btn-pkm.spento { box-shadow: none; }
     /* i bottoni "compatti" del primo passo (solo icona e barra) qui hanno anche il nome */
     html.app .btn-pkm.compatto .picon { order: 1; }
     html.app .btn-pkm.compatto::after { order: 2; content: attr(aria-label); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html.app .btn-pkm.compatto :is(.btn-pkm-hp, .btn-pkm-ko) { order: 3; width: 100%; }
     html.app .btn-pkm.compatto .btn-pkm-ko { text-align: center; }
     html.app .btn-pkm.compatto .tag-stato { top: -8px; right: -6px; }
-    html.app .btn-pkm.alleato { box-shadow: 3px 3px 0 #9a9a9a; }
+    html.app .tag-stato:not(.brn, .psn, .tox) { color: #000; }
+    html.app .btn-pkm.alleato, html.app .btn-pkm.alleato:hover:not(.spento) { background: #34344a; color: #a9a9c0; border: 2px dashed #6a6a82; box-shadow: 0 2px 0 #000; }
 
     /* bersagli (doppie): gli avversari grandi, il compagno piccolo */
     html.app .bersagli { gap: 8px 16px; }
     html.app .bersagli-riga { gap: 8px; }
+    html.app .bersagli-gruppo.alleati .etichetta { color: #9a9ab2; }
+    html.app .eff { color: #000; border-radius: 5px; }
+    html.app .eff.nullo { color: #fff; }
 
     /* anteprima: i sei Pokémon da toccare nell'ordine in cui scendono in campo */
     html.app .anteprima-griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 4px 4px 2px; }
-    html.app .tessera { height: 66px; padding: 4px 3px; border-width: 3px; box-shadow: 3px 3px 0 var(--inchiostro); }
+    html.app .tessera {
+        height: 66px; padding: 4px 3px; color: #fff;
+        background: var(--bt-pannello); border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce);
+    }
+    html.app .tessera.scelta { background: linear-gradient(180deg, color-mix(in srgb, var(--colore-mio, #ffbd44) 70%, #fff), var(--colore-mio, #ffbd44)); color: #000; }
+    html.app .tessera.spenta { box-shadow: none; }
+    html.app .tessera-numero { background: var(--bt-giallo); color: #000; border: 2px solid #000; border-radius: 50%; }
+    html.app .tessera-lead { border-radius: 5px; }
     html.app .tessera-sprite img { max-height: 44px; }
     html.app .testa-scelta .riga-azioni { gap: 6px; }
 
@@ -164,20 +215,146 @@
     html.app body.prova-cpu #azioni-vittoria { display: none; }
     html.app .pannello .rivincita { display: grid; }
     html.app .esito-card .rivincita { display: none; }
-    html.app .esito-card { max-width: calc(100% - 16px); padding: 8px 10px 10px; box-shadow: 4px 4px 0 var(--inchiostro); }
-    html.app .esito-card h2 { padding: 3px 9px 1px; font-size: .95rem; box-shadow: 3px 3px 0 rgba(0, 0, 0, .3); }
+    html.app .esito { background: rgba(0, 0, 0, .6); }
+    html.app .esito-card {
+        max-width: calc(100% - 16px); padding: 8px 10px 10px; color: #fff; transform: none; animation: none;
+        background: var(--bt-pannello); border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 #000, inset 0 0 0 2px var(--bt-luce);
+    }
+    html.app .esito-card h2 { padding: 3px 9px 1px; font-size: .95rem; transform: none; background: var(--bt-giallo); color: #000; border: 3px solid #000; border-radius: 7px; box-shadow: 0 3px 0 #000; }
     html.app .esito-card p { margin: 6px 0 0; font-size: .74rem; }
     html.app .esito-card .riga-azioni { margin-top: 8px; gap: 6px; }
     html.app .esito-card .riga-azioni .btn { padding: 5px 9px 3px; font-size: .68rem; }
+    html.app .rivincita { color: #fff; background: var(--bt-pannello); border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce); }
+    html.app .rivincita-scelta { background: #fff; color: #000; border: 2px solid #000; border-radius: 7px; box-shadow: 0 2px 0 #000; }
+    html.app .rivincita-scelta.scelta { background: var(--bt-giallo); color: #000; }
+    html.app .rivincita .errore { color: #ffb4b4; }
 
     /* scelta del team prima di giocare (partite online): a tutto schermo, sotto l'intestazione, così le schede stanno comode */
-    html.app .velo.lobby { position: fixed; inset: 0; z-index: 50; padding: 56px max(12px, env(safe-area-inset-right, 0px)) 14px max(12px, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
+    html.app .velo { background: rgba(13, 11, 29, .96); color: #fff; }
+    html.app .velo.lobby { position: fixed; inset: 0; z-index: 50; padding: 56px max(12px, env(safe-area-inset-right, 0px)) 14px max(12px, env(safe-area-inset-left, 0px)); box-sizing: border-box; background: radial-gradient(120% 110% at 50% 40%, #1d1842 0%, #0a0818 70%, #000 100%); }
+    html.app .lobby-titolo { transform: none; background: var(--bt-giallo); color: #000; border: 3px solid #000; border-radius: 8px; box-shadow: 0 3px 0 #000; }
     html.app .lobby-colonne { grid-template-columns: 1fr; }
     html.app .schede-team { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    html.app .scheda-team, html.app .scheda-team:hover:not(:disabled) { transform: none; color: #fff; background: var(--bt-pannello); border: 3px solid #000; border-radius: 10px; box-shadow: 0 4px 0 #000, inset 0 0 0 2px var(--bt-luce); }
+    html.app .scheda-team.scelta { background: var(--bt-giallo); color: #000; }
+    html.app .scheda-team-formato { border-radius: 4px; }
 
     /* le prove in locale con i due pannelli (non si fanno da telefono): un foglio sopra lo schermo che scorre */
-    html.app .comandi.doppio { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; overflow-y: auto; background: var(--crema); }
-    html.app .comandi.doppio .pannello + .pannello { border-left: 0; border-top: var(--bordo-forte); }
+    html.app .comandi.doppio { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; overflow-y: auto; background: #0d0b1d; color: #fff; }
+    html.app .comandi.doppio .pannello + .pannello { border-left: 0; border-top: 4px solid #000; }
+    html.app .pannello-testa { color: #000; }
+    html.app .stato-avversario { color: #000; border: 2px solid #000; border-radius: 6px; }
+
+    /* ---------- Le schede (app-schede.js): il tooltip rifatto come una carta da gioco ---------- */
+    html.app #tooltipwrapper .tooltip[data-sc] { width: auto !important; max-width: calc(100vw - 20px) !important; padding: 0; background: none !important; border: 0 !important; box-shadow: none !important; color: #fff; font-size: calc(10 * var(--u)) !important; animation: sc-entra .2s cubic-bezier(.2, 1.35, .4, 1) backwards; }
+    html.app .sc {
+        box-sizing: border-box; display: grid; overflow: hidden; color: #fff; font-family: 'Josefin Sans', sans-serif; line-height: 1.15; text-align: left;
+        background: var(--bt-pannello); border: .4em solid #000; border-radius: 1.4em; box-shadow: 0 .8em 0 #000, inset 0 0 0 .2em var(--bt-luce);
+    }
+    html.app .sc * { box-sizing: border-box; }
+    html.app .sc small, html.app .sc em { font-style: normal; }
+    html.app .sc-et { color: var(--bt-giallo); font: 900 .9em/1 'Josefin Sans', sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    html.app .sc-tipi { display: flex; flex-wrap: wrap; justify-content: center; gap: .4em; }
+    html.app .sc-tipo { padding: .3em .8em .1em; background: var(--tipo, #8a8a9c); color: #000; border: .25em solid #000; border-radius: 99px; box-shadow: 0 .2em 0 #000; font: 800 .95em/1.25 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    html.app .sc-tipo.sc-chiaro, html.app .sc-mossa.sc-chiaro { color: #fff; }
+    html.app .sc-nome { font: 900 1.55em/1.05 'Josefin Sans', sans-serif; letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 .12em 0 #000, 0 0 .5em rgba(0, 0, 0, .6); }
+    html.app .sc-barra { flex: 1 1 auto; height: .9em; min-width: 0; background: rgba(0, 0, 0, .55); border: .2em solid #000; border-radius: 99px; overflow: hidden; box-shadow: inset 0 0 0 .1em rgba(255, 255, 255, .1); }
+    html.app .sc-barra i { display: block; height: 100%; border-radius: 99px; }
+
+    /* Pokémon: lui a sinistra su un fondo dei suoi due tipi, a destra i numeri */
+    html.app .sc-pkm { grid-template-columns: 15em minmax(0, 1fr); width: min(calc(100vw - 24px), 50em); }
+    html.app .sc-eroe {
+        position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .35em; padding: 1em .8em .9em; border-right: .4em solid #000;
+        background: radial-gradient(85% 60% at 50% 46%, rgba(255, 255, 255, .22), transparent 72%), linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .5) 100%), linear-gradient(155deg, var(--t1) 0 50%, var(--t2) 50% 100%);
+    }
+    html.app .sc-livello { position: absolute; top: .6em; left: .6em; padding: .25em .6em .1em; background: #000; color: var(--bt-giallo); border-radius: .5em; font: 800 .95em/1.2 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    html.app .sc-img { flex: none; width: auto; height: 7.8em; max-width: 100%; margin: .4em 0 .2em; object-fit: contain; filter: drop-shadow(0 .4em 0 rgba(0, 0, 0, .35)); user-select: none; -webkit-user-drag: none; }
+    html.app .sc-nome { text-align: center; }
+    html.app .sc-specie { color: rgba(255, 255, 255, .85); font: 700 .95em/1 'Montserrat', sans-serif; text-shadow: 0 .1em 0 #000; }
+    html.app .sc-note { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em; }
+    html.app .sc-note i { padding: .2em .5em .1em; background: rgba(0, 0, 0, .55); border-radius: .4em; font: 800 .8em/1.2 'Josefin Sans', sans-serif; font-style: normal; text-transform: uppercase; }
+    html.app .sc-corpo { display: flex; flex-direction: column; justify-content: center; gap: .7em; min-width: 0; padding: .9em 1.1em 1em; }
+    html.app .sc-hp { display: flex; align-items: center; gap: .6em; }
+    html.app .sc-hp b { flex: none; font: 800 1.15em/1 'Josefin Sans', sans-serif; }
+    html.app .sc-hp small { flex: none; color: rgba(255, 255, 255, .7); font: 600 .9em/1 'Montserrat', sans-serif; }
+    html.app .sc-hp-g { background: linear-gradient(180deg, #8dffae, #1fc455); }
+    html.app .sc-hp-y { background: linear-gradient(180deg, #ffe58f, #ffb11f); }
+    html.app .sc-hp-r { background: linear-gradient(180deg, #ff9a9a, #ee2a2a); }
+    html.app .sc-stato { flex: none; padding: .2em .6em .1em; border: .2em solid #000; border-radius: .5em; color: #000; background: #ccc; font: 800 .85em/1.2 'Josefin Sans', sans-serif; text-transform: uppercase; }
+    html.app .sc-stato.par { background: #ffcc33; }
+    html.app .sc-stato.brn { background: #ff4422; color: #fff; }
+    html.app .sc-stato.psn, html.app .sc-stato.tox { background: #aa5599; color: #fff; }
+    html.app .sc-stato.slp { background: #c8c8a8; }
+    html.app .sc-stato.frz { background: #66ccff; }
+
+    /* le sei statistiche: barre colorate per fascia (rosso, arancio, giallo, verde, azzurro), la cifra grande è quella che conta in battaglia */
+    html.app .sc-stat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .45em 1.2em; }
+    html.app .sc-st { position: relative; display: grid; grid-template-columns: 4.4em minmax(0, 1fr) 2.6em; align-items: center; gap: .5em; }
+    html.app .sc-st > span:first-child { display: flex; align-items: center; gap: .3em; color: #c8c2ff; font: 800 .9em/1 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+    html.app .sc-st .sc-barra { height: .75em; }
+    html.app .sc-st b { font: 800 1.1em/1 'Josefin Sans', sans-serif; text-align: right; }
+    html.app .sc-st em { padding: .15em .45em .05em; background: var(--bt-giallo); color: #000; border: .15em solid #000; border-radius: .4em; font: 900 .85em/1.1 'Josefin Sans', sans-serif; letter-spacing: 0; }
+    html.app .sc-st.su b { color: #9cf5a6; }
+    html.app .sc-st.giu b { color: #ff9b9b; }
+    html.app .sc-st.su b::after { content: '▲'; margin-left: .15em; font-size: .6em; }
+    html.app .sc-st.giu b::after { content: '▼'; margin-left: .15em; font-size: .6em; }
+    html.app .sc-v1 i { background: linear-gradient(180deg, #ff9a9a, #e63a3a); }
+    html.app .sc-v2 i { background: linear-gradient(180deg, #ffc27a, #f2781a); }
+    html.app .sc-v3 i { background: linear-gradient(180deg, #ffe98a, #f2bf1a); }
+    html.app .sc-v4 i { background: linear-gradient(180deg, #b4f58f, #3fc43f); }
+    html.app .sc-v5 i { background: linear-gradient(180deg, #9aeeff, #2aa8e8); }
+    html.app .sc-vel { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6em; }
+    html.app .sc-vel b { font: 900 2.2em/1 'Josefin Sans', sans-serif; }
+    html.app .sc-vel small { color: rgba(255, 255, 255, .78); font: 700 .95em/1 'Montserrat', sans-serif; }
+    html.app .sc-boost { padding: .25em .6em .1em; border: .2em solid #000; border-radius: .5em; font: 800 .9em/1.2 'Josefin Sans', sans-serif; text-transform: uppercase; }
+    html.app .sc-boost.su { background: #9cf5a6; color: #000; }
+    html.app .sc-boost.giu { background: #ff9b9b; color: #000; }
+
+    /* abilità e strumento */
+    html.app .sc-chips { display: flex; flex-wrap: wrap; gap: .5em; }
+    html.app .sc-chip { display: inline-flex; align-items: baseline; gap: .5em; min-width: 0; padding: .35em .8em .25em; background: rgba(0, 0, 0, .38); border: .2em solid #000; border-radius: .7em; box-shadow: inset 0 0 0 .1em rgba(255, 255, 255, .12); }
+    html.app .sc-chip small { flex: none; color: var(--bt-giallo); font: 800 .8em/1 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    html.app .sc-chip b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 1.05em/1.1 'Josefin Sans', sans-serif; }
+    html.app .sc-poss b { color: rgba(255, 255, 255, .8); }
+
+    /* le mosse: quattro tasti del colore del tipo, come nel menu FIGHT */
+    html.app .sc-mosse { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4em .5em; }
+    html.app .sc-mosse .sc-et { grid-column: 1 / -1; }
+    html.app .sc-mossa { display: flex; align-items: center; justify-content: space-between; gap: .4em; min-width: 0; padding: .4em .7em .3em; color: #000; background: linear-gradient(180deg, color-mix(in srgb, var(--tipo) 75%, #fff), var(--tipo)); border: .25em solid #000; border-radius: .8em; box-shadow: 0 .2em 0 #000, inset 0 0 0 .15em rgba(255, 255, 255, .3); }
+    html.app .sc-mossa b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 800 1em/1.1 'Josefin Sans', sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+    html.app .sc-mossa small { flex: none; font: 700 .85em/1 'Montserrat', sans-serif; opacity: .8; }
+
+    /* mossa: la fascia del tipo in alto, a sinistra le placche (potenza, precisione), a destra cosa fa */
+    html.app .sc-mv { grid-template-columns: auto minmax(0, 1fr); width: min(calc(100vw - 24px), 46em); }
+    html.app .sc-banda { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: .8em; padding: .8em 1.1em .7em; border-bottom: .4em solid #000; background: linear-gradient(135deg, color-mix(in srgb, var(--t1) 80%, #000), color-mix(in srgb, var(--t1) 38%, #000)); }
+    html.app .sc-banda .sc-nome { font-size: 1.8em; text-align: left; }
+    html.app .sc-banda .sc-tipi { flex: none; flex-wrap: nowrap; }
+    html.app .sc-cat { padding: .3em .8em .1em; border: .25em solid #000; border-radius: 99px; box-shadow: 0 .2em 0 #000; font: 800 .95em/1.25 'Josefin Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    html.app .sc-cat-physical { background: #ff9b3d; color: #000; }
+    html.app .sc-cat-special { background: #7a93ff; color: #000; }
+    html.app .sc-cat-status { background: #c9c9d6; color: #000; }
+    html.app .sc-placche { display: flex; flex-direction: column; justify-content: center; gap: .6em; padding: .9em 1em; background: rgba(0, 0, 0, .22); border-right: .3em solid rgba(0, 0, 0, .55); }
+    html.app .sc-placca { min-width: 7em; padding: .5em .8em .4em; text-align: center; background: rgba(0, 0, 0, .42); border: .25em solid #000; border-radius: .9em; box-shadow: inset 0 0 0 .1em rgba(255, 255, 255, .14); }
+    html.app .sc-placca small { display: block; margin-bottom: .2em; color: var(--bt-giallo); font: 800 .85em/1 'Josefin Sans', sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    html.app .sc-placca b { display: block; font: 900 2.1em/1 'Josefin Sans', sans-serif; }
+    html.app .sc-placca-lunga b { font-size: 1em; line-height: 1.3; }
+    html.app .sc-dettagli { display: flex; flex-direction: column; justify-content: center; gap: .7em; min-width: 0; padding: .9em 1.1em 1em; }
+    html.app .sc-desc { margin: 0; color: rgba(255, 255, 255, .94); font: 600 1.05em/1.35 'Montserrat', sans-serif; }
+    html.app .sc-effetto { color: #ffe9a8; }
+    html.app .sc-tags { display: flex; flex-wrap: wrap; gap: .4em; }
+    html.app .sc-tag { padding: .25em .7em .15em; background: rgba(0, 0, 0, .38); border: .2em solid #000; border-radius: .6em; font: 700 .9em/1.2 'Josefin Sans', sans-serif; letter-spacing: .03em; text-transform: uppercase; }
+    html.app .sc-bersagli, html.app .sc-bersaglio { color: #c8c2ff; }
+    html.app .sc-eff { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
+    html.app .sc-ef { display: inline-flex; align-items: baseline; gap: .5em; padding: .35em .8em .25em; color: #000; background: #c9c9d6; border: .25em solid #000; border-radius: .8em; box-shadow: 0 .2em 0 #000; }
+    html.app .sc-ef small { font: 700 .95em/1 'Montserrat', sans-serif; }
+    html.app .sc-ef b { font: 900 1.35em/1 'Montserrat', sans-serif; }
+    html.app .sc-ef i { font: 800 .85em/1 'Josefin Sans', sans-serif; font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
+    html.app .sc-ef-super { background: linear-gradient(180deg, #a6f7b9, #3fd36d); }
+    html.app .sc-ef-poco { background: linear-gradient(180deg, #ffe58f, #ffb11f); }
+    html.app .sc-ef-nullo { color: #fff; background: linear-gradient(180deg, #ff8c8c, #d62424); }
+
+    @keyframes sc-entra { from { opacity: 0; scale: .82; translate: 0 1.2em; } to { opacity: 1; scale: 1; translate: 0 0; } }
+    @keyframes sc-vela { from { opacity: 0; } to { opacity: 1; } }
 }
 
 /* ---------- Telefono girato: i comandi ai due lati dello schermo, che sta al centro ---------- */
@@ -210,11 +387,11 @@
     /* i comandi non hanno più una scatola: ogni pezzo (tasto, mossa, Pokémon, testo) è una cella del tavolo */
     html.app .comandi:not(.doppio), html.app .comandi:not(.doppio) :is(.pannello, .pannello-testa, .corpo, .testa-scelta, .messaggio, .annulla-scelta) { display: contents; }
 
-    /* il testo (la domanda, un messaggio, la striscia dello spettatore): una fascia scura in fondo allo schermo, come la casella di testo dei giochi */
+    /* il testo (la domanda, un messaggio, la striscia dello spettatore): una fascia scura in fondo allo schermo, come la casella di testo dei giochi. Bordo nero, non bianco */
     html.app .comandi:not(.doppio) :is(.domanda, .messaggio > span, .striscia) {
         grid-column: 2; grid-row: 1 / -1; align-self: end; justify-self: center; z-index: 30; pointer-events: none;
-        box-sizing: border-box; max-width: calc(var(--wc) - 24px); margin: 0 0 8px; padding: 4px 10px 3px;
-        background: rgba(0, 0, 0, .86); color: #fff; border: 2px solid #fff; box-shadow: 3px 3px 0 rgba(0, 0, 0, .4);
+        box-sizing: border-box; max-width: calc(var(--wc) - 24px); margin: 0 0 8px; padding: 4px 11px 3px;
+        background: linear-gradient(180deg, #221d4f, #120f2e); color: #fff; border: 3px solid #000; border-radius: 9px; box-shadow: 0 3px 0 rgba(0, 0, 0, .55), inset 0 0 0 2px var(--bt-luce);
         font: 700 .72rem/1.15 'Josefin Sans', sans-serif; letter-spacing: .03em; text-transform: uppercase; text-align: center;
     }
     html.app .comandi:not(.doppio) .domanda small { font-size: .6rem; }
@@ -225,12 +402,12 @@
     }
     html.app .comandi:not(.doppio) .errore {
         grid-column: 2; grid-row: 1 / -1; align-self: start; justify-self: center; z-index: 31; margin: 6px 0 0; padding: 3px 8px 2px;
-        background: var(--pericolo); color: #fff; border: 2px solid #fff; font: 700 .64rem 'Josefin Sans', sans-serif; text-transform: uppercase;
+        background: var(--pericolo); color: #fff; border: 2px solid #000; border-radius: 6px; box-shadow: none; font: 700 .64rem 'Josefin Sans', sans-serif; text-transform: uppercase;
     }
 
     /* passo 1: POKÉMON a sinistra, FIGHT a destra */
     html.app .corpo[data-ab="menu"] .ab-menu { display: contents; }
-    html.app .ab-btn { align-self: center; height: min(100%, 128px); min-height: 0; padding: 8px 2px 6px; font-size: clamp(.78rem, 2.1vw, 1.1rem); }
+    html.app .ab-btn { align-self: center; height: min(100%, 128px); min-height: 0; padding: 8px 2px 6px; font-size: clamp(.68rem, 1.75vw, .92rem); }
     html.app .ab-btn::before { width: 30px; height: 30px; }
     html.app .ab-squadra { grid-column: 1; grid-row: 2 / 4; }
     html.app .ab-lotta { grid-column: 3; grid-row: 2 / 4; }
@@ -275,17 +452,17 @@
     html.app .comandi:not(.doppio) .testa-scelta .riga-azioni { display: contents; }
     html.app .testa-scelta .riga-azioni > .btn {
         box-sizing: border-box; align-self: center; height: min(100%, 110px); padding: 8px 6px 6px;
-        border: 4px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro); font: 700 .9rem 'Josefin Sans', sans-serif; letter-spacing: .05em; text-align: center;
+        border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 #000, inset 0 0 0 2px rgba(255, 255, 255, .4); font: 900 .9rem 'Josefin Sans', sans-serif; letter-spacing: .05em; text-align: center;
     }
     html.app .testa-scelta .riga-azioni > .btn:first-child { grid-column: 1; grid-row: 2 / 4; }
     html.app .testa-scelta .riga-azioni > .btn:last-child { grid-column: 3; grid-row: 2 / 4; }
-    html.app .testa-scelta .riga-azioni > .btn.primario:not(:disabled) { background: color-mix(in srgb, var(--conferma) 60%, #fff); }
+    html.app .testa-scelta .riga-azioni > .btn.primario:not(:disabled) { background: linear-gradient(180deg, #a6f7b9 0%, #3fd36d 55%, #26b955 100%); }
     html.app .comandi:not(.doppio) .anteprima-griglia {
         grid-column: 2; grid-row: 1 / -1; align-self: end; z-index: 30; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 4px; margin: 0 6px 6px; padding: 0;
     }
     html.app .comandi:not(.doppio) .corpo[data-ab="anteprima"] .domanda { margin-bottom: 72px; }
-    html.app .anteprima-griglia .tessera { height: 62px; padding: 3px 2px; border-width: 2px; box-shadow: 2px 2px 0 var(--inchiostro); }
+    html.app .anteprima-griglia .tessera { height: 62px; padding: 3px 2px; border-width: 2px; border-radius: 8px; box-shadow: 0 3px 0 #000, inset 0 0 0 2px var(--bt-luce); }
     html.app .anteprima-griglia .tessera-sprite img { max-height: 38px; }
 
     /* messaggi con un pulsante (salta l'animazione, annulla la scelta) e fine partita contro la CPU: i pulsanti nella colonna di destra */
@@ -296,7 +473,7 @@
     /* "Play again?" a fine di una partita amichevole: un foglio sopra lo schermo, perché ha più scelte */
     html.app .comandi:not(.doppio) .rivincita {
         position: fixed; z-index: 85; top: 50%; left: 50%; width: min(440px, calc(100vw - 24px)); max-height: calc(100dvh - 20px); translate: -50% -50%; overflow-y: auto;
-        align-content: start; box-shadow: 6px 6px 0 var(--inchiostro);
+        align-content: start; box-shadow: 0 6px 0 #000, inset 0 0 0 2px var(--bt-luce);
     }
     html.app .esito-card { padding: 6px 8px 8px; }
 }
@@ -313,11 +490,11 @@
     html.app .btn-hub, html.app #link-hub { grid-column: 1; grid-row: 1; justify-self: start; }
     html.app .cab-insegna { grid-column: 2; grid-row: 1; }
     html.app .servizi { grid-column: 3; grid-row: 1; justify-self: end; }
-    html.app .palco-box { grid-column: 1 / -1; grid-row: 2; width: auto; margin-right: 5px; }
+    html.app .palco-box { grid-column: 1 / -1; grid-row: 2; width: auto; }
     html.app .cab-campo { grid-column: 1 / -1; grid-row: 3; }
 
     /* il pannello dei comandi: una scatola che si riempie, col contenuto al centro (se è troppo, scorre dentro la scatola) */
-    html.app .comandi { grid-column: 1 / -1; grid-row: 4; margin-right: 5px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; min-width: 0; align-self: stretch; overflow-x: hidden; overflow-y: auto; border: 4px solid var(--inchiostro); box-shadow: 5px 5px 0 var(--inchiostro); }
+    html.app .comandi { grid-column: 1 / -1; grid-row: 4; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; min-width: 0; align-self: stretch; overflow-x: hidden; overflow-y: auto; background: var(--bt-pannello); color: #fff; border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 #000, inset 0 0 0 2px var(--bt-luce); }
     html.app .pannello { flex: 1 0 auto; }
     html.app .comandi:not(.doppio) .pannello-testa { position: static; padding: 0; background: none; border: 0; justify-content: flex-end; }
     html.app .comandi:not(.doppio) .stato-avversario { margin: 6px 8px 0; padding: 2px 6px 0; border-width: 2px; box-shadow: none; font-size: .62rem; transform: none; }
@@ -331,7 +508,7 @@
     html.app .corpo[data-ab="menu"] .testa-scelta { justify-content: center; }
     html.app .corpo[data-ab="menu"] .domanda {
         flex: 0 1 auto; padding: 7px 12px 5px; text-align: center; font-size: 1.1rem;
-        background: var(--carta); border: 3px solid var(--inchiostro); box-shadow: 3px 3px 0 var(--inchiostro);
+        background: rgba(0, 0, 0, .35); border: 3px solid #000; border-radius: 9px; box-shadow: inset 0 0 0 2px var(--bt-luce);
     }
     html.app .ab-menu { gap: 14px; }
     html.app .ab-btn { min-height: 92px; gap: 8px; font-size: 1.3rem; }

@@ -396,7 +396,7 @@ test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna i
     const b = apri({ ua: UA.apk, percorso: '/didi-lu/battle.html' });
     assert.deepEqual(b.classi(), ['app', 'app-apk', 'os-android']);
     assert.deepEqual(b.fogli(), ['app-battaglia.css']);
-    assert.deepEqual(b.script(), ['app-suoni.js', 'app-battaglia.js']);
+    assert.deepEqual(b.script(), ['app-suoni.js', 'app-schede.js', 'app-battaglia.js'], 'le schede (Pokémon, mosse) prima dei comandi, che le usano');
 });
 
 test('il desktop installato come app (display-mode standalone, senza telefono): classe app e interfaccia da gioco, ma niente menù né avviso "gira il telefono"', () => {
@@ -577,14 +577,14 @@ test('ogni pagina collega manifest, icona e aspetto da app; app.js è uno script
 
 test('i fogli e gli script dell\'app esistono e li scarica solo l\'app (da app.js): nessuna pagina li collega, tranne il menù che porta i suoi script', () => {
     const js = docs('app.js');
-    for (const f of ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css', 'app-battaglia.css', 'app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-menu.js', 'app-battaglia.js']) {
+    for (const f of ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css', 'app-battaglia.css', 'app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-menu.js', 'app-battaglia.js', 'app-schede.js']) {
         assert.ok(esiste(f), `manca ${f}`);
         assert.ok(js.includes(`'${f}'`) || f === 'app-menu.js', `app.js non cita ${f}`);
     }
     assert.ok(!esiste('app-pagine.css') && !esiste('app-shell.js'), 'i vecchi file della barra in basso sono stati tolti');
     for (const f of PAGINE) {
         const h = docs(f).replace(/<!--[\s\S]*?-->/g, '');
-        assert.doesNotMatch(h, /app-(gioco|gioco-pagine|menu|battaglia)\.css|app-(gioco|battaglia)\.js|app-suoni\.js/, `${f} non deve collegare i fogli dell'app`);
+        assert.doesNotMatch(h, /app-(gioco|gioco-pagine|menu|battaglia)\.css|app-(gioco|battaglia|schede)\.js|app-suoni\.js/, `${f} non deve collegare i fogli dell'app`);
         if (f !== 'menu.html') assert.doesNotMatch(h, /app-comune\.js|app-menu\.js/, `${f}: solo il menù collega queste`);
     }
     // il menù: le parti comuni prima della sua logica
