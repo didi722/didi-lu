@@ -64,14 +64,19 @@ test('html: una pista di locandine; senza showdown lo dice', () => {
     assert.match(K.html(null), /No showdowns yet/);
 });
 
-test('htmlPager: le frecce e un pallino per match, quello guardato acceso (la finestra del showdown mostra un match alla volta)', () => {
+test('htmlPager: solo un pallino per match, quello guardato acceso (niente frecce né numeri: si scorre con il dito)', () => {
     const h = K.htmlPager(3, 1);
-    assert.match(h, /^<button type="button" class="sd-freccia sd-prec" aria-label="Previous match"/);
-    assert.match(h, /<span class="sd-punti" aria-hidden="true"><i><\/i><i class="su"><\/i><i><\/i><\/span>/);
-    assert.match(h, /<button type="button" class="sd-freccia sd-succ" aria-label="Next match"[^>]*>›<\/button>$/);
+    assert.equal(h, '<span class="sd-punti" aria-hidden="true"><i></i><i class="su"></i><i></i></span>');
+    assert.doesNotMatch(h, /button|sd-freccia|\d\s*\/\s*\d/);
     assert.equal((K.htmlPager(0, 0).match(/<i/g) || []).length, 0);
     assert.equal((K.htmlPager('x', 0).match(/<i/g) || []).length, 0);
     assert.equal((K.htmlPager(1, 0).match(/<i class="su">/g) || []).length, 1);
+});
+
+test('finestra showdown: i match fuori vista non forzano mai visibility:visible (a finestra chiusa non devono prendere i tocchi sopra la lista)', () => {
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-matches.js'), 'utf8');
+    assert.doesNotMatch(js, /visibility = [^;]*'visible'/);
+    assert.match(js, /visibility = Math\.abs\(x\) <= 1\.02 \? '' : 'hidden'/);
 });
 
 test('htmlTabs / tabValido: SHOWDOWNS e RANKINGS, quello guardato acceso; sul primo il numero dei showdown; una scelta sconosciuta torna ai showdown', () => {
@@ -111,7 +116,7 @@ test('il foglio: una schermata alla volta, le schede del sito spente, le locandi
     const css = docs('app-gioco-pagine.css');
     assert.match(css, /html\.app-shell\[data-mt="sd"\] body\.pg-matches \.hub-right-column, html\.app-shell\[data-mt="rk"\] body\.pg-matches \.hub-left-column \{ display: none !important; \}/);
     assert.match(css, /body\.pg-matches #matchList \{ display: none !important; \}/);
-    for (const c of ['mt-barra', 'mt-tab', 'mp-carta', 'mp-pista', 'mp-formato', 'mp-scena', 'mp-lato', 'mp-palco', 'mp-avatar', 'mp-nome', 'mp-win', 'mp-vs', 'mp-punti', 'mp-data', 'mp-vuoto', 'mp-testa-avatar', 'mp-fila', 'mp-pkm', 'sd-pista', 'sd-pager', 'sd-freccia', 'sd-punti']) {
+    for (const c of ['mt-barra', 'mt-tab', 'mp-carta', 'mp-pista', 'mp-formato', 'mp-scena', 'mp-lato', 'mp-palco', 'mp-avatar', 'mp-nome', 'mp-win', 'mp-vs', 'mp-punti', 'mp-data', 'mp-vuoto', 'mp-testa-avatar', 'mp-fila', 'mp-pkm', 'sd-pista', 'sd-pager', 'sd-punti']) {
         assert.ok(css.includes('.' + c), `il foglio non conosce ${c}`);
     }
     assert.match(css, /#sd-modal-overlay \.sd-lineup \{ display: flex !important;/, 'i Pokémon dei team si vedono');
