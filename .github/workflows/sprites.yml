@@ -1,0 +1,38 @@
+name: Sprites
+
+# Mette nel sito le immagini dei Pokémon della lega (docs/sprites/): si scaricano da Showdown una volta sola e poi arrivano dal sito, veloci.
+# Ogni giorno (così i Pokémon nuovi arrivano da soli) e a mano (Actions > Sprites > Run workflow).
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sprites:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Dependencies
+        run: npm install firebase-admin --no-save
+
+      - name: Scarica le immagini che mancano
+        run: node tools/sprites/scarica.cjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Salva nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/sprites
+          if git diff --cached --quiet; then echo "Niente di nuovo"; else git commit -m "Sprites: immagini dei Pokémon nuovi" && git push; fi

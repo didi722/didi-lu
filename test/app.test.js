@@ -1067,7 +1067,7 @@ test('SCRIPT_PAGINE: gli script che una pagina dell\'app carica oltre a quelli c
         for (const f of lista) assert.ok(esiste(f), `${pagina}: manca ${f}`);
         // il carosello va prima di chi lo usa
         const i = lista.indexOf('app-carosello.js');
-        if (i >= 0) assert.equal(i, lista.findIndex(x => x !== 'sprite-pkm.js'), `${pagina}: il carosello viene prima delle schermate che lo usano`);
+        if (i >= 0) assert.equal(i, lista.findIndex(x => x !== 'sprite-pkm.js' && x !== 'sprites/indice.js'), `${pagina}: il carosello viene prima delle schermate che lo usano`);
     }
 });
 
