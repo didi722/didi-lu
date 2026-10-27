@@ -350,7 +350,7 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
     assert.equal(el[0].proprieta['--x'], 0);
     assert.equal(el[1].proprieta['--x'], 1, 'la seguente appena fuori, a destra');
     assert.equal(el[3].proprieta['--x'], -1, 'l\'ultima appena fuori, a sinistra (il giro si chiude)');
-    assert.deepEqual(el.map(c => c.style.visibility), ['visible', 'visible', 'hidden', 'visible'], 'quella dall\'altra parte del giro non si disegna');
+    assert.deepEqual(el.map(c => c.style.visibility), ['visible', 'visible', 'visible', 'visible'], 'nessuna scena è nascosta: quella dall\'altra parte del giro sta fuori schermo ma già preparata (nascosta, il telefono la disegnava da capo alla prima volta che serve)');
     assert.deepEqual(el.map(c => c.attributi['aria-hidden']), ['false', 'true', 'true', 'true'], 'per chi legge lo schermo c\'è solo la scena guardata');
     // tornando dalle pagine si ritrova la scena di prima
     const q = paginaMenu({ sessione: { menuCarta: '2' } });
