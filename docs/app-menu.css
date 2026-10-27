@@ -107,7 +107,7 @@ html.app .gx-lobby::before { content: ''; position: fixed; inset: 0; z-index: 1;
 /* ogni scena è uno strato suo (will-change: transform, che il telefono prepara per intero: con `translate` le scene fuori schermo non erano pronte e il primo tocco a scorrere le disegnava lì per lì, a scatti): scorrere è solo spostare strati */
 html.app .gx-carta {
     position: absolute; inset: 0; display: block; overflow: hidden; color: #fff; text-decoration: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; -webkit-user-drag: none;
-    transform: translate3d(calc(var(--x, 0) * 100%), 0, 0); transition: transform .38s cubic-bezier(.2, .9, .3, 1); will-change: transform; backface-visibility: hidden; contain: paint;
+    transform: translate3d(calc(var(--x, 0) * 100%), 0, 0); will-change: transform; backface-visibility: hidden; contain: paint;
 }
 /* mentre si trascina segue il dito senza ritardo; chi passa dall'altra parte del giro salta senza animarsi */
 html.app .gx-pista.trascinando .gx-carta, html.app .gx-carta.gx-salta { transition: none !important; }

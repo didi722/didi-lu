@@ -227,14 +227,13 @@
         const sa = win.performance && typeof win.performance.now === 'function' && typeof win.requestAnimationFrame === 'function';
         const anima = da => {
             const id = ++animazione, t0 = win.performance.now();
-            pista.classList.add('trascinando');
             posiziona(da);
             const passoAnim = t => {
                 if (id !== animazione) return;
                 const k = Math.min(1, (win.performance.now() - t0) / DURATA_SCORRIMENTO_MS);
                 const e = 1 - Math.pow(1 - k, 3);
                 posiziona(da * (1 - e));
-                if (k < 1) win.requestAnimationFrame(passoAnim); else pista.classList.remove('trascinando');
+                if (k < 1) win.requestAnimationFrame(passoAnim);
             };
             win.requestAnimationFrame(passoAnim);
         };
@@ -268,10 +267,10 @@
             // mentre il dito si muove si aggiorna una volta per fotogramma (non a ogni evento: ce ne sono di più) e si tocca solo --x
             let ultima = null, inAttesa = false;
             const segui = (f, fine) => {
-                if (!fine) { animazione++; fraDito = f; } else if (typeof win.requestAnimationFrame === 'function') raf(() => { fraDito = 0; });
-                pista.classList.toggle('trascinando', !fine);
+                if (!fine) { animazione++; fraDito = f; } else if (sa) raf(() => { fraDito = 0; });
                 if (!fine) fermaAnimazioni(); else riprendiDopo();
-                if (fine) { ultima = null; posiziona(0); return; }
+                // dito alzato: se non c'è un cambio di scena (vai lo sostituisce subito) le scene tornano al loro posto con lo stesso movimento
+                if (fine) { ultima = null; if (sa) { if (fraDito !== 0) anima(fraDito); } else posiziona(0); return; }
                 ultima = f;
                 if (!inAttesa) { inAttesa = true; raf(() => { inAttesa = false; if (ultima !== null) posiziona(ultima); }); }
             };
