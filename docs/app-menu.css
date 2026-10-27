@@ -104,10 +104,10 @@ html.app .gx-lobby::before { content: ''; position: fixed; inset: 0; z-index: 1;
         linear-gradient(90deg, rgba(9, 7, 28, .95) 0, rgba(9, 7, 28, .86) calc(150 * var(--u)), rgba(9, 7, 28, .4) calc(246 * var(--u)), transparent calc(330 * var(--u))),
         linear-gradient(0deg, rgba(9, 7, 28, .78) 0, transparent calc(90 * var(--u))),
         linear-gradient(180deg, rgba(9, 7, 28, .6) 0, transparent calc(58 * var(--u))); }
-/* ogni scena è uno strato suo (will-change): scorrere è solo spostare strati, senza ridisegnare niente */
+/* ogni scena è uno strato suo (will-change: transform, che il telefono prepara per intero: con `translate` le scene fuori schermo non erano pronte e il primo tocco a scorrere le disegnava lì per lì, a scatti): scorrere è solo spostare strati */
 html.app .gx-carta {
     position: absolute; inset: 0; display: block; overflow: hidden; color: #fff; text-decoration: none; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; -webkit-user-drag: none;
-    translate: calc(var(--x, 0) * 100%) 0; transition: translate .38s cubic-bezier(.2, .9, .3, 1); will-change: translate; contain: paint;
+    transform: translate3d(calc(var(--x, 0) * 100%), 0, 0); transition: transform .38s cubic-bezier(.2, .9, .3, 1); will-change: transform; backface-visibility: hidden; contain: paint;
 }
 /* mentre si trascina segue il dito senza ritardo; chi passa dall'altra parte del giro salta senza animarsi */
 html.app .gx-pista.trascinando .gx-carta, html.app .gx-carta.gx-salta { transition: none !important; }

@@ -185,6 +185,10 @@
 
         // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
+        let timerCentro = null;
+        const DOPO_SCORRIMENTO_MS = 400;     // un po' più della transizione delle scene (.38s)
+        // le immagini delle scene si decodificano subito (a riposo), non alla prima volta che entrano mentre si scorre
+        try { [...$('gx-tessere').querySelectorAll('.gx-carta img')].forEach(im => { if (typeof im.decode === 'function') im.decode().catch(() => { /* si vedrà comunque */ }); }); } catch (e) { /* pazienza */ }
         const pista = $('gx-tessere').querySelector('.gx-pista');
         const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
         const xPrima = new Map();
@@ -214,10 +218,16 @@
             const n = Car.dentro(i, carte.length);
             if (n === stato.corrente) return;
             stato.corrente = n;
-            try { win.sessionStorage.setItem(CHIAVE_CARTA, String(n)); } catch (e) { /* non si ricorda */ }
-            segnaCentro();
             posiziona();
-            fai('scegli');
+            // appena la scena parte l'unica cosa da fare è spostarla: cambiare le classi del centro (che ferma e fa ripartire le animazioni di tutte le scene, centinaia di
+            // elementi) e il resto si fa a scorrimento finito, non nello stesso fotogramma (era lì lo scatto)
+            if (timerCentro !== null && typeof win.clearTimeout === 'function') win.clearTimeout(timerCentro);
+            timerCentro = win.setTimeout(() => {
+                timerCentro = null;
+                try { win.sessionStorage.setItem(CHIAVE_CARTA, String(stato.corrente)); } catch (e) { /* non si ricorda */ }
+                segnaCentro();
+                fai('scegli');
+            }, DOPO_SCORRIMENTO_MS);
         };
         const passo = verso => vai(Car.passo(stato.corrente, carte.length, verso, true));
         if (carte.length) {
@@ -241,7 +251,7 @@
             });
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
-                if (c && !c.classList.contains('gx-centro')) { e.preventDefault(); vai(Number(c.dataset.i)); }
+                if (c && Number(c.dataset.i) !== stato.corrente) { e.preventDefault(); vai(Number(c.dataset.i)); }
             });
             doc.addEventListener('keydown', e => { if (e.key === 'ArrowRight') passo(1); else if (e.key === 'ArrowLeft') passo(-1); });
         }
