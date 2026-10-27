@@ -31,6 +31,13 @@
 
     <audio id="bg-music-home" loop preload="none"></audio>
 
+    <!-- La prima volta di ogni visita, prima di tutto: una schermata scura con la barra di caricamento (le immagini e le GIF si scaricano ora); poi si dissolve e compare quella del titolo -->
+    <div class="gx-avvio" id="gx-avvio" aria-hidden="true">
+        <div class="gx-avvio-logo"><img src="immagini/magikarp.png" alt="" width="72" height="72"><b>Sant'Alvise League</b></div>
+        <div class="gx-avvio-barra"><i></i></div>
+        <p class="gx-avvio-testo">Loading 0%</p>
+    </div>
+
     <!-- La prima volta di ogni visita: schermata del titolo -->
     <div class="gx-splash" id="gx-splash" role="button" tabindex="0" aria-label="Tap to start" hidden>
         <span class="gx-splash-raggi" aria-hidden="true"></span>
@@ -50,6 +57,7 @@
     </div>
     <script>
         // rete di sicurezza: la schermata del titolo si vede da subito (prima dello script del menù); se quello non parte, un tocco la chiude lo stesso (se sta caricando, ci pensa lui)
+        setTimeout(function () { var v = document.getElementById('gx-avvio'); if (v) v.hidden = true; }, 45000);   // rete di sicurezza: la schermata di caricamento non resta mai
         document.getElementById('gx-splash').addEventListener('click', function () {
             var s = this;
             setTimeout(function () { if (!s.classList.contains('esce') && !s.classList.contains('carica')) { document.documentElement.classList.add('gx-pronto'); s.hidden = true; } }, 900);

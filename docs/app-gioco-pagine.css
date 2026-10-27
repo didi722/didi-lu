@@ -1131,6 +1131,9 @@
     html.app-shell body.pg-practice .pr-chip { flex: none; white-space: nowrap; }
     html.app-shell body.pg-practice .pr-chip { padding: calc(6 * var(--u)) calc(14 * var(--u)) calc(4 * var(--u)); cursor: pointer; background: rgba(0, 0, 0, .5); color: #fff; border: calc(2.5 * var(--u)) solid rgba(255, 255, 255, .35); border-radius: calc(12 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(12 * var(--u))/1.2 var(--nb-font-titoli); letter-spacing: .05em; text-transform: uppercase; }
     html.app-shell body.pg-practice .pr-chip:active { translate: 0 calc(2 * var(--u)); box-shadow: none; background: var(--gx-giallo); color: #000; border-color: var(--nb-ink, #000); }
+    html.app-shell body.pg-practice .pr-carico { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(10 * var(--u)); min-height: calc(220 * var(--u)); }
+    html.app-shell body.pg-practice .pr-ball { display: block; width: calc(46 * var(--u)); height: calc(46 * var(--u)); box-sizing: border-box; border: calc(4 * var(--u)) solid #fff; border-radius: 50%; background: linear-gradient(#ff3e3e calc(50% - 3px), #000 calc(50% - 3px), #000 calc(50% + 3px), #fff calc(50% + 3px)); animation: pr-gira 1.1s linear infinite; }
+    @keyframes pr-gira { to { transform: rotate(360deg); } }
     html.app-shell body.pg-practice .pr-vuoto, html.app-shell body.pg-practice .pr-carico { margin: calc(24 * var(--u)) 0; text-align: center; color: rgba(255, 255, 255, .85); font: 700 calc(14 * var(--u))/1.4 var(--nb-font-testo); }
     html.app-shell body.pg-practice .pr-vuoto a { color: var(--gx-giallo); }
     html.app-shell body.pg-practice .pr-accedi { margin: auto; display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--u)); text-align: center; color: #fff; }

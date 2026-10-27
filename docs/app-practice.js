@@ -278,7 +278,7 @@
     /** Senza accesso: un invito */
     const htmlAccedi = () => `<div class="pr-accedi"><b>Log in to play</b><small>Your teams and your friends are waiting.</small>
             <button type="button" class="pr-bottone" data-accedi="1" data-suono="apri">Log in</button></div>`;
-    const htmlCarico = () => '<p class="pr-carico">Loading…</p>';
+    const htmlCarico = () => '<div class="pr-carico" role="status"><i class="pr-ball" aria-hidden="true"></i><span>Loading…</span></div>';
 
     // ---------- nella pagina ----------
 
@@ -307,26 +307,30 @@
             stato.ranked = riepilogoRanked(stato.io, stato.stagioni, stato.sfide, Date.now());
         };
 
+        // se l'HTML è identico a quello già in pagina non si tocca niente: ogni ridisegno inutile rifaceva le locandine (immagini, entrata) e sembrava che si caricassero due volte
+        let ultimo = null;
+        const metti = html => { if (html === ultimo) return false; ultimo = html; pagina.innerHTML = html; return true; };
         const disegna = () => {
             pagina.dataset.vista = stato.vista;
-            if (!stato.pronto) { pagina.innerHTML = htmlCarico(); return; }
-            if (!stato.utente) { pagina.innerHTML = htmlAccedi(); return; }
+            if (!stato.pronto) { metti(htmlCarico()); return; }
+            if (!stato.utente) { metti(htmlAccedi()); return; }
             if (stato.vista === 'cpu') {
-                if (!stato.team) { pagina.innerHTML = htmlCarico(); return; }
-                pagina.innerHTML = htmlCpu({ team: stato.team, random: win.FormatoRandom ? win.FormatoRandom.FORMATI : [], dex });
+                if (!stato.team) { metti(htmlCarico()); return; }
+                metti(htmlCpu({ team: stato.team, random: win.FormatoRandom ? win.FormatoRandom.FORMATI : [], dex }));
             } else if (stato.vista === 'amichevole') {
-                if (!stato.giocatori) { pagina.innerHTML = htmlCarico(); return; }
-                pagina.innerHTML = htmlAmichevole({ giocatori: stato.giocatori });
+                if (!stato.giocatori) { metti(htmlCarico()); return; }
+                metti(htmlAmichevole({ giocatori: stato.giocatori }));
             } else if (stato.vista === 'ranked') {
-                if (!stato.ranked) { pagina.innerHTML = htmlCarico(); return; }
+                if (!stato.ranked) { metti(htmlCarico()); return; }
                 const l = stato.ranked;
                 const scelta = l.find(s => s.id === stato.stagione) || (l.length === 1 ? l[0] : null);
-                if (!l.length) pagina.innerHTML = htmlRankedVuoto();
-                else if (!scelta) pagina.innerHTML = htmlRankedScelta(l);
-                else pagina.innerHTML = htmlRankedStagione(scelta, { info, indietro: l.length > 1 ? { vista: 'ranked', stagione: '' } : { vista: 'home' } });
+                if (!l.length) metti(htmlRankedVuoto());
+                else if (!scelta) metti(htmlRankedScelta(l));
+                else metti(htmlRankedStagione(scelta, { info, indietro: l.length > 1 ? { vista: 'ranked', stagione: '' } : { vista: 'home' } }));
             } else {
-                pagina.innerHTML = htmlHome({ ranked: stato.ranked });
-                caricaImmagini();
+                // la schermata di scelta compare quando i dati ci sono (una volta sola), non prima e poi di nuovo
+                if (stato.io && !stato.ranked) { metti(htmlCarico()); return; }
+                if (metti(htmlHome({ ranked: stato.ranked }))) caricaImmagini();
             }
         };
 
@@ -393,7 +397,7 @@
                     if (stato.vista === 'ranked') disegna();
                 }
             } catch (e) {
-                pagina.innerHTML = '<p class="pr-vuoto">Couldn\'t load this. Check your connection and try again.</p>';
+                ultimo = null; pagina.innerHTML = '<p class="pr-vuoto">Couldn\'t load this. Check your connection and try again.</p>';
             }
         };
 

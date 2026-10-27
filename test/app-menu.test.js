@@ -774,3 +774,28 @@ test('stagioniDaMostrare: tutte le aperte (la più vicina alla scadenza prima) e
     assert.deepEqual(M.stagioniDaMostrare([{ id: 'sbeta', ...info('playing') }], adesso).map(x => x.id), ['sbeta'], 'la beta solo se non c\'è altro');
     assert.equal(M.stagioneDaMostrare([{ id: 's1', ...info('playing') }], adesso).id, 's1', 'quella di prima resta valida');
 });
+
+test('avvio: prima una schermata di caricamento scura con la barra (gx-avvio), sopra al titolo; finito si dissolve e compare "Tap to start"; il titolo non mostra più la sua barra', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'menu.html'), 'utf8');
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-menu.js'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-menu.css'), 'utf8');
+    assert.ok(html.indexOf('id="gx-avvio"') > 0 && html.indexOf('id="gx-avvio"') < html.indexOf('id="gx-splash"'));
+    assert.match(html, /gx-avvio-barra/);
+    assert.match(css, /html\.app \.gx-avvio \{[^}]*z-index: 3500[^}]*#1d1842/);
+    assert.match(css, /html\.app \.gx-avvio\.esce \{ opacity: 0;/);
+    assert.match(css, /\.gx-splash\.carica \.gx-splash-carica \{ display: none; \}/);
+    assert.match(js, /avvio\.classList\.add\('esce'\)/);
+    assert.match(js, /MINIMO_CARICAMENTO_MS - \(Date\.now\(\) - inizio\)/);
+    assert.match(js, /MINIMO_CARICAMENTO_MS/);
+    // il titolo non cambia più il suo testo con la percentuale
+    assert.doesNotMatch(js, /tocca\.textContent = 'Loading/);
+    // la Home scorre senza ricalcolare gli stili dei figli a ogni fotogramma
+    assert.match(css, /@property --x \{ syntax: '<number>'; inherits: false;/);
+});
+
+test('simulatore: nell\'app il titolo della prova contro la CPU è solo "Practice"', () => {
+    const b = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'battle-ui.js'), 'utf8');
+    assert.match(b, /function etichettaPractice\(formato\) \{\s*return document\.documentElement\.classList\.contains\('app'\) \? 'Practice' : `Practice vs CPU · \$\{formato\}`;/);
+    assert.equal((b.match(/etichetta: etichettaPractice\(/g) || []).length, 2);
+});
