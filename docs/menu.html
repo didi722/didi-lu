@@ -41,13 +41,14 @@
             <img src="immagini/magikarp.png" alt="" width="84" height="84">
             <h1><span>Sant'Alvise</span><b>League</b></h1>
         </div>
+        <div class="gx-splash-carica" aria-hidden="true"><i></i></div>
         <p class="gx-splash-tocca">Tap to start</p>
     </div>
     <script>
-        // rete di sicurezza: la schermata del titolo si vede da subito (prima dello script del menù); se quello non parte, un tocco la chiude lo stesso
+        // rete di sicurezza: la schermata del titolo si vede da subito (prima dello script del menù); se quello non parte, un tocco la chiude lo stesso (se sta caricando, ci pensa lui)
         document.getElementById('gx-splash').addEventListener('click', function () {
             var s = this;
-            setTimeout(function () { if (!s.classList.contains('esce')) { document.documentElement.classList.add('gx-pronto'); s.hidden = true; } }, 900);
+            setTimeout(function () { if (!s.classList.contains('esce') && !s.classList.contains('carica')) { document.documentElement.classList.add('gx-pronto'); s.hidden = true; } }, 900);
         });
     </script>
 

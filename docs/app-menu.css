@@ -116,6 +116,7 @@ html.app .gx-pista.trascinando .gx-carta, html.app .gx-carta.gx-salta { transiti
 html.app .gx-pista .gx-carta:not(.gx-centro) :is(*, *::before, *::after), html.app .gx-pista.gx-ferma :is(*, *::before, *::after) { animation-play-state: paused !important; }
 /* l'immagine propria (tessera-<id>) prende il posto delle figure; sotto resta la scena */
 html.app .gx-immagine { position: absolute; right: 0; bottom: 0; height: min(88%, calc(300 * var(--u))); max-width: 82%; width: auto; object-fit: contain; object-position: right bottom; filter: drop-shadow(0 calc(8 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, .35)); }
+html.app .gx-immagine.gx-bordo { right: calc(-70 * var(--u)); height: 100%; max-height: none; max-width: none; filter: none; }
 html.app .gx-immagine[hidden] { display: none; }
 
 /* ----- il nome della scena: un grande tag storto che brilla, in basso al centro, con la riga sotto ----- */
@@ -162,6 +163,12 @@ html.app .gx-splash-logo h1 span { font-size: calc(42 * var(--u)); font-weight: 
 html.app .gx-splash-logo h1 b { padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(4 * var(--u)) solid #000; border-radius: calc(6 * var(--u)); font-size: calc(22 * var(--u)); font-weight: 900; letter-spacing: .24em; rotate: -2.5deg; box-shadow: 0 calc(5 * var(--u)) 0 #000; }
 html.app .gx-splash-tocca { position: absolute; left: 0; right: 0; bottom: calc(24 * var(--u)); z-index: 2; margin: 0; text-align: center; font: 900 calc(20 * var(--u))/1 var(--gx-font); letter-spacing: .26em; text-transform: uppercase;
     text-shadow: 0 calc(3 * var(--u)) 0 #000, 0 0 calc(14 * var(--u)) rgba(255, 255, 255, .7); animation: gx-lampeggia 1.3s ease-in-out infinite; }
+
+/* la barra di caricamento della schermata del titolo (la riempie lo script con --p da 0 a 1; si sposta solo la scala, la fa la scheda grafica) */
+html.app .gx-splash-carica { display: none; position: absolute; left: 50%; bottom: calc(54 * var(--u)); z-index: 2; width: calc(230 * var(--u)); height: calc(14 * var(--u)); margin-left: calc(-115 * var(--u)); overflow: hidden; box-sizing: border-box; background: rgba(0, 0, 20, .55); border: calc(3 * var(--u)) solid #000; border-radius: calc(8 * var(--u)); }
+html.app .gx-splash.carica .gx-splash-carica { display: block; }
+html.app .gx-splash-carica i { display: block; width: 100%; height: 100%; background: linear-gradient(180deg, #fff3a8, var(--gx-giallo) 55%, #e89a10); transform-origin: left center; transform: scaleX(var(--p, 0)); transition: transform .25s ease-out; }
+html.app .gx-splash.carica .gx-splash-tocca { animation: none; }
 
 /* ---------- 3. L'annuncio delle iscrizioni aperte ---------- */
 html.app .gx-manifesto { position: relative; align-items: center; gap: calc(6 * var(--u)); width: min(calc(360 * var(--u)), 92vw); padding: calc(18 * var(--u)) calc(18 * var(--u)) calc(16 * var(--u)); text-align: center; overflow: hidden;

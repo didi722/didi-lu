@@ -137,7 +137,7 @@
     function htmlCarta(v, indice, esc) {
         const sc = S.SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
         return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
-            S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '"' + (sc.arte ? ' data-arte="' + esc(sc.arte) + '"' : '') + ' alt="' + esc(sc.alt || '') + '" hidden>' }) +
+            S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '"' + (sc.arte ? ' data-arte="' + esc(sc.arte) + '"' : '') + (sc.bordo ? ' data-bordo' : '') + ' alt="' + esc(sc.alt || '') + '" hidden>' }) +
             '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b><small class="gx-sotto">' + esc(sc.sotto) + '</small></span></a>';
     }
 
@@ -172,7 +172,7 @@
         $('gx-tessere').querySelectorAll('.gx-immagine').forEach(img => {
             const prove = immaginiDi(img.dataset.id).concat(img.dataset.arte ? [img.dataset.arte] : []);       // prima la tua (tessera-<id>), poi quella già pronta della scena
             let k = 0;
-            img.addEventListener('load', () => { img.hidden = false; img.closest('.gx-carta').classList.add('ha-immagine'); });
+            img.addEventListener('load', () => { img.hidden = false; if (img.hasAttribute('data-bordo')) img.classList.add('gx-bordo'); img.closest('.gx-carta').classList.add('ha-immagine'); });       // le scene "a filo" (Play) stanno a tutta altezza, contro i bordi dello schermo
             img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });
             img.src = prove[0];
         });
@@ -274,8 +274,9 @@
         // ----- la schermata del titolo -----
         const splash = $('gx-splash');
         const giaVisto = (() => { try { return !!win.sessionStorage.getItem(CHIAVE_SPLASH); } catch (e) { return false; } })();
+        let caricando = false;                           // finché le immagini non sono arrivate la schermata del titolo non si chiude
         const chiudiSplash = () => {
-            if (!splash || splash.hidden) return;
+            if (!splash || splash.hidden || caricando) return;
             try { win.sessionStorage.setItem(CHIAVE_SPLASH, '1'); } catch (e) { /* la prossima volta si rivede */ }
             fai('avvio');
             avviaMusica();
@@ -287,9 +288,15 @@
             const scintilleSplash = $('gx-splash-scintille');
             if (scintilleSplash) scintilleSplash.innerHTML = S.htmlScintille(16, 11);
             splash.hidden = false;
+            // la barra di caricamento: le immagini delle scene si scaricano ora, così scorrere e aprire Play è subito pronto (al massimo 10 secondi)
+            const tocca = splash.querySelector ? splash.querySelector('.gx-splash-tocca') : null, barra = splash.querySelector ? splash.querySelector('.gx-splash-carica') : null;
+            const testo = tocca ? tocca.textContent : '';
+            const mostra = f => { if (barra) barra.style.setProperty('--p', String(Math.min(1, f))); if (tocca) tocca.textContent = 'Loading ' + Math.round(Math.min(1, f) * 100) + '%'; };
+            caricando = true; splash.classList.add('carica'); mostra(0);
+            S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms), avanza: mostra, fine: () => { caricando = false; splash.classList.remove('carica'); if (tocca) tocca.textContent = testo; } });
             splash.addEventListener('click', chiudiSplash);
             splash.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') chiudiSplash(); });
-        } else html.classList.add('gx-pronto');
+        } else { html.classList.add('gx-pronto'); S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms) }); }       // niente schermata del titolo: le immagini si scaldano lo stesso, in silenzio
 
         // ----- la finestra di accesso -----
         const aggiornaClasse = () => html.classList.toggle('gx-dialogo-aperto', !!doc.querySelector('.gx-dialogo:not([hidden])'));

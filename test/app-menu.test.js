@@ -170,7 +170,7 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     assert.match(h, /^<a class="gx-carta gx-c-box" href="box\.html" data-i="1" data-id="box" style="--c:#6fa8ff" data-suono="scegli"><span class="gx-sf">/);
     assert.match(h, /<img class="gx-immagine" data-id="box" alt="" hidden><span class="gx-vignetta"/);
     // Play ha la sua immagine già pronta (si cerca dopo la tua, tessera-play)
-    assert.match(M.htmlCarta(A.VOCI[0], 0, C.esc), /<img class="gx-immagine" data-id="play" data-arte="immagini\/app\/scena-play\.webp" alt="Mega Charizard Y and Mega Lucario face off" hidden>/);
+    assert.match(M.htmlCarta(A.VOCI[0], 0, C.esc), /<img class="gx-immagine" data-id="play" data-arte="immagini\/app\/scena-play\.webp" data-bordo alt="Mega Charizard Y and Mega Lucario face off" hidden>/);
     assert.match(h, /<span class="gx-blocco"><b class="gx-tag"><span>Box<\/span><\/b><small class="gx-sotto">Your teams &amp; Pokémon<\/small><\/span><\/a>$/);
 
     const css = docs('app-menu.css');
@@ -400,6 +400,25 @@ test('le scene: la scena che passa dall\'altra parte del giro salta senza attrav
     q.id('gx-tessere').scatta('click', { target: { closest: () => e2[0] }, preventDefault() {} });
     assert.ok(!e2[0].classi.has('gx-salta') && !e2[3].classi.has('gx-salta'), 'la scena che entra e quella che esce scorrono');
     assert.ok(e2[0].classi.has('gx-centro'));
+});
+
+test('la barra di caricamento: finché le immagini delle scene non sono arrivate "Tap to start" è una barra e il tocco non chiude; poi si chiude come sempre', () => {
+    const lista = [];
+    global.Image = class { set src(v) { this._src = v; lista.push(this); } };
+    try {
+        const p = paginaMenu({});
+        const splash = p.id('gx-splash');
+        assert.ok(splash.classi.has('carica'), 'sta caricando');
+        assert.ok(lista.length >= 8 && lista.some(i => /scena-play\.webp$/.test(i._src)), 'scarica le figure e la scena di Play: ' + lista.length);
+        splash.click();
+        assert.deepEqual(p.suoni, [], 'il tocco, mentre carica, non fa niente');
+        assert.ok(!p.classiHtml.has('gx-pronto'));
+        lista.forEach(i => i.onload());
+        assert.ok(!splash.classi.has('carica'), 'a caricamento finito la barra sparisce');
+        splash.click();
+        assert.deepEqual(p.suoni, ['avvio']);
+        assert.ok(p.classiHtml.has('gx-pronto'));
+    } finally { delete global.Image; }
 });
 
 test('la schermata del titolo: la prima volta di ogni visita c\'è ("Tap to start"); toccarla suona l\'avvio, fa partire la musica e la toglie; poi non torna', () => {

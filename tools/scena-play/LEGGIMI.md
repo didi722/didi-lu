@@ -1,18 +1,12 @@
 # L'immagine di Play (docs/immagini/app/scena-play.webp)
 
-Mega Charizard Y che soffia fuoco contro Mega Lucario col braccio teso, su sfondo trasparente (il cielo lo mette la scena). È composta da due render di Pokémon HOME (PokeAPI)
-messi in posa (braccio teso, bocca aperta, inclinati), con aloni, luci di taglio e getto di fuoco. Si rifà con questi script (Python, Pillow e numpy):
+È un'immagine di lotta generata con un'IA di immagini (Gemini): Mega Charizard Y in picchiata che soffia fuoco contro Mega Lucario in balzo, visto di tre quarti da dietro, nello stile
+dei modelli 3D di Pokémon HOME. L'IA l'ha disegnata su sfondo verde piatto; `da-gemini.py` toglie il verde (chroma key con despill, bordi morbidi), rimpicciolisce
+Charizard (senza toccare Lucario) attorno alla bocca e salva un WebP con trasparenza, alto 1000 px (Python, Pillow e numpy):
 
 ```
-mkdir arte
-curl -o arte/home-10059.png https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/10059.png     # Mega Lucario
-curl -o arte/home-10035.png https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/10035.png     # Mega Charizard Y
-ARTE=arte python3 tools/scena-play/scontro.py       # scrive scontro.webp (con trasparenza) e scontro-anteprima.png
-cp scontro.webp docs/immagini/app/scena-play.webp
+python3 tools/scena-play/da-gemini.py originale.jpg docs/immagini/app/scena-play.webp 0.82     # 0.82 = quanto si rimpicciolisce Charizard
 ```
 
-- `pose.py`: le pose (angolo del braccio, apertura della bocca).
-- `effetti.py`: aloni, luci di taglio e bagliori.
-- `scontro.py`: posizioni, inclinazioni, fuoco ed esportazione (si ferma se qualcosa tocca il bordo: lì si vedrebbe un taglio netto).
-
-Una tua immagine (anche generata con un'IA di immagini), `docs/immagini/app/tessera-play.png` o `.webp`, ritagliata su trasparente, ha la precedenza su questa.
+Il prompt usato e i punti da regolare (il poligono `LUCARIO` dice dove sta Lucario, `BOCCA` il punto attorno a cui si rimpicciolisce Charizard) sono in testa allo script.
+Una tua immagine, `docs/immagini/app/tessera-play.png` o `.webp` (ritagliata su trasparente), ha la precedenza su questa; sta a tutta altezza, a filo del bordo in basso e a destra.
