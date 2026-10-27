@@ -137,7 +137,7 @@
     function htmlCarta(v, indice, esc) {
         const sc = S.SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
         return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
-            S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '" alt="" hidden>' }) +
+            S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '"' + (sc.arte ? ' data-arte="' + esc(sc.arte) + '"' : '') + ' alt="' + esc(sc.alt || '') + '" hidden>' }) +
             '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b><small class="gx-sotto">' + esc(sc.sotto) + '</small></span></a>';
     }
 
@@ -170,7 +170,7 @@
         $('gx-tessere').innerHTML = '<div class="gx-pista">' + voci.map((v, i) => htmlCarta(v, i, esc)).join('') + '</div>';
         // le immagini vere, se ci sono (se manca una .png si prova la .webp; se mancano tutte resta la scena di ripiego)
         $('gx-tessere').querySelectorAll('.gx-immagine').forEach(img => {
-            const prove = immaginiDi(img.dataset.id);
+            const prove = immaginiDi(img.dataset.id).concat(img.dataset.arte ? [img.dataset.arte] : []);       // prima la tua (tessera-<id>), poi quella già pronta della scena
             let k = 0;
             img.addEventListener('load', () => { img.hidden = false; img.closest('.gx-carta').classList.add('ha-immagine'); });
             img.addEventListener('error', () => { k += 1; if (k < prove.length) img.src = prove[k]; });

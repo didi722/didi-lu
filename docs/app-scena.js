@@ -2,7 +2,7 @@
 // APP — le scene a tutto schermo (menù principale e locandine di Play)
 // ---------------------------------------------------------------------
 // Una "scena" è un'immagine da gioco per telefono fatta di strati: un cielo colorato con raggi di luce, nuvole e scintille che salgono, le figure grandi in
-// primo piano (render di Pokémon HOME da PokeAPI, o figure) che stanno ferme, e gli effetti che si muovono (folgori, onde d'urto, Poké Ball che gira, quadrante...).
+// primo piano (render di Pokémon HOME da PokeAPI, o figure, o un'immagine composta) che stanno ferme, e gli effetti che si muovono (Poké Ball che gira, quadrante, cuori...).
 // Qui c'è solo il markup, a partire da una descrizione della scena (`SCENE` per il menù, `LOCANDINE` per le tre locandine di Play); lo stile sta in app-scena.css.
 // Le figure di ripiego si possono sostituire con immagini proprie (vedi LEGGIMI): il menù e Play le cercano per nome e, se ci sono, le usano.
 // La parte pura è provata in test/app-scena.test.js; funziona nel browser (window.AppScena) e in Node (require).
@@ -22,12 +22,12 @@
     /**
      * Le scene del menù principale (una per voce): `cielo` (la classe del cielo), `fx` (gli effetti), `sotto` (la riga sotto il tag) ed `eroi` (le figure, ognuna col
      * suo posto = classe): `pkm` è il numero nel Pokédex (render HOME), `img` una figura qualsiasi. `prova` è il nome di un'immagine propria da cercare in
-     * immagini/app/ (png o webp) al posto della figura.
+     * immagini/app/ (png o webp) al posto della figura. `arte` è un'immagine già pronta della scena intera (sta al posto delle figure; quella propria, tessera-<id>, vince).
      */
     const SCENE = {
-        play: { cielo: 'cielo-blu', fx: 'folgori', sotto: 'Ranked · Unranked · VS CPU', eroi: [{ pkm: 10034, c: 'e-char', alt: 'Mega Charizard X' }, { pkm: 10059, c: 'e-luca', alt: 'Mega Lucario' }] },
+        play: { cielo: 'cielo-blu', sotto: 'Ranked · Unranked · VS CPU', eroi: [], arte: 'immagini/app/scena-play.webp', alt: 'Mega Charizard Y and Mega Lucario face off' },
         box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
-        trainers: { cielo: 'cielo-tramonto', fx: 'sfida', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-1', alt: '', prova: 'trainers-1' }, { img: 'immagini/profile/1.png', c: 't-2', alt: '', prova: 'trainers-2' }] },
+        trainers: { cielo: 'cielo-tramonto', fx: 'aure', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-1', alt: '', prova: 'trainers-1' }, { img: 'immagini/profile/1.png', c: 't-2', alt: '', prova: 'trainers-2' }] },
         stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] }
     };
 
@@ -51,15 +51,7 @@
     }
 
     // gli effetti: tutti si muovono con spostamenti, rotazioni e trasparenza (le fa la scheda grafica)
-    const FOLGORI = '<svg class="gx-fx gx-folgori gx-f1" viewBox="0 0 520 300" aria-hidden="true"><polyline points="248,184 262,172 260,190 278,178 276,196 294,186 294,202 312,198 310,210" /></svg>' +
-        '<svg class="gx-fx gx-folgori gx-f2" viewBox="0 0 520 300" aria-hidden="true"><polyline points="254,158 270,150 266,166 284,158" /></svg>' +
-        '<svg class="gx-fx gx-folgori gx-f3" viewBox="0 0 520 300" aria-hidden="true"><polyline points="266,8 258,36 276,40 264,70 282,74 272,106 288,110 282,148" /></svg>' +
-        '<span class="gx-onda" aria-hidden="true"></span><span class="gx-onda gx-onda2" aria-hidden="true"></span><span class="gx-impatto" aria-hidden="true"></span>' +
-        '<span class="gx-aura-l" aria-hidden="true"></span><span class="gx-aura-r" aria-hidden="true"></span>' +
-        '<span class="gx-linee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
-    const SFIDA = '<span class="gx-onda" aria-hidden="true"></span><span class="gx-onda gx-onda2" aria-hidden="true"></span><span class="gx-impatto" aria-hidden="true"></span>' +
-        '<span class="gx-aura-l" aria-hidden="true"></span><span class="gx-aura-r" aria-hidden="true"></span>' +
-        '<span class="gx-linee" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
+    const AURE = '<span class="gx-aura-l" aria-hidden="true"></span><span class="gx-aura-r" aria-hidden="true"></span>';
     const PALLA = '<svg class="gx-fx gx-palla" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="15"/><circle cx="50" cy="50" r="6"/></svg>';
     const RADAR = '<svg class="gx-fx gx-radar" viewBox="0 0 200 200" aria-hidden="true"><polygon class="gx-r-gr" points="100,14 174,57 174,143 100,186 26,143 26,57"/>' +
         '<polygon class="gx-r-gr" points="100,43 149,71 149,129 100,157 51,129 51,71"/><polygon class="gx-r-gr" points="100,72 124,86 124,114 100,128 76,114 76,86"/>' +
@@ -69,7 +61,7 @@
     const SOLE = '<span class="gx-sole" aria-hidden="true"></span>';
     const CUORI = '<span class="gx-cuori" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i></span>';
     const GRIGLIA = '<span class="gx-griglia" aria-hidden="true"></span><span class="gx-scansione" aria-hidden="true"></span>';
-    const EFFETTI = { folgori: FOLGORI, sfida: SFIDA, palla: PALLA, radar: RADAR, sole: SOLE, cuori: CUORI, griglia: GRIGLIA };
+    const EFFETTI = { aure: AURE, palla: PALLA, radar: RADAR, sole: SOLE, cuori: CUORI, griglia: GRIGLIA };
 
     /** Le figure di una scena, ognuna col suo posto; se non si caricano spariscono e resta il resto. `prova` dice che c'è un'immagine propria da cercare (la prova il menù) */
     function htmlEroi(sc, escF) {

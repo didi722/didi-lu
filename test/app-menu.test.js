@@ -169,6 +169,8 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     const h = M.htmlCarta(A.VOCI[1], 1, C.esc);
     assert.match(h, /^<a class="gx-carta gx-c-box" href="box\.html" data-i="1" data-id="box" style="--c:#6fa8ff" data-suono="scegli"><span class="gx-sf">/);
     assert.match(h, /<img class="gx-immagine" data-id="box" alt="" hidden><span class="gx-vignetta"/);
+    // Play ha la sua immagine già pronta (si cerca dopo la tua, tessera-play)
+    assert.match(M.htmlCarta(A.VOCI[0], 0, C.esc), /<img class="gx-immagine" data-id="play" data-arte="immagini\/app\/scena-play\.webp" alt="Mega Charizard Y and Mega Lucario face off" hidden>/);
     assert.match(h, /<span class="gx-blocco"><b class="gx-tag"><span>Box<\/span><\/b><small class="gx-sotto">Your teams &amp; Pokémon<\/small><\/span><\/a>$/);
 
     const css = docs('app-menu.css');
@@ -336,7 +338,7 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
         assert.equal(t[3], String(i));
         assert.equal(t[4], v.id);
         assert.equal(t[5], v.colore);
-        assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}" alt="" hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b><small class="gx-sotto">[^<]+</small></span>$`));
+        assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}"[^>]* hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b><small class="gx-sotto">[^<]+</small></span>$`));
     });
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     assert.equal(el.length, A.VOCI.length);
