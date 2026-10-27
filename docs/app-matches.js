@@ -88,11 +88,11 @@
         return avatar ? `<img class="mp-testa-avatar" draggable="false" src="${esc(avatar)}" alt="" onerror="this.remove()">` : '';
     }
 
-    /** Sotto la finestra del showdown, per passare da un match all'altro: le frecce e un pallino per match (`su` quello guardato) */
+    /** Sotto la finestra del showdown, per passare da un match all'altro: solo un pallino per match (`su` quello guardato); si scorre con il dito */
     function htmlPager(quanti, su) {
         const n = Math.max(0, Number(quanti) || 0);
         const punti = Array.from({ length: n }, (_, i) => `<i${i === su ? ' class="su"' : ''}></i>`).join('');
-        return `<button type="button" class="sd-freccia sd-prec" aria-label="Previous match" data-suono="scegli">‹</button><span class="sd-punti" aria-hidden="true">${punti}</span><button type="button" class="sd-freccia sd-succ" aria-label="Next match" data-suono="scegli">›</button>`;
+        return `<span class="sd-punti" aria-hidden="true">${punti}</span>`;
     }
 
     /** La schermata da mostrare: quella ricordata se è una delle due, altrimenti i showdown */
@@ -205,7 +205,7 @@
             if (win.NomeScorrevole && typeof win.NomeScorrevole.installa === 'function') win.NomeScorrevole.installa('.mp-nome');
         };
 
-        // la finestra del showdown: un match alla volta (si scorre di lato, le vicine si avvicinano mentre si trascina), con le frecce e i pallini sotto
+        // la finestra del showdown: un match alla volta (si scorre di lato, le vicine si avvicinano mentre si trascina), con i pallini sotto
         const montaMatch = f => {
             const corpo = f.querySelector('.sd-corpo');
             const match = corpo ? Array.from(corpo.querySelectorAll('.sd-match')) : [];
@@ -221,17 +221,14 @@
                 match.forEach((el, i) => {
                     const x = i - corrente + frac;
                     el.style.setProperty('--x', x);
-                    el.style.visibility = Math.abs(x) <= 1.02 ? 'visible' : 'hidden';
+                    // mai 'visible': quando la finestra si chiude (visibility: hidden sul velo) i match devono sparire anche al tocco, e 'visible' inline vincerebbe sull'ereditato
+                    el.style.visibility = Math.abs(x) <= 1.02 ? '' : 'hidden';
                     el.classList.toggle('sd-corrente', i === corrente);
                 });
                 punti().forEach((p, i) => p.classList.toggle('su', i === corrente));
             };
             const vai = i => { const n = Math.max(0, Math.min(match.length - 1, i)); if (n !== corrente) { corrente = n; posiziona(); } };
             posiziona();
-            pager.addEventListener('click', e => {
-                const b = e.target.closest ? e.target.closest('.sd-freccia') : null;
-                if (b) vai(corrente + (b.classList.contains('sd-succ') ? 1 : -1));
-            });
             Car.collegaGesti(corpo, { avanti: () => vai(corrente + 1), indietro: () => vai(corrente - 1), passoPx: () => corpo.clientWidth || 600 * Car.unitaPx(win),
                 trascina: (fr, fine) => { corpo.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : fr); } });
         };

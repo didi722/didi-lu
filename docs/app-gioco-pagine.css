@@ -656,14 +656,14 @@
     html.app-shell #sd-modal-overlay .sd-punteggio { padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) !important; font-size: calc(20 * var(--u)) !important; rotate: 0deg !important; }
     html.app-shell #sd-modal-overlay .sd-punteggio b { font-size: calc(22 * var(--u)) !important; }
     html.app-shell #sd-modal-overlay .sd-replay { grid-column: auto !important; width: auto !important; padding: calc(9 * var(--u)) calc(14 * var(--u)) calc(7 * var(--u)) !important; white-space: nowrap; font-size: calc(12 * var(--u)) !important; rotate: 0deg !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000) !important; }
-    /* la finestra del showdown a un match per volta (app-matches.js): il match è una schermata sola, grande, e si scorre di lato; sotto le frecce e un pallino per match */
+    /* la finestra del showdown a un match per volta (app-matches.js): il match è una schermata sola, grande, e si scorre di lato; sotto un pallino per match, senza frecce né numeri */
     html.app-shell #sd-modal-overlay .sd-corpo.sd-pista { position: relative; display: block !important; flex: 1 1 auto; min-height: calc(200 * var(--u)); padding: 0 !important; overflow: hidden !important; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
     html.app-shell #sd-modal-overlay .sd-pista .sd-match {
         position: absolute !important; inset: 0; box-sizing: border-box; display: grid !important; grid-template-columns: minmax(0, 1fr) calc(150 * var(--u)) minmax(0, 1fr) !important; grid-template-rows: 1fr auto !important; align-items: center; gap: calc(4 * var(--u)) calc(6 * var(--u)) !important;
         padding: calc(26 * var(--u)) calc(14 * var(--u)) calc(8 * var(--u)) !important; border: 0 !important; translate: calc(var(--x, 0) * 100%) 0; transition: translate .38s cubic-bezier(.2, .9, .3, 1);
     }
     html.app-shell #sd-modal-overlay .sd-pista.trascinando .sd-match { transition: none; }
-    html.app-shell #sd-modal-overlay .sd-pista .sd-numero { top: calc(8 * var(--u)) !important; left: calc(14 * var(--u)) !important; font-size: calc(12 * var(--u)) !important; padding: calc(4 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)) !important; }
+    html.app-shell #sd-modal-overlay .sd-pista .sd-numero { display: none !important; }
     html.app-shell #sd-modal-overlay .sd-pista .sd-team-1 { grid-column: 1; grid-row: 1 / span 2; }
     html.app-shell #sd-modal-overlay .sd-pista .sd-team-2 { grid-column: 3; grid-row: 1 / span 2; }
     html.app-shell #sd-modal-overlay .sd-pista .sd-punteggio { grid-column: 2; grid-row: 1; align-self: end; justify-self: center; }
@@ -676,8 +676,6 @@
     html.app-shell #sd-modal-overlay .sd-pista .sd-lineup .mini-gif { height: calc(54 * var(--u)); max-width: calc(66 * var(--u)); }
     html.app-shell #sd-modal-overlay .sd-pista .sd-senza-team .sd-team-nome { font-size: calc(15 * var(--u)) !important; opacity: .8; }
     html.app-shell #sd-modal-overlay .sd-pager { flex: none; display: flex; align-items: center; justify-content: center; gap: calc(16 * var(--u)); padding: 0 0 calc(10 * var(--u)); }
-    html.app-shell #sd-modal-overlay .sd-freccia { width: calc(46 * var(--u)); height: calc(28 * var(--u)); padding: 0 0 calc(3 * var(--u)); cursor: pointer; background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(10 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font: 900 calc(20 * var(--u))/1 var(--nb-font-titoli); }
-    html.app-shell #sd-modal-overlay .sd-freccia:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }
     html.app-shell #sd-modal-overlay .sd-punti { display: flex; gap: calc(8 * var(--u)); }
     html.app-shell #sd-modal-overlay .sd-punti i { width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-radius: 50%; background: rgba(255, 255, 255, .25); border: calc(1.5 * var(--u)) solid rgba(0, 0, 0, .5); transition: scale .2s ease, background .2s ease; }
     html.app-shell #sd-modal-overlay .sd-punti i.su { background: var(--gx-giallo); scale: 1.4; }
