@@ -901,6 +901,13 @@ function formattaEffettoNatura(natura) {
 }
 
 async function renderizza(lista) {
+    // Ogni formato ha il suo colore (lo stesso per tutti i suoi team: contorno e sfumature della card nell'app), ricavato dal nome del formato
+    const coloreFormato = formato => {
+        const palette = ['#ffbd44', '#6fa8ff', '#ff7b6b', '#b388eb', '#47ea6a', '#ff93c8', '#3fd6d0', '#f5e04a'];
+        let h = 0;
+        for (const c of String(formato || '').toLowerCase().trim()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+        return palette[h % palette.length];
+    };
     await caricaTeamBloccati();
     const grid = document.getElementById('teamsGrid');
     if (!grid) return;
@@ -947,13 +954,13 @@ async function renderizza(lista) {
             `<div class="card-winrate" title="${percentualeTeam}% of matches won"><span style="width:${percentualeTeam}%"></span><b>${percentualeTeam}% wins</b></div>`;
 
         return `
-        <div class="card" style="--i: ${posizione};" onclick="apriDettagli('${team.id}')">
+        <div class="card" style="--i: ${posizione}; --cc: ${coloreFormato(team.category || team.categoria || 'VGC')};" onclick="apriDettagli('${team.id}')">
             <div class="card-header">
                 <span class="category">${team.category || team.categoria || 'VGC'}</span>
 
                 ${htmlAzioni}
 
-                <span class="bt-card" data-team-badge="${team.id}"></span>
+                <span class="bt-card" data-team-badge="${team.id}" onclick="event.stopPropagation()"></span>
                 <span class="stats">W: ${team.vittorie || 0} / L: ${team.sconfitte || 0}</span>
             </div>
             <h3>${team.nome || 'No teams yet'}</h3>
@@ -979,8 +986,7 @@ async function renderizza(lista) {
                     }, 50);
 
                     return `
-                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]}; --tipo2: ${(window.coloriPokemonNoti2 || {})[nomePkm] || window.coloriPokemonNoti[nomePkm]};"` : ''}
-                             onclick="event.stopPropagation(); preparaAperturaPkm('${team.id}', ${index}, '${pkmNameUrl}')">
+                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]}; --tipo2: ${(window.coloriPokemonNoti2 || {})[nomePkm] || window.coloriPokemonNoti[nomePkm]};"` : ''}>
                             <div class="pkm-sprite-container">
                                 <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
                                 </div>

@@ -138,7 +138,7 @@
         const sc = S.SCENE[v.id] || { cielo: 'cielo-blu', eroi: [], sotto: '' };
         return '<a class="gx-carta gx-c-' + esc(v.id) + '" href="' + esc(v.href) + '" data-i="' + indice + '" data-id="' + esc(v.id) + '" style="--c:' + esc(v.colore) + '" data-suono="scegli">' +
             S.htmlScena(sc, { indice, scintille: SCINTILLE, escF: esc, immagine: '<img class="gx-immagine" data-id="' + esc(v.id) + '"' + (sc.arte ? ' data-arte="' + esc(sc.arte) + '"' : '') + (sc.bordo ? ' data-bordo' : '') + ' alt="' + esc(sc.alt || '') + '" hidden>' }) +
-            '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b><small class="gx-sotto">' + esc(sc.sotto) + '</small></span></a>';
+            '<span class="gx-blocco"><b class="gx-tag"><span>' + esc(v.et) + '</span></b></span></a>';
     }
 
     /** Gli indirizzi da provare, in ordine, per l'immagine di una scena */
@@ -235,7 +235,7 @@
             };
             // si scorre da qualunque punto dello schermo (anche sopra il giocatore), non solo sulla scena
             Car.collegaGesti($('gx-lobby') || $('gx-tessere'), {
-                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => doc.documentElement.clientWidth || 740 * Car.unitaPx(win), trascina: segui
+                avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => doc.documentElement.clientWidth || 740 * Car.unitaPx(win), trascina: segui, senzaScorrimento: true
             });
             $('gx-tessere').addEventListener('click', e => {
                 const c = e.target.closest ? e.target.closest('.gx-carta') : null;
@@ -353,7 +353,7 @@
             if (!st) return '';
             const s = riassuntoStagione(st, !!giocatore && giaIscritto(st.iscritti, giocatore.id));
             const punti = stagioni.length > 1 ? '<span class="gx-st-punti" aria-hidden="true">' + stagioni.map((x, k) => '<i' + (k === indiceNastro % stagioni.length ? ' class="su"' : '') + '></i>').join('') + '</span>' : '';
-            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b><small>' + esc(s.testo) + '</small></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
+            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
         };
         const pannelloGiocatore = () => {
             const nastro = '<div class="gx-nastro" id="gx-nastro">' + htmlNastro() + '</div>';
