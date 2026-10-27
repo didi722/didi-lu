@@ -360,10 +360,10 @@
         doc.head.appendChild(s);
     }
 
-    // il service worker serve solo a rendere il sito installabile (e alla pagina "offline"): da PC non serve (nessuna differenza per chi usa il sito
-    // dal computer), nell'APK nemmeno (il sito arriva sempre dalla rete)
+    // il service worker rende il sito installabile, mostra la pagina "offline" e tiene in cache le immagini (sprite dei Pokémon: senza, le GIF si riscaricano
+    // a ogni apertura e l'app è lenta, anche nell'APK). Da PC non serve (nessuna differenza per chi usa il sito dal computer)
     function registraServiceWorker(win, modo, os) {
-        if (modo === 'apk' || !os || !win.navigator || !('serviceWorker' in win.navigator)) return;
+        if (!os || !win.navigator || !('serviceWorker' in win.navigator)) return;
         const sicuro = win.location.protocol === 'https:' || win.location.hostname === 'localhost' || win.location.hostname === '127.0.0.1';
         if (!sicuro) return;
         win.addEventListener('load', () => { win.navigator.serviceWorker.register('sw.js').catch(() => { /* senza: il sito funziona uguale */ }); });

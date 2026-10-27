@@ -63,9 +63,11 @@
     }
 
     /** La scheda di un allenatore: niente sfondo. Al centro lui e il suo Pokémon compagno sul palco tondo; di fianco il nome, il ranking, l'Elo, i trofei e i badge. `gif(specie)` dà l'indirizzo del Pokémon animato. */
-    function htmlCarta(g, indice, { gif } = {}) {
+    function htmlCarta(g, indice, { gif, centro } = {}) {
         const c = coloreSicuro(g.colore);
-        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}" data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
+        // tutte le GIF partono insieme e si contendono la rete: il compagno che si guarda ha la precedenza, gli altri aspettano (fetchpriority)
+        const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
+        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
         const trofei = htmlTrofei(g), badge = htmlBadge(g);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
@@ -152,7 +154,7 @@
             let richiesto = '';
             try { richiesto = new win.URLSearchParams(win.location.search).get('player') || ''; } catch (e) { richiesto = ''; }
             const corrente = stato ? Car.dentro(stato.corrente, lista.length) : indiceIniziale(lista, richiesto);
-            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif })).join('')}</div>`;
+            radice.innerHTML = `<div class="at-pista">${lista.map((g, i) => htmlCarta(g, i, { gif, centro: corrente })).join('')}</div>`;
             stato = { lista, corrente, pista: radice.querySelector('.at-pista') };
             stato.pista.querySelectorAll('.at-carta').forEach(scala);
             stato.pista.addEventListener('click', e => {

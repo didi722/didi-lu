@@ -25,6 +25,8 @@ Il permesso `VIBRATE` è nel manifest. Chi ha un APK costruito prima di questo g
 schermo intero, orizzontale fisso e vibrazione; con l'APK vecchio l'app funziona lo stesso, ma resta com'era (barre visibili, orientamento libero: se il telefono è in piedi compare "Turn your phone sideways").
 Senza rete l'app mostra `docs/offline.html`.
 
+**Velocità delle immagini.** Il service worker (`docs/sw.js`, registrato anche nell'APK) tiene in cache le **immagini**: gli sprite dei Pokémon (GIF di Showdown, render di PokeAPI e Pokémon DB) restano salvati tra una visita e l'altra (fino a 400, poi via i più vecchi) invece di essere riscaricati a ogni apertura (GitHub li dichiara validi solo 5 minuti), e le immagini del sito (`immagini/`) escono subito dalla cache e intanto si rinfrescano in rete. Pagine, script e stili non si tengono mai (gli aggiornamenti arrivano subito). Gli sprite si chiedono con il CORS per poterli salvare; se un host non lo concede si salva la risposta opaca in una cache a parte (al massimo 60). Nei Trainers il compagno al centro ha `fetchpriority="high"`, gli altri `low`. La barra di caricamento all'avvio scalda in più le immagini della home e di Play.
+
 ## Per gli amici
 
 - **Android**: aprire dal telefono https://github.com/didi722/didi-lu/releases/download/app-android/sant-alvise-league.apk (indirizzo fisso, è sempre l'ultima versione),
