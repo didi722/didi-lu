@@ -148,9 +148,12 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
     assert.match(html, /<div class="gx-dialogo" id="gx-login"[^>]* hidden>/);
-    // la schermata del titolo ha Pikachu e Mega Lucario (render di Pokémon HOME), entrano appena l'immagine è arrivata; se l'immagine non c'è, spariscono
-    assert.match(html, /class="gx-splash-eroe gx-splash-sx" src="https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/other\/home\/25\.png"[^>]*onload="this\.classList\.add\('pronta'\)" onerror="this\.style\.display='none'"/);
-    assert.match(html, /class="gx-splash-eroe gx-splash-dx" src="https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/other\/home\/10059\.png"/);
+    // la schermata del titolo ha cinque Pokémon in posa d'attacco, ai lati (immagini ritagliate, in immagini/app/); entrano appena l'immagine è arrivata; se l'immagine non c'è, spariscono
+    for (const n of ['archen', 'crustle', 'hitmontop', 'umbreon', 'lopunny']) {
+        assert.ok(html.includes('class="gx-splash-eroe gx-sp-' + n + '" src="immagini/app/splash-' + n + '.webp"'), n);
+        assert.ok(html.includes('onload="this.classList.add(\'pronta\')" onerror="this.style.display=\'none\'"'), 'compare a immagine arrivata, sparisce se manca');
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'app', 'splash-' + n + '.webp')), 'l\'immagine di ' + n + ' c\'è');
+    }
     // si vede dal primo disegno (con il CSS) anche prima dello script del menù: se quello non parte, un tocco la chiude lo stesso
     assert.match(html, /document\.getElementById\('gx-splash'\)\.addEventListener\('click'/);
     // le scene: il palco e i tasti per saltare dall'una all'altra
