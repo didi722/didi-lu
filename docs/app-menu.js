@@ -205,7 +205,9 @@
                 if (prima !== undefined && prima * x < 0 && Math.abs(x - prima) > 1.5) { el.style.transition = 'none'; el.classList.add('gx-salta'); raf(() => raf(() => { el.style.transition = ''; el.classList.remove('gx-salta'); })); }
                 xPrima.set(el, x);
                 el.style.setProperty('--x', x);
-                el.style.visibility = Math.abs(x) <= 1.02 ? 'visible' : 'hidden';
+                // mai 'hidden': una scena nascosta il telefono non la prepara, e quando tocca a lei (quella dall'altra parte del giro, soprattutto tornando indietro) va disegnata da
+                // capo nello stesso fotogramma in cui parte lo scorrimento. Fuori schermo (x = ±2) resta preparata, e non si vede né si tocca (le tessere fuori sono aria-hidden)
+                el.style.visibility = 'visible';
             });
         };
         /** Quale scena è quella guardata (per chi scorre da tastiera e per chi legge lo schermo): si aggiorna solo quando cambia */
