@@ -2656,6 +2656,7 @@ window.chiudiReplay = function() {
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
     // 3. GESTIONE RIPRESA MUSICA (rispettando il Mute)
+    window.AppMusicaPausa = false;
     if (player) {
         // Recuperiamo la preferenza globale
         const savedPref = localStorage.getItem('userMusicPref');
@@ -2686,6 +2687,7 @@ window.chiudiReplay = function() {
 
 async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu) {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
+    window.AppMusicaPausa = true;   // fermata apposta (suona il replay): la musica dell'app non deve ripartire da sola (app-musica.js)
     if (player) player.pause();
 
     // il motore del replay si prepara subito, mentre si leggono i dati dei set: quando si clicca il primo set è già lì

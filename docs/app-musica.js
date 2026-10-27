@@ -57,7 +57,14 @@
     function avvia(win) {
         const doc = win.document;
         if (!doc.documentElement.classList.contains('app')) return null;
-        const audio = doc.getElementById('bg-music-home');
+        let audio = doc.getElementById('bg-music-home');
+        // le pagine che non avevano il loro lettore (Practice, Profilo, Login...) restavano senza musica: se ne crea uno. La battaglia ha i suoi suoni e resta com'è
+        if (!audio && doc.body && typeof doc.createElement === 'function' && !/battle\.html/.test(String((win.location && win.location.pathname) || ''))) {
+            audio = doc.createElement('audio');
+            audio.id = 'bg-music-home';
+            audio.setAttribute('preload', 'auto');
+            doc.body.appendChild(audio);
+        }
         if (!audio) return null;
         const ls = { get: k => { try { return win.localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { win.localStorage.setItem(k, v); } catch (e) { /* senza memoria */ } } };
         const ss = { get: k => { try { return win.sessionStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { win.sessionStorage.setItem(k, v); } catch (e) { /* senza memoria */ } } };
@@ -88,10 +95,16 @@
             if (p && typeof p.catch === 'function') p.catch(() => doc.addEventListener('pointerdown', () => { if (!spenta()) audio.play().catch(() => {}); }, { once: true }));
         };
         const salva = () => { if (!audio.paused || audio.currentTime > 0) ss.set(CHIAVE_POSTO, JSON.stringify({ url: attuale, t: audio.currentTime })); };
+        // la musica non deve fermarsi da sola: un tocco (il suo "bip" sintetizzato, un'altra parte della pagina...) può metterla in pausa; se non l'ha spenta chi ascolta
+        // (userMusicPref) riparte subito (salvo `window.AppMusicaPausa`: la pagina l'ha fermata apposta, per esempio mentre suona un replay), e a ogni tocco si riprova se era rimasta ferma (pagina appena aperta con la partenza automatica bloccata)
+        const riparti = () => { if (!spenta() && !win.AppMusicaPausa && audio.paused) { audio.muted = false; const p = audio.play(); if (p && typeof p.catch === 'function') p.catch(() => { /* al prossimo tocco */ }); } };
+        audio.addEventListener('pause', () => { win.setTimeout(() => { if (doc.visibilityState !== 'hidden') riparti(); }, 120); });
+        doc.addEventListener('pointerdown', riparti, true);
+        doc.addEventListener('touchend', riparti, true);
         win.addEventListener('pagehide', salva);
         doc.addEventListener('visibilitychange', () => { if (doc.visibilityState === 'hidden') salva(); });
         // anche a metà pagina (il browser può chiudere senza avvisi)
-        win.setInterval(salva, 2000);
+        win.setInterval(salva, 1000);
         riprendi();
         parti();
 
