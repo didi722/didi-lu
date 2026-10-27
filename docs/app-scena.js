@@ -25,7 +25,7 @@
      * immagini/app/ (png o webp) al posto della figura. `arte` è un'immagine già pronta della scena intera (sta al posto delle figure; quella propria, tessera-<id>, vince).
      */
     const SCENE = {
-        play: { cielo: 'cielo-blu', sotto: 'Ranked · Unranked · VS CPU', eroi: [], arte: 'immagini/app/scena-play.webp', alt: 'Mega Charizard Y and Mega Lucario face off' },
+        play: { cielo: 'cielo-blu', sotto: 'Ranked · Unranked · VS CPU', eroi: [], arte: 'immagini/app/scena-play.webp', bordo: true, alt: 'Mega Charizard Y and Mega Lucario face off' },
         box: { cielo: 'cielo-viola', fx: 'palla', sotto: 'Your teams & Pokémon', eroi: [{ pkm: 94, c: 'e-sx', alt: 'Gengar' }, { pkm: 149, c: 'e-dx', alt: 'Dragonite' }, { pkm: 445, c: 'e-cn', alt: 'Garchomp' }] },
         trainers: { cielo: 'cielo-tramonto', fx: 'aure', sotto: 'The League', eroi: [{ img: 'immagini/profile/15.png', c: 't-1', alt: '', prova: 'trainers-1' }, { img: 'immagini/profile/1.png', c: 't-2', alt: '', prova: 'trainers-2' }] },
         stats: { cielo: 'cielo-notte', fx: 'radar', sotto: 'Numbers & records', eroi: [{ pkm: 150, c: 'e-mew', alt: 'Mewtwo' }] }
@@ -83,6 +83,30 @@
             '<span class="gx-vignetta" aria-hidden="true"></span></span>';
     }
 
+    /** Le immagini che il menù e Play usano di sicuro (figure delle scene e scena di Play), senza doppioni: si scaricano all'avvio, dietro la barra di caricamento */
+    function immaginiScene() {
+        const url = [];
+        const aggiungi = u => { if (u && !url.includes(u)) url.push(u); };
+        [...Object.values(SCENE), ...Object.values(LOCANDINE)].forEach(sc => { aggiungi(sc.arte); (sc.eroi || []).forEach(e => aggiungi(e.pkm ? ARTE(e.pkm) : e.img)); });
+        return url;
+    }
+
+    /**
+     * Scarica le immagini `urls` (così restano in memoria per quando servono). `avanza(frazione)` dice a che punto si è, `fine()` si chiama una volta sola quando sono arrivate
+     * tutte (anche quelle che non si caricano contano) o dopo `attesa` ms, se qualcosa è lento: l'app non resta mai ferma. Senza Image (test) finisce subito.
+     */
+    function precarica(urls, { Immagine, attesa = 10000, avanza, fine, setTempo } = {}) {
+        const Img = Immagine || (typeof Image !== 'undefined' ? Image : null);
+        const tot = (urls || []).length;
+        let fatte = 0, chiuso = false;
+        const chiudi = () => { if (chiuso) return; chiuso = true; if (fine) fine(); };
+        if (!Img || !tot) { if (avanza) avanza(1); chiudi(); return tot; }
+        const passo = () => { fatte += 1; if (avanza) avanza(fatte / tot); if (fatte >= tot) chiudi(); };
+        urls.forEach(u => { const i = new Img(); i.onload = passo; i.onerror = passo; i.src = u; });
+        (setTempo || (typeof setTimeout !== 'undefined' ? setTimeout : null))(chiudi, attesa);
+        return tot;
+    }
+
     /**
      * Gli indirizzi da provare, in ordine, per un'immagine propria (`nome` senza estensione, dentro immagini/app/). Una pagina la usa se arriva: tenta i due indirizzi e,
      * se nessuno c'è, resta la scena di ripiego.
@@ -111,5 +135,5 @@
         return lista.length;
     }
 
-    return { ARTE, SCENE, LOCANDINE, EFFETTI, htmlScintille, htmlEroi, htmlScena, proveDi, cercaImmagini };
+    return { ARTE, SCENE, LOCANDINE, EFFETTI, htmlScintille, htmlEroi, htmlScena, immaginiScene, precarica, proveDi, cercaImmagini };
 });

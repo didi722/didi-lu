@@ -91,3 +91,30 @@ test('app-scena.css: ogni regola riguarda l\'app (html.app…); le figure stanno
     assert.deepEqual(A.SCRIPT_PAGINE['practice.html'], ['app-scena.js', 'app-practice.js']);
     assert.deepEqual(A.FOGLI_SCENA, ['practice.html']);
 });
+
+test('immaginiScene / precarica: le figure di tutte le scene (senza doppioni) si scaricano; finisce quando sono arrivate tutte, anche se qualcuna non c\'è, o allo scadere', () => {
+    const u = S.immaginiScene();
+    assert.equal(new Set(u).size, u.length, 'senza doppioni');
+    for (const attesa of [S.SCENE.play.arte, S.ARTE(94), S.ARTE(384), S.ARTE(474), 'immagini/profile/15.png']) assert.ok(u.includes(attesa), attesa);
+    const lista = []; const passi = []; let fine = 0, scade = null;
+    class Finta { set src(v) { this._src = v; lista.push(this); } }
+    S.precarica(['a', 'b', 'c'], { Immagine: Finta, avanza: f => passi.push(f), fine: () => { fine += 1; }, setTempo: (f, ms) => { scade = { f, ms }; } });
+    assert.equal(lista.length, 3);
+    lista[0].onload(); lista[1].onerror();
+    assert.equal(fine, 0);
+    lista[2].onload();
+    assert.deepEqual(passi, [1 / 3, 2 / 3, 1]);
+    assert.equal(fine, 1);
+    scade.f();                                                   // lo scadere dopo la fine non richiama
+    assert.equal(fine, 1);
+    // se qualcosa è lento, scade e l'app va avanti
+    let f2 = 0, s2 = null;
+    S.precarica(['x'], { Immagine: Finta, fine: () => { f2 += 1; }, setTempo: (f, ms) => { s2 = { f, ms }; } });
+    s2.f();
+    assert.equal(f2, 1);
+    assert.equal(s2.ms, 10000);
+    // senza Image (o senza elenco) finisce subito
+    let f3 = 0;
+    S.precarica([], { Immagine: Finta, fine: () => { f3 += 1; } });
+    assert.equal(f3, 1);
+});
