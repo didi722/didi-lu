@@ -1079,7 +1079,7 @@
     html.app-shell body.pg-practice .pr-img { position: absolute; right: 0; bottom: 21%; left: 0; margin: 0 auto; max-width: 100%; max-height: 78%; width: auto; height: auto; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); z-index: 2; }
     html.app-shell body.pg-practice .pr-arte.ha-immagine .gx-eroe { display: none; }
     /* Ranked: zoom sulla testa di Rayquaza, il corpo esce sotto la locandina (e sta dietro il tag) */
-    html.app-shell body.pg-practice .pr-p-ranked .pr-img { left: -12%; right: auto; width: 124%; max-width: none; max-height: none; height: auto; top: -2%; bottom: auto; margin: 0; }
+    html.app-shell body.pg-practice .pr-poster[data-vista="ranked"] .pr-img { left: -12%; right: auto; width: 124%; max-width: none; max-height: none; height: auto; top: -2%; bottom: auto; margin: 0; }
     html.app-shell body.pg-practice .pr-img[hidden] { display: none; }
     html.app-shell body.pg-practice .pr-poster .pr-tag { position: relative; z-index: 4; display: block; max-width: none; overflow: visible; padding: calc(7 * var(--u)) calc(22 * var(--u)) calc(4 * var(--u)); background: var(--c); color: #000; border: calc(4 * var(--u)) solid var(--nb-ink, #000); border-radius: calc(5 * var(--u)); box-shadow: 0 calc(6 * var(--u)) 0 var(--nb-ink, #000), inset 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .45); transform: skewX(-9deg); transition: transform .1s ease, box-shadow .1s ease; }
     html.app-shell body.pg-practice .pr-poster .pr-tag { max-width: 94%; }
