@@ -81,6 +81,14 @@ test('htmlCarta: niente sfondo: lui e il Pokémon sul palco tondo, di fianco nom
     assert.doesNotMatch(T.htmlCarta(lista[0], 0), /at-pkm/, 'senza lo strumento per le immagini animate non rompe');
 });
 
+test('htmlCarta: le GIF partono tutte insieme e si contendono la rete: il compagno che si guarda ha la precedenza (fetchpriority), gli altri aspettano', () => {
+    const gif = s => 'gif/' + s + '.gif';
+    const g = { nome: 'Ada', colore: '#31c489', avatar: 'a.png', pkm: 'Gengar' };
+    assert.match(T.htmlCarta(g, 2, { gif, centro: 2 }), /<img class="at-pkm"[^>]*fetchpriority="high"/);
+    assert.match(T.htmlCarta(g, 0, { gif, centro: 2 }), /<img class="at-pkm"[^>]*fetchpriority="low"/);
+    assert.doesNotMatch(T.htmlCarta(g, 0, { gif }), /fetchpriority/, 'senza sapere qual è il centro non si dice niente');
+});
+
 test('players.html pubblica gli allenatori in classifica e non offre più la sfida amichevole nell\'app; la pagina pubblica rimanda qui', () => {
     const html = docs('players.html');
     assert.match(html, /AppSito\.pubblica\('trainers'/);

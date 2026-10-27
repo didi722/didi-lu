@@ -258,7 +258,7 @@ test('nel browser da PC: nessuna classe, nessun foglio né script dell\'app, nes
     assert.deepEqual(s.registrazioni, []);
 });
 
-test('service worker: solo da telefono o tablet, su https o localhost, solo se il browser lo ha, mai dentro l\'APK', () => {
+test('service worker: solo da telefono o tablet (anche dentro l\'APK: tiene in cache gli sprite), su https o localhost, solo se il browser lo ha', () => {
     const registra = opz => { const s = apri(opz); assert.deepEqual(s.registrazioni, [], 'non prima che la pagina sia caricata'); s.sulla(s.win, 'load'); return s.registrazioni; };
     assert.deepEqual(registra({ ua: UA.android }), ['sw.js']);
     assert.deepEqual(registra({ ua: UA.iphone }), ['sw.js']);
@@ -268,7 +268,7 @@ test('service worker: solo da telefono o tablet, su https o localhost, solo se i
     assert.deepEqual(registra({ ua: UA.pc }), [], 'da PC non serve');
     assert.deepEqual(registra({ ua: UA.pc, search: '?app=1' }), [], 'nemmeno guardando l\'aspetto da app dal PC');
     assert.deepEqual(registra({ ua: UA.android, serviceWorker: false }), []);
-    assert.deepEqual(registra({ ua: UA.apk }), [], 'nell\'APK il sito arriva sempre dalla rete');
+    assert.deepEqual(registra({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5 }), ['sw.js'], 'nell\'APK serve per le immagini: senza, le GIF dei Pokémon si riscaricano a ogni apertura');
 });
 
 test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e app-shell, i fogli e gli script dell\'interfaccia da gioco nell\'ordine, nessun invito', () => {
@@ -295,12 +295,12 @@ test('i fogli e gli script dell\'app ereditano l\'indirizzo di app.js (anche con
     assert.equal(l.avviso(), null, 'l\'avviso "gira il telefono" aspetta la pagina pronta');
 });
 
-test('dentro l\'APK, in una pagina del gioco: classe app-apk, nessun service worker, orientamento bloccato e barre di sistema nascoste', async () => {
+test('dentro l\'APK, in una pagina del gioco: classe app-apk, service worker (per le immagini), orientamento bloccato e barre di sistema nascoste', async () => {
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/box.html', punti: 5, nativo: true });
     assert.deepEqual(s.risultato, { modo: 'apk' });
     assert.deepEqual(s.classi(), ['app', 'app-apk', 'app-shell', 'os-android']);
     s.sulla(s.win, 'load');
-    assert.deepEqual(s.registrazioni, []);
+    assert.deepEqual(s.registrazioni, ['sw.js']);
     await new Promise(r => setImmediate(r));
     assert.deepEqual(s.blocchi, ['landscape']);
     assert.equal(s.barre, 1);
@@ -855,12 +855,120 @@ test('service worker: usa la pagina già chiesta in anticipo dal browser (naviga
     assert.equal(await sw.evento('fetch', { request: pagina, preloadResponse: Promise.reject(new TypeError('Failed to fetch')) }), 'PAGINA-OFFLINE', 'senza rete');
 });
 
-test('service worker: non mette in cache pagine, script o stili (gli aggiornamenti del sito arrivano subito)', () => {
+test('service worker: non mette in cache pagine, script o stili (gli aggiornamenti del sito arrivano subito), solo la pagina offline e le immagini', () => {
     const sw = docs('sw.js');
-    assert.doesNotMatch(sw, /\.put\(|addAll\(/);
-    assert.equal((sw.match(/\.add\(/g) || []).length, 1, 'una sola aggiunta in cache: la pagina offline');
+    assert.doesNotMatch(sw, /addAll\(/);
+    assert.equal((sw.match(/cache\.add\(/g) || []).length, 1, 'una sola aggiunta diretta in cache: la pagina offline');
     assert.match(sw, /cache: 'reload'/, 'la pagina offline si prende sempre fresca dalla rete');
-    assert.match(sw, /richiesta\.mode !== 'navigate'\) return/);
+    assert.match(sw, /if \(richiesta\.mode !== 'navigate'\) \{/, 'quello che non è una pagina passa dal controllo delle immagini');
+    assert.match(sw, /richiesta\.destination !== 'image'/, 'e di tutto il resto non si occupa');
+});
+
+/** Un service worker con una cache vera (in memoria) e una rete finta, per le immagini */
+function swImmagini({ cors = true, rete = true } = {}) {
+    const casse = new Map();
+    const richieste = [];
+    const ascoltatori = {};
+    const cassa = nome => { if (!casse.has(nome)) casse.set(nome, new Map()); return casse.get(nome); };
+    const sandbox = {
+        self: { addEventListener: (ev, f) => { ascoltatori[ev] = f; }, location: { origin: 'https://sito.test' }, skipWaiting: () => Promise.resolve(), clients: { claim: () => Promise.resolve() } },
+        caches: {
+            open: async nome => { const c = cassa(nome); return { match: async u => c.get(u), put: async (u, r) => { c.set(u, r); }, keys: async () => [...c.keys()], delete: async u => c.delete(u), add: async () => {} }; },
+            keys: async () => [...casse.keys()], delete: async n => casse.delete(n), match: async () => undefined
+        },
+        URL, Request: class { constructor(u) { this.url = u; } }, Response: { error: () => 'ERRORE' },
+        fetch: async (r, opz) => {
+            const url = typeof r === 'string' ? r : r.url;
+            richieste.push({ url, opz });
+            if (!sandbox.rete) throw new TypeError('Failed to fetch');
+            if (opz && opz.mode === 'cors' && !sandbox.cors) throw new TypeError('CORS');
+            const risposta = { ok: true, status: 200, type: opz && opz.mode === 'cors' ? 'cors' : 'opaque', url, clone() { return this; } };
+            if (typeof r !== 'string' && !sandbox.cors) risposta.type = 'opaque';
+            return risposta;
+        },
+        cors, rete
+    };
+    vm.runInNewContext(docs('sw.js'), sandbox);
+    const chiedi = async (url, extra = {}) => {
+        let promessa, attesa = [];
+        ascoltatori.fetch({ request: { mode: 'no-cors', destination: 'image', method: 'GET', url, ...extra }, respondWith: p => { promessa = p; }, waitUntil: p => attesa.push(p) });
+        const r = promessa === undefined ? 'NON-GESTITA' : await promessa;
+        await Promise.all(attesa);
+        return r;
+    };
+    return { sandbox, casse, richieste, chiedi };
+}
+
+test('service worker, immagini: lo sprite di un Pokémon si scarica una volta sola (con il CORS) e poi viene dalla cache, anche senza rete', async () => {
+    const sw = swImmagini();
+    const url = 'https://play.pokemonshowdown.com/sprites/ani/garchomp.gif';
+    const prima = await sw.chiedi(url);
+    assert.equal(prima.type, 'cors');
+    assert.deepEqual(sw.richieste.map(r => r.opz && r.opz.mode), ['cors'], 'si chiede con il CORS, così si può tenere');
+    assert.ok(sw.casse.get('sant-alvise-immagini-v1').has(url), 'salvata');
+    sw.sandbox.rete = false;
+    const dopo = await sw.chiedi(url);
+    assert.equal(dopo.url, url);
+    assert.equal(sw.richieste.length, 1, 'la seconda volta niente rete: sono GIF che non cambiano mai');
+    // i render di PokeAPI e quelli di Pokémon DB sono sprite uguali
+    sw.sandbox.rete = true;
+    for (const u of ['https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/25.png', 'https://img.pokemondb.net/sprites/home/normal/pikachu.png']) {
+        await sw.chiedi(u);
+        assert.ok(sw.casse.get('sant-alvise-immagini-v1').has(u), u);
+    }
+});
+
+test('service worker, immagini: cosa NON gestisce (altri host, altri percorsi, richieste non immagini, POST) va in rete come prima', async () => {
+    const sw = swImmagini();
+    for (const [url, extra] of [
+        ['https://raw.githubusercontent.com/didi722/didi-lu/main/docs/app.js', { destination: 'script' }],
+        ['https://raw.githubusercontent.com/altro/repo/main/a.png', {}],
+        ['https://play.pokemonshowdown.com/data/pokedex.js', { destination: 'script' }],
+        ['https://pokeapi.co/api/v2/pokemon/pikachu', { destination: '' }],
+        ['https://altro.test/foto.png', {}],
+        ['https://play.pokemonshowdown.com/sprites/ani/mew.gif', { method: 'POST' }],
+        ['https://sito.test/didi-lu/app.js', { destination: 'script' }]
+    ]) assert.equal(await sw.chiedi(url, extra), 'NON-GESTITA', url);
+    assert.equal(sw.richieste.length, 0);
+});
+
+test('service worker, immagini: quelle del sito (immagini/) escono subito dalla cache e intanto si rinfrescano; se manca la rete restano quelle', async () => {
+    const sw = swImmagini();
+    const url = 'https://sito.test/didi-lu/immagini/app/scena-play.webp';
+    await sw.chiedi(url);                                      // prima volta: dalla rete e salvata
+    assert.ok(sw.casse.get('sant-alvise-immagini-v1').has(url));
+    assert.equal(sw.richieste.length, 1);
+    const r = await sw.chiedi(url);                            // seconda: subito quella salvata, e si rinfresca
+    assert.equal(r.url, url);
+    assert.equal(sw.richieste.length, 2);
+    assert.equal(sw.richieste[1].opz.cache, 'no-cache', 'il rinfresco chiede alla rete se è cambiata');
+    sw.sandbox.rete = false;
+    assert.equal((await sw.chiedi(url)).url, url, 'senza rete resta quella salvata');
+});
+
+test('service worker, immagini: se l\'host non permette il CORS si ripiega sulla richiesta normale (risposta opaca, in una cache a parte, poche) e non si riprova', async () => {
+    const sw = swImmagini({ cors: false });
+    const url = 'https://play.pokemonshowdown.com/sprites/ani/rayquaza.gif';
+    const r = await sw.chiedi(url);
+    assert.equal(r.type, 'opaque');
+    assert.ok(sw.casse.get('sant-alvise-immagini-opache-v1').has(url));
+    assert.equal(sw.casse.get('sant-alvise-immagini-v1').size, 0, 'niente nella cache normale');
+    assert.equal(sw.richieste.map(x => x.opz && x.opz.mode).join(','), 'cors,', 'prima il CORS, poi la richiesta normale');
+    const dopo = await sw.chiedi(url);
+    assert.equal(dopo.url, url);
+    assert.equal(sw.richieste.length, 2, 'la seconda volta dalla cache: nessuna richiesta in più');
+});
+
+test('service worker, immagini: la cache tiene al massimo 400 immagini (via le più vecchie) e il non-successo (404) non si salva', async () => {
+    const sw = swImmagini();
+    for (let i = 0; i < 403; i++) await sw.chiedi(`https://play.pokemonshowdown.com/sprites/ani/p${i}.gif`);
+    const cassa = sw.casse.get('sant-alvise-immagini-v1');
+    assert.equal(cassa.size, 400);
+    assert.ok(!cassa.has('https://play.pokemonshowdown.com/sprites/ani/p0.gif') && cassa.has('https://play.pokemonshowdown.com/sprites/ani/p402.gif'));
+    sw.sandbox.fetch = async (r, opz) => ({ ok: false, status: 404, type: 'cors', url: typeof r === 'string' ? r : r.url, clone() { return this; } });
+    const mancante = 'https://play.pokemonshowdown.com/sprites/ani/non-esiste.gif';
+    assert.equal((await sw.chiedi(mancante)).status, 404, 'la risposta arriva com\'è: la pagina passa alla sua immagine di riserva');
+    assert.ok(!cassa.has(mancante));
 });
 
 test('offline.html: autonoma (nessun file esterno, nemmeno l\'immagine), con il pulsante per riprovare', () => {
