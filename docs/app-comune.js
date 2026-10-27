@@ -142,7 +142,8 @@
     /** La posizione in classifica letta da Firebase (null se non classificato o se non si riesce a leggere) */
     async function leggiPosizione(win, id) {
         try {
-            const v = (await win.firebase.database().ref('players').once('value')).val();
+            // il nodo `players` lo legge già il caricamento delle GIF (app-precarica.js): una lettura sola
+            const v = win.AppPrecarica && typeof win.AppPrecarica.players === 'function' ? await win.AppPrecarica.players(win) : (await win.firebase.database().ref('players').once('value')).val();
             return posizioneInClassifica(v, id);
         } catch (e) { return null; }
     }

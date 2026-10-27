@@ -67,7 +67,7 @@
         const c = coloreSicuro(g.colore);
         // tutte le GIF partono insieme e si contendono la rete: il compagno che si guarda ha la precedenza, gli altri aspettano (fetchpriority)
         const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
-        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="this.style.display='none'">` : '';
+        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
         const trofei = htmlTrofei(g), badge = htmlBadge(g);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">

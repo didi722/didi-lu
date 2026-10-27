@@ -72,7 +72,15 @@ test('app-battaglia.css: ogni regola riguarda l\'app (html.app) ed è solo per t
     // le schede dei Pokémon compaiono tenendo premuto, al centro dello schermo (non sono più nascoste)
     assert.match(css, /html\.app #tooltipwrapper \{ position: fixed !important; inset: 0 !important;[^}]*display: flex !important; align-items: center; justify-content: center;/);
     assert.match(css, /html\.app #tooltipwrapper \.tooltip \{ position: static !important; left: auto !important; top: auto !important;/);
-    // i due passi: menu -> (mosse | cambi)
+    // l'immersione: sfondo nero (niente bianco né grigio), pannelli viola scuro come il resto dell'app, tasti gialli o colorati dai bordi neri e l'ombra dritta sotto
+    assert.match(css, /html\.app, html\.app body \{[^}]*background: #000; color: var\(--bt-testo\);/);
+    assert.match(css, /--bt-pannello: radial-gradient\(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%\);/);
+    assert.match(css, /html\.app \.btn-hub, html\.app #link-hub \{[^}]*background: var\(--bt-giallo\); color: #000; border: 3px solid #000;/);
+    assert.match(css, /html\.app \.mossa \{[^}]*border: 3px solid #000; border-left: 9px solid var\(--tipo\);/, 'la mossa è scura con la banda del suo tipo');
+    assert.match(css, /html\.app \.ab-btn \{[^}]*border: 4px solid #000; border-radius: 14px; box-shadow: 0 6px 0 #000/);
+    // i due tasti grandi stanno nelle colonne ai lati: il testo ci deve stare (POKÉMON è la parola più lunga)
+    assert.match(css, /font-size: clamp\(\.68rem, 1\.75vw, \.92rem\)/);
+    // i passi del pannello (i due passi: menu -> (mosse | cambi))
     for (const passo of ['menu', 'mosse', 'cambi']) assert.match(css, new RegExp(`\\.corpo\\[data-ab="${passo}"\\]`));
     assert.match(css, /\.ab-menu \{ display: grid; grid-template-columns: 1fr 1fr/);
 });

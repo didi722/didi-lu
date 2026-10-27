@@ -242,6 +242,6 @@ test('nel browser: window.Suoni c\'è sempre; con la classe app (nell\'app) è g
 
 test('app.js carica i suoni in ogni pagina dell\'app (anche battaglia, accesso e menù) e solo lì', () => {
     const js = docs('app.js');
-    assert.match(js, /if \(modo\) caricaScript\(doc, 'app-suoni\.js'\);/);
+    assert.match(js, /if \(modo\) \{ caricaScript\(doc, 'app-suoni\.js'\);/);
     for (const f of fs.readdirSync(DOCS).filter(x => x.endsWith('.html'))) assert.doesNotMatch(docs(f).replace(/<!--[\s\S]*?-->/g, ''), /app-suoni\.js/, `${f}: arriva da app.js`);
 });

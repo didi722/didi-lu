@@ -8,7 +8,8 @@
 //   - con l'allenatore (scenaConAllenatore): il Pokémon è alto quanto lo sarebbe accanto a lui; se non sta nel palco si rimpicciolisce la scena intera, allenatore compreso;
 //   - da solo (altezzaDaSolo), per le Stats dove non c'è nessun allenatore: i Pokémon sono in scala tra loro con una curva logaritmica, così Rayquaza resta più imponente
 //     di Archen anche se non sta in un palco alto 15 metri, e un Joltik non sparisce ma si vede che è piccolo.
-// Nel browser le misure vere si leggono da PokeAPI una volta per specie e si ricordano (anche tra una visita e l'altra).
+// Le misure vere sono in altezze-pkm.js (generato dai dati del simulatore: istantanee); le specie che non ci sono si leggono da PokeAPI una volta e si ricordano (anche
+// tra una visita e l'altra).
 // Funziona nel browser (window.ScalaPkm) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
@@ -99,9 +100,24 @@
     };
     const scriviMemoria = () => { try { radice.localStorage.setItem(CHIAVE_MEMORIA, JSON.stringify(memoria)); } catch (e) { /* senza memoria si rilegge */ } };
 
+    const pausa = ms => new Promise(r => radice.setTimeout(r, ms));
+
+    /** La tabella delle altezze (altezze-pkm.js): nel browser, se la pagina l'ha caricata; in Node, il file */
+    const tabella = () => {
+        if (radice.AltezzePkm) return radice.AltezzePkm;
+        try { return typeof module === 'object' && module.exports ? require('./altezze-pkm.js') : {}; } catch (e) { return {}; }
+    };
+    const dallaTabella = n => { const t = tabella(); const v = t[n] || (n.includes('-') ? t[n.split('-')[0]] : null); return v ? { altezzaM: v[0], vola: !!v[1] } : null; };
+
+    /** PokeAPI, con un secondo tentativo se la rete si impunta (errore, 429, 5xx); una specie che non conosce (404) è null */
     async function leggiApi(n) {
-        const r = await radice.fetch('https://pokeapi.co/api/v2/pokemon/' + encodeURIComponent(n));
-        if (!r.ok) return null;
+        let r = null;
+        for (let tentativo = 0; tentativo < 2; tentativo++) {
+            try { r = await radice.fetch('https://pokeapi.co/api/v2/pokemon/' + encodeURIComponent(n)); } catch (e) { if (tentativo) throw e; await pausa(600); continue; }
+            if (r.status === 429 || r.status >= 500) { if (tentativo) return null; await pausa(600); continue; }
+            break;
+        }
+        if (!r || !r.ok) return null;
         const j = await r.json();
         return {
             altezzaM: Number(j.height) / 10 || ALTEZZA_NON_NOTA_M,
@@ -109,12 +125,14 @@
         };
     }
 
-    /** Altezza vera e se fluttua, per specie: { altezzaM, vola }. Se PokeAPI non lo conosce prova la specie base; se non risponde una taglia media. */
+    /** Altezza vera e se fluttua, per specie: { altezzaM, vola }. Dalla tabella; se la specie non c'è, da PokeAPI (che, se non la conosce, prova la specie base); se non risponde una taglia media. */
     function misure(nome) {
         const n = nomeApi(nome);
         if (cache.has(n)) return cache.get(n);
         const m = leggiMemoria()[n];
         if (m) { const p = Promise.resolve({ altezzaM: m.h, vola: !!m.v }); cache.set(n, p); return p; }
+        const t = dallaTabella(n);
+        if (t) { const p = Promise.resolve(t); cache.set(n, p); return p; }
         const p = (async () => {
             let d = null;
             try { d = await leggiApi(n); if (!d && n.includes('-')) d = await leggiApi(n.split('-')[0]); } catch (e) { d = null; }
@@ -189,6 +207,6 @@
 
     return {
         FORME_SPECIALI, RIMPICCIOLISCI, INGRANDISCI, A_TERRA, GALLEGGIANO,
-        nomeApi, fluttua, regolaDi, scenaConAllenatore, altezzaDaSolo, sollevamento, misure, dimensiona, scena
+        nomeApi, fluttua, regolaDi, scenaConAllenatore, altezzaDaSolo, sollevamento, dallaTabella, misure, dimensiona, scena
     };
 });

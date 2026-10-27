@@ -278,7 +278,7 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
     assert.deepEqual(s.reindirizzato, [], 'una pagina diversa dalla home si apre dov\'è');
     assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css'], 'l\'aspetto comune e quello delle pagine');
     // suoni (per ogni pagina dell'app), poi le parti comuni e l'interfaccia in alto: nell'ordine in cui servono (async = false: partono uno dopo l'altro)
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'], 'poi quelli della pagina (Matches: il carosello della classifica e le locandine dei showdown)');
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'], 'poi quelli della pagina (Matches: il carosello della classifica e le locandine dei showdown)');
     for (const f of s.doc.head.figli.filter(x => x.tagName === 'SCRIPT')) assert.equal(f.async, false, `${f.src}: async = false per l'ordine`);
     assert.equal(s.invito(), null);
 });
@@ -286,11 +286,11 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
 test('i fogli e gli script dell\'app ereditano l\'indirizzo di app.js (anche con un numero di versione), a pagina letta si aggiungono alla testa', () => {
     const s = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', srcApp: 'app.js?v=7' });
     assert.deepEqual(s.fogli(), ['app-gioco.css?v=7', 'app-gioco-pagine.css?v=7']);
-    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7', 'app-carosello.js?v=7', 'app-teambuilder.js?v=7', 'app-box-badge.js?v=7']);
+    assert.deepEqual(s.script(), ['app-suoni.js?v=7', 'app-musica.js?v=7', 'app-comune.js?v=7', 'app-gioco.js?v=7', 'app-carosello.js?v=7', 'app-teambuilder.js?v=7', 'app-box-badge.js?v=7']);
     // mentre la pagina si legge i fogli si scrivono subito (document.write): il sito "da PC" non lampeggia prima dell'app
     const l = apri({ ua: UA.android, standalone: true, percorso: '/didi-lu/box.html', caricamento: true });
     assert.deepEqual(l.doc.scritture, ['<link rel="stylesheet" href="app-gioco.css">', '<link rel="stylesheet" href="app-gioco-pagine.css">']);
-    assert.deepEqual(l.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js']);
+    assert.deepEqual(l.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js']);
     assert.deepEqual(l.classi(), ['app', 'app-installata', 'app-shell', 'os-android'], 'le classi arrivano subito (niente sfarfallio)');
     assert.equal(l.avviso(), null, 'l\'avviso "gira il telefono" aspetta la pagina pronta');
 });
@@ -344,7 +344,7 @@ test('il menù principale: solo l\'aspetto comune e il suo (app-gioco.css, app-m
     const s = apri({ ua: UA.apk, percorso: '/didi-lu/menu.html', punti: 5 });
     assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android']);
     assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-scena.css', 'app-menu.css']);
-    assert.deepEqual(s.script(), ['app-suoni.js'], 'i suoni dei tasti ci sono; il resto lo collega la pagina (app-comune.js, app-menu.js)');
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js'], 'i suoni dei tasti ci sono; il resto lo collega la pagina (app-comune.js, app-menu.js)');
     assert.deepEqual(s.reindirizzato, []);
 });
 
@@ -391,12 +391,12 @@ test('battaglia, accesso, amministrazione e modello vuoto: classe app, nessuna i
         const s = apri({ ua: UA.apk, percorso: '/didi-lu/' + p });
         assert.deepEqual(s.classi(), ['app', 'app-apk', 'os-android'], p);
         assert.deepEqual(s.fogli(), [], p);
-        assert.deepEqual(s.script(), ['app-suoni.js'], p);
+        assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js'], p);
     }
     const b = apri({ ua: UA.apk, percorso: '/didi-lu/battle.html' });
     assert.deepEqual(b.classi(), ['app', 'app-apk', 'os-android']);
     assert.deepEqual(b.fogli(), ['app-battaglia.css']);
-    assert.deepEqual(b.script(), ['app-suoni.js', 'app-battaglia.js']);
+    assert.deepEqual(b.script(), ['app-suoni.js', 'app-musica.js', 'app-schede.js', 'app-battaglia.js'], 'le schede (Pokémon, mosse) prima dei comandi, che le usano');
 });
 
 test('il desktop installato come app (display-mode standalone, senza telefono): classe app e interfaccia da gioco, ma niente menù né avviso "gira il telefono"', () => {
@@ -421,7 +421,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
     let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
     assert.equal(s.risultato.modo, 'installata');
     assert.equal(memoria.appForzata, '1');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js']);
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
     assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });
@@ -435,7 +435,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
 test('con lo storage del browser bloccato (navigazione privata...) il sito funziona uguale', () => {
     const s = apri({ ua: UA.iphone, percorso: '/didi-lu/matches.html', storageRotto: true, search: '?app=1' });
     assert.equal(s.risultato.modo, 'installata');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
     // senza memoria della visita la home si riconosce come prima apertura: si va al menù (che non rimanda da nessuna parte, quindi nessun ciclo)
     const m = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true, search: '?app=1', punti: 5 });
     assert.deepEqual(m.reindirizzato, ['menu.html']);
@@ -577,14 +577,14 @@ test('ogni pagina collega manifest, icona e aspetto da app; app.js è uno script
 
 test('i fogli e gli script dell\'app esistono e li scarica solo l\'app (da app.js): nessuna pagina li collega, tranne il menù che porta i suoi script', () => {
     const js = docs('app.js');
-    for (const f of ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css', 'app-battaglia.css', 'app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-menu.js', 'app-battaglia.js']) {
+    for (const f of ['app-gioco.css', 'app-gioco-pagine.css', 'app-menu.css', 'app-battaglia.css', 'app-suoni.js', 'app-musica.js', 'app-comune.js', 'app-gioco.js', 'app-menu.js', 'app-battaglia.js', 'app-schede.js']) {
         assert.ok(esiste(f), `manca ${f}`);
         assert.ok(js.includes(`'${f}'`) || f === 'app-menu.js', `app.js non cita ${f}`);
     }
     assert.ok(!esiste('app-pagine.css') && !esiste('app-shell.js'), 'i vecchi file della barra in basso sono stati tolti');
     for (const f of PAGINE) {
         const h = docs(f).replace(/<!--[\s\S]*?-->/g, '');
-        assert.doesNotMatch(h, /app-(gioco|gioco-pagine|menu|battaglia)\.css|app-(gioco|battaglia)\.js|app-suoni\.js/, `${f} non deve collegare i fogli dell'app`);
+        assert.doesNotMatch(h, /app-(gioco|gioco-pagine|menu|battaglia)\.css|app-(gioco|battaglia|schede)\.js|app-suoni\.js/, `${f} non deve collegare i fogli dell'app`);
         if (f !== 'menu.html') assert.doesNotMatch(h, /app-comune\.js|app-menu\.js/, `${f}: solo il menù collega queste`);
     }
     // il menù: le parti comuni prima della sua logica

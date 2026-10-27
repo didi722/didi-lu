@@ -36,7 +36,7 @@
      */
     function htmlLato(n, lato, vince, perde, gif) {
         const l = lato || {};
-        const pkm = l.pkm && typeof gif === 'function' ? `<img class="mp-pkm" draggable="false" src="${esc(gif(l.pkm))}" data-pkm="${esc(l.pkm)}" alt="" onerror="this.style.display='none'">` : '';
+        const pkm = l.pkm && typeof gif === 'function' ? `<img class="mp-pkm" draggable="false" src="${esc(gif(l.pkm))}" data-pkm="${esc(l.pkm)}" alt="" onerror="SpritePkm.ritenta(this)">` : '';
         return `<span class="mp-lato mp-l${n}${vince ? ' mp-vince' : ''}${perde ? ' mp-perde' : ''}" style="--c:${coloreSicuro(l.colore, n === 1 ? '#31c489' : '#8e44ad')}">
             <span class="mp-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span><span class="mp-scena"><img class="mp-avatar" draggable="false" src="${esc(l.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">${pkm}</span></span>
             <b class="mp-nome nome-scorrevole">${esc(l.nome || 'TBD')}</b>${vince ? '<i class="mp-win">WIN</i>' : ''}

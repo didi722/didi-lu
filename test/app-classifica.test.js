@@ -52,7 +52,7 @@ test('scorre da sola ogni pochi secondi (e dopo un gesto a mano aspetta di più)
 
 test('matches.html pubblica la classifica; nell\'app l\'elenco del sito si nasconde, "Registered teams" non si vede e i showdown li disegna app-matches.js', () => {
     assert.match(docs('matches.html'), /AppSito\.pubblica\('classifica'/);
-    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['matches.html'], ['app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
+    assert.deepEqual(require('../docs/app.js').SCRIPT_PAGINE['matches.html'], ['app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
     const css = docs('app-gioco-pagine.css');
     assert.match(css, /html\.app-shell\.app-classifica body\.pg-matches #participants-list\{display:none\}|html\.app-shell\.app-classifica body\.pg-matches #participants-list \{ ?display: none/);
     assert.match(css, /\.cl-laterale \.cl-apri \{ display: none !important; \}/, 'via "Full table"');

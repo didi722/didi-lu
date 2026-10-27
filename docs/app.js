@@ -49,9 +49,9 @@
     // gli script che una pagina dell'app carica oltre a quelli comuni (app-comune.js, app-gioco.js): ognuno disegna a modo suo i dati che la pagina del sito ha
     // appena calcolato (vedi pubblica), così il sito da PC non cambia di una riga
     const SCRIPT_PAGINE = {
-        'matches.html': ['app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'],
-        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'scala-pkm.js', 'app-trainers.js'],
-        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js'],
+        'matches.html': ['app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'],
+        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-trainers.js'],
+        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js'],
         'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
         'practice.html': ['app-scena.js', 'app-practice.js']
     };
@@ -307,7 +307,7 @@
         }
 
         // i suoni e la vibrazione dei tasti (app-suoni.js) valgono per ogni pagina dell'app, battaglia compresa
-        if (modo) caricaScript(doc, 'app-suoni.js');
+        if (modo) { caricaScript(doc, 'app-suoni.js'); caricaScript(doc, 'app-musica.js'); }      // la musica continua da una pagina all'altra (app-musica.js)
 
         // il menù principale: l'aspetto da gioco comune (app-gioco.css: colori, tasti, finestre) e il suo (app-menu.css: sfondo, avatar, tessere); la logica
         // (app-comune.js, app-menu.js) la carica la pagina
@@ -325,8 +325,9 @@
             caricaScript(doc, 'app-comune.js'); caricaScript(doc, 'app-gioco.js');          // nell'ordine: gli script aggiunti così partono uno dopo l'altro
             for (const nome of SCRIPT_PAGINE[pagina] || []) caricaScript(doc, nome);
         }
-        // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js
-        else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-battaglia.js'); }
+        // la battaglia ha il suo foglio e i suoi comandi a due passi (Fight / Pokémon), come in un gioco: app-battaglia.css, app-battaglia.js; le schede
+        // (Pokémon, mosse) che sostituiscono i tooltip di Showdown le fa app-schede.js, che deve esserci prima
+        else if (modo && pagina === 'battle.html') { caricaFogliDiStile(doc, 'app-battaglia.css'); caricaScript(doc, 'app-schede.js'); caricaScript(doc, 'app-battaglia.js'); }
 
         const quandoPronto = fn => (doc.readyState === 'loading' ? doc.addEventListener('DOMContentLoaded', fn) : fn());
 
