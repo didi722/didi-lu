@@ -285,7 +285,9 @@
             const P = win.AppPrecarica;
             if (!P) { if (barraGif.fine) barraGif.fine(); return; }
             P.avvia(win, { idsStagioni, giocatore: () => (giocatore ? giocatore.id : ''), setTempo: (f, ms) => win.setTimeout(f, ms), avanza: barraGif.avanza, fine: barraGif.fine })
-                .catch(() => { if (barraGif.fine) barraGif.fine(); });
+                .catch(() => { if (barraGif.fine) barraGif.fine(); })
+                .then(() => (typeof P.scaldaScript === 'function' ? P.scaldaScript(win) : null))        // poi gli script del simulatore, in silenzio
+                .catch(() => {});
         };
         const chiudiSplash = () => {
             if (!splash || splash.hidden || caricando) return;

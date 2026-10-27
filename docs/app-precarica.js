@@ -30,6 +30,16 @@
     const ATTESA_MASSIMA_MS = 25000;
     const CONCORRENZA = 6;
     const SCADENZA_IMMAGINE_MS = 15000;
+    /** Gli script del simulatore (gli stessi di battle.html): si scaldano nella cache del service worker, così giocare contro la CPU non aspetta di scaricarli e compilarli */
+    const CACHE_SCRIPT = 'sant-alvise-script-v1';
+    const SCRIPT_SIMULATORE = [
+        'https://play.pokemonshowdown.com/config/config.js', 'https://play.pokemonshowdown.com/js/lib/ps-polyfill.js', 'https://play.pokemonshowdown.com/js/lib/jquery-1.11.0.min.js',
+        'https://play.pokemonshowdown.com/js/lib/html-sanitizer-minified.js', 'https://play.pokemonshowdown.com/js/battle-sound.js', 'https://play.pokemonshowdown.com/js/battledata.js',
+        'https://play.pokemonshowdown.com/data/pokedex-mini.js', 'https://play.pokemonshowdown.com/data/pokedex-mini-bw.js', 'https://play.pokemonshowdown.com/data/graphics.js',
+        'https://play.pokemonshowdown.com/data/pokedex.js', 'https://play.pokemonshowdown.com/data/moves.js', 'https://play.pokemonshowdown.com/data/abilities.js',
+        'https://play.pokemonshowdown.com/data/items.js', 'https://play.pokemonshowdown.com/data/teambuilder-tables.js', 'https://play.pokemonshowdown.com/js/battle-tooltips.js',
+        'https://play.pokemonshowdown.com/js/battle.js', 'pkmn-sim.js', 'pkmn-randoms.js'
+    ];
     const PESO_COMPAGNO = 1000, PESO_BOX = 5, PESO_TEAM = 1;
 
     const sprite = () => radice.SpritePkm || SpriteNode;
@@ -239,6 +249,36 @@
         }
     }
 
+    /**
+     * Chiede (senza usarli) gli script del simulatore che non sono ancora nella cache: il service worker li salva. Pochi per volta e solo a service worker al lavoro.
+     * Ritorna quanti ne ha chiesti.
+     */
+    async function scaldaScript(win, { concorrenza = 2, elenco = SCRIPT_SIMULATORE } = {}) {
+        const sw = win && win.navigator && win.navigator.serviceWorker;
+        if (!sw || !sw.controller || !win.caches || typeof win.fetch !== 'function') return 0;
+        let cache;
+        try { cache = await win.caches.open(CACHE_SCRIPT); } catch (e) { return 0; }
+        const base = win.location && win.location.href;
+        const manca = [];
+        for (const u of elenco) {
+            let url;
+            try { url = new URL(u, base).href; } catch (e) { continue; }
+            if (!(await cache.match(url))) manca.push(url);
+        }
+        let prossimo = 0;
+        const lavoratore = async () => {
+            while (prossimo < manca.length) {
+                const url = manca[prossimo++];
+                try {
+                    const r = await win.fetch(url, /^https:\/\/play\.pokemonshowdown\.com\//.test(url) ? { mode: 'no-cors' } : undefined);
+                    if (r && r.body && typeof r.body.cancel === 'function') await r.body.cancel().catch(() => {});
+                } catch (e) { /* alla prossima apertura */ }
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(concorrenza, manca.length) }, lavoratore));
+        return manca.length;
+    }
+
     // ---------- tutto insieme ----------
 
     /**
@@ -270,6 +310,6 @@
 
     return {
         CACHE_IMMAGINI, CACHE_OPACHE, CHIAVE_SPECIE, CHIAVE_FALLITE, VALIDITA_ELENCO_MS, SILENZIO_FALLITE_MS, ATTESA_MASSIMA_MS, CONCORRENZA,
-        specieDa, avatarDa, caricaImmagine, lavoroSpecie, eseguiCoda, inCache, daScaricare, attendiServiceWorker, players, teamsIscritti, leggiElenco, avvia
+        SCRIPT_SIMULATORE, CACHE_SCRIPT, scaldaScript, specieDa, avatarDa, caricaImmagine, lavoroSpecie, eseguiCoda, inCache, daScaricare, attendiServiceWorker, players, teamsIscritti, leggiElenco, avvia
     };
 });

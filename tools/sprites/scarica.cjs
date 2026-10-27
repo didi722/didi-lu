@@ -80,6 +80,21 @@ async function principale(specie, { fetchFn = fetch, concorrenza = 6, log = cons
         }
     };
     await Promise.all(Array.from({ length: concorrenza }, lavoratore));
+    // le GIF "di schiena" (i tuoi Pokémon nel simulatore): il service worker le serve dal sito al posto di Showdown. Chi non ce l'ha si ricorda in assenti.json
+    fs.mkdirSync(path.join(CARTELLA, 'ani-back'), { recursive: true });
+    const fileAssenti = path.join(CARTELLA, 'ani-back', 'assenti.json');
+    const assenti = new Set(fs.existsSync(fileAssenti) ? JSON.parse(fs.readFileSync(fileAssenti, 'utf8')) : []);
+    const conGif = idsIn(path.join(CARTELLA, 'ani'), '.gif').filter(i => !fs.existsSync(path.join(CARTELLA, 'ani-back', i + '.gif')) && !assenti.has(i));
+    let prossimoRetro = 0, retroNuove = 0;
+    await Promise.all(Array.from({ length: concorrenza }, async () => {
+        while (prossimoRetro < conGif.length) {
+            const i = conGif[prossimoRetro++];
+            const b = await scarica(`${SD}/ani-back/${i}.gif`, 'ani', fetchFn);
+            if (b) { fs.writeFileSync(path.join(CARTELLA, 'ani-back', i + '.gif'), b); retroNuove++; } else assenti.add(i);
+        }
+    }));
+    fs.writeFileSync(fileAssenti, JSON.stringify([...assenti].sort()));
+    log(`di schiena: nuove ${retroNuove}`);
     fs.writeFileSync(path.join(CARTELLA, 'indice.js'), indiceDa({ ani: idsIn(path.join(CARTELLA, 'ani'), '.gif'), dex: idsIn(path.join(CARTELLA, 'dex'), '.png') }));
     log(`specie: ${specie.length}, nuove: ${nuove}, senza immagine: ${senza.length}${senza.length ? ' (' + senza.join(', ') + ')' : ''}`);
     return { nuove, senza };

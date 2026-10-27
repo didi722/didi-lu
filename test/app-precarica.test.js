@@ -276,3 +276,27 @@ test('il menù: le GIF partono quando Firebase c\'è, con gli id delle stagioni 
     const html = docs('menu.html');
     assert.ok(html.indexOf('sprite-pkm.js') < html.indexOf('app-precarica.js') && html.indexOf('app-precarica.js') < html.indexOf('app-menu.js'));
 });
+
+test('scaldaScript: chiede gli script del simulatore che mancano dalla cache (due per volta, solo a service worker al lavoro) e li lascia al service worker', async () => {
+    const dentro = new Set(['https://didi722.github.io/didi-lu/pkmn-sim.js']);
+    const chieste = []; let inVolo = 0, massimo = 0;
+    const win = {
+        location: { href: 'https://didi722.github.io/didi-lu/menu.html' }, navigator: { serviceWorker: { controller: {} } },
+        caches: { open: async () => ({ match: async u => (dentro.has(u) ? {} : undefined) }) },
+        fetch: async (u, o) => { chieste.push([u, o && o.mode]); inVolo++; massimo = Math.max(massimo, inVolo); await new Promise(r => setImmediate(r)); inVolo--; return { body: { cancel: async () => {} } }; }
+    };
+    const n = await P.scaldaScript(win);
+    assert.equal(n, P.SCRIPT_SIMULATORE.length - 1, 'quello già dentro non si richiede');
+    assert.ok(massimo <= 2);
+    assert.ok(chieste.every(([u, m]) => (/play\.pokemonshowdown\.com/.test(u) ? m === 'no-cors' : m === undefined)));
+    assert.ok(!chieste.some(([u]) => u.endsWith('/pkmn-sim.js')));
+    assert.equal(await P.scaldaScript({ ...win, navigator: { serviceWorker: { controller: null } } }), 0, 'senza service worker non si fa niente');
+    assert.equal(await P.scaldaScript({}), 0);
+    // l'elenco è quello di battle.html (gli script di Showdown e i due bundle)
+    const html = docs('battle.html');
+    for (const m of html.matchAll(/<script src="(https:\/\/play\.pokemonshowdown\.com\/(?:js|data|config)\/[^"]+\.js)"/g)) assert.ok(P.SCRIPT_SIMULATORE.includes(m[1]), m[1]);
+    assert.ok(P.SCRIPT_SIMULATORE.includes('pkmn-sim.js') && P.SCRIPT_SIMULATORE.includes('pkmn-randoms.js'));
+    assert.ok(docs('sw.js').includes(`'${P.CACHE_SCRIPT}'`));
+    assert.match(docs('app-menu.js'), /P\.scaldaScript\(win\)/);
+});
+

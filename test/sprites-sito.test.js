@@ -82,3 +82,11 @@ test('il workflow Sprites: ogni giorno e a mano, con le credenziali di Firebase,
     assert.match(y, /node tools\/sprites\/scarica\.cjs/);
     assert.match(y, /git add docs\/sprites\b/);
 });
+
+test('scarica.cjs prende anche le GIF di schiena (per il simulatore) e si ricorda chi non le ha; la lista pratica mostra tutti e sei i Pokémon e senza caricamento a richiesta', () => {
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'tools', 'sprites', 'scarica.cjs'), 'utf8'), /assenti\.json[\s\S]*ani-back\/\$\{i\}\.gif/);
+    assert.match(docs('app-gioco-pagine.css'), /\.pr-carta \.pr-mini \{ flex: 1 1 0; min-width: 0; width: auto;/);
+    assert.doesNotMatch(docs('app-practice.js'), /class="pr-mini"[^`]*loading="lazy"/);
+    assert.match(docs('app-menu.css'), /gx-carta:not\(\.gx-centro\) \*::after[\s\S]*animation-play-state: paused !important/, 'le scene che non si vedono stanno ferme');
+});
+

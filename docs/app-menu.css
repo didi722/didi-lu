@@ -225,3 +225,11 @@ html.app .ach-riga-barra { display: flex; align-items: center; gap: calc(6 * var
 html.app .ach-num { flex: none; font: 900 calc(9.5 * var(--u))/1 var(--gx-font); letter-spacing: .04em; opacity: .85; }
 html.app .ach-desc { font: 700 calc(9.5 * var(--u))/1.25 var(--gx-font-testo); opacity: .8; }
 html.app .ach-frase { font: 900 calc(9.5 * var(--u))/1.25 var(--gx-font-testo); opacity: .9; }
+
+/* le scene che non si vedono (e tutte mentre si trascina) tengono ferme le loro animazioni: scorrere non deve far lavorare nuvole, raggi, scintille e aure di quattro scene insieme */
+html.app .gx-carta:not(.gx-centro) *,
+html.app .gx-carta:not(.gx-centro) *::before,
+html.app .gx-carta:not(.gx-centro) *::after,
+html.app .gx-pista.trascinando .gx-carta *,
+html.app .gx-pista.trascinando .gx-carta *::before,
+html.app .gx-pista.trascinando .gx-carta *::after { animation-play-state: paused !important; }

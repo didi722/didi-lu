@@ -1860,7 +1860,8 @@ function sprite(specie, retro) {
     const id = DexSim.species.get(specie).spriteid || specie.toLowerCase().replace(/[^a-z0-9-]/g, '');
     const img = el('img', {
         alt: '',
-        src: `https://play.pokemonshowdown.com/sprites/${retro ? 'ani-back' : 'ani'}/${id}.gif`
+        // quelle della lega stanno anche nel sito (sprites/: workflow "Sprites"): arrivano subito; le altre da Showdown
+        src: (!retro && window.SpritePkm && window.SpritePkm.locale(specie)) || `https://play.pokemonshowdown.com/sprites/${retro ? 'ani-back' : 'ani'}/${id}.gif`
     });
     img.addEventListener('error', () => {
         img.src = `https://play.pokemonshowdown.com/sprites/${retro ? 'gen5-back' : 'gen5'}/${id}.png`;

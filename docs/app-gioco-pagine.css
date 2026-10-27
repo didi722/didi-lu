@@ -1109,7 +1109,8 @@
     }
     html.app-shell body.pg-practice .pr-carta .pr-nome { font-size: calc(17 * var(--u)); text-shadow: 0 calc(2 * var(--u)) 0 rgba(0, 0, 0, .5); }
     html.app-shell body.pg-practice .pr-carta .pr-tag { background: var(--c); color: #000; border-radius: calc(5 * var(--u)); transform: skewX(-9deg); padding-left: calc(12 * var(--u)); padding-right: calc(12 * var(--u)); box-shadow: 0 calc(2 * var(--u)) 0 var(--nb-ink, #000); }
-    html.app-shell body.pg-practice .pr-carta .pr-mini { width: calc(38 * var(--u)); height: calc(38 * var(--u)); filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4)); }
+    html.app-shell body.pg-practice .pr-carta .pr-mini-riga { width: 100%; }
+    html.app-shell body.pg-practice .pr-carta .pr-mini { flex: 1 1 0; min-width: 0; width: auto; max-width: calc(38 * var(--u)); height: calc(36 * var(--u)); filter: drop-shadow(0 calc(3 * var(--u)) 0 rgba(0, 0, 0, .4)); }
     /* l'alone dei giocatori sfuma verso l'alto invece di tagliarsi, e ai lati si dissolve */
     html.app-shell body.pg-practice .pr-g-giocatori { padding-top: calc(34 * var(--u)); margin-top: calc(-30 * var(--u)); padding-left: calc(14 * var(--u)); padding-right: calc(14 * var(--u)); -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
     html.app-shell body.pg-practice .pr-carta:active, html.app-shell body.pg-practice .pr-giocatore:active { translate: 0 calc(4 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--nb-ink, #000); }

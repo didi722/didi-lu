@@ -157,7 +157,7 @@
             <h2>${esc(titolo)}</h2>${sotto ? `<span class="pr-sotto">${esc(sotto)}</span>` : ''}
         </header>`;
 
-    const mini = (specie, dex) => specie.map(s => `<img class="pr-mini" src="${esc(dex ? dex(s) : '')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`).join('');
+    const mini = (specie, dex) => specie.map(s => `<img class="pr-mini" src="${esc(dex ? dex(s) : '')}" alt="" onerror="this.style.visibility='hidden'">`).join('');
 
     // ----- l'HTML: ranked -----
 

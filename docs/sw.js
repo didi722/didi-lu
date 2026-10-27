@@ -26,6 +26,12 @@ const SPRITE = [
     { host: 'raw.githubusercontent.com', percorso: '/PokeAPI/sprites/' },
     { host: 'img.pokemondb.net', percorso: '/sprites/' }
 ];
+// gli script pesanti del simulatore (quelli di Showdown e i due bundle del sito): scaricarli e compilarli a ogni partita era la pausa di qualche secondo prima di giocare.
+// Si servono subito dalla cache e intanto si rinfrescano (la versione nuova arriva alla volta dopo)
+const CACHE_SCRIPT = 'sant-alvise-script-v1';
+const MASSIMO_SCRIPT = 60;
+const PERCORSI_SHOWDOWN = ['/js/', '/data/', '/config/'];
+const SCRIPT_PESANTI = /\/pkmn-(sim|randoms)\.js$/;
 const senzaCors = new Set();      // gli indirizzi per cui il CORS è stato rifiutato in questa sessione: non si riprova
 
 /** 'sprite' (immagine di un Pokémon: per sempre), 'sito' (immagine del sito: subito dalla cache, rinfrescata in rete) o null (non è affar nostro) */
@@ -38,6 +44,40 @@ function tipoImmagine(richiesta) {
     if (self.location && u.origin === self.location.origin && /\/sprites\/(ani|dex)\//.test(u.pathname)) return 'sprite';
     if (self.location && u.origin === self.location.origin && u.pathname.includes('/immagini/')) return 'sito';
     return null;
+}
+
+/** Vero se la richiesta è uno script del simulatore da tenere (non importa come la chiede la pagina: <script>, import o fetch di riscaldamento) */
+function eScript(richiesta) {
+    if (richiesta.method && richiesta.method !== 'GET') return false;
+    let u;
+    try { u = new URL(richiesta.url); } catch (e) { return false; }
+    if (!u.pathname.endsWith('.js')) return false;
+    if (u.hostname === 'play.pokemonshowdown.com') return PERCORSI_SHOWDOWN.some(p => u.pathname.startsWith(p));
+    return !!(self.location && u.origin === self.location.origin && SCRIPT_PESANTI.test(u.pathname));
+}
+
+async function rispondiScript(evento, richiesta) {
+    const url = richiesta.url;
+    let salvata;
+    try { salvata = await (await caches.open(CACHE_SCRIPT)).match(url); } catch (e) { salvata = undefined; }
+    const aggiorna = async () => {
+        let r;
+        if (new URL(url).origin === self.location.origin) r = await fetch(url, { cache: 'no-cache' });
+        else { try { r = await fetch(url, { mode: 'cors', credentials: 'omit' }); } catch (e) { r = await fetch(richiesta); } }
+        if (r && (r.type === 'opaque' || (r.ok && r.status === 200))) await salva(CACHE_SCRIPT, MASSIMO_SCRIPT, url, r);
+        return r;
+    };
+    if (salvata) { evento.waitUntil(aggiorna().catch(() => {})); return salvata; }
+    try { return await aggiorna(); } catch (e) { return fetch(richiesta); }
+}
+
+/** Le GIF di Showdown (davanti e dietro) che stanno anche nel sito (sprites/): l'indirizzo nel sito, o null */
+function indirizzoNelSito(url) {
+    let u;
+    try { u = new URL(url); } catch (e) { return null; }
+    const m = u.hostname === 'play.pokemonshowdown.com' && /^\/sprites\/(ani|ani-back)\/([a-z0-9-]+\.gif)$/.exec(u.pathname);
+    if (!m || !self.location || !self.location.href) return null;
+    return new URL(`sprites/${m[1]}/${m[2]}`, self.location.href).href;
 }
 
 /** Tiene al massimo `massimo` immagini in `cache`: se ce ne sono di più, via le più vecchie */
@@ -61,6 +101,14 @@ async function scarica(richiesta, tipo) {
         const r = await fetch(url, { cache: 'no-cache' });
         if (r && r.ok && r.status === 200) await salva(CACHE_IMMAGINI, MASSIMO_IMMAGINI, url, r);
         return r;
+    }
+    // la stessa GIF nel sito (la lega ne ha già la sua copia: stesso indirizzo della pagina, molto più veloce): se c'è, è quella
+    const nelSito = indirizzoNelSito(url);
+    if (nelSito) {
+        try {
+            const r = await fetch(nelSito);
+            if (r && r.ok && r.status === 200) { await salva(CACHE_IMMAGINI, MASSIMO_IMMAGINI, url, r); return r; }
+        } catch (e) { /* si ripiega su Showdown */ }
     }
     if (!senzaCors.has(url)) {
         try {
@@ -107,7 +155,8 @@ self.addEventListener('fetch', evento => {
     // le immagini dei Pokémon e del sito si tengono (vedi sopra); script, stili, Firebase, Showdown (le API)... vanno in rete come se il service worker non ci fosse
     if (richiesta.mode !== 'navigate') {
         const tipo = tipoImmagine(richiesta);
-        if (tipo) evento.respondWith(rispondiImmagine(evento, richiesta, tipo));
+        if (tipo) { evento.respondWith(rispondiImmagine(evento, richiesta, tipo)); return; }
+        if (eScript(richiesta)) evento.respondWith(rispondiScript(evento, richiesta));
         return;
     }
     evento.respondWith((async () => {
