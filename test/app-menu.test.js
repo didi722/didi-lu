@@ -362,10 +362,13 @@ test('le scene: toccare una scena di lato la porta al centro (quella al centro a
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     let fermati = 0;
     const tocca = i => p.id('gx-tessere').scatta('click', { target: { closest: () => el[i] }, preventDefault: () => { fermati++; } });
+    const finita = () => p.timer.filter(t => t.ms === 400).forEach(t => t.f());      // a scorrimento finito (un po' più della transizione) si segna il centro, si ricorda e si fa il suono
     tocca(2);
     assert.equal(fermati, 1, 'toccare una scena di lato non apre la pagina');
-    assert.deepEqual(el.map(c => c.classi.has('gx-centro')), [false, false, true, false]);
     assert.deepEqual(el.slice(1).map(c => c.proprieta['--x']), [-1, 0, 1], 'le vicine appena fuori dallo schermo, ai due lati');
+    assert.deepEqual(p.suoni, [], 'il resto aspetta che la scena sia arrivata: nello stesso fotogramma dello spostamento faceva scattare');
+    finita();
+    assert.deepEqual(el.map(c => c.classi.has('gx-centro')), [false, false, true, false]);
     assert.equal(p.sessione.menuCarta, '2', 'la scena si ricorda per quando si torna dalle pagine');
     assert.deepEqual(p.suoni, ['scegli']);
     assert.deepEqual(el.map(c => c.attributi['aria-hidden']), ['true', 'true', 'false', 'true']);
@@ -375,11 +378,11 @@ test('le scene: toccare una scena di lato la porta al centro (quella al centro a
     assert.deepEqual(p.suoni, ['scegli']);
     // le frecce da tastiera (e Esc non sposta niente)
     const tasti = k => (p.doc.ascoltatori.keydown || []).forEach(f => f({ key: k }));
-    tasti('ArrowRight');
+    tasti('ArrowRight'); finita();
     assert.ok(el[3].classi.has('gx-centro'));
-    tasti('ArrowRight');
+    tasti('ArrowRight'); finita();
     assert.ok(el[0].classi.has('gx-centro'), 'dall\'ultima si torna alla prima: il giro si chiude');
-    tasti('ArrowLeft');
+    tasti('ArrowLeft'); finita();
     assert.ok(el[3].classi.has('gx-centro'));
     tasti('Escape');
     assert.ok(el[3].classi.has('gx-centro'));
@@ -403,6 +406,7 @@ test('le scene: la scena che passa dall\'altra parte del giro salta senza attrav
     const e2 = q.id('gx-tessere').querySelectorAll('.gx-carta');
     q.id('gx-tessere').scatta('click', { target: { closest: () => e2[0] }, preventDefault() {} });
     assert.ok(!e2[0].classi.has('gx-salta') && !e2[3].classi.has('gx-salta'), 'la scena che entra e quella che esce scorrono');
+    q.timer.filter(t => t.ms === 400).forEach(t => t.f());
     assert.ok(e2[0].classi.has('gx-centro'));
 });
 
