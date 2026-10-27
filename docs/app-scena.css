@@ -65,8 +65,8 @@ html.app .gx-c-box .e-dx { height: calc(192 * var(--u)); right: calc(-12 * var(-
 /* TRAINERS: due allenatori uno di fronte all'altro (le figure di ripiego sono i loro avatar; se c'è l'immagine propria, trainers-1 e trainers-2, la usa) */
 html.app .gx-c-trainers .gx-eroe { image-rendering: pixelated; filter: drop-shadow(0 calc(6 * var(--u)) 0 rgba(0, 0, 0, .35)); }
 html.app .gx-c-trainers .gx-eroe.propria { image-rendering: auto; filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 255, 255, .5)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(40, 0, 40, .5)); }
-html.app .gx-c-trainers .t-1 { height: calc(200 * var(--u)); left: calc(84 * var(--u)); bottom: calc(52 * var(--u)); z-index: 2; }
-html.app .gx-c-trainers .t-2 { height: calc(200 * var(--u)); right: calc(84 * var(--u)); bottom: calc(52 * var(--u)); z-index: 2; }
+html.app .gx-c-trainers .t-1 { height: calc(240 * var(--u)); left: calc(60 * var(--u)); bottom: calc(44 * var(--u)); z-index: 2; }
+html.app .gx-c-trainers .t-2 { height: calc(240 * var(--u)); right: calc(60 * var(--u)); bottom: calc(44 * var(--u)); z-index: 2; }
 html.app .gx-c-trainers .gx-aura-l { left: calc(70 * var(--u)); bottom: calc(30 * var(--u)); width: calc(230 * var(--u)); height: calc(230 * var(--u)); background: radial-gradient(circle, rgba(255, 200, 90, .7) 0%, rgba(255, 120, 60, .3) 42%, transparent 70%); }
 html.app .gx-c-trainers .gx-aura-r { right: calc(70 * var(--u)); bottom: calc(30 * var(--u)); width: calc(230 * var(--u)); height: calc(230 * var(--u)); background: radial-gradient(circle, rgba(200, 160, 255, .7) 0%, rgba(120, 80, 255, .3) 42%, transparent 70%); }
 
