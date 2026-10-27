@@ -205,7 +205,7 @@ function browserFinto({ ora = 1000, rete = true, tipo = 'application/javascript'
         fetch: async (u, opz) => {
             richieste.push({ url: u, opz });
             if (indirizzi.length) indirizzi.push(u);
-            if (!sandbox.rete || (sandbox.fallisciSu && u === sandbox.fallisciSu)) throw new TypeError('Failed to fetch');
+            if (!sandbox.rete || (sandbox.fallisciSu && u.endsWith(new URL(sandbox.fallisciSu).pathname))) throw new TypeError('Failed to fetch');
             const corpo = /\.css$/.test(u) ? `.a{background:url(../fx/pioggia.png)}` : `corpo(${u})`;
             return { ok: sandbox.stato === 200, status: sandbox.stato, type: 'cors', headers: { get: () => sandbox.tipo }, clone() { return this; }, text: async () => corpo };
         },
@@ -288,6 +288,26 @@ test('motore: se non si può (CORS rifiutato, file che non esiste, pagina d\'err
     lento.win.setTimeout = (f, ms) => { if (ms === C.ATTESA_MASSIMA_MS) f(); return 1; };
     lento.win.clearTimeout = () => {};
     assert.equal(await C.preparaMotore(lento.win), null, 'oltre l\'attesa massima si apre il replay come prima');
+});
+
+test('motore: i file si chiedono prima al sito (motore-replay/, copiati dal workflow, senza CORS da rispettare), poi a Showdown; la cache li tiene sotto l\'indirizzo di Showdown', async () => {
+    C.azzera();
+    const b = browserFinto();
+    const m = await C.preparaMotore(b.win, { adesso: 1 });
+    assert.equal(b.richieste.length, TUTTI);
+    assert.ok(b.richieste.every(r => r.url.startsWith(`${SITO}motore-replay/`)), 'tutto dal sito');
+    assert.equal(b.richieste[0].url, `${SITO}motore-replay/style/font-awesome.css`);
+    assert.ok(b.casse.get(C.NOME_CACHE).has(R.MOTORE.script[0]));
+    assert.equal(m.stili[R.MOTORE.stili[0]], '.a{background:url(https://play.pokemonshowdown.com/fx/pioggia.png)}', 'gli indirizzi dentro il foglio restano quelli di Showdown');
+
+    // il sito non ha ancora il motore (404 sui suoi file): si ripiega su Showdown
+    C.azzera();
+    const senza = browserFinto();
+    const fetchBase = senza.win.fetch;
+    senza.win.fetch = async (u, opz) => (u.startsWith(`${SITO}motore-replay/`) ? { ok: false, status: 404, type: 'basic', headers: { get: () => 'text/html' }, text: async () => '' } : fetchBase(u, opz));
+    const m2 = await C.preparaMotore(senza.win, { adesso: 1 });
+    assert.equal(Object.keys(m2.script).length, 16);
+    assert.equal(senza.richieste.filter(r => r.url.startsWith('https://play.pokemonshowdown.com/')).length, TUTTI, 'poi Showdown');
 });
 
 test('assolutizzaCss: url() e @import relativi diventano quelli di Showdown, quelli già assoluti, data: e # restano', () => {

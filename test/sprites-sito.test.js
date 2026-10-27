@@ -106,3 +106,23 @@ test('tutte le specie di Showdown: una per file (spriteid), senza quelle inventa
     assert.ok(T.fontiDi(u[0]).some(f => f.tipo === 'dex'), 'la lega ha anche il PNG del Pokédex');
     assert.match(fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'sprites.yml'), 'utf8'), /npm install firebase-admin pokemon-showdown/);
 });
+
+test('motore dei replay: i file di Showdown si copiano nel sito (stesso percorso), tutto o niente, senza pagine d\'errore; il workflow lo fa prima delle immagini e spinge con pull --rebase', async () => {
+    const M = require('../tools/sprites/motore.cjs');
+    const R = require('../docs/replay-sito.js');
+    assert.ok(M.fileDi(R.MOTORE.script[0]).endsWith(path.join('docs', 'motore-replay', 'js', 'lib', 'ps-polyfill.js')));
+    assert.ok(M.fileDi(R.MOTORE.stili[1]).endsWith(path.join('docs', 'motore-replay', 'style', 'battle.css')));
+    const corpo = 'x'.repeat(300);
+    assert.equal(M.eFileDelMotore(corpo), true);
+    assert.equal(M.eFileDelMotore('<!DOCTYPE html>' + corpo), false);
+    assert.equal(M.eFileDelMotore('corto'), false);
+    const tutti = R.MOTORE.stili.concat(R.MOTORE.script);
+    const ok = await M.scaricaTutto(tutti, async () => ({ ok: true, status: 200, text: async () => corpo }));
+    assert.equal(ok.size, tutti.length);
+    await assert.rejects(M.scaricaTutto(tutti, async u => (u === tutti[4] ? { ok: false, status: 404 } : { ok: true, status: 200, text: async () => corpo })), /404/, 'un file che manca ferma tutto');
+    await assert.rejects(M.scaricaTutto(tutti, async () => ({ ok: true, status: 200, text: async () => '<html>' + corpo })), /non è un file del motore/);
+    const y = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'sprites.yml'), 'utf8');
+    assert.ok(y.indexOf('tools/sprites/motore.cjs') < y.indexOf('tools/sprites/scarica.cjs'), 'il motore è veloce: prima');
+    assert.match(y, /git add docs\/motore-replay/);
+    assert.equal((y.match(/git pull --rebase origin/g) || []).length, 2, 'durante il download il ramo si muove: si riparte dall\'ultima versione prima di spingere');
+});
