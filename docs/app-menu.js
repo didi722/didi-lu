@@ -185,6 +185,8 @@
 
         // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
+        // le immagini delle scene si decodificano subito (a riposo), non alla prima volta che entrano mentre si scorre
+        try { [...$('gx-tessere').querySelectorAll('.gx-carta img')].forEach(im => { if (typeof im.decode === 'function') im.decode().catch(() => { /* si vedrà comunque */ }); }); } catch (e) { /* pazienza */ }
         const pista = $('gx-tessere').querySelector('.gx-pista');
         const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
         const xPrima = new Map();

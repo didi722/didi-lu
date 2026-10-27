@@ -183,7 +183,7 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     for (const st of ['gx-st-open', 'gx-st-playing', 'gx-st-closed']) assert.ok(css.includes(st), st);
     // una scena alla volta: il palco ritaglia tutto e ogni scena è uno strato suo che sta in un posto dipendente da --x (0 = al centro, ±1 = fuori dallo schermo)
     assert.match(css, /html\.app \.gx-tessere \{[^}]*position: fixed; inset: 0;[^}]*overflow: hidden;/);
-    assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*translate: calc\(var\(--x, 0\) \* 100%\) 0;[^}]*will-change: translate;/);
+    assert.match(css, /html\.app \.gx-carta \{[^}]*position: absolute; inset: 0;[^}]*transform: translate3d\(calc\(var\(--x, 0\) \* 100%\), 0, 0\);[^}]*will-change: transform;/);
     // scorrere è fluido: mentre si scorre (e per un attimo dopo) le animazioni stanno ferme, restano solo strati che si spostano
     assert.match(css, /\.gx-pista\.gx-ferma :is\(\*, \*::before, \*::after\) \{ animation-play-state: paused !important; \}/);
     // il tag sta in basso, al centro della scena
