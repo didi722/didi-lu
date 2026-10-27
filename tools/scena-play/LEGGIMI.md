@@ -10,3 +10,13 @@ python3 tools/scena-play/da-gemini.py originale.jpg docs/immagini/app/scena-play
 
 Il prompt usato e i punti da regolare (il poligono `LUCARIO` dice dove sta Lucario, `BOCCA` il punto attorno a cui si rimpicciolisce Charizard) sono in testa allo script.
 Una tua immagine, `docs/immagini/app/tessera-play.png` o `.webp` (ritagliata su trasparente), ha la precedenza su questa; sta a tutta altezza, a filo del bordo in basso e a destra.
+
+## Le altre immagini (Box, Stats, locandine di Play)
+
+Stesso procedimento, con `ritaglia.py`: l'IA le disegna su sfondo piatto (verde `#00FF00`, oppure magenta `#FF00FF` per Rayquaza, che è verde), lo script toglie lo sfondo, ripulisce l'alone e ritaglia attorno ai Pokémon.
+
+```
+python3 tools/scena-play/ritaglia.py originale.jpg docs/immagini/app/tessera-box.webp verde 900        # verde o magenta, altezza in px
+```
+
+Solo i Pokémon, senza effetti: gli effetti (Poké Ball che gira, radar, sole, cuori, griglia) li disegna l'app dietro di loro.

@@ -44,7 +44,7 @@ html.app .gx-vignetta { inset: 0; pointer-events: none; background: radial-gradi
 html.app .gx-eroe { position: absolute; width: auto; max-width: none; pointer-events: none; user-select: none; -webkit-user-drag: none; }
 html.app .gx-fx { position: absolute; pointer-events: none; }
 html.app .gx-eroe.propria { image-rendering: auto; }
-html.app .gx-carta.ha-immagine .gx-eroi { display: none; }
+html.app .gx-carta.ha-immagine .gx-eroe { display: none; }       /* con un'immagine tua le figure spariscono, gli effetti (Poké Ball che gira, radar...) restano dietro */
 
 /* l'alone morbido dietro una figura (si "respira" piano) */
 html.app .gx-aura-l, html.app .gx-aura-r { position: absolute; width: calc(250 * var(--u)); height: calc(250 * var(--u)); border-radius: 50%; animation: gx-respira 2.6s ease-in-out infinite; }
@@ -57,7 +57,7 @@ html.app .gx-carta .gx-eroi::before { content: ''; position: absolute; left: 16%
 /* PLAY: un'immagine sola, Mega Lucario contro Mega Charizard Y (immagini/app/scena-play.webp, o la tua tessera-play): sta in basso a destra, il cielo e le scintille sono quelli della scena */
 
 /* BOX: i tre Pokémon in fila (fermi) davanti a una Poké Ball che gira piano */
-html.app .gx-palla { right: calc(90 * var(--u)); bottom: calc(4 * var(--u)); width: calc(300 * var(--u)); height: calc(300 * var(--u)); fill: none; stroke: rgba(255, 255, 255, .34); stroke-width: 2.4; stroke-linecap: round; animation: gx-ruota 60s linear infinite; z-index: 0; }
+html.app .gx-palla { right: calc(90 * var(--u)); bottom: calc(4 * var(--u)); width: calc(300 * var(--u)); height: calc(300 * var(--u)); fill: none; stroke: rgba(255, 255, 255, .5); stroke-width: 2.6; stroke-linecap: round; animation: gx-ruota 60s linear infinite; z-index: 0; }
 html.app .gx-c-box .e-cn { height: calc(262 * var(--u)); right: calc(118 * var(--u)); bottom: calc(-16 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(14 * var(--u)) rgba(170, 190, 255, .75)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .45)); }
 html.app .gx-c-box .e-sx { height: calc(166 * var(--u)); right: calc(300 * var(--u)); bottom: calc(26 * var(--u)); z-index: 1; transform: rotate(-6deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(190, 120, 255, .8)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); }
 html.app .gx-c-box .e-dx { height: calc(192 * var(--u)); right: calc(-12 * var(--u)); bottom: calc(24 * var(--u)); z-index: 1; transform: rotate(5deg); filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 190, 90, .75)) drop-shadow(0 calc(8 * var(--u)) calc(6 * var(--u)) rgba(10, 0, 50, .45)); }
@@ -72,7 +72,7 @@ html.app .gx-c-trainers .gx-aura-r { right: calc(70 * var(--u)); bottom: calc(30
 
 /* STATS: Mewtwo (fermo) davanti a un quadrante che si muove */
 html.app .gx-c-stats .e-mew { height: calc(292 * var(--u)); right: calc(20 * var(--u)); bottom: calc(-18 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(190, 130, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .5)); }
-html.app .gx-radar { right: calc(236 * var(--u)); bottom: calc(22 * var(--u)); width: calc(222 * var(--u)); height: calc(222 * var(--u)); z-index: 1; overflow: visible; }
+html.app .gx-radar { right: calc(-16 * var(--u)); bottom: calc(40 * var(--u)); width: calc(236 * var(--u)); height: calc(236 * var(--u)); z-index: 1; overflow: visible; }
 html.app .gx-r-gr { fill: rgba(150, 120, 255, .08); stroke: rgba(190, 170, 255, .55); stroke-width: 1.2; }
 html.app .gx-r-assi { stroke: rgba(190, 170, 255, .4); stroke-width: 1; fill: none; }
 html.app .gx-r-val { fill: rgba(80, 230, 255, .32); stroke: #6ff0ff; stroke-width: 2.4; stroke-linejoin: round; animation: gx-radar 6s ease-in-out infinite; }
