@@ -91,3 +91,18 @@ test('scarica.cjs prende anche le GIF di schiena (per il simulatore) e si ricord
     assert.match(docs('app-menu.css'), /gx-carta:not\(\.gx-centro\) \*::after[\s\S]*animation-play-state: paused !important/, 'le scene che non si vedono stanno ferme');
 });
 
+
+test('tutte le specie di Showdown: una per file (spriteid), senza quelle inventate, solo GIF animate; la lega resta in testa con tutte le sue immagini', () => {
+    const finto = { species: { all: () => [
+        { name: 'Charizard-Mega-X', spriteid: 'charizard-megax' }, { name: 'Pikachu', spriteid: 'pikachu', isNonstandard: 'Past' },
+        { name: 'Pikachu-Doppione', spriteid: 'pikachu' }, { name: 'Pokestar Smeargle', spriteid: 'pokestarsmeargle', isNonstandard: 'Custom' }, { name: 'Senza', spriteid: '' }
+    ] } };
+    const tutte = T.tutteLeSpecie(finto);
+    assert.deepEqual(tutte.map(s => s.id), ['charizard-megax', 'pikachu']);
+    assert.deepEqual(T.fontiDi(tutte[0]).map(f => f.url.split('/sprites/')[1]), ['ani/charizard-megax.gif', 'ani/charizard.gif', 'gen5ani/charizard-megax.gif']);
+    const lega = [{ id: 'pikachu', nome: 'Pikachu' }];
+    const u = T.unisci(lega, tutte);
+    assert.deepEqual(u.map(s => s.id), ['pikachu', 'charizard-megax']);
+    assert.ok(T.fontiDi(u[0]).some(f => f.tipo === 'dex'), 'la lega ha anche il PNG del Pokédex');
+    assert.match(fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'sprites.yml'), 'utf8'), /npm install firebase-admin pokemon-showdown/);
+});
