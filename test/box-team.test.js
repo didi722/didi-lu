@@ -101,8 +101,8 @@ const squadra = (id, nome, v, s, pokemon = ['Calyrex-Shadow', 'Clefairy']) => ({
 
 test('renderizza: finestrella per team con striscia, azioni, bilancio, barra delle vittorie e le tessere dei Pokémon', async () => {
     const { html, griglia } = await eseguiRenderizza([squadra('t1', 'Martiri', 9, 3), squadra('t2', 'Mai giocato', 0, 0)]);
-    assert.equal((html.match(/<div class="card" style="--i: \d+;"/g) || []).length, 2);
-    assert.match(html, /style="--i: 0;"[\s\S]*style="--i: 1;"/, 'posizione di ogni card, per l\'entrata a cascata');
+    assert.equal((html.match(/<div class="card" style="--i: \d+; --cc: #[0-9a-f]{6};"/g) || []).length, 2);
+    assert.match(html, /style="--i: 0; --cc[^"]*"[\s\S]*style="--i: 1; --cc/, 'posizione di ogni card, per l\'entrata a cascata');
     assert.match(html, /<span class="category">VGC Reg G<\/span>/);
     assert.match(html, /<span class="stats">W: 9 \/ L: 3<\/span>/);
     // barra: 9 su 12 = 75%; il team che non ha giocato non ha barra
@@ -163,4 +163,14 @@ test('applicaColoreBordo: il primo tipo di PokéAPI diventa il colore (--tipo) d
     const t2 = { style: { props: {}, setProperty(k, v) { this.props[k] = v; } } };
     await senza('Boh', 't2');
     assert.deepEqual(t2.style.props, {});
+});
+
+test('card del team: il clic su un Pokémon apre il team (non il Pokémon: quello si apre dal dettaglio del team), i badge no; ogni formato ha il suo colore', () => {
+    const inizio = box.indexOf('async function renderizza(lista)');
+    const fn = box.slice(inizio, box.indexOf('\n}\n', inizio));
+    assert.doesNotMatch(fn, /class="pkm-box"[^>]*onclick/, 'le tessere non hanno un clic loro: sale alla card');
+    assert.doesNotMatch(fn, /preparaAperturaPkm/);
+    assert.match(fn, /<div class="card" style="--i: \$\{posizione\}; --cc: \$\{coloreFormato\(/);
+    assert.match(fn, /<span class="bt-card" data-team-badge="\$\{team\.id\}" onclick="event\.stopPropagation\(\)">/);
+    assert.match(fn, /onclick="apriDettagli\('\$\{team\.id\}'\)"/);
 });

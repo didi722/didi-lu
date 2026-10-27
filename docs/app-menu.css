@@ -81,7 +81,7 @@ html.app .gx-st-closed { --s: #c9b8ff; }
 html.app .gx-pallino { flex: none; width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-radius: 50%; background: #ea1818; border: calc(2 * var(--u)) solid var(--gx-ink); animation: gx-lampeggia 1.2s ease-in-out infinite; }
 html.app .gx-st-closed .gx-pallino { background: #8a7ad0; animation: none; }
 html.app .gx-st-testi { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: calc(1 * var(--u)); }
-html.app .gx-st-testi b { font: 900 calc(12.5 * var(--u))/1.1 var(--gx-font); text-transform: uppercase; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.app .gx-st-testi b { font: 900 calc(12.5 * var(--u))/1.1 var(--gx-font); text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
 html.app .gx-st-testi small { font: 700 calc(9 * var(--u))/1.15 var(--gx-font-testo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html.app .gx-stagione em { flex: none; padding: calc(5 * var(--u)) calc(9 * var(--u)) calc(3 * var(--u)); background: #000; color: #fff; border-radius: calc(6 * var(--u)); font: 900 calc(10.5 * var(--u))/1 var(--gx-font); font-style: normal; letter-spacing: .08em; }
 html.app .gx-st-open em { animation: gx-pulsa 1.1s ease-in-out infinite; }
@@ -121,11 +121,10 @@ html.app .gx-immagine[hidden] { display: none; }
 
 /* ----- il nome della scena: un grande tag storto che brilla, in basso al centro, con la riga sotto ----- */
 html.app .gx-blocco { position: absolute; left: calc(238 * var(--u)); right: 0; bottom: calc(14 * var(--u)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: calc(6 * var(--u)); pointer-events: none; }
-html.app .gx-tag { position: relative; display: block; overflow: hidden; padding: calc(5 * var(--u)) calc(40 * var(--u)) calc(3 * var(--u)) calc(30 * var(--u)); color: #000; border: calc(5 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); transform: skewX(-9deg) rotate(-1.5deg);
+html.app .gx-tag { position: relative; display: block; overflow: hidden; padding: calc(5 * var(--u)) calc(30 * var(--u)) calc(3 * var(--u)) calc(30 * var(--u)); color: #000; border: calc(5 * var(--u)) solid var(--gx-ink); border-radius: calc(7 * var(--u)); transform: skewX(-9deg) rotate(-1.5deg);
     background: linear-gradient(180deg, color-mix(in srgb, var(--c) 52%, #fff) 0%, var(--c) 52%, color-mix(in srgb, var(--c) 74%, #000) 100%);
     box-shadow: 0 calc(7 * var(--u)) 0 var(--gx-ink), 0 0 calc(34 * var(--u)) color-mix(in srgb, var(--c) 75%, transparent), inset 0 calc(4 * var(--u)) 0 rgba(255, 255, 255, .55); }
 html.app .gx-tag span { display: block; transform: skewX(9deg); font: 900 calc(40 * var(--u))/1.04 var(--gx-font); letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 calc(3 * var(--u)) 0 rgba(255, 255, 255, .55); }
-html.app .gx-tag::after { content: '\25B6'; position: absolute; right: calc(12 * var(--u)); top: 50%; translate: 0 -48%; transform: skewX(9deg); font-size: calc(15 * var(--u)); animation: gx-lampeggia 1.2s ease-in-out infinite; }
 html.app .gx-tag::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .6), transparent); animation: gx-brilla 3.6s ease-in-out infinite; }
 @keyframes gx-brilla { 0%, 70% { translate: -120% 0; } 100% { translate: 290% 0; } }
 html.app .gx-sotto { padding: calc(3 * var(--u)) calc(14 * var(--u)) calc(2 * var(--u)); background: rgba(8, 6, 26, .66); border: calc(2 * var(--u)) solid rgba(255, 255, 255, .22); border-radius: calc(8 * var(--u)); font: 800 calc(11 * var(--u))/1.4 var(--gx-font); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }

@@ -219,3 +219,14 @@ test('collegaGesti con trascina: il dito di lato fa seguire gli elementi, il ril
     ev.pointerup({ clientX: 290, clientY: 190 });
     assert.deepEqual(chiamate, []);
 });
+
+test('gesto: uno scatto veloce conta anche se corto (un colpo di dito), uno lento e corto no; la Home non lascia il gesto al browser (touch-action: none)', () => {
+    const K = require('../docs/app-carosello.js');
+    assert.equal(K.gesto(-20, 0), 0, 'corto e senza velocità: niente');
+    assert.equal(K.gesto(-20, 0, 36, 40), 1, '20 px in 40 ms: scatto');
+    assert.equal(K.gesto(20, 2, 36, 40), -1);
+    assert.equal(K.gesto(-20, 0, 36, 400), 0, '20 px in 400 ms: lento');
+    assert.equal(K.gesto(-8, 0, 36, 10), 0, 'troppo corto anche se veloce');
+    assert.equal(K.gesto(-20, 30, 36, 40), 0, 'più in verticale che di lato');
+    assert.match(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'docs', 'app-menu.js'), 'utf8'), /trascina: segui, senzaScorrimento: true/);
+});

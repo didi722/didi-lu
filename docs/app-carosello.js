@@ -16,6 +16,8 @@
     'use strict';
 
     const SOGLIA_GESTO = 36;        // pixel di spostamento di lato che contano come "ho scorso"
+    const SOGLIA_SCATTO = 14;       // pixel minimi di uno scatto veloce
+    const VELOCITA_SCATTO = 0.35;   // px per ms: sopra, il gesto è uno scatto
     const SOGLIA_CLIC = 8;          // sotto questa distanza un tocco è un tocco, non un trascinamento
     const PREVALENZA = 1.2;         // un gesto è "di lato" se lo spostamento orizzontale supera quello verticale di questo fattore
 
@@ -114,7 +116,9 @@
     /**
      * Cosa vuol dire un gesto: +1 avanti (il dito va a sinistra), -1 indietro (il dito va a destra), 0 niente (troppo corto, o più in verticale che di lato).
      */
-    function gesto(dx, dy, soglia = SOGLIA_GESTO) {
+    function gesto(dx, dy, soglia = SOGLIA_GESTO, ms = 0) {
+        // uno scatto veloce conta anche se corto (un colpo di dito, non un trascinamento lento)
+        if (ms > 0 && Math.abs(dx) >= SOGLIA_SCATTO && Math.abs(dx) / ms >= VELOCITA_SCATTO) soglia = Math.min(soglia, SOGLIA_SCATTO);
         if (Math.abs(dx) < soglia) return 0;
         if (Math.abs(dx) < Math.abs(dy) * PREVALENZA) return 0;
         return dx < 0 ? 1 : -1;
@@ -126,13 +130,13 @@
      * Scorrere in verticale resta alla pagina (touch-action: pan-y). Un trascinamento non fa scattare il clic che lo chiude.
      * Restituisce { stacca } per toglierli.
      */
-    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO, ignora, trascina, passoPx } = {}) {
+    function collegaGesti(el, { avanti, indietro, soglia = SOGLIA_GESTO, ignora, trascina, passoPx, senzaScorrimento } = {}) {
         let inizio = null, mosso = false, orizzontale = false;
         const passoVero = () => (typeof passoPx === 'function' ? passoPx() : passoPx) || 0;
         const giu = e => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             if (ignora && e.target && e.target.closest && e.target.closest(ignora)) { inizio = null; return; }      // es. i cursori: lì il dito serve a loro
-            inizio = { x: e.clientX, y: e.clientY };
+            inizio = { x: e.clientX, y: e.clientY, t: Date.now() };
             mosso = false;
             orizzontale = false;
         };
@@ -149,8 +153,9 @@
         const su = e => {
             if (!inizio) return;
             const dx = e.clientX - inizio.x, dy = e.clientY - inizio.y;
+            const inizio0 = inizio;
             inizio = null;
-            const g = gesto(dx, dy, soglia);
+            const g = gesto(dx, dy, soglia, Date.now() - (inizio0 ? inizio0.t : Date.now()));
             // prima si smette di seguire il dito (gli elementi tornano al loro posto con la transizione), poi si cambia: finiscono dove devono, senza salti
             if (orizzontale && trascina) trascina(0, true);
             orizzontale = false;
@@ -165,7 +170,7 @@
         el.addEventListener('pointerup', su);
         el.addEventListener('pointercancel', annulla);
         el.addEventListener('click', clic, true);
-        if (el.style) el.style.touchAction = 'pan-y';
+        if (el.style) el.style.touchAction = senzaScorrimento ? 'none' : 'pan-y';     // dove la pagina non scorre (la Home) il browser non deve mai prendersi il gesto: un dito un po' storto in verticale lo annullava
         return {
             stacca() {
                 el.removeEventListener('pointerdown', giu);

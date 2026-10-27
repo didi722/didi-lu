@@ -174,7 +174,7 @@ test('le scene del menù: una per voce, con il tag in basso al centro e la riga 
     assert.match(h, /<img class="gx-immagine" data-id="box" alt="" hidden><span class="gx-vignetta"/);
     // Play ha la sua immagine già pronta (si cerca dopo la tua, tessera-play)
     assert.match(M.htmlCarta(A.VOCI[0], 0, C.esc), /<img class="gx-immagine" data-id="play" data-arte="immagini\/app\/scena-play\.webp" data-bordo alt="Mega Charizard Y and Mega Lucario face off" hidden>/);
-    assert.match(h, /<span class="gx-blocco"><b class="gx-tag"><span>Box<\/span><\/b><small class="gx-sotto">Your teams &amp; Pokémon<\/small><\/span><\/a>$/);
+    assert.match(h, /<span class="gx-blocco"><b class="gx-tag"><span>Box<\/span><\/b><\/span><\/a>$/);
 
     const css = docs('app-menu.css');
     assert.doesNotMatch(css, /@@/, 'nessun segnaposto rimasto nel foglio');
@@ -342,7 +342,7 @@ test('le scene: una per voce del gioco, nell\'ordine, con link, colore, immagine
         assert.equal(t[3], String(i));
         assert.equal(t[4], v.id);
         assert.equal(t[5], v.colore);
-        assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}"[^>]* hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b><small class="gx-sotto">[^<]+</small></span>$`));
+        assert.match(t[6], new RegExp(`^<span class="gx-sf"><span class="gx-cielo cielo-[a-z]+" aria-hidden="true"></span>[\\s\\S]*<img class="gx-immagine" data-id="${v.id}"[^>]* hidden><span class="gx-vignetta" aria-hidden="true"></span></span><span class="gx-blocco"><b class="gx-tag"><span>${v.et}</span></b></span>$`));
     });
     const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
     assert.equal(el.length, A.VOCI.length);
@@ -651,7 +651,7 @@ test('la stagione del momento: il nastro sotto il giocatore, col tempo che manca
     await passaUnGiro(); await passaUnGiro(); await passaUnGiro();
     const g = p.id('gx-giocatore').innerHTML;
     assert.match(g, /<a class="gx-stagione gx-st-open" href="hub\.html\?id=s2" data-suono="scegli">/);
-    assert.match(g, /<b>Spring Cup<\/b><small>Sign-ups close in 2d 1h<\/small>/);
+    assert.match(g, /<b>Spring Cup<\/b><\/span>/);
     assert.match(g, /<em>JOIN<\/em>/);
     // il conto alla rovescia si aggiorna da solo, ogni mezzo minuto
     assert.equal(p.intervalli.length, 2);
