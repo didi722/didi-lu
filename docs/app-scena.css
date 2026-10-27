@@ -72,7 +72,7 @@ html.app .gx-c-trainers .gx-aura-r { right: calc(70 * var(--u)); bottom: calc(30
 
 /* STATS: Mewtwo (fermo) davanti a un quadrante che si muove */
 html.app .gx-c-stats .e-mew { height: calc(292 * var(--u)); right: calc(20 * var(--u)); bottom: calc(-18 * var(--u)); z-index: 2; filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(190, 130, 255, .85)) drop-shadow(0 calc(8 * var(--u)) calc(7 * var(--u)) rgba(10, 0, 50, .5)); }
-html.app .gx-radar { right: calc(-16 * var(--u)); bottom: calc(40 * var(--u)); width: calc(236 * var(--u)); height: calc(236 * var(--u)); z-index: 1; overflow: visible; }
+html.app .gx-radar { right: calc(168 * var(--u)); bottom: calc(34 * var(--u)); width: calc(270 * var(--u)); height: calc(270 * var(--u)); z-index: 1; overflow: visible; }
 html.app .gx-r-gr { fill: rgba(150, 120, 255, .08); stroke: rgba(190, 170, 255, .55); stroke-width: 1.2; }
 html.app .gx-r-assi { stroke: rgba(190, 170, 255, .4); stroke-width: 1; fill: none; }
 html.app .gx-r-val { fill: rgba(80, 230, 255, .32); stroke: #6ff0ff; stroke-width: 2.4; stroke-linejoin: round; animation: gx-radar 6s ease-in-out infinite; }
