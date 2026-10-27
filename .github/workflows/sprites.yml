@@ -23,7 +23,7 @@ jobs:
           node-version: '24'
 
       - name: Install Dependencies
-        run: npm install firebase-admin --no-save
+        run: npm install firebase-admin pokemon-showdown --no-save
 
       - name: Scarica le immagini che mancano
         run: node tools/sprites/scarica.cjs

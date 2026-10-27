@@ -188,6 +188,20 @@ async function preparaDaSito(chiavi) {
 // -----------------------------------------------------
 // Il team della CPU lo compone cpu-partita.js dal pool del formato quando inizia la sfida, a caso, quindi esiste per ogni
 // formato, anche nuovo. La CPU sceglie le mosse con cpu-ia.js. A fine partita: stesso team della CPU, uno nuovo a caso, o ritorno al Box.
+/** Scarica in anticipo le GIF (davanti e di schiena) dei Pokémon di un team (testo da importare, impacchettato o lista di set): il browser le tiene, il service worker le serve dal sito */
+function scaldaGif(team) {
+    try {
+        const sets = typeof team === 'string' ? (team.includes('|') ? Teams.unpack(team) : Teams.import(team)) : team;
+        const visti = new Set();
+        for (const s of sets || []) {
+            const sp = DexSim.species.get(s.species || s.name);
+            if (!sp.exists || visti.has(sp.spriteid)) continue;
+            visti.add(sp.spriteid);
+            for (const cartella of ['ani', 'ani-back']) new Image().src = `https://play.pokemonshowdown.com/sprites/${cartella}/${sp.spriteid}.gif`;
+        }
+    } catch (e) { /* è solo un anticipo */ }
+}
+
 async function preparaCpu(chiaveTeam) {
     $('opzione-bot').hidden = true;
     const ritorno = $('link-hub');
@@ -217,6 +231,7 @@ async function preparaCpu(chiaveTeam) {
         return mostraMessaggioCampo(`Couldn't start the practice: ${errore.message}`);
     }
 
+    scaldaGif(primo.team); scaldaGif(dati.team && dati.team.testo);     // le GIF dei due team si scaricano subito, mentre si prepara il resto: in campo ci sono già
     document.body.classList.add('prova-cpu');
     cpu = {
         cerebro: null, team: primo.team, giocatore: dati, errori: 0, rqid: null,

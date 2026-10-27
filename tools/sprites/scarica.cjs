@@ -24,15 +24,29 @@ function elencoSpecie(players, stagioni) {
     return [...nomi.entries()].map(([id, nome]) => ({ id, nome }));
 }
 
+/**
+ * TUTTE le specie di Showdown (non solo quelle della lega): la CPU compone team con qualunque Pokémon del formato e le sue GIF, chieste a Showdown, arrivavano lente.
+ * Per queste solo le GIF animate (davanti e di schiena), senza i PNG del Pokédex. L'elenco viene dal simulatore (pokemon-showdown): `spriteid` è il nome del file di Showdown.
+ */
+function tutteLeSpecie(Dex = require('pokemon-showdown').Dex) {
+    const viste = new Map();
+    for (const s of Dex.species.all()) {
+        if (s.isNonstandard && s.isNonstandard !== 'Past') continue;
+        if (!s.spriteid || viste.has(s.spriteid)) continue;
+        viste.set(s.spriteid, { id: s.spriteid, nome: s.name, soloGif: true });
+    }
+    return [...viste.values()];
+}
+
 /** Da dove scaricare una specie, in ordine, e dove metterla: la GIF animata, la GIF Gen 5 (salvata come animata), il PNG del Pokédex */
-function fontiDi({ id, nome }) {
+function fontiDi({ id, nome, soloGif }) {
     const { completo, base } = Sprite.idSprite(nome);
     const ids = [completo].concat(base && base !== completo ? [base] : []);
     const fonti = [];
     for (const i of ids) fonti.push({ url: `${SD}/ani/${i}.gif`, tipo: 'ani' });
     fonti.push({ url: `${SD}/gen5ani/${completo}.gif`, tipo: 'ani' });
     for (const i of ids) fonti.push({ url: `${SD}/dex/${i}.png`, tipo: 'dex' });
-    return fonti.map(f => ({ ...f, file: path.join(CARTELLA, f.tipo, `${id}.${f.tipo === 'ani' ? 'gif' : 'png'}`) }));
+    return fonti.filter(f => !(soloGif && f.tipo === 'dex')).map(f => ({ ...f, file: path.join(CARTELLA, f.tipo, `${id}.${f.tipo === 'ani' ? 'gif' : 'png'}`) }));
 }
 
 /** Vero se i byte sono una GIF o un PNG (Showdown, per i file che non ha, può rispondere con una pagina) */
@@ -60,6 +74,12 @@ async function scarica(url, tipo, fetchFn, tentativi = 3) {
         await new Promise(r => setTimeout(r, 400 * (t + 1)));
     }
     return null;
+}
+
+/** Le specie della lega per prime (con tutte le loro immagini), poi le altre di Showdown che mancano */
+function unisci(lega, tutte) {
+    const ids = new Set(lega.map(s => s.id));
+    return lega.concat(tutte.filter(s => !ids.has(s.id)));
 }
 
 async function principale(specie, { fetchFn = fetch, concorrenza = 6, log = console.log } = {}) {
@@ -119,7 +139,7 @@ async function leggiDati() {
 }
 
 if (require.main === module) {
-    leggiDati().then(({ players, stagioni }) => principale(elencoSpecie(players, stagioni))).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+    leggiDati().then(({ players, stagioni }) => principale(unisci(elencoSpecie(players, stagioni), process.env.SENZA_TUTTE ? [] : tutteLeSpecie()))).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
 }
 
-module.exports = { elencoSpecie, fontiDi, eImmagine, indiceDa, scarica, principale, CARTELLA };
+module.exports = { tutteLeSpecie, unisci, elencoSpecie, fontiDi, eImmagine, indiceDa, scarica, principale, CARTELLA };
