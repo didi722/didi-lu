@@ -16,6 +16,8 @@
 //   SpritePkm.dex(testo)             https://play.pokemonshowdown.com/sprites/dex/<id>.png
 //   SpritePkm.pokeapi(testo)         nome per PokéAPI: "mr-mime", "great-tusk", "type-null" (minuscolo, spazi → trattini)
 //   SpritePkm.riserva(img, id)       per onerror: prima il PNG del Pokédex, poi la Poké Ball
+//   SpritePkm.catena(testo)          gli indirizzi da provare in ordine per l'immagine animata di un Pokémon (GIF, GIF Gen 5, PNG del Pokédex)
+//   SpritePkm.ritenta(img)           per onerror dei compagni (data-pkm): riprova la stessa GIF (la rete può essersi solo impuntata), poi le altre della catena; alla fine nasconde
 //
 // Funziona nel browser (window.SpritePkm) e in Node (require).
 // =====================================================
@@ -76,5 +78,42 @@
         img.src = POKEBALL;
     }
 
-    return { SD, POKEBALL, FORME_DI_PARTENZA, BASI_CON_TRATTINO, pulisciSpecie, idSprite, id, gif, dex, pokeapi, riserva };
+    /** Gli indirizzi da provare, in ordine, per l'immagine animata di un Pokémon (le stesse strade di stats.js, senza la Poké Ball): la GIF, la GIF in stile Gen 5, il PNG del Pokédex; poi la GIF della specie base */
+    function catena(specie) {
+        const { completo, base } = idSprite(specie);
+        const per = id => [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`];
+        const lista = per(completo);
+        if (base && base !== completo) lista.push(`${SD}/ani/${base}.gif`);
+        return [...new Set(lista)];
+    }
+
+    const ATTESA_RITENTA_MS = 700;
+
+    /**
+     * Per l'onerror di un'immagine di Pokémon che porta il suo nome (data-pkm): una GIF che non arriva spesso è solo la rete che si impunta (tante richieste insieme, un
+     * telefono in movimento), e nasconderla per sempre, come si faceva, lasciava il compagno senza immagine fino alla visita dopo. Qui: prima si riprova la stessa GIF dopo un
+     * momento, poi si passa alle altre della catena (la GIF Gen 5, il PNG del Pokédex); solo se nessuna c'è l'immagine sparisce. Intanto non si vede (niente icona rotta) e
+     * riappare appena una carica. Ritorna true se ha riprovato, false se ha rinunciato.
+     */
+    function ritenta(img, { setTempo } = {}) {
+        if (!img) return false;
+        const dati = img.dataset || (img.dataset = {});
+        const nome = dati.pkm;
+        const passi = nome ? [{ url: gif(nome), dopo: ATTESA_RITENTA_MS }].concat(catena(nome).slice(1).map(url => ({ url, dopo: 0 }))) : [];
+        const fase = Number(dati.spriteTentativo || 0);
+        dati.spriteTentativo = String(fase + 1);
+        if (fase >= passi.length) {
+            img.onerror = null;
+            if (img.style) img.style.display = 'none';
+            return false;
+        }
+        if (img.style) img.style.visibility = 'hidden';
+        img.onload = () => { if (img.style) img.style.visibility = ''; };
+        const vai = () => { img.src = passi[fase].url; };
+        const aspetta = setTempo || (typeof setTimeout === 'function' ? setTimeout : null);
+        if (passi[fase].dopo && aspetta) aspetta(vai, passi[fase].dopo); else vai();
+        return true;
+    }
+
+    return { SD, POKEBALL, FORME_DI_PARTENZA, BASI_CON_TRATTINO, ATTESA_RITENTA_MS, pulisciSpecie, idSprite, id, gif, dex, pokeapi, catena, riserva, ritenta };
 });

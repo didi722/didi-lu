@@ -44,7 +44,7 @@ test('htmlLato / htmlPoster con il compagno: il Pokémon preferito sta sullo ste
     const gif = n => 'gif/' + n.toLowerCase() + '.gif';
     const conPkm = sd('a1', { p1: { nome: 'Didi', colore: '#31c489', avatar: 'a.png', pkm: 'Gengar', vinti: 2 } });
     const h = K.htmlPoster(conPkm, 0, gif);
-    assert.match(h, /<span class="mp-scena"><img class="mp-avatar"[^>]*><img class="mp-pkm" draggable="false" src="gif\/gengar\.gif" data-pkm="Gengar" alt="" onerror="this\.style\.display='none'"><\/span>/);
+    assert.match(h, /<span class="mp-scena"><img class="mp-avatar"[^>]*><img class="mp-pkm" draggable="false" src="gif\/gengar\.gif" data-pkm="Gengar" alt="" onerror="SpritePkm\.ritenta\(this\)"><\/span>/, 'una GIF che non arriva si riprova (e passa alle altre della catena), non sparisce subito');
     assert.equal((h.match(/class="mp-pkm"/g) || []).length, 1, 'solo chi ha un Pokémon preferito');
     assert.doesNotMatch(K.htmlPoster(conPkm, 0), /mp-pkm/, 'senza la funzione delle gif niente compagno');
     assert.doesNotMatch(K.htmlPoster(sd('a1'), 0, gif), /mp-pkm/, 'senza Pokémon preferito niente compagno');

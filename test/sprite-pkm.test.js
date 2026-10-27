@@ -90,3 +90,44 @@ test('le pagine usano la regola condivisa: nessun nome di GIF costruito a mano d
     assert.match(docs('stats.js'), /const \{ idSprite \} = window\.SpritePkm;/);
     assert.match(docs('battle-extra.js'), /window\.SpritePkm \? window\.SpritePkm\.id\(specie\)/);
 });
+
+test('catena: la GIF animata, la GIF Gen 5, il PNG del Pokédex; per le forme anche la GIF della specie base', () => {
+    assert.deepEqual(S.catena('Pikachu'), [
+        'https://play.pokemonshowdown.com/sprites/ani/pikachu.gif', 'https://play.pokemonshowdown.com/sprites/gen5ani/pikachu.gif', 'https://play.pokemonshowdown.com/sprites/dex/pikachu.png'
+    ]);
+    const u = S.catena('Urshifu-Rapid-Strike');
+    assert.equal(u[0], S.gif('Urshifu-Rapid-Strike'));
+    assert.equal(u[u.length - 1], 'https://play.pokemonshowdown.com/sprites/ani/urshifu.gif');
+    assert.equal(new Set(u).size, u.length);
+    // lo stesso primo indirizzo di stats.js, così quello che il caricamento all'apertura scarica è quello che Stats chiede
+    assert.match(docs('stats.js'), /\[`\$\{SD\}\/ani\/\$\{id\}\.gif`, `\$\{SD\}\/gen5ani\/\$\{id\}\.gif`, `\$\{SD\}\/dex\/\$\{id\}\.png`/);
+});
+
+test('ritenta (onerror dei compagni): riprova la stessa GIF dopo un momento, poi la Gen 5 e il PNG; solo se nessuna c\'è l\'immagine sparisce; intanto non si vede e riappare appena una carica', () => {
+    const img = { dataset: { pkm: 'Pikachu' }, style: {}, onerror: () => {} };
+    const attese = [];
+    const setTempo = (f, ms) => { attese.push(ms); f(); return 1; };
+    assert.equal(S.ritenta(img, { setTempo }), true);
+    assert.equal(img.src, S.gif('Pikachu'), 'la stessa GIF: la rete può essersi solo impuntata');
+    assert.deepEqual(attese, [S.ATTESA_RITENTA_MS], 'dopo un momento');
+    assert.equal(img.style.visibility, 'hidden', 'niente icona rotta');
+    img.onload();
+    assert.equal(img.style.visibility, '', 'appena una carica riappare');
+    assert.equal(S.ritenta(img, { setTempo }), true);
+    assert.equal(img.src, 'https://play.pokemonshowdown.com/sprites/gen5ani/pikachu.gif');
+    assert.equal(S.ritenta(img, { setTempo }), true);
+    assert.equal(img.src, 'https://play.pokemonshowdown.com/sprites/dex/pikachu.png');
+    assert.equal(S.ritenta(img, { setTempo }), false, 'finite le strade: sparisce');
+    assert.equal(img.style.display, 'none');
+    assert.equal(img.onerror, null);
+    assert.equal(S.ritenta({ dataset: {}, style: {} }), false, 'senza nome (data-pkm) non c\'è niente da riprovare');
+    assert.equal(S.ritenta(null), false);
+});
+
+test('i compagni (classifica, Matches, Trainers) usano ritenta e non nascondono la GIF al primo errore', () => {
+    for (const f of ['app-classifica.js', 'app-matches.js', 'app-trainers.js']) {
+        const js = docs(f);
+        assert.match(js, /data-pkm="\$\{esc\([a-z]+\.pkm\)\}"[^`]*onerror="SpritePkm\.ritenta\(this\)"/, f);
+        assert.doesNotMatch(js, /class="(?:ac|mp|at)-pkm"[^`]*onerror="this\.style\.display='none'"/, f);
+    }
+});

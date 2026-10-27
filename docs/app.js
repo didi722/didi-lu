@@ -49,9 +49,9 @@
     // gli script che una pagina dell'app carica oltre a quelli comuni (app-comune.js, app-gioco.js): ognuno disegna a modo suo i dati che la pagina del sito ha
     // appena calcolato (vedi pubblica), così il sito da PC non cambia di una riga
     const SCRIPT_PAGINE = {
-        'matches.html': ['app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'],
-        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'scala-pkm.js', 'app-trainers.js'],
-        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js'],
+        'matches.html': ['app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'],
+        'players.html': ['sprite-pkm.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-trainers.js'],
+        'stats.html': ['app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js'],
         'box.html': ['app-carosello.js', 'app-teambuilder.js', 'app-box-badge.js'],
         'practice.html': ['app-scena.js', 'app-practice.js']
     };

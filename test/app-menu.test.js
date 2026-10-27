@@ -143,7 +143,7 @@ test('menu.html: tutti gli id che lo script cerca ci sono (e quelli creati al vo
     assert.match(html, /<script src="sfide\.js"><\/script>/);
     assert.match(html, /<body class="gx-menu">/);
     // gli Achievements usano i moduli dei badge del sito (prima dello script dell'app), che a loro volta vogliono Statistiche e Titoli
-    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-carosello\.js"><\/script>\s*<script src="app-scena\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
+    assert.match(html, /<script src="statistiche\.js"><\/script>\s*<script src="titoli\.js"><\/script>\s*<script src="fiocchi\.js"><\/script>\s*<script src="badge-team\.js"><\/script>\s*<script src="badge-allenatore\.js"><\/script>\s*<script src="app-comune\.js"><\/script>\s*<script src="app-carosello\.js"><\/script>\s*<script src="app-scena\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="app-precarica\.js"><\/script>\s*<script src="app-achievements\.js"><\/script>\s*<script src="app-menu\.js"><\/script>\s*<\/body>/);
     // il menù non è una pagina per i motori di ricerca né per il browser da PC: dal browser si torna alla home (provato sotto)
     assert.match(html, /<title>Menu \| Sant'Alvise League<\/title>/);
     assert.match(html, /<div class="gx-splash" id="gx-splash"[^>]* hidden>/, 'la schermata del titolo parte nascosta: la mostra lo script una volta a visita');
@@ -238,7 +238,7 @@ function elemento(id) {
  * Il menù di menu.html con una finestra finta. Gli elementi nascono dagli id veri del markup; quelli che lo script disegna (come il tasto "Log in"
  * dentro il pannello del giocatore) nascono quando compaiono nell'innerHTML di chi li contiene.
  */
-function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, giocatori = {}, stagioni = {}, firebaseAttivo = true, loginRiesce = true } = {}) {
+function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, giocatori = {}, stagioni = {}, firebaseAttivo = true, loginRiesce = true, precarica = null } = {}) {
     const registro = {};
     const nuovo = id => {
         const e = elemento(id);
@@ -314,6 +314,7 @@ function paginaMenu({ app = true, sessione = {}, memoria = {}, utenti = {}, gioc
         history: { state: null, pushState() {}, back() {} }
     };
     if (app) classiHtml.add('app');
+    if (precarica) win.AppPrecarica = precarica;
     const r = M.avvia(win);
     return {
         win, doc, r, registro, classiHtml, proprieta, sessione, memoria, ...registroEventi,
@@ -421,6 +422,58 @@ test('la barra di caricamento: finché le immagini delle scene non sono arrivate
         splash.click();
         assert.deepEqual(p.suoni, ['avvio']);
         assert.ok(p.classiHtml.has('gx-pronto'));
+    } finally { delete global.Image; }
+});
+
+test('la barra di caricamento comprende le GIF dei Pokémon (app-precarica.js): partono con gli id delle stagioni (senza le cup) e il tocco aspetta anche loro', async () => {
+    const lista = [];
+    global.Image = class { set src(v) { this._src = v; lista.push(this); } };
+    const chiamate = [];
+    const precarica = { avvia: (win, o) => { chiamate.push(o); return new Promise(() => {}); } };
+    try {
+        const stagioni = { sbeta: { info: { name: 'Beta', tipo: 'league' } }, s0: { info: { name: 'Coppa', tipo: 'cup' } }, s1: { info: { name: 'Uno', tipo: 'league' } } };
+        const p = paginaMenu({ stagioni, precarica, giocatori: { didi: { info: { name: 'Didi' } } } });
+        assert.equal(chiamate.length, 1, 'le GIF partono appena c\'è Firebase');
+        assert.equal(typeof chiamate[0].avanza, 'function');
+        assert.equal(typeof chiamate[0].fine, 'function');
+        assert.equal(chiamate[0].giocatore(), '', 'nessuno è collegato');
+        await new Promise(r => setImmediate(r));
+        assert.deepEqual(await chiamate[0].idsStagioni, ['sbeta', 's1'], 'le stagioni con i team di Stats; le cup no');
+        const splash = p.id('gx-splash');
+        // le immagini delle scene sono arrivate, le GIF no: si aspetta
+        lista.forEach(i => i.onload());
+        assert.ok(splash.classi.has('carica'), 'le GIF non sono finite');
+        splash.click();
+        assert.deepEqual(p.suoni, []);
+        chiamate[0].avanza(.5);
+        assert.ok(splash.classi.has('carica'));
+        chiamate[0].fine();
+        assert.ok(!splash.classi.has('carica'), 'a GIF scaricate (o scaduto il tetto) il tocco chiude');
+        splash.click();
+        assert.deepEqual(p.suoni, ['avvio']);
+        // e se tutto va storto la barra non tiene ferma l'app per sempre
+        const q = paginaMenu({ precarica });
+        lista.forEach(i => i.onload());
+        const sblocca = q.timer.find(t => t.ms === 32000);
+        assert.ok(sblocca, 'tetto di 32 secondi');
+        sblocca.f();
+        assert.ok(!q.id('gx-splash').classi.has('carica'));
+    } finally { delete global.Image; }
+});
+
+test('senza Firebase (rete assente) il menù parte lo stesso e le GIF non lo tengono fermo; se app-precarica.js manca, nemmeno', () => {
+    const chiamate = [];
+    const p = paginaMenu({ firebaseAttivo: false, precarica: { avvia: (w, o) => { chiamate.push(o); return Promise.resolve(); } } });
+    assert.equal(chiamate.length, 0, 'finché Firebase non c\'è si aspetta');
+    const attesaFirebase = p.intervalli.find(i => i.ms === 150);
+    for (let giro = 0; giro < 60; giro++) attesaFirebase.f();
+    assert.equal(chiamate.length, 1, 'dopo l\'ultimo tentativo si parte lo stesso (con quello che c\'è in memoria)');
+    const lista = [];
+    global.Image = class { set src(v) { this._src = v; lista.push(this); } };
+    try {
+        const q = paginaMenu({});
+        lista.forEach(i => i.onload());
+        assert.ok(!q.id('gx-splash').classi.has('carica'), 'senza app-precarica.js c\'è solo la barra delle scene, come prima');
     } finally { delete global.Image; }
 });
 

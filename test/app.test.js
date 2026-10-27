@@ -278,7 +278,7 @@ test('dall\'icona sulla Home dell\'iPhone, in una pagina del gioco: classi app e
     assert.deepEqual(s.reindirizzato, [], 'una pagina diversa dalla home si apre dov\'è');
     assert.deepEqual(s.fogli(), ['app-gioco.css', 'app-gioco-pagine.css'], 'l\'aspetto comune e quello delle pagine');
     // suoni (per ogni pagina dell'app), poi le parti comuni e l'interfaccia in alto: nell'ordine in cui servono (async = false: partono uno dopo l'altro)
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'], 'poi quelli della pagina (Matches: il carosello della classifica e le locandine dei showdown)');
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js'], 'poi quelli della pagina (Matches: il carosello della classifica e le locandine dei showdown)');
     for (const f of s.doc.head.figli.filter(x => x.tagName === 'SCRIPT')) assert.equal(f.async, false, `${f.src}: async = false per l'ordine`);
     assert.equal(s.invito(), null);
 });
@@ -421,7 +421,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
     let s = apri({ ua: UA.pc, percorso: '/didi-lu/stats.html', search: '?app=1', memoria });
     assert.equal(s.risultato.modo, 'installata');
     assert.equal(memoria.appForzata, '1');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'scala-pkm.js', 'app-stats.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'nome-scorrevole.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-stats.js']);
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', memoria });
     assert.equal(s.risultato.modo, 'installata', 'la volta dopo, senza parametro, resta acceso');
     s = apri({ ua: UA.pc, percorso: '/didi-lu/box.html', search: '?app=0', memoria });
@@ -435,7 +435,7 @@ test('?app=1 accende l\'aspetto da app anche da PC e lo ricorda; ?app=0 lo spegn
 test('con lo storage del browser bloccato (navigazione privata...) il sito funziona uguale', () => {
     const s = apri({ ua: UA.iphone, percorso: '/didi-lu/matches.html', storageRotto: true, search: '?app=1' });
     assert.equal(s.risultato.modo, 'installata');
-    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
+    assert.deepEqual(s.script(), ['app-suoni.js', 'app-comune.js', 'app-gioco.js', 'app-carosello.js', 'altezze-pkm.js', 'scala-pkm.js', 'app-classifica.js', 'app-matches.js']);
     // senza memoria della visita la home si riconosce come prima apertura: si va al menù (che non rimanda da nessuna parte, quindi nessun ciclo)
     const m = apri({ ua: UA.iphone, percorso: '/didi-lu/index.html', storageRotto: true, search: '?app=1', punti: 5 });
     assert.deepEqual(m.reindirizzato, ['menu.html']);

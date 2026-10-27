@@ -41,7 +41,7 @@
     /** Un giocatore: niente sfondo, lui sul palco tondo nel suo colore, sotto il nome, il posto, i punti e i numeri; `vs` è il tasto per sfidarlo (già HTML) */
     function htmlCarta(p, indice, vs, gif) {
         const d = righeDati(p);
-        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" data-pkm="${esc(p.pkm)}" alt="${esc(p.pkm)}" onerror="this.style.display='none'">` : '';
+        const pkm = p.pkm && gif ? `<img class="ac-pkm" draggable="false" src="${esc(gif(p.pkm))}" data-pkm="${esc(p.pkm)}" alt="${esc(p.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
         return `<article class="ac-carta" data-i="${indice}" style="--c:${coloreSicuro(p.colore)}">
             <a class="ac-link" draggable="false" href="${esc(indirizzo(p.nome))}" aria-label="${esc(p.nome)}: open the trainer card" data-suono="apri">
                 <span class="ac-palco"><span class="pal-aura" aria-hidden="true"></span><span class="pal-pedana" aria-hidden="true"></span><span class="ac-scena">${avatar(p, 'ac-avatar')}${pkm}</span></span>

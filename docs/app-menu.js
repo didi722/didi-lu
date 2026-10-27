@@ -275,6 +275,18 @@
         const splash = $('gx-splash');
         const giaVisto = (() => { try { return !!win.sessionStorage.getItem(CHIAVE_SPLASH); } catch (e) { return false; } })();
         let caricando = false;                           // finché le immagini non sono arrivate la schermata del titolo non si chiude
+        // le GIF dei Pokémon (compagni, team di Stats...) si scaricano all'apertura (app-precarica.js): partono quando Firebase c'è, e il menù dà gli id delle stagioni appena li ha trovati
+        let risolviIds = () => {};
+        const idsStagioni = new Promise(r => { risolviIds = r; });
+        let gifAvviate = false, barraGif = {};
+        const avviaGif = () => {
+            if (gifAvviate) return;
+            gifAvviate = true;
+            const P = win.AppPrecarica;
+            if (!P) { if (barraGif.fine) barraGif.fine(); return; }
+            P.avvia(win, { idsStagioni, giocatore: () => (giocatore ? giocatore.id : ''), setTempo: (f, ms) => win.setTimeout(f, ms), avanza: barraGif.avanza, fine: barraGif.fine })
+                .catch(() => { if (barraGif.fine) barraGif.fine(); });
+        };
         const chiudiSplash = () => {
             if (!splash || splash.hidden || caricando) return;
             try { win.sessionStorage.setItem(CHIAVE_SPLASH, '1'); } catch (e) { /* la prossima volta si rivede */ }
@@ -288,15 +300,20 @@
             const scintilleSplash = $('gx-splash-scintille');
             if (scintilleSplash) scintilleSplash.innerHTML = S.htmlScintille(16, 11);
             splash.hidden = false;
-            // la barra di caricamento: le immagini delle scene si scaricano ora, così scorrere e aprire Play è subito pronto (al massimo 10 secondi)
+            // la barra di caricamento: le immagini delle scene (un quinto) e le GIF dei Pokémon (il resto) si scaricano ora, così scorrere, aprire Play, Stats o una stagione è subito pronto
             const tocca = splash.querySelector ? splash.querySelector('.gx-splash-tocca') : null, barra = splash.querySelector ? splash.querySelector('.gx-splash-carica') : null;
             const testo = tocca ? tocca.textContent : '';
             const mostra = f => { if (barra) barra.style.setProperty('--p', String(Math.min(1, f))); if (tocca) tocca.textContent = 'Loading ' + Math.round(Math.min(1, f) * 100) + '%'; };
+            const parte = { scene: 0, gif: 0 }, finito = { scene: false, gif: false };
+            const aggiorna = () => mostra(.2 * parte.scene + .8 * parte.gif);
+            const prova = () => { if (finito.scene && finito.gif && caricando) { caricando = false; splash.classList.remove('carica'); if (tocca) tocca.textContent = testo; } };
             caricando = true; splash.classList.add('carica'); mostra(0);
-            S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms), avanza: mostra, fine: () => { caricando = false; splash.classList.remove('carica'); if (tocca) tocca.textContent = testo; } });
+            S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms), avanza: f => { parte.scene = f; aggiorna(); }, fine: () => { finito.scene = true; parte.scene = 1; aggiorna(); prova(); } });
+            barraGif = { avanza: f => { parte.gif = f; aggiorna(); }, fine: () => { finito.gif = true; parte.gif = 1; aggiorna(); prova(); } };
+            win.setTimeout(() => { finito.scene = finito.gif = true; prova(); }, 32000);         // la rete non tiene mai ferma l'app
             splash.addEventListener('click', chiudiSplash);
             splash.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') chiudiSplash(); });
-        } else { html.classList.add('gx-pronto'); S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms) }); }       // niente schermata del titolo: le immagini si scaldano lo stesso, in silenzio
+        } else { html.classList.add('gx-pronto'); S.precarica(S.immaginiScene(), { setTempo: (f, ms) => win.setTimeout(f, ms) }); }       // niente schermata del titolo: le immagini si scaldano lo stesso, in silenzio (e le GIF, se ne mancano)
 
         // ----- la finestra di accesso -----
         const aggiornaClasse = () => html.classList.toggle('gx-dialogo-aperto', !!doc.querySelector('.gx-dialogo:not([hidden])'));
@@ -417,6 +434,7 @@
                     trovate.push(...blocco);
                     if (!blocco[blocco.length - 1].info) break;
                 }
+                risolviIds(trovate.filter(t => t.info && String(t.info.tipo || '').toLowerCase().trim() !== 'cup').map(t => t.id));      // per le GIF dei team di Stats
                 stagioni = stagioniDaMostrare(trovate, Date.now());
                 stagione = stagioni[0] || null;
                 // con le iscrizioni aperte serve sapere chi è già dentro (per il tasto del nastro e per l'annuncio)
@@ -426,7 +444,7 @@
                         st.iscritti = v ? Object.keys(v) : [];
                     } catch (e) { st.iscritti = undefined; }
                 }
-            } catch (e) { stagione = null; stagioni = []; }
+            } catch (e) { stagione = null; stagioni = []; risolviIds([]); }
             indiceNastro = 0;
             disegnaGiocatore();
             provaAnnuncio();
@@ -492,9 +510,10 @@
         const parti = () => {
             auth().onAuthStateChanged(user => { caricaGiocatore(user); });
             caricaStagione();
+            avviaGif();
         };
         if (win.firebase && win.firebase.apps && win.firebase.apps.length) parti();
-        else { let n = 0; const t = win.setInterval(() => { if (win.firebase && win.firebase.apps && win.firebase.apps.length) { win.clearInterval(t); parti(); } else if (++n > 50) win.clearInterval(t); }, 150); }
+        else { let n = 0; const t = win.setInterval(() => { if (win.firebase && win.firebase.apps && win.firebase.apps.length) { win.clearInterval(t); parti(); } else if (++n > 50) { win.clearInterval(t); risolviIds([]); avviaGif(); } }, 150); }
 
         return { opzioni, disegnaGiocatore };
     }

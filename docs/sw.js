@@ -17,9 +17,9 @@ const OFFLINE = 'offline.html';
 
 // le immagini (cache a parte: l'attivazione toglie solo le vecchie `sant-alvise-offline-*`)
 const CACHE_IMMAGINI = 'sant-alvise-immagini-v1';          // risposte normali (CORS o dello stesso sito)
-const CACHE_OPACHE = 'sant-alvise-immagini-opache-v1';      // se l'host degli sprite non permette il CORS: risposte "opache", che Chrome conta molto di più: poche
+const CACHE_OPACHE = 'sant-alvise-immagini-opache-v1';      // se l'host degli sprite non permette il CORS: risposte "opache", che Chrome conta molto di più: meno
 const MASSIMO_IMMAGINI = 400;
-const MASSIMO_OPACHE = 60;
+const MASSIMO_OPACHE = 150;          // abbastanza per le GIF che il caricamento iniziale scarica (app-precarica.js: compagni e team di Stats); se non c'è spazio il salvataggio salta in silenzio
 // gli sprite dei Pokémon (solo questi host e questi percorsi: tutto il resto va in rete come prima)
 const SPRITE = [
     { host: 'play.pokemonshowdown.com', percorso: '/sprites/' },
