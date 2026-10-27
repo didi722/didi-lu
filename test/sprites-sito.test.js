@@ -42,8 +42,9 @@ test('scarica.cjs: si tengono solo vere GIF e PNG (Showdown, per un file che non
     assert.equal(T.eImmagine(Buffer.concat([Buffer.from('<html>'), Buffer.alloc(100)]), 'ani'), false);
     assert.equal(T.eImmagine(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(100)]), 'dex'), true);
     assert.equal(T.eImmagine(Buffer.from('GIF89a'), 'ani'), false, 'troppo piccola');
-    const i = T.indiceDa({ ani: ['b', 'a'], dex: new Set(['z']) });
-    assert.match(i, /window\.SpriteLocali = \{ ani: \["a","b"\], dex: \["z"\] \};/);
+    const i = T.indiceDa({ ani: ['b', 'a'], dex: new Set(['z']), back: ['q', 'p'] });
+    assert.match(i, /window\.SpriteLocali = \{ ani: \["a","b"\], dex: \["z"\], back: \["p","q"\] \};/);
+    assert.match(T.indiceDa({ ani: ['a'], dex: [] }), /back: \[\] \};/, 'senza GIF di schiena l\'elenco è vuoto');
 });
 
 test('scarica: salta quello che c\'è già, prova le fonti in ordine e ricorda chi non ha niente', async () => {
@@ -61,7 +62,7 @@ test('scarica: salta quello che c\'è già, prova le fonti in ordine e ricorda c
 });
 
 test('il sito: sprites/indice.js c\'è (vuoto finché il workflow non gira), lo carica ogni pagina che usa sprite-pkm.js prima di lui, il service worker tiene per sempre sprites/, Stats ci guarda per prima', () => {
-    assert.match(docs('sprites/indice.js'), /window\.SpriteLocali = \{ ani: \[.*\], dex: \[.*\] \};/);
+    assert.match(docs('sprites/indice.js'), /window\.SpriteLocali = \{ ani: \[.*\], dex: \[.*\], back: \[.*\] \};/);
     for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.html'))) {
         const h = docs(f);
         if (!h.includes('<script src="sprite-pkm.js"></script>')) continue;
@@ -69,7 +70,7 @@ test('il sito: sprites/indice.js c\'è (vuoto finché il workflow non gira), lo 
     }
     const { SCRIPT_PAGINE } = require('../docs/app.js');
     assert.ok(SCRIPT_PAGINE['players.html'].indexOf('sprites/indice.js') < SCRIPT_PAGINE['players.html'].indexOf('sprite-pkm.js'));
-    assert.match(docs('sw.js'), /\/sprites\\\/\(ani\|dex\)\\\/\/\.test\(u\.pathname\)\) return 'sprite'/);
+    assert.match(docs('sw.js'), /\/sprites\\\/\(ani\|ani-back\|dex\)\\\/\/\.test\(u\.pathname\)\) return 'sprite'/);
     assert.match(docs('stats.js'), /window\.SpritePkm\.locale \? window\.SpritePkm\.locale\(specie\)/);
 });
 
@@ -82,3 +83,11 @@ test('il workflow Sprites: ogni giorno e a mano, con le credenziali di Firebase,
     assert.match(y, /node tools\/sprites\/scarica\.cjs/);
     assert.match(y, /git add docs\/sprites\b/);
 });
+
+test('scarica.cjs prende anche le GIF di schiena (per il simulatore) e si ricorda chi non le ha; la lista pratica mostra tutti e sei i Pokémon e senza caricamento a richiesta', () => {
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'tools', 'sprites', 'scarica.cjs'), 'utf8'), /assenti\.json[\s\S]*ani-back\/\$\{i\}\.gif/);
+    assert.match(docs('app-gioco-pagine.css'), /\.pr-carta \.pr-mini \{ flex: 1 1 0; min-width: 0; width: auto;/);
+    assert.doesNotMatch(docs('app-practice.js'), /class="pr-mini"[^`]*loading="lazy"/);
+    assert.match(docs('app-menu.css'), /gx-carta:not\(\.gx-centro\) \*::after[\s\S]*animation-play-state: paused !important/, 'le scene che non si vedono stanno ferme');
+});
+

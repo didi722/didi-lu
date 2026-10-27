@@ -16,6 +16,7 @@
        <script src="risultati-match.js"></script>
        <script src="team-visibili.js"></script>
        <script src="replay-sito.js"></script>
+       <script src="replay-carica.js"></script>
           <script src="sfide.js"></script>
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="controlli.css">
@@ -1377,6 +1378,8 @@ function chiudiModaleTeamsIscritti() {
 async function apriModaleShowdown(sdId, sdData) {
     const info = sdData.info || {};
     const matches = sdData.matches || {};
+    // il passo dopo, per chi guarda un showdown, è un replay: il suo motore (Showdown, qualche MB) si prepara intanto, in silenzio (replay-carica.js)
+    if (typeof ReplayCarica !== 'undefined') ReplayCarica.scalda(window);
 
     // 1. Recuperiamo i colori base dal database
     const colors = await getPlayersColors(info.player1, info.player2);
@@ -2486,9 +2489,11 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
 
     // 3. Logica di caricamento URL
     if (urlFile && (urlFile.startsWith('http') || urlFile.startsWith('https'))) {
-        // Caso A: Link diretto da Firebase Cloud Storage
+        // Caso A: Link diretto da Firebase Cloud Storage. Il replay si ricostruisce dentro la pagina (motore di Showdown e immagini dei Pokémon dalla cache del
+        // browser, replay-carica.js); se non si può (replay caricato a mano da Showdown, rete...) si apre dal suo indirizzo come prima
         console.log("Caricamento da Cloud Storage (Firebase)...");
-        iframe.src = urlFile;
+        if (window.ReplayCarica) window.ReplayCarica.apri(window, iframe, urlFile);
+        else iframe.src = urlFile;
     } 
     else if (urlFile && urlFile.trim() !== "") {
         // Caso B: Retrocompatibilità con file locali (cartella video/ o replays/)
@@ -2645,7 +2650,8 @@ window.chiudiReplay = function() {
 
     // 2. Resettiamo l'iframe per fermare l'audio del video
     if (iframe) {
-        iframe.src = ""; 
+        if (window.ReplayCarica) window.ReplayCarica.ferma(window, iframe);
+        else iframe.src = "";
     }
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
 
@@ -2681,6 +2687,9 @@ window.chiudiReplay = function() {
 async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu) {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
     if (player) player.pause();
+
+    // il motore del replay si prepara subito, mentre si leggono i dati dei set: quando si clicca il primo set è già lì
+    if (window.ReplayCarica) window.ReplayCarica.scalda(window);
 
     const modal = document.getElementById('replayModal');
     const selector = document.getElementById('setSelector');

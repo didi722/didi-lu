@@ -96,6 +96,9 @@
         // a mano (dito o tocco): l'automatismo aspetta un po' prima di ripartire
         const amano = verso => { ripresa = Date.now() + RIPRENDI_DOPO; passo(verso); };
 
+        // la classifica sta in una delle due schermate di Matches (SHOWDOWNS | RANKINGS: html[data-mt]); l'altra è nascosta (display: none)
+        const visibile = () => { const t = doc.documentElement.getAttribute ? doc.documentElement.getAttribute('data-mt') : null; return !t || t === 'rk'; };
+
         // da solo, ogni PASSO_AUTO ms passa al successivo (non se il dito è giù, la pagina è nascosta, c'è un solo giocatore o si è appena scorso a mano)
         const avviaAuto = () => {
             if (timer) return;
@@ -104,6 +107,7 @@
                 passo(1);
             }, PASSO_AUTO);
         };
+        const fermaAuto = () => { if (timer) { win.clearInterval(timer); timer = null; } };
 
         // il giocatore e il suo Pokémon compagno, in scala tra loro (scala-pkm.js) e dentro il cerchio del palco
         const scalaCarte = () => {
@@ -144,14 +148,26 @@
             scheda.innerHTML = html(giocatori, { vs, gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.ac-pista');
             posiziona();
+            // nascosta non si può né mettere in scala (senza misure i Pokémon compagni restano invisibili) né far scorrere: lo si fa quando la schermata si apre (entra)
+            if (visibile()) { scalaCarte(); avviaAuto(); }
+        };
+
+        // si apre RANKINGS: si riparte dal primo in classifica, i Pokémon compagni si mettono in scala (ora che hanno misure) e lo scorrimento comincia adesso.
+        // Si passa ai SHOWDOWNS: tutto fermo
+        const entra = () => {
+            if (!stato) return;
+            stato.corrente = 0;
+            ripresa = 0;
+            posiziona();
             scalaCarte();
             avviaAuto();
         };
+        doc.addEventListener('app-tab', e => { if (!e) return; if (e.detail === 'rk') entra(); else fermaAuto(); });
 
         doc.addEventListener('app-dati', e => { if (e && e.detail === 'classifica' && ponte) monta(ponte.datiPagina('classifica')); });
         const gia = ponte && ponte.datiPagina ? ponte.datiPagina('classifica') : null;
         if (gia) monta(gia);
-        return { monta, vai, passo };
+        return { monta, vai, passo, entra };
     }
 
     return { PASSO_AUTO, RIPRENDI_DOPO, indirizzo, righeDati, htmlCarta, html, avvia };

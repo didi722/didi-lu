@@ -865,13 +865,13 @@ test('service worker: non mette in cache pagine, script o stili (gli aggiornamen
 });
 
 /** Un service worker con una cache vera (in memoria) e una rete finta, per le immagini */
-function swImmagini({ cors = true, rete = true } = {}) {
+function swImmagini({ cors = true, rete = true, href } = {}) {
     const casse = new Map();
     const richieste = [];
     const ascoltatori = {};
     const cassa = nome => { if (!casse.has(nome)) casse.set(nome, new Map()); return casse.get(nome); };
     const sandbox = {
-        self: { addEventListener: (ev, f) => { ascoltatori[ev] = f; }, location: { origin: 'https://sito.test' }, skipWaiting: () => Promise.resolve(), clients: { claim: () => Promise.resolve() } },
+        self: { addEventListener: (ev, f) => { ascoltatori[ev] = f; }, location: { origin: 'https://sito.test', href }, skipWaiting: () => Promise.resolve(), clients: { claim: () => Promise.resolve() } },
         caches: {
             open: async nome => { const c = cassa(nome); return { match: async u => c.get(u), put: async (u, r) => { c.set(u, r); }, keys: async () => [...c.keys()], delete: async u => c.delete(u), add: async () => {} }; },
             keys: async () => [...casse.keys()], delete: async n => casse.delete(n), match: async () => undefined
@@ -923,7 +923,7 @@ test('service worker, immagini: cosa NON gestisce (altri host, altri percorsi, r
     for (const [url, extra] of [
         ['https://raw.githubusercontent.com/didi722/didi-lu/main/docs/app.js', { destination: 'script' }],
         ['https://raw.githubusercontent.com/altro/repo/main/a.png', {}],
-        ['https://play.pokemonshowdown.com/data/pokedex.js', { destination: 'script' }],
+        ['https://play.pokemonshowdown.com/sprites/other/x.js', { destination: 'script' }],
         ['https://pokeapi.co/api/v2/pokemon/pikachu', { destination: '' }],
         ['https://altro.test/foto.png', {}],
         ['https://play.pokemonshowdown.com/sprites/ani/mew.gif', { method: 'POST' }],
@@ -1083,4 +1083,43 @@ test('pubblica / datiPagina: la pagina del sito lascia i dati calcolati e l\'app
     try { A.pubblica('trainers', [1]); } finally { global.document = prima; }
     assert.deepEqual(eventi, ['trainers']);
     assert.deepEqual(A.datiPagina('trainers'), [1]);
+});
+
+test('service worker, simulatore: le GIF di Showdown che la lega ha già nel sito arrivano dal sito; gli script pesanti vengono subito dalla cache e intanto si rinfrescano', async () => {
+    const sw = swImmagini({ href: 'https://sito.test/didi-lu/sw.js' });
+    const ps = 'https://play.pokemonshowdown.com/sprites/ani/garchomp.gif';
+    const r = await sw.chiedi(ps);
+    assert.deepEqual(sw.richieste.map(x => x.url), ['https://sito.test/didi-lu/sprites/ani/garchomp.gif'], 'prima il sito: Showdown non si disturba');
+    assert.ok(sw.casse.get('sant-alvise-immagini-v1').has(ps), 'ricordata con l\'indirizzo che chiede la pagina');
+    assert.ok(r);
+    sw.richieste.length = 0;
+    await sw.chiedi('https://play.pokemonshowdown.com/sprites/ani-back/garchomp.gif');
+    assert.equal(sw.richieste[0].url, 'https://sito.test/didi-lu/sprites/ani-back/garchomp.gif', 'anche quelle di schiena');
+    sw.richieste.length = 0;
+    await sw.chiedi('https://play.pokemonshowdown.com/sprites/dex/garchomp.png');
+    assert.equal(sw.richieste[0].url, 'https://play.pokemonshowdown.com/sprites/dex/garchomp.png', 'il resto va a Showdown come prima');
+
+    const js = 'https://play.pokemonshowdown.com/data/pokedex.js';
+    sw.richieste.length = 0;
+    await sw.chiedi(js, { destination: 'script' });
+    assert.ok(sw.casse.get('sant-alvise-script-v1').has(js), 'salvato');
+    const n = sw.richieste.length;
+    await sw.chiedi(js, { destination: 'script' });
+    assert.equal(sw.richieste.length, n + 1, 'servito dalla cache e intanto rinfrescato (una richiesta in rete in secondo piano)');
+    sw.sandbox.rete = false;
+    assert.ok(await sw.chiedi(js, { destination: '' }), 'anche senza rete e anche chiesto con fetch (il riscaldamento)');
+    assert.equal(await sw.chiedi('https://play.pokemonshowdown.com/js/storage.js.map', { destination: 'script' }), 'NON-GESTITA', 'solo i .js');
+    assert.equal(await sw.chiedi('https://sito.test/didi-lu/app.js', { destination: 'script' }), 'NON-GESTITA', 'gli script del sito (app.js, pagine) non si tengono: gli aggiornamenti arrivano subito');
+});
+
+
+test('app.css: la schermata di caricamento con la Poké Ball (quella bianca di ogni pagina del sito) nell\'app è scura dal primo disegno — sta nel foglio che si carica subito', () => {
+    const css = docs('app.css');
+    assert.match(regola(css, 'html.app .poke-loader-overlay'), /background:\s*radial-gradient\([^;]*#1d1842[^;]*#05040d/);
+    assert.match(regola(css, 'html.app .poke-loader-overlay .loading-text'), /color:\s*#fff/);
+    assert.match(regola(css, 'html.app .pokeball-spinner'), /border-color:\s*#fff/);
+    // le pagine del sito (PC) la tengono com'era: nessun altro foglio la schiarisce e il bianco resta nei loro fogli
+    assert.match(docs('style-matches.css'), /\.poke-loader-overlay \{[^}]*background-color: #f7f7f7/);
+    // il menù principale ha il suo titolo scuro e non usa questa schermata
+    assert.ok(!docs('menu.html').includes('poke-loader'));
 });

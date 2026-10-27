@@ -805,7 +805,7 @@ function slugSprite(specie) {
     return sp?.spriteid || (window.SpritePkm ? window.SpritePkm.id(specie) : String(specie ?? '').toLowerCase().replace(/\s+/g, '').replace(/[.'é’%]/g, ''));
 }
 function sprite(specie) {
-    return `https://play.pokemonshowdown.com/sprites/ani/${slugSprite(specie)}.gif`;
+    return window.SpritePkm?.locale?.(specie) || `https://play.pokemonshowdown.com/sprites/ani/${slugSprite(specie)}.gif`;
 }
 // GIF mancante: PNG del Pokédex, poi la Poké Ball (come gestisciErroreSprite del sito)
 function spriteDiRiserva(img) {

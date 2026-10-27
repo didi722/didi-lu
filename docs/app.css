@@ -25,6 +25,12 @@ html.app img { -webkit-user-drag: none; }
     html.app :is(a, button, [role="button"], .btn, label):active { transition-duration: .05s; }
 }
 
+/* ---------- La schermata di caricamento con la Poké Ball (quella di ogni pagina del sito, bianca per il PC): nell'app è scura come il resto. Sta qui, nel foglio che si
+   carica subito, perché deve essere scura dal primo disegno (gli altri fogli dell'app arrivano dopo e la si vedrebbe bianca per un attimo) ---------- */
+html.app .poke-loader-overlay { background: radial-gradient(120% 100% at 50% 40%, #1d1842 0%, #0d0b1d 70%, #05040d 100%); }
+html.app .poke-loader-overlay .loading-text { color: #fff; }
+html.app .pokeball-spinner { border-color: #fff; box-shadow: none; }
+
 /* ---------- "Gira il telefono": col telefono in piedi (dove l'orientamento non si è potuto bloccare) ---------- */
 .app-ruota { display: none; }
 @media (orientation: portrait) and (max-width: 700px) {
