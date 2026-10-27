@@ -803,3 +803,14 @@ test('simulatore: nell\'app il titolo della prova contro la CPU è solo "Practic
     assert.match(b, /function etichettaPractice\(formato\) \{\s*return document\.documentElement\.classList\.contains\('app'\) \? 'Practice' : `Practice vs CPU · \$\{formato\}`;/);
     assert.equal((b.match(/etichetta: etichettaPractice\(/g) || []).length, 2);
 });
+
+test('le scene: anche con uno swipe veloce o un tocco di lato (senza trascinamento) le animazioni stanno ferme finché la scena non è arrivata, poi ripartono', () => {
+    const p = paginaMenu();
+    const el = p.id('gx-tessere').querySelectorAll('.gx-carta');
+    const pista = p.id('gx-tessere').querySelector('.gx-pista');
+    assert.ok(!pista.classi.has('gx-ferma'));
+    p.id('gx-tessere').scatta('click', { target: { closest: () => el[2] }, preventDefault() {} });
+    assert.ok(pista.classi.has('gx-ferma'), 'ferme appena la scena parte');
+    p.timer.filter(t => t.ms === 460).forEach(t => t.f());
+    assert.ok(!pista.classi.has('gx-ferma'), 'ripartono quando è arrivata');
+});

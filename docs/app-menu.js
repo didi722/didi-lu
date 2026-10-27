@@ -185,12 +185,17 @@
 
         // ----- il carosello: una scena alla volta (le altre stanno fuori dallo schermo); si scorre di lato seguendo il dito e le vicine entrano mentre si trascina -----
         const stato = { corrente: 0 };
-        let timerCentro = null;
+        let timerCentro = null, timerFerma = null;
+        const DURATA_SCORRIMENTO_MS = 360;   // quanto dura lo scorrimento di una scena verso il centro
         const DOPO_SCORRIMENTO_MS = 400;     // un po' più della transizione delle scene (.38s)
         // le immagini delle scene si decodificano subito (a riposo), non alla prima volta che entrano mentre si scorre
         try { [...$('gx-tessere').querySelectorAll('.gx-carta img')].forEach(im => { if (typeof im.decode === 'function') im.decode().catch(() => { /* si vedrà comunque */ }); }); } catch (e) { /* pazienza */ }
         const pista = $('gx-tessere').querySelector('.gx-pista');
         const carte = [...$('gx-tessere').querySelectorAll('.gx-carta')];
+        /** Mentre una scena scorre le animazioni di tutte le scene stanno ferme (se ne stanno muovendo decine, e il telefono ha altro da fare); ripartono quando è arrivata */
+        const annulla = id => { if (id !== null && typeof win.clearTimeout === 'function') win.clearTimeout(id); };
+        const fermaAnimazioni = () => { pista.classList.add('gx-ferma'); annulla(timerFerma); timerFerma = null; };
+        const riprendiDopo = () => { annulla(timerFerma); timerFerma = win.setTimeout(() => { timerFerma = null; pista.classList.remove('gx-ferma'); }, PAUSA_SCORRIMENTO); };
         const xPrima = new Map();
         const raf = f => (typeof win.requestAnimationFrame === 'function' ? win.requestAnimationFrame(f) : f());
         try { const salvata = Number(win.sessionStorage.getItem(CHIAVE_CARTA)); if (Number.isInteger(salvata) && salvata >= 0 && salvata < carte.length) stato.corrente = salvata; } catch (e) { /* si parte dalla prima */ }
@@ -216,11 +221,36 @@
             el.tabIndex = i === stato.corrente ? 0 : -1;
             el.setAttribute('aria-hidden', i === stato.corrente ? 'false' : 'true');
         });
+        // Lo scorrimento finale lo fa il codice, un fotogramma alla volta, esattamente come quando si accompagna la scena col dito (che è fluido); la transizione CSS, usata
+        // prima per gli swipe veloci e i tocchi, a scatti sul telefono. Senza requestAnimationFrame o orologio (prove) si salta direttamente alla posizione finale.
+        let animazione = 0, fraDito = 0;
+        const sa = win.performance && typeof win.performance.now === 'function' && typeof win.requestAnimationFrame === 'function';
+        const anima = da => {
+            const id = ++animazione, t0 = win.performance.now();
+            pista.classList.add('trascinando');
+            posiziona(da);
+            const passoAnim = t => {
+                if (id !== animazione) return;
+                const k = Math.min(1, (win.performance.now() - t0) / DURATA_SCORRIMENTO_MS);
+                const e = 1 - Math.pow(1 - k, 3);
+                posiziona(da * (1 - e));
+                if (k < 1) win.requestAnimationFrame(passoAnim); else pista.classList.remove('trascinando');
+            };
+            win.requestAnimationFrame(passoAnim);
+        };
         const vai = i => {
             const n = Car.dentro(i, carte.length);
             if (n === stato.corrente) return;
+            const prima = stato.corrente;
             stato.corrente = n;
-            posiziona();
+            // anche con uno swipe veloce (o un tocco sulla scena di lato), dove il dito non ha "accompagnato" niente: le animazioni stanno ferme finché la scena non è arrivata
+            fermaAnimazioni(); riprendiDopo();
+            if (sa) {
+                // si parte da dove sono le scene adesso (la scena nuova era a `da` passi dal centro, più quanto il dito l'aveva già portata) e si arriva a zero
+                const da = Car.distanza(n, prima, carte.length, true) + fraDito;
+                fraDito = 0;
+                anima(da);
+            } else posiziona();
             // appena la scena parte l'unica cosa da fare è spostarla: cambiare le classi del centro (che ferma e fa ripartire le animazioni di tutte le scene, centinaia di
             // elementi) e il resto si fa a scorrimento finito, non nello stesso fotogramma (era lì lo scatto)
             if (timerCentro !== null && typeof win.clearTimeout === 'function') win.clearTimeout(timerCentro);
@@ -236,13 +266,11 @@
             segnaCentro();
             posiziona();
             // mentre il dito si muove si aggiorna una volta per fotogramma (non a ogni evento: ce ne sono di più) e si tocca solo --x
-            let ultima = null, inAttesa = false, timerFerma = null;
+            let ultima = null, inAttesa = false;
             const segui = (f, fine) => {
+                if (!fine) { animazione++; fraDito = f; } else if (typeof win.requestAnimationFrame === 'function') raf(() => { fraDito = 0; });
                 pista.classList.toggle('trascinando', !fine);
-                if (!fine) {
-                    pista.classList.add('gx-ferma');
-                    if (timerFerma !== null) { win.clearTimeout(timerFerma); timerFerma = null; }
-                } else timerFerma = win.setTimeout(() => { timerFerma = null; pista.classList.remove('gx-ferma'); }, PAUSA_SCORRIMENTO);
+                if (!fine) fermaAnimazioni(); else riprendiDopo();
                 if (fine) { ultima = null; posiziona(0); return; }
                 ultima = f;
                 if (!inAttesa) { inAttesa = true; raf(() => { inAttesa = false; if (ultima !== null) posiziona(ultima); }); }
