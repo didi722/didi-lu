@@ -16,6 +16,7 @@
 //   SpritePkm.dex(testo)             https://play.pokemonshowdown.com/sprites/dex/<id>.png
 //   SpritePkm.pokeapi(testo)         nome per PokéAPI: "mr-mime", "great-tusk", "type-null" (minuscolo, spazi → trattini)
 //   SpritePkm.riserva(img, id)       per onerror: prima il PNG del Pokédex, poi la Poké Ball
+//   SpritePkm.locale(testo)          l'immagine che sta nel sito (sprites/...), o null
 //   SpritePkm.catena(testo)          gli indirizzi da provare in ordine per l'immagine animata di un Pokémon (GIF, GIF Gen 5, PNG del Pokédex)
 //   SpritePkm.ritenta(img)           per onerror dei compagni (data-pkm): riprova la stessa GIF (la rete può essersi solo impuntata), poi le altre della catena; alla fine nasconde
 //
@@ -57,7 +58,21 @@
     }
 
     const id = specie => idSprite(specie).completo;
-    const gif = specie => `${SD}/ani/${id(specie)}.gif`;
+    // Le immagini dei Pokémon della lega sono anche NEL SITO (sprites/ani/<id>.gif, sprites/dex/<id>.png: le scarica il workflow "Sprites" e ne scrive l'elenco in
+    // sprites/indice.js): dallo stesso indirizzo della pagina arrivano subito, senza un altro server, e il service worker le tiene per sempre. Quelle che non ci sono
+    // si chiedono a Showdown, come prima.
+    const locali = () => globalThis.SpriteLocali || null;
+    /** L'immagine nel sito (indirizzo relativo alla pagina) per la specie, o null se non c'è: prima la GIF animata, poi il PNG del Pokédex */
+    function locale(specie) {
+        const l = locali();
+        if (!l) return null;
+        if (!l._ids) l._ids = { ani: new Set(l.ani || []), dex: new Set(l.dex || []) };
+        const i = id(specie);
+        if (l._ids.ani.has(i)) return `sprites/ani/${i}.gif`;
+        if (l._ids.dex.has(i)) return `sprites/dex/${i}.png`;
+        return null;
+    }
+    const gif = specie => locale(specie) || `${SD}/ani/${id(specie)}.gif`;
     const dex = specie => `${SD}/dex/${id(specie)}.png`;
     const pokeapi = specie => senzaAccenti(pulisciSpecie(specie)).toLowerCase().replace(/[.'’:%]/g, '').trim().replace(/\s+/g, '-');
 
@@ -84,7 +99,8 @@
         const per = id => [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`];
         const lista = per(completo);
         if (base && base !== completo) lista.push(`${SD}/ani/${base}.gif`);
-        return [...new Set(lista)];
+        const mio = locale(specie);
+        return [...new Set(mio ? [mio].concat(lista) : lista)];
     }
 
     const ATTESA_RITENTA_MS = 700;
@@ -99,7 +115,7 @@
         if (!img) return false;
         const dati = img.dataset || (img.dataset = {});
         const nome = dati.pkm;
-        const passi = nome ? [{ url: gif(nome), dopo: ATTESA_RITENTA_MS }].concat(catena(nome).slice(1).map(url => ({ url, dopo: 0 }))) : [];
+        const passi = nome ? [{ url: gif(nome), dopo: ATTESA_RITENTA_MS }].concat(catena(nome).filter(u => u !== gif(nome)).map(url => ({ url, dopo: 0 }))) : [];
         const fase = Number(dati.spriteTentativo || 0);
         dati.spriteTentativo = String(fase + 1);
         if (fase >= passi.length) {
@@ -115,5 +131,5 @@
         return true;
     }
 
-    return { SD, POKEBALL, FORME_DI_PARTENZA, BASI_CON_TRATTINO, ATTESA_RITENTA_MS, pulisciSpecie, idSprite, id, gif, dex, pokeapi, catena, riserva, ritenta };
+    return { SD, POKEBALL, locale, FORME_DI_PARTENZA, BASI_CON_TRATTINO, ATTESA_RITENTA_MS, pulisciSpecie, idSprite, id, gif, dex, pokeapi, catena, riserva, ritenta };
 });

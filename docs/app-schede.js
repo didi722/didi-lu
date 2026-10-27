@@ -219,6 +219,12 @@
 
     // ---------- La scheda della mossa ----------
 
+    /** Una placca: il numero grande e, se Showdown lo spiega tra parentesi ("130% (1.3× from Compound Eyes)"), la spiegazione piccola sotto (la placca non deve allargarsi) */
+    function placca(titolo, testo) {
+        const m = /^(.*?)\s*\((.+)\)\s*$/.exec(String(testo));
+        return `<div class="sc-placca"><small>${esc(titolo)}</small><b>${esc(m ? m[1] : testo)}</b>${m ? `<i class="sc-nota">${esc(m[2])}</i>` : ''}</div>`;
+    }
+
     /**
      * La scheda di una mossa da quello che il tooltip dice (vedi leggiMossa):
      *  { nome, tipo, categoria, potenza, potenze: [], precisione, priorita, descrizione, bersaglio, effetto, tag: [], efficacia: [{ nome, classe, testo }] }
@@ -229,8 +235,8 @@
 
         const placche = [];
         if (d.potenze && d.potenze.length) placche.push(`<div class="sc-placca sc-placca-lunga"><small>Power</small>${d.potenze.map(p => `<b>${esc(p)}</b>`).join('')}</div>`);
-        else if (d.potenza) placche.push(`<div class="sc-placca"><small>Power</small><b>${esc(d.potenza)}</b></div>`);
-        if (d.precisione) placche.push(`<div class="sc-placca"><small>Accuracy</small><b>${esc(d.precisione)}</b></div>`);
+        else if (d.potenza) placche.push(placca('Power', d.potenza));
+        if (d.precisione) placche.push(placca('Accuracy', d.precisione));
         if (d.priorita) placche.push(`<div class="sc-placca"><small>Priority</small><b>${esc(d.priorita)}</b></div>`);
 
         let dettagli = '';

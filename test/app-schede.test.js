@@ -238,3 +238,10 @@ test('il lettore dipende dalle classi che battle-extra.js e Showdown scrivono: s
     // i colori dei tipi dei cartellini sono quelli delle schede (provato sopra); le categorie sono quelle di Showdown
     assert.deepEqual(Object.values({ physical: 'Physical', special: 'Special', status: 'Status' }), ['Physical', 'Special', 'Status']);
 });
+
+test('le placche non si allargano: la spiegazione tra parentesi ("130% (1.3× from Compound Eyes)") va piccola sotto il numero', () => {
+    const h = S.htmlCartaMossa({ nome: 'Pollen Puff', tipo: 'Bug', categoria: 'Special', potenza: '90', precisione: '130% (1.3× from Compound Eyes)', tag: [], efficacia: [] });
+    assert.match(h, /<div class="sc-placca"><small>Accuracy<\/small><b>130%<\/b><i class="sc-nota">1\.3× from Compound Eyes<\/i><\/div>/);
+    assert.match(docs('app-battaglia.css'), /\.sc-mv \{ grid-template-columns: 11em minmax\(0, 1fr\);/, 'la colonna delle placche ha una misura sua');
+});
+

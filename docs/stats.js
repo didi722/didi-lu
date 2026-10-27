@@ -87,6 +87,8 @@
             ? [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`, `${SD}/gen5/${id}.png`]
             : [`${SD}/dex/${id}.png`, `${SD}/gen5/${id}.png`, `${SD}/gen5ani/${id}.gif`, `${SD}/ani/${id}.gif`]);
         const lista = [...per(completo)];
+        const mio = window.SpritePkm.locale ? window.SpritePkm.locale(specie) : null;      // quella che sta nel sito (sprites/): arriva subito
+        if (mio && animato === (mio.endsWith('.gif'))) lista.unshift(mio);
         if (base && base !== completo) lista.push(...per(base));
         if (db) lista.push(`https://img.pokemondb.net/sprites/home/normal/${db}.png`);
         lista.push(POKEBALL);
