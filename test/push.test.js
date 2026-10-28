@@ -77,7 +77,7 @@ test('testo: ogni notifica ha titolo, corpo, pagina da aprire e un tag; tutto in
     assert.equal(P.testo('sfida', { da: 'Lu', stagione: 's 1/x' }).url, 'matches.html?id=s%201%2Fx', 'l\'id della stagione non rompe l\'indirizzo');
     assert.match(P.testo('iscrizioni-aperte', casi['iscrizioni-aperte']).body, /sign up before 03\/11 20:30 UTC/);
     assert.match(P.testo('iscrizioni-aperte', { nome: 'Season 3', scadenza: 'boh' }).body, /the deadline/);
-    assert.match(P.testo('promemoria', { nome: 'S', ore: 24 }).body, /less than a day left/);
+    assert.match(P.testo('promemoria', { nome: 'S', ore: 24 }).body, /sign-ups close in less than a day/);
     assert.match(P.testo('stagione-conclusa', { nome: 'Season 2' }).body, /^Season 2 is over$/);
 });
 
@@ -186,13 +186,14 @@ test('notificaIscrizioniAperte: a tutti quelli che hanno le notifiche; una volta
     assert.equal(messaging.inviati[0].notification.title, 'Sign-ups are open');
 });
 
-test('notificaPromemoria: solo a chi non è ancora iscritto; ogni soglia (24 e 3 ore) una volta sola', async () => {
+test('notificaPromemoria: a tutti quelli con le notifiche accese (iscritti o no); ogni soglia (24 e 3 ore) una volta sola', async () => {
     const db = dbFinto({ users: UTENTI, pushTokens: TOKEN, seasons: { s3: { iscritti: { didi: true, lu: true } } } });
     const messaging = messagingFinto();
     const info = { name: 'Season 3', status: 'open' };
     const r = await P.notificaPromemoria({ db, messaging, stagione: 's3', info, ore: 24 });
-    assert.equal(r.inviate, 1);
-    assert.deepEqual(messaging.inviati[0].tokens, ['tok-ada'], 'Tom non ha le notifiche; Didi e Lu sono già iscritti');
+    assert.ok(r.inviate >= 3);
+    assert.ok(messaging.inviati[0].tokens.includes('tok-ada'), 'chi non è iscritto');
+    assert.ok(messaging.inviati[0].tokens.length >= 3, 'e anche chi è già iscritto (Didi e Lu)');
     assert.equal((await P.notificaPromemoria({ db, messaging, stagione: 's3', info, ore: 24 })).saltata, true);
     assert.equal((await P.notificaPromemoria({ db, messaging, stagione: 's3', info, ore: 3 })).saltata, false, 'quella da 3 ore è un\'altra notifica');
 });

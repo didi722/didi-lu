@@ -5,7 +5,7 @@
 |---|---|---|---|
 | Sfida ricevuta | appena qualcuno ti sfida (amichevole o di stagione) | lo sfidato | Cloud Function `pushSfidaRicevuta` |
 | Iscrizioni aperte | una stagione passa a "open" | tutti quelli che hanno acceso le notifiche | Cloud Function `pushStatoStagione` |
-| Promemoria scadenza | 24 ore e 3 ore prima della scadenza | chi non è ancora iscritto | checker (ogni 30 minuti) |
+| Promemoria scadenza | 24 ore e 3 ore prima della scadenza | tutti quelli che hanno acceso le notifiche (iscritti o no) | checker (ogni 30 minuti) |
 | Voto MVP aperto | quando si apre la finestra di voto | gli iscritti che non hanno ancora votato | checker (ogni 30 minuti) |
 | Stagione conclusa | la stagione passa a "closed" | gli iscritti, col nome del vincitore | Cloud Function `pushStatoStagione` |
 
