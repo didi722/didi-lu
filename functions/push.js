@@ -41,7 +41,7 @@ function testo(tipo, d = {}) {
         case 'promemoria':
             return {
                 title: 'Sign-ups close soon',
-                body: `${d.nome}: ${d.ore >= 24 ? 'less than a day left' : `about ${d.ore} hours left`} to sign up`,
+                body: `${d.nome}: sign-ups close in ${d.ore >= 24 ? 'less than a day' : `about ${d.ore} hours`}`,
                 url: 'index.html', tag: `promemoria-${d.stagione || ''}`
             };
         case 'mvp':
@@ -183,12 +183,9 @@ async function notificaStagioneConclusa({ db, messaging, stagione, info }) {
     return invia({ db, messaging, uids, n, chiaveUnica: `conclusa-${stagione}` });
 }
 
-/** Promemoria: ai giocatori che NON sono ancora iscritti */
+/** Promemoria: a tutti quelli che hanno acceso le notifiche (iscritti o no: la scadenza interessa a tutti, e il testo non dice "iscriviti") */
 async function notificaPromemoria({ db, messaging, stagione, info, ore }) {
-    const [utenti, iscrittiSnap] = await Promise.all([db.ref('users').once('value'), db.ref(`seasons/${stagione}/iscritti`).once('value')]);
-    const u = utenti.val() || {};
-    const iscritti = new Set(Object.keys(iscrittiSnap.val() || {}).map(idDi));
-    const uids = uidDeiGiocatori(u, tuttiIGiocatori(u).filter(id => !iscritti.has(id)));
+    const uids = await uidConToken(db);
     const n = testo('promemoria', { nome: nomeStagione(info, stagione), ore, stagione });
     return invia({ db, messaging, uids, n, chiaveUnica: `promemoria-${stagione}-${ore}` });
 }
