@@ -56,9 +56,50 @@ function testo(tipo, d = {}) {
                 body: d.vincitore ? `${d.nome} is over: ${d.vincitore} wins!` : `${d.nome} is over`,
                 url: 'palmares.html', tag: `conclusa-${d.stagione || ''}`
             };
+        case 'turno':
+            return {
+                title: 'Your move!',
+                body: `${d.da} has played their turn${d.categoria ? ` in ${d.categoria}` : ''}`,
+                url: partitaUrl(d), tag: `turno-${d.id || ''}`, soloChiusa: true
+            };
+        case 'sfida-accettata':
+            return {
+                title: 'Challenge accepted',
+                body: `${d.a} accepted your challenge${d.categoria ? ` in ${d.categoria}` : ''}: the match is ready`,
+                url: partitaUrl(d), tag: `accettata-${d.id || ''}`
+            };
+        case 'mvp-scadenza':
+            return {
+                title: 'MVP voting closes soon',
+                body: `${d.nome}: about ${d.ore} hours left to vote`,
+                url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `mvp-scadenza-${d.stagione || ''}`
+            };
+        case 'iscrivi-team':
+            return {
+                title: 'Register your teams!',
+                body: `${d.nome}: ${d.scadenza ? `sign-ups close ${quandoScade(d.scadenza)}` : 'sign-ups are closing'}, make sure your teams are registered`,
+                url: `hub.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `iscrivi-team-${d.stagione || ''}`
+            };
+        case 'live':
+            return {
+                title: 'Live now',
+                body: `${d.p1} vs ${d.p2}${d.categoria ? ` · ${d.categoria}` : ''}`,
+                url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `live-${d.id || ''}`, soloChiusa: true
+            };
+        case 'mvp-nomina':
+            return {
+                title: 'Official MVP',
+                body: `${d.nome}: ${d.vincitore} is the MVP!`,
+                url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `mvp-nomina-${d.stagione || ''}`
+            };
         default:
             return null;
     }
+}
+
+/** La pagina di una partita: quella amichevole dal suo id, quella di stagione dalla stagione */
+function partitaUrl(d) {
+    return d.amichevole ? `battle.html?amichevole=${encodeURIComponent(d.sfida || '')}` : `battle.html?stagione=${encodeURIComponent(d.stagione || '')}`;
 }
 
 function quandoScade(iso) {
@@ -99,6 +140,22 @@ function promemoriaDovuto(info, adesso = Date.now()) {
     return [...ORE_PROMEMORIA].sort((a, b) => a - b).find(ore => mancano <= ore * 3600000) || 0;
 }
 
+/** Il promemoria della scadenza del voto MVP (dopo la chiusura della stagione): le ore (3) della soglia già superata, o 0. `finestra` è Mvp.finestraVoto(...) */
+const ORE_MVP_SCADENZA = [3];
+function mvpScadenzaDovuta(finestra, adesso = Date.now()) {
+    if (!finestra || !finestra.aperta || finestra.fase !== 'dopo' || !Number.isFinite(finestra.scade) || finestra.scade <= adesso) return 0;
+    const mancano = finestra.scade - adesso;
+    return [...ORE_MVP_SCADENZA].sort((a, b) => a - b).find(ore => mancano <= ore * 3600000) || 0;
+}
+
+/** "Iscrivi i tuoi team": a metà strada tra l'apertura della stagione (`apertaIl`, ms: quando è partita la notifica di apertura) e la scadenza delle iscrizioni */
+function iscriviTeamDovuto(info, apertaIl, adesso = Date.now()) {
+    if (!info || idDi(info.status || 'open') !== 'open' || !Number.isFinite(apertaIl)) return false;
+    const scadenza = Date.parse(info.deadline);
+    if (!Number.isFinite(scadenza) || scadenza <= adesso || scadenza <= apertaIl) return false;
+    return adesso >= apertaIl + (scadenza - apertaIl) / 2;
+}
+
 // ---------- invio ----------
 
 /** Tutti i token (con chi li ha) di questi uid: [{ uid, chiave, token }] */
@@ -123,7 +180,7 @@ function messaggio(tokens, n) {
     return {
         tokens,
         notification: { title: n.title, body: n.body },
-        data: { url: n.url || 'index.html', tag: n.tag || '' },
+        data: { url: n.url || 'index.html', tag: n.tag || '', ...(n.soloChiusa ? { soloChiusa: '1' } : {}) },
         // sul web la notifica la disegna il service worker del sito (docs/sw.js) e apre `data.url`; su Android la disegna il sistema
         webpush: { headers: { Urgency: 'high', TTL: '86400' } },
         android: { priority: 'high', ttl: 86400000, notification: { tag: n.tag || undefined } }
@@ -201,9 +258,82 @@ async function notificaMvp({ db, messaging, stagione, info }) {
     return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `mvp-${stagione}` });
 }
 
+/** L'avversario ha scelto la sua mossa e tu no: tocca a te (una volta per turno) */
+async function notificaTurno({ db, messaging, id, info }) {
+    if (!info || !info.p1 || !info.p2) return null;
+    const scelto = (await db.ref(`partite/${id}/haScelto`).once('value')).val() || {};
+    const lati = ['p1', 'p2'].filter(l => scelto[l] !== undefined && scelto[l] !== null);
+    if (lati.length !== 1) return null;                      // nessuno ha scelto, o hanno scelto entrambi: il turno è già andato
+    const chi = lati[0], altro = chi === 'p1' ? 'p2' : 'p1';
+    const uid = info[altro].uid;
+    if (!uid) return null;
+    const n = testo('turno', { da: info[chi].nome, categoria: info.categoria, amichevole: !!info.amichevole, sfida: info.sfida, stagione: info.stagione, id });
+    return invia({ db, messaging, uids: [uid], n, chiaveUnica: `turno-${id}-${scelto[chi]}-${chi}` });
+}
+
+/** La sfida che hai lanciato è stata accettata (la partita è pronta) */
+async function notificaSfidaAccettata({ db, messaging, stagione, id, sfida }) {
+    if (!sfida || sfida.stato !== 'accettata') return null;
+    const utenti = (await db.ref('users').once('value')).val() || {};
+    const uid = sfida.daUid || uidDelGiocatore(utenti, sfida.daId || sfida.da);
+    if (!uid) return null;
+    const n = testo('sfida-accettata', { a: sfida.a, categoria: sfida.categoria, amichevole: stagione === 'amichevoli', sfida: id, stagione, id });
+    return invia({ db, messaging, uids: [uid], n, chiaveUnica: `accettata-${stagione}-${id}` });
+}
+
+/** Il voto MVP sta per chiudersi: a chi non ha ancora votato */
+async function notificaMvpScadenza({ db, messaging, stagione, info, ore }) {
+    const [utenti, iscrittiSnap, votiSnap] = await Promise.all([
+        db.ref('users').once('value'), db.ref(`seasons/${stagione}/iscritti`).once('value'), db.ref(`seasons/${stagione}/mvp/voti`).once('value')
+    ]);
+    const votato = new Set(Object.keys(votiSnap.val() || {}).map(idDi));
+    const ids = Object.keys(iscrittiSnap.val() || {}).filter(id => !votato.has(idDi(id)));
+    const n = testo('mvp-scadenza', { nome: nomeStagione(info, stagione), ore, stagione });
+    return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `mvp-scadenza-${stagione}-${ore}` });
+}
+
+/** "Iscrivi i tuoi team": agli iscritti che in qualche formato non hanno ancora registrato nessun team */
+async function notificaIscriviTeam({ db, messaging, stagione, info }) {
+    const [utenti, iscrittiSnap, teamSnap] = await Promise.all([
+        db.ref('users').once('value'), db.ref(`seasons/${stagione}/iscritti`).once('value'), db.ref(`seasons/${stagione}/teams_iscritti`).once('value')
+    ]);
+    const formati = Object.values((info && info.selected_formats) || {});
+    const teams = teamSnap.val() || {};
+    const senzaTeam = id => formati.some(f => {
+        const voci = teams[f] || {};
+        const chiave = Object.keys(voci).find(k => idDi(k) === idDi(id));
+        return !chiave || !(voci[chiave] && voci[chiave].count > 0);
+    });
+    const ids = Object.keys(iscrittiSnap.val() || {}).filter(senzaTeam);
+    const n = testo('iscrivi-team', { nome: nomeStagione(info, stagione), scadenza: info.deadline, stagione });
+    return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `iscrivi-team-${stagione}` });
+}
+
+/** Un match ufficiale (ranked) è in diretta: a tutti quelli con le notifiche accese, tranne i due che giocano */
+async function notificaLive({ db, messaging, id, info }) {
+    if (!info || info.amichevole || !info.stagione || !info.p1 || !info.p2) return null;
+    const uids = (await uidConToken(db)).filter(u => u !== info.p1.uid && u !== info.p2.uid);
+    const n = testo('live', { p1: info.p1.nome, p2: info.p2.nome, categoria: info.categoria, stagione: info.stagione, id });
+    return invia({ db, messaging, uids, n, chiaveUnica: `live-${id}` });
+}
+
+/** L'MVP ufficiale della stagione (lo scrive il conteggio dei voti in seasons/{id}/mvp/risultato): a tutti quelli con le notifiche accese */
+async function notificaMvpNomina({ db, messaging, stagione, info, risultato }) {
+    const v = risultato && risultato.vincitori;
+    const lista = (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : [])).filter(x => x && x.chiave);
+    if (!lista.length) return null;
+    const m = lista[0];
+    const vincitore = `${m.specie || 'A Pokémon'}${m.player ? ` (${m.player})` : ''}`;
+    const uids = await uidConToken(db);
+    const n = testo('mvp-nomina', { nome: nomeStagione(info, stagione), vincitore, stagione });
+    return invia({ db, messaging, uids, n, chiaveUnica: `mvp-nomina-${stagione}` });
+}
+
 module.exports = {
     PERCORSO_TOKEN, PERCORSO_INVIATI, ORE_PROMEMORIA,
     testo, quandoScade, uidDelGiocatore, uidDeiGiocatori, tuttiIGiocatori, promemoriaDovuto, messaggio,
     tokenDi, uidConToken, invia,
-    notificaSfida, notificaIscrizioniAperte, notificaStagioneConclusa, notificaPromemoria, notificaMvp
+    notificaSfida, notificaIscrizioniAperte, notificaStagioneConclusa, notificaPromemoria, notificaMvp,
+    ORE_MVP_SCADENZA, mvpScadenzaDovuta, iscriviTeamDovuto,
+    notificaTurno, notificaSfidaAccettata, notificaMvpScadenza, notificaIscriviTeam, notificaLive, notificaMvpNomina
 };

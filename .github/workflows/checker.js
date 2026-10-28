@@ -40,11 +40,23 @@ async function notifiche(id, info, dati) {
       const r = await push.notificaPromemoria({ ...ctx, ore });
       if (r && !r.saltata) console.log(`🔔 Promemoria (${ore} h) per [${id}]: ${r.inviate} notifiche inviate.`);
     }
+    // "Iscrivi i tuoi team!": a metà strada tra l'apertura (quando è partita la notifica di apertura) e la scadenza delle iscrizioni
+    const apertaIl = Number((await db.ref(`pushInviati/aperta-${String(id).replace(/[.#$\[\]/]/g, '_')}`).once('value')).val());
+    if (push.iscriviTeamDovuto(info, apertaIl)) {
+      const r = await push.notificaIscriviTeam(ctx);
+      if (r && !r.saltata) console.log(`🔔 Iscrivi i team per [${id}]: ${r.inviate} notifiche inviate.`);
+    }
     if (id !== 'sbeta' && ['playing', 'closed'].includes(String(info.status || '').toLowerCase())) {
       const avanzamento = sito.avanzamentoStagione(info, dati.iscritti, dati.showdowns, dati.teams_iscritti);
-      if (Mvp.finestraVoto(info, avanzamento, id).aperta) {
+      const finestra = Mvp.finestraVoto(info, avanzamento, id);
+      if (finestra.aperta) {
         const r = await push.notificaMvp(ctx);
         if (r && !r.saltata) console.log(`🔔 Voto MVP aperto per [${id}]: ${r.inviate} notifiche inviate.`);
+        const oreMvp = push.mvpScadenzaDovuta(finestra);
+        if (oreMvp) {
+          const s2 = await push.notificaMvpScadenza({ ...ctx, ore: oreMvp });
+          if (s2 && !s2.saltata) console.log(`🔔 Scadenza voto MVP (${oreMvp} h) per [${id}]: ${s2.inviate} notifiche inviate.`);
+        }
       }
     }
   } catch (e) {
