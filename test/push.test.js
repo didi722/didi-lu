@@ -364,7 +364,6 @@ test('notificaTurno: quando uno dei due ha scelto e l\'altro no, tocca all\'altr
     assert.equal(r.inviate, 1);
     assert.deepEqual(messaging.inviati[0].tokens.sort(), ['morto-lu-2', 'tok-lu-1'], 'a Lu, che non ha ancora scelto');
     assert.equal(messaging.inviati[0].notification.title, 'Your move!');
-    assert.equal(messaging.inviati[0].data.soloChiusa, '1', 'solo a sito e app chiusi');
     assert.equal((await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED })).saltata, true, 'lo stesso turno una volta sola');
     db.albero.partite.p1.haScelto = { p1: 4, p2: 4 };
     assert.equal(await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED }), null, 'hanno scelto entrambi');
@@ -377,6 +376,30 @@ test('notificaTurno: quando uno dei due ha scelto e l\'altro no, tocca all\'altr
     await P.notificaTurno({ db, messaging: m2, id: 'p2', info: amic });
     assert.deepEqual(m2.inviati[0].tokens, ['tok-didi']);
     assert.match(m2.inviati[0].data.url, /battle\.html\?amichevole=x9/);
+});
+
+test('notificaTurno: se il destinatario è dentro la partita (battito fresco del simulatore) non riceve niente; battito vecchio, sì', async () => {
+    const adesso = Date.now();
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN, partite: { p1: { haScelto: { p1: 4 }, presenza: { p2: adesso - 5000 } } } });
+    const messaging = messagingFinto();
+    assert.equal(await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED }), null, 'Lu sta giocando dal PC');
+    assert.equal(messaging.inviati.length, 0);
+    db.albero.partite.p1.presenza.p2 = adesso - 5 * 60000;
+    assert.equal((await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED })).inviate, 1, 'battito di cinque minuti fa: il simulatore è chiuso');
+    assert.equal(P.inPartita(adesso - 1000), true);
+    assert.equal(P.inPartita(adesso - P.PRESENZA_MS - 1), false);
+    assert.equal(P.inPartita(undefined), false);
+    assert.equal(P.inPartita(true), false, 'solo un orario');
+});
+
+test('il simulatore online segna la presenza (battito, tolta alla chiusura o se cade la rete) e nell\'app la toglie quando va in secondo piano', () => {
+    const js = fs.readFileSync(path.join(RADICE, 'docs', 'motore-online.js'), 'utf8');
+    assert.match(js, /partite\/\$\{this\.id\}\/presenza\/\$\{this\.lato\}/);
+    assert.match(js, /onDisconnect\(\)\.remove\(\)/);
+    assert.match(js, /setInterval\([\s\S]*30000\)/);
+    assert.match(js, /chiudi\(\) \{[\s\S]*_togliPresenza/);
+    assert.match(js, /visibilityState === 'hidden'\) togli\(\)/);
+    assert.match(js, /if \(this\.lato\) \{\s*this\._presenza\(\);/, 'solo chi gioca (non gli spettatori)');
 });
 
 test('notificaSfidaAccettata: a chi ha lanciato la sfida, solo se è accettata, una volta sola', async () => {
@@ -397,7 +420,6 @@ test('notificaLive: un match ufficiale in diretta va a tutti con le notifiche, t
     const r = await P.notificaLive({ db, messaging, id: 'p1', info: INFO_RANKED });
     assert.equal(r.inviate, 1);
     assert.deepEqual(messaging.inviati[0].tokens, ['tok-ada']);
-    assert.equal(messaging.inviati[0].data.soloChiusa, '1');
     assert.equal(await P.notificaLive({ db, messaging, id: 'p2', info: { ...INFO_RANKED, amichevole: true } }), null);
     assert.equal(await P.notificaLive({ db, messaging, id: 'p3', info: { ...INFO_RANKED, stagione: '' } }), null);
 });
@@ -460,5 +482,5 @@ test('cablaggio delle nuove notifiche: i trigger, il checker e il service worker
     assert.match(chk, /push\.iscriviTeamDovuto\(info, apertaIl\)/);
     assert.match(chk, /push\.mvpScadenzaDovuta\(finestra\)/);
     const sw = fs.readFileSync(path.join(RADICE, 'docs', 'sw.js'), 'utf8');
-    assert.match(sw, /dati\.soloChiusa[\s\S]*visibilityState === 'visible'/);
+    assert.doesNotMatch(sw, /soloChiusa/, 'il service worker non scarta più le notifiche a sito aperto: conta solo essere dentro quella partita');
 });
