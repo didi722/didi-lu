@@ -108,6 +108,20 @@
         </div>
     </div>
 
+    <!-- La richiesta delle notifiche: una volta sola, la prima volta che si apre il menù da collegati -->
+    <div class="gx-dialogo gx-avvisi" id="gx-avvisi" role="dialog" aria-modal="true" aria-labelledby="gx-avvisi-titolo" hidden>
+        <div class="gx-pannello gx-manifesto">
+            <span class="gx-manifesto-raggi" aria-hidden="true"></span>
+            <p class="gx-man-sopra">Stay in the game</p>
+            <h2 id="gx-avvisi-titolo">Turn on alerts?</h2>
+            <p class="gx-man-tempo">Get notified when you are challenged, when sign-ups open or are about to close, and when MVP voting starts.</p>
+            <div class="gx-righe">
+                <button type="button" class="gx-bottone gx-secondario" data-chiudi data-suono="chiudi">Not now</button>
+                <button type="button" class="gx-bottone gx-primario" id="gx-avvisi-si" data-suono="ok">Turn on</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Gli achievements dell'allenatore (i badge del sito: livello, traguardi, cosa manca) -->
     <div class="gx-dialogo gx-ach" id="gx-ach" role="dialog" aria-modal="true" aria-labelledby="gx-ach-titolo" hidden>
         <div class="gx-pannello gx-ach-pannello">

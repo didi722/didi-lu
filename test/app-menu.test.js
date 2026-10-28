@@ -814,3 +814,18 @@ test('le scene: anche con uno swipe veloce o un tocco di lato (senza trascinamen
     p.timer.filter(t => t.ms === 460).forEach(t => t.f());
     assert.ok(!pista.classi.has('gx-ferma'), 'ripartono quando è arrivata');
 });
+
+test('la richiesta delle notifiche: una finestra sola, la prima volta da collegati, mai sopra l\'annuncio di una stagione e mai se già decisa o se il telefono non può', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'menu.html'), 'utf8');
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-menu.js'), 'utf8');
+    assert.match(html, /id="gx-avvisi"[^>]*hidden/);
+    assert.match(html, /id="gx-avvisi-si"/);
+    assert.match(js, /CHIAVE_AVVISI = 'appAvvisiChiesti'/);
+    // si prova dopo il titolo, con un giocatore, e subito dopo l'annuncio (o se non c'è)
+    assert.match(js, /if \(!annunciato && stagione\)[\s\S]*return;\s*\}\s*\}\s*provaAvvisi\(\);/);
+    assert.match(js, /aggiornaClasse\(\); provaAvvisi\(\); \}/, 'chiuso l\'annuncio tocca alla richiesta');
+    assert.match(js, /\(annuncio && !annuncio\.hidden\) \|\| leggi\(CHIAVE_AVVISI\)/, 'mai sopra l\'annuncio, mai due volte');
+    assert.match(js, /st === 'acceso' \|\| st === 'negato'[\s\S]*scrivi\(CHIAVE_AVVISI, '1'\)/, 'già decise: non si chiede');
+    assert.match(js, /if \(st !== 'spento'\) return;/, 'telefono che non può ricevere avvisi: niente richiesta');
+    assert.match(js, /win\.Push\.attiva\(\)/, 'il permesso lo chiede il telefono, con il suo avviso');
+});

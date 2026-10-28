@@ -24,6 +24,7 @@
     'use strict';
 
     const CHIAVE_SPLASH = 'menuSplashVisto';          // sessionStorage: la schermata del titolo si vede una volta a visita
+    const CHIAVE_AVVISI = 'appAvvisiChiesti';         // localStorage: la richiesta delle notifiche è già stata fatta (una volta sola)
     const CHIAVE_ANNUNCIO = 'appStagioneVista';       // localStorage: l'ultima stagione annunciata (il messaggio compare una volta per stagione)
     const PASSO_NASTRO = 4000;                        // ms: ogni quanto il nastro passa alla stagione dopo
     const LINK_MP3 = 'https://dn721900.ca.archive.org/0/items/pkmn-rse-soundtrack/Disc%201/13%20-%20Pok%C3%A9mon%20Center.mp3';
@@ -509,20 +510,57 @@
         const annuncio = $('gx-annuncio');
         let annunciato = false;
         function provaAnnuncio() {
-            if (annunciato || !annuncio || !giocatore || !stagione) return;
+            if (!annuncio || !giocatore) return;
             if (splash && !splash.hidden) return;
-            const a = daAnnunciare({ stagione, giocatoreId: giocatore.id, iscritti: stagione.iscritti, vista: leggi(CHIAVE_ANNUNCIO) });
-            if (!a) return;
-            annunciato = true;
-            scrivi(CHIAVE_ANNUNCIO, String(a.id));
-            $('gx-annuncio-nome').textContent = a.nome;
-            $('gx-annuncio-tempo').textContent = 'Closes in ' + a.tempo;
-            $('gx-annuncio-vai').setAttribute('href', a.href);
-            annuncio.hidden = false;
-            aggiornaClasse();
-            fai('ok');
+            if (!annunciato && stagione) {
+                const a = daAnnunciare({ stagione, giocatoreId: giocatore.id, iscritti: stagione.iscritti, vista: leggi(CHIAVE_ANNUNCIO) });
+                if (a) {
+                    annunciato = true;
+                    scrivi(CHIAVE_ANNUNCIO, String(a.id));
+                    $('gx-annuncio-nome').textContent = a.nome;
+                    $('gx-annuncio-tempo').textContent = 'Closes in ' + a.tempo;
+                    $('gx-annuncio-vai').setAttribute('href', a.href);
+                    annuncio.hidden = false;
+                    aggiornaClasse();
+                    fai('ok');
+                    return;
+                }
+            }
+            provaAvvisi();
         }
-        function chiudiAnnuncio() { if (!annuncio || annuncio.hidden) return; annuncio.hidden = true; aggiornaClasse(); }
+        // ----- la richiesta delle notifiche: una volta sola, la prima volta che si apre il menù da collegati (e mai sopra l'annuncio di una stagione) -----
+        const avvisi = $('gx-avvisi');
+        let avvisiProvati = false;
+        const caricaPush = () => new Promise(ok => {
+            if (win.Push) { ok(win.Push); return; }
+            const sc = doc.createElement('script');
+            sc.src = 'push.js';
+            sc.onload = () => ok(win.Push || null);
+            sc.onerror = () => ok(null);
+            doc.head.appendChild(sc);
+        });
+        function provaAvvisi() {
+            if (avvisiProvati || !avvisi || !giocatore || (annuncio && !annuncio.hidden) || leggi(CHIAVE_AVVISI)) return;
+            avvisiProvati = true;
+            caricaPush().then(P => (P ? P.stato() : null)).then(st => {
+                if (st === 'acceso' || st === 'negato') { scrivi(CHIAVE_AVVISI, '1'); return; }      // già decise: non si chiede
+                if (st !== 'spento') return;                                                              // questo telefono non può riceverle
+                avvisi.hidden = false;
+                aggiornaClasse();
+                fai('ok');
+            }).catch(() => { /* niente richiesta: si riprova alla prossima apertura */ });
+        }
+        function chiudiAvvisi() { if (!avvisi || avvisi.hidden) return; scrivi(CHIAVE_AVVISI, '1'); avvisi.hidden = true; aggiornaClasse(); }
+        if (avvisi) {
+            avvisi.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === avvisi) chiudiAvvisi(); });
+            const si = $('gx-avvisi-si');
+            if (si) si.addEventListener('click', () => {
+                chiudiAvvisi();
+                // il telefono mostra da sé la sua richiesta di permesso; se si rifiuta si può sempre riaccendere dalle impostazioni (tessera Alerts)
+                if (win.Push) win.Push.attiva().catch(() => { /* resta spento */ });
+            });
+        }
+        function chiudiAnnuncio() { if (!annuncio || annuncio.hidden) return; annuncio.hidden = true; aggiornaClasse(); provaAvvisi(); }
         if (annuncio) {
             annuncio.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === annuncio) chiudiAnnuncio(); });
         }
