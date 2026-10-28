@@ -60,7 +60,7 @@ function testo(tipo, d = {}) {
             return {
                 title: 'Your move!',
                 body: `${d.da} has played their turn${d.categoria ? ` in ${d.categoria}` : ''}`,
-                url: partitaUrl(d), tag: `turno-${d.id || ''}`, soloChiusa: true
+                url: partitaUrl(d), tag: `turno-${d.id || ''}`
             };
         case 'sfida-accettata':
             return {
@@ -84,7 +84,7 @@ function testo(tipo, d = {}) {
             return {
                 title: 'Live now',
                 body: `${d.p1} vs ${d.p2}${d.categoria ? ` · ${d.categoria}` : ''}`,
-                url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `live-${d.id || ''}`, soloChiusa: true
+                url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `live-${d.id || ''}`
             };
         case 'mvp-nomina':
             return {
@@ -180,7 +180,7 @@ function messaggio(tokens, n) {
     return {
         tokens,
         notification: { title: n.title, body: n.body },
-        data: { url: n.url || 'index.html', tag: n.tag || '', ...(n.soloChiusa ? { soloChiusa: '1' } : {}) },
+        data: { url: n.url || 'index.html', tag: n.tag || '' },
         // sul web la notifica la disegna il service worker del sito (docs/sw.js) e apre `data.url`; su Android la disegna il sistema
         webpush: { headers: { Urgency: 'high', TTL: '86400' } },
         android: { priority: 'high', ttl: 86400000, notification: { tag: n.tag || undefined } }
@@ -258,7 +258,11 @@ async function notificaMvp({ db, messaging, stagione, info }) {
     return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `mvp-${stagione}` });
 }
 
-/** L'avversario ha scelto la sua mossa e tu no: tocca a te (una volta per turno) */
+/** Chi sta dentro la partita (simulatore aperto) segna `partite/{id}/presenza/{lato}` con un battito ogni 30 s (docs/motore-online.js): se è fresco non gli si manda niente */
+const PRESENZA_MS = 90000;
+const inPartita = (battito, adesso = Date.now()) => typeof battito === 'number' && Number.isFinite(battito) && adesso - battito < PRESENZA_MS;
+
+/** L'avversario ha scelto la sua mossa e tu no: tocca a te (una volta per turno), a meno che tu non sia già dentro la partita */
 async function notificaTurno({ db, messaging, id, info }) {
     if (!info || !info.p1 || !info.p2) return null;
     const scelto = (await db.ref(`partite/${id}/haScelto`).once('value')).val() || {};
@@ -267,6 +271,8 @@ async function notificaTurno({ db, messaging, id, info }) {
     const chi = lati[0], altro = chi === 'p1' ? 'p2' : 'p1';
     const uid = info[altro].uid;
     if (!uid) return null;
+    const battito = (await db.ref(`partite/${id}/presenza/${altro}`).once('value')).val();
+    if (inPartita(battito)) return null;                      // il simulatore è aperto: la mossa dell'avversario la vede lì
     const n = testo('turno', { da: info[chi].nome, categoria: info.categoria, amichevole: !!info.amichevole, sfida: info.sfida, stagione: info.stagione, id });
     return invia({ db, messaging, uids: [uid], n, chiaveUnica: `turno-${id}-${scelto[chi]}-${chi}` });
 }
@@ -334,6 +340,6 @@ module.exports = {
     testo, quandoScade, uidDelGiocatore, uidDeiGiocatori, tuttiIGiocatori, promemoriaDovuto, messaggio,
     tokenDi, uidConToken, invia,
     notificaSfida, notificaIscrizioniAperte, notificaStagioneConclusa, notificaPromemoria, notificaMvp,
-    ORE_MVP_SCADENZA, mvpScadenzaDovuta, iscriviTeamDovuto,
+    ORE_MVP_SCADENZA, mvpScadenzaDovuta, iscriviTeamDovuto, PRESENZA_MS, inPartita,
     notificaTurno, notificaSfidaAccettata, notificaMvpScadenza, notificaIscriviTeam, notificaLive, notificaMvpNomina
 };

@@ -178,19 +178,12 @@ self.addEventListener('push', evento => {
     const n = d.notification || {};
     const dati = d.data || {};
     const titolo = n.title || dati.title || 'Sant\'Alvise League';
-    evento.waitUntil((async () => {
-        // le notifiche "solo a sito chiuso" (il tuo turno, un match in diretta) non si mostrano se il sito o l'app sono aperti e in vista: lì si vede già
-        if (dati.soloChiusa) {
-            const aperte = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-            if (aperte.some(c => c.visibilityState === 'visible')) return;
-        }
-        await self.registration.showNotification(titolo, {
-            body: n.body || dati.body || '',
-            icon: ICONA, badge: ICONA,
-            tag: dati.tag || n.tag || undefined,
-            data: { url: dati.url || 'index.html' }
-        });
-    })());
+    evento.waitUntil(self.registration.showNotification(titolo, {
+        body: n.body || dati.body || '',
+        icon: ICONA, badge: ICONA,
+        tag: dati.tag || n.tag || undefined,
+        data: { url: dati.url || 'index.html' }
+    }));
 });
 
 self.addEventListener('notificationclick', evento => {

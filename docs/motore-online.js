@@ -97,6 +97,7 @@ export class BattagliaOnline {
         });
 
         if (this.lato) {
+            this._presenza();
             const avversario = this.lato === 'p1' ? 'p2' : 'p1';
             this._ascolta(`${base}/privato/${this.lato}/richiesta`, 'value', s => {
                 const r = s.val();
@@ -105,6 +106,27 @@ export class BattagliaOnline {
                 this._consegna(r);
             });
             this._ascolta(`${base}/haScelto/${avversario}`, 'value', s => this._emetti('avversario', s.val()));
+        }
+    }
+
+    /**
+     * Segna che questo giocatore è dentro la partita: il server non gli manda la notifica "tocca a te" mentre il simulatore è aperto (functions/push.js, inPartita).
+     * Un battito ogni 30 secondi; sparisce da solo se la connessione cade o alla chiusura; nell'app, con lo schermo spento o l'app in secondo piano, si toglie (le notifiche devono arrivare).
+     */
+    _presenza() {
+        const w = typeof self !== 'undefined' ? self : null;
+        if (!w || !w.firebase || !w.firebase.database) return;
+        const ref = this.db.ref(`partite/${this.id}/presenza/${this.lato}`);
+        const nellApp = () => !!(w.document && w.document.documentElement.classList.contains('app'));
+        const metti = () => { ref.set(w.firebase.database.ServerValue.TIMESTAMP).catch(() => { /* senza: arrivano anche le notifiche */ }); };
+        const togli = () => { ref.remove().catch(() => { /* scade da sola */ }); };
+        try { ref.onDisconnect().remove(); } catch (e) { /* senza: scade da sola dopo 90 secondi */ }
+        metti();
+        this._battito = w.setInterval(() => { if (!(nellApp() && w.document.visibilityState === 'hidden')) metti(); }, 30000);
+        this._togliPresenza = togli;
+        if (w.document) {
+            this._visibilita = () => { if (!nellApp()) return; if (w.document.visibilityState === 'hidden') togli(); else metti(); };
+            w.document.addEventListener('visibilitychange', this._visibilita);
         }
     }
 
@@ -132,6 +154,9 @@ export class BattagliaOnline {
     }
 
     chiudi() {
+        if (this._battito) { self.clearInterval(this._battito); this._battito = null; }
+        if (this._visibilita && self.document) self.document.removeEventListener('visibilitychange', this._visibilita);
+        if (this._togliPresenza) { this._togliPresenza(); this._togliPresenza = null; }
         this.riferimenti.forEach(r => r.off());
         this.riferimenti = [];
     }

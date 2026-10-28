@@ -8,14 +8,14 @@
 | Promemoria scadenza | 24 ore e 3 ore prima della scadenza | tutti quelli che hanno acceso le notifiche (iscritti o no) | checker (ogni 30 minuti) |
 | Voto MVP aperto | quando si apre la finestra di voto | gli iscritti che non hanno ancora votato | checker (ogni 30 minuti) |
 | Stagione conclusa | la stagione passa a "closed" | gli iscritti, col nome del vincitore | Cloud Function `pushStatoStagione` |
-| Il tuo turno | l'avversario ha giocato il suo turno e a te manca la scelta (ufficiale e amichevole); solo se sito e app non sono aperti | l'altro giocatore | Cloud Function `pushTurno` |
+| Il tuo turno | l'avversario ha giocato il suo turno e a te manca la scelta (ufficiale e amichevole); non arriva se sei dentro quella partita (simulatore aperto, anche dal PC) | l'altro giocatore | Cloud Function `pushTurno` |
 | Sfida accettata | chi ti sfida accetta (la partita è pronta) | chi ha lanciato la sfida | Cloud Function `pushSfidaAccettata` |
 | Scadenza voto MVP | 3 ore prima della fine del voto (dopo la chiusura della stagione) | gli iscritti che non hanno votato | checker (ogni 30 minuti) |
 | Iscrivi i tuoi team! | a metà strada tra l'apertura della stagione e la scadenza delle iscrizioni | gli iscritti a cui manca un team in qualche formato | checker (ogni 30 minuti) |
-| Match in diretta | un match ufficiale (ranked) parte; solo se sito e app non sono aperti | tutti con le notifiche, tranne i due che giocano | Cloud Function `pushMatchLive` |
+| Match in diretta | un match ufficiale (ranked) parte | tutti con le notifiche, tranne i due che giocano | Cloud Function `pushMatchLive` |
 | MVP ufficiale | il conteggio dei voti scrive l'MVP della stagione | tutti con le notifiche | Cloud Function `pushMvpNomina` |
 
-(«solo se sito e app non sono aperti»: sull'APK Android il sistema mostra la notifica solo con l'app in secondo piano; sul web la scarta il service worker se una finestra del sito è in vista. Il vincitore della stagione è la notifica «Stagione conclusa» di sopra.)
+(Il simulatore segna che sei dentro la partita con un battito ogni 30 secondi in `partite/<id>/presenza/<p1|p2>`: se è fresco (meno di 90 secondi) la notifica «Your move!» non parte. Nell'APK, con l'app in secondo piano il battito si toglie. Il vincitore della stagione è la notifica «Season finished» di sopra.)
 
 Ognuno le accende dalle impostazioni dell'app (l'ingranaggio nel menù principale o il tondino del giocatore in alto nelle pagine, tessera **Alerts**). Ogni notifica "di stato" parte una volta sola (`pushInviati/…`).
 
