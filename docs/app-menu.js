@@ -407,7 +407,7 @@
             if (!st) return '';
             const s = riassuntoStagione(st, !!giocatore && giaIscritto(st.iscritti, giocatore.id));
             const punti = stagioni.length > 1 ? '<span class="gx-st-punti" aria-hidden="true">' + stagioni.map((x, k) => '<i' + (k === indiceNastro % stagioni.length ? ' class="su"' : '') + '></i>').join('') + '</span>' : '';
-            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '" data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
+            return '<a class="gx-stagione gx-st-' + s.stato + '" href="' + esc(s.href) + '"' + (s.azione === 'JOIN' ? ' data-iscrivi="' + esc(String(st.id)) + '"' : '') + ' data-suono="scegli"><i class="gx-pallino"></i><span class="gx-st-testi"><b>' + esc(s.nome) + '</b></span>' + punti + '<em>' + esc(s.azione) + '</em></a>';
         };
         const pannelloGiocatore = () => {
             const nastro = '<div class="gx-nastro" id="gx-nastro">' + htmlNastro() + '</div>';
@@ -520,6 +520,7 @@
                     $('gx-annuncio-nome').textContent = a.nome;
                     $('gx-annuncio-tempo').textContent = 'Closes in ' + a.tempo;
                     $('gx-annuncio-vai').setAttribute('href', a.href);
+                    $('gx-annuncio-vai').setAttribute('data-iscrivi', String(a.id));
                     annuncio.hidden = false;
                     aggiornaClasse();
                     fai('ok');
@@ -550,6 +551,49 @@
                 fai('ok');
             }).catch(() => { /* niente richiesta: si riprova alla prossima apertura */ });
         }
+        // ----- l'iscrizione a una stagione aperta: riepilogo e conferma qui, poi l'hub (prima JOIN portava all'hub senza iscrivere: si finiva con team iscritti e giocatore no) -----
+        const iscr = $('gx-iscr');
+        let iscrStagione = '';
+        const chiudiIscr = () => { if (!iscr || iscr.hidden) return; iscr.hidden = true; aggiornaClasse(); };
+        async function apriIscr(id) {
+            if (!iscr || !id) return;
+            iscrStagione = id;
+            const errore = $('gx-iscr-errore');
+            errore.hidden = true;
+            try {
+                const info = (await db().ref(`seasons/${id}/info`).once('value')).val() || {};
+                $('gx-iscr-nome').textContent = info.name || `Season ${String(id).replace(/^s/, '')}`;
+                const formati = info.selected_formats ? Object.values(info.selected_formats).join(' · ') : '';
+                $('gx-iscr-info').textContent = [formati, info.showdowns_per_format ? `${info.showdowns_per_format} showdowns per format` : ''].filter(Boolean).join(' — ') || 'Confirm to register your profile to this competition.';
+            } catch (e) { $('gx-iscr-nome').textContent = `Season ${String(id).replace(/^s/, '')}`; $('gx-iscr-info').textContent = ''; }
+            iscr.hidden = false;
+            aggiornaClasse();
+        }
+        if (iscr) {
+            iscr.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === iscr) chiudiIscr(); });
+            const si = $('gx-iscr-si');
+            if (si) si.addEventListener('click', async () => {
+                const errore = $('gx-iscr-errore');
+                const utenteAuth = auth().currentUser;
+                if (!utenteAuth || !iscrStagione) { errore.textContent = 'Log in first.'; errore.hidden = false; return; }
+                si.disabled = true;
+                try {
+                    const nome = (await db().ref(`users/${utenteAuth.uid}/name`).once('value')).val();
+                    if (!nome) throw new Error('No player name');
+                    const gia = (await db().ref(`seasons/${iscrStagione}/iscritti/${nome}`).once('value')).exists();
+                    if (!gia) await db().ref(`seasons/${iscrStagione}/iscritti/${nome}`).set({ uid: utenteAuth.uid, timestamp: win.firebase.database.ServerValue.TIMESTAMP });
+                    win.location.href = `hub.html?id=${encodeURIComponent(iscrStagione)}`;
+                } catch (err) { errore.textContent = 'Could not register. Try again.'; errore.hidden = false; si.disabled = false; }
+            });
+        }
+        // JOIN (il nastro, l'annuncio) non porta all'hub: prima si conferma l'iscrizione
+        doc.addEventListener('click', e => {
+            const a = e.target.closest ? e.target.closest('[data-iscrivi]') : null;
+            if (!a) return;
+            e.preventDefault();
+            chiudiAnnuncio();
+            apriIscr(a.getAttribute('data-iscrivi'));
+        }, true);
         function chiudiAvvisi() { if (!avvisi || avvisi.hidden) return; scrivi(CHIAVE_AVVISI, '1'); avvisi.hidden = true; aggiornaClasse(); }
         if (avvisi) {
             avvisi.addEventListener('click', e => { if ((e.target.closest && e.target.closest('[data-chiudi]')) || e.target === avvisi) chiudiAvvisi(); });
