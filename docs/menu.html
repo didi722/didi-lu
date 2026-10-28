@@ -108,6 +108,22 @@
         </div>
     </div>
 
+    <!-- L'iscrizione a una stagione aperta: riepilogo e conferma (era un tasto verso l'hub, che non iscrive nessuno) -->
+    <div class="gx-dialogo gx-iscr" id="gx-iscr" role="dialog" aria-modal="true" aria-labelledby="gx-iscr-titolo" hidden>
+        <div class="gx-pannello gx-manifesto">
+            <span class="gx-manifesto-raggi" aria-hidden="true"></span>
+            <p class="gx-man-sopra">Join the season</p>
+            <h2 id="gx-iscr-titolo">Register?</h2>
+            <b class="gx-man-nome" id="gx-iscr-nome"></b>
+            <p class="gx-man-tempo" id="gx-iscr-info"></p>
+            <p class="gx-man-tempo" id="gx-iscr-errore" hidden></p>
+            <div class="gx-righe">
+                <button type="button" class="gx-bottone gx-secondario" data-chiudi data-suono="chiudi">Not now</button>
+                <button type="button" class="gx-bottone gx-primario" id="gx-iscr-si" data-suono="ok">Confirm &amp; join</button>
+            </div>
+        </div>
+    </div>
+
     <!-- La richiesta delle notifiche: una volta sola, la prima volta che si apre il menù da collegati -->
     <div class="gx-dialogo gx-avvisi" id="gx-avvisi" role="dialog" aria-modal="true" aria-labelledby="gx-avvisi-titolo" hidden>
         <div class="gx-pannello gx-manifesto">

@@ -654,7 +654,7 @@ test('la stagione del momento: il nastro sotto il giocatore, col tempo che manca
     const p = paginaMenu({ sessione: { menuSplashVisto: '1' }, stagioni });
     await passaUnGiro(); await passaUnGiro(); await passaUnGiro();
     const g = p.id('gx-giocatore').innerHTML;
-    assert.match(g, /<a class="gx-stagione gx-st-open" href="hub\.html\?id=s2" data-suono="scegli">/);
+    assert.match(g, /<a class="gx-stagione gx-st-open" href="hub\.html\?id=s2" data-iscrivi="s2" data-suono="scegli">/);
     assert.match(g, /<b>Spring Cup<\/b><\/span>/);
     assert.match(g, /<em>JOIN<\/em>/);
     // il conto alla rovescia si aggiorna da solo, ogni mezzo minuto
@@ -828,4 +828,17 @@ test('la richiesta delle notifiche: una finestra sola, la prima volta da collega
     assert.match(js, /st === 'acceso' \|\| st === 'negato'[\s\S]*scrivi\(CHIAVE_AVVISI, '1'\)/, 'già decise: non si chiede');
     assert.match(js, /if \(st !== 'spento'\) return;/, 'telefono che non può ricevere avvisi: niente richiesta');
     assert.match(js, /win\.Push\.attiva\(\)/, 'il permesso lo chiede il telefono, con il suo avviso');
+});
+
+test('JOIN: non porta più all\'hub (che non iscrive) ma a un riepilogo con conferma; l\'hub non fa iscrivere team a chi non è iscritto alla stagione', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'menu.html'), 'utf8');
+    const js = fs.readFileSync(path.join(__dirname, '..', 'docs', 'app-menu.js'), 'utf8');
+    const hub = fs.readFileSync(path.join(__dirname, '..', 'docs', 'hub.html'), 'utf8');
+    assert.match(html, /id="gx-iscr"[^>]*hidden/);
+    assert.match(html, /id="gx-iscr-si"[^>]*>Confirm &amp; join/);
+    assert.match(js, /\[data-iscrivi\][\s\S]*e\.preventDefault\(\);[\s\S]*apriIscr\(/, 'il tocco su JOIN apre il riepilogo');
+    assert.match(js, /setAttribute\('data-iscrivi', String\(a\.id\)\)/, 'anche l\'annuncio');
+    assert.match(js, /seasons\/\$\{iscrStagione\}\/iscritti\/\$\{nome\}`\)\.set\(\{ uid: utenteAuth\.uid, timestamp/, 'l\'iscrizione scrive uid e data, come il sito');
+    assert.match(js, /if \(!gia\) await/, 'se si è già iscritti non si riscrive');
+    assert.match(hub, /You are not registered to this season yet[\s\S]*return;[\s\S]*teams_iscritti\/\$\{format\}\/\$\{nomeUtenteClean\}`\)\.set\(payload\)/, 'niente team senza iscrizione');
 });

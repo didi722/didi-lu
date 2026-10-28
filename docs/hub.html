@@ -1465,6 +1465,12 @@ async function inviaSelezioneTeam(format, nomeUtenteClean, allTeams, selectedTea
     };
 
     try {
+        // senza essere iscritti alla stagione non si iscrivono team (si arrivava qui dall'app senza aver confermato l'iscrizione)
+        const iscrittiAdesso = (await db.ref(`seasons/${seasonId}/iscritti`).once('value')).val() || {};
+        if (!Object.keys(iscrittiAdesso).some(n => String(n).toLowerCase() === String(nomeUtenteClean).toLowerCase())) {
+            alert('You are not registered to this season yet: join it from the home first.');
+            return;
+        }
         await db.ref(`seasons/${seasonId}/teams_iscritti/${format}/${nomeUtenteClean}`).set(payload);
         closeTeamModal();
     } catch (e) {

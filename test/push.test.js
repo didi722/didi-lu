@@ -61,7 +61,13 @@ test('testo: ogni notifica ha titolo, corpo, pagina da aprire e un tag; tutto in
         'iscrizioni-aperte': { nome: 'Season 3', scadenza: '2026-11-03T20:30:00Z', stagione: 's3' },
         promemoria: { nome: 'Season 3', ore: 3, stagione: 's3' },
         mvp: { nome: 'Season 2', stagione: 's2' },
-        'stagione-conclusa': { nome: 'Season 2', vincitore: 'Didi', stagione: 's2' }
+        'stagione-conclusa': { nome: 'Season 2', vincitore: 'Didi', stagione: 's2' },
+        turno: { da: 'Lu', categoria: 'OU', stagione: 's2', id: 'p1' },
+        'sfida-accettata': { a: 'Lu', categoria: 'OU', amichevole: true, sfida: 'x1', id: 'x1' },
+        'mvp-scadenza': { nome: 'Season 2', ore: 3, stagione: 's2' },
+        'iscrivi-team': { nome: 'Season 3', scadenza: '2026-11-03T20:30:00Z', stagione: 's3' },
+        live: { p1: 'Didi', p2: 'Lu', categoria: 'OU', stagione: 's2', id: 'p1' },
+        'mvp-nomina': { nome: 'Season 2', vincitore: 'Garchomp (Didi)', stagione: 's2' }
     };
     for (const [tipo, d] of Object.entries(casi)) {
         const n = P.testo(tipo, d);
@@ -319,7 +325,7 @@ test('cablaggio: i trigger ci sono, il checker manda promemoria e voto MVP, il s
     const chk = leggi('.github', 'workflows', 'checker.js');
     assert.match(chk, /push\.promemoriaDovuto\(info\)/);
     assert.match(chk, /push\.notificaPromemoria/);
-    assert.match(chk, /Mvp\.finestraVoto\(info, avanzamento, id\)\.aperta/);
+    assert.match(chk, /Mvp\.finestraVoto\(info, avanzamento, id\);\s*if \(finestra\.aperta\)/);
     assert.match(chk, /push\.notificaMvp/);
     assert.match(chk, /catch \(e\) \{\s*console\.error\(`⚠️ Notifiche push/, 'gli errori delle notifiche non fermano il controllo delle stagioni');
     // il checker e le functions usano lo stesso file e la stessa chiave dei token del sito
@@ -344,4 +350,115 @@ test('APK: plugin delle notifiche nel package.json e nel lock, permesso Android 
     assert.ok(flusso.indexOf('Notifiche push (google-services.json') < flusso.indexOf('npx cap sync android'), 'il file c\'è prima di sincronizzare e costruire');
     assert.ok(flusso.indexOf('Notifiche push (google-services.json') > flusso.indexOf('npx cap add android'), 'e dopo che il progetto Android esiste');
     assert.deepEqual(JSON.parse(leggi('capacitor.config.json')).plugins.PushNotifications.presentationOptions, ['badge', 'sound', 'alert']);
+});
+
+
+// ---------- le nuove notifiche ----------
+
+const INFO_RANKED = { stagione: 's2', categoria: 'OU', p1: { nome: 'Didi', uid: 'u1' }, p2: { nome: 'Lu', uid: 'u2' } };
+
+test('notificaTurno: quando uno dei due ha scelto e l\'altro no, tocca all\'altro (una volta per turno); se hanno scelto entrambi o nessuno, niente', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN, partite: { p1: { haScelto: { p1: 4 } } } });
+    const messaging = messagingFinto();
+    const r = await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED });
+    assert.equal(r.inviate, 1);
+    assert.deepEqual(messaging.inviati[0].tokens.sort(), ['morto-lu-2', 'tok-lu-1'], 'a Lu, che non ha ancora scelto');
+    assert.equal(messaging.inviati[0].notification.title, 'Your move!');
+    assert.equal(messaging.inviati[0].data.soloChiusa, '1', 'solo a sito e app chiusi');
+    assert.equal((await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED })).saltata, true, 'lo stesso turno una volta sola');
+    db.albero.partite.p1.haScelto = { p1: 4, p2: 4 };
+    assert.equal(await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED }), null, 'hanno scelto entrambi');
+    db.albero.partite.p1.haScelto = {};
+    assert.equal(await P.notificaTurno({ db, messaging, id: 'p1', info: INFO_RANKED }), null, 'nessuno');
+    // amichevole: lo stesso, con la pagina della sfida
+    const amic = { ...INFO_RANKED, amichevole: true, sfida: 'x9', stagione: undefined };
+    db.albero.partite.p2 = { haScelto: { p2: 1 } };
+    const m2 = messagingFinto();
+    await P.notificaTurno({ db, messaging: m2, id: 'p2', info: amic });
+    assert.deepEqual(m2.inviati[0].tokens, ['tok-didi']);
+    assert.match(m2.inviati[0].data.url, /battle\.html\?amichevole=x9/);
+});
+
+test('notificaSfidaAccettata: a chi ha lanciato la sfida, solo se è accettata, una volta sola', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const messaging = messagingFinto();
+    assert.equal(await P.notificaSfidaAccettata({ db, messaging, stagione: 's2', id: 'x1', sfida: { stato: 'in_attesa', daId: 'didi' } }), null);
+    const sfida = { stato: 'accettata', daId: 'didi', da: 'Didi', a: 'Lu', categoria: 'OU' };
+    const r = await P.notificaSfidaAccettata({ db, messaging, stagione: 's2', id: 'x1', sfida });
+    assert.equal(r.inviate, 1);
+    assert.deepEqual(messaging.inviati[0].tokens, ['tok-didi']);
+    assert.match(messaging.inviati[0].notification.body, /Lu accepted your challenge in OU/);
+    assert.equal((await P.notificaSfidaAccettata({ db, messaging, stagione: 's2', id: 'x1', sfida })).saltata, true);
+});
+
+test('notificaLive: un match ufficiale in diretta va a tutti con le notifiche, tranne i due che giocano; le amichevoli no', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const messaging = messagingFinto();
+    const r = await P.notificaLive({ db, messaging, id: 'p1', info: INFO_RANKED });
+    assert.equal(r.inviate, 1);
+    assert.deepEqual(messaging.inviati[0].tokens, ['tok-ada']);
+    assert.equal(messaging.inviati[0].data.soloChiusa, '1');
+    assert.equal(await P.notificaLive({ db, messaging, id: 'p2', info: { ...INFO_RANKED, amichevole: true } }), null);
+    assert.equal(await P.notificaLive({ db, messaging, id: 'p3', info: { ...INFO_RANKED, stagione: '' } }), null);
+});
+
+test('mvpScadenzaDovuta / notificaMvpScadenza: tre ore prima della fine del voto, solo a chi non ha votato', async () => {
+    const ora = Date.parse('2026-11-10T12:00:00Z');
+    const finestra = ore => ({ aperta: true, fase: 'dopo', scade: ora + ore * 3600000 });
+    assert.equal(P.mvpScadenzaDovuta(finestra(10), ora), 0);
+    assert.equal(P.mvpScadenzaDovuta(finestra(3), ora), 3);
+    assert.equal(P.mvpScadenzaDovuta(finestra(1), ora), 3);
+    assert.equal(P.mvpScadenzaDovuta(finestra(-1), ora), 0, 'scaduto');
+    assert.equal(P.mvpScadenzaDovuta({ aperta: true, fase: 'durante' }, ora), 0, 'prima della chiusura non c\'è una scadenza');
+    assert.equal(P.mvpScadenzaDovuta({ aperta: false, fase: 'dopo', scade: ora + 1000 }, ora), 0);
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN, seasons: { s2: { iscritti: { didi: true, lu: true, ada: true }, mvp: { voti: { didi: {} } } } } });
+    const messaging = messagingFinto();
+    const r = await P.notificaMvpScadenza({ db, messaging, stagione: 's2', info: { name: 'Season 2' }, ore: 3 });
+    assert.equal(r.inviate, 2, 'Lu (2 telefoni, uno morto) e Ada; Didi ha già votato');
+    assert.match(messaging.inviati[0].notification.body, /about 3 hours left to vote/);
+    assert.equal((await P.notificaMvpScadenza({ db, messaging, stagione: 's2', info: {}, ore: 3 })).saltata, true);
+});
+
+test('iscriviTeamDovuto / notificaIscriviTeam: a metà tempo tra apertura e scadenza, agli iscritti senza team in qualche formato', async () => {
+    const apertaIl = Date.parse('2026-11-01T00:00:00Z');
+    const info = { status: 'open', deadline: '2026-11-11T00:00:00Z', selected_formats: { a: 'OU', b: 'VGC' } };
+    assert.equal(P.iscriviTeamDovuto(info, apertaIl, Date.parse('2026-11-05T23:00:00Z')), false, 'prima della metà');
+    assert.equal(P.iscriviTeamDovuto(info, apertaIl, Date.parse('2026-11-06T00:00:00Z')), true, 'a metà');
+    assert.equal(P.iscriviTeamDovuto(info, apertaIl, Date.parse('2026-11-12T00:00:00Z')), false, 'scaduta');
+    assert.equal(P.iscriviTeamDovuto({ ...info, status: 'playing' }, apertaIl, Date.parse('2026-11-07T00:00:00Z')), false);
+    assert.equal(P.iscriviTeamDovuto(info, NaN, Date.parse('2026-11-07T00:00:00Z')), false, 'senza la data di apertura non si sa');
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN, seasons: { s3: {
+        iscritti: { didi: true, lu: true, ada: true },
+        teams_iscritti: { OU: { didi: { count: 2 }, lu: { count: 1 }, ada: { count: 0 } }, VGC: { didi: { count: 1 } } }
+    } } });
+    const messaging = messagingFinto();
+    const r = await P.notificaIscriviTeam({ db, messaging, stagione: 's3', info });
+    assert.deepEqual(messaging.inviati[0].tokens.sort(), ['morto-lu-2', 'tok-ada', 'tok-lu-1'], 'Lu e Ada: a Didi non manca niente');
+    assert.equal(r.inviate, 2);
+    assert.equal((await P.notificaIscriviTeam({ db, messaging, stagione: 's3', info })).saltata, true);
+});
+
+test('notificaMvpNomina: l\'MVP ufficiale a tutti con le notifiche, col Pokémon e il giocatore; senza vincitori niente', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const messaging = messagingFinto();
+    assert.equal(await P.notificaMvpNomina({ db, messaging, stagione: 's2', info: {}, risultato: { vincitori: [] } }), null);
+    const risultato = { vincitori: [{ chiave: 'k', specie: 'Garchomp', player: 'Didi' }] };
+    const r = await P.notificaMvpNomina({ db, messaging, stagione: 's2', info: { name: 'Season 2' }, risultato });
+    assert.equal(r.inviate, 3);
+    assert.match(messaging.inviati[0].notification.body, /Season 2: Garchomp \(Didi\) is the MVP!/);
+    assert.equal((await P.notificaMvpNomina({ db, messaging, stagione: 's2', info: {}, risultato })).saltata, true);
+});
+
+test('cablaggio delle nuove notifiche: i trigger, il checker e il service worker (niente notifica a sito aperto per turno e live)', () => {
+    const idx = fs.readFileSync(path.join(RADICE, 'functions', 'index.js'), 'utf8');
+    for (const [nome, rif] of [['pushTurno', '/partite/{id}/haScelto/{lato}'], ['pushSfidaAccettata', '/sfide/{stagione}/{id}/stato'], ['pushMatchLive', '/partite/{id}/stato'], ['pushMvpNomina', '/seasons/{stagione}/mvp/risultato']]) {
+        assert.ok(idx.includes(`exports.${nome} =`), nome);
+        assert.ok(idx.includes(`ref: '${rif}'`), `${nome}: ${rif}`);
+    }
+    assert.match(idx, /!== 'lobby'[\s\S]*!== 'in_corso'/, 'live: solo quando la partita parte');
+    const chk = fs.readFileSync(path.join(RADICE, '.github', 'workflows', 'checker.js'), 'utf8');
+    assert.match(chk, /push\.iscriviTeamDovuto\(info, apertaIl\)/);
+    assert.match(chk, /push\.mvpScadenzaDovuta\(finestra\)/);
+    const sw = fs.readFileSync(path.join(RADICE, 'docs', 'sw.js'), 'utf8');
+    assert.match(sw, /dati\.soloChiusa[\s\S]*visibilityState === 'visible'/);
 });

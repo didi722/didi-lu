@@ -42,6 +42,27 @@ html.app body.gx-menu .sfide-btn {
 }
 html.app body.gx-menu .sfide-btn:hover { background: var(--gx-carta); color: #000; transform: none; box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink); }
 html.app body.gx-menu .sfide-btn:active { transform: translateY(calc(3 * var(--u))); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+/* campanella e battaglie in corso: una finestra al centro dello schermo (come le impostazioni), con lo sfondo scurito, non un fumetto sotto il tasto; si chiude con la X o toccando fuori */
+html.app body.gx-menu .sfide-dropdown {
+    position: fixed !important; inset: 0 !important; margin: auto !important; width: min(calc(520 * var(--u)), calc(100% - 24 * var(--u))) !important; max-width: none !important; height: fit-content !important;
+    max-height: calc(100vh - 24 * var(--u)) !important; overflow-y: auto; overscroll-behavior: contain; z-index: 2001; box-sizing: border-box; padding: calc(12 * var(--u)) calc(14 * var(--u)) calc(6 * var(--u)) !important;
+    background: radial-gradient(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%) !important; color: #fff; border: calc(4 * var(--u)) solid var(--gx-ink) !important; border-radius: calc(14 * var(--u)) !important; box-shadow: 0 calc(8 * var(--u)) 0 var(--gx-ink) !important;
+    animation: gx-finestra .26s cubic-bezier(.2, 1.3, .4, 1) backwards;
+}
+html.app body.gx-menu:has(.sfide-dropdown:not([hidden]))::after { content: ""; position: fixed; inset: 0; z-index: 2000; background: rgba(5, 4, 15, .72); pointer-events: none; }
+html.app body.gx-menu .sfide-dropdown h3 {
+    display: flex; align-items: center; justify-content: space-between; gap: calc(10 * var(--u)); margin: 0 0 calc(8 * var(--u)); padding: 0; background: none; box-shadow: none; transform: none; color: #fff;
+    font: 900 calc(18 * var(--u))/1.2 var(--gx-font); letter-spacing: .08em; text-transform: uppercase;
+}
+html.app body.gx-menu .sfide-chiudi {
+    flex: none; display: grid; place-items: center; width: calc(34 * var(--u)); height: calc(34 * var(--u)); padding: 0 0 calc(2 * var(--u)); background: var(--gx-giallo); color: #000; border: calc(3 * var(--u)) solid var(--gx-ink);
+    border-radius: 50%; box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink); font: 900 calc(22 * var(--u))/1 var(--gx-font); cursor: pointer;
+}
+html.app body.gx-menu .sfide-chiudi:active { translate: 0 calc(2 * var(--u)); box-shadow: 0 calc(1 * var(--u)) 0 var(--gx-ink); }
+html.app body.gx-menu .sfide-dropdown .sfide-sezione { margin: calc(10 * var(--u)) 0 calc(6 * var(--u)); color: var(--gx-giallo); font-size: calc(11 * var(--u)); letter-spacing: .1em; }
+html.app body.gx-menu .sfide-dropdown .sfide-voce { margin-bottom: calc(9 * var(--u)); padding: calc(9 * var(--u)) calc(11 * var(--u)); color: #000; border-radius: calc(10 * var(--u)); transform: none !important; box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink) !important; }
+html.app body.gx-menu .sfide-dropdown .sfide-vuoto { margin: calc(8 * var(--u)) 0 calc(12 * var(--u)); color: rgba(255, 255, 255, .8); font-size: calc(12 * var(--u)); line-height: 1.4; }
+@keyframes gx-finestra { from { opacity: 0; scale: .86; } to { opacity: 1; scale: 1; } }
 html.app body.gx-menu .sfide-live-btn { right: calc(12 * var(--u) + 3 * 46 * var(--u)); }
 html.app body.gx-menu .sfide-live-btn.senza-campanella { right: calc(12 * var(--u) + 2 * 46 * var(--u)); }
 html.app body.gx-menu .sfide-live-btn.mia { background: var(--gx-giallo); }

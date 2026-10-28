@@ -129,6 +129,48 @@ exports.pushSfidaRicevuta = onValueCreated(
     }))
 );
 
+// L'avversario ha giocato il suo turno (ha scelto la mossa e tu no): partite ufficiali e amichevoli
+exports.pushTurno = onValueCreated(
+    { ...OPZIONI_PUSH, ref: '/partite/{id}/haScelto/{lato}' },
+    evento => conLog('turno', async () => {
+        const db = getDatabase();
+        const info = (await db.ref(`partite/${evento.params.id}/info`).once('value')).val();
+        return push.notificaTurno({ db, messaging: getMessaging(), id: evento.params.id, info });
+    })
+);
+
+// La sfida che avevi lanciato è stata accettata (di stagione o amichevole)
+exports.pushSfidaAccettata = onValueWritten(
+    { ...OPZIONI_PUSH, ref: '/sfide/{stagione}/{id}/stato' },
+    evento => conLog('sfida-accettata', async () => {
+        if (String(evento.data.before.val() || '') === 'accettata' || String(evento.data.after.val() || '') !== 'accettata') return null;
+        const db = getDatabase();
+        const sfida = (await db.ref(`sfide/${evento.params.stagione}/${evento.params.id}`).once('value')).val();
+        return push.notificaSfidaAccettata({ db, messaging: getMessaging(), stagione: evento.params.stagione, id: evento.params.id, sfida });
+    })
+);
+
+// Un match ufficiale (ranked) comincia (i due sono pronti: la partita passa da lobby a in_corso): gli altri lo sanno
+exports.pushMatchLive = onValueWritten(
+    { ...OPZIONI_PUSH, ref: '/partite/{id}/stato' },
+    evento => conLog('live', async () => {
+        if (String(evento.data.before.val() || '') !== 'lobby' || String(evento.data.after.val() || '') !== 'in_corso') return null;
+        const db = getDatabase();
+        const info = (await db.ref(`partite/${evento.params.id}/info`).once('value')).val();
+        return push.notificaLive({ db, messaging: getMessaging(), id: evento.params.id, info });
+    })
+);
+
+// L'MVP ufficiale di una stagione (il conteggio dei voti scrive il risultato)
+exports.pushMvpNomina = onValueCreated(
+    { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/mvp/risultato' },
+    evento => conLog('mvp-nomina', async () => {
+        const db = getDatabase();
+        const info = (await db.ref(`seasons/${evento.params.stagione}/info`).once('value')).val() || {};
+        return push.notificaMvpNomina({ db, messaging: getMessaging(), stagione: evento.params.stagione, info, risultato: evento.data.val() });
+    })
+);
+
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
 exports.pushStatoStagione = onValueWritten(
     { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/info/status' },

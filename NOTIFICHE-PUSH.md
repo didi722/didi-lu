@@ -8,6 +8,14 @@
 | Promemoria scadenza | 24 ore e 3 ore prima della scadenza | tutti quelli che hanno acceso le notifiche (iscritti o no) | checker (ogni 30 minuti) |
 | Voto MVP aperto | quando si apre la finestra di voto | gli iscritti che non hanno ancora votato | checker (ogni 30 minuti) |
 | Stagione conclusa | la stagione passa a "closed" | gli iscritti, col nome del vincitore | Cloud Function `pushStatoStagione` |
+| Il tuo turno | l'avversario ha giocato il suo turno e a te manca la scelta (ufficiale e amichevole); solo se sito e app non sono aperti | l'altro giocatore | Cloud Function `pushTurno` |
+| Sfida accettata | chi ti sfida accetta (la partita è pronta) | chi ha lanciato la sfida | Cloud Function `pushSfidaAccettata` |
+| Scadenza voto MVP | 3 ore prima della fine del voto (dopo la chiusura della stagione) | gli iscritti che non hanno votato | checker (ogni 30 minuti) |
+| Iscrivi i tuoi team! | a metà strada tra l'apertura della stagione e la scadenza delle iscrizioni | gli iscritti a cui manca un team in qualche formato | checker (ogni 30 minuti) |
+| Match in diretta | un match ufficiale (ranked) parte; solo se sito e app non sono aperti | tutti con le notifiche, tranne i due che giocano | Cloud Function `pushMatchLive` |
+| MVP ufficiale | il conteggio dei voti scrive l'MVP della stagione | tutti con le notifiche | Cloud Function `pushMvpNomina` |
+
+(«solo se sito e app non sono aperti»: sull'APK Android il sistema mostra la notifica solo con l'app in secondo piano; sul web la scarta il service worker se una finestra del sito è in vista. Il vincitore della stagione è la notifica «Stagione conclusa» di sopra.)
 
 Ognuno le accende dalle impostazioni dell'app (l'ingranaggio nel menù principale o il tondino del giocatore in alto nelle pagine, tessera **Alerts**). Ogni notifica "di stato" parte una volta sola (`pushInviati/…`).
 
@@ -20,7 +28,7 @@ Ognuno le accende dalle impostazioni dell'app (l'ingranaggio nel menù principal
    }
    ```
    (dentro `"rules": { … }`, accanto agli altri nodi; `pushInviati` non serve: lo scrive solo il server.)
-2. **Pubblicare le Cloud Functions** (due nuove: `pushSfidaRicevuta`, `pushStatoStagione`): `firebase deploy --only functions`, come le altre volte.
+2. **Pubblicare le Cloud Functions** (`pushSfidaRicevuta`, `pushStatoStagione`, `pushTurno`, `pushSfidaAccettata`, `pushMatchLive`, `pushMvpNomina`): `firebase deploy --only functions`, come le altre volte.
 3. **Notifiche dall'icona sulla Home (Android Chrome e iPhone):** Firebase → Impostazioni del progetto → Cloud Messaging → *Certificati push web* → *Genera coppia di chiavi*. Mandami la **chiave pubblica** (è lunga ~87 caratteri, non è un segreto) e la metto in `docs/push.js` (`CHIAVE_VAPID`), oppure incollala tu lì. Finché è vuota la tessera Alerts non compare sul web.
    - iPhone: le notifiche funzionano solo se il sito è stato aggiunto alla Home (iOS 16.4 o successivo).
 4. **Notifiche nell'APK Android:** Firebase → Impostazioni del progetto → *Le tue app* → *Aggiungi app* → Android, nome pacchetto `com.didilucabattles.app`. Scarica `google-services.json`, aprilo e copia **tutto il contenuto** in un Secret del repository chiamato `GOOGLE_SERVICES_JSON` (Settings → Secrets and variables → Actions). Poi rilancia il workflow *Android APK* (Run workflow su `main`): senza il Secret l'APK si costruisce lo stesso, ma senza notifiche.
