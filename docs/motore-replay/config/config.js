@@ -538,7 +538,7 @@ Config.groups = {
 }
 
 /*** Begin automatically generated configuration ***/
-Config.version = "0.11.2 (f49fca99)";
+Config.version = "0.11.2 (40881c29)";
 Config.translationCachebuster = "c8c897b4";
 
 Config.routes = {
