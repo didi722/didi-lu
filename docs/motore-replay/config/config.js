@@ -1,6 +1,8 @@
 var Config = Config || {};
 
-// only used by oldclient
+// oldclient ramp
+window.ramp = window.ramp || {};
+window.ramp.que = window.ramp.que || [];
 Config.roomsFirstOpenScript = function (mainMenuOnly) {
 	if (mainMenuOnly) {
 		$('.leftmenu .activitymenu').first().after('<div id="mainmenu-mobile" style="text-align:center"></div>');
@@ -8,11 +10,16 @@ Config.roomsFirstOpenScript = function (mainMenuOnly) {
 		$('.roomlisttop').first().after('<div id="roomlist1-desktop"></div>');
 		$('.roomlist').first().after('<div id="roomlist2-desktop"></div>');
 	}
+	var rampScript = document.createElement('script');
+	rampScript.setAttribute('data-cfasync', 'false');
+	rampScript.setAttribute('async', '');
+	rampScript.setAttribute('src', '//cdn.intergient.com/1025841/77767/ramp.js');
+	document.head.appendChild(rampScript);
 };
 
-// indexHTML used in both; others only used in newclient
+// newclient ramp
 Config.includes = {
-	// indexHTML: '<script src="https://hb.vntsm.com/v4/live/vms/sites/pokemonshowdown.com/index.js" async></script>\n' + 
+	// indexHTML: '<script src="https://hb.vntsm.com/v4/live/vms/sites/pokemonshowdown.com/index.js" async></script>\n' +
 	// 	'<script>\n' +
 	// 	'	window.__VM = window.__VM || [];' +
 	// 	'	window.__VM.push(function (admanager, scope) {\n' +
@@ -22,7 +29,18 @@ Config.includes = {
 	mainmenuHTML: '<div id="mainmenu-mobile" style="text-align:center"></div>',
 	roomlistTopHTML: '<div id="roomlist1-desktop"></div>',
 	roomlistAfterFirstHTML: '<div id="roomlist2-desktop"></div>',
+	htmlMounted: false,
+	htmlDidMount: function () {
+		if (Config.htmlMounted) return;
+		Config.htmlMounted = true;
+		var rampScript = document.createElement('script');
+		rampScript.setAttribute('data-cfasync', 'false');
+		rampScript.setAttribute('async', '');
+		rampScript.setAttribute('src', '//cdn.intergient.com/1025841/77767/ramp.js');
+		document.head.appendChild(rampScript);
+	},
 };
+
 
 Config.bannedHosts = ['cool.jit.su', 'pokeball-nixonserver.rhcloud.com', /\.glitch\.me/];
 //Config.afd = true;
@@ -538,7 +556,7 @@ Config.groups = {
 }
 
 /*** Begin automatically generated configuration ***/
-Config.version = "0.11.2 (40881c29)";
+Config.version = "0.11.2 (02c67685)";
 Config.translationCachebuster = "c8c897b4";
 
 Config.routes = {
@@ -550,4 +568,3 @@ Config.routes = {
 	teams: 'teams.pokemonshowdown.com',
 };
 /*** End automatically generated configuration ***/
-
