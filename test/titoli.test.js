@@ -144,9 +144,9 @@ test('serie: soglie crescenti e difficili (quattro livelli: la simulazione è in
     }
     assert.deepEqual(T.LIVELLI_BADGE, ['bronze', 'silver', 'gold', 'platinum']);
     const passi = id => T.BADGE.find(b => b.id === id).steps;
-    assert.deepEqual(passi('won'), [10, 14, 18, 24]);
-    assert.deepEqual(passi('clean'), [4, 5, 6, 7]);
-    assert.deepEqual(passi('sd'), [8, 12, 16, 24]);
+    assert.deepEqual(passi('won'), [12, 16, 22, 26]);
+    assert.deepEqual(passi('clean'), [5, 6, 8, 10]);
+    assert.deepEqual(passi('sd'), [10, 16, 24, 34]);
     // il bronzo si può prendere in una o due stagioni (una League media: ~87 match, ~29 showdown); gli ultimi livelli chiedono anni, perché le serie continuano tra una stagione e l'altra
     assert.ok(passi('won')[0] <= 87 && passi('clean')[0] <= 87 && passi('sd')[0] <= 29);
     // l'ordine in cui si mostrano i badge dell'allenatore è lo stesso del catalogo delle serie: clean, win, sd
