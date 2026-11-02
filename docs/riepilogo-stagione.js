@@ -49,7 +49,7 @@
         collezione: { src: `${IMG}poke-ball.png` },
         sorpresa: { src: `${IMG}scope-lens.png` }
     };
-    const IMMAGINE_MVP = 'immagini/ribbon-mvp-bronze.png'; // il titolo dell'MVP: il fiocco "Season MVP" che prende il Pokémon (fiocchi.js), al primo livello
+    const IMMAGINE_MVP = 'immagini/ribbon-mvp-gold.png';   // l'adesivo dell'MVP: il fiocco "Season MVP" dorato, qualunque sia il numero di MVP vinti da quel Pokémon
     const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
 
@@ -278,14 +278,11 @@
         const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
         const n = riep.numeri;
 
-        // ---- l'apertura
-        const hero = `<section class="rs-b rs-hero" style="--c:${colore}">${etichetta(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP')}`
-            + `<div class="rs-hero-trofeo">${htmlTrofeo(riep)}</div>`
-            + `<div class="rs-hero-testo"><h2 class="rs-titolo">${esc(riep.nome)}</h2>`
-            + `<div class="rs-hero-formati">${riep.formati.map(f => `<span class="rs-tag">${esc(f)}</span>`).join('')}${periodo ? `<span class="rs-periodo">${esc(periodo)}</span>` : ''}</div>`
-            + '<button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></div>'
+        // ---- l'apertura: solo i numeri di tutta la stagione, a blocchetti (il nome della stagione è già nell'intestazione della pagina), e il tasto per condividere
+        const hero = `<section class="rs-stagione rs-s12" style="--c:${colore}">${etichetta(riep.provvisorio ? 'SEASON STATS · PREVIEW' : 'SEASON STATS')}`
             + `<div class="rs-lega" aria-label="Whole league">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
-                .map(([e, x]) => `<div class="rs-lega-voce"><b>${x}</b><span>${e}</span></div>`).join('')}</div></section>`;
+                .map(([e, x]) => `<div class="rs-lega-voce"><b>${x}</b><span>${e}</span></div>`).join('')}</div>`
+            + '<button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></section>';
 
         // ---- il campione: i numeri della sua scheda in /stats
         const diff = st ? st.ko.fatti - st.ko.subiti : 0;
@@ -303,7 +300,7 @@
         const campione = v
             ? `<section class="rs-b rs-campione ${riep.mvp || riep.mvpInCorso ? 'rs-s8' : 'rs-s12'}" style="--c:${colore}">${etichetta(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION')}`
               + `<div class="rs-campione-testa">${avatarImg(v, 'rs-av-grande')}<div class="rs-campione-id"><a class="rs-campione-nome" href="${esc(linkGiocatore(v.nome))}">${esc(v.nome)}</a>`
-              + `<span class="rs-campione-sotto">${v.punti} pts · #${v.posizione} of ${riep.classifica.length}</span></div></div><div class="rs-dati">${dati.join('')}</div></section>`
+              + `<span class="rs-campione-sotto">${v.punti} pts · #${v.posizione} of ${riep.classifica.length}</span></div>${htmlTrofeo(riep)}</div><div class="rs-dati">${dati.join('')}</div></section>`
             : '';
 
         // ---- l'MVP
@@ -340,7 +337,8 @@
             ? `<section class="rs-b rs-premi rs-s12">${etichetta('AWARDS')}<div class="rs-premi-lista">${riep.premi.map(p =>
                 `<article class="rs-premio" style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
                 + `<div><b>${esc(p.titolo)}</b><small>${esc(p.descrizione)}</small></div></div>`
-                + `<div class="rs-vincitori">${p.vincitori.map(htmlPersona).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></article>`).join('')}</div></section>`
+                + `<div class="rs-premio-pie"><div class="rs-premio-chi"><div class="rs-vincitori">${p.vincitori.map(x => `<a class="rs-nome-tag" href="${esc(linkGiocatore(x.nome))}">${esc(x.nome)}</a>`).join('')}</div>`
+                + `<span class="rs-valore">${esc(p.testoValore)}</span></div><div class="rs-avatar-premio">${p.vincitori.map(x => avatarImg(x, 'rs-av-premio')).join('')}</div></div></article>`).join('')}</div></section>`
             : '';
 
         return `<div class="rs">${hero}${campione}${mvp}${classifica}${colonna}${premi}</div>`;

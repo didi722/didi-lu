@@ -78,7 +78,7 @@ test('l\'HTML protegge il testo che viene dal database e il testo da condividere
     const riep = R.calcola(dati([giocatore('ada', { nome: '<img src=x onerror=alert(1)>' }), giocatore('bea')]));
     const h = R.html(riep, { gif: s => `g/${s}` });
     assert.doesNotMatch(h, /<img src=x/);
-    assert.match(h, /Season &lt;1&gt;/);
+    assert.doesNotMatch(h, /Season <1>/, 'il nome della stagione è già nell\'intestazione della pagina');
     assert.match(R.html(null), /No recap available/);
     const t = R.testo(riep);
     assert.match(t, /Champion: BEA/);
@@ -116,7 +116,7 @@ test('struttura a blocchi: apertura, campione | MVP, classifica | colonna, premi
     const g = [giocatore('ada'), giocatore('bea')];
     const riep = R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } }));
     const h = R.html(riep, {});
-    for (const blocco of ['rs-b rs-hero', 'rs-b rs-campione rs-s8', 'rs-b rs-mvp rs-s4', 'rs-b rs-classifica rs-s5', 'rs-colonna rs-s7', 'rs-b rs-formati', 'rs-b rs-usati', 'rs-b rs-premi rs-s12']) assert.ok(h.includes(blocco), blocco);
+    for (const blocco of ['rs-stagione rs-s12', 'rs-b rs-campione rs-s8', 'rs-b rs-mvp rs-s4', 'rs-b rs-classifica rs-s5', 'rs-colonna rs-s7', 'rs-b rs-formati', 'rs-b rs-usati', 'rs-b rs-premi rs-s12']) assert.ok(h.includes(blocco), blocco);
     assert.match(h, /class="cl-riga cl-primo"[^>]*style="--cl-colore:/, 'righe della classifica del sito');
     assert.doesNotMatch(h, /cl-finestra/, 'niente più finestre una sotto l\'altra');
     // senza MVP il campione prende tutta la riga, senza Pokémon la classifica pure
@@ -150,7 +150,7 @@ test('anteprima: una stagione non chiusa si chiama "leader" e non "campione"', (
     assert.equal(prov.provvisorio, true);
     assert.equal(prov.vincitore.id, 'bea', 'in anteprima conta la classifica, non un vincitore scritto');
     assert.match(R.html(prov), /CURRENT LEADER/);
-    assert.match(R.html(prov), /SEASON RECAP · PREVIEW/);
+    assert.match(R.html(prov), /SEASON STATS · PREVIEW/);
     const chiusa = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 's1', name: 'S', status: 'closed', winner: 'ada' } }));
     assert.equal(chiusa.provvisorio, false);
     assert.equal(chiusa.vincitore.id, 'ada');
@@ -247,7 +247,7 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
     }
-    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-bronze.png')), 'il fiocco Season MVP');
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-gold.png')), 'il fiocco Season MVP dorato');
     const g = [giocatore('ada', { eloDelta: 30, azioni: { setConDati: 30, cambi: 30 } }), giocatore('bea')];
     const riep = R.calcola(dati(g));
     const premi = Object.fromEntries(riep.premi.map(x => [x.id, x]));
@@ -261,7 +261,7 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const mvp = { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'ada', voti: 1 } } } };
     const p = [{ chiave: 'ada::t::0', player: 'ada', playerNome: 'ADA', specie: 'Gengar', specieId: 'gengar', portato: 5, koFatti: 3, formato: 'OU', team: 'T' }];
     const completo = R.html(R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } })));
-    assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-bronze\.png"/);
+    assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-gold\.png"/);
     assert.match(completo, /rs-t-img" src="immagini\/riepilogo\/exp-share\.png"[^>]*>BEST OF EACH FORMAT/);
     // ogni premio ha la sua immagine; senza, resta l'emoji
     for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['serie', 'flame-orb.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
