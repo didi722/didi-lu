@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="nb-pagine.css">
+<link rel="stylesheet" href="match-settimana.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="formato-tooltip.css">
@@ -30,6 +31,10 @@
 <script src="statistiche.js"></script>
 <script src="mvp.js"></script>
 <script src="mvp-voto.js"></script>
+<script src="sprites/indice.js"></script>
+<script src="sprite-pkm.js"></script>
+<script src="medaglione-pkm.js"></script>
+<script src="match-settimana.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -159,6 +164,11 @@
 </a>
 
 </div>
+
+<!-- Il set più bello degli ultimi sette giorni (match-settimana.js): compare da solo quando c'è un replay -->
+<section id="match-settimana" class="ms-sezione" aria-label="Match of the week" hidden>
+    <div class="ms" id="ms-blocco"></div>
+</section>
 
 </div>
         
@@ -487,6 +497,35 @@ function contaMvpScaduti() {
         .catch(e => console.warn('MVP: stagioni scadute non contate', e));
 }
 
+// Il match della settimana: il set più bello degli ultimi sette giorni (match-settimana.js), con i colori e gli avatar dei due allenatori.
+// Il nodo `seasons` si rilegge a ogni cambiamento del database: il blocco si ridisegna solo se il set scelto è un altro.
+let matchSettimanaChiave = '';
+async function mostraMatchSettimana(data) {
+    const sezione = document.getElementById('match-settimana');
+    if (!sezione || !window.MatchSettimana) return;
+    let scelto = null;
+    try { scelto = MatchSettimana.scegli(data); } catch (e) { console.warn('Match della settimana non disponibile:', e); }
+    if (!scelto) { sezione.hidden = true; document.body.classList.remove('con-match'); matchSettimanaChiave = ''; return; }
+    const chiave = [scelto.stagione, scelto.showdown, scelto.match, scelto.set].join('|');
+    if (chiave === matchSettimanaChiave) return;
+    matchSettimanaChiave = chiave;
+    const giocatori = {};
+    await Promise.all(['p1', 'p2'].map(async k => {
+        const id = scelto.giocatori[k].id;
+        if (!id || giocatori[id]) return;
+        try {
+            const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
+            giocatori[id] = { colore: info.color || '', avatar: info.avatar || '' };
+        } catch (e) { giocatori[id] = {}; }
+    }));
+    if (chiave !== matchSettimanaChiave) return;        // nel frattempo è stato scelto un altro set
+    const blocco = document.getElementById('ms-blocco');
+    blocco.innerHTML = MatchSettimana.html(scelto, { giocatori, gif: window.SpritePkm ? s => SpritePkm.gif(s) : null });
+    sezione.hidden = false;
+    document.body.classList.add('con-match');
+    if (window.MedaglionePkm) MedaglionePkm.coloraMedaglioni(window, blocco);
+}
+
 function caricaStagioniHome() {
     console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
@@ -501,6 +540,7 @@ function caricaStagioniHome() {
 
         datiStagioniMvp = data;
         contaMvpScaduti();
+        mostraMatchSettimana(data);
 
         const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
         allKeys.sort((a, b) => {

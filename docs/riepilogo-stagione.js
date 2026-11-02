@@ -14,9 +14,9 @@
 // Funziona nel browser (window.RiepilogoStagione) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./mvp.js'));
-    else radice.RiepilogoStagione = fabbrica(radice.Mvp);
-})(typeof self !== 'undefined' ? self : this, function (Mvp) {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./mvp.js'), require('./medaglione-pkm.js'));
+    else radice.RiepilogoStagione = fabbrica(radice.Mvp, radice.MedaglionePkm);
+})(typeof self !== 'undefined' ? self : this, function (Mvp, Medaglione) {
     'use strict';
 
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -49,14 +49,6 @@
     };
     const IMMAGINE_MVP = 'immagini/ribbon-mvp-gold.png';   // l'adesivo dell'MVP: il fiocco "Season MVP" dorato, qualunque sia il numero di MVP vinti da quel Pokémon
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
-
-    // I colori dei tipi (gli stessi di dettagli.js e di tutto il sito): il medaglione di un Pokémon è sul colore del suo primo tipo, come nel Box
-    const COLORI_TIPO = {
-        normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33', grass: '#77cc55', ice: '#66ccff',
-        fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
-        rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee'
-    };
-    const nomePokeApi = specie => String(specie || '').toLowerCase().trim().replace(/ /g, '-').replace(/[.'é’%]/g, '').replace(/-?\*$/, '');
 
     const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro...)
     const MAX_PARI = 3;             // a pari merito si premiano al più tanti allenatori
@@ -530,25 +522,6 @@
         return velo;
     }
 
-    const cacheTipo = new Map();      // specie -> promessa del colore del suo primo tipo (o null)
-    function colorePerSpecie(win, specie) {
-        const k = nomePokeApi(specie);
-        if (!k || typeof win.fetch !== 'function') return Promise.resolve(null);
-        if (!cacheTipo.has(k)) {
-            cacheTipo.set(k, win.fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(k)}`)
-                .then(r => (r.ok ? r.json() : null))
-                .then(j => (j && j.types && j.types[0] ? COLORI_TIPO[j.types[0].type.name] || null : null))
-                .catch(() => null));
-        }
-        return cacheTipo.get(k);
-    }
-    /** Ogni medaglione prende il colore del tipo del suo Pokémon (finché non arriva resta grigio) */
-    function coloraMedaglioni(win, radice) {
-        radice.querySelectorAll('[data-pkm]').forEach(el => {
-            colorePerSpecie(win, el.getAttribute('data-pkm')).then(c => { if (c && el.isConnected) el.style.setProperty('--tipo', c); });
-        });
-    }
-
     /**
      * Disegna il riepilogo nella colonna dei match (sopra l'elenco). Si può richiamare: aggiorna senza cambiare la vista scelta.
      * @returns {HTMLElement|null}
@@ -601,9 +574,9 @@
         corpo._riepilogo = riep;
         corpo._gif = gif;
         corpo.innerHTML = html(riep, { gif });
-        coloraMedaglioni(win, corpo);
+        if (Medaglione) Medaglione.coloraMedaglioni(win, corpo);       // il colore del tipo arriva appena PokeAPI risponde
         return corpo;
     }
 
-    return { calcola, html, testo, monta, nomePokeApi, COLORI_TIPO, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
+    return { calcola, html, testo, monta, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
 });

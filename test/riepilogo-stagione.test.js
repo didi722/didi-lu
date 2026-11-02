@@ -7,6 +7,7 @@ const path = require('node:path');
 const R = require('../docs/riepilogo-stagione.js');
 const AppMatches = require('../docs/app-matches.js');
 const Statistiche = require('../docs/statistiche.js');
+const Medaglione = require('../docs/medaglione-pkm.js');
 
 const leggi = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
 
@@ -285,10 +286,10 @@ test('i Pokémon (MVP, migliori di ogni formato, più usati) sono medaglioni com
     assert.match(css, /\.rs-banner \{[^}]*background: var\(--rs-ink\); color: #fff;/);
     // il colore è quello del primo tipo, come nel Box (dettagli.js)
     const Dettagli = leggi('dettagli.js');
-    for (const [tipo, colore] of Object.entries(R.COLORI_TIPO)) assert.ok(Dettagli.includes(`${tipo}: '${colore}'`), tipo);
-    assert.equal(R.nomePokeApi('Landorus-Therian'), 'landorus-therian');
-    assert.equal(R.nomePokeApi('Urshifu-*'), 'urshifu');
-    assert.equal(R.nomePokeApi("Farfetch'd"), 'farfetchd');
+    for (const [tipo, colore] of Object.entries(Medaglione.COLORI_TIPO)) assert.ok(Dettagli.includes(`${tipo}: '${colore}'`), tipo);
+    assert.equal(Medaglione.nomePokeApi('Landorus-Therian'), 'landorus-therian');
+    assert.equal(Medaglione.nomePokeApi('Urshifu-*'), 'urshifu');
+    assert.equal(Medaglione.nomePokeApi("Farfetch'd"), 'farfetchd');
 });
 
 test('le etichette nere dei nomi (allenatore e Pokémon) hanno la stessa ombra corta, quella dei blocchi scuri del tema', () => {
