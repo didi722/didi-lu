@@ -19,7 +19,7 @@ body.pg-index {
     box-sizing: border-box;
     width: calc(100% - var(--nb-ads, 0px));
     margin: 0 0 0 var(--nb-ads, 0px);
-    padding: 60px 30px 36px;      /* sotto l'ombra della carta di mezzo (ingrandita del 15%) c'è posto per le etichette che sporgono */
+    padding: 84px 30px 36px;      /* sotto l'ombra della carta di mezzo (ingrandita del 15%) c'è posto per le etichette che sporgono */
 }
 .ms-sezione[hidden] { display: none; }
 
@@ -75,65 +75,86 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12
 @keyframes ms-entra-sx { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
 
 /* i due allenatori, uno di fronte all'altro, sui loro colori; in mezzo formato e set */
-.ms-scontro { display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; min-width: 0; }
+.ms-scontro { display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: stretch; min-width: 0; }
 .ms-lato {
-    position: relative; display: flex; align-items: center; gap: 9px; min-width: 0; padding: 7px 10px;
+    position: relative; display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px 10px;
     background: var(--c, #d9dde6); color: #000;
     border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     rotate: calc(var(--nb-rot, 1) * -.4deg);
 }
 .ms-l2 { flex-direction: row-reverse; text-align: right; rotate: calc(var(--nb-rot, 1) * .4deg); }
 .ms-vince { box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
-.ms-win {
-    position: absolute; top: -13px; left: 10px; padding: 4px 10px 2px; background: var(--nb-ink, #000); color: #fff;
-    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
-    font: 900 10px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; rotate: calc(var(--nb-rot, 1) * -3deg);
-}
-.ms-l2 .ms-win { left: auto; right: 10px; rotate: calc(var(--nb-rot, 1) * 3deg); }
+/* chi ha perso: lo stesso colore, ma sbiadito verso la carta (senza color-mix resta il colore pieno) */
+.ms-perde { background: color-mix(in srgb, var(--c, #d9dde6) 38%, var(--nb-carta, #fff)); }
 .ms-av-link { flex: none; display: block; }
-.ms-av { display: block; width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); animation: ms-saltello .8s steps(1) infinite; }
+.ms-av { display: block; width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); animation: ms-saltello .8s steps(1) infinite; }
 .ms-av-vuoto { background: rgba(0, 0, 0, .15); border-radius: 50%; filter: none; animation: none; }
-.ms-testi { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.ms-testi { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
 .ms-l2 .ms-testi { align-items: flex-end; }
-.ms-nome-link { display: block; max-width: 100%; min-width: 0; }
-.ms-nome { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 19px/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; text-shadow: 2px 2px 0 rgba(255, 255, 255, .55); }
+
+/* i tag: bianchi, bordo nero spesso e ombra, come nel resto del sito (nome del Pokémon, motivo); quello del team è nero come i titoli, con l'ombra grigia trasparente */
+.ms-banner, .ms-chip {
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000); box-sizing: border-box;
+}
+.ms-riga { display: flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0; }
+.ms-l2 .ms-riga { flex-direction: row-reverse; }
+.ms-nome-link {
+    display: block; box-sizing: border-box; min-width: 0; padding: 3px 9px 1px; background: var(--nb-ink, #000); color: #fff;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    rotate: calc(var(--nb-rot, 1) * -1deg);
+}
+.ms a.ms-nome-link { color: #fff; }
+.ms-l2 .ms-nome-link { rotate: calc(var(--nb-rot, 1) * 1deg); }
+/* un nome troppo lungo per il tag scorre avanti e indietro (nome-scorrevole.js/.css: lo stesso di Matches e del simulatore) */
+.ms-nome { display: block; font: 900 15px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; }
 .ms-sprites { display: flex; flex-wrap: nowrap; gap: 1px; max-width: 100%; }
 .ms-l2 .ms-sprites { justify-content: flex-end; }
-.ms-spr { flex: 0 1 24px; width: 24px; min-width: 10px; height: 24px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
+.ms-spr { flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
 .ms-spr.ms-ko { filter: grayscale(1); opacity: .5; }     /* i Pokémon andati KO: spenti, restano accesi quelli che sono rimasti in piedi */
 
-.ms-centro { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 80px; max-width: 118px; text-align: center; }
-.ms-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 3px 9px 1px; background: var(--nb-ink, #000); color: #fff; font: 800 10px/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1.5deg); }
-.ms-vs { font: 900 26px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-shadow: 3px 3px 0 rgba(0, 0, 0, .18); }
-.ms-set { font: 800 10px/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+/* le medagliette dei badge (le stesse del Box, badge-team.css): quelle del team accanto al nome, quelle del Pokémon sul bordo del medaglione */
+.ms-bdg { display: flex; flex: none; gap: 3px; }
+.ms-bdg:empty { display: none; }
+.ms-bdg .bt-mini { width: 22px; height: 22px; border-width: 2px; box-shadow: 1px 1px 0 var(--nb-ink, #000); }
+.ms-bdg .bt-mini-img { width: 14px; height: 14px; }
+.ms-bdg .bt-mini.bt-altri { min-width: 22px; padding: 0 4px; font-size: .6rem; }
+.ms-bdg-prot { position: absolute; left: 50%; bottom: -13px; z-index: 2; gap: 1px; translate: -50% 0; }
+.ms-bdg-prot .bt-mini { width: 20px; height: 20px; }
+.ms-bdg-prot .bt-mini-img { width: 12px; height: 12px; }
 
 /* il Pokémon protagonista (medaglione come nel Box), il motivo per cui è bello e il replay */
-.ms-prot { display: flex; align-items: center; flex: none; gap: 8px; }
+.ms-prot { display: flex; align-items: center; flex: none; gap: 12px; }
 .ms-med {
-    position: relative; display: grid; place-items: center; flex: none; box-sizing: border-box; width: 44px; height: 44px;
+    position: relative; display: grid; place-items: center; flex: none; box-sizing: border-box; width: 46px; height: 46px;
     background: radial-gradient(rgba(0, 0, 0, .17) 1.4px, transparent 1.7px) 0 0 / 9px 9px, var(--tipo, #cfd3dc);
     border: 3px solid var(--nb-ink, #000); border-radius: 50%; box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
 }
-.ms-med img { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 12%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .35)); }
-.ms-prot-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.ms-banner { padding: 4px 11px 2px; background: var(--nb-ink, #000); color: #fff; font: 900 12px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; white-space: nowrap; rotate: calc(var(--nb-rot, 1) * -1.5deg); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
-.ms-chip { padding: 3px 9px 1px; background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); white-space: nowrap; font: 800 10px/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1deg); }
+.ms-med > img { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 12%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .35)); }
+.ms-prot-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.ms-banner { padding: 3px 9px 1px; font: 900 12px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; white-space: nowrap; rotate: calc(var(--nb-rot, 1) * -1deg); }
+.ms-chip { padding: 2px 8px 1px; white-space: nowrap; font: 800 10px/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1deg); }
+
+/* a destra: il tasto del replay (bianco come i bottoni del sito, nero al passaggio) e sotto formato e set */
+.ms-azione { display: flex; flex: none; flex-direction: column; align-items: center; gap: 6px; width: 112px; }
 .ms-replay {
-    flex: none; padding: 10px 15px 8px; background: var(--nb-ink, #000); color: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    box-sizing: border-box; width: 100%; padding: 9px 12px 7px; text-align: center; background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font: 900 12px/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
-    rotate: calc(var(--nb-rot, 1) * 1deg); transition: translate .1s ease, box-shadow .1s ease;
+    rotate: calc(var(--nb-rot, 1) * 1deg); transition: translate .1s ease, box-shadow .1s ease, background-color .1s ease, color .1s ease;
 }
-.ms a.ms-replay { color: #fff; }
-.ms-replay:hover { translate: -2px -2px; box-shadow: var(--nb-sh-4-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
+.ms a.ms-replay { color: var(--nb-ink, #000); }
+.ms a.ms-replay:hover { translate: -2px -2px; background: var(--nb-ink, #000); color: #fff; box-shadow: var(--nb-sh-4-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
 .ms-replay:active { translate: 1px 1px; box-shadow: none; }
+.ms-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
+.ms-info { text-align: center; font: 800 9px/1.25 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; opacity: .75; overflow-wrap: anywhere; }
 
 @keyframes ms-saltello { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .ms-av, .ms-in-dx, .ms-in-sx { animation: none; } }
 
 /* schermi bassi (laptop, finestre non a tutto schermo): un po' più stretto, perché stagioni e banner stiano insieme senza scorrere (o quasi) */
 @media (min-width: 1051px) and (max-height: 820px) {
-    .ms-sezione { padding-top: 56px; padding-bottom: 22px; }
+    .ms-sezione { padding-top: 70px; padding-bottom: 22px; }
 }
 
 /* finestre meno larghe: il banner si stringe insieme alle stagioni (fino a 771 px). Prima si rinuncia al motivo, poi al nome del Pokémon: resta il medaglione
@@ -148,7 +169,7 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12
 /* sotto i 1050 px le stagioni vanno in colonna (nb-pagine.css): il banner sta al centro, largo quanto serve */
 @media (max-width: 1050px) {
     .ms { width: min(100%, 760px); }
-    .ms-sezione { padding: 48px 20px 70px; }
+    .ms-sezione { padding: 56px 20px 70px; }
 }
 /* schermi stretti: la riga va a capo: gli allenatori sopra, protagonista e replay sotto (qui c'è di nuovo posto per il nome e il motivo) */
 @media (max-width: 800px) {
@@ -157,18 +178,18 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12
     .ms-scontro { flex-basis: 100%; }
     .ms-prot { flex: 1 1 auto; }
     .ms-chip, .ms-banner { display: block; }
+    .ms-azione { width: 130px; }
 }
-/* telefoni: i due allenatori uno sopra l'altro, formato e set in mezzo; l'etichetta e la settimana una sotto l'altra */
+/* telefoni: i due allenatori uno sopra l'altro; l'etichetta e la settimana una sotto l'altra */
 @media (max-width: 600px) {
     .ms { padding-top: 14px; }
     .ms-t { position: static; display: inline-block; margin: -34px 0 8px -4px; }
     .ms-pager { position: static; justify-content: space-between; margin: 0 0 14px; rotate: none; }
     .ms-sett { flex: 1 1 auto; justify-content: center; }
     .ms-scontro { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-    .ms-centro { order: 2; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 12px; max-width: none; }
-    .ms-l2 { order: 3; }
+    .ms-azione { flex-basis: 100%; width: auto; }
+    .ms-replay { max-width: 180px; }
     .ms-corpo { justify-content: center; }
-    .ms-replay { margin: 0 auto; }
 }
 
 /* nell'app la home è il menù (menu.html): qui non serve */

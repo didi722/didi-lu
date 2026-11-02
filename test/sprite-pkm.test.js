@@ -131,3 +131,9 @@ test('i compagni (classifica, Matches, Trainers) usano ritenta e non nascondono 
         assert.doesNotMatch(js, /class="(?:ac|mp|at)-pkm"[^`]*onerror="this\.style\.display='none'"/, f);
     }
 });
+
+test('"Urshifu-*" (forma nascosta nel team preview): si usa la specie base, mai un indirizzo come "urshifu-"', () => {
+    assert.equal(S.id('Urshifu-*'), 'urshifu');
+    assert.equal(S.gif('Urshifu-*'), 'https://play.pokemonshowdown.com/sprites/ani/urshifu.gif');
+    assert.equal(S.id('Urshifu-Rapid-Strike'), 'urshifu-rapidstrike', 'con la forma vera resta quella');
+});

@@ -933,6 +933,8 @@ function apriReplayDaLink(showdowns) {
     const richiesto = new URLSearchParams(window.location.search).get('replay');
     if (!richiesto) return;
     replayDaLinkAperto = true;
+    // aperto dal banner "Match of the week" della home (da=home): chiudendo il replay si torna lì, non all'elenco dei match
+    window.replayTornaAllaHome = new URLSearchParams(window.location.search).get('da') === 'home';
     const [sdId, matchKey, setKey] = richiesto.split('~');
     const match = showdowns && showdowns[sdId] && showdowns[sdId].matches && showdowns[sdId].matches[matchKey];
     if (!match) return;
@@ -2697,6 +2699,14 @@ window.chiudiReplay = function() {
         else iframe.src = "";
     }
     if (window.nascondiComandiReplay) window.nascondiComandiReplay();
+
+    // replay aperto dalla home (link del Match of the week): si torna alla home (la musica la gestisce lei)
+    if (window.replayTornaAllaHome) {
+        window.replayTornaAllaHome = false;
+        window.AppMusicaPausa = false;
+        window.location.replace('index.html');
+        return;
+    }
 
     // 3. GESTIONE RIPRESA MUSICA (rispettando il Mute)
     window.AppMusicaPausa = false;

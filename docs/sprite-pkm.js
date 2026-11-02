@@ -44,7 +44,8 @@
     }
 
     function idSprite(specie) {
-        const s = senzaAccenti(pulisciSpecie(specie)).toLowerCase();
+        // "Urshifu-*": Showdown nasconde la forma nel team preview. Senza forma si usa la specie base (un indirizzo come "urshifu-" non esiste)
+        const s = senzaAccenti(pulisciSpecie(specie)).toLowerCase().replace(/-?\*$/, '');
         let base = s, forma = '';
         const conTrattino = BASI_CON_TRATTINO.find(b => s === b || s.startsWith(b + '-'));
         if (conTrattino) { base = conTrattino; forma = s.slice(conTrattino.length + 1); }

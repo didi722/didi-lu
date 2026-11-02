@@ -21,7 +21,7 @@
 //
 // Tre parti:
 //   - settimane(seasons, { adesso }) / scegli() / analizzaSet(setStats): pure, niente DOM e niente Firebase (provate in test/match-settimana.test.js);
-//   - html(scelto, { ... }): il banner di una settimana; linkReplay(): il link a matches.html?replay=...;
+//   - html(scelto, { ... }): il banner di una settimana; badge(): le medagliette dei team e del Pokémon protagonista; linkReplay(): il link a matches.html?replay=...;
 //   - monta(win, radice, { gif, leggiGiocatore }): disegna il banner, tiene la settimana guardata e collega le frecce, la tastiera e lo scorrimento.
 // Funziona nel browser (window.MatchSettimana) e in Node (require).
 // =====================================================
@@ -246,9 +246,9 @@
         return { ...w.scelto, corrente: w.corrente, quanti: w.quanti, settimana: { inizio: w.inizio, fine: w.fine, numero: w.numero, anno: w.anno } };
     }
 
-    /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo) */
+    /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo); da=home: chiudendo il replay si torna alla home */
     function linkReplay(s) {
-        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}`;
+        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}&da=home`;
     }
 
     // -----------------------------------------------------
@@ -287,17 +287,18 @@
             const vince = s.vincitore === k;
             const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
-            return `<div class="ms-lato ms-l${n}${vince ? ' ms-vince' : ''}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.team || 'Random teams')}">`
-                + `${vince ? '<span class="ms-win">WINNER</span>' : ''}`
-                + `<a class="ms-av-link" href="${esc(pagina)}">${avatar}</a>`
-                + `<div class="ms-testi"><a class="ms-nome-link" href="${esc(pagina)}"><b class="ms-nome">${esc(g.nome)}</b></a>`
+            // dell'allenatore resta l'avatar (il nome è nel suggerimento); il tag nero porta il nome del team (senza team, quello dell'allenatore)
+            return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`
+                + `<a class="ms-av-link" href="${esc(pagina)}" title="${esc(g.nome)}">${avatar}</a>`
+                + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}" title="${esc(g.team ? `${g.team} · ${g.nome}` : g.nome)}"><b class="ms-nome nome-scorrevole">${esc(g.team || g.nome)}</b></a>`
+                + `<span class="ms-bdg" data-ms-badge="${k}"></span></div>`
                 + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div></div>`;
         };
         // il protagonista: medaglione (come nel Box), nome e il motivo più importante; gli altri motivi stanno nel suggerimento al passaggio del mouse
         const prot = s.protagonista;
         const motivo = s.motivi.length ? `<span class="ms-chip">${esc(s.motivi[0])}</span>` : '';
         const medaglione = prot && gif
-            ? `<div class="ms-prot" title="${esc(s.motivi.join(' · '))}"><span class="ms-med" data-pkm="${esc(prot.specie)}"><img src="${esc(gif(prot.specie))}" alt="${esc(prot.specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>`
+            ? `<div class="ms-prot" title="${esc(s.motivi.join(' · '))}"><span class="ms-med" data-pkm="${esc(prot.specie)}"><img src="${esc(gif(prot.specie))}" alt="${esc(prot.specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"><span class="ms-bdg ms-bdg-prot" data-ms-badge="prot"></span></span>`
               + `<div class="ms-prot-testo"><b class="ms-banner">${esc(prot.specie)}</b>${motivo}</div></div>`
             : (motivo ? `<div class="ms-prot" title="${esc(s.motivi.join(' · '))}"><div class="ms-prot-testo">${motivo}</div></div>` : '');
         const quando = dataBreve(s.data);
@@ -309,10 +310,40 @@
             : '';
         return `<span class="ms-t">MATCH OF THE WEEK</span>${pager}`
             + `<div class="ms-corpo${animazione ? ` ms-in-${animazione === 'sx' ? 'sx' : 'dx'}` : ''}" aria-live="polite"><div class="ms-scontro">${lato('p1', 1)}`
-            + `<div class="ms-centro" title="${esc([s.categoria, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · '))}"><span class="ms-tag">${esc(s.categoria || 'Showdown')}</span><b class="ms-vs">VS</b>`
-            + `<span class="ms-set">Set ${s.numeroSet} · Match ${s.numeroMatch}</span></div>`
             + `${lato('p2', 2)}</div>${medaglione}`
-            + `<a class="ms-replay" href="${esc(linkReplay(s))}" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay</a></div>`;
+            + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s))}" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay</a>`
+            + `<span class="ms-info" title="${esc([s.categoria, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · '))}"><b>${esc(s.categoria || 'Showdown')}</b>Set ${s.numeroSet} · Match ${s.numeroMatch}</span></div></div>`;
+    }
+
+    /**
+     * I badge da mettere nel banner: quelli dei due team (BadgeTeam) e quelli del Pokémon protagonista (Fiocchi), le stesse medagliette del Box e delle pagine dei team.
+     * @param {object} risultato  Statistiche.calcola(...) di tutto il sito (Fiocchi.carica(db))
+     * @param {object} s          il set scelto
+     * @param {{ Fiocchi, BadgeTeam }} lib
+     * @returns {{ p1: string, p2: string, prot: string }}  HTML delle medagliette (vuoto se non ne hanno)
+     */
+    function badge(risultato, s, lib) {
+        const fuori = { p1: '', p2: '', prot: '' };
+        if (!s || !lib || !lib.Fiocchi || !lib.BadgeTeam) return fuori;
+        for (const k of ['p1', 'p2']) {
+            const g = s.giocatori[k];
+            if (!g.id || !g.team) continue;                         // senza team (random) non ci sono badge di team
+            fuori[k] = lib.BadgeTeam.htmlMini(lib.BadgeTeam.calcola(lib.BadgeTeam.trova(risultato, { player: g.id, team: g.team })), 2);
+        }
+        const p = s.protagonista, g = p && s.giocatori[p.lato];
+        if (p && p.specie && g && g.id && g.team) {
+            // "Urshifu-*" (forma nascosta nel team preview, nei set salvati prima della correzione): si cerca la forma vera tra i Pokémon di quel team
+            let specie = p.specie;
+            if (/\*/.test(specie)) {
+                const prefisso = specie.replace(/\*$/, '').toLowerCase();
+                const forme = (risultato.pokemon || []).filter(x => idDi(x.player) === g.id && idDi(x.team) === idDi(g.team) && !/\*/.test(x.specie) && String(x.specie).toLowerCase().startsWith(prefisso));
+                if (forme.length === 1) specie = forme[0].specie;
+            }
+            // sul medaglione stanno i due fiocchi più alti, senza il "+N" (non c'è posto)
+            const presi = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie })));
+            fuori.prot = presi.slice(0, 2).map(f => lib.Fiocchi.htmlMedaglietta(f)).join('');
+        }
+        return fuori;
     }
 
     // -----------------------------------------------------
@@ -325,11 +356,12 @@
      * @param {object} opzioni
      *   gif(specie)        l'immagine animata di un Pokémon (senza, niente sprite)
      *   leggiGiocatore(id) -> Promise<{ colore, avatar }>: i colori e l'avatar di un allenatore (la pagina li legge da Firebase); ricordati dopo la prima volta
+     *   caricaBadge()      -> Promise<risultato di Statistiche.calcola>: i numeri per i badge (di solito Fiocchi.carica(db)); i badge arrivano dopo il banner. Servono win.Fiocchi e win.BadgeTeam
      *   adesso()           l'ora di adesso (si cambia nelle prove)
      * @returns {{ aggiorna(esito): Promise<boolean>, vai(delta): Promise<boolean>, stato }}
      *   aggiorna: si chiama con settimane(...) a ogni lettura dei dati: ridisegna solo se qualcosa è cambiato, e non sposta chi sta guardando una settimana vecchia
      */
-    function monta(win, radice, { gif, leggiGiocatore, adesso = () => Date.now() } = {}) {
+    function monta(win, radice, { gif, leggiGiocatore, caricaBadge, adesso = () => Date.now() } = {}) {
         const stato = { elenco: [], inizio: null, ultima: true, firma: '', giro: 0, trascinato: false };
         const cache = new Map();
         const info = id => {
@@ -350,6 +382,14 @@
             if (mio !== stato.giro) return false;                // nel frattempo è stato chiesto altro: vale l'ultima richiesta
             radice.innerHTML = html(w.scelto, { giocatori, gif, settimana: etichettaSettimana(w, adesso()), indice: i, totale: stato.elenco.length, animazione });
             if (win && win.MedaglionePkm) win.MedaglionePkm.coloraMedaglioni(win, radice);       // il colore del tipo arriva appena PokeAPI risponde
+            // i badge arrivano a banner già visibile (servono le statistiche di tutto il sito): se nel frattempo si è passati a un'altra settimana non si scrive più
+            if (caricaBadge && win && win.Fiocchi && win.BadgeTeam) {
+                Promise.resolve().then(caricaBadge).then(risultato => {
+                    if (mio !== stato.giro || !radice.querySelector) return;
+                    const b = badge(risultato, w.scelto, win);
+                    for (const k of ['p1', 'p2', 'prot']) { const casella = radice.querySelector(`[data-ms-badge="${k}"]`); if (casella) casella.innerHTML = b[k]; }
+                }).catch(() => {});
+            }
             // le settimane vicine si preparano subito: scorrendo, avatar e colori ci sono già
             [i - 1, i + 1].forEach(j => { const v = stato.elenco[j]; if (v) ['p1', 'p2'].forEach(k => info(v.scelto.giocatori[k].id)); });
             return true;
@@ -415,5 +455,5 @@
         return { aggiorna, vai, stato };
     }
 
-    return { analizzaSet, candidati, settimane, scegli, spostamento, etichettaSettimana, lunediDi, numeroSettimana, linkReplay, html, monta, giornoDi };
+    return { analizzaSet, candidati, settimane, scegli, spostamento, etichettaSettimana, lunediDi, numeroSettimana, linkReplay, html, badge, monta, giornoDi };
 });

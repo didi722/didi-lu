@@ -83,6 +83,15 @@
         return radici;
     }
 
+    // Nel team preview Showdown nasconde la forma di certi Pokémon ("Urshifu-*"): finché non scendono in campo (o il server non dice quale era portato) la specie
+    // resta il segnaposto. Appena si conosce la forma vera ("Urshifu-Rapid-Strike") la sostituisce: stats e fiocchi la cercano con il nome del team registrato.
+    const comeSegnaposto = e => /\*/.test(String(e.specie || ''));
+    function rivelaForma(e, specie) {
+        if (!e || !specie || /\*/.test(specie) || !comeSegnaposto(e) || baseDi(specie) !== e.base) return;
+        e.specie = specie;
+        e.id = idDi(specie);
+    }
+
     function nuovaEntry(lato, specie, extra) {
         return {
             lato, specie, id: idDi(specie), base: baseDi(specie), nome: '', nomeDichiarato: '',
@@ -243,6 +252,7 @@
                         if (tipo === 'switch' && S.fase === 'scelte' && S.turno >= 1) S.azioni[id.lato].cambi++;
                         const specie = String(parti[3] || '').split(',')[0].trim();
                         const e = trovaOCrea(id.lato, specie, id.nick);
+                        rivelaForma(e, specie);
                         S.attivo[id.pos] = e;
                         if (!e.apparso) {
                             e.apparso = true;
@@ -466,7 +476,7 @@
                 const e = esatto
                     || L.entries.find(x => !x.portato && x.id === idDi(specie))
                     || L.entries.find(x => !x.portato && x.base === baseDi(specie));
-                if (e) e.portato = true;
+                if (e) { e.portato = true; rivelaForma(e, specie); }
             }
             if (!L.dim) L.dim = L.entries.filter(e => e.portato).length;
 
