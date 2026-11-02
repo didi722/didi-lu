@@ -42,6 +42,7 @@
         muro: { src: `${IMG}assault-vest.png` },
         pulito: { src: `${IMG}focus-sash.png` },
         rimonta: { src: `${IMG}focus-band.png` },
+        serie: { src: `${IMG}flame-orb.png` },
         elo: { src: `${IMG}rare-candy.png` },
         cambi: { src: `${IMG}eject-button.png` },
         sfortuna: { src: `${IMG}destiny-knot.png` },

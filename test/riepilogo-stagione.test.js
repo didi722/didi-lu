@@ -236,7 +236,7 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const rimonta = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 0, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 9 } }), giocatore('bea')])));
     assert.match(rimonta, /immagini\/riepilogo\/focus-band\.png/, 'Never Say Die: la bandana con le fiamme');
     const serie = R.html(R.calcola(dati([giocatore('ada', { serie: { vittorieMax: 6 } }), giocatore('bea')])));
-    assert.match(serie, /rs-icona" aria-hidden="true">🔥/, 'Hot Streak: ancora l\'emoji, manca il flame-orb');
+    assert.match(serie, /immagini\/riepilogo\/flame-orb\.png/, 'Hot Streak: il flame-orb');
     const ko = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 40, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 0 } }), giocatore('bea')])));
     assert.match(ko, /immagini\/riepilogo\/choice-band\.webp/);
 });
