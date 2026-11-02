@@ -28,6 +28,7 @@
 <script src="statistiche.js"></script>
 <script src="mvp.js"></script>
 <script src="mvp-voto.js"></script>
+<script src="riepilogo-stagione.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="nome-scorrevole.js"></script>
@@ -39,6 +40,7 @@
 <link rel="stylesheet" href="showdown.css">
 <link rel="stylesheet" href="classifica.css">
 <link rel="stylesheet" href="mvp.css">
+<link rel="stylesheet" href="riepilogo-stagione.css">
 <link rel="stylesheet" href="tooltip.css">
 <script src="tooltip.js" defer></script>
 <link rel="stylesheet" href="mobile.css">
@@ -809,6 +811,17 @@ async function inizializzaPaginaArchivio() {
         adminPlusBtn.style.display = (isAdmin && !stagioneChiusa) ? 'flex' : 'none';
     }
 
+    // --- 4b. RIEPILOGO DI FINE STAGIONE: una stagione chiusa si apre sul riepilogo (riepilogo-stagione.js), con il calendario a un tocco ---
+    const calcolaRiepilogo = async () => {
+        if (!stagioneChiusa || !window.RiepilogoStagione || !window.Statistiche) return null;
+        try {
+            const mvpNodo = (await db.ref(`seasons/${stagioneAttiva}/mvp`).once('value')).val() || {};
+            const risultato = Statistiche.calcola({ seasons: { [stagioneAttiva]: { info: dataSeasonInfo, showdowns: dataShowdowns, teams_iscritti: dataIscritti, mvp: mvpNodo } }, players: dataPlayers }, { stagione: stagioneAttiva });
+            return RiepilogoStagione.calcola({ risultato, info: dataSeasonInfo, leaderboard: dataLeaderboard, showdowns: dataShowdowns, mvp: mvpNodo });
+        } catch (e) { console.error('Riepilogo non disponibile:', e); return null; }
+    };
+    const riepilogoIniziale = await calcolaRiepilogo();
+
     if (!container) return;
     container.innerHTML = "";
 
@@ -880,7 +893,7 @@ async function inizializzaPaginaArchivio() {
         const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
-    if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd });
+    if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
 
        await Sfide.avvia({ stagione: stagioneAttiva, infoStagione: dataSeasonInfo });
 
@@ -894,6 +907,16 @@ async function inizializzaPaginaArchivio() {
         try {
             await MvpVoto.avvia({ stagione: stagioneAttiva, info: dataSeasonInfo, showdowns: dataShowdowns, teamsIscritti: dataIscritti, players: dataPlayers, votante: idVotanteMvp });
         } catch (e) { console.error('MVP non disponibile:', e); }
+    }
+
+    // --- 8. Il riepilogo (dopo lo spoglio dell'MVP, che può aver appena scritto il risultato). Se la stagione non è (più) chiusa, sparisce ---
+    const riepilogo = riepilogoIniziale ? await calcolaRiepilogo() : null;
+    if (riepilogo) {
+        RiepilogoStagione.monta(window, riepilogo, { gif: window.SpritePkm ? sp => SpritePkm.gif(sp) : null });
+    } else {
+        ['riepilogoStagione', 'riepilogoScelta'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
+        const col = document.querySelector('.hub-left-column');
+        if (col) col.removeAttribute('data-vista');
     }
 }
 
