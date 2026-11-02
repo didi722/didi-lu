@@ -282,6 +282,7 @@ test('i Pokémon (MVP, migliori di ogni formato, più usati) sono medaglioni com
     assert.match(h, /<b class="rs-banner">Anorith<\/b>/, 'il nome è l\'etichetta nera sotto il disco');
     const css = leggi('riepilogo-stagione.css');
     assert.match(css, /\.rs-med \{[^}]*radial-gradient\(rgba\(0, 0, 0, \.17\)[^}]*var\(--tipo, #cfd3dc\)[^}]*border-radius: 50%/);
+    assert.match(css, /\.rs-med img \{ position: absolute; inset: 0; width: 100%; height: 100%;/, 'lo sprite sta nel disco, qualunque sia la sua altezza');
     assert.match(css, /\.rs-banner \{[^}]*background: var\(--rs-ink\); color: #fff;/);
     // il colore è quello del primo tipo, come nel Box (dettagli.js)
     const Dettagli = leggi('dettagli.js');
