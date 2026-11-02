@@ -57,7 +57,7 @@ test('difficili: una stagione giocata molto bene non dà ancora niente (o quasi)
     });
     const l = BA.calcola(risultato(stagione), 'didi');
     for (const b of l) assert.ok(b.livello <= 1, `${b.id}: dopo una stagione al massimo il bronzo (livello ${b.livello})`);
-    assert.equal(per(l, 'elopeak').livello, 1, '1150 supera 1120');
+    assert.equal(per(l, 'elopeak').livello, 1, '1150 supera 1140');
     assert.equal(per(l, 'matchwinner').livello, 0, '61 match vinti: ancora sotto i 70');
     assert.equal(per(l, 'showdown').livello, 0, '21 showdown vinti: sotto i 25');
     assert.equal(per(l, 'setcrusher').livello, 0, '162 set vinti: sotto i 200');
@@ -113,7 +113,7 @@ test('percentuale di vittorie: conta solo dopo 120 match', () => {
 test('format master: formati con almeno 12 match (una stagione) e almeno il 65% di vittorie', () => {
     const formati = { VGC: { n: 14, vinti: 10 }, OU: { n: 12, vinti: 8 }, Monotype: { n: 11, vinti: 11 }, Uber: { n: 20, vinti: 8 }, LC: { n: 12, vinti: 7 } };
     assert.equal(BA.formatiForti(giocatore({ formati })), 2, 'VGC e OU; Monotype ha troppi pochi match, LC il 58%, Uber troppe sconfitte');
-    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 0, 'due formati: ancora sotto il bronzo (soglie 3 / 7 / 12)');
+    assert.equal(per(BA.calcola(risultato(giocatore({ formati })), 'didi'), 'formatmaster').livello, 0, 'due formati: ancora sotto il bronzo (soglie 3 / 6 / 10 / 16)');
     const tre = { ...formati, LC: { n: 12, vinti: 9 } };
     assert.equal(per(BA.calcola(risultato(giocatore({ formati: tre })), 'didi'), 'formatmaster').livello, 1, 'tre formati: il bronzo');
 });
@@ -217,8 +217,8 @@ test('scheda per il profilo: livelli, numeri, barra e cosa manca, come nelle sch
 
     // l'Elo parte da 1000, non da zero: la barra lo sa
     const e = s('elopeak');
-    assert.deepEqual(e.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1260, partenza: 1000, suffisso: '' });
-    assert.equal(e.frase, 'Reach 1260 to unlock Platinum.');
+    assert.deepEqual(e.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1280, partenza: 1000, suffisso: '' });
+    assert.equal(e.frase, 'Reach 1280 to unlock Platinum.');
 });
 
 test('scheda: per tutti e dodici i badge, con o senza dati, ha tutto quello che la pagina disegna', () => {
@@ -239,8 +239,8 @@ test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000
     const l = BA.calcola(risultato(giocatore({
         eloPicco: 1050, match: { giocati: 130, vinti: 100, persi: 30 }, percMatch: 77, stagioniVinte: 0, stagioniGiocate: 1
     })), 'didi');
-    // Elo: 1050 con partenza 1000 e prossimo 1120 = 50 su 120 (non 1050/1120)
-    assert.equal(per(l, 'elopeak').progresso, 50 / 120);
+    // Elo: 1050 con partenza 1000 e prossimo 1140 = 50 su 140 (non 1050/1140)
+    assert.equal(per(l, 'elopeak').progresso, 50 / 140);
     const ordine = BA.perVicinanza(l);
     for (let i = 1; i < ordine.length; i++) {
         const [a, b] = [ordine[i - 1], ordine[i]];
@@ -254,8 +254,8 @@ test('perVicinanza: anche i badge dell\'allenatore, con l\'Elo che parte da 1000
 test('scheda: il testo "cosa manca" e le etichette sono quelli di sempre (la scheda ora è generica, in badge-team.js)', () => {
     const l = BA.calcola(risultato(giocatore({ eloPicco: 1240, percMatch: 91, match: { giocati: 12, vinti: 11, persi: 1 } })), 'didi');
     const elo = BA.scheda(per(l, 'elopeak'));
-    assert.equal(elo.frase, 'Reach 1260 to unlock Platinum.');
-    assert.deepEqual(elo.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1260, partenza: 1000, suffisso: '' });
+    assert.equal(elo.frase, 'Reach 1280 to unlock Platinum.');
+    assert.deepEqual(elo.barra, { etichetta: 'Peak Elo', valore: 1240, obiettivo: 1280, partenza: 1000, suffisso: '' });
     const dom = BA.scheda(per(l, 'dominant'));
     assert.equal(dom.barra.etichetta, 'Matches played');
     assert.match(dom.frase, /Counts after 120 matches played/);

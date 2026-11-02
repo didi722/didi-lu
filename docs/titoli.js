@@ -184,22 +184,23 @@
     //   - steps: i match (o gli showdown) di fila per bronzo, argento, oro, platino. Vengono da `node tools/simula-soglie.cjs` (League, Monoformat e
     //     Randomize, anche in contemporanea: le serie attraversano le stagioni): un giocatore "forte" (~60% di match vinti) prende il bronzo in
     //     una o due stagioni, l'argento dopo molte, l'oro solo dopo anni; il platino lo prende solo un giocatore dominante (~72%) dopo una ventina di
-    //     stagioni. Win Streak 10 / 14 / 18 / 24, Clean Streak 4 / 5 / 6 / 7, SD Streak 8 / 12 / 16 / 24.
+    //     stagioni. Win Streak 12 / 16 / 22 / 26, Clean Streak 5 / 6 / 8 / 10, SD Streak 10 / 16 / 24 / 34 (alzate dopo la prima stagione reale: un giocatore al 80% prendeva
+    //     due argenti in una settimana; ora il bronzo vuole circa un mese, l'argento qualche mese, il platino un paio d'anni).
     //     Prima (tre livelli) erano 10 / 16 / 24, 5 / 7 / 9 e 8 / 14 / 22, tarati su una League da 12 showdown a testa.
     // -----------------------------------------------------
     const LIVELLI_BADGE = ['bronze', 'silver', 'gold', 'platinum'];
     const IMMAGINE_FONDATORE = 'immagini/badge-allenatore-founder.png';
     const immagineSerie = (b, livello) => `immagini/badge-allenatore-${b.file}-${livello}.png`;
     const BADGE = [
-        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [4, 5, 6, 7],
+        { id: 'clean', file: 'cleanstreak', label: 'Clean Streak', icona: '✨', unita: 'clean wins', steps: [5, 6, 8, 10],
           testo: 'Win matches without dropping a single set, back to back.',
           descrizione: n => `${n} matches won without losing a set, in a row`,
           maxKeys: ['maxcleanstrike'], curKeys: ['cleanstrike'], dateKeys: ['maxcleanstrikedate'] },
-        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [10, 14, 18, 24],
+        { id: 'won', file: 'winstreak', label: 'Win Streak', icona: '🔥', unita: 'match wins', steps: [12, 16, 22, 26],
           testo: 'Win matches back to back.',
           descrizione: n => `${n} matches won in a row`,
           maxKeys: ['maxwonstrike'], curKeys: ['wonstrike'], dateKeys: ['maxwonstrikedate'] },
-        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [8, 12, 16, 24],
+        { id: 'sd', file: 'sdstreak', label: 'SD Streak', icona: '🎯', unita: 'showdown wins', steps: [10, 16, 24, 34],
           testo: 'Win showdowns back to back.',
           descrizione: n => `${n} showdowns won in a row`,
           maxKeys: ['maxshowdownstrike', 'maxsdstrike'], curKeys: ['showdownstrike', 'sdstrike'],
