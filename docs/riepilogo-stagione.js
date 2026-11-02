@@ -135,7 +135,9 @@
             const p = colori.get(idDi(v.name)) || {};
             return { posizione: i + 1, id: idDi(v.name), nome: p.nome || v.name, colore: p.colore || '', avatar: p.avatar || '', punti: num(v.points), vinti: num(v.won), persi: num(v.lost), sdVinti: num(v.sdWon), sdPersi: num(v.sdLost) };
         });
-        const idVincitore = idDi(info.winner) || (classifica[0] ? classifica[0].id : '');
+        // provvisorio: la stagione non è chiusa (anteprima con ?riepilogo=1): il "campione" è chi guida la classifica
+        const provvisorio = String(info.status || '').toLowerCase() !== 'closed';
+        const idVincitore = (provvisorio ? '' : idDi(info.winner)) || (classifica[0] ? classifica[0].id : '');
         const vincitore = classifica.find(x => x.id === idVincitore) || null;
 
         // MVP: il risultato dello spoglio, se c'è già; altrimenti, se ci sono voti, "si sta ancora votando"
@@ -162,7 +164,7 @@
             id: String(info.id || ''), nome: String(info.name || info.nome || r.stagioni && r.stagioni[0] && r.stagioni[0].nome || 'Season'),
             formati: nomiFormati, dal: date[0] || '', al: date[date.length - 1] || '',
             numeri: { showdown: num(r.totali.showdown), match: num(r.totali.match), set: num(r.totali.set), ko: koTotali, giocatori: classifica.length || giocatori.length },
-            vincitore, classifica, mvp, mvpInCorso, formatiMigliori: formati,
+            provvisorio, vincitore, classifica, mvp, mvpInCorso, formatiMigliori: formati,
             premi: costruisciPremi(r, dagliShowdown(dati.showdowns)), piuUsati
         };
     }
@@ -180,10 +182,13 @@
     }
 
     // -----------------------------------------------------
-    // Come si vede
+    // Come si vede: le stesse finestre e le stesse righe della classifica del sito (classifica.css: .cl-finestra, .cl-riga...), quindi il riepilogo
+    // segue il tema scelto da ognuno (temi.css); nell'app, dove l'aspetto è quello del gioco, le finestre diventano pannelli scuri (riepilogo-stagione.css)
     // -----------------------------------------------------
     const dataBreve = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : ''; };
     const linkGiocatore = nome => `public.html?player=${encodeURIComponent(String(nome || '').trim())}`;
+
+    const finestra = (titolo, corpo, classe = '') => `<section class="cl-finestra rs-sez ${classe}"><div class="cl-barra"><span class="cl-barra-titolo">${esc(titolo)}</span></div><div class="cl-corpo">${corpo}</div></section>`;
 
     function htmlPersona(p, extraClasse = '') {
         const colore = coloreSicuro(p.colore, '#8a8a8a');
@@ -194,63 +199,222 @@
     const imgPkm = (specie, gif) => (gif && specie
         ? `<img class="rs-pkm" src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
 
+    /** Una riga della classifica finale: la stessa di quella a lato (le classi .cl-*) */
+    function htmlRiga(c) {
+        const avatar = c.avatar ? `<img src="${esc(c.avatar)}" class="cl-avatar" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>';
+        return `<a class="cl-riga${c.posizione === 1 ? ' cl-primo' : ''}" href="${esc(linkGiocatore(c.nome))}" style="--cl-colore:${coloreSicuro(c.colore, '#31c489')}">`
+            + `<span class="cl-pos">#${c.posizione}</span>${avatar}<span class="cl-testi"><span class="cl-nome">${esc(c.nome)}</span>`
+            + `<span class="cl-dati">SD ${c.sdVinti}-${c.sdPersi} · MATCH ${c.vinti}-${c.persi}</span></span><span class="cl-punti">${c.punti}</span></a>`;
+    }
+
     /** Il riepilogo come HTML (tutto il testo che viene dal database è protetto). `gif(specie)` dà l'immagine animata di un Pokémon. */
     function html(riep, { gif } = {}) {
         if (!riep) return '<p class="rs-vuoto">No recap available for this season.</p>';
         const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
-        const testa = `<header class="rs-testa"><span class="rs-etichetta">SEASON RECAP</span><h2>${esc(riep.nome)}</h2>`
-            + `<p>${esc(riep.formati.join(' · '))}${periodo ? ` · ${esc(periodo)}` : ''}</p></header>`;
-
-        const campione = riep.vincitore
-            ? `<section class="rs-campione" style="--c:${coloreSicuro(riep.vincitore.colore, '#ffbd44')}"><span class="rs-coppa" aria-hidden="true">🏆</span>`
-              + `<div><span class="rs-etichetta">CHAMPION</span>${htmlPersona(riep.vincitore, 'rs-grande')}`
-              + `<span class="rs-dati">${riep.vincitore.punti} pts · ${riep.vincitore.vinti}W ${riep.vincitore.persi}L · SD ${riep.vincitore.sdVinti}-${riep.vincitore.sdPersi}</span></div></section>`
-            : '';
-
         const n = riep.numeri;
-        const numeri = `<section class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
-            .map(([e, v]) => `<div class="rs-numero"><b>${v}</b><span>${e}</span></div>`).join('')}</section>`;
-
-        const classifica = riep.classifica.length
-            ? `<section class="rs-sezione"><h3>Final standings</h3><ol class="rs-classifica">${riep.classifica.map(c =>
-                `<li class="rs-riga${c.posizione === 1 ? ' rs-primo' : ''}" style="--c:${coloreSicuro(c.colore, '#8a8a8a')}"><span class="rs-pos">#${c.posizione}</span>`
-                + `${htmlPersona(c)}<span class="rs-dati">${c.vinti}W ${c.persi}L</span><b class="rs-punti">${c.punti}</b></li>`).join('')}</ol></section>`
+        const campione = riep.vincitore
+            ? `<div class="rs-campione" style="--c:${coloreSicuro(riep.vincitore.colore, '#ffbd44')}"><span class="rs-coppa" aria-hidden="true">${riep.provvisorio ? '🥇' : '🏆'}</span>`
+              + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(riep.vincitore, 'rs-grande')}`
+              + `<span class="rs-dati">${riep.vincitore.punti} pts · ${riep.vincitore.vinti}W ${riep.vincitore.persi}L · SD ${riep.vincitore.sdVinti}-${riep.vincitore.sdPersi}</span></div></div>`
             : '';
+        const numeri = `<div class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
+            .map(([e, v]) => `<div class="rs-carta rs-numero"><b>${v}</b><span>${e}</span></div>`).join('')}</div>`;
+        const intro = finestra(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP',
+            `<h2 class="rs-titolo">${esc(riep.nome)}</h2><p class="rs-sotto">${esc(riep.formati.join(' · '))}${periodo ? ` · ${esc(periodo)}` : ''}</p>${campione}${numeri}`, 'rs-intro');
+
+        const classifica = riep.classifica.length ? finestra('FINAL STANDINGS', `<div class="rs-classifica">${riep.classifica.map(htmlRiga).join('')}</div>`) : '';
 
         const mvp = riep.mvp
-            ? `<section class="rs-sezione rs-mvp"><h3>Season MVP</h3><div class="rs-mvp-corpo">${imgPkm(riep.mvp.specie, gif)}<div><b>${esc(riep.mvp.specie)}</b>`
-              + `<span>${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span>${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></div></div></section>`
-            : riep.mvpInCorso ? '<section class="rs-sezione rs-mvp"><h3>Season MVP</h3><p class="rs-nota">The votes are still being counted.</p></section>' : '';
+            ? finestra('SEASON MVP', `<div class="rs-mvp-corpo">${imgPkm(riep.mvp.specie, gif)}<div><b>${esc(riep.mvp.specie)}</b>`
+                + `<span>${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span>${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></div></div>`)
+            : riep.mvpInCorso ? finestra('SEASON MVP', '<p class="rs-nota">The votes are still being counted.</p>') : '';
 
         const formati = riep.formatiMigliori.length
-            ? `<section class="rs-sezione"><h3>Best of each format</h3><div class="rs-formati">${riep.formatiMigliori.map(f =>
-                `<div class="rs-formato">${imgPkm(f.specie, gif)}<span class="rs-etichetta">${esc(f.formato)}</span><b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
+            ? finestra('BEST OF EACH FORMAT', `<div class="rs-griglia rs-formati">${riep.formatiMigliori.map(f =>
+                `<div class="rs-carta rs-formato">${imgPkm(f.specie, gif)}<span class="rs-etichetta">${esc(f.formato)}</span><b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div>`)
             : '';
 
         const premi = riep.premi.length
-            ? `<section class="rs-sezione"><h3>Awards</h3><div class="rs-premi">${riep.premi.map(p =>
-                `<article class="rs-premio"><span class="rs-icona" aria-hidden="true">${p.icona}</span><div><b>${esc(p.titolo)}</b>`
-                + `<small>${esc(p.descrizione)}</small><div class="rs-vincitori">${p.vincitori.map(v => htmlPersona(v)).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></div></article>`).join('')}</div></section>`
+            ? finestra('AWARDS', `<div class="rs-griglia rs-premi">${riep.premi.map(p =>
+                `<article class="rs-carta rs-premio"><span class="rs-icona" aria-hidden="true">${p.icona}</span><div><b>${esc(p.titolo)}</b>`
+                + `<small>${esc(p.descrizione)}</small><div class="rs-vincitori">${p.vincitori.map(v => htmlPersona(v)).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></div></article>`).join('')}</div>`)
             : '';
 
         const usati = riep.piuUsati.length
-            ? `<section class="rs-sezione"><h3>Most used Pokémon</h3><div class="rs-usati">${riep.piuUsati.map((u, i) =>
-                `<div class="rs-usato">${imgPkm(u.specie, gif)}<span>${i + 1}. ${esc(u.specie)}</span><i>${u.set} sets</i></div>`).join('')}</div></section>`
+            ? finestra('MOST USED POKÉMON', `<div class="rs-griglia rs-usati">${riep.piuUsati.map((u, i) =>
+                `<div class="rs-carta rs-usato">${imgPkm(u.specie, gif)}<span>${i + 1}. ${esc(u.specie)}</span><i>${u.set} sets</i></div>`).join('')}</div>`)
             : '';
 
-        return `<div class="rs">${testa}${campione}${numeri}${classifica}${mvp}${formati}${premi}${usati}`
+        return `<div class="rs">${intro}${classifica}${mvp}${formati}${premi}${usati}`
             + `<div class="rs-azioni"><button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></div></div>`;
+    }
+
+    // -----------------------------------------------------
+    // La card da condividere: un'immagine (1080x1350) disegnata sul canvas, nello stile del sito (carta chiara, striscia nera, righe colorate)
+    // -----------------------------------------------------
+    const CARD = { W: 1080, H: 1350 };
+
+    /** Carica un'immagine senza sporcare il canvas: se il server non dà il permesso (CORS) o non risponde, si salta e basta */
+    function caricaImmagine(win, src) {
+        return new Promise(ok => {
+            if (!src || !win.Image) return ok(null);
+            const img = new win.Image();
+            img.crossOrigin = 'anonymous';
+            const t = win.setTimeout(() => ok(null), 5000);
+            img.onload = () => { win.clearTimeout(t); ok(img); };
+            img.onerror = () => { win.clearTimeout(t); ok(null); };
+            img.src = src;
+        });
+    }
+
+    /**
+     * Disegna la card. `gif(specie)` dà l'immagine del Pokémon (l'MVP). Restituisce il canvas.
+     * Lo stile è quello del tema classico: la card è la stessa per tutti, così le immagini che girano in chat si riconoscono.
+     */
+    async function disegnaCard(win, riep, { gif } = {}) {
+        const doc = win.document;
+        const { W, H } = CARD;
+        const canvas = doc.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const c = canvas.getContext('2d');
+        try { await Promise.all([doc.fonts.load('900 40px "Josefin Sans"'), doc.fonts.load('700 28px "Montserrat"')]); } catch (e) { /* si usano i caratteri di riserva */ }
+        const FT = '"Josefin Sans", "Arial Black", Arial, sans-serif', FX = '"Montserrat", Arial, sans-serif';
+        const INK = '#000', CARTA = '#fffdf6', GIALLO = '#ffbd44';
+
+        const [avatarCampione, avatarClassifica, spriteMvp] = await Promise.all([
+            caricaImmagine(win, riep.vincitore && riep.vincitore.avatar),
+            Promise.all(riep.classifica.slice(0, 5).map(x => caricaImmagine(win, x.avatar))),
+            caricaImmagine(win, riep.mvp && gif ? gif(riep.mvp.specie) : '')
+        ]);
+
+        const testoFit = (t, x, y, maxW, px, peso, famiglia, colore, allinea = 'left') => {
+            let d = px;
+            c.font = `${peso} ${d}px ${famiglia}`;
+            while (c.measureText(t).width > maxW && d > 12) { d -= 1; c.font = `${peso} ${d}px ${famiglia}`; }
+            c.fillStyle = colore; c.textAlign = allinea; c.textBaseline = 'alphabetic';
+            c.fillText(t, x, y);
+        };
+        const riquadro = (x, y, w, h, riempi, bordo = 6, ombra = 0) => {
+            if (ombra) { c.fillStyle = INK; c.fillRect(x + ombra, y + ombra, w, h); }
+            c.fillStyle = riempi; c.fillRect(x, y, w, h);
+            c.lineWidth = bordo; c.strokeStyle = INK; c.strokeRect(x + bordo / 2, y + bordo / 2, w - bordo, h - bordo);
+        };
+        const tondo = (img, cx, cy, r, vuoto) => {
+            c.save(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.closePath(); c.fillStyle = vuoto || '#ddd'; c.fill();
+            if (img) { c.clip(); c.drawImage(img, cx - r, cy - r, r * 2, r * 2); }
+            c.restore(); c.lineWidth = 5; c.strokeStyle = INK; c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+        };
+
+        // sfondo e carta
+        c.fillStyle = '#efe9da'; c.fillRect(0, 0, W, H);
+        c.fillStyle = 'rgba(0,0,0,.09)';
+        for (let y = 8; y < H; y += 24) for (let x = 8; x < W; x += 24) { c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill(); }
+        const X = 40, L = W - 80;
+        riquadro(X, 36, L, H - 90, CARTA, 10, 14);
+
+        // striscia nera con i tre pallini
+        c.fillStyle = INK; c.fillRect(X + 5, 41, L - 10, 70);
+        [['#ff5f57', 50], ['#febc2e', 90], ['#28c840', 130]].forEach(([col, dx]) => { c.fillStyle = col; c.beginPath(); c.arc(X + dx, 76, 13, 0, Math.PI * 2); c.fill(); });
+        testoFit(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP', X + 175, 90, L - 200, 34, 800, FT, '#fff');
+
+        // titolo
+        testoFit(String(riep.nome).toUpperCase(), X + 40, 190, L - 80, 74, 900, FT, INK);
+        const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
+        testoFit(`${riep.formati.join(' · ')}${periodo ? ` · ${periodo}` : ''}`, X + 40, 232, L - 80, 26, 700, FX, 'rgba(0,0,0,.7)');
+
+        // campione
+        let y = 262;
+        if (riep.vincitore) {
+            const v = riep.vincitore;
+            riquadro(X + 30, y, L - 60, 150, coloreSicuro(v.colore, GIALLO), 7, 8);
+            c.font = '84px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillStyle = INK; c.fillText(riep.provvisorio ? '🥇' : '🏆', X + 56, y + 98);
+            tondo(avatarCampione, X + 238, y + 75, 56, '#fff');
+            c.fillStyle = INK; c.fillRect(X + 326, y + 18, 214, 34);
+            testoFit(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION', X + 338, y + 44, 190, 23, 900, FT, GIALLO);
+            testoFit(String(v.nome).toUpperCase(), X + 326, y + 100, L - 60 - 310, 54, 900, FT, INK);
+            testoFit(`${v.punti} pts · ${v.vinti}W ${v.persi}L · SD ${v.sdVinti}-${v.sdPersi}`, X + 326, y + 132, L - 60 - 310, 23, 700, FX, 'rgba(0,0,0,.75)');
+            y += 150 + 24;
+        }
+
+        // classifica (le prime cinque)
+        riep.classifica.slice(0, 5).forEach((r, i) => {
+            const ry = y + i * 68;
+            riquadro(X + 30, ry, L - 60, 60, coloreSicuro(r.colore, '#8a8a8a'), 5, 5);
+            c.fillStyle = i === 0 ? GIALLO : INK; c.fillRect(X + 44, ry + 12, 62, 36);
+            testoFit(`#${r.posizione}`, X + 75, ry + 39, 56, 26, 900, FT, i === 0 ? INK : '#fff', 'center');
+            tondo(avatarClassifica[i], X + 150, ry + 30, 22, '#fff');
+            testoFit(String(r.nome).toUpperCase(), X + 192, ry + 39, 430, 30, 900, FT, INK);
+            testoFit(`${r.vinti}W ${r.persi}L`, X + 790, ry + 39, 130, 24, 800, FX, INK, 'right');
+            riquadro(X + 810, ry + 6, 120, 48, '#fff', 4);
+            testoFit(String(r.punti), X + 870, ry + 43, 100, 30, 900, FT, INK, 'center');
+        });
+        y += Math.min(5, riep.classifica.length) * 68 + 14;
+
+        // MVP
+        if (riep.mvp) {
+            riquadro(X + 30, y, L - 60, 116, '#fff', 6, 6);
+            if (spriteMvp) { const k = Math.min(110 / spriteMvp.width, 110 / spriteMvp.height, 3); c.drawImage(spriteMvp, X + 70, y + 58 - spriteMvp.height * k / 2, spriteMvp.width * k, spriteMvp.height * k); }
+            c.fillStyle = INK; c.fillRect(X + 190, y + 14, 150, 30);
+            testoFit('SEASON MVP', X + 202, y + 37, 130, 20, 900, FT, GIALLO);
+            testoFit(String(riep.mvp.specie).toUpperCase(), X + 190, y + 80, L - 60 - 180, 40, 900, FT, INK);
+            testoFit(`${riep.mvp.team} · ${riep.mvp.player} · ${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}`, X + 190, y + 106, L - 60 - 180, 20, 700, FX, 'rgba(0,0,0,.7)');
+            y += 116 + 20;
+        }
+
+        // premi (i primi sei che ci stanno)
+        const spazio = (H - 54 - 56) - y;      // fino al piede della carta (resta posto per la riga dei numeri)
+        const righe = Math.max(0, Math.min(3, Math.floor(spazio / 94)));
+        riep.premi.slice(0, righe * 2).forEach((p, i) => {
+            const px = X + 30 + (i % 2) * ((L - 60) / 2 + 8), py = y + Math.floor(i / 2) * 94;
+            const pw = (L - 60) / 2 - 8;
+            riquadro(px, py, pw, 84, '#fff', 5, 5);
+            c.font = '44px sans-serif'; c.textAlign = 'left'; c.fillStyle = INK; c.fillText(p.icona, px + 14, py + 56);
+            testoFit(p.titolo.toUpperCase(), px + 76, py + 30, pw - 92, 23, 900, FT, INK);
+            testoFit(p.vincitori.map(v => v.nome).join(', '), px + 76, py + 57, pw - 92, 23, 800, FX, INK);
+            testoFit(p.testoValore, px + 76, py + 77, pw - 92, 17, 700, FX, 'rgba(0,0,0,.65)');
+        });
+
+        testoFit(`${riep.numeri.match} matches · ${riep.numeri.set} sets · ${riep.numeri.ko} KOs`, W / 2, H - 76, L - 60, 22, 800, FX, 'rgba(0,0,0,.6)', 'center');
+        return canvas;
     }
 
     // -----------------------------------------------------
     // Nella pagina: il riepilogo e, sul sito, i due tasti "SEASON RECAP | CALENDAR"
     // (nell'app la scelta è nei tag in alto: app-matches.js)
     // -----------------------------------------------------
+    /** La finestra con l'immagine pronta: da lì si condivide (se il telefono lo permette) o si salva */
+    function mostraAnteprima(win, blob, testoCondivisione) {
+        const doc = win.document;
+        const url = win.URL.createObjectURL(blob);
+        const file = typeof win.File === 'function' ? new win.File([blob], 'season-recap.png', { type: 'image/png' }) : null;
+        const nav = win.navigator || {};
+        const puoCondividere = !!(file && typeof nav.canShare === 'function' && nav.canShare({ files: [file] }) && typeof nav.share === 'function');
+        const velo = doc.createElement('div');
+        velo.className = 'rs-velo';
+        velo.setAttribute('role', 'dialog');
+        velo.setAttribute('aria-modal', 'true');
+        velo.innerHTML = `<div class="rs-dialogo"><img src="${url}" alt="Season recap card"><div class="rs-dialogo-azioni">`
+            + `${puoCondividere ? '<button type="button" data-fai="condividi">SHARE</button>' : ''}<a class="rs-salva" href="${url}" download="season-recap.png">SAVE IMAGE</a>`
+            + '<button type="button" data-fai="chiudi">CLOSE</button></div></div>';
+        const chiudi = () => { velo.remove(); win.URL.revokeObjectURL(url); doc.removeEventListener('keydown', tasto); };
+        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+        velo.addEventListener('click', async e => {
+            if (e.target === velo) return chiudi();
+            const b = e.target.closest ? e.target.closest('[data-fai]') : null;
+            if (!b) return;
+            if (b.dataset.fai === 'chiudi') return chiudi();
+            try { await nav.share({ files: [file], title: 'Season recap', text: testoCondivisione }); } catch (err) { /* annullato */ }
+        });
+        doc.addEventListener('keydown', tasto);
+        doc.body.appendChild(velo);
+        return velo;
+    }
+
     /**
      * Disegna il riepilogo nella colonna dei match (sopra l'elenco). Si può richiamare: aggiorna senza cambiare la vista scelta.
      * @returns {HTMLElement|null}
      */
-    function monta(win, riep, { gif } = {}) {
+    function monta(win, riep, { gif, vistaIniziale = 'riepilogo' } = {}) {
         const doc = win.document;
         const colonna = doc && doc.querySelector('.hub-left-column');
         const elenco = doc && doc.getElementById('matchList');
@@ -274,18 +438,26 @@
             corpo.addEventListener('click', async e => {
                 const b = e.target.closest ? e.target.closest('[data-azione="condividi"]') : null;
                 if (!b) return;
-                const t = testo(corpo._riepilogo);
+                const prima = b.textContent;
+                b.disabled = true; b.textContent = 'CREATING…';
                 try {
-                    if (win.navigator && typeof win.navigator.share === 'function') await win.navigator.share({ title: 'Season recap', text: t });
-                    else if (win.navigator && win.navigator.clipboard) { await win.navigator.clipboard.writeText(t); b.textContent = 'COPIED!'; win.setTimeout(() => { b.textContent = 'SHARE RECAP'; }, 1800); }
-                } catch (err) { /* annullato: niente da fare */ }
+                    const canvas = await disegnaCard(win, corpo._riepilogo, { gif: corpo._gif });
+                    const blob = await new Promise((ok, no) => canvas.toBlob(x => (x ? ok(x) : no(new Error('immagine non creata'))), 'image/png'));
+                    mostraAnteprima(win, blob, testo(corpo._riepilogo));
+                } catch (err) {
+                    // l'immagine non si è potuta fare: si condivide il testo
+                    const t = testo(corpo._riepilogo);
+                    try { if (win.navigator && typeof win.navigator.share === 'function') await win.navigator.share({ title: 'Season recap', text: t }); else if (win.navigator && win.navigator.clipboard) await win.navigator.clipboard.writeText(t); } catch (e2) { /* niente */ }
+                }
+                b.disabled = false; b.textContent = prima;
             });
-            vai('riepilogo');
+            vai(vistaIniziale);
         }
         corpo._riepilogo = riep;
+        corpo._gif = gif;
         corpo.innerHTML = html(riep, { gif });
         return corpo;
     }
 
-    return { calcola, html, testo, monta, confrontaClassifica };
+    return { calcola, html, testo, monta, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
 });

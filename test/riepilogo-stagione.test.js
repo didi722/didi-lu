@@ -88,7 +88,8 @@ test('nella pagina: una stagione chiusa calcola il riepilogo, lo monta con i due
     const m = leggi('matches.html');
     assert.match(m, /<script src="riepilogo-stagione\.js"><\/script>/);
     assert.match(m, /<link rel="stylesheet" href="riepilogo-stagione\.css">/);
-    assert.match(m, /if \(!stagioneChiusa \|\| !window\.RiepilogoStagione/);
+    assert.match(m, /if \(\(!stagioneChiusa && !anteprima\) \|\| !window\.RiepilogoStagione/);
+    assert.match(m, /get\('riepilogo'\) === '1'/, 'con ?riepilogo=1 anteprima anche di una stagione in corso, senza scrivere niente');
     assert.match(m, /riepilogo: !!riepilogoIniziale/);
     assert.match(m, /RiepilogoStagione\.monta\(window, riepilogo,/);
     const js = leggi('riepilogo-stagione.js');
@@ -106,4 +107,40 @@ test('app: la stagione chiusa ha il tag Recap davanti agli altri, e un tag scono
     assert.doesNotMatch(AppMatches.htmlTabs('sd', 5, false), /data-tab="rc"/);
     assert.equal(AppMatches.tabValido('rc', true), 'rc');
     assert.equal(AppMatches.tabValido('rc', false), 'sd', 'senza riepilogo il tag non esiste');
+});
+
+test('estetica: stesse finestre e righe della classifica del sito (seguono il tema di ognuno), pannelli scuri nell\'app', () => {
+    const riep = R.calcola(dati([giocatore('ada'), giocatore('bea')]));
+    const h = R.html(riep, {});
+    assert.match(h, /class="cl-finestra rs-sez/);
+    assert.match(h, /class="cl-barra"><span class="cl-barra-titolo">FINAL STANDINGS/);
+    assert.match(h, /class="cl-riga cl-primo"[^>]*style="--cl-colore:/);
+    const css = leggi('riepilogo-stagione.css');
+    // i colori, le ombre, gli angoli e le rotazioni sono quelli del tema (--nb-*), non fissi
+    for (const v of ['--nb-ink', '--nb-carta', '--nb-sh-s', '--nb-raggio', '--nb-rot', '--nb-font-titoli']) assert.ok(css.includes(v), v);
+    assert.match(css, /html\.app-shell \.rs \.cl-finestra \{ background: radial-gradient/);
+    assert.match(css, /\.rs a\.cl-riga \{ color: #000; \}/);
+});
+
+test('anteprima: una stagione non chiusa si chiama "leader" e non "campione"', () => {
+    const prov = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 's1', name: 'S', status: 'playing', winner: 'ada' } }));
+    assert.equal(prov.provvisorio, true);
+    assert.equal(prov.vincitore.id, 'bea', 'in anteprima conta la classifica, non un vincitore scritto');
+    assert.match(R.html(prov), /CURRENT LEADER/);
+    assert.match(R.html(prov), /SEASON RECAP · PREVIEW/);
+    const chiusa = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 's1', name: 'S', status: 'closed', winner: 'ada' } }));
+    assert.equal(chiusa.provvisorio, false);
+    assert.equal(chiusa.vincitore.id, 'ada');
+    assert.match(R.html(chiusa), /CHAMPION/);
+});
+
+test('card immagine: dimensioni fisse, finestra con SHARE (solo se il telefono lo permette) e SAVE IMAGE', () => {
+    assert.deepEqual(R.CARD, { W: 1080, H: 1350 });
+    const js = leggi('riepilogo-stagione.js');
+    assert.match(js, /canvas\.toBlob\(/);
+    assert.match(js, /canShare\(\{ files: \[file\] \}\)/);
+    assert.match(js, /download="season-recap\.png"/);
+    assert.match(js, /img\.crossOrigin = 'anonymous'/, 'le immagini non sporcano il canvas: senza permesso si saltano');
+    // se l'immagine non si può fare, si ripiega sul testo
+    assert.match(js, /l'immagine non si è potuta fare: si condivide il testo/);
 });

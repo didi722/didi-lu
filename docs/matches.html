@@ -813,7 +813,9 @@ async function inizializzaPaginaArchivio() {
 
     // --- 4b. RIEPILOGO DI FINE STAGIONE: una stagione chiusa si apre sul riepilogo (riepilogo-stagione.js), con il calendario a un tocco ---
     const calcolaRiepilogo = async () => {
-        if (!stagioneChiusa || !window.RiepilogoStagione || !window.Statistiche) return null;
+        // con ?riepilogo=1 si vede anche di una stagione in corso (anteprima: il "campione" è chi guida la classifica); non scrive nulla
+        const anteprima = new URLSearchParams(location.search).get('riepilogo') === '1';
+        if ((!stagioneChiusa && !anteprima) || !window.RiepilogoStagione || !window.Statistiche) return null;
         try {
             const mvpNodo = (await db.ref(`seasons/${stagioneAttiva}/mvp`).once('value')).val() || {};
             const risultato = Statistiche.calcola({ seasons: { [stagioneAttiva]: { info: dataSeasonInfo, showdowns: dataShowdowns, teams_iscritti: dataIscritti, mvp: mvpNodo } }, players: dataPlayers }, { stagione: stagioneAttiva });
