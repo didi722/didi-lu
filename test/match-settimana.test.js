@@ -261,9 +261,11 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     assert.match(h, /<b class="ms-banner">Ultimo<\/b><span class="ms-chip">Came back from 3 down<\/span><\/div><\/div>/, 'del protagonista si vede il motivo più importante');
     assert.equal((h.match(/class="ms-chip"/g) || []).length, 1);
     assert.match(h, /<div class="ms-prot" title="Came back from 3 down · Won with 1 Pokémon left · Ultimo took 4 KOs">/, 'tutti i motivi nel suggerimento');
-    assert.match(h, /<a class="ms-replay" href="matches\.html\?id=s0&amp;replay=sd1~match1~set1&amp;da=home" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay<\/a>/);
+    assert.match(h, /<a class="ms-replay" href="matches\.html\?id=s0&amp;replay=sd1~match1~set1&amp;da=home" title="Watch the replay\n/);
     // in mezzo: formato, VS e set; la data e il resto nel suggerimento
-    assert.match(h, /<span class="ms-info" title="OU · 29 Oct · Stagione · Match 2-1"><b>OU<\/b>Set 1 · Match 1<\/span><\/div><\/div>$/, 'sotto il replay: formato e set; la data e il resto nel suggerimento');
+    // sotto il replay niente scritte: formato, set, data e il resto stanno nel suggerimento del tasto
+    assert.doesNotMatch(h, /ms-info/);
+    assert.match(h, /<div class="ms-azione"><a class="ms-replay" href="[^"]*" title="Watch the replay\nOU · Set 1 · Match 1 · 29 Oct · Stagione · Match 2-1" aria-label="Watch the replay">&#9654; Replay<\/a><\/div><\/div>$/);
     // il nome dell'allenatore sta in un tag, con accanto il posto per i badge del team; il Pokémon protagonista ha il suo sul medaglione
     assert.match(h, /<\/a><span class="ms-bdg" data-ms-badge="p1"><\/span><\/div>/);
     assert.match(h, /<span class="ms-bdg ms-bdg-prot" data-ms-badge="prot"><\/span><\/span><div class="ms-prot-testo">/);
@@ -495,7 +497,7 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.match(css, /\.ms-scontro \{ display: grid; flex: 1 1 auto; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
     assert.match(css, /\.ms-l2 \{ flex-direction: row-reverse; text-align: right;/);
     // i nomi non vanno a capo a metà parola (si accorciano con i puntini) e gli sprite si restringono invece di andare a capo
-    assert.match(css, /\.ms-nome \{ display: block; font:/);
+    assert.match(css, /\.ms-nome \{ display: block; font: 700 15px\/1\.15 'Josefin Sans', sans-serif; letter-spacing: 1px; text-transform: uppercase; \}/, 'il font dei tag con il nome della stagione');
     assert.doesNotMatch(/\.ms-nome \{[^}]*\}/.exec(css)[0], /ellipsis/, 'un nome lungo scorre (nome-scorrevole.css), non si taglia con i puntini');
     assert.match(css, /\.ms-sprites \{ display: flex; flex-wrap: nowrap;/);
     assert.match(css, /\.ms-spr \{ flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain;/);
@@ -512,7 +514,7 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.match(css, /@media \(max-width: 800px\) \{[\s\S]*?\.ms-corpo \{ flex-wrap: wrap;/);
     assert.match(css, /@media \(max-width: 600px\) \{[\s\S]*?\.ms-scontro \{ grid-template-columns: minmax\(0, 1fr\);/);
     assert.match(css, /html\.app-shell \.ms-sezione \{ display: none; \}/);
-    assert.match(css, /body\.pg-index\.con-match \.home-seasons-container \{ min-height: 0;/);
+    assert.match(css, /body\.pg-index\.con-match \.home-seasons-container \{ min-height: 0; margin-top: auto; margin-bottom: auto;/, 'stagioni al centro dello spazio sopra il banner, che resta in fondo');
     // i blocchi neri hanno l'ombra corta dei blocchi scuri (mai nera piena): l'etichetta in alto e il replay quando si annerisce al passaggio
     assert.match(/\.ms-t \{[^}]*\}/.exec(css)[0], /--nb-sh-s-scuro/);
     assert.match(/\.ms a\.ms-replay:hover \{[^}]*\}/.exec(css)[0], /--nb-sh-4-scuro/);
@@ -587,7 +589,7 @@ test('home: il banner è largo quanto la fila delle stagioni (stesse misure di n
     assert.match(idx, /\.season-card \{[^}]*max-width: 280px;/, 'il tetto di 280 px delle carte è cambiato in style-index.css: aggiornare --ms-card');
     assert.match(css, /\.ms \{[^}]*width: calc\(3 \* var\(--ms-card\) \+ 2 \* var\(--ms-gap\) - 12px\);/);
     // lo spazio sopra il banner basta per le etichette che sporgono e per l'ombra della carta di mezzo (ingrandita); sugli schermi bassi un po' meno
-    assert.match(css, /\.ms-sezione \{[^}]*padding: 84px 30px 36px;/);
+    assert.match(css, /\.ms-sezione \{[^}]*padding: 84px 30px 22px;/);
     assert.match(css, /@media \(min-width: 1051px\) and \(max-height: 820px\) \{[^}]*\.ms-sezione \{ padding-top: 70px;/);
     // sotto i 1050 px le stagioni vanno in colonna: il banner non segue più la loro fila
     assert.match(css, /@media \(max-width: 1050px\) \{\s*\.ms \{ width: min\(100%, 760px\); \}/);

@@ -311,8 +311,7 @@
         return `<span class="ms-t">MATCH OF THE WEEK</span>${pager}`
             + `<div class="ms-corpo${animazione ? ` ms-in-${animazione === 'sx' ? 'sx' : 'dx'}` : ''}" aria-live="polite"><div class="ms-scontro">${lato('p1', 1)}`
             + `${lato('p2', 2)}</div>${medaglione}`
-            + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s))}" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay</a>`
-            + `<span class="ms-info" title="${esc([s.categoria, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · '))}"><b>${esc(s.categoria || 'Showdown')}</b>Set ${s.numeroSet} · Match ${s.numeroMatch}</span></div></div>`;
+            + `<div class="ms-azione"><a class="ms-replay" href="${esc(linkReplay(s))}" title="${esc(['Watch the replay', [s.categoria, `Set ${s.numeroSet} · Match ${s.numeroMatch}`, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · ')].join('\n'))}" aria-label="Watch the replay">&#9654; Replay</a></div></div>`;
     }
 
     /**
