@@ -270,3 +270,23 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const senzaImmagine = { ...riep, premi: [{ ...riep.premi[0], immagine: null, icona: '🔥' }] };
     assert.match(R.html(senzaImmagine), /<span class="rs-icona-emoji">🔥<\/span>/);
 });
+
+test('i Pokémon (MVP, migliori di ogni formato, più usati) sono medaglioni come nel Box: disco a mezzatinta del colore del tipo e nome in etichetta nera', () => {
+    const mvp = { risultato: { vincitori: { 0: { specie: 'Anorith', team: 'T', player: 'ada', voti: 2 } } } };
+    const p = [{ chiave: 'ada::t::0', player: 'ada', playerNome: 'ADA', specie: 'Anorith', specieId: 'anorith', portato: 5, koFatti: 3, formato: 'OU', team: 'T' }];
+    const g = [giocatore('ada'), giocatore('bea')];
+    const h = R.html(R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } })), { gif: s => `g/${s}.gif` });
+    assert.match(h, /class="rs-med rs-med-grande" data-pkm="Anorith"><img src="g\/Anorith\.gif"/, 'MVP');
+    assert.match(h, /class="rs-med rs-med-medio" data-pkm="Anorith"/, 'migliori di ogni formato');
+    assert.match(h, /class="rs-med rs-med-piccolo" data-pkm="Anorith"/, 'più usati');
+    assert.match(h, /<b class="rs-banner">Anorith<\/b>/, 'il nome è l\'etichetta nera sotto il disco');
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /\.rs-med \{[^}]*radial-gradient\(rgba\(0, 0, 0, \.17\)[^}]*var\(--tipo, #cfd3dc\)[^}]*border-radius: 50%/);
+    assert.match(css, /\.rs-banner \{[^}]*background: var\(--rs-ink\); color: #fff;/);
+    // il colore è quello del primo tipo, come nel Box (dettagli.js)
+    const Dettagli = leggi('dettagli.js');
+    for (const [tipo, colore] of Object.entries(R.COLORI_TIPO)) assert.ok(Dettagli.includes(`${tipo}: '${colore}'`), tipo);
+    assert.equal(R.nomePokeApi('Landorus-Therian'), 'landorus-therian');
+    assert.equal(R.nomePokeApi('Urshifu-*'), 'urshifu');
+    assert.equal(R.nomePokeApi("Farfetch'd"), 'farfetchd');
+});

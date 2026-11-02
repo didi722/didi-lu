@@ -53,6 +53,14 @@
     const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
 
+    // I colori dei tipi (gli stessi di dettagli.js e di tutto il sito): il medaglione di un Pokémon è sul colore del suo primo tipo, come nel Box
+    const COLORI_TIPO = {
+        normal: '#aaaa99', fire: '#ff4422', water: '#3399ff', electric: '#ffcc33', grass: '#77cc55', ice: '#66ccff',
+        fighting: '#bb5544', poison: '#aa5599', ground: '#ddbb55', flying: '#8899ff', psychic: '#ff5599', bug: '#aabb22',
+        rock: '#bbaa66', ghost: '#6666bb', dragon: '#7766ee', dark: '#775544', steel: '#aaaabb', fairy: '#ee99ee'
+    };
+    const nomePokeApi = specie => String(specie || '').toLowerCase().trim().replace(/ /g, '-').replace(/[.'é’%]/g, '').replace(/-?\*$/, '');
+
     const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro, il cambio...)
     const MAX_PARI = 3;             // a pari merito si premiano al più tanti allenatori
 
@@ -244,8 +252,9 @@
     /** Un allenatore: avatar e nome, link alla sua pagina */
     const htmlPersona = p => `<a class="rs-persona" href="${esc(linkGiocatore(p.nome))}" style="--c:${coloreSicuro(p.colore, COLORE_NEUTRO)}">${avatarImg(p, 'rs-av')}<span class="rs-nome">${esc(p.nome)}</span></a>`;
 
-    const imgPkm = (specie, gif, classe = 'rs-pkm') => (gif && specie
-        ? `<img class="${classe}" src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
+    /** Il medaglione di un Pokémon, come nel Box: lo sprite su un disco a mezzatinta del colore del suo tipo (che arriva appena PokeAPI risponde: monta()) */
+    const medaglione = (specie, gif, classe) => (gif && specie
+        ? `<span class="rs-med ${classe}" data-pkm="${esc(specie)}"><img src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>` : '');
 
     /** Una riga della classifica finale: la stessa di quella a lato (le classi .cl-*, classifica.css) */
     function htmlRiga(c) {
@@ -306,7 +315,7 @@
         // ---- l'MVP
         const mvp = riep.mvp
             ? `<section class="rs-b rs-mvp rs-s4" style="--c:${coloreSicuro(riep.mvp.colore, COLORE_NEUTRO)}">${etichetta('SEASON MVP')}<img class="rs-sticker" src="${IMMAGINE_MVP}" alt="" decoding="async">`
-              + `<div class="rs-mvp-scena">${imgPkm(riep.mvp.specie, gif, 'rs-pkm-grande')}</div><b class="rs-mvp-nome">${esc(riep.mvp.specie)}</b>`
+              + `<div class="rs-mvp-scena">${medaglione(riep.mvp.specie, gif, 'rs-med-grande')}</div><b class="rs-banner">${esc(riep.mvp.specie)}</b>`
               + `<span class="rs-mvp-sotto">${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span class="rs-voti">${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></section>`
             : riep.mvpInCorso
                 ? `<section class="rs-b rs-mvp rs-mvp-attesa rs-s4">${etichetta('SEASON MVP')}<img class="rs-sticker rs-sticker-grande" src="${IMMAGINE_MVP}" alt="" decoding="async"><p class="rs-nota">The votes are still being counted.</p></section>`
@@ -321,13 +330,13 @@
         // ---- a fianco della classifica: il miglior Pokémon di ogni formato e i più usati
         const formati = riep.formatiMigliori.length
             ? `<section class="rs-b rs-formati">${etichetta('BEST OF EACH FORMAT', IMMAGINE_FORMATI)}<div class="rs-formati-lista">${riep.formatiMigliori.map(f =>
-                `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${imgPkm(f.specie, gif, 'rs-pkm')}`
-                + `<b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
+                `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${medaglione(f.specie, gif, 'rs-med-medio')}`
+                + `<b class="rs-banner rs-banner-piccolo">${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
             : '';
         const massimo = Math.max(1, ...riep.piuUsati.map(u => u.set));
         const usati = riep.piuUsati.length
             ? `<section class="rs-b rs-usati">${etichetta('MOST USED POKÉMON')}<div class="rs-usati-lista">${riep.piuUsati.map((u, i) =>
-                `<div class="rs-uso"><span class="rs-pos">#${i + 1}</span>${imgPkm(u.specie, gif, 'rs-pkm-piccolo')}<div class="rs-uso-testo"><b>${esc(u.specie)}</b>`
+                `<div class="rs-uso"><span class="rs-pos">#${i + 1}</span>${medaglione(u.specie, gif, 'rs-med-piccolo')}<div class="rs-uso-testo"><b>${esc(u.specie)}</b>`
                 + `<span class="rs-barra"><span style="width:${Math.round(100 * u.set / massimo)}%"></span></span></div><i>${u.set} sets</i></div>`).join('')}</div></section>`
             : '';
         const colonna = haColonna ? `<div class="rs-colonna rs-s7">${formati}${usati}</div>` : '';
@@ -528,6 +537,25 @@
         return velo;
     }
 
+    const cacheTipo = new Map();      // specie -> promessa del colore del suo primo tipo (o null)
+    function colorePerSpecie(win, specie) {
+        const k = nomePokeApi(specie);
+        if (!k || typeof win.fetch !== 'function') return Promise.resolve(null);
+        if (!cacheTipo.has(k)) {
+            cacheTipo.set(k, win.fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(k)}`)
+                .then(r => (r.ok ? r.json() : null))
+                .then(j => (j && j.types && j.types[0] ? COLORI_TIPO[j.types[0].type.name] || null : null))
+                .catch(() => null));
+        }
+        return cacheTipo.get(k);
+    }
+    /** Ogni medaglione prende il colore del tipo del suo Pokémon (finché non arriva resta grigio) */
+    function coloraMedaglioni(win, radice) {
+        radice.querySelectorAll('[data-pkm]').forEach(el => {
+            colorePerSpecie(win, el.getAttribute('data-pkm')).then(c => { if (c && el.isConnected) el.style.setProperty('--tipo', c); });
+        });
+    }
+
     /**
      * Disegna il riepilogo nella colonna dei match (sopra l'elenco). Si può richiamare: aggiorna senza cambiare la vista scelta.
      * @returns {HTMLElement|null}
@@ -580,8 +608,9 @@
         corpo._riepilogo = riep;
         corpo._gif = gif;
         corpo.innerHTML = html(riep, { gif });
+        coloraMedaglioni(win, corpo);
         return corpo;
     }
 
-    return { calcola, html, testo, monta, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
+    return { calcola, html, testo, monta, nomePokeApi, COLORI_TIPO, disegnaCard, mostraAnteprima, confrontaClassifica, CARD };
 });
