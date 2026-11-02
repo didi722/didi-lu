@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="nb-pagine.css">
+<link rel="stylesheet" href="badge-team.css">
 <link rel="stylesheet" href="match-settimana.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
@@ -34,6 +35,8 @@
 <script src="sprites/indice.js"></script>
 <script src="sprite-pkm.js"></script>
 <script src="medaglione-pkm.js"></script>
+<script src="fiocchi.js"></script>
+<script src="badge-team.js"></script>
 <script src="match-settimana.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
@@ -508,6 +511,7 @@ async function mostraMatchSettimana(data) {
     if (!matchSettimanaBanner) {
         matchSettimanaBanner = MatchSettimana.monta(window, blocco, {
             gif: window.SpritePkm ? s => SpritePkm.gif(s) : null,
+            caricaBadge: () => Fiocchi.carica(db),          // i badge dei team e del Pokémon protagonista (le stesse statistiche del Box)
             leggiGiocatore: async id => {
                 const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
                 return { colore: info.color || '', avatar: info.avatar || '' };

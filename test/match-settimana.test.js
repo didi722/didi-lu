@@ -246,8 +246,9 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     const h = M.html(s, { giocatori, gif: x => `g/${x}.gif`, settimana, indice: 0, totale: 1 });
     assert.match(h, /^<span class="ms-t">MATCH OF THE WEEK<\/span><div class="ms-pager ms-solo" role="group" aria-label="Week">/);
     assert.match(h, /<span class="ms-sett"><b>This week<\/b><span>26 Oct – 1 Nov<\/span><\/span>/);
-    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="&lt;b&gt;Uno&lt;\/b&gt;"><span class="ms-win">WINNER<\/span>/);
-    assert.match(h, /class="ms-lato ms-l2" style="--c:#d9dde6" title="Team Due"/, 'un colore non valido torna al neutro');
+    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="&lt;b&gt;Uno&lt;\/b&gt;"><a class="ms-av-link"/, 'chi ha vinto: colore pieno');
+    assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Team Due \(lost\)"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
+    assert.doesNotMatch(h, /WINNER|ms-win|class="ms-vs"|>VS</, 'né il tag WINNER né la scritta VS');
     assert.doesNotMatch(h, /<b>Uno<\/b>/, 'il nome del team è protetto');
     assert.equal((h.match(/class="ms-spr ms-ko"/g) || []).length, 3 + 4, 'i Pokémon andati KO sono spenti (3 di Ada e 4 di Bea)');
     assert.match(h, /class="ms-med" data-pkm="Ultimo"/);
@@ -256,12 +257,14 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     assert.match(h, /<div class="ms-prot" title="Came back from 3 down · Won with 1 Pokémon left · Ultimo took 4 KOs">/, 'tutti i motivi nel suggerimento');
     assert.match(h, /<a class="ms-replay" href="matches\.html\?id=s0&amp;replay=sd1~match1~set1" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay<\/a>/);
     // in mezzo: formato, VS e set; la data e il resto nel suggerimento
-    assert.match(h, /<div class="ms-centro" title="OU · 29 Oct · Stagione · Match 2-1"><span class="ms-tag">OU<\/span><b class="ms-vs">VS<\/b><span class="ms-set">Set 1 · Match 1<\/span><\/div>/);
+    assert.match(h, /<span class="ms-info" title="OU · 29 Oct · Stagione · Match 2-1"><b>OU<\/b>Set 1 · Match 1<\/span><\/div><\/div>$/, 'sotto il replay: formato e set; la data e il resto nel suggerimento');
+    // il nome dell'allenatore sta in un tag, con accanto il posto per i badge del team; il Pokémon protagonista ha il suo sul medaglione
+    assert.match(h, /<div class="ms-riga"><a class="ms-nome-link" href="public\.html\?player=Ada"><b class="ms-nome">Ada<\/b><\/a><span class="ms-bdg" data-ms-badge="p1"><\/span><\/div>/);
+    assert.match(h, /<span class="ms-bdg ms-bdg-prot" data-ms-badge="prot"><\/span><\/span><div class="ms-prot-testo">/);
     // l'allenatore di sinistra ha l'avatar a sinistra, quello di destra a destra (lo decide il CSS: .ms-l2 in riga inversa); il link porta alla pagina pubblica
     assert.match(h, /<a class="ms-av-link" href="public\.html\?player=Ada">/);
-    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Bea"><b class="ms-nome">Bea<\/b><\/a>/);
     // l'ordine: etichetta, settimana, poi nella riga gli allenatori, il protagonista, il replay
-    const ordine = ['class="ms-t"', 'class="ms-pager', 'class="ms-corpo', 'class="ms-scontro"', 'class="ms-prot"', 'class="ms-replay"'].map(x => h.indexOf(x));
+    const ordine = ['class="ms-t"', 'class="ms-pager', 'class="ms-corpo', 'class="ms-scontro"', 'class="ms-prot"', 'class="ms-azione"', 'class="ms-replay"'].map(x => h.indexOf(x));
     assert.deepEqual(ordine, [...ordine].sort((a, b) => a - b));
     assert.ok(ordine.every(i => i >= 0));
     assert.equal(M.html(null), '');
@@ -446,6 +449,9 @@ test('home: il banner sta sotto le stagioni, nascosto finché non c\'è un set; 
     assert.ok(idx.indexOf('id="match-settimana"') > idx.indexOf('id="link-next"'), 'dopo le tre stagioni');
     assert.match(idx, /mostraMatchSettimana\(data\);/);
     assert.match(idx, /MatchSettimana\.monta\(window, blocco, \{/);
+    assert.match(idx, /caricaBadge: \(\) => Fiocchi\.carica\(db\)/);
+    for (const f of ['fiocchi.js', 'badge-team.js']) assert.ok(idx.includes(`<script src="${f}"></script>`), f);
+    assert.match(idx, /<link rel="stylesheet" href="badge-team\.css">/);
     assert.match(idx, /MatchSettimana\.settimane\(data\)/);
     assert.match(idx, /matchSettimanaBanner\.aggiorna\(ce \? esito : null\)/);
     assert.match(idx, /players\/\$\{id\}\/info/);
@@ -472,12 +478,12 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.doesNotMatch(css, /--nb-giallo|--gx-giallo|ffbd44|ffde4d/i);
     // una riga sola: allenatori (griglia a tre colonne), protagonista, replay
     assert.match(css, /\.ms-corpo \{ display: flex; align-items: center;/);
-    assert.match(css, /\.ms-scontro \{ display: grid; flex: 1 1 auto; grid-template-columns: minmax\(0, 1fr\) auto minmax\(0, 1fr\);/);
+    assert.match(css, /\.ms-scontro \{ display: grid; flex: 1 1 auto; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
     assert.match(css, /\.ms-l2 \{ flex-direction: row-reverse; text-align: right;/);
     // i nomi non vanno a capo a metà parola (si accorciano con i puntini) e gli sprite si restringono invece di andare a capo
     assert.match(css, /\.ms-nome \{ display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/);
     assert.match(css, /\.ms-sprites \{ display: flex; flex-wrap: nowrap;/);
-    assert.match(css, /\.ms-spr \{ flex: 0 1 24px; width: 24px; min-width: 10px; height: 24px; object-fit: contain;/);
+    assert.match(css, /\.ms-spr \{ flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain;/);
     assert.match(css, /\.ms-spr\.ms-ko \{ filter: grayscale\(1\); opacity: \.5; \}/);
     // la settimana con le frecce sul bordo in alto a destra (come l'etichetta a sinistra); le frecce spente in fondo; il dito scorre di lato
     assert.match(css, /\.ms-pager \{\s*position: absolute; top: -19px; right: 18px;/);
@@ -492,11 +498,64 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.match(css, /@media \(max-width: 600px\) \{[\s\S]*?\.ms-scontro \{ grid-template-columns: minmax\(0, 1fr\);/);
     assert.match(css, /html\.app-shell \.ms-sezione \{ display: none; \}/);
     assert.match(css, /body\.pg-index\.con-match \.home-seasons-container \{ min-height: 0;/);
-    // i blocchi neri hanno l'ombra corta dei blocchi scuri (mai nera piena)
-    for (const sel of ['\\.ms-t', '\\.ms-win', '\\.ms-banner', '\\.ms-replay']) {
-        const regola = new RegExp(`${sel} \\{[^}]*\\}`).exec(css);
-        assert.ok(regola && /--nb-sh-s-scuro/.test(regola[0]), `${sel}: ombra dei blocchi scuri`);
-    }
+    // i blocchi neri hanno l'ombra corta dei blocchi scuri (mai nera piena): l'etichetta in alto e il replay quando si annerisce al passaggio
+    assert.match(/\.ms-t \{[^}]*\}/.exec(css)[0], /--nb-sh-s-scuro/);
+    assert.match(/\.ms a\.ms-replay:hover \{[^}]*\}/.exec(css)[0], /--nb-sh-4-scuro/);
+    // i tag (nome dell'allenatore e del Pokémon, motivo) sono bianchi con bordo nero spesso e ombra; chi ha perso è sbiadito; niente WINNER né VS
+    const tag = /\.ms-nome-link, \.ms-banner, \.ms-chip \{[^}]*\}/.exec(css);
+    assert.ok(tag && /background: var\(--nb-carta/.test(tag[0]) && /border: 3px solid var\(--nb-ink/.test(tag[0]) && /box-shadow: var\(--nb-sh-s/.test(tag[0]));
+    assert.match(css, /\.ms-perde \{ background: color-mix\(in srgb, var\(--c, #d9dde6\) 38%, var\(--nb-carta/);
+    assert.doesNotMatch(css, /\.ms-win|\.ms-vs|\.ms-centro/);
+    // i badge: del team accanto al nome, del Pokémon sul bordo del medaglione (le immagini del medaglione non si prendono le loro regole)
+    assert.match(css, /\.ms-med > img \{ position: absolute;/);
+    assert.match(css, /\.ms-bdg-prot \{ position: absolute;/);
+});
+
+test('badge: i badge dei due team e dei fiocchi del Pokémon protagonista, con le stesse medagliette del Box; niente badge senza team', () => {
+    const s = M.scegli(stagioni({ match1: match('2026-10-29', { set1: rimonta() }) }), { adesso: OGGI });
+    const chiamate = [];
+    const lib = {
+        BadgeTeam: {
+            trova: (r, q) => { chiamate.push(['team', q.player, q.team]); return { q }; },
+            calcola: e => [{ e }], htmlMini: (l, max) => `<mini team ${l[0].e.q.player} max${max}>`
+        },
+        Fiocchi: {
+            trova: (r, q) => { chiamate.push(['pkm', q.player, q.team, q.specie]); return { q }; },
+            calcola: e => [{ e, livello: 1 }, { e, livello: 2 }, { e, livello: 3 }], guadagnati: l => l, htmlMedaglietta: f => `<f${f.livello}>`
+        }
+    };
+    assert.deepEqual(M.badge({}, s, lib), { p1: '<mini team ada max2>', p2: '<mini team bea max2>', prot: '<f1><f2>' }, 'sul medaglione i due più alti');
+    assert.deepEqual(chiamate, [['team', 'ada', 'Team Uno'], ['team', 'bea', 'Team Due'], ['pkm', 'ada', 'Team Uno', 'Ultimo']], 'il Pokémon è di chi ha vinto, nel suo team');
+    const senzaTeam = M.scegli(stagioni({ match1: match('2026-10-29', { set1: rimonta() }, { team1: '', team2: '' }) }), { adesso: OGGI });
+    assert.deepEqual(M.badge({}, senzaTeam, lib), { p1: '', p2: '', prot: '' });
+    assert.deepEqual(M.badge({}, s, {}), { p1: '', p2: '', prot: '' }, 'senza le librerie dei badge il banner è lo stesso');
+});
+
+test('monta: i badge arrivano dopo il banner e non si scrivono più se nel frattempo si è cambiato settimana', async () => {
+    const r = radiceFinta();
+    const caselle = {};
+    r.querySelector = sel => { const k = /data-ms-badge="(\w+)"/.exec(sel); return k ? (caselle[k[1]] = caselle[k[1]] || { innerHTML: '' }) : null; };
+    let rilascia;
+    const attesa = new Promise(ok => { rilascia = ok; });
+    const win = {
+        Fiocchi: { trova: () => null, calcola: () => [{ livello: 1 }], guadagnati: l => l, htmlMedaglietta: () => '<p>' },
+        BadgeTeam: { trova: () => null, calcola: () => [], htmlMini: () => '<t>' }
+    };
+    const b = M.monta(win, r, { adesso: () => OGGI, caricaBadge: () => attesa });
+    await b.aggiorna(M.settimane(treSettimane(), { adesso: OGGI }));
+    assert.deepEqual(caselle, {}, 'il banner c\'è prima dei badge');
+    rilascia({});
+    await aspetta();
+    assert.deepEqual([caselle.p1.innerHTML, caselle.p2.innerHTML, caselle.prot.innerHTML], ['<t>', '<t>', '<p>']);
+    // si cambia settimana prima che i dati arrivino: i vecchi badge non finiscono nel banner nuovo
+    const r2 = radiceFinta(), scritti = [];
+    r2.querySelector = () => ({ set innerHTML(v) { scritti.push(v); } });
+    let rilascia2; const attesa2 = new Promise(ok => { rilascia2 = ok; });
+    const b2 = M.monta(win, r2, { adesso: () => OGGI, caricaBadge: () => attesa2 });
+    await b2.aggiorna(M.settimane(treSettimane(), { adesso: OGGI }));
+    await b2.vai(-1);
+    rilascia2({}); await aspetta();
+    assert.equal(scritti.length, 3, 'solo i badge della settimana mostrata (3 caselle), non quelli della prima');
 });
 
 test('home: il banner è largo quanto la fila delle stagioni (stesse misure di nb-pagine.css e style-index.css) e basso', () => {
@@ -511,8 +570,8 @@ test('home: il banner è largo quanto la fila delle stagioni (stesse misure di n
     assert.match(idx, /\.season-card \{[^}]*max-width: 280px;/, 'il tetto di 280 px delle carte è cambiato in style-index.css: aggiornare --ms-card');
     assert.match(css, /\.ms \{[^}]*width: calc\(3 \* var\(--ms-card\) \+ 2 \* var\(--ms-gap\) - 12px\);/);
     // lo spazio sopra il banner basta per le etichette che sporgono e per l'ombra della carta di mezzo (ingrandita); sugli schermi bassi un po' meno
-    assert.match(css, /\.ms-sezione \{[^}]*padding: 60px 30px 36px;/);
-    assert.match(css, /@media \(min-width: 1051px\) and \(max-height: 820px\) \{[^}]*\.ms-sezione \{ padding-top: 56px;/);
+    assert.match(css, /\.ms-sezione \{[^}]*padding: 84px 30px 36px;/);
+    assert.match(css, /@media \(min-width: 1051px\) and \(max-height: 820px\) \{[^}]*\.ms-sezione \{ padding-top: 70px;/);
     // sotto i 1050 px le stagioni vanno in colonna: il banner non segue più la loro fila
     assert.match(css, /@media \(max-width: 1050px\) \{\s*\.ms \{ width: min\(100%, 760px\); \}/);
 });
