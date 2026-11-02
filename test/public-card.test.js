@@ -182,7 +182,7 @@ test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo e
     assert.match(trainer, /colori\.unshift\(attuale\)/);
     // le scelte degli altri restano in lista ma disabilitate e grigie: tutte e quattro le liste passano da comePresa()
     assert.match(trainer, /function comePresa\(bottone, titolo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
-    assert.equal((trainer.match(/comePresa\(/g) || []).length, 5, 'definizione + avatar, colori, Pokémon, canzoni');
+    assert.equal((trainer.match(/comePresa\(/g) || []).length, 6, 'definizione + avatar, colori, Pokémon, Pokémon del Box, canzoni');
     assert.doesNotMatch(trainer, /\.filter\(p => \(p\.name === mio \|\| !presi\.pokemon/, 'i Pokémon presi non si tolgono dalla lista');
     assert.doesNotMatch(trainer, /P\.PALETTE_FIRMA\.filter\(/, 'i colori presi non si tolgono dalla palette');
     assert.match(cssEditor, /\.is-preso, \.is-preso:hover \{[^}]*cursor: not-allowed/);
@@ -511,4 +511,19 @@ test('in modifica un blocco spento o vuoto è un segnaposto che non collassa: ni
     assert.ok(conContenimento.length >= 3, conContenimento.join(' | '));
     // il segnaposto non deve restare in .pp-fisso a larghezza zero: il suo min-width resta 0 (non toglie spazio agli altri) ma con testo
     assert.match(cssCard, /body\.pp-fisso :is\(\.pp-zona, \.pp-linea\) > \.pp-blocco:is\(\.pp-spento, \.pp-vuoto\) \{ flex: 0 0 auto !important; min-width: 0 !important; min-height: 0 !important; \}/);
+});
+
+test('compagno dal Box: si sceglie un Pokémon dei propri team (campo pkmBox), sul palco compaiono i suoi badge', () => {
+    assert.ok(P.CAMPI_PROFILO.includes('pkmBox'));
+    // l'editor: una lista dal Box accanto a quella generica; scegliere dal Box salva specie + posizione, dalla lista generica azzera pkmBox
+    assert.match(trainer, /function boxMio\(ctx, presi, scegli\)/);
+    assert.match(trainer, /scegli\(\{ pkmPreferito: specie, pkmBox: valore \}\)/);
+    assert.match(trainer, /scegli\(\{ pkmPreferito: p\.name, pkmBox: '' \}\)/);
+    assert.match(trainer, /scegli\(\{ pkmPreferito: '', pkmBox: '' \}\)/);
+    // la card: i fiocchi di quel Pokémon (del suo team) sul palco, solo se è ancora lui
+    assert.match(card, /function compagnoDalBox\(d\)/);
+    assert.match(card, /pulisci\(nome\) !== pulisci\(d\.info\.pkmPreferito\)/);
+    assert.match(card, /Fiocchi\.riempiMini\(dbPagina, set,/);
+    assert.match(card, /pkmBox: \['palco'\]/);
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8'), /\.pp-set \.pp-pkm-badge/);
 });

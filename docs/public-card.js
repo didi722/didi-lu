@@ -101,12 +101,38 @@
         const posto = h('div', { class: 'pp-pkm' });
         set.append(posto);
         if (d.info.pkmPreferito) montaPokemonPreferito(set, posto, d.info.pkmPreferito);
+        montaBadgeCompagno(set, d);
         return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro' },
             h('div', { class: 'pp-raggi' }),
             h('div', { class: 'pp-puntini' }),
             h('div', { class: 'pp-pavimento' }),
             set,
             h('div', { class: 'pp-targhette', hidden: true })));     // le targhette scelte per il palco (riempiTarghe)
+    }
+
+    /** "idTeam|posizione" (come lo salva l'editor) -> { team, indice, pokemon } se quel Pokémon del Box esiste ancora e è davvero il compagno scelto */
+    function compagnoDalBox(d) {
+        const [idTeam, pos] = String((d.info && d.info.pkmBox) || '').split('|');
+        const indice = Number(pos);
+        if (!idTeam || !Number.isInteger(indice) || indice < 0) return null;
+        const team = (d.teams || []).find(t => t && t.id === idTeam);
+        const pokemon = team ? elenco(team.pokemon)[indice] : null;
+        const nome = pokemon && (pokemon.nome || pokemon.name);
+        if (!nome || pulisci(nome) !== pulisci(d.info.pkmPreferito)) return null;     // il Box è cambiato: non è più lui
+        return { team, indice, pokemon };
+    }
+
+    /** I badge (fiocchi) del compagno scelto dal Box, sotto di lui sul palco */
+    function montaBadgeCompagno(set, d) {
+        const c = compagnoDalBox(d);
+        if (!c) return;
+        const casella = h('span', { class: 'pkm-badges-overlay pp-pkm-badge', 'data-fiocchi-pkm': String(c.indice) });
+        set.append(casella);
+        const dbPagina = typeof db !== 'undefined' ? db : (window.firebase && window.firebase.database ? window.firebase.database() : null);
+        const giocatore = String(d.nome || d.chiave || '').trim();
+        if (dbPagina && giocatore && window.Fiocchi) {
+            window.Fiocchi.riempiMini(dbPagina, set, { giocatore, team: c.team, valido: () => set.contains(casella), max: 4, amicizia: p => !!p.amicizia });
+        }
     }
 
     // Il Pokémon preferito in scala con l'allenatore, davanti o dietro a lui, a terra o in volo.
@@ -339,7 +365,8 @@
                 h('span', { class: 'pp-chip', testo: 'PARTY' }),
                 h('button', { class: 'pp-party-nome', type: 'button', title: 'See the whole team', testo: nome,
                     onclick: () => { if (typeof window.apriDettagli === 'function') window.apriDettagli(team.id); } }),
-                h('span', { class: 'pp-party-meta', testo: meta })),
+                h('span', { class: 'pp-party-meta', testo: meta }),
+                h('span', { class: 'bt-barra-team pp-party-badge', 'data-badge-team': '' })),
             h('div', { class: 'pp-party-slots', stile: { '--quanti': Math.max(pokemon.length, 1) } }, pokemon.map((p, i) => {
                 const nomePkm = p.nome || p.name;
                 const slot = h('button', { class: 'pp-slot', type: 'button', stile: { '--i': i, '--t1': '#e8e8e8', '--t2': '#e8e8e8' },
@@ -348,6 +375,7 @@
                         window.squadraAperta = team;     // i fiocchi del Pokémon sono quelli DI QUEL team
                         if (typeof window.apriPkmDettaglio === 'function') window.apriPkmDettaglio(p, pulisci(nomePkm), elenco(team.pokemon).indexOf(p));
                     } },
+                    h('span', { class: 'pkm-badges-overlay pp-slot-badge', 'data-fiocchi-pkm': String(i) }),
                     h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
                         onerror: e => {
                             if (window.SpritePkm) return window.SpritePkm.riserva(e.target, window.SpritePkm.id(nomePkm));
@@ -359,6 +387,15 @@
                 });
                 return slot;
             }))));
+
+        // i badge del team e i fiocchi dei suoi Pokémon si vedono subito, senza aprire il team (arrivano appena sono pronte le statistiche)
+        const dbPagina = typeof db !== 'undefined' ? db : (window.firebase && window.firebase.database ? window.firebase.database() : null);
+        const giocatore = String(stato.dati.nome || stato.dati.chiave || '').trim();
+        const valido = () => stato.blocchi.party === el && sceltaTeam(stato.config) === team;
+        if (dbPagina && giocatore) {
+            if (window.BadgeTeam) window.BadgeTeam.montaBarra(dbPagina, el.querySelector('[data-badge-team]'), { giocatore, team, valido, max: 6 });
+            if (window.Fiocchi) window.Fiocchi.riempiMini(dbPagina, el, { giocatore, team, valido, max: 3, amicizia: p => !!p.amicizia });
+        }
     }
 
     // ---- Trofei e medaglie --------------------------------------------------------------------
@@ -914,7 +951,7 @@
     // ---- Profilo: i campi di players/{id}/info che si scelgono nell'editor --------------------------
 
     // quali blocchi cambiano quando cambia un campo
-    const DIPENDE = { avatar: ['palco'], pkmPreferito: ['palco'], bio: ['identita'], title: ['identita'], musicName: ['musica'], musicaPreferita: ['musica'], color: [] };
+    const DIPENDE = { avatar: ['palco'], pkmPreferito: ['palco'], pkmBox: ['palco'], bio: ['identita'], title: ['identita'], musicName: ['musica'], musicaPreferita: ['musica'], color: [] };
 
     function profiloAttuale() {
         const info = stato.dati.info || {};

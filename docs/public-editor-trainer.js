@@ -132,7 +132,8 @@
             if (grande && p.avatar) grande.src = p.avatar;
             const col = String(p.color || '').toUpperCase();
             document.querySelectorAll('#pe-colori .pe-campione').forEach(b => { const on = b.dataset.v === col; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
-            document.querySelectorAll('#pe-lista-pokemon .pe-scelta').forEach(b => b.classList.toggle('is-on', b.dataset.v === String(p.pkmPreferito || '').toLowerCase()));
+            document.querySelectorAll('#pe-lista-pokemon .pe-scelta').forEach(b => b.classList.toggle('is-on', !p.pkmBox && b.dataset.v === String(p.pkmPreferito || '').toLowerCase()));
+            document.querySelectorAll('#pe-box-pokemon .pe-scelta').forEach(b => b.classList.toggle('is-on', b.dataset.box === String(p.pkmBox || '')));
             document.querySelectorAll('#pe-lista-canzoni .pe-scelta').forEach(b => b.classList.toggle('is-on', b.dataset.v === p.musicaPreferita));
             const nomePkm = document.getElementById('pe-pokemon-attuale');
             if (nomePkm) nomePkm.textContent = p.pkmPreferito ? p.pkmPreferito.toUpperCase() : 'None';
@@ -156,7 +157,7 @@
             const mio = String(profilo.pkmPreferito || '').toLowerCase();
             const trovati = pokemon.filter(p => !q || p.name.includes(q));
             lista.append(...trovati.slice(0, MAX_RIGHE).map(p => {
-                const b = h('button', { type: 'button', class: `pe-scelta${p.name === mio ? ' is-on' : ''}`, 'data-v': p.name, onclick: () => scegli({ pkmPreferito: p.name }) },
+                const b = h('button', { type: 'button', class: `pe-scelta${p.name === mio ? ' is-on' : ''}`, 'data-v': p.name, onclick: () => scegli({ pkmPreferito: p.name, pkmBox: '' }) },
                     h('img', { src: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`, alt: '', loading: 'lazy' }),
                     h('span', { testo: p.name.toUpperCase() }));
                 return p.name !== mio && presi.pokemon.has(p.name) ? comePresa(b, p.name.toUpperCase()) : b;
@@ -171,8 +172,36 @@
 
         return sezione('Favourite Pokémon',
             h('div', { class: 'pe-attuale' }, h('span', { testo: 'Now: ' }), h('b', { id: 'pe-pokemon-attuale', testo: profilo.pkmPreferito ? profilo.pkmPreferito.toUpperCase() : 'None' }),
-                h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => scegli({ pkmPreferito: '' }), testo: 'None' })),
+                h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => scegli({ pkmPreferito: '', pkmBox: '' }), testo: 'None' })),
+            boxMio(ctx, presi, scegli),
+            h('p', { class: 'pe-nota', testo: 'Or pick any Pokémon from the list:' }),
             cerca, lista);
+    }
+
+    /** I Pokémon dei propri team: scegliendone uno il compagno è proprio lui e sulla scena si vedono i suoi badge */
+    function boxMio(ctx, presi, scegli) {
+        const { C, h } = ctx;
+        const nomeDi = p => String((p && (p.nome || p.name)) || '');
+        const chiaveSpecie = n => n.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+        const mio = String(C.profilo().pkmBox || '');
+        const squadre = (C.stato.dati.teams || []).filter(t => t && typeof t === 'object' && t.id);
+        const gruppi = squadre.map(t => {
+            const lista = Array.isArray(t.pokemon) ? t.pokemon : Object.values(t.pokemon || {});
+            const voci = lista.map((p, i) => ({ nome: nomeDi(p), i })).filter(v => v.nome).map(v => {
+                const valore = `${t.id}|${v.i}`;
+                const specie = chiaveSpecie(v.nome);
+                const img = h('img', { alt: '', loading: 'lazy' });
+                img.src = `https://play.pokemonshowdown.com/sprites/gen5/${specie.replace(/-/g, '')}.png`;
+                img.onerror = () => { img.onerror = null; img.removeAttribute('src'); };
+                const b = h('button', { type: 'button', class: `pe-scelta${valore === mio ? ' is-on' : ''}`, 'data-box': valore,
+                    onclick: () => scegli({ pkmPreferito: specie, pkmBox: valore }) },
+                    img, h('span', { testo: v.nome.toUpperCase() }));
+                return valore !== mio && presi.pokemon.has(specie) ? comePresa(b, v.nome.toUpperCase()) : b;
+            });
+            return voci.length ? h('div', { class: 'pe-box-team' }, h('p', { class: 'pe-nota', testo: String(t.nome || t.name || 'My team') }), h('div', { class: 'pe-scorri' }, voci)) : null;
+        }).filter(Boolean);
+        if (!gruppi.length) return h('p', { class: 'pe-nota', testo: 'You have no team in your Box yet: build one to pick a companion from it, with its badges.' });
+        return h('div', { id: 'pe-box-pokemon' }, h('p', { class: 'pe-nota', testo: "From my Box (shows that Pokémon's badges):" }), gruppi);
     }
 
     // ---- Canzone ------------------------------------------------------------------------------
