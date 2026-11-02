@@ -43,8 +43,14 @@
 .rs-intro .cl-corpo { display: flex; flex-direction: column; gap: calc(12 * var(--rs-u)); }
 .rs-titolo { margin: 0; font: 900 calc(30 * var(--rs-u))/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; text-shadow: var(--nb-sh-titolo-testo, 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3))); }
 .rs-sotto { margin: calc(-6 * var(--rs-u)) 0 0; font-weight: 700; font-size: calc(13 * var(--rs-u)); opacity: .8; }
-.rs-campione { display: flex; align-items: center; gap: calc(14 * var(--rs-u)); padding: calc(12 * var(--rs-u)) calc(14 * var(--rs-u)); color: #000; background: var(--c, #ffbd44); border: calc(4 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
-.rs-campione > div { display: flex; flex-direction: column; gap: calc(4 * var(--rs-u)); min-width: 0; }
+.rs-campione { display: flex; flex-direction: column; gap: calc(12 * var(--rs-u)); padding: calc(12 * var(--rs-u)) calc(14 * var(--rs-u)); color: #000; background: var(--c, #ffbd44); border: calc(4 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.rs-campione-testa { display: flex; align-items: center; gap: calc(14 * var(--rs-u)); }
+.rs-campione-testa > div { display: flex; flex-direction: column; gap: calc(4 * var(--rs-u)); min-width: 0; }
+.rs-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--rs-u)), 1fr)); gap: calc(8 * var(--rs-u)); }
+.rs-chip { display: flex; flex-direction: column; gap: calc(2 * var(--rs-u)); padding: calc(6 * var(--rs-u)) calc(8 * var(--rs-u)); }
+.rs-chip span { font-size: calc(9 * var(--rs-u)); font-weight: 900; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+.rs-chip b { font-size: calc(17 * var(--rs-u)); line-height: 1.1; }
+.rs-lega { margin-top: calc(2 * var(--rs-u)); }
 .rs-coppa { font-size: calc(54 * var(--rs-u)); line-height: 1; filter: drop-shadow(0 calc(3 * var(--rs-u)) 0 rgba(0, 0, 0, .35)); }
 .rs-numeri { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(10 * var(--rs-u)); }
 .rs-numero { display: flex; flex-direction: column; align-items: center; padding: calc(8 * var(--rs-u)) calc(4 * var(--rs-u)); }

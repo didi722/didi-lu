@@ -138,7 +138,18 @@
         // provvisorio: la stagione non è chiusa (anteprima con ?riepilogo=1): il "campione" è chi guida la classifica
         const provvisorio = String(info.status || '').toLowerCase() !== 'closed';
         const idVincitore = (provvisorio ? '' : idDi(info.winner)) || (classifica[0] ? classifica[0].id : '');
-        const vincitore = classifica.find(x => x.id === idVincitore) || null;
+        const base = classifica.find(x => x.id === idVincitore) || null;
+        // i numeri del campione sono quelli della sua scheda in /stats (stessa fonte: Statistiche.calcola)
+        const sc = base ? colori.get(base.id) : null;
+        const vincitore = base && sc ? {
+            ...base,
+            stat: {
+                elo: num(sc.elo), percMatch: sc.percMatch == null ? null : num(sc.percMatch),
+                set: { vinti: num(sc.set && sc.set.vinti), persi: num(sc.set && sc.set.persi) },
+                ko: { fatti: num(sc.ko && sc.ko.fatti), subiti: num(sc.ko && sc.ko.subiti) },
+                serie: num(sc.serie && sc.serie.vittorieMax)
+            }
+        } : base;
 
         // MVP: il risultato dello spoglio, se c'è già; altrimenti, se ci sono voti, "si sta ancora votando"
         const mvpNodo = (dati && dati.mvp) || {};
@@ -173,7 +184,7 @@
     function testo(riep) {
         if (!riep) return '';
         const righe = [`🏁 ${riep.nome} — season recap`];
-        if (riep.vincitore) righe.push(`🏆 Champion: ${riep.vincitore.nome} (${riep.vincitore.punti} pts)`);
+        if (riep.vincitore) righe.push(`${riep.provvisorio ? '🥇 Leader' : '🏆 Champion'}: ${riep.vincitore.nome} (${riep.vincitore.punti} pts)`);
         riep.classifica.slice(0, 3).forEach(c => righe.push(`${['🥇', '🥈', '🥉'][c.posizione - 1]} ${c.nome} — ${c.punti} pts (${c.vinti}-${c.persi})`));
         if (riep.mvp) righe.push(`⭐ MVP: ${riep.mvp.specie} (${riep.mvp.player})`);
         riep.premi.forEach(p => righe.push(`${p.icona} ${p.titolo}: ${p.vincitori.map(v => v.nome).join(', ')} — ${p.testoValore}`));
@@ -212,12 +223,16 @@
         if (!riep) return '<p class="rs-vuoto">No recap available for this season.</p>';
         const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
         const n = riep.numeri;
-        const campione = riep.vincitore
-            ? `<div class="rs-campione" style="--c:${coloreSicuro(riep.vincitore.colore, '#ffbd44')}"><span class="rs-coppa" aria-hidden="true">${riep.provvisorio ? '🥇' : '🏆'}</span>`
-              + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(riep.vincitore, 'rs-grande')}`
-              + `<span class="rs-dati">${riep.vincitore.punti} pts · ${riep.vincitore.vinti}W ${riep.vincitore.persi}L · SD ${riep.vincitore.sdVinti}-${riep.vincitore.sdPersi}</span></div></div>`
+        const v = riep.vincitore;
+        const st = v && v.stat;
+        const chip = (et, val) => `<div class="rs-carta rs-chip"><span>${et}</span><b>${val}</b></div>`;
+        const campione = v
+            ? `<div class="rs-campione" style="--c:${coloreSicuro(v.colore, '#ffbd44')}"><div class="rs-campione-testa"><span class="rs-coppa" aria-hidden="true">${riep.provvisorio ? '🥇' : '🏆'}</span>`
+              + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(v, 'rs-grande')}</div></div>`
+              + `<div class="rs-stat">${chip('Points', v.punti)}${st ? chip('Elo', st.elo || 'N/A') : ''}${chip('Showdowns', `${v.sdVinti} – ${v.sdPersi}`)}${chip('Matches', `${v.vinti} – ${v.persi}`)}`
+              + `${st ? chip('Sets', `${st.set.vinti} – ${st.set.persi}`) + chip('Win %', st.percMatch == null ? 'N/A' : `${st.percMatch}%`) + chip('Best streak', st.serie) + chip('KOs', `${st.ko.fatti} – ${st.ko.subiti}`) : ''}</div></div>`
             : '';
-        const numeri = `<div class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
+        const numeri = `<span class="rs-etichetta rs-lega">WHOLE LEAGUE</span><div class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
             .map(([e, v]) => `<div class="rs-carta rs-numero"><b>${v}</b><span>${e}</span></div>`).join('')}</div>`;
         const intro = finestra(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP',
             `<h2 class="rs-titolo">${esc(riep.nome)}</h2><p class="rs-sotto">${esc(riep.formati.join(' · '))}${periodo ? ` · ${esc(periodo)}` : ''}</p>${campione}${numeri}`, 'rs-intro');
@@ -332,7 +347,7 @@
             c.fillStyle = INK; c.fillRect(X + 326, y + 18, 214, 34);
             testoFit(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION', X + 338, y + 44, 190, 23, 900, FT, GIALLO);
             testoFit(String(v.nome).toUpperCase(), X + 326, y + 100, L - 60 - 310, 54, 900, FT, INK);
-            testoFit(`${v.punti} pts · ${v.vinti}W ${v.persi}L · SD ${v.sdVinti}-${v.sdPersi}`, X + 326, y + 132, L - 60 - 310, 23, 700, FX, 'rgba(0,0,0,.75)');
+            testoFit(`${v.punti} pts · ${v.vinti}W ${v.persi}L · SD ${v.sdVinti}-${v.sdPersi}${v.stat ? ` · ${v.stat.percMatch == null ? '' : `${v.stat.percMatch}% · `}Elo ${v.stat.elo || 'N/A'}` : ''}`, X + 326, y + 132, L - 60 - 310, 23, 700, FX, 'rgba(0,0,0,.75)');
             y += 150 + 24;
         }
 

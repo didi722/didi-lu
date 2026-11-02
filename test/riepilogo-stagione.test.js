@@ -16,7 +16,7 @@ const giocatore = (id, extra = {}) => ({
 });
 const dati = (players, extra = {}) => ({
     risultato: { totali: { match: 12, set: 36, showdown: 4 }, players, pokemon: [], formati: ['OU'], stagioni: [{ nome: 'S1' }] },
-    info: { id: 's1', name: 'Season <1>', selected_formats: ['OU'], winner: 'bea' },
+    info: { id: 's1', name: 'Season <1>', selected_formats: ['OU'], winner: 'bea', status: 'closed' },
     leaderboard: { ada: { points: 10, won: 3, lost: 1, setW: 9, sdWon: 2, sdLost: 0 }, bea: { points: 14, won: 5, lost: 1, setW: 12, sdWon: 3, sdLost: 1 } },
     showdowns: {}, mvp: null, ...extra
 });
@@ -143,4 +143,13 @@ test('card immagine: dimensioni fisse, finestra con SHARE (solo se il telefono l
     assert.match(js, /img\.crossOrigin = 'anonymous'/, 'le immagini non sporcano il canvas: senza permesso si saltano');
     // se l'immagine non si può fare, si ripiega sul testo
     assert.match(js, /l'immagine non si è potuta fare: si condivide il testo/);
+});
+
+test('il campione ha gli stessi numeri della sua scheda in /stats (Elo, % vittorie, set, KO, serie) e i totali della lega sono etichettati', () => {
+    const lukiani = giocatore('bea', { elo: 1160, percMatch: 80.6, set: { vinti: 79, persi: 29 }, ko: { fatti: 365, subiti: 253, setConDati: 30 }, serie: { vittorieMax: 15 } });
+    const riep = R.calcola(dati([giocatore('ada'), lukiani]));
+    assert.deepEqual(riep.vincitore.stat, { elo: 1160, percMatch: 80.6, set: { vinti: 79, persi: 29 }, ko: { fatti: 365, subiti: 253 }, serie: 15 });
+    const h = R.html(riep);
+    for (const t of ['Elo', 'Win %', 'Best streak', '1160', '80.6%', '79 – 29', '365 – 253']) assert.ok(h.includes(t), t);
+    assert.match(h, /WHOLE LEAGUE/);
 });
