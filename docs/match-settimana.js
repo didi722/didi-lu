@@ -246,9 +246,9 @@
         return { ...w.scelto, corrente: w.corrente, quanti: w.quanti, settimana: { inizio: w.inizio, fine: w.fine, numero: w.numero, anno: w.anno } };
     }
 
-    /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo) */
+    /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo); da=home: chiudendo il replay si torna alla home */
     function linkReplay(s) {
-        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}`;
+        return `matches.html?id=${encodeURIComponent(s.stagione)}&replay=${encodeURIComponent(s.showdown)}~${encodeURIComponent(s.match)}~${encodeURIComponent(s.set)}&da=home`;
     }
 
     // -----------------------------------------------------
@@ -287,9 +287,10 @@
             const vince = s.vincitore === k;
             const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
-            return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.team || 'Random teams')}${vince ? '' : ' (lost)'}">`
-                + `<a class="ms-av-link" href="${esc(pagina)}">${avatar}</a>`
-                + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}"><b class="ms-nome">${esc(g.nome)}</b></a>`
+            // dell'allenatore resta l'avatar (il nome è nel suggerimento); il tag nero porta il nome del team (senza team, quello dell'allenatore)
+            return `<div class="ms-lato ms-l${n} ${vince ? 'ms-vince' : 'ms-perde'}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.nome)} · ${vince ? 'won' : 'lost'}">`
+                + `<a class="ms-av-link" href="${esc(pagina)}" title="${esc(g.nome)}">${avatar}</a>`
+                + `<div class="ms-testi"><div class="ms-riga"><a class="ms-nome-link" href="${esc(pagina)}" title="${esc(g.team ? `${g.team} · ${g.nome}` : g.nome)}"><b class="ms-nome">${esc(g.team || g.nome)}</b></a>`
                 + `<span class="ms-bdg" data-ms-badge="${k}"></span></div>`
                 + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div></div>`;
         };

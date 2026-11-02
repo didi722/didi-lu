@@ -235,8 +235,8 @@ test('scegli: lo scarto di Elo conta dal lato di chi ha vinto (vince p2 con meno
 // ---------- il banner ----------
 test('linkReplay: matches.html con la stagione e il set (showdown~match~set)', () => {
     const s = M.scegli(stagioni({ match1: match('2026-10-29', { set2: rimonta() }) }), { adesso: OGGI });
-    assert.equal(M.linkReplay(s), 'matches.html?id=s0&replay=sd1~match1~set2');
-    assert.equal(M.linkReplay({ stagione: 's1', showdown: '-Abc_d', match: 'match3', set: 'set1' }), 'matches.html?id=s1&replay=-Abc_d~match3~set1');
+    assert.equal(M.linkReplay(s), 'matches.html?id=s0&replay=sd1~match1~set2&da=home', 'da=home: chiudendo il replay si torna alla home');
+    assert.equal(M.linkReplay({ stagione: 's1', showdown: '-Abc_d', match: 'match3', set: 'set1' }), 'matches.html?id=s1&replay=-Abc_d~match3~set1&da=home');
 });
 
 test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui loro colori, WINNER, i Pokémon KO spenti, il protagonista, il replay', () => {
@@ -246,23 +246,29 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     const h = M.html(s, { giocatori, gif: x => `g/${x}.gif`, settimana, indice: 0, totale: 1 });
     assert.match(h, /^<span class="ms-t">MATCH OF THE WEEK<\/span><div class="ms-pager ms-solo" role="group" aria-label="Week">/);
     assert.match(h, /<span class="ms-sett"><b>This week<\/b><span>26 Oct – 1 Nov<\/span><\/span>/);
-    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="&lt;b&gt;Uno&lt;\/b&gt;"><a class="ms-av-link"/, 'chi ha vinto: colore pieno');
-    assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Team Due \(lost\)"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
+    assert.match(h, /class="ms-lato ms-l1 ms-vince" style="--c:#aa00cc" title="Ada · won"><a class="ms-av-link" href="public\.html\?player=Ada" title="Ada"><img class="ms-av" src="a\.png"/, 'chi ha vinto: colore pieno; dell\'allenatore l\'avatar');
+    assert.match(h, /class="ms-lato ms-l2 ms-perde" style="--c:#d9dde6" title="Bea · lost"/, 'chi ha perso: sbiadito; un colore non valido torna al neutro');
     assert.doesNotMatch(h, /WINNER|ms-win|class="ms-vs"|>VS</, 'né il tag WINNER né la scritta VS');
     assert.doesNotMatch(h, /<b>Uno<\/b>/, 'il nome del team è protetto');
+    // il tag nero porta il nome del team (protetto), non quello dell'allenatore; senza team, il nome dell'allenatore
+    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="&lt;b&gt;Uno&lt;\/b&gt; · Ada"><b class="ms-nome">&lt;b&gt;Uno&lt;\/b&gt;<\/b><\/a>/);
+    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Bea" title="Team Due · Bea"><b class="ms-nome">Team Due<\/b><\/a>/);
+    assert.doesNotMatch(h, /<b class="ms-nome">(Ada|Bea)<\/b>/);
+    const senzaTeam = M.html({ ...s, giocatori: { p1: { ...s.giocatori.p1, team: '' }, p2: s.giocatori.p2 } }, { giocatori });
+    assert.match(senzaTeam, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="Ada"><b class="ms-nome">Ada<\/b><\/a>/);
     assert.equal((h.match(/class="ms-spr ms-ko"/g) || []).length, 3 + 4, 'i Pokémon andati KO sono spenti (3 di Ada e 4 di Bea)');
     assert.match(h, /class="ms-med" data-pkm="Ultimo"/);
     assert.match(h, /<b class="ms-banner">Ultimo<\/b><span class="ms-chip">Came back from 3 down<\/span><\/div><\/div>/, 'del protagonista si vede il motivo più importante');
     assert.equal((h.match(/class="ms-chip"/g) || []).length, 1);
     assert.match(h, /<div class="ms-prot" title="Came back from 3 down · Won with 1 Pokémon left · Ultimo took 4 KOs">/, 'tutti i motivi nel suggerimento');
-    assert.match(h, /<a class="ms-replay" href="matches\.html\?id=s0&amp;replay=sd1~match1~set1" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay<\/a>/);
+    assert.match(h, /<a class="ms-replay" href="matches\.html\?id=s0&amp;replay=sd1~match1~set1&amp;da=home" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay<\/a>/);
     // in mezzo: formato, VS e set; la data e il resto nel suggerimento
     assert.match(h, /<span class="ms-info" title="OU · 29 Oct · Stagione · Match 2-1"><b>OU<\/b>Set 1 · Match 1<\/span><\/div><\/div>$/, 'sotto il replay: formato e set; la data e il resto nel suggerimento');
     // il nome dell'allenatore sta in un tag, con accanto il posto per i badge del team; il Pokémon protagonista ha il suo sul medaglione
-    assert.match(h, /<div class="ms-riga"><a class="ms-nome-link" href="public\.html\?player=Ada"><b class="ms-nome">Ada<\/b><\/a><span class="ms-bdg" data-ms-badge="p1"><\/span><\/div>/);
+    assert.match(h, /<\/a><span class="ms-bdg" data-ms-badge="p1"><\/span><\/div>/);
     assert.match(h, /<span class="ms-bdg ms-bdg-prot" data-ms-badge="prot"><\/span><\/span><div class="ms-prot-testo">/);
     // l'allenatore di sinistra ha l'avatar a sinistra, quello di destra a destra (lo decide il CSS: .ms-l2 in riga inversa); il link porta alla pagina pubblica
-    assert.match(h, /<a class="ms-av-link" href="public\.html\?player=Ada">/);
+    assert.match(h, /<a class="ms-av-link" href="public\.html\?player=Ada" title="Ada">/);
     // l'ordine: etichetta, settimana, poi nella riga gli allenatori, il protagonista, il replay
     const ordine = ['class="ms-t"', 'class="ms-pager', 'class="ms-corpo', 'class="ms-scontro"', 'class="ms-prot"', 'class="ms-azione"', 'class="ms-replay"'].map(x => h.indexOf(x));
     assert.deepEqual(ordine, [...ordine].sort((a, b) => a - b));
@@ -323,7 +329,7 @@ test('monta: si apre sull\'ultima settimana; le frecce passano alle altre in ord
     assert.equal(await b.vai(-1), true);
     assert.match(r.innerHTML, /<b>Last week<\/b><span>19–25 Oct<\/span>/);
     assert.match(r.innerHTML, /class="ms-corpo ms-in-sx"/, 'andando indietro entra da sinistra');
-    assert.match(r.innerHTML, /href="matches\.html\?id=s0&amp;replay=sd1~b~set1"/, 'il replay è quello della settimana mostrata (match b)');
+    assert.match(r.innerHTML, /href="matches\.html\?id=s0&amp;replay=sd1~b~set1&amp;da=home"/, 'il replay è quello della settimana mostrata (match b)');
     assert.equal(await b.vai(-1), true);
     assert.match(r.innerHTML, /<b>Week 42<\/b><span>12–18 Oct<\/span>/);
     assert.match(r.innerHTML, /class="ms-freccia ms-prec"[^>]*disabled/, 'la più vecchia: freccia indietro spenta');
@@ -469,6 +475,9 @@ test('matches.html: ?replay=showdown~match~set apre da solo il replay di quel se
     assert.match(m, /get\('replay'\)/);
     assert.match(m, /richiesto\.split\('~'\)/);
     assert.match(m, /if \(replayDaLinkAperto\) return;/);
+    // da=home (link del banner): chiudendo il replay si torna alla home, una volta sola
+    assert.match(m, /window\.replayTornaAllaHome = new URLSearchParams\(window\.location\.search\)\.get\('da'\) === 'home';/);
+    assert.match(m, /if \(window\.replayTornaAllaHome\) \{\s*window\.replayTornaAllaHome = false;[\s\S]*?window\.location\.replace\('index\.html'\);\s*return;/);
     assert.match(m, /<script src="medaglione-pkm\.js"><\/script>\s*\n<script src="riepilogo-stagione\.js"><\/script>/, 'il medaglione prima del riepilogo');
 });
 
@@ -501,8 +510,10 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     // i blocchi neri hanno l'ombra corta dei blocchi scuri (mai nera piena): l'etichetta in alto e il replay quando si annerisce al passaggio
     assert.match(/\.ms-t \{[^}]*\}/.exec(css)[0], /--nb-sh-s-scuro/);
     assert.match(/\.ms a\.ms-replay:hover \{[^}]*\}/.exec(css)[0], /--nb-sh-4-scuro/);
-    // i tag (nome dell'allenatore e del Pokémon, motivo) sono bianchi con bordo nero spesso e ombra; chi ha perso è sbiadito; niente WINNER né VS
-    const tag = /\.ms-nome-link, \.ms-banner, \.ms-chip \{[^}]*\}/.exec(css);
+    // i tag del nome del Pokémon e del motivo sono bianchi con bordo nero spesso e ombra; chi ha perso è sbiadito; niente WINNER né VS
+    const nero = /\.ms-nome-link \{[^}]*\}/.exec(css)[0];
+    assert.ok(/background: var\(--nb-ink/.test(nero) && /color: #fff/.test(nero) && /--nb-sh-s-scuro/.test(nero), 'il tag del team è nero, con testo bianco e l\'ombra grigia trasparente dei titoli');
+    const tag = /\.ms-banner, \.ms-chip \{[^}]*\}/.exec(css);
     assert.ok(tag && /background: var\(--nb-carta/.test(tag[0]) && /border: 3px solid var\(--nb-ink/.test(tag[0]) && /box-shadow: var\(--nb-sh-s/.test(tag[0]));
     assert.match(css, /\.ms-perde \{ background: color-mix\(in srgb, var\(--c, #d9dde6\) 38%, var\(--nb-carta/);
     assert.doesNotMatch(css, /\.ms-win|\.ms-vs|\.ms-centro/);

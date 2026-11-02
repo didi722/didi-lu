@@ -92,14 +92,19 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12
 .ms-testi { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
 .ms-l2 .ms-testi { align-items: flex-end; }
 
-/* i tag: bianchi, bordo nero spesso e ombra, come nel resto del sito (nome dell'allenatore, nome del Pokémon, motivo) */
-.ms-nome-link, .ms-banner, .ms-chip {
+/* i tag: bianchi, bordo nero spesso e ombra, come nel resto del sito (nome del Pokémon, motivo); quello del team è nero come i titoli, con l'ombra grigia trasparente */
+.ms-banner, .ms-chip {
     background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
     box-shadow: var(--nb-sh-s, 3px 3px 0 #000); box-sizing: border-box;
 }
 .ms-riga { display: flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0; }
 .ms-l2 .ms-riga { flex-direction: row-reverse; }
-.ms-nome-link { display: block; min-width: 0; padding: 3px 9px 1px; rotate: calc(var(--nb-rot, 1) * -1deg); }
+.ms-nome-link {
+    display: block; box-sizing: border-box; min-width: 0; padding: 3px 9px 1px; background: var(--nb-ink, #000); color: #fff;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    rotate: calc(var(--nb-rot, 1) * -1deg);
+}
+.ms a.ms-nome-link { color: #fff; }
 .ms-l2 .ms-nome-link { rotate: calc(var(--nb-rot, 1) * 1deg); }
 .ms-nome { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 15px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; }
 .ms-sprites { display: flex; flex-wrap: nowrap; gap: 1px; max-width: 100%; }
