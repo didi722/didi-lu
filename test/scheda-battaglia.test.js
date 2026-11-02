@@ -76,7 +76,7 @@ test('titoloVisibile: quello scelto, a meno che nella pagina pubblica la targhet
 
 // ---------- le medaglie da allenatore ----------
 test('medaglieAllenatore: il fondatore per primo, poi per livello; senza badge, niente', () => {
-    const m = SB.medaglieAllenatore({ id: 'didi', statsBadge: { maxcleanstrike: 7, maxwonstrike: 16, maxsdstrike: 8 }, lista: null }, DIP);
+    const m = SB.medaglieAllenatore({ id: 'didi', statsBadge: { maxcleanstrike: 10, maxwonstrike: 16, maxsdstrike: 10 }, lista: null }, DIP);
     assert.deepEqual(m.map(x => x.id), ['founder', 'clean', 'won', 'sd']);
     assert.deepEqual(m.map(x => x.livello), ['founder', 'platinum', 'silver', 'bronze']);
     assert.ok(m.every(x => x.nome && x.img && x.livelloNome), 'ogni medaglia ha nome, immagine e livello');
@@ -92,9 +92,9 @@ test('carica: titolo, ELO, posizione e medaglie di tutti e due; la CPU (senza id
     assert.equal(r.p1.titolo, 'Ghost Gym Leader');
     assert.equal(r.p1.elo, 1210);
     assert.equal(r.p1.posizione, '#1');
-    // le serie vengono dai match veri (sei match vinti 2-0 di fila: 6 puliti = oro per la Clean Streak), non dai numeri salvati nel profilo
+    // le serie vengono dai match veri (sei match vinti 2-0 di fila: 6 puliti = argento per la Clean Streak), non dai numeri salvati nel profilo
     // (7 puliti, 10 vittorie, 8 showdown: sbagliati di proposito)
-    assert.deepEqual(r.p1.medaglie.filter(m => ['clean', 'won', 'sd'].includes(m.id)).map(m => `${m.id}:${m.livello}`), ['clean:gold']);
+    assert.deepEqual(r.p1.medaglie.filter(m => ['clean', 'won', 'sd'].includes(m.id)).map(m => `${m.id}:${m.livello}`), ['clean:silver']);
     assert.deepEqual(r.p1.medaglie.slice(0, 2).map(m => m.id), ['founder', 'clean'], 'il fondatore per primo, poi la più alta');
     assert.equal(r.p2.titolo, '', 'Lu ha nascosto il titolo');
     assert.equal(r.p2.elo, 1100);

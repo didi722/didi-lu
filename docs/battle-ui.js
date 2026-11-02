@@ -613,6 +613,7 @@ async function preparaOnline(chiavi) {
     });
     battaglia.on('set', n => { nuovoSet(n); disegnaInfo(); ridisegnaComandi(); });
     battaglia.avvia();
+    avviaReazioni(id, funzioni);
 }
 
 // -----------------------------------------------------
@@ -695,6 +696,15 @@ async function preparaAmichevole(idSfida) {
         if (online.stato === 'conclusa') quandoScenaFerma(mostraEsitoAmichevole);
     });
     battaglia.avvia();
+    avviaReazioni(id, funzioni);
+}
+
+// Le reazioni di chi guarda (reazioni-live.js): chi guarda ha i tasti, tutti vedono le reazioni salire sul campo
+function avviaReazioni(id, funzioni) {
+    if (!window.ReazioniLive) return;
+    try {
+        window.ReazioniLive.monta(window, { db: firebase.database(), funzioni, id, puoReagire: !mioLato, barra: $('reazioni'), volo: $('reazioni-volo') });
+    } catch (e) { console.warn('Reazioni non disponibili', e); }
 }
 
 // Formato Random: del proprio team non c'è altro che la richiesta del simulatore. Le colonne dei player lo mostrano da lì (specie e

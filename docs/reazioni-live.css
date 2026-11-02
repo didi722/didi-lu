@@ -1,0 +1,50 @@
+/* Reazioni alle partite live (reazioni-live.js): i tasti per chi guarda e le reazioni che salgono sul campo.
+   Usa le variabili di style-battle.css (inchiostro, carta, bordo): stesso stile dei bottoni del simulatore. */
+
+/* i tasti, sotto la riga "You're watching live" */
+.rz-barra {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px;
+    padding: 8px 18px 16px;
+}
+.rz-barra[hidden] { display: none; }
+.rz-titolo { font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; opacity: .75; }
+.rz-tasti { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.rz-btn {
+    display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 11px 3px;
+    background: var(--carta, #fff); color: var(--inchiostro, #000); border: var(--bordo, 3px solid #000); border-radius: 0;
+    box-shadow: 3px 3px 0 var(--inchiostro, #000); cursor: pointer;
+    font: 700 .8rem 'Josefin Sans', sans-serif;
+    transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.rz-btn:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 5px 5px 0 var(--inchiostro, #000); }
+.rz-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--inchiostro, #000); }
+.rz-btn:focus-visible { outline: 3px dashed var(--inchiostro, #000); outline-offset: 3px; }
+.rz-glifo { font-size: 1.4rem; line-height: 1; }
+.rz-n { min-width: 1.4em; text-align: center; }
+.rz-premuto { animation: rz-pop .28s ease-out; }
+@keyframes rz-pop { 40% { transform: scale(1.18) rotate(-3deg); } }
+/* una reazione ogni tanto: tra una e l'altra i tasti si spengono un istante */
+.rz-attesa .rz-btn { opacity: .55; cursor: default; }
+.rz-nota { flex: 1 1 100%; min-height: 1em; text-align: center; font: 700 .7rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.rz-nota:empty { display: none; }
+
+/* le reazioni sul campo: salgono dal basso, ognuna in un punto suo, e svaniscono (non prendono i clic) */
+.rz-volo { position: absolute; inset: 0; z-index: 30; overflow: hidden; pointer-events: none; }
+.rz-vola {
+    position: absolute; bottom: 2%; font-size: 2.3rem; line-height: 1; translate: var(--rz-deriva, 0px) 0;
+    filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .35));
+    animation: rz-sali 3.2s ease-out forwards;
+}
+@keyframes rz-sali {
+    0% { bottom: 2%; opacity: 0; scale: .5; }
+    10% { opacity: 1; scale: 1.15; }
+    22% { scale: 1; }
+    80% { opacity: 1; }
+    100% { bottom: 86%; opacity: 0; }
+}
+/* chi ha chiesto meno movimento: la reazione compare ferma e svanisce */
+@media (prefers-reduced-motion: reduce) {
+    .rz-vola { bottom: 40%; animation: rz-svanisce 1.8s ease-out forwards; }
+    @keyframes rz-svanisce { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; } }
+    .rz-premuto { animation: none; }
+}
