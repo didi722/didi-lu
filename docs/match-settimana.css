@@ -1,0 +1,175 @@
+/* =====================================================================
+   MATCH DELLA SETTIMANA (home): un banner lungo e basso sotto le tre stagioni, con il set più bello di una settimana (da lunedì a domenica) e le frecce per
+   passare alle altre. Il markup è di match-settimana.js.
+   Una riga sola, larga quanto la fila delle stagioni: i due allenatori uno di fronte all'altro, il Pokémon protagonista con il motivo, il tasto del replay.
+   Sul bordo in alto: l'etichetta nera a sinistra e la settimana con le frecce a destra. Stile del sito: bordi neri spessi, ombre piene, colori degli
+   allenatori, etichette che sporgono dall'angolo.
+   Colori, ombre, angoli, rotazioni e caratteri sono quelli del tema scelto da ciascuno (temi.css: --nb-*), mai le misure. Va caricato dopo nb-pagine.css.
+   ===================================================================== */
+
+/* Le stesse misure delle tre stagioni: il banner è largo quanto la loro fila. Il gap e la larghezza di una carta sono quelli di nb-pagine.css (--nb-gap-card e
+   la larghezza di .season-card: tra 236 e 300 px) con il tetto di 280 px di style-index.css (max-width). Se si cambiano là si cambiano anche qui: lo controlla
+   test/match-settimana.test.js. */
+body.pg-index {
+    --ms-gap: clamp(26px, 3.6vw, 56px);
+    --ms-card: clamp(236px, calc((100vw - var(--nb-ads, 0px) - 60px - 2 * var(--ms-gap)) / 3), 280px);
+}
+
+.ms-sezione {
+    box-sizing: border-box;
+    width: calc(100% - var(--nb-ads, 0px));
+    margin: 0 0 0 var(--nb-ads, 0px);
+    padding: 60px 30px 36px;      /* sotto l'ombra della carta di mezzo (ingrandita del 15%) c'è posto per le etichette che sporgono */
+}
+.ms-sezione[hidden] { display: none; }
+
+/* con il banner le tre stagioni non riempiono più tutta l'altezza: stagioni e match stanno insieme, al centro della pagina */
+body.pg-index.con-match .main-wrapper { display: flex; flex-direction: column; justify-content: center; min-height: calc(100vh - 190px); }
+body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12px; padding-bottom: 0; }
+
+.ms {
+    position: relative; box-sizing: border-box; margin: 0 auto; max-width: 100%;
+    width: calc(3 * var(--ms-card) + 2 * var(--ms-gap) - 12px);     /* la fila delle tre stagioni come si vede: le carte laterali sono un po' più piccole */
+    padding: 28px 14px 11px;
+    background: radial-gradient(rgba(0, 0, 0, .08) 1.3px, transparent 1.6px) 0 0 / 14px 14px, var(--nb-carta, #fff);
+    color: var(--nb-ink, #000);
+    border: 4px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+    touch-action: pan-y;          /* il dito può scorrere di lato (settimane) senza che il browser si prenda il gesto; in verticale scorre la pagina */
+}
+.ms a { color: inherit; text-decoration: none; }
+
+/* sul bordo in alto: l'etichetta nera (a sinistra) e la settimana con le frecce (a destra) */
+.ms-t {
+    position: absolute; top: -19px; left: 18px; z-index: 3;
+    padding: 6px 14px 3px; background: var(--nb-ink, #000); color: #fff; border: 3px solid var(--nb-ink, #000);
+    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    font: 900 13px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+    rotate: calc(var(--nb-rot, 1) * -2deg);
+}
+.ms-pager {
+    position: absolute; top: -19px; right: 18px; z-index: 3; display: flex; align-items: stretch;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    rotate: calc(var(--nb-rot, 1) * 1.5deg);
+    user-select: none; -webkit-user-select: none;       /* cliccando in fretta sulle frecce non si seleziona la data */
+    overflow: hidden;                                   /* con gli angoli tondi (tema morbido) lo sfondo delle frecce non esce dal bordo */
+}
+.ms-sett { display: flex; align-items: baseline; gap: 8px; padding: 6px 13px 3px; white-space: nowrap; font: 900 13px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; }
+.ms-sett span { font-weight: 800; opacity: .65; }
+.ms-freccia {
+    display: grid; place-items: center; width: 30px; margin: 0; padding: 0; background: transparent; color: inherit; border: 0; border-radius: 0; cursor: pointer;
+    transition: background-color .1s ease, color .1s ease;
+}
+.ms-prec { border-right: 3px solid var(--nb-ink, #000); }
+.ms-succ { border-left: 3px solid var(--nb-ink, #000); }
+.ms-freccia:hover:not(:disabled), .ms-freccia:focus-visible { background: var(--nb-ink, #000); color: #fff; outline: none; }
+.ms-freccia:active:not(:disabled) { translate: 1px 1px; }
+.ms-freccia:disabled { opacity: .28; cursor: default; }
+
+/* la riga: gli allenatori, il protagonista, il replay. Cambiando settimana il contenuto entra di lato */
+.ms-corpo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ms-in-dx { animation: ms-entra-dx .22s ease-out; }
+.ms-in-sx { animation: ms-entra-sx .22s ease-out; }
+@keyframes ms-entra-dx { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes ms-entra-sx { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+
+/* i due allenatori, uno di fronte all'altro, sui loro colori; in mezzo formato e set */
+.ms-scontro { display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; min-width: 0; }
+.ms-lato {
+    position: relative; display: flex; align-items: center; gap: 9px; min-width: 0; padding: 7px 10px;
+    background: var(--c, #d9dde6); color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    rotate: calc(var(--nb-rot, 1) * -.4deg);
+}
+.ms-l2 { flex-direction: row-reverse; text-align: right; rotate: calc(var(--nb-rot, 1) * .4deg); }
+.ms-vince { box-shadow: var(--nb-sh-4, 4px 4px 0 #000); }
+.ms-win {
+    position: absolute; top: -13px; left: 10px; padding: 4px 10px 2px; background: var(--nb-ink, #000); color: #fff;
+    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    font: 900 10px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; rotate: calc(var(--nb-rot, 1) * -3deg);
+}
+.ms-l2 .ms-win { left: auto; right: 10px; rotate: calc(var(--nb-rot, 1) * 3deg); }
+.ms-av-link { flex: none; display: block; }
+.ms-av { display: block; width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000); animation: ms-saltello .8s steps(1) infinite; }
+.ms-av-vuoto { background: rgba(0, 0, 0, .15); border-radius: 50%; filter: none; animation: none; }
+.ms-testi { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.ms-l2 .ms-testi { align-items: flex-end; }
+.ms-nome-link { display: block; max-width: 100%; min-width: 0; }
+.ms-nome { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 19px/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; text-shadow: 2px 2px 0 rgba(255, 255, 255, .55); }
+.ms-sprites { display: flex; flex-wrap: nowrap; gap: 1px; max-width: 100%; }
+.ms-l2 .ms-sprites { justify-content: flex-end; }
+.ms-spr { flex: 0 1 24px; width: 24px; min-width: 10px; height: 24px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
+.ms-spr.ms-ko { filter: grayscale(1); opacity: .5; }     /* i Pokémon andati KO: spenti, restano accesi quelli che sono rimasti in piedi */
+
+.ms-centro { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 80px; max-width: 118px; text-align: center; }
+.ms-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 3px 9px 1px; background: var(--nb-ink, #000); color: #fff; font: 800 10px/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1.5deg); }
+.ms-vs { font: 900 26px/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-shadow: 3px 3px 0 rgba(0, 0, 0, .18); }
+.ms-set { font: 800 10px/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+
+/* il Pokémon protagonista (medaglione come nel Box), il motivo per cui è bello e il replay */
+.ms-prot { display: flex; align-items: center; flex: none; gap: 8px; }
+.ms-med {
+    position: relative; display: grid; place-items: center; flex: none; box-sizing: border-box; width: 44px; height: 44px;
+    background: radial-gradient(rgba(0, 0, 0, .17) 1.4px, transparent 1.7px) 0 0 / 9px 9px, var(--tipo, #cfd3dc);
+    border: 3px solid var(--nb-ink, #000); border-radius: 50%; box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+.ms-med img { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; padding: 12%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, .35)); }
+.ms-prot-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ms-banner { padding: 4px 11px 2px; background: var(--nb-ink, #000); color: #fff; font: 900 12px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; white-space: nowrap; rotate: calc(var(--nb-rot, 1) * -1.5deg); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.ms-chip { padding: 3px 9px 1px; background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); white-space: nowrap; font: 800 10px/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1deg); }
+.ms-replay {
+    flex: none; padding: 10px 15px 8px; background: var(--nb-ink, #000); color: #fff; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35));
+    font: 900 12px/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
+    rotate: calc(var(--nb-rot, 1) * 1deg); transition: translate .1s ease, box-shadow .1s ease;
+}
+.ms a.ms-replay { color: #fff; }
+.ms-replay:hover { translate: -2px -2px; box-shadow: var(--nb-sh-4-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
+.ms-replay:active { translate: 1px 1px; box-shadow: none; }
+
+@keyframes ms-saltello { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .ms-av, .ms-in-dx, .ms-in-sx { animation: none; } }
+
+/* schermi bassi (laptop, finestre non a tutto schermo): un po' più stretto, perché stagioni e banner stiano insieme senza scorrere (o quasi) */
+@media (min-width: 1051px) and (max-height: 820px) {
+    .ms-sezione { padding-top: 56px; padding-bottom: 22px; }
+}
+
+/* finestre meno larghe: il banner si stringe insieme alle stagioni (fino a 771 px). Prima si rinuncia al motivo, poi al nome del Pokémon: resta il medaglione
+   (il nome e il motivo sono nel suggerimento al passaggio del mouse). */
+@media (max-width: 1230px) {
+    .ms-chip { display: none; }
+}
+@media (max-width: 1150px) {
+    .ms-banner { display: none; }
+}
+
+/* sotto i 1050 px le stagioni vanno in colonna (nb-pagine.css): il banner sta al centro, largo quanto serve */
+@media (max-width: 1050px) {
+    .ms { width: min(100%, 760px); }
+    .ms-sezione { padding: 48px 20px 70px; }
+}
+/* schermi stretti: la riga va a capo: gli allenatori sopra, protagonista e replay sotto (qui c'è di nuovo posto per il nome e il motivo) */
+@media (max-width: 800px) {
+    .ms-sezione { padding: 44px 14px 70px; }
+    .ms-corpo { flex-wrap: wrap; justify-content: space-between; row-gap: 12px; }
+    .ms-scontro { flex-basis: 100%; }
+    .ms-prot { flex: 1 1 auto; }
+    .ms-chip, .ms-banner { display: block; }
+}
+/* telefoni: i due allenatori uno sopra l'altro, formato e set in mezzo; l'etichetta e la settimana una sotto l'altra */
+@media (max-width: 600px) {
+    .ms { padding-top: 14px; }
+    .ms-t { position: static; display: inline-block; margin: -34px 0 8px -4px; }
+    .ms-pager { position: static; justify-content: space-between; margin: 0 0 14px; rotate: none; }
+    .ms-sett { flex: 1 1 auto; justify-content: center; }
+    .ms-scontro { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .ms-centro { order: 2; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 12px; max-width: none; }
+    .ms-l2 { order: 3; }
+    .ms-corpo { justify-content: center; }
+    .ms-replay { margin: 0 auto; }
+}
+
+/* nell'app la home è il menù (menu.html): qui non serve */
+html.app-shell .ms-sezione { display: none; }

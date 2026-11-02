@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="temi.css">
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="nb-pagine.css">
+<link rel="stylesheet" href="match-settimana.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
 <link rel="stylesheet" href="formato-tooltip.css">
@@ -30,6 +31,10 @@
 <script src="statistiche.js"></script>
 <script src="mvp.js"></script>
 <script src="mvp-voto.js"></script>
+<script src="sprites/indice.js"></script>
+<script src="sprite-pkm.js"></script>
+<script src="medaglione-pkm.js"></script>
+<script src="match-settimana.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
@@ -159,6 +164,11 @@
 </a>
 
 </div>
+
+<!-- Il set più bello di una settimana, con le frecce per le altre (match-settimana.js): compare da solo quando c'è un replay -->
+<section id="match-settimana" class="ms-sezione" aria-label="Match of the week" hidden>
+    <div class="ms" id="ms-blocco"></div>
+</section>
 
 </div>
         
@@ -487,6 +497,31 @@ function contaMvpScaduti() {
         .catch(e => console.warn('MVP: stagioni scadute non contate', e));
 }
 
+// Il match della settimana: un banner con il set più bello di ogni settimana (da lunedì a domenica) e le frecce per scorrerle (match-settimana.js), con i
+// colori e gli avatar dei due allenatori. Il nodo `seasons` si rilegge a ogni cambiamento del database: il banner si ridisegna solo se cambia qualcosa
+// di ciò che mostra, e chi sta guardando una settimana vecchia ci resta.
+let matchSettimanaBanner = null;
+async function mostraMatchSettimana(data) {
+    const sezione = document.getElementById('match-settimana');
+    const blocco = document.getElementById('ms-blocco');
+    if (!sezione || !blocco || !window.MatchSettimana) return;
+    if (!matchSettimanaBanner) {
+        matchSettimanaBanner = MatchSettimana.monta(window, blocco, {
+            gif: window.SpritePkm ? s => SpritePkm.gif(s) : null,
+            leggiGiocatore: async id => {
+                const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
+                return { colore: info.color || '', avatar: info.avatar || '' };
+            }
+        });
+    }
+    let esito = null;
+    try { esito = MatchSettimana.settimane(data); } catch (e) { console.warn('Match della settimana non disponibile:', e); }
+    const ce = !!(esito && esito.elenco.length);
+    await matchSettimanaBanner.aggiorna(ce ? esito : null);
+    sezione.hidden = !(ce && blocco.firstChild);          // si mostra a banner disegnato
+    document.body.classList.toggle('con-match', !sezione.hidden);
+}
+
 function caricaStagioniHome() {
     console.log("⏳ Avvio caricamento stagioni...");
     const seasonsRef = db.ref('seasons');
@@ -501,6 +536,7 @@ function caricaStagioniHome() {
 
         datiStagioniMvp = data;
         contaMvpScaduti();
+        mostraMatchSettimana(data);
 
         const allKeys = Object.keys(data).filter(key => key === 'sbeta' || /^s\d+$/.test(key));
         allKeys.sort((a, b) => {

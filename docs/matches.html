@@ -28,6 +28,7 @@
 <script src="statistiche.js"></script>
 <script src="mvp.js"></script>
 <script src="mvp-voto.js"></script>
+<script src="medaglione-pkm.js"></script>
 <script src="riepilogo-stagione.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
@@ -920,6 +921,23 @@ async function inizializzaPaginaArchivio() {
         const col = document.querySelector('.hub-left-column');
         if (col) col.removeAttribute('data-vista');
     }
+
+    // --- 9. Link diretto a un replay: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (dal "Match of the week" della home) ---
+    apriReplayDaLink(dataShowdowns);
+}
+
+let replayDaLinkAperto = false;
+/** Apre da solo il replay chiesto nell'indirizzo (una volta sola per apertura della pagina): il set indicato, con i suoi due team e il punteggio del match */
+function apriReplayDaLink(showdowns) {
+    if (replayDaLinkAperto) return;
+    const richiesto = new URLSearchParams(window.location.search).get('replay');
+    if (!richiesto) return;
+    replayDaLinkAperto = true;
+    const [sdId, matchKey, setKey] = richiesto.split('~');
+    const match = showdowns && showdowns[sdId] && showdowns[sdId].matches && showdowns[sdId].matches[matchKey];
+    if (!match) return;
+    const jsq = t => String(t == null ? '' : t);
+    apriMatch(sdId, matchKey, jsq(match.team1), jsq(match.team2), jsq(match.p1score), jsq(match.p2score), setKey);
 }
 
 // testo sicuro dentro l'HTML della classifica (nomi e indirizzi arrivano dal database)
@@ -2710,7 +2728,7 @@ window.chiudiReplay = function() {
 
 // --- FUNZIONE APRI MATCH ---
 
-async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu) {
+async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu, setIniziale) {
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
     window.AppMusicaPausa = true;   // fermata apposta (suona il replay): la musica dell'app non deve ripartire da sola (app-musica.js)
     if (player) player.pause();
@@ -2817,7 +2835,7 @@ selector.style.height = 'auto';
                     // il colore di chi ha vinto il set è un filetto sul tasto (--vinc), non il suo sfondo
                     // un tasto per set: la lettera di chi lo ha vinto (il suo colore come filetto in basso) e, piccolo, il numero del set
                     buttonsHtml += `
-                        <button class="btn-set vincitore-${vincId}" style="--vinc: ${colorSfondo};"
+                        <button class="btn-set vincitore-${vincId}" data-set="${numSet}" style="--vinc: ${colorSfondo};"
                                 title="Set ${numSet}: won by ${winInitial}" aria-label="Set ${numSet}, won by ${winInitial}"
                                 onclick="gestisciClickReplay(this, '${infoSet.url}')">
                             <span class="set-num" aria-hidden="true">${numSet}</span>${winInitial}
@@ -2830,7 +2848,9 @@ selector.style.height = 'auto';
             adattaReplayAlloSchermo();
             
             setTimeout(() => { 
-                const firstBtn = selector.querySelector('.btn-set'); 
+                // di solito si parte dal primo set; arrivando dal "Match of the week" (?replay=...) dal set che si vuole guardare
+                const voluto = setIniziale ? selector.querySelector(`.btn-set[data-set="${String(setIniziale).replace(/\D/g, '')}"]`) : null;
+                const firstBtn = voluto || selector.querySelector('.btn-set'); 
                 if (firstBtn) firstBtn.click(); 
             }, 200);
         } else {
