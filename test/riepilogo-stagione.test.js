@@ -48,7 +48,8 @@ test('premi: solo se qualcuno li merita; a pari merito si premiano tutti (al mas
     assert.deepEqual(premi.muro.vincitori.map(v => v.id), ['bea'], 'cleo ha troppi pochi set per la media');
     assert.deepEqual(premi.pulito.vincitori.map(v => v.id), ['ada']);
     assert.equal(premi.rimonta, undefined, 'nessuno ha vinto all\'ultimo Pokémon: niente premio');
-    assert.deepEqual(premi.serie.vincitori.map(v => v.id), ['ada'], 'una serie di 4 conta, 2 no (soglia 2)');
+    assert.equal(premi.serie, undefined, 'Hot Streak non c\'è più');
+    assert.equal(premi.cambi, undefined, 'Switch Doctor non c\'è più');
     assert.equal(premi.collezione, undefined, 'senza team niente premi sui Pokémon');
 });
 
@@ -244,7 +245,7 @@ test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe
 });
 
 test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e MVP e formati hanno le loro', () => {
-    for (const f of ['eject-button.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
+    for (const f of ['poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
     }
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-gold.png')), 'il fiocco Season MVP dorato');
@@ -252,10 +253,8 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const riep = R.calcola(dati(g));
     const premi = Object.fromEntries(riep.premi.map(x => [x.id, x]));
     assert.equal(premi.elo.immagine.src, 'immagini/riepilogo/rare-candy.png');
-    assert.equal(premi.cambi.immagine.src, 'immagini/riepilogo/eject-button.png');
     const h = R.html(riep);
     assert.match(h, /<span class="rs-icona" aria-hidden="true"><img src="immagini\/riepilogo\/rare-candy\.png"/);
-    assert.match(h, /<span class="rs-icona" aria-hidden="true"><img src="immagini\/riepilogo\/eject-button\.png"/);
     assert.match(h, /onerror="this\.onerror=null;this\.src='immagini\/riepilogo\/poke-ball\.png'"/, 'la palla è la riserva');
     // l'MVP ha il fiocco "Season MVP" come adesivo, i migliori di ogni formato l'exp share nell'etichetta
     const mvp = { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'ada', voti: 1 } } } };
@@ -264,7 +263,7 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-gold\.png"/);
     assert.match(completo, /<span class="rs-t">BEST OF EACH FORMAT<\/span>/, 'senza immagine nell\'etichetta');
     // ogni premio ha la sua immagine; senza, resta l'emoji
-    for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['serie', 'flame-orb.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
+    for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
         assert.ok(leggi('riepilogo-stagione.js').includes(`${id}: { src: \`\${IMG}${file}\` }`), `${id} -> ${file}`);
     }
     const senzaImmagine = { ...riep, premi: [{ ...riep.premi[0], immagine: null, icona: '🔥' }] };

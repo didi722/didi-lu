@@ -42,9 +42,7 @@
         muro: { src: `${IMG}assault-vest.png` },
         pulito: { src: `${IMG}focus-sash.png` },
         rimonta: { src: `${IMG}focus-band.png` },
-        serie: { src: `${IMG}flame-orb.png` },
         elo: { src: `${IMG}rare-candy.png` },
-        cambi: { src: `${IMG}eject-button.png` },
         sfortuna: { src: `${IMG}destiny-knot.png` },
         collezione: { src: `${IMG}poke-ball.png` },
         sorpresa: { src: `${IMG}scope-lens.png` }
@@ -60,7 +58,7 @@
     };
     const nomePokeApi = specie => String(specie || '').toLowerCase().trim().replace(/ /g, '-').replace(/[.'é’%]/g, '').replace(/-?\*$/, '');
 
-    const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro, il cambio...)
+    const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro...)
     const MAX_PARI = 3;             // a pari merito si premiano al più tanti allenatori
 
     /** Come nella classifica della pagina (risultati-match.js): punti, match vinti, set vinti, poi il nome */
@@ -116,11 +114,7 @@
               valore: v => `${v} per set` },
             { id: 'pulito', icona: '✨', titolo: 'Flawless', testo: 'Most sets won without losing a Pokémon', calc: () => migliori(g, x => num(x.ko && x.ko.setPerfetti)), valore: v => `${v} sets` },
             { id: 'rimonta', icona: '💪', titolo: 'Never Say Die', testo: 'Most sets won on the last Pokémon', calc: () => migliori(g, x => num(x.ko && x.ko.setAlLimite)), valore: v => `${v} sets` },
-            { id: 'serie', icona: '🔥', titolo: 'Hot Streak', testo: 'Longest winning streak (matches)', calc: () => migliori(g, x => num(x.serie && x.serie.vittorieMax), { soglia: 2 }), valore: v => `${v} in a row` },
             { id: 'elo', icona: '📈', titolo: 'Elo Climber', testo: 'Biggest Elo gain', calc: () => migliori(g, x => num(x.eloDelta)), valore: v => `+${v} Elo` },
-            { id: 'cambi', icona: '🔄', titolo: 'Switch Doctor', testo: 'Most switches per set',
-              calc: () => migliori(g, x => uno(num(x.azioni && x.azioni.cambi) / Math.max(1, num(x.azioni && x.azioni.setConDati))), { soglia: 0, vale: x => num(x.azioni && x.azioni.setConDati) >= MIN_SET }),
-              valore: v => `${v} per set` },
             { id: 'sfortuna', icona: '💔', titolo: 'Heartbreaker', testo: 'Most matches lost by a single set',
               calc: () => migliori(g, x => num(extra.persiPerUno[idDi(x.id)]), { soglia: 1 }), valore: v => `${v} matches` }
         ];
