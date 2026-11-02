@@ -26,6 +26,15 @@
     const coloreSicuro = (c, vuoto) => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : vuoto);
     const uno = n => Math.round(n * 10) / 10;
 
+    // Il trofeo della stagione, per tipo (gli stessi PNG di tipo-stagione.js: TIPI[tipo].icona; la league è colorata con il colore del campione)
+    const TROFEI = { league: 'immagini/season-winner.png', monoformat: 'immagini/coppa-monoformat.png', random: 'immagini/coppa-random.png', cup: 'immagini/coppa-cup.png' };
+    const TROFEO_COLORE = 'immagini/season-winner-color.png';     // la sagoma da colorare (league)
+    const trofeoDi = info => {
+        const t = idDi(info && info.tipo);
+        const tipo = TROFEI[t] ? t : 'league';       // le prime stagioni non hanno tipo: sono league; la beta non dà trofei, ma qui ne serve uno
+        return { tipo, icona: tipo === 'cup' && info && info.icona ? String(info.icona) : TROFEI[tipo] };
+    };
+
     const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro, il cambio...)
     const MAX_PARI = 3;             // a pari merito si premiano al più tanti allenatori
 
@@ -167,7 +176,7 @@
 
         const usate = {};
         for (const m of r.pokemon || []) if (num(m.portato) > 0) { const k = m.specieId; usate[k] = usate[k] || { specie: m.specie, set: 0 }; usate[k].set += num(m.portato); }
-        const piuUsati = Object.values(usate).sort((a, b) => b.set - a.set || a.specie.localeCompare(b.specie)).slice(0, 5);
+        const piuUsati = Object.values(usate).sort((a, b) => b.set - a.set || a.specie.localeCompare(b.specie)).slice(0, 3);
 
         const date = valori(dati.showdowns).map(sd => String((sd && sd.info && sd.info.data) || '')).filter(Boolean).sort();
         const koTotali = giocatori.reduce((s, x) => s + num(x.ko && x.ko.fatti), 0);
@@ -176,7 +185,7 @@
             id: String(info.id || ''), nome: String(info.name || info.nome || r.stagioni && r.stagioni[0] && r.stagioni[0].nome || 'Season'),
             formati: nomiFormati, dal: date[0] || '', al: date[date.length - 1] || '',
             numeri: { showdown: num(r.totali.showdown), match: num(r.totali.match), set: num(r.totali.set), ko: koTotali, giocatori: classifica.length || giocatori.length },
-            provvisorio, vincitore, classifica, mvp, mvpInCorso, formatiMigliori: formati,
+            provvisorio, trofeo: trofeoDi(info), vincitore, classifica, mvp, mvpInCorso, formatiMigliori: formati,
             premi: costruisciPremi(r, dagliShowdown(dati.showdowns)), piuUsati
         };
     }
@@ -219,6 +228,15 @@
             + `<span class="cl-dati">SD ${c.sdVinti}-${c.sdPersi} · MATCH ${c.vinti}-${c.persi}</span></span><span class="cl-punti">${c.punti}</span></a>`;
     }
 
+    /** Il trofeo della stagione: la league è la coppa colorata con il colore del campione (come nel profilo), le altre hanno il loro PNG */
+    function htmlTrofeo(riep) {
+        const t = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
+        if (t.tipo === 'league') {
+            return `<span class="rs-trofeo" aria-hidden="true"><i class="rs-trofeo-colore" style="--c:${coloreSicuro(riep.vincitore && riep.vincitore.colore, '#cccccc')}"></i><img src="${esc(TROFEI.league)}" alt="" decoding="async"></span>`;
+        }
+        return `<span class="rs-trofeo" aria-hidden="true"><img src="${esc(t.icona)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${TROFEI.league}'"></span>`;
+    }
+
     /** Il riepilogo come HTML (tutto il testo che viene dal database è protetto). `gif(specie)` dà l'immagine animata di un Pokémon. */
     function html(riep, { gif } = {}) {
         if (!riep) return '<p class="rs-vuoto">No recap available for this season.</p>';
@@ -228,7 +246,7 @@
         const st = v && v.stat;
         const chip = (et, val) => `<div class="rs-carta rs-chip"><span>${et}</span><b>${val}</b></div>`;
         const campione = v
-            ? `<div class="rs-campione" style="--c:${coloreSicuro(v.colore, '#ffbd44')}"><div class="rs-campione-testa"><span class="rs-coppa" aria-hidden="true">${riep.provvisorio ? '🥇' : '🏆'}</span>`
+            ? `<div class="rs-campione" style="--c:${coloreSicuro(v.colore, '#d9dde6')}"><div class="rs-campione-testa">${htmlTrofeo(riep)}`
               + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(v, 'rs-grande')}</div></div>`
               + `<div class="rs-stat">${chip('Points', v.punti)}${st ? chip('Final Elo', st.elo || 'N/A') : ''}${chip('Showdowns', `${v.sdVinti} – ${v.sdPersi}`)}${chip('Matches', `${v.vinti} – ${v.persi}`)}`
               + `${st ? chip('Sets', `${st.set.vinti} – ${st.set.persi}`) + chip('Win %', st.percMatch == null ? 'N/A' : `${st.percMatch}%`) + chip('Best streak', st.serie) + chip('KOs', `${st.ko.fatti} – ${st.ko.subiti}`) : ''}</div></div>`
@@ -295,12 +313,15 @@
         const c = canvas.getContext('2d');
         try { await Promise.all([doc.fonts.load('900 40px "Josefin Sans"'), doc.fonts.load('700 28px "Montserrat"')]); } catch (e) { /* si usano i caratteri di riserva */ }
         const FT = '"Josefin Sans", "Arial Black", Arial, sans-serif', FX = '"Montserrat", Arial, sans-serif';
-        const INK = '#000', CARTA = '#fffdf6', GIALLO = '#ffbd44';
+        const INK = '#000', CARTA = '#ffffff', SFONDO = '#e6e9ef', NEUTRO = '#d9dde6';       // niente giallo: la card è bianca, nera e dei colori degli allenatori
 
-        const [avatarCampione, avatarClassifica, spriteMvp] = await Promise.all([
+        const trofeo = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
+        const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, maschera] = await Promise.all([
             caricaImmagine(win, riep.vincitore && riep.vincitore.avatar),
             Promise.all(riep.classifica.slice(0, 5).map(x => caricaImmagine(win, x.avatar))),
-            caricaImmagine(win, riep.mvp && gif ? gif(riep.mvp.specie) : '')
+            caricaImmagine(win, riep.mvp && gif ? gif(riep.mvp.specie) : ''),
+            caricaImmagine(win, trofeo.icona),
+            trofeo.tipo === 'league' ? caricaImmagine(win, TROFEO_COLORE) : Promise.resolve(null)
         ]);
 
         const testoFit = (t, x, y, maxW, px, peso, famiglia, colore, allinea = 'left') => {
@@ -322,11 +343,27 @@
         };
 
         // sfondo e carta
-        c.fillStyle = '#efe9da'; c.fillRect(0, 0, W, H);
-        c.fillStyle = 'rgba(0,0,0,.09)';
+        c.fillStyle = SFONDO; c.fillRect(0, 0, W, H);
+        c.fillStyle = 'rgba(0,0,0,.07)';
         for (let y = 8; y < H; y += 24) for (let x = 8; x < W; x += 24) { c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill(); }
         const X = 40, L = W - 80;
         riquadro(X, 36, L, H - 90, CARTA, 10, 14);
+        // il trofeo della stagione dentro un'area quadrata: la league è la coppa colorata con il colore del campione, le altre il loro PNG
+        const disegnaTrofeo = (x, y, lato, colore) => {
+            const dentro = img => { const k = Math.min(lato / img.width, lato / img.height); return [x + (lato - img.width * k) / 2, y + (lato - img.height * k) / 2, img.width * k, img.height * k]; };
+            if (!imgTrofeo) return false;
+            if (maschera) {
+                const f = doc.createElement('canvas'); f.width = lato; f.height = lato;
+                const g = f.getContext('2d');
+                g.fillStyle = colore; g.fillRect(0, 0, lato, lato);
+                g.globalCompositeOperation = 'destination-in';
+                const k = Math.min(lato / maschera.width, lato / maschera.height);
+                g.drawImage(maschera, (lato - maschera.width * k) / 2, (lato - maschera.height * k) / 2, maschera.width * k, maschera.height * k);
+                c.drawImage(f, x, y);
+            }
+            c.drawImage(imgTrofeo, ...dentro(imgTrofeo));
+            return true;
+        };
 
         // striscia nera con i tre pallini
         c.fillStyle = INK; c.fillRect(X + 5, 41, L - 10, 70);
@@ -342,11 +379,11 @@
         let y = 262;
         if (riep.vincitore) {
             const v = riep.vincitore;
-            riquadro(X + 30, y, L - 60, 150, coloreSicuro(v.colore, GIALLO), 7, 8);
-            c.font = '84px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillStyle = INK; c.fillText(riep.provvisorio ? '🥇' : '🏆', X + 56, y + 98);
+            riquadro(X + 30, y, L - 60, 150, coloreSicuro(v.colore, NEUTRO), 7, 8);
+            if (!disegnaTrofeo(X + 46, y + 20, 110, coloreSicuro(v.colore, '#cccccc'))) { c.font = '84px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillStyle = INK; c.fillText('🏆', X + 56, y + 98); }
             tondo(avatarCampione, X + 238, y + 75, 56, '#fff');
             c.fillStyle = INK; c.fillRect(X + 326, y + 18, 214, 34);
-            testoFit(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION', X + 338, y + 44, 190, 23, 900, FT, GIALLO);
+            testoFit(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION', X + 338, y + 44, 190, 23, 900, FT, '#fff');
             testoFit(String(v.nome).toUpperCase(), X + 326, y + 100, L - 60 - 310, 54, 900, FT, INK);
             testoFit(`${v.punti} pts · ${v.vinti}W ${v.persi}L · SD ${v.sdVinti}-${v.sdPersi}${v.stat ? ` · ${v.stat.percMatch == null ? '' : `${v.stat.percMatch}% · `}Elo ${v.stat.elo || 'N/A'}` : ''}`, X + 326, y + 132, L - 60 - 310, 23, 700, FX, 'rgba(0,0,0,.75)');
             y += 150 + 24;
@@ -356,8 +393,8 @@
         riep.classifica.slice(0, 5).forEach((r, i) => {
             const ry = y + i * 68;
             riquadro(X + 30, ry, L - 60, 60, coloreSicuro(r.colore, '#8a8a8a'), 5, 5);
-            c.fillStyle = i === 0 ? GIALLO : INK; c.fillRect(X + 44, ry + 12, 62, 36);
-            testoFit(`#${r.posizione}`, X + 75, ry + 39, 56, 26, 900, FT, i === 0 ? INK : '#fff', 'center');
+            c.fillStyle = INK; c.fillRect(X + 44, ry + 12, 62, 36);
+            testoFit(`#${r.posizione}`, X + 75, ry + 39, 56, 26, 900, FT, '#fff', 'center');
             tondo(avatarClassifica[i], X + 150, ry + 30, 22, '#fff');
             testoFit(String(r.nome).toUpperCase(), X + 192, ry + 39, 430, 30, 900, FT, INK);
             testoFit(`${r.vinti}W ${r.persi}L`, X + 790, ry + 39, 130, 24, 800, FX, INK, 'right');
@@ -371,7 +408,7 @@
             riquadro(X + 30, y, L - 60, 116, '#fff', 6, 6);
             if (spriteMvp) { const k = Math.min(110 / spriteMvp.width, 110 / spriteMvp.height, 3); c.drawImage(spriteMvp, X + 70, y + 58 - spriteMvp.height * k / 2, spriteMvp.width * k, spriteMvp.height * k); }
             c.fillStyle = INK; c.fillRect(X + 190, y + 14, 150, 30);
-            testoFit('SEASON MVP', X + 202, y + 37, 130, 20, 900, FT, GIALLO);
+            testoFit('SEASON MVP', X + 202, y + 37, 130, 20, 900, FT, '#fff');
             testoFit(String(riep.mvp.specie).toUpperCase(), X + 190, y + 80, L - 60 - 180, 40, 900, FT, INK);
             testoFit(`${riep.mvp.team} · ${riep.mvp.player} · ${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}`, X + 190, y + 106, L - 60 - 180, 20, 700, FX, 'rgba(0,0,0,.7)');
             y += 116 + 20;

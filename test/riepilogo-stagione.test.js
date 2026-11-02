@@ -181,3 +181,30 @@ test('sul sito, vedendo il riepilogo la classifica a lato sparisce; nell\'app re
     const css = leggi('riepilogo-stagione.css');
     assert.match(css, /html:not\(\.app-shell\) \.hub-main-layout\.rs-solo-riepilogo \.hub-right-column \{ display: none; \}/);
 });
+
+test('trofeo: il PNG del tipo di stagione (come in tipo-stagione.js), la league colorata con il colore del campione; i Pokémon più usati sono tre', () => {
+    const TipoStagione = require('../docs/tipo-stagione.js');
+    for (const tipo of ['league', 'monoformat', 'random', 'cup']) {
+        const riep = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 'x', name: 'X', status: 'closed', tipo } }));
+        assert.equal(riep.trofeo.tipo, tipo);
+        assert.equal(riep.trofeo.icona, TipoStagione.TIPI[tipo].icona, `${tipo}: stesso PNG di tipo-stagione.js`);
+    }
+    const cup = R.calcola(dati([giocatore('ada')], { info: { id: 'c', name: 'C', status: 'closed', tipo: 'cup', icona: 'immagini/coppa-natale.png' } }));
+    assert.equal(cup.trofeo.icona, 'immagini/coppa-natale.png', 'una cup può avere la sua icona');
+    const senzaTipo = R.calcola(dati([giocatore('ada')]));
+    assert.equal(senzaTipo.trofeo.tipo, 'league', 'le prime stagioni non hanno il tipo: sono league');
+    const h = R.html(R.calcola(dati([giocatore('ada', { colore: '#aa00cc' }), giocatore('bea', { colore: '#aa00cc' })])));
+    assert.match(h, /class="rs-trofeo-colore" style="--c:#aa00cc"/);
+    assert.doesNotMatch(h, /🥇|🏆/, 'niente emoji al posto del trofeo');
+    const p = Array.from({ length: 6 }, (_, i) => ({ chiave: `a::t::${i}`, player: 'ada', specie: `Mon${i}`, specieId: `mon${i}`, portato: 10 - i, koFatti: 1, formato: 'OU' }));
+    const tre = R.calcola(dati([giocatore('ada'), giocatore('bea')], { risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: [giocatore('ada'), giocatore('bea')], pokemon: p, formati: ['OU'], stagioni: [] } }));
+    assert.equal(tre.piuUsati.length, 3);
+});
+
+test('estetica: le etichette nere hanno il testo bianco (non giallo) e la card immagine non usa il giallo', () => {
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /\.rs-etichetta \{[^}]*background: var\(--nb-ink, #000\); color: #fff;/);
+    const js = leggi('riepilogo-stagione.js');
+    assert.doesNotMatch(js, /GIALLO\b|ffbd44/, 'la card non usa il giallo');
+    assert.match(js, /testoFit\(riep\.provvisorio \? 'CURRENT LEADER' : 'CHAMPION', X \+ 338, y \+ 44, 190, 23, 900, FT, '#fff'\)/);
+});
