@@ -110,17 +110,39 @@ test('app: la stagione chiusa ha il tag Recap davanti agli altri, e un tag scono
     assert.equal(AppMatches.tabValido('rc', false), 'sd', 'senza riepilogo il tag non esiste');
 });
 
-test('estetica: stesse finestre e righe della classifica del sito (seguono il tema di ognuno), pannelli scuri nell\'app', () => {
-    const riep = R.calcola(dati([giocatore('ada'), giocatore('bea')]));
+test('struttura a blocchi: apertura, campione | MVP, classifica | colonna, premi; le righe sono quelle della classifica del sito', () => {
+    const mvp = { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'ada', voti: 2 } } } };
+    const p = Array.from({ length: 3 }, (_, i) => ({ chiave: `ada::t::${i}`, player: 'ada', playerNome: 'ADA', specie: `Mon${i}`, specieId: `mon${i}`, portato: 9 - i, koFatti: 4, formato: 'OU', team: 'T' }));
+    const g = [giocatore('ada'), giocatore('bea')];
+    const riep = R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } }));
     const h = R.html(riep, {});
-    assert.match(h, /class="cl-finestra rs-sez/);
-    assert.match(h, /class="cl-barra"><span class="cl-barra-titolo">FINAL STANDINGS/);
-    assert.match(h, /class="cl-riga cl-primo"[^>]*style="--cl-colore:/);
+    for (const blocco of ['rs-b rs-hero', 'rs-b rs-campione rs-s8', 'rs-b rs-mvp rs-s4', 'rs-b rs-classifica rs-s5', 'rs-colonna rs-s7', 'rs-b rs-formati', 'rs-b rs-usati', 'rs-b rs-premi rs-s12']) assert.ok(h.includes(blocco), blocco);
+    assert.match(h, /class="cl-riga cl-primo"[^>]*style="--cl-colore:/, 'righe della classifica del sito');
+    assert.doesNotMatch(h, /cl-finestra/, 'niente più finestre una sotto l\'altra');
+    // senza MVP il campione prende tutta la riga, senza Pokémon la classifica pure
+    const senza = R.html(R.calcola(dati(g)));
+    assert.ok(senza.includes('rs-b rs-campione rs-s12'));
+    assert.ok(senza.includes('rs-b rs-classifica rs-s12'));
+    assert.doesNotMatch(senza, /rs-colonna/);
     const css = leggi('riepilogo-stagione.css');
-    // i colori, le ombre, gli angoli e le rotazioni sono quelli del tema (--nb-*), non fissi
-    for (const v of ['--nb-ink', '--nb-carta', '--nb-sh-s', '--nb-raggio', '--nb-rot', '--nb-font-titoli']) assert.ok(css.includes(v), v);
-    assert.match(css, /html\.app-shell \.rs \.cl-finestra \{ background: radial-gradient/);
-    assert.match(css, /\.rs a\.cl-riga \{ color: #000; \}/);
+    assert.match(css, /grid-template-columns: repeat\(12, minmax\(0, 1fr\)\)/);
+    for (const col of ['rs-s4', 'rs-s5', 'rs-s7', 'rs-s8', 'rs-s12']) assert.ok(css.includes(`.${col} {`), col);
+    // nell'app la griglia non cambia col pixel dello schermo: le regole per lo schermo stretto valgono solo sul sito
+    const strette = css.match(/@media \(max-width: \d+px\) \{[\s\S]*?\n\}/g) || [];
+    assert.ok(strette.length >= 2);
+    for (const m of strette) assert.ok(!/^\s{4}\.rs/m.test(m), 'ogni regola per lo schermo stretto è limitata a html:not(.app-shell)');
+});
+
+test('estetica: i colori, le ombre, gli angoli, le rotazioni e i caratteri sono quelli del tema di ognuno; niente giallo', () => {
+    const css = leggi('riepilogo-stagione.css');
+    for (const v of ['--nb-ink', '--nb-carta', '--nb-sh-s', '--nb-sh-m', '--nb-raggio', '--nb-rot', '--nb-font-titoli', '--nb-spaziatura']) assert.ok(css.includes(v), v);
+    assert.doesNotMatch(css, /--nb-giallo|--gx-giallo|ffbd44|ffde4d|ffd34d|#ff[ce][0-9a-f]{3}\b/i, 'nessun giallo nel riepilogo');
+    assert.match(css, /\.rs \.cl-primo \.cl-pos \{ background: var\(--rs-ink\); color: #fff;/, 'la posizione #1 non è gialla');
+    // le etichette nere che sporgono dall'angolo hanno il testo bianco
+    assert.match(css, /\.rs-t \{[^}]*background: var\(--rs-ink\); color: #fff;/);
+    assert.match(css, /\.rs-scelta button\.su \{ background: var\(--nb-ink, #000\); color: #fff; \}/, 'il tasto acceso non è giallo');
+    // nell'app: misure in --u e angoli arrotondati come le altre schede del gioco
+    assert.match(css, /html\.app-shell \.rs \{[^}]*--rs-u: var\(--u\); --rs-raggio: calc\(10 \* var\(--u\)\)/);
 });
 
 test('anteprima: una stagione non chiusa si chiama "leader" e non "campione"', () => {
@@ -151,8 +173,10 @@ test('il campione ha gli stessi numeri della sua scheda in /stats (Elo, % vittor
     const riep = R.calcola(dati([giocatore('ada'), lukiani]));
     assert.deepEqual(riep.vincitore.stat, { elo: 1160, percMatch: 80.6, set: { vinti: 79, persi: 29 }, ko: { fatti: 365, subiti: 253 }, serie: 15 });
     const h = R.html(riep);
-    for (const t of ['Elo', 'Win %', 'Best streak', '1160', '80.6%', '79 – 29', '365 – 253']) assert.ok(h.includes(t), t);
-    assert.match(h, /WHOLE LEAGUE/);
+    for (const t of ['Final Elo', 'Win %', 'Best streak', '1160', '80.6%']) assert.ok(h.includes(t), t);
+    assert.match(h, /<b class="v">79<\/b><i>–<\/i><b class="p">29<\/b>/, 'set vinti e persi');
+    assert.match(h, /<b class="v">365<\/b><i>–<\/i><b class="p">253<\/b>/, 'KO fatti e subiti');
+    assert.match(h, /aria-label="Whole league"/, 'i totali della lega stanno a parte, nell\'apertura');
 });
 
 test('Elo del campione: quello a fine stagione (ultimo match di quella stagione), non il ranking di oggi', () => {
@@ -171,7 +195,7 @@ test('Elo del campione: quello a fine stagione (ultimo match di quella stagione)
     const poche = Statistiche.calcola({ seasons: { sB, sA: { ...sA, showdowns: { s1: sA.showdowns.s1 } } }, players }, { stagione: 'sA' });
     const r2 = R.calcola({ risultato: poche, info: sA.info, leaderboard: { ada: { points: 2, won: 1, lost: 0, setW: 3, sdWon: 1, sdLost: 0 } }, showdowns: { s1: sA.showdowns.s1 } });
     assert.equal(r2.vincitore.stat.elo, 0);
-    assert.match(R.html(r2), /Final Elo<\/span><b>N\/A/);
+    assert.match(R.html(r2), /Final Elo<\/span><span class="rs-dato-va">N\/A/);
 });
 
 test('sul sito, vedendo il riepilogo la classifica a lato sparisce; nell\'app resta com\'è (i tag in alto)', () => {
@@ -182,31 +206,33 @@ test('sul sito, vedendo il riepilogo la classifica a lato sparisce; nell\'app re
     assert.match(css, /html:not\(\.app-shell\) \.hub-main-layout\.rs-solo-riepilogo \.hub-right-column \{ display: none; \}/);
 });
 
-test('trofeo: il PNG del tipo di stagione (come in tipo-stagione.js), la league colorata con il colore del campione; i Pokémon più usati sono tre', () => {
+test('trofeo: il PNG del tipo di stagione (la league ha la coppa standard con i fiocchi blu e rosso); i Pokémon più usati sono tre', () => {
     const TipoStagione = require('../docs/tipo-stagione.js');
     for (const tipo of ['league', 'monoformat', 'random', 'cup']) {
         const riep = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 'x', name: 'X', status: 'closed', tipo } }));
         assert.equal(riep.trofeo.tipo, tipo);
-        assert.equal(riep.trofeo.icona, TipoStagione.TIPI[tipo].icona, `${tipo}: stesso PNG di tipo-stagione.js`);
+        // la league è l'unica che qui non usa la stessa immagine del profilo (season-winner.png, che nel profilo si colora)
+        assert.equal(riep.trofeo.icona, tipo === 'league' ? 'immagini/season-winner-color.png' : TipoStagione.TIPI[tipo].icona, tipo);
+        assert.match(R.html(riep), new RegExp(`class="rs-trofeo" aria-hidden="true"><img src="${riep.trofeo.icona.replace(/[.]/g, '\\.')}"`));
     }
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'season-winner-color.png')), 'la coppa standard con i fiocchi blu e rosso');
     const cup = R.calcola(dati([giocatore('ada')], { info: { id: 'c', name: 'C', status: 'closed', tipo: 'cup', icona: 'immagini/coppa-natale.png' } }));
     assert.equal(cup.trofeo.icona, 'immagini/coppa-natale.png', 'una cup può avere la sua icona');
     const senzaTipo = R.calcola(dati([giocatore('ada')]));
     assert.equal(senzaTipo.trofeo.tipo, 'league', 'le prime stagioni non hanno il tipo: sono league');
     const h = R.html(R.calcola(dati([giocatore('ada', { colore: '#aa00cc' }), giocatore('bea', { colore: '#aa00cc' })])));
-    assert.match(h, /class="rs-trofeo-colore" style="--c:#aa00cc"/);
+    assert.doesNotMatch(h, /rs-trofeo-colore/, 'la coppa non si colora più con il colore del campione');
     assert.doesNotMatch(h, /🥇|🏆/, 'niente emoji al posto del trofeo');
     const p = Array.from({ length: 6 }, (_, i) => ({ chiave: `a::t::${i}`, player: 'ada', specie: `Mon${i}`, specieId: `mon${i}`, portato: 10 - i, koFatti: 1, formato: 'OU' }));
     const tre = R.calcola(dati([giocatore('ada'), giocatore('bea')], { risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: [giocatore('ada'), giocatore('bea')], pokemon: p, formati: ['OU'], stagioni: [] } }));
     assert.equal(tre.piuUsati.length, 3);
 });
 
-test('estetica: le etichette nere hanno il testo bianco (non giallo) e la card immagine non usa il giallo', () => {
-    const css = leggi('riepilogo-stagione.css');
-    assert.match(css, /\.rs-etichetta \{[^}]*background: var\(--nb-ink, #000\); color: #fff;/);
+test('la card immagine non usa il giallo e disegna il trofeo come PNG (senza maschera di colore)', () => {
     const js = leggi('riepilogo-stagione.js');
     assert.doesNotMatch(js, /GIALLO\b|ffbd44/, 'la card non usa il giallo');
     assert.match(js, /testoFit\(riep\.provvisorio \? 'CURRENT LEADER' : 'CHAMPION', X \+ 338, y \+ 44, 190, 23, 900, FT, '#fff'\)/);
+    assert.doesNotMatch(js, /maschera|TROFEO_COLORE|destination-in/, 'niente più coppa colorata');
 });
 
 test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe sul body; app: tag Recap)', () => {
@@ -217,26 +243,30 @@ test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe
     assert.match(css, /html\.app-shell\[data-mt="rc"\][^{]*#btn-mvp[^{]*\{ display: none !important; \}/);
 });
 
-test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e i titoli MVP e formati hanno la loro', () => {
-    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
+test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e MVP e formati hanno le loro', () => {
+    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
     }
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-bronze.png')), 'il fiocco Season MVP');
     const g = [giocatore('ada', { eloDelta: 30, azioni: { setConDati: 30, cambi: 30 } }), giocatore('bea')];
-    const premi = Object.fromEntries(R.calcola(dati(g)).premi.map(x => [x.id, x]));
+    const riep = R.calcola(dati(g));
+    const premi = Object.fromEntries(riep.premi.map(x => [x.id, x]));
     assert.equal(premi.elo.immagine.src, 'immagini/riepilogo/rare-candy.png');
     assert.equal(premi.cambi.immagine.src, 'immagini/riepilogo/eject-button.png');
-    const h = R.html(R.calcola(dati(g)));
-    assert.match(h, /class="rs-icona-img" src="immagini\/riepilogo\/rare-candy\.png"/);
-    assert.match(h, /class="rs-icona-img" src="immagini\/riepilogo\/eject-button\.png"/);
+    const h = R.html(riep);
+    assert.match(h, /<span class="rs-icona" aria-hidden="true"><img src="immagini\/riepilogo\/rare-candy\.png"/);
+    assert.match(h, /<span class="rs-icona" aria-hidden="true"><img src="immagini\/riepilogo\/eject-button\.png"/);
     assert.match(h, /onerror="this\.onerror=null;this\.src='immagini\/riepilogo\/poke-ball\.png'"/, 'la palla è la riserva');
-    const conMvp = R.html(R.calcola(dati(g, { mvp: { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'Ada', voti: 1 } } } } })));
-    assert.match(conMvp, /rs-titolo-img" src="immagini\/ribbon-mvp-bronze\.png"[^>]*> SEASON MVP/);
-    // un premio senza immagine mantiene la sua emoji
-    const rimonta = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 0, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 9 } }), giocatore('bea')])));
-    assert.match(rimonta, /immagini\/riepilogo\/focus-band\.png/, 'Never Say Die: la bandana con le fiamme');
-    const serie = R.html(R.calcola(dati([giocatore('ada', { serie: { vittorieMax: 6 } }), giocatore('bea')])));
-    assert.match(serie, /immagini\/riepilogo\/flame-orb\.png/, 'Hot Streak: il flame-orb');
-    const ko = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 40, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 0 } }), giocatore('bea')])));
-    assert.match(ko, /immagini\/riepilogo\/choice-band\.webp/);
+    // l'MVP ha il fiocco "Season MVP" come adesivo, i migliori di ogni formato l'exp share nell'etichetta
+    const mvp = { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'ada', voti: 1 } } } };
+    const p = [{ chiave: 'ada::t::0', player: 'ada', playerNome: 'ADA', specie: 'Gengar', specieId: 'gengar', portato: 5, koFatti: 3, formato: 'OU', team: 'T' }];
+    const completo = R.html(R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } })));
+    assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-bronze\.png"/);
+    assert.match(completo, /rs-t-img" src="immagini\/riepilogo\/exp-share\.png"[^>]*>BEST OF EACH FORMAT/);
+    // ogni premio ha la sua immagine; senza, resta l'emoji
+    for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['serie', 'flame-orb.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
+        assert.ok(leggi('riepilogo-stagione.js').includes(`${id}: { src: \`\${IMG}${file}\` }`), `${id} -> ${file}`);
+    }
+    const senzaImmagine = { ...riep, premi: [{ ...riep.premi[0], immagine: null, icona: '🔥' }] };
+    assert.match(R.html(senzaImmagine), /<span class="rs-icona-emoji">🔥<\/span>/);
 });

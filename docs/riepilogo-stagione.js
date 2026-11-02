@@ -26,9 +26,9 @@
     const coloreSicuro = (c, vuoto) => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : vuoto);
     const uno = n => Math.round(n * 10) / 10;
 
-    // Il trofeo della stagione, per tipo (gli stessi PNG di tipo-stagione.js: TIPI[tipo].icona; la league è colorata con il colore del campione)
-    const TROFEI = { league: 'immagini/season-winner.png', monoformat: 'immagini/coppa-monoformat.png', random: 'immagini/coppa-random.png', cup: 'immagini/coppa-cup.png' };
-    const TROFEO_COLORE = 'immagini/season-winner-color.png';     // la sagoma da colorare (league)
+    // Il trofeo della stagione, per tipo (gli stessi PNG di tipo-stagione.js: TIPI[tipo].icona). Per la league (Sant'Alvise) è la coppa standard con i fiocchi blu e rosso
+    // (season-winner-color.png), non quella che nel profilo si colora con il colore dell'allenatore (season-winner.png).
+    const TROFEI = { league: 'immagini/season-winner-color.png', monoformat: 'immagini/coppa-monoformat.png', random: 'immagini/coppa-random.png', cup: 'immagini/coppa-cup.png' };
     const trofeoDi = info => {
         const t = idDi(info && info.tipo);
         const tipo = TROFEI[t] ? t : 'league';       // le prime stagioni non hanno tipo: sono league; la beta non dà trofei, ma qui ne serve uno
@@ -163,7 +163,7 @@
             return { posizione: i + 1, id: idDi(v.name), nome: p.nome || v.name, colore: p.colore || '', avatar: p.avatar || '', punti: num(v.points), vinti: num(v.won), persi: num(v.lost), sdVinti: num(v.sdWon), sdPersi: num(v.sdLost) };
         });
         // provvisorio: la stagione non è chiusa (anteprima con ?riepilogo=1): il "campione" è chi guida la classifica
-        const provvisorio = String(info.status || '').toLowerCase() !== 'closed';
+        const provvisorio = !['closed', 'terminata'].includes(String(info.status || '').toLowerCase().trim());
         const idVincitore = (provvisorio ? '' : idDi(info.winner)) || (classifica[0] ? classifica[0].id : '');
         const base = classifica.find(x => x.id === idVincitore) || null;
         // i numeri del campione sono quelli della sua scheda in /stats (stessa fonte: Statistiche.calcola). Con la stagione scelta l'Elo è quello a FINE STAGIONE
@@ -182,14 +182,15 @@
         // MVP: il risultato dello spoglio, se c'è già; altrimenti, se ci sono voti, "si sta ancora votando"
         const mvpNodo = (dati && dati.mvp) || {};
         const mv = valori(mvpNodo.risultato && mvpNodo.risultato.vincitori).filter(Boolean)[0] || null;
-        const mvp = mv ? { specie: String(mv.specie || ''), team: String(mv.team || ''), player: String(mv.player || ''), voti: num(mv.voti) } : null;
+        const proprietario = mv ? colori.get(idDi(mv.player)) : null;       // di chi è il Pokémon: il suo nome e il suo colore
+        const mvp = mv ? { specie: String(mv.specie || ''), team: String(mv.team || ''), player: String((proprietario && proprietario.nome) || mv.player || ''), colore: (proprietario && proprietario.colore) || '', voti: num(mv.voti) } : null;
         const mvpInCorso = !mvp && !!mvpNodo.voti;
 
         const formati = [];
         const nomiFormati = Array.isArray(info.selected_formats) && info.selected_formats.length ? info.selected_formats : (r.formati || []);
         for (const f of nomiFormati) {
             const top = Mvp && Mvp.classifica ? Mvp.classifica((r.pokemon || []).filter(m => m.formato === f), 1)[0] : null;
-            if (top) formati.push({ formato: f, specie: top.specie, team: top.team, player: top.playerNome || top.player, koFatti: num(top.ko), set: num(top.presenze) });
+            if (top) formati.push({ formato: f, specie: top.specie, team: top.team, player: top.playerNome || top.player, colore: top.colore || '', koFatti: num(top.ko), set: num(top.presenze) });
         }
 
         const usate = {};
@@ -221,26 +222,32 @@
     }
 
     // -----------------------------------------------------
-    // Come si vede: le stesse finestre e le stesse righe della classifica del sito (classifica.css: .cl-finestra, .cl-riga...), quindi il riepilogo
-    // segue il tema scelto da ognuno (temi.css); nell'app, dove l'aspetto è quello del gioco, le finestre diventano pannelli scuri (riepilogo-stagione.css)
+    // Come si vede: una pagina a BLOCCHI (griglia a 12 colonne, blocchi affiancati e di misure diverse), nello stile del sito: bordi neri, ombre piene, colori
+    // degli allenatori, etichette che sporgono dall'angolo. Colori, ombre, angoli, rotazioni e caratteri seguono il tema scelto da ciascuno (temi.css: --nb-*);
+    // nell'app le misure seguono --u (riepilogo-stagione.css). Niente giallo: gli accenti sono il nero e il colore dell'allenatore.
+    //   hero (12)            nome della stagione, trofeo, formati, numeri di tutta la lega, tasto per condividere
+    //   campione (8) | MVP (4)
+    //   classifica (5) | colonna (7): migliori di ogni formato + Pokémon più usati
+    //   premi (12)           un riquadro per premio, sul colore di chi lo ha vinto
     // -----------------------------------------------------
     const dataBreve = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : ''; };
     const linkGiocatore = nome => `public.html?player=${encodeURIComponent(String(nome || '').trim())}`;
+    const COLORE_NEUTRO = '#d9dde6';
 
-    /** L'icona di un titolo (immagine piccola davanti al testo) */
-    const iconaTitolo = src => (src ? `<img class="rs-titolo-img" src="${esc(src)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'"> ` : '');
-    const finestra = (titolo, corpo, classe = '', icona = '') => `<section class="cl-finestra rs-sez ${classe}"><div class="cl-barra"><span class="cl-barra-titolo">${iconaTitolo(icona)}${esc(titolo)}</span></div><div class="cl-corpo">${corpo}</div></section>`;
+    /** L'etichetta che sporge dall'angolo di un blocco, con (se c'è) la sua immagine davanti al testo */
+    const etichetta = (testo, icona = '') => `<span class="rs-t">${icona ? `<img class="rs-t-img" src="${esc(icona)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'">` : ''}${esc(testo)}</span>`;
 
-    function htmlPersona(p, extraClasse = '') {
-        const colore = coloreSicuro(p.colore, '#8a8a8a');
-        const faccia = p.avatar ? `<img class="rs-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="rs-avatar rs-avatar-vuoto"></span>';
-        return `<a class="rs-persona ${extraClasse}" href="${esc(linkGiocatore(p.nome))}" style="--c:${colore}">${faccia}<span class="rs-nome">${esc(p.nome)}</span></a>`;
-    }
+    const avatarImg = (p, classe) => (p.avatar
+        ? `<img class="${classe}" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+        : `<span class="${classe} rs-av-vuoto"></span>`);
 
-    const imgPkm = (specie, gif) => (gif && specie
-        ? `<img class="rs-pkm" src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
+    /** Un allenatore: avatar e nome, link alla sua pagina */
+    const htmlPersona = p => `<a class="rs-persona" href="${esc(linkGiocatore(p.nome))}" style="--c:${coloreSicuro(p.colore, COLORE_NEUTRO)}">${avatarImg(p, 'rs-av')}<span class="rs-nome">${esc(p.nome)}</span></a>`;
 
-    /** Una riga della classifica finale: la stessa di quella a lato (le classi .cl-*) */
+    const imgPkm = (specie, gif, classe = 'rs-pkm') => (gif && specie
+        ? `<img class="${classe}" src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
+
+    /** Una riga della classifica finale: la stessa di quella a lato (le classi .cl-*, classifica.css) */
     function htmlRiga(c) {
         const avatar = c.avatar ? `<img src="${esc(c.avatar)}" class="cl-avatar" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="cl-avatar cl-avatar-vuoto" aria-hidden="true"></span>';
         return `<a class="cl-riga${c.posizione === 1 ? ' cl-primo' : ''}" href="${esc(linkGiocatore(c.nome))}" style="--cl-colore:${coloreSicuro(c.colore, '#31c489')}">`
@@ -250,63 +257,93 @@
 
     /** L'icona di un premio: l'immagine se c'è (con la palla di riserva se non si carica), altrimenti l'emoji */
     function htmlIconaPremio(p) {
-        if (!p.immagine) return esc(p.icona);
-        return `<img class="rs-icona-img${p.immagine.pixel ? ' rs-pixel' : ''}" src="${esc(p.immagine.src)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'">`;
+        if (!p.immagine) return `<span class="rs-icona-emoji">${esc(p.icona)}</span>`;
+        return `<img src="${esc(p.immagine.src)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'">`;
     }
 
-    /** Il trofeo della stagione: la league è la coppa colorata con il colore del campione (come nel profilo), le altre hanno il loro PNG */
+    /** Il trofeo della stagione: il PNG del suo tipo (la league ha la coppa standard con i fiocchi blu e rosso) */
     function htmlTrofeo(riep) {
         const t = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
-        if (t.tipo === 'league') {
-            return `<span class="rs-trofeo" aria-hidden="true"><i class="rs-trofeo-colore" style="--c:${coloreSicuro(riep.vincitore && riep.vincitore.colore, '#cccccc')}"></i><img src="${esc(TROFEI.league)}" alt="" decoding="async"></span>`;
-        }
         return `<span class="rs-trofeo" aria-hidden="true"><img src="${esc(t.icona)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${TROFEI.league}'"></span>`;
     }
+
+    const vp = (v, p) => `<span class="rs-wl"><b class="v">${v}</b><i>–</i><b class="p">${p}</b></span>`;
+    const dato = (et, val, extra = '') => `<div class="rs-dato"><span class="rs-dato-et">${et}</span><span class="rs-dato-va">${val}</span>${extra}</div>`;
 
     /** Il riepilogo come HTML (tutto il testo che viene dal database è protetto). `gif(specie)` dà l'immagine animata di un Pokémon. */
     function html(riep, { gif } = {}) {
         if (!riep) return '<p class="rs-vuoto">No recap available for this season.</p>';
+        const v = riep.vincitore, st = v && v.stat;
+        const colore = coloreSicuro(v && v.colore, COLORE_NEUTRO);
         const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
         const n = riep.numeri;
-        const v = riep.vincitore;
-        const st = v && v.stat;
-        const chip = (et, val) => `<div class="rs-carta rs-chip"><span>${et}</span><b>${val}</b></div>`;
+
+        // ---- l'apertura
+        const hero = `<section class="rs-b rs-hero" style="--c:${colore}">${etichetta(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP')}`
+            + `<div class="rs-hero-trofeo">${htmlTrofeo(riep)}</div>`
+            + `<div class="rs-hero-testo"><h2 class="rs-titolo">${esc(riep.nome)}</h2>`
+            + `<div class="rs-hero-formati">${riep.formati.map(f => `<span class="rs-tag">${esc(f)}</span>`).join('')}${periodo ? `<span class="rs-periodo">${esc(periodo)}</span>` : ''}</div>`
+            + '<button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></div>'
+            + `<div class="rs-lega" aria-label="Whole league">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
+                .map(([e, x]) => `<div class="rs-lega-voce"><b>${x}</b><span>${e}</span></div>`).join('')}</div></section>`;
+
+        // ---- il campione: i numeri della sua scheda in /stats
+        const diff = st ? st.ko.fatti - st.ko.subiti : 0;
+        const dati = [dato('Points', v ? v.punti : 0)];
+        if (v) {
+            if (st) dati.push(dato('Final Elo', st.elo || 'N/A'));
+            dati.push(dato('Showdowns', vp(v.sdVinti, v.sdPersi)), dato('Matches', vp(v.vinti, v.persi)));
+            if (st) {
+                dati.push(dato('Sets', vp(st.set.vinti, st.set.persi)),
+                    dato('Win %', st.percMatch == null ? 'N/A' : `${st.percMatch}%`, st.percMatch == null ? '' : `<span class="rs-barra"><span style="width:${Math.max(0, Math.min(100, st.percMatch))}%"></span></span>`),
+                    dato('Best streak', st.serie),
+                    dato('KOs', vp(st.ko.fatti, st.ko.subiti), `<small class="rs-sub ${diff >= 0 ? 'v' : 'p'}">${diff > 0 ? '+' : ''}${diff}</small>`));
+            }
+        }
         const campione = v
-            ? `<div class="rs-campione" style="--c:${coloreSicuro(v.colore, '#d9dde6')}"><div class="rs-campione-testa">${htmlTrofeo(riep)}`
-              + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(v, 'rs-grande')}</div></div>`
-              + `<div class="rs-stat">${chip('Points', v.punti)}${st ? chip('Final Elo', st.elo || 'N/A') : ''}${chip('Showdowns', `${v.sdVinti} – ${v.sdPersi}`)}${chip('Matches', `${v.vinti} – ${v.persi}`)}`
-              + `${st ? chip('Sets', `${st.set.vinti} – ${st.set.persi}`) + chip('Win %', st.percMatch == null ? 'N/A' : `${st.percMatch}%`) + chip('Best streak', st.serie) + chip('KOs', `${st.ko.fatti} – ${st.ko.subiti}`) : ''}</div></div>`
+            ? `<section class="rs-b rs-campione ${riep.mvp || riep.mvpInCorso ? 'rs-s8' : 'rs-s12'}" style="--c:${colore}">${etichetta(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION')}`
+              + `<div class="rs-campione-testa">${avatarImg(v, 'rs-av-grande')}<div class="rs-campione-id"><a class="rs-campione-nome" href="${esc(linkGiocatore(v.nome))}">${esc(v.nome)}</a>`
+              + `<span class="rs-campione-sotto">${v.punti} pts · #${v.posizione} of ${riep.classifica.length}</span></div></div><div class="rs-dati">${dati.join('')}</div></section>`
             : '';
-        const numeri = `<span class="rs-etichetta rs-lega">WHOLE LEAGUE</span><div class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
-            .map(([e, v]) => `<div class="rs-carta rs-numero"><b>${v}</b><span>${e}</span></div>`).join('')}</div>`;
-        const intro = finestra(riep.provvisorio ? 'SEASON RECAP · PREVIEW' : 'SEASON RECAP',
-            `<h2 class="rs-titolo">${esc(riep.nome)}</h2><p class="rs-sotto">${esc(riep.formati.join(' · '))}${periodo ? ` · ${esc(periodo)}` : ''}</p>${campione}${numeri}`, 'rs-intro');
 
-        const classifica = riep.classifica.length ? finestra('FINAL STANDINGS', `<div class="rs-classifica">${riep.classifica.map(htmlRiga).join('')}</div>`) : '';
-
+        // ---- l'MVP
         const mvp = riep.mvp
-            ? finestra('SEASON MVP', `<div class="rs-mvp-corpo">${imgPkm(riep.mvp.specie, gif)}<div><b>${esc(riep.mvp.specie)}</b>`
-                + `<span>${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span>${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></div></div>`, '', IMMAGINE_MVP)
-            : riep.mvpInCorso ? finestra('SEASON MVP', '<p class="rs-nota">The votes are still being counted.</p>', '', IMMAGINE_MVP) : '';
+            ? `<section class="rs-b rs-mvp rs-s4" style="--c:${coloreSicuro(riep.mvp.colore, COLORE_NEUTRO)}">${etichetta('SEASON MVP')}<img class="rs-sticker" src="${IMMAGINE_MVP}" alt="" decoding="async">`
+              + `<div class="rs-mvp-scena">${imgPkm(riep.mvp.specie, gif, 'rs-pkm-grande')}</div><b class="rs-mvp-nome">${esc(riep.mvp.specie)}</b>`
+              + `<span class="rs-mvp-sotto">${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span class="rs-voti">${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></section>`
+            : riep.mvpInCorso
+                ? `<section class="rs-b rs-mvp rs-mvp-attesa rs-s4">${etichetta('SEASON MVP')}<img class="rs-sticker rs-sticker-grande" src="${IMMAGINE_MVP}" alt="" decoding="async"><p class="rs-nota">The votes are still being counted.</p></section>`
+                : '';
 
+        // ---- la classifica finale
+        const haColonna = riep.formatiMigliori.length || riep.piuUsati.length;
+        const classifica = riep.classifica.length
+            ? `<section class="rs-b rs-classifica ${haColonna ? 'rs-s5' : 'rs-s12'}">${etichetta('FINAL STANDINGS')}<div class="rs-righe">${riep.classifica.map(htmlRiga).join('')}</div></section>`
+            : '';
+
+        // ---- a fianco della classifica: il miglior Pokémon di ogni formato e i più usati
         const formati = riep.formatiMigliori.length
-            ? finestra('BEST OF EACH FORMAT', `<div class="rs-griglia rs-formati">${riep.formatiMigliori.map(f =>
-                `<div class="rs-carta rs-formato">${imgPkm(f.specie, gif)}<span class="rs-etichetta">${esc(f.formato)}</span><b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div>`, '', IMMAGINE_FORMATI)
+            ? `<section class="rs-b rs-formati">${etichetta('BEST OF EACH FORMAT', IMMAGINE_FORMATI)}<div class="rs-formati-lista">${riep.formatiMigliori.map(f =>
+                `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${imgPkm(f.specie, gif, 'rs-pkm')}`
+                + `<b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
             : '';
-
-        const premi = riep.premi.length
-            ? finestra('AWARDS', `<div class="rs-griglia rs-premi">${riep.premi.map(p =>
-                `<article class="rs-carta rs-premio"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span><div><b>${esc(p.titolo)}</b>`
-                + `<small>${esc(p.descrizione)}</small><div class="rs-vincitori">${p.vincitori.map(v => htmlPersona(v)).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></div></article>`).join('')}</div>`)
-            : '';
-
+        const massimo = Math.max(1, ...riep.piuUsati.map(u => u.set));
         const usati = riep.piuUsati.length
-            ? finestra('MOST USED POKÉMON', `<div class="rs-griglia rs-usati">${riep.piuUsati.map((u, i) =>
-                `<div class="rs-carta rs-usato">${imgPkm(u.specie, gif)}<span>${i + 1}. ${esc(u.specie)}</span><i>${u.set} sets</i></div>`).join('')}</div>`)
+            ? `<section class="rs-b rs-usati">${etichetta('MOST USED POKÉMON')}<div class="rs-usati-lista">${riep.piuUsati.map((u, i) =>
+                `<div class="rs-uso"><span class="rs-pos">#${i + 1}</span>${imgPkm(u.specie, gif, 'rs-pkm-piccolo')}<div class="rs-uso-testo"><b>${esc(u.specie)}</b>`
+                + `<span class="rs-barra"><span style="width:${Math.round(100 * u.set / massimo)}%"></span></span></div><i>${u.set} sets</i></div>`).join('')}</div></section>`
+            : '';
+        const colonna = haColonna ? `<div class="rs-colonna rs-s7">${formati}${usati}</div>` : '';
+
+        // ---- i premi: un riquadro ciascuno, sul colore di chi lo ha vinto
+        const premi = riep.premi.length
+            ? `<section class="rs-b rs-premi rs-s12">${etichetta('AWARDS')}<div class="rs-premi-lista">${riep.premi.map(p =>
+                `<article class="rs-premio" style="--c:${coloreSicuro(p.vincitori[0] && p.vincitori[0].colore, COLORE_NEUTRO)}"><div class="rs-premio-testa"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span>`
+                + `<div><b>${esc(p.titolo)}</b><small>${esc(p.descrizione)}</small></div></div>`
+                + `<div class="rs-vincitori">${p.vincitori.map(htmlPersona).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></article>`).join('')}</div></section>`
             : '';
 
-        return `<div class="rs">${intro}${classifica}${mvp}${formati}${premi}${usati}`
-            + `<div class="rs-azioni"><button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></div></div>`;
+        return `<div class="rs">${hero}${campione}${mvp}${classifica}${colonna}${premi}</div>`;
     }
 
     // -----------------------------------------------------
@@ -343,12 +380,11 @@
 
         const trofeo = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
         const mostrati = riep.premi.slice(0, 8);
-        const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, maschera, immaginiPremi, ballMvp] = await Promise.all([
+        const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, immaginiPremi, ballMvp] = await Promise.all([
             caricaImmagine(win, riep.vincitore && riep.vincitore.avatar),
             Promise.all(riep.classifica.slice(0, 5).map(x => caricaImmagine(win, x.avatar))),
             caricaImmagine(win, riep.mvp && gif ? gif(riep.mvp.specie) : ''),
             caricaImmagine(win, trofeo.icona),
-            trofeo.tipo === 'league' ? caricaImmagine(win, TROFEO_COLORE) : Promise.resolve(null),
             Promise.all(mostrati.map(p => caricaImmagine(win, p.immagine && p.immagine.src))),
             caricaImmagine(win, riep.mvp ? IMMAGINE_MVP : '')
         ]);
@@ -377,20 +413,11 @@
         for (let y = 8; y < H; y += 24) for (let x = 8; x < W; x += 24) { c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill(); }
         const X = 40, L = W - 80;
         riquadro(X, 36, L, H - 90, CARTA, 10, 14);
-        // il trofeo della stagione dentro un'area quadrata: la league è la coppa colorata con il colore del campione, le altre il loro PNG
-        const disegnaTrofeo = (x, y, lato, colore) => {
-            const dentro = img => { const k = Math.min(lato / img.width, lato / img.height); return [x + (lato - img.width * k) / 2, y + (lato - img.height * k) / 2, img.width * k, img.height * k]; };
+        // il trofeo della stagione dentro un'area quadrata (il PNG del tipo di stagione)
+        const disegnaTrofeo = (x, y, lato) => {
             if (!imgTrofeo) return false;
-            if (maschera) {
-                const f = doc.createElement('canvas'); f.width = lato; f.height = lato;
-                const g = f.getContext('2d');
-                g.fillStyle = colore; g.fillRect(0, 0, lato, lato);
-                g.globalCompositeOperation = 'destination-in';
-                const k = Math.min(lato / maschera.width, lato / maschera.height);
-                g.drawImage(maschera, (lato - maschera.width * k) / 2, (lato - maschera.height * k) / 2, maschera.width * k, maschera.height * k);
-                c.drawImage(f, x, y);
-            }
-            c.drawImage(imgTrofeo, ...dentro(imgTrofeo));
+            const k = Math.min(lato / imgTrofeo.width, lato / imgTrofeo.height);
+            c.drawImage(imgTrofeo, x + (lato - imgTrofeo.width * k) / 2, y + (lato - imgTrofeo.height * k) / 2, imgTrofeo.width * k, imgTrofeo.height * k);
             return true;
         };
 
@@ -409,7 +436,7 @@
         if (riep.vincitore) {
             const v = riep.vincitore;
             riquadro(X + 30, y, L - 60, 150, coloreSicuro(v.colore, NEUTRO), 7, 8);
-            if (!disegnaTrofeo(X + 46, y + 20, 110, coloreSicuro(v.colore, '#cccccc'))) { c.font = '84px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillStyle = INK; c.fillText('🏆', X + 56, y + 98); }
+            if (!disegnaTrofeo(X + 46, y + 20, 110)) { c.font = '84px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillStyle = INK; c.fillText('🏆', X + 56, y + 98); }
             tondo(avatarCampione, X + 238, y + 75, 56, '#fff');
             c.fillStyle = INK; c.fillRect(X + 326, y + 18, 214, 34);
             testoFit(riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION', X + 338, y + 44, 190, 23, 900, FT, '#fff');
