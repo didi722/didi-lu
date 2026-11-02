@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="note-team.css">
     <link rel="stylesheet" href="badge-team.css">
     <link rel="stylesheet" href="nome-scorrevole.css">
+    <link rel="stylesheet" href="reazioni-live.css">
     <link rel="stylesheet" href="tooltip.css">
 
     <script>window.exports = window;</script>
@@ -134,6 +135,8 @@
                     <div class="palco-box">
                         <section class="palco" id="palco" aria-label="Battle field">
                             <div id="campo"></div>
+                            <!-- Le reazioni di chi guarda salgono qui (reazioni-live.js) -->
+                            <div class="rz-volo" id="reazioni-volo" aria-hidden="true"></div>
                             <div class="velo" id="messaggio-palco">
                                 <p id="testo-palco">Loading the battle engine…</p>
                             </div>
@@ -167,6 +170,8 @@
                         <div class="corpo" id="corpo-p2"></div>
                     </div>
                     <p class="striscia" id="striscia-spettatore" aria-live="polite" hidden></p>
+                    <!-- I tasti delle reazioni, solo per chi guarda (reazioni-live.js) -->
+                    <div class="rz-barra" id="reazioni" aria-label="Reactions" hidden></div>
                 </section>
             </section>
 
@@ -236,6 +241,7 @@
     <script src="scheda-battaglia.js"></script>
     <script src="tooltip.js" defer></script>
     <script src="nome-scorrevole.js"></script>
+    <script src="reazioni-live.js"></script>
     <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
     <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.lato-nome, .lato-team'));</script>

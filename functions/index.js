@@ -90,6 +90,21 @@ function richiamabile(nome, opzioni = {}) {
         }
     });
 }
+// Reazioni alle partite in diretta (functions/reazioni.js): leggere è dei client, scrivere solo da qui. Leggera: niente simulatore.
+const { creaReazioni, ErroreReazione } = require('./reazioni');
+let reazioni = null;
+exports.reagisciPartita = onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 15, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    try {
+        reazioni ||= creaReazioni({ db: getDatabase() });
+        return await reazioni.reagisci(richiesta.auth.uid, richiesta.data || {});
+    } catch (e) {
+        if (e instanceof ErroreReazione) throw new HttpsError(e.codice, e.message);
+        console.error('reagisciPartita', e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+
 exports.apriPartita = richiamabile('apriPartita');
 exports.prontoPartita = richiamabile('pronto');
 exports.inviaScelta = richiamabile('inviaScelta', { minInstances: 0 });
