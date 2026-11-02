@@ -301,6 +301,14 @@
             if (formato && !squadre[chiave].formato) squadre[chiave].formato = formato;
             return squadre[chiave];
         };
+        // "Urshifu-*" (la forma nascosta del team preview) -> "Urshifu-Rapid-Strike", dal team registrato; senza una forma sola corrispondente resta com'è
+        const formaDalTeam = (specie, roster) => {
+            const s = String(specie || '');
+            if (!/-?\*$/.test(s)) return s;
+            const prefisso = s.replace(/\*$/, '').toLowerCase();
+            const forme = (roster || []).map(r => String(r.nome || '')).filter(n => n && !/\*/.test(n) && n.toLowerCase().startsWith(prefisso));
+            return forme.length === 1 ? forme[0] : s;
+        };
         // Pokémon di un team: chiave = specie + numero d'ordine se la specie è doppia
         const chiaviPokemon = (specie) => {
             const visti = {};
@@ -377,10 +385,12 @@
                     aggiungiKoSet(team.ko, st, lato);
 
                     const mioLato = st[lato];
-                    const chiavi = chiaviPokemon(valori(mioLato.pokemon).map(x => x.specie));
+                    // i set analizzati prima della correzione del server hanno ancora il segnaposto del team preview ("Urshifu-*"): la forma vera è nel team registrato
+                    const specieLato = valori(mioLato.pokemon).map(x => formaDalTeam(x.specie, team.roster));
+                    const chiavi = chiaviPokemon(specieLato);
                     const vintoSet = st.vincitore === lato;
                     valori(mioLato.pokemon).forEach((x, i) => {
-                        const m = mostro(team, chiavi[i], x.specie);
+                        const m = mostro(team, chiavi[i], specieLato[i]);
                         m.setStats++;
                         if (x.portato) {
                             scesiNelMatch.add(m);

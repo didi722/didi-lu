@@ -586,3 +586,21 @@ test('home: il banner è largo quanto la fila delle stagioni (stesse misure di n
     // sotto i 1050 px le stagioni vanno in colonna: il banner non segue più la loro fila
     assert.match(css, /@media \(max-width: 1050px\) \{\s*\.ms \{ width: min\(100%, 760px\); \}/);
 });
+
+test('badge: se il protagonista è "Urshifu-*" (forma nascosta nel team preview) si cerca la forma vera tra i Pokémon di quel team', () => {
+    const s = M.scegli(stagioni({ match1: match('2026-10-29', { set1: rimonta() }) }), { adesso: OGGI });
+    s.protagonista = { ...s.protagonista, specie: 'Urshifu-*' };
+    const cercati = [];
+    const lib = {
+        BadgeTeam: { trova: () => null, calcola: () => [], htmlMini: () => '' },
+        Fiocchi: { trova: (r, q) => { cercati.push(q.specie); return null; }, calcola: () => [], guadagnati: () => [], htmlMedaglietta: () => '' }
+    };
+    const risultato = { pokemon: [
+        { player: 'ada', team: 'Team Uno', specie: 'Urshifu-Rapid-Strike' }, { player: 'ada', team: 'Altro', specie: 'Urshifu-Single-Strike' }, { player: 'bea', team: 'Team Uno', specie: 'Urshifu-Single-Strike' }
+    ] };
+    M.badge(risultato, s, lib);
+    assert.deepEqual(cercati, ['Urshifu-Rapid-Strike'], 'solo nel team e dell\'allenatore giusti');
+    cercati.length = 0;
+    M.badge({ pokemon: [] }, s, lib);
+    assert.deepEqual(cercati, ['Urshifu-*'], 'senza una forma sola resta il segnaposto');
+});

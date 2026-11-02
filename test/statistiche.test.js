@@ -456,3 +456,22 @@ test('classificato: con meno di 3 showdown (come nel profilo) l\'allenatore è u
     assert.equal(conSd(3).classificato, true);
     assert.equal(require('../docs/statistiche.js').MIN_SD_CLASSIFICA, 3);
 });
+
+// ---------- la forma nascosta del team preview ("Urshifu-*") ----------
+test('"Urshifu-*" nei set salvati si riconosce dal team registrato: lo stesso Pokémon, non uno in più', () => {
+    const base = calcola(dati).pokemon.filter(p => p.player === 'didi' && p.team === 'ALPHA');
+    const copia = JSON.parse(JSON.stringify(dati));
+    let cambiati = 0;
+    for (const s of Object.values(copia.seasons)) for (const sd of Object.values(s.showdowns)) for (const m of Object.values(sd.matches)) for (const st of Object.values(m.setStats || {})) {
+        for (const p of st.p1.pokemon) if (p.specie === 'Urshifu-Rapid-Strike') { p.specie = 'Urshifu-*'; cambiati++; }
+    }
+    assert.ok(cambiati > 0, 'la prova ha almeno un Urshifu da cambiare');
+    const dopo = calcola(copia).pokemon.filter(p => p.player === 'didi' && p.team === 'ALPHA');
+    assert.deepEqual(dopo.map(p => [p.chiave, p.specie]), base.map(p => [p.chiave, p.specie]), 'stessi Pokémon, con il nome della forma vera');
+    assert.ok(!dopo.some(p => /\*/.test(p.specie)));
+    const u = x => x.find(p => p.specieId === 'urshifurapidstrike');
+    assert.deepEqual([u(dopo).portato, u(dopo).koFatti, u(dopo).setStats], [u(base).portato, u(base).koFatti, u(base).setStats], 'e con gli stessi numeri');
+    // se nel team non c'è una forma sola che corrisponde, resta com'è
+    copia.players.didi.teams.a.pokemon = copia.players.didi.teams.a.pokemon.filter(r => r.nome !== 'Urshifu-Rapid-Strike');
+    assert.ok(calcola(copia).pokemon.some(p => p.player === 'didi' && p.team === 'ALPHA' && p.specie === 'Urshifu-*'));
+});

@@ -332,8 +332,15 @@
         }
         const p = s.protagonista, g = p && s.giocatori[p.lato];
         if (p && p.specie && g && g.id && g.team) {
+            // "Urshifu-*" (forma nascosta nel team preview, nei set salvati prima della correzione): si cerca la forma vera tra i Pokémon di quel team
+            let specie = p.specie;
+            if (/\*/.test(specie)) {
+                const prefisso = specie.replace(/\*$/, '').toLowerCase();
+                const forme = (risultato.pokemon || []).filter(x => idDi(x.player) === g.id && idDi(x.team) === idDi(g.team) && !/\*/.test(x.specie) && String(x.specie).toLowerCase().startsWith(prefisso));
+                if (forme.length === 1) specie = forme[0].specie;
+            }
             // sul medaglione stanno i due fiocchi più alti, senza il "+N" (non c'è posto)
-            const presi = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie: p.specie })));
+            const presi = lib.Fiocchi.guadagnati(lib.Fiocchi.calcola(lib.Fiocchi.trova(risultato, { player: g.id, team: g.team, specie })));
             fuori.prot = presi.slice(0, 2).map(f => lib.Fiocchi.htmlMedaglietta(f)).join('');
         }
         return fuori;
