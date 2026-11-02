@@ -74,7 +74,7 @@ html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#bt
 .rs-t-img { width: calc(24 * var(--rs-u)); height: calc(24 * var(--rs-u)); object-fit: contain; margin: calc(-4 * var(--rs-u)) 0 calc(-5 * var(--rs-u)); }
 
 /* ---------- l'apertura: i numeri di tutta la stagione a blocchetti, e il tasto per condividere ---------- */
-.rs-stagione { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(16 * var(--rs-u)); }
+.rs-stagione { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(16 * var(--rs-u)); }
 .rs-stagione .rs-t { top: calc(-30 * var(--rs-u)); }
 .rs-lega { display: contents; }
 .rs-lega-voce { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(4 * var(--rs-u)); padding: calc(14 * var(--rs-u)) calc(8 * var(--rs-u)) calc(12 * var(--rs-u)); background: var(--rs-carta); color: var(--rs-ink); border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-s); rotate: calc(var(--nb-rot, 1) * -.5deg); }

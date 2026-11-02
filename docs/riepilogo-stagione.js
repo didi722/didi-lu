@@ -280,11 +280,11 @@
         const periodo = riep.dal ? `${dataBreve(riep.dal)}${riep.al && riep.al !== riep.dal ? ` → ${dataBreve(riep.al)}` : ''}` : '';
         const n = riep.numeri;
 
-        // ---- l'apertura: solo i numeri di tutta la stagione, a blocchetti (il nome della stagione è già nell'intestazione della pagina), e il tasto per condividere
+        // ---- l'apertura: solo i numeri di tutta la stagione, a blocchetti (il nome della stagione è già nell'intestazione della pagina), 
         const hero = `<section class="rs-stagione rs-s12" style="--c:${colore}">${etichetta(riep.provvisorio ? 'SEASON STATS · PREVIEW' : 'SEASON STATS')}`
             + `<div class="rs-lega" aria-label="Whole league">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
                 .map(([e, x]) => `<div class="rs-lega-voce"><b>${x}</b><span>${e}</span></div>`).join('')}</div>`
-            + '<button type="button" class="rs-condividi" data-azione="condividi">SHARE RECAP</button></section>';
+            + '</section>';
 
         // ---- il campione: i numeri della sua scheda in /stats
         const diff = st ? st.ko.fatti - st.ko.subiti : 0;

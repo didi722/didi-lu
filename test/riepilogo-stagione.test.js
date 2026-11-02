@@ -297,3 +297,10 @@ test('le etichette nere dei nomi (allenatore e Pokémon) hanno la stessa ombra c
     assert.match(css, /\.rs-banner \{[^}]*box-shadow: var\(--nb-sh-s-scuro, 3px 3px 0 rgba\(0, 0, 0, \.35\)\)/);
     assert.doesNotMatch(css, /\.rs-banner \{[^}]*--nb-sh-titolo/, 'l\'ombra del titolo è troppo lontana');
 });
+
+test('senza tasto SHARE RECAP: l\'apertura ha solo i quattro numeri di stagione', () => {
+    const h = R.html(R.calcola(dati([giocatore('ada'), giocatore('bea')])));
+    assert.doesNotMatch(h, /SHARE RECAP|data-azione="condividi"/);
+    assert.equal((h.match(/class="rs-lega-voce"/g) || []).length, 4);
+    assert.match(leggi('riepilogo-stagione.css'), /\.rs-stagione \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
+});
