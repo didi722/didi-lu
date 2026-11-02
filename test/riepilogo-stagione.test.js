@@ -218,7 +218,7 @@ test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe
 });
 
 test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e i titoli MVP e formati hanno la loro', () => {
-    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
+    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
     }
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-bronze.png')), 'il fiocco Season MVP');
@@ -234,7 +234,9 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     assert.match(conMvp, /rs-titolo-img" src="immagini\/ribbon-mvp-bronze\.png"[^>]*> SEASON MVP/);
     // un premio senza immagine mantiene la sua emoji
     const rimonta = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 0, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 9 } }), giocatore('bea')])));
-    assert.match(rimonta, /rs-icona" aria-hidden="true">💪/);
+    assert.match(rimonta, /immagini\/riepilogo\/focus-band\.png/, 'Never Say Die: la bandana con le fiamme');
+    const serie = R.html(R.calcola(dati([giocatore('ada', { serie: { vittorieMax: 6 } }), giocatore('bea')])));
+    assert.match(serie, /rs-icona" aria-hidden="true">🔥/, 'Hot Streak: ancora l\'emoji, manca il flame-orb');
     const ko = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 40, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 0 } }), giocatore('bea')])));
     assert.match(ko, /immagini\/riepilogo\/choice-band\.webp/);
 });
