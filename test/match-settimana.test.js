@@ -162,7 +162,14 @@ test('html: i due allenatori sui loro colori, WINNER sul vincitore, i Pokémon K
     assert.match(h, /class="ms-med" data-pkm="Ultimo"/);
     assert.match(h, /<b class="ms-banner">Ultimo<\/b><span class="ms-didascalia">Last one standing<\/span>/);
     assert.match(h, /href="matches\.html\?id=s0&amp;replay=sd1~match1~set1">WATCH THE REPLAY<\/a>/);
-    assert.match(h, /Set 1 · Match 1 · 29 Oct/);
+    assert.match(h, /<span class="ms-set">Set 1 · Match 1<\/span><span class="ms-data">29 Oct<\/span>/);
+    assert.match(h, /<b class="ms-vs">VS<\/b>/);
+    // l'allenatore di sinistra ha l'avatar a sinistra, quello di destra a destra (lo decide il CSS: .ms-l2 in riga inversa); il link porta alla pagina pubblica
+    assert.match(h, /<a class="ms-av-link" href="public\.html\?player=Ada">/);
+    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Bea"><b class="ms-nome">Bea<\/b><\/a>/);
+    // in basso, dopo i due allenatori: il protagonista, i motivi e il replay (in questo ordine)
+    assert.ok(h.indexOf('class="ms-scontro"') < h.indexOf('class="ms-pie"'));
+    assert.ok(h.indexOf('class="ms-prot"') < h.indexOf('class="ms-motivi"') && h.indexOf('class="ms-motivi"') < h.indexOf('class="ms-replay"'));
     assert.match(h, /<span class="ms-chip">Came back from 3 down<\/span>/);
     assert.equal(M.html(null), '');
     // senza sprite (la pagina non li ha) il blocco c'è lo stesso
@@ -197,10 +204,33 @@ test('matches.html: ?replay=showdown~match~set apre da solo il replay di quel se
 
 test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo; sotto i 900 px un blocco per riga; nell\'app non serve', () => {
     const css = leggi('match-settimana.css');
-    for (const v of ['--nb-ink', '--nb-carta', '--nb-sh-s', '--nb-sh-l', '--nb-raggio', '--nb-rot', '--nb-font-titoli', '--nb-ads']) assert.ok(css.includes(v), v);
+    for (const v of ['--nb-ink', '--nb-carta', '--nb-sh-s', '--nb-sh-m', '--nb-raggio', '--nb-rot', '--nb-font-titoli', '--nb-ads']) assert.ok(css.includes(v), v);
     assert.doesNotMatch(css, /--nb-giallo|--gx-giallo|ffbd44|ffde4d/i);
     assert.match(css, /@media \(max-width: 900px\) \{[^}]*\.ms-sezione \{[^}]*\}[\s\S]*\.ms-scontro \{ grid-template-columns: minmax\(0, 1fr\)/);
     assert.match(css, /html\.app-shell \.ms-sezione \{ display: none; \}/);
     assert.match(css, /\.ms-spr\.ms-ko \{ filter: grayscale\(1\); opacity: \.4; \}/);
     assert.match(css, /body\.pg-index\.con-match \.home-seasons-container \{ min-height: 0;/);
+});
+
+test('home: il nastro è largo quanto la fila delle stagioni (stesse misure di nb-pagine.css e style-index.css) e basso', () => {
+    const css = leggi('match-settimana.css');
+    const nb = leggi('nb-pagine.css');
+    const idx = leggi('style-index.css');
+    // le misure delle carte: gap e larghezza come in nb-pagine.css, con il tetto di 280 px che style-index.css dà a .season-card
+    assert.ok(nb.includes('clamp(26px, 3.6vw, 56px)'), 'il gap delle stagioni è cambiato in nb-pagine.css: aggiornare --ms-gap');
+    assert.ok(css.includes('--ms-gap: clamp(26px, 3.6vw, 56px);'));
+    assert.ok(nb.includes('clamp(236px, calc((100vw - var(--nb-ads) - 60px - 2 * var(--nb-gap-card)) / 3), 300px)'), 'la larghezza delle stagioni è cambiata in nb-pagine.css: aggiornare --ms-card');
+    assert.ok(css.includes('--ms-card: clamp(236px, calc((100vw - var(--nb-ads, 0px) - 60px - 2 * var(--ms-gap)) / 3), 280px);'));
+    assert.match(idx, /\.season-card \{[^}]*max-width: 280px;/, 'il tetto di 280 px delle carte è cambiato in style-index.css: aggiornare --ms-card');
+    assert.match(css, /\.ms \{[^}]*width: calc\(3 \* var\(--ms-card\) \+ 2 \* var\(--ms-gap\) - 12px\);/);
+    // un nastro basso: i due allenatori in riga (avatar accanto al testo), il resto in una riga sola sotto
+    assert.match(css, /\.ms-scontro \{ display: grid; grid-template-columns: minmax\(0, 1fr\) 132px minmax\(0, 1fr\);/);
+    assert.match(css, /\.ms-l2 \{ flex-direction: row-reverse; text-align: right;/);
+    assert.match(css, /\.ms-pie \{ display: flex; align-items: center;/);
+    assert.match(css, /\.ms-replay \{[^}]*margin-left: auto;/);
+    // lo spazio sotto la carta di mezzo (ingrandita) basta per l'etichetta che sporge; sugli schermi bassi tutto è un po' più stretto
+    assert.match(css, /\.ms-sezione \{[^}]*padding: 64px 30px 36px;/);
+    assert.match(css, /@media \(min-width: 1051px\) and \(max-height: 820px\) \{[^}]*\.ms-sezione \{ padding-top: 50px;/);
+    // sotto i 1050 px le stagioni vanno in colonna: il nastro non segue più la loro fila
+    assert.match(css, /@media \(max-width: 1050px\) \{\s*\.ms \{ width: min\(100%, 760px\); \}/);
 });

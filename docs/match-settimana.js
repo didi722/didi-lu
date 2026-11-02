@@ -205,7 +205,9 @@
     const COLORE_NEUTRO = '#d9dde6';
 
     /**
-     * Il blocco della home.
+     * Il blocco della home: un nastro basso (si legge a colpo d'occhio, senza rubare la pagina alle stagioni).
+     *   in alto: i due allenatori sui loro colori, uno di fronte all'altro (avatar, nome, team, i Pokémon portati) e in mezzo formato e set
+     *   in basso: il Pokémon protagonista, perché è bello e il tasto del replay
      * @param {object} s  il risultato di scegli()
      * @param {object} extra  giocatori: { id: { colore, avatar } }; gif(specie): l'immagine animata di un Pokémon
      */
@@ -216,26 +218,28 @@
         const lato = (k, n) => {
             const g = s.giocatori[k], extra = giocatori[g.id] || {};
             const vince = s.vincitore === k;
+            const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
             return `<div class="ms-lato ms-l${n}${vince ? ' ms-vince' : ''}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}">`
                 + `${vince ? '<span class="ms-win">WINNER</span>' : ''}`
-                + `<a class="ms-chi" href="public.html?player=${encodeURIComponent(g.nome)}">${avatar}<b class="ms-nome">${esc(g.nome)}</b></a>`
+                + `<a class="ms-av-link" href="${esc(pagina)}">${avatar}</a>`
+                + `<div class="ms-testi"><a class="ms-nome-link" href="${esc(pagina)}"><b class="ms-nome">${esc(g.nome)}</b></a>`
                 + `<span class="ms-team">${esc(g.team || 'Random teams')}</span>`
-                + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div>`;
+                + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div></div>`;
         };
         const prot = s.protagonista;
         const medaglione = prot && gif
             ? `<div class="ms-prot"><span class="ms-med" data-pkm="${esc(prot.specie)}"><img src="${esc(gif(prot.specie))}" alt="${esc(prot.specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>`
-              + `<b class="ms-banner">${esc(prot.specie)}</b><span class="ms-didascalia">${prot.ultimo ? 'Last one standing' : 'Top performer'}</span></div>`
+              + `<div class="ms-prot-testo"><b class="ms-banner">${esc(prot.specie)}</b><span class="ms-didascalia">${prot.ultimo ? 'Last one standing' : 'Top performer'}</span></div></div>`
             : '';
         const quando = dataBreve(s.data);
         return `<span class="ms-t">MATCH OF THE WEEK</span>`
             + `<div class="ms-scontro">${lato('p1', 1)}`
-            + `<div class="ms-centro"><span class="ms-tag">${esc(s.categoria || 'Showdown')}</span>`
-            + `<span class="ms-set">Set ${s.numeroSet} · Match ${s.numeroMatch}${quando ? ` · ${esc(quando)}` : ''}</span>`
-            + `${medaglione}<div class="ms-motivi">${s.motivi.map(m => `<span class="ms-chip">${esc(m)}</span>`).join('')}</div>`
-            + `<a class="ms-replay" href="${esc(linkReplay(s))}">WATCH THE REPLAY</a></div>`
-            + `${lato('p2', 2)}</div>`;
+            + `<div class="ms-centro"><span class="ms-tag">${esc(s.categoria || 'Showdown')}</span><b class="ms-vs">VS</b>`
+            + `<span class="ms-set">Set ${s.numeroSet} · Match ${s.numeroMatch}</span>${quando ? `<span class="ms-data">${esc(quando)}</span>` : ''}</div>`
+            + `${lato('p2', 2)}</div>`
+            + `<div class="ms-pie">${medaglione}<div class="ms-motivi">${s.motivi.map(m => `<span class="ms-chip">${esc(m)}</span>`).join('')}</div>`
+            + `<a class="ms-replay" href="${esc(linkReplay(s))}">WATCH THE REPLAY</a></div>`;
     }
 
     return { GIORNI, analizzaSet, candidati, scegli, linkReplay, html, giornoDi };
