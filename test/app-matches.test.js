@@ -106,7 +106,7 @@ test('avvia: fuori dall\'app o senza la pagina di Matches non fa niente', () => 
 
 test('matches.html pubblica i showdown (con la funzione per aprire la finestra); app.js carica app-matches.js dopo la classifica', () => {
     const html = docs('matches.html');
-    assert.match(html, /AppSito\.pubblica\('showdowns', \{ stagione: stagioneAttiva, lista: perAppSd \}\)/);
+    assert.match(html, /AppSito\.pubblica\('showdowns', \{ stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale \}\)/);
     assert.match(html, /apri: \(\) => apriModaleShowdown\(sdId, sd\)/);
     const s = require('../docs/app.js').SCRIPT_PAGINE['matches.html'];
     assert.ok(s.indexOf('app-matches.js') > s.indexOf('app-classifica.js') && s.indexOf('app-carosello.js') < s.indexOf('app-matches.js'));

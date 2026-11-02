@@ -27,6 +27,9 @@
     const AVATAR_VUOTO = 'immagini/magikarp.png';
     const CHIAVE_TAB = 'matchesTab';                 // sessionStorage: la schermata guardata, per ritrovarla tornando indietro
     const TABS = [{ id: 'sd', et: 'Showdowns' }, { id: 'rk', et: 'Rankings' }];
+    // una stagione chiusa ha anche il riepilogo (riepilogo-stagione.js), che è il primo tag e quello che si vede aprendola
+    const TABS_RIEPILOGO = [{ id: 'rc', et: 'Recap' }].concat(TABS);
+    const CHIAVE_TAB_SCELTO = 'matchesTabScelto';  // sessionStorage: la stagione di cui chi guarda ha scelto un tag (altrimenti, con il riepilogo, si apre su quello)
 
     // ---------- parti pure ----------
 
@@ -67,8 +70,8 @@
     }
 
     /** I due tag in alto; `su` è quello guardato, `quanti` il numero di showdown (sul primo) */
-    function htmlTabs(su, quanti) {
-        return TABS.map(t => `<button type="button" class="mt-tab${t.id === su ? ' su' : ''}" role="tab" aria-selected="${t.id === su}" data-tab="${t.id}" data-suono="scegli"><span>${t.et}${t.id === 'sd' && quanti ? ` <i>${quanti}</i>` : ''}</span></button>`).join('');
+    function htmlTabs(su, quanti, conRiepilogo = false) {
+        return (conRiepilogo ? TABS_RIEPILOGO : TABS).map(t => `<button type="button" class="mt-tab${t.id === su ? ' su' : ''}" role="tab" aria-selected="${t.id === su}" data-tab="${t.id}" data-suono="scegli"><span>${t.et}${t.id === 'sd' && quanti ? ` <i>${quanti}</i>` : ''}</span></button>`).join('');
     }
 
     /** Gli avatar degli allenatori che compaiono nei showdown, per nome (senza badare alle maiuscole): serve alla testata della finestra del showdown */
@@ -96,7 +99,7 @@
     }
 
     /** La schermata da mostrare: quella ricordata se è una delle due, altrimenti i showdown */
-    const tabValido = t => (TABS.some(x => x.id === t) ? t : 'sd');
+    const tabValido = (t, conRiepilogo = false) => ((conRiepilogo ? TABS_RIEPILOGO : TABS).some(x => x.id === t) ? t : 'sd');
 
     // ---------- nella pagina ----------
 
@@ -110,6 +113,8 @@
         const html_ = doc.documentElement;
         let stato = { lista: [], corrente: 0, scheda: null, pista: null };
         let tab = 'sd';
+        let conRc = false;          // la stagione è chiusa e ha il riepilogo
+        let stagioneRc = '';        // quale: la scelta di un tag vale per quella stagione
         try { tab = tabValido(win.sessionStorage.getItem(CHIAVE_TAB)); } catch (e) { /* si parte dai showdown */ }
 
         // ----- i due tag in alto (con, a destra, la fila delle partite in diretta) -----
@@ -121,11 +126,11 @@
         const live = doc.getElementById('liveList');
         const disegnaTabs = () => {
             barra.querySelectorAll('.mt-tab').forEach(b => b.remove());
-            barra.insertAdjacentHTML('afterbegin', htmlTabs(tab, stato.lista.length));
+            barra.insertAdjacentHTML('afterbegin', htmlTabs(tab, stato.lista.length, conRc));
         };
         if (live) barra.appendChild(live);
         const mostra = nuovo => {
-            tab = tabValido(nuovo);
+            tab = tabValido(nuovo, conRc);
             html_.setAttribute('data-mt', tab);
             try { win.sessionStorage.setItem(CHIAVE_TAB, tab); } catch (e) { /* non si ricorda */ }
             disegnaTabs();
@@ -135,7 +140,10 @@
         };
         barra.addEventListener('click', e => {
             const b = e.target.closest ? e.target.closest('.mt-tab') : null;
-            if (b && b.dataset.tab !== tab) mostra(b.dataset.tab);
+            if (b && b.dataset.tab !== tab) {
+                if (conRc) { try { win.sessionStorage.setItem(CHIAVE_TAB_SCELTO, stagioneRc || '1'); } catch (e) { /* non si ricorda */ } }
+                mostra(b.dataset.tab);
+            }
         });
         mostra(tab);
 
@@ -179,6 +187,15 @@
 
         const monta = dati => {
             const lista = dati && Array.isArray(dati.lista) ? dati.lista.filter(Boolean) : [];
+            // stagione chiusa: compare il tag del riepilogo, e si apre su quello (salvo che chi guarda abbia già scelto un altro tag)
+            const aveva = conRc;
+            conRc = !!(dati && dati.riepilogo);
+            stagioneRc = String((dati && dati.stagione) || '');
+            if (conRc && !aveva) {
+                let scelto = false;
+                try { scelto = win.sessionStorage.getItem(CHIAVE_TAB_SCELTO) === (stagioneRc || '1'); } catch (e) { /* mai scelto */ }
+                mostra(scelto ? tab : 'rc');
+            } else if (!conRc && tab === 'rc') mostra('sd');
             let scheda = doc.getElementById('app-showdown');
             if (!scheda) {
                 scheda = doc.createElement('div');
@@ -258,5 +275,5 @@
         return { monta, vai, passo, mostra };
     }
 
-    return { CHIAVE_TAB, TABS, htmlLato, htmlPoster, html, htmlTabs, htmlPager, tabValido, avatarPerNome, htmlAvatarTesta, avvia };
+    return { CHIAVE_TAB, CHIAVE_TAB_SCELTO, TABS, TABS_RIEPILOGO, htmlLato, htmlPoster, html, htmlTabs, htmlPager, tabValido, avatarPerNome, htmlAvatarTesta, avvia };
 });
