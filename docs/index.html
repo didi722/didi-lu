@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="controlli.css">
 <link rel="stylesheet" href="nb-pagine.css">
 <link rel="stylesheet" href="badge-team.css">
+<link rel="stylesheet" href="nome-scorrevole.css">
 <link rel="stylesheet" href="match-settimana.css">
 <link rel="stylesheet" href="finestre.css">
 <link rel="stylesheet" href="tooltip.css">
@@ -37,6 +38,8 @@
 <script src="medaglione-pkm.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
+<script src="nome-scorrevole.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.ms-nome'));</script>
 <script src="match-settimana.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
@@ -524,6 +527,7 @@ async function mostraMatchSettimana(data) {
     await matchSettimanaBanner.aggiorna(ce ? esito : null);
     sezione.hidden = !(ce && blocco.firstChild);          // si mostra a banner disegnato
     document.body.classList.toggle('con-match', !sezione.hidden);
+    if (!sezione.hidden && window.NomeScorrevole) NomeScorrevole.applicaTutti('.ms-nome');      // i nomi dei team troppo lunghi scorrono (a ogni cambio di settimana ci pensa installa, qui subito alla prima volta)
 }
 
 function caricaStagioniHome() {

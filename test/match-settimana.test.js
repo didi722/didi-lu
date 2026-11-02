@@ -251,11 +251,11 @@ test('html: una riga con etichetta e settimana sul bordo, i due allenatori sui l
     assert.doesNotMatch(h, /WINNER|ms-win|class="ms-vs"|>VS</, 'né il tag WINNER né la scritta VS');
     assert.doesNotMatch(h, /<b>Uno<\/b>/, 'il nome del team è protetto');
     // il tag nero porta il nome del team (protetto), non quello dell'allenatore; senza team, il nome dell'allenatore
-    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="&lt;b&gt;Uno&lt;\/b&gt; · Ada"><b class="ms-nome">&lt;b&gt;Uno&lt;\/b&gt;<\/b><\/a>/);
-    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Bea" title="Team Due · Bea"><b class="ms-nome">Team Due<\/b><\/a>/);
-    assert.doesNotMatch(h, /<b class="ms-nome">(Ada|Bea)<\/b>/);
+    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="&lt;b&gt;Uno&lt;\/b&gt; · Ada"><b class="ms-nome nome-scorrevole">&lt;b&gt;Uno&lt;\/b&gt;<\/b><\/a>/);
+    assert.match(h, /<a class="ms-nome-link" href="public\.html\?player=Bea" title="Team Due · Bea"><b class="ms-nome nome-scorrevole">Team Due<\/b><\/a>/);
+    assert.doesNotMatch(h, /<b class="ms-nome nome-scorrevole">(Ada|Bea)<\/b>/);
     const senzaTeam = M.html({ ...s, giocatori: { p1: { ...s.giocatori.p1, team: '' }, p2: s.giocatori.p2 } }, { giocatori });
-    assert.match(senzaTeam, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="Ada"><b class="ms-nome">Ada<\/b><\/a>/);
+    assert.match(senzaTeam, /<a class="ms-nome-link" href="public\.html\?player=Ada" title="Ada"><b class="ms-nome nome-scorrevole">Ada<\/b><\/a>/);
     assert.equal((h.match(/class="ms-spr ms-ko"/g) || []).length, 3 + 4, 'i Pokémon andati KO sono spenti (3 di Ada e 4 di Bea)');
     assert.match(h, /class="ms-med" data-pkm="Ultimo"/);
     assert.match(h, /<b class="ms-banner">Ultimo<\/b><span class="ms-chip">Came back from 3 down<\/span><\/div><\/div>/, 'del protagonista si vede il motivo più importante');
@@ -458,6 +458,11 @@ test('home: il banner sta sotto le stagioni, nascosto finché non c\'è un set; 
     assert.match(idx, /caricaBadge: \(\) => Fiocchi\.carica\(db\)/);
     for (const f of ['fiocchi.js', 'badge-team.js']) assert.ok(idx.includes(`<script src="${f}"></script>`), f);
     assert.match(idx, /<link rel="stylesheet" href="badge-team\.css">/);
+    // i nomi dei team troppo lunghi scorrono avanti e indietro (lo stesso meccanismo di Matches e del simulatore)
+    assert.match(idx, /<link rel="stylesheet" href="nome-scorrevole\.css">/);
+    assert.ok(idx.indexOf('<script src="nome-scorrevole.js"></script>') > 0 && idx.indexOf('<script src="nome-scorrevole.js"></script>') < idx.indexOf('<script src="match-settimana.js"></script>'));
+    assert.match(idx, /NomeScorrevole\.installa\('\.ms-nome'\)/);
+    assert.match(idx, /NomeScorrevole\.applicaTutti\('\.ms-nome'\)/);
     assert.match(idx, /MatchSettimana\.settimane\(data\)/);
     assert.match(idx, /matchSettimanaBanner\.aggiorna\(ce \? esito : null\)/);
     assert.match(idx, /players\/\$\{id\}\/info/);
@@ -490,7 +495,8 @@ test('stile: bordi, ombre, angoli, rotazioni e caratteri del tema; niente giallo
     assert.match(css, /\.ms-scontro \{ display: grid; flex: 1 1 auto; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
     assert.match(css, /\.ms-l2 \{ flex-direction: row-reverse; text-align: right;/);
     // i nomi non vanno a capo a metà parola (si accorciano con i puntini) e gli sprite si restringono invece di andare a capo
-    assert.match(css, /\.ms-nome \{ display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/);
+    assert.match(css, /\.ms-nome \{ display: block; font:/);
+    assert.doesNotMatch(/\.ms-nome \{[^}]*\}/.exec(css)[0], /ellipsis/, 'un nome lungo scorre (nome-scorrevole.css), non si taglia con i puntini');
     assert.match(css, /\.ms-sprites \{ display: flex; flex-wrap: nowrap;/);
     assert.match(css, /\.ms-spr \{ flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain;/);
     assert.match(css, /\.ms-spr\.ms-ko \{ filter: grayscale\(1\); opacity: \.5; \}/);

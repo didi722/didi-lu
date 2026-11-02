@@ -106,7 +106,8 @@ body.pg-index.con-match .home-seasons-container { min-height: 0; padding-top: 12
 }
 .ms a.ms-nome-link { color: #fff; }
 .ms-l2 .ms-nome-link { rotate: calc(var(--nb-rot, 1) * 1deg); }
-.ms-nome { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 15px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; }
+/* un nome troppo lungo per il tag scorre avanti e indietro (nome-scorrevole.js/.css: lo stesso di Matches e del simulatore) */
+.ms-nome { display: block; font: 900 15px/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; }
 .ms-sprites { display: flex; flex-wrap: nowrap; gap: 1px; max-width: 100%; }
 .ms-l2 .ms-sprites { justify-content: flex-end; }
 .ms-spr { flex: 0 1 30px; width: 30px; min-width: 10px; height: 30px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
