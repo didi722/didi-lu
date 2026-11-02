@@ -35,12 +35,16 @@
         return { tipo, icona: tipo === 'cup' && info && info.icona ? String(info.icona) : TROFEI[tipo] };
     };
 
-    // Le immagini a tema Pokémon (strumenti) al posto delle emoji. Dove manca ancora l'immagine resta l'emoji. `pixel`: è piccola (24 px), si ingrandisce senza sfumare.
+    // Le immagini a tema Pokémon (strumenti) al posto delle emoji. Dove manca ancora l'immagine resta l'emoji.
     const IMG = 'immagini/riepilogo/';
     const IMMAGINI = {
+        pulito: { src: `${IMG}focus-sash.png` },
+        serie: { src: `${IMG}flame-orb.png` },
         elo: { src: `${IMG}rare-candy.png` },
-        cambi: { src: `${IMG}eject-button.png`, pixel: true },
-        collezione: { src: `${IMG}poke-ball.png` }
+        cambi: { src: `${IMG}eject-button.png` },
+        sfortuna: { src: `${IMG}destiny-knot.png` },
+        collezione: { src: `${IMG}poke-ball.png` },
+        sorpresa: { src: `${IMG}scope-lens.png` }
     };
     const IMMAGINE_MVP = `${IMG}master-ball.png`;           // il titolo dell'MVP
     const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
@@ -125,7 +129,7 @@
         const s = extra.sorpresa;
         if (s && s.scarto >= 20) {
             const v = g.find(x => idDi(x.id) === s.vincitore), p = g.find(x => idDi(x.id) === s.perdente);
-            if (v) premi.push({ id: 'sorpresa', icona: '⚡', titolo: 'Upset of the Season', descrizione: `Beat ${p ? p.nome : s.perdente} with ${s.scarto} less Elo`, vincitori: [persona(v)], valore: s.scarto, testoValore: `${s.punteggio}${s.formato ? ` · ${s.formato}` : ''}` });
+            if (v) premi.push({ id: 'sorpresa', icona: '⚡', immagine: IMMAGINI.sorpresa, titolo: 'Upset of the Season', descrizione: `Beat ${p ? p.nome : s.perdente} with ${s.scarto} less Elo`, vincitori: [persona(v)], valore: s.scarto, testoValore: `${s.punteggio}${s.formato ? ` · ${s.formato}` : ''}` });
         }
         return premi;
     }
@@ -335,7 +339,7 @@
         const INK = '#000', CARTA = '#ffffff', SFONDO = '#e6e9ef', NEUTRO = '#d9dde6';       // niente giallo: la card è bianca, nera e dei colori degli allenatori
 
         const trofeo = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
-        const mostrati = riep.premi.slice(0, 6);
+        const mostrati = riep.premi.slice(0, 8);
         const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, maschera, immaginiPremi, ballMvp] = await Promise.all([
             caricaImmagine(win, riep.vincitore && riep.vincitore.avatar),
             Promise.all(riep.classifica.slice(0, 5).map(x => caricaImmagine(win, x.avatar))),
@@ -440,7 +444,7 @@
 
         // premi (i primi sei che ci stanno)
         const spazio = (H - 54 - 56) - y;      // fino al piede della carta (resta posto per la riga dei numeri)
-        const righe = Math.max(0, Math.min(3, Math.floor(spazio / 94)));
+        const righe = Math.max(0, Math.min(4, Math.floor(spazio / 94)));
         mostrati.slice(0, righe * 2).forEach((p, i) => {
             const px = X + 30 + (i % 2) * ((L - 60) / 2 + 8), py = y + Math.floor(i / 2) * 94;
             const pw = (L - 60) / 2 - 8;
