@@ -1,141 +1,257 @@
 /* =====================================================================
-   RIEPILOGO DI FINE STAGIONE (Matches): la carta che si vede aprendo una stagione chiusa. Il markup è di riepilogo-stagione.js.
+   RIEPILOGO DI FINE STAGIONE (Matches): la pagina che si vede aprendo una stagione chiusa. Il markup è di riepilogo-stagione.js.
    ---------------------------------------------------------------------
-   Sul sito usa gli stessi pezzi della classifica (classifica.css: .cl-finestra, .cl-barra, .cl-riga...) e le variabili --nb-* del tema scelto
-   da ciascuno (temi.css): colori, ombre, angoli, rotazioni e caratteri cambiano col tema, mai le misure. Nell'app, dove l'aspetto è quello del gioco
-   (app-gioco.css), le finestre diventano pannelli scuri con l'etichetta gialla e le misure seguono --u. Va caricato dopo classifica.css.
+   Una pagina a BLOCCHI: griglia a 12 colonne con blocchi affiancati e di misure diverse (apertura, campione | MVP, classifica | colonna, premi).
+   Stile del sito: bordi neri spessi, ombre piene, colori degli allenatori, etichette nere che sporgono dall'angolo, ogni pezzo un po' storto.
+   Colori, ombre, angoli, rotazioni e caratteri sono quelli del tema scelto da ciascuno (temi.css: --nb-*), mai le misure.
+   Niente giallo: gli accenti sono il nero e il colore dell'allenatore del blocco (--c).
+   Nell'app le misure seguono --u (app-gioco.css) e la griglia non cambia col pixel dello schermo (lo schermo è sempre in scala).
    ===================================================================== */
-.rs { --rs-u: 1px; display: flex; flex-direction: column; gap: calc(20 * var(--rs-u)); color: var(--nb-ink, #000); font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
-.rs a { color: inherit; text-decoration: none; }
-.rs a.cl-riga { color: #000; }      /* le righe sono sul colore dell'allenatore: testo scuro anche dentro i pannelli scuri dell'app */
-.rs .cl-finestra { box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
-.rs-vuoto, .rs-nota { margin: 0; padding: calc(16 * var(--rs-u)); text-align: center; font-weight: 700; }
 
-/* i due tasti del sito: RECAP | CALENDAR (nell'app ci sono i tag in alto) */
-.rs-scelta { display: flex; gap: 10px; margin: 0 0 18px; }
+/* ---------- i due tasti del sito: RECAP | CALENDAR (nell'app ci sono i tag in alto) ---------- */
+.rs-scelta { display: flex; gap: 10px; margin: 0 0 24px; }
 .rs-scelta button {
     flex: 1; padding: 10px 12px 8px; cursor: pointer; font: 900 .95rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .08em); text-transform: uppercase;
     color: var(--nb-ink, #000); background: var(--nb-carta, #fff); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     rotate: calc(var(--nb-rot, 1) * -.6deg); transition: translate .1s ease, box-shadow .1s ease;
 }
 .rs-scelta button:nth-child(2) { rotate: calc(var(--nb-rot, 1) * .6deg); }
-.rs-scelta button.su { background: var(--nb-giallo, #ffbd44); }
+.rs-scelta button.su { background: var(--nb-ink, #000); color: #fff; }
 .rs-scelta button:hover { translate: -2px -2px; box-shadow: var(--nb-sh-4, 5px 5px 0 #000); }
 .rs-scelta button:active { translate: 1px 1px; box-shadow: none; }
 .hub-left-column[data-vista="riepilogo"] #matchList { display: none; }
+.hub-left-column[data-vista="calendario"] #riepilogoStagione { display: none; }
 /* sul sito, vedendo il riepilogo non serve la classifica a lato: la colonna dei match prende tutta la larghezza */
 html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-right-column { display: none; }
 html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-left-column { margin-right: 0 !important; }
 /* in alto, vedendo il riepilogo: niente "Registered teams" né "Vote MVP" (nell'app "Registered teams" non c'è; il tasto dell'MVP sparisce con il tag Recap) */
 body.rs-vista-riepilogo .top-auth-bar .btn-registered-teams, body.rs-vista-riepilogo .top-auth-bar #btn-mvp { display: none !important; }
 html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#btn-mvp#btn-mvp { display: none !important; }
-.hub-left-column[data-vista="calendario"] #riepilogoStagione { display: none; }
 
-/* pezzi comuni */
-.rs-etichetta { display: inline-block; align-self: flex-start; padding: calc(3 * var(--rs-u)) calc(8 * var(--rs-u)) calc(1 * var(--rs-u)); background: var(--nb-ink, #000); color: #fff; border-radius: calc(var(--nb-raggio, 0px) * .5); font-weight: 900; font-size: calc(11 * var(--rs-u)); letter-spacing: .14em; text-transform: uppercase; }
-.rs-carta { box-sizing: border-box; background: var(--nb-carta, #fff); color: var(--nb-ink, #000); border: calc(3 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
-.rs-griglia > .rs-carta:nth-child(odd) { rotate: calc(var(--nb-rot, 1) * -.5deg); }
-.rs-griglia > .rs-carta:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .5deg); }
-.rs-dati { font-weight: 700; font-size: calc(12 * var(--rs-u)); opacity: .85; }
+.rs-vuoto, .rs-nota { margin: 0; padding: 16px; text-align: center; font-weight: 700; }
 
-.rs-persona { display: inline-flex; align-items: center; gap: calc(6 * var(--rs-u)); min-width: 0; max-width: 100%; }
-.rs-persona .rs-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; text-transform: uppercase; font-size: calc(14 * var(--rs-u)); letter-spacing: var(--nb-spaziatura, .04em); }
-.rs-avatar { flex: none; width: calc(30 * var(--rs-u)); height: calc(30 * var(--rs-u)); object-fit: contain; border: calc(2.5 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: 50%; background: #fff; }
-.rs-avatar-vuoto { display: inline-block; background: rgba(0, 0, 0, .15); }
-.rs-grande .rs-avatar { width: calc(46 * var(--rs-u)); height: calc(46 * var(--rs-u)); }
-.rs-grande .rs-nome { font-size: calc(24 * var(--rs-u)); }
+/* ---------- la griglia ---------- */
+.rs {
+    --rs-u: 1px;
+    --rs-ink: var(--nb-ink, #000);
+    --rs-carta: var(--nb-carta, #fff);
+    --rs-raggio: var(--nb-raggio, 0px);
+    --rs-sh-s: var(--nb-sh-s, 3px 3px 0 #000);
+    --rs-sh-m: var(--nb-sh-m, 6px 6px 0 #000);
+    --rs-vinto: #057a2d;
+    --rs-perso: #b01212;
+    --rs-verde: #09ca49;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: calc(36 * var(--rs-u)) calc(24 * var(--rs-u));
+    padding: calc(14 * var(--rs-u)) calc(6 * var(--rs-u)) calc(10 * var(--rs-u));
+    color: var(--rs-ink);
+    font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+.rs a { color: inherit; text-decoration: none; }
+.rs-s4 { grid-column: span 4; }
+.rs-s5 { grid-column: span 5; }
+.rs-s7 { grid-column: span 7; }
+.rs-s8 { grid-column: span 8; }
+.rs-s12 { grid-column: 1 / -1; }
 
-/* l'apertura: nome della stagione, campione e numeri */
-.rs-intro .cl-corpo { display: flex; flex-direction: column; gap: calc(12 * var(--rs-u)); }
-.rs-titolo { margin: 0; font: 900 calc(30 * var(--rs-u))/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; text-shadow: var(--nb-sh-titolo-testo, 3px 3px 0 var(--nb-shcol-titolo, rgba(0, 0, 0, .3))); }
-.rs-sotto { margin: calc(-6 * var(--rs-u)) 0 0; font-weight: 700; font-size: calc(13 * var(--rs-u)); opacity: .8; }
-.rs-campione { display: flex; flex-direction: column; gap: calc(12 * var(--rs-u)); padding: calc(12 * var(--rs-u)) calc(14 * var(--rs-u)); color: #000; background: var(--c, #d9dde6); border: calc(4 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
-.rs-campione-testa { display: flex; align-items: center; gap: calc(14 * var(--rs-u)); }
-.rs-campione-testa > div { display: flex; flex-direction: column; gap: calc(4 * var(--rs-u)); min-width: 0; }
-.rs-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--rs-u)), 1fr)); gap: calc(8 * var(--rs-u)); }
-.rs-chip { display: flex; flex-direction: column; gap: calc(2 * var(--rs-u)); padding: calc(6 * var(--rs-u)) calc(8 * var(--rs-u)); }
-.rs-chip span { font-size: calc(9 * var(--rs-u)); font-weight: 900; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
-.rs-chip b { font-size: calc(17 * var(--rs-u)); line-height: 1.1; }
-.rs-lega { margin-top: calc(2 * var(--rs-u)); }
-.rs-trofeo { flex: none; display: grid; place-items: center; width: calc(84 * var(--rs-u)); height: calc(84 * var(--rs-u)); filter: drop-shadow(calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 #000); }
-.rs-trofeo > * { grid-area: 1 / 1; width: 100%; height: 100%; }
-.rs-trofeo img { object-fit: contain; pointer-events: none; z-index: 2; }
-/* la coppa della league: la sagoma colorata con il colore del campione, e sopra il disegno (come nel profilo) */
-.rs-trofeo-colore { box-sizing: border-box; padding: 1.5px; background-color: var(--c, #ccc); z-index: 1;
-    -webkit-mask: url('immagini/season-winner-color.png') center / contain no-repeat content-box; mask: url('immagini/season-winner-color.png') center / contain no-repeat content-box; }
-.rs-numeri { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(10 * var(--rs-u)); }
-.rs-numero { display: flex; flex-direction: column; align-items: center; padding: calc(8 * var(--rs-u)) calc(4 * var(--rs-u)); }
-.rs-numero b { font-size: calc(24 * var(--rs-u)); line-height: 1; }
-.rs-numero span { font-size: calc(10 * var(--rs-u)); font-weight: 900; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+/* un blocco, con la sua etichetta nera che sporge dall'angolo in alto */
+.rs-b {
+    position: relative; box-sizing: border-box; min-width: 0;
+    padding: calc(32 * var(--rs-u)) calc(18 * var(--rs-u)) calc(18 * var(--rs-u));
+    background: var(--rs-carta); color: var(--rs-ink);
+    border: calc(4 * var(--rs-u)) solid var(--rs-ink); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-m);
+}
+.rs-t {
+    position: absolute; top: calc(-18 * var(--rs-u)); left: calc(14 * var(--rs-u)); z-index: 3;
+    display: inline-flex; align-items: center; gap: calc(7 * var(--rs-u));
+    padding: calc(7 * var(--rs-u)) calc(14 * var(--rs-u)) calc(4 * var(--rs-u));
+    background: var(--rs-ink); color: #fff; border: calc(3 * var(--rs-u)) solid var(--rs-ink);
+    box-shadow: calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 rgba(0, 0, 0, .3);
+    font: 900 calc(13 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+    rotate: calc(var(--nb-rot, 1) * -2deg);
+}
+.rs-t-img { width: calc(24 * var(--rs-u)); height: calc(24 * var(--rs-u)); object-fit: contain; margin: calc(-4 * var(--rs-u)) 0 calc(-5 * var(--rs-u)); }
 
-/* la classifica finale: righe come quelle a lato */
-.rs-classifica { display: flex; flex-direction: column; gap: calc(11 * var(--rs-u)); }
-.rs-classifica .cl-riga { rotate: calc(var(--nb-rot, 1) * -.4deg); }
-
-.rs-pkm { width: calc(64 * var(--rs-u)); height: calc(64 * var(--rs-u)); object-fit: contain; image-rendering: pixelated; flex: none; }
-.rs-mvp-corpo { display: flex; align-items: center; gap: calc(14 * var(--rs-u)); }
-.rs-mvp-corpo > div { display: flex; flex-direction: column; gap: calc(2 * var(--rs-u)); min-width: 0; }
-.rs-mvp-corpo b { font-size: calc(22 * var(--rs-u)); text-transform: uppercase; }
-.rs-mvp-corpo span { font-weight: 700; font-size: calc(12 * var(--rs-u)); }
-
-.rs-griglia { display: grid; gap: calc(12 * var(--rs-u)); }
-.rs-formati, .rs-usati { grid-template-columns: repeat(auto-fit, minmax(calc(130 * var(--rs-u)), 1fr)); }
-.rs-premi { grid-template-columns: repeat(auto-fit, minmax(calc(230 * var(--rs-u)), 1fr)); }
-.rs-formato, .rs-usato { display: flex; flex-direction: column; align-items: center; gap: calc(3 * var(--rs-u)); padding: calc(8 * var(--rs-u)); text-align: center; }
-.rs-formato b { text-transform: uppercase; font-size: calc(13 * var(--rs-u)); }
-.rs-formato span:not(.rs-etichetta) { font-weight: 700; font-size: calc(11 * var(--rs-u)); }
-.rs-usato span { font-weight: 900; font-size: calc(12 * var(--rs-u)); text-transform: uppercase; }
-.rs-usato i { font-style: normal; font-weight: 700; font-size: calc(11 * var(--rs-u)); opacity: .7; }
-
-.rs-premio { display: flex; gap: calc(10 * var(--rs-u)); padding: calc(10 * var(--rs-u)); }
-.rs-premio > div { display: flex; flex-direction: column; gap: calc(3 * var(--rs-u)); min-width: 0; }
-.rs-icona { flex: none; display: grid; place-items: center; width: calc(48 * var(--rs-u)); font-size: calc(30 * var(--rs-u)); line-height: 1; }
-.rs-icona-img { width: calc(48 * var(--rs-u)); height: calc(48 * var(--rs-u)); object-fit: contain; }
-.rs-icona-img.rs-pixel { image-rendering: pixelated; }
-.rs-titolo-img { width: calc(24 * var(--rs-u)); height: calc(24 * var(--rs-u)); margin-right: calc(4 * var(--rs-u)); vertical-align: -.2em; object-fit: contain; }
-.rs-premio b { font-size: calc(14 * var(--rs-u)); text-transform: uppercase; letter-spacing: var(--nb-spaziatura, .04em); }
-.rs-premio small { font-size: calc(11 * var(--rs-u)); font-weight: 700; opacity: .7; }
-.rs-vincitori { display: flex; flex-wrap: wrap; gap: calc(6 * var(--rs-u)) calc(10 * var(--rs-u)); }
-.rs-vincitori .rs-avatar { width: calc(24 * var(--rs-u)); height: calc(24 * var(--rs-u)); }
-.rs-valore { align-self: flex-start; padding: 0 calc(6 * var(--rs-u)); background: var(--nb-giallo, #ffbd44); border: calc(2 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: calc(var(--nb-raggio, 0px) * .5); font-weight: 900; font-size: calc(11 * var(--rs-u)); }
-
-.rs-azioni { display: flex; justify-content: center; padding-bottom: calc(6 * var(--rs-u)); }
-.rs-condividi { padding: calc(10 * var(--rs-u)) calc(24 * var(--rs-u)) calc(8 * var(--rs-u)); cursor: pointer; font: 900 calc(15 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; color: #000; background: var(--nb-giallo, #ffbd44); border: calc(3 * var(--rs-u)) solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); rotate: calc(var(--nb-rot, 1) * 1deg); transition: translate .1s ease, box-shadow .1s ease; }
-.rs-condividi:hover { translate: -2px -2px; box-shadow: var(--nb-sh-4, 5px 5px 0 #000); }
+/* ---------- l'apertura: il nome della stagione, il trofeo, i numeri di tutta la lega ---------- */
+.rs-hero {
+    grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: calc(20 * var(--rs-u)) calc(34 * var(--rs-u));
+    padding: calc(44 * var(--rs-u)) calc(30 * var(--rs-u)) calc(28 * var(--rs-u));
+    background: radial-gradient(rgba(255, 255, 255, .1) calc(1.3 * var(--rs-u)), transparent calc(1.6 * var(--rs-u))) 0 0 / calc(14 * var(--rs-u)) calc(14 * var(--rs-u)), var(--rs-ink);
+    color: #fff; border-bottom: calc(14 * var(--rs-u)) solid var(--c, #888);
+}
+.rs-hero .rs-t { background: #fff; color: var(--rs-ink); border-color: var(--rs-ink); box-shadow: calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 var(--c, #888); }
+.rs-hero-trofeo { flex: none; }
+.rs-trofeo { position: relative; display: grid; place-items: center; width: calc(150 * var(--rs-u)); height: calc(150 * var(--rs-u)); }
+.rs-trofeo::before { content: ''; position: absolute; inset: calc(-12 * var(--rs-u)); border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .32), rgba(255, 255, 255, 0) 68%); }
+.rs-trofeo img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 calc(6 * var(--rs-u)) 0 rgba(0, 0, 0, .5)); }
+.rs-hero-testo { flex: 1 1 calc(280 * var(--rs-u)); min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: calc(14 * var(--rs-u)); }
+.rs-titolo {
+    margin: 0; font: 900 calc(50 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase;
+    color: #fff; text-shadow: calc(4 * var(--rs-u)) calc(4 * var(--rs-u)) 0 var(--c, #888); overflow-wrap: anywhere; text-wrap: balance;
+}
+.rs-hero-formati { display: flex; flex-wrap: wrap; align-items: center; gap: calc(8 * var(--rs-u)) calc(10 * var(--rs-u)); }
+.rs-tag {
+    padding: calc(4 * var(--rs-u)) calc(11 * var(--rs-u)) calc(2 * var(--rs-u)); color: #fff; border: calc(2 * var(--rs-u)) solid rgba(255, 255, 255, .85);
+    font: 800 calc(12 * var(--rs-u))/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1.2deg);
+}
+.rs-tag:nth-child(even) { rotate: calc(var(--nb-rot, 1) * -1.2deg); }
+.rs-periodo { font: 700 calc(13 * var(--rs-u))/1 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.rs-condividi {
+    padding: calc(10 * var(--rs-u)) calc(22 * var(--rs-u)) calc(8 * var(--rs-u)); cursor: pointer; color: #000; background: #fff; border: calc(3 * var(--rs-u)) solid #fff; border-radius: var(--rs-raggio);
+    box-shadow: calc(4 * var(--rs-u)) calc(4 * var(--rs-u)) 0 var(--c, #888);
+    font: 900 calc(14 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .1em; text-transform: uppercase;
+    rotate: calc(var(--nb-rot, 1) * -1deg); transition: translate .1s ease, box-shadow .1s ease;
+}
+.rs-condividi:hover { translate: -2px -2px; box-shadow: calc(7 * var(--rs-u)) calc(7 * var(--rs-u)) 0 var(--c, #888); }
 .rs-condividi:active { translate: 1px 1px; box-shadow: none; }
 .rs-condividi:disabled { opacity: .6; cursor: progress; }
+.rs-lega { flex: 0 0 auto; margin-left: auto; display: grid; grid-template-columns: repeat(2, auto); gap: calc(16 * var(--rs-u)) calc(32 * var(--rs-u)); padding-left: calc(30 * var(--rs-u)); border-left: calc(3 * var(--rs-u)) dashed rgba(255, 255, 255, .35); }
+.rs-lega-voce { display: flex; flex-direction: column; gap: calc(3 * var(--rs-u)); }
+.rs-lega-voce b { font: 900 calc(38 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); color: #fff; }
+.rs-lega-voce span { font: 800 calc(10 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
 
-/* la finestra con la card pronta da condividere o salvare */
-.rs-velo { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, .72); }
-.rs-dialogo { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: min(92vw, 520px); max-height: 94vh; }
-.rs-dialogo img { display: block; max-width: 100%; max-height: calc(94vh - 80px); object-fit: contain; border: 4px solid #000; background: #fffdf6; box-shadow: 8px 8px 0 #000; }
-.rs-dialogo-azioni { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.rs-dialogo-azioni button, .rs-dialogo-azioni a { padding: 9px 18px 7px; cursor: pointer; font: 900 .95rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-decoration: none; color: #000; background: var(--nb-giallo, #ffbd44); border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
-.rs-dialogo-azioni button[data-fai="chiudi"] { background: #fff; }
+/* ---------- il campione: sul suo colore, con i numeri della sua scheda in /stats ---------- */
+.rs-campione { display: flex; flex-direction: column; gap: calc(18 * var(--rs-u)); background: var(--c, #d9dde6); color: #000; }
+.rs-campione-testa { display: flex; align-items: center; gap: calc(18 * var(--rs-u)); min-width: 0; }
+.rs-av-grande { flex: none; width: calc(100 * var(--rs-u)); height: calc(100 * var(--rs-u)); object-fit: contain; filter: drop-shadow(calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 #000); animation: rs-saltello .8s steps(1) infinite; }
+.rs-campione-id { display: flex; flex-direction: column; gap: calc(6 * var(--rs-u)); min-width: 0; }
+.rs-campione-nome { font: 900 calc(46 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; overflow-wrap: anywhere; text-shadow: calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 rgba(255, 255, 255, .55); }
+.rs-campione-sotto { font: 800 calc(13 * var(--rs-u))/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.rs-dati { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(10 * var(--rs-u)); }
+.rs-dato { display: flex; flex-direction: column; gap: calc(3 * var(--rs-u)); min-width: 0; padding: calc(8 * var(--rs-u)) calc(10 * var(--rs-u)); background: var(--rs-carta); color: #000; border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-s); }
+.rs-dato-et { overflow-wrap: anywhere; font: 800 calc(10 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; color: #444; }
+.rs-dato-va { white-space: nowrap; font: 900 calc(23 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.rs-wl { display: inline-flex; align-items: baseline; gap: calc(4 * var(--rs-u)); }
+.rs-wl b.v { color: var(--rs-vinto); }
+.rs-wl b.p { color: var(--rs-perso); }
+.rs-wl i { font-style: normal; color: #777; }
+.rs-sub { font: 800 calc(11 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.rs-sub.v { color: var(--rs-vinto); }
+.rs-sub.p { color: var(--rs-perso); }
+.rs-barra { display: block; width: 100%; height: calc(9 * var(--rs-u)); margin-top: calc(3 * var(--rs-u)); box-sizing: border-box; background: var(--rs-carta); border: calc(2 * var(--rs-u)) solid var(--rs-ink); }
+.rs-barra > span { display: block; height: 100%; background: var(--rs-verde); }
 
-@media (max-width: 560px) {
-    .rs-numeri { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* ---------- l'MVP: sul colore del suo allenatore, con il fiocco "Season MVP" ---------- */
+.rs-mvp { display: flex; flex-direction: column; align-items: center; gap: calc(6 * var(--rs-u)); text-align: center; background: var(--c, #d9dde6); color: #000; }
+.rs-mvp-scena { position: relative; display: grid; place-items: center; width: 100%; min-height: calc(170 * var(--rs-u)); }
+.rs-mvp-scena::before { content: ''; position: absolute; width: calc(158 * var(--rs-u)); height: calc(158 * var(--rs-u)); border-radius: 50%; background: rgba(255, 255, 255, .6); border: calc(3 * var(--rs-u)) solid var(--rs-ink); box-shadow: inset 0 calc(-10 * var(--rs-u)) 0 rgba(0, 0, 0, .08); }
+.rs-pkm-grande { position: relative; width: calc(140 * var(--rs-u)); height: calc(140 * var(--rs-u)); object-fit: contain; image-rendering: pixelated; filter: drop-shadow(calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 rgba(0, 0, 0, .4)); }
+.rs-sticker { position: absolute; top: calc(8 * var(--rs-u)); right: calc(12 * var(--rs-u)); z-index: 2; width: calc(62 * var(--rs-u)); height: calc(62 * var(--rs-u)); object-fit: contain; rotate: 10deg; filter: drop-shadow(calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 #000); }
+.rs-sticker-grande { position: static; width: calc(110 * var(--rs-u)); height: calc(110 * var(--rs-u)); rotate: 0deg; }
+.rs-mvp-nome { font: 900 calc(26 * var(--rs-u))/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; overflow-wrap: anywhere; }
+.rs-mvp-sotto { font: 700 calc(12 * var(--rs-u))/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.rs-voti { margin-top: calc(4 * var(--rs-u)); padding: calc(3 * var(--rs-u)) calc(11 * var(--rs-u)) calc(1 * var(--rs-u)); background: var(--rs-carta); border: calc(2 * var(--rs-u)) solid var(--rs-ink); font: 900 calc(12 * var(--rs-u))/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * -1.5deg); }
+.rs-mvp-attesa { justify-content: center; background: var(--rs-carta); }
+
+/* ---------- la classifica finale: le righe sono quelle della classifica del sito (classifica.css) ---------- */
+.rs-classifica { display: flex; flex-direction: column; }
+.rs-righe { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: space-between; gap: calc(12 * var(--rs-u)); }
+.rs-righe .cl-riga { flex: 1 1 auto; max-height: calc(92 * var(--rs-u)); padding: calc(8 * var(--rs-u)) calc(12 * var(--rs-u)); gap: calc(12 * var(--rs-u)); rotate: calc(var(--nb-rot, 1) * -.4deg); }
+.rs-righe .cl-avatar { width: calc(52 * var(--rs-u)); height: calc(52 * var(--rs-u)); }
+.rs-righe .cl-nome { font-size: calc(19 * var(--rs-u)); }
+.rs-righe .cl-dati { font-size: calc(11 * var(--rs-u)); }
+.rs-righe .cl-pos { font-size: calc(15 * var(--rs-u)); }
+.rs-righe .cl-punti { min-width: calc(54 * var(--rs-u)); padding: calc(5 * var(--rs-u)) calc(9 * var(--rs-u)) calc(3 * var(--rs-u)); font-size: calc(24 * var(--rs-u)); }
+.rs-righe .cl-riga:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .4deg); }
+.rs .cl-primo .cl-pos { background: var(--rs-ink); color: #fff; box-shadow: none; }
+
+/* ---------- a fianco della classifica: il miglior Pokémon di ogni formato e i più usati ---------- */
+.rs-colonna { display: flex; flex-direction: column; gap: calc(36 * var(--rs-u)); min-width: 0; }
+.rs-colonna > .rs-b { flex: 1 1 auto; }
+.rs-formati-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(104 * var(--rs-u)), 1fr)); gap: calc(14 * var(--rs-u)); height: 100%; }
+.rs-fcard { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(5 * var(--rs-u)); min-width: 0; padding: calc(14 * var(--rs-u)) calc(8 * var(--rs-u)) calc(10 * var(--rs-u)); text-align: center; background: var(--rs-carta); color: #000; border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-bottom: calc(12 * var(--rs-u)) solid var(--c, #888); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-s); }
+.rs-fcard b { font: 900 calc(14 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.rs-fcard > span:not(.rs-tag-nero) { font: 700 calc(11 * var(--rs-u))/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.rs-tag-nero { padding: calc(3 * var(--rs-u)) calc(10 * var(--rs-u)) calc(1 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 800 calc(11 * var(--rs-u))/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * 1.5deg); }
+.rs-pkm { width: calc(80 * var(--rs-u)); height: calc(80 * var(--rs-u)); object-fit: contain; image-rendering: pixelated; filter: drop-shadow(calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 rgba(0, 0, 0, .35)); }
+.rs-usati-lista { display: flex; flex-direction: column; gap: calc(10 * var(--rs-u)); }
+.rs-uso { display: grid; grid-template-columns: auto calc(54 * var(--rs-u)) minmax(0, 1fr) auto; align-items: center; gap: calc(10 * var(--rs-u)); padding: calc(6 * var(--rs-u)) calc(12 * var(--rs-u)); background: var(--rs-carta); color: #000; border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-s); }
+.rs-pos { padding: calc(3 * var(--rs-u)) calc(8 * var(--rs-u)) calc(1 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 900 calc(12 * var(--rs-u))/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.rs-pkm-piccolo { width: calc(54 * var(--rs-u)); height: calc(48 * var(--rs-u)); object-fit: contain; image-rendering: pixelated; filter: drop-shadow(calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 rgba(0, 0, 0, .35)); }
+.rs-uso-testo { display: flex; flex-direction: column; gap: calc(3 * var(--rs-u)); min-width: 0; }
+.rs-uso-testo b { font: 900 calc(14 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.rs-uso i { font: 800 calc(12 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); font-style: normal; white-space: nowrap; opacity: .7; }
+
+/* ---------- i premi: un riquadro per premio, sul colore di chi lo ha vinto (l'ultima riga si allarga a riempire) ---------- */
+.rs-premi-lista { display: flex; flex-wrap: wrap; gap: calc(18 * var(--rs-u)); }
+.rs-premio { flex: 1 1 calc(25% - 14 * var(--rs-u)); min-width: calc(200 * var(--rs-u)); box-sizing: border-box; display: flex; flex-direction: column; gap: calc(12 * var(--rs-u)); padding: calc(14 * var(--rs-u)); background: var(--c, #d9dde6); color: #000; border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-radius: var(--rs-raggio); box-shadow: var(--rs-sh-s); rotate: calc(var(--nb-rot, 1) * -.4deg); }
+.rs-premio:nth-child(even) { rotate: calc(var(--nb-rot, 1) * .4deg); }
+.rs-premio-testa { display: flex; align-items: center; gap: calc(12 * var(--rs-u)); }
+.rs-premio-testa > div { display: flex; flex-direction: column; gap: calc(3 * var(--rs-u)); min-width: 0; }
+.rs-icona { flex: none; display: grid; place-items: center; width: calc(58 * var(--rs-u)); height: calc(58 * var(--rs-u)); background: var(--rs-carta); border: calc(3 * var(--rs-u)) solid var(--rs-ink); border-radius: 50%; box-shadow: calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 var(--rs-ink); }
+.rs-icona img { width: calc(42 * var(--rs-u)); height: calc(42 * var(--rs-u)); object-fit: contain; }
+.rs-icona-emoji { font-size: calc(28 * var(--rs-u)); line-height: 1; }
+.rs-premio b { font: 900 calc(15 * var(--rs-u))/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; }
+.rs-premio small { font: 700 calc(11 * var(--rs-u))/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.rs-vincitori { display: flex; flex-wrap: wrap; gap: calc(6 * var(--rs-u)) calc(14 * var(--rs-u)); }
+.rs-persona { display: inline-flex; align-items: center; gap: calc(7 * var(--rs-u)); min-width: 0; max-width: 100%; }
+.rs-av { flex: none; width: calc(32 * var(--rs-u)); height: calc(32 * var(--rs-u)); object-fit: contain; filter: drop-shadow(calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 #000); }
+.rs-av-vuoto { display: inline-block; background: rgba(0, 0, 0, .15); border-radius: 50%; filter: none; }
+.rs-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 900 calc(18 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; }
+.rs-valore { align-self: flex-start; margin-top: auto; padding: calc(3 * var(--rs-u)) calc(11 * var(--rs-u)) calc(1 * var(--rs-u)); background: var(--rs-carta); color: #000; border: calc(2 * var(--rs-u)) solid var(--rs-ink); box-shadow: calc(2 * var(--rs-u)) calc(2 * var(--rs-u)) 0 var(--rs-ink); font: 900 calc(12 * var(--rs-u))/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; rotate: calc(var(--nb-rot, 1) * -1.5deg); }
+
+@keyframes rs-saltello { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(-3 * var(--rs-u))); } }
+@media (prefers-reduced-motion: reduce) { .rs-av-grande { animation: none; } }
+
+/* ---------- sul sito, a schermo stretto: un blocco per riga ---------- */
+@media (max-width: 860px) {
+    html:not(.app-shell) .rs { gap: 34px 16px; }
+    html:not(.app-shell) .rs-s4, html:not(.app-shell) .rs-s5, html:not(.app-shell) .rs-s7, html:not(.app-shell) .rs-s8 { grid-column: 1 / -1; }
+    html:not(.app-shell) .rs-lega { margin-left: 0; padding-left: 0; border-left: 0; grid-template-columns: repeat(4, auto); width: 100%; justify-content: space-between; }
+    html:not(.app-shell) .rs-hero { padding: 40px 18px 22px; }
+    html:not(.app-shell) .rs-titolo { font-size: 36px; }
+    html:not(.app-shell) .rs-dati { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    html:not(.app-shell) .rs-campione-nome { font-size: 32px; }
+}
+@media (max-width: 520px) {
+    html:not(.app-shell) .rs-lega { grid-template-columns: repeat(2, auto); gap: 14px 24px; }
+    html:not(.app-shell) .rs-premio { flex-basis: 100%; }
+    html:not(.app-shell) .rs-premi-lista { gap: 16px; }
 }
 
-/* ---------- nell'app: l'aspetto del gioco (pannelli scuri, etichetta gialla), misure in --u, niente tasti RECAP | CALENDAR (ci sono i tag in alto) ---------- */
-html.app-shell .rs { --rs-u: var(--u); gap: calc(14 * var(--u)); color: #fff; font-family: var(--gx-font, 'Josefin Sans', sans-serif); }
+/* ---------- la finestra con la card pronta da condividere o salvare ---------- */
+.rs-velo { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, .72); }
+.rs-dialogo { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: min(92vw, 520px); max-height: 94vh; }
+.rs-dialogo img { display: block; max-width: 100%; max-height: calc(94vh - 80px); object-fit: contain; border: 4px solid #000; background: #fff; box-shadow: 8px 8px 0 #000; }
+.rs-dialogo-azioni { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.rs-dialogo-azioni button, .rs-dialogo-azioni a { padding: 9px 18px 7px; cursor: pointer; font: 900 .95rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-decoration: none; color: #000; background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 #000; }
+.rs-dialogo-azioni button[data-fai="condividi"] { background: #000; color: #fff; border-color: #fff; }
+
+/* ---------- nell'app: misure in --u, angoli arrotondati e ombre in basso come le altre schede del gioco; niente tasti RECAP | CALENDAR (ci sono i tag in alto) ---------- */
+html.app-shell .rs {
+    --rs-u: var(--u); --rs-raggio: calc(10 * var(--u)); --rs-sh-s: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); --rs-sh-m: 0 calc(6 * var(--u)) 0 var(--gx-ink, #000);
+    font-family: var(--gx-font, 'Josefin Sans', sans-serif); gap: calc(32 * var(--u)) calc(20 * var(--u)); padding-top: calc(16 * var(--u));
+}
 html.app-shell .rs-scelta { display: none !important; }
-html.app-shell .rs .cl-finestra { background: radial-gradient(120% 90% at 50% 0%, #2c2766 0%, #1b1740 62%) !important; color: #fff; border: calc(4 * var(--u)) solid var(--gx-ink, #000); border-radius: calc(14 * var(--u)); box-shadow: 0 calc(8 * var(--u)) 0 var(--gx-ink, #000), inset 0 0 0 calc(2 * var(--u)) rgba(255, 255, 255, .1); }
-html.app-shell .rs .cl-barra { height: auto; padding: calc(10 * var(--u)) calc(12 * var(--u)) 0; background: none; font-size: calc(11 * var(--u)); line-height: 1; }
-html.app-shell .rs .cl-barra-titolo { flex: none; overflow: visible; padding: calc(5 * var(--u)) calc(14 * var(--u)) calc(3 * var(--u)); background: var(--gx-giallo, #ffbd44); color: #000; border: calc(3 * var(--u)) solid var(--gx-ink, #000); border-radius: calc(5 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); rotate: -1.5deg; font: 900 calc(15 * var(--u))/1.1 var(--gx-font, 'Josefin Sans', sans-serif); letter-spacing: .08em; }
-html.app-shell .rs .cl-corpo { padding: calc(12 * var(--u)); }
-html.app-shell .rs-titolo { color: #fff; text-shadow: 0 calc(3 * var(--u)) 0 #000; }
-html.app-shell .rs-carta, html.app-shell .rs-campione { rotate: 0deg; border-radius: calc(8 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink, #000); color: #000; }
-html.app-shell .rs-campione { border-radius: calc(10 * var(--u)); }
-html.app-shell .rs-classifica { gap: calc(9 * var(--u)); }
-html.app-shell .rs-classifica .cl-riga { rotate: 0deg; padding: calc(5 * var(--u)) calc(8 * var(--u)); gap: calc(7 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); }
-html.app-shell .rs-classifica .cl-avatar { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
-html.app-shell .rs-classifica .cl-nome { font-size: calc(13 * var(--u)); }
-html.app-shell .rs-classifica .cl-dati { font-size: calc(10 * var(--u)); }
-html.app-shell .rs-classifica .cl-pos { font-size: calc(11 * var(--u)); }
-html.app-shell .rs-classifica .cl-punti { font-size: calc(15 * var(--u)); }
-html.app-shell .rs-condividi, html.app-shell .rs-valore { rotate: 0deg; }
-html.app-shell .rs-condividi { border-radius: calc(8 * var(--u)); box-shadow: 0 calc(4 * var(--u)) 0 var(--gx-ink, #000); }
+html.app-shell .rs-t { border-radius: calc(5 * var(--u)); }
+html.app-shell .rs-tag, html.app-shell .rs-voti, html.app-shell .rs-valore, html.app-shell .rs-tag-nero, html.app-shell .rs-pos { border-radius: calc(5 * var(--u)); }
+html.app-shell .rs-valore { box-shadow: 0 calc(2 * var(--u)) 0 var(--gx-ink, #000); }
+html.app-shell .rs-righe .cl-riga { rotate: 0deg; border-width: calc(3 * var(--u)); border-radius: calc(8 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--gx-ink, #000); }
+html.app-shell .rs-hero { gap: calc(14 * var(--u)) calc(22 * var(--u)); padding: calc(38 * var(--u)) calc(22 * var(--u)) calc(20 * var(--u)); }
+html.app-shell .rs-trofeo { width: calc(112 * var(--u)); height: calc(112 * var(--u)); }
+html.app-shell .rs-hero-testo { flex-basis: calc(220 * var(--u)); }
+html.app-shell .rs-titolo { font-size: calc(40 * var(--u)); }
+html.app-shell .rs-lega { gap: calc(10 * var(--u)) calc(24 * var(--u)); padding-left: calc(22 * var(--u)); }
+html.app-shell .rs-lega-voce b { font-size: calc(30 * var(--u)); }
+/* nell'app lo schermo è largo 740 unità: classifica e colonna a metà, e i pezzi un po' più piccoli perché i nomi non si taglino */
+html.app-shell .rs-s5, html.app-shell .rs-s7 { grid-column: span 6; }
+html.app-shell .rs-righe .cl-riga { max-height: calc(80 * var(--u)); padding: calc(6 * var(--u)) calc(9 * var(--u)); gap: calc(8 * var(--u)); }
+html.app-shell .rs-righe .cl-avatar { width: calc(40 * var(--u)); height: calc(40 * var(--u)); }
+html.app-shell .rs-righe .cl-nome { font-size: calc(15 * var(--u)); }
+html.app-shell .rs-righe .cl-dati { font-size: calc(9 * var(--u)); }
+html.app-shell .rs-righe .cl-pos { font-size: calc(12 * var(--u)); }
+html.app-shell .rs-righe .cl-punti { min-width: calc(42 * var(--u)); padding: calc(4 * var(--u)) calc(7 * var(--u)) calc(2 * var(--u)); font-size: calc(18 * var(--u)); }
+html.app-shell .rs-formati-lista { grid-template-columns: repeat(auto-fit, minmax(calc(86 * var(--u)), 1fr)); gap: calc(10 * var(--u)); }
+html.app-shell .rs-fcard { padding: calc(10 * var(--u)) calc(6 * var(--u)) calc(8 * var(--u)); }
+html.app-shell .rs-pkm { width: calc(62 * var(--u)); height: calc(62 * var(--u)); }
+html.app-shell .rs-dato { padding: calc(6 * var(--u)) calc(8 * var(--u)); }
+html.app-shell .rs-dato-et { font-size: calc(9 * var(--u)); letter-spacing: .03em; }
+html.app-shell .rs-dato-va { font-size: calc(19 * var(--u)); }
+html.app-shell .rs-icona { width: calc(50 * var(--u)); height: calc(50 * var(--u)); }
+html.app-shell .rs-icona img { width: calc(36 * var(--u)); height: calc(36 * var(--u)); }
+html.app-shell .rs-premio b { font-size: calc(13 * var(--u)); }
+html.app-shell .rs-premio, html.app-shell .rs-premio:nth-child(even), html.app-shell .rs-campione-testa { rotate: 0deg; }
 html.app-shell .rs-dialogo { max-width: 92vw; }
 html.app-shell .rs-dialogo img { max-height: calc(94vh - 70px); }
 html.app-shell[data-mt="sd"] #riepilogoStagione, html.app-shell[data-mt="rk"] #riepilogoStagione { display: none !important; }
