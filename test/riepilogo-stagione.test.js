@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const R = require('../docs/riepilogo-stagione.js');
 const AppMatches = require('../docs/app-matches.js');
+const Statistiche = require('../docs/statistiche.js');
 
 const leggi = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
 
@@ -152,4 +153,31 @@ test('il campione ha gli stessi numeri della sua scheda in /stats (Elo, % vittor
     const h = R.html(riep);
     for (const t of ['Elo', 'Win %', 'Best streak', '1160', '80.6%', '79 – 29', '365 – 253']) assert.ok(h.includes(t), t);
     assert.match(h, /WHOLE LEAGUE/);
+});
+
+test('Elo del campione: quello a fine stagione (ultimo match di quella stagione), non il ranking di oggi', () => {
+    const match = (data, e1, d1) => ({ player1Id: 'ada', player2Id: 'bea', player1: 'Ada', player2: 'Bea', p1score: 3, p2score: 0, data, categoria: 'OU',
+        p1EloAtMatch: e1, p2EloAtMatch: 1000, p1DeltaElo: d1, p2DeltaElo: -d1, p1points: 2, p2points: 0 });
+    const showdown = (data, e1, d1) => ({ info: { data, categoria: 'OU', vincitoreShowdown: 'ada' }, matches: { match1: match(data, e1, d1) } });
+    const sA = { info: { id: 'sA', name: 'A', status: 'closed' }, showdowns: { s1: showdown('2026-01-10', 1000, 20), s2: showdown('2026-01-11', 1020, 20), s3: showdown('2026-01-12', 1040, 20) } };
+    const sB = { info: { id: 'sB', name: 'B', status: 'playing' }, showdowns: { s1: showdown('2026-02-10', 1060, 15) } };
+    const players = { ada: { stats: { 'individual-stats': { ranking: 1075, showdownsPlayed: 4 } } }, bea: {} };
+    const risultato = Statistiche.calcola({ seasons: { sA, sB }, players }, { stagione: 'sA' });
+    const riep = R.calcola({ risultato, info: sA.info, leaderboard: { ada: { points: 8, won: 3, lost: 0, setW: 9, sdWon: 3, sdLost: 0 }, bea: { points: 0, won: 0, lost: 3, setW: 0, sdWon: 0, sdLost: 3 } }, showdowns: sA.showdowns });
+    assert.equal(riep.vincitore.id, 'ada');
+    assert.equal(riep.vincitore.stat.elo, 1060, 'fine della stagione A (1040 + 20), non 1075 di oggi');
+    assert.match(R.html(riep), /Final Elo/);
+    // con meno di tre showdown nella stagione l'Elo è unranked: N/A
+    const poche = Statistiche.calcola({ seasons: { sB, sA: { ...sA, showdowns: { s1: sA.showdowns.s1 } } }, players }, { stagione: 'sA' });
+    const r2 = R.calcola({ risultato: poche, info: sA.info, leaderboard: { ada: { points: 2, won: 1, lost: 0, setW: 3, sdWon: 1, sdLost: 0 } }, showdowns: { s1: sA.showdowns.s1 } });
+    assert.equal(r2.vincitore.stat.elo, 0);
+    assert.match(R.html(r2), /Final Elo<\/span><b>N\/A/);
+});
+
+test('sul sito, vedendo il riepilogo la classifica a lato sparisce; nell\'app resta com\'è (i tag in alto)', () => {
+    const js = leggi('riepilogo-stagione.js');
+    assert.match(js, /layout\.classList\.toggle\('rs-solo-riepilogo', v === 'riepilogo'\)/);
+    assert.match(js, /const sito = !doc\.documentElement\.classList\.contains\('app-shell'\)/);
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /html:not\(\.app-shell\) \.hub-main-layout\.rs-solo-riepilogo \.hub-right-column \{ display: none; \}/);
 });

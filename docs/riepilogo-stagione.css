@@ -23,6 +23,9 @@
 .rs-scelta button:hover { translate: -2px -2px; box-shadow: var(--nb-sh-4, 5px 5px 0 #000); }
 .rs-scelta button:active { translate: 1px 1px; box-shadow: none; }
 .hub-left-column[data-vista="riepilogo"] #matchList { display: none; }
+/* sul sito, vedendo il riepilogo non serve la classifica a lato: la colonna dei match prende tutta la larghezza */
+html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-right-column { display: none; }
+html:not(.app-shell) .hub-main-layout.rs-solo-riepilogo .hub-left-column { margin-right: 0 !important; }
 .hub-left-column[data-vista="calendario"] #riepilogoStagione { display: none; }
 
 /* pezzi comuni */

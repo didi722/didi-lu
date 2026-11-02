@@ -139,12 +139,13 @@
         const provvisorio = String(info.status || '').toLowerCase() !== 'closed';
         const idVincitore = (provvisorio ? '' : idDi(info.winner)) || (classifica[0] ? classifica[0].id : '');
         const base = classifica.find(x => x.id === idVincitore) || null;
-        // i numeri del campione sono quelli della sua scheda in /stats (stessa fonte: Statistiche.calcola)
+        // i numeri del campione sono quelli della sua scheda in /stats (stessa fonte: Statistiche.calcola). Con la stagione scelta l'Elo è quello a FINE STAGIONE
+        // (l'ultimo match della stagione: Elo prima + variazione), non il ranking di oggi; con meno di 3 showdown è unranked (N/A)
         const sc = base ? colori.get(base.id) : null;
         const vincitore = base && sc ? {
             ...base,
             stat: {
-                elo: num(sc.elo), percMatch: sc.percMatch == null ? null : num(sc.percMatch),
+                elo: sc.classificato === false ? 0 : num(sc.elo), percMatch: sc.percMatch == null ? null : num(sc.percMatch),
                 set: { vinti: num(sc.set && sc.set.vinti), persi: num(sc.set && sc.set.persi) },
                 ko: { fatti: num(sc.ko && sc.ko.fatti), subiti: num(sc.ko && sc.ko.subiti) },
                 serie: num(sc.serie && sc.serie.vittorieMax)
@@ -229,7 +230,7 @@
         const campione = v
             ? `<div class="rs-campione" style="--c:${coloreSicuro(v.colore, '#ffbd44')}"><div class="rs-campione-testa"><span class="rs-coppa" aria-hidden="true">${riep.provvisorio ? '🥇' : '🏆'}</span>`
               + `<div><span class="rs-etichetta">${riep.provvisorio ? 'CURRENT LEADER' : 'CHAMPION'}</span>${htmlPersona(v, 'rs-grande')}</div></div>`
-              + `<div class="rs-stat">${chip('Points', v.punti)}${st ? chip('Elo', st.elo || 'N/A') : ''}${chip('Showdowns', `${v.sdVinti} – ${v.sdPersi}`)}${chip('Matches', `${v.vinti} – ${v.persi}`)}`
+              + `<div class="rs-stat">${chip('Points', v.punti)}${st ? chip('Final Elo', st.elo || 'N/A') : ''}${chip('Showdowns', `${v.sdVinti} – ${v.sdPersi}`)}${chip('Matches', `${v.vinti} – ${v.persi}`)}`
               + `${st ? chip('Sets', `${st.set.vinti} – ${st.set.persi}`) + chip('Win %', st.percMatch == null ? 'N/A' : `${st.percMatch}%`) + chip('Best streak', st.serie) + chip('KOs', `${st.ko.fatti} – ${st.ko.subiti}`) : ''}</div></div>`
             : '';
         const numeri = `<span class="rs-etichetta rs-lega">WHOLE LEAGUE</span><div class="rs-numeri">${[['Showdowns', n.showdown], ['Matches', n.match], ['Sets', n.set], ['KOs', n.ko]]
@@ -445,8 +446,12 @@
             scelta.innerHTML = '<button type="button" role="tab" data-vista="riepilogo">SEASON RECAP</button><button type="button" role="tab" data-vista="calendario">CALENDAR</button>';
             elenco.parentNode.insertBefore(scelta, elenco);
             elenco.parentNode.insertBefore(corpo, elenco);
+            const layout = colonna.parentNode;
+            const sito = !doc.documentElement.classList.contains('app-shell');
             const vai = v => {
                 colonna.setAttribute('data-vista', v);
+                // sul sito, con il riepilogo (che ha già la classifica finale) la classifica a lato non serve: la colonna dei match prende tutta la larghezza
+                if (sito && layout && layout.classList) layout.classList.toggle('rs-solo-riepilogo', v === 'riepilogo');
                 scelta.querySelectorAll('button').forEach(b => { const su = b.dataset.vista === v; b.classList.toggle('su', su); b.setAttribute('aria-selected', String(su)); });
             };
             scelta.addEventListener('click', e => { const b = e.target.closest ? e.target.closest('button[data-vista]') : null; if (b) vai(b.dataset.vista); });
