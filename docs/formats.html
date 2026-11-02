@@ -1144,6 +1144,9 @@ function verificaConflittoNumerico(a, b) {
     return false;
 }
 
+// I campi a scelta in cui più righe uguali si sommano (Spettro oppure Buio): chi rispetta una qualunque è ammesso
+const CAMPI_CON_ALTERNATIVE = new Set(['type', 'color', 'egg_group', 'highest_stat', 'habitat', 'shape']);
+
 // Funzione principale di validazione ed evidenziazione errori
 function eseguiControlloConflitti() {
     const regole = raccogliDatiRegole();
@@ -1184,6 +1187,9 @@ function eseguiControlloConflitti() {
                             messaggiErrore.push(`Contradiction in ${labelCategoria} (${infoCampo.label}): Conflict in numerical/ordered restrictions.`);
                         }
                     } else if (infoCampo.type === "select" || infoCampo.type === "boolean") {
+                        // tipo, colore, gruppo uova, statistica migliore...: due valori diversi sono alternative (Spettro oppure Buio), non una contraddizione
+                        if (infoCampo.type === "select" && CAMPI_CON_ALTERNATIVE.has(rA.field) && rA.category === "pokemon") continue;
+                        if (infoCampo.type === "select" && rA.category === "mosse" && rA.field === "type") continue;
                         if (rA.value !== null && rB.value !== null && rA.value !== rB.value) {
                             IDConflitti.add(rA.id);
                             IDConflitti.add(rB.id);
@@ -1374,6 +1380,17 @@ async function salvaNuovoFormato() {
                 }
 
                 const oggettoRegola = { mode: r.mode };
+
+                // più righe SPECIFIC sullo stesso campo a scelta (Spettro e Buio): si salvano come alternative
+                const alternativeCampo = (r.mode === "SPECIFIC" && r.operator === "equals" && r.value !== null && r.value !== ""
+                    && (r.category === "pokemon" || (r.category === "mosse" && r.field === "type")) && CAMPI_CON_ALTERNATIVE.has(r.field))
+                    ? regoleInserite.filter(x => x.category === r.category && x.field === r.field && x.mode === "SPECIFIC" && x.operator === "equals" && x.value !== null && x.value !== "").map(x => x.value)
+                    : [];
+                if (alternativeCampo.length > 1) {
+                    const uniche = [...new Set(alternativeCampo)];
+                    payload.restrizioni[r.category][r.field] = { mode: "SPECIFIC", operator: "equals", value: uniche[0], ...(uniche.length > 1 ? { oppure: uniche } : {}) };
+                    return;
+                }
 
                 if (r.mode === "SPECIFIC") {
                     oggettoRegola.operator = r.operator;
@@ -2048,6 +2065,11 @@ function apriModaleModificaFormato(id, dataJsonB64) {
       if (formato.restrizioni && Object.keys(formato.restrizioni).length > 0) {
           Object.entries(formato.restrizioni).forEach(([categoria, campi]) => {
               Object.entries(campi).forEach(([campo, regola]) => {
+                  // più alternative sullo stesso campo (Spettro oppure Buio): una riga ciascuna
+                  if (regola && Array.isArray(regola.oppure) && regola.oppure.length > 1) {
+                      regola.oppure.forEach(v => aggiungiRigaRegola(categoria, campo, { ...regola, value: v, oppure: undefined }));
+                      return;
+                  }
                   // Chiamiamo la funzione passando i dati memorizzati nel DB per ricostruire la catena
                   aggiungiRigaRegola(categoria, campo, regola);
               });

@@ -915,7 +915,7 @@
     // ---- Cosa si sceglie nel profilo e non si può condividere ----------------------------------
 
     // Questi campi di players/{id}/info stanno nell'editor della pagina (prima erano in profile.html)
-    const CAMPI_PROFILO = ['avatar', 'color', 'bio', 'pkmPreferito', 'title', 'musicName', 'musicaPreferita'];
+    const CAMPI_PROFILO = ['avatar', 'color', 'bio', 'pkmPreferito', 'pkmBox', 'title', 'musicName', 'musicaPreferita'];
     const BIO_MAX = 100;
 
     /** "https://x.io/immagini/profile/3.png?v=2" -> "profile/3.png": le ultime due parti, in minuscolo */

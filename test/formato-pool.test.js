@@ -128,3 +128,44 @@ test('box.html usa il modulo condiviso e non ha più una copia della logica del 
     assert.ok(!html.includes('function controllaRestrizioniBiologiche'), 'la copia vecchia è ancora in box.html');
     assert.ok(!html.includes('function controllaTierAmmessa'), 'la copia vecchia è ancora in box.html');
 });
+
+test('più righe "tipo" sullo stesso formato sono alternative: solo Spettro e Buio (oppure) = chi ha uno dei due tipi; una riga sola resta com\'era', () => {
+    const tipi = new Map(Object.entries(base).map(([k, v]) => [k, [].concat(v.type || v.types || []).map(t => String(t).toLowerCase())]));
+    const solo = valori => {
+        const r = valori.length > 1
+            ? { mode: 'SPECIFIC', operator: 'equals', value: valori[0], oppure: valori }
+            : { mode: 'SPECIFIC', operator: 'equals', value: valori[0] };
+        return pool(reg({ baseTier: 'OU', restrizioni: { pokemon: { is_legendary: { mode: 'SPECIFIC', value: 'allowed' }, type: r } } })).pokemon;
+    };
+    const spettro = solo(['Ghost']), buio = solo(['Dark']), entrambi = solo(['Ghost', 'Dark']);
+    assert.ok(spettro.length > 5 && buio.length > 5, 'ci sono Pokémon di tutti e due i tipi');
+    const idsE = new Set(entrambi.map(p => p.id));
+    assert.ok(spettro.every(p => idsE.has(p.id)) && buio.every(p => idsE.has(p.id)), 'Spettro oppure Buio contiene entrambi gli insiemi');
+    assert.ok(idsE.size > Math.max(spettro.length, buio.length), 'e ha più Pokémon di ciascuno');
+    assert.ok(idsE.has('gengar') && idsE.has('tyranitar'), 'Gengar (Spettro) e Tyranitar (Buio)');
+    assert.ok(!idsE.has('garchomp'), 'non Garchomp');
+    // nessun Pokémon fuori dai due tipi
+    for (const p of entrambi) {
+        const t = tipi.get(p.id.toLowerCase());
+        if (t && t.length) assert.ok(t.includes('ghost') || t.includes('dark'), p.id);
+    }
+});
+
+test('le alternative delle regole: stesso risultato nel confronto di team-cpu e nel tooltip del formato; la pagina dei formati le salva e le ricarica', () => {
+    const C = require('../docs/team-cpu.js');
+    if (C.confrontaOperatore) {
+        const r = { operator: 'equals', value: 'ghost', oppure: ['ghost', 'dark'] };
+        assert.equal(C.confrontaOperatore('dark', r), true);
+        assert.equal(C.confrontaOperatore(['dark', 'flying'], r), true);
+        assert.equal(C.confrontaOperatore('fire', r), false);
+    }
+    const html = fs.readFileSync(path.join(DOCS, 'formats.html'), 'utf8');
+    assert.match(html, /CAMPI_CON_ALTERNATIVE = new Set\(\['type', 'color', 'egg_group'/);
+    assert.match(html, /oppure: uniche/, 'salva le alternative');
+    assert.match(html, /regola\.oppure\.forEach\(v => aggiungiRigaRegola/, 'le ricarica una riga ciascuna');
+    assert.match(html, /CAMPI_CON_ALTERNATIVE\.has\(rA\.field\) && rA\.category === "pokemon"\) continue/, 'due tipi diversi non sono un conflitto');
+    const tip = fs.readFileSync(path.join(DOCS, 'formato-tooltip.js'), 'utf8');
+    assert.match(tip, /join\(' or '\)/);
+    const box = fs.readFileSync(path.join(DOCS, 'box.html'), 'utf8');
+    assert.match(box, /regola\.oppure\.some\(v => validaSingoloOperatore/);
+});

@@ -96,6 +96,10 @@
     }
 
     function confrontaOperatore(valore, regola) {
+        // più righe sullo stesso campo (tipo Spettro e tipo Buio): vale chi rispetta una qualunque
+        if (regola.operator === 'equals' && Array.isArray(regola.oppure) && regola.oppure.length) {
+            return regola.oppure.some(v => confrontaOperatore(valore, { ...regola, value: v, oppure: null }));
+        }
         let target = regola.value;
         if (target === 'true') target = true;
         if (target === 'false') target = false;

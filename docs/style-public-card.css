@@ -519,6 +519,15 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 }
 
 .pp-pkm.pp-dietro { z-index: 5; }
+
+/* i fiocchi del compagno scelto dal Box: una riga sotto di lui, sempre davanti */
+.pp-set .pp-pkm-badge {
+    top: auto; left: auto;
+    right: calc(28 * var(--d)); bottom: calc(22 * var(--d));
+    z-index: 20; gap: 3px; pointer-events: none;
+}
+.pp-set .pp-pkm-badge .bt-mini { width: 22px; height: 22px; }
+.pp-set .pp-pkm-badge .bt-mini-img { width: 14px; height: 14px; }
 .pp-pkm.pp-davanti { z-index: 15; }
 
 .pp-pkm-img {
@@ -814,6 +823,12 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     box-shadow: 4px 4px 0 #000;
     transition: transform 0.12s, box-shadow 0.12s;
 }
+
+/* i fiocchi del Pokémon, in alto a destra nella sua casella; i badge del team accanto al nome del team */
+.pp-slot .pp-slot-badge { top: 4px; right: 4px; z-index: 3; gap: 2px; max-width: calc(100% - 8px); flex-wrap: wrap; justify-content: flex-end; pointer-events: none; }
+.pp-slot .pp-slot-badge .bt-mini { width: 22px; height: 22px; }
+.pp-slot .pp-slot-badge .bt-mini-img { width: 14px; height: 14px; }
+.pp-party-badge { margin-left: auto; }
 
 .pp-slot::before {
     content: '';

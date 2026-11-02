@@ -128,7 +128,9 @@
                             dettaglio = `${regola.min} - ${regola.max}`;
                         } else {
                             const op = umanizzaTermineFormato(regola.operator);
-                            const val = umanizzaTermineFormato(regola.value);
+                            const val = Array.isArray(regola.oppure) && regola.oppure.length > 1
+                                ? regola.oppure.map(umanizzaTermineFormato).join(' or ')
+                                : umanizzaTermineFormato(regola.value);
                             dettaglio = (op === '=' || !op) ? val : `${op} ${val}`;
                         }
                         badge = `<span class="frt-badge specific">${escapeHtmlFormato(dettaglio)}</span>`;

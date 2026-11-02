@@ -117,6 +117,11 @@
     function valutaOperatore(valoreJson, operatore, regola) {
         const op = operatore.toLowerCase().trim();
 
+        // più righe sullo stesso campo (tipo Spettro e tipo Buio): vale chi rispetta una qualunque (`oppure` = tutti i valori ammessi)
+        if (op === 'equals' && regola && Array.isArray(regola.oppure) && regola.oppure.length) {
+            return regola.oppure.some(v => valutaOperatore(valoreJson, op, { ...regola, value: v, oppure: null }));
+        }
+
         if (Array.isArray(valoreJson)) {
             const arrLower = valoreJson.map(v => String(v).toLowerCase().trim());
             const target = String(regola.value || '').toLowerCase().trim();
