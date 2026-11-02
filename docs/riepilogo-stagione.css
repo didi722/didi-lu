@@ -115,7 +115,7 @@ html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#bt
 .rs-med-grande { --d: calc(168 * var(--rs-u)); box-shadow: var(--rs-sh-m); }
 .rs-med-medio { --d: calc(96 * var(--rs-u)); }
 .rs-med-piccolo { --d: calc(56 * var(--rs-u)); border-width: calc(3 * var(--rs-u)); }
-.rs-banner { position: relative; z-index: 1; display: inline-block; max-width: 100%; box-sizing: border-box; margin-top: calc(-14 * var(--rs-u)); padding: calc(6 * var(--rs-u)) calc(20 * var(--rs-u)) calc(4 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 900 calc(22 * var(--rs-u))/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-align: center; text-transform: uppercase; overflow-wrap: anywhere; rotate: calc(var(--nb-rot, 1) * -1.5deg); box-shadow: var(--nb-sh-titolo, 3px 3px 0 rgba(0, 0, 0, .3)); }
+.rs-banner { position: relative; z-index: 1; display: inline-block; max-width: 100%; box-sizing: border-box; margin-top: calc(-14 * var(--rs-u)); padding: calc(6 * var(--rs-u)) calc(20 * var(--rs-u)) calc(4 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 900 calc(22 * var(--rs-u))/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-align: center; text-transform: uppercase; overflow-wrap: anywhere; rotate: calc(var(--nb-rot, 1) * -1.5deg); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
 .rs-banner-piccolo { margin-top: calc(-12 * var(--rs-u)); padding: calc(4 * var(--rs-u)) calc(12 * var(--rs-u)) calc(2 * var(--rs-u)); font-size: calc(13 * var(--rs-u)); }
 
 /* ---------- l'MVP: sul colore del suo allenatore, con il fiocco "Season MVP" ---------- */
@@ -168,7 +168,7 @@ html.app-shell[data-mt="rc"] body.pg-matches .top-auth-bar > #btn-mvp#btn-mvp#bt
 .rs-premio-pie { display: flex; flex-wrap: wrap; flex: 1 1 auto; align-items: flex-end; justify-content: space-between; gap: calc(8 * var(--rs-u)); }
 .rs-premio-chi { display: flex; flex-direction: column; align-items: flex-start; gap: calc(10 * var(--rs-u)); min-width: 0; }
 .rs-vincitori { display: flex; flex-wrap: wrap; gap: calc(6 * var(--rs-u)); }
-.rs a.rs-nome-tag { padding: calc(5 * var(--rs-u)) calc(10 * var(--rs-u)) calc(3 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 900 calc(14 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * -1.5deg); white-space: nowrap; }
+.rs a.rs-nome-tag { padding: calc(5 * var(--rs-u)) calc(10 * var(--rs-u)) calc(3 * var(--rs-u)); background: var(--rs-ink); color: #fff; font: 900 calc(14 * var(--rs-u))/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .04em); text-transform: uppercase; rotate: calc(var(--nb-rot, 1) * -1.5deg); white-space: nowrap; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
 .rs-avatar-premio { display: flex; flex: none; margin-left: auto; align-items: flex-end; margin-right: calc(4 * var(--rs-u)); }
 .rs-av-premio { width: calc(68 * var(--rs-u)); height: calc(68 * var(--rs-u)); object-fit: contain; margin-left: calc(-14 * var(--rs-u)); filter: drop-shadow(calc(3 * var(--rs-u)) calc(3 * var(--rs-u)) 0 rgba(0, 0, 0, .45)); }
 .rs-av-premio:first-child { margin-left: 0; }

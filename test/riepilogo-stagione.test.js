@@ -290,3 +290,10 @@ test('i Pokémon (MVP, migliori di ogni formato, più usati) sono medaglioni com
     assert.equal(R.nomePokeApi('Urshifu-*'), 'urshifu');
     assert.equal(R.nomePokeApi("Farfetch'd"), 'farfetchd');
 });
+
+test('le etichette nere dei nomi (allenatore e Pokémon) hanno la stessa ombra corta, quella dei blocchi scuri del tema', () => {
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /\.rs a\.rs-nome-tag \{[^}]*box-shadow: var\(--nb-sh-s-scuro, 3px 3px 0 rgba\(0, 0, 0, \.35\)\)/);
+    assert.match(css, /\.rs-banner \{[^}]*box-shadow: var\(--nb-sh-s-scuro, 3px 3px 0 rgba\(0, 0, 0, \.35\)\)/);
+    assert.doesNotMatch(css, /\.rs-banner \{[^}]*--nb-sh-titolo/, 'l\'ombra del titolo è troppo lontana');
+});
