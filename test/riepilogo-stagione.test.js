@@ -216,3 +216,24 @@ test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe
     assert.match(css, /body\.rs-vista-riepilogo \.top-auth-bar \.btn-registered-teams, body\.rs-vista-riepilogo \.top-auth-bar #btn-mvp \{ display: none !important; \}/);
     assert.match(css, /html\.app-shell\[data-mt="rc"\][^{]*#btn-mvp[^{]*\{ display: none !important; \}/);
 });
+
+test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e i titoli MVP e formati hanno la loro', () => {
+    for (const f of ['eject-button', 'exp-share', 'master-ball', 'poke-ball', 'rare-candy']) {
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', `${f}.png`)), f);
+    }
+    const g = [giocatore('ada', { eloDelta: 30, azioni: { setConDati: 30, cambi: 30 } }), giocatore('bea')];
+    const premi = Object.fromEntries(R.calcola(dati(g)).premi.map(x => [x.id, x]));
+    assert.equal(premi.elo.immagine.src, 'immagini/riepilogo/rare-candy.png');
+    assert.equal(premi.cambi.immagine.src, 'immagini/riepilogo/eject-button.png');
+    assert.equal(premi.cambi.immagine.pixel, true, 'è da 24 px: si ingrandisce senza sfumare');
+    assert.equal(premi.ko, undefined);
+    const h = R.html(R.calcola(dati(g)));
+    assert.match(h, /class="rs-icona-img" src="immagini\/riepilogo\/rare-candy\.png"/);
+    assert.match(h, /class="rs-icona-img rs-pixel" src="immagini\/riepilogo\/eject-button\.png"/);
+    assert.match(h, /onerror="this\.onerror=null;this\.src='immagini\/riepilogo\/poke-ball\.png'"/, 'la palla è la riserva');
+    const conMvp = R.html(R.calcola(dati(g, { mvp: { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'Ada', voti: 1 } } } } })));
+    assert.match(conMvp, /rs-titolo-img" src="immagini\/riepilogo\/master-ball\.png"[^>]*> SEASON MVP/);
+    // un premio senza immagine mantiene la sua emoji
+    const ko = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 40, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 0 } }), giocatore('bea')])));
+    assert.match(ko, /rs-icona" aria-hidden="true">💥/);
+});

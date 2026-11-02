@@ -35,6 +35,17 @@
         return { tipo, icona: tipo === 'cup' && info && info.icona ? String(info.icona) : TROFEI[tipo] };
     };
 
+    // Le immagini a tema Pokémon (strumenti) al posto delle emoji. Dove manca ancora l'immagine resta l'emoji. `pixel`: è piccola (24 px), si ingrandisce senza sfumare.
+    const IMG = 'immagini/riepilogo/';
+    const IMMAGINI = {
+        elo: { src: `${IMG}rare-candy.png` },
+        cambi: { src: `${IMG}eject-button.png`, pixel: true },
+        collezione: { src: `${IMG}poke-ball.png` }
+    };
+    const IMMAGINE_MVP = `${IMG}master-ball.png`;           // il titolo dell'MVP
+    const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
+    const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
+
     const MIN_SET = 6;              // sotto questi set giocati non si premiano le medie (il muro, il cambio...)
     const MAX_PARI = 3;             // a pari merito si premiano al più tanti allenatori
 
@@ -108,7 +119,7 @@
         const premi = [];
         for (const d of defs) {
             const esito = d.calc();
-            if (esito) premi.push({ id: d.id, icona: d.icona, titolo: d.titolo, descrizione: d.testo, vincitori: esito.vincitori.map(persona), valore: esito.valore, testoValore: d.valore(esito.valore) });
+            if (esito) premi.push({ id: d.id, icona: d.icona, immagine: IMMAGINI[d.id] || null, titolo: d.titolo, descrizione: d.testo, vincitori: esito.vincitori.map(persona), valore: esito.valore, testoValore: d.valore(esito.valore) });
         }
         // la sorpresa: ha vinto chi aveva meno Elo (e di quanto)
         const s = extra.sorpresa;
@@ -209,7 +220,9 @@
     const dataBreve = iso => { const p = String(iso || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : ''; };
     const linkGiocatore = nome => `public.html?player=${encodeURIComponent(String(nome || '').trim())}`;
 
-    const finestra = (titolo, corpo, classe = '') => `<section class="cl-finestra rs-sez ${classe}"><div class="cl-barra"><span class="cl-barra-titolo">${esc(titolo)}</span></div><div class="cl-corpo">${corpo}</div></section>`;
+    /** L'icona di un titolo (immagine piccola davanti al testo) */
+    const iconaTitolo = src => (src ? `<img class="rs-titolo-img" src="${esc(src)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'"> ` : '');
+    const finestra = (titolo, corpo, classe = '', icona = '') => `<section class="cl-finestra rs-sez ${classe}"><div class="cl-barra"><span class="cl-barra-titolo">${iconaTitolo(icona)}${esc(titolo)}</span></div><div class="cl-corpo">${corpo}</div></section>`;
 
     function htmlPersona(p, extraClasse = '') {
         const colore = coloreSicuro(p.colore, '#8a8a8a');
@@ -226,6 +239,12 @@
         return `<a class="cl-riga${c.posizione === 1 ? ' cl-primo' : ''}" href="${esc(linkGiocatore(c.nome))}" style="--cl-colore:${coloreSicuro(c.colore, '#31c489')}">`
             + `<span class="cl-pos">#${c.posizione}</span>${avatar}<span class="cl-testi"><span class="cl-nome">${esc(c.nome)}</span>`
             + `<span class="cl-dati">SD ${c.sdVinti}-${c.sdPersi} · MATCH ${c.vinti}-${c.persi}</span></span><span class="cl-punti">${c.punti}</span></a>`;
+    }
+
+    /** L'icona di un premio: l'immagine se c'è (con la palla di riserva se non si carica), altrimenti l'emoji */
+    function htmlIconaPremio(p) {
+        if (!p.immagine) return esc(p.icona);
+        return `<img class="rs-icona-img${p.immagine.pixel ? ' rs-pixel' : ''}" src="${esc(p.immagine.src)}" alt="" decoding="async" onerror="this.onerror=null;this.src='${IMMAGINE_RISERVA}'">`;
     }
 
     /** Il trofeo della stagione: la league è la coppa colorata con il colore del campione (come nel profilo), le altre hanno il loro PNG */
@@ -260,17 +279,17 @@
 
         const mvp = riep.mvp
             ? finestra('SEASON MVP', `<div class="rs-mvp-corpo">${imgPkm(riep.mvp.specie, gif)}<div><b>${esc(riep.mvp.specie)}</b>`
-                + `<span>${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span>${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></div></div>`)
-            : riep.mvpInCorso ? finestra('SEASON MVP', '<p class="rs-nota">The votes are still being counted.</p>') : '';
+                + `<span>${esc(riep.mvp.team)} · ${esc(riep.mvp.player)}</span><span>${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}</span></div></div>`, '', IMMAGINE_MVP)
+            : riep.mvpInCorso ? finestra('SEASON MVP', '<p class="rs-nota">The votes are still being counted.</p>', '', IMMAGINE_MVP) : '';
 
         const formati = riep.formatiMigliori.length
             ? finestra('BEST OF EACH FORMAT', `<div class="rs-griglia rs-formati">${riep.formatiMigliori.map(f =>
-                `<div class="rs-carta rs-formato">${imgPkm(f.specie, gif)}<span class="rs-etichetta">${esc(f.formato)}</span><b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div>`)
+                `<div class="rs-carta rs-formato">${imgPkm(f.specie, gif)}<span class="rs-etichetta">${esc(f.formato)}</span><b>${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div>`, '', IMMAGINE_FORMATI)
             : '';
 
         const premi = riep.premi.length
             ? finestra('AWARDS', `<div class="rs-griglia rs-premi">${riep.premi.map(p =>
-                `<article class="rs-carta rs-premio"><span class="rs-icona" aria-hidden="true">${p.icona}</span><div><b>${esc(p.titolo)}</b>`
+                `<article class="rs-carta rs-premio"><span class="rs-icona" aria-hidden="true">${htmlIconaPremio(p)}</span><div><b>${esc(p.titolo)}</b>`
                 + `<small>${esc(p.descrizione)}</small><div class="rs-vincitori">${p.vincitori.map(v => htmlPersona(v)).join('')}</div><span class="rs-valore">${esc(p.testoValore)}</span></div></article>`).join('')}</div>`)
             : '';
 
@@ -316,12 +335,15 @@
         const INK = '#000', CARTA = '#ffffff', SFONDO = '#e6e9ef', NEUTRO = '#d9dde6';       // niente giallo: la card è bianca, nera e dei colori degli allenatori
 
         const trofeo = riep.trofeo || { tipo: 'league', icona: TROFEI.league };
-        const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, maschera] = await Promise.all([
+        const mostrati = riep.premi.slice(0, 6);
+        const [avatarCampione, avatarClassifica, spriteMvp, imgTrofeo, maschera, immaginiPremi, ballMvp] = await Promise.all([
             caricaImmagine(win, riep.vincitore && riep.vincitore.avatar),
             Promise.all(riep.classifica.slice(0, 5).map(x => caricaImmagine(win, x.avatar))),
             caricaImmagine(win, riep.mvp && gif ? gif(riep.mvp.specie) : ''),
             caricaImmagine(win, trofeo.icona),
-            trofeo.tipo === 'league' ? caricaImmagine(win, TROFEO_COLORE) : Promise.resolve(null)
+            trofeo.tipo === 'league' ? caricaImmagine(win, TROFEO_COLORE) : Promise.resolve(null),
+            Promise.all(mostrati.map(p => caricaImmagine(win, p.immagine && p.immagine.src))),
+            caricaImmagine(win, riep.mvp ? IMMAGINE_MVP : '')
         ]);
 
         const testoFit = (t, x, y, maxW, px, peso, famiglia, colore, allinea = 'left') => {
@@ -407,8 +429,10 @@
         if (riep.mvp) {
             riquadro(X + 30, y, L - 60, 116, '#fff', 6, 6);
             if (spriteMvp) { const k = Math.min(110 / spriteMvp.width, 110 / spriteMvp.height, 3); c.drawImage(spriteMvp, X + 70, y + 58 - spriteMvp.height * k / 2, spriteMvp.width * k, spriteMvp.height * k); }
-            c.fillStyle = INK; c.fillRect(X + 190, y + 14, 150, 30);
-            testoFit('SEASON MVP', X + 202, y + 37, 130, 20, 900, FT, '#fff');
+            const dx = ballMvp ? 40 : 0;       // la palla davanti all'etichetta
+            if (ballMvp) c.drawImage(ballMvp, X + 190, y + 10, 36, 36);
+            c.fillStyle = INK; c.fillRect(X + 190 + dx, y + 14, 150, 30);
+            testoFit('SEASON MVP', X + 202 + dx, y + 37, 130, 20, 900, FT, '#fff');
             testoFit(String(riep.mvp.specie).toUpperCase(), X + 190, y + 80, L - 60 - 180, 40, 900, FT, INK);
             testoFit(`${riep.mvp.team} · ${riep.mvp.player} · ${riep.mvp.voti} vote${riep.mvp.voti === 1 ? '' : 's'}`, X + 190, y + 106, L - 60 - 180, 20, 700, FX, 'rgba(0,0,0,.7)');
             y += 116 + 20;
@@ -417,11 +441,20 @@
         // premi (i primi sei che ci stanno)
         const spazio = (H - 54 - 56) - y;      // fino al piede della carta (resta posto per la riga dei numeri)
         const righe = Math.max(0, Math.min(3, Math.floor(spazio / 94)));
-        riep.premi.slice(0, righe * 2).forEach((p, i) => {
+        mostrati.slice(0, righe * 2).forEach((p, i) => {
             const px = X + 30 + (i % 2) * ((L - 60) / 2 + 8), py = y + Math.floor(i / 2) * 94;
             const pw = (L - 60) / 2 - 8;
             riquadro(px, py, pw, 84, '#fff', 5, 5);
-            c.font = '44px sans-serif'; c.textAlign = 'left'; c.fillStyle = INK; c.fillText(p.icona, px + 14, py + 56);
+            const im = immaginiPremi[i];
+            if (im) {
+                // piccola (24 px): ingrandita di un numero intero e senza sfumare; le altre rimpicciolite normalmente
+                const piccola = im.width <= 32;
+                const lato = piccola ? im.width * Math.max(1, Math.round(48 / im.width)) : 52;
+                const k = Math.min(lato / im.width, lato / im.height);
+                c.save(); if (piccola) c.imageSmoothingEnabled = false;
+                c.drawImage(im, px + 14 + (52 - im.width * k) / 2, py + 14 + (52 - im.height * k) / 2, im.width * k, im.height * k);
+                c.restore();
+            } else { c.font = '44px sans-serif'; c.textAlign = 'left'; c.fillStyle = INK; c.fillText(p.icona, px + 14, py + 56); }
             testoFit(p.titolo.toUpperCase(), px + 76, py + 30, pw - 92, 23, 900, FT, INK);
             testoFit(p.vincitori.map(v => v.nome).join(', '), px + 76, py + 57, pw - 92, 23, 800, FX, INK);
             testoFit(p.testoValore, px + 76, py + 77, pw - 92, 17, 700, FX, 'rgba(0,0,0,.65)');
