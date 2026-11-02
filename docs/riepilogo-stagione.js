@@ -489,6 +489,8 @@
                 colonna.setAttribute('data-vista', v);
                 // sul sito, con il riepilogo (che ha già la classifica finale) la classifica a lato non serve: la colonna dei match prende tutta la larghezza
                 if (sito && layout && layout.classList) layout.classList.toggle('rs-solo-riepilogo', v === 'riepilogo');
+                // e in alto non servono "Registered teams" e "Vote MVP" (i team e l'MVP sono nel riepilogo)
+                if (sito && doc.body) doc.body.classList.toggle('rs-vista-riepilogo', v === 'riepilogo');
                 scelta.querySelectorAll('button').forEach(b => { const su = b.dataset.vista === v; b.classList.toggle('su', su); b.setAttribute('aria-selected', String(su)); });
             };
             scelta.addEventListener('click', e => { const b = e.target.closest ? e.target.closest('button[data-vista]') : null; if (b) vai(b.dataset.vista); });

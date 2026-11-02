@@ -208,3 +208,11 @@ test('estetica: le etichette nere hanno il testo bianco (non giallo) e la card i
     assert.doesNotMatch(js, /GIALLO\b|ffbd44/, 'la card non usa il giallo');
     assert.match(js, /testoFit\(riep\.provvisorio \? 'CURRENT LEADER' : 'CHAMPION', X \+ 338, y \+ 44, 190, 23, 900, FT, '#fff'\)/);
 });
+
+test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe sul body; app: tag Recap)', () => {
+    const js = leggi('riepilogo-stagione.js');
+    assert.match(js, /doc\.body\.classList\.toggle\('rs-vista-riepilogo', v === 'riepilogo'\)/);
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /body\.rs-vista-riepilogo \.top-auth-bar \.btn-registered-teams, body\.rs-vista-riepilogo \.top-auth-bar #btn-mvp \{ display: none !important; \}/);
+    assert.match(css, /html\.app-shell\[data-mt="rc"\][^{]*#btn-mvp[^{]*\{ display: none !important; \}/);
+});
