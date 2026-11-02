@@ -1,11 +1,15 @@
 // =====================================================
 // MATCH DELLA SETTIMANA — Poké-Tournament
 //
-// Nella home, sotto le stagioni: il set più bello degli ultimi sette giorni, con il replay a un tocco. Si sceglie da solo, dai numeri che il sito ha già
-// (seasons/{id}/showdowns/{sd}/matches/{m}/setStats: un'analisi del log di ogni set, e replays/{set}/url). Niente da salvare.
+// Nella home, sotto le stagioni: un BANNER lungo e basso con il set più bello di una settimana e il replay a un tocco. Con le frecce (o i tasti ←/→, o
+// scorrendo col dito) si passa da una settimana all'altra. Si sceglie da solo, dai numeri che il sito ha già (seasons/{id}/showdowns/{sd}/matches/{m}/
+// setStats: un'analisi del log di ogni set, e replays/{set}/url). Niente da salvare.
 //
-// COME SI SCEGLIE. Ogni set riceve un PUNTEGGIO DI SPETTACOLO; vince il più alto tra i set giocati negli ultimi 7 giorni. Se in questi 7 giorni non si è
-// giocato (tra una stagione e l'altra) si prende la settimana dell'ultima partita giocata: il blocco c'è sempre finché esiste un replay.
+// LE SETTIMANE sono quelle di calendario: da lunedì a domenica (non "gli ultimi 7 giorni"). Un set appartiene alla settimana del giorno in cui è stato
+// giocato. Le settimane con almeno un set sono quelle che si possono scorrere; all'apertura si vede l'ultima. Se nella settimana in corso non si è ancora
+// giocato, resta quella dell'ultima settimana in cui si è giocato: il banner c'è sempre finché esiste un replay.
+//
+// COME SI SCEGLIE, dentro una settimana. Ogni set riceve un PUNTEGGIO DI SPETTACOLO; vince il più alto.
 //   - com'è finito:     vinto con 1 solo Pokémon rimasto +40 (con 0, cioè l'ultimo KO decide: +46), con 2 +14, con 3 o più 0 (una passeggiata)
 //   - la rimonta:       il vincitore è arrivato a essere sotto di 2 Pokémon +26, di 3 +48 (di 1 solo: +4)
 //   - la durata:        1,2 punti per turno, fino a 24 turni
@@ -15,9 +19,10 @@
 //   - il match stretto: +6 se il match è finito con un solo set di scarto
 // A parità vince il set giocato più di recente. Si escludono la stagione beta e i set senza replay (non ci sarebbe niente da guardare).
 //
-// Due parti:
-//   - scegli(seasons, { adesso }) / analizzaSet(setStats): pure, niente DOM e niente Firebase (provate in test/match-settimana.test.js);
-//   - html(scelto, { giocatori, gif }) / linkReplay(scelto): il blocco della home (match-settimana.css) e il link a matches.html?replay=...
+// Tre parti:
+//   - settimane(seasons, { adesso }) / scegli() / analizzaSet(setStats): pure, niente DOM e niente Firebase (provate in test/match-settimana.test.js);
+//   - html(scelto, { ... }): il banner di una settimana; linkReplay(): il link a matches.html?replay=...;
+//   - monta(win, radice, { gif, leggiGiocatore }): disegna il banner, tiene la settimana guardata e collega le frecce, la tastiera e lo scorrimento.
 // Funziona nel browser (window.MatchSettimana) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
@@ -26,8 +31,8 @@
 })(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
-    const GIORNI = 7;
     const GIORNO_MS = 86400000;
+    const MESI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
@@ -53,6 +58,41 @@
         const e = Date.parse(match && match.lastEdit);
         return Number.isFinite(e) ? e : null;
     }
+
+    // -----------------------------------------------------
+    // Le settimane (da lunedì a domenica)
+    // -----------------------------------------------------
+    /** Il lunedì (mezzogiorno UTC) della settimana di un giorno */
+    function lunediDi(ts) {
+        const d = new Date(ts);
+        const dow = (d.getUTCDay() + 6) % 7;          // lunedì = 0 ... domenica = 6
+        return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow, 12);
+    }
+    /** Oggi come giorno (mezzogiorno UTC) nel fuso di chi guarda */
+    function oggiComeGiorno(adesso) {
+        const d = new Date(adesso);
+        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    }
+    /** Il numero della settimana (ISO: quella del giovedì) di un lunedì, e il suo anno */
+    function numeroSettimana(lunedi) {
+        const giovedi = lunedi + 3 * GIORNO_MS;
+        const anno = new Date(giovedi).getUTCFullYear();
+        const giorni = Math.round((giovedi - Date.UTC(anno, 0, 1, 12)) / GIORNO_MS);
+        return { numero: Math.floor(giorni / 7) + 1, anno };
+    }
+    /** Come si chiama una settimana: "This week", "Last week" o "Week 43", e le sue date ("19–25 Oct", "26 Oct – 1 Nov") */
+    function etichettaSettimana(w, adesso = Date.now()) {
+        const lunediOggi = lunediDi(oggiComeGiorno(adesso));
+        const diff = Math.round((lunediOggi - w.inizio) / (7 * GIORNO_MS));
+        const titolo = diff === 0 ? 'This week' : diff === 1 ? 'Last week' : `Week ${w.numero}`;
+        const a = new Date(w.inizio), b = new Date(w.fine);
+        const intervallo = a.getUTCMonth() === b.getUTCMonth()
+            ? `${a.getUTCDate()}–${b.getUTCDate()} ${MESI[a.getUTCMonth()]}`
+            : `${a.getUTCDate()} ${MESI[a.getUTCMonth()]} – ${b.getUTCDate()} ${MESI[b.getUTCMonth()]}`;
+        return { titolo, intervallo };
+    }
+    /** La settimana a cui si passa muovendosi di `delta` (-1 più vecchia, +1 più nuova): non si esce dall'elenco */
+    const spostamento = (indice, delta, totale) => Math.max(0, Math.min(Math.max(0, totale - 1), indice + delta));
 
     // -----------------------------------------------------
     // Quanto è bello un set
@@ -169,23 +209,41 @@
         return fuori;
     }
 
+    /** Il set che identifica una settimana scelta (per capire se è cambiato) */
+    const chiaveSet = s => (s ? [s.stagione, s.showdown, s.match, s.set].join('|') : '');
+
     /**
-     * Il set più bello degli ultimi `giorni` giorni (o della settimana dell'ultima partita, se in questi giorni non si è giocato).
+     * Le settimane (da lunedì a domenica) in cui si è giocato almeno un set con replay, dalla più vecchia alla più nuova, ognuna con il suo set più bello.
+     * La settimana in corso c'è solo se ha già un set: se no l'ultima è quella dell'ultima partita giocata. Niente date nel futuro.
      * @param {object} seasons  il nodo `seasons` di Firebase
-     * @returns {object|null}   il set scelto (analizzaSet + dove sta + chi lo ha giocato), con `corrente` (true: è davvero degli ultimi giorni) e `quanti` (set in gara)
+     * @returns {{ elenco: Array<{ inizio, fine, numero, anno, corrente, quanti, scelto }>, indice: number }}  `indice` è la settimana da mostrare all'apertura (l'ultima)
      */
-    function scegli(seasons, { adesso = Date.now(), giorni = GIORNI } = {}) {
-        const tutti = candidati(seasons).filter(c => c.quando <= adesso + GIORNO_MS);
-        if (!tutti.length) return null;
-        let corrente = true;
-        let gara = tutti.filter(c => c.quando > adesso - giorni * GIORNO_MS);
-        if (!gara.length) {
-            const ultimo = Math.max(...tutti.map(c => c.quando));
-            gara = tutti.filter(c => c.quando > ultimo - giorni * GIORNO_MS);
-            corrente = false;
+    function settimane(seasons, { adesso = Date.now() } = {}) {
+        const oggi = oggiComeGiorno(adesso);
+        const lunediOggi = lunediDi(oggi);
+        const per = new Map();
+        for (const c of candidati(seasons)) {
+            if (c.quando > oggi + GIORNO_MS) continue;          // una data nel futuro è un errore (un giorno di tolleranza per i fusi orari)
+            const lunedi = lunediDi(c.quando);
+            if (lunedi > lunediOggi) continue;                  // una settimana che deve ancora cominciare
+            if (!per.has(lunedi)) per.set(lunedi, []);
+            per.get(lunedi).push(c);
         }
-        gara.sort((x, y) => y.punteggio - x.punteggio || y.quando - x.quando || String(x.showdown + x.match + x.set).localeCompare(String(y.showdown + y.match + y.set)));
-        return { ...gara[0], corrente, quanti: gara.length };
+        const elenco = [...per.entries()].sort((a, b) => a[0] - b[0]).map(([inizio, set]) => {
+            // il più bello; a parità il più recente; poi l'ordine dei nomi, perché nulla sia lasciato al caso
+            set.sort((x, y) => y.punteggio - x.punteggio || y.quando - x.quando || chiaveSet(x).localeCompare(chiaveSet(y)));
+            const { numero, anno } = numeroSettimana(inizio);
+            return { inizio, fine: inizio + 6 * GIORNO_MS, numero, anno, corrente: inizio === lunediOggi, quanti: set.length, scelto: set[0] };
+        });
+        return { elenco, indice: elenco.length - 1 };
+    }
+
+    /** Il set più bello della settimana da mostrare all'apertura (la in corso o, se è vuota, l'ultima giocata); null se non c'è niente. */
+    function scegli(seasons, opzioni) {
+        const { elenco, indice } = settimane(seasons, opzioni);
+        if (!elenco.length) return null;
+        const w = elenco[indice];
+        return { ...w.scelto, corrente: w.corrente, quanti: w.quanti, settimana: { inizio: w.inizio, fine: w.fine, numero: w.numero, anno: w.anno } };
     }
 
     /** Il link che apre il replay di quel set: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (matches.html lo apre da solo) */
@@ -194,24 +252,33 @@
     }
 
     // -----------------------------------------------------
-    // Come si vede (match-settimana.css)
+    // Come si vede (match-settimana.css): un banner basso e lungo
     // -----------------------------------------------------
     const dataBreve = iso => {
         const t = giornoDi(iso);
         if (t == null) return '';
         const d = new Date(t);
-        return `${d.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]}`;
+        return `${d.getUTCDate()} ${MESI[d.getUTCMonth()]}`;
     };
     const COLORE_NEUTRO = '#d9dde6';
+    const FRECCIA = { '-1': 'M16 3 L7 12 L16 21', '1': 'M8 3 L17 12 L8 21' };
+    const bottoneFreccia = (verso, attivo) => `<button type="button" class="ms-freccia ${verso < 0 ? 'ms-prec' : 'ms-succ'}" data-ms-vai="${verso}"`
+        + ` aria-label="${verso < 0 ? 'Previous week' : 'Next week'}" title="${verso < 0 ? 'Previous week' : 'Next week'}"${attivo ? '' : ' disabled'}>`
+        + `<svg viewBox="0 0 24 24" width="12" height="18" aria-hidden="true" focusable="false"><path d="${FRECCIA[verso]}" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>`;
 
     /**
-     * Il blocco della home: un nastro basso (si legge a colpo d'occhio, senza rubare la pagina alle stagioni).
-     *   in alto: i due allenatori sui loro colori, uno di fronte all'altro (avatar, nome, team, i Pokémon portati) e in mezzo formato e set
-     *   in basso: il Pokémon protagonista, perché è bello e il tasto del replay
-     * @param {object} s  il risultato di scegli()
-     * @param {object} extra  giocatori: { id: { colore, avatar } }; gif(specie): l'immagine animata di un Pokémon
+     * Il banner di una settimana (il contenuto di `.ms`): una riga lunga e bassa.
+     *   sul bordo in alto: l'etichetta nera a sinistra e, a destra, la settimana con le frecce per passare alla precedente e alla successiva
+     *   nella riga: i due allenatori uno di fronte all'altro (avatar, nome, i Pokémon portati), in mezzo formato e set, il Pokémon protagonista con il motivo, il replay
+     * @param {object} s  il set scelto di una settimana (settimane().elenco[i].scelto)
+     * @param {object} extra
+     *   giocatori   { id: { colore, avatar } }
+     *   gif         gif(specie): l'immagine animata di un Pokémon
+     *   settimana   { titolo, intervallo } (etichettaSettimana)
+     *   indice, totale  quale settimana è e quante sono: con più di una compaiono le frecce
+     *   animazione  'dx' | 'sx': da che parte entra il contenuto passando da una settimana all'altra
      */
-    function html(s, { giocatori = {}, gif } = {}) {
+    function html(s, { giocatori = {}, gif, settimana, indice = 0, totale = 1, animazione = '' } = {}) {
         if (!s) return '';
         const sprite = (p, classe) => (gif && p.specie
             ? `<img class="${classe}${p.svenuto ? ' ms-ko' : ''}" src="${esc(gif(p.specie))}" alt="${esc(p.specie)}" title="${esc(p.specie)}${p.svenuto ? ' (fainted)' : ''}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
@@ -220,27 +287,133 @@
             const vince = s.vincitore === k;
             const pagina = `public.html?player=${encodeURIComponent(g.nome)}`;
             const avatar = extra.avatar ? `<img class="ms-av" src="${esc(extra.avatar)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>';
-            return `<div class="ms-lato ms-l${n}${vince ? ' ms-vince' : ''}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}">`
+            return `<div class="ms-lato ms-l${n}${vince ? ' ms-vince' : ''}" style="--c:${coloreSicuro(extra.colore, COLORE_NEUTRO)}" title="${esc(g.team || 'Random teams')}">`
                 + `${vince ? '<span class="ms-win">WINNER</span>' : ''}`
                 + `<a class="ms-av-link" href="${esc(pagina)}">${avatar}</a>`
                 + `<div class="ms-testi"><a class="ms-nome-link" href="${esc(pagina)}"><b class="ms-nome">${esc(g.nome)}</b></a>`
-                + `<span class="ms-team">${esc(g.team || 'Random teams')}</span>`
                 + `<div class="ms-sprites">${s.lati[k].pokemon.map(p => sprite(p, 'ms-spr')).join('')}</div></div></div>`;
         };
+        // il protagonista: medaglione (come nel Box), nome e il motivo più importante; gli altri motivi stanno nel suggerimento al passaggio del mouse
         const prot = s.protagonista;
+        const motivo = s.motivi.length ? `<span class="ms-chip">${esc(s.motivi[0])}</span>` : '';
         const medaglione = prot && gif
-            ? `<div class="ms-prot"><span class="ms-med" data-pkm="${esc(prot.specie)}"><img src="${esc(gif(prot.specie))}" alt="${esc(prot.specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>`
-              + `<div class="ms-prot-testo"><b class="ms-banner">${esc(prot.specie)}</b><span class="ms-didascalia">${prot.ultimo ? 'Last one standing' : 'Top performer'}</span></div></div>`
-            : '';
+            ? `<div class="ms-prot" title="${esc(s.motivi.join(' · '))}"><span class="ms-med" data-pkm="${esc(prot.specie)}"><img src="${esc(gif(prot.specie))}" alt="${esc(prot.specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>`
+              + `<div class="ms-prot-testo"><b class="ms-banner">${esc(prot.specie)}</b>${motivo}</div></div>`
+            : (motivo ? `<div class="ms-prot" title="${esc(s.motivi.join(' · '))}"><div class="ms-prot-testo">${motivo}</div></div>` : '');
         const quando = dataBreve(s.data);
-        return `<span class="ms-t">MATCH OF THE WEEK</span>`
-            + `<div class="ms-scontro">${lato('p1', 1)}`
-            + `<div class="ms-centro"><span class="ms-tag">${esc(s.categoria || 'Showdown')}</span><b class="ms-vs">VS</b>`
-            + `<span class="ms-set">Set ${s.numeroSet} · Match ${s.numeroMatch}</span>${quando ? `<span class="ms-data">${esc(quando)}</span>` : ''}</div>`
-            + `${lato('p2', 2)}</div>`
-            + `<div class="ms-pie">${medaglione}<div class="ms-motivi">${s.motivi.map(m => `<span class="ms-chip">${esc(m)}</span>`).join('')}</div>`
-            + `<a class="ms-replay" href="${esc(linkReplay(s))}">WATCH THE REPLAY</a></div>`;
+        const piu = totale > 1;
+        // la settimana: con più di una, le frecce ai lati (la prima e l'ultima sono spente quando non c'è altro da cui andare)
+        const pager = settimana
+            ? `<div class="ms-pager${piu ? '' : ' ms-solo'}" role="group" aria-label="Week">${piu ? bottoneFreccia(-1, indice > 0) : ''}`
+              + `<span class="ms-sett"><b>${esc(settimana.titolo)}</b><span>${esc(settimana.intervallo)}</span></span>${piu ? bottoneFreccia(1, indice < totale - 1) : ''}</div>`
+            : '';
+        return `<span class="ms-t">MATCH OF THE WEEK</span>${pager}`
+            + `<div class="ms-corpo${animazione ? ` ms-in-${animazione === 'sx' ? 'sx' : 'dx'}` : ''}" aria-live="polite"><div class="ms-scontro">${lato('p1', 1)}`
+            + `<div class="ms-centro" title="${esc([s.categoria, quando, s.nomeStagione, `Match ${s.punteggioMatch}`].filter(Boolean).join(' · '))}"><span class="ms-tag">${esc(s.categoria || 'Showdown')}</span><b class="ms-vs">VS</b>`
+            + `<span class="ms-set">Set ${s.numeroSet} · Match ${s.numeroMatch}</span></div>`
+            + `${lato('p2', 2)}</div>${medaglione}`
+            + `<a class="ms-replay" href="${esc(linkReplay(s))}" title="Watch the replay" aria-label="Watch the replay">&#9654; Replay</a></div>`;
     }
 
-    return { GIORNI, analizzaSet, candidati, scegli, linkReplay, html, giornoDi };
+    // -----------------------------------------------------
+    // Nella pagina: il banner con le sue settimane
+    // -----------------------------------------------------
+    /**
+     * Disegna il banner dentro `radice` e collega le frecce, i tasti ←/→ e lo scorrimento col dito (verso sinistra = settimana più nuova).
+     * @param {Window} win
+     * @param {HTMLElement} radice  il contenitore (di solito `.ms`): ci si mette dentro l'HTML del banner
+     * @param {object} opzioni
+     *   gif(specie)        l'immagine animata di un Pokémon (senza, niente sprite)
+     *   leggiGiocatore(id) -> Promise<{ colore, avatar }>: i colori e l'avatar di un allenatore (la pagina li legge da Firebase); ricordati dopo la prima volta
+     *   adesso()           l'ora di adesso (si cambia nelle prove)
+     * @returns {{ aggiorna(esito): Promise<boolean>, vai(delta): Promise<boolean>, stato }}
+     *   aggiorna: si chiama con settimane(...) a ogni lettura dei dati: ridisegna solo se qualcosa è cambiato, e non sposta chi sta guardando una settimana vecchia
+     */
+    function monta(win, radice, { gif, leggiGiocatore, adesso = () => Date.now() } = {}) {
+        const stato = { elenco: [], inizio: null, ultima: true, firma: '', giro: 0, trascinato: false };
+        const cache = new Map();
+        const info = id => {
+            if (!id) return Promise.resolve({});
+            // una lettura riuscita si ricorda; una fallita no, così al prossimo giro ci si riprova
+            if (!cache.has(id)) cache.set(id, Promise.resolve().then(() => (leggiGiocatore ? leggiGiocatore(id) : {})).then(x => x || {}).catch(() => { cache.delete(id); return {}; }));
+            return cache.get(id);
+        };
+        const indiceDi = () => stato.elenco.findIndex(w => w.inizio === stato.inizio);
+
+        async function disegna(animazione) {
+            const mio = ++stato.giro;
+            const i = indiceDi();
+            const w = stato.elenco[i];
+            if (!w) return false;
+            const giocatori = {};
+            await Promise.all(['p1', 'p2'].map(async k => { const id = w.scelto.giocatori[k].id; if (id) giocatori[id] = await info(id); }));
+            if (mio !== stato.giro) return false;                // nel frattempo è stato chiesto altro: vale l'ultima richiesta
+            radice.innerHTML = html(w.scelto, { giocatori, gif, settimana: etichettaSettimana(w, adesso()), indice: i, totale: stato.elenco.length, animazione });
+            if (win && win.MedaglionePkm) win.MedaglionePkm.coloraMedaglioni(win, radice);       // il colore del tipo arriva appena PokeAPI risponde
+            // le settimane vicine si preparano subito: scorrendo, avatar e colori ci sono già
+            [i - 1, i + 1].forEach(j => { const v = stato.elenco[j]; if (v) ['p1', 'p2'].forEach(k => info(v.scelto.giocatori[k].id)); });
+            return true;
+        }
+
+        function vai(delta) {
+            const i = indiceDi();
+            const nuovo = spostamento(i, delta, stato.elenco.length);
+            if (i < 0 || nuovo === i) return Promise.resolve(false);
+            stato.inizio = stato.elenco[nuovo].inizio;
+            stato.ultima = nuovo === stato.elenco.length - 1;
+            stato.firma = firmaDi(nuovo);
+            return disegna(delta > 0 ? 'dx' : 'sx');
+        }
+        const firmaDi = i => `${stato.elenco.length}|${stato.elenco[i].inizio}|${chiaveSet(stato.elenco[i].scelto)}|${stato.elenco[i].quanti}`;
+
+        function aggiorna(esito) {
+            stato.elenco = (esito && esito.elenco) || [];
+            if (!stato.elenco.length) { stato.firma = ''; stato.giro++; radice.innerHTML = ''; return Promise.resolve(false); }      // giro++: un disegno ancora in corso non fa riapparire il vecchio banner
+            // chi sta guardando una settimana vecchia ci resta; chi guarda l'ultima segue quella (anche se ne arriva una nuova)
+            let i = !stato.ultima && stato.inizio != null ? indiceDi() : -1;
+            if (i < 0) i = typeof esito.indice === 'number' ? esito.indice : stato.elenco.length - 1;
+            stato.inizio = stato.elenco[i].inizio;
+            stato.ultima = i === stato.elenco.length - 1;
+            const firma = firmaDi(i);
+            if (firma === stato.firma) return Promise.resolve(false);
+            stato.firma = firma;
+            return disegna('');
+        }
+
+        // le frecce (il contenuto si ridisegna: l'ascolto sta sul contenitore, che resta)
+        radice.addEventListener('click', e => {
+            if (stato.trascinato) { e.preventDefault(); e.stopPropagation(); return; }
+            const b = e.target && e.target.closest ? e.target.closest('[data-ms-vai]') : null;
+            if (!b || b.disabled) return;
+            const verso = b.getAttribute('data-ms-vai');
+            const datastiera = e.detail === 0;
+            vai(Number(verso)).then(() => {
+                // da tastiera il fuoco resta sulla freccia che si è usata (il contenuto è stato ridisegnato); se è arrivata in fondo, passa all'altra
+                if (!datastiera || !radice.querySelector) return;
+                const nuova = radice.querySelector(`[data-ms-vai="${verso}"]:not(:disabled)`) || radice.querySelector('[data-ms-vai]:not(:disabled)');
+                if (nuova && nuova.focus) nuova.focus();
+            });
+        });
+        radice.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); vai(-1); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); vai(1); }
+        });
+        // scorrere col dito (o col mouse tenuto premuto): verso sinistra la settimana più nuova, verso destra la più vecchia
+        let inizioX = null, inizioY = null;
+        radice.addEventListener('pointerdown', e => { inizioX = e.clientX; inizioY = e.clientY; });
+        radice.addEventListener('pointerup', e => {
+            if (inizioX == null) return;
+            const dx = e.clientX - inizioX, dy = e.clientY - inizioY;
+            inizioX = inizioY = null;
+            if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+            stato.trascinato = true;                               // il click che segue la fine dello scorrimento non deve aprire un link
+            if (win && win.setTimeout) win.setTimeout(() => { stato.trascinato = false; }, 0);
+            vai(dx < 0 ? 1 : -1);
+        });
+        radice.addEventListener('pointercancel', () => { inizioX = inizioY = null; });
+
+        return { aggiorna, vai, stato };
+    }
+
+    return { analizzaSet, candidati, settimane, scegli, spostamento, etichettaSettimana, lunediDi, numeroSettimana, linkReplay, html, monta, giornoDi };
 });
