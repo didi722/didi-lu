@@ -902,12 +902,13 @@
 
     // L'editor (con la scheda Trainer) si scarica solo quando serve, solo al proprietario
     let caricamentoEditor = null;
+    // gli script dell'editor si chiedono sempre aggiornati (?v=): la copia in cache del browser poteva restare quella vecchia e nascondere le novità
     function caricaScript(src) {
-        return new Promise((ok, no) => document.head.append(h('script', { src, onload: ok, onerror: () => no(new Error(src)) })));
+        return new Promise((ok, no) => document.head.append(h('script', { src: `${src}?v=${Date.now()}`, onload: ok, onerror: () => no(new Error(src)) })));
     }
     function apriEditor() {
         if (!caricamentoEditor) {
-            document.head.append(h('link', { rel: 'stylesheet', href: 'style-public-editor.css' }));
+            document.head.append(h('link', { rel: 'stylesheet', href: `style-public-editor.css?v=${Date.now()}` }));
             caricamentoEditor = caricaScript('public-editor.js').then(() => caricaScript('public-editor-trainer.js'))
                 .catch(err => { caricamentoEditor = null; throw err; });
         }
