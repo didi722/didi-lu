@@ -38,6 +38,8 @@
     // Le immagini a tema Pokémon (strumenti) al posto delle emoji. Dove manca ancora l'immagine resta l'emoji.
     const IMG = 'immagini/riepilogo/';
     const IMMAGINI = {
+        ko: { src: `${IMG}choice-band.webp` },
+        muro: { src: `${IMG}assault-vest.png` },
         pulito: { src: `${IMG}focus-sash.png` },
         serie: { src: `${IMG}flame-orb.png` },
         elo: { src: `${IMG}rare-candy.png` },
@@ -46,7 +48,7 @@
         collezione: { src: `${IMG}poke-ball.png` },
         sorpresa: { src: `${IMG}scope-lens.png` }
     };
-    const IMMAGINE_MVP = `${IMG}master-ball.png`;           // il titolo dell'MVP
+    const IMMAGINE_MVP = 'immagini/ribbon-mvp-bronze.png'; // il titolo dell'MVP: il fiocco "Season MVP" che prende il Pokémon (fiocchi.js), al primo livello
     const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
 
