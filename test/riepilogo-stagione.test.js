@@ -244,7 +244,7 @@ test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe
 });
 
 test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e MVP e formati hanno le loro', () => {
-    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
+    for (const f of ['eject-button.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'focus-band.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
     }
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-gold.png')), 'il fiocco Season MVP dorato');
@@ -262,7 +262,7 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const p = [{ chiave: 'ada::t::0', player: 'ada', playerNome: 'ADA', specie: 'Gengar', specieId: 'gengar', portato: 5, koFatti: 3, formato: 'OU', team: 'T' }];
     const completo = R.html(R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } })));
     assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-gold\.png"/);
-    assert.match(completo, /rs-t-img" src="immagini\/riepilogo\/exp-share\.png"[^>]*>BEST OF EACH FORMAT/);
+    assert.match(completo, /<span class="rs-t">BEST OF EACH FORMAT<\/span>/, 'senza immagine nell\'etichetta');
     // ogni premio ha la sua immagine; senza, resta l'emoji
     for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['serie', 'flame-orb.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
         assert.ok(leggi('riepilogo-stagione.js').includes(`${id}: { src: \`\${IMG}${file}\` }`), `${id} -> ${file}`);

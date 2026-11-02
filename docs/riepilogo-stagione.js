@@ -50,7 +50,6 @@
         sorpresa: { src: `${IMG}scope-lens.png` }
     };
     const IMMAGINE_MVP = 'immagini/ribbon-mvp-gold.png';   // l'adesivo dell'MVP: il fiocco "Season MVP" dorato, qualunque sia il numero di MVP vinti da quel Pokémon
-    const IMMAGINE_FORMATI = `${IMG}exp-share.png`;         // il titolo del miglior Pokémon di ogni formato
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
 
     // I colori dei tipi (gli stessi di dettagli.js e di tutto il sito): il medaglione di un Pokémon è sul colore del suo primo tipo, come nel Box
@@ -329,7 +328,7 @@
 
         // ---- a fianco della classifica: il miglior Pokémon di ogni formato e i più usati
         const formati = riep.formatiMigliori.length
-            ? `<section class="rs-b rs-formati">${etichetta('BEST OF EACH FORMAT', IMMAGINE_FORMATI)}<div class="rs-formati-lista">${riep.formatiMigliori.map(f =>
+            ? `<section class="rs-b rs-formati">${etichetta('BEST OF EACH FORMAT')}<div class="rs-formati-lista">${riep.formatiMigliori.map(f =>
                 `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${medaglione(f.specie, gif, 'rs-med-medio')}`
                 + `<b class="rs-banner rs-banner-piccolo">${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
             : '';
