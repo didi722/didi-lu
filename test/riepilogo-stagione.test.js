@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const R = require('../docs/riepilogo-stagione.js');
 const AppMatches = require('../docs/app-matches.js');
+const Statistiche = require('../docs/statistiche.js');
 
 const leggi = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
 
@@ -16,7 +17,7 @@ const giocatore = (id, extra = {}) => ({
 });
 const dati = (players, extra = {}) => ({
     risultato: { totali: { match: 12, set: 36, showdown: 4 }, players, pokemon: [], formati: ['OU'], stagioni: [{ nome: 'S1' }] },
-    info: { id: 's1', name: 'Season <1>', selected_formats: ['OU'], winner: 'bea' },
+    info: { id: 's1', name: 'Season <1>', selected_formats: ['OU'], winner: 'bea', status: 'closed' },
     leaderboard: { ada: { points: 10, won: 3, lost: 1, setW: 9, sdWon: 2, sdLost: 0 }, bea: { points: 14, won: 5, lost: 1, setW: 12, sdWon: 3, sdLost: 1 } },
     showdowns: {}, mvp: null, ...extra
 });
@@ -143,4 +144,97 @@ test('card immagine: dimensioni fisse, finestra con SHARE (solo se il telefono l
     assert.match(js, /img\.crossOrigin = 'anonymous'/, 'le immagini non sporcano il canvas: senza permesso si saltano');
     // se l'immagine non si può fare, si ripiega sul testo
     assert.match(js, /l'immagine non si è potuta fare: si condivide il testo/);
+});
+
+test('il campione ha gli stessi numeri della sua scheda in /stats (Elo, % vittorie, set, KO, serie) e i totali della lega sono etichettati', () => {
+    const lukiani = giocatore('bea', { elo: 1160, percMatch: 80.6, set: { vinti: 79, persi: 29 }, ko: { fatti: 365, subiti: 253, setConDati: 30 }, serie: { vittorieMax: 15 } });
+    const riep = R.calcola(dati([giocatore('ada'), lukiani]));
+    assert.deepEqual(riep.vincitore.stat, { elo: 1160, percMatch: 80.6, set: { vinti: 79, persi: 29 }, ko: { fatti: 365, subiti: 253 }, serie: 15 });
+    const h = R.html(riep);
+    for (const t of ['Elo', 'Win %', 'Best streak', '1160', '80.6%', '79 – 29', '365 – 253']) assert.ok(h.includes(t), t);
+    assert.match(h, /WHOLE LEAGUE/);
+});
+
+test('Elo del campione: quello a fine stagione (ultimo match di quella stagione), non il ranking di oggi', () => {
+    const match = (data, e1, d1) => ({ player1Id: 'ada', player2Id: 'bea', player1: 'Ada', player2: 'Bea', p1score: 3, p2score: 0, data, categoria: 'OU',
+        p1EloAtMatch: e1, p2EloAtMatch: 1000, p1DeltaElo: d1, p2DeltaElo: -d1, p1points: 2, p2points: 0 });
+    const showdown = (data, e1, d1) => ({ info: { data, categoria: 'OU', vincitoreShowdown: 'ada' }, matches: { match1: match(data, e1, d1) } });
+    const sA = { info: { id: 'sA', name: 'A', status: 'closed' }, showdowns: { s1: showdown('2026-01-10', 1000, 20), s2: showdown('2026-01-11', 1020, 20), s3: showdown('2026-01-12', 1040, 20) } };
+    const sB = { info: { id: 'sB', name: 'B', status: 'playing' }, showdowns: { s1: showdown('2026-02-10', 1060, 15) } };
+    const players = { ada: { stats: { 'individual-stats': { ranking: 1075, showdownsPlayed: 4 } } }, bea: {} };
+    const risultato = Statistiche.calcola({ seasons: { sA, sB }, players }, { stagione: 'sA' });
+    const riep = R.calcola({ risultato, info: sA.info, leaderboard: { ada: { points: 8, won: 3, lost: 0, setW: 9, sdWon: 3, sdLost: 0 }, bea: { points: 0, won: 0, lost: 3, setW: 0, sdWon: 0, sdLost: 3 } }, showdowns: sA.showdowns });
+    assert.equal(riep.vincitore.id, 'ada');
+    assert.equal(riep.vincitore.stat.elo, 1060, 'fine della stagione A (1040 + 20), non 1075 di oggi');
+    assert.match(R.html(riep), /Final Elo/);
+    // con meno di tre showdown nella stagione l'Elo è unranked: N/A
+    const poche = Statistiche.calcola({ seasons: { sB, sA: { ...sA, showdowns: { s1: sA.showdowns.s1 } } }, players }, { stagione: 'sA' });
+    const r2 = R.calcola({ risultato: poche, info: sA.info, leaderboard: { ada: { points: 2, won: 1, lost: 0, setW: 3, sdWon: 1, sdLost: 0 } }, showdowns: { s1: sA.showdowns.s1 } });
+    assert.equal(r2.vincitore.stat.elo, 0);
+    assert.match(R.html(r2), /Final Elo<\/span><b>N\/A/);
+});
+
+test('sul sito, vedendo il riepilogo la classifica a lato sparisce; nell\'app resta com\'è (i tag in alto)', () => {
+    const js = leggi('riepilogo-stagione.js');
+    assert.match(js, /layout\.classList\.toggle\('rs-solo-riepilogo', v === 'riepilogo'\)/);
+    assert.match(js, /const sito = !doc\.documentElement\.classList\.contains\('app-shell'\)/);
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /html:not\(\.app-shell\) \.hub-main-layout\.rs-solo-riepilogo \.hub-right-column \{ display: none; \}/);
+});
+
+test('trofeo: il PNG del tipo di stagione (come in tipo-stagione.js), la league colorata con il colore del campione; i Pokémon più usati sono tre', () => {
+    const TipoStagione = require('../docs/tipo-stagione.js');
+    for (const tipo of ['league', 'monoformat', 'random', 'cup']) {
+        const riep = R.calcola(dati([giocatore('ada'), giocatore('bea')], { info: { id: 'x', name: 'X', status: 'closed', tipo } }));
+        assert.equal(riep.trofeo.tipo, tipo);
+        assert.equal(riep.trofeo.icona, TipoStagione.TIPI[tipo].icona, `${tipo}: stesso PNG di tipo-stagione.js`);
+    }
+    const cup = R.calcola(dati([giocatore('ada')], { info: { id: 'c', name: 'C', status: 'closed', tipo: 'cup', icona: 'immagini/coppa-natale.png' } }));
+    assert.equal(cup.trofeo.icona, 'immagini/coppa-natale.png', 'una cup può avere la sua icona');
+    const senzaTipo = R.calcola(dati([giocatore('ada')]));
+    assert.equal(senzaTipo.trofeo.tipo, 'league', 'le prime stagioni non hanno il tipo: sono league');
+    const h = R.html(R.calcola(dati([giocatore('ada', { colore: '#aa00cc' }), giocatore('bea', { colore: '#aa00cc' })])));
+    assert.match(h, /class="rs-trofeo-colore" style="--c:#aa00cc"/);
+    assert.doesNotMatch(h, /🥇|🏆/, 'niente emoji al posto del trofeo');
+    const p = Array.from({ length: 6 }, (_, i) => ({ chiave: `a::t::${i}`, player: 'ada', specie: `Mon${i}`, specieId: `mon${i}`, portato: 10 - i, koFatti: 1, formato: 'OU' }));
+    const tre = R.calcola(dati([giocatore('ada'), giocatore('bea')], { risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: [giocatore('ada'), giocatore('bea')], pokemon: p, formati: ['OU'], stagioni: [] } }));
+    assert.equal(tre.piuUsati.length, 3);
+});
+
+test('estetica: le etichette nere hanno il testo bianco (non giallo) e la card immagine non usa il giallo', () => {
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /\.rs-etichetta \{[^}]*background: var\(--nb-ink, #000\); color: #fff;/);
+    const js = leggi('riepilogo-stagione.js');
+    assert.doesNotMatch(js, /GIALLO\b|ffbd44/, 'la card non usa il giallo');
+    assert.match(js, /testoFit\(riep\.provvisorio \? 'CURRENT LEADER' : 'CHAMPION', X \+ 338, y \+ 44, 190, 23, 900, FT, '#fff'\)/);
+});
+
+test('in riepilogo: niente "Registered teams" e "Vote MVP" in alto (sito: classe sul body; app: tag Recap)', () => {
+    const js = leggi('riepilogo-stagione.js');
+    assert.match(js, /doc\.body\.classList\.toggle\('rs-vista-riepilogo', v === 'riepilogo'\)/);
+    const css = leggi('riepilogo-stagione.css');
+    assert.match(css, /body\.rs-vista-riepilogo \.top-auth-bar \.btn-registered-teams, body\.rs-vista-riepilogo \.top-auth-bar #btn-mvp \{ display: none !important; \}/);
+    assert.match(css, /html\.app-shell\[data-mt="rc"\][^{]*#btn-mvp[^{]*\{ display: none !important; \}/);
+});
+
+test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji dove manca) e i titoli MVP e formati hanno la loro', () => {
+    for (const f of ['eject-button.png', 'exp-share.png', 'poke-ball.png', 'rare-candy.png', 'scope-lens.png', 'destiny-knot.png', 'flame-orb.png', 'focus-sash.png', 'assault-vest.png', 'choice-band.webp']) {
+        assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'riepilogo', f)), f);
+    }
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'docs', 'immagini', 'ribbon-mvp-bronze.png')), 'il fiocco Season MVP');
+    const g = [giocatore('ada', { eloDelta: 30, azioni: { setConDati: 30, cambi: 30 } }), giocatore('bea')];
+    const premi = Object.fromEntries(R.calcola(dati(g)).premi.map(x => [x.id, x]));
+    assert.equal(premi.elo.immagine.src, 'immagini/riepilogo/rare-candy.png');
+    assert.equal(premi.cambi.immagine.src, 'immagini/riepilogo/eject-button.png');
+    const h = R.html(R.calcola(dati(g)));
+    assert.match(h, /class="rs-icona-img" src="immagini\/riepilogo\/rare-candy\.png"/);
+    assert.match(h, /class="rs-icona-img" src="immagini\/riepilogo\/eject-button\.png"/);
+    assert.match(h, /onerror="this\.onerror=null;this\.src='immagini\/riepilogo\/poke-ball\.png'"/, 'la palla è la riserva');
+    const conMvp = R.html(R.calcola(dati(g, { mvp: { risultato: { vincitori: { 0: { specie: 'Gengar', team: 'T', player: 'Ada', voti: 1 } } } } })));
+    assert.match(conMvp, /rs-titolo-img" src="immagini\/ribbon-mvp-bronze\.png"[^>]*> SEASON MVP/);
+    // un premio senza immagine mantiene la sua emoji
+    const rimonta = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 0, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 9 } }), giocatore('bea')])));
+    assert.match(rimonta, /rs-icona" aria-hidden="true">💪/);
+    const ko = R.html(R.calcola(dati([giocatore('ada', { ko: { fatti: 40, subiti: 1, setConDati: 30, setPerfetti: 0, setAlLimite: 0 } }), giocatore('bea')])));
+    assert.match(ko, /immagini\/riepilogo\/choice-band\.webp/);
 });
