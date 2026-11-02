@@ -71,7 +71,7 @@
         { id: 'winstreak', nome: 'Win Streak', icona: '🔥', unita: 'matches in a row', soglie: [9, 12, 16, 20],
           descrizione: 'Matches won in a row.',
           valore: p => num(p.serie && p.serie.vittorieMax), immagini: perLivelli('ribbon-winstreak-{l}.png') },
-        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [4, 5, 6, 7],
+        { id: 'cleanstreak', nome: 'Clean Streak', icona: '✨', unita: 'clean wins in a row', soglie: [4, 5, 7, 9],
           descrizione: 'Matches won without dropping a set.',
           valore: p => num(p.serie && p.serie.pulitaMax), immagini: perLivelli('ribbon-cleanstreak-{l}.png') },
         { id: 'champion', nome: 'Champion', icona: '👑', unita: 'seasons won', soglie: [1, 2, 3, 5],
