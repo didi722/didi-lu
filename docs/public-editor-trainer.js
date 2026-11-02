@@ -21,6 +21,8 @@
     let pokemon = null;              // [{ name, id }], 'errore' o null (non ancora caricato)
     let canzoni = null;              // [{ nome, url }], 'errore' o null
     let ricerca = { pokemon: '', canzoni: '' };
+    let boxAperto = false;           // "From my Box" aperto o chiuso (resta così se il pannello si ridisegna)
+    let teamAperto = null;           // l'id del team aperto, uno solo alla volta
     let anteprima = null;            // l'audio dell'anteprima di una canzone
 
     // ---- Dati che vengono da fuori ------------------------------------------------------------
@@ -178,13 +180,17 @@
             cerca, lista);
     }
 
-    /** I Pokémon dei propri team: scegliendone uno il compagno è proprio lui e sulla scena si vedono i suoi badge */
+    /**
+     * I Pokémon dei propri team: scegliendone uno il compagno è proprio lui e sulla scena si vedono i suoi badge.
+     * A fisarmonica: "From my Box" si apre sull'elenco dei team, e un team alla volta mostra i suoi Pokémon (aprirne un altro chiude il primo).
+     */
     function boxMio(ctx, presi, scegli) {
         const { C, h } = ctx;
         const nomeDi = p => String((p && (p.nome || p.name)) || '');
         const chiaveSpecie = n => n.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
         const mio = String(C.profilo().pkmBox || '');
         const squadre = (C.stato.dati.teams || []).filter(t => t && typeof t === 'object' && t.id);
+
         const gruppi = squadre.map(t => {
             const lista = Array.isArray(t.pokemon) ? t.pokemon : Object.values(t.pokemon || {});
             const voci = lista.map((p, i) => ({ nome: nomeDi(p), i })).filter(v => v.nome).map(v => {
@@ -198,10 +204,35 @@
                     img, h('span', { testo: v.nome.toUpperCase() }));
                 return valore !== mio && presi.pokemon.has(specie) ? comePresa(b, v.nome.toUpperCase()) : b;
             });
-            return voci.length ? h('div', { class: 'pe-box-team' }, h('p', { class: 'pe-nota', testo: String(t.nome || t.name || 'My team') }), h('div', { class: 'pe-scorri' }, voci)) : null;
+            if (!voci.length) return null;
+            const corpo = h('div', { class: 'pe-scorri pe-acc-corpo', hidden: true }, voci);
+            const testa = h('button', { type: 'button', class: 'pe-acc-testa pe-acc-team', 'aria-expanded': 'false', 'data-team': t.id },
+                h('span', { testo: String(t.nome || t.name || 'My team') }), h('span', { class: 'pe-acc-freccia', testo: '▸' }));
+            return { id: t.id, testa, corpo, riga: h('div', { class: 'pe-acc-voce' }, testa, corpo) };
         }).filter(Boolean);
+
         if (!gruppi.length) return h('p', { class: 'pe-nota', testo: 'You have no team in your Box yet: build one to pick a companion from it, with its badges.' });
-        return h('div', { id: 'pe-box-pokemon' }, h('p', { class: 'pe-nota', testo: "From my Box (shows that Pokémon's badges):" }), gruppi);
+
+        const imposta = (el, corpo, aperto) => {
+            el.setAttribute('aria-expanded', String(aperto));
+            el.querySelector('.pe-acc-freccia').textContent = aperto ? '▾' : '▸';
+            corpo.hidden = !aperto;
+        };
+        const elencoTeam = h('div', { class: 'pe-acc-corpo', hidden: !boxAperto }, gruppi.map(g => g.riga));
+        const testaBox = h('button', { type: 'button', class: 'pe-acc-testa', id: 'pe-box-testa', 'aria-expanded': String(boxAperto) },
+            h('span', { testo: "From my Box (shows that Pokémon's badges)" }), h('span', { class: 'pe-acc-freccia', testo: boxAperto ? '▾' : '▸' }));
+        testaBox.onclick = () => { boxAperto = !boxAperto; imposta(testaBox, elencoTeam, boxAperto); };
+
+        // un solo team aperto alla volta: aprirne uno chiude gli altri; ricliccare quello aperto lo chiude
+        gruppi.forEach(g => {
+            const aperto = teamAperto === g.id;
+            imposta(g.testa, g.corpo, aperto);
+            g.testa.onclick = () => {
+                teamAperto = teamAperto === g.id ? null : g.id;
+                gruppi.forEach(x => imposta(x.testa, x.corpo, x.id === teamAperto));
+            };
+        });
+        return h('div', { id: 'pe-box-pokemon', class: 'pe-acc' }, testaBox, elencoTeam);
     }
 
     // ---- Canzone ------------------------------------------------------------------------------

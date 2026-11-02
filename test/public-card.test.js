@@ -527,3 +527,13 @@ test('compagno dal Box: si sceglie un Pokémon dei propri team (campo pkmBox), s
     assert.match(card, /pkmBox: \['palco'\]/);
     assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8'), /\.pp-set \.pp-pkm-badge/);
 });
+
+test('compagno dal Box: elenco a fisarmonica (un team aperto alla volta) e fiocchi con il suggerimento al passaggio', () => {
+    assert.match(trainer, /teamAperto = teamAperto === g\.id \? null : g\.id;/);
+    assert.match(trainer, /gruppi\.forEach\(x => imposta\(x\.testa, x\.corpo, x\.id === teamAperto\)\)/);
+    assert.match(trainer, /id: 'pe-box-testa'/);
+    const cssCard = fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-card.css'), 'utf8');
+    const regola = cssCard.match(/\.pp-set \.pp-pkm-badge \{[^}]*\}/)[0];
+    assert.doesNotMatch(regola, /pointer-events:\s*none/, 'senza eventi del mouse il title delle medagliette non compare');
+    assert.match(fs.readFileSync(path.join(__dirname, '..', 'docs', 'style-public-editor.css'), 'utf8'), /\.pe-acc \[hidden\] \{ display: none !important; \}/);
+});

@@ -582,3 +582,18 @@ body.pp-ridimensiona .pp-blocco, body.pp-ridimensiona .pp-corpo { pointer-events
 }
 
 .pe-palco-nota[hidden] { display: none; }
+
+/* "From my Box": fisarmonica (il box, poi un team alla volta) */
+.pe-acc { margin: 0 0 14px; }
+.pe-acc [hidden] { display: none !important; }
+.pe-acc-testa {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+    padding: 9px 10px; margin: 0 0 6px; background: #fff; border: 3px solid #000; box-shadow: 0 3px 0 #000;
+    font: 900 0.8rem/1.2 'Josefin Sans', sans-serif; text-transform: uppercase; text-align: left; color: #000; cursor: pointer;
+}
+.pe-acc-testa:hover { background: #ffde4d; }
+.pe-acc-testa[aria-expanded="true"] { background: #7cf29a; }
+.pe-acc-freccia { flex: none; }
+.pe-acc-corpo { margin: 0 0 6px; }
+.pe-acc-team { font-size: 0.74rem; padding: 7px 9px; }
+.pe-acc-voce .pe-scorri { margin: 0 0 8px; }

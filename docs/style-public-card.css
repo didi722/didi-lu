@@ -524,7 +524,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 .pp-set .pp-pkm-badge {
     top: auto; left: auto;
     right: calc(28 * var(--d)); bottom: calc(22 * var(--d));
-    z-index: 20; gap: 3px; pointer-events: none;
+    z-index: 20; gap: 3px;     /* i fiocchi si possono sfiorare: hanno il suggerimento al passaggio */
 }
 .pp-set .pp-pkm-badge .bt-mini { width: 22px; height: 22px; }
 .pp-set .pp-pkm-badge .bt-mini-img { width: 14px; height: 14px; }
