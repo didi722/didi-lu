@@ -141,11 +141,11 @@ test('html: il riepilogo, un Pokémon con i dettagli, le lead e la nota; niente 
     assert.match(SF.html(SF.calcola(dati(), { formato: 'VGC' }), { ordine: 'ko' }), /data-fs-ordine="ko" aria-pressed="true"/);
 });
 
-test('html: oltre dieci Pokémon il resto è nascosto dietro "Show all"; senza strumenti (scheda chiusa) lo dice', () => {
+test('html: oltre cinque Pokémon il resto è nascosto dietro "Show all"; senza strumenti (scheda chiusa) lo dice', () => {
     const molti = { filtro: { formato: 'X' }, totali: { team: 3, giocatori: 2, match: 3, set: 6, setConDati: 6 }, lead: [], vuoto: false,
         pokemon: Array.from({ length: 13 }, (_, i) => ({ specieId: `p${i}`, nome: `P${i}`, team: 3 - (i % 3), perc: 50, giocatori: 1, istanze: 1, setVisibili: i === 12 ? 0 : 1, schedaChiusa: i === 12, strumenti: [], mosse: [], abilita: [], compagni: [], battaglia: null })) };
     const h = SF.html(molti, {});
-    assert.equal((h.match(/data-fs-extra/g) || []).length, 3);
+    assert.equal((h.match(/data-fs-extra/g) || []).length, 8);
     assert.match(h, /data-fs-altri>Show all 13<\/button>/);
     assert.match(h, /the sheet is closed in this season/);
     assert.doesNotMatch(SF.html(molti, { tutti: true }), /data-fs-extra|data-fs-altri/);

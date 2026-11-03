@@ -31,6 +31,9 @@
                 try {
                     const scena = this.battle && this.battle.scene;
                     if (scena && typeof scena.updateStatbar === 'function') scena.updateStatbar(pokemon);
+                    // Il Dynamax resta (è nel simulatore: Zoroark ha le mosse Max), ma lo sprite di Zoroark rientra in campo di grandezza normale: la grandezza
+                    // si decide quando il Dynamax inizia (-start Dynamax → animTransform), non a ogni rientro. Qui si ridisegna come allora.
+                    if (pokemon.volatiles.dynamax && scena && typeof scena.animTransform === 'function') scena.animTransform(pokemon, true, true);
                 } catch (e) { /* solo grafica */ }
             }
             return esito;

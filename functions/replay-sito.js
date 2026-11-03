@@ -624,6 +624,24 @@ ${barreSalute('.palco')}
             return errore("This replay couldn't be read.");
         }
 
+        // Illusione svelata durante il Dynamax: il Dynamax resta, ma il client rimette Zoroark in campo di grandezza normale (la grandezza si decide
+        // solo quando il Dynamax inizia). Si ridisegna lo sprite come allora (stessa correzione di docs/illusione-client.js nel simulatore).
+        try {
+            const Lato = battle.p1 && battle.p1.constructor;
+            if (Lato && typeof Lato.prototype.replace === 'function' && !Lato.prototype.replace.dynamax) {
+                const sostituisci = Lato.prototype.replace;
+                Lato.prototype.replace = function (pokemon) {
+                    const esito = sostituisci.apply(this, arguments);
+                    try {
+                        const scena = this.battle && this.battle.scene;
+                        if (pokemon && pokemon.volatiles && pokemon.volatiles.dynamax && scena && typeof scena.animTransform === 'function') scena.animTransform(pokemon, true, true);
+                    } catch (e) { /* solo grafica */ }
+                    return esito;
+                };
+                Lato.prototype.replace.dynamax = true;
+            }
+        } catch (e) { /* al peggio resta com'era */ }
+
         // Niente tooltip al passaggio del mouse sui Pokémon: il motore li aggancia al campo, qui si staccano
         try { battle.scene.tooltips.unlisten(window.jQuery('#campo')); } catch (e) { /* al peggio resta il CSS */ }
 

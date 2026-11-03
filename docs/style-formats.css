@@ -1647,6 +1647,14 @@ body {
    TELEFONO (≤ 900px): la scheda di un formato e "Add new format". A PC regole e classifica stanno affiancate; su telefono vanno in
    pila e la finestra scorre insieme al velo. Il desktop non cambia: tutto sta dentro la media query.
    ===================================================================== */
+/* Con le Stats aperte (solo con le due colonne affiancate) il corpo non scorre: ogni colonna ha il suo scorrimento, così le regole restano ferme
+   mentre si leggono le statistiche. Il padding lascia posto alle etichette e alle ombre che sporgono dal bordo. */
+@media (min-width: 901px) {
+    .fmt-corpo.con-stats { overflow: hidden; align-items: stretch; }
+    .fmt-corpo.con-stats .fmt-regole,
+    .fmt-corpo.con-stats .fmt-classifica { min-height: 0; overflow-y: auto; padding: 22px 10px 14px; margin: -22px -10px -14px; }
+}
+
 @media (max-width: 900px) {
     #format-modal-overlay,
     #format-modal {
