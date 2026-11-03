@@ -148,9 +148,11 @@ test('replay: intestazione, palco (console con i set a destra) e comandi nel flu
 
     const adatta = matches.slice(matches.indexOf('function adattaReplayAlloSchermo()'), matches.indexOf("window.addEventListener('resize', () => { if (document.getElementById('replayModal')"));
     assert.match(adatta, /const perLarghezza = \(larghezza - 24 - tastiSet\) \/ 1150;/, 'la larghezza dei tasti dei set a destra si toglie');
-    assert.match(adatta, /const riservato = alto\('\.replay-mini-header'\) \+ alto\('\.replay-campo'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione, il campo e i comandi si misura');
-    assert.match(adatta, /const perAltezza = \(altezza - riservato\) \/ 647;/);
-    assert.match(adatta, /Math\.min\(1, perLarghezza, Math\.max\(0\.5, perAltezza\)\)/);
+    assert.match(adatta, /const riservatoBase = alto\('\.replay-mini-header'\) \+ alto\('\.replay-comandi'\)/, 'lo spazio per l\'intestazione e i comandi si misura');
+    assert.match(adatta, /\(altezza - riservato\) \/ 647/);
+    assert.match(adatta, /Math\.min\(1, perLarghezza, Math\.max\(0\.5, \(altezza - riservato\) \/ 647\)\)/);
+    // meteo, terreni e condizioni: in colonna a sinistra se lì c'è posto (190px liberi), altrimenti una riga sopra che toglie altezza alla console
+    assert.match(adatta, /if \(insieme && liberoSinistra >= 190\) modal\.classList\.add\('campo-laterale'\);\s*else scala = scalaCon\(riservatoBase \+ alto\('\.replay-campo'\)\);/);
     // l'immagine della console è 1920 × 1080: a 1150 px di larghezza è alta 647 px
     assert.equal(Math.round(1150 * 1080 / 1920), 647);
 });
@@ -193,8 +195,15 @@ test('replay: meteo, terreni e condizioni dei lati stanno fuori dallo schermo de
     assert.match(pagina, /id="replayCampo"/);
     assert.match(pagina, /e\.data\.tipo !== 'replay-campo'/);
     assert.doesNotMatch(pagina.slice(pagina.indexOf("tipo !== 'replay-campo'"), pagina.indexOf("tipo !== 'replay-campo'") + 1500), /innerHTML/);
-    assert.match(css, /#replayModal \.replay-campo \{\s*order: 2;/);
+    assert.match(css, /#replayModal \.replay-campo \{\s*order: -1; flex: 1 0 100%;/);
     assert.match(css, /#replayModal \.replay-palco \{ order: 3;/);
-    // l'altezza della striscia si toglie dallo spazio della console
+    // l'altezza della striscia si toglie dallo spazio della console (solo se sta sopra)
     assert.match(pagina, /alto\('\.replay-campo'\)/);
+    // dove a sinistra c'è posto: colonna a sinistra della console, dentro il palco
+    assert.ok(pagina.indexOf('class="replay-palco"') < pagina.indexOf('id="replayCampo"') && pagina.indexOf('id="replayCampo"') < pagina.indexOf('class="gba-container"'), 'il campo è il primo figlio del palco');
+    assert.match(css, /#replayModal\.campo-laterale \.replay-campo \{\s*position: absolute; top: 0; bottom: 0; right: 100%;[^}]*flex-direction: column;/);
+    // meteo, terreni e stanze: un solo colore neutro; le condizioni di un lato solo, il colore dell'allenatore
+    assert.doesNotMatch(css, /rcampo-voce\.(meteo|terreno|campo) \{ background/);
+    assert.match(css, /#replayModal \.rcampo-voce\.lato-cond\.p1 \{ background: var\(--rc-p1/);
+    assert.match(css, /#replayModal \.rcampo-voce \{[^}]*background: var\(--nb-carta/);
 });

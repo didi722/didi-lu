@@ -440,25 +440,33 @@
 /* il palco: la console e, alla sua destra, i tasti dei set in verticale */
 #replayModal .replay-palco { order: 3; flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 16px; max-width: 100%; min-width: 0; }
 #replayModal .gba-container { margin: 0; }
-/* meteo, terreni e condizioni dei lati: una riga di cartellini sopra la console, sotto l'intestazione */
+/* meteo, terreni e condizioni dei lati. Di default una riga di cartellini sopra la console (dentro il palco, che va a capo); dove a sinistra c'è posto
+   (.campo-laterale, lo decide adattaReplayAlloSchermo in matches.html) una colonna a sinistra della console, a filo con lo schermo, nello spazio libero. */
+#replayModal .replay-palco { flex-wrap: wrap; }
 #replayModal .replay-campo {
-    order: 2; flex: 0 0 auto; max-width: min(1120px, 100%);
+    order: -1; flex: 1 0 100%; max-width: min(1120px, 100%);
     display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
 }
 #replayModal .replay-campo[hidden] { display: none; }
+#replayModal.campo-laterale .replay-palco { position: relative; flex-wrap: nowrap; }
+#replayModal.campo-laterale .replay-campo {
+    position: absolute; top: 0; bottom: 0; right: 100%; margin-right: 20px; width: 170px; max-width: none; flex: none;
+    flex-direction: column; flex-wrap: nowrap; align-items: flex-end; justify-content: center; gap: 10px; overflow-y: auto; overflow-x: hidden; padding: 4px 6px 4px 0;
+}
 #replayModal .rcampo-voce {
-    display: inline-flex; align-items: baseline; gap: 6px;
+    display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 6px; max-width: 100%; box-sizing: border-box;
     padding: 5px 10px 3px;
     background: var(--nb-carta, #fff); color: #000;
     border: 2px solid #000; border-radius: calc(var(--nb-raggio, 0px) * .6);
     box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
     font: 800 .72rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase;
 }
+#replayModal.campo-laterale .rcampo-voce { rotate: calc(var(--nb-rot, 1) * -1deg); }
+#replayModal.campo-laterale .rcampo-voce:nth-child(even) { rotate: calc(var(--nb-rot, 1) * 1deg); }
 #replayModal .rcampo-voce small { font: 600 .66rem 'Montserrat', sans-serif; letter-spacing: 0; text-transform: none; }
-#replayModal .rcampo-voce.meteo { background: var(--nb-giallo, #ffbd44); }
+/* meteo, terreni e stanze (Trick Room...) valgono per tutto il campo: un solo colore neutro. Le condizioni di un lato solo (Tailwind, Reflect, Stealth Rock...)
+   hanno il colore dell'allenatore */
 #replayModal .rcampo-voce.meteo.annullato { text-decoration: line-through 2px; }
-#replayModal .rcampo-voce.terreno { background: #d4f7df; }
-#replayModal .rcampo-voce.campo { background: #000; color: #fff; }
 #replayModal .rcampo-voce.lato-cond.p1 { background: var(--rc-p1, #6fa8ff); }
 #replayModal .rcampo-voce.lato-cond.p2 { background: var(--rc-p2, #ff8a8a); }
 /* i comandi del replay: una barra tra la console e i tasti dei set, nello stile del tema */
