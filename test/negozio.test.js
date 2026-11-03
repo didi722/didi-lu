@@ -35,6 +35,21 @@ test('html: un motivo dello sfondo in uso nella pagina resta di chi lo usa; i mo
     assert.doesNotMatch(h, /data-ng="equipa" data-id="sfondo/);
 });
 
+test('anteprime: aure con il loro colore, sfondi con il motivo vero, shiny con lo sprite del compagno; senza dati restano semplici e il testo ostile non esce dal tag', () => {
+    const sfondo = P.sfondoCss({ motivo: 'stelle', colore: '#ffd966', forza: 3 }, '#31c489');
+    const h = N.html({ saldo: 0, anteprime: { 'sfondo-stelle': sfondo, shiny: { sprite: Sprite.gif('Garchomp', true) } } });
+    assert.match(h, /data-id="sfondo-stelle"><span class="ng-anteprima" style="background-color:#ffd966;background-image:url\(&quot;data:image\/svg\+xml,/);
+    assert.match(h, /<img src="https:\/\/play\.pokemonshowdown\.com\/sprites\/ani-shiny\/garchomp\.gif"/);
+    const senza = N.html({ saldo: 0 });
+    assert.match(senza, /data-id="shiny"><span class="ng-anteprima ng-scintilla"><\/span>/, 'senza sprite: la scintilla');
+    assert.match(senza, /data-id="aura-oro"><span class="ng-anteprima" style="--ng-c:#ffcc33"><\/span>/);
+    assert.match(senza, /data-id="sfondo-raggi"><span class="ng-anteprima" style="--ng-c:#d9dde6"><\/span>/, 'senza motivo: un quadrato semplice');
+    assert.doesNotMatch(N.anteprima({ tipo: 'shiny' }, { sprite: '"><script>x</script>' }), /<script>/);
+    assert.doesNotMatch(N.anteprima({ tipo: 'sfondo' }, { colore: '"><b>', immagine: 'url(x)', dimensione: '1px', posizione: '0 0' }), /<b>/);
+    // la variabile dell'aura non deve toccare quelle del resto del sito
+    assert.doesNotMatch(N.STILE.replace(/--ng-c/g, ''), /--c\b/);
+});
+
 test('sprite shiny: gif e catena con i colori alternativi, senza immagini locali', () => {
     assert.equal(Sprite.gif('Garchomp', true), 'https://play.pokemonshowdown.com/sprites/ani-shiny/garchomp.gif');
     assert.equal(Sprite.gif('Garchomp'), 'https://play.pokemonshowdown.com/sprites/ani/garchomp.gif');
@@ -58,6 +73,8 @@ test('cablaggio: il campanello apre il negozio; shiny nella pagina, nell\'app e 
     const sf = leggi('docs', 'sfide.js');
     assert.match(sf, /function pieNegozio\(\)/);
     assert.match(sf, /pieNegozio\(\)\);\s*\}/);
+    assert.match(sf, /segui\(`wallet\/\$\{P\.uid\}\/saldo`/, 'il saldo si segue in tempo reale');
+    assert.match(sf, /`Shop · 🪙 \$\{saldo\}`/, 'il tasto mostra il saldo');
     assert.match(sf, /carica\('cosmetici\.js', \(\) => window\.Cosmetici\)\.then\(\(\) => carica\('negozio\.js'/);
     const pc = leggi('docs', 'public-card.js');
     assert.match(pc, /const brillante = !!\(stato\.dati && stato\.dati\.info && stato\.dati\.info\.pkmShiny\)/);

@@ -102,6 +102,20 @@ test('acquista: sconosciuto, già posseduto, troppo poche monete, e quello andat
     assert.equal(saldo(db, 'u1'), 0);
 });
 
+test('acquista: due richieste insieme per lo stesso oggetto lo pagano una volta sola; se il saldo non basta non resta nessuna prenotazione', async () => {
+    const db = dbFinto({ wallet: { u1: { saldo: 700 } } });
+    const [x, y] = await Promise.all([M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' })]);
+    assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
+    assert.equal([x, y].find(r => !r.ok).motivo, 'owned');
+    assert.equal(saldo(db, 'u1'), 700 - C.perId('aura-arcobaleno').prezzo, 'addebitato una volta');
+    assert.equal(movimenti(db, 'u1').filter(m => m.importo < 0).length, 1);
+
+    const povero = dbFinto({ wallet: { u2: { saldo: 5 } } });
+    assert.deepEqual(await M.acquista({ db: povero, uid: 'u2', id: 'shiny' }), { ok: false, motivo: 'poor' });
+    assert.equal((povero.albero.wallet.u2.posseduti || {}).shiny, undefined, 'la prenotazione è tornata indietro');
+    assert.equal(saldo(povero, 'u2'), 5);
+});
+
 test('equipa: solo ciò che si possiede; shiny e aura finiscono nel profilo pubblico, togliere li pulisce', async () => {
     const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: 0, posseduti: { shiny: 1, 'aura-oro': 1 } } }, players: { didi: { info: {} } } });
     assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'shiny', attivo: true }), { ok: true });

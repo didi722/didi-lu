@@ -866,6 +866,11 @@
             console.warn('Posta non leggibile: controlla le regole del database (notifiche/{uid}/posta)', err);
             P.pronte.voci = true;
         });
+        // le monete (wallet/{uid}/saldo, le scrive solo il server): si vedono sul tasto SHOP del campanello
+        segui(`wallet/${P.uid}/saldo`, 0, snap => {
+            P.saldo = snap.val() == null ? null : Number(snap.val()) || 0;
+            disegnaCampanella();
+        }, () => { /* senza il permesso di leggerle, il tasto resta senza saldo */ });
         // la preferenza del riassunto del lunedì: notifiche/{uid}/preferenze/digest = 'off' (il server non lo manda al telefono; la posta c'è sempre)
         segui(`notifiche/${P.uid}/preferenze`, 0, snap => {
             P.digestSpento = (snap.val() || {}).digest === 'off';
@@ -919,7 +924,8 @@
     window.addEventListener('apri-negozio', () => { if (S.utente) apriNegozio(); });      // anche dall'editor della pagina (motivi a pagamento)
     function pieNegozio() {
         const p = el('div', 'sfide-piede');
-        p.append(azione('Shop · coins & cosmetics', '', () => { chiudiMenu(); return apriNegozio(); }));
+        const saldo = S.posta.saldo;
+        p.append(azione(saldo == null ? 'Shop · coins & cosmetics' : `Shop · 🪙 ${saldo}`, '', () => { chiudiMenu(); return apriNegozio(); }));
         return p;
     }
     function aggiornaPush() {

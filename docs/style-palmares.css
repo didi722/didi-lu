@@ -1,6 +1,6 @@
 /* Archive: le card di ogni stagione e cup chiusa (palmares.js), nello stile neubrutalista del sito */
-body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-@media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { margin-left: 0; padding: 30px 16px 70px; } }
+body.pg-palmares .palm-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+@media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { width: 100%; margin-left: 0; padding: 30px 16px 70px; } }
 .palm-filtri { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
 .palm-tasto {
     padding: 8px 14px; background: var(--nb-carta, #fff); color: #000; cursor: pointer;

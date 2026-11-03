@@ -173,6 +173,13 @@ body {
 .rc-play { width: 58px; background: var(--nb-giallo, #ffbd44); }
 .rc-play:hover { background: #fff; }
 .rc-velocita { width: 52px; }
+/* telefono in verticale: otto tasti a grandezza piena non stanno in fila, si stringono (e vanno a capo se ancora non bastasse) */
+@media (max-width: 480px) {
+    .replay-comandi { flex-wrap: wrap; gap: 6px; padding: 6px 8px; max-width: 100%; }
+    .rc-tasto { width: 34px; height: 34px; }
+    .rc-play { width: 46px; }
+    .rc-velocita { width: 44px; }
+}
 /* il link a questo turno: dopo il tasto copia si fa verde un attimo */
 .rc-tasto.copiato { background: #9be37f; }
 /* i momenti chiave del set (primo KO, sorpassi, rimonta, ultimo Pokémon, ultimo KO): chip sotto i comandi, un tocco porta a quel turno */

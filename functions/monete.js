@@ -94,14 +94,21 @@ const uidDi = async (db, nome) => {
     return Object.keys(utenti).find(u => String(utenti[u] && utenti[u].name || '').toLowerCase().trim() === id) || '';
 };
 
-/** Compra un cosmetico: deve esistere, non essere già suo (o in uso) e il saldo bastare */
+/** Compra un cosmetico: deve esistere, non essere già suo (o in uso) e il saldo bastare.
+ *  Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
 async function acquista({ db, uid, id, adesso = Date.now() }) {
     const c = Cosmetici.perId(id);
     if (!c) return { ok: false, motivo: 'unknown' };
-    const wallet = (await db.ref(`wallet/${uid}`).once('value')).val() || {};
-    if ((wallet.posseduti || {})[id]) return { ok: false, motivo: 'owned' };
-    if (!(await spendi(db, uid, c.prezzo, `Bought: ${c.nome}`, { adesso }))) return { ok: false, motivo: 'poor' };
-    await db.ref(`wallet/${uid}/posseduti/${id}`).set(adesso);
+    const mio = db.ref(`wallet/${uid}/posseduti/${id}`);
+    const preso = await mio.transaction(v => (v ? undefined : adesso));
+    if (!preso.committed) return { ok: false, motivo: 'owned' };
+    let pagato = false;
+    try {
+        pagato = await spendi(db, uid, c.prezzo, `Bought: ${c.nome}`, { adesso });
+    } finally {
+        if (!pagato) await mio.transaction(v => (v === adesso ? null : undefined));
+    }
+    if (!pagato) return { ok: false, motivo: 'poor' };
     const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
     return { ok: true, saldo };
 }
