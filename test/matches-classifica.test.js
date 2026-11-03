@@ -207,3 +207,13 @@ test('replay: meteo, terreni e condizioni dei lati stanno fuori dallo schermo de
     assert.match(css, /#replayModal \.rcampo-voce\.lato-cond\.p1 \{ background: var\(--rc-p1/);
     assert.match(css, /#replayModal \.rcampo-voce \{[^}]*background: var\(--nb-carta/);
 });
+
+test('la classifica a lato (sticky) parte ferma: il suo `top` è la posizione naturale, non 100px fissi che la facevano salire scorrendo', () => {
+    const m = fs.readFileSync(path.join(__dirname, '..', 'docs', 'matches.html'), 'utf8');
+    assert.match(m, /function fissaClassificaLaterale\(\)/);
+    assert.match(m, /col\.style\.position = 'static';[\s\S]*?getBoundingClientRect\(\)\.top \+ window\.scrollY/, 'misura la posizione naturale senza lo sticky');
+    assert.match(m, /Math\.min\(naturale, window\.innerHeight - alta - 16\)/, 'se la finestra è bassa sale quanto basta per vederla tutta');
+    assert.match(m, /matchMedia\('\(max-width: 900px\)'\)\.matches\) \{ col\.style\.top = ''; return; \}/, 'in pila (telefono) non si tocca');
+    assert.match(m, /classList\.contains\('app-shell'\)\) return;/, 'nell\'app non si tocca');
+    assert.match(m, /osserva\.observe\(el\)/, 'si rifà quando cambia l\'intestazione');
+});
