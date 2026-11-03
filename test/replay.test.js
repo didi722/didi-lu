@@ -152,7 +152,7 @@ test('barra dei messaggi ("Go! Togekiss!"): fascia piatta e scura, senza bordi n
         const regola = /\.palco \.messagebar \{[^}]*\}/.exec(testo);
         assert.ok(regola, `${f}: regola della barra dei messaggi`);
         assert.match(regola[0], /border: 0; border-radius: 0; box-shadow: none;/, f);
-        assert.match(regola[0], /font: 600 11px\/1\.35 'Josefin Sans', sans-serif;/, f);
+        assert.match(regola[0], /font: 400 12.5px\/1.4 'Josefin Sans', sans-serif;/, f);
         assert.match(regola[0], /left: 110px; right: 110px; bottom: 10px;/, `${f}: occupa lo stesso posto di prima`);
         assert.match(testo, /\.palco \.messagebar strong \{[^}]*Josefin Sans/, f);
         assert.match(testo, /\.palco \.messagebar small \{[^}]*Josefin Sans/, f);
