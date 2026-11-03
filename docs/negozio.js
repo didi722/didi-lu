@@ -6,6 +6,9 @@
 //
 //   Negozio.apri(win)        legge il portafoglio e il profilo di chi è collegato e apre la finestra
 //   Negozio.html(stato)      il markup (puro): stato = { saldo, posseduti, info, pagina, movimenti, nota, occupato }
+//   Negozio.compra(win, id, nome)     compra un cosmetico (anche un avatar o una canzone) dal server → { ok, saldo, gratis } oppure { ok: false, motivo }
+//   Negozio.apriShinyTeam(win, team)  la finestra del Box per rendere shiny i Pokémon di un team (anche bloccato); htmlShinyTeam(stato) è il markup puro
+//   Negozio.frase(motivo)             il testo in inglese di un errore del negozio
 //
 // La parte pura si prova in Node (test/negozio.test.js); il resto gira nel browser.
 // =====================================================
@@ -47,12 +50,28 @@
 .ng-voce[data-tipo=shiny] .ng-anteprima.ng-scintilla::before{content:'✦';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 1.5rem sans-serif;color:#e0a800}
 .ng-voce b{display:block;font:900 .85rem 'Josefin Sans',sans-serif;text-transform:uppercase}
 .ng-voce small{display:block;font:600 .7rem/1.3 'Montserrat',sans-serif;opacity:.7}
+.ng-pkm .ng-anteprima{display:flex;align-items:center;justify-content:center;gap:0;width:88px;height:56px;border-radius:0;overflow:hidden;background:#f3f4f8}
+.ng-pkm .ng-anteprima img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
+.ng-pkm .ng-anteprima i{font:900 .9rem sans-serif;opacity:.5;font-style:normal}
+.ng-pkm.ng-mio .ng-anteprima{background:#fff7d6}
+.ng-voce[data-tipo=pokemon]{grid-template-columns:88px minmax(0,1fr) auto}
+.ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
+.ng-bottone.ng-sicuro{background:#ffbd44}
+.ng-guida{margin:14px 0 0;padding:10px 12px;border:3px dashed #000;background:#fafafa;font:600 .76rem/1.45 'Montserrat',sans-serif}
+.ng-guida b{font-weight:800}
 .ng-bottone{padding:7px 12px 5px;background:#fff;color:#000;border:3px solid #000;box-shadow:3px 3px 0 #000;font:900 .76rem 'Josefin Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
 .ng-bottone.ng-compra{background:#47ea6a}
 .ng-bottone:disabled{opacity:.45;cursor:default;box-shadow:none}
 .ng-movimenti{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px;font:600 .76rem 'Montserrat',sans-serif}
 .ng-movimenti li{display:flex;justify-content:space-between;gap:10px}
 .ng-movimenti .ng-piu{color:#0a7d2a;font-weight:800}.ng-movimenti .ng-meno{color:#b3261e;font-weight:800}`;
+
+    /** Il paragrafo sui guadagni: i numeri vengono da PREMI (cosmetici.js), così non si disallineano */
+    function notaPremi() {
+        const P = Cosmetici.PREMI, o = P.set.ufficiale, a = P.set.amichevole;
+        return `Earn coins by playing: a season set pays ${o.giocato}, or ${o.giocato + o.vinto} if you win it; a friendly pays ${a.giocato} or ${a.giocato + a.vinto} (up to ${P.tettoAmichevoliGiorno} a day). `
+            + `A new bronze/silver/gold badge pays ${P.badge[1]}/${P.badge[2]}/${P.badge[3]}, winning a season ${P.stagioneVinta} and an MVP ${P.mvp}.`;
+    }
 
     /** L'anteprima di una voce. `a` (facoltativo, da stato.anteprime): per gli sfondi lo stile vero del motivo; per lo shiny l'indirizzo dello sprite del compagno. */
     function anteprima(c, a) {
@@ -86,17 +105,53 @@
             }).join('');
             return `<section class="ng-gruppo"><h3>${esc(Cosmetici.TIPI[tipo].nome)}</h3><p>${esc(Cosmetici.TIPI[tipo].frase)}</p><ul class="ng-lista">${voci}</ul></section>`;
         }).join('');
-        const mov = (s.movimenti || []).slice(-8).reverse().map(m => `<li><span>${esc(data(m.t))} · ${esc(m.motivo)}</span><b class="${num(m.importo) >= 0 ? 'ng-piu' : 'ng-meno'}">${num(m.importo) >= 0 ? '+' : ''}${num(m.importo)}</b></li>`).join('');
+        const mov = (s.movimenti || []).slice(-8).reverse().map(m => `<li><span>${esc(data(m.t))} · ${esc(m.motivo)}</span><b class="${num(m.importo) >= 0 ? 'ng-piu' : 'ng-meno'}">${num(m.importo) === 0 ? 'free' : `${num(m.importo) > 0 ? '+' : ''}${num(m.importo)}`}</b></li>`).join('');
         return `<div class="ng-finestra" role="dialog" aria-modal="true" aria-label="Shop"><button type="button" class="ng-chiudi" data-ng="chiudi" aria-label="Close">×</button>`
             + `<div class="ng-testa"><h2>Shop</h2><span class="ng-saldo" title="Your coins">🪙 ${saldo}</span></div>`
-            + `<p class="ng-nota">Earn coins by playing: 4 per set, +6 if you win it (double in season matches; friendlies are capped at 40 a day), 25/50/100 for a new bronze/silver/gold badge, 300 for winning a season and 100 for an MVP.</p>`
+            + `<p class="ng-nota">${esc(notaPremi())}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
             + gruppi
+            + `<p class="ng-guida"><b>More to spend on.</b> Avatars (${Cosmetici.PREZZI.avatar} 🪙) and songs (${Cosmetici.PREZZI.canzone} 🪙): unlock them in <b>Customize → Trainer</b>; your first avatar and first song are free if you still have the default ones. `
+            + `Shiny Pokémon (${Cosmetici.PREZZI.shinyPokemon} 🪙 each): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
             + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
     }
 
+    /** Il markup della finestra del Box per rendere shiny i Pokémon di un team (puro): stato = { team, pokemon: [{ nome, shiny, normale, brillante }], saldo, prezzo, messaggio, occupato, armato } */
+    function htmlShinyTeam(stato) {
+        const s = stato || {};
+        const prezzo = num(s.prezzo) || Cosmetici.PREZZI.shinyPokemon;
+        const saldo = num(s.saldo);
+        const img = src => (src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '');
+        const righe = (s.pokemon || []).map((p, i) => {
+            const armato = s.armato === i;
+            const anteprima = p.shiny ? `<span class="ng-anteprima">${img(p.brillante)}</span>` : `<span class="ng-anteprima">${img(p.normale)}<i>→</i>${img(p.brillante)}</span>`;
+            const bottone = p.shiny ? '<span class="ng-fatto">Shiny ✓</span>'
+                : `<button type="button" class="ng-bottone ng-compra${armato ? ' ng-sicuro' : ''}" data-ng="shiny" data-i="${i}"${s.occupato || saldo < prezzo ? ' disabled' : ''}>${armato ? 'Sure? ' : ''}${prezzo} 🪙</button>`;
+            return `<li class="ng-voce ng-pkm${p.shiny ? ' ng-mio' : ''}" data-tipo="pokemon">${anteprima}<span><b>${esc(p.nome)}</b><small>${p.shiny ? 'Shiny for good' : (armato ? 'Press again to confirm' : 'Normal colours')}</small></span>${bottone}</li>`;
+        }).join('');
+        return `<div class="ng-finestra" role="dialog" aria-modal="true" aria-label="Shiny Pokémon"><button type="button" class="ng-chiudi" data-ng="chiudi" aria-label="Close">×</button>`
+            + `<div class="ng-testa"><h2>✨ Shiny · ${esc(s.team)}</h2><span class="ng-saldo" title="Your coins">🪙 ${saldo}</span></div>`
+            + `<p class="ng-nota">Pick the Pokémon to make shiny: ${prezzo} 🪙 each. It only changes the colours, so it works on locked teams too, it shows in battle and on the site, and it stays for good.</p>`
+            + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
+            + (righe ? `<ul class="ng-lista">${righe}</ul>` : '<p class="ng-nota">This team has no Pokémon yet.</p>')
+            + '</div>';
+    }
+
     // ---------------------------------------------------------------- nel browser
-    const FRASI = { owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found." };
+    const FRASI = {
+        owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
+        already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
+    };
+    const frase = motivo => FRASI[motivo] || "Couldn't do that.";
+
+    /** Chiama una funzione del server (europe-west1): le carica la prima volta, perché servono solo a chi compra */
+    async function chiama(win, nome, dati) {
+        await caricaFunzioni(win);
+        const f = win.firebase.app().functions('europe-west1');
+        return (await f.httpsCallable(nome)(dati || {})).data || {};
+    }
+    /** Compra un cosmetico (anche un avatar o una canzone). `nome` è solo per l'elenco dei movimenti. → { ok, saldo, gratis } oppure { ok: false, motivo } */
+    const compra = (win, id, nome) => chiama(win, 'acquistaCosmetico', { id, nome: nome || '' });
 
     function caricaFunzioni(win) {
         if (win.firebase && win.firebase.functions) return Promise.resolve();
@@ -174,10 +229,8 @@
             if (b.dataset.ng === 'chiudi') return chiudi();
             stato.occupato = true; stato.messaggio = ''; disegna();
             try {
-                await caricaFunzioni(win);
-                const f = fb.app().functions('europe-west1');
-                const r = (await f.httpsCallable(b.dataset.ng === 'compra' ? 'acquistaCosmetico' : 'equipaCosmetico')({ id: b.dataset.id, attivo: b.dataset.attivo !== '0' })).data || {};
-                stato.messaggio = r.ok ? (b.dataset.ng === 'compra' ? 'Bought! Put it on whenever you like.' : 'Done.') : (FRASI[r.motivo] || "Couldn't do that.");
+                const r = await chiama(win, b.dataset.ng === 'compra' ? 'acquistaCosmetico' : 'equipaCosmetico', { id: b.dataset.id, attivo: b.dataset.attivo !== '0' });
+                stato.messaggio = r.ok ? (b.dataset.ng === 'compra' ? 'Bought! Put it on whenever you like.' : 'Done.') : frase(r.motivo);
                 await leggi();
             } catch (err) { stato.messaggio = "Couldn't do that. Try again in a moment."; }
             stato.occupato = false; disegna();
@@ -185,5 +238,59 @@
         return velo;
     }
 
-    return { html, anteprima, apri, STILE };
+    /**
+     * Apre la finestra per rendere shiny i Pokémon di un team del Box.
+     * @param {Window} win
+     * @param {{ id: string, nome: string, pokemon: Array<{ nome: string, shiny?: boolean }>, alFatto?: function(number): void }} team  `alFatto(indice)` si chiama dopo ogni acquisto
+     */
+    async function apriShinyTeam(win, team) {
+        const doc = win.document, fb = win.firebase;
+        if (!fb || !fb.auth || !fb.database) return null;
+        const utente = fb.auth().currentUser;
+        if (!utente) return null;
+        if (!doc.getElementById('ng-stile')) { const st = doc.createElement('style'); st.id = 'ng-stile'; st.textContent = STILE; doc.head.appendChild(st); }
+        const SP = win.SpritePkm;
+        const gif = (nome, shiny) => (SP && SP.gif ? SP.gif(nome, shiny) : '');
+        const stato = {
+            team: team.nome, saldo: 0, prezzo: Cosmetici.PREZZI.shinyPokemon, messaggio: '', occupato: false, armato: null,
+            pokemon: (team.pokemon || []).map(p => ({ nome: (p && p.nome) || '?', shiny: !!(p && p.shiny), normale: gif(p && p.nome, false), brillante: gif(p && p.nome, true) }))
+        };
+        const velo = doc.createElement('div');
+        velo.className = 'ng-velo';
+        doc.body.appendChild(velo);
+        const chiudi = () => { velo.remove(); doc.removeEventListener('keydown', tasto); };
+        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+        doc.addEventListener('keydown', tasto);
+        const disegna = () => { velo.innerHTML = htmlShinyTeam(stato); };
+        const leggiSaldo = async () => { stato.saldo = num((await fb.database().ref(`wallet/${utente.uid}/saldo`).once('value')).val()); };
+        velo.innerHTML = '<div class="ng-finestra"><p class="ng-nota">Loading…</p></div>';
+        try { await leggiSaldo(); } catch (e) { stato.messaggio = "Couldn't load your coins. Check the connection and try again."; }
+        disegna();
+        velo.addEventListener('click', async e => {
+            if (e.target === velo) return chiudi();
+            const b = e.target.closest ? e.target.closest('[data-ng]') : null;
+            if (!b || b.disabled) { if (stato.armato != null) { stato.armato = null; disegna(); } return; }
+            if (b.dataset.ng === 'chiudi') return chiudi();
+            const i = Number(b.dataset.i);
+            // un tocco arma il pulsante ("Sure?"), il secondo compra: le monete non si spendono per sbaglio
+            if (stato.armato !== i) { stato.armato = i; disegna(); return; }
+            stato.armato = null; stato.occupato = true; stato.messaggio = ''; disegna();
+            try {
+                const r = await chiama(win, 'shinyPokemonTeam', { team: team.id, indice: i });
+                if (r.ok) {
+                    stato.pokemon[i].shiny = true;
+                    stato.saldo = num(r.saldo);
+                    stato.messaggio = `${stato.pokemon[i].nome} is shiny now!`;
+                    if (typeof team.alFatto === 'function') { try { team.alFatto(i); } catch (err) { /* la finestra resta */ } }
+                } else {
+                    stato.messaggio = frase(r.motivo);
+                    if (r.motivo === 'already') stato.pokemon[i].shiny = true;
+                }
+            } catch (err) { stato.messaggio = "Couldn't do that. Try again in a moment."; }
+            stato.occupato = false; disegna();
+        });
+        return velo;
+    }
+
+    return { html, htmlShinyTeam, anteprima, apri, apriShinyTeam, compra, chiama, frase, STILE };
 });

@@ -84,7 +84,7 @@ test('le pagine usano la regola condivisa: nessun nome di GIF costruito a mano d
     for (const pagina of ['box.html', 'hub.html', 'matches.html']) {
         const t = docs(pagina);
         assert.match(t, /function gestisciErroreSprite\(img, pkmNameUrl, spriteId\)/);
-        assert.match(t, /sprites\/dex\/\$\{spriteId \|\| pkmNameUrl\}\.png/);
+        assert.match(t, /sprites\/\$\{img\.dataset\.shiny \? 'dex-shiny' : 'dex'\}\/\$\{spriteId \|\| pkmNameUrl\}\.png/, `${pagina}: il ripiego usa l'id di Showdown, in shiny per i Pokémon shiny`);
     }
     assert.match(docs('public-card.js'), /window\.SpritePkm \? window\.SpritePkm\.gif\(nome, shiny\)/);
     assert.match(docs('stats.js'), /const \{ idSprite \} = window\.SpritePkm;/);

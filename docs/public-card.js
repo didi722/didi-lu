@@ -380,7 +380,7 @@
                         if (typeof window.apriPkmDettaglio === 'function') window.apriPkmDettaglio(p, pulisci(nomePkm), elenco(team.pokemon).indexOf(p));
                     } },
                     h('span', { class: 'pkm-badges-overlay pp-slot-badge', 'data-fiocchi-pkm': String(i) }),
-                    h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
+                    h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm, p.shiny), alt: '', 'data-shiny': p.shiny ? '1' : null,
                         onerror: e => {
                             if (window.SpritePkm) return window.SpritePkm.riserva(e.target, window.SpritePkm.id(nomePkm));
                             e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';

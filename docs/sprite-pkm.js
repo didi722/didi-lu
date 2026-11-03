@@ -86,8 +86,9 @@
      *  `idSprite` è l'id già calcolato (SpritePkm.id). */
     function riserva(img, idSprite) {
         const passi = [];
-        if (idSprite && FORME_DI_PARTENZA[idSprite]) passi.push(`${SD}/ani/${FORME_DI_PARTENZA[idSprite]}.gif`);
-        if (idSprite) passi.push(`${SD}/dex/${idSprite}.png`);
+        const brillante = !!(img.dataset && img.dataset.shiny);       // un Pokémon shiny ripiega sulle immagini shiny
+        if (idSprite && FORME_DI_PARTENZA[idSprite]) passi.push(`${SD}/${brillante ? 'ani-shiny' : 'ani'}/${FORME_DI_PARTENZA[idSprite]}.gif`);
+        if (idSprite) passi.push(`${SD}/${brillante ? 'dex-shiny' : 'dex'}/${idSprite}.png`);
         const fase = Number(img.dataset.spriteFase || 0);
         img.dataset.spriteFase = String(fase + 1);
         if (fase < passi.length) { img.src = passi[fase]; return; }

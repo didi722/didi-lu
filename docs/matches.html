@@ -1501,7 +1501,7 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visi
                         ${pokemonList.map((p, pidx) => {
                             const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                             const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            const pkmSprite = SpritePkm.gif(p.nome);
+                            const pkmSprite = SpritePkm.gif(p.nome, p.shiny);
                             const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                             const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${pidx}`;
                             
@@ -2383,9 +2383,9 @@ function generaHtmlGifs(nomeTeam, categoria) {
         // chiama solo col nome base (Mimikyu, Giratina...) hanno già la loro GIF con quel nome
         const id = SpritePkm.id(p.nome);
         return `
-            <img src="${SpritePkm.gif(p.nome)}" 
+            <img src="${SpritePkm.gif(p.nome, p.shiny)}" 
                  class="mini-gif" 
-                 alt="${id}"
+                 alt="${id}"${p.shiny ? ' data-shiny="1"' : ''}
                  onerror="SpritePkm.riserva(this, '${id}')">
         `;
     }).join('');
@@ -2537,7 +2537,7 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/${img.dataset.shiny ? 'dex-shiny' : 'dex'}/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -2600,8 +2600,8 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="${SpritePkm.gif(p.nome)}" 
-                             class="modal-sprite clickable-pkm" 
+                        <img src="${SpritePkm.gif(p.nome, p.shiny)}" 
+                             class="modal-sprite clickable-pkm"${p.shiny ? ' data-shiny="1"' : ''} 
                              onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
 
                     <div class="modal-pkm-info">

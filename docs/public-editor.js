@@ -186,22 +186,54 @@
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
-    // I motivi a pagamento (cosmetici.js): quelli comprati si usano, quelli in uso nella pagina salvata restano di chi li aveva; gli altri sono bloccati e il tasto apre il negozio.
-    let possedutiMotivi = null;      // wallet/{uid}/posseduti, letto una volta (null finché non arriva)
-    function leggiPossedutiMotivi() {
-        if (possedutiMotivi || !window.firebase || !window.firebase.auth) return;
+    // ---- I cosmetici a pagamento (cosmetici.js): motivi dello sfondo, avatar, canzoni --------------
+    // Il portafoglio (wallet/{uid}) si legge una volta; si compra dal server (negozio.js, caricato solo quando serve). Quello che si usa già nella pagina SALVATA resta di chi lo usa;
+    // il resto è bloccato finché non si compra: il tasto apre lo sblocco (avatar e canzoni) o il negozio (i motivi). Il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza.
+    let portafoglio = null;          // null finché non si legge; poi { saldo, posseduti, gratis, pronto }
+    function leggiPortafoglio(forza) {
+        if ((portafoglio && !forza) || !window.firebase || !window.firebase.auth) return Promise.resolve();
         const u = window.firebase.auth().currentUser;
-        if (!u) return;
-        possedutiMotivi = {};
-        window.firebase.database().ref(`wallet/${u.uid}/posseduti`).once('value')
-            .then(snap => { possedutiMotivi = snap.val() || {}; if (typeof disegnaPannello === 'function') disegnaPannello(); })
-            .catch(() => { /* senza: restano bloccati solo i motivi a pagamento che non usi già */ });
+        if (!u) return Promise.resolve();
+        if (!portafoglio) portafoglio = { saldo: 0, posseduti: {}, gratis: {}, pronto: false };
+        return window.firebase.database().ref(`wallet/${u.uid}`).once('value')
+            .then(snap => { const w = snap.val() || {}; portafoglio = { saldo: Number(w.saldo) || 0, posseduti: w.posseduti || {}, gratis: w.gratis || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .catch(() => { /* senza: resta bloccato ciò che non usi già, e non si compra */ });
     }
-    const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, { wallet: { posseduti: possedutiMotivi || {} }, info: C.stato.dati.info, pagina: C.stato.salvata });
+    // quello che si usa nella pagina SALVATA (non l'anteprima di una scelta ancora da salvare)
+    const infoSalvata = () => ({ ...C.stato.dati.info, ...C.stato.infoSalvata });
+    const contestoCosmetici = () => ({ wallet: portafoglio || {}, info: infoSalvata(), pagina: C.stato.salvata });
+    const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, contestoCosmetici());
     const apriNegozio = () => window.dispatchEvent(new CustomEvent('apri-negozio'));     // lo ascolta il campanello (sfide.js)
 
+    function caricaNegozio() {
+        if (window.Negozio) return Promise.resolve();
+        const mio = Array.from(document.scripts).find(x => /(^|\/)public-editor\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
+        const base = mio ? mio.getAttribute('src').replace(/public-editor\.js.*$/, '') : '';
+        const carica = nome => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = `${base}${nome}`; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
+        return carica('negozio.js');
+    }
+    const tipoDi = id => (String(id).startsWith('avatar-') ? 'avatar' : 'canzone');
+
+    /** Quello che le schede (Trainer) usano per avatar e canzoni a pagamento */
+    const cosmetici = {
+        pronto: () => !!(portafoglio && portafoglio.pronto),
+        possiede: id => !!window.Cosmetici && window.Cosmetici.possiede(id, contestoCosmetici()),
+        prezzo: id => (window.Cosmetici && window.Cosmetici.prezzoPer(id, contestoCosmetici())) || { prezzo: 0, gratis: false },
+        saldo: () => (portafoglio ? portafoglio.saldo : 0),
+        frase: motivo => (motivo === 'loading' ? 'Still loading your coins: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
+        /** Sblocca un avatar o una canzone dal server; ritorna { ok, saldo, gratis } o { ok: false, motivo } e rilegge il portafoglio */
+        async compra(id, nome) {
+            if (!cosmetici.pronto()) return { ok: false, motivo: 'loading' };
+            await caricaNegozio();
+            const r = await window.Negozio.compra(window, id, nome);
+            if (r.ok) await leggiPortafoglio(true);
+            return r;
+        },
+        tipoDi
+    };
+
     function schedaSfondo() {
-        leggiPossedutiMotivi();
+        leggiPortafoglio();
         const s = cfg().sfondo;
         const anteprima = motivo => {
             const css = P.sfondoCss({ ...s, motivo }, colore());
@@ -426,6 +458,19 @@
         try {
             const database = typeof db !== 'undefined' ? db : firebase.database();
             const chiave = C.stato.dati.chiave;
+
+            // avatar e canzone nuovi devono essere sbloccati (il lucchetto sulla lista apre lo sblocco): il resto della pagina si salva comunque dopo che si sono sbloccati
+            if (window.Cosmetici && (cambiati.includes('avatar') || cambiati.includes('musicaPreferita'))) {
+                const nuovi = [];
+                const avatarId = cambiati.includes('avatar') && profilo.avatar ? window.Cosmetici.idAvatar(profilo.avatar) : '';
+                if (avatarId && !cosmetici.possiede(avatarId)) nuovi.push('avatar');
+                const canzoneId = cambiati.includes('musicaPreferita') && profilo.musicaPreferita ? window.Cosmetici.idCanzone(profilo.musicaPreferita) : '';
+                if (canzoneId && !cosmetici.possiede(canzoneId)) nuovi.push('song');
+                if (nuovi.length) {
+                    avvisa(cosmetici.pronto() ? `Unlock your new ${nuovi.join(' and ')} first (look for the lock). Nothing was saved.` : "Couldn't check your unlocks yet: wait a moment and try again. Nothing was saved.", true);
+                    return;
+                }
+            }
 
             // colore, avatar, Pokémon preferito e canzone sono unici: si ricontrolla sui dati di adesso, perché
             // qualcuno può aver scelto la stessa cosa mentre si modificava
@@ -1029,7 +1074,7 @@
 
     /** Quello che serve alle schede aggiunte da altri file */
     function contesto() {
-        return { P, C, h, sezione, segmentato, interruttore, campione, cursore, cambiaProfilo, avvisa, ridisegna: disegnaPannello };
+        return { P, C, h, sezione, segmentato, interruttore, campione, cursore, cambiaProfilo, avvisa, ridisegna: disegnaPannello, cosmetici };
     }
 
     function apri(card) {
@@ -1041,6 +1086,7 @@
         C.stato.dopoApplica = () => { installaBarre(); aggiornaManiglie(); aggiornaNotaPalco(); };
         C.stato.dopoAdatta = () => { aggiornaManiglie(); aggiornaNotaPalco(); };
         C.modifica(true);
+        leggiPortafoglio();
         installaBarre();
         costruisciPannello();
         disegnaPannello();

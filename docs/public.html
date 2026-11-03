@@ -603,7 +603,7 @@ async function apriDettagli(id) {
                 <div class="modal-pkm-card modal-pkm-card-apri" role="button" tabindex="0" data-i="${pIndex}" aria-label="${escHtml(p.nome)}">
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
-                        <img src="${SpritePkm.gif(p.nome)}" class="modal-sprite" alt=""
+                        <img src="${SpritePkm.gif(p.nome, p.shiny)}" class="modal-sprite" alt=""${p.shiny ? ' data-shiny="1"' : ''}
                              onerror="SpritePkm.riserva(this, '${SpritePkm.id(p.nome)}')">
                     </div>
                     <div class="modal-pkm-info">

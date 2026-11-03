@@ -8,6 +8,9 @@
 // Colore, avatar, Pokémon preferito e canzone sono unici: quelli che un altro allenatore ha già
 // scelto restano nella lista ma in grigio e non si possono scegliere (P.scelteDegliAltri); quello che si ha
 // già resta sempre selezionabile. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
+//
+// Avatar e canzoni nuovi si sbloccano a pagamento (cosmetici.js, il server li vende): quelli che non si hanno mostrano un lucchetto e il tasto apre una conferma;
+// una volta sbloccati restano tuoi e si cambia quando si vuole. Il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza.
 // =====================================================
 (function () {
     'use strict';
@@ -61,10 +64,38 @@
         return bottone;
     }
 
+    // Lo sblocco di un avatar o di una canzone: una finestrella di conferma sopra al pannello. `dopo` parte a sblocco riuscito (di solito sceglie la voce appena sbloccata).
+    function chiediSblocco(ctx, { id, nome, tipo, immagine, dopo }) {
+        const { h, cosmetici, avvisa } = ctx;
+        const p = cosmetici.prezzo(id);
+        const saldo = cosmetici.saldo();
+        const chiudi = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
+        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+        const conferma = h('button', { type: 'button', class: 'pe-bottone pe-primario', testo: p.gratis ? 'Unlock for free' : `Unlock · ${p.prezzo} 🪙`, onclick: async () => {
+            conferma.disabled = true;
+            conferma.textContent = 'Unlocking…';
+            let r;
+            try { r = await cosmetici.compra(id, nome); } catch (e) { r = { ok: false, motivo: 'error' }; }
+            chiudi();
+            if (r.ok) { avvisa(r.gratis ? `${nome} unlocked for free!` : `${nome} unlocked.`); dopo(); } else avvisa(cosmetici.frase(r.motivo), true);
+        } });
+        if (!p.gratis && (!cosmetici.pronto() || saldo < p.prezzo)) conferma.disabled = true;
+        const velo = h('div', { class: 'pe-sblocco-velo', onclick: e => { if (e.target === velo) chiudi(); } },
+            h('div', { class: 'pe-sblocco', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Unlock ${nome}` },
+                immagine ? h('img', { src: immagine, alt: '' }) : null,
+                h('b', { testo: nome }),
+                h('p', { class: 'pe-nota', testo: !cosmetici.pronto() ? 'Loading your coins…'
+                    : p.gratis ? `Your first ${tipo} is free: you still have the default one.`
+                        : `Unlocking costs ${p.prezzo} 🪙 and you have ${saldo} 🪙. It stays yours: you can come back to it any time.${saldo < p.prezzo ? ' Play some sets to earn more coins.' : ''}` }),
+                h('div', { class: 'pe-sblocco-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
+        document.addEventListener('keydown', tasto);
+        document.body.append(velo);
+    }
+
     // ---- Disegno ------------------------------------------------------------------------------
 
     function disegna(ctx) {
-        const { C, h, sezione, campione, cambiaProfilo, ridisegna } = ctx;
+        const { C, h, sezione, campione, cambiaProfilo, ridisegna, cosmetici } = ctx;
         const dati = C.stato.dati;
         const profilo = C.profilo();
         const presi = P.scelteDegliAltri(dati.chiave, dati.tutti);
@@ -79,12 +110,21 @@
         const tuttiAvatar = P.elencoAvatar();
         const preso = f => `profile/${f}`.toLowerCase() !== avatarAttuale && presi.avatar.has(`profile/${f}`.toLowerCase());
         const avatarLiberi = tuttiAvatar.filter(f => !preso(f));
+        const idAv = f => `avatar-${f.replace('.png', '')}`;
+        const bloccato = id => !!window.Cosmetici && !cosmetici.possiede(id);
+        const prezzoAv = cosmetici.prezzo('avatar-1');
         const griglia = h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, tuttiAvatar.map(f => {
-            const b = h('button', { type: 'button', class: `pe-avatar-item${`profile/${f}`.toLowerCase() === avatarAttuale ? ' is-on' : ''}`, 'data-v': `profile/${f}`.toLowerCase(), title: `Avatar ${f.replace('.png', '')}`,
-                onclick: () => scegli({ avatar: new URL(`immagini/profile/${f}`, window.location.href).href }) },
+            const n = f.replace('.png', ''), id = idAv(f), chiuso = bloccato(id);
+            const url = new URL(`immagini/profile/${f}`, window.location.href).href;
+            const b = h('button', { type: 'button', class: `pe-avatar-item${`profile/${f}`.toLowerCase() === avatarAttuale ? ' is-on' : ''}${chiuso ? ' pe-bloccato' : ''}`, 'data-v': `profile/${f}`.toLowerCase(),
+                title: chiuso ? `Avatar ${n} · locked: ${prezzoAv.gratis ? 'free (your first one)' : `${prezzoAv.prezzo} 🪙`}` : `Avatar ${n}`,
+                onclick: () => (chiuso
+                    ? chiediSblocco(ctx, { id, nome: `Avatar ${n}`, tipo: 'avatar', immagine: `immagini/profile/${f}`, dopo: () => { scegli({ avatar: url }); ridisegna(); } })
+                    : scegli({ avatar: url })) },
             h('img', { src: `immagini/profile/${f}`, alt: '', loading: 'lazy' }));
-            return preso(f) ? comePresa(b, `Avatar ${f.replace('.png', '')}`) : b;
+            return preso(f) ? comePresa(b, `Avatar ${n}`) : b;
         }));
+        const notaAvatar = prezzoAv.gratis ? 'Your first new avatar is free: you still have the default one.' : `A new avatar costs ${prezzoAv.prezzo} 🪙 and stays yours. You have ${cosmetici.saldo()} 🪙.`;
 
         // ---- colore firma: tutti, quelli di altri in grigio (il tuo di adesso resta sempre selezionabile)
         const attuale = String(profilo.color || '').toUpperCase();
@@ -116,6 +156,7 @@
                 h('div', { class: 'pe-avatar-riga' },
                     h('span', { class: 'pe-avatar-grande' }, h('img', { id: 'pe-avatar-attuale', src: profilo.avatar || 'immagini/profile/1.png', alt: 'Current avatar' })),
                     h('span', { class: 'pe-nota', testo: `${avatarLiberi.length} of ${tuttiAvatar.length} avatars available` })),
+                h('p', { class: 'pe-nota', testo: notaAvatar }),
                 griglia),
             sezione('Signature colour', swatch,
                 h('p', { class: 'pe-nota', testo: 'It colours your name, stats and trophy. Greyed out colours belong to other trainers; yours is always kept.' })),
@@ -238,7 +279,7 @@
     // ---- Canzone ------------------------------------------------------------------------------
 
     function sezioneCanzone(ctx, presi, scegli) {
-        const { C, h, sezione } = ctx;
+        const { C, h, sezione, cosmetici } = ctx;
         const profilo = C.profilo();
         const lista = h('div', { class: 'pe-scorri', id: 'pe-lista-canzoni' });
 
@@ -251,8 +292,18 @@
             const prese = c => c.url !== mio && (presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()));
             const libere = canzoni.filter(c => !q || c.nome.toLowerCase().includes(q));
             lista.append(...libere.map(c => {
-                const scelta = h('button', { type: 'button', class: `pe-scelta${c.url === mio ? ' is-on' : ''}`, 'data-v': c.url, onclick: () => { fermaAnteprima(); scegli({ musicName: c.nome, musicaPreferita: c.url }); } },
-                    h('span', { testo: c.nome }));
+                const id = window.Cosmetici ? window.Cosmetici.idCanzone(c.url) : '';
+                const chiusa = !!id && !cosmetici.possiede(id);
+                const prezzoC = chiusa ? cosmetici.prezzo(id) : null;
+                const scelta = h('button', { type: 'button', class: `pe-scelta${c.url === mio ? ' is-on' : ''}${chiusa ? ' pe-bloccato' : ''}`, 'data-v': c.url,
+                    title: chiusa ? `${c.nome} · locked: ${prezzoC.gratis ? 'free (your first one)' : `${prezzoC.prezzo} 🪙`}` : null,
+                    onclick: () => {
+                        fermaAnteprima();
+                        if (!chiusa) { scegli({ musicName: c.nome, musicaPreferita: c.url }); return; }
+                        chiediSblocco(ctx, { id, nome: c.nome, tipo: 'song', dopo: () => { scegli({ musicName: c.nome, musicaPreferita: c.url }); riempi(); } });
+                    } },
+                h('span', { testo: chiusa ? `🔒 ${c.nome}` : c.nome }),
+                chiusa ? h('small', { class: 'pe-prezzo', testo: prezzoC.gratis ? 'free' : `${prezzoC.prezzo} 🪙` }) : null);
                 return h('div', { class: 'pe-canzone' },
                     prese(c) ? comePresa(scelta, c.nome) : scelta,
                     h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${c.nome}`, onclick: ev => {
@@ -276,6 +327,8 @@
             h('div', { class: 'pe-attuale' }, h('span', { testo: 'Now: ' }), h('b', { id: 'pe-canzone-attuale', testo: profilo.musicName || (profilo.musicaPreferita ? 'Favourite song' : 'None') }),
                 h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => { fermaAnteprima(); scegli({ musicName: '', musicaPreferita: '' }); }, testo: 'None' })),
             cerca, lista,
+            h('p', { class: 'pe-nota', testo: cosmetici.prezzo('canzone-00000000').gratis ? 'Your first new song is free: you have not picked one yet. Tap ▶ to listen before you unlock.'
+                : `A new song costs ${cosmetici.prezzo('canzone-00000000').prezzo} 🪙 and stays yours: tap ▶ to listen first. You have ${cosmetici.saldo()} 🪙.` }),
             h('p', { class: 'pe-nota', testo: 'The song plays from the Music block of your card. If you turn that block off, no music plays.' }));
     }
 

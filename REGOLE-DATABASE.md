@@ -126,4 +126,6 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 
 Se qualcosa smette di funzionare, rimetti le regole vecchie (tienine una copia) e dimmi quale azione ha fallito: nella console del browser compare "permission_denied" col percorso.
 
+Avatar, canzoni e shiny dei team: le monete non si falsificano (le scrive solo il server), ma il valore scelto (l'avatar e la canzone nel profilo, il segno shiny nei team) si scrive dal sito. L'editor e il Box controllano che sia sbloccato, ma chi scrive a mano nel database può aggirarli: è solo estetico. Una regola `.validate` per gli avatar sarebbe legata all'indirizzo del sito e per le canzoni non si può scrivere (l'id è un'impronta dell'indirizzo), quindi non le metto.
+
 Due rischi noti: chi guarda le partite in diretta **senza account** non le vedrà più (nelle regole era già "auth != null", ma non valeva); e non ho potuto provare le regole su Firebase da qui.

@@ -210,7 +210,10 @@ const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
     if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
     const dati = richiesta.data || {};
     try {
-        const esito = await monete[nome]({ db: getDatabase(), uid: richiesta.auth.uid, id: String(dati.id || ''), attivo: dati.attivo !== false });
+        const esito = await monete[nome]({
+            db: getDatabase(), uid: richiesta.auth.uid, id: String(dati.id || ''), attivo: dati.attivo !== false,
+            nome: String(dati.nome || '').slice(0, 60), team: String(dati.team || ''), indice: dati.indice
+        });
         return esito;
     } catch (e) {
         console.error(nome, e);
@@ -219,6 +222,7 @@ const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
 });
 exports.acquistaCosmetico = negozio('acquista');
 exports.equipaCosmetico = negozio('equipa');
+exports.shinyPokemonTeam = negozio('shinyPokemon');      // lo shiny di un Pokémon di un team del Box (anche bloccato)
 
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
 exports.pushStatoStagione = onValueWritten(

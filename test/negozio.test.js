@@ -8,6 +8,7 @@ const path = require('node:path');
 const N = require('../docs/negozio.js');
 const P = require('../docs/pagina-pubblica.js');
 const Sprite = require('../docs/sprite-pkm.js');
+const C = require('../docs/cosmetici.js');
 
 const leggi = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
 
@@ -15,8 +16,8 @@ test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano mon
     const h = N.html({ saldo: 220, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro', pkmShiny: false }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
     assert.match(h, /🪙 220/);
     for (const t of ['Shiny companion', 'Trainer aura', 'Page patterns']) assert.ok(h.includes(t), t);
-    assert.match(h, /data-ng="compra" data-id="shiny">200 🪙/);
-    assert.match(h, /data-ng="compra" data-id="aura-arcobaleno" disabled>250 🪙/, '220 monete: l\'arcobaleno costa 250');
+    assert.match(h, new RegExp(`data-ng="compra" data-id="shiny">${C.perId('shiny').prezzo} 🪙`));
+    assert.match(h, new RegExp(`data-ng="compra" data-id="aura-arcobaleno" disabled>${C.perId('aura-arcobaleno').prezzo} 🪙`), '220 monete: l\'arcobaleno costa di più');
     assert.match(h, /data-ng="equipa" data-id="aura-oro" data-attivo="0">Take off/, 'l\'aura in uso si toglie');
     assert.match(h, /On now/);
     assert.match(h, /&lt;b&gt;Bought&lt;\/b&gt;/);
@@ -93,4 +94,85 @@ test('cablaggio: il campanello apre il negozio; shiny nella pagina, nell\'app e 
     assert.match(ed, /dispatchEvent\(new CustomEvent\('apri-negozio'\)\)/);
     assert.match(leggi('docs', 'sfide.js'), /addEventListener\('apri-negozio'/);
     assert.ok(leggi('docs', 'style-public-editor.css').includes('.pe-motivo.pe-bloccato'));
+});
+
+test('htmlShinyTeam: una riga per Pokémon; i shiny sono "Shiny ✓", gli altri hanno il prezzo (spento senza monete); un tocco arma ("Sure?"), il testo è protetto', () => {
+    const base = { team: 'Alfa <b>', saldo: 150, prezzo: 100, pokemon: [{ nome: 'Garchomp', shiny: true, brillante: 'https://x/g-s.gif' }, { nome: 'Incineroar', shiny: false, normale: 'https://x/i.gif', brillante: 'https://x/i-s.gif' }, { nome: '<i>X</i>', shiny: false }] };
+    const h = N.htmlShinyTeam(base);
+    assert.match(h, /✨ Shiny · Alfa &lt;b&gt;/);
+    assert.match(h, /🪙 150/);
+    assert.equal((h.match(/class="ng-voce ng-pkm/g) || []).length, 3);
+    assert.match(h, /Garchomp<\/b><small>Shiny for good<\/small><\/span><span class="ng-fatto">Shiny ✓/);
+    assert.match(h, /Incineroar<\/b><small>Normal colours<\/small><\/span><button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="1">100 🪙<\/button>/);
+    assert.match(h, /<img src="https:\/\/x\/i\.gif"[^>]*>(<i>→<\/i>)<img src="https:\/\/x\/i-s\.gif"/, 'prima/dopo');
+    assert.doesNotMatch(h, /<i>X<\/i>/, 'il nome è protetto');
+    // un tocco arma il pulsante di quel Pokémon soltanto
+    const armato = N.htmlShinyTeam({ ...base, armato: 1 });
+    assert.match(armato, /class="ng-bottone ng-compra ng-sicuro" data-ng="shiny" data-i="1">Sure\? 100 🪙/);
+    assert.match(armato, /Press again to confirm/);
+    assert.equal((armato.match(/ng-sicuro/g) || []).length, 1);
+    // senza monete o mentre si compra i pulsanti sono spenti
+    assert.equal((N.htmlShinyTeam({ ...base, saldo: 99 }).match(/data-ng="shiny"[^>]*disabled/g) || []).length, 2);
+    assert.equal((N.htmlShinyTeam({ ...base, occupato: true }).match(/data-ng="shiny"[^>]*disabled/g) || []).length, 2);
+    assert.match(N.htmlShinyTeam({ ...base, messaggio: 'Not enough coins.' }), /role="status">Not enough coins\./);
+    assert.match(N.htmlShinyTeam({ team: 'Vuoto', pokemon: [] }), /This team has no Pokémon yet/);
+    assert.match(N.htmlShinyTeam({ team: 'Vuoto', pokemon: [{ nome: 'A' }] }), new RegExp(`data-i="0"[^>]*>${C.PREZZI.shinyPokemon} 🪙`), 'senza prezzo nello stato vale quello del catalogo');
+});
+
+test('negozio: i guadagni nel testo vengono da PREMI, la guida dice dove si spendono avatar, canzoni e shiny; "free" nei movimenti a zero; le frasi degli errori nuovi', () => {
+    const h = N.html({ saldo: 0, movimenti: [{ t: Date.UTC(2026, 10, 3), importo: 0, motivo: 'Free: Avatar 12' }] });
+    const P = C.PREMI;
+    assert.match(h, new RegExp(`a season set pays ${P.set.ufficiale.giocato}, or ${P.set.ufficiale.giocato + P.set.ufficiale.vinto} if you win it`));
+    assert.match(h, new RegExp(`a friendly pays ${P.set.amichevole.giocato} or ${P.set.amichevole.giocato + P.set.amichevole.vinto} \\(up to ${P.tettoAmichevoliGiorno} a day\\)`));
+    assert.match(h, new RegExp(`Avatars \\(${C.PREZZI.avatar} 🪙\\) and songs \\(${C.PREZZI.canzone} 🪙\\)`));
+    assert.match(h, new RegExp(`Shiny Pokémon \\(${C.PREZZI.shinyPokemon} 🪙 each\\): the ✨ button on a team in your <b>Box</b>`));
+    assert.match(h, /Free: Avatar 12<\/span><b class="ng-piu">free<\/b>/);
+    for (const m of ['busy', 'already', 'cannot-apply', 'poor', 'owned']) assert.match(N.frase(m), /\w{4}/, m);
+    assert.equal(N.frase('boh'), "Couldn't do that.");
+    assert.match(N.frase('already'), /already shiny/);
+});
+
+test('sprite shiny: se la GIF manca, un Pokémon shiny ripiega sulle immagini shiny (il Pokédex shiny), non su quelle normali', () => {
+    const img = shiny => ({ dataset: shiny ? { shiny: '1' } : {}, src: '' });
+    const a = img(true);
+    Sprite.riserva(a, 'garchomp');
+    assert.equal(a.src, 'https://play.pokemonshowdown.com/sprites/dex-shiny/garchomp.png');
+    const b = img(false);
+    Sprite.riserva(b, 'garchomp');
+    assert.equal(b.src, 'https://play.pokemonshowdown.com/sprites/dex/garchomp.png');
+    const c = img(true);
+    Sprite.riserva(c, 'mimikyu');
+    assert.equal(c.src, 'https://play.pokemonshowdown.com/sprites/ani-shiny/mimikyu-disguised.gif', 'la forma di partenza, in shiny');
+});
+
+test('cablaggio: Box con il tasto ✨, la finestra e lo shiny sulle card; il salvataggio dei team toglie lo shiny non comprato; le altre pagine mostrano lo shiny dei team; il server lo vende', () => {
+    const box = leggi('docs', 'box.html');
+    assert.match(box, /<script src="cosmetici\.js"><\/script>\s*<script src="negozio\.js"><\/script>/);
+    assert.match(box, /class="card-azione azione-shiny" onclick="event\.stopPropagation\(\); apriShinyTeam\('\$\{team\.id\}'\)"/);
+    assert.match(box, /function apriShinyTeam\(id\)[\s\S]*?window\.Negozio\.apriShinyTeam\(window,[\s\S]*?alFatto: indice => \{ if \(pokemon\[indice\]\) pokemon\[indice\]\.shiny = true; applicaFiltri\(\); \}/);
+    assert.match(box, /SpritePkm\.gif\(nomePkm, p\.shiny\)/);
+    assert.match(box, /SpritePkm\.gif\(p\.nome, p\.shiny\)[^\n]*clickable-pkm/);
+    assert.match(box, /Cosmetici\.senzaShinyAbusivi\(testoScritto, editingId \? tuttiITeam\.find\(t => t\.id === editingId\) : null\)/);
+    assert.match(box, /sprites\/\$\{img\.dataset\.shiny \? 'dex-shiny' : 'dex'\}/);
+    for (const [f, re] of [['matches.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['public.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['hub.html', /SpritePkm\.gif\(p\.nome \|\| '', p\.shiny\)/]]) assert.match(leggi('docs', f), re, f);
+    assert.match(leggi('docs', 'public-card.js'), /gifShowdown\(nomePkm, p\.shiny\)/, 'la squadra nella pagina pubblica');
+    const idx = leggi('functions', 'index.js');
+    assert.match(idx, /exports\.shinyPokemonTeam = negozio\('shinyPokemon'\)/);
+    assert.match(idx, /team: String\(dati\.team \|\| ''\), indice: dati\.indice/);
+});
+
+test('cablaggio: l\'editor legge il portafoglio, mostra il lucchetto su avatar e canzoni non sbloccati e al salvataggio non accetta quelli non sbloccati', () => {
+    const ed = leggi('docs', 'public-editor.js');
+    assert.match(ed, /function leggiPortafoglio\(forza\)/);
+    assert.match(ed, /ref\(`wallet\/\$\{u\.uid\}`\)/);
+    assert.match(ed, /cosmetici\.possiede\(avatarId\)[\s\S]*?cosmetici\.possiede\(canzoneId\)[\s\S]*?Unlock your new/);
+    assert.match(ed, /ridisegna: disegnaPannello, cosmetici \}/);
+    assert.doesNotMatch(ed, /possedutiMotivi|leggiPossedutiMotivi/, 'un solo portafoglio per tutto');
+    const tr = leggi('docs', 'public-editor-trainer.js');
+    assert.match(tr, /function chiediSblocco\(ctx,/);
+    assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: `Avatar \$\{n\}`, tipo: 'avatar'/);
+    assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: c\.nome, tipo: 'song'/);
+    assert.match(tr, /Unlock for free/);
+    assert.match(tr, /None' \}\)|testo: 'None'/, 'togliere la canzone resta gratis');
+    assert.match(leggi('docs', 'style-public-editor.css'), /\.pe-avatar-item\.pe-bloccato::after \{ content: '🔒'/);
 });

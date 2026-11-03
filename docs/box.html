@@ -40,6 +40,8 @@
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
     <script src="scheda-condivisione.js"></script>
+    <script src="cosmetici.js"></script>
+    <script src="negozio.js"></script>
 <script src="controllo-team.js"></script>
 <script src="formato-random.js"></script>
 <link rel="stylesheet" href="tooltip.css">
@@ -939,12 +941,16 @@ async function renderizza(lista) {
             <button type="button" class="azione-note" data-note-chip="${team.id}" ${numeroNote ? '' : 'hidden'}
                     onclick="event.stopPropagation(); apriDettagli('${team.id}', { note: true })"
                     title="Notes on this team: what to fix or try">📝 <b>${numeroNote}</b></button>`;
+        const htmlShiny = `
+                <button type="button" class="card-azione azione-shiny" onclick="event.stopPropagation(); apriShinyTeam('${team.id}')"
+                        title="Make a Pokémon of this team shiny" aria-label="Make a Pokémon of this team shiny">✨</button>`;
         const htmlCondividi = `
                 <button type="button" class="card-azione azione-condividi" onclick="event.stopPropagation(); condividiTeam('${team.id}')"
                         title="Share this team as an image" aria-label="Share this team">📤</button>`;
         const htmlAzioni = `
             <div class="card-actions">
                 ${htmlProvaCpu}
+                ${htmlShiny}
                 ${htmlCondividi}
                 ${!isBloccato ? `
                 <button type="button" class="card-azione azione-modifica" onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')"
@@ -981,7 +987,7 @@ async function renderizza(lista) {
 
                     const pkmNameUrl = nomePkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                     const itemNameUrl = strumentoPkm.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                    const pkmSprite = SpritePkm.gif(nomePkm);
+                    const pkmSprite = SpritePkm.gif(nomePkm, p.shiny);
                     const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                     const sideClass = (index % 2 === 0) ? 'left-side' : 'right-side';
                     const teamIdSanitized = (team.id || '').toString().replace(/-/g, '');
@@ -994,9 +1000,9 @@ async function renderizza(lista) {
                     }, 50);
 
                     return `
-                        <div class="pkm-box" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]}; --tipo2: ${(window.coloriPokemonNoti2 || {})[nomePkm] || window.coloriPokemonNoti[nomePkm]};"` : ''}>
+                        <div class="pkm-box${p.shiny ? ' is-shiny' : ''}" id="${pkmBoxId}"${window.coloriPokemonNoti && window.coloriPokemonNoti[nomePkm] ? ` style="--tipo: ${window.coloriPokemonNoti[nomePkm]}; --tipo2: ${(window.coloriPokemonNoti2 || {})[nomePkm] || window.coloriPokemonNoti[nomePkm]};"` : ''}>
                             <div class="pkm-sprite-container">
-                                <img src="${pkmSprite}" class="pkm-sprite" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
+                                <img src="${pkmSprite}" class="pkm-sprite"${p.shiny ? ' data-shiny="1"' : ''} onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(nomePkm)}')">
                                 </div>
                             <div class="pkm-info">
                                 <span class="pkm-name">${nomePkm}</span>
@@ -1142,6 +1148,18 @@ function provaControCpu(id) {
 }
 
 /** Il team come immagine da mandare in chat (scheda-condivisione.js): nome, formato, i Pokémon con strumento e mosse, il record */
+// ✨ Lo shiny di un Pokémon del team (negozio.js): costa monete e cambia solo i colori, quindi vale anche per i team bloccati. Il server aggiorna il Box e le iscrizioni alle stagioni in corso.
+function apriShinyTeam(id) {
+    const team = tuttiITeam.find(t => t.id === id);
+    if (!team) return;
+    if (!window.Negozio) { alert("The shop didn't load: check your connection and reload the page."); return; }
+    const pokemon = Array.isArray(team.pokemon) ? team.pokemon : Object.values(team.pokemon || {});
+    window.Negozio.apriShinyTeam(window, {
+        id: team.id, nome: team.nome || 'Team', pokemon,
+        alFatto: indice => { if (pokemon[indice]) pokemon[indice].shiny = true; applicaFiltri(); }      // le card si ridisegnano subito, senza aspettare il database
+    });
+}
+
 async function condividiTeam(id) {
     const team = tuttiITeam.find(t => t.id === id);
     if (!team || !window.SchedaCondivisione) return;
@@ -1221,7 +1239,7 @@ async function apriDettagli(id, opzioni = {}) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-<img src="${SpritePkm.gif(p.nome)}" class="modal-sprite clickable-pkm" onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
+<img src="${SpritePkm.gif(p.nome, p.shiny)}" class="modal-sprite clickable-pkm"${p.shiny ? ' data-shiny="1"' : ''} onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
                     <div class="modal-pkm-info">
                         <div class="info-container" style="position: relative; display: inline-block;">
                                                         <strong style="cursor: help;" onmouseover="caricaStats('${pkmNameUrl}', '${statsId}', '${p.natura || ''}')">${p.nome}</strong>
@@ -1566,7 +1584,7 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/${img.dataset.shiny ? 'dex-shiny' : 'dex'}/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1602,7 +1620,7 @@ function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
         <div class="pkm-modal-grid">
             <div class="area-header">
                 <div id="single-types" class="types-centered"></div>
-<img id="pkm-hero-sprite" src="${SpritePkm.gif(pokemonData.nome || pkmNameUrl)}" class="pkm-sprite-hero" onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(pokemonData.nome || pkmNameUrl)}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
+<img id="pkm-hero-sprite" src="${SpritePkm.gif(pokemonData.nome || pkmNameUrl, pokemonData.shiny)}" class="pkm-sprite-hero"${pokemonData.shiny ? ' data-shiny="1"' : ''} onerror="gestisciErroreSprite(this, '${pkmNameUrl.toLowerCase()}', '${SpritePkm.id(pokemonData.nome || pkmNameUrl)}')">                <h2 class="pkm-name-banner">${pokemonData.nome || ''}</h2>
             </div>
             <div class="area-weakness pkm-panel">
                 <h4 class="panel-title">DEFENSE</h4>
@@ -3054,7 +3072,9 @@ async function salvaTeamSuFirebase({ nome, categoria, testo, editingId = null } 
 
     const nomeTeamScelto = String(nome || '').trim();
     const idRegolamentoScelto = String(categoria || '');
-    const testoShowdown = String(testo || '').trim();
+    const testoScritto = String(testo || '').trim();
+    // lo shiny si compra (✨ sulla card del team): un "Shiny: Yes" scritto o incollato nel testo si toglie, a meno che quel Pokémon fosse già shiny nel team di prima
+    const testoShowdown = window.Cosmetici ? Cosmetici.senzaShinyAbusivi(testoScritto, editingId ? tuttiITeam.find(t => t.id === editingId) : null) : testoScritto;
 
     if (!nomeTeamScelto || !idRegolamentoScelto || !testoShowdown) {
         alert("Error: Please fill in all fields.");
