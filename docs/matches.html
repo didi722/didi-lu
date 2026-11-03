@@ -36,6 +36,7 @@
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
 <script src="ordine-showdown.js"></script>
+<script src="filtro-showdown.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole, .cl-nome'));</script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
@@ -189,6 +190,8 @@
                 <div id="season-summary-content" class="summary-grid"></div>
             </div>
    <div id="liveList" class="live-list" hidden></div>
+            <!-- il filtro degli showdown (filtro-showdown.js): lo riempie montaFiltroShowdown() -->
+            <div id="matchFiltro" class="match-filtro" hidden></div>
             <div id="matchList" class="showdown-grid-double">
                 </div>
         </div>
@@ -838,6 +841,8 @@ async function inizializzaPaginaArchivio() {
     }
 
     const perAppSd = [];    // gli stessi showdown come dati: l'app li mostra a locandine (app-matches.js)
+    const vociFiltro = [];  // la scheda di ricerca di ogni showdown (filtro-showdown.js)
+    const schedeFiltro = new Map();   // id del showdown -> la sua card
     sortedSdKeys.forEach(sdId => {
         const sd = dataShowdowns[sdId];
         const info = sd.info || {};
@@ -894,10 +899,13 @@ async function inizializzaPaginaArchivio() {
     </div>
 `;
         container.appendChild(sdCard);
+        schedeFiltro.set(sdId, sdCard);
+        if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
         const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
+    montaFiltroShowdown({ voci: vociFiltro, schede: schedeFiltro, perAppSd, stagione: stagioneAttiva, riepilogo: !!riepilogoIniziale });
 
        await Sfide.avvia({ stagione: stagioneAttiva, infoStagione: dataSeasonInfo });
 
@@ -925,6 +933,88 @@ async function inizializzaPaginaArchivio() {
 
     // --- 9. Link diretto a un replay: matches.html?id=<stagione>&replay=<showdown>~<match>~<set> (dal "Match of the week" della home) ---
     apriReplayDaLink(dataShowdowns);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// FILTRO DEGLI SHOWDOWN (filtro-showdown.js): cercare al volo uno showdown. Una barra di ricerca (giocatore, team, formato, data) e le tendine
+// (giocatore, contro chi, formato, mese, vinti/persi) che si sommano. Le card che non c'entrano si nascondono; l'app, che le mostra a locandine,
+// riceve la lista filtrata. I criteri restano finché la pagina è aperta (anche se la lista si ridisegna dopo un salvataggio).
+// ---------------------------------------------------------------------------------------------------------------------------
+let criteriFiltroSd = { ...(window.FiltroShowdown ? FiltroShowdown.CRITERI_VUOTI : {}) };
+let filtroSdAperto = false;
+let contestoFiltroSd = null;
+
+function montaFiltroShowdown(ctx) {
+    const barra = document.getElementById('matchFiltro');
+    if (!barra || !window.FiltroShowdown) return;
+    contestoFiltroSd = ctx;
+    // con meno di due showdown non c'è niente da cercare
+    if (ctx.voci.length < 2) { barra.hidden = true; barra.innerHTML = ''; return; }
+    barra.hidden = false;
+
+    // un criterio che non esiste più (un showdown eliminato) si lascia cadere
+    const opz = FiltroShowdown.opzioni(ctx.voci);
+    const c = criteriFiltroSd;
+    if (c.giocatore && !opz.giocatori.some(g => g.chiave === c.giocatore)) { c.giocatore = ''; c.esito = ''; }
+    if (c.contro && !opz.giocatori.some(g => g.chiave === c.contro)) c.contro = '';
+    if (c.formato && !opz.formati.includes(c.formato)) c.formato = '';
+    if (c.mese && !opz.mesi.some(m => m.valore === c.mese)) c.mese = '';
+
+    if (!barra.dataset.pronto) {
+        barra.dataset.pronto = '1';
+        barra.addEventListener('input', e => {
+            if (!e.target.matches('[data-mf="testo"]')) return;
+            criteriFiltroSd.testo = e.target.value;
+            applicaFiltroShowdown(false);
+        });
+        barra.addEventListener('change', e => {
+            const campo = e.target.dataset && e.target.dataset.mf;
+            if (!campo || campo === 'testo') return;
+            criteriFiltroSd[campo] = e.target.value;
+            if (campo === 'giocatore' && !e.target.value) criteriFiltroSd.esito = '';
+            applicaFiltroShowdown(true);
+        });
+        barra.addEventListener('click', e => {
+            if (e.target.closest('[data-mf-apri]')) {
+                filtroSdAperto = !filtroSdAperto;
+                const p = barra.querySelector('.mf-pannello'), t = barra.querySelector('[data-mf-apri]');
+                if (p) p.hidden = !filtroSdAperto;
+                if (t) t.setAttribute('aria-expanded', String(filtroSdAperto));
+                return;
+            }
+            const esito = e.target.closest('[data-mf-esito]');
+            if (esito) { criteriFiltroSd.esito = esito.dataset.mfEsito; applicaFiltroShowdown(true); return; }
+            if (e.target.closest('[data-mf-pulisci]')) {
+                criteriFiltroSd = { ...FiltroShowdown.CRITERI_VUOTI };
+                applicaFiltroShowdown(true);
+            }
+        });
+    }
+    applicaFiltroShowdown(true);
+}
+
+/** Applica i criteri: nasconde le card che non c'entrano e, se `ridisegna`, rifà la barra (tendine, tasto Clear); l'app riceve le locandine rimaste */
+function applicaFiltroShowdown(ridisegna) {
+    const ctx = contestoFiltroSd;
+    const barra = document.getElementById('matchFiltro');
+    if (!ctx || !barra) return;
+    const rimaste = FiltroShowdown.filtra(ctx.voci, criteriFiltroSd);
+    const ok = new Set(rimaste.map(v => v.id));
+    ctx.schede.forEach((card, id) => { card.hidden = !ok.has(id); });
+    const conteggio = { mostrati: rimaste.length, totale: ctx.voci.length };
+    if (ridisegna) {
+        barra.innerHTML = FiltroShowdown.html(FiltroShowdown.opzioni(ctx.voci), criteriFiltroSd, conteggio, { aperto: filtroSdAperto });
+    } else {
+        // scrivendo non si tocca la casella (il cursore resta dov'è): si aggiornano solo conteggio, avviso, Clear e il numero sul tasto
+        const attivi = FiltroShowdown.quantiAttivi(criteriFiltroSd);
+        const conta = barra.querySelector('.mf-conta'), vuoto = barra.querySelector('.mf-vuoto'), pulisci = barra.querySelector('.mf-pulisci'), tasto = barra.querySelector('[data-mf-apri]');
+        if (conta) conta.textContent = conteggio.mostrati === conteggio.totale ? `${conteggio.totale} ${conteggio.totale === 1 ? 'showdown' : 'showdowns'}` : `${conteggio.mostrati} of ${conteggio.totale} showdowns`;
+        if (vuoto) vuoto.hidden = conteggio.mostrati > 0;
+        if (pulisci) pulisci.hidden = !attivi;
+        if (tasto) tasto.innerHTML = `Filters${attivi ? ` <i class="mf-n">${attivi}</i>` : ''}`;
+    }
+    // l'app mostra i showdown a locandine: riceve solo quelle rimaste (e riparte dalla prima)
+    if (window.AppSito) AppSito.pubblica('showdowns', { stagione: ctx.stagione, lista: ctx.perAppSd.filter(s => ok.has(s.id)), riepilogo: ctx.riepilogo, reset: true });
 }
 
 let replayDaLinkAperto = false;

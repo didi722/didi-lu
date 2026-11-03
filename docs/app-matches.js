@@ -213,7 +213,8 @@
                 });
                 Car.collegaGesti(scheda, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 380 * Car.unitaPx(win), trascina: (f, fine) => { scheda.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
             }
-            stato = { lista, corrente: Math.min(stato.corrente, Math.max(0, lista.length - 1)), scheda, pista: null };
+            // con `reset` (il filtro ha cambiato la lista) si riparte dalla prima locandina
+            stato = { lista, corrente: dati && dati.reset ? 0 : Math.min(stato.corrente, Math.max(0, lista.length - 1)), scheda, pista: null };
             scheda.innerHTML = html(lista, { gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
             stato.pista = scheda.querySelector('.mp-pista');
             posiziona();

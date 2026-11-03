@@ -166,6 +166,20 @@
     html.app-shell body.pg-matches .hub-right-column { display: block !important; min-width: 0; }
     /* una schermata alla volta: SHOWDOWNS (la colonna delle partite) oppure RANKINGS (la classifica), come dicono i due tag in alto */
     html.app-shell[data-mt="sd"] body.pg-matches .hub-right-column, html.app-shell[data-mt="rk"] body.pg-matches .hub-left-column { display: none !important; }
+    /* il filtro degli showdown: una riga sola (ricerca e tasto Filters) sopra le locandine; le tendine si aprono sopra, senza spingere giù il carosello */
+    html.app-shell body.pg-matches .match-filtro { position: relative; z-index: 20; gap: calc(6 * var(--u)); margin: 0 0 calc(6 * var(--u)); }
+    html.app-shell body.pg-matches .mf-barra { gap: calc(8 * var(--u)); }
+    html.app-shell body.pg-matches .mf-testo { padding: calc(7 * var(--u)) calc(11 * var(--u)) calc(5 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(6 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(13 * var(--u)); }
+    html.app-shell body.pg-matches .mf-apri { padding: calc(7 * var(--u)) calc(14 * var(--u)) calc(5 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(6 * var(--u)); box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(12 * var(--u)); translate: none; }
+    html.app-shell body.pg-matches .mf-pannello { position: absolute; top: calc(100% - calc(2 * var(--u))); left: 0; right: 0; max-height: 70vh; overflow-y: auto; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: calc(10 * var(--u)); gap: calc(8 * var(--u)) calc(10 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(6 * var(--u)); box-shadow: 0 calc(5 * var(--u)) 0 var(--nb-ink, #000); }
+    html.app-shell body.pg-matches .mf-campo > span, html.app-shell body.pg-matches .mf-esito > span { font-size: calc(10 * var(--u)); }
+    html.app-shell body.pg-matches .mf-campo select { font-size: calc(12 * var(--u)); padding: calc(5 * var(--u)) calc(6 * var(--u)); border-width: calc(2 * var(--u)); }
+    html.app-shell body.pg-matches .mf-esito-tasto, html.app-shell body.pg-matches .mf-pulisci { font-size: calc(11 * var(--u)); border-width: calc(2 * var(--u)); border-radius: calc(5 * var(--u)); }
+    html.app-shell body.pg-matches .mf-conta { font-size: calc(11 * var(--u)); color: rgba(255, 255, 255, .85); }
+    html.app-shell body.pg-matches .mf-riga { min-height: 0; }
+    /* senza filtri attivi la riga del conteggio non serve: l'altezza va alle locandine */
+    html.app-shell body.pg-matches .mf-riga:has(.mf-pulisci[hidden]) { display: none; }
+    html.app-shell body.pg-matches .mf-vuoto { color: rgba(255, 255, 255, .85); font-size: calc(13 * var(--u)); padding: calc(24 * var(--u)) 0; }
     html.app-shell body.pg-matches .info-summary-card { display: none !important; }
     html.app-shell body.pg-matches #matchList { display: none !important; }
     /* i due tag in alto, e a destra la fila delle partite in diretta (un solo chip, che scorre) */
