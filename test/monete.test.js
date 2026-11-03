@@ -96,7 +96,7 @@ test('spendi: solo se c\'è il saldo; non va mai sotto zero', async () => {
 test('acquista: sconosciuto, già posseduto, troppo poche monete, e quello andato a buon fine (si paga una volta)', async () => {
     const db = dbFinto({ wallet: { u1: { saldo: C.perId('aura-arcobaleno').prezzo } } });
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'non-esiste' }), { ok: false, motivo: 'unknown' });
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), { ok: true, saldo: 0, gratis: false });
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), { ok: true, saldo: 0 });
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-arcobaleno' }), { ok: false, motivo: 'owned' });
     assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'shiny' }), { ok: false, motivo: 'poor' });
     assert.ok(db.albero.wallet.u1.posseduti['aura-arcobaleno']);
@@ -117,109 +117,157 @@ test('acquista: due richieste insieme per lo stesso oggetto lo pagano una volta 
     assert.equal(saldo(povero, 'u2'), 5);
 });
 
-test('avatar e canzoni: il primo sblocco è gratis per chi ha ancora quelli di partenza (uno per tipo), poi si paga; quello che si usava resta suo e non si ripaga', async () => {
-    const db = dbFinto({
-        users: { u1: { name: 'Nuovo' }, u2: { name: 'Vecchio' }, u3: { name: 'Terzo' } },
-        players: {
-            nuovo: { info: { avatar: 'https://via.placeholder.com/150', musicaPreferita: '' } },
-            vecchio: { info: { avatar: 'https://didi722.github.io/didi-lu/immagini/profile/7.png', musicaPreferita: 'https://x.test/a.mp3', musicName: 'A' } },
-            terzo: { info: { avatar: 'immagini/profile/9.png' } }
-        },
-        wallet: { u1: { saldo: 100 }, u2: { saldo: 100 } }
-    });
-    const { avatar, canzone } = C.PREZZI;
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-12' }), { ok: true, saldo: 100, gratis: true }, 'il primo avatar è gratis');
-    assert.ok(db.albero.wallet.u1.gratis.avatar && db.albero.wallet.u1.posseduti['avatar-12']);
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-13' }), { ok: true, saldo: 100 - avatar, gratis: false }, 'il secondo si paga (l\'avatar di partenza non è cambiato, ma lo sblocco gratis è già stato usato)');
-    const uno = C.idCanzone('https://x.test/uno.mp3'), due = C.idCanzone('https://x.test/due.mp3');
-    assert.equal((await M.acquista({ db, uid: 'u1', id: uno, nome: 'Uno' })).gratis, true, 'la prima canzone è gratis, anche se l\'avatar l\'ha già usata per il suo tipo');
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: due, nome: 'Due' }), { ok: true, saldo: 100 - avatar - canzone, gratis: false });
-    assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), [[0, 'Free: Avatar 12'], [-avatar, 'Bought: Avatar 13'], [0, 'Free: Uno'], [-canzone, 'Bought: Due']]);
-
-    // chi ha già un avatar e una canzone paga subito; quello che usava resta suo (era "in uso", mai comprato)
-    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-20' }), { ok: true, saldo: 100 - avatar, gratis: false });
-    assert.ok(db.albero.wallet.u2.posseduti['avatar-7'], 'l\'avatar di prima è suo');
-    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-7' }), { ok: false, motivo: 'owned' }, 'tornare a quello di prima non costa');
-    const tre = C.idCanzone('https://x.test/tre.mp3');
-    assert.equal((await M.acquista({ db, uid: 'u2', id: tre })).gratis, false, 'ha già una canzone: niente gratis');
-    assert.ok(db.albero.wallet.u2.posseduti[C.idCanzone('https://x.test/a.mp3')], 'anche la canzone di prima resta sua');
-    // l'avatar in uso adesso è già suo: nessun addebito
-    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-9' }), { ok: false, motivo: 'owned' });
-    // id che non esistono
-    for (const id of ['avatar-162', 'avatar-293', 'avatar-0', 'canzone-xyz', 'avatar-1; drop']) assert.deepEqual(await M.acquista({ db, uid: 'u1', id }), { ok: false, motivo: 'unknown' }, id);
-});
-
-test('avatar e canzoni hanno un solo proprietario: comprare vuol dire riservare, anche se poi non lo si usa; nessuno li può comprare finché sono di un altro, e non si paga niente', async () => {
-    const db = dbFinto({
+const INDIRIZZO = n => `https://didi722.github.io/didi-lu/immagini/profile/${n}.png`;
+function dbGiocatori(extra = {}) {
+    return dbFinto({
         users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Ilaria' } },
         players: {
-            didi: { info: { avatar: 'https://didi722.github.io/didi-lu/immagini/profile/7.png', musicaPreferita: 'https://x.test/a.mp3' } },
-            lukiani: { info: { avatar: 'immagini/profile/20.png', musicaPreferita: 'https://x.test/b.mp3' } },
-            ilaria: { info: { avatar: 'https://via.placeholder.com/150' } }
+            didi: { info: { avatar: 'https://via.placeholder.com/150', musicaPreferita: '' } },                      // ha ancora quelli di partenza
+            lukiani: { info: { avatar: INDIRIZZO(7), musicaPreferita: 'https://x.test/b.mp3', musicName: 'B' } },    // li aveva già scelti
+            ilaria: { info: { avatar: 'immagini/profile/20.png' } }
         },
-        wallet: { u1: { saldo: 500 }, u2: { saldo: 500 }, u3: { saldo: 500 } }
+        wallet: { u1: { saldo: 300 }, u2: { saldo: 300 }, u3: { saldo: 300 } },
+        ...extra
     });
+}
+const cambiaAv = (db, uid, n) => M.cambia({ db, uid, tipo: 'avatar', id: `avatar-${n}` });
+const presi = db => db.albero.cosmeticiPresi || {};
+
+test('cambia avatar: il primo è gratis e resta tuo per sempre; ogni cambio dopo costa; cambiando di nuovo, quello di prima torna libero (tranne il primo)', async () => {
+    const db = dbGiocatori();
     const { avatar } = C.PREZZI;
-    // Didi compra l'avatar 5 e continua a usare il 7: l'avatar 5 è suo e di nessun altro
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-5' }), { ok: true, saldo: 500 - avatar, gratis: false });
-    assert.equal(db.albero.cosmeticiPresi['avatar-5'], 'didi');
-    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-5' }), { ok: false, motivo: 'taken' }, 'comprato da Didi, anche se non lo usa');
-    assert.equal(saldo(db, 'u2'), 500, 'e non si addebita niente');
-    assert.equal((db.albero.wallet.u2.posseduti || {})['avatar-5'], undefined);
-    // un avatar in uso da un altro (mai comprato: era già suo) non si vende
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-20' }), { ok: false, motivo: 'taken' }, 'lo usa Lukiani');
-    // chi cambia avatar tiene il vecchio e nessun altro lo può prendere: era suo per uso, ora lo è per possesso
-    assert.equal(db.albero.cosmeticiPresi['avatar-7'], 'didi');
-    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-7' }), { ok: false, motivo: 'taken' }, 'Didi non lo usa più per scelta, ma resta suo');
-    // le canzoni uguale
-    const a = C.idCanzone('https://x.test/a.mp3'), nuova = C.idCanzone('https://x.test/nuova.mp3');
-    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: a }), { ok: false, motivo: 'taken' }, 'la canzone in uso da Didi');
-    assert.equal((await M.acquista({ db, uid: 'u1', id: nuova })).ok, true);
-    assert.equal(db.albero.cosmeticiPresi[a], 'didi', 'la canzone di prima resta di Didi');
-    assert.equal(db.albero.cosmeticiPresi[nuova], 'didi');
-    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: nuova }), { ok: false, motivo: 'taken' });
-    // chi è già proprietario non è un altro: lo stesso Didi riprova → "owned"
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-5' }), { ok: false, motivo: 'owned' });
-    // il resto del catalogo non è esclusivo: due allenatori possono avere la stessa aura
-    assert.equal((await M.acquista({ db, uid: 'u1', id: 'aura-oro' })).ok, true);
-    assert.equal((await M.acquista({ db, uid: 'u2', id: 'aura-oro' })).ok, true);
-    assert.equal(db.albero.cosmeticiPresi['aura-oro'], undefined);
+    // il primo: gratis, diventa "di casa"
+    assert.deepEqual(await cambiaAv(db, 'u1', 12), { ok: true, saldo: 300, gratis: true, casa: 'avatar-12', avatar: INDIRIZZO(12) });
+    assert.equal(db.albero.players.didi.info.avatar, INDIRIZZO(12), 'il server scrive il profilo');
+    assert.equal(db.albero.wallet.u1.casa.avatar, 'avatar-12');
+    assert.deepEqual(presi(db), { 'avatar-12': 'didi' });
+    // il secondo costa; il primo resta riservato anche se non lo porta più
+    assert.deepEqual(await cambiaAv(db, 'u1', 13), { ok: true, saldo: 300 - avatar, gratis: false, casa: 'avatar-12', avatar: INDIRIZZO(13) });
+    assert.deepEqual(presi(db), { 'avatar-12': 'didi', 'avatar-13': 'didi' });
+    // un terzo: il secondo torna libero, il primo no
+    const terzo = await cambiaAv(db, 'u1', 14);
+    assert.deepEqual(terzo, { ok: true, saldo: 300 - 2 * avatar, gratis: false, casa: 'avatar-12', avatar: INDIRIZZO(14), liberato: 'avatar-13' });
+    assert.deepEqual(presi(db), { 'avatar-12': 'didi', 'avatar-14': 'didi' });
+    assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), [[0, 'Free: Avatar 12'], [-avatar, 'Avatar: Avatar 13'], [-avatar, 'Avatar: Avatar 14']]);
+    // gli altri: il secondo (liberato) lo può prendere chiunque; il primo e quello che porta Didi no
+    assert.equal((await cambiaAv(db, 'u3', 13)).ok, true, 'liberato');
+    assert.deepEqual(await cambiaAv(db, 'u2', 12), { ok: false, motivo: 'taken' }, 'quello di casa di Didi resta suo');
+    assert.deepEqual(await cambiaAv(db, 'u2', 14), { ok: false, motivo: 'taken' }, 'e quello che porta');
+    assert.equal(saldo(db, 'u2'), 300, 'senza addebiti');
+    // tornare al primo è un cambio come gli altri (costa) e libera quello che portava
+    const ritorno = await cambiaAv(db, 'u1', 12);
+    assert.deepEqual(ritorno, { ok: true, saldo: 300 - 3 * avatar, gratis: false, casa: 'avatar-12', avatar: INDIRIZZO(12), liberato: 'avatar-14' });
+    assert.equal(presi(db)['avatar-14'], undefined);
+    assert.equal((await cambiaAv(db, 'u2', 14)).ok, true, 'ora è libero');
+    // già quello che porta
+    assert.deepEqual(await cambiaAv(db, 'u1', 12), { ok: false, motivo: 'same' });
+    assert.equal(saldo(db, 'u1'), 300 - 3 * avatar);
 });
 
-test('avatar riservato: due allenatori che comprano lo stesso insieme, uno solo lo prende e si paga una volta; se il saldo non basta la riserva torna libera; "taken" non consuma lo sblocco gratis', async () => {
-    const db = dbFinto({
-        users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Ilaria' } },
-        players: { didi: { info: {} }, lukiani: { info: {} }, ilaria: { info: { avatar: 'immagini/profile/3.png' } } },
-        wallet: { u1: { saldo: 100 }, u2: { saldo: 100 }, u3: { saldo: 1 } }
-    });
-    const [x, y] = await Promise.all([M.acquista({ db, uid: 'u1', id: 'avatar-9' }), M.acquista({ db, uid: 'u2', id: 'avatar-9' })]);
+test('cambia avatar: chi lo aveva già scelto non ha il gratis, e quello che aveva diventa il suo "di casa" al primo cambio', async () => {
+    const db = dbGiocatori();
+    const { avatar } = C.PREZZI;
+    // finché non cambia, quello che porta è protetto perché lo porta (nessuno lo può prendere)
+    assert.deepEqual(await cambiaAv(db, 'u3', 7), { ok: false, motivo: 'taken' });
+    // il primo cambio costa, e l'avatar di prima resta suo per sempre
+    assert.deepEqual(await cambiaAv(db, 'u2', 9), { ok: true, saldo: 300 - avatar, gratis: false, casa: 'avatar-7', avatar: INDIRIZZO(9) });
+    assert.equal(db.albero.wallet.u2.casa.avatar, 'avatar-7');
+    assert.deepEqual(presi(db), { 'avatar-7': 'lukiani', 'avatar-9': 'lukiani' });
+    assert.deepEqual(await cambiaAv(db, 'u3', 7), { ok: false, motivo: 'taken' }, 'ora è riservato, non solo in uso');
+    // il secondo cambio libera il 9 e tiene il 7
+    const r = await cambiaAv(db, 'u2', 10);
+    assert.equal(r.liberato, 'avatar-9');
+    assert.deepEqual(presi(db), { 'avatar-7': 'lukiani', 'avatar-10': 'lukiani' });
+    // un avatar che usa un altro non si prende, anche se non risulta riservato (era già suo); niente addebito e niente scritture
+    assert.deepEqual(await cambiaAv(db, 'u1', 20), { ok: false, motivo: 'taken' });
+    assert.equal(saldo(db, 'u1'), 300);
+    assert.equal(db.albero.players.didi.info.avatar, 'https://via.placeholder.com/150');
+    assert.equal(db.albero.wallet.u1.casa, undefined, 'un tentativo respinto non consuma il gratis');
+    assert.equal(presi(db)['avatar-20'], undefined);
+    assert.equal((await cambiaAv(db, 'u1', 21)).gratis, true, 'il gratis c\'è ancora');
+});
+
+test('cambia avatar: senza monete non cambia niente; due allenatori sullo stesso avatar, ne vince uno; due richieste dello stesso allenatore non pagano due volte; se la scrittura fallisce le monete tornano e la riserva cade', async () => {
+    const povero = dbGiocatori({ wallet: { u2: { saldo: 10 } } });
+    assert.deepEqual(await cambiaAv(povero, 'u2', 9), { ok: false, motivo: 'poor' });
+    assert.equal(povero.albero.players.lukiani.info.avatar, INDIRIZZO(7));
+    assert.equal(presi(povero)['avatar-9'], undefined, 'la riserva è tornata libera');
+    assert.equal(povero.albero.wallet.u2.casa, undefined, 'e quello di prima non è diventato "di casa"');
+    assert.equal(saldo(povero, 'u2'), 10);
+
+    const gara = dbGiocatori({ players: { didi: { info: {} }, ilaria: { info: {} }, lukiani: { info: { avatar: INDIRIZZO(7) } } } });
+    const [x, y] = await Promise.all([cambiaAv(gara, 'u1', 30), cambiaAv(gara, 'u3', 30)]);
     assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
     assert.equal([x, y].find(r => !r.ok).motivo, 'taken');
-    const vinto = x.ok ? 'didi' : 'lukiani', perso = x.ok ? 'u2' : 'u1';
-    assert.equal(db.albero.cosmeticiPresi['avatar-9'], vinto);
-    // chi ha perso non ha pagato, non ha l'avatar e può ancora usare il suo gratis per un altro
-    assert.equal(saldo(db, perso), 100);
-    assert.equal((db.albero.wallet[perso].posseduti || {})['avatar-9'], undefined);
-    assert.equal(db.albero.wallet[perso].gratis, undefined, 'lo sblocco gratis non si è consumato');
-    assert.deepEqual(await M.acquista({ db, uid: perso, id: 'avatar-10' }), { ok: true, saldo: 100, gratis: true });
-    // senza monete la riserva non resta: l'avatar torna libero per gli altri
-    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-11' }), { ok: false, motivo: 'poor' });
-    assert.equal(db.albero.cosmeticiPresi['avatar-11'], undefined, 'riserva tornata libera');
-    assert.equal((await M.acquista({ db, uid: perso, id: 'avatar-11' })).ok, true);
-    // un acquisto interrotto a metà (riservato ma non nel portafoglio) si porta a termine dallo stesso allenatore
-    db.albero.cosmeticiPresi['avatar-12'] = vinto;
-    const rep = await M.acquista({ db, uid: x.ok ? 'u1' : 'u2', id: 'avatar-12' });
-    assert.equal(rep.ok, true, 'era già suo nel registro: si riprende');
-    // e non si riserva per chi non ha un profilo
-    assert.deepEqual(await M.acquista({ db, uid: 'senza-profilo', id: 'avatar-40' }), { ok: false, motivo: 'no-profile' });
+    const perso = x.ok ? 'u3' : 'u1';
+    assert.equal((await cambiaAv(gara, perso, 31)).gratis, true, 'chi ha perso ha ancora il suo primo gratis');
+
+    const doppio = dbGiocatori();
+    const [a, b] = await Promise.all([cambiaAv(doppio, 'u2', 40), cambiaAv(doppio, 'u2', 41)]);
+    assert.deepEqual([a.ok, b.ok].sort(), [false, true]);
+    assert.equal([a, b].find(r => !r.ok).motivo, 'busy');
+    assert.equal(saldo(doppio, 'u2'), 300 - C.PREZZI.avatar, 'addebitato una volta');
+    assert.equal(Object.keys(doppio.albero.walletEventi || {}).length, 0, 'il segno di "operazione in corso" è caduto');
+
+    for (const [uid, attesa] of [['u2', 300], ['u1', 300]]) {
+        const rotto = dbGiocatori();
+        const ref = rotto.ref;
+        rotto.ref = (p = '') => { const r = ref(p); if (p === `players/${uid === 'u1' ? 'didi' : 'lukiani'}/info`) r.update = async () => { throw new Error('scrittura fallita'); }; return r; };
+        await assert.rejects(cambiaAv(rotto, uid, 50), /scrittura fallita/);
+        assert.equal(saldo(rotto, uid), attesa, 'nessun addebito rimasto');
+        assert.equal(presi(rotto)['avatar-50'], undefined, 'riserva caduta');
+        assert.equal((rotto.albero.wallet[uid].casa || {}).avatar, undefined);
+    }
 });
 
-test('avatar e canzoni senza monete: lo sblocco gratis si consuma lo stesso, quello a pagamento no; la prenotazione torna indietro', async () => {
-    const db = dbFinto({ users: { u1: { name: 'Nuovo' } }, players: { nuovo: { info: { avatar: '' } } }, wallet: { u1: { saldo: 10 } } });
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-3' }), { ok: true, saldo: 10, gratis: true });
-    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-4' }), { ok: false, motivo: 'poor' });
-    assert.equal(db.albero.wallet.u1.posseduti['avatar-4'], undefined);
-    assert.equal(saldo(db, 'u1'), 10);
+test('cambia canzone: il primo è gratis e resta tuo, poi costa; "None" è gratis e libera quella che portavi (non quella di casa); id e indirizzo devono combaciare', async () => {
+    const db = dbGiocatori();
+    const { canzone } = C.PREZZI;
+    const url = n => `https://x.test/${n}.mp3`;
+    const cambiaCa = (uid, n, nome) => M.cambia({ db, uid, tipo: 'canzone', id: C.idCanzone(url(n)), url: url(n), nome });
+    const c1 = C.idCanzone(url('uno')), c2 = C.idCanzone(url('due')), c3 = C.idCanzone(url('tre'));
+    assert.deepEqual(await cambiaCa('u1', 'uno', 'Uno'), { ok: true, saldo: 300, gratis: true, casa: c1, musicaPreferita: url('uno'), musicName: 'Uno' });
+    assert.deepEqual([db.albero.players.didi.info.musicaPreferita, db.albero.players.didi.info.musicName], [url('uno'), 'Uno']);
+    assert.equal((await cambiaCa('u1', 'due', 'Due')).gratis, false);
+    assert.equal(saldo(db, 'u1'), 300 - canzone);
+    const r3 = await cambiaCa('u1', 'tre', 'Tre');
+    assert.equal(r3.liberato, c2);
+    assert.deepEqual(presi(db), { [c1]: 'didi', [c3]: 'didi' });
+    assert.deepEqual(await cambiaCa('u3', 'uno', 'Uno'), { ok: false, motivo: 'taken' }, 'quella di casa di Didi');
+    assert.deepEqual(await cambiaCa('u3', 'tre', 'Tre'), { ok: false, motivo: 'taken' }, 'quella che porta');
+    assert.equal((await cambiaCa('u3', 'due', 'Due')).ok, true, 'quella liberata');
+    // nessuna canzone: gratis; quella che portava (non di casa) torna libera
+    const nessuna = await M.cambia({ db, uid: 'u1', tipo: 'canzone', id: '' });
+    assert.deepEqual(nessuna, { ok: true, saldo: 300 - 2 * canzone, gratis: false, casa: c1, liberato: c3, musicaPreferita: '', musicName: '' });
+    assert.deepEqual([db.albero.players.didi.info.musicaPreferita, db.albero.players.didi.info.musicName], ['', '']);
+    assert.deepEqual(presi(db), { [c1]: 'didi', [C.idCanzone(url('due'))]: 'ilaria' });
+    assert.deepEqual(await M.cambia({ db, uid: 'u1', tipo: 'canzone', id: '' }), { ok: false, motivo: 'same' });
+    // chi aveva già una canzone: "None" come primo gesto la tiene "di casa"
+    const l = await M.cambia({ db, uid: 'u2', tipo: 'canzone', id: '' });
+    assert.equal(l.casa, C.idCanzone('https://x.test/b.mp3'));
+    assert.equal(presi(db)[C.idCanzone('https://x.test/b.mp3')], 'lukiani');
+    assert.equal(saldo(db, 'u2'), 300);
+    // dati che non tornano
+    const sbagliati = [
+        { id: C.idCanzone(url('uno')), url: url('due') },
+        { id: C.idCanzone('javascript:alert(1)'), url: 'javascript:alert(1)' },
+        { id: 'canzone-zzzzzzzz', url: url('uno') },
+        { id: C.idCanzone(url('uno')), url: '' },
+        { id: 'avatar-3', url: url('uno') }
+    ];
+    for (const d of sbagliati) assert.deepEqual(await M.cambia({ db, uid: 'u3', tipo: 'canzone', ...d, nome: 'x' }), { ok: false, motivo: 'unknown' }, JSON.stringify(d));
+    assert.deepEqual(await M.cambia({ db, uid: 'u3', tipo: 'colore', id: 'x' }), { ok: false, motivo: 'unknown' });
+    assert.deepEqual(await M.cambia({ db, uid: 'senza-profilo', tipo: 'avatar', id: 'avatar-3' }), { ok: false, motivo: 'no-profile' });
+    for (const id of ['avatar-162', 'avatar-293', 'avatar-0', 'canzone-1a2b3c4d', 'avatar-5; x']) assert.deepEqual(await cambiaAv(db, 'u3', id.replace('avatar-', '')), { ok: false, motivo: 'unknown' }, id);
+});
+
+test('avatar e canzoni non si comprano: acquista li rifiuta; il resto del catalogo non è esclusivo (due allenatori possono avere la stessa aura)', async () => {
+    const db = dbGiocatori();
+    for (const id of ['avatar-5', C.idCanzone('https://x.test/a.mp3')]) assert.deepEqual(await M.acquista({ db, uid: 'u1', id }), { ok: false, motivo: 'unknown' });
+    assert.equal(saldo(db, 'u1'), 300);
+    assert.equal((await M.acquista({ db, uid: 'u1', id: 'aura-oro' })).ok, true);
+    assert.equal((await M.acquista({ db, uid: 'u2', id: 'aura-oro' })).ok, true);
+    assert.equal(presi(db)['aura-oro'], undefined);
 });
 
 const TESTO = `Garchomp @ Rocky Helmet

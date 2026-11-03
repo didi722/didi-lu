@@ -9,9 +9,9 @@
 // scelto restano nella lista ma in grigio e non si possono scegliere (P.scelteDegliAltri); quello che si ha
 // già resta sempre selezionabile. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
 //
-// Avatar e canzoni nuovi si sbloccano a pagamento (cosmetici.js, il server li vende): quelli che non si hanno mostrano un lucchetto e il tasto apre una conferma;
-// una volta sbloccati restano tuoi e si cambia quando si vuole. Il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza.
-// Ogni avatar e ogni canzone ha UN solo proprietario (cosmeticiPresi, lo scrive il server): comprare vuol dire riservare, e quello comprato da un altro resta grigio anche se lui non lo usa.
+// Avatar e canzone non si comprano, si CAMBIANO (cosmetici.js; il server fa il cambio e scrive il profilo, fuori da SAVE e da "undo"): ogni cambio costa, tranne il primo per chi ha ancora
+// quello di partenza. Il primo avatar e la prima canzone sono "di casa" e restano tuoi per sempre; quello che porti è riservato finché lo porti e cambiando di nuovo torna libero per tutti.
+// Quello che ha riservato un altro (cosmeticiPresi, lo scrive il server) resta grigio anche se lui non lo porta. Un tocco apre una conferma che dice quanto costa e che fine fa quello di adesso.
 // =====================================================
 (function () {
     'use strict';
@@ -65,30 +65,33 @@
         return bottone;
     }
 
-    // Lo sblocco di un avatar o di una canzone: una finestrella di conferma sopra al pannello. `dopo` parte a sblocco riuscito (di solito sceglie la voce appena sbloccata).
-    function chiediSblocco(ctx, { id, nome, tipo, immagine, dopo }) {
+    // Il cambio di un avatar o di una canzone: una finestrella di conferma sopra al pannello. Dice quanto costa e che fine fa quello che porti adesso (negozio.js, frasiCambio).
+    // `nome`: come si chiama quello nuovo; `extra`: per una canzone l'indirizzo e il nome da mandare al server; `id` vuoto = togliere la canzone.
+    async function chiediCambio(ctx, { tipo, id, nome, immagine, extra }) {
         const { h, cosmetici, avvisa } = ctx;
-        const p = cosmetici.prezzo(id);
-        const saldo = cosmetici.saldo();
+        try { await cosmetici.negozio(); } catch (e) { avvisa("The shop didn't load: check your connection and try again.", true); return; }
+        const p = id ? cosmetici.prezzo(tipo) : { prezzo: 0, gratis: false };
+        const corrente = cosmetici.corrente(tipo);
+        const nomeCorrente = tipo === 'avatar' && corrente ? `Avatar ${corrente.replace('avatar-', '')}` : '';
+        const f = window.Negozio.frasiCambio({ tipo, id, prezzo: p.prezzo, gratis: p.gratis, saldo: cosmetici.saldo(), corrente, casa: cosmetici.casa(tipo), nomeCorrente });
         const chiudi = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
         const tasto = e => { if (e.key === 'Escape') chiudi(); };
-        const conferma = h('button', { type: 'button', class: 'pe-bottone pe-primario', testo: p.gratis ? 'Unlock for free' : `Unlock · ${p.prezzo} 🪙`, onclick: async () => {
+        const conferma = h('button', { type: 'button', class: 'pe-bottone pe-primario', testo: f.conferma, onclick: async () => {
             conferma.disabled = true;
-            conferma.textContent = 'Unlocking…';
+            conferma.textContent = 'Changing…';
             let r;
-            try { r = await cosmetici.compra(id, nome); } catch (e) { r = { ok: false, motivo: 'error' }; }
+            try { r = await cosmetici.cambia(tipo, id, extra); } catch (e) { r = { ok: false, motivo: 'error' }; }
             chiudi();
-            if (r.ok) { avvisa(r.gratis ? `${nome} unlocked for free!` : `${nome} unlocked.`); dopo(); } else avvisa(cosmetici.frase(r.motivo), true);
+            if (r.ok) avvisa(!id ? 'Song removed.' : r.gratis ? `${nome} is yours for good!` : `${nome} it is!${r.liberato ? ' The old one is free again.' : ''}`);
+            else avvisa(cosmetici.frase(r.motivo), true);
         } });
-        if (!p.gratis && (!cosmetici.pronto() || saldo < p.prezzo)) conferma.disabled = true;
-        const velo = h('div', { class: 'pe-sblocco-velo', onclick: e => { if (e.target === velo) chiudi(); } },
-            h('div', { class: 'pe-sblocco', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Unlock ${nome}` },
+        if (!f.ok || !cosmetici.pronto()) conferma.disabled = true;
+        const velo = h('div', { class: 'pe-conferma-velo', onclick: e => { if (e.target === velo) chiudi(); } },
+            h('div', { class: 'pe-conferma', role: 'dialog', 'aria-modal': 'true', 'aria-label': id ? `Change to ${nome}` : 'Remove the song' },
                 immagine ? h('img', { src: immagine, alt: '' }) : null,
                 h('b', { testo: nome }),
-                h('p', { class: 'pe-nota', testo: !cosmetici.pronto() ? 'Loading your coins…'
-                    : p.gratis ? `Your first ${tipo} is free: you still have the default one. It becomes yours alone: nobody else can take it, even if you switch to another later.`
-                        : `Unlocking costs ${p.prezzo} 🪙 and you have ${saldo} 🪙. It becomes yours alone: nobody else can take it, even if you switch to another later.${saldo < p.prezzo ? ' Play some sets to earn more coins.' : ''}` }),
-                h('div', { class: 'pe-sblocco-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
+                ...(cosmetici.pronto() ? f.righe.map(riga => h('p', { class: 'pe-nota', testo: riga })) : [h('p', { class: 'pe-nota', testo: 'Loading your coins…' })]),
+                h('div', { class: 'pe-conferma-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
         document.addEventListener('keydown', tasto);
         document.body.append(velo);
     }
@@ -110,26 +113,24 @@
         const avatarAttuale = P.chiaveAvatar(profilo.avatar);
         const tuttiAvatar = P.elencoAvatar();
         const idAv = f => `avatar-${f.replace('.png', '')}`;
-        const bloccato = id => !!window.Cosmetici && !cosmetici.possiede(id);
-        // grigio se lo usa un altro adesso, o se lo ha comprato un altro (anche se oggi non lo usa: comprare vuol dire riservare); quello che è tuo resta sempre scegliabile
+        const casaAv = cosmetici.casa('avatar');
+        // grigio se lo porta un altro adesso, o se l'ha riservato un altro (il suo "di casa", o quello che porta); quello che porti tu resta sempre scegliabile
         const preso = f => `profile/${f}`.toLowerCase() !== avatarAttuale && presi.avatar.has(`profile/${f}`.toLowerCase());
         const doAltri = f => cosmetici.presoDa(idAv(f));
         const avatarLiberi = tuttiAvatar.filter(f => !preso(f) && !doAltri(f));
-        const prezzoAv = cosmetici.prezzo('avatar-1');
+        const prezzoAv = cosmetici.prezzo('avatar');
         const griglia = h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, tuttiAvatar.map(f => {
-            const n = f.replace('.png', ''), id = idAv(f), chiuso = bloccato(id);
-            const url = new URL(`immagini/profile/${f}`, window.location.href).href;
-            const b = h('button', { type: 'button', class: `pe-avatar-item${`profile/${f}`.toLowerCase() === avatarAttuale ? ' is-on' : ''}${chiuso ? ' pe-bloccato' : ''}`, 'data-v': `profile/${f}`.toLowerCase(),
-                title: chiuso ? `Avatar ${n} · locked: ${prezzoAv.gratis ? 'free (your first one)' : `${prezzoAv.prezzo} 🪙`}` : `Avatar ${n}`,
-                onclick: () => (chiuso
-                    ? chiediSblocco(ctx, { id, nome: `Avatar ${n}`, tipo: 'avatar', immagine: `immagini/profile/${f}`, dopo: () => { scegli({ avatar: url }); ridisegna(); } })
-                    : scegli({ avatar: url })) },
+            const n = f.replace('.png', ''), id = idAv(f), casaMia = id === casaAv;
+            const chiave = `profile/${f}`.toLowerCase(), portato = chiave === avatarAttuale;
+            const b = h('button', { type: 'button', class: `pe-avatar-item${portato ? ' is-on' : ''}${casaMia ? ' is-casa' : ''}`, 'data-v': chiave,
+                title: casaMia ? `Avatar ${n} · your first avatar, yours for good` : `Avatar ${n}${portato ? '' : prezzoAv.gratis ? ' · free (your first one)' : ` · change for ${prezzoAv.prezzo} 🪙`}`,
+                onclick: () => { if (!portato) chiediCambio(ctx, { tipo: 'avatar', id, nome: `Avatar ${n}`, immagine: `immagini/profile/${f}` }); } },
             h('img', { src: `immagini/profile/${f}`, alt: '', loading: 'lazy' }));
             if (preso(f)) return comePresa(b, `Avatar ${n}`);
             return doAltri(f) ? comePresa(b, `Avatar ${n}`, `Owned by ${cosmetici.nomeDi(doAltri(f))}`) : b;
         }));
-        const notaAvatar = prezzoAv.gratis ? 'Your first new avatar is free: you still have the default one. Every avatar belongs to one trainer only: once you unlock it, nobody else can take it.'
-            : `A new avatar costs ${prezzoAv.prezzo} 🪙. Every avatar belongs to one trainer only: once you unlock it, it is yours and nobody else can take it. You have ${cosmetici.saldo()} 🪙.`;
+        const notaAvatar = prezzoAv.gratis ? 'Your first avatar is free and stays yours for good. Every avatar belongs to one trainer only.'
+            : `Changing your avatar costs ${prezzoAv.prezzo} 🪙 and happens right away. Your first avatar (★) stays yours for good; the one you wear is yours while you wear it, then it goes back to the pool. You have ${cosmetici.saldo()} 🪙.`;
 
         // ---- colore firma: tutti, quelli di altri in grigio (il tuo di adesso resta sempre selezionabile)
         const attuale = String(profilo.color || '').toUpperCase();
@@ -156,7 +157,7 @@
         motto.value = profilo.bio;
 
         return [
-            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE. Colours, avatars, Pokémon and songs that another trainer already has are greyed out: they cannot be picked.' }),
+            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE, except the avatar and the song: they cost coins and change right away. Colours, avatars, Pokémon and songs that another trainer already has are greyed out: they cannot be picked.' }),
             sezione('Avatar',
                 h('div', { class: 'pe-avatar-riga' },
                     h('span', { class: 'pe-avatar-grande' }, h('img', { id: 'pe-avatar-attuale', src: profilo.avatar || 'immagini/profile/1.png', alt: 'Current avatar' })),
@@ -168,7 +169,7 @@
             sezione('Title', selettore, h('p', { class: 'pe-nota', testo: 'Only the titles you have earned.' })),
             sezione('Motto', motto, conto),
             sezionePokemon(ctx, presi, scegli),
-            sezioneCanzone(ctx, presi, scegli)
+            sezioneCanzone(ctx, presi)
         ];
 
         // l'attenzione alla voce scelta: si cambia la classe, non si ridisegna (la lista non torna in cima)
@@ -283,10 +284,13 @@
 
     // ---- Canzone ------------------------------------------------------------------------------
 
-    function sezioneCanzone(ctx, presi, scegli) {
+    function sezioneCanzone(ctx, presi) {
         const { C, h, sezione, cosmetici } = ctx;
         const profilo = C.profilo();
         const lista = h('div', { class: 'pe-scorri', id: 'pe-lista-canzoni' });
+        const idDi = c => (window.Cosmetici ? window.Cosmetici.idCanzone(c.url) : '');
+        const casaCa = cosmetici.casa('canzone');
+        const prezzoC = cosmetici.prezzo('canzone');
 
         const riempi = () => {
             lista.replaceChildren();
@@ -295,22 +299,19 @@
             const q = ricerca.canzoni.trim().toLowerCase();
             const mio = profilo.musicaPreferita;
             const prese = c => c.url !== mio && (presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()));
-            // una canzone comprata da un altro (anche se oggi non la usa) è sua
-            const doAltri = c => (window.Cosmetici ? cosmetici.presoDa(window.Cosmetici.idCanzone(c.url)) : '');
+            // una canzone riservata da un altro (la sua "di casa", o quella che porta) è sua
+            const doAltri = c => cosmetici.presoDa(idDi(c));
             const libere = canzoni.filter(c => !q || c.nome.toLowerCase().includes(q));
             lista.append(...libere.map(c => {
-                const id = window.Cosmetici ? window.Cosmetici.idCanzone(c.url) : '';
-                const chiusa = !!id && !cosmetici.possiede(id);
-                const prezzoC = chiusa ? cosmetici.prezzo(id) : null;
-                const scelta = h('button', { type: 'button', class: `pe-scelta${c.url === mio ? ' is-on' : ''}${chiusa ? ' pe-bloccato' : ''}`, 'data-v': c.url,
-                    title: chiusa ? `${c.nome} · locked: ${prezzoC.gratis ? 'free (your first one)' : `${prezzoC.prezzo} 🪙`}` : null,
+                const id = idDi(c), casaMia = !!id && id === casaCa, portata = c.url === mio;
+                const scelta = h('button', { type: 'button', class: `pe-scelta${portata ? ' is-on' : ''}${casaMia ? ' is-casa' : ''}`, 'data-v': c.url,
+                    title: casaMia ? `${c.nome} · your first song, yours for good` : portata ? null : `${c.nome} · ${prezzoC.gratis ? 'free (your first one)' : `change for ${prezzoC.prezzo} 🪙`}`,
                     onclick: () => {
                         fermaAnteprima();
-                        if (!chiusa) { scegli({ musicName: c.nome, musicaPreferita: c.url }); return; }
-                        chiediSblocco(ctx, { id, nome: c.nome, tipo: 'song', dopo: () => { scegli({ musicName: c.nome, musicaPreferita: c.url }); riempi(); } });
+                        if (!portata) chiediCambio(ctx, { tipo: 'canzone', id, nome: c.nome, extra: { url: c.url, nome: c.nome } });
                     } },
-                h('span', { testo: chiusa ? `🔒 ${c.nome}` : c.nome }),
-                chiusa ? h('small', { class: 'pe-prezzo', testo: prezzoC.gratis ? 'free' : `${prezzoC.prezzo} 🪙` }) : null);
+                h('span', { testo: casaMia ? `★ ${c.nome}` : c.nome }),
+                portata ? null : h('small', { class: 'pe-prezzo', testo: prezzoC.gratis ? 'free' : `${prezzoC.prezzo} 🪙` }));
                 return h('div', { class: 'pe-canzone' },
                     prese(c) ? comePresa(scelta, c.nome) : doAltri(c) ? comePresa(scelta, c.nome, `Owned by ${cosmetici.nomeDi(doAltri(c))}`) : scelta,
                     h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${c.nome}`, onclick: ev => {
@@ -332,10 +333,11 @@
 
         return sezione('Favourite song',
             h('div', { class: 'pe-attuale' }, h('span', { testo: 'Now: ' }), h('b', { id: 'pe-canzone-attuale', testo: profilo.musicName || (profilo.musicaPreferita ? 'Favourite song' : 'None') }),
-                h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => { fermaAnteprima(); scegli({ musicName: '', musicaPreferita: '' }); }, testo: 'None' })),
+                h('button', { type: 'button', class: 'pe-bottone pe-piccolo', disabled: !profilo.musicaPreferita, title: 'Play no song (free)',
+                    onclick: () => { fermaAnteprima(); chiediCambio(ctx, { tipo: 'canzone', id: '', nome: 'No song', extra: {} }); }, testo: 'None' })),
             cerca, lista,
-            h('p', { class: 'pe-nota', testo: cosmetici.prezzo('canzone-00000000').gratis ? 'Your first new song is free: you have not picked one yet. Every song belongs to one trainer only: once you unlock it, nobody else can take it. Tap ▶ to listen before you unlock.'
-                : `A new song costs ${cosmetici.prezzo('canzone-00000000').prezzo} 🪙. Every song belongs to one trainer only: once you unlock it, it is yours and nobody else can take it. Tap ▶ to listen first. You have ${cosmetici.saldo()} 🪙.` }),
+            h('p', { class: 'pe-nota', testo: prezzoC.gratis ? 'Your first song is free and stays yours for good. Every song belongs to one trainer only. Tap ▶ to listen before you choose.'
+                : `Changing your song costs ${prezzoC.prezzo} 🪙 and happens right away; "None" is free. Your first song (★) stays yours for good; the one you play is yours while you play it, then it goes back to the pool. Tap ▶ to listen first. You have ${cosmetici.saldo()} 🪙.` }),
             h('p', { class: 'pe-nota', testo: 'The song plays from the Music block of your card. If you turn that block off, no music plays.' }));
     }
 

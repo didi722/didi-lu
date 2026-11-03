@@ -196,7 +196,7 @@ test('salvataggio: un\'unica scrittura su info, e le scelte uniche si ricontroll
     assert.match(editor, /database\.ref\('players'\)\.once\('value'\)/);
     assert.match(editor, /P\.conflitti\(chiave, unici, tutti\)/);
     // ogni campo unico è controllato, e ogni nome di conflitto ha il suo messaggio
-    assert.match(editor, /CAMPI_UNICI = \['color', 'avatar', 'pkmPreferito', 'musicName', 'musicaPreferita'\]/);
+    assert.match(editor, /CAMPI_UNICI = \['color', 'pkmPreferito'\]/);
     for (const nome of ['color', 'avatar', 'pkmPreferito', 'musica']) assert.match(editor, new RegExp(`NOMI_CONFLITTO = \\{[^}]*\\b${nome}:`), nome);
     // "No Title" si salva come stringa vuota, come faceva profile.html
     assert.match(editor, /k === 'title' && profilo\.title === 'No Title' \? ''/);

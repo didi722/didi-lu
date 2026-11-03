@@ -6,7 +6,7 @@
 //
 //   Negozio.apri(win)        legge il portafoglio e il profilo di chi è collegato e apre la finestra
 //   Negozio.html(stato)      il markup (puro): stato = { saldo, posseduti, info, pagina, movimenti, nota, occupato }
-//   Negozio.compra(win, id, nome)     compra un cosmetico (anche un avatar o una canzone) dal server → { ok, saldo, gratis } oppure { ok: false, motivo }
+//   Negozio.cambia(win, dati)         cambia l'avatar o la canzone dal server (costa, tranne il primo): { tipo: 'avatar'|'canzone', id, url?, nome? } → { ok, saldo, gratis, casa, liberato? } oppure { ok: false, motivo }
 //   Negozio.apriShinyTeam(win, team)  la finestra del Box per rendere shiny i Pokémon di un team (anche bloccato); htmlShinyTeam(stato) è il markup puro
 //   Negozio.frase(motivo)             il testo in inglese di un errore del negozio
 //
@@ -111,9 +111,33 @@
             + `<p class="ng-nota">${esc(notaPremi())}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
             + gruppi
-            + `<p class="ng-guida"><b>More to spend on.</b> Avatars (${Cosmetici.PREZZI.avatar} 🪙) and songs (${Cosmetici.PREZZI.canzone} 🪙): unlock them in <b>Customize → Trainer</b>; your first avatar and first song are free if you still have the default ones. Each one belongs to one trainer only: once it is yours, nobody else can take it. `
+            + `<p class="ng-guida"><b>More to spend on.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙) or your song (${Cosmetici.PREZZI.canzone} 🪙) is in <b>Customize → Trainer</b>. Your first avatar and first song are free and stay yours for good; `
+            + `the one you wear is yours while you wear it, then it goes back to the pool for everyone. `
             + `Shiny Pokémon (${Cosmetici.PREZZI.shinyPokemon} 🪙 each): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
             + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
+    }
+
+    /**
+     * Le frasi della finestra di conferma di un cambio di avatar o di canzone (pura). `corrente` e `casa` sono gli id di quello che porti e di quello "di casa" (il primo, tuo per sempre; ''
+     * se non ci sono); `id` vuoto con tipo 'canzone' = togliere la canzone. → { righe, conferma, ok } (ok = si può confermare: bastano le monete)
+     */
+    function frasiCambio({ tipo, id, prezzo, gratis, saldo, corrente, casa, nomeCorrente }) {
+        const cosa = tipo === 'avatar' ? 'avatar' : 'song';
+        const quale = nomeCorrente || `your current ${cosa}`;
+        const Quale = quale.charAt(0).toUpperCase() + quale.slice(1);
+        const righe = [];
+        const sorteDiQuelloCheHai = corrente && corrente !== id ? [corrente === casa ? `${Quale} stays yours for good.` : `${Quale} goes back to the pool: anyone can take it.`] : [];
+        if (!id) {
+            righe.push('You will have no song.', ...sorteDiQuelloCheHai);
+            return { righe, conferma: 'Remove it', ok: true };
+        }
+        if (gratis) {
+            righe.push(`Your first ${cosa} is free, and it stays yours for good: nobody else can take it, even when you wear another one later.`);
+            return { righe, conferma: 'Choose for free', ok: true };
+        }
+        righe.push(`Changing your ${cosa} costs ${prezzo} 🪙, and you have ${saldo} 🪙.${saldo < prezzo ? ' Play some sets to earn more coins.' : ''}`);
+        righe.push(id === casa ? `It is your first ${cosa}: yours for good.` : `The new one is yours while you wear it.`, ...sorteDiQuelloCheHai);
+        return { righe, conferma: `Change · ${prezzo} 🪙`, ok: saldo >= prezzo };
     }
 
     /** Il markup della finestra del Box per rendere shiny i Pokémon di un team (puro): stato = { team, pokemon: [{ nome, shiny, normale, brillante }], saldo, prezzo, messaggio, occupato, armato } */
@@ -140,7 +164,7 @@
     // ---------------------------------------------------------------- nel browser
     const FRASI = {
         owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
-        taken: 'Someone else already owns it: every avatar and song belongs to one trainer only.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
+        taken: 'Someone else already has it: every avatar and song belongs to one trainer only.', same: 'It is already the one you are wearing.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 
@@ -150,8 +174,8 @@
         const f = win.firebase.app().functions('europe-west1');
         return (await f.httpsCallable(nome)(dati || {})).data || {};
     }
-    /** Compra un cosmetico (anche un avatar o una canzone). `nome` è solo per l'elenco dei movimenti. → { ok, saldo, gratis } oppure { ok: false, motivo } */
-    const compra = (win, id, nome) => chiama(win, 'acquistaCosmetico', { id, nome: nome || '' });
+    /** Cambia l'avatar o la canzone (il server fa il cambio e scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
+    const cambia = (win, dati) => chiama(win, 'cambiaCosmetico', dati);
 
     function caricaFunzioni(win) {
         if (win.firebase && win.firebase.functions) return Promise.resolve();
@@ -292,5 +316,5 @@
         return velo;
     }
 
-    return { html, htmlShinyTeam, anteprima, apri, apriShinyTeam, compra, chiama, frase, STILE };
+    return { html, htmlShinyTeam, frasiCambio, anteprima, apri, apriShinyTeam, cambia, chiama, frase, STILE };
 });

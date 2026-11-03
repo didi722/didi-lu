@@ -1048,6 +1048,13 @@
             if (prima && prima.musicaPreferita !== stato.infoSalvata.musicaPreferita && stato.infoSalvata.musicaPreferita
                 && musicaAttiva() && typeof window.avviaMusicaGiocatore === 'function') window.avviaMusicaGiocatore(stato.infoSalvata.musicaPreferita);
         },
+        /** Avatar e canzone li cambia il server (a pagamento): si vedono subito e contano come già salvati, senza toccare il resto della bozza (e la nuova canzone parte, se può) */
+        profiloDalServer(valori) {
+            impostaProfilo(valori);
+            const salvati = Object.fromEntries(P.CAMPI_PROFILO.filter(k => k in valori).map(k => [k, valori[k] == null ? '' : String(valori[k])]));
+            stato.infoSalvata = { ...stato.infoSalvata, ...salvati };
+            if (valori.musicaPreferita && musicaAttiva() && typeof window.avviaMusicaGiocatore === 'function') window.avviaMusicaGiocatore(valori.musicaPreferita);
+        },
         modifica(on) {
             stato.modifica = !!on;
             document.body.classList.toggle('pp-modifica', stato.modifica);

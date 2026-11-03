@@ -86,7 +86,9 @@
         disegnaPannello();
     }
 
-    const profiloSporco = () => { const ora = C.profilo(), salvato = C.stato.infoSalvata; return P.CAMPI_PROFILO.some(k => ora[k] !== salvato[k]); };
+    // avatar e canzone li scrive il server (a pagamento): non fanno parte di SAVE né delle modifiche da salvare
+    const CAMPI_DEL_SERVER = ['avatar', 'musicName', 'musicaPreferita'];
+    const profiloSporco = () => { const ora = C.profilo(), salvato = C.stato.infoSalvata; return P.CAMPI_PROFILO.some(k => !CAMPI_DEL_SERVER.includes(k) && ora[k] !== salvato[k]); };
     const sporco = () => !P.uguali(cfg(), C.stato.salvata) || profiloSporco();
 
     // ---- Piccoli componenti -------------------------------------------------------------------
@@ -186,21 +188,22 @@
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
-    // ---- I cosmetici a pagamento (cosmetici.js): motivi dello sfondo, avatar, canzoni --------------
-    // Il portafoglio (wallet/{uid}) si legge una volta; si compra dal server (negozio.js, caricato solo quando serve). Quello che si usa già nella pagina SALVATA resta di chi lo usa;
-    // il resto è bloccato finché non si compra: il tasto apre lo sblocco (avatar e canzoni) o il negozio (i motivi). Il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza.
-    let portafoglio = null;          // null finché non si legge; poi { saldo, posseduti, gratis, pronto }
+    // ---- I cosmetici a pagamento (cosmetici.js): motivi dello sfondo, e il cambio di avatar e canzone --------------
+    // Il portafoglio (wallet/{uid}) si legge una volta; si paga dal server (negozio.js, caricato solo quando serve). I motivi dello sfondo bloccati si comprano dal negozio. Avatar e canzone non si
+    // comprano: si CAMBIANO, e il server fa subito il cambio e scrive il profilo (fuori da SAVE/Cancel/undo): costa sempre, tranne la prima volta per chi ha ancora quello di partenza; il primo
+    // resta tuo per sempre ("di casa"), quello che porti è tuo finché lo porti e poi torna libero.
+    let portafoglio = null;          // null finché non si legge; poi { saldo, posseduti, casa, pronto }
     function leggiPortafoglio(forza) {
         if ((portafoglio && !forza) || !window.firebase || !window.firebase.auth) return Promise.resolve();
         const u = window.firebase.auth().currentUser;
         if (!u) return Promise.resolve();
-        if (!portafoglio) portafoglio = { saldo: 0, posseduti: {}, gratis: {}, pronto: false };
+        if (!portafoglio) portafoglio = { saldo: 0, posseduti: {}, casa: {}, pronto: false };
         return window.firebase.database().ref(`wallet/${u.uid}`).once('value')
-            .then(snap => { const w = snap.val() || {}; portafoglio = { saldo: Number(w.saldo) || 0, posseduti: w.posseduti || {}, gratis: w.gratis || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .then(snap => { const w = snap.val() || {}; portafoglio = { saldo: Number(w.saldo) || 0, posseduti: w.posseduti || {}, casa: w.casa || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
             .catch(() => { /* senza: resta bloccato ciò che non usi già, e non si compra */ });
     }
-    // Avatar e canzoni hanno un solo proprietario: cosmeticiPresi/{id} = l'allenatore che li ha comprati (lo scrive il server). Chi li compra li riserva: nessun altro li può comprare né usare,
-    // anche se tu oggi ne usi un altro. Si legge una volta; si rilegge se un acquisto dice "taken" (qualcuno ti ha preceduto).
+    // Avatar e canzoni sono unici: cosmeticiPresi/{id} = l'allenatore che li tiene riservati (quello di casa e quello che porta; lo scrive il server). Si legge una volta; si rilegge dopo un cambio
+    // e se il server dice "taken" (qualcuno ti ha preceduto).
     let registro = null;             // null finché non si legge; poi { <id>: <allenatore> }
     function leggiRegistro(forza) {
         if ((registro && !forza) || !window.firebase || !window.firebase.database) return Promise.resolve();
@@ -224,27 +227,46 @@
     }
     const tipoDi = id => (String(id).startsWith('avatar-') ? 'avatar' : 'canzone');
 
-    /** Quello che le schede (Trainer) usano per avatar e canzoni a pagamento */
+    const idCorrente = tipo => (window.Cosmetici ? window.Cosmetici.idCorrente(tipo, infoSalvata()) : '');
+
+    /** Quello che le schede (Trainer) usano per il cambio di avatar e di canzone */
     const cosmetici = {
         pronto: () => !!(portafoglio && portafoglio.pronto),
-        possiede: id => !!window.Cosmetici && window.Cosmetici.possiede(id, contestoCosmetici()),
-        prezzo: id => (window.Cosmetici && window.Cosmetici.prezzoPer(id, contestoCosmetici())) || { prezzo: 0, gratis: false },
         saldo: () => (portafoglio ? portafoglio.saldo : 0),
-        /** L'id dell'allenatore che possiede questo avatar o questa canzone, se non sei tu; '' se è libero o è tuo */
+        /** Carica negozio.js (le frasi della conferma e la chiamata al server) se non c'è già */
+        negozio: caricaNegozio,
+        /** Quanto costa cambiare oggi: { prezzo, gratis } */
+        prezzo: tipo => (window.Cosmetici && window.Cosmetici.prezzoCambio(tipo, contestoCosmetici())) || { prezzo: 0, gratis: false },
+        /** L'id di quello che porti adesso ('' se è quello di partenza) */
+        corrente: idCorrente,
+        /** L'id di quello "di casa" (il primo, tuo per sempre): quello registrato, o per chi non ha ancora cambiato niente quello che porta (diventerà di casa al primo cambio) */
+        casa: tipo => {
+            const registrato = portafoglio && portafoglio.casa && portafoglio.casa[tipo];
+            if (registrato) return String(registrato);
+            return window.Cosmetici && !window.Cosmetici.eDiDefault(tipo, infoSalvata()) ? idCorrente(tipo) : '';
+        },
+        /** L'id dell'allenatore che tiene riservato questo avatar o questa canzone, se non sei tu; '' se è libero o è tuo */
         presoDa: id => { const o = registro && registro[id]; return o && o !== C.stato.dati.chiave ? String(o) : ''; },
         /** Il nome da mostrare di un allenatore (dal profilo, se c'è) */
         nomeDi: g => { const i = ((C.stato.dati.tutti || {})[g] || {}).info; return (i && i.name) || String(g); },
         frase: motivo => (motivo === 'loading' ? 'Still loading your coins: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
-        /** Sblocca un avatar o una canzone dal server; ritorna { ok, saldo, gratis } o { ok: false, motivo } e rilegge il portafoglio */
-        async compra(id, nome) {
+        /**
+         * Cambia l'avatar (id avatar-<n>) o la canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone). Il server paga e scrive il profilo: qui si aggiorna la carta, che
+         * conta già come salvata, e si rilegge portafoglio e registro. Ritorna { ok, ... } oppure { ok: false, motivo }.
+         */
+        async cambia(tipo, id, extra) {
             if (!cosmetici.pronto()) return { ok: false, motivo: 'loading' };
             await caricaNegozio();
-            const r = await window.Negozio.compra(window, id, nome);
-            if (r.ok) await leggiPortafoglio(true);
-            if (r.ok || r.motivo === 'taken') await leggiRegistro(true);        // dopo un acquisto cambia anche il registro; se qualcuno ti ha preceduto, ora lo si vede
+            const r = await window.Negozio.cambia(window, { tipo, id, ...(extra || {}) });
+            if (r.ok) {
+                const valori = tipo === 'avatar' ? { avatar: r.avatar } : { musicaPreferita: r.musicaPreferita, musicName: r.musicName };
+                C.profiloDalServer(valori);
+                for (const f of storia) Object.assign(f.profilo, valori);          // "undo" non deve riportare indietro quello che il server ha già cambiato
+                await Promise.all([leggiPortafoglio(true), leggiRegistro(true)]);
+                disegnaPannello();
+            } else if (r.motivo === 'taken') await leggiRegistro(true);                // qualcuno ti ha preceduto: ora si vede
             return r;
-        },
-        tipoDi
+        }
     };
 
     function schedaSfondo() {
@@ -459,7 +481,7 @@
     // ---- Salvare ------------------------------------------------------------------------------
 
     // Le scelte che non si possono condividere con un altro allenatore
-    const CAMPI_UNICI = ['color', 'avatar', 'pkmPreferito', 'musicName', 'musicaPreferita'];
+    const CAMPI_UNICI = ['color', 'pkmPreferito'];          // avatar e canzone, pure unici, li cambia il server (che controlla)
     const NOMI_CONFLITTO = { color: 'colour', avatar: 'avatar', pkmPreferito: 'favourite Pokémon', musica: 'song' };
 
     async function salva() {
@@ -469,25 +491,12 @@
         const daSalvare = P.copia(cfg());
         const profilo = C.profilo();
         const salvato = C.stato.infoSalvata;
-        const cambiati = P.CAMPI_PROFILO.filter(k => profilo[k] !== salvato[k]);
+        const cambiati = P.CAMPI_PROFILO.filter(k => !CAMPI_DEL_SERVER.includes(k) && profilo[k] !== salvato[k]);
         try {
             const database = typeof db !== 'undefined' ? db : firebase.database();
             const chiave = C.stato.dati.chiave;
 
-            // avatar e canzone nuovi devono essere sbloccati (il lucchetto sulla lista apre lo sblocco): il resto della pagina si salva comunque dopo che si sono sbloccati
-            if (window.Cosmetici && (cambiati.includes('avatar') || cambiati.includes('musicaPreferita'))) {
-                const nuovi = [];
-                const avatarId = cambiati.includes('avatar') && profilo.avatar ? window.Cosmetici.idAvatar(profilo.avatar) : '';
-                if (avatarId && !cosmetici.possiede(avatarId)) nuovi.push('avatar');
-                const canzoneId = cambiati.includes('musicaPreferita') && profilo.musicaPreferita ? window.Cosmetici.idCanzone(profilo.musicaPreferita) : '';
-                if (canzoneId && !cosmetici.possiede(canzoneId)) nuovi.push('song');
-                if (nuovi.length) {
-                    avvisa(cosmetici.pronto() ? `Unlock your new ${nuovi.join(' and ')} first (look for the lock). Nothing was saved.` : "Couldn't check your unlocks yet: wait a moment and try again. Nothing was saved.", true);
-                    return;
-                }
-            }
-
-            // colore, avatar, Pokémon preferito e canzone sono unici: si ricontrolla sui dati di adesso, perché
+            // colore e Pokémon preferito sono unici: si ricontrolla sui dati di adesso, perché
             // qualcuno può aver scelto la stessa cosa mentre si modificava
             const unici = {};
             for (const k of CAMPI_UNICI) if (cambiati.includes(k)) unici[k] = profilo[k];
@@ -1103,6 +1112,7 @@
         C.modifica(true);
         leggiPortafoglio();
         leggiRegistro();
+        caricaNegozio().catch(() => { /* si riprova quando serve */ });
         installaBarre();
         costruisciPannello();
         disegnaPannello();

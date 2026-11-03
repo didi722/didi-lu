@@ -15,7 +15,8 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 - `pushTokens`, `notifiche`, `partite/*/privato`: ora davvero privati. L'admin può leggere/scrivere `notifiche` (serve a "Delete season", che pulisce le notifiche).
 - `partite`: lettura solo da loggati (come già scritto), scrittura solo della `presenza`; il resto lo scrive il server.
 - `wallet` (le monete): ognuno legge solo il proprio, nessuno lo scrive dal sito. **Senza queste regole il negozio non è sicuro**: oggi chiunque sia loggato può scrivere ovunque, quindi anche darsi monete.
-- `cosmeticiPresi` (chi possiede quale avatar o canzone): ogni avatar e ogni canzone ha un solo proprietario, e chi lo compra lo riserva. Lo legge chiunque (serve a mostrare "già preso" nell'editor), lo scrive solo il server.
+- `cosmeticiPresi` (chi tiene riservato quale avatar o canzone): avatar e canzoni sono unici. Ognuno ne tiene due per tipo: il primo, "di casa", per sempre, e quello che porta finché lo porta (cambiando torna libero). Lo legge chiunque (serve a mostrare "già preso" nell'editor), lo scrive solo il server.
+- Avatar e canzone nel profilo (`players/…/info/avatar`, `musicaPreferita`, `musicName`): cambiarli costa e lo fa il server; il sito li può solo leggere. Regole `.validate`: si scrivono solo se non esistono ancora (come quando il pannello admin crea il giocatore) o lasciandoli uguali.
 - Cosmetici del negozio nel profilo (`players/…/info/pkmShiny`, `info/aura`, i motivi a pagamento dello sfondo in `info/pagina/sfondo/motivo`): `players` resta scrivibile dai loggati, ma questi valori si accettano solo se chi scrive li ha nel portafoglio (o se non cambiano, così chi usava già un motivo lo tiene). Sono regole `.validate`, che il permesso del nodo sopra non può scavalcare. Le Functions passano comunque.
 - Tutto quello che non è elencato (`partiteServer`, `pushInviati`, `pushProve`, `badgeVisti`, `walletEventi`) è chiuso al sito; le Functions e il checker passano comunque (Admin SDK).
 
@@ -41,6 +42,10 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
       "$giocatore": {
         "info": {
           // Cosmetici a pagamento: un valore nuovo passa solo se è già nel portafoglio di chi scrive; togliere o lasciare com'è si può sempre.
+          // Avatar e canzone: li cambia solo il server (si pagano). Il sito può crearli (admin) o lasciarli uguali.
+          "avatar": { ".validate": "!data.exists() || newData.val() == data.val()" },
+          "musicaPreferita": { ".validate": "!data.exists() || newData.val() == data.val()" },
+          "musicName": { ".validate": "!data.exists() || newData.val() == data.val()" },
           "pkmShiny": { ".validate": "newData.val() == null || data.val() == newData.val() || (newData.val() === true && root.child('wallet').child(auth.uid).child('posseduti').child('shiny').exists())" },
           "aura": { ".validate": "newData.val() == null || data.val() == newData.val() || root.child('wallet').child(auth.uid).child('posseduti').child(newData.val()).exists()" },
           "pagina": { "sfondo": { "motivo": {
@@ -127,9 +132,10 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 3. Da **admin**: creare/chiudere/eliminare una stagione, creare un formato, aggiungere un giocatore.
 4. Una partita **in diretta** guardata da un secondo account.
 5. Negozio: comprare un cosmetico, metterlo e toglierlo (passa dalle Functions); poi **Customize → Save** sulla propria pagina: deve salvare anche con un motivo comprato. Se compare "permission_denied" su `players/…/info/pagina/sfondo/motivo`, c'è un motivo a pagamento non nel portafoglio.
+6. **Customize → Trainer**: cambiare avatar e canzone (passa dalle Functions, non da Save). Se compare "permission_denied" su `players/…/info/avatar`, c'è ancora una versione vecchia del sito in cache: svuotarla.
 
 Se qualcosa smette di funzionare, rimetti le regole vecchie (tienine una copia) e dimmi quale azione ha fallito: nella console del browser compare "permission_denied" col percorso.
 
-Avatar, canzoni e shiny dei team: le monete non si falsificano (le scrive solo il server), ma il valore scelto (l'avatar e la canzone nel profilo, il segno shiny nei team) si scrive dal sito. L'editor e il Box controllano che sia sbloccato, ma chi scrive a mano nel database può aggirarli: è solo estetico. Una regola `.validate` per gli avatar sarebbe legata all'indirizzo del sito e per le canzoni non si può scrivere (l'id è un'impronta dell'indirizzo), quindi non le metto.
+Shiny dei team: le monete non si falsificano (le scrive solo il server) e avatar e canzoni li cambia solo il server, ma il segno shiny dentro i team (`players/…/teams`) si scrive dal sito. Il Box toglie lo shiny non comprato quando salva un team, ma chi scrive a mano nel database può aggirarlo: è solo estetico.
 
 Due rischi noti: chi guarda le partite in diretta **senza account** non le vedrà più (nelle regole era già "auth != null", ma non valeva); e non ho potuto provare le regole su Firebase da qui.

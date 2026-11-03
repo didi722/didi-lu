@@ -124,7 +124,8 @@ test('negozio: i guadagni nel testo vengono da PREMI, la guida dice dove si spen
     const P = C.PREMI;
     assert.match(h, new RegExp(`a season set pays ${P.set.ufficiale.giocato}, or ${P.set.ufficiale.giocato + P.set.ufficiale.vinto} if you win it`));
     assert.match(h, new RegExp(`a friendly pays ${P.set.amichevole.giocato} or ${P.set.amichevole.giocato + P.set.amichevole.vinto} \\(up to ${P.tettoAmichevoliGiorno} a day\\)`));
-    assert.match(h, new RegExp(`Avatars \\(${C.PREZZI.avatar} 🪙\\) and songs \\(${C.PREZZI.canzone} 🪙\\)`));
+    assert.match(h, new RegExp(`Changing your avatar \\(${C.PREZZI.avatar} 🪙\\) or your song \\(${C.PREZZI.canzone} 🪙\\) is in <b>Customize → Trainer</b>`));
+    assert.match(h, /Your first avatar and first song are free and stay yours for good; the one you wear is yours while you wear it, then it goes back to the pool for everyone/);
     assert.match(h, new RegExp(`Shiny Pokémon \\(${C.PREZZI.shinyPokemon} 🪙 each\\): the ✨ button on a team in your <b>Box</b>`));
     assert.match(h, /Free: Avatar 12<\/span><b class="ng-piu">free<\/b>/);
     for (const m of ['busy', 'already', 'cannot-apply', 'poor', 'owned']) assert.match(N.frase(m), /\w{4}/, m);
@@ -161,29 +162,63 @@ test('cablaggio: Box con il tasto ✨, la finestra e lo shiny sulle card; il sal
     assert.match(idx, /team: String\(dati\.team \|\| ''\), indice: dati\.indice/);
 });
 
-test('cablaggio: l\'editor legge il portafoglio, mostra il lucchetto su avatar e canzoni non sbloccati e al salvataggio non accetta quelli non sbloccati', () => {
+test('cablaggio: avatar e canzone si cambiano dal server (fuori da SAVE), con conferma; il primo di casa è segnato, quelli riservati da altri sono grigi, il resto non ha lucchetti', () => {
     const ed = leggi('docs', 'public-editor.js');
     assert.match(ed, /function leggiPortafoglio\(forza\)/);
     assert.match(ed, /ref\(`wallet\/\$\{u\.uid\}`\)/);
-    assert.match(ed, /cosmetici\.possiede\(avatarId\)[\s\S]*?cosmetici\.possiede\(canzoneId\)[\s\S]*?Unlock your new/);
+    assert.match(ed, /casa: w\.casa \|\| \{\}/);
     assert.match(ed, /ridisegna: disegnaPannello, cosmetici \}/);
-    assert.doesNotMatch(ed, /possedutiMotivi|leggiPossedutiMotivi/, 'un solo portafoglio per tutto');
-    const tr = leggi('docs', 'public-editor-trainer.js');
-    assert.match(tr, /function chiediSblocco\(ctx,/);
-    assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: `Avatar \$\{n\}`, tipo: 'avatar'/);
-    assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: c\.nome, tipo: 'song'/);
-    assert.match(tr, /Unlock for free/);
-    // avatar e canzoni hanno un solo proprietario: il registro si legge, i comprati da altri sono grigi (anche se non li usano) e il server dice "taken"
+    assert.doesNotMatch(ed, /possedutiMotivi|leggiPossedutiMotivi|cosmetici\.compra|Unlock your new/, 'niente più acquisto permanente di avatar e canzoni');
+    // il cambio: il server paga e scrive; qui si aggiorna la carta (già "salvata"), la cronologia dell'undo, il portafoglio e il registro
+    assert.match(ed, /window\.Negozio\.cambia\(window, \{ tipo, id, \.\.\.\(extra \|\| \{\}\) \}\)/);
+    assert.match(ed, /C\.profiloDalServer\(valori\)/);
+    assert.match(ed, /for \(const f of storia\) Object\.assign\(f\.profilo, valori\)/);
+    assert.match(ed, /await Promise\.all\(\[leggiPortafoglio\(true\), leggiRegistro\(true\)\]\)/);
+    assert.match(ed, /else if \(r\.motivo === 'taken'\) await leggiRegistro\(true\)/);
+    // SAVE non scrive mai avatar e canzone
+    assert.match(ed, /CAMPI_DEL_SERVER = \['avatar', 'musicName', 'musicaPreferita'\]/);
+    assert.match(ed, /const cambiati = P\.CAMPI_PROFILO\.filter\(k => !CAMPI_DEL_SERVER\.includes\(k\) && profilo\[k\] !== salvato\[k\]\)/);
+    assert.match(ed, /P\.CAMPI_PROFILO\.some\(k => !CAMPI_DEL_SERVER\.includes\(k\) && ora\[k\] !== salvato\[k\]\)/);
+    // il registro dei riservati
     assert.match(ed, /ref\('cosmeticiPresi'\)/);
     assert.match(ed, /presoDa: id => \{ const o = registro && registro\[id\]; return o && o !== C\.stato\.dati\.chiave \? String\(o\) : ''; \}/);
-    assert.match(ed, /if \(r\.ok \|\| r\.motivo === 'taken'\) await leggiRegistro\(true\)/);
+    assert.match(leggi('docs', 'public-card.js'), /profiloDalServer\(valori\) \{\s*impostaProfilo\(valori\);[\s\S]*?stato\.infoSalvata = \{ \.\.\.stato\.infoSalvata, \.\.\.salvati \}/);
+
+    const tr = leggi('docs', 'public-editor-trainer.js');
+    assert.match(tr, /async function chiediCambio\(ctx,/);
+    assert.match(tr, /window\.Negozio\.frasiCambio\(\{ tipo, id, prezzo: p\.prezzo, gratis: p\.gratis, saldo: cosmetici\.saldo\(\), corrente, casa: cosmetici\.casa\(tipo\), nomeCorrente \}\)/);
+    assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'avatar', id, nome: `Avatar \$\{n\}`/);
+    assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'canzone', id, nome: c\.nome, extra: \{ url: c\.url, nome: c\.nome \} \}\)/);
+    assert.match(tr, /chiediCambio\(ctx, \{ tipo: 'canzone', id: '', nome: 'No song', extra: \{\} \}\)/, 'togliere la canzone passa dal server e libera quella di prima');
+    assert.doesNotMatch(tr, /chiediSblocco|pe-bloccato|🔒|cosmetici\.possiede|cosmetici\.compra/, 'niente lucchetti: ogni cambio costa, non ci sono voci "bloccate"');
+    assert.match(tr, /is-casa/);
     assert.match(tr, /const doAltri = f => cosmetici\.presoDa\(idAv\(f\)\)/);
     assert.match(tr, /comePresa\(b, `Avatar \$\{n\}`, `Owned by \$\{cosmetici\.nomeDi\(doAltri\(f\)\)\}`\)/);
     assert.match(tr, /doAltri\(c\) \? comePresa\(scelta, c\.nome, `Owned by/);
-    assert.match(tr, /nobody else can take it, even if you switch to another later/);
-    assert.match(N.frase('taken'), /Someone else already owns it/);
-    assert.match(N.html({ saldo: 0 }), /Each one belongs to one trainer only: once it is yours, nobody else can take it/);
+    assert.match(tr, /disabled: !profilo\.musicaPreferita/, '"None" è spento se non c\'è una canzone');
+    assert.match(N.frase('taken'), /Someone else already has it/);
+    assert.match(leggi('docs', 'style-public-editor.css'), /\.pe-avatar-item\.is-casa::after \{ content: '★'/);
     assert.match(leggi('REGOLE-DATABASE.md'), /"cosmeticiPresi": \{ "\.read": true \}/);
-    assert.match(tr, /None' \}\)|testo: 'None'/, 'togliere la canzone resta gratis');
-    assert.match(leggi('docs', 'style-public-editor.css'), /\.pe-avatar-item\.pe-bloccato::after \{ content: '🔒'/);
+    const idx = leggi('functions', 'index.js');
+    assert.match(idx, /exports\.cambiaCosmetico = negozio\('cambia'\)/);
+    assert.match(idx, /tipo: String\(dati\.tipo \|\| ''\), url: String\(dati\.url \|\| ''\)\.slice\(0, 600\)/);
+});
+
+test('frasiCambio: gratis la prima volta; poi quanto costa, che fine fa quello che porti (di casa: resta tuo; altrimenti torna libero) e se le monete bastano; "None" è gratis', () => {
+    const base = { tipo: 'avatar', id: 'avatar-5', prezzo: 40, gratis: false, saldo: 220, corrente: 'avatar-9', casa: 'avatar-7', nomeCorrente: 'Avatar 9' };
+    const f = N.frasiCambio(base);
+    assert.deepEqual(f.righe, ['Changing your avatar costs 40 🪙, and you have 220 🪙.', 'The new one is yours while you wear it.', 'Avatar 9 goes back to the pool: anyone can take it.']);
+    assert.deepEqual([f.conferma, f.ok], ['Change · 40 🪙', true]);
+    assert.ok(N.frasiCambio({ ...base, corrente: 'avatar-7', nomeCorrente: 'Avatar 7' }).righe.includes('Avatar 7 stays yours for good.'), 'quello di casa resta tuo');
+    assert.ok(N.frasiCambio({ ...base, id: 'avatar-7' }).righe.includes('It is your first avatar: yours for good.'), 'tornare al primo');
+    const povero = N.frasiCambio({ ...base, saldo: 39 });
+    assert.equal(povero.ok, false);
+    assert.match(povero.righe[0], /you have 39 🪙\. Play some sets to earn more coins\.$/);
+    const primo = N.frasiCambio({ tipo: 'avatar', id: 'avatar-5', prezzo: 0, gratis: true, saldo: 0, corrente: '', casa: '' });
+    assert.deepEqual(primo, { righe: ['Your first avatar is free, and it stays yours for good: nobody else can take it, even when you wear another one later.'], conferma: 'Choose for free', ok: true });
+    // senza nessuna canzone: gratis, e dice che fine fa quella di adesso
+    assert.deepEqual(N.frasiCambio({ tipo: 'canzone', id: '', prezzo: 0, gratis: false, saldo: 0, corrente: 'canzone-aaaaaaaa', casa: 'canzone-bbbbbbbb' }),
+        { righe: ['You will have no song.', 'Your current song goes back to the pool: anyone can take it.'], conferma: 'Remove it', ok: true });
+    assert.deepEqual(N.frasiCambio({ tipo: 'canzone', id: '', prezzo: 0, gratis: false, saldo: 0, corrente: 'canzone-aaaaaaaa', casa: 'canzone-aaaaaaaa' }).righe, ['You will have no song.', 'Your current song stays yours for good.']);
+    assert.match(N.frasiCambio({ tipo: 'canzone', id: 'canzone-cccccccc', prezzo: 60, gratis: false, saldo: 100, corrente: 'canzone-aaaaaaaa', casa: '' }).righe[0], /Changing your song costs 60 🪙/);
 });

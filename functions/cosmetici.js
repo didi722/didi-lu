@@ -3,21 +3,24 @@
 //
 // Cose che si comprano con le monete (wallet/{uid}) e cambiano solo l'aspetto.
 //   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita.
-//   - Le famiglie: ogni avatar (avatar-<n>) e ogni canzone (canzone-<impronta dell'indirizzo>) si sblocca a pagamento. Quello che si usa già resta di chi lo usa; chi ha
-//     ancora l'avatar o la canzone di partenza ha il PRIMO sblocco gratis (uno per tipo: wallet/{uid}/gratis/<tipo>). Ognuno ha UN solo proprietario (cosmeticiPresi/<id>, lo scrive il server):
-//     comprare vuol dire riservare, così un avatar unico com'è sempre stato non si può perdere perché nel frattempo l'ha preso un altro.
+//   - Le famiglie: avatar (avatar-<n>) e canzoni (canzone-<impronta dell'indirizzo>) non si comprano, si CAMBIANO (functions/monete.js: cambia). Ogni cambio costa (PREZZI) e il server lo fa
+//     subito, scrivendo il profilo. Il primo avatar e la prima canzone sono "di casa": quello che si sceglie gratis (chi ha ancora l'avatar o la canzone di partenza) o, per chi ne aveva già
+//     uno, quello che aveva, resta suo PER SEMPRE e nessun altro lo può prendere. Quello che si porta è riservato finché lo si porta: cambiando di nuovo torna libero per tutti.
+//     Così l'unicità, com'è sempre stata, non si rompe e non si paga mai qualcosa che poi non si può usare.
 //   - Lo shiny di un Pokémon di un team: costa PREZZI.shinyPokemon e si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js).
 //   - L'economia: PREMI (quanto si guadagna) e PREZZI (quanto costano le famiglie), calibrati sulla stagione tipo con stimaStagione().
 // ATTENZIONE: questo file esiste in due copie identiche, functions/cosmetici.js (il server controlla prezzi e acquisti) e docs/cosmetici.js (il sito).
 // Modificane una e copiala sull'altra (lo controlla test/monete.test.js).
 //
 //   Cosmetici.CATALOGO, Cosmetici.perId(id), Cosmetici.TIPI, Cosmetici.PREMI, Cosmetici.PREZZI
-//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene)
+//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar e canzoni: quello che porti o quello di casa
 //   Cosmetici.possedutiDa({ wallet, info, pagina })    l'insieme degli id posseduti del catalogo fisso
 //   Cosmetici.motivoBloccato(motivo, contesto)         true se quel motivo dello sfondo è a pagamento e non è posseduto
 //   Cosmetici.idAvatar(testo), Cosmetici.idCanzone(url) l'id di un avatar (da "…/profile/12.png") o di una canzone (dal suo indirizzo)
 //   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / la canzone di partenza?
-//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa a chi guarda, oggi (0 se è il suo primo sblocco gratis)
+//   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / della canzone che porta adesso ('' se è quello di partenza o nessuno)
+//   Cosmetici.prezzoCambio(tipo, { wallet, info })     { prezzo, gratis }: quanto costa cambiare avatar o canzone, oggi (0 la prima volta, se ha ancora quello di partenza)
+//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa un cosmetico del catalogo, o un cambio per gli id degli avatar e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
 //   Cosmetici.testoConShiny(testo, indice, nome, specie)  il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato (lo scrive il server dopo l'acquisto)
 //   Cosmetici.senzaShinyAbusivi(testo, teamPrecedente)    toglie "Shiny: Yes" ai Pokémon che non erano già shiny: lo shiny si compra, non si scrive (il Box lo usa al salvataggio)
@@ -42,7 +45,7 @@
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------
-    // Le famiglie: tanti pezzi piccoli (un avatar è il 4% di una stagione, una canzone il 6%, uno shiny di team il 10%); il catalogo fisso sta nel 10–45% (vedi CATALOGO).
+    // Le famiglie: tanti pezzi piccoli (un cambio di avatar è il 4% di una stagione, di canzone il 6%, uno shiny di team il 10%); il catalogo fisso sta nel 10–45% (vedi CATALOGO).
     const PREZZI = { avatar: 40, canzone: 60, shinyPokemon: 100 };
 
     const TIPI = {
@@ -97,8 +100,8 @@
         if (c) return c;
         const sid = String(id == null ? '' : id);
         const a = /^avatar-(\d{1,3})$/.exec(sid);
-        if (a && avatarValido(Number(a[1]))) return { id: sid, tipo: 'avatar', nome: `Avatar ${Number(a[1])}`, prezzo: PREZZI.avatar, gratisPrimo: true };
-        if (/^canzone-[0-9a-f]{8}$/.test(sid)) return { id: sid, tipo: 'canzone', nome: 'Song', prezzo: PREZZI.canzone, gratisPrimo: true };
+        if (a && avatarValido(Number(a[1]))) return { id: sid, tipo: 'avatar', nome: `Avatar ${Number(a[1])}`, prezzo: PREZZI.avatar };
+        if (/^canzone-[0-9a-f]{8}$/.test(sid)) return { id: sid, tipo: 'canzone', nome: 'Song', prezzo: PREZZI.canzone };
         return null;
     };
 
@@ -106,11 +109,17 @@
     function eDiDefault(tipo, info) {
         const i = objOr(info);
         if (tipo === 'avatar') return !idAvatar(i.avatar);
-        if (tipo === 'canzone') return !String(i.musicaPreferita == null ? '' : i.musicaPreferita).trim() && !String(i.musicName == null ? '' : i.musicName).trim();
+        if (tipo === 'canzone') return !String(i.musicaPreferita == null ? '' : i.musicaPreferita).trim();
         return false;
     }
 
-    /** Comprato (wallet.posseduti), oppure già in uso: chi usava un motivo che ora è a pagamento, ha già il compagno shiny, l'avatar o la canzone di adesso, li tiene */
+    /** L'id dell'avatar o della canzone che porta adesso; '' se è quello di partenza o nessuno */
+    function idCorrente(tipo, info) {
+        const i = objOr(info);
+        return tipo === 'avatar' ? idAvatar(i.avatar) : tipo === 'canzone' ? idCanzone(i.musicaPreferita) : '';
+    }
+
+    /** Comprato (wallet.posseduti), oppure già in uso: chi usava un motivo che ora è a pagamento, ha già il compagno shiny o l'aura di adesso, li tiene. Avatar e canzoni non si comprano: vedi sotto */
     function possiede(id, { wallet, info, pagina } = {}) {
         const c = perId(id);
         if (!c) return false;
@@ -119,8 +128,8 @@
         if (c.tipo === 'shiny') return !!i.pkmShiny;
         if (c.tipo === 'aura') return i.aura === id;
         if (c.tipo === 'sfondo') return objOr(objOr(pagina).sfondo).motivo === c.motivo;
-        if (c.tipo === 'avatar') return idAvatar(i.avatar) === id;
-        if (c.tipo === 'canzone') return !!idCanzone(i.musicaPreferita) && idCanzone(i.musicaPreferita) === id;
+        // avatar e canzoni: quello che porti, o quello di casa (il primo, tuo per sempre)
+        if (c.tipo === 'avatar' || c.tipo === 'canzone') return idCorrente(c.tipo, i) === id || objOr(objOr(wallet).casa)[c.tipo] === id;
         return false;
     }
 
@@ -134,11 +143,17 @@
         return !!c && !possiede(c.id, contesto);
     }
 
-    /** Quanto costa a chi guarda, oggi: il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza (e non ha già usato il suo sblocco gratis) */
-    function prezzoPer(id, { wallet, info } = {}) {
+    /** Quanto costa cambiare avatar o canzone, oggi: sempre PREZZI, tranne la prima volta per chi ha ancora quello di partenza (e non ha ancora un "di casa"): quella è gratis */
+    function prezzoCambio(tipo, { wallet, info } = {}) {
+        if (!objOr(objOr(wallet).casa)[tipo] && eDiDefault(tipo, info)) return { prezzo: 0, gratis: true };
+        return { prezzo: PREZZI[tipo] || 0, gratis: false };
+    }
+
+    /** Quanto costa un cosmetico del catalogo; per gli id degli avatar e delle canzoni, quanto costa cambiare */
+    function prezzoPer(id, contesto = {}) {
         const c = perId(id);
         if (!c) return null;
-        if (c.gratisPrimo && !objOr(objOr(wallet).gratis)[c.tipo] && eDiDefault(c.tipo, info)) return { prezzo: 0, gratis: true };
+        if (c.tipo === 'avatar' || c.tipo === 'canzone') return prezzoCambio(c.tipo, contesto);
         return { prezzo: c.prezzo, gratis: false };
     }
 
@@ -229,5 +244,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, CATALOGO, TIPI, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idCanzone, eDiDefault, prezzoPer, stimaStagione, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, CATALOGO, TIPI, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

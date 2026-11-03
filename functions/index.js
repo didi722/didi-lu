@@ -212,7 +212,8 @@ const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
     try {
         const esito = await monete[nome]({
             db: getDatabase(), uid: richiesta.auth.uid, id: String(dati.id || ''), attivo: dati.attivo !== false,
-            nome: String(dati.nome || '').slice(0, 60), team: String(dati.team || ''), indice: dati.indice
+            nome: String(dati.nome || '').slice(0, 60), team: String(dati.team || ''), indice: dati.indice,
+            tipo: String(dati.tipo || ''), url: String(dati.url || '').slice(0, 600)
         });
         return esito;
     } catch (e) {
@@ -222,6 +223,7 @@ const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
 });
 exports.acquistaCosmetico = negozio('acquista');
 exports.equipaCosmetico = negozio('equipa');
+exports.cambiaCosmetico = negozio('cambia');             // il cambio di avatar o di canzone (costa; il primo è gratis e resta tuo)
 exports.shinyPokemonTeam = negozio('shinyPokemon');      // lo shiny di un Pokémon di un team del Box (anche bloccato)
 
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
