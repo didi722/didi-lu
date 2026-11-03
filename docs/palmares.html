@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archive</title>
+    <title>Hall of Fame</title>
     <link rel="icon" type="image/png" href="immagini/magikarp.png">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -48,7 +48,7 @@
 <header class="top-bar">
     <div class="top-bar-inner">
         <section class="hub-hero">
-            <h1 class="hub-title-display">ARCHIVE</h1>
+            <h1 class="hub-title-display">HALL OF FAME</h1>
         </section>
     </div>
 </header>
@@ -64,7 +64,7 @@
         <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
         <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
         <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
-        <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> ARCHIVE</a>
+        <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
         <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
         <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
         <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -126,6 +126,14 @@
 </div>
 
 <main class="palm-pagina">
+    <nav class="palm-sezioni" id="palm-sezioni" role="tablist" aria-label="Hall of Fame sections">
+        <button type="button" class="palm-sezione attiva" role="tab" aria-selected="true" data-vista="stagioni">Seasons</button>
+        <button type="button" class="palm-sezione" role="tab" aria-selected="false" data-vista="records">Records</button>
+        <button type="button" class="palm-sezione" role="tab" aria-selected="false" data-vista="mvp">MVP &amp; Dream Teams</button>
+        <button type="button" class="palm-sezione" role="tab" aria-selected="false" data-vista="settimane">Match of the week</button>
+    </nav>
+
+    <div id="palm-vista-stagioni">
     <section class="palm-controlli" aria-label="Filter">
         <div class="palm-filtri" role="group" aria-label="Type" id="palm-filtri"></div>
     </section>
@@ -135,11 +143,16 @@
         <div class="palm-griglia" id="palm-in-corso"></div>
     </section>
 
-    <section aria-label="Archive">
+    <section aria-label="Past seasons and cups">
         <h2 class="palm-titolo">PAST SEASONS &amp; CUPS</h2>
         <div class="palm-griglia" id="palm-archivio"></div>
         <p class="palm-vuoto" id="palm-vuoto" hidden>Nothing here yet.</p>
     </section>
+    </div>
+
+    <div id="palm-vista-records" class="hof-vista" hidden></div>
+    <div id="palm-vista-mvp" class="hof-vista" hidden></div>
+    <div id="palm-vista-settimane" class="hof-vista" hidden></div>
 </main>
 
 <script>
@@ -399,6 +412,12 @@ loginModal.addEventListener('click', (event) => {
 });
 </script>
 <script src="tipo-stagione.js"></script>
+<script src="statistiche.js"></script>
+<script src="mvp.js"></script>
+<script src="match-settimana.js"></script>
+<script src="sprites/indice.js"></script>
+<script src="sprite-pkm.js"></script>
+<script src="hall-of-fame.js"></script>
 <script src="palmares.js"></script>
 <script src="controlli.js"></script>
 </body>

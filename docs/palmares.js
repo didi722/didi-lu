@@ -1,5 +1,5 @@
 // =====================================================
-// ARCHIVE (palmarès) — Poké-Tournament
+// HALL OF FAME (palmarès, già Archive) — Poké-Tournament
 //
 // Tutte le stagioni e le cup giocate, chiuse e in corso, con il vincitore e la data: la home ne mostra solo tre. Si legge dalle info di
 // ogni stagione (tipo-stagione.js), mai dalle stagioni intere.
@@ -79,6 +79,42 @@
         }).join('');
     }
 
+    // ---------- le sezioni della Hall of Fame (hall-of-fame.js): Records, MVP & Dream Teams, Match of the week ----------
+    // Le stagioni intere pesano (showdown e match): si leggono una volta sola, alla prima apertura di una sezione che le usa.
+    function montaSezioni(giocatori) {
+        const HoF = typeof window !== 'undefined' ? window.HallOfFame : null;
+        const nav = document.getElementById('palm-sezioni');
+        if (!HoF || !nav) return;
+        const viste = ['stagioni', 'records', 'mvp', 'settimane'];
+        const gif = window.SpritePkm ? sp => window.SpritePkm.gif(sp) : null;
+        const pronte = {};
+        let dati = null;
+        const carica = async () => {
+            if (!dati) {
+                const [seasons, players] = await Promise.all([db.ref('seasons').once('value'), db.ref('players').once('value')]);
+                dati = { seasons: seasons.val() || {}, players: players.val() || {} };
+            }
+            return dati;
+        };
+        const costruisci = {
+            records: async () => HoF.htmlRecords(HoF.records(window.Statistiche.calcola(await carica(), { stagione: 'all', senzaSquadre: true })), { gif, giocatori }),
+            mvp: async () => HoF.htmlStagioni(HoF.stagioni(await carica(), { Statistiche: window.Statistiche, Mvp: window.Mvp }), { gif }),
+            settimane: async () => HoF.htmlSettimane(HoF.settimane(window.MatchSettimana.settimane((await carica()).seasons).elenco, window.MatchSettimana), { gif, giocatori })
+        };
+        const mostra = async vista => {
+            nav.querySelectorAll('.palm-sezione').forEach(b => { const su = b.dataset.vista === vista; b.classList.toggle('attiva', su); b.setAttribute('aria-selected', String(su)); });
+            for (const v of viste) { const el = document.getElementById(`palm-vista-${v}`); if (el) el.hidden = v !== vista; }
+            if (vista === 'stagioni' || pronte[vista]) return;
+            const el = document.getElementById(`palm-vista-${vista}`);
+            el.innerHTML = '<p class="hof-vuoto">Loading…</p>';
+            try { el.innerHTML = await costruisci[vista](); pronte[vista] = true; } catch (e) { console.warn('Hall of Fame:', e); el.innerHTML = '<p class="hof-vuoto">Couldn\'t load this section. Try again later.</p>'; }
+        };
+        nav.addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) mostra(b.dataset.vista); });
+        // ?sezione=records apre direttamente una sezione
+        const scelta = new URLSearchParams(location.search).get('sezione');
+        if (viste.includes(scelta)) mostra(scelta);
+    }
+
     // ---------- la pagina ----------
     async function avvia() {
         if (typeof document === 'undefined' || !document.getElementById('palm-archivio')) return;
@@ -110,6 +146,7 @@
             for (const [id, p] of Object.entries(snap.val() || {})) giocatori[idDi(id)] = { name: p && p.info && p.info.name, color: p && p.info && p.info.color, avatar: p && p.info && p.info.avatar };
         } catch (e) { console.warn('Archive not available:', e); }
         disegna();
+        montaSezioni(giocatori);
         const loader = document.getElementById('poke-loader');
         if (loader) loader.style.display = 'none';
     }
