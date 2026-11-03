@@ -293,6 +293,7 @@
         const giocatori = {};   // id -> scheda
         const squadre = {};     // chiave -> scheda
         const mostri = {};      // chiave -> scheda
+        const apertureDelFormato = {};   // coppia di titolari (i primi due in campo) -> { specie, set, vinti, persi }: le "lead" più giocate
 
         const giocatore = id => (giocatori[id] ||= {
             id, ...nuovoRisultati(), azioni: vuotoAzioni(),
@@ -423,6 +424,15 @@
                         if (x.svenuto) m.svenuto++;
                         if (x.ultimo) { m.ultimo++; if (vintoSet) m.ultimoVinto++; }
                     });
+                    // Le lead: i titolari del set (i primi in campo: due nei doppi, uno nei singoli), contati per specie e senza ordine
+                    const titolari = valori(mioLato.pokemon).map((x, i) => (x.titolare ? { id: idSpecie(specieLato[i]), nome: specieLato[i] } : null))
+                        .filter(x => x && x.id).sort((u, v) => u.id.localeCompare(v.id));
+                    if (titolari.length && titolari.length <= 2 && titolari[0].id !== (titolari[1] || {}).id) {
+                        const chiaveLead = titolari.map(x => x.id).join('+');
+                        const lead = (apertureDelFormato[chiaveLead] ||= { specie: titolari.map(x => x.nome), specieId: titolari.map(x => x.id), set: 0, vinti: 0, persi: 0 });
+                        lead.set++;
+                        if (vintoSet) lead.vinti++; else if (st.vincitore) lead.persi++;
+                    }
                 }
 
                 // serie del match: chi non è mai sceso in campo non la allunga e non la spezza
@@ -608,7 +618,11 @@
             },
             players: elencoPlayers,
             teams: elencoTeams,
-            pokemon: elencoPokemon
+            pokemon: elencoPokemon,
+            // le coppie di apertura (lead) del perimetro: le più giocate prima
+            lead: Object.values(apertureDelFormato)
+                .map(l => ({ ...l, percVinti: perc(l.vinti, l.vinti + l.persi) }))
+                .sort((a, b) => b.set - a.set || b.vinti - a.vinti || a.specie.join().localeCompare(b.specie.join()))
         };
     }
 
