@@ -279,6 +279,18 @@ body {
     box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
 }
 
+/* Barra dei messaggi ("Go! Togekiss!", "It's super effective!"): una fascia piatta e scura, senza bordi né angoli, nel carattere del sito.
+   Resta bassa e stretta come quella di Showdown: copre poco campo. */
+.palco .messagebar {
+    left: 110px; right: 110px; bottom: 10px;
+    padding: 5px 11px 3px;
+    background: rgba(0, 0, 0, .88); color: var(--carta);
+    border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
+    font: 600 11px/1.35 'Josefin Sans', sans-serif; letter-spacing: .02em;
+}
+.palco .messagebar strong { color: var(--carta); font: 800 12px 'Josefin Sans', sans-serif; letter-spacing: .03em; }
+.palco .messagebar small { font: 700 9px 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+
 ${barreSalute('.palco')}
 
 /* "seeking..." di Showdown: velo crema con l'adesivo nero */
