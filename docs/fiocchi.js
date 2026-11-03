@@ -14,6 +14,7 @@
 //   serie.vittorieMax  match vinti di fila, contando solo quelli in cui è sceso in campo
 //   serie.pulitaMax    match vinti di fila senza lasciare set all'avversario (stessa regola)
 //   stagioniVinteInCampo  stagioni vinte dal suo team in cui è sceso in campo
+//   dreamTeamVinti        stagioni in cui è entrato nella squadra ideale (mvp.js: squadraIdeale; lo conta statistiche.js)
 //   stagioniInCampo       stagioni giocate dal suo team in cui è sceso in campo
 //
 // Ogni fiocco ha 4 livelli (bronzo, argento, oro, platino) con le sue soglie qui sotto, calibrate con `node tools/simula-soglie.cjs` (il bronzo è una stagione
@@ -80,6 +81,9 @@
         { id: 'mvp', nome: 'Season MVP', icona: '⭐', unita: 'seasons as MVP', soglie: [1, 2, 3, 4],
           descrizione: 'Voted MVP of a season by the players. It is this very Pokémon, not its species.',
           valore: p => num(p.mvpVinti), immagini: perLivelli('ribbon-mvp-{l}.png') },
+        { id: 'dreamteam', nome: 'Dream Team', icona: '🌟', unita: 'seasons in the Dream Team', soglie: [1, 2, 3, 4],
+          descrizione: 'Picked for the Dream Team of a season: the best Pokémon of each format. It is this very Pokémon, not its species.',
+          valore: p => num(p.dreamTeamVinti), immagini: perLivelli('ribbon-dreamteam-{l}.png') },
         { id: 'friendship', nome: 'Friendship', icona: '🎀', unita: 'seasons together', soglie: [2, 3, 4, 6],
           descrizione: 'Seasons played.',
           valore: p => num(p.stagioniInCampo), immagini: perLivelli('ribbon-friendship-{l}.png') }

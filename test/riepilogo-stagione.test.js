@@ -262,7 +262,8 @@ test('immagini a tema Pokémon: i PNG esistono, i premi li usano (con l\'emoji d
     const p = [{ chiave: 'ada::t::0', player: 'ada', playerNome: 'ADA', specie: 'Gengar', specieId: 'gengar', portato: 5, koFatti: 3, formato: 'OU', team: 'T' }];
     const completo = R.html(R.calcola(dati(g, { mvp, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU'], stagioni: [] } })));
     assert.match(completo, /class="rs-sticker" src="immagini\/ribbon-mvp-gold\.png"/);
-    assert.match(completo, /<span class="rs-t">BEST OF EACH FORMAT<\/span>/, 'senza immagine nell\'etichetta');
+    assert.match(completo, /<span class="rs-t">DREAM TEAM<\/span><img class="rs-sticker rs-sticker-squadra" src="immagini\/ribbon-dreamteam-gold\.png"/, 'la squadra ideale ha il fiocco Dream Team come adesivo');
+    assert.doesNotMatch(completo, /BEST OF EACH FORMAT/);
     // ogni premio ha la sua immagine; senza, resta l'emoji
     for (const [id, file] of [['ko', 'choice-band.webp'], ['muro', 'assault-vest.png'], ['pulito', 'focus-sash.png'], ['rimonta', 'focus-band.png'], ['sfortuna', 'destiny-knot.png'], ['collezione', 'poke-ball.png'], ['sorpresa', 'scope-lens.png']]) {
         assert.ok(leggi('riepilogo-stagione.js').includes(`${id}: { src: \`\${IMG}${file}\` }`), `${id} -> ${file}`);
@@ -304,4 +305,23 @@ test('senza tasto SHARE RECAP: l\'apertura ha solo i quattro numeri di stagione'
     assert.doesNotMatch(h, /SHARE RECAP|data-azione="condividi"/);
     assert.equal((h.match(/class="rs-lega-voce"/g) || []).length, 4);
     assert.match(leggi('riepilogo-stagione.css'), /\.rs-stagione \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
+});
+
+test('squadra ideale nel riepilogo: i posti divisi tra i formati della stagione, un Pokémon per specie, al massimo due per allenatore; il blocco prende il posto dei "migliori di ogni formato"', () => {
+    const g = [giocatore('ada'), giocatore('bea'), giocatore('cleo')];
+    const pk = (n, player, formato, specie, punti) => ({ chiave: `${player}::${formato}::${n}`, player, playerNome: player.toUpperCase(), colore: '#112233', team: `T-${player}`, formato, specie, specieId: specie.toLowerCase(),
+        portato: 10, koFatti: punti, svenuto: 0, setPortatoVinti: 5, ultimoVinto: 0, serie: { matchVinti: 3, matchPortato: 5 } });
+    const p = [pk(1, 'ada', 'OU', 'Gengar', 30), pk(2, 'bea', 'OU', 'Gengar', 28), pk(3, 'cleo', 'OU', 'Snorlax', 20), pk(4, 'ada', 'OU', 'Mew', 18), pk(5, 'bea', 'UU', 'Zubat', 22), pk(6, 'cleo', 'UU', 'Golbat', 21)];
+    const riep = R.calcola(dati(g, { info: { id: 's1', name: 'S1', selected_formats: ['OU', 'UU'], winner: 'bea', status: 'closed' }, risultato: { totali: { match: 12, set: 36, showdown: 4 }, players: g, pokemon: p, formati: ['OU', 'UU'], stagioni: [] } }));
+    // due formati: tre posti ciascuno; Gengar una volta sola (quello di ada, il migliore), il secondo Gengar salta
+    assert.deepEqual(riep.squadra.map(m => `${m.formato}:${m.specie}:${m.player}`), ['OU:Gengar:ADA', 'OU:Snorlax:CLEO', 'OU:Mew:ADA', 'UU:Zubat:BEA', 'UU:Golbat:CLEO']);
+    assert.equal(riep.formatiMigliori, undefined);
+    const h = R.html(riep, { gif: s => `g/${s}.gif` });
+    assert.equal((h.match(/class="rs-fcard"/g) || []).length, 5);
+    assert.match(h, /class="rs-formati-lista" style="--rs-col:3"/);
+    assert.ok(R.testo(riep).includes('🌟 Dream Team: Gengar, Snorlax, Mew, Zubat, Golbat'));
+    // senza Pokémon (Randomize, niente team) il blocco non c'è
+    const vuota = R.calcola(dati(g, {}));
+    assert.deepEqual(vuota.squadra, []);
+    assert.doesNotMatch(R.html(vuota), /DREAM TEAM/);
 });

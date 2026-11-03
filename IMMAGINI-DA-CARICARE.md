@@ -6,16 +6,7 @@ Finché un file manca il sito mostra al suo posto una medaglia disegnata con il 
 
 ## Fiocchi dei Pokémon (scheda Pokémon e medagliette sulla card del team)
 
-36 file presenti su 40 attesi, 4 mancanti.
-
-Mancano:
-
-| File | Badge | Cosa rappresenta |
-|---|---|---|
-| `ribbon-mvp-bronze.png` | Season MVP · bronze | Voted MVP of a season by the players. It is this very Pokémon, not its species. |
-| `ribbon-mvp-silver.png` | Season MVP · silver | Voted MVP of a season by the players. It is this very Pokémon, not its species. |
-| `ribbon-mvp-gold.png` | Season MVP · gold | Voted MVP of a season by the players. It is this very Pokémon, not its species. |
-| `ribbon-mvp-platinum.png` | Season MVP · platinum | Voted MVP of a season by the players. It is this very Pokémon, not its species. |
+44 file presenti su 44 attesi, 0 mancanti.
 
 ## Badge dei team (scaffale, medagliette nella testata e sulla card del team)
 
@@ -25,4 +16,4 @@ Mancano:
 
 61 file presenti su 61 attesi, 0 mancanti.
 
-Totale: 4 file mancanti.
+Totale: 0 file mancanti.

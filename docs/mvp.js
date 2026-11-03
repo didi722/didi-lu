@@ -19,6 +19,12 @@
 // x1,5, set vinti come ultimo Pokémon rimasto x6, match vinti con lui in campo x2. Con questi pesi un Pokémon che gioca spesso, fa KO e vince
 // emerge, ma uno che gioca poco e fa tutto bene non scompare. A parità: più KO, poi più presenze, poi il nome. Chi non è mai sceso in campo non c'è.
 //
+// LA SQUADRA IDEALE (squadraIdeale()): a fine stagione, senza voto, i Pokémon migliori divisi tra i formati della stagione. Sei posti in tutto, ripartiti in
+// parti uguali tra i formati (3 formati: 2 a testa; 2 formati: 3 a testa; 1 formato: sei; con più di sei formati uno ciascuno; se non tornano i conti, i posti in più
+// vanno ai primi formati dell'elenco). Dentro un formato vale la stessa classifica dell'MVP; si pesca a turno, un formato alla volta, così nessuno prende tutti i
+// posti migliori. Una specie compare una volta sola in tutta la squadra, un allenatore ha al massimo due Pokémon e serve un minimo di set giocati.
+// Dà il fiocco "Dream Team" (fiocchi.js) ai Pokémon scelti: lo calcola statistiche.js stagione per stagione (dreamTeamVinti).
+//
 // Funzione pura, niente DOM e niente Firebase: funziona nel browser (window.Mvp) e in Node (test/mvp.test.js).
 // =====================================================
 (function (radice, fabbrica) {
@@ -76,6 +82,48 @@
             || String(a.specie).localeCompare(String(b.specie)) || String(a.chiave).localeCompare(String(b.chiave)));
         voci.forEach((v, i) => { v.posizione = i + 1; });
         return max > 0 ? voci.slice(0, max) : voci;
+    }
+
+    const POSTI_SQUADRA = 6;          // i Pokémon della squadra ideale, divisi tra i formati
+    const MIN_SET_SQUADRA = 4;        // set giocati per poter entrare
+    const MAX_PER_ALLENATORE = 2;     // Pokémon dello stesso allenatore nella squadra
+
+    /** I posti di ogni formato: [{ nome, posti }]. Il resto della divisione va ai primi formati dell'elenco; mai meno di un posto per formato. */
+    function postiPerFormato(formati, totale = POSTI_SQUADRA) {
+        const nomi = (formati || []).map(f => String(f)).filter(Boolean);
+        if (!nomi.length) return [];
+        const base = Math.floor(totale / nomi.length), resto = totale % nomi.length;
+        return nomi.map((nome, i) => ({ nome, posti: Math.max(1, base + (i < resto ? 1 : 0)) }));
+    }
+
+    /**
+     * La squadra ideale di una stagione.
+     * @param {Array} pokemon  Statistiche.calcola(dati, { stagione }).pokemon di QUELLA stagione
+     * @param {string[]} formati  i formati della stagione (nell'ordine in cui si vogliono mostrare)
+     * @returns {{ posti: Array<{ nome, posti }>, membri: Array }}  membri: voci di classifica() con `formato` e `posto` (1 = il migliore del formato), per formato nell'ordine dato
+     */
+    function squadraIdeale(pokemon, formati, { totale = POSTI_SQUADRA, minSet = MIN_SET_SQUADRA, maxPerAllenatore = MAX_PER_ALLENATORE } = {}) {
+        const posti = postiPerFormato(formati, totale);
+        const tutti = classifica(pokemon).filter(v => v.presenze >= minSet);
+        const liste = posti.map(f => ({ ...f, candidati: tutti.filter(v => v.formato === f.nome), presi: [] }));
+        const specieUsate = new Set(), perAllenatore = {};
+        let preso = true;
+        while (preso) {
+            preso = false;
+            for (const f of liste) {
+                if (f.presi.length >= f.posti) continue;
+                const v = f.candidati.find(c => !f.presi.includes(c) && !specieUsate.has(c.specieId) && (perAllenatore[c.player] || 0) < maxPerAllenatore);
+                if (!v) { f.posti = f.presi.length; continue; }      // nessuno in grado di entrare: questo formato resta con meno Pokémon
+                f.presi.push(v);
+                specieUsate.add(v.specieId);
+                perAllenatore[v.player] = (perAllenatore[v.player] || 0) + 1;
+                preso = true;
+            }
+        }
+        return {
+            posti: liste.map(f => ({ nome: f.nome, posti: f.posti })),
+            membri: liste.flatMap(f => f.presi.map((v, i) => ({ ...v, formato: f.nome, posto: i + 1 })))
+        };
     }
 
     // Le statistiche che la scheda del voto mette in evidenza, nell'ordine: id, etichetta, valore da confrontare (più alto = meglio), come si scrive
@@ -240,5 +288,5 @@
         return (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : [])).filter(x => x && x.chiave);
     }
 
-    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, sogliaVoto, chiusuraDi, finestraVoto, showdownAllApertura, STAT_VOTO, statVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
+    return { PESI, TOP, VOTI, SHOWDOWN_FINALI, VOTA_I_PROPRI, ORE_DOPO_CHIUSURA, stagioneConMvp, punteggio, classifica, POSTI_SQUADRA, MIN_SET_SQUADRA, MAX_PER_ALLENATORE, postiPerFormato, squadraIdeale, sogliaVoto, chiusuraDi, finestraVoto, showdownAllApertura, STAT_VOTO, statVoto, candidato, controllaScelte, spoglio, daContare, vincitoriDi };
 });
