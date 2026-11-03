@@ -4657,3 +4657,7 @@ max-width: 100%;
 
 
 }
+
+/* il tasto SHARE nella testata dello showdown: un chip che si preme */
+button.sd-condividi { cursor: pointer; font-family: inherit; }
+button.sd-condividi:hover, button.sd-condividi:focus-visible { background: var(--nb-giallo, #ffbd44); outline: none; }

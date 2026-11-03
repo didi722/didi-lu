@@ -981,6 +981,17 @@
         applica();
     }
 
+    /** Il tasto SHARE in alto: la scheda dell'allenatore come immagine da mandare in chat (scheda-condivisione.js). Per tutti, non solo per il proprietario. */
+    function montaTastoCondividi(d) {
+        const nav = document.getElementById('pp-nav');
+        if (!nav || document.getElementById('pp-condividi-btn') || !window.SchedaCondivisione) return;
+        nav.append(h('button', { id: 'pp-condividi-btn', class: 'pp-modifica-btn pp-condividi-btn', type: 'button', onclick: () => {
+            const dati = stato.dati;
+            const info = dati.info || {};
+            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, riepilogo: stato.riepilogo }));
+        } }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '\u2197' }), ' SHARE'));
+    }
+
     function monta(d) {
         stato.dati = d;
         stato.salvata = P.normalizza(d.info && d.info.pagina);
@@ -998,6 +1009,7 @@
 
         riempiCornice(d);
         applica();
+        montaTastoCondividi(d);
         const carta = document.getElementById('pp-carta');
         carta.classList.add('pp-entra');
         // l'entrata dura meno di un secondo e mezzo: dopo, un blocco rimesso in un'altra riga non deve rifarla (ricomparirebbe da vuoto)

@@ -39,6 +39,7 @@
 <script src="dati-gen.js"></script>
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
+    <script src="scheda-condivisione.js"></script>
 <script src="controllo-team.js"></script>
 <script src="formato-random.js"></script>
 <link rel="stylesheet" href="tooltip.css">
@@ -938,9 +939,13 @@ async function renderizza(lista) {
             <button type="button" class="azione-note" data-note-chip="${team.id}" ${numeroNote ? '' : 'hidden'}
                     onclick="event.stopPropagation(); apriDettagli('${team.id}', { note: true })"
                     title="Notes on this team: what to fix or try">📝 <b>${numeroNote}</b></button>`;
+        const htmlCondividi = `
+                <button type="button" class="card-azione azione-condividi" onclick="event.stopPropagation(); condividiTeam('${team.id}')"
+                        title="Share this team as an image" aria-label="Share this team">📤</button>`;
         const htmlAzioni = `
             <div class="card-actions">
                 ${htmlProvaCpu}
+                ${htmlCondividi}
                 ${!isBloccato ? `
                 <button type="button" class="card-azione azione-modifica" onclick="event.stopPropagation(); caricaTeamPerModifica('${team.id}')"
                         title="Edit team">✏️</button>
@@ -1134,6 +1139,19 @@ function inizializzaRotazioneTooltipMosse() {
 // Prova del team contro la CPU: la battaglia sceglie da sola un team CPU dello stesso formato (battle-ui.js)
 function provaControCpu(id) {
     window.location.href = 'battle.html?cpu=1&team=' + encodeURIComponent(id);
+}
+
+/** Il team come immagine da mandare in chat (scheda-condivisione.js): nome, formato, i Pokémon con strumento e mosse, il record */
+async function condividiTeam(id) {
+    const team = tuttiITeam.find(t => t.id === id);
+    if (!team || !window.SchedaCondivisione) return;
+    let colore = '', avatar = '';
+    try {
+        const info = (await db.ref(`players/${playerID}/info`).once('value')).val() || {};
+        colore = info.color || ''; avatar = info.avatar || '';
+    } catch (e) { /* senza: colori di riserva */ }
+    const v = Number(team.vittorie) || 0, p = Number(team.sconfitte) || 0;
+    SchedaCondivisione.condividi(window, SchedaCondivisione.team(team, { giocatore: playerID, colore, avatar, record: v + p ? { vinti: v, persi: p } : null }));
 }
 
 async function apriDettagli(id, opzioni = {}) {
