@@ -8,7 +8,7 @@
 // FiltroShowdown.voce(id, sd, vince)       → la scheda di ricerca di un showdown (dai dati di Firebase: info + matches)
 // FiltroShowdown.opzioni(voci)             → quello che si può scegliere: { giocatori, formati, mesi }
 // FiltroShowdown.filtra(voci, criteri)     → le schede che rispettano i criteri (stesso ordine)
-// FiltroShowdown.html(opzioni, criteri, conteggio) → la barra (stringa HTML); i comportamenti li collega la pagina
+// FiltroShowdown.html(opzioni, criteri, conteggio, stato) → il filtro (stringa HTML): a riposo è solo un'icona, toccandola si apre; i comportamenti li collega la pagina
 //
 // Funzioni pure: niente DOM, niente Firebase. Si provano in Node (test/filtro-showdown.test.js); nel browser è window.FiltroShowdown.
 // =====================================================
@@ -97,8 +97,12 @@
         });
     }
 
+    // l'icona dei filtri (un imbuto)
+    const ICONA = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 2h13L9.6 8.3V14l-3.2-1.7V8.3z"/></svg>';
+
     /**
-     * La barra del filtro: ricerca, tasto dei filtri (con quanti sono attivi), il pannello con le tendine, il conteggio.
+     * Il filtro: a riposo è solo l'icona dei filtri (con, se ce ne sono di attivi, quanti sono, il conteggio e il tasto Clear); toccandola si apre la ricerca
+     * con le tendine.
      * @param {{ giocatori: Array, formati: string[], mesi: Array }} opz   da opzioni()
      * @param {object} criteri   i criteri attuali
      * @param {{ mostrati: number, totale: number }} conteggio
@@ -107,21 +111,25 @@
     function html(opz, criteri, conteggio, stato = {}) {
         const c = { ...CRITERI_VUOTI, ...(criteri || {}) };
         const attivi = quantiAttivi(c);
+        const aperto = !!stato.aperto;
         const tendina = (campo, etichetta, voci, scelto) => `<label class="mf-campo"><span>${etichetta}</span><select data-mf="${campo}" aria-label="${etichetta}"><option value="">Any</option>${voci.map(v => `<option value="${esc(v.valore)}"${v.valore === scelto ? ' selected' : ''}>${esc(v.nome)}</option>`).join('')}</select></label>`;
         const giocatori = opz.giocatori.map(g => ({ valore: g.chiave, nome: g.nome }));
         const tasto = (valore, testo) => `<button type="button" class="mf-esito-tasto" data-mf-esito="${valore}" aria-pressed="${c.esito === valore}">${testo}</button>`;
-        return `<div class="mf-barra">
+        const conta = conteggio.mostrati === conteggio.totale ? `${conteggio.totale} ${conteggio.totale === 1 ? 'showdown' : 'showdowns'}` : `${conteggio.mostrati} of ${conteggio.totale} showdowns`;
+        return `<div class="mf-testa">
+            <button type="button" class="mf-apri" data-mf-apri aria-expanded="${aperto}" aria-controls="mf-corpo" aria-label="Filter showdowns" title="Filter showdowns">${ICONA}<i class="mf-n"${attivi ? '' : ' hidden'}>${attivi}</i></button>
+            <span class="mf-riga"${attivi || aperto ? '' : ' hidden'}><span class="mf-conta" aria-live="polite">${conta}</span><button type="button" class="mf-pulisci" data-mf-pulisci${attivi ? '' : ' hidden'}>Clear</button></span>
+        </div>
+        <div class="mf-corpo" id="mf-corpo"${aperto ? '' : ' hidden'}>
             <input type="search" class="mf-testo" data-mf="testo" value="${esc(c.testo)}" placeholder="Search player, team, format, date…" aria-label="Search showdowns" autocomplete="off" enterkeyhint="search">
-            <button type="button" class="mf-apri" data-mf-apri aria-expanded="${!!stato.aperto}" aria-controls="mf-pannello">Filters${attivi ? ` <i class="mf-n">${attivi}</i>` : ''}</button>
+            <div class="mf-pannello">
+                ${tendina('giocatore', 'Player', giocatori, c.giocatore)}
+                ${tendina('contro', 'Versus', giocatori, c.contro)}
+                ${tendina('formato', 'Format', opz.formati.map(f => ({ valore: f, nome: f })), c.formato)}
+                ${tendina('mese', 'Month', opz.mesi.map(m => ({ valore: m.valore, nome: m.nome })), c.mese)}
+                <div class="mf-esito" role="group" aria-label="Result for the chosen player"${c.giocatore ? '' : ' hidden'}><span>Result</span>${tasto('', 'Any')}${tasto('won', 'Won')}${tasto('lost', 'Lost')}</div>
+            </div>
         </div>
-        <div class="mf-pannello" id="mf-pannello"${stato.aperto ? '' : ' hidden'}>
-            ${tendina('giocatore', 'Player', giocatori, c.giocatore)}
-            ${tendina('contro', 'Versus', giocatori, c.contro)}
-            ${tendina('formato', 'Format', opz.formati.map(f => ({ valore: f, nome: f })), c.formato)}
-            ${tendina('mese', 'Month', opz.mesi.map(m => ({ valore: m.valore, nome: m.nome })), c.mese)}
-            <div class="mf-esito" role="group" aria-label="Result for the chosen player"${c.giocatore ? '' : ' hidden'}><span>Result</span>${tasto('', 'Any')}${tasto('won', 'Won')}${tasto('lost', 'Lost')}</div>
-        </div>
-        <div class="mf-riga"><span class="mf-conta" aria-live="polite">${conteggio.mostrati === conteggio.totale ? `${conteggio.totale} ${conteggio.totale === 1 ? 'showdown' : 'showdowns'}` : `${conteggio.mostrati} of ${conteggio.totale} showdowns`}</span><button type="button" class="mf-pulisci" data-mf-pulisci${attivi ? '' : ' hidden'}>Clear</button></div>
         <p class="mf-vuoto" role="status"${conteggio.mostrati ? ' hidden' : ''}>No showdown matches these filters.</p>`;
     }
 

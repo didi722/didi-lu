@@ -1111,14 +1111,6 @@ body {
 /* ---------- STATS DEL FORMATO (stats-formato.js) ---------- */
 .fmt-stats { min-width: 0; }
 .fs { display: flex; flex-direction: column; gap: 18px; min-width: 0; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); color: var(--nb-ink, #000); }
-.fs-campo { display: flex; align-items: center; gap: 10px; }
-.fs-campo > span { font: 900 .72rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-transform: uppercase; }
-.fs-stagione {
-    flex: 1 1 auto; min-width: 0; box-sizing: border-box; padding: 6px 8px;
-    background: var(--nb-carta, #fff); color: #000;
-    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
-    font: 800 .82rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; cursor: pointer;
-}
 .fs-riepilogo { margin: 0; font: 700 .78rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
 .fs-riepilogo b { font-family: var(--nb-font-titoli, 'Josefin Sans', sans-serif); font-weight: 900; }
 .fs-sezione { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

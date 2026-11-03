@@ -1,11 +1,12 @@
 // =====================================================
 // STATISTICHE DI UN FORMATO — Poké-Tournament
 //
-// StatsFormato.calcola(dati, { formato, stagione }) mette insieme, per UN formato (la scheda "Stats" della finestra della pagina Formats),
+// StatsFormato.calcola(dati, { formato }) mette insieme, per UN formato (la scheda "Stats" della finestra della pagina Formats),
 // i numeri che il sito calcola già altrove:
 //   - uso, strumenti, mosse, abilità e compagni di squadra: da UsoGlobale (uso-globale.js), cioè dai team ISCRITTI alle stagioni che hanno
 //     giocato almeno un set ufficiale (un team mai sceso in campo non si vede: l'uso non deve rivelare team ancora segreti);
-//   - set vinti, KO per set, lead (i due Pokémon che aprono il set): da Statistiche (statistiche.js), con lo stesso formato e la stessa stagione.
+//   - set vinti, KO per set, lead (i due Pokémon che aprono il set): da Statistiche (statistiche.js), con lo stesso formato.
+// Sono sempre i numeri di tutte le stagioni (come nel resto del sito, la beta non conta).
 // È una funzione pura: niente DOM, niente Firebase. StatsFormato.html(r, opzioni) ne fa il markup (una stringa), che la pagina mette nella finestra.
 // Si prova in Node (test/stats-formato.test.js).
 //
@@ -28,26 +29,10 @@
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const giocati = b => (b ? num(b.vinti) + num(b.persi) : 0);
 
-    /** Le stagioni (non cup) in cui il formato ha almeno un match salvato: [{ id, nome, match }], come le ordina Statistiche (la più recente prima, la beta in fondo). */
-    function stagioniDelFormato(dati, formato, tutteLeStagioni) {
-        const conta = {};
-        for (const [id, s] of Object.entries(dati?.seasons || {})) {
-            if (idDi(s?.info?.tipo) === 'cup') continue;
-            for (const sd of valori(s?.showdowns)) {
-                for (const m of valori(sd?.matches)) {
-                    if (!m || m.p1score == null || m.p2score == null) continue;
-                    if (String(m.categoria || sd?.info?.categoria || '') === formato) conta[id] = (conta[id] || 0) + 1;
-                }
-            }
-        }
-        return tutteLeStagioni.filter(s => conta[s.id]).map(s => ({ id: s.id, nome: s.nome, match: conta[s.id], beta: !!s.beta }));
-    }
-
     function calcola(dati, filtro = {}) {
         const formato = String(filtro.formato || '');
-        const stagione = filtro.stagione && filtro.stagione !== 'all' ? String(filtro.stagione) : 'all';
-        const r = Statistiche.calcola(dati, { stagione, formato, senzaSquadre: true });
-        const uso = UsoGlobale.calcola(dati, { stagione, formato }, r.pokemon);
+        const r = Statistiche.calcola(dati, { stagione: 'all', formato, senzaSquadre: true });
+        const uso = UsoGlobale.calcola(dati, { stagione: 'all', formato }, r.pokemon);
 
         const pokemon = uso.specie.map(s => ({
             specieId: s.specieId, nome: s.nome,
@@ -66,8 +51,7 @@
             .map(l => ({ specie: l.specie, specieId: l.specieId, set: l.set, vinti: l.vinti, persi: l.persi, percVinti: l.percVinti }));
 
         return {
-            filtro: { formato, stagione },
-            stagioni: stagioniDelFormato(dati, formato, r.stagioni),
+            filtro: { formato },
             totali: { team: uso.totali.team, giocatori: uso.totali.giocatori, match: r.totali.match, set: r.totali.set, setConDati: r.totali.setConDati },
             pokemon, lead,
             vuoto: r.totali.match === 0 && uso.totali.team === 0
@@ -152,23 +136,11 @@
     function html(r, opz = {}) {
         const sprite = opz.sprite || (() => '');
         const ordine = ['uso', 'vinti', 'ko'].includes(opz.ordine) ? opz.ordine : 'uso';
-        const scelta = r.filtro.stagione;
-        const select = `<label class="fs-campo"><span>Season</span><select class="fs-stagione" data-fs-stagione aria-label="Season">
-            <option value="all"${scelta === 'all' ? ' selected' : ''}>All seasons</option>
-            ${r.stagioni.map(s => `<option value="${esc(s.id)}"${scelta === s.id ? ' selected' : ''}>${esc(s.nome)}${s.beta ? ' (beta)' : ''}</option>`).join('')}
-        </select></label>`;
-        if (r.vuoto) {
-            // "tutte le stagioni" non include la beta: se il formato è stato giocato solo lì, lo si dice
-            const testo = scelta !== 'all' ? 'No matches played in this format in this season.'
-                : r.stagioni.length ? 'No matches played outside the beta yet: pick the beta season above to see its stats.'
-                : 'No matches played in this format yet.';
-            return `<div class="fs">${select}<p class="fs-niente">${testo}</p></div>`;
-        }
+        if (r.vuoto) return '<div class="fs"><p class="fs-niente">No matches played in this format yet.</p></div>';
         const t = r.totali;
         const lista = ordina(r.pokemon, ordine);
         const tasto = (id, testo) => `<button type="button" class="fs-ordine-tasto" data-fs-ordine="${id}" aria-pressed="${ordine === id}">${testo}</button>`;
         return `<div class="fs">
-            ${select}
             <p class="fs-riepilogo"><b>${t.team}</b> ${t.team === 1 ? 'team' : 'teams'} · <b>${t.giocatori}</b> ${t.giocatori === 1 ? 'player' : 'players'} · <b>${t.match}</b> ${t.match === 1 ? 'match' : 'matches'} · <b>${t.set}</b> ${t.set === 1 ? 'set' : 'sets'}</p>
             <section class="fs-sezione" aria-label="Pokémon">
                 <div class="fs-intesta"><h3>Pokémon</h3><div class="fs-ordine" role="group" aria-label="Sort by">${tasto('uso', 'Usage')}${tasto('vinti', 'Win %')}${tasto('ko', 'KO/set')}</div></div>
@@ -185,5 +157,5 @@
         </div>`;
     }
 
-    return { calcola, ordina, html, stagioniDelFormato, MIN_SET_PERC, MIN_SET_LEAD, VISIBILI };
+    return { calcola, ordina, html, MIN_SET_PERC, MIN_SET_LEAD, VISIBILI };
 });

@@ -89,43 +89,60 @@ test('quantiAttivi: testo, giocatore, contro, formato, mese; l\'esito conta solo
     assert.equal(F.quantiAttivi(null), 0);
 });
 
-test('html: la barra ha ricerca, tendine con le scelte, tasti vinti/persi solo con un giocatore, conteggio e avviso se non c\'è niente; niente HTML dai nomi', () => {
+test('html: a riposo è solo l\'icona dei filtri; aperto ha ricerca e tendine, tasti vinti/persi solo con un giocatore, conteggio e avviso; niente HTML dai nomi', () => {
     const cattivo = [...voci, F.voce('z', sd('<b>X</b>', 'Lu', 'A"B', '2026-06-01'), 1)];
     const opz = F.opzioni(cattivo);
+    // a riposo, senza filtri: icona e basta
+    const riposo = F.html(opz, {}, { mostrati: 6, totale: 6 });
+    assert.match(riposo, /<button type="button" class="mf-apri" data-mf-apri aria-expanded="false" aria-controls="mf-corpo" aria-label="Filter showdowns"[^>]*><svg/);
+    assert.match(riposo, /<i class="mf-n" hidden>0<\/i>/);
+    assert.match(riposo, /<span class="mf-riga" hidden>/, 'senza filtri la riga del conteggio non si vede');
+    assert.match(riposo, /<div class="mf-corpo" id="mf-corpo" hidden>/, 'ricerca e tendine nascoste');
+    // chiuso ma con filtri attivi: numero sull'icona, conteggio e Clear si vedono
+    const attivo = F.html(opz, { giocatore: 'didi', esito: 'won' }, { mostrati: 1, totale: 6 });
+    assert.match(attivo, /<i class="mf-n">2<\/i>/);
+    assert.match(attivo, /<span class="mf-riga">/);
+    assert.match(attivo, /1 of 6 showdowns/);
+    assert.doesNotMatch(attivo, /data-mf-pulisci hidden/);
+    assert.match(attivo, /<div class="mf-corpo" id="mf-corpo" hidden>/);
+    // aperto
     const h = F.html(opz, { giocatore: 'didi', esito: 'won' }, { mostrati: 1, totale: 6 }, { aperto: true });
+    assert.match(h, /aria-expanded="true"/);
+    assert.match(h, /<div class="mf-corpo" id="mf-corpo">/);
     assert.match(h, /<input type="search" class="mf-testo" data-mf="testo" value=""/);
     assert.match(h, /<select data-mf="giocatore" aria-label="Player"><option value="">Any<\/option>.*<option value="didi" selected>Didi<\/option>/s);
     assert.match(h, /&lt;b&gt;X&lt;\/b&gt;/);
     assert.doesNotMatch(h, /<b>X<\/b>/);
     assert.match(h, /value="A&quot;B"/);
     assert.match(h, /<option value="2026-06">June 2026<\/option>/);
-    assert.match(h, /<button type="button" class="mf-apri" data-mf-apri aria-expanded="true"[^>]*>Filters <i class="mf-n">2<\/i>/);
     assert.match(h, /data-mf-esito="won" aria-pressed="true"/);
     assert.doesNotMatch(h, /class="mf-esito"[^>]*hidden/);
-    assert.match(h, /1 of 6 showdowns/);
     assert.match(h, /<p class="mf-vuoto" role="status" hidden>/);
-    const senza = F.html(opz, {}, { mostrati: 0, totale: 6 });
+    const senza = F.html(opz, {}, { mostrati: 0, totale: 6 }, { aperto: true });
     assert.match(senza, /class="mf-esito"[^>]*hidden/, 'senza giocatore i tasti Won/Lost non si vedono');
-    assert.match(senza, /<div class="mf-pannello" id="mf-pannello" hidden>/);
+    assert.match(senza, /<span class="mf-riga">/, 'aperto la riga si vede anche senza filtri');
     assert.match(senza, /data-mf-pulisci hidden/);
     assert.match(senza, /<p class="mf-vuoto" role="status">No showdown matches these filters\./);
-    assert.match(F.html(opz, { testo: 'a"b' }, { mostrati: 6, totale: 6 }), /value="a&quot;b"/);
-    assert.match(F.html(opz, {}, { mostrati: 6, totale: 6 }), /6 showdowns/);
-    assert.match(F.html(opz, {}, { mostrati: 1, totale: 1 }), /1 showdown</);
+    assert.match(F.html(opz, { testo: 'a"b' }, { mostrati: 6, totale: 6 }, { aperto: true }), /value="a&quot;b"/);
+    assert.match(F.html(opz, {}, { mostrati: 6, totale: 6 }, { aperto: true }), /6 showdowns/);
+    assert.match(F.html(opz, {}, { mostrati: 1, totale: 1 }, { aperto: true }), /1 showdown</);
 });
 
-test('cablaggio: matches.html ha la barra, indicizza ogni showdown, nasconde le card e passa all\'app solo le locandine rimaste', () => {
+test('cablaggio: matches.html ha il filtro (icona a riposo), indicizza ogni showdown, nasconde le card; nell\'app non c\'è', () => {
     const m = leggi('docs', 'matches.html');
     assert.match(m, /<script src="filtro-showdown\.js"><\/script>/);
     assert.match(m, /<div id="matchFiltro" class="match-filtro" hidden><\/div>\s*<div id="matchList"/);
     assert.match(m, /FiltroShowdown\.voce\(sdId, sd, chiVince\)/);
     assert.match(m, /montaFiltroShowdown\(\{ voci: vociFiltro, schede: schedeFiltro, perAppSd/);
     assert.match(m, /card\.hidden = !ok\.has\(id\)/);
-    assert.match(m, /lista: ctx\.perAppSd\.filter\(s => ok\.has\(s\.id\)\), riepilogo: ctx\.riepilogo, reset: true/);
-    assert.match(leggi('docs', 'app-matches.js'), /dati && dati\.reset \? 0 :/);
+    assert.match(m, /function aggiornaParti\(barra\)/);
+    assert.match(m, /classList\.contains\('app-shell'\)\) \{ barra\.hidden = true; barra\.innerHTML = ''; return; \}/, 'nell\'app non si monta');
+    assert.equal((m.match(/AppSito\.pubblica\('showdowns'/g) || []).length, 1, 'l\'app riceve sempre l\'elenco intero: non c\'è filtro');
+    assert.doesNotMatch(leggi('docs', 'app-matches.js'), /dati\.reset/);
     const css = leggi('docs', 'style-matches.css');
-    for (const c of ['.match-filtro', '.mf-testo', '.mf-pannello', '.mf-esito-tasto', '.showdown-summary-card[hidden]']) assert.ok(css.includes(c), c);
-    assert.ok(leggi('docs', 'app-gioco-pagine.css').includes('.mf-pannello'));
-    // con il riepilogo di fine stagione in vista (il calendario nascosto) la barra non deve restare da sola
+    for (const c of ['.match-filtro', '.mf-apri', '.mf-n', '.mf-corpo', '.mf-pannello', '.mf-esito-tasto', '.showdown-summary-card[hidden]']) assert.ok(css.includes(c), c);
+    assert.match(leggi('docs', 'app-gioco-pagine.css'), /body\.pg-matches \.match-filtro \{ display: none !important; \}/);
+    assert.doesNotMatch(leggi('docs', 'app-gioco-pagine.css'), /\.mf-pannello/);
+    // con il riepilogo di fine stagione in vista (il calendario nascosto) il filtro non deve restare da solo
     assert.match(leggi('docs', 'riepilogo-stagione.css'), /#matchFiltro/);
 });

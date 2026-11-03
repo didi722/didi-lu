@@ -85,9 +85,10 @@ test('statistiche: le lead sono i due titolari del set, senza ordine, con i set 
     assert.deepEqual([solo.set, solo.vinti], [1, 1]);
 });
 
-test('calcola: formato e stagione si rispettano; totali, uso, battaglia e le stagioni in cui il formato è stato giocato', () => {
+test('calcola: il formato si rispetta, sempre su tutte le stagioni; totali, uso e battaglia', () => {
     const r = SF.calcola(dati(), { formato: 'VGC' });
-    assert.deepEqual(r.stagioni.map(s => [s.id, s.match]), [['s2', 1], ['s1', 1]], 'la più recente prima; OU non conta qui');
+    assert.deepEqual(r.filtro, { formato: 'VGC' });
+    assert.equal(r.stagioni, undefined, 'niente selettore di stagione');
     assert.deepEqual([r.totali.team, r.totali.giocatori, r.totali.match, r.totali.set, r.totali.setConDati], [4, 2, 2, 5, 5]);
     assert.equal(r.vuoto, false);
     const g = r.pokemon.find(p => p.specieId === 'garchomp');
@@ -99,9 +100,7 @@ test('calcola: formato e stagione si rispettano; totali, uso, battaglia e le sta
     assert.equal(g.mosse.find(x => x.nome === 'Dragon Claw').perc, 50, 'solo uno dei due set la porta');
     assert.ok(g.compagni.some(c => c.nome === 'Incineroar'));
     assert.equal(r.pokemon.find(p => p.specieId === 'gholdengo'), undefined, 'un altro formato non si vede');
-    const unaStagione = SF.calcola(dati(), { formato: 'VGC', stagione: 's2' });
-    assert.deepEqual([unaStagione.totali.team, unaStagione.totali.match, unaStagione.totali.set], [2, 1, 2]);
-    assert.equal(unaStagione.filtro.stagione, 's2');
+    assert.deepEqual(SF.calcola(dati(), { formato: 'VGC', stagione: 's2' }).totali, r.totali, 'una stagione chiesta non cambia niente');
     assert.equal(SF.calcola(dati(), { formato: 'Mai giocato' }).vuoto, true);
 });
 
@@ -122,33 +121,28 @@ test('ordina: usa il criterio scelto e mette in fondo chi ha troppo pochi set; l
     assert.ok(SF.calcola(d, { formato: 'VGC' }).lead.every(l => l.set >= SF.MIN_SET_LEAD));
 });
 
-test('html: la tendina delle stagioni, il riepilogo, un Pokémon con i dettagli, le lead e la nota; niente HTML dai nomi', () => {
+test('html: il riepilogo, un Pokémon con i dettagli, le lead e la nota; niente selettore di stagione; niente HTML dai nomi', () => {
     const d = dati();
-    d.seasons.s1.info.name = '<b>Evil</b>';
+    d.seasons.s1.showdowns.sd1.matches.match1.team1 = 'Alfa';
     const h = SF.html(SF.calcola(d, { formato: 'VGC' }), { sprite: n => `<img alt="${n}">` });
-    assert.match(h, /<option value="all" selected>All seasons<\/option>/);
-    assert.match(h, /&lt;b&gt;Evil&lt;\/b&gt;/);
-    assert.doesNotMatch(h, /<b>Evil<\/b>/);
+    assert.doesNotMatch(h, /<select|data-fs-stagione|Season/);
+    assert.doesNotMatch(SF.html(SF.calcola(d, { formato: 'VGC' }), {}), /fs-campo/);
     assert.match(h, /<b>4<\/b> teams · <b>2<\/b> players · <b>2<\/b> matches · <b>5<\/b> sets/);
     assert.match(h, /<span class="fs-nome">Garchomp<\/span>/);
     assert.match(h, /<h4>Items<\/h4>.*Rocky Helmet/s);
     assert.match(h, /Garchomp \+ Incineroar/);
     assert.match(h, /data-fs-ordine="vinti" aria-pressed="false"/);
     assert.match(h, /<img alt="Garchomp">/);
-    const scelta = SF.html(SF.calcola(dati(), { formato: 'VGC', stagione: 's2' }), {});
-    assert.match(scelta, /<option value="s2" selected>Season Two<\/option>/);
     assert.match(SF.html(SF.calcola(dati(), { formato: 'Nessuno' })), /No matches played in this format yet\./);
-    assert.match(SF.html(SF.calcola(dati(), { formato: 'Nessuno', stagione: 's1' })), /in this season/);
+    // la beta non conta (come nel resto del sito): un formato giocato solo lì risulta vuoto
     const soloBeta = dati();
     soloBeta.seasons.sbeta = { info: { name: 'Beta', status: 'closed' }, showdowns: { sd1: { info: { categoria: 'Monotype' }, matches: { match1: match('didi', 'X', 'lu', 'Y', 2, 0, '2026-01-01', null, 'Monotype') } } } };
-    assert.match(SF.html(SF.calcola(soloBeta, { formato: 'Monotype' })), /outside the beta yet: pick the beta season/);
-    assert.match(SF.html(SF.calcola(soloBeta, { formato: 'Monotype' })), /<option value="sbeta">Beta \(beta\)<\/option>/);
-    assert.equal(SF.calcola(soloBeta, { formato: 'Monotype', stagione: 'sbeta' }).vuoto, false, 'scegliendo la beta si vedono');
+    assert.equal(SF.calcola(soloBeta, { formato: 'Monotype' }).vuoto, true);
     assert.match(SF.html(SF.calcola(dati(), { formato: 'VGC' }), { ordine: 'ko' }), /data-fs-ordine="ko" aria-pressed="true"/);
 });
 
 test('html: oltre dieci Pokémon il resto è nascosto dietro "Show all"; senza strumenti (scheda chiusa) lo dice', () => {
-    const molti = { filtro: { formato: 'X', stagione: 'all' }, stagioni: [], totali: { team: 3, giocatori: 2, match: 3, set: 6, setConDati: 6 }, lead: [], vuoto: false,
+    const molti = { filtro: { formato: 'X' }, totali: { team: 3, giocatori: 2, match: 3, set: 6, setConDati: 6 }, lead: [], vuoto: false,
         pokemon: Array.from({ length: 13 }, (_, i) => ({ specieId: `p${i}`, nome: `P${i}`, team: 3 - (i % 3), perc: 50, giocatori: 1, istanze: 1, setVisibili: i === 12 ? 0 : 1, schedaChiusa: i === 12, strumenti: [], mosse: [], abilita: [], compagni: [], battaglia: null })) };
     const h = SF.html(molti, {});
     assert.equal((h.match(/data-fs-extra/g) || []).length, 3);
@@ -164,7 +158,9 @@ test('cablaggio: la pagina Formats ha il doppio tasto Ranking | Stats, carica gl
     assert.match(f, /caricaScriptStatsFormato/);
     for (const s of ['statistiche.js', 'uso-globale.js', 'sprite-pkm.js', 'stats-formato.js']) assert.ok(f.includes(`'${s}'`), s);
     assert.match(f, /db\.ref\('seasons'\)\.once\('value'\)/);
+    assert.doesNotMatch(f, /data-fs-stagione|statsFormato\.stagione/, 'niente selettore di stagione');
     assert.doesNotMatch(f, /<script src="stats-formato\.js"/, 'non si carica con la pagina');
     const css = leggi('docs', 'style-formats.css');
-    for (const c of ['.fmt-vista', '.fs-voce', '.fs-lead-riga', '.fs-stagione']) assert.ok(css.includes(c), c);
+    for (const c of ['.fmt-vista', '.fs-voce', '.fs-lead-riga']) assert.ok(css.includes(c), c);
+    assert.ok(!css.includes('.fs-stagione') && !css.includes('.fs-campo'));
 });

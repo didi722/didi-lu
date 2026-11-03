@@ -2344,12 +2344,9 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
     if (tastoChiudi) tastoChiudi.focus({ preventScroll: true });
 
     // Ranking | Stats: le statistiche del formato si preparano solo al primo tocco su "Stats"
-    statsFormato = { formato: formatName, players, stagione: 'all', ordine: 'uso', tutti: false, risultato: null };
+    statsFormato = { formato: formatName, players, ordine: 'uso', tutti: false, risultato: null };
     modalOverlay.querySelectorAll('.fmt-vista-tasto').forEach(t => t.addEventListener('click', () => cambiaVistaFormato(t.dataset.vista)));
     const contenitoreStats = document.getElementById('format-stats');
-    contenitoreStats.addEventListener('change', e => {
-        if (e.target.matches('[data-fs-stagione]')) { statsFormato.stagione = e.target.value; statsFormato.tutti = false; disegnaStatsFormato(); }
-    });
     contenitoreStats.addEventListener('click', e => {
         const ordine = e.target.closest('[data-fs-ordine]');
         if (ordine) { statsFormato.ordine = ordine.dataset.fsOrdine; disegnaStatsFormato(); return; }
@@ -2361,7 +2358,7 @@ async function apriModaleFormato(formatName, playersEncoded, formatDataEncoded =
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
-// STATS DEL FORMATO (finestra del formato, tasto "Stats"): uso, % di set vinti, KO per set, lead, strumenti e mosse. I conti sono in
+// STATS DEL FORMATO (finestra del formato, tasto "Stats"): uso, % di set vinti, KO per set, lead, strumenti e mosse, di tutte le stagioni. I conti sono in
 // stats-formato.js (con statistiche.js e uso-globale.js): si caricano, insieme alle stagioni, solo al primo tocco su "Stats".
 // ---------------------------------------------------------------------------------------------------------------------------
 let statsFormato = null;            // { formato, players, stagione, ordine, tutti, risultato } della finestra aperta
@@ -2426,7 +2423,7 @@ function disegnaStatsFormato() {
     const stato = statsFormato;
     const stats = document.getElementById('format-stats');
     if (!stato || !stats || !datiStagioniFormato) return;
-    const r = StatsFormato.calcola({ seasons: datiStagioniFormato, players: stato.players }, { formato: stato.formato, stagione: stato.stagione });
+    const r = StatsFormato.calcola({ seasons: datiStagioniFormato, players: stato.players }, { formato: stato.formato });
     const prima = stats.scrollTop;
     stats.innerHTML = StatsFormato.html(r, { ordine: stato.ordine, tutti: stato.tutti, sprite: spriteStatsFormato });
     stats.scrollTop = prima;
