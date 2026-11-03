@@ -77,7 +77,7 @@ test('cablaggio: Box (card del team), Matches (showdown e replay) e pagina dell\
     assert.match(m, /data-comando="condividi" id="rcCondividi"/);
     assert.match(m, /SchedaCondivisione\.replay\(sd, \{ set: Number\(set\.dataset\.set\)/);
     assert.match(m, /data-vincitore=/);
-    assert.match(leggi('docs', 'public.html'), /<script src="scheda-condivisione\.js"><\/script>\s*<script src="public-card\.js">/);
+    assert.match(leggi('docs', 'public.html'), /<script src="scheda-condivisione\.js"><\/script>\s*<script src="cosmetici\.js"><\/script>\s*<script src="public-card\.js">/);
     assert.match(leggi('docs', 'public-card.js'), /SchedaCondivisione\.allenatore\(\{ nome: dati\.nome/);
     assert.match(leggi('docs', 'app-gioco-pagine.css'), /\.pp-modifica-btn:not\(\.pp-condividi-btn\)/);
 });

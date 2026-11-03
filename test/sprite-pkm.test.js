@@ -86,7 +86,7 @@ test('le pagine usano la regola condivisa: nessun nome di GIF costruito a mano d
         assert.match(t, /function gestisciErroreSprite\(img, pkmNameUrl, spriteId\)/);
         assert.match(t, /sprites\/dex\/\$\{spriteId \|\| pkmNameUrl\}\.png/);
     }
-    assert.match(docs('public-card.js'), /window\.SpritePkm \? window\.SpritePkm\.gif\(nome\)/);
+    assert.match(docs('public-card.js'), /window\.SpritePkm \? window\.SpritePkm\.gif\(nome, shiny\)/);
     assert.match(docs('stats.js'), /const \{ idSprite \} = window\.SpritePkm;/);
     assert.match(docs('battle-extra.js'), /window\.SpritePkm \? window\.SpritePkm\.id\(specie\)/);
 });

@@ -186,7 +186,22 @@
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
+    // I motivi a pagamento (cosmetici.js): quelli comprati si usano, quelli in uso nella pagina salvata restano di chi li aveva; gli altri sono bloccati e il tasto apre il negozio.
+    let possedutiMotivi = null;      // wallet/{uid}/posseduti, letto una volta (null finché non arriva)
+    function leggiPossedutiMotivi() {
+        if (possedutiMotivi || !window.firebase || !window.firebase.auth) return;
+        const u = window.firebase.auth().currentUser;
+        if (!u) return;
+        possedutiMotivi = {};
+        window.firebase.database().ref(`wallet/${u.uid}/posseduti`).once('value')
+            .then(snap => { possedutiMotivi = snap.val() || {}; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .catch(() => { /* senza: restano bloccati solo i motivi a pagamento che non usi già */ });
+    }
+    const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, { wallet: { posseduti: possedutiMotivi || {} }, info: C.stato.dati.info, pagina: C.stato.salvata });
+    const apriNegozio = () => window.dispatchEvent(new CustomEvent('apri-negozio'));     // lo ascolta il campanello (sfide.js)
+
     function schedaSfondo() {
+        leggiPossedutiMotivi();
         const s = cfg().sfondo;
         const anteprima = motivo => {
             const css = P.sfondoCss({ ...s, motivo }, colore());
@@ -200,8 +215,10 @@
             onchange: () => disegnaPannello() });
         return [
             sezione('Pattern', h('div', { class: 'pe-motivi' }, Object.entries(P.MOTIVI).map(([id, nome]) =>
-                h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}`, 'aria-pressed': String(s.motivo === id), onclick: () => cambia(c => { c.sfondo.motivo = id; return c; }) },
-                    h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: nome }))))),
+                h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}${motivoBloccato(id) ? ' pe-bloccato' : ''}`, 'aria-pressed': String(s.motivo === id),
+                    title: motivoBloccato(id) ? `${nome}: buy it in the Shop (bell menu)` : null,
+                    onclick: () => (motivoBloccato(id) ? apriNegozio() : cambia(c => { c.sfondo.motivo = id; return c; })) },
+                    h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: motivoBloccato(id) ? `🔒 ${nome}` : nome }))))),
             sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
                 campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
                 P.PALETTE_SFONDO.map(x => campione(x, s.colore === x.toLowerCase(), x, () => cambia(c => { c.sfondo.colore = x.toLowerCase(); return c; }))),

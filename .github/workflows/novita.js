@@ -22,6 +22,7 @@ const BadgeAllenatore = require(path.join(RADICE, 'docs', 'badge-allenatore.js')
 const Titoli = require(path.join(RADICE, 'docs', 'titoli.js'));
 const MatchSettimana = require(path.join(RADICE, 'docs', 'match-settimana.js'));
 const push = require(path.join(RADICE, 'functions', 'push.js'));
+const monete = require(path.join(RADICE, 'functions', 'monete.js'));
 
 const PERCORSO_BADGE = 'badgeVisti';
 const GIORNO_MS = 86400000;
@@ -196,6 +197,10 @@ async function notificaBadge({ db, messaging, seasons, players, utenti, log = ()
     const nuovi = badgeNuovi(presi, visti);
     if (!nuovi.length) return { iniziale: false, nuovi: 0 };
     await db.ref(PERCORSO_BADGE).set(badgeDaSalvare(presi, visti));      // prima si salva, poi si notifica
+    // le monete dei badge nuovi (monete.js): una volta sola per badge e livello; i badge che c'erano già alla prima volta non pagano
+    for (const b of nuovi) {
+        try { await monete.premiaBadge({ db, uid: push.uidDelGiocatore(utenti, b.giocatore), chiave: b.chiave, prima: b.prima, dopo: b.liv, nome: b.badge }); } catch (e) { log(`⚠️ Monete badge non accreditate: ${e.message}`); }
+    }
     const tutti = Object.keys(utenti || {});
     for (const g of novitaPerGiocatore(nuovi, nomi)) {
         const uid = push.uidDelGiocatore(utenti, g.giocatore);

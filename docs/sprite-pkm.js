@@ -12,7 +12,7 @@
 //   SpritePkm.pulisciSpecie(testo)   "Soprannome (Garchomp)" → "Garchomp"; "Garchomp (M)" → "Garchomp"
 //   SpritePkm.idSprite(testo)        { completo: 'urshifu-rapidstrike', base: 'urshifu', db: 'urshifu' }  (db: nome per Pokémon Database, "mr-mime")
 //   SpritePkm.id(testo)              l'id di Showdown ("completo")
-//   SpritePkm.gif(testo)             https://play.pokemonshowdown.com/sprites/ani/<id>.gif
+//   SpritePkm.gif(testo, shiny)      https://play.pokemonshowdown.com/sprites/ani/<id>.gif (con shiny: ani-shiny, i colori alternativi)
 //   SpritePkm.dex(testo)             https://play.pokemonshowdown.com/sprites/dex/<id>.png
 //   SpritePkm.pokeapi(testo)         nome per PokéAPI: "mr-mime", "great-tusk", "type-null" (minuscolo, spazi → trattini)
 //   SpritePkm.riserva(img, id)       per onerror: prima il PNG del Pokédex, poi la Poké Ball
@@ -73,7 +73,8 @@
         if (l._ids.dex.has(i)) return `sprites/dex/${i}.png`;
         return null;
     }
-    const gif = specie => locale(specie) || `${SD}/ani/${id(specie)}.gif`;
+    // `shiny` (un cosmetico del negozio, cosmetici.js): i colori alternativi; le immagini del sito sono solo normali, quelle shiny si chiedono a Showdown
+    const gif = (specie, shiny) => (shiny ? `${SD}/ani-shiny/${id(specie)}.gif` : (locale(specie) || `${SD}/ani/${id(specie)}.gif`));
     const dex = specie => `${SD}/dex/${id(specie)}.png`;
     const pokeapi = specie => senzaAccenti(pulisciSpecie(specie)).toLowerCase().replace(/[.'’:%]/g, '').trim().replace(/\s+/g, '-');
 
@@ -95,8 +96,9 @@
     }
 
     /** Gli indirizzi da provare, in ordine, per l'immagine animata di un Pokémon (le stesse strade di stats.js, senza la Poké Ball): la GIF, la GIF in stile Gen 5, il PNG del Pokédex; poi la GIF della specie base */
-    function catena(specie) {
+    function catena(specie, shiny) {
         const { completo, base } = idSprite(specie);
+        if (shiny) return [`${SD}/ani-shiny/${completo}.gif`, `${SD}/gen5ani-shiny/${completo}.gif`, `${SD}/dex-shiny/${completo}.png`].concat(base && base !== completo ? [`${SD}/ani-shiny/${base}.gif`] : []);
         const per = id => [`${SD}/ani/${id}.gif`, `${SD}/gen5ani/${id}.gif`, `${SD}/dex/${id}.png`];
         const lista = per(completo);
         if (base && base !== completo) lista.push(`${SD}/ani/${base}.gif`);

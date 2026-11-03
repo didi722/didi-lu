@@ -1423,3 +1423,19 @@ body.pp-fisso .pp-coppa-gruppo .pp-coppa { width: 52px; height: 52px; }
 .pp-tipo-monoformat .pp-segnaposto .pp-coppa-img { filter: hue-rotate(170deg) saturate(1.3); }
 .pp-tipo-random .pp-segnaposto .pp-coppa-img { filter: hue-rotate(80deg) saturate(1.2); }
 .pp-tipo-cup .pp-segnaposto .pp-coppa-img { filter: hue-rotate(-40deg) saturate(1.5); }
+
+/* ---------- Cosmetici (cosmetici.js): le aure dell'allenatore ---------- */
+.pp-allenatore[data-aura="aura-oro"] img { filter: drop-shadow(0 0 6px #ffcc33) drop-shadow(0 0 18px #ffcc33); }
+.pp-allenatore[data-aura="aura-fiamma"] img { filter: drop-shadow(0 0 6px #ff5a1f) drop-shadow(0 0 18px #ff8a1f); }
+.pp-allenatore[data-aura="aura-ghiaccio"] img { filter: drop-shadow(0 0 6px #5fd4ff) drop-shadow(0 0 18px #9be7ff); }
+.pp-allenatore[data-aura="aura-arcobaleno"] img { animation: pp-aura-arcobaleno 4s linear infinite; }
+@keyframes pp-aura-arcobaleno {
+    0%   { filter: drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 18px #ff3b3b); }
+    17%  { filter: drop-shadow(0 0 6px #ffb02e) drop-shadow(0 0 18px #ffb02e); }
+    33%  { filter: drop-shadow(0 0 6px #f4e03a) drop-shadow(0 0 18px #f4e03a); }
+    50%  { filter: drop-shadow(0 0 6px #3be07a) drop-shadow(0 0 18px #3be07a); }
+    67%  { filter: drop-shadow(0 0 6px #3ba8ff) drop-shadow(0 0 18px #3ba8ff); }
+    83%  { filter: drop-shadow(0 0 6px #b04dff) drop-shadow(0 0 18px #b04dff); }
+    100% { filter: drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 18px #ff3b3b); }
+}
+@media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-arcobaleno"] img { animation: none; filter: drop-shadow(0 0 6px #ff66cc) drop-shadow(0 0 18px #ff66cc); } }

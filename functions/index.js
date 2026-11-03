@@ -182,6 +182,12 @@ exports.pushMvpNomina = onValueCreated(
     evento => conLog('mvp-nomina', async () => {
         const db = getDatabase();
         const info = (await db.ref(`seasons/${evento.params.stagione}/info`).once('value')).val() || {};
+        // 100 monete a chi ha il Pokémon MVP (una volta sola)
+        try {
+            for (const v of Object.values((evento.data.val() || {}).vincitori || {})) {
+                if (v && v.player) await monete.accredita(db, await monete.uidDi(db, v.player), monete.PREMI.mvp, `MVP: ${v.specie || 'Pokémon'}`, { chiave: `mvp-${evento.params.stagione}-${v.chiave || v.player}` });
+            }
+        } catch (e) { console.error('Monete MVP', e); }
         return push.notificaMvpNomina({ db, messaging: getMessaging(), stagione: evento.params.stagione, info, risultato: evento.data.val() });
     })
 );
@@ -198,6 +204,22 @@ exports.provaNotifica = onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
     }
 });
 
+// Il negozio (functions/monete.js): comprare e mettere i cosmetici. Il saldo lo scrive solo il server.
+const monete = require('./monete');
+const negozio = nome => onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 20, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    const dati = richiesta.data || {};
+    try {
+        const esito = await monete[nome]({ db: getDatabase(), uid: richiesta.auth.uid, id: String(dati.id || ''), attivo: dati.attivo !== false });
+        return esito;
+    } catch (e) {
+        console.error(nome, e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+exports.acquistaCosmetico = negozio('acquista');
+exports.equipaCosmetico = negozio('equipa');
+
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
 exports.pushStatoStagione = onValueWritten(
     { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/info/status' },
@@ -213,6 +235,8 @@ exports.pushStatoStagione = onValueWritten(
             // il vincitore lo scrive il sito subito dopo lo stato: si aspetta un attimo, così la notifica lo può dire
             await new Promise(ok => setTimeout(ok, 8000));
             const aggiornata = (await db.ref(`seasons/${stagione}/info`).once('value')).val() || info;
+            // il premio di chi ha vinto la stagione (una volta sola)
+            try { await monete.accredita(db, await monete.uidDi(db, aggiornata.winner), monete.PREMI.stagioneVinta, `Season won: ${aggiornata.name || stagione}`, { chiave: `stagione-${stagione}` }); } catch (e) { console.error('Monete stagione', e); }
             return push.notificaStagioneConclusa({ db, messaging: getMessaging(), stagione, info: aggiornata });
         }
         return null;

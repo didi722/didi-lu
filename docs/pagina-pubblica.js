@@ -83,7 +83,9 @@
         scacchi:  'Checkers',
         anelli:   'Rings',
         raggi:    'Sunburst',
-        pokeball: 'Pokéballs'
+        pokeball: 'Pokéballs',
+        stelle:   'Stars',
+        onde:     'Waves'
     };
 
     // colore: null = il colore dell'allenatore
@@ -715,6 +717,14 @@
         "<circle cx='72' cy='72' r='14'/><path d='M58 72h28'/><circle cx='72' cy='72' r='4'/>" +
         '</g></svg>';
 
+    const SVG_STELLE = c =>
+        "<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>" +
+        `<g fill='${c}'><path d='M20 8l3.5 9 9.5.5-7.4 6 2.5 9.2L20 27.4l-8.1 5.3 2.5-9.2-7.4-6 9.5-.5z'/>` +
+        "<path d='M60 46l2.6 6.8 7.2.4-5.6 4.5 1.9 7-6.1-4-6.1 4 1.9-7-5.6-4.5 7.2-.4z'/><circle cx='64' cy='14' r='2.5'/><circle cx='12' cy='62' r='2.5'/></g></svg>";
+    const SVG_ONDE = c =>
+        "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='32' viewBox='0 0 64 32'>" +
+        `<path d='M0 16c8-12 24-12 32 0s24 12 32 0' fill='none' stroke='${c}' stroke-width='4'/></svg>`;
+
     /**
      * Lo sfondo della pagina: colore di base + motivo disegnato con soli gradienti (o un SVG in linea).
      * `periodo` è la misura in px dopo cui il motivo si ripete: serve per farlo scorrere senza scatti
@@ -747,6 +757,10 @@
                 return r(`repeating-conic-gradient(from 0deg at 50% 34%, ${c} 0 5deg, transparent 5deg 10deg)`, '100% 100%', '0 0', 0);
             case 'pokeball':
                 return r(`url("data:image/svg+xml,${encodeURIComponent(SVG_POKEBALL(c))}")`, '96px 96px', '0 0', 96);
+            case 'stelle':
+                return r(`url("data:image/svg+xml,${encodeURIComponent(SVG_STELLE(c))}")`, '80px 80px', '0 0', 80);
+            case 'onde':
+                return r(`url("data:image/svg+xml,${encodeURIComponent(SVG_ONDE(c))}")`, '64px 32px', '0 0', 64);
             default:
                 return r('none', 'auto', '0 0', 0);
         }

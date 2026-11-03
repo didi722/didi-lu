@@ -14,7 +14,8 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 - `regolamenti` (formati) e `settings`: scrittura solo admin.
 - `pushTokens`, `notifiche`, `partite/*/privato`: ora davvero privati. L'admin può leggere/scrivere `notifiche` (serve a "Delete season", che pulisce le notifiche).
 - `partite`: lettura solo da loggati (come già scritto), scrittura solo della `presenza`; il resto lo scrive il server.
-- Tutto quello che non è elencato (`partiteServer`, `pushInviati`, `pushProve`, `badgeVisti`) è chiuso al sito; le Functions e il checker passano comunque (Admin SDK).
+- `wallet` (le monete): ognuno legge solo il proprio, nessuno lo scrive dal sito. **Senza queste regole il negozio non è sicuro**: oggi chiunque sia loggato può scrivere ovunque, quindi anche darsi monete.
+- Tutto quello che non è elencato (`partiteServer`, `pushInviati`, `pushProve`, `badgeVisti`, `walletEventi`) è chiuso al sito; le Functions e il checker passano comunque (Admin SDK).
 
 ```json
 {
@@ -55,6 +56,14 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    // Monete e cosmetici (functions/monete.js): ognuno legge il proprio portafoglio, lo scrive SOLO il server (nessuna regola ".write": è chiuso al sito).
+    // Senza queste regole (oggi qualunque utente loggato scrive ovunque) chiunque potrebbe darsi monete a mano: pubblicale prima di far girare il negozio.
+    "wallet": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
       }
     },
 

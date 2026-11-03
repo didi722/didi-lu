@@ -84,12 +84,12 @@
      * La scheda di un allenatore, dalle sei statistiche già pronte della sua pagina (pagina-pubblica.js: riepilogoStat) e dalle sue info
      * (colore, avatar, motto, Pokémon compagno).
      */
-    function allenatore({ nome = '', colore = '', avatar = '', info = {}, riepilogo = {} } = {}) {
+    function allenatore({ nome = '', colore = '', avatar = '', info = {}, riepilogo = {}, aura = '' } = {}) {
         const r = riepilogo || {};
         const voce = (et, x) => ({ et, val: testo(x && x.grande, 14) || '—', sub: testo(x && x.piccolo, 30) });
         return {
             tipo: 'allenatore', titolo: 'TRAINER', nome: testo(nome, 30) || 'Trainer',
-            colore: coloreSicuro(colore, '#31c489'), avatar: avatar || '',
+            colore: coloreSicuro(colore, '#31c489'), avatar: avatar || '', aura: coloreSicuro(aura, ''),
             motto: testo(info.motto, 70), compagno: testo(info.pkmPreferito, 30), compagnoShiny: !!info.pkmShiny,
             numeri: [voce('Rank', r.rank), voce('Matches', r.match), voce('Showdowns', r.sd), voce('Sets', r.set)],
             extra: [r.formato && r.formato.grande && r.formato.grande !== '\u2014' ? `Main format: ${testo(r.formato.grande, 30)} (${testo(r.formato.piccolo, 20)})` : '',
@@ -261,6 +261,7 @@
         cornice(c, H, 'TRAINER', h);
         const [avatar, compagno] = await Promise.all([caricaImmagine(win, s.avatar), immagineSpecie(win, s.compagno, s.compagnoShiny)]);
         h.riquadro(80, 150, W - 160, 470, s.colore, 8, 12);
+        if (s.aura) { c.save(); c.shadowColor = s.aura; c.shadowBlur = 60; c.fillStyle = s.aura; c.beginPath(); c.arc(260, 385, 138, 0, Math.PI * 2); c.fill(); c.fill(); c.restore(); }
         h.tondo(avatar, 260, 385, 140, '#fff');
         if (compagno) { c.save(); c.globalAlpha = 1; h.dentro(compagno, 560, 220, 360); c.restore(); }
         h.fit(s.nome.toUpperCase(), W / 2, 722, W - 160, 96, 900, FT, INK, 'center');

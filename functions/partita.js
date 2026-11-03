@@ -20,6 +20,7 @@ const EsitoSet = require('./esito-set');
 const DatiGen = require('./dati-gen');
 const ControlloTeam = require('./controllo-team');
 const FormatoRandom = require('./formato-random');
+const monete = require('./monete');
 const fs = require('fs');
 const path = require('path');
 
@@ -493,6 +494,13 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         if (b.ended) await fineSet(id, info, nuovoStato, b);
     }
 
+    // Le monete di un set (monete.js): a chi ha giocato, una volta sola per set. Un errore qui non deve mai fermare la partita.
+    async function premiaSetConcluso(id, info, stato, vincitore, ufficiale) {
+        try {
+            await monete.premiaSet({ db, uids: { p1: info.p1 && info.p1.uid, p2: info.p2 && info.p2.uid }, vincitore, ufficiale, id, set: stato.set });
+        } catch (e) { console.error('Monete non accreditate', id, stato.set, e); }
+    }
+
     // --- fine di un set ---
     async function fineSet(id, info, stato, b) {
         if (info.amichevole) return fineSetAmichevole(id, info, stato, b);
@@ -536,6 +544,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         const risultato = { vincitore, url, turni: b.turn };
         if (stats) risultato.stats = stats;
         await db.ref(`partite/${id}/risultati/set${stato.set}`).set(risultato);
+        await premiaSetConcluso(id, info, stato, vincitore, true);
 
         if (stato.set < info.bestOf) await avviaSet(id, info, stato.set + 1);
         else await db.ref(`partite/${id}/stato`).set('da_salvare');
@@ -915,6 +924,7 @@ function creaServizio({ db, salvaReplay, registraRisultato, segreto, sito = '', 
         const vincitore = EsitoSet.vincitoreDelLog(righe).lato
             || (b.winner === b.p1.name ? 'p1' : (b.winner === b.p2.name ? 'p2' : ''));
         await db.ref(`partite/${id}/risultati/set${stato.set}`).set({ vincitore, turni: b.turn });
+        await premiaSetConcluso(id, info, stato, vincitore, false);
 
         const risultati = await leggi(`partite/${id}/risultati`) || {};
         const vinti = { p1: 0, p2: 0 };

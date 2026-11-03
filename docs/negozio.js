@@ -1,0 +1,135 @@
+// =====================================================
+// NEGOZIO — Poké-Tournament
+//
+// La finestra dove si spendono le monete (wallet/{uid}, lo scrive solo il server: functions/monete.js): cosmetici del catalogo (cosmetici.js) da comprare e,
+// per il Pokémon compagno shiny e le aure, da mettere o togliere. Si apre dal campanello (SHOP) con Negozio.apri().
+//
+//   Negozio.apri(win)        legge il portafoglio e il profilo di chi è collegato e apre la finestra
+//   Negozio.html(stato)      il markup (puro): stato = { saldo, posseduti, info, pagina, movimenti, nota, occupato }
+//
+// La parte pura si prova in Node (test/negozio.test.js); il resto gira nel browser.
+// =====================================================
+(function (radice, fabbrica) {
+    const inNode = typeof module === 'object' && module.exports;
+    const N = fabbrica(inNode ? require('./cosmetici.js') : radice.Cosmetici);
+    if (inNode) module.exports = N; else radice.Negozio = N;
+})(typeof self !== 'undefined' ? self : this, function (Cosmetici) {
+    'use strict';
+
+    const VERSIONE_FIREBASE = '9.17.1';
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+    const data = t => { const d = new Date(num(t)); return Number.isNaN(d.getTime()) ? '' : `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
+
+    const STILE = `.ng-velo{position:fixed;inset:0;z-index:100001;display:flex;align-items:flex-start;justify-content:center;padding:16px;background:rgba(0,0,0,.72);box-sizing:border-box;overflow:auto}
+.ng-finestra{position:relative;box-sizing:border-box;width:min(640px,100%);margin:auto;padding:20px 18px 18px;background:#fff;color:#000;border:4px solid #000;box-shadow:8px 8px 0 #000;font-family:'Montserrat',sans-serif}
+.ng-chiudi{position:absolute;top:8px;right:10px;width:32px;height:32px;background:#ffbd44;border:3px solid #000;font:900 1.1rem sans-serif;cursor:pointer}
+.ng-testa{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 40px 12px 0}
+.ng-testa h2{margin:0;font:900 1.4rem 'Josefin Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.ng-saldo{padding:5px 12px 3px;background:#ffbd44;border:3px solid #000;box-shadow:3px 3px 0 #000;font:900 1.05rem 'Josefin Sans',sans-serif}
+.ng-nota{margin:0 0 12px;font:600 .78rem/1.4 'Montserrat',sans-serif;opacity:.75}
+.ng-msg{margin:0 0 12px;padding:8px 10px;border:3px solid #000;background:#fff6d6;font:700 .82rem/1.3 'Montserrat',sans-serif}
+.ng-gruppo h3{margin:16px 0 4px;font:900 .95rem 'Josefin Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.ng-gruppo>p{margin:0 0 8px;font:600 .74rem 'Montserrat',sans-serif;opacity:.65}
+.ng-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ng-voce{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border:3px solid #000;background:#fff}
+.ng-voce.ng-mio{background:#e9ffe9}
+.ng-anteprima{width:44px;height:44px;border:3px solid #000;border-radius:50%;background:var(--c,#d9dde6)}
+.ng-voce[data-tipo=sfondo] .ng-anteprima{border-radius:0}
+.ng-voce[data-tipo=shiny] .ng-anteprima{background:linear-gradient(135deg,#fff 0 40%,#ffe066 40% 60%,#fff 60%)}
+.ng-voce b{display:block;font:900 .85rem 'Josefin Sans',sans-serif;text-transform:uppercase}
+.ng-voce small{display:block;font:600 .7rem/1.3 'Montserrat',sans-serif;opacity:.7}
+.ng-bottone{padding:7px 12px 5px;background:#fff;color:#000;border:3px solid #000;box-shadow:3px 3px 0 #000;font:900 .76rem 'Josefin Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.ng-bottone.ng-compra{background:#47ea6a}
+.ng-bottone:disabled{opacity:.45;cursor:default;box-shadow:none}
+.ng-movimenti{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px;font:600 .76rem 'Montserrat',sans-serif}
+.ng-movimenti li{display:flex;justify-content:space-between;gap:10px}
+.ng-movimenti .ng-piu{color:#0a7d2a;font-weight:800}.ng-movimenti .ng-meno{color:#b3261e;font-weight:800}`;
+
+    /** Il markup della finestra (puro). */
+    function html(stato) {
+        const s = stato || {};
+        const saldo = num(s.saldo);
+        const contesto = { wallet: { posseduti: s.posseduti || {} }, info: s.info || {}, pagina: s.pagina || {} };
+        const gruppi = Object.keys(Cosmetici.TIPI).map(tipo => {
+            const voci = Cosmetici.CATALOGO.filter(c => c.tipo === tipo).map(c => {
+                const mio = Cosmetici.possiede(c.id, contesto);
+                const attivo = c.tipo === 'shiny' ? !!(s.info || {}).pkmShiny : c.tipo === 'aura' ? (s.info || {}).aura === c.id : false;
+                const bottone = mio
+                    ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
+                    : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo ? ' disabled' : ''}>${c.prezzo} 🪙</button>`;
+                const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
+                return `<li class="ng-voce${mio ? ' ng-mio' : ''}" data-tipo="${esc(c.tipo)}"><span class="ng-anteprima" style="--c:${esc(c.colore || '#d9dde6')}"></span><span><b>${esc(c.nome)}</b><small>${nota}</small></span>${bottone}</li>`;
+            }).join('');
+            return `<section class="ng-gruppo"><h3>${esc(Cosmetici.TIPI[tipo].nome)}</h3><p>${esc(Cosmetici.TIPI[tipo].frase)}</p><ul class="ng-lista">${voci}</ul></section>`;
+        }).join('');
+        const mov = (s.movimenti || []).slice(-8).reverse().map(m => `<li><span>${esc(data(m.t))} · ${esc(m.motivo)}</span><b class="${num(m.importo) >= 0 ? 'ng-piu' : 'ng-meno'}">${num(m.importo) >= 0 ? '+' : ''}${num(m.importo)}</b></li>`).join('');
+        return `<div class="ng-finestra" role="dialog" aria-modal="true" aria-label="Shop"><button type="button" class="ng-chiudi" data-ng="chiudi" aria-label="Close">×</button>`
+            + `<div class="ng-testa"><h2>Shop</h2><span class="ng-saldo" title="Your coins">🪙 ${saldo}</span></div>`
+            + `<p class="ng-nota">Earn coins by playing: 4 per set, +6 if you win it (double in season matches; friendlies are capped at 40 a day), 25/50/100 for a new bronze/silver/gold badge, 300 for winning a season and 100 for an MVP.</p>`
+            + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
+            + gruppi
+            + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
+    }
+
+    // ---------------------------------------------------------------- nel browser
+    const FRASI = { owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found." };
+
+    function caricaFunzioni(win) {
+        if (win.firebase && win.firebase.functions) return Promise.resolve();
+        return new Promise((ok, no) => {
+            const sc = win.document.createElement('script');
+            sc.src = `https://www.gstatic.com/firebasejs/${VERSIONE_FIREBASE}/firebase-functions-compat.js`;
+            sc.onload = ok; sc.onerror = () => no(new Error('functions'));
+            win.document.head.appendChild(sc);
+        });
+    }
+
+    async function apri(win) {
+        const doc = win.document, fb = win.firebase;
+        if (!fb || !fb.auth || !fb.database) return null;
+        const utente = fb.auth().currentUser;
+        if (!utente) return null;
+        if (!doc.getElementById('ng-stile')) { const st = doc.createElement('style'); st.id = 'ng-stile'; st.textContent = STILE; doc.head.appendChild(st); }
+        const db = fb.database();
+        const velo = doc.createElement('div');
+        velo.className = 'ng-velo';
+        doc.body.appendChild(velo);
+        const stato = { saldo: 0, posseduti: {}, info: {}, pagina: {}, movimenti: [], messaggio: '', occupato: false };
+        const chiudi = () => { velo.remove(); doc.removeEventListener('keydown', tasto); };
+        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+        doc.addEventListener('keydown', tasto);
+        const disegna = () => { velo.innerHTML = html(stato); };
+        const leggi = async () => {
+            const nome = String((await db.ref(`users/${utente.uid}/name`).once('value')).val() || '').toLowerCase().trim();
+            const [w, info] = await Promise.all([db.ref(`wallet/${utente.uid}`).once('value'), nome ? db.ref(`players/${nome}/info`).once('value') : Promise.resolve({ val: () => ({}) })]);
+            const wallet = w.val() || {};
+            stato.saldo = num(wallet.saldo);
+            stato.posseduti = wallet.posseduti || {};
+            stato.movimenti = Object.keys(wallet.movimenti || {}).sort().map(k => wallet.movimenti[k]);
+            stato.info = info.val() || {};
+            stato.pagina = stato.info.pagina || {};
+        };
+        velo.innerHTML = '<div class="ng-finestra"><p class="ng-nota">Loading…</p></div>';
+        try { await leggi(); } catch (e) { stato.messaggio = "Couldn't load your coins. Check the connection and try again."; }
+        disegna();
+        velo.addEventListener('click', async e => {
+            if (e.target === velo) return chiudi();
+            const b = e.target.closest ? e.target.closest('[data-ng]') : null;
+            if (!b || b.disabled) return;
+            if (b.dataset.ng === 'chiudi') return chiudi();
+            stato.occupato = true; stato.messaggio = ''; disegna();
+            try {
+                await caricaFunzioni(win);
+                const f = fb.app().functions('europe-west1');
+                const r = (await f.httpsCallable(b.dataset.ng === 'compra' ? 'acquistaCosmetico' : 'equipaCosmetico')({ id: b.dataset.id, attivo: b.dataset.attivo !== '0' })).data || {};
+                stato.messaggio = r.ok ? (b.dataset.ng === 'compra' ? 'Bought! Put it on whenever you like.' : 'Done.') : (FRASI[r.motivo] || "Couldn't do that.");
+                await leggi();
+            } catch (err) { stato.messaggio = "Couldn't do that. Try again in a moment."; }
+            stato.occupato = false; disegna();
+        });
+        return velo;
+    }
+
+    return { html, apri, STILE };
+});

@@ -597,3 +597,7 @@ body.pp-ridimensiona .pp-blocco, body.pp-ridimensiona .pp-corpo { pointer-events
 .pe-acc-corpo { margin: 0 0 6px; }
 .pe-acc-team { font-size: 0.74rem; padding: 7px 9px; }
 .pe-acc-voce .pe-scorri { margin: 0 0 8px; }
+
+/* i motivi dello sfondo a pagamento che non si possiedono: spenti, con il lucchetto (cosmetici.js) */
+.pe-motivo.pe-bloccato { opacity: .55; }
+.pe-motivo.pe-bloccato .pe-motivo-prova { filter: grayscale(.8); }

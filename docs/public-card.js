@@ -72,7 +72,7 @@
 
     const pulisci = nome => String(nome || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime); senza il modulo si usa il vecchio nome con i trattini
-    const gifShowdown = nome => (window.SpritePkm ? window.SpritePkm.gif(nome) : `https://play.pokemonshowdown.com/sprites/ani/${pulisci(nome)}.gif`);
+    const gifShowdown = (nome, shiny) => (window.SpritePkm ? window.SpritePkm.gif(nome, shiny) : `https://play.pokemonshowdown.com/sprites/ani${shiny ? '-shiny' : ''}/${pulisci(nome)}.gif`);
     const elenco = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
 
     // I tipi di un Pokémon (PokeAPI), una sola richiesta per specie
@@ -96,7 +96,7 @@
     function costruisciPalco(d) {
         const set = h('div', { class: 'pp-set' });
         set.append(d.info.avatar
-            ? h('div', { class: 'pp-allenatore' }, h('img', { src: d.info.avatar, alt: '' }))
+            ? h('div', { class: 'pp-allenatore', 'data-aura': (window.Cosmetici && window.Cosmetici.perId(d.info.aura) && window.Cosmetici.perId(d.info.aura).tipo === 'aura') ? d.info.aura : null }, h('img', { src: d.info.avatar, alt: '' }))
             : h('div', { class: 'pp-allenatore pp-allenatore-vuoto', testo: '?' }));
         const posto = h('div', { class: 'pp-pkm' });
         set.append(posto);
@@ -144,12 +144,16 @@
         let nome = String(nomeGrezzo).toLowerCase().trim();
         if (FORME_SPECIALI[nome]) nome = FORME_SPECIALI[nome];
 
+        // il cosmetico "Shiny companion" (cosmetici.js): lo stesso Pokémon con i colori alternativi
+        const brillante = !!(stato.dati && stato.dati.info && stato.dati.info.pkmShiny);
         let gif = null, altezzaM = 1.2, vola = false;
         try {
             const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nome)}`);
             if (!r.ok) throw new Error('Pokémon not found');
             const j = await r.json();
-            gif = (j.sprites && j.sprites.other && j.sprites.other.showdown && j.sprites.other.showdown.front_default)
+            const show = j.sprites && j.sprites.other && j.sprites.other.showdown;
+            gif = (brillante && show && show.front_shiny)
+                || (!brillante && show && show.front_default)
                 || (j.sprites && j.sprites.other && j.sprites.other['official-artwork'] && j.sprites.other['official-artwork'].front_default)
                 || null;
             altezzaM = j.height / 10;
@@ -162,7 +166,7 @@
             vola = GALLEGGIANO.includes(nome);
         }
         if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
-        if (!gif) gif = gifShowdown(nomeGrezzo);
+        if (!gif) gif = gifShowdown(nomeGrezzo, brillante);
 
         const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
         const misure = P.scalaScena(altezzaM, { regola, vola });
@@ -988,7 +992,7 @@
         nav.append(h('button', { id: 'pp-condividi-btn', class: 'pp-modifica-btn pp-condividi-btn', type: 'button', onclick: () => {
             const dati = stato.dati;
             const info = dati.info || {};
-            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, riepilogo: stato.riepilogo }));
+            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
         } }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '\u2197' }), ' SHARE'));
     }
 
