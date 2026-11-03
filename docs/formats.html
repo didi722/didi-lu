@@ -2398,6 +2398,9 @@ function cambiaVistaFormato(vista) {
     if (!classifica || !stats) return;
     classifica.hidden = sullaStats;
     stats.hidden = !sullaStats;
+    // con le Stats si scorre solo la colonna destra: le regole del formato restano ferme (style-formats.css: .con-stats)
+    const corpo = document.querySelector('.fmt-corpo');
+    if (corpo) corpo.classList.toggle('con-stats', sullaStats);
     if (sullaStats) preparaStatsFormato();
 }
 

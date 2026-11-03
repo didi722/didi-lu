@@ -21,8 +21,8 @@
 
     const MIN_SET_PERC = 3;      // set con un vincitore per mostrare % vittorie e KO per set di un Pokémon
     const MIN_SET_LEAD = 2;      // set per elencare una coppia di lead
-    const LEAD_MAX = 8;
-    const VISIBILI = 10;         // quanti Pokémon si vedono prima di "Show all"
+    const LEAD_MAX = 5;
+    const VISIBILI = 5;          // quanti Pokémon si vedono prima di "Show all"
 
     const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
     const valori = x => (x && typeof x === 'object' ? Object.values(x) : []);

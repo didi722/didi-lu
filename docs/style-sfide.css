@@ -93,6 +93,7 @@
     overflow-y: auto;
     padding: 16px;
     background: #fff;
+    color: #000;   /* il testo non eredita il colore della pagina (bianco in certi temi): il fondo è sempre bianco */
     border: 3px solid var(--nb-ink, #000);
     box-shadow: calc(8px * var(--nb-kx, 1)) calc(8px * var(--nb-ky, 1)) calc(20px * var(--nb-bk, 0)) var(--nb-shcol, #000);
     z-index: 3001;
@@ -181,7 +182,7 @@
 .sfide-azione:active { transform: translate(2px, 2px); box-shadow: calc(1px * var(--nb-kx, 1)) calc(1px * var(--nb-ky, 1)) calc(3px * var(--nb-bk, 0)) var(--nb-shcol, #000); }
 .sfide-azione:focus-visible { outline: 3px solid var(--nb-ink, #000); outline-offset: 2px; }
 .sfide-azione:disabled { opacity: 0.4; cursor: not-allowed; }
-.sfide-vuoto { margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; }
+.sfide-vuoto { margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; color: #000; }
 
 
 /* ---------- Bottone VS: fuori dalla riga della classifica, a sinistra ---------- */
