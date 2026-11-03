@@ -143,3 +143,18 @@ test('replay dentro la scocca del Game Boy: i comandi (pausa, avanti, velocità,
     assert.match(matches, /tipo: 'replay-comando', comando: /);
     for (const comando of ['inizio', 'indietro', 'play', 'avanti', 'velocita', 'audio']) assert.match(matches, new RegExp(`data-comando="${comando}"`), comando);
 });
+
+test('barra dei messaggi ("Go! Togekiss!"): fascia piatta e scura, senza bordi né angoli, nel carattere del sito, uguale nel simulatore e nei replay', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const leggi = f => fs.readFileSync(path.join(__dirname, '..', 'docs', f), 'utf8');
+    for (const f of ['style-battle.css', 'replay-sito.js']) {
+        const testo = leggi(f);
+        const regola = /\.palco \.messagebar \{[^}]*\}/.exec(testo);
+        assert.ok(regola, `${f}: regola della barra dei messaggi`);
+        assert.match(regola[0], /border: 0; border-radius: 0; box-shadow: none;/, f);
+        assert.match(regola[0], /font: 600 11px\/1\.35 'Josefin Sans', sans-serif;/, f);
+        assert.match(regola[0], /left: 110px; right: 110px; bottom: 10px;/, `${f}: occupa lo stesso posto di prima`);
+        assert.match(testo, /\.palco \.messagebar strong \{[^}]*Josefin Sans/, f);
+        assert.match(testo, /\.palco \.messagebar small \{[^}]*Josefin Sans/, f);
+    }
+});
