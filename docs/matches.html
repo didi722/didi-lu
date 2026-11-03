@@ -1028,6 +1028,34 @@ function aggiornaParti(barra) {
     if (pulisci) pulisci.hidden = !attivi;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------------
+// LA CLASSIFICA A LATO RESTA DOV'È: la colonna è sticky, e con `top` fisso (style-matches.css: 100px) scorrendo saliva di un centinaio di pixel
+// prima di fermarsi. Qui `top` diventa la sua posizione naturale (sotto l'intestazione), così appena si scorre è già ferma; se la finestra è
+// troppo bassa per tenerla tutta in vista sale quanto basta. Si rifà quando cambia l'intestazione o la finestra.
+// ---------------------------------------------------------------------------------------------------------------------------
+function fissaClassificaLaterale() {
+    const col = document.querySelector('.hub-right-column');
+    if (!col || document.documentElement.classList.contains('app-shell')) return;
+    if (window.matchMedia('(max-width: 900px)').matches) { col.style.top = ''; return; }      // in pila sotto le partite: non è sticky
+    const stile = col.style.position;
+    col.style.position = 'static';                                  // senza lo sticky la sua posizione naturale si misura anche a pagina scorsa
+    const naturale = col.getBoundingClientRect().top + window.scrollY;
+    col.style.position = stile;
+    const alta = col.offsetHeight;
+    if (!alta) return;                                              // nascosta: niente da misurare
+    const top = Math.round(Math.max(16, Math.min(naturale, window.innerHeight - alta - 16)));
+    if (col.style.top !== `${top}px`) col.style.top = `${top}px`;
+}
+document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('resize', fissaClassificaLaterale);
+    window.addEventListener('load', fissaClassificaLaterale);
+    if (window.ResizeObserver) {
+        const osserva = new ResizeObserver(fissaClassificaLaterale);
+        ['.top-bar', '.hub-main-layout'].forEach(sel => { const el = document.querySelector(sel); if (el) osserva.observe(el); });
+    }
+    fissaClassificaLaterale();
+});
+
 let replayDaLinkAperto = false;
 /** Apre da solo il replay chiesto nell'indirizzo (una volta sola per apertura della pagina): il set indicato, con i suoi due team e il punteggio del match */
 function apriReplayDaLink(showdowns) {
