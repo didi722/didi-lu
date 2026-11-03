@@ -371,9 +371,10 @@
     <div id="replayModal" class="replay-modal" onclick="chiudiReplay()">
     
     <!-- il palco: la console e, alla sua destra, i tasti dei set in verticale (sul telefono vanno sotto) -->
-    <!-- Meteo, terreni e condizioni dei lati: stanno sopra la console, fuori dallo schermo, per non coprire le barre della salute (il replay le manda con replay-campo) -->
-    <div class="replay-campo" id="replayCampo" aria-label="Field conditions" onclick="event.stopPropagation()" hidden></div>
     <div class="replay-palco">
+    <!-- Meteo, terreni e condizioni dei lati: fuori dallo schermo, per non coprire le barre della salute (il replay le manda con replay-campo).
+         Dove a sinistra c'è posto (adattaReplayAlloSchermo: .campo-laterale) stanno in colonna a sinistra della console, altrimenti in una riga sopra -->
+    <div class="replay-campo" id="replayCampo" aria-label="Field conditions" onclick="event.stopPropagation()" hidden></div>
     <div class="gba-container">
         <img src="immagini/advance.png" class="gba-shell" alt="GBA Shell">
         <div class="gba-screen-area" onclick="event.stopPropagation()">
@@ -2666,7 +2667,7 @@ function adattaReplayAlloSchermo() {
     const insieme = larghezza > 900;
     const tastiSet = insieme ? (modal.querySelector('.set-selector')?.offsetWidth || 90) + 16 : 0;
     const sotto = insieme ? 0 : alto('.set-selector') + 10;
-    const riservato = alto('.replay-mini-header') + alto('.replay-campo') + alto('.replay-comandi') + sotto + 54;
+    const riservatoBase = alto('.replay-mini-header') + alto('.replay-comandi') + sotto + 54;
     // nell'app da telefono non c'è la console né l'intestazione: la scena del replay (640 × 360) sta da sola al centro, ingrandita quanto ci sta;
     // ai lati restano due colonne strette, i tasti dei set a sinistra e i comandi a destra
     if (document.documentElement.classList.contains('app-shell') && (larghezza <= 900 || altezza <= 500)) {
@@ -2675,8 +2676,18 @@ function adattaReplayAlloSchermo() {
         return;
     }
     const perLarghezza = (larghezza - 24 - tastiSet) / 1150;
-    const perAltezza = (altezza - riservato) / 647;
-    const scala = Math.min(1, perLarghezza, Math.max(0.5, perAltezza));
+    const scalaCon = riservato => Math.min(1, perLarghezza, Math.max(0.5, (altezza - riservato) / 647));
+    // meteo, terreni e condizioni dei lati: in colonna a sinistra della console se lì c'è posto (la colonna è larga 170px), altrimenti in una riga sopra,
+    // che toglie un po' d'altezza alla console
+    const campo = modal.querySelector('.replay-campo');
+    const conCampo = !!(campo && !campo.hidden);
+    modal.classList.remove('campo-laterale');
+    let scala = scalaCon(riservatoBase);
+    if (conCampo) {
+        const liberoSinistra = (larghezza - (1150 * scala + tastiSet)) / 2;
+        if (insieme && liberoSinistra >= 190) modal.classList.add('campo-laterale');
+        else scala = scalaCon(riservatoBase + alto('.replay-campo'));
+    }
     modal.style.setProperty('--gba-scala', scala.toFixed(3));
 }
 window.addEventListener('resize', () => { if (document.getElementById('replayModal')?.style.display === 'flex') adattaReplayAlloSchermo(); });
