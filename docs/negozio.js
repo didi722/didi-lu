@@ -111,7 +111,7 @@
             + `<p class="ng-nota">${esc(notaPremi())}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
             + gruppi
-            + `<p class="ng-guida"><b>More to spend on.</b> Avatars (${Cosmetici.PREZZI.avatar} 🪙) and songs (${Cosmetici.PREZZI.canzone} 🪙): unlock them in <b>Customize → Trainer</b>; your first avatar and first song are free if you still have the default ones. `
+            + `<p class="ng-guida"><b>More to spend on.</b> Avatars (${Cosmetici.PREZZI.avatar} 🪙) and songs (${Cosmetici.PREZZI.canzone} 🪙): unlock them in <b>Customize → Trainer</b>; your first avatar and first song are free if you still have the default ones. Each one belongs to one trainer only: once it is yours, nobody else can take it. `
             + `Shiny Pokémon (${Cosmetici.PREZZI.shinyPokemon} 🪙 each): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
             + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
     }
@@ -140,7 +140,7 @@
     // ---------------------------------------------------------------- nel browser
     const FRASI = {
         owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
-        already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
+        taken: 'Someone else already owns it: every avatar and song belongs to one trainer only.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 

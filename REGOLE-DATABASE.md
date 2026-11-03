@@ -15,6 +15,7 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
 - `pushTokens`, `notifiche`, `partite/*/privato`: ora davvero privati. L'admin può leggere/scrivere `notifiche` (serve a "Delete season", che pulisce le notifiche).
 - `partite`: lettura solo da loggati (come già scritto), scrittura solo della `presenza`; il resto lo scrive il server.
 - `wallet` (le monete): ognuno legge solo il proprio, nessuno lo scrive dal sito. **Senza queste regole il negozio non è sicuro**: oggi chiunque sia loggato può scrivere ovunque, quindi anche darsi monete.
+- `cosmeticiPresi` (chi possiede quale avatar o canzone): ogni avatar e ogni canzone ha un solo proprietario, e chi lo compra lo riserva. Lo legge chiunque (serve a mostrare "già preso" nell'editor), lo scrive solo il server.
 - Cosmetici del negozio nel profilo (`players/…/info/pkmShiny`, `info/aura`, i motivi a pagamento dello sfondo in `info/pagina/sfondo/motivo`): `players` resta scrivibile dai loggati, ma questi valori si accettano solo se chi scrive li ha nel portafoglio (o se non cambiano, così chi usava già un motivo lo tiene). Sono regole `.validate`, che il permesso del nodo sopra non può scavalcare. Le Functions passano comunque.
 - Tutto quello che non è elencato (`partiteServer`, `pushInviati`, `pushProve`, `badgeVisti`, `walletEventi`) è chiuso al sito; le Functions e il checker passano comunque (Admin SDK).
 
@@ -81,6 +82,9 @@ Non cambia nulla di quello che il sito fa oggi; chiude i buchi che non servono a
         ".read": "auth != null && auth.uid === $uid"
       }
     },
+
+    // Chi possiede quale avatar o canzone (functions/monete.js): pubblico in lettura, lo scrive solo il server.
+    "cosmeticiPresi": { ".read": true },
 
     // Token dei telefoni: ognuno scrive i suoi, nessuno li legge dal sito.
     "pushTokens": {

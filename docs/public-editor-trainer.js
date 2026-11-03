@@ -11,6 +11,7 @@
 //
 // Avatar e canzoni nuovi si sbloccano a pagamento (cosmetici.js, il server li vende): quelli che non si hanno mostrano un lucchetto e il tasto apre una conferma;
 // una volta sbloccati restano tuoi e si cambia quando si vuole. Il primo avatar e la prima canzone sono gratis per chi ha ancora quelli di partenza.
+// Ogni avatar e ogni canzone ha UN solo proprietario (cosmeticiPresi, lo scrive il server): comprare vuol dire riservare, e quello comprato da un altro resta grigio anche se lui non lo usa.
 // =====================================================
 (function () {
     'use strict';
@@ -56,10 +57,10 @@
 
     // Una voce già scelta da un altro allenatore: grigia, non si clicca
     const PRESA = 'Already taken by another trainer';
-    function comePresa(bottone, titolo) {
+    function comePresa(bottone, titolo, motivo) {
         bottone.disabled = true;
         bottone.classList.add('is-preso');
-        bottone.title = titolo ? `${titolo} · ${PRESA}` : PRESA;
+        bottone.title = titolo ? `${titolo} · ${motivo || PRESA}` : (motivo || PRESA);
         bottone.setAttribute('aria-label', bottone.title);
         return bottone;
     }
@@ -85,8 +86,8 @@
                 immagine ? h('img', { src: immagine, alt: '' }) : null,
                 h('b', { testo: nome }),
                 h('p', { class: 'pe-nota', testo: !cosmetici.pronto() ? 'Loading your coins…'
-                    : p.gratis ? `Your first ${tipo} is free: you still have the default one.`
-                        : `Unlocking costs ${p.prezzo} 🪙 and you have ${saldo} 🪙. It stays yours: you can come back to it any time.${saldo < p.prezzo ? ' Play some sets to earn more coins.' : ''}` }),
+                    : p.gratis ? `Your first ${tipo} is free: you still have the default one. It becomes yours alone: nobody else can take it, even if you switch to another later.`
+                        : `Unlocking costs ${p.prezzo} 🪙 and you have ${saldo} 🪙. It becomes yours alone: nobody else can take it, even if you switch to another later.${saldo < p.prezzo ? ' Play some sets to earn more coins.' : ''}` }),
                 h('div', { class: 'pe-sblocco-azioni' }, h('button', { type: 'button', class: 'pe-bottone', onclick: chiudi, testo: 'Cancel' }), conferma)));
         document.addEventListener('keydown', tasto);
         document.body.append(velo);
@@ -108,10 +109,12 @@
         // ---- avatar
         const avatarAttuale = P.chiaveAvatar(profilo.avatar);
         const tuttiAvatar = P.elencoAvatar();
-        const preso = f => `profile/${f}`.toLowerCase() !== avatarAttuale && presi.avatar.has(`profile/${f}`.toLowerCase());
-        const avatarLiberi = tuttiAvatar.filter(f => !preso(f));
         const idAv = f => `avatar-${f.replace('.png', '')}`;
         const bloccato = id => !!window.Cosmetici && !cosmetici.possiede(id);
+        // grigio se lo usa un altro adesso, o se lo ha comprato un altro (anche se oggi non lo usa: comprare vuol dire riservare); quello che è tuo resta sempre scegliabile
+        const preso = f => `profile/${f}`.toLowerCase() !== avatarAttuale && presi.avatar.has(`profile/${f}`.toLowerCase());
+        const doAltri = f => cosmetici.presoDa(idAv(f));
+        const avatarLiberi = tuttiAvatar.filter(f => !preso(f) && !doAltri(f));
         const prezzoAv = cosmetici.prezzo('avatar-1');
         const griglia = h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, tuttiAvatar.map(f => {
             const n = f.replace('.png', ''), id = idAv(f), chiuso = bloccato(id);
@@ -122,9 +125,11 @@
                     ? chiediSblocco(ctx, { id, nome: `Avatar ${n}`, tipo: 'avatar', immagine: `immagini/profile/${f}`, dopo: () => { scegli({ avatar: url }); ridisegna(); } })
                     : scegli({ avatar: url })) },
             h('img', { src: `immagini/profile/${f}`, alt: '', loading: 'lazy' }));
-            return preso(f) ? comePresa(b, `Avatar ${n}`) : b;
+            if (preso(f)) return comePresa(b, `Avatar ${n}`);
+            return doAltri(f) ? comePresa(b, `Avatar ${n}`, `Owned by ${cosmetici.nomeDi(doAltri(f))}`) : b;
         }));
-        const notaAvatar = prezzoAv.gratis ? 'Your first new avatar is free: you still have the default one.' : `A new avatar costs ${prezzoAv.prezzo} 🪙 and stays yours. You have ${cosmetici.saldo()} 🪙.`;
+        const notaAvatar = prezzoAv.gratis ? 'Your first new avatar is free: you still have the default one. Every avatar belongs to one trainer only: once you unlock it, nobody else can take it.'
+            : `A new avatar costs ${prezzoAv.prezzo} 🪙. Every avatar belongs to one trainer only: once you unlock it, it is yours and nobody else can take it. You have ${cosmetici.saldo()} 🪙.`;
 
         // ---- colore firma: tutti, quelli di altri in grigio (il tuo di adesso resta sempre selezionabile)
         const attuale = String(profilo.color || '').toUpperCase();
@@ -290,6 +295,8 @@
             const q = ricerca.canzoni.trim().toLowerCase();
             const mio = profilo.musicaPreferita;
             const prese = c => c.url !== mio && (presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()));
+            // una canzone comprata da un altro (anche se oggi non la usa) è sua
+            const doAltri = c => (window.Cosmetici ? cosmetici.presoDa(window.Cosmetici.idCanzone(c.url)) : '');
             const libere = canzoni.filter(c => !q || c.nome.toLowerCase().includes(q));
             lista.append(...libere.map(c => {
                 const id = window.Cosmetici ? window.Cosmetici.idCanzone(c.url) : '';
@@ -305,7 +312,7 @@
                 h('span', { testo: chiusa ? `🔒 ${c.nome}` : c.nome }),
                 chiusa ? h('small', { class: 'pe-prezzo', testo: prezzoC.gratis ? 'free' : `${prezzoC.prezzo} 🪙` }) : null);
                 return h('div', { class: 'pe-canzone' },
-                    prese(c) ? comePresa(scelta, c.nome) : scelta,
+                    prese(c) ? comePresa(scelta, c.nome) : doAltri(c) ? comePresa(scelta, c.nome, `Owned by ${cosmetici.nomeDi(doAltri(c))}`) : scelta,
                     h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${c.nome}`, onclick: ev => {
                         ev.stopPropagation();
                         const gia = anteprima && anteprima.src === c.url;
@@ -327,8 +334,8 @@
             h('div', { class: 'pe-attuale' }, h('span', { testo: 'Now: ' }), h('b', { id: 'pe-canzone-attuale', testo: profilo.musicName || (profilo.musicaPreferita ? 'Favourite song' : 'None') }),
                 h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => { fermaAnteprima(); scegli({ musicName: '', musicaPreferita: '' }); }, testo: 'None' })),
             cerca, lista,
-            h('p', { class: 'pe-nota', testo: cosmetici.prezzo('canzone-00000000').gratis ? 'Your first new song is free: you have not picked one yet. Tap ▶ to listen before you unlock.'
-                : `A new song costs ${cosmetici.prezzo('canzone-00000000').prezzo} 🪙 and stays yours: tap ▶ to listen first. You have ${cosmetici.saldo()} 🪙.` }),
+            h('p', { class: 'pe-nota', testo: cosmetici.prezzo('canzone-00000000').gratis ? 'Your first new song is free: you have not picked one yet. Every song belongs to one trainer only: once you unlock it, nobody else can take it. Tap ▶ to listen before you unlock.'
+                : `A new song costs ${cosmetici.prezzo('canzone-00000000').prezzo} 🪙. Every song belongs to one trainer only: once you unlock it, it is yours and nobody else can take it. Tap ▶ to listen first. You have ${cosmetici.saldo()} 🪙.` }),
             h('p', { class: 'pe-nota', testo: 'The song plays from the Music block of your card. If you turn that block off, no music plays.' }));
     }
 

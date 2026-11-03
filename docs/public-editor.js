@@ -199,6 +199,16 @@
             .then(snap => { const w = snap.val() || {}; portafoglio = { saldo: Number(w.saldo) || 0, posseduti: w.posseduti || {}, gratis: w.gratis || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
             .catch(() => { /* senza: resta bloccato ciò che non usi già, e non si compra */ });
     }
+    // Avatar e canzoni hanno un solo proprietario: cosmeticiPresi/{id} = l'allenatore che li ha comprati (lo scrive il server). Chi li compra li riserva: nessun altro li può comprare né usare,
+    // anche se tu oggi ne usi un altro. Si legge una volta; si rilegge se un acquisto dice "taken" (qualcuno ti ha preceduto).
+    let registro = null;             // null finché non si legge; poi { <id>: <allenatore> }
+    function leggiRegistro(forza) {
+        if ((registro && !forza) || !window.firebase || !window.firebase.database) return Promise.resolve();
+        return window.firebase.database().ref('cosmeticiPresi').once('value')
+            .then(snap => { registro = snap.val() || {}; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .catch(() => { registro = registro || {}; /* senza: si vede solo ciò che gli altri usano adesso, e il server rifiuta il resto */ });
+    }
+
     // quello che si usa nella pagina SALVATA (non l'anteprima di una scelta ancora da salvare)
     const infoSalvata = () => ({ ...C.stato.dati.info, ...C.stato.infoSalvata });
     const contestoCosmetici = () => ({ wallet: portafoglio || {}, info: infoSalvata(), pagina: C.stato.salvata });
@@ -220,6 +230,10 @@
         possiede: id => !!window.Cosmetici && window.Cosmetici.possiede(id, contestoCosmetici()),
         prezzo: id => (window.Cosmetici && window.Cosmetici.prezzoPer(id, contestoCosmetici())) || { prezzo: 0, gratis: false },
         saldo: () => (portafoglio ? portafoglio.saldo : 0),
+        /** L'id dell'allenatore che possiede questo avatar o questa canzone, se non sei tu; '' se è libero o è tuo */
+        presoDa: id => { const o = registro && registro[id]; return o && o !== C.stato.dati.chiave ? String(o) : ''; },
+        /** Il nome da mostrare di un allenatore (dal profilo, se c'è) */
+        nomeDi: g => { const i = ((C.stato.dati.tutti || {})[g] || {}).info; return (i && i.name) || String(g); },
         frase: motivo => (motivo === 'loading' ? 'Still loading your coins: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
         /** Sblocca un avatar o una canzone dal server; ritorna { ok, saldo, gratis } o { ok: false, motivo } e rilegge il portafoglio */
         async compra(id, nome) {
@@ -227,6 +241,7 @@
             await caricaNegozio();
             const r = await window.Negozio.compra(window, id, nome);
             if (r.ok) await leggiPortafoglio(true);
+            if (r.ok || r.motivo === 'taken') await leggiRegistro(true);        // dopo un acquisto cambia anche il registro; se qualcuno ti ha preceduto, ora lo si vede
             return r;
         },
         tipoDi
@@ -1087,6 +1102,7 @@
         C.stato.dopoAdatta = () => { aggiornaManiglie(); aggiornaNotaPalco(); };
         C.modifica(true);
         leggiPortafoglio();
+        leggiRegistro();
         installaBarre();
         costruisciPannello();
         disegnaPannello();

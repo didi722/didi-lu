@@ -4,7 +4,8 @@
 // Cose che si comprano con le monete (wallet/{uid}) e cambiano solo l'aspetto.
 //   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita.
 //   - Le famiglie: ogni avatar (avatar-<n>) e ogni canzone (canzone-<impronta dell'indirizzo>) si sblocca a pagamento. Quello che si usa già resta di chi lo usa; chi ha
-//     ancora l'avatar o la canzone di partenza ha il PRIMO sblocco gratis (uno per tipo: wallet/{uid}/gratis/<tipo>).
+//     ancora l'avatar o la canzone di partenza ha il PRIMO sblocco gratis (uno per tipo: wallet/{uid}/gratis/<tipo>). Ognuno ha UN solo proprietario (cosmeticiPresi/<id>, lo scrive il server):
+//     comprare vuol dire riservare, così un avatar unico com'è sempre stato non si può perdere perché nel frattempo l'ha preso un altro.
 //   - Lo shiny di un Pokémon di un team: costa PREZZI.shinyPokemon e si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js).
 //   - L'economia: PREMI (quanto si guadagna) e PREZZI (quanto costano le famiglie), calibrati sulla stagione tipo con stimaStagione().
 // ATTENZIONE: questo file esiste in due copie identiche, functions/cosmetici.js (il server controlla prezzi e acquisti) e docs/cosmetici.js (il sito).

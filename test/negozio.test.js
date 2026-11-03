@@ -173,6 +173,17 @@ test('cablaggio: l\'editor legge il portafoglio, mostra il lucchetto su avatar e
     assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: `Avatar \$\{n\}`, tipo: 'avatar'/);
     assert.match(tr, /chiediSblocco\(ctx, \{ id, nome: c\.nome, tipo: 'song'/);
     assert.match(tr, /Unlock for free/);
+    // avatar e canzoni hanno un solo proprietario: il registro si legge, i comprati da altri sono grigi (anche se non li usano) e il server dice "taken"
+    assert.match(ed, /ref\('cosmeticiPresi'\)/);
+    assert.match(ed, /presoDa: id => \{ const o = registro && registro\[id\]; return o && o !== C\.stato\.dati\.chiave \? String\(o\) : ''; \}/);
+    assert.match(ed, /if \(r\.ok \|\| r\.motivo === 'taken'\) await leggiRegistro\(true\)/);
+    assert.match(tr, /const doAltri = f => cosmetici\.presoDa\(idAv\(f\)\)/);
+    assert.match(tr, /comePresa\(b, `Avatar \$\{n\}`, `Owned by \$\{cosmetici\.nomeDi\(doAltri\(f\)\)\}`\)/);
+    assert.match(tr, /doAltri\(c\) \? comePresa\(scelta, c\.nome, `Owned by/);
+    assert.match(tr, /nobody else can take it, even if you switch to another later/);
+    assert.match(N.frase('taken'), /Someone else already owns it/);
+    assert.match(N.html({ saldo: 0 }), /Each one belongs to one trainer only: once it is yours, nobody else can take it/);
+    assert.match(leggi('REGOLE-DATABASE.md'), /"cosmeticiPresi": \{ "\.read": true \}/);
     assert.match(tr, /None' \}\)|testo: 'None'/, 'togliere la canzone resta gratis');
     assert.match(leggi('docs', 'style-public-editor.css'), /\.pe-avatar-item\.pe-bloccato::after \{ content: '🔒'/);
 });

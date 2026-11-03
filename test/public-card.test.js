@@ -181,8 +181,8 @@ test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo e
     // il colore di chi sceglie resta sempre tra le scelte
     assert.match(trainer, /colori\.unshift\(attuale\)/);
     // le scelte degli altri restano in lista ma disabilitate e grigie: tutte e quattro le liste passano da comePresa()
-    assert.match(trainer, /function comePresa\(bottone, titolo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
-    assert.equal((trainer.match(/comePresa\(/g) || []).length, 6, 'definizione + avatar, colori, Pokémon, Pokémon del Box, canzoni');
+    assert.match(trainer, /function comePresa\(bottone, titolo, motivo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
+    assert.equal((trainer.match(/comePresa\(/g) || []).length, 8, 'definizione + avatar (in uso o comprato da un altro), colori, Pokémon, Pokémon del Box, canzoni (in uso o comprata da un altro)');
     assert.doesNotMatch(trainer, /\.filter\(p => \(p\.name === mio \|\| !presi\.pokemon/, 'i Pokémon presi non si tolgono dalla lista');
     assert.doesNotMatch(trainer, /P\.PALETTE_FIRMA\.filter\(/, 'i colori presi non si tolgono dalla palette');
     assert.match(cssEditor, /\.is-preso, \.is-preso:hover \{[^}]*cursor: not-allowed/);

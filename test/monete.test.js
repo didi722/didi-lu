@@ -140,12 +140,78 @@ test('avatar e canzoni: il primo sblocco è gratis per chi ha ancora quelli di p
     assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-20' }), { ok: true, saldo: 100 - avatar, gratis: false });
     assert.ok(db.albero.wallet.u2.posseduti['avatar-7'], 'l\'avatar di prima è suo');
     assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-7' }), { ok: false, motivo: 'owned' }, 'tornare a quello di prima non costa');
-    assert.equal((await M.acquista({ db, uid: 'u2', id: uno })).gratis, false, 'ha già una canzone: niente gratis');
+    const tre = C.idCanzone('https://x.test/tre.mp3');
+    assert.equal((await M.acquista({ db, uid: 'u2', id: tre })).gratis, false, 'ha già una canzone: niente gratis');
     assert.ok(db.albero.wallet.u2.posseduti[C.idCanzone('https://x.test/a.mp3')], 'anche la canzone di prima resta sua');
     // l'avatar in uso adesso è già suo: nessun addebito
     assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-9' }), { ok: false, motivo: 'owned' });
     // id che non esistono
     for (const id of ['avatar-162', 'avatar-293', 'avatar-0', 'canzone-xyz', 'avatar-1; drop']) assert.deepEqual(await M.acquista({ db, uid: 'u1', id }), { ok: false, motivo: 'unknown' }, id);
+});
+
+test('avatar e canzoni hanno un solo proprietario: comprare vuol dire riservare, anche se poi non lo si usa; nessuno li può comprare finché sono di un altro, e non si paga niente', async () => {
+    const db = dbFinto({
+        users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Ilaria' } },
+        players: {
+            didi: { info: { avatar: 'https://didi722.github.io/didi-lu/immagini/profile/7.png', musicaPreferita: 'https://x.test/a.mp3' } },
+            lukiani: { info: { avatar: 'immagini/profile/20.png', musicaPreferita: 'https://x.test/b.mp3' } },
+            ilaria: { info: { avatar: 'https://via.placeholder.com/150' } }
+        },
+        wallet: { u1: { saldo: 500 }, u2: { saldo: 500 }, u3: { saldo: 500 } }
+    });
+    const { avatar } = C.PREZZI;
+    // Didi compra l'avatar 5 e continua a usare il 7: l'avatar 5 è suo e di nessun altro
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-5' }), { ok: true, saldo: 500 - avatar, gratis: false });
+    assert.equal(db.albero.cosmeticiPresi['avatar-5'], 'didi');
+    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: 'avatar-5' }), { ok: false, motivo: 'taken' }, 'comprato da Didi, anche se non lo usa');
+    assert.equal(saldo(db, 'u2'), 500, 'e non si addebita niente');
+    assert.equal((db.albero.wallet.u2.posseduti || {})['avatar-5'], undefined);
+    // un avatar in uso da un altro (mai comprato: era già suo) non si vende
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-20' }), { ok: false, motivo: 'taken' }, 'lo usa Lukiani');
+    // chi cambia avatar tiene il vecchio e nessun altro lo può prendere: era suo per uso, ora lo è per possesso
+    assert.equal(db.albero.cosmeticiPresi['avatar-7'], 'didi');
+    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-7' }), { ok: false, motivo: 'taken' }, 'Didi non lo usa più per scelta, ma resta suo');
+    // le canzoni uguale
+    const a = C.idCanzone('https://x.test/a.mp3'), nuova = C.idCanzone('https://x.test/nuova.mp3');
+    assert.deepEqual(await M.acquista({ db, uid: 'u2', id: a }), { ok: false, motivo: 'taken' }, 'la canzone in uso da Didi');
+    assert.equal((await M.acquista({ db, uid: 'u1', id: nuova })).ok, true);
+    assert.equal(db.albero.cosmeticiPresi[a], 'didi', 'la canzone di prima resta di Didi');
+    assert.equal(db.albero.cosmeticiPresi[nuova], 'didi');
+    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: nuova }), { ok: false, motivo: 'taken' });
+    // chi è già proprietario non è un altro: lo stesso Didi riprova → "owned"
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'avatar-5' }), { ok: false, motivo: 'owned' });
+    // il resto del catalogo non è esclusivo: due allenatori possono avere la stessa aura
+    assert.equal((await M.acquista({ db, uid: 'u1', id: 'aura-oro' })).ok, true);
+    assert.equal((await M.acquista({ db, uid: 'u2', id: 'aura-oro' })).ok, true);
+    assert.equal(db.albero.cosmeticiPresi['aura-oro'], undefined);
+});
+
+test('avatar riservato: due allenatori che comprano lo stesso insieme, uno solo lo prende e si paga una volta; se il saldo non basta la riserva torna libera; "taken" non consuma lo sblocco gratis', async () => {
+    const db = dbFinto({
+        users: { u1: { name: 'Didi' }, u2: { name: 'Lukiani' }, u3: { name: 'Ilaria' } },
+        players: { didi: { info: {} }, lukiani: { info: {} }, ilaria: { info: { avatar: 'immagini/profile/3.png' } } },
+        wallet: { u1: { saldo: 100 }, u2: { saldo: 100 }, u3: { saldo: 1 } }
+    });
+    const [x, y] = await Promise.all([M.acquista({ db, uid: 'u1', id: 'avatar-9' }), M.acquista({ db, uid: 'u2', id: 'avatar-9' })]);
+    assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
+    assert.equal([x, y].find(r => !r.ok).motivo, 'taken');
+    const vinto = x.ok ? 'didi' : 'lukiani', perso = x.ok ? 'u2' : 'u1';
+    assert.equal(db.albero.cosmeticiPresi['avatar-9'], vinto);
+    // chi ha perso non ha pagato, non ha l'avatar e può ancora usare il suo gratis per un altro
+    assert.equal(saldo(db, perso), 100);
+    assert.equal((db.albero.wallet[perso].posseduti || {})['avatar-9'], undefined);
+    assert.equal(db.albero.wallet[perso].gratis, undefined, 'lo sblocco gratis non si è consumato');
+    assert.deepEqual(await M.acquista({ db, uid: perso, id: 'avatar-10' }), { ok: true, saldo: 100, gratis: true });
+    // senza monete la riserva non resta: l'avatar torna libero per gli altri
+    assert.deepEqual(await M.acquista({ db, uid: 'u3', id: 'avatar-11' }), { ok: false, motivo: 'poor' });
+    assert.equal(db.albero.cosmeticiPresi['avatar-11'], undefined, 'riserva tornata libera');
+    assert.equal((await M.acquista({ db, uid: perso, id: 'avatar-11' })).ok, true);
+    // un acquisto interrotto a metà (riservato ma non nel portafoglio) si porta a termine dallo stesso allenatore
+    db.albero.cosmeticiPresi['avatar-12'] = vinto;
+    const rep = await M.acquista({ db, uid: x.ok ? 'u1' : 'u2', id: 'avatar-12' });
+    assert.equal(rep.ok, true, 'era già suo nel registro: si riprende');
+    // e non si riserva per chi non ha un profilo
+    assert.deepEqual(await M.acquista({ db, uid: 'senza-profilo', id: 'avatar-40' }), { ok: false, motivo: 'no-profile' });
 });
 
 test('avatar e canzoni senza monete: lo sblocco gratis si consuma lo stesso, quello a pagamento no; la prenotazione torna indietro', async () => {

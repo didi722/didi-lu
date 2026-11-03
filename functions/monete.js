@@ -99,20 +99,55 @@ const uidDi = async (db, nome) => {
 /** L'id del giocatore (il suo nome in minuscolo) di un account */
 const giocatoreDi = async (db, uid) => String((await db.ref(`users/${uid}/name`).once('value')).val() || '').toLowerCase().trim();
 
-/** Compra un cosmetico: deve esistere, non essere già suo (o in uso) e il saldo bastare. Per un avatar o una canzone, chi ha ancora quelli di partenza ha il primo sblocco gratis.
- *  Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
+// ---------------------------------------------------------------- avatar e canzoni: un solo proprietario
+// Un avatar o una canzone è unico, com'è sempre stato: nessun altro poteva scegliere quello che avevi. Con gli acquisti l'unicità passa dall'uso al POSSESSO: comprare vuol dire riservare.
+// cosmeticiPresi/<id> = l'id dell'allenatore che lo possiede (lo scrive solo il server, lo legge chiunque per mostrare "già preso"). Finché è tuo nessun altro lo può comprare né usare,
+// anche se oggi ne usi un altro: così non succede di pagare un avatar e poi non poterlo mettere perché nel frattempo l'ha preso qualcuno.
+const ESCLUSIVI = ['avatar', 'canzone'];
+
+/** Chi, tra gli altri, usa adesso questo avatar o questa canzone? Ritorna l'id dell'allenatore, o '' */
+function chiUsa(giocatori, io, c) {
+    for (const [g, v] of Object.entries(giocatori && typeof giocatori === 'object' ? giocatori : {})) {
+        if (g === io) continue;
+        const i = v && v.info;
+        if (!i) continue;
+        if ((c.tipo === 'avatar' ? Cosmetici.idAvatar(i.avatar) : Cosmetici.idCanzone(i.musicaPreferita)) === c.id) return g;
+    }
+    return '';
+}
+
+/** Riserva un id per un allenatore (transazione: se due comprano insieme vince il primo). { ok } se era libero o già suo; { nuovo } se l'ha scritto adesso (per toglierlo se l'acquisto non riesce) */
+async function riserva(db, id, giocatore) {
+    let prima;
+    const r = await db.ref(`cosmeticiPresi/${id}`).transaction(v => { prima = v; return !v || v === giocatore ? giocatore : undefined; });
+    return { ok: !!r.committed, nuovo: !!r.committed && !prima };
+}
+
+/** Compra un cosmetico: deve esistere, non essere già suo (o in uso) e il saldo bastare. Per un avatar o una canzone, chi ha ancora quelli di partenza ha il primo sblocco gratis; ognuno ha un solo
+ *  proprietario (vedi sopra). Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
 async function acquista({ db, uid, id, nome, adesso = Date.now() }) {
     const c = Cosmetici.perId(id);
     if (!c) return { ok: false, motivo: 'unknown' };
+    const esclusivo = ESCLUSIVI.includes(c.tipo);
     const giocatore = await giocatoreDi(db, uid);
-    const [wallet, info] = await Promise.all([
+    if (esclusivo && !giocatore) return { ok: false, motivo: 'no-profile' };
+    const [wallet, info, giocatori, titolare] = await Promise.all([
         db.ref(`wallet/${uid}`).once('value').then(x => x.val() || {}),
-        giocatore ? db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}) : Promise.resolve({})
+        giocatore ? db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}) : Promise.resolve({}),
+        esclusivo ? db.ref('players').once('value').then(x => x.val() || {}) : Promise.resolve({}),
+        esclusivo ? db.ref(`cosmeticiPresi/${id}`).once('value').then(x => x.val() || '') : Promise.resolve('')
     ]);
     if (Cosmetici.possiede(id, { wallet, info, pagina: info.pagina })) return { ok: false, motivo: 'owned' };
+    // è di un altro (comprato, anche se oggi non lo usa) o lo usa un altro: non si vende, e non si addebita niente
+    if (esclusivo && ((titolare && titolare !== giocatore) || chiUsa(giocatori, giocatore, c))) return { ok: false, motivo: 'taken' };
     const mio = db.ref(`wallet/${uid}/posseduti/${id}`);
     const preso = await mio.transaction(v => (v ? undefined : adesso));
     if (!preso.committed) return { ok: false, motivo: 'owned' };
+    let riservato = { ok: true, nuovo: false };
+    if (esclusivo) {
+        riservato = await riserva(db, id, giocatore);
+        if (!riservato.ok) { await mio.transaction(v => (v === adesso ? null : undefined)); return { ok: false, motivo: 'taken' }; }
+    }
     // il primo avatar e la prima canzone: gratis per chi ha ancora quelli di partenza, una volta per tipo (la prenotazione del gratis è una transazione anch'essa)
     let prezzo = c.prezzo, gratis = false;
     if (Cosmetici.prezzoPer(id, { wallet, info }).gratis) {
@@ -125,12 +160,18 @@ async function acquista({ db, uid, id, nome, adesso = Date.now() }) {
         if (prezzo > 0) fatto = await spendi(db, uid, prezzo, `Bought: ${etichetta}`, { adesso });
         else { await scriviMovimento(db, uid, 0, `Free: ${etichetta}`, adesso); fatto = true; }
     } finally {
-        if (!fatto) await mio.transaction(v => (v === adesso ? null : undefined));
+        if (!fatto) {
+            await mio.transaction(v => (v === adesso ? null : undefined));
+            if (riservato.nuovo) await db.ref(`cosmeticiPresi/${id}`).transaction(v => (v === giocatore ? null : undefined));
+        }
     }
     if (!fatto) return { ok: false, motivo: 'poor' };
-    // quello che usava prima resta suo: era "in uso" ma mai comprato, e senza questo cambiare avatar o canzone lo farebbe perdere
+    // quello che usava prima resta suo (e di nessun altro): era "in uso" ma mai comprato, e senza questo cambiare avatar o canzone lo farebbe perdere
     const corrente = c.tipo === 'avatar' ? Cosmetici.idAvatar(info.avatar) : c.tipo === 'canzone' ? Cosmetici.idCanzone(info.musicaPreferita) : '';
-    if (corrente && corrente !== id) await db.ref(`wallet/${uid}/posseduti/${corrente}`).transaction(v => v || adesso);
+    if (corrente && corrente !== id) {
+        await db.ref(`wallet/${uid}/posseduti/${corrente}`).transaction(v => v || adesso);
+        await riserva(db, corrente, giocatore);
+    }
     const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
     return { ok: true, saldo, gratis };
 }
