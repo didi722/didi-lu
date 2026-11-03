@@ -1634,7 +1634,7 @@ async function apriModaleShowdown(sdId, sdData) {
             </article>`;
     }).join('');
 
-    window.showdownAperto = { id: sdId, info, matches, colori: { [String(info.player1 || '').toLowerCase().trim()]: colors.c1, [String(info.player2 || '').toLowerCase().trim()]: colors.c2 } };
+    globalThis.showdownAperto = { id: sdId, info, matches, colori: { [String(info.player1 || '').toLowerCase().trim()]: colors.c1, [String(info.player2 || '').toLowerCase().trim()]: colors.c2 } };
     modalOverlay.innerHTML = `
         <div class="sd-finestra" role="dialog" aria-modal="true" aria-label="${esc(info.player1)} vs ${esc(info.player2)}">
             <button type="button" class="sd-chiudi" aria-label="Close" onclick="chiudiModaleShowdown()">×</button>

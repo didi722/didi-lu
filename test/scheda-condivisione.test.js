@@ -72,6 +72,7 @@ test('cablaggio: Box (card del team), Matches (showdown e replay) e pagina dell\
     const m = leggi('docs', 'matches.html');
     assert.match(m, /<script src="scheda-condivisione\.js"><\/script>/);
     assert.match(m, /onclick="condividiShowdown\(\)"/);
+    assert.match(m, /globalThis\.showdownAperto = \{/);
     assert.match(m, /SchedaCondivisione\.showdown\(a\.info, a\.matches/);
     assert.match(m, /data-comando="condividi" id="rcCondividi"/);
     assert.match(m, /SchedaCondivisione\.replay\(sd, \{ set: Number\(set\.dataset\.set\)/);
