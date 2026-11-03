@@ -7,7 +7,7 @@
 //
 //   SchedaCondivisione.team(team, { giocatore, colore, avatar, record })      → la scheda (dati semplici) di un team
 //   SchedaCondivisione.showdown(info, matches, { colori, avatar })            → di uno showdown
-//   SchedaCondivisione.replay(showdown, { set, esitoSet, turni, url })        → di un set (con il link)
+//   SchedaCondivisione.replay(showdown, { set, match, esitoSet, turni, url }) → di un set (con il link)
 //   SchedaCondivisione.allenatore({ nome, colore, avatar, info, riepilogo })   → della scheda di un allenatore (riepilogo = riepilogoStat della sua pagina)
 //   SchedaCondivisione.testo(scheda)                                          → il testo che accompagna l'immagine
 //   SchedaCondivisione.disegna(win, scheda, { gif })                          → il canvas (async)
@@ -69,10 +69,11 @@
     }
 
     /** Un set di un replay: come lo showdown, ma col set, l'esito, i turni e il link (con il turno, se c'è) */
-    function replay(sd, { set = 0, esitoSet = '', turni = 0, url = '' } = {}) {
+    function replay(sd, { set = 0, match = 0, esitoSet = '', turni = 0, url = '' } = {}) {
         const s = JSON.parse(JSON.stringify(sd));
         s.tipo = 'replay';
-        s.titolo = `REPLAY · SET ${num(set) || ''}`.trim();
+        s.titolo = ['REPLAY', num(match) ? `MATCH ${num(match)}` : '', num(set) ? `SET ${num(set)}` : ''].filter(Boolean).join(' · ');
+        s.match1 = num(match);
         s.set = num(set);
         s.esitoSet = testo(esitoSet, 30);
         s.turni = num(turni);
@@ -102,7 +103,7 @@
         if (!s) return '';
         if (s.tipo === 'team') return `${s.titolo}${s.etichetta ? ` (${s.etichetta})` : ''}: ${s.pokemon.map(p => p.specie).join(', ')}${s.chi.nome ? ` · ${s.chi.nome}` : ''} — ${NOME_LEGA}`;
         if (s.tipo === 'showdown') return `${s.lati[0].nome} ${s.lati[0].vinti} - ${s.lati[1].vinti} ${s.lati[1].nome}${s.etichetta ? ` · ${s.etichetta}` : ''}${s.data ? ` · ${s.data}` : ''} — ${NOME_LEGA}`;
-        if (s.tipo === 'replay') return `${s.lati[0].nome} vs ${s.lati[1].nome}${s.etichetta ? ` · ${s.etichetta}` : ''} · set ${s.set || '?'}${s.url ? `\n${s.url}` : ''}`;
+        if (s.tipo === 'replay') return `${s.lati[0].nome} vs ${s.lati[1].nome}${s.etichetta ? ` · ${s.etichetta}` : ''}${s.match1 ? ` · match ${s.match1}` : ''} · set ${s.set || '?'}${s.url ? `\n${s.url}` : ''}`;
         if (s.tipo === 'allenatore') return `${s.nome}: ${s.numeri.map(n => `${n.et} ${n.val}${n.sub ? ` (${n.sub})` : ''}`).join(' · ')} — ${NOME_LEGA}`;
         return NOME_LEGA;
     }
@@ -154,9 +155,11 @@
             c.fillStyle = riempi; c.fillRect(x, y, w, h);
             c.lineWidth = bordo; c.strokeStyle = INK; c.strokeRect(x + bordo / 2, y + bordo / 2, w - bordo, h - bordo);
         };
-        const tondo = (img, cx, cy, r, vuoto) => {
+        // senza avatar (non c'è, o il server non lo lascia leggere) il cerchio porta l'iniziale dell'allenatore
+        const tondo = (img, cx, cy, r, vuoto, lettera) => {
             c.save(); c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.closePath(); c.fillStyle = vuoto || '#ddd'; c.fill();
             if (img) { c.clip(); c.drawImage(img, cx - r, cy - r, r * 2, r * 2); }
+            else if (lettera) { c.fillStyle = INK; c.font = `900 ${Math.round(r * 1.1)}px ${FT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(lettera).charAt(0).toUpperCase(), cx, cy + r * 0.06); c.textBaseline = 'alphabetic'; }
             c.restore(); c.lineWidth = 6; c.strokeStyle = INK; c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
         };
         // un'immagine dentro un quadrato, senza deformarla
@@ -197,11 +200,11 @@
             h.fit(s.etichetta.toUpperCase(), 80 + w / 2, 260, w - 20, 30, 900, FT, INK, 'center');
         }
         if (s.chi.nome) {
-            h.tondo(avatar, W - 130, 215, 48, s.colore);
+            h.tondo(avatar, W - 130, 215, 48, s.colore, s.chi.nome);
             h.fit(s.chi.nome.toUpperCase(), W - 195, 228, 340, 36, 900, FT, INK, 'right');
         }
         // la griglia dei Pokémon: due colonne, tre righe
-        const cw = 450, ch = 290, gx = 80, gy = 310, sp = 20;
+        const cw = 450, ch = 285, gx = 80, gy = 305, sp = 18;
         s.pokemon.forEach((p, i) => {
             const x = gx + (i % 2) * (cw + sp), y = gy + Math.floor(i / 2) * (ch + sp);
             h.riquadro(x, y, cw, ch, s.colore, 6, 8);
@@ -212,7 +215,7 @@
             p.mosse.forEach((m, j) => h.fit(`• ${m}`, x + 20 + (j % 2) * (cw / 2 - 5), y + 205 + Math.floor(j / 2) * 40, cw / 2 - 30, 24, 700, FX, INK));
             if (p.abilita) h.fit(p.abilita, x + 170, y + 120, cw - 190, 20, 600, FX, '#555');
         });
-        if (s.record) h.fit(`${s.record.vinti} W · ${s.record.persi} L · ${s.record.perc}% wins`, W / 2, H - 90, W - 160, 34, 900, FT, INK, 'center');
+        if (s.record) h.fit(`${s.record.vinti} W · ${s.record.persi} L · ${s.record.perc}% wins`, W / 2, H - 82, W - 160, 34, 900, FT, INK, 'center');
         pie(c, H, h, NOME_LEGA.toUpperCase());
     }
 
@@ -226,21 +229,19 @@
             h.riquadro((W - w) / 2, 140, w, 60, '#ffbd44', 5, 5);
             h.fit(s.etichetta.toUpperCase(), W / 2, 183, w - 20, 34, 900, FT, INK, 'center');
         }
-        // i due lati sul colore dell'allenatore, il punteggio in mezzo
-        const punti = s.tipo === 'replay' ? s.lati.map((l, i) => (s.esitoSet && s.esitoSet === l.nome ? 1 : 0)) : s.lati.map(l => l.vinti);
+        // i due lati sul colore dell'allenatore; chi ha perso si sfuma dentro il bordo (che resta nero)
         const vince = s.tipo === 'replay' ? (s.esitoSet ? (s.esitoSet === s.lati[0].nome ? 1 : s.esitoSet === s.lati[1].nome ? 2 : 0) : 0) : s.vince;
         [0, 1].forEach(i => {
             const l = s.lati[i], x = i === 0 ? 70 : W / 2 + 25, w = W / 2 - 95, y = 240;
             h.riquadro(x, y, w, 360, l.colore, 8, vince === i + 1 ? 14 : 6);
-            c.fillStyle = vince && vince !== i + 1 ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,0)'; c.fillRect(x, y, w, 360);
-            h.tondo(avatars[i], x + w / 2, y + 120, 85, '#fff');
+            if (vince && vince !== i + 1) { c.fillStyle = 'rgba(255,255,255,.45)'; c.fillRect(x + 8, y + 8, w - 16, 344); }
+            h.tondo(avatars[i], x + w / 2, y + 120, 85, '#fff', l.nome);
             h.fit(l.nome.toUpperCase(), x + w / 2, y + 285, w - 30, 46, 900, FT, INK, 'center');
             if (vince === i + 1) { h.riquadro(x + w / 2 - 55, y + 300, 110, 46, '#ffbd44', 4, 0); h.fit('WIN', x + w / 2, y + 335, 90, 32, 900, FT, INK, 'center'); }
         });
-        const centro = s.tipo === 'replay' ? 'VS' : `${s.lati[0].vinti} - ${s.lati[1].vinti}`;
         h.riquadro(W / 2 - 50, 380, 100, 64, '#fff', 5, 5);
-        h.fit(s.tipo === 'replay' ? 'VS' : 'VS', W / 2, 428, 80, 40, 900, FT, INK, 'center');
-        if (s.tipo === 'showdown') h.fit(centro, W / 2, 705, W - 200, 90, 900, FT, INK, 'center');
+        h.fit('VS', W / 2, 428, 80, 40, 900, FT, INK, 'center');
+        if (s.tipo === 'showdown') h.fit(`${s.lati[0].vinti} - ${s.lati[1].vinti}`, W / 2, 705, W - 200, 90, 900, FT, INK, 'center');
         // sotto: i match (showdown) o set, turni e link (replay)
         if (s.tipo === 'showdown') {
             s.match.forEach((m, i) => {
@@ -249,7 +250,7 @@
             });
             if (s.data) h.fit(s.data, W / 2, H - 80, W - 160, 30, 800, FT, '#333', 'center');
         } else {
-            h.fit(`SET ${s.set || '?'}${s.esitoSet ? ` · ${s.esitoSet.toUpperCase()} WINS` : ''}${s.turni ? ` · ${s.turni} TURNS` : ''}`, W / 2, 690, W - 160, 54, 900, FT, INK, 'center');
+            h.fit(`${s.match1 ? `MATCH ${s.match1} · ` : ''}SET ${s.set || '?'}${s.esitoSet ? ` · ${s.esitoSet.toUpperCase()} WINS` : ''}${s.turni ? ` · ${s.turni} TURNS` : ''}`, W / 2, 690, W - 160, 54, 900, FT, INK, 'center');
             if (s.url) h.fit(s.url.replace(/^https?:\/\//, ''), W / 2, 760, W - 140, 22, 700, FX, '#333', 'center');
             h.fit('Tap the link to watch it', W / 2, 810, W - 160, 28, 800, FT, '#555', 'center');
         }
@@ -261,9 +262,16 @@
         cornice(c, H, 'TRAINER', h);
         const [avatar, compagno] = await Promise.all([caricaImmagine(win, s.avatar), immagineSpecie(win, s.compagno, s.compagnoShiny)]);
         h.riquadro(80, 150, W - 160, 470, s.colore, 8, 12);
-        if (s.aura) { c.save(); c.shadowColor = s.aura; c.shadowBlur = 60; c.fillStyle = s.aura; c.beginPath(); c.arc(260, 385, 138, 0, Math.PI * 2); c.fill(); c.fill(); c.restore(); }
-        h.tondo(avatar, 260, 385, 140, '#fff');
-        if (compagno) { c.save(); c.globalAlpha = 1; h.dentro(compagno, 560, 220, 360); c.restore(); }
+        // senza compagno l'avatar sta al centro del riquadro; l'aura (cosmetico) è un bagliore dietro il cerchio, tenuto dentro il riquadro
+        const cx = compagno ? 260 : W / 2;
+        if (s.aura) {
+            c.save(); c.beginPath(); c.rect(88, 158, W - 176, 454); c.clip();
+            c.shadowColor = s.aura; c.shadowBlur = 60; c.fillStyle = s.aura;
+            c.beginPath(); c.arc(cx, 385, 138, 0, Math.PI * 2); c.fill(); c.fill();
+            c.restore();
+        }
+        h.tondo(avatar, cx, 385, 140, '#fff', s.nome);
+        if (compagno) h.dentro(compagno, 560, 220, 360);
         h.fit(s.nome.toUpperCase(), W / 2, 722, W - 160, 96, 900, FT, INK, 'center');
         if (s.motto) h.fit(`“${s.motto}”`, W / 2, 775, W - 200, 32, 700, FX, '#444', 'center');
         s.numeri.forEach((n, i) => {

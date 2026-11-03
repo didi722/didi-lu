@@ -2796,7 +2796,7 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         const avatar = await avatarDeiGiocatori([r.info.player1, r.info.player2]);
         const sd = SchedaCondivisione.showdown(r.info, r.matches, { colori, avatar });
         // il set mostrato: i turni di quel set sono quelli che il replay conosce; qui si dice quale set e chi l'ha vinto
-        SchedaCondivisione.condividi(window, SchedaCondivisione.replay(sd, { set: Number(set.dataset.set), esitoSet: set.dataset.vincitore || '', turni: turniTotaliReplay, url: window.indirizzoTurnoReplay() }));
+        SchedaCondivisione.condividi(window, SchedaCondivisione.replay(sd, { set: Number(set.dataset.set), match: parseInt(String(r.match).replace(/\D/g, ''), 10) || 0, esitoSet: set.dataset.vincitore || '', turni: turniTotaliReplay, url: window.indirizzoTurnoReplay() }));
     }
     async function copiaLinkTurno() {
         const url = window.indirizzoTurnoReplay();

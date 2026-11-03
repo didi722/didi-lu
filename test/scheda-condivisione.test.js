@@ -45,6 +45,10 @@ test('replay: come lo showdown con set, esito, turni e link; il testo porta il l
     assert.deepEqual([r.tipo, r.titolo, r.set, r.esitoSet, r.turni], ['replay', 'REPLAY · SET 2', 2, 'Lu', 11]);
     assert.equal(sd.tipo, 'showdown', 'lo showdown di partenza non cambia');
     assert.equal(S.testo(r), 'Didi vs Lu · VGC · set 2\nhttps://x.test/matches.html?id=s1&replay=a~b~set2&turno=7');
+    const m3 = S.replay(sd, { set: 2, match: 3 });
+    assert.equal(m3.titolo, 'REPLAY · MATCH 3 · SET 2');
+    assert.match(S.testo(m3), /^Didi vs Lu · VGC · match 3 · set 2$/);
+    assert.equal(S.replay(sd, {}).titolo, 'REPLAY', 'senza match né set resta solo REPLAY');
 });
 
 test('allenatore: le quattro caselle dalle statistiche già pronte della pagina, formato e punti in più; testo breve', () => {
