@@ -49,6 +49,14 @@ function dati() {
     };
 }
 
+test('squadre: i team del perimetro con le specie che portano (una volta sola), per chi vuole contare i team con un tipo', () => {
+    const r = U.calcola(dati(), { formato: 'VGC Reg G' });
+    assert.deepEqual(r.squadre, [{ giocatore: 'didi', stagione: 's1', specieId: ['incineroar', 'rillaboom', 'chiyu'] }]);
+    const ou = U.calcola(dati(), { formato: 'OU' }).squadre;
+    assert.equal(ou.length, 3);
+    assert.deepEqual(ou.map(x => x.stagione).sort(), ['s1', 's1', 's2']);
+});
+
 test('uso: percentuale dei team iscritti che contengono il Pokémon; la beta non conta, lo stesso team in due stagioni conta due volte', () => {
     const r = U.calcola(dati());
     assert.equal(r.totali.team, 4, 'Alfa (s1 e s2), Beta, Gamma; il team della beta è escluso');
@@ -134,7 +142,7 @@ test('iscrizioni senza la fotografia dei team: si usano i team del Box del gioca
     const r = U.calcola(d);
     assert.deepEqual(r.specie.map(s => s.specieId), ['rotomwash']);
     assert.equal(r.totali.team, 1);
-    assert.deepEqual(U.calcola({}), { filtro: { stagione: 'all', formato: 'all' }, formati: [], totali: { team: 0, pokemon: 0, giocatori: 0, specie: 0 }, specie: [], perFormato: {} });
+    assert.deepEqual(U.calcola({}), { filtro: { stagione: 'all', formato: 'all' }, formati: [], totali: { team: 0, pokemon: 0, giocatori: 0, specie: 0 }, specie: [], squadre: [], perFormato: {} });
     assert.equal(U.calcola(null).totali.team, 0);
     // anche i team salvati come oggetto invece che come array (è così che Firebase restituisce gli array)
     const comeOggetto = { seasons: { s1: { showdowns: { 0: { matches: { 0: match('didi', 'X', 'lu', 'Y') } } }, teams_iscritti: { OU: { didi: { datiTeams: { 0: team('x', 'X', { 0: mon('Ditto', 'Choice Scarf', 'Imposter', 'Jolly', { 0: 'Transform' }) }) } } } } } } };

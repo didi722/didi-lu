@@ -4986,6 +4986,9 @@ color:#eeeeee;
 
 /* Chip cliccabili nei tooltip del damage calc */
 .tb-tip-chips + .tb-tip-big { margin-top: 6px; }
+/* la lega nei tooltip del Team Builder (lega-box.js): quello che si gioca davvero nel formato */
+.tb-tip-section.tb-lega .tb-tip-chip small { font-weight: 800; }
+.tb-lega-uso { font-size: .78em; font-weight: 800; opacity: .7; white-space: nowrap; }
 .tb-tip-chip-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; align-self: center; }
 .tb-tip-chip-btn {
     font-size: 0.68rem; font-weight: 700; padding: 1px 6px; cursor: pointer; user-select: none;
