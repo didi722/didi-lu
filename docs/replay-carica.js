@@ -138,6 +138,15 @@
         return r.text();
     }
 
+    /** I momenti chiave del set (ReplaySito.momentiChiave, dal log): la pagina li sente come evento "replay-momenti" ({ iframe, momenti }) e li mostra sotto i comandi */
+    function annunciaMomenti(win, iframe, R, dati) {
+        try {
+            if (typeof R.momentiChiave !== 'function' || typeof win.dispatchEvent !== 'function' || typeof win.CustomEvent !== 'function') return;
+            const momenti = R.momentiChiave(dati.log, { p1: dati.p1 && dati.p1.nome, p2: dati.p2 && dati.p2.nome });
+            win.dispatchEvent(new win.CustomEvent('replay-momenti', { detail: { iframe, momenti } }));
+        } catch (e) { /* senza momenti il replay funziona uguale */ }
+    }
+
     async function apri(win, iframe, indirizzo, opzioni) {
         const numero = (iframe.__replayCarica || 0) + 1;       // se mentre si prepara se ne apre un altro (un altro set), questo si ferma
         iframe.__replayCarica = numero;
@@ -151,6 +160,7 @@
             const dati = R.leggiReplay(testo);
             if (!dati) throw new Error('non è un replay del sito');
             iframe.srcdoc = R.creaReplayHtml(Object.assign({}, dati, { motore, sprites: spritesDi(win) }));
+            annunciaMomenti(win, iframe, R, dati);
             return motore ? 'sito' : 'sito-senza-motore';
         } catch (errore) {
             if (!ancora()) return 'annullato';

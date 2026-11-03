@@ -173,6 +173,24 @@ body {
 .rc-play { width: 58px; background: var(--nb-giallo, #ffbd44); }
 .rc-play:hover { background: #fff; }
 .rc-velocita { width: 52px; }
+/* il link a questo turno: dopo il tasto copia si fa verde un attimo */
+.rc-tasto.copiato { background: #9be37f; }
+/* i momenti chiave del set (primo KO, sorpassi, rimonta, ultimo Pokémon, ultimo KO): chip sotto i comandi, un tocco porta a quel turno */
+.replay-momenti { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; box-sizing: border-box; max-width: min(100%, 760px); margin: 0 auto; z-index: 6; }
+.replay-momenti[hidden] { display: none; }
+.rm-chip {
+    display: inline-flex; align-items: center; gap: 5px; box-sizing: border-box; padding: 3px 9px 3px 3px; cursor: pointer;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 2px solid var(--nb-ink, #000); border-radius: calc(var(--nb-raggio, 0px) * .6);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 800 .74rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .03em; text-transform: uppercase;
+}
+.rm-chip b { padding: 1px 6px 0; background: var(--nb-ink, #000); color: #fff; border-radius: calc(var(--nb-raggio, 0px) * .4); font-weight: 900; }
+.rm-chip.rm-fine b { background: #c0392b; }
+.rm-chip.rm-rimonta b { background: #2a6fdb; }
+.rm-chip.rm-sorpasso b { background: #7b3fb5; }
+.rm-chip.rm-ultimo b { background: #d9730d; }
+.rm-chip:hover, .rm-chip:focus-visible, .rm-chip.qui { background: var(--nb-giallo, #ffbd44); outline: none; }
 
 .gba-screen-area {
     position: absolute;

@@ -767,7 +767,7 @@ ${barreSalute('.palco')}
         let ultimoAvviso = '';
         function avvisaGenitore() {
             if (window.parent === window) return;
-            const messaggio = { tipo: 'replay-stato', inPausa: inPausa(), velocita: VELOCITA[velocita].etichetta, muto };
+            const messaggio = { tipo: 'replay-stato', inPausa: inPausa(), velocita: VELOCITA[velocita].etichetta, muto, turno: Math.max(0, battle.turn), turni: totaleTurni };
             const chiave = JSON.stringify(messaggio);
             if (chiave === ultimoAvviso) return;
             ultimoAvviso = chiave;
@@ -835,6 +835,13 @@ ${barreSalute('.palco')}
         $('btn-velocita').addEventListener('click', prossimaVelocita);
         $('btn-audio').addEventListener('click', commutaAudio);
 
+        // Un turno preciso (un link "guarda il turno 12", un momento chiave): all'inizio di quel turno, oltre l'ultimo in fondo al set; è la stessa via della barra
+        function vaiATurno(n) {
+            if (!Number.isFinite(n) || n < 0) return;
+            $('velo-avvio').hidden = true;
+            battle.seekTurn(totaleTurni && n > totaleTurni ? Infinity : Math.floor(n));
+        }
+
         // Barra dei turni: un clic porta lì (in fondo = fine del set)
         const barra = $('barra-turni');
         function vaiAFrazione(frazione) {
@@ -857,6 +864,7 @@ ${barreSalute('.palco')}
             if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
             if (e.data.tipo === 'replay-comandi-fuori') document.documentElement.classList.add('comandi-fuori');
             else if (e.data.tipo === 'replay-campo-fuori') { document.documentElement.classList.add('campo-fuori'); inviaCampo(ultimeVoci); }
+            else if (e.data.tipo === 'replay-comando' && e.data.comando === 'turno') vaiATurno(Number(e.data.valore));
             else if (e.data.tipo === 'replay-comando' && Object.prototype.hasOwnProperty.call(COMANDI, e.data.comando)) COMANDI[e.data.comando]();
         });
         ultimoAvviso = '';
@@ -952,6 +960,68 @@ ${barreSalute('.palco')}
      *             play.pokemonshowdown.com, quello che manca si chiede a Showdown come sempre
      *  sprites    (idem) { base, ani, back }: l'indirizzo della cartella del sito e le immagini dei Pokémon che ci sono (vedi immaginiReplay)
      */
+    /**
+     * I momenti chiave di un set, dal log: solo fatti sui Pokémon rimasti in campo dopo ogni KO (i Pokémon portati sono quelli di |teamsize|, o tutta la squadra).
+     *   - 'primo': il primo KO;  - 'sorpasso': chi era dietro (o pari) passa avanti;  - 'rimonta': il punto più basso di chi poi ha vinto, se era sotto di 2 o più;
+     *   - 'ultimo': chi ha vinto è rimasto con l'ultimo Pokémon;  - 'fine': l'ultimo KO.
+     * Restituisce [{ turno, tipo, testo }] in ordine di turno, uno per turno (se più momenti cadono nello stesso turno vale il più importante e i testi si uniscono).
+     * `nomi` ({ p1, p2 }) serve solo se il log non ha le righe |player|.
+     */
+    function momentiChiave(righe, nomi = {}) {
+        const nome = { p1: String(nomi.p1 || 'P1'), p2: String(nomi.p2 || 'P2') };
+        const taglia = { p1: 0, p2: 0 }, conTeamsize = { p1: false, p2: false }, ko = { p1: 0, p2: 0 };
+        const eventi = [];     // { turno, lato, vivi: { p1, p2 } } dopo ogni KO
+        let turno = 0, vincitore = '';
+        for (const riga of Array.isArray(righe) ? righe : []) {
+            const p = String(riga).split('|');
+            const lato = /^p[12]/.test(p[2] || '') ? p[2].slice(0, 2) : '';
+            if (p[1] === 'player' && lato && p[3]) nome[lato] = p[3];
+            else if (p[1] === 'poke' && lato && !conTeamsize[lato]) taglia[lato]++;
+            else if (p[1] === 'teamsize' && lato) { taglia[lato] = parseInt(p[3], 10) || taglia[lato]; conTeamsize[lato] = true; }
+            else if (p[1] === 'turn') turno = parseInt(p[2], 10) || turno;
+            else if (p[1] === 'win') vincitore = p.slice(2).join('|');
+            else if (p[1] === 'faint' && lato && turno) {
+                ko[lato]++;
+                eventi.push({ turno, lato, vivi: { p1: taglia.p1 - ko.p1, p2: taglia.p2 - ko.p2 } });
+            }
+        }
+        if (!eventi.length || !taglia.p1 || !taglia.p2) return [];
+
+        const vince = vincitore === nome.p1 ? 'p1' : vincitore === nome.p2 ? 'p2' : '';
+        const perTurno = new Map();     // turno -> [{ tipo, testo }]
+        const segna = (t, tipo, testo) => { if (!perTurno.has(t)) perTurno.set(t, []); perTurno.get(t).push({ tipo, testo }); };
+        const dopo = e => Math.sign(e.vivi.p1 - e.vivi.p2);
+
+        segna(eventi[0].turno, 'primo', 'First KO');
+        let ultimoVantaggio = 0;       // chi era avanti l'ultima volta che qualcuno lo era: 1 = p1, -1 = p2
+        eventi.forEach((e, i) => {
+            const v = dopo(e);
+            if (v === 0) return;
+            // l'ultimo KO di un set deciso lo racconta già "Final KO": non è anche un sorpasso
+            if (ultimoVantaggio !== 0 && v !== ultimoVantaggio && !(vince && i === eventi.length - 1)) segna(e.turno, 'sorpasso', `${nome[v > 0 ? 'p1' : 'p2']} takes the lead`);
+            ultimoVantaggio = v;
+        });
+        if (vince) {
+            const altro = vince === 'p1' ? 'p2' : 'p1';
+            let peggiore = null, ultimoRimasto = null;
+            for (const e of eventi) {
+                const sotto = e.vivi[altro] - e.vivi[vince];
+                if (sotto >= 2 && (!peggiore || sotto > peggiore.sotto)) peggiore = { turno: e.turno, sotto };
+                if (!ultimoRimasto && e.vivi[vince] === 1 && e.vivi[altro] >= 1) ultimoRimasto = e.turno;
+            }
+            if (peggiore) segna(peggiore.turno, 'rimonta', `${nome[vince]} down ${peggiore.sotto}`);
+            if (ultimoRimasto) segna(ultimoRimasto, 'ultimo', `${nome[vince]}'s last Pokémon`);
+            segna(eventi[eventi.length - 1].turno, 'fine', 'Final KO');
+        }
+        const PESO = { fine: 5, rimonta: 4, sorpasso: 3, ultimo: 2, primo: 1 };
+        return [...perTurno.entries()].sort((a, b) => a[0] - b[0]).map(([t, tutte]) => {
+            // se nel turno finisce il set, "primo KO" non aggiunge nulla (un set di un solo KO)
+            const voci = tutte.some(v => v.tipo === 'fine') ? tutte.filter(v => v.tipo !== 'primo') : tutte;
+            voci.sort((a, b) => PESO[b.tipo] - PESO[a.tipo]);
+            return { turno: t, tipo: voci[0].tipo, testo: voci.map(v => v.testo).join(' · ') };
+        });
+    }
+
     function creaReplayHtml({ log, p1, p2, etichetta = '', match = '', set = '', sito = '', motore = null, sprites = null } = {}) {
         const righe = righeDi(log);
         if (!righe.length) throw new Error('creaReplayHtml: il log del set è vuoto');
@@ -1142,5 +1212,5 @@ ${barreSalute('.battle')}
     // gli indirizzi del motore di Showdown che un replay del sito carica: matches.html li scarica una volta e li tiene (replay-carica.js)
     const MOTORE = { stili: STILI.map(s => SHOWDOWN + s), script: SCRIPT.map(s => SHOWDOWN + s) };
 
-    return { creaReplayHtml, adattaReplayShowdown, leggiReplay, immaginiReplay, MOTORE };
+    return { creaReplayHtml, adattaReplayShowdown, leggiReplay, immaginiReplay, momentiChiave, MOTORE };
 });

@@ -486,6 +486,8 @@
 #replayModal .rc-tasto:hover { background: var(--nb-giallo, #ffbd44); transform: translate(-2px, -2px); box-shadow: var(--nb-sh-m, 6px 6px 0 #000); }
 #replayModal .rc-tasto:active { transform: translate(2px, 2px); box-shadow: none; }
 #replayModal .rc-play { background: var(--nb-giallo, #ffbd44); }
+#replayModal .rc-tasto.copiato { background: #9be37f; }
+#replayModal .replay-momenti { order: 5; flex: 0 0 auto; }
 #replayModal .rc-play:hover { background: var(--nb-carta, #fff); }
 
 /* intestazione: una finestra bassa con i due team e il punteggio; il colore di chi ha vinto è il filetto in basso (--vinc) */
