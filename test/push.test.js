@@ -29,15 +29,16 @@ function dbFinto(dati = {}) {
         for (const n of k.slice(0, -1)) x = x[n] = x[n] || {};
         if (valore === null) delete x[k[k.length - 1]]; else x[k[k.length - 1]] = valore;
     };
-    return {
-        albero,
-        ref: percorso => ({
+    let contatore = 0;
+    const ref = percorso => ({
+            push: () => { const k = `-K${String(++contatore).padStart(6, '0')}`; return { set: async v => metti(`${percorso}/${k}`, v) }; },
+            child: k => ref(`${percorso}/${k}`),
             once: async () => ({ val: () => { const v = prendi(percorso); return v === undefined ? null : JSON.parse(JSON.stringify(v)); } }),
             transaction: async fn => { const nuovo = fn(prendi(percorso) === undefined ? null : prendi(percorso)); if (nuovo === undefined) return { committed: false }; metti(percorso, nuovo); return { committed: true }; },
             remove: async () => metti(percorso, null),
             set: async v => metti(percorso, v)
-        })
-    };
+    });
+    return { albero, ref };
 }
 
 /** messaging finto: registra i messaggi; i token che iniziano con "morto" falliscono come farebbe Firebase */
@@ -483,4 +484,97 @@ test('cablaggio delle nuove notifiche: i trigger, il checker e il service worker
     assert.match(chk, /push\.mvpScadenzaDovuta\(finestra\)/);
     const sw = fs.readFileSync(path.join(RADICE, 'docs', 'sw.js'), 'utf8');
     assert.doesNotMatch(sw, /soloChiusa/, 'il service worker non scarta più le notifiche a sito aperto: conta solo essere dentro quella partita');
+});
+
+// ---------- la posta del campanello e la notifica di prova ----------
+const posta = (db, uid) => Object.values(((db.albero.notifiche || {})[uid] || {}).posta || {});
+
+test('scriviPosta: una voce per persona, con il tipo, il testo e la pagina; se ne tengono al massimo MAX_POSTA (le più vecchie escono)', async () => {
+    const db = dbFinto();
+    await P.scriviPosta(db, ['u1', 'u2', 'u1'], { tipo: 'badge', titolo: 'New badge', testo: 'Garchomp took Knockout silver', url: 'box.html', lega: false });
+    assert.equal(posta(db, 'u1').length, 1, 'un uid ripetuto non doppia');
+    assert.deepEqual(Object.keys(posta(db, 'u2')[0]).sort(), ['img', 'lega', 't', 'testo', 'tipo', 'titolo', 'url']);
+    assert.equal(posta(db, 'u2')[0].tipo, 'badge');
+    for (let i = 0; i < P.MAX_POSTA + 5; i++) await P.scriviPosta(db, ['u3'], { tipo: 'digest', titolo: `n${i}`, testo: '', url: '' });
+    const v = posta(db, 'u3');
+    assert.equal(v.length, P.MAX_POSTA);
+    assert.equal(v[0].titolo, 'n5', 'le prime cinque sono uscite');
+    assert.equal(await P.scriviPosta(db, [], { tipo: 'x' }), 0);
+});
+
+test('invia con "posta": la stessa notifica va anche nel campanello di tutti, anche di chi non ha i token; con la chiave unica già usata niente di nuovo', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const m = messagingFinto();
+    const n = P.testo('stagione-conclusa', { nome: 'Season 2', vincitore: 'Didi', stagione: 's2' });
+    const r = await P.invia({ db, messaging: m, uids: ['u1', 'u4'], n, chiaveUnica: 'conclusa-s2', posta: { tipo: 'stagione' } });
+    assert.equal(r.inviate, 1, 'Tom non ha i token: nessun push');
+    assert.equal(posta(db, 'u4').length, 1, 'ma la posta sì');
+    assert.equal(posta(db, 'u4')[0].titolo, 'Season finished');
+    assert.equal(posta(db, 'u4')[0].url, 'palmares.html');
+    const di = await P.invia({ db, messaging: m, uids: ['u1', 'u4'], n, chiaveUnica: 'conclusa-s2', posta: { tipo: 'stagione' } });
+    assert.equal(di.saltata, true);
+    assert.equal(posta(db, 'u4').length, 1, 'la seconda volta non si ripete');
+    // senza "posta" (sfida, turno...) il campanello non si tocca
+    await P.invia({ db, messaging: m, uids: ['u2'], n: P.testo('turno', { da: 'Lu', stagione: 's2', id: 'p1' }) });
+    assert.equal(posta(db, 'u2').length, 0);
+});
+
+test('le notifiche di stato scrivono anche nella posta, a tutti (non solo a chi ha i token): iscrizioni aperte, promemoria, MVP ufficiale', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const m = messagingFinto();
+    await P.notificaIscrizioniAperte({ db, messaging: m, stagione: 's3', info: { name: 'Season 3', deadline: '2026-11-30T20:00:00Z' } });
+    await P.notificaPromemoria({ db, messaging: m, stagione: 's3', info: { name: 'Season 3' }, ore: 3 });
+    await P.notificaMvpNomina({ db, messaging: m, stagione: 's3', info: { name: 'Season 3' }, risultato: { vincitori: { 0: { chiave: 'a::b', specie: 'Garchomp', player: 'Didi' } } } });
+    for (const uid of ['u1', 'u2', 'u3', 'u4']) assert.deepEqual(posta(db, uid).map(x => x.tipo), ['stagione', 'stagione', 'mvp'], uid);
+    assert.equal(m.inviati.length >= 3, true, 'i push a chi li ha continuano a partire');
+});
+
+test('badge e riassunto: testi per il telefono e il campanello', () => {
+    const b = P.testo('badge', { titolo: 'New badge', testo: 'Garchomp · Knockout · Silver', url: 'box.html', chiave: 'x' });
+    assert.deepEqual([b.title, b.body, b.url], ['New badge', 'Garchomp · Knockout · Silver', 'box.html']);
+    const d = P.testo('digest', { titolo: 'Your week', testo: '7 matches', settimana: '2026-W44' });
+    assert.equal(d.tag, 'digest-2026-W44');
+    assert.equal(P.testo('prova').title, 'Test notification');
+});
+
+test('notificaProva: una notifica a se stessi, dice a quanti dispositivi; senza dispositivi niente da inviare; una ogni 15 secondi', async () => {
+    const db = dbFinto({ users: UTENTI, pushTokens: TOKEN });
+    const m = messagingFinto();
+    const r = await P.notificaProva({ db, messaging: m, uid: 'u2', adesso: 1000000 });
+    assert.deepEqual(r, { dispositivi: 2, inviate: 1, ritirati: 1 }, 'Lu ha due dispositivi, uno dei quali morto');
+    assert.equal(m.inviati[0].notification.title, 'Test notification');
+    await assert.rejects(P.notificaProva({ db, messaging: m, uid: 'u2', adesso: 1000000 + P.INTERVALLO_PROVE_MS - 1 }), e => e.codice === 'resource-exhausted');
+    const ancora = await P.notificaProva({ db, messaging: m, uid: 'u2', adesso: 1000000 + P.INTERVALLO_PROVE_MS });
+    assert.equal(ancora.dispositivi, 1, 'il token morto è stato ritirato');
+    assert.deepEqual(await P.notificaProva({ db, messaging: m, uid: 'u4', adesso: 1 }), { dispositivi: 0, inviate: 0, ritirati: 0 });
+    assert.equal(posta(db, 'u2').length, 0, 'la prova non va nella posta');
+    assert.equal(await P.notificaProva({ db, messaging: m, uid: '' }), null);
+    assert.match(leggi('functions', 'index.js'), /exports\.provaNotifica = onCall\(/);
+});
+
+test('lato client: esitoProva dà una frase chiara per ogni caso, prova() è esportata e chiama la funzione europea, con errori in inglese', () => {
+    assert.match(C.esitoProva(null), /turn them on first/);
+    assert.match(C.esitoProva({ dispositivi: 0, inviate: 0, ritirati: 0 }), /turn them on first/);
+    assert.match(C.esitoProva({ dispositivi: 2, inviate: 1, ritirati: 1 }), /^Sent!/);
+    assert.match(C.esitoProva({ dispositivi: 1, inviate: 0, ritirati: 1 }), /turn notifications off and on again/);
+    assert.equal(typeof C.prova, 'function');
+    const src = leggi('docs', 'push.js');
+    assert.match(src, /functions\('europe-west1'\)\.httpsCallable\('provaNotifica'\)/);
+    assert.match(src, /resource-exhausted/);
+});
+
+test('il campanello: legge la posta e le preferenze, segna le voci lette, mostra Season/League news e il piè con prova e riassunto', () => {
+    const s = leggi('docs', 'sfide.js');
+    assert.match(s, /segui\(`notifiche\/\$\{P\.uid\}\/posta`, MAX_POSTA_VISTA/);
+    assert.match(s, /const MAX_POSTA_VISTA = 40/);
+    assert.match(s, /limitToLast\(limite\)/);
+    assert.match(s, /segui\(`notifiche\/\$\{P\.uid\}\/preferenze`/);
+    assert.match(s, /segui\(`notifiche\/\$\{P\.uid\}\/posta-lette`/);
+    assert.match(s, /\['News for you', perMe\]/);
+    assert.match(s, /\['League news', dallaLega\]/);
+    assert.match(s, /'Send a test'/);
+    assert.match(s, /Weekly digest: \$\{spento \? 'off' : 'on'\}/);
+    assert.match(s, /window\.Push\.esitoProva\(await window\.Push\.prova\(\)\)/);
+    const css = leggi('docs', 'style-sfide.css');
+    for (const c of ['.sfide-voce.posta', '.sfide-piede', '.sfide-stato', '.sfide-nota']) assert.ok(css.includes(c), c);
 });

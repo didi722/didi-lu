@@ -125,6 +125,13 @@
 .sfide-voce.da-giocare { background: #d4f7df; color: #000 }
 .sfide-voce.accettata { background: #d4f7df; color: #000}
 .sfide-voce.rifiutata { background: #f1f1f1; color: #000}
+.sfide-voce.posta { background: #fffdf6; color: #000; }
+.sfide-voce.posta.lega { background: #f1f1f1; }
+/* il piè del campanello: le notifiche di questo dispositivo (accendi/spegni e prova) */
+.sfide-piede { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 14px; padding-top: 12px; border-top: 3px dashed rgba(0, 0, 0, .25); }
+.sfide-piede .sfide-stato { flex: 1 1 100%; font: 700 .75rem 'Josefin Sans', sans-serif; text-transform: uppercase; }
+.sfide-piede .sfide-azione { flex: 0 1 auto; padding: 6px 12px; }
+.sfide-piede .sfide-nota { flex: 1 1 100%; margin: 0; font-size: .75rem; font-weight: 600; }
 .sfide-voce-top {
     display: flex;
     justify-content: space-between;

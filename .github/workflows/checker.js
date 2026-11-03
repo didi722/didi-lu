@@ -31,6 +31,8 @@ const sito = caricaSito();
 const { getMessaging } = require('firebase-admin/messaging');
 const push = require(path.join(__dirname, '..', '..', 'functions', 'push.js'));
 const Mvp = require(path.join(__dirname, '..', '..', 'docs', 'mvp.js'));
+// Novità della lega (novita.js): i badge sbloccati e il riassunto del lunedì, notifica e posta del campanello
+const novita = require('./novita.js');
 
 async function notifiche(id, info, dati) {
   try {
@@ -121,6 +123,8 @@ async function runChecker() {
       const adesso = modificheFatte ? ((await db.ref(`seasons/${id}/info`).once('value')).val() || info) : info;
       await notifiche(id, adesso, seasonData);
     }
+
+    await novita.eseguiNovita({ db, messaging: getMessaging(), seasons, adesso: Date.now() });
 
     console.log(`✅ Controllo terminato con successo. Stati database modificati: ${modificheFatte}`);
     process.exit(0);

@@ -186,6 +186,18 @@ exports.pushMvpNomina = onValueCreated(
     })
 );
 
+// Una notifica di prova a se stessi (il tasto "Send a test" del campanello): serve a controllare che sul proprio telefono o browser arrivino davvero
+exports.provaNotifica = onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 30, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    try {
+        return await push.notificaProva({ db: getDatabase(), messaging: getMessaging(), uid: richiesta.auth.uid });
+    } catch (e) {
+        if (e && e.codice) throw new HttpsError(e.codice, e.message);
+        console.error('provaNotifica', e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+
 // Le iscrizioni di una stagione si aprono (la stagione nasce "open", o torna ad esserlo), o la stagione si conclude
 exports.pushStatoStagione = onValueWritten(
     { ...OPZIONI_PUSH, ref: '/seasons/{stagione}/info/status' },
