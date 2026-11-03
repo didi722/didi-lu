@@ -168,7 +168,7 @@ test('Formats: il tipo Random si sceglie, si salva con i campi del modulo condiv
     assert.match(html, /FormatoRandom\.eRandom\(formatoDati\)/);
     assert.match(html, /battle\.html\?cpu=1&random=\$\{encodeURIComponent\(random\.id\)\}/);
     assert.ok(!html.includes('conClassifica'), 'la classifica c\'è anche per i Random');
-    assert.match(html, /<section class="fmt-classifica" aria-label="Format ranking">/);
+    assert.match(html, /<section class="fmt-classifica" aria-label="Format ranking and stats">/);
     assert.match(leggi('docs/style-formats.css'), /\.fmt-gioca-cpu \{/);
     assert.ok(!leggi('docs/style-formats.css').includes('.fmt-senza-classifica'));
 });

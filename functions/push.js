@@ -7,6 +7,10 @@
 //   - iscrizioni aperte, stagione conclusa              -> index.js (trigger sul database)
 //   - promemoria scadenza iscrizioni, voto MVP aperto   -> .github/workflows/checker.js (ogni 30 minuti)
 // I token stanno in pushTokens/{uid}/{chiave} = { t, os, creato }; li scrive il sito (docs/push.js) quando il giocatore accende le notifiche.
+// LA POSTA: gli avvisi "di stato" (iscrizioni, stagione conclusa, MVP ufficiale, badge, riassunto del lunedì...) finiscono anche nel campanello del sito, così si
+// leggono anche senza notifiche sul telefono (o da un browser che non le ha): notifiche/{uid}/posta/{chiave} = { tipo, titolo, testo, url, t, lega }, scritte solo
+// da qui. `lega: true` sono le notizie della lega (cosa è successo agli altri), le altre sono per chi le riceve. Chi le ha lette: notifiche/{uid}/posta-lette/{chiave}
+// = ora (lo scrive il sito, come le altre notifiche lette). Se ne tengono al massimo MAX_POSTA per persona.
 // Questo file non carica niente di pesante (solo i dati e `messaging` che gli si passano): lo usano sia le Cloud Functions sia lo script del checker.
 // La parte pura (testi, destinatari, promemoria) è provata in test/push.test.js.
 // =====================================================
@@ -14,6 +18,10 @@
 const PERCORSO_TOKEN = 'pushTokens';
 const PERCORSO_INVIATI = 'pushInviati';          // chiavi già notificate (una notifica "di stato" parte una volta sola)
 const ORE_PROMEMORIA = [24, 3];                  // quante ore prima della scadenza delle iscrizioni
+const PERCORSO_POSTA = 'notifiche';              // notifiche/{uid}/posta/{chiave}
+const MAX_POSTA = 40;                            // voci di posta tenute per persona (le più vecchie si tolgono)
+const PERCORSO_PROVE = 'pushProve';              // pushProve/{uid} = ora dell'ultima prova (serve al limite: una ogni 15 secondi)
+const INTERVALLO_PROVE_MS = 15000;
 
 const idDi = t => String(t == null ? '' : t).toLowerCase().trim();
 const nomeStagione = (info, id) => (info && info.name) || `Season ${id}`;
@@ -92,6 +100,12 @@ function testo(tipo, d = {}) {
                 body: `${d.nome}: ${d.vincitore} is the MVP!`,
                 url: `matches.html?id=${encodeURIComponent(d.stagione || '')}`, tag: `mvp-nomina-${d.stagione || ''}`
             };
+        case 'badge':
+            return { title: d.titolo || 'New badge', body: d.testo || '', url: d.url || 'index.html', tag: `badge-${d.chiave || ''}` };
+        case 'digest':
+            return { title: d.titolo || 'Your week in the league', body: d.testo || '', url: d.url || 'index.html', tag: `digest-${d.settimana || ''}` };
+        case 'prova':
+            return { title: 'Test notification', body: 'If you can read this, notifications work on this device.', url: 'index.html', tag: 'prova' };
         default:
             return null;
     }
@@ -169,6 +183,31 @@ async function tokenDi(db, uids) {
     return out;
 }
 
+/** Gli uid di tutti i giocatori con un account (users/{uid}): la posta del campanello è per tutti, le notifiche sul telefono solo per chi ha i token */
+async function uidDiTutti(db) {
+    return Object.keys((await db.ref('users').once('value')).val() || {});
+}
+
+/**
+ * Scrive una voce nella posta (campanello) di ognuno di questi uid. `voce`: { tipo, titolo, testo, url, lega, img }.
+ * Dopo la scrittura si tolgono le voci oltre MAX_POSTA (le chiavi push sono in ordine di tempo).
+ */
+async function scriviPosta(db, uids, voce) {
+    if (!voce || !uids || !uids.length) return 0;
+    const v = {
+        tipo: String(voce.tipo || ''), titolo: String(voce.titolo || ''), testo: String(voce.testo || ''), url: String(voce.url || ''),
+        t: Date.now(), lega: !!voce.lega, img: String(voce.img || '')
+    };
+    const unici = [...new Set(uids)];
+    await Promise.all(unici.map(async uid => {
+        const rif = db.ref(`${PERCORSO_POSTA}/${uid}/posta`);
+        await rif.push().set(v);
+        const chiavi = Object.keys((await rif.once('value')).val() || {}).sort();
+        if (chiavi.length > MAX_POSTA) await Promise.all(chiavi.slice(0, chiavi.length - MAX_POSTA).map(k => rif.child(k).remove()));
+    }));
+    return unici.length;
+}
+
 /** Tutti gli uid che hanno almeno un token */
 async function uidConToken(db) {
     const v = (await db.ref(PERCORSO_TOKEN).once('value')).val() || {};
@@ -191,15 +230,23 @@ const TOKEN_MORTO = new Set(['messaging/registration-token-not-registered', 'mes
 
 /**
  * Manda `n` ({title, body, url, tag}) a questi uid. I token che Firebase dice morti (app disinstallata, permesso tolto) si cancellano.
- * `chiaveUnica`: se c'è, la notifica parte una volta sola (pushInviati/{chiave}). Restituisce { inviate, ritirati, saltata }.
+ * `chiaveUnica`: se c'è, la notifica parte una volta sola (pushInviati/{chiave}).
+ * `posta`: { tipo, lega?, img? }: la stessa notifica va anche nella posta del campanello (scriviPosta) di tutti questi uid, anche di chi non ha i token.
+ * `soloPosta`: niente push, solo la posta (per chi ha spento questo tipo di avviso sul telefono).
+ * Restituisce { inviate, ritirati, saltata }.
  */
-async function invia({ db, messaging, uids, n, chiaveUnica = '' }) {
+async function invia({ db, messaging, uids, n, chiaveUnica = '', posta = null, soloPosta = false }) {
     if (!n || !uids || !uids.length) return { inviate: 0, ritirati: 0, saltata: false };
     if (chiaveUnica) {
         const chiave = String(chiaveUnica).replace(/[.#$\[\]/]/g, '_');
         const esito = await db.ref(`${PERCORSO_INVIATI}/${chiave}`).transaction(cur => (cur ? undefined : Date.now()));   // già c'è: si annulla (committed = false)
         if (!esito.committed) return { inviate: 0, ritirati: 0, saltata: true };
     }
+    if (posta) {
+        try { await scriviPosta(db, uids, { tipo: posta.tipo, titolo: n.title, testo: n.body, url: n.url, lega: posta.lega, img: posta.img }); }
+        catch (e) { console.error('Posta non scritta (la notifica parte lo stesso):', e); }
+    }
+    if (soloPosta) return { inviate: 0, ritirati: 0, saltata: false };
     const elenco = await tokenDi(db, uids);
     let inviate = 0, ritirati = 0;
     for (let i = 0; i < elenco.length; i += 500) {
@@ -228,23 +275,23 @@ async function notificaSfida({ db, messaging, stagione, id, sfida }) {
 }
 
 async function notificaIscrizioniAperte({ db, messaging, stagione, info }) {
-    const uids = await uidConToken(db);
+    const uids = await uidDiTutti(db);
     const n = testo('iscrizioni-aperte', { nome: nomeStagione(info, stagione), scadenza: info.deadline, stagione });
-    return invia({ db, messaging, uids, n, chiaveUnica: `aperta-${stagione}` });
+    return invia({ db, messaging, uids, n, chiaveUnica: `aperta-${stagione}`, posta: { tipo: 'stagione' } });
 }
 
 async function notificaStagioneConclusa({ db, messaging, stagione, info }) {
     const [utenti, iscrittiSnap] = await Promise.all([db.ref('users').once('value'), db.ref(`seasons/${stagione}/iscritti`).once('value')]);
     const uids = uidDeiGiocatori(utenti.val() || {}, Object.keys(iscrittiSnap.val() || {}));
     const n = testo('stagione-conclusa', { nome: nomeStagione(info, stagione), vincitore: info.winner && (info.winner.name || info.winner) || '', stagione });
-    return invia({ db, messaging, uids, n, chiaveUnica: `conclusa-${stagione}` });
+    return invia({ db, messaging, uids, n, chiaveUnica: `conclusa-${stagione}`, posta: { tipo: 'stagione' } });
 }
 
 /** Promemoria: a tutti quelli che hanno acceso le notifiche (iscritti o no: la scadenza interessa a tutti, e il testo non dice "iscriviti") */
 async function notificaPromemoria({ db, messaging, stagione, info, ore }) {
-    const uids = await uidConToken(db);
+    const uids = await uidDiTutti(db);
     const n = testo('promemoria', { nome: nomeStagione(info, stagione), ore, stagione });
-    return invia({ db, messaging, uids, n, chiaveUnica: `promemoria-${stagione}-${ore}` });
+    return invia({ db, messaging, uids, n, chiaveUnica: `promemoria-${stagione}-${ore}`, posta: { tipo: 'stagione' } });
 }
 
 /** Voto MVP aperto: agli iscritti che non hanno ancora votato */
@@ -312,7 +359,7 @@ async function notificaIscriviTeam({ db, messaging, stagione, info }) {
     });
     const ids = Object.keys(iscrittiSnap.val() || {}).filter(senzaTeam);
     const n = testo('iscrivi-team', { nome: nomeStagione(info, stagione), scadenza: info.deadline, stagione });
-    return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `iscrivi-team-${stagione}` });
+    return invia({ db, messaging, uids: uidDeiGiocatori(utenti.val() || {}, ids), n, chiaveUnica: `iscrivi-team-${stagione}`, posta: { tipo: 'stagione' } });
 }
 
 /** Un match ufficiale (ranked) è in diretta: a tutti quelli con le notifiche accese, tranne i due che giocano */
@@ -330,15 +377,29 @@ async function notificaMvpNomina({ db, messaging, stagione, info, risultato }) {
     if (!lista.length) return null;
     const m = lista[0];
     const vincitore = `${m.specie || 'A Pokémon'}${m.player ? ` (${m.player})` : ''}`;
-    const uids = await uidConToken(db);
+    const uids = await uidDiTutti(db);
     const n = testo('mvp-nomina', { nome: nomeStagione(info, stagione), vincitore, stagione });
-    return invia({ db, messaging, uids, n, chiaveUnica: `mvp-nomina-${stagione}` });
+    return invia({ db, messaging, uids, n, chiaveUnica: `mvp-nomina-${stagione}`, posta: { tipo: 'mvp' } });
+}
+
+/**
+ * Una notifica di prova a se stessi, per controllare che sul telefono (o nel browser) arrivi davvero: chiamata dal campanello (docs/push.js: prova).
+ * Una ogni INTERVALLO_PROVE_MS. Restituisce { dispositivi, inviate, ritirati }: dispositivi = quanti telefoni/browser hanno acceso le notifiche.
+ */
+async function notificaProva({ db, messaging, uid, adesso = Date.now() }) {
+    if (!uid) return null;
+    const esito = await db.ref(`${PERCORSO_PROVE}/${uid}`).transaction(cur => (Number(cur) && adesso - Number(cur) < INTERVALLO_PROVE_MS ? undefined : adesso));
+    if (!esito.committed) { const e = new Error('Un attimo: una prova alla volta'); e.codice = 'resource-exhausted'; throw e; }
+    const dispositivi = (await tokenDi(db, [uid])).length;
+    if (!dispositivi) return { dispositivi: 0, inviate: 0, ritirati: 0 };
+    const r = await invia({ db, messaging, uids: [uid], n: testo('prova') });
+    return { dispositivi, inviate: r.inviate, ritirati: r.ritirati };
 }
 
 module.exports = {
-    PERCORSO_TOKEN, PERCORSO_INVIATI, ORE_PROMEMORIA,
+    PERCORSO_TOKEN, PERCORSO_INVIATI, ORE_PROMEMORIA, PERCORSO_POSTA, MAX_POSTA, PERCORSO_PROVE, INTERVALLO_PROVE_MS,
     testo, quandoScade, uidDelGiocatore, uidDeiGiocatori, tuttiIGiocatori, promemoriaDovuto, messaggio,
-    tokenDi, uidConToken, invia,
+    tokenDi, uidConToken, uidDiTutti, scriviPosta, invia, notificaProva,
     notificaSfida, notificaIscrizioniAperte, notificaStagioneConclusa, notificaPromemoria, notificaMvp,
     ORE_MVP_SCADENZA, mvpScadenzaDovuta, iscriviTeamDovuto, PRESENZA_MS, inPartita,
     notificaTurno, notificaSfidaAccettata, notificaMvpScadenza, notificaIscriviTeam, notificaLive, notificaMvpNomina

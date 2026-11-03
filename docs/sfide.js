@@ -19,6 +19,9 @@
 //     creata, risposta, showdownId
 //   }
 //   notifiche/{uid}/{stagione}/{idSfida-stato} = timestamp di lettura
+//   notifiche/{uid}/posta/{chiave}        = { tipo, titolo, testo, url, t, lega }  la POSTA: gli avvisi di stato (badge, riassunto del lunedì, stagione, MVP) scritti
+//                                           dal server (functions/push.js: scriviPosta); lega = notizie sugli altri. Nel campanello sono "News for you" e "League news"
+//   notifiche/{uid}/posta-lette/{chiave}  = timestamp di lettura (come per le sfide)
 //
 // Le sfide AMICHEVOLI (fuori dalle stagioni: niente punti, niente statistiche, niente replay) stanno in sfide/amichevoli/{id}, come
 // se "amichevoli" fosse una stagione, e usano la stessa campanella e le stesse notifiche lette. Le crea e le gestisce il server
@@ -52,6 +55,10 @@
         nonLettePrima: 0,
         battagliePrima: 0,
         mvp: {},                  // id → stagione in cui votare l'MVP (vedi la sezione MVP)
+        posta: { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), ascolti: [], digestSpento: false },   // la posta del campanello (vedi la sezione 7c)
+        pushStato: '',            // lo stato delle notifiche push su questo dispositivo ('acceso', 'spento', 'negato', 'non-supportato', '' = non ancora letto)
+        pushNota: '',             // l'ultima frase del piè del campanello (esito di accensione o prova)
+        pushOccupato: false,
         recenti: []               // [id, info] delle stagioni chiuse da meno di 24 ore
     };
 
@@ -279,7 +286,7 @@
         const campanella = $(CAMPANELLA[0]);
         if (campanella) {
             // La campanella serve a chi è iscritto ad almeno una stagione seguita
-            campanella.hidden = !(S.utente && (elencoStagioni().some(D => D.io) || Object.values(S.mvp).some(M => M.io)));
+            campanella.hidden = !(S.utente && (elencoStagioni().some(D => D.io) || Object.values(S.mvp).some(M => M.io) || S.posta.voci.length));
             if (campanella.hidden) $(CAMPANELLA[2]).hidden = true;
         }
         // Se la campanella non c'è, le spade prendono il suo posto
@@ -378,6 +385,7 @@
             if (nuova) ascolta(D);
         });
 
+        avviaPosta();
         aggiornaVisibilita();
         ridisegna();
         avviaMvp(giro);
@@ -824,6 +832,123 @@
 
 
     // -----------------------------------------------------
+    // 7c. La posta: avvisi di stato scritti dal server, per chi li ha ricevuti (e per tutti, le notizie della lega)
+    // -----------------------------------------------------
+    const MAX_POSTA_VISTA = 40;
+    const TAG_POSTA = { badge: 'Badge', digest: 'Weekly', stagione: 'Season', mvp: 'MVP' };
+
+    function staccaPosta() {
+        S.posta.ascolti.forEach(([q, fn]) => { try { q.off('value', fn); } catch (e) { /* già staccato */ } });
+        S.posta = { uid: '', voci: [], lette: {}, pronte: { voci: false, lette: false }, locali: new Set(), ascolti: [], digestSpento: false };
+    }
+
+    function avviaPosta() {
+        if (!S.utente) { if (S.posta.uid) staccaPosta(); return; }
+        if (S.posta.uid === S.utente.uid) return;
+        staccaPosta();
+        const P = S.posta;
+        P.uid = S.utente.uid;
+        const segui = (percorso, limite, cb, errore) => {
+            const rif = db().ref(percorso);
+            const q = limite ? rif.limitToLast(limite) : rif;
+            const fn = snap => { if (S.posta === P) cb(snap); };
+            q.on('value', fn, errore);
+            P.ascolti.push([q, fn]);
+        };
+        segui(`notifiche/${P.uid}/posta`, MAX_POSTA_VISTA, snap => {
+            P.voci = Object.entries(snap.val() || {}).filter(([, v]) => v && typeof v === 'object' && Number(v.t))
+                .map(([k, v]) => ({ k, tipo: String(v.tipo || ''), titolo: String(v.titolo || ''), testo: String(v.testo || ''), url: String(v.url || ''), t: Number(v.t), lega: !!v.lega }))
+                .sort((a, b) => b.t - a.t);
+            P.pronte.voci = true;
+            aggiornaVisibilita();
+            disegnaCampanella();
+        }, err => {
+            console.warn('Posta non leggibile: controlla le regole del database (notifiche/{uid}/posta)', err);
+            P.pronte.voci = true;
+        });
+        // la preferenza del riassunto del lunedì: notifiche/{uid}/preferenze/digest = 'off' (il server non lo manda al telefono; la posta c'è sempre)
+        segui(`notifiche/${P.uid}/preferenze`, 0, snap => {
+            P.digestSpento = (snap.val() || {}).digest === 'off';
+            disegnaCampanella();
+        }, err => console.warn('Preferenze non leggibili: controlla le regole del database', err));
+        segui(`notifiche/${P.uid}/posta-lette`, 0, snap => {
+            P.lette = snap.val() || {};
+            P.pronte.lette = true;
+            disegnaCampanella();
+        }, err => {
+            console.warn('Posta letta non leggibile: controlla le regole del database', err);
+            P.pronte.lette = true;
+        });
+    }
+
+    const lettaPosta = k => !!S.posta.lette[k] || S.posta.locali.has(k);
+    const postaNonLetta = () => (S.posta.pronte.voci && S.posta.pronte.lette ? S.posta.voci.filter(x => !lettaPosta(x.k)) : []);
+
+    function segnaLettePosta(voci) {
+        if (!S.utente || !voci.length) return;
+        const agg = {};
+        for (const x of voci) {
+            if (lettaPosta(x.k)) continue;
+            S.posta.locali.add(x.k);
+            agg[x.k] = firebase.database.ServerValue.TIMESTAMP;
+        }
+        if (Object.keys(agg).length) {
+            db().ref(`notifiche/${S.utente.uid}/posta-lette`).update(agg)
+                .catch(e => console.warn('Posta letta non salvata: controlla le regole del database', e));
+        }
+    }
+
+    // ---- il piè del campanello: le notifiche di questo dispositivo (accendi/spegni e una prova per vedere se arrivano) ----
+    function caricaPush() {
+        if (window.Push || S.pushCaricando) return;
+        S.pushCaricando = true;
+        const mio = Array.from(document.scripts).find(x => /(^|\/)sfide\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
+        const sc = document.createElement('script');
+        sc.src = mio ? mio.getAttribute('src').replace(/sfide\.js/, 'push.js') : 'push.js';
+        sc.onload = () => { try { window.Push.ripristina(); } catch (e) { /* niente */ } aggiornaPush(); };
+        sc.onerror = () => { S.pushCaricando = false; };
+        document.head.append(sc);
+    }
+    function aggiornaPush() {
+        if (!window.Push) return Promise.resolve();
+        return window.Push.stato().then(st => { S.pushStato = st; disegnaCampanella(); }).catch(() => { /* niente piè */ });
+    }
+    function piePush() {
+        if (!window.Push || !S.pushStato || S.pushStato === 'non-supportato') return null;
+        const stato = S.pushStato;
+        const piede = el('div', 'sfide-piede');
+        piede.append(el('span', 'sfide-stato', `This device: <b>${stato === 'acceso' ? 'notifications on' : stato === 'negato' ? 'blocked' : 'notifications off'}</b>`));
+        if (stato === 'negato') {
+            piede.append(el('p', 'sfide-nota', 'Allow notifications for this site in the browser or phone settings.'));
+        } else {
+            const comando = azione(stato === 'acceso' ? 'Turn off' : 'Turn on', stato === 'acceso' ? 'no' : 'si', async () => {
+                if (S.pushOccupato) return;
+                S.pushOccupato = true; S.pushNota = '';
+                try { S.pushStato = await (stato === 'acceso' ? window.Push.disattiva() : window.Push.attiva()); }
+                catch (e) { S.pushNota = String((e && e.message) || 'Could not change it'); }
+                S.pushOccupato = false;
+                disegnaCampanella();
+            });
+            piede.append(comando);
+            if (stato === 'acceso') {
+                const spento = S.posta.digestSpento;
+                piede.append(azione(`Weekly digest: ${spento ? 'off' : 'on'}`, '', async () => {
+                    try { await db().ref(`notifiche/${S.utente.uid}/preferenze/digest`).set(spento ? null : 'off'); }
+                    catch (e) { S.pushNota = "Couldn't save it."; disegnaCampanella(); }
+                }));
+                piede.append(azione('Send a test', '', async () => {
+                    S.pushNota = 'Sending…'; disegnaCampanella();
+                    try { S.pushNota = window.Push.esitoProva(await window.Push.prova()); }
+                    catch (e) { S.pushNota = String((e && e.message) || "Couldn't send the test."); }
+                    disegnaCampanella();
+                }));
+            }
+        }
+        if (S.pushNota) piede.append(el('p', 'sfide-nota', esc(S.pushNota)));
+        return piede;
+    }
+
+    // -----------------------------------------------------
     // 7b. MVP: il voto aperto è una notifica
     //
     // Quando mancano pochi showdown alla fine di una stagione (e per 24 ore dopo la chiusura) chi è iscritto e non ha ancora votato trova in
@@ -1001,6 +1126,7 @@
         const tutte = notifiche();
         const caricata = D => D.pronti.sfide && D.pronti.lette;
         let nonLette = tutte.filter(n => caricata(n.D) && !letta(n.D, n.chiave));
+        let postaNuova = postaNonLetta();
 
         // Menu aperto: quello che si vede è letto (anche nelle altre pagine)
         if (!box.hidden && nonLette.length) {
@@ -1008,9 +1134,15 @@
             segnaLette(nonLette);
             nonLette = [];
         }
+        if (!box.hidden && postaNuova.length) {
+            postaNuova.forEach(x => S.nuoveAperte.add(`posta/${x.k}`));
+            segnaLettePosta(postaNuova);
+            postaNuova = [];
+        }
+        if (!box.hidden) { caricaPush(); if (!S.pushStato) aggiornaPush(); }
 
         // Contatore, titolo della scheda e scossa quando arriva qualcosa di nuovo
-        const n = nonLette.length;
+        const n = nonLette.length + postaNuova.length;
         badge.textContent = n;
         badge.hidden = n === 0;
         btn.setAttribute('aria-label', n ? `Notifications: ${n} unread` : 'Notifications');
@@ -1083,13 +1215,26 @@
             azioni: [collegamento('Vote', 'si', `matches.html?id=${encodeURIComponent(x.id)}&mvp=1`)]
         }));
 
+        // La posta: gli avvisi per me e le notizie della lega (le ultime, le più vecchie restano nel database ma non si mostrano)
+        const vocePosta = x => voce({
+            classe: x.lega ? 'posta lega' : 'posta', tag: TAG_POSTA[x.tipo] || 'News', quando: x.t,
+            nuova: S.nuoveAperte.has(`posta/${x.k}`) || (S.posta.pronte.voci && S.posta.pronte.lette && !lettaPosta(x.k)),
+            testo: x.titolo && !x.lega ? `<strong>${esc(x.titolo)}</strong> ${esc(x.testo)}` : esc(x.testo),
+            azioni: x.url ? [collegamento('Open', '', x.url)] : []
+        });
+        const perMe = S.posta.voci.filter(x => !x.lega).slice(0, 8).map(vocePosta);
+        const dallaLega = S.posta.voci.filter(x => x.lega).slice(0, 8).map(vocePosta);
+
+        const pie = piePush();
         box.replaceChildren(...menuConSezioni('Notifications', [
             ['Waiting for you', ricevute],
             ['MVP voting', votiMvp],
             ['Friendly matches in progress', inCorso],
+            ['News for you', perMe],
+            ['League news', dallaLega],
             ['Replies', risposte],
             ['Sent', inviate]
-        ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'));
+        ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'), ...(pie ? [pie] : []));
     }
 
     // ---- Spade: battaglie in corso in tutte le stagioni (compare solo se ce ne sono) ----

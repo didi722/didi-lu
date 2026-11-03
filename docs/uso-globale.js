@@ -257,6 +257,11 @@
                 specie: elenco.length
             },
             specie: elenco,
+            // i team del perimetro con le specie che portano (una volta sola ciascuna): serve a chi vuole sapere "quanti team hanno un Pokémon di quel tipo"
+            squadre: nelPerimetro.map(i => ({
+                giocatore: i.giocatore, stagione: i.stagione,
+                specieId: [...new Set(i.team.pokemon.map(p => idSpecie(specieDaNome(p.nome))).filter(Boolean))]
+            })),
             perFormato
         };
     }

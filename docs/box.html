@@ -30,6 +30,8 @@
 <script src="editor-team.js"></script>
 <script src="mvp.js"></script>
 <script src="statistiche.js"></script>
+<script src="uso-globale.js"></script>
+<script src="lega-box.js"></script>
 <script src="fiocchi.js"></script>
 <script src="badge-team.js"></script>
 <script src="note-team.js"></script>
@@ -4444,6 +4446,51 @@ const tbStato = {
 // Team del box aperto nel builder per la modifica (null = team nuovo)
 let tbModifica = null;
 
+// ---------------------------------------------------------------------
+// LA LEGA NEI TOOLTIP (lega-box.js): quello che si gioca davvero in questo formato, dai team iscritti che hanno già giocato un set ufficiale.
+// Si legge una volta (le stagioni) quando si apre il Team Builder; finché non è pronta, o se nessuno ha ancora giocato il formato, i tooltip restano quelli di sempre.
+// ---------------------------------------------------------------------
+const tbLega = { formato: '', dati: null, caricando: false };
+
+async function tbCaricaLega() {
+    const formato = tbStato.regolamento && tbStato.regolamento.categoria;
+    if (!formato || tbLega.formato === formato || tbLega.caricando || typeof LegaBox === 'undefined') return;
+    tbLega.caricando = true;
+    try {
+        if (!window.stagioniPerLega) window.stagioniPerLega = (await db.ref('seasons').once('value')).val() || {};
+        const dati = { seasons: window.stagioniPerLega, players: {} };
+        const battaglia = Statistiche.calcola(dati, { formato, senzaSquadre: true }).pokemon;
+        tbLega.dati = LegaBox.prepara(UsoGlobale.calcola(dati, { formato }, battaglia));
+        tbLega.formato = formato;
+    } catch (e) {
+        console.warn('League data not available', e);
+        tbLega.dati = null;
+    } finally {
+        tbLega.caricando = false;
+    }
+    // se nel frattempo si è aperto un altro formato, si carica anche quello
+    const adesso = tbStato.regolamento && tbStato.regolamento.categoria;
+    if (adesso && adesso !== formato && tbLega.formato !== adesso) tbCaricaLega();
+}
+
+// I numeri della lega per il formato del team che si sta costruendo (null se non ci sono ancora)
+function tbLegaCorrente() {
+    const formato = tbStato.regolamento && tbStato.regolamento.categoria;
+    return formato && tbLega.formato === formato ? tbLega.dati : null;
+}
+
+// Gli esempi dei suggerimenti: prima chi si gioca nella lega (i più usati), poi gli altri nell'ordine di sempre
+function tbEsempiLega(pokemon, quanti = 3) {
+    return LegaBox.ordinaPerUso(tbLegaCorrente(), pokemon, v => v.specieId).slice(0, quanti);
+}
+
+// "33% · 51% win" accanto al nome di un Pokémon che la lega gioca (con il dettaglio nel suggerimento al passaggio del mouse)
+function tbEtichettaLega(v) {
+    const lega = tbLegaCorrente();
+    const e = lega ? LegaBox.etichetta(lega, v.specieId) : '';
+    return e ? ` <small class="tb-lega-uso" title="${tbEsc(LegaBox.frase(lega, v.specieId))}">${tbEsc(e)}</small>` : '';
+}
+
 // Stato del menù a tendina (mosse / strumenti)
 const tbCombo = {
     input: null, tipo: '', indice: 0, voci: [], evidenziata: 0, digitato: false,
@@ -4984,16 +5031,16 @@ function tbHtmlSuggerimenti(critici, avvisi, quantiNelTeam) {
     if (!scelti.length) return '';
 
     const slotLibero = tbStato.slot.some(s => !s) && !tbStato.solaLettura;
-        const esempio = v => slotLibero
+        const esempio = v => (slotLibero
         ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${v.specieId}')">${tbEsc(v.nome)}</span>`
-        : tbEsc(v.nome);
+        : tbEsc(v.nome)) + tbEtichettaLega(v);
 
     const righe = scelti.map(g => `
         <div class="tb-tip-row">
             <span class="tb-tip-types">${g.tipi.map(tbBadgeTipoMini).join('')}</span>
             <span class="tb-tip-names wrap">covers <b>${g.copre.join(', ')}</b>${g.peggiora.length ? ` · <i>weak to ${g.peggiora.join(', ')}</i>` : ''}</span>
         </div>
-        <div class="tb-tip-examples">e.g. ${g.pokemon.slice(0, 3).map(esempio).join(', ')}</div>`).join('');
+        <div class="tb-tip-examples">e.g. ${tbEsempiLega(g.pokemon).map(esempio).join(', ')}</div>`).join('');
 
     return `
         <div class="tb-tip-section">
@@ -5048,6 +5095,18 @@ function tbHtmlDifesa() {
            ${tbHtmlSuggerimenti(c.critici, c.avvisi, c.pieni)}`
         : `<div class="tb-tip-section"><div class="tb-tip-sub">✔ No critical weaknesses</div></div>`;
 
+    // La lega: per ogni tipo problematico, quanti team del formato hanno un Pokémon di quel tipo (quindi quanti probabilmente lo attaccano così)
+    const lega = tbLegaCorrente();
+    const sezioneLega = lega && problemi.length
+        ? `<div class="tb-tip-section tb-lega">
+               <div class="tb-tip-title">🏆 In the league · teams with a Pokémon of that type</div>
+               <div class="tb-tip-chips">${problemi.slice(0, 6).map(r => {
+                   const n = LegaBox.teamConTipo(lega, id => (tbSpecie(id) || {}).types, r.tipo);
+                   return `<span class="tb-tip-chip">${tbBadgeTipoMini(r.tipo)}<small>${n}/${lega.team}</small></span>`;
+               }).join('')}</div>
+           </div>`
+        : '';
+
     const celle = c.tipi.map(r => `
         <div class="tb-tip-cell ${r.stato}">
             ${tbBadgeTipoMini(r.tipo)}
@@ -5062,6 +5121,7 @@ function tbHtmlDifesa() {
             <div class="tb-tip-bar"><div style="width: ${(100 * conRisposta / totale).toFixed(1)}%;"></div></div>
             <div class="tb-tip-sub">${c.critici.length} critical · ${c.avvisi.length} to watch</div>
             ${sezioneProblemi}
+            ${sezioneLega}
             <div class="tb-tip-section"><div class="tb-tip-grid">${celle}</div></div>
         </div>`;
 }
@@ -5300,9 +5360,9 @@ function tbHtmlAttacco() {
                      || (y.pokemon[0].bst - x.pokemon[0].bst))
         .slice(0, 3);
     const slotLibero = tbStato.slot.some(s => !s) && !tbStato.solaLettura;
-        const esempio = v => slotLibero
+        const esempio = v => (slotLibero
         ? `<span class="tb-tip-link" onclick="tbAggiungiSuggerito('${v.specieId}')">${tbEsc(v.nome)}</span>`
-        : tbEsc(v.nome);
+        : tbEsc(v.nome)) + tbEtichettaLega(v);
     const sezionePokemon = proposte.length
         ? `<div class="tb-tip-section">
                <div class="tb-tip-title">💡 ${slotLibero ? 'Or add' : 'Or swap in'} a Pokémon with these STABs</div>
@@ -5312,8 +5372,20 @@ function tbHtmlAttacco() {
                        <span class="tb-tip-names wrap">${g.aiuta.length ? `also resists <b>${g.aiuta.join(', ')}</b>` : ''}${g.peggiora.length ? `${g.aiuta.length ? ' · ' : ''}<i>weak to ${g.peggiora.join(', ')}</i>` : ''}</span>
                        <span class="tb-tip-badge ok">+${g.guadagno}</span>
                    </div>
-                   <div class="tb-tip-examples">e.g. ${g.pokemon.slice(0, 3).map(esempio).join(', ')}</div>`).join('')}
+                   <div class="tb-tip-examples">e.g. ${tbEsempiLega(g.pokemon).map(esempio).join(', ')}</div>`).join('')}
                ${slotLibero ? '<div class="tb-tip-note">Click a name to add it to the first empty slot</div>' : ''}
+           </div>`
+        : '';
+
+    // La lega: contro i Pokémon più usati dai team del formato
+    const lega = tbLegaCorrente();
+    const miglioreContro = new Map(a.bersagli.map(b => [b.v.specieId, b.migliore]));
+    const cl = lega ? LegaBox.copertura(lega, id => (miglioreContro.has(id) ? miglioreContro.get(id) : null)) : null;
+    const sezioneLega = cl && cl.considerati
+        ? `<div class="tb-tip-section tb-lega">
+               <div class="tb-tip-title">🏆 In the league · ${cl.considerati} most used</div>
+               <div class="tb-tip-row"><span>Hit super-effectively</span><b>${cl.superEfficaci} of ${cl.considerati}</b></div>
+               ${cl.resistono.length ? `<div class="tb-tip-note">Resist everything you run: ${cl.resistono.slice(0, 4).map(x => `${tbEsc(x.nome)} (${x.perc}%)`).join(', ')}${cl.resistono.length > 4 ? ` +${cl.resistono.length - 4}` : ''}</div>` : ''}
            </div>`
         : '';
 
@@ -5336,6 +5408,7 @@ function tbHtmlAttacco() {
             <div class="tb-tip-bar"><div style="width: ${(100 * a.superEfficaci / a.totale).toFixed(1)}%;"></div></div>
             <div class="tb-tip-sub">${a.superEfficaci} super-effective · ${neutri} neutral at best · ${a.muri.length} resist everything</div>
             <div class="tb-tip-section"><div class="tb-tip-chips">${htmlTipiTeam}</div></div>
+            ${sezioneLega}
             ${sezioneMuri}
             ${sezioneGruppi}
             ${sezioneSuggerimenti}
@@ -6800,6 +6873,21 @@ function tbHtmlSpeedTier() {
            </div>`
         : '';
 
+    // La lega: quanti dei Pokémon più usati dai team del formato superi (stessi riferimenti di sopra: 252 EV, 31 IV, +Spe)
+    const lega = tbLegaCorrente();
+    const vsLega = lega ? LegaBox.velocita(lega, mia, id => {
+        const x = tbSpecie(id);
+        return x && x.baseStats ? tbCalcolaStat('spe', x.baseStats.spe, 252, 31, nat.max) : null;
+    }) : null;
+    const sezioneLega = vsLega && vsLega.considerati
+        ? `<div class="tb-tip-section tb-lega">
+               <div class="tb-tip-title">🏆 In the league · ${vsLega.considerati} most used</div>
+               <div class="tb-tip-row"><span>You outspeed</span><b>${vsLega.superati} of ${vsLega.considerati}</b></div>
+               ${vsLega.piuVeloci.length ? `<div class="tb-tip-note">Faster: ${vsLega.piuVeloci.slice(0, 4).map(x => `${tbEsc(x.nome)} ${x.vel} (${x.perc}%)`).join(', ')}${vsLega.piuVeloci.length > 4 ? ` +${vsLega.piuVeloci.length - 4}` : ''}</div>` : ''}
+               ${vsLega.pari.length ? `<div class="tb-tip-note">Tied: ${vsLega.pari.map(x => tbEsc(x.nome)).join(', ')}</div>` : ''}
+           </div>`
+        : '';
+
     return `
         ${tbTestataCoach(`SPEED TIER · ${mia}`)}
         <div class="neubrutalist-tooltip-body">
@@ -6807,6 +6895,7 @@ function tbHtmlSpeedTier() {
             <div class="tb-tip-sub">of the format outsped</div>
             <div class="tb-tip-bar"><div style="width: ${(100 * piuLenti / totale).toFixed(1)}%;"></div></div>
             <div class="tb-tip-sub">${piuLenti} slower · ${pari.length} ties · ${piuVeloci} faster</div>
+            ${sezioneLega}
             ${rigaSprechi}
             ${modoTR ? '' : `
                 <div class="tb-tip-section">${htmlModificatori}</div>
@@ -7655,6 +7744,7 @@ async function apriTeamBuilder() {
         tbRender();
         tbMontaNote();
                 tbCaricaCalc().catch(() => {}); // precarica il damage calc in background
+        tbCaricaLega();                 // i numeri della lega per i tooltip, in background
         if (daHelper) await tbAttendiBuilderPronto(); // font e sprite pronti prima di scoprirlo
     } catch (err) {
         console.error('[Team Builder]', err);

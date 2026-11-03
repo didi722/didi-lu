@@ -169,6 +169,27 @@
         return 'spento';
     }
 
+    /** La frase per l'esito di una prova (Push.prova): { dispositivi, inviate, ritirati } -> testo */
+    function esitoProva(r) {
+        if (!r || !r.dispositivi) return 'No device has notifications on yet: turn them on first.';
+        if (r.inviate) return 'Sent! It should show up in a few seconds.';
+        return 'No device accepted it: turn notifications off and on again.';
+    }
+
+    /** Una notifica di prova a questo account (a tutti i suoi dispositivi): serve a controllare che arrivino davvero. Restituisce { dispositivi, inviate, ritirati }. */
+    async function prova() {
+        const w = finestra();
+        const utente = await utenteCollegato();
+        if (!utente) throw new Error('Log in first');
+        if (!w.firebase.functions) await caricaScript(`https://www.gstatic.com/firebasejs/${VERSIONE_FIREBASE}/firebase-functions-compat.js`);
+        try {
+            return (await w.firebase.app().functions('europe-west1').httpsCallable('provaNotifica')()).data;
+        } catch (e) {
+            if (/resource-exhausted/.test(String((e && e.code) || ''))) throw new Error('One at a time: wait a few seconds.');
+            throw new Error("Couldn't send the test. Try again.");
+        }
+    }
+
     /** Ad ogni apertura, se sono accese: il token può cambiare (Firebase lo rinnova), quindi lo si riscrive. Non chiede mai permessi. */
     async function ripristina() {
         if (!tipo() || leggi(PROVA_ACCESE) !== '1') return;
@@ -192,5 +213,5 @@
         });
     }
 
-    return { CHIAVE_VAPID, chiaveToken, supporto, statoDa, ambiente, tipo, stato, attiva, disattiva, ripristina };
+    return { CHIAVE_VAPID, chiaveToken, supporto, statoDa, ambiente, tipo, stato, attiva, disattiva, ripristina, prova, esitoProva };
 });

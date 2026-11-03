@@ -36,6 +36,7 @@
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
 <script src="ordine-showdown.js"></script>
+<script src="filtro-showdown.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole, .cl-nome'));</script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
@@ -189,6 +190,8 @@
                 <div id="season-summary-content" class="summary-grid"></div>
             </div>
    <div id="liveList" class="live-list" hidden></div>
+            <!-- il filtro degli showdown (filtro-showdown.js): lo riempie montaFiltroShowdown() -->
+            <div id="matchFiltro" class="match-filtro" hidden></div>
             <div id="matchList" class="showdown-grid-double">
                 </div>
         </div>
@@ -395,7 +398,10 @@
         <button type="button" class="rc-tasto" data-comando="avanti" aria-label="Next turn" title="Next turn"></button>
         <button type="button" class="rc-tasto rc-velocita" data-comando="velocita" id="rcVelocita" title="Speed">1×</button>
         <button type="button" class="rc-tasto" data-comando="audio" id="rcAudio" title="Sound"></button>
+        <button type="button" class="rc-tasto" data-comando="link" id="rcLink" aria-label="Copy a link to this turn" title="Copy a link to this turn"></button>
     </div>
+    <!-- I momenti chiave del set (replay-sito.js: momentiChiave, dal log): un tocco porta a quel turno -->
+    <div class="replay-momenti" id="replayMomenti" role="group" aria-label="Key moments" onclick="event.stopPropagation()" hidden></div>
 
     <span class="close-replay" onclick="chiudiReplay()">&times;</span>
 </div>
@@ -838,6 +844,8 @@ async function inizializzaPaginaArchivio() {
     }
 
     const perAppSd = [];    // gli stessi showdown come dati: l'app li mostra a locandine (app-matches.js)
+    const vociFiltro = [];  // la scheda di ricerca di ogni showdown (filtro-showdown.js)
+    const schedeFiltro = new Map();   // id del showdown -> la sua card
     sortedSdKeys.forEach(sdId => {
         const sd = dataShowdowns[sdId];
         const info = sd.info || {};
@@ -894,10 +902,13 @@ async function inizializzaPaginaArchivio() {
     </div>
 `;
         container.appendChild(sdCard);
+        schedeFiltro.set(sdId, sdCard);
+        if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
         const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
+    montaFiltroShowdown({ voci: vociFiltro, schede: schedeFiltro, perAppSd, stagione: stagioneAttiva, riepilogo: !!riepilogoIniziale });
 
        await Sfide.avvia({ stagione: stagioneAttiva, infoStagione: dataSeasonInfo });
 
@@ -927,6 +938,96 @@ async function inizializzaPaginaArchivio() {
     apriReplayDaLink(dataShowdowns);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------------
+// FILTRO DEGLI SHOWDOWN (filtro-showdown.js): cercare al volo uno showdown. A riposo è solo l'icona dei filtri; toccandola si apre una ricerca
+// (giocatore, team, formato, data) con le tendine (giocatore, contro chi, formato, mese, vinti/persi) che si sommano. Le card che non c'entrano si
+// nascondono. Nell'app non c'è (le partite sono locandine). I criteri restano finché la pagina è aperta (anche se la lista si ridisegna dopo un salvataggio).
+// ---------------------------------------------------------------------------------------------------------------------------
+let criteriFiltroSd = { ...(window.FiltroShowdown ? FiltroShowdown.CRITERI_VUOTI : {}) };
+let filtroSdAperto = false;
+let contestoFiltroSd = null;
+
+function montaFiltroShowdown(ctx) {
+    const barra = document.getElementById('matchFiltro');
+    if (!barra || !window.FiltroShowdown) return;
+    if (document.documentElement.classList.contains('app-shell')) { barra.hidden = true; barra.innerHTML = ''; return; }   // nell'app non serve
+    contestoFiltroSd = ctx;
+    // con meno di due showdown non c'è niente da cercare
+    if (ctx.voci.length < 2) { barra.hidden = true; barra.innerHTML = ''; return; }
+    barra.hidden = false;
+
+    // un criterio che non esiste più (un showdown eliminato) si lascia cadere
+    const opz = FiltroShowdown.opzioni(ctx.voci);
+    const c = criteriFiltroSd;
+    if (c.giocatore && !opz.giocatori.some(g => g.chiave === c.giocatore)) { c.giocatore = ''; c.esito = ''; }
+    if (c.contro && !opz.giocatori.some(g => g.chiave === c.contro)) c.contro = '';
+    if (c.formato && !opz.formati.includes(c.formato)) c.formato = '';
+    if (c.mese && !opz.mesi.some(m => m.valore === c.mese)) c.mese = '';
+
+    if (!barra.dataset.pronto) {
+        barra.dataset.pronto = '1';
+        barra.addEventListener('input', e => {
+            if (!e.target.matches('[data-mf="testo"]')) return;
+            criteriFiltroSd.testo = e.target.value;
+            applicaFiltroShowdown(false);
+        });
+        barra.addEventListener('change', e => {
+            const campo = e.target.dataset && e.target.dataset.mf;
+            if (!campo || campo === 'testo') return;
+            criteriFiltroSd[campo] = e.target.value;
+            if (campo === 'giocatore' && !e.target.value) criteriFiltroSd.esito = '';
+            applicaFiltroShowdown(true);
+        });
+        barra.addEventListener('click', e => {
+            if (e.target.closest('[data-mf-apri]')) {
+                filtroSdAperto = !filtroSdAperto;
+                const corpo = barra.querySelector('.mf-corpo'), t = barra.querySelector('[data-mf-apri]');
+                if (corpo) corpo.hidden = !filtroSdAperto;
+                if (t) t.setAttribute('aria-expanded', String(filtroSdAperto));
+                aggiornaParti(barra);
+                if (filtroSdAperto) { const q = barra.querySelector('.mf-testo'); if (q) q.focus({ preventScroll: true }); }
+                return;
+            }
+            const esito = e.target.closest('[data-mf-esito]');
+            if (esito) { criteriFiltroSd.esito = esito.dataset.mfEsito; applicaFiltroShowdown(true); return; }
+            if (e.target.closest('[data-mf-pulisci]')) {
+                criteriFiltroSd = { ...FiltroShowdown.CRITERI_VUOTI };
+                applicaFiltroShowdown(true);
+            }
+        });
+    }
+    applicaFiltroShowdown(true);
+}
+
+/** Applica i criteri: nasconde le card che non c'entrano e, se `ridisegna`, rifà il filtro (tendine, tasto Clear) */
+function applicaFiltroShowdown(ridisegna) {
+    const ctx = contestoFiltroSd;
+    const barra = document.getElementById('matchFiltro');
+    if (!ctx || !barra) return;
+    const rimaste = FiltroShowdown.filtra(ctx.voci, criteriFiltroSd);
+    const ok = new Set(rimaste.map(v => v.id));
+    ctx.schede.forEach((card, id) => { card.hidden = !ok.has(id); });
+    const conteggio = { mostrati: rimaste.length, totale: ctx.voci.length };
+    if (ridisegna) {
+        barra.innerHTML = FiltroShowdown.html(FiltroShowdown.opzioni(ctx.voci), criteriFiltroSd, conteggio, { aperto: filtroSdAperto });
+    } else {
+        // scrivendo non si tocca la casella (il cursore resta dov'è): si aggiornano solo conteggio, avviso, Clear e il numero sull'icona
+        const conta = barra.querySelector('.mf-conta'), vuoto = barra.querySelector('.mf-vuoto');
+        if (conta) conta.textContent = conteggio.mostrati === conteggio.totale ? `${conteggio.totale} ${conteggio.totale === 1 ? 'showdown' : 'showdowns'}` : `${conteggio.mostrati} of ${conteggio.totale} showdowns`;
+        if (vuoto) vuoto.hidden = conteggio.mostrati > 0;
+        aggiornaParti(barra);
+    }
+}
+
+/** L'icona mostra quanti filtri sono attivi; la riga con conteggio e Clear si vede solo se ce ne sono (o se il filtro è aperto) */
+function aggiornaParti(barra) {
+    const attivi = FiltroShowdown.quantiAttivi(criteriFiltroSd);
+    const n = barra.querySelector('.mf-n'), riga = barra.querySelector('.mf-riga'), pulisci = barra.querySelector('.mf-pulisci');
+    if (n) { n.textContent = String(attivi); n.hidden = !attivi; }
+    if (riga) riga.hidden = !(attivi || filtroSdAperto);
+    if (pulisci) pulisci.hidden = !attivi;
+}
+
 let replayDaLinkAperto = false;
 /** Apre da solo il replay chiesto nell'indirizzo (una volta sola per apertura della pagina): il set indicato, con i suoi due team e il punteggio del match */
 function apriReplayDaLink(showdowns) {
@@ -937,6 +1038,9 @@ function apriReplayDaLink(showdowns) {
     // aperto dal banner "Match of the week" della home (da=home): chiudendo il replay si torna lì, non all'elenco dei match
     window.replayTornaAllaHome = new URLSearchParams(window.location.search).get('da') === 'home';
     const [sdId, matchKey, setKey] = richiesto.split('~');
+    // ?turno=12: il replay parte da quel turno (lo si manda al replay appena si fa vivo: vedi "replay-stato")
+    const turnoRichiesto = parseInt(new URLSearchParams(window.location.search).get('turno'), 10);
+    window.turnoDaLink = Number.isFinite(turnoRichiesto) && turnoRichiesto > 0 ? turnoRichiesto : null;
     const match = showdowns && showdowns[sdId] && showdowns[sdId].matches && showdowns[sdId].matches[matchKey];
     if (!match) return;
     const jsq = t => String(t == null ? '' : t);
@@ -2583,14 +2687,81 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         indietro: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h2.5v12H2zM14 2v12L5.5 8z"/></svg>',
         avanti: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.5 2H14v12h-2.5zM2 2v12l8.5-6z"/></svg>',
         audio: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10.5 4.6a4.6 4.6 0 0 1 0 6.8l-1-1.1a3.1 3.1 0 0 0 0-4.6zM12.6 2.4a7.6 7.6 0 0 1 0 11.2l-1-1.1a6.1 6.1 0 0 0 0-9z"/></svg>',
-        muto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10 5.6l1-1 2 2 2-2 1 1-2 2 2 2-1 1-2-2-2 2-1-1 2-2z"/></svg>'
+        muto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10 5.6l1-1 2 2 2-2 1 1-2 2 2 2-1 1-2-2-2 2-1-1 2-2z"/></svg>',
+        link: '<svg viewBox="2.6 2.6 10.8 10.8" aria-hidden="true"><path d="M6.2 9.8a2.4 2.4 0 0 1 0-3.4l2.2-2.2a2.4 2.4 0 0 1 3.4 3.4l-1 1-1.1-1.1 1-1a.8.8 0 0 0-1.2-1.2L7.3 7.5a.8.8 0 0 0 0 1.2zM9.8 6.2a2.4 2.4 0 0 1 0 3.4l-2.2 2.2a2.4 2.4 0 0 1-3.4-3.4l1-1 1.1 1.1-1 1a.8.8 0 0 0 1.2 1.2l2.2-2.2a.8.8 0 0 0 0-1.2z"/></svg>',
+        fatto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 12.4 1.8 8l1.4-1.4 3 3 6.6-6.6L14.2 4.4z"/></svg>'
     };
+
+    // ---- il turno in cui è il replay, i momenti chiave e il link a un turno preciso ----
+    let turnoReplay = 0;            // l'ultimo turno comunicato dal replay (replay-stato)
+    let momentiReplay = [];         // [{ turno, tipo, testo }] del set aperto (ReplayCarica li annuncia con l'evento "replay-momenti")
+    const striscia = () => document.getElementById('replayMomenti');
+    const evidenziaMomento = () => {
+        const s = striscia();
+        if (!s) return;
+        s.querySelectorAll('.rm-chip').forEach(c => c.classList.toggle('qui', Number(c.dataset.turno) === turnoReplay));
+    };
+    const disegnaMomenti = () => {
+        const s = striscia();
+        if (!s) return;
+        s.replaceChildren(...momentiReplay.slice(0, 8).map(m => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = `rm-chip rm-${String(m.tipo).replace(/[^a-z]/g, '')}`;
+            b.dataset.turno = String(m.turno);
+            b.title = `Turn ${m.turno}: ${m.testo}`;
+            const t = document.createElement('b');
+            t.textContent = `T${m.turno}`;
+            b.append(t, ` ${String(m.testo).slice(0, 48)}`);
+            return b;
+        }));
+        s.hidden = !s.childElementCount;
+        evidenziaMomento();
+    };
+    window.addEventListener('replay-momenti', e => {
+        const f = frame();
+        if (!e.detail || !f || e.detail.iframe !== f) return;
+        momentiReplay = Array.isArray(e.detail.momenti) ? e.detail.momenti : [];
+        disegnaMomenti();
+    });
+
+    /** Il link a questo turno di questo set (da incollare in chat): matches.html?id=<stagione>&replay=<showdown>~<match>~set<N>&turno=<T> */
+    window.indirizzoTurnoReplay = function () {
+        const r = window.replayAttuale;
+        const set = document.querySelector('.btn-set.active[data-set], .btn-set.is-selected[data-set]');
+        if (!r || !r.sd || !r.match || !set) return '';
+        const q = new URLSearchParams({ id: stagioneAttiva, replay: `${r.sd}~${r.match}~set${String(set.dataset.set).replace(/\D/g, '')}` });
+        if (turnoReplay > 0) q.set('turno', String(turnoReplay));
+        return `${location.origin}${location.pathname}?${q.toString().replace(/%7E/g, '~')}`;      // la ~ resta com'è: il link si legge meglio in chat
+    };
+    async function copiaLinkTurno() {
+        const url = window.indirizzoTurnoReplay();
+        const tasto = document.getElementById('rcLink');
+        if (!url || !tasto) return;
+        let ok = false;
+        try { await navigator.clipboard.writeText(url); ok = true; } catch (e) {
+            // senza permesso degli appunti (alcuni browser, pagine non sicure) si copia con una casella nascosta
+            try {
+                const t = document.createElement('textarea');
+                t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+                document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove();
+            } catch (err) { ok = false; }
+        }
+        tasto.innerHTML = ok ? ICONE.fatto : ICONE.link;
+        tasto.title = ok ? (turnoReplay > 0 ? `Link to turn ${turnoReplay} copied` : 'Link copied') : "Couldn't copy the link";
+        tasto.classList.toggle('copiato', ok);
+        clearTimeout(copiaLinkTurno.timer);
+        copiaLinkTurno.timer = setTimeout(() => { tasto.innerHTML = ICONE.link; tasto.title = 'Copy a link to this turn'; tasto.classList.remove('copiato'); }, 1800);
+    }
 
     window.nascondiComandiReplay = function () {
         const b = barra();
         if (b) b.hidden = true;
         const c = document.getElementById('replayCampo');
         if (c) { c.hidden = true; c.innerHTML = ''; }
+        turnoReplay = 0;
+        momentiReplay = [];
+        disegnaMomenti();
     };
 
     // I cartellini del campo (meteo, terreno, stanze, condizioni dei lati): il replay li manda come dati, qui si disegnano con testo e basta
@@ -2627,6 +2798,14 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
             try { e.source.postMessage({ tipo: 'replay-comandi-fuori' }, '*'); } catch (err) { /* iframe già chiuso */ }
         }
         const { inPausa, velocita, muto } = e.data;
+        turnoReplay = Number.isFinite(Number(e.data.turno)) ? Math.max(0, Number(e.data.turno)) : 0;
+        evidenziaMomento();
+        // aperto da un link con ?turno=: la prima volta che il replay si fa vivo lo si porta a quel turno
+        if (window.turnoDaLink) {
+            const t = window.turnoDaLink;
+            window.turnoDaLink = null;
+            try { e.source.postMessage({ tipo: 'replay-comando', comando: 'turno', valore: t }, '*'); } catch (err) { /* iframe già chiuso */ }
+        }
         const play = document.getElementById('rcPlay');
         play.innerHTML = inPausa ? ICONE.play : ICONE.pausa;
         play.setAttribute('aria-label', inPausa ? 'Play' : 'Pause');
@@ -2647,9 +2826,17 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         for (const t of b.querySelectorAll('[data-comando="inizio"], [data-comando="indietro"], [data-comando="avanti"]')) t.innerHTML = ICONE[t.dataset.comando];
         document.getElementById('rcPlay').innerHTML = ICONE.play;
         document.getElementById('rcAudio').innerHTML = ICONE.audio;
+        document.getElementById('rcLink').innerHTML = ICONE.link;
         b.addEventListener('click', e => {
             const t = e.target.closest('[data-comando]');
-            if (t) invia({ tipo: 'replay-comando', comando: t.dataset.comando });
+            if (!t) return;
+            if (t.dataset.comando === 'link') copiaLinkTurno();
+            else invia({ tipo: 'replay-comando', comando: t.dataset.comando });
+        });
+        const s = striscia();
+        if (s) s.addEventListener('click', e => {
+            const c = e.target.closest('.rm-chip');
+            if (c) invia({ tipo: 'replay-comando', comando: 'turno', valore: Number(c.dataset.turno) });
         });
     });
 })();
@@ -2750,6 +2937,7 @@ window.chiudiReplay = function() {
 // --- FUNZIONE APRI MATCH ---
 
 async function apriMatch(showdownID, matchKey, teamDidi, teamLu, scoreDidi, scoreLu, setIniziale) {
+    window.replayAttuale = { sd: showdownID, match: matchKey };   // serve al link "guarda questo turno" (indirizzoTurnoReplay)
     const player = document.getElementById('bg-music-home') || document.getElementById('bg-music');
     window.AppMusicaPausa = true;   // fermata apposta (suona il replay): la musica dell'app non deve ripartire da sola (app-musica.js)
     if (player) player.pause();

@@ -166,6 +166,8 @@
     html.app-shell body.pg-matches .hub-right-column { display: block !important; min-width: 0; }
     /* una schermata alla volta: SHOWDOWNS (la colonna delle partite) oppure RANKINGS (la classifica), come dicono i due tag in alto */
     html.app-shell[data-mt="sd"] body.pg-matches .hub-right-column, html.app-shell[data-mt="rk"] body.pg-matches .hub-left-column { display: none !important; }
+    /* il filtro degli showdown (solo sito): nell'app le partite sono locandine */
+    html.app-shell body.pg-matches .match-filtro { display: none !important; }
     html.app-shell body.pg-matches .info-summary-card { display: none !important; }
     html.app-shell body.pg-matches #matchList { display: none !important; }
     /* i due tag in alto, e a destra la fila delle partite in diretta (un solo chip, che scorre) */
@@ -1216,6 +1218,8 @@
     html.app-shell #replayModal .replay-comandi { position: fixed; right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); top: calc(50 * var(--u)); bottom: calc(10 * var(--u)); order: 0; flex-direction: column; justify-content: center; gap: calc(8 * var(--u)); padding: 0; background: none; border: 0; box-shadow: none; }
     html.app-shell #replayModal .rc-tasto, html.app-shell #replayModal .rc-play, html.app-shell #replayModal .rc-velocita { width: calc(40 * var(--u)); height: calc(36 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(11 * var(--u)); transform: none !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(12 * var(--u)); }
     html.app-shell #replayModal .rc-tasto:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
+    /* i momenti chiave: nell'app lo spazio sotto la console non c'è (landscape), per ora si vedono solo da sito */
+    html.app-shell #replayModal .replay-momenti { display: none !important; }
     html.app-shell #replayModal .rc-tasto svg { width: calc(17 * var(--u)); height: calc(17 * var(--u)); }
     html.app-shell #replayModal > .close-replay { top: calc(8 * var(--u)); right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); width: calc(34 * var(--u)); height: calc(34 * var(--u)); font-size: calc(22 * var(--u)); border-width: calc(3 * var(--u)); border-radius: 50%; rotate: 0deg; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); }
 }

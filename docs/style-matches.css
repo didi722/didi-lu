@@ -173,6 +173,24 @@ body {
 .rc-play { width: 58px; background: var(--nb-giallo, #ffbd44); }
 .rc-play:hover { background: #fff; }
 .rc-velocita { width: 52px; }
+/* il link a questo turno: dopo il tasto copia si fa verde un attimo */
+.rc-tasto.copiato { background: #9be37f; }
+/* i momenti chiave del set (primo KO, sorpassi, rimonta, ultimo Pokémon, ultimo KO): chip sotto i comandi, un tocco porta a quel turno */
+.replay-momenti { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; box-sizing: border-box; max-width: min(100%, 760px); margin: 0 auto; z-index: 6; }
+.replay-momenti[hidden] { display: none; }
+.rm-chip {
+    display: inline-flex; align-items: center; gap: 5px; box-sizing: border-box; padding: 3px 9px 3px 3px; cursor: pointer;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 2px solid var(--nb-ink, #000); border-radius: calc(var(--nb-raggio, 0px) * .6);
+    box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 800 .74rem/1.2 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .03em; text-transform: uppercase;
+}
+.rm-chip b { padding: 1px 6px 0; background: var(--nb-ink, #000); color: #fff; border-radius: calc(var(--nb-raggio, 0px) * .4); font-weight: 900; }
+.rm-chip.rm-fine b { background: #c0392b; }
+.rm-chip.rm-rimonta b { background: #2a6fdb; }
+.rm-chip.rm-sorpasso b { background: #7b3fb5; }
+.rm-chip.rm-ultimo b { background: #d9730d; }
+.rm-chip:hover, .rm-chip:focus-visible, .rm-chip.qui { background: var(--nb-giallo, #ffbd44); outline: none; }
 
 .gba-screen-area {
     position: absolute;
@@ -1822,6 +1840,69 @@ max-width: 100%;
     align-items: flex-start;
     width: 100%;
     gap: 40px; /* Spazio tra match e players */
+}
+
+/* ---------- Filtro degli showdown (filtro-showdown.js): a riposo è solo l'icona dei filtri, toccandola si apre la ricerca ---------- */
+.showdown-summary-card[hidden] { display: none !important; }
+.match-filtro { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; margin-right: 50px; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); }
+.match-filtro[hidden] { display: none; }
+.match-filtro + #matchList.showdown-grid-double { margin-top: 0; }
+.mf-testa { display: flex; align-items: center; gap: 12px; }
+.mf-apri {
+    position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 46px; height: 40px; padding: 0; cursor: pointer;
+    background: var(--nb-carta, #fff); color: var(--nb-ink, #000);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    transition: translate .1s ease, box-shadow .1s ease, background-color .1s ease;
+}
+.mf-apri svg { display: block; width: 18px; height: 18px; fill: currentColor; }
+.mf-apri[aria-expanded="true"] { background: var(--nb-ink, #000); color: #fff; }
+.mf-apri:hover, .mf-apri:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); outline: none; }
+.mf-apri:active { translate: 1px 1px; box-shadow: none; }
+/* quanti filtri sono attivi: un pallino giallo sull'angolo dell'icona */
+.mf-n { position: absolute; top: -9px; right: -9px; min-width: 1.5em; box-sizing: border-box; padding: 2px 4px 0; background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid var(--nb-ink, #000); border-radius: 999px; font: 900 .66rem/1.3 var(--nb-font-titoli, 'Josefin Sans', sans-serif); font-style: normal; text-align: center; }
+.mf-n[hidden] { display: none; }
+.mf-riga { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mf-riga[hidden] { display: none; }
+.mf-corpo { display: flex; flex-direction: column; gap: 10px; }
+.mf-corpo[hidden] { display: none; }
+.mf-testo {
+    width: 100%; box-sizing: border-box; padding: 9px 12px 7px;
+    background: var(--nb-carta, #fff); color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 700 .9rem var(--nb-font-testo, 'Montserrat', sans-serif);
+}
+.mf-testo::placeholder { color: #555; font-weight: 600; }
+.mf-testo:focus { outline: none; background: #fffbe6; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
+.mf-pulisci, .mf-esito-tasto {
+    box-sizing: border-box; cursor: pointer; color: var(--nb-ink, #000); background: var(--nb-carta, #fff);
+    border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    font: 900 .7rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase;
+}
+.mf-pannello {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 14px; padding: 14px;
+    background: var(--nb-carta, #fff); color: #000;
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+}
+.mf-campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mf-campo > span, .mf-esito > span { font: 900 .66rem/1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.mf-campo select {
+    width: 100%; box-sizing: border-box; padding: 7px 8px 5px; background: var(--nb-carta, #fff); color: #000; cursor: pointer;
+    border: 2px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px);
+    font: 800 .82rem var(--nb-font-titoli, 'Josefin Sans', sans-serif);
+}
+.mf-esito { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.mf-esito[hidden] { display: none; }
+.mf-esito-tasto { padding: 5px 12px 3px; }
+.mf-esito-tasto[aria-pressed="true"] { background: var(--nb-giallo, #ffbd44); }
+.mf-conta { font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; text-transform: uppercase; color: var(--nb-testo, #000); }
+.mf-pulisci { padding: 3px 10px 1px; font-size: .68rem; }
+.mf-pulisci[hidden] { display: none; }
+.mf-pulisci:hover, .mf-pulisci:focus-visible { background: var(--nb-giallo, #ffbd44); outline: none; }
+.mf-vuoto { margin: 0; padding: 18px 12px; text-align: center; font: italic 700 .9rem var(--nb-font-testo, 'Montserrat', sans-serif); color: var(--nb-testo, #000); }
+.mf-vuoto[hidden] { display: none; }
+@media (max-width: 900px) {
+    .match-filtro { margin-right: 0; }
+    .mf-pannello { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* 2. La colonna dei match deve espandersi */
