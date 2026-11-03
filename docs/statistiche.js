@@ -30,6 +30,11 @@
     'use strict';
 
     const BETA = 'sbeta';
+    // mvp.js (la classifica dei Pokémon e la squadra ideale): nel browser è window.Mvp, caricato dalla pagina; senza, la squadra ideale non si calcola (nessun fiocco)
+    const libMvp = () => {
+        if (typeof module === 'object' && module.exports) { try { return require('./mvp.js'); } catch (e) { return null; } }
+        return (typeof self !== 'undefined' && self.Mvp) || null;
+    };
     const ELO_INIZIALE = 1000;
     const MIN_SD_CLASSIFICA = 3;     // con meno showdown giocati un allenatore è unranked: l'Elo si mostra come N/A
 
@@ -253,6 +258,21 @@
         for (const [id, stagioneDati] of Object.entries(seasons)) {
             if (!stagioneChiusa(stagioneDati?.info) || (stagioneScelta === 'all' ? id === BETA : id !== stagioneScelta)) continue;
             for (const v of vincitoriMvp(stagioneDati)) (mvpDelPokemon[v.chiave] ||= new Set()).add(id);
+        }
+
+        // Squadra ideale delle stagioni chiuse nel perimetro scelto (League e Monoformat, come l'MVP): chiave del Pokémon -> stagioni in cui c'è entrato.
+        // Si calcola stagione per stagione (i numeri di UNA stagione), con lo stesso conto del riepilogo (Mvp.squadraIdeale).
+        const squadraDelPokemon = {};
+        const Mvp = filtro.senzaSquadre ? null : libMvp();
+        if (Mvp && Mvp.squadraIdeale) {
+            for (const [id, stagioneDati] of Object.entries(seasons)) {
+                if (!stagioneChiusa(stagioneDati?.info) || (stagioneScelta === 'all' ? id === BETA : id !== stagioneScelta)) continue;
+                if (!Mvp.stagioneConMvp(stagioneDati.info, id)) continue;
+                const rs = calcola(dati, { stagione: id, senzaSquadre: true });
+                const info = stagioneDati.info || {};
+                const formatiStagione = Array.isArray(info.selected_formats) && info.selected_formats.length ? info.selected_formats : rs.formati;
+                for (const m of Mvp.squadraIdeale(rs.pokemon, formatiStagione).membri) (squadraDelPokemon[m.chiave] ||= new Set()).add(id);
+            }
         }
 
         const stagioni = Object.keys(seasons).sort(ordineStagioni).map(id => ({
@@ -534,6 +554,9 @@
                 // le stagioni in cui QUESTO Pokémon (non la sua specie) è stato eletto MVP
                 mvpVinti: mvpDelPokemon[m.chiave] ? mvpDelPokemon[m.chiave].size : 0,
                 mvpStagioni: mvpDelPokemon[m.chiave] ? [...mvpDelPokemon[m.chiave]] : [],
+                // le stagioni in cui QUESTO Pokémon è entrato nella squadra ideale (mvp.js: squadraIdeale)
+                dreamTeamVinti: squadraDelPokemon[m.chiave] ? squadraDelPokemon[m.chiave].size : 0,
+                dreamTeamStagioni: squadraDelPokemon[m.chiave] ? [...squadraDelPokemon[m.chiave]] : [],
                 showdown: t ? t.showdown : { giocati: 0, vinti: 0, persi: 0 },
                 match: t ? t.match : { giocati: 0, vinti: 0, persi: 0 },
                 set: t ? t.set : { giocati: 0, vinti: 0, persi: 0 },

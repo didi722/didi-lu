@@ -2,8 +2,8 @@
 // RIEPILOGO DI FINE STAGIONE — Poké-Tournament
 //
 // Una stagione chiusa, aperta in matches.html, mostra questo riepilogo invece dell'elenco dei showdown (che resta a un tocco: "Calendar").
-// Dentro: il vincitore e la classifica finale, i numeri della stagione, l'MVP, il miglior Pokémon di ogni formato, i premi (più KO, il muro, la
-// rimonta...) e i Pokémon più usati. Tutto si calcola dai numeri che il sito ha già (Statistiche.calcola su QUELLA stagione): niente di nuovo da salvare.
+// Dentro: il vincitore e la classifica finale, i numeri della stagione, l'MVP, la squadra ideale (i migliori Pokémon di ogni formato, scelti dai numeri:
+// Mvp.squadraIdeale), i premi (più KO, il muro, la rimonta...) e i Pokémon più usati. Tutto si calcola dai numeri che il sito ha già (Statistiche.calcola su QUELLA stagione): niente di nuovo da salvare.
 //
 // Due parti:
 //   - calcola(dati) -> il riepilogo come dati: pura, niente DOM e niente Firebase (provata in test/riepilogo-stagione.test.js);
@@ -47,6 +47,7 @@
         collezione: { src: `${IMG}poke-ball.png` },
         sorpresa: { src: `${IMG}scope-lens.png` }
     };
+    const IMMAGINE_SQUADRA = 'immagini/ribbon-dreamteam-gold.png';   // l'adesivo della squadra ideale: il fiocco "Dream Team" dorato
     const IMMAGINE_MVP = 'immagini/ribbon-mvp-gold.png';   // l'adesivo dell'MVP: il fiocco "Season MVP" dorato, qualunque sia il numero di MVP vinti da quel Pokémon
     const IMMAGINE_RISERVA = `${IMG}poke-ball.png`;         // se un'immagine non si carica
 
@@ -179,12 +180,10 @@
         const mvp = mv ? { specie: String(mv.specie || ''), team: String(mv.team || ''), player: String((proprietario && proprietario.nome) || mv.player || ''), colore: (proprietario && proprietario.colore) || '', voti: num(mv.voti) } : null;
         const mvpInCorso = !mvp && !!mvpNodo.voti;
 
-        const formati = [];
+        // la squadra ideale: i posti divisi tra i formati della stagione, i migliori di ognuno (stessa classifica dell'MVP); senza team (Randomize) non c'è
         const nomiFormati = Array.isArray(info.selected_formats) && info.selected_formats.length ? info.selected_formats : (r.formati || []);
-        for (const f of nomiFormati) {
-            const top = Mvp && Mvp.classifica ? Mvp.classifica((r.pokemon || []).filter(m => m.formato === f), 1)[0] : null;
-            if (top) formati.push({ formato: f, specie: top.specie, team: top.team, player: top.playerNome || top.player, colore: top.colore || '', koFatti: num(top.ko), set: num(top.presenze) });
-        }
+        const ideale = Mvp && Mvp.squadraIdeale ? Mvp.squadraIdeale(r.pokemon || [], nomiFormati) : { posti: [], membri: [] };
+        const squadra = ideale.membri.map(m => ({ formato: m.formato, posto: m.posto, specie: m.specie, team: m.team, player: m.playerNome || m.player, colore: m.colore || '', koFatti: num(m.ko), set: num(m.presenze) }));
 
         const usate = {};
         for (const m of r.pokemon || []) if (num(m.portato) > 0) { const k = m.specieId; usate[k] = usate[k] || { specie: m.specie, set: 0 }; usate[k].set += num(m.portato); }
@@ -197,7 +196,7 @@
             id: String(info.id || ''), nome: String(info.name || info.nome || r.stagioni && r.stagioni[0] && r.stagioni[0].nome || 'Season'),
             formati: nomiFormati, dal: date[0] || '', al: date[date.length - 1] || '',
             numeri: { showdown: num(r.totali.showdown), match: num(r.totali.match), set: num(r.totali.set), ko: koTotali, giocatori: classifica.length || giocatori.length },
-            provvisorio, trofeo: trofeoDi(info), vincitore, classifica, mvp, mvpInCorso, formatiMigliori: formati,
+            provvisorio, trofeo: trofeoDi(info), vincitore, classifica, mvp, mvpInCorso, squadra,
             premi: costruisciPremi(r, dagliShowdown(dati.showdowns)), piuUsati
         };
     }
@@ -209,6 +208,7 @@
         if (riep.vincitore) righe.push(`${riep.provvisorio ? '🥇 Leader' : '🏆 Champion'}: ${riep.vincitore.nome} (${riep.vincitore.punti} pts)`);
         riep.classifica.slice(0, 3).forEach(c => righe.push(`${['🥇', '🥈', '🥉'][c.posizione - 1]} ${c.nome} — ${c.punti} pts (${c.vinti}-${c.persi})`));
         if (riep.mvp) righe.push(`⭐ MVP: ${riep.mvp.specie} (${riep.mvp.player})`);
+        if (riep.squadra && riep.squadra.length) righe.push(`🌟 Dream Team: ${riep.squadra.map(m => m.specie).join(', ')}`);
         riep.premi.forEach(p => righe.push(`${p.icona} ${p.titolo}: ${p.vincitori.map(v => v.nome).join(', ')} — ${p.testoValore}`));
         righe.push(`${riep.numeri.match} matches · ${riep.numeri.set} sets · ${riep.numeri.ko} KOs`);
         return righe.join('\n');
@@ -307,14 +307,15 @@
                 : '';
 
         // ---- la classifica finale
-        const haColonna = riep.formatiMigliori.length || riep.piuUsati.length;
+        const haColonna = riep.squadra.length || riep.piuUsati.length;
         const classifica = riep.classifica.length
             ? `<section class="rs-b rs-classifica ${haColonna ? 'rs-s5' : 'rs-s12'}">${etichetta('FINAL STANDINGS')}<div class="rs-righe">${riep.classifica.map(htmlRiga).join('')}</div></section>`
             : '';
 
-        // ---- a fianco della classifica: il miglior Pokémon di ogni formato e i più usati
-        const formati = riep.formatiMigliori.length
-            ? `<section class="rs-b rs-formati">${etichetta('BEST OF EACH FORMAT')}<div class="rs-formati-lista">${riep.formatiMigliori.map(f =>
+        // ---- a fianco della classifica: la squadra ideale (i migliori Pokémon di ogni formato) e i più usati
+        const formati = riep.squadra.length
+            ? `<section class="rs-b rs-formati rs-squadra">${etichetta('DREAM TEAM')}<img class="rs-sticker rs-sticker-squadra" src="${IMMAGINE_SQUADRA}" alt="" decoding="async">`
+              + `<div class="rs-formati-lista" style="--rs-col:${Math.min(3, riep.squadra.length)}">${riep.squadra.map(f =>
                 `<div class="rs-fcard" style="--c:${coloreSicuro(f.colore, COLORE_NEUTRO)}"><span class="rs-tag-nero">${esc(f.formato)}</span>${medaglione(f.specie, gif, 'rs-med-medio')}`
                 + `<b class="rs-banner rs-banner-piccolo">${esc(f.specie)}</b><span>${esc(f.player)} · ${f.koFatti} KOs</span></div>`).join('')}</div></section>`
             : '';

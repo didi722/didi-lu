@@ -92,13 +92,13 @@ test('Statistiche: le date GG/MM/AAAA si ordinano come date, non come testo', ()
 
 test('Titoli.serieAggiornate: i numeri veri vincono su quelli salvati (anche sui vecchi nomi dello showdown)', () => {
     const r = risultato();
-    // quello che la funzione vecchia scriveva: 4 puliti di fila, e un record di showdown nei vecchi campi
-    const salvati = { maxcleanstrike: 4, cleanstrike: 3, maxwonstrike: 9, wonstrike: 2, maxsdstrike: 30, sdstrike: 5, maxshowdownstrike: 1, loyaltybadge: true };
+    // quello che la funzione vecchia scriveva: 5 puliti di fila, e un record di showdown nei vecchi campi
+    const salvati = { maxcleanstrike: 5, cleanstrike: 3, maxwonstrike: 9, wonstrike: 2, maxsdstrike: 30, sdstrike: 5, maxshowdownstrike: 1, loyaltybadge: true };
     const veri = Titoli.serieAggiornate(salvati, r, 'Lukiani');       // anche con la maiuscola
     assert.deepEqual([veri.maxcleanstrike, veri.cleanstrike, veri.maxwonstrike, veri.wonstrike, veri.maxshowdownstrike, veri.showdownstrike], [2, 0, 5, 0, 3, 0]);
     assert.equal(veri.loyaltybadge, true, 'il resto dei numeri salvati non si tocca');
-    assert.equal(salvati.maxcleanstrike, 4, 'l\'oggetto salvato non viene modificato');
-    // il badge Clean Streak (bronzo a 4 match puliti) non c'è, e nemmeno quello degli showdown (con il vecchio 30)
+    assert.equal(salvati.maxcleanstrike, 5, 'l\'oggetto salvato non viene modificato');
+    // il badge Clean Streak (bronzo a 5 match puliti) non c'è, e nemmeno quello degli showdown (con il vecchio 30)
     const serie = stats => Titoli.badgeSbloccati(stats, 'lukiani').map(b => b.id).filter(id => id !== 'founder');     // Lukiani è un fondatore: il suo badge speciale non c'entra
     assert.deepEqual(serie(veri), []);
     assert.deepEqual(serie(salvati), ['clean', 'sd'], 'con i numeri salvati sì: è il bug');

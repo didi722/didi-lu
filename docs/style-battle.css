@@ -551,16 +551,17 @@ html[data-modo="fit"] .lato > .lato-condizioni { flex: 1 1 0; min-height: 48px; 
 }
 
 /* Barra dei messaggi ("Go! Togekiss!", "It's super effective!"): una fascia piatta e scura, senza bordi né angoli, nel carattere del sito.
-   Resta bassa e stretta come quella di Showdown: copre poco campo. */
+   Resta bassa e stretta come quella di Showdown: copre poco campo. Carattere fine (400, il corsivo e il grassetto sono 700: Google Fonts ne dà solo due) e un po' più grande;
+   il rientro sotto è minore di quello sopra perché Josefin Sans lascia aria sotto la riga (le discendenti): così il testo risulta al centro. */
 .palco .messagebar {
     left: 110px; right: 110px; bottom: 10px;
-    padding: 5px 11px 3px;
+    padding: 5px 12px 2px;
     background: rgba(0, 0, 0, .88); color: var(--carta);
     border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
-    font: 600 11px/1.35 'Josefin Sans', sans-serif; letter-spacing: .02em;
+    font: 400 12.5px/1.4 'Josefin Sans', sans-serif; letter-spacing: .01em;
 }
-.palco .messagebar strong { color: var(--carta); font: 800 12px 'Josefin Sans', sans-serif; letter-spacing: .03em; }
-.palco .messagebar small { font: 700 9px 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+.palco .messagebar strong { color: var(--carta); font: 700 13px 'Josefin Sans', sans-serif; letter-spacing: .02em; }
+.palco .messagebar small { font: 400 11.5px 'Josefin Sans', sans-serif; letter-spacing: .01em; opacity: .9; }
 
 /* Barre della salute: niente stondature, bordo nero, colori pieni */
 .palco .statbar strong {

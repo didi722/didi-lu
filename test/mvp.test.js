@@ -451,3 +451,67 @@ test('matches.html carica mvp.css e gli script dell\'MVP (dopo le statistiche) e
     assert.match(html, /MvpVoto\.avvia\(\{ stagione: stagioneAttiva/);
     assert.ok(leggi('docs/mvp-voto.js').includes("db.ref(`seasons/${ctx.stagione}/mvp/voti/${idDi(ctx.votante)}`)"), 'i voti stanno sotto seasons/{id}/mvp/voti/{giocatore}');
 });
+
+// ---------- 9. la squadra ideale ----------
+test('postiPerFormato: sei posti in parti uguali tra i formati, il resto ai primi, mai meno di uno', () => {
+    const posti = n => Mvp.postiPerFormato(Array.from({ length: n }, (_, i) => `F${i}`)).map(x => x.posti);
+    assert.deepEqual(posti(1), [6]);
+    assert.deepEqual(posti(2), [3, 3]);
+    assert.deepEqual(posti(3), [2, 2, 2]);
+    assert.deepEqual(posti(4), [2, 2, 1, 1]);
+    assert.deepEqual(posti(5), [2, 1, 1, 1, 1]);
+    assert.deepEqual(posti(6), [1, 1, 1, 1, 1, 1]);
+    assert.deepEqual(posti(8), [1, 1, 1, 1, 1, 1, 1, 1], 'oltre sei formati uno ciascuno');
+    assert.deepEqual(Mvp.postiPerFormato([]), []);
+});
+
+test('squadraIdeale: i migliori di ogni formato, una specie una volta sola, al massimo due per allenatore, serve un minimo di set; si pesca a turno tra i formati', () => {
+    const p = (id, player, formato, specie, ko, portato = 10) => pk(`${player}::${id}`, { player, playerNome: player, formato, specie, specieId: specie.toLowerCase(), koFatti: ko, portato, setPortatoVinti: portato });
+    const lista = [
+        p('a', 'didi', 'OU', 'Gengar', 50), p('b', 'lu', 'OU', 'Gengar', 49),            // stessa specie: entra solo il primo
+        p('c', 'didi', 'OU', 'Mew', 40), p('d', 'didi', 'OU', 'Snorlax', 39),            // didi ha già due posti: il terzo non entra
+        p('e', 'tom', 'OU', 'Ditto', 38, 3),                                              // troppo pochi set
+        p('f', 'lu', 'OU', 'Zubat', 20), p('g', 'tom', 'UU', 'Golbat', 30), p('h', 'lu', 'UU', 'Mienfoo', 29)
+    ];
+    const s = Mvp.squadraIdeale(lista, ['OU', 'UU']);
+    assert.deepEqual(s.posti, [{ nome: 'OU', posti: 3 }, { nome: 'UU', posti: 2 }], 'UU ha solo due Pokémon in grado di entrare');
+    assert.deepEqual(s.membri.map(m => `${m.formato}${m.posto}:${m.specie}:${m.player}`), ['OU1:Gengar:didi', 'OU2:Mew:didi', 'OU3:Zubat:lu', 'UU1:Golbat:tom', 'UU2:Mienfoo:lu']);
+    // il turno: se un formato esaurisce i candidati, gli altri non ne prendono di più (i posti sono quelli del formato)
+    assert.equal(Mvp.squadraIdeale(lista, ['OU', 'UU'], { totale: 4 }).membri.length, 4);
+    assert.deepEqual(Mvp.squadraIdeale([], ['OU']), { posti: [{ nome: 'OU', posti: 0 }], membri: [] }, 'nessun candidato: nessun posto');
+    assert.deepEqual(Mvp.squadraIdeale(lista, []), { posti: [], membri: [] });
+});
+
+test('squadra ideale e statistiche: dreamTeamVinti conta le stagioni chiuse (League e Monoformat) in cui il Pokémon è entrato; ma non in quelle aperte, né nella beta, né nelle Random', () => {
+    const lato = (nome, pokemon) => ({ nome, portati: pokemon.length, svenuti: 0, pokemon: pokemon.map(specie => ({ specie, nome: '', portato: true, titolare: true, koFatti: 1, koDiretti: 1, svenuto: false, turnoKo: 0, ultimo: false })) });
+    const set = () => ({ v: 3, turni: 8, vincitore: 'p1', p1: lato('Didi', ['Garchomp', 'Rotom']), p2: lato('Lu', ['Dragonite', 'Tornadus']) });
+    const match = n => ({ player1: 'didi', player1Id: 'didi', player2: 'lu', player2Id: 'lu', winnerId: 'didi', team1: 'A', team2: 'B', score: '3-0', p1score: 3, p2score: 0, p1points: 2, p2points: 0,
+        data: `2026-03-${String(n).padStart(2, '0')}`, categoria: 'VGC', p1EloAtMatch: 1000, p2EloAtMatch: 1000, p1DeltaElo: 16, p2DeltaElo: -16, setStats: { set1: set(), set2: set(), set3: set() } });
+    const stagione = (status, tipo) => ({ info: { name: 'S', status, tipo, selected_formats: ['VGC'] }, showdowns: { sd1: { info: { categoria: 'VGC', data: '2026-03-01' }, matches: Object.fromEntries([1, 2, 3, 4].map(n => [`match${n}`, match(n)])) } } });
+    const players = { didi: { info: { name: 'Didi' }, teams: { a: { nome: 'A', categoria: 'VGC', pokemon: [{ nome: 'Garchomp' }, { nome: 'Rotom' }] } } }, lu: { info: { name: 'Lu' }, teams: { b: { nome: 'B', categoria: 'VGC', pokemon: [{ nome: 'Dragonite' }, { nome: 'Tornadus' }] } } } };
+    const vinti = seasons => calcola({ seasons, players }, { stagione: 'all' }).pokemon.filter(x => x.dreamTeamVinti).map(x => x.specie).sort();
+    // un solo formato: sei posti, ma i Pokémon in gara sono quattro e al massimo due per allenatore
+    assert.equal(vinti({ s1: stagione('closed', 'league') }).length, 4, 'due Pokémon a testa: tutti e quattro');
+    assert.deepEqual(vinti({ s1: stagione('playing', 'league') }), [], 'stagione aperta: ancora niente');
+    assert.deepEqual(vinti({ sbeta: stagione('closed', 'league') }), [], 'la beta non conta');
+    assert.deepEqual(vinti({ s1: stagione('closed', 'random') }), [], 'le Random non hanno la squadra');
+    const due = vinti({ s1: stagione('closed', 'league'), s2: stagione('closed', 'league') });
+    assert.equal(calcola({ seasons: { s1: stagione('closed', 'league'), s2: stagione('closed', 'league') }, players }, { stagione: 'all' }).pokemon.find(x => x.specie === 'Garchomp').dreamTeamVinti, 2, 'due stagioni: due volte');
+    assert.equal(due.length, 8 / 2);
+    assert.equal(calcola({ seasons: { s1: stagione('closed', 'league'), s2: stagione('closed', 'league') }, players }, { stagione: 's1' }).pokemon.find(x => x.specie === 'Garchomp').dreamTeamVinti, 1, 'una stagione sola: una volta');
+});
+
+test('fiocco Dream Team: come quello dell\'MVP, quattro livelli per le stagioni in cui il Pokémon è nella squadra ideale', () => {
+    const f = id => Fiocchi.CATALOGO.find(x => x.id === id);
+    assert.deepEqual(f('dreamteam').soglie, f('mvp').soglie);
+    assert.equal(Fiocchi.calcola({ dreamTeamVinti: 2 }).find(x => x.id === 'dreamteam').livello, 2);
+    assert.equal(Fiocchi.calcola({}).find(x => x.id === 'dreamteam').livello, 0);
+    assert.deepEqual(f('dreamteam').immagini, ['bronze', 'silver', 'gold', 'platinum'].map(l => `immagini/ribbon-dreamteam-${l}.png`));
+});
+
+test('ogni pagina che carica statistiche.js carica anche mvp.js (la squadra ideale e il suo fiocco lo usano)', () => {
+    const cartella = path.join(__dirname, '..', 'docs');
+    const pagine = fs.readdirSync(cartella).filter(f => f.endsWith('.html')).filter(f => leggi(`docs/${f}`).includes('src="statistiche.js"'));
+    assert.ok(pagine.length >= 9, pagine.join(', '));
+    for (const f of pagine) assert.ok(leggi(`docs/${f}`).includes('<script src="mvp.js"></script>'), `${f}: manca mvp.js`);
+});
