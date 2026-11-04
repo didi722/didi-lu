@@ -264,7 +264,7 @@ test('public: la versione pubblica di un team ha le specie e i badge, mai mosse,
     };
     const v = versionePubblica('t1', team);
     assert.deepEqual(Object.keys(v).sort(), ['categoria', 'id', 'nome', 'pokemon', 'stats', 'vittorie']);
-    assert.deepEqual(v.pokemon, [{ nome: 'Zapdos', amicizia: true }, { nome: 'Garchomp', amicizia: false }]);
+    assert.deepEqual(v.pokemon, [{ nome: 'Zapdos', amicizia: true, shiny: false }, { nome: 'Garchomp', amicizia: false, shiny: false }]);
     assert.deepEqual(v.stats, { won: 12, lost: 4, lose: undefined, setW: 28, setL: 14, points: 36, played: 16 });
     assert.equal(v.nome, 'Sun Squad');
     assert.equal(v.vittorie, 12);
