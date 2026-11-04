@@ -27,7 +27,7 @@ test('records: il podio di ogni primato, a parità in ordine alfabetico; i recor
         pokemon: [{ specie: 'Garchomp', team: 'Alfa', playerNome: 'Didi', koFatti: 40, koPerSet: 1.4, portato: 30, serie: { vittorieMax: 7 } }, { specie: 'Mew', team: 'Beta', playerNome: 'Lu', koFatti: 3, koPerSet: 3, portato: 2, serie: { vittorieMax: 0 } }]
     });
     const per = id => r.find(x => x.id === id);
-    assert.deepEqual(per('serie-allenatore').voci.map(v => [v.nome, v.valore]), [['Lu', '15 in a row'], ['Ada', '6 in a row'], ['Didi', '6 in a row']], 'a pari valore: ordine alfabetico, solo tre');
+    assert.deepEqual(per('serie-allenatore').voci.map(v => [v.nome, v.valore]), [['Lu', '15'], ['Ada', '6'], ['Didi', '6']], 'a pari valore: ordine alfabetico, solo tre');
     assert.equal(per('serie-allenatore').voci[0].quando, '2026-10-29');
     assert.deepEqual(per('elo').voci.map(v => [v.nome, v.valore]), [['Lu', '1160'], ['Didi', '1100']], 'chi non è classificato non entra');
     assert.deepEqual(per('percentuale').voci.map(v => v.nome), ['Lu', 'Didi'], 'sotto 10 match non si entra');
@@ -47,7 +47,7 @@ test('records dai dati veri: Statistiche.calcola produce un podio per ogni prima
     const dati = { players: { didi: { info: { name: 'Didi' } }, lu: { info: { name: 'Lu' } } }, seasons: { s1: { info: { name: 'S1', status: 'closed' }, showdowns: { sd1: { info: { categoria: 'VGC', data: '2026-03-01' }, matches: { m1: m('didi', 'lu', 2, 0, '2026-03-01'), m2: m('didi', 'lu', 2, 1, '2026-03-02') } } } } } };
     const r = H.records(Statistiche.calcola(dati, { stagione: 'all', senzaSquadre: true }));
     const serie = r.find(x => x.id === 'serie-allenatore');
-    assert.deepEqual([serie.voci[0].nome, serie.voci[0].valore], ['Didi', '2 in a row']);
+    assert.deepEqual([serie.voci[0].nome, serie.voci[0].valore], ['Didi', '2']);
     assert.ok(r.find(x => x.id === 'match'));
 });
 
@@ -81,11 +81,11 @@ test('settimane: dal Match of the week più recente, con link al replay senza ?d
 });
 
 test('markup: testo protetto, podio con il primo evidenziato, link all\'allenatore; messaggi quando non c\'è niente', () => {
-    const lista = [{ id: 'x', gruppo: 'Trainers', titolo: '<b>Serie</b>', nota: 'n', voci: [{ nome: 'Di<di>', sotto: 's', valore: '15 in a row', specie: '', colore: '#ff0000', avatar: 'a.png', link: 'public.html?player=Di%3Cdi%3E', quando: '2026-10-29' }] }];
+    const lista = [{ id: 'x', gruppo: 'Trainers', titolo: '<b>Serie</b>', nota: 'n', voci: [{ nome: 'Di<di>', sotto: 's', valore: '15', specie: '', colore: '#ff0000', avatar: 'a.png', link: 'public.html?player=Di%3Cdi%3E', quando: '2026-10-29' }] }];
     const h = H.htmlRecords(lista, { gif: s => `${s}.gif` });
     assert.match(h, /&lt;b&gt;Serie&lt;\/b&gt;/);
     assert.doesNotMatch(h, /<b>Serie<\/b>/);
-    assert.match(h, /<a href="public\.html\?player=Di%3Cdi%3E">Di&lt;di&gt;<\/a>/);
+    assert.match(h, /<a class="hof-nome" href="public\.html\?player=Di%3Cdi%3E">Di&lt;di&gt;<\/a>/);
     assert.match(h, /hof-primo/);
     assert.match(h, /29\/10\/2026/);
     assert.match(H.htmlRecords([]), /No records yet/);
@@ -93,10 +93,11 @@ test('markup: testo protetto, podio con il primo evidenziato, link all\'allenato
     assert.match(H.htmlSettimane([]), /No Match of the week yet/);
     const st = H.htmlStagioni([{ stagione: 's1', nome: 'S<1>', data: '2026-04-01', mvp: [{ specie: 'Garchomp', player: 'Didi', team: 'A' }], dream: [{ specie: 'Rillaboom', player: 'Lu', team: 'B', formato: 'VGC' }] }], { gif: s => `${s}.gif` });
     assert.match(st, /S&lt;1&gt;/);
-    assert.match(st, /<h4>MVP<\/h4>[\s\S]*Garchomp[\s\S]*<h4>Dream Team<\/h4>[\s\S]*Rillaboom/);
-    const se = H.htmlSettimane([{ titolo: 'Last week', intervallo: '1 Nov', quanti: 2, p1: { id: 'didi', nome: 'Didi', team: 'A' }, p2: { id: 'lu', nome: 'Lu', team: '' }, vincitore: 'p2', formato: 'VGC', stagione: 'S1', motivi: ['x'], protagonista: 'Mew', link: 'matches.html?id=s1&replay=a~b~c' }], { gif: s => `${s}.gif`, giocatori: { didi: { color: '#ff0000' } } });
-    assert.match(se, /<a class="hof-replay" href="matches\.html\?id=s1&amp;replay=a~b~c">WATCH<\/a>/);
-    assert.match(se, /hof-lato hof-vince[^>]*><b>Lu<\/b>/);
+    assert.match(st, /Season MVP<\/h4>[\s\S]*Garchomp[\s\S]*Dream Team<\/h4>[\s\S]*Rillaboom/);
+    // le settimane usano il banner della home (MatchSettimana.html), una volta per settimana e senza frecce; il replay non riporta alla home
+    const finto = { html: (sc, o) => `<banner ${sc.stagione} ${o.settimana.titolo} ${o.totale} ${o.daHome}>` };
+    const se = H.htmlSettimane([{ titolo: 'Last <week>', intervallo: '1 Nov', scelto: { stagione: 's1' } }], { MatchSettimana: finto, giocatori: { lu: { color: '#fff', avatar: 'a.png' } } });
+    assert.equal(se, '<ol class="hof-settimane"><li class="ms hof-ms"><banner s1 Last <week> 1 false></li></ol>');
 });
 
 test('cablaggio: la pagina si chiama Hall of Fame (titolo e menu), ha le quattro sezioni e carica i moduli; le stagioni intere si leggono solo alla prima apertura', () => {
@@ -111,6 +112,10 @@ test('cablaggio: la pagina si chiama Hall of Fame (titolo e menu), ha le quattro
     assert.match(js, /if \(vista === 'stagioni' \|\| pronte\[vista\]\) return;/);
     assert.match(js, /get\('sezione'\)/);
     assert.ok(leggi('docs', 'style-palmares.css').includes('.hof-record'));
+    for (const f of ['match-settimana.css', 'nome-scorrevole.css']) assert.ok(p.includes(`<link rel="stylesheet" href="${f}">`), f);
+    for (const f of ['medaglione-pkm.js', 'nome-scorrevole.js']) assert.ok(p.includes(`<script src="${f}"></script>`), f);
+    assert.match(js, /MatchSettimana: window\.MatchSettimana/);
+    assert.match(leggi('docs', 'match-settimana.js'), /\$\{daHome \? '&da=home' : ''\}/);
     for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.html'))) {
         const t = leggi('docs', f);
         assert.ok(!/fa-trophy"><\/i> ARCHIVE/.test(t), `${f}: il menu dice ancora ARCHIVE`);

@@ -9,7 +9,7 @@
 //   HallOfFame.records(risultato)                 [{ id, gruppo, titolo, nota, voci: [{ nome, sotto, valore, specie, colore, link }] }]  (risultato = Statistiche.calcola(dati, { stagione: 'all' }))
 //   HallOfFame.stagioni(dati, { Statistiche, Mvp })   [{ stagione, nome, data, mvp: [...], dream: [...] }] (le chiuse, la più recente prima)
 //   HallOfFame.settimane(elenco, MatchSettimana)  l'archivio dei Match of the week, dal più recente
-//   HallOfFame.htmlRecords / htmlStagioni / htmlSettimane(...)   il markup (testo sempre protetto)
+//   HallOfFame.htmlRecords / htmlStagioni / htmlSettimane(...)   il markup (testo sempre protetto); i Match of the week usano il banner della home (MatchSettimana.html)
 //
 // Funzioni pure: niente DOM, niente Firebase. Si provano in Node (test/hall-of-fame.test.js).
 // =====================================================
@@ -35,19 +35,19 @@
     // ---------------------------------------------------------------- i record
     // Ogni record: da quale elenco (players | teams | pokemon), che numero conta (più alto = meglio), chi può entrare e come si scrive.
     const DEFINIZIONI = [
-        { id: 'serie-allenatore', gruppo: 'Trainers', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'players', val: x => num(x.serie && x.serie.vittorieMax), testo: v => `${v} in a row`, quando: x => x.serie && x.serie.vittorieMaxData },
-        { id: 'pulita-allenatore', gruppo: 'Trainers', titolo: 'Longest clean streak', nota: 'Matches won without losing a set, in a row', da: 'players', val: x => num(x.serie && x.serie.pulitaMax), testo: v => `${v} in a row`, quando: x => x.serie && x.serie.pulitaMaxData },
+        { id: 'serie-allenatore', gruppo: 'Trainers', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'players', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData },
+        { id: 'pulita-allenatore', gruppo: 'Trainers', titolo: 'Longest clean streak', nota: 'Matches won without losing a set, in a row', da: 'players', val: x => num(x.serie && x.serie.pulitaMax), testo: v => String(v), quando: x => x.serie && x.serie.pulitaMaxData },
         { id: 'elo', gruppo: 'Trainers', titolo: 'Highest Elo ever', nota: 'The best rating reached', da: 'players', val: x => (x.eloPicco == null ? 0 : num(x.eloPicco)), testo: v => String(Math.round(v)), filtro: x => x.eloPicco != null && x.classificato !== false },
         { id: 'showdown', gruppo: 'Trainers', titolo: 'Most showdowns won', da: 'players', val: x => num(x.showdown && x.showdown.vinti), testo: v => String(v) },
         { id: 'match', gruppo: 'Trainers', titolo: 'Most matches won', da: 'players', val: x => num(x.match && x.match.vinti), testo: v => String(v) },
         { id: 'percentuale', gruppo: 'Trainers', titolo: 'Best win rate', nota: `Matches won, from ${MIN_MATCH_ALLENATORE} matches played`, da: 'players', val: x => num(x.percMatch), testo: v => `${v}%`, filtro: x => num(x.match && x.match.giocati) >= MIN_MATCH_ALLENATORE, sotto: x => `${num(x.match.vinti)}W · ${num(x.match.persi)}L` },
         { id: 'stagioni', gruppo: 'Trainers', titolo: 'Most seasons won', da: 'players', val: x => num(x.stagioniVinte), testo: v => String(v) },
         { id: 'mvp', gruppo: 'Trainers', titolo: 'Most MVP titles', nota: "Titles won by the trainer's Pokémon", da: 'players', val: x => num(x.mvpVinti), testo: v => String(v) },
-        { id: 'serie-team', gruppo: 'Teams', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'teams', val: x => num(x.serie && x.serie.vittorieMax), testo: v => `${v} in a row`, quando: x => x.serie && x.serie.vittorieMaxData },
+        { id: 'serie-team', gruppo: 'Teams', titolo: 'Longest winning streak', nota: 'Matches won in a row', da: 'teams', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v), quando: x => x.serie && x.serie.vittorieMaxData },
         { id: 'percentuale-team', gruppo: 'Teams', titolo: 'Best win rate', nota: `Matches won, from ${MIN_MATCH_TEAM} matches played`, da: 'teams', val: x => num(x.percMatch), testo: v => `${v}%`, filtro: x => num(x.match && x.match.giocati) >= MIN_MATCH_TEAM, sotto: x => `${num(x.match.vinti)}W · ${num(x.match.persi)}L` },
         { id: 'ko', gruppo: 'Pokémon', titolo: 'Most KOs', nota: 'Opponents knocked out', da: 'pokemon', val: x => num(x.koFatti), testo: v => String(v) },
         { id: 'ko-per-set', gruppo: 'Pokémon', titolo: 'Most KOs per set', nota: `Average, from ${MIN_SET_POKEMON} sets played`, da: 'pokemon', val: x => num(x.koPerSet), testo: v => v.toFixed(1), filtro: x => num(x.portato) >= MIN_SET_POKEMON && x.koPerSet != null },
-        { id: 'serie-pokemon', gruppo: 'Pokémon', titolo: 'Longest winning streak', nota: 'Matches won in a row while on the field', da: 'pokemon', val: x => num(x.serie && x.serie.vittorieMax), testo: v => `${v} in a row` }
+        { id: 'serie-pokemon', gruppo: 'Pokémon', titolo: 'Longest winning streak', nota: 'Matches won in a row while on the field', da: 'pokemon', val: x => num(x.serie && x.serie.vittorieMax), testo: v => String(v) }
     ];
 
     function voceDi(def, x) {
@@ -110,7 +110,7 @@
             const e = MatchSettimana.etichettaSettimana(w);
             const s = w.scelto;
             return {
-                titolo: e.titolo, intervallo: e.intervallo, quanti: w.quanti,
+                titolo: e.titolo, intervallo: e.intervallo, quanti: w.quanti, scelto: s,
                 p1: s.giocatori.p1, p2: s.giocatori.p2, vincitore: s.vincitore, formato: s.categoria, stagione: s.nomeStagione,
                 motivi: s.motivi || [], protagonista: s.protagonista ? s.protagonista.specie : '',
                 // senza ?da=home (che riporta alla home): chiudendo il replay si resta nella pagina dei match della stagione
@@ -120,44 +120,48 @@
     }
 
     // ---------------------------------------------------------------- markup
-    const sprite = (gif, specie, classe) => (gif && specie ? `<img class="${classe}" src="${esc(gif(specie))}" data-pkm="${esc(specie)}" alt="" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)">` : '');
+    // Gli stessi pezzi della home e del riepilogo di stagione: medaglione del Pokémon (.ms-med, colorato da MedaglionePkm), avatar che saltella (.ms-av), tag neri inclinati per i nomi,
+    // etichette nere che sporgono dal bordo, banner bianchi (match-settimana.css, stile-palmares.css). Colori, ombre e rotazioni sono quelli del tema di chi guarda (--nb-*).
+    const medaglione = (gif, specie) => (gif && specie ? `<span class="ms-med" data-pkm="${esc(specie)}" title="${esc(specie)}"><img src="${esc(gif(specie))}" alt="${esc(specie)}" loading="lazy" onerror="if(window.SpritePkm)SpritePkm.ritenta(this)"></span>` : '');
+    const avatarDi = av => (av ? `<img class="ms-av" src="${esc(av)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ms-av ms-av-vuoto"></span>');
 
     function htmlRecords(lista, { gif, giocatori = {} } = {}) {
         if (!lista || !lista.length) return '<p class="hof-vuoto">No records yet: they appear as the league plays.</p>';
         const gruppi = [];
         for (const rec of lista) { let g = gruppi.find(x => x.nome === rec.gruppo); if (!g) gruppi.push(g = { nome: rec.gruppo, lista: [] }); g.lista.push(rec); }
         return gruppi.map(g => `<section class="hof-gruppo" aria-label="${esc(g.nome)}"><h3 class="hof-gruppo-titolo">${esc(g.nome)}</h3><div class="hof-griglia">`
-            + g.lista.map(rec => `<article class="hof-record"><h4>${esc(rec.titolo)}</h4>${rec.nota ? `<p class="hof-nota">${esc(rec.nota)}</p>` : ''}<ol>`
+            + g.lista.map(rec => `<article class="hof-record"><h4 class="hof-etichetta">${esc(rec.titolo)}</h4>${rec.nota ? `<p class="hof-nota">${esc(rec.nota)}</p>` : ''}<ol>`
                 + rec.voci.map((v, i) => {
                     const av = (giocatori[idDi(v.nome)] || {}).avatar || v.avatar;
-                    const testa = v.specie ? sprite(gif, v.specie, 'hof-spr') : (av ? `<img class="hof-av" src="${esc(av)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '');
-                    const nome = v.link ? `<a href="${esc(v.link)}">${esc(v.nome)}</a>` : esc(v.nome);
+                    const testa = v.specie ? medaglione(gif, v.specie) : (v.avatar !== '' || av ? avatarDi(av) : '');
+                    const nome = v.link ? `<a class="hof-nome" href="${esc(v.link)}">${esc(v.nome)}</a>` : `<span class="hof-nome">${esc(v.nome)}</span>`;
                     return `<li class="hof-voce${i === 0 ? ' hof-primo' : ''}" style="--c:${esc(v.colore)}"><span class="hof-pos">${i + 1}</span>${testa}`
-                        + `<span class="hof-chi"><b>${nome}</b>${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}${v.quando ? `<small>${esc(dataIt(v.quando))}</small>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
+                        + `<span class="hof-chi">${nome}${v.sotto ? `<small>${esc(v.sotto)}</small>` : ''}${v.quando ? `<small>${esc(dataIt(v.quando))}</small>` : ''}</span><span class="hof-valore">${esc(v.valore)}</span></li>`;
                 }).join('') + '</ol></article>').join('') + '</div></section>').join('');
     }
 
-    function htmlStagioni(lista, { gif } = {}) {
+    function htmlStagioni(lista, { gif, giocatori = {} } = {}) {
         if (!lista || !lista.length) return '<p class="hof-vuoto">No MVP or Dream Team yet: they are chosen when a season closes.</p>';
-        const chip = (m, ruolo) => `<li class="hof-membro">${sprite(gif, m.specie, 'hof-spr')}<span class="hof-chi"><b>${esc(m.specie)}</b><small>${esc([m.team, m.player].filter(Boolean).join(' · '))}${ruolo && m.formato ? `${m.team || m.player ? ' · ' : ''}${esc(m.formato)}` : ''}</small></span></li>`;
+        const scheda = (m, ruolo) => {
+            const g = giocatori[idDi(m.player)] || {};
+            return `<li class="hof-membro" style="--c:${esc(coloreSicuro(g.color, '#d9dde6'))}">${ruolo && m.formato ? `<span class="hof-tag-nero">${esc(m.formato)}</span>` : ''}${medaglione(gif, m.specie)}`
+                + `<b class="ms-banner">${esc(m.specie)}</b><span class="hof-sotto">${esc([m.team, m.player].filter(Boolean).join(' · '))}</span></li>`;
+        };
+        const blocco = (titolo, immagine, membri, ruolo) => `<section class="hof-blocco"><h4 class="hof-etichetta">${esc(titolo)}</h4><img class="hof-sticker" src="${esc(immagine)}" alt="" loading="lazy">`
+            + `<ul>${membri.map(m => scheda(m, ruolo)).join('')}</ul></section>`;
         return lista.map(s => `<article class="hof-stagione"><h3><a href="matches.html?id=${encodeURIComponent(s.stagione)}">${esc(s.nome)}</a>${s.data ? `<time>${esc(dataIt(s.data))}</time>` : ''}</h3>`
-            + (s.mvp.length ? `<div class="hof-blocco"><h4>MVP</h4><ul>${s.mvp.map(m => chip(m, false)).join('')}</ul></div>` : '')
-            + (s.dream.length ? `<div class="hof-blocco"><h4>Dream Team</h4><ul>${s.dream.map(m => chip(m, true)).join('')}</ul></div>` : '')
+            + (s.mvp.length ? blocco('Season MVP', 'immagini/ribbon-mvp-gold.png', s.mvp, false) : '')
+            + (s.dream.length ? blocco('Dream Team', 'immagini/ribbon-dreamteam-gold.png', s.dream, true) : '')
             + '</article>').join('');
     }
 
-    function htmlSettimane(lista, { gif, giocatori = {} } = {}) {
+    /** Le settimane: lo stesso banner della home (MatchSettimana.html) una volta per settimana, senza frecce; chiudendo il replay si resta nei match della stagione */
+    function htmlSettimane(lista, { gif, giocatori = {}, MatchSettimana } = {}) {
         if (!lista || !lista.length) return '<p class="hof-vuoto">No Match of the week yet.</p>';
-        return `<ol class="hof-settimane">${lista.map(w => {
-            const lato = (g, k) => {
-                const extra = giocatori[idDi(g.id)] || {};
-                return `<span class="hof-lato${w.vincitore === k ? ' hof-vince' : ''}" style="--c:${esc(coloreSicuro(extra.color, '#d9dde6'))}"><b>${esc(g.nome)}</b>${g.team ? `<small>${esc(g.team)}</small>` : ''}</span>`;
-            };
-            return `<li class="hof-sett"><div class="hof-sett-testa"><b>${esc(w.titolo)}</b><span>${esc(w.intervallo)}</span></div>`
-                + `<div class="hof-sett-corpo">${sprite(gif, w.protagonista, 'hof-spr')}<div class="hof-scontro">${lato(w.p1, 'p1')}<i>vs</i>${lato(w.p2, 'p2')}</div>`
-                + `<div class="hof-sett-info"><small>${esc([w.formato, w.stagione].filter(Boolean).join(' · '))}</small>${w.motivi.length ? `<span class="hof-motivo">${esc(w.motivi[0])}</span>` : ''}</div>`
-                + `<a class="hof-replay" href="${esc(w.link)}">WATCH</a></div></li>`;
-        }).join('')}</ol>`;
+        if (!MatchSettimana) return '';
+        const info = {};
+        for (const [id, g] of Object.entries(giocatori)) info[id] = { colore: g.color || '', avatar: g.avatar || '' };
+        return `<ol class="hof-settimane">${lista.map(w => `<li class="ms hof-ms">${MatchSettimana.html(w.scelto, { giocatori: info, gif, settimana: { titolo: w.titolo, intervallo: w.intervallo }, totale: 1, daHome: false })}</li>`).join('')}</ol>`;
     }
 
     return { records, stagioni, settimane, htmlRecords, htmlStagioni, htmlSettimane, DEFINIZIONI, MIN_MATCH_ALLENATORE, MIN_MATCH_TEAM, MIN_SET_POKEMON };
