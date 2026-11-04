@@ -430,7 +430,8 @@ test('formato dell\'elenco: lobby, team scelti, partita fino in fondo, e NIENTE 
     assert.deepEqual(effetti.replay, [], 'nessun replay');
     assert.deepEqual(effetti.registrati, [], 'nessun match registrato');
     const toccati = new Set(db.scritture.map(p => p.split('/')[0]));
-    assert.deepEqual([...toccati].sort(), ['partite', 'partiteServer', 'sfide'], `solo i dati della partita: ${[...toccati]}`);
+    // oltre ai dati della partita, le monete dei set (wallet, walletEventi: monete.js); nessuna statistica, stagione o storico
+    assert.deepEqual([...toccati].sort(), ['partite', 'partiteServer', 'sfide', 'wallet', 'walletEventi'], `solo i dati della partita e le monete: ${[...toccati]}`);
     assert.equal(db.leggi('seasons'), null);
     assert.equal(db.leggi('players/didi/stats'), null);
     assert.equal(db.leggi('players/lu/stats'), null);

@@ -429,7 +429,7 @@
     html.app-shell :is(.pp-testata, .pp-piede) { display: none !important; }
     /* il corpo non deve diventare un contenitore che scorre (col "nascondi" orizzontale lo diventava): il palco appiccicato non si appiccicherebbe */
     html.app-shell body #pp-nav { position: fixed; bottom: max(calc(12 * var(--u)), env(safe-area-inset-bottom, 0px)); right: max(calc(12 * var(--u)), env(safe-area-inset-right, 0px)); z-index: 40; padding: 0; margin: 0; }
-    html.app-shell body #pp-nav :is(.pp-indietro, .pp-modifica-btn) { display: none !important; }          /* personalizzare la carta è roba da sito */
+    html.app-shell body #pp-nav :is(.pp-indietro, .pp-modifica-btn:not(.pp-condividi-btn)) { display: none !important; }          /* personalizzare la carta è roba da sito; il tasto SHARE c'è anche nell'app */
     html.app-shell body #pp-nav .pp-modifica-btn, html.app-shell body #pp-nav a, html.app-shell body #pp-nav button { box-shadow: 0 calc(4 * var(--u)) 0 var(--nb-ink, #000); }
     /* gli adesivi sono messi dal proprietario sulla SUA disposizione (in percentuale sulla carta): nella disposizione dell'app finirebbero sopra a numeri e nomi */
     html.app-shell body:not(.pp-modifica) #pp-adesivi { display: none; }
@@ -1215,8 +1215,8 @@
     html.app-shell #replayModal .btn-set .set-num { top: calc(-7 * var(--u)); left: calc(-7 * var(--u)); width: calc(16 * var(--u)); height: calc(16 * var(--u)); font-size: calc(9 * var(--u)); }
     html.app-shell #replayModal .set-messaggio { padding: calc(5 * var(--u)) calc(9 * var(--u)) calc(3 * var(--u)); font-size: calc(11 * var(--u)); }
     /* i comandi: una colonna a destra, sotto la X */
-    html.app-shell #replayModal .replay-comandi { position: fixed; right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); top: calc(50 * var(--u)); bottom: calc(10 * var(--u)); order: 0; flex-direction: column; justify-content: center; gap: calc(8 * var(--u)); padding: 0; background: none; border: 0; box-shadow: none; }
-    html.app-shell #replayModal .rc-tasto, html.app-shell #replayModal .rc-play, html.app-shell #replayModal .rc-velocita { width: calc(40 * var(--u)); height: calc(36 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(11 * var(--u)); transform: none !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(12 * var(--u)); }
+    html.app-shell #replayModal .replay-comandi { position: fixed; right: max(calc(10 * var(--u)), env(safe-area-inset-right, 0px)); top: calc(50 * var(--u)); bottom: calc(10 * var(--u)); order: 0; flex-direction: column; justify-content: center; gap: calc(5 * var(--u)); padding: 0; background: none; border: 0; box-shadow: none; }
+    html.app-shell #replayModal .rc-tasto, html.app-shell #replayModal .rc-play, html.app-shell #replayModal .rc-velocita { width: calc(40 * var(--u)); height: calc(32 * var(--u)); border-width: calc(3 * var(--u)); border-radius: calc(11 * var(--u)); transform: none !important; box-shadow: 0 calc(3 * var(--u)) 0 var(--nb-ink, #000); font-size: calc(12 * var(--u)); }
     html.app-shell #replayModal .rc-tasto:active { translate: 0 calc(2 * var(--u)); box-shadow: none; }
     /* i momenti chiave: nell'app lo spazio sotto la console non c'è (landscape), per ora si vedono solo da sito */
     html.app-shell #replayModal .replay-momenti { display: none !important; }

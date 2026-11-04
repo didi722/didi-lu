@@ -112,6 +112,7 @@
 .card-azione:hover,
 .card-azione:focus-visible { scale: 1.18; rotate: calc(var(--nb-rot, 1) * -6deg); outline: none; }
 .azione-cpu:hover, .azione-cpu:focus-visible { background: var(--nb-verde, #47ea6a); }
+.azione-condividi:hover, .azione-condividi:focus-visible { background: var(--nb-giallo, #ffbd44); }
 .azione-modifica:hover, .azione-modifica:focus-visible { background: #7dd3fc; }
 .azione-elimina:hover, .azione-elimina:focus-visible { background: var(--nb-rosso, #ff4444); }
 
@@ -249,3 +250,7 @@
     /* telefoni strettissimi: i pallini lasciano il posto alla categoria */
     .card-header { padding-left: 10px; background: var(--nb-ink, #000); }
 }
+
+/* ✨ Lo shiny di un Pokémon del team (negozio.js): la scintilla accanto al nome, e il tasto sulla card */
+.pkm-box.is-shiny .pkm-name::after { content: ' ✨'; }
+.card-azione.azione-shiny { filter: saturate(1.2); }

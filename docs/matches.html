@@ -37,6 +37,7 @@
     <script src="sprite-pkm.js"></script>
 <script src="ordine-showdown.js"></script>
 <script src="filtro-showdown.js"></script>
+<script src="scheda-condivisione.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => NomeScorrevole.installa('.showdown-summary-card .nome-scorrevole, .cl-nome'));</script>
 <script src="dettagli.js" defer></script>
 <link rel="stylesheet" href="showdown.css">
@@ -147,7 +148,7 @@
     <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
-    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> ARCHIVE</a>
+    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -399,6 +400,7 @@
         <button type="button" class="rc-tasto rc-velocita" data-comando="velocita" id="rcVelocita" title="Speed">1×</button>
         <button type="button" class="rc-tasto" data-comando="audio" id="rcAudio" title="Sound"></button>
         <button type="button" class="rc-tasto" data-comando="link" id="rcLink" aria-label="Copy a link to this turn" title="Copy a link to this turn"></button>
+        <button type="button" class="rc-tasto" data-comando="condividi" id="rcCondividi" aria-label="Share this set as an image" title="Share this set as an image"></button>
     </div>
     <!-- I momenti chiave del set (replay-sito.js: momentiChiave, dal log): un tocco porta a quel turno -->
     <div class="replay-momenti" id="replayMomenti" role="group" aria-label="Key moments" onclick="event.stopPropagation()" hidden></div>
@@ -904,7 +906,7 @@ async function inizializzaPaginaArchivio() {
         container.appendChild(sdCard);
         schedeFiltro.set(sdId, sdCard);
         if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
-        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', vinti }; };
+        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: !!g.pkmShiny, vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
@@ -1139,7 +1141,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">
@@ -1499,7 +1501,7 @@ async function mostraTeamGiocatoreSelezionato(nomeGiocatore, categorieDati, visi
                         ${pokemonList.map((p, pidx) => {
                             const pkmNameUrl = p.nome.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
                             const itemNameUrl = (p.strumento || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                            const pkmSprite = SpritePkm.gif(p.nome);
+                            const pkmSprite = SpritePkm.gif(p.nome, p.shiny);
                             const itemSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemNameUrl}.png`;
                             const pkmBoxId = `modal-tooltip-box-${teamIdSicuro}-${pidx}`;
                             
@@ -1632,6 +1634,7 @@ async function apriModaleShowdown(sdId, sdData) {
             </article>`;
     }).join('');
 
+    globalThis.showdownAperto = { id: sdId, info, matches, colori: { [String(info.player1 || '').toLowerCase().trim()]: colors.c1, [String(info.player2 || '').toLowerCase().trim()]: colors.c2 } };
     modalOverlay.innerHTML = `
         <div class="sd-finestra" role="dialog" aria-modal="true" aria-label="${esc(info.player1)} vs ${esc(info.player2)}">
             <button type="button" class="sd-chiudi" aria-label="Close" onclick="chiudiModaleShowdown()">×</button>
@@ -1644,6 +1647,7 @@ async function apriModaleShowdown(sdId, sdData) {
                 <div class="sd-etichette">
                     ${info.categoria ? `<span class="sd-chip sd-formato">${esc(info.categoria)}</span>` : ''}
                     ${info.data ? `<span class="sd-chip sd-data">${esc(formattaDataItaliana(info.data))}</span>` : ''}
+                    <button type="button" class="sd-chip sd-condividi" onclick="condividiShowdown()" title="Share this showdown as an image">SHARE</button>
                 </div>
                 ${vittorie.p1 + vittorie.p2 ? `
                 <div class="sd-serie" title="Matches won">
@@ -1658,6 +1662,25 @@ async function apriModaleShowdown(sdId, sdData) {
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', chiudiShowdownConEsc);
 }
+/** Gli avatar degli allenatori (per nome, minuscolo), per la scheda da condividere */
+async function avatarDeiGiocatori(nomi) {
+    const fuori = {};
+    await Promise.all(nomi.map(async n => {
+        const k = String(n || '').toLowerCase().trim();
+        if (!k) return;
+        try { fuori[k] = (await db.ref(`players/${k}/info/avatar`).once('value')).val() || ''; } catch (e) { fuori[k] = ''; }
+    }));
+    return fuori;
+}
+
+/** Lo showdown aperto come immagine da mandare in chat (scheda-condivisione.js) */
+async function condividiShowdown() {
+    const a = window.showdownAperto;
+    if (!a || !window.SchedaCondivisione) return;
+    const avatar = await avatarDeiGiocatori([a.info.player1, a.info.player2]);
+    SchedaCondivisione.condividi(window, SchedaCondivisione.showdown(a.info, a.matches, { colori: a.colori, avatar }));
+}
+
 function chiudiShowdownConEsc(e) {
     if (e.key !== 'Escape') return;
     // se sopra c'è un'altra finestra (team, replay) è lei a chiudersi per prima
@@ -2360,9 +2383,9 @@ function generaHtmlGifs(nomeTeam, categoria) {
         // chiama solo col nome base (Mimikyu, Giratina...) hanno già la loro GIF con quel nome
         const id = SpritePkm.id(p.nome);
         return `
-            <img src="${SpritePkm.gif(p.nome)}" 
+            <img src="${SpritePkm.gif(p.nome, p.shiny)}" 
                  class="mini-gif" 
-                 alt="${id}"
+                 alt="${id}"${p.shiny ? ' data-shiny="1"' : ''}
                  onerror="SpritePkm.riserva(this, '${id}')">
         `;
     }).join('');
@@ -2514,7 +2537,7 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/${img.dataset.shiny ? 'dex-shiny' : 'dex'}/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -2577,8 +2600,8 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="${SpritePkm.gif(p.nome)}" 
-                             class="modal-sprite clickable-pkm" 
+                        <img src="${SpritePkm.gif(p.nome, p.shiny)}" 
+                             class="modal-sprite clickable-pkm"${p.shiny ? ' data-shiny="1"' : ''} 
                              onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome)}')">                    </div>
 
                     <div class="modal-pkm-info">
@@ -2717,11 +2740,13 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         audio: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10.5 4.6a4.6 4.6 0 0 1 0 6.8l-1-1.1a3.1 3.1 0 0 0 0-4.6zM12.6 2.4a7.6 7.6 0 0 1 0 11.2l-1-1.1a6.1 6.1 0 0 0 0-9z"/></svg>',
         muto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 5.5h3L8 2v12l-4-3.5H1zM10 5.6l1-1 2 2 2-2 1 1-2 2 2 2-1 1-2-2-2 2-1-1 2-2z"/></svg>',
         link: '<svg viewBox="2.6 2.6 10.8 10.8" aria-hidden="true"><path d="M6.2 9.8a2.4 2.4 0 0 1 0-3.4l2.2-2.2a2.4 2.4 0 0 1 3.4 3.4l-1 1-1.1-1.1 1-1a.8.8 0 0 0-1.2-1.2L7.3 7.5a.8.8 0 0 0 0 1.2zM9.8 6.2a2.4 2.4 0 0 1 0 3.4l-2.2 2.2a2.4 2.4 0 0 1-3.4-3.4l1-1 1.1 1.1-1 1a.8.8 0 0 0 1.2 1.2l2.2-2.2a.8.8 0 0 0 0-1.2z"/></svg>',
-        fatto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 12.4 1.8 8l1.4-1.4 3 3 6.6-6.6L14.2 4.4z"/></svg>'
+        fatto: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 12.4 1.8 8l1.4-1.4 3 3 6.6-6.6L14.2 4.4z"/></svg>',
+        condividi: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 4.6 4.9l1.1 1.1L7.2 4.5v6.3h1.6V4.5L10.3 6l1.1-1.1zM3 8.5V14h10V8.5h-1.6v3.9H4.6V8.5z"/></svg>'
     };
 
     // ---- il turno in cui è il replay, i momenti chiave e il link a un turno preciso ----
     let turnoReplay = 0;            // l'ultimo turno comunicato dal replay (replay-stato)
+    let turniTotaliReplay = 0;      // i turni del set (replay-stato)
     let momentiReplay = [];         // [{ turno, tipo, testo }] del set aperto (ReplayCarica li annuncia con l'evento "replay-momenti")
     const striscia = () => document.getElementById('replayMomenti');
     const evidenziaMomento = () => {
@@ -2762,6 +2787,17 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         if (turnoReplay > 0) q.set('turno', String(turnoReplay));
         return `${location.origin}${location.pathname}?${q.toString().replace(/%7E/g, '~')}`;      // la ~ resta com'è: il link si legge meglio in chat
     };
+    /** Il set che si sta guardando come immagine da mandare in chat, con il link (e il turno, se si è già partiti) */
+    async function condividiReplay() {
+        const r = window.replayAttuale;
+        const set = document.querySelector('.btn-set.active[data-set], .btn-set.is-selected[data-set]');
+        if (!r || !r.info || !set || !window.SchedaCondivisione) return;
+        const colori = (window.showdownAperto && window.showdownAperto.colori) || {};
+        const avatar = await avatarDeiGiocatori([r.info.player1, r.info.player2]);
+        const sd = SchedaCondivisione.showdown(r.info, r.matches, { colori, avatar });
+        // il set mostrato: i turni di quel set sono quelli che il replay conosce; qui si dice quale set e chi l'ha vinto
+        SchedaCondivisione.condividi(window, SchedaCondivisione.replay(sd, { set: Number(set.dataset.set), match: parseInt(String(r.match).replace(/\D/g, ''), 10) || 0, esitoSet: set.dataset.vincitore || '', turni: turniTotaliReplay, url: window.indirizzoTurnoReplay() }));
+    }
     async function copiaLinkTurno() {
         const url = window.indirizzoTurnoReplay();
         const tasto = document.getElementById('rcLink');
@@ -2827,6 +2863,7 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         }
         const { inPausa, velocita, muto } = e.data;
         turnoReplay = Number.isFinite(Number(e.data.turno)) ? Math.max(0, Number(e.data.turno)) : 0;
+        turniTotaliReplay = Number.isFinite(Number(e.data.turni)) ? Math.max(0, Number(e.data.turni)) : 0;
         evidenziaMomento();
         // aperto da un link con ?turno=: la prima volta che il replay si fa vivo lo si porta a quel turno
         if (window.turnoDaLink) {
@@ -2855,10 +2892,12 @@ window.caricaVideoDirect = function(urlFile, btnElement) {
         document.getElementById('rcPlay').innerHTML = ICONE.play;
         document.getElementById('rcAudio').innerHTML = ICONE.audio;
         document.getElementById('rcLink').innerHTML = ICONE.link;
+        document.getElementById('rcCondividi').innerHTML = ICONE.condividi;
         b.addEventListener('click', e => {
             const t = e.target.closest('[data-comando]');
             if (!t) return;
             if (t.dataset.comando === 'link') copiaLinkTurno();
+            else if (t.dataset.comando === 'condividi') condividiReplay();
             else invia({ tipo: 'replay-comando', comando: t.dataset.comando });
         });
         const s = striscia();
@@ -3054,6 +3093,7 @@ selector.style.height = 'auto';
         }
 
         const matchObj = sdData.matches ? sdData.matches[matchKey] : null;
+        window.replayAttuale = Object.assign(window.replayAttuale || {}, { info: sdData.info, matches: sdData.matches });   // per la scheda del replay
 
         if (matchObj && matchObj.replays) {
             let buttonsHtml = '<div class="set-lista">';
@@ -3072,7 +3112,7 @@ selector.style.height = 'auto';
                     // il colore di chi ha vinto il set è un filetto sul tasto (--vinc), non il suo sfondo
                     // un tasto per set: la lettera di chi lo ha vinto (il suo colore come filetto in basso) e, piccolo, il numero del set
                     buttonsHtml += `
-                        <button class="btn-set vincitore-${vincId}" data-set="${numSet}" style="--vinc: ${colorSfondo};"
+                        <button class="btn-set vincitore-${vincId}" data-set="${numSet}" data-vincitore="${(vincId === '1' ? p1Name : vincId === '2' ? p2Name : '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))}" style="--vinc: ${colorSfondo};"
                                 title="Set ${numSet}: won by ${winInitial}" aria-label="Set ${numSet}, won by ${winInitial}"
                                 onclick="gestisciClickReplay(this, '${infoSet.url}')">
                             <span class="set-num" aria-hidden="true">${numSet}</span>${winInitial}

@@ -597,3 +597,21 @@ body.pp-ridimensiona .pp-blocco, body.pp-ridimensiona .pp-corpo { pointer-events
 .pe-acc-corpo { margin: 0 0 6px; }
 .pe-acc-team { font-size: 0.74rem; padding: 7px 9px; }
 .pe-acc-voce .pe-scorri { margin: 0 0 8px; }
+
+/* i motivi dello sfondo a pagamento che non si possiedono: spenti, con il lucchetto (cosmetici.js) */
+.pe-motivo.pe-bloccato { opacity: .55; }
+.pe-motivo.pe-bloccato .pe-motivo-prova { filter: grayscale(.8); }
+
+/* ---------- Cambio di avatar e di canzone (cosmetici.js): la stella su quello "di casa" e la finestrella di conferma ---------- */
+.pe-avatar-item { position: relative; }
+.pe-avatar-item.is-casa::after { content: '★'; position: absolute; right: 1px; top: -1px; font-size: .85rem; line-height: 1; color: #e0a800; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+.pe-scelta.is-casa:not(.is-on) { background: #fff7d6; }
+.pe-campione.is-casa::before { content: '★'; position: absolute; right: -1px; top: -5px; z-index: 1; font-size: .8rem; line-height: 1; color: #e0a800; text-shadow: 0 0 2px #fff, 0 0 2px #fff; pointer-events: none; }
+.pe-conferma-colore { display: block; width: 72px; height: 72px; background: var(--c, #ccc); border: 3px solid #000; }
+.pe-scelta .pe-prezzo { margin-left: auto; padding-left: 8px; font: 900 .68rem 'Josefin Sans', sans-serif; white-space: nowrap; flex: none; }
+.pe-conferma-velo { position: fixed; inset: 0; z-index: 2800; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+.pe-conferma { box-sizing: border-box; width: min(340px, 100%); padding: 16px; display: grid; gap: 10px; justify-items: center; text-align: center; background: #fff; color: #000; border: 4px solid #000; box-shadow: 6px 6px 0 #000; }
+.pe-conferma img { width: 72px; height: 72px; object-fit: contain; image-rendering: pixelated; border: 3px solid #000; background: #f3f4f8; }
+.pe-conferma b { font: 900 1rem 'Josefin Sans', sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+.pe-conferma .pe-nota { margin: 0; }
+.pe-conferma-azioni { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }

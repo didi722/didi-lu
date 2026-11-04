@@ -67,7 +67,7 @@
         const c = coloreSicuro(g.colore);
         // tutte le GIF partono insieme e si contendono la rete: il compagno che si guarda ha la precedenza, gli altri aspettano (fetchpriority)
         const prio = centro === undefined ? '' : ` fetchpriority="${indice === centro ? 'high' : 'low'}" decoding="async"`;
-        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
+        const pkm = g.pkm && gif ? `<img class="at-pkm" draggable="false" src="${esc(gif(g.pkm, g.pkmShiny))}"${prio} data-pkm="${esc(g.pkm)}" alt="${esc(g.pkm)}" onerror="SpritePkm.ritenta(this)">` : '';
         const trofei = htmlTrofei(g), badge = htmlBadge(g);
         return `<article class="at-carta" data-i="${indice}" style="--c:${c}">
             <div class="at-palco">
@@ -90,7 +90,7 @@
         const doc = win.document;
         if (!doc || !doc.documentElement || !doc.documentElement.classList.contains('app-shell')) return null;
         const ponte = win.AppSito;
-        const gif = win.SpritePkm ? s => win.SpritePkm.gif(s) : null;
+        const gif = win.SpritePkm ? (s, sh) => win.SpritePkm.gif(s, sh) : null;
         let stato = null;      // { lista, corrente, pista }
 
         // il compagno in scala con l'allenatore (le formule della pagina pubblica, scala-pkm.js) e a terra o fluttuante; si rifà quando le immagini arrivano e lo schermo cambia

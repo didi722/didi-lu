@@ -39,7 +39,7 @@
      */
     function htmlLato(n, lato, vince, perde, gif) {
         const l = lato || {};
-        const pkm = l.pkm && typeof gif === 'function' ? `<img class="mp-pkm" draggable="false" src="${esc(gif(l.pkm))}" data-pkm="${esc(l.pkm)}" alt="" onerror="SpritePkm.ritenta(this)">` : '';
+        const pkm = l.pkm && typeof gif === 'function' ? `<img class="mp-pkm" draggable="false" src="${esc(gif(l.pkm, l.pkmShiny))}" data-pkm="${esc(l.pkm)}" alt="" onerror="SpritePkm.ritenta(this)">` : '';
         return `<span class="mp-lato mp-l${n}${vince ? ' mp-vince' : ''}${perde ? ' mp-perde' : ''}" style="--c:${coloreSicuro(l.colore, n === 1 ? '#31c489' : '#8e44ad')}">
             <span class="mp-palco" aria-hidden="true"><span class="pal-aura"></span><span class="pal-pedana"></span><span class="mp-scena"><img class="mp-avatar" draggable="false" src="${esc(l.avatar || AVATAR_VUOTO)}" alt="" onerror="this.onerror=null;this.src='${AVATAR_VUOTO}'">${pkm}</span></span>
             <b class="mp-nome nome-scorrevole">${esc(l.nome || 'TBD')}</b>${vince ? '<i class="mp-win">WIN</i>' : ''}
@@ -214,7 +214,7 @@
                 Car.collegaGesti(scheda, { avanti: () => passo(1), indietro: () => passo(-1), passoPx: () => 380 * Car.unitaPx(win), trascina: (f, fine) => { scheda.classList.toggle('trascinando', !fine); posiziona(fine ? 0 : f); } });
             }
             stato = { lista, corrente: Math.min(stato.corrente, Math.max(0, lista.length - 1)), scheda, pista: null };
-            scheda.innerHTML = html(lista, { gif: win.SpritePkm ? sp => win.SpritePkm.gif(sp) : null });
+            scheda.innerHTML = html(lista, { gif: win.SpritePkm ? (sp, sh) => win.SpritePkm.gif(sp, sh) : null });
             stato.pista = scheda.querySelector('.mp-pista');
             posiziona();
             scalaPoster();

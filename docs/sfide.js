@@ -866,6 +866,11 @@
             console.warn('Posta non leggibile: controlla le regole del database (notifiche/{uid}/posta)', err);
             P.pronte.voci = true;
         });
+        // le monete (wallet/{uid}/saldo, le scrive solo il server): si vedono sul tasto SHOP del campanello
+        segui(`wallet/${P.uid}/saldo`, 0, snap => {
+            P.saldo = snap.val() == null ? null : Number(snap.val()) || 0;
+            disegnaCampanella();
+        }, () => { /* senza il permesso di leggerle, il tasto resta senza saldo */ });
         // la preferenza del riassunto del lunedì: notifiche/{uid}/preferenze/digest = 'off' (il server non lo manda al telefono; la posta c'è sempre)
         segui(`notifiche/${P.uid}/preferenze`, 0, snap => {
             P.digestSpento = (snap.val() || {}).digest === 'off';
@@ -908,6 +913,20 @@
         sc.onload = () => { try { window.Push.ripristina(); } catch (e) { /* niente */ } aggiornaPush(); };
         sc.onerror = () => { S.pushCaricando = false; };
         document.head.append(sc);
+    }
+    // ---- Negozio: le monete e i cosmetici (negozio.js, cosmetici.js): si caricano solo quando si preme SHOP ----
+    function apriNegozio() {
+        const mio = Array.from(document.scripts).find(x => /(^|\/)sfide\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
+        const base = mio ? mio.getAttribute('src').replace(/sfide\.js.*$/, '') : '';
+        const carica = (nome, ok) => (ok() ? Promise.resolve() : new Promise((si, no) => { const sc = document.createElement('script'); sc.src = `${base}${nome}`; sc.onload = si; sc.onerror = no; document.head.append(sc); }));
+        return carica('cosmetici.js', () => window.Cosmetici).then(() => carica('negozio.js', () => window.Negozio)).then(() => window.Negozio.apri(window)).catch(() => { /* senza rete il negozio non si apre */ });
+    }
+    window.addEventListener('apri-negozio', () => { if (S.utente) apriNegozio(); });      // anche dall'editor della pagina (motivi a pagamento)
+    function pieNegozio() {
+        const p = el('div', 'sfide-piede');
+        const saldo = S.posta.saldo;
+        p.append(azione(saldo == null ? 'Shop · coins & cosmetics' : `Shop · 🪙 ${saldo}`, '', () => { chiudiMenu(); return apriNegozio(); }));
+        return p;
     }
     function aggiornaPush() {
         if (!window.Push) return Promise.resolve();
@@ -1234,7 +1253,7 @@
             ['League news', dallaLega],
             ['Replies', risposte],
             ['Sent', inviate]
-        ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'), ...(pie ? [pie] : []));
+        ], 'No notifications. Press VS next to a player in the rankings to send a challenge, or ⚔ on the Trainers page for a friendly match.'), ...(pie ? [pie] : []), pieNegozio());
     }
 
     // ---- Spade: battaglie in corso in tutte le stagioni (compare solo se ce ne sono) ----

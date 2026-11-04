@@ -1,6 +1,6 @@
 /* Archive: le card di ogni stagione e cup chiusa (palmares.js), nello stile neubrutalista del sito */
-body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
-@media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { margin-left: 0; padding: 30px 16px 70px; } }
+body.pg-palmares .palm-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1100px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 44px 26px 80px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+@media (max-width: 900px) { body.pg-palmares .ads-sidebar { display: none; } body.pg-palmares .palm-pagina { width: 100%; margin-left: 0; padding: 30px 16px 70px; } }
 .palm-filtri { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
 .palm-tasto {
     padding: 8px 14px; background: var(--nb-carta, #fff); color: #000; cursor: pointer;
@@ -58,3 +58,66 @@ body.pg-palmares .palm-pagina { max-width: 1100px; margin: 0 auto 0 calc(var(--n
 .palm-vuoto { font-weight: 700; opacity: .7; }
 body.pg-palmares .hub-title-display { white-space: normal; overflow: visible; text-overflow: clip; }
 .palm-card:hover { transform: translate(-2px, -2px); }
+
+/* ---------- Hall of Fame: le sezioni (hall-of-fame.js) ---------- */
+.palm-sezioni { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 26px; }
+.palm-sezione {
+    box-sizing: border-box; padding: 9px 16px 7px; cursor: pointer; color: var(--nb-ink, #000); background: var(--nb-carta, #fff);
+    border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-s, 3px 3px 0 #000);
+    font: 900 .9rem/1.1 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase;
+    transition: translate .1s ease, box-shadow .1s ease;
+}
+.palm-sezione:hover, .palm-sezione:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); outline: none; }
+.palm-sezione.attiva { background: var(--nb-ink, #000); color: #fff; }
+.hof-vista[hidden], #palm-vista-stagioni[hidden] { display: none; }
+.hof-vuoto { margin: 24px 0; font: italic 700 .95rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+
+.hof-gruppo-titolo { margin: 26px 0 14px; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase; }
+.hof-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px 22px; }
+.hof-record, .hof-stagione, .hof-sett {
+    box-sizing: border-box; padding: 14px 16px 12px; min-width: 0;
+    background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0px); box-shadow: var(--nb-sh-m, 5px 5px 0 #000);
+}
+.hof-record h4, .hof-blocco h4 { margin: 0; font: 900 .95rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .05em); text-transform: uppercase; }
+.hof-blocco h4 { margin-bottom: 6px; opacity: .7; font-size: .75rem; }
+.hof-nota { margin: 3px 0 10px; font: 600 .72rem/1.3 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; }
+.hof-record ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 7px; }
+.hof-voce { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 8px; border: 2px solid var(--nb-ink, #000); background: color-mix(in srgb, var(--c, #d9dde6) 45%, #fff); }
+.hof-voce:not(:has(.hof-spr, .hof-av)) { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.hof-primo { background: var(--c, #ffbd44); }
+.hof-pos { font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.hof-spr, .hof-av { width: 44px; height: 40px; object-fit: contain; }
+.hof-spr { filter: drop-shadow(2px 2px 0 #000); }
+.hof-av { border: 2px solid var(--nb-ink, #000); border-radius: 50%; background: #fff; }
+.hof-chi { min-width: 0; display: flex; flex-direction: column; }
+.hof-chi b { font: 800 .85rem/1.15 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.hof-chi b a { color: inherit; text-decoration: none; }
+.hof-chi b a:hover { text-decoration: underline; }
+.hof-chi small { font: 700 .66rem/1.25 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.hof-valore { font: 900 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); white-space: nowrap; }
+
+.hof-vista > .hof-stagione + .hof-stagione { margin-top: 22px; }
+.hof-stagione h3 { margin: 0 0 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 900 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.hof-stagione h3 a { color: inherit; text-decoration: none; }
+.hof-stagione h3 time { font: 700 .75rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .65; text-transform: none; }
+.hof-blocco { margin-top: 10px; }
+.hof-blocco ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.hof-membro { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 4px; border: 2px solid var(--nb-ink, #000); background: #fff; }
+
+.hof-settimane { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.hof-sett { padding: 0; }
+.hof-sett-testa { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 6px 14px 4px; background: var(--nb-ink, #000); color: #fff; font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; }
+.hof-sett-testa span { opacity: .75; }
+.hof-sett-corpo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; }
+.hof-scontro { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.hof-scontro i { font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; opacity: .6; }
+.hof-lato { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; padding: 5px 10px; border: 2px solid var(--nb-ink, #000); background: color-mix(in srgb, var(--c, #d9dde6) 35%, #fff); opacity: .72; }
+.hof-lato.hof-vince { background: var(--c, #d9dde6); opacity: 1; }
+.hof-lato b { font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow-wrap: anywhere; }
+.hof-lato small { font: 700 .66rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.hof-sett-info { display: flex; flex-direction: column; gap: 3px; min-width: 120px; }
+.hof-sett-info small { font: 700 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.hof-motivo { align-self: flex-start; padding: 2px 8px 0; background: var(--nb-giallo, #ffbd44); border: 2px solid var(--nb-ink, #000); font: 800 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.hof-replay { padding: 7px 14px 5px; background: var(--nb-verde, #47ea6a); color: #000; border: 3px solid var(--nb-ink, #000); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .06em; text-decoration: none; }
+.hof-replay:hover { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
+@media (max-width: 560px) { .hof-griglia { grid-template-columns: minmax(0, 1fr); } .palm-sezione { font-size: .78rem; padding: 8px 12px 6px; } }

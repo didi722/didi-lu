@@ -71,8 +71,10 @@
     }
 
     const pulisci = nome => String(nome || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    /** Un cosmetico del negozio (aura, effetto del nome o del palco) si mostra solo se l'id è davvero di quel tipo: quello che sta nel profilo lo scrive il server, ma il testo non è un permesso */
+    const cosmeticoDi = (id, tipo) => { const c = window.Cosmetici && window.Cosmetici.perId(id); return c && c.tipo === tipo ? id : null; };
     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime); senza il modulo si usa il vecchio nome con i trattini
-    const gifShowdown = nome => (window.SpritePkm ? window.SpritePkm.gif(nome) : `https://play.pokemonshowdown.com/sprites/ani/${pulisci(nome)}.gif`);
+    const gifShowdown = (nome, shiny) => (window.SpritePkm ? window.SpritePkm.gif(nome, shiny) : `https://play.pokemonshowdown.com/sprites/ani${shiny ? '-shiny' : ''}/${pulisci(nome)}.gif`);
     const elenco = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
 
     // I tipi di un Pokémon (PokeAPI), una sola richiesta per specie
@@ -96,13 +98,13 @@
     function costruisciPalco(d) {
         const set = h('div', { class: 'pp-set' });
         set.append(d.info.avatar
-            ? h('div', { class: 'pp-allenatore' }, h('img', { src: d.info.avatar, alt: '' }))
+            ? h('div', { class: 'pp-allenatore', 'data-aura': cosmeticoDi(d.info.aura, 'aura') }, h('img', { src: d.info.avatar, alt: '' }))
             : h('div', { class: 'pp-allenatore pp-allenatore-vuoto', testo: '?' }));
         const posto = h('div', { class: 'pp-pkm' });
         set.append(posto);
         if (d.info.pkmPreferito) montaPokemonPreferito(set, posto, d.info.pkmPreferito);
         montaBadgeCompagno(set, d);
-        return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro' },
+        return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro', 'data-effetto-palco': cosmeticoDi(d.info.effettoPalco, 'palco') },
             h('div', { class: 'pp-raggi' }),
             h('div', { class: 'pp-puntini' }),
             h('div', { class: 'pp-pavimento' }),
@@ -144,12 +146,16 @@
         let nome = String(nomeGrezzo).toLowerCase().trim();
         if (FORME_SPECIALI[nome]) nome = FORME_SPECIALI[nome];
 
+        // il cosmetico "Shiny companion" (cosmetici.js): lo stesso Pokémon con i colori alternativi
+        const brillante = !!(stato.dati && stato.dati.info && stato.dati.info.pkmShiny);
         let gif = null, altezzaM = 1.2, vola = false;
         try {
             const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nome)}`);
             if (!r.ok) throw new Error('Pokémon not found');
             const j = await r.json();
-            gif = (j.sprites && j.sprites.other && j.sprites.other.showdown && j.sprites.other.showdown.front_default)
+            const show = j.sprites && j.sprites.other && j.sprites.other.showdown;
+            gif = (brillante && show && show.front_shiny)
+                || (!brillante && show && show.front_default)
                 || (j.sprites && j.sprites.other && j.sprites.other['official-artwork'] && j.sprites.other['official-artwork'].front_default)
                 || null;
             altezzaM = j.height / 10;
@@ -162,7 +168,7 @@
             vola = GALLEGGIANO.includes(nome);
         }
         if (posto.dataset.giro !== String(mio)) return;     // nel frattempo ne è stato scelto un altro
-        if (!gif) gif = gifShowdown(nomeGrezzo);
+        if (!gif) gif = gifShowdown(nomeGrezzo, brillante);
 
         const regola = RIMPICCIOLISCI.includes(nome) ? 'rimpicciolisci' : INGRANDISCI.includes(nome) ? 'ingrandisci' : undefined;
         const misure = P.scalaScena(altezzaM, { regola, vola });
@@ -240,10 +246,11 @@
     function costruisciIdentita(d) {
         const nome = String(d.nome || '').toUpperCase();
         const motto = d.info.bio ? h('p', { class: 'pp-motto' }, h('span', { testo: String(d.info.bio).toUpperCase() })) : null;
+        const effettoNome = cosmeticoDi(d.info.effettoNome, 'nome');       // l'effetto ridisegna il testo (data-testo) sopra il nome: vedi effetti-pagina.css
         const posizione = stato.riepilogo && stato.riepilogo.rank && /^#\d+$/.test(stato.riepilogo.rank.grande) ? stato.riepilogo.rank.grande : '\u2605';
         return blocco('identita', 'pp-identita',
             costruisciSigillo(posizione),
-            h('h1', { class: 'pp-nome', stile: { '--len': nome.length || 1 } }, h('span', { id: 'player-name-display', testo: nome })),
+            h('h1', { class: 'pp-nome', stile: { '--len': nome.length || 1 }, 'data-effetto-nome': effettoNome, 'data-testo': effettoNome ? nome : null }, h('span', { id: 'player-name-display', testo: nome })),
             h('div', { class: 'pp-titolo-riga', hidden: true }),     // le targhette scelte per questo blocco (riempiTarghe)
             motto);
     }
@@ -376,7 +383,7 @@
                         if (typeof window.apriPkmDettaglio === 'function') window.apriPkmDettaglio(p, pulisci(nomePkm), elenco(team.pokemon).indexOf(p));
                     } },
                     h('span', { class: 'pkm-badges-overlay pp-slot-badge', 'data-fiocchi-pkm': String(i) }),
-                    h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm), alt: '',
+                    h('img', { class: 'pp-slot-img', src: gifShowdown(nomePkm, p.shiny), alt: '', 'data-shiny': p.shiny ? '1' : null,
                         onerror: e => {
                             if (window.SpritePkm) return window.SpritePkm.riserva(e.target, window.SpritePkm.id(nomePkm));
                             e.target.onerror = null; e.target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
@@ -981,6 +988,17 @@
         applica();
     }
 
+    /** Il tasto SHARE in alto: la scheda dell'allenatore come immagine da mandare in chat (scheda-condivisione.js). Per tutti, non solo per il proprietario. */
+    function montaTastoCondividi(d) {
+        const nav = document.getElementById('pp-nav');
+        if (!nav || document.getElementById('pp-condividi-btn') || !window.SchedaCondivisione) return;
+        nav.append(h('button', { id: 'pp-condividi-btn', class: 'pp-modifica-btn pp-condividi-btn', type: 'button', onclick: () => {
+            const dati = stato.dati;
+            const info = dati.info || {};
+            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
+        } }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '\u2197' }), ' SHARE'));
+    }
+
     function monta(d) {
         stato.dati = d;
         stato.salvata = P.normalizza(d.info && d.info.pagina);
@@ -998,6 +1016,7 @@
 
         riempiCornice(d);
         applica();
+        montaTastoCondividi(d);
         const carta = document.getElementById('pp-carta');
         carta.classList.add('pp-entra');
         // l'entrata dura meno di un secondo e mezzo: dopo, un blocco rimesso in un'altra riga non deve rifarla (ricomparirebbe da vuoto)
@@ -1031,6 +1050,13 @@
             stato.infoSalvata = { ...profiloAttuale(), ...valori };
             if (prima && prima.musicaPreferita !== stato.infoSalvata.musicaPreferita && stato.infoSalvata.musicaPreferita
                 && musicaAttiva() && typeof window.avviaMusicaGiocatore === 'function') window.avviaMusicaGiocatore(stato.infoSalvata.musicaPreferita);
+        },
+        /** Avatar e canzone li cambia il server (a pagamento): si vedono subito e contano come già salvati, senza toccare il resto della bozza (e la nuova canzone parte, se può) */
+        profiloDalServer(valori) {
+            impostaProfilo(valori);
+            const salvati = Object.fromEntries(P.CAMPI_PROFILO.filter(k => k in valori).map(k => [k, valori[k] == null ? '' : String(valori[k])]));
+            stato.infoSalvata = { ...stato.infoSalvata, ...salvati };
+            if (valori.musicaPreferita && musicaAttiva() && typeof window.avviaMusicaGiocatore === 'function') window.avviaMusicaGiocatore(valori.musicaPreferita);
         },
         modifica(on) {
             stato.modifica = !!on;

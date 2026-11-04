@@ -75,7 +75,7 @@
     <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
-    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> ARCHIVE</a>
+    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -892,7 +892,7 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/${img.dataset.shiny ? 'dex-shiny' : 'dex'}/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1140,7 +1140,7 @@ function gestisciErroreSprite(img, pkmNameUrl, spriteId) {
     img.dataset.spriteFase = String(fase + 1);
 
     if (fase === 0) {
-        img.src = `https://play.pokemonshowdown.com/sprites/dex/${spriteId || pkmNameUrl}.png`;
+        img.src = `https://play.pokemonshowdown.com/sprites/${img.dataset.shiny ? 'dex-shiny' : 'dex'}/${spriteId || pkmNameUrl}.png`;
         return;
     }
 
@@ -1228,8 +1228,8 @@ function generaHtmlDettaglioTeam(team, proprietario, palette) {
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
                         <div id="${mIdPrefix}" class="modal-types"></div>
-                        <img src="${SpritePkm.gif(p.nome || '')}" 
-                             class="modal-sprite clickable-pkm" 
+                        <img src="${SpritePkm.gif(p.nome || '', p.shiny)}" 
+                             class="modal-sprite clickable-pkm"${p.shiny ? ' data-shiny="1"' : ''} 
                              onerror="gestisciErroreSprite(this, '${pkmNameUrl}', '${SpritePkm.id(p.nome || '')}')">                    </div>
 
                     <div class="modal-pkm-info">

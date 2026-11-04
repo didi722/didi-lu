@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&family=Montserrat:wght@400;600;700&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Bangers&family=Bungee&family=Rubik+Mono+One&family=Orbitron:wght@500;700;900&family=Righteous&family=Fredoka:wght@500;700&family=Permanent+Marker&family=Lobster&family=Playfair+Display:wght@700;900&family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style-public.css">
     <link rel="stylesheet" href="style-public-card.css">
+    <link rel="stylesheet" href="effetti-pagina.css">
     <link rel="stylesheet" href="temi.css">
     <link rel="stylesheet" href="finestre.css">
     <link rel="stylesheet" href="dettagli.css">
@@ -37,6 +38,8 @@
     <script src="personalita-grafico.js"></script>
     <script src="pagina-pubblica.js"></script>
     <script src="tipo-stagione.js"></script>
+    <script src="scheda-condivisione.js"></script>
+    <script src="cosmetici.js"></script>
     <script src="public-card.js"></script>
     <!-- Il sito come app: manifest, icona, aspetto da app (app.css) e barra in basso (app.js) -->
     <meta name="theme-color" content="#000000">
@@ -96,7 +99,7 @@
     <a href="profile.html" class="menu-item"><i class="fas fa-user"></i> PROFILE</a>
     <a href="players.html" class="menu-item"><i class="fas fa-users"></i> TRAINERS</a>
     <a href="stats.html" class="menu-item"><i class="fas fa-chart-bar"></i> STATS</a>
-    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> ARCHIVE</a>
+    <a href="palmares.html" class="menu-item"><i class="fas fa-trophy"></i> HALL OF FAME</a>
     <a href="formats.html" class="menu-item"><i class="fas fa-gavel"></i> FORMATS</a>
     <a href="rules.html" class="menu-item"><i class="fas fa-scroll"></i> RULEBOOK</a>
     <a href="admin.html" id="admin-menu-item" class="menu-item" style="display: none;"><i class="fas fa-user-shield"></i> ADMIN</a>
@@ -601,7 +604,7 @@ async function apriDettagli(id) {
                 <div class="modal-pkm-card modal-pkm-card-apri" role="button" tabindex="0" data-i="${pIndex}" aria-label="${escHtml(p.nome)}">
                     <div class="pkm-badges-overlay" data-fiocchi-pkm="${pIndex}"></div>
                     <div class="modal-left-column">
-                        <img src="${SpritePkm.gif(p.nome)}" class="modal-sprite" alt=""
+                        <img src="${SpritePkm.gif(p.nome, p.shiny)}" class="modal-sprite" alt=""${p.shiny ? ' data-shiny="1"' : ''}
                              onerror="SpritePkm.riserva(this, '${SpritePkm.id(p.nome)}')">
                     </div>
                     <div class="modal-pkm-info">
