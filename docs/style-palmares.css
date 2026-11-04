@@ -76,6 +76,7 @@ body.pg-palmares .hub-title-display { white-space: normal; overflow: visible; te
 .hof-vista[hidden], #palm-vista-stagioni[hidden] { display: none; }
 .hof-vuoto { margin: 24px 0; font: italic 700 .95rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
 
+.hof-gruppo[hidden] { display: none; }
 .hof-gruppo-titolo { margin: 30px 0 26px; font: 900 1.1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase; }
 .hof-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 40px 26px; }
 

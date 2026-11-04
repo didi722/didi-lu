@@ -92,6 +92,8 @@ test('markup: testo protetto, podio con il primo evidenziato, link all\'allenato
     assert.doesNotMatch(h, /<small>29\/10\/2026<\/small>/, 'non più sotto il tag del nome');
     // senza data la cella c'è lo stesso (la griglia ha una colonna per la data)
     assert.match(H.htmlRecords([{ id: 'y', gruppo: 'Trainers', titolo: 'T', voci: [{ nome: 'A', sotto: '', valore: '1', specie: '', colore: '#fff', avatar: '', link: '', quando: '' }] }]), /<span class="hof-quando"><\/span><span class="hof-valore">1<\/span>/);
+    assert.match(h, /<div class="palm-filtri hof-filtri"[^>]*><button type="button" class="palm-tasto attivo" data-gruppo="all">All<\/button><button type="button" class="palm-tasto" data-gruppo="Trainers">Trainers<\/button><\/div>/, 'i tag come quelli delle stagioni');
+    assert.match(h, /<section class="hof-gruppo" data-gruppo="Trainers"/);
     assert.match(H.htmlRecords([]), /No records yet/);
     assert.match(H.htmlStagioni([]), /No MVP or Dream Team yet/);
     assert.match(H.htmlSettimane([]), /No Match of the week yet/);
