@@ -82,10 +82,10 @@
         aura: S.info.aura || null, effettoNome: S.info.effettoNome || null, effettoPalco: S.info.effettoPalco || null,
         sfondoMotivo: null, avatar: S.info.avatar || '', color: S.info.color || ''
     });
-    // la pagina nel riquadro è larga 1100 pixel (com'è sul PC): si rimpicciolisce per stare nella colonna
+    // la pagina nel riquadro è larga 1440 pixel (come su un monitor 16:9): si rimpicciolisce per stare nella colonna
     function adattaAnteprima() {
         const q = $('shop-schermo');
-        if (q && q.clientWidth > 0) q.style.setProperty('--k', (q.clientWidth / 1100).toFixed(4));
+        if (q && q.clientWidth > 0) q.style.setProperty('--k', (q.clientWidth / 1440).toFixed(4));
     }
     window.addEventListener('resize', adattaAnteprima);
     function aggiornaAnteprima() {
