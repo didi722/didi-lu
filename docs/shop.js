@@ -28,7 +28,7 @@
 
     const S = {
         uid: '', giocatore: '', saldo: 0, posseduti: {}, casa: {}, info: {}, pagina: {}, movimenti: [], stagioni: {}, nomiStagioni: {}, registro: {}, teams: [],
-        tutti: null, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
+        tutti: null, shinyPkm: {}, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
     };
     let ascolto = null;          // l'audio dell'anteprima di una canzone
 
@@ -46,7 +46,7 @@
             ...idStagioni.map(id => db.ref(`seasons/${id}/info`).once('value').then(x => x.val() || {}, () => ({})))
         ]);
         const wallet = w.val() || {};
-        S.saldo = num(wallet.saldo); S.posseduti = wallet.posseduti || {}; S.casa = wallet.casa || {};
+        S.saldo = num(wallet.saldo); S.posseduti = wallet.posseduti || {}; S.casa = wallet.casa || {}; S.shinyPkm = wallet.shinyPkm || {};
         S.movimenti = Object.keys(wallet.movimenti || {}).sort().map(k => wallet.movimenti[k]);
         S.info = info.val() || {}; S.pagina = S.info.pagina || {};
         S.registro = registro.val() || {};
@@ -265,6 +265,36 @@
         });
     }
 
+    // ---- lo shiny dei Pokémon di un team
+    const squadraAttuale = () => S.teams.find(x => x.id === S.squadra);
+    /** Tornare normale (gratis) o rimettere shiny un Pokémon già comprato (gratis) */
+    function cambiaShiny(i, attivo) {
+        const t = squadraAttuale(), p = t && t.pokemon[i];
+        if (!p) return;
+        return operazione(() => N.chiama(window, 'shinyPokemonTeam', { team: t.id, indice: i, attivo }), async r => {
+            msg(r.ok ? (attivo ? `${p.nome} is shiny again!` : `${p.nome} is back to normal.`) : N.frase(r.motivo), !r.ok);
+            await leggi(); mostraSaldo();
+        });
+    }
+    /** Comprare lo shiny di un Pokémon: la conferma con il Pokémon in grande, normale e shiny */
+    function chiediShiny(i) {
+        const t = squadraAttuale(), p = t && t.pokemon[i];
+        if (!p) return;
+        const gif = (nome, shiny) => (SP && SP.gif ? SP.gif(nome, shiny) : '');
+        const f = C.prezzoShiny(p.nome), poco = S.saldo < f.prezzo;
+        const img = src => (src ? `<img class="shop-pkm-grande" src="${esc(src)}" alt="" onerror="this.style.visibility='hidden'">` : '');
+        finestra(`<div class="shop-pkm-coppia">${img(gif(p.nome, false))}<i>→</i>${img(gif(p.nome, true))}</div><b>${esc(p.nome)}</b>`
+            + `<p>Shiny ${esc(p.nome)} costs ${f.prezzo} 🪙 and you have ${S.saldo} 🪙.${poco ? ' Play some sets to earn more coins.' : ''}</p>${poco ? '' : '<p><b>Are you sure you want to buy it?</b></p>'}<p>You can go back to normal colours any time, and make it shiny again for free.</p>`
+            + `<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button><button type="button" class="ng-bottone ng-compra" data-x="ok"${poco ? ' disabled' : ''}>Yes, buy · ${f.prezzo} 🪙</button></div>`, (e, velo, togli) => {
+            if (!(e.target.dataset && e.target.dataset.x === 'ok') || e.target.disabled) return;
+            togli();
+            operazione(() => N.chiama(window, 'shinyPokemonTeam', { team: t.id, indice: i }), async r => {
+                msg(r.ok ? `${p.nome} is shiny now!` : N.frase(r.motivo), !r.ok);
+                await leggi(); mostraSaldo();
+            });
+        });
+    }
+
     /** Comprare una voce del catalogo: prima una finestra con la voce in grande e la domanda "sei sicuro?" */
     function chiediCatalogo(c) {
         if (!c) return;
@@ -313,7 +343,7 @@
         const gif = (nome, shiny) => (SP && SP.gif ? SP.gif(nome, shiny) : '');
         const schede = squadre.map(x => `<button type="button" class="shop-squadra${x.id === S.squadra ? ' attiva' : ''}" data-ng="squadra" data-id="${esc(x.id)}">${esc(x.nome)}</button>`).join('');
         return `<section class="ng-gruppo"><h3>Shiny Pokémon</h3><div class="shop-squadre">${schede}</div>`
-            + N.shinyTeamHtml({ pokemon: t.pokemon.map(p => ({ nome: p.nome, shiny: !!p.shiny, normale: gif(p.nome, false), brillante: gif(p.nome, true) })), saldo: S.saldo, occupato: S.occupato, armato: S.armato && S.armato.team === t.id ? S.armato.i : null })
+            + N.shinyTeamHtml({ pokemon: t.pokemon.map(p => ({ nome: p.nome, shiny: !!p.shiny, comprato: !!S.shinyPkm[`${t.id}_${C.idSpecie(p.nome)}`], normale: gif(p.nome, false), brillante: gif(p.nome, true) })), saldo: S.saldo, occupato: S.occupato })
             + `<p class="ng-nota">You will see it in your <a href="box.html">Box</a>, in battle, in the rankings and on your page.</p></section>`;
     }
 
@@ -379,16 +409,8 @@
             return;
         }
         if (ng === 'squadra') { S.squadra = b.dataset.id; S.armato = null; return disegna(true); }
-        if (ng === 'shiny') {
-            const t = S.teams.find(x => x.id === S.squadra), i = Number(b.dataset.i);
-            // un tocco arma il pulsante ("Sure?"), il secondo compra: le monete non si spendono per sbaglio
-            if (!S.armato || S.armato.team !== t.id || S.armato.i !== i) { S.armato = { team: t.id, i }; return disegna(true); }
-            S.armato = null;
-            return operazione(() => N.chiama(window, 'shinyPokemonTeam', { team: t.id, indice: i }), r => {
-                if (r.ok) { t.pokemon[i].shiny = true; S.saldo = num(r.saldo); mostraSaldo(); msg(`${t.pokemon[i].nome} is shiny now!`); }
-                else { msg(N.frase(r.motivo), true); if (r.motivo === 'already') t.pokemon[i].shiny = true; }
-            });
-        }
+        if (ng === 'shiny') return chiediShiny(Number(b.dataset.i));
+        if (ng === 'shiny-on' || ng === 'shiny-off') return cambiaShiny(Number(b.dataset.i), ng === 'shiny-on');
     });
     $('shop-contenuto').addEventListener('input', e => { if (e.target.id === 'shop-ricerca') { S.ricerca = e.target.value; const pos = e.target.selectionStart; disegna(true); const r = $('shop-ricerca'); if (r) { r.focus(); r.setSelectionRange(pos, pos); } } });
     $('shop-schede').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) vai(b.dataset.tab); });

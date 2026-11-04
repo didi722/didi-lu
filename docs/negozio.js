@@ -48,13 +48,13 @@
 .ng-voce[data-tipo=shiny] .ng-anteprima.ng-scintilla::before{content:'✦';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 1.5rem sans-serif;color:#e0a800}
 .ng-voce b{display:block;font:900 .85rem 'Josefin Sans',sans-serif;text-transform:uppercase}
 .ng-voce small{display:block;font:600 .7rem/1.3 'Montserrat',sans-serif;opacity:.7}
-.ng-pkm .ng-anteprima{display:flex;align-items:center;justify-content:center;gap:0;width:88px;height:56px;border-radius:0;overflow:hidden;background:#f3f4f8}
-.ng-pkm .ng-anteprima img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
-.ng-pkm .ng-anteprima i{font:900 .9rem sans-serif;opacity:.5;font-style:normal}
-.ng-pkm.ng-mio .ng-anteprima{background:#fff7d6}
-.ng-voce[data-tipo=pokemon]{grid-template-columns:88px minmax(0,1fr) auto}
+.ng-schiera{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:30px 18px}
+.ng-carta{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
+.ng-tondo{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:176px;height:176px;border:4px solid #000;border-radius:50%;background:#e6e9f2;box-shadow:4px 4px 0 rgba(0,0,0,.35);overflow:hidden}
+.ng-shiny .ng-tondo{background:#fff1a8}
+.ng-tondo img{max-width:136px;max-height:136px;object-fit:contain;image-rendering:pixelated}
+.ng-tag{position:relative;z-index:1;margin:-16px 0 10px;max-width:100%;box-sizing:border-box;padding:4px 12px 2px;background:#000;color:#fff;border:3px solid #000;box-shadow:3px 3px 0 rgba(0,0,0,.35);font:700 14px/1.15 'Josefin Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;text-align:center;overflow-wrap:anywhere;rotate:-1.5deg}
 .ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
-.ng-bottone.ng-sicuro{background:#ffbd44}
 .ng-voce[data-tipo=nome] .ng-anteprima,.ng-voce[data-tipo=palco] .ng-anteprima{border-radius:0;width:64px;height:52px}
 .ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
 .ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
@@ -185,33 +185,33 @@
     }
 
     /**
-     * I Pokémon di un team con fascia e prezzo dello shiny (puro): stato = { pokemon: [{ nome, shiny, normale, brillante }], saldo, occupato, armato }.
-     * Il prezzo di ogni Pokémon dipende dalla sua specie (Cosmetici.prezzoShiny); il server lo calcola allo stesso modo, quindi quello che si legge qui è quello che si paga.
+     * I Pokémon di un team come carte grandi (puro): la gif, il tag col nome e il pulsante. stato = { pokemon: [{ nome, shiny, comprato, normale, brillante }], saldo, occupato }.
+     * Non shiny: il prezzo della sua specie (Cosmetici.prezzoShiny; il server lo calcola allo stesso modo), che apre la conferma; non shiny ma già comprato: "Make shiny" gratis;
+     * shiny: "Back to normal" (gratis; poi si rimette shiny gratis).
      */
     function shinyTeamHtml(stato) {
         const s = stato || {};
         const saldo = num(s.saldo);
         const img = src => (src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '');
         const pillola = (fascia, testo) => `<span class="ng-fascia" data-fascia="${esc(fascia)}">${esc(testo)}</span>`;
-        const righe = (s.pokemon || []).map((p, i) => {
-            const armato = s.armato === i;
+        const carte = (s.pokemon || []).map((p, i) => {
             const f = Cosmetici.prezzoShiny(p.nome);
-            const anteprima = p.shiny ? `<span class="ng-anteprima">${img(p.brillante)}</span>` : `<span class="ng-anteprima">${img(p.normale)}<i>→</i>${img(p.brillante)}</span>`;
-            const bottone = p.shiny ? '<span class="ng-fatto">Shiny ✓</span>'
-                : `<button type="button" class="ng-bottone ng-compra${armato ? ' ng-sicuro' : ''}" data-ng="shiny" data-i="${i}"${s.occupato || saldo < f.prezzo ? ' disabled' : ''}>${armato ? 'Sure? ' : ''}${f.prezzo} 🪙</button>`;
-            const nome = `${esc(p.nome)}${p.shiny ? '' : pillola(f.fascia, f.nome)}`;
-            return `<li class="ng-voce ng-pkm${p.shiny ? ' ng-mio' : ''}" data-tipo="pokemon">${anteprima}<span><b>${nome}</b><small>${p.shiny ? 'Shiny for good' : (armato ? 'Press again to confirm' : 'Normal colours')}</small></span>${bottone}</li>`;
+            const dis = s.occupato ? ' disabled' : '';
+            const bottone = p.shiny ? `<button type="button" class="ng-bottone" data-ng="shiny-off" data-i="${i}"${dis}>Back to normal</button>`
+                : p.comprato ? `<button type="button" class="ng-bottone ng-compra" data-ng="shiny-on" data-i="${i}"${dis}>Make shiny · free</button>`
+                    : `<button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="${i}"${s.occupato || saldo < f.prezzo ? ' disabled' : ''}>${f.prezzo} 🪙</button>`;
+            return `<li class="ng-carta${p.shiny ? ' ng-shiny' : ''}" data-tipo="pokemon"><span class="ng-tondo">${img(p.shiny ? p.brillante : p.normale)}</span><b class="ng-tag">${esc(p.nome)}</b>${bottone}</li>`;
         }).join('');
         const fasce = Cosmetici.fasceShiny().map(f => pillola(f.fascia, `${f.nome} ${f.prezzo}`)).join('');
-        return `<p class="ng-nota">Pick the Pokémon to make shiny. The price depends on the species: the rarer it is, the more it costs. It only changes the colours, so it works on locked teams too, it shows in battle and on the site, and it stays for good.</p>`
+        return `<p class="ng-nota">Pick the Pokémon to make shiny. The price depends on the species: the rarer it is, the more it costs. It only changes the colours, so it works on locked teams too, it shows in battle and on the site. Once bought it is yours: you can go back to normal and make it shiny again for free.</p>`
             + `<p class="ng-fasce" aria-label="Prices by rarity">${fasce}</p>`
-            + (righe ? `<ul class="ng-lista">${righe}</ul>` : '<p class="ng-nota">This team has no Pokémon yet.</p>');
+            + (carte ? `<ul class="ng-schiera">${carte}</ul>` : '<p class="ng-nota">This team has no Pokémon yet.</p>');
     }
 
     // ---------------------------------------------------------------- nel browser
     const FRASI = {
         owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
-        taken: 'Someone else already has it: every avatar, colour and song belongs to one trainer only.', same: 'It is already the one you are wearing.', limit: 'You already have the most you can have: release one of yours to get this.', worn: "You are wearing it: wear another one first, then release this.", already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged.", 'box-companion': 'Your companion comes from your Box, so it is shiny or not like that Pokémon: make it shiny in the Pokémon tab. The shiny companion is for a Pokémon picked from the list.', 'not-yet': 'This limited edition is not on sale yet: it arrives with the next season.', ended: 'This limited edition has ended: it can no longer be bought.'
+        taken: 'Someone else already has it: every avatar, colour and song belongs to one trainer only.', same: 'It is already the one you are wearing.', limit: 'You already have the most you can have: release one of yours to get this.', worn: "You are wearing it: wear another one first, then release this.", already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged.", 'box-companion': 'Your companion comes from your Box, so it is shiny or not like that Pokémon: make it shiny in the Pokémon tab. The shiny companion is for a Pokémon picked from the list.', 'not-shiny': 'It is not shiny.', 'not-yet': 'This limited edition is not on sale yet: it arrives with the next season.', ended: 'This limited edition has ended: it can no longer be bought.'
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 

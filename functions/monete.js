@@ -342,9 +342,10 @@ const vociDi = x => (Array.isArray(x) ? x.map((v, k) => [String(k), v]) : Object
  * Rende shiny il Pokémon numero `indice` di un team del Box. Lo shiny è solo estetico, quindi vale anche per i team bloccati (iscritti a una stagione iniziata): si scrive nel team
  * del Box e nelle iscrizioni alle stagioni non chiuse (dove il team è una copia), compreso il testo Showdown, che è quello che il simulatore legge. La stagione chiusa resta com'era.
  * Il prezzo lo decide il server dalla specie del Pokémon nel team (Cosmetici.prezzoShiny: da comune a leggendario), mai dal client. Si paga solo se tutte le modifiche si possono fare; se la
- * scrittura fallisce le monete tornano. → { ok, saldo, prezzo, fascia } oppure { ok: false, motivo: unknown | no-profile | already | busy | cannot-apply | poor }
+ * scrittura fallisce le monete tornano. → { ok, saldo, prezzo, fascia, gratis, attivo } oppure { ok: false, motivo: unknown | no-profile | already | not-shiny | busy | cannot-apply | poor }.
+ * `attivo: false` lo riporta normale (gratis); chi lo ha già comprato lo rimette shiny gratis (wallet/{uid}/shinyPkm/<team>_<specie> tiene il conto)
  */
-async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
+async function shinyPokemon({ db, uid, team, indice, attivo = true, adesso = Date.now() }) {
     const giocatore = await giocatoreDi(db, uid);
     if (!giocatore) return { ok: false, motivo: 'no-profile' };
     const idTeam = String(team || ''), i = Number(indice);
@@ -354,16 +355,23 @@ async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
     const voci = vociDi(t && t.pokemon);
     if (!t || !voci[i] || !voci[i][1] || !voci[i][1].nome) return { ok: false, motivo: 'unknown' };
     const [chiave, pokemon] = voci[i];
-    if (pokemon.shiny) return { ok: false, motivo: 'already' };
-    const { prezzo, fascia } = Cosmetici.prezzoShiny(pokemon.nome);
+    if (attivo && pokemon.shiny) return { ok: false, motivo: 'already' };
+    if (!attivo && !pokemon.shiny) return { ok: false, motivo: 'not-shiny' };
+    // chi lo ha già comprato (o era già shiny prima che si tenesse il conto) lo può rimettere gratis dopo averlo tolto
+    const chiaveAcquisto = `${idTeam}_${idSpecie(pokemon.nome)}`;
+    const percorsoAcquisto = `wallet/${uid}/shinyPkm/${chiaveAcquisto}`;
+    const comprato = !!(await db.ref(percorsoAcquisto).once('value')).val();
+    const gratis = attivo && comprato;
+    const { prezzo: prezzoPieno, fascia } = Cosmetici.prezzoShiny(pokemon.nome);
+    const prezzo = gratis || !attivo ? 0 : prezzoPieno;
     const specieTeam = voci.map(([, p]) => (p && p.nome) || '');
 
     // un solo acquisto alla volta per questo Pokémon (due richieste insieme non lo pagano due volte)
     return conLock(db, `shiny-${giocatore}-${idTeam}-${i}`, adesso, async () => {
         // le modifiche si preparano prima di pagare: se il testo non si riesce a toccare non si addebita niente
-        const modifiche = { [`${radice}/pokemon/${chiave}/shiny`]: true };
+        const modifiche = { [`${radice}/pokemon/${chiave}/shiny`]: attivo ? true : null, [percorsoAcquisto]: adesso };
         if (t.testoShowdown && String(t.testoShowdown).trim()) {
-            const nuovo = testoConShiny(t.testoShowdown, i, pokemon.nome, specieTeam);
+            const nuovo = testoConShiny(t.testoShowdown, i, pokemon.nome, specieTeam, attivo);
             if (nuovo == null) return { ok: false, motivo: 'cannot-apply' };
             modifiche[`${radice}/testoShowdown`] = nuovo;
         }
@@ -380,27 +388,29 @@ async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
                     const dellaCopia = vociDi(copia.pokemon);
                     // lo stesso Pokémon della copia: nella stessa posizione se è la stessa specie, altrimenti il primo di quella specie non ancora shiny
                     const stessa = p => !!p && idSpecie(p.nome) === idSpecie(pokemon.nome);
-                    const j = dellaCopia[i] && stessa(dellaCopia[i][1]) ? i : dellaCopia.findIndex(([, p]) => stessa(p) && !p.shiny);
+                    const j = dellaCopia[i] && stessa(dellaCopia[i][1]) ? i : dellaCopia.findIndex(([, p]) => stessa(p) && !!p.shiny !== attivo);
                     if (j < 0) continue;
                     const base = `seasons/${sid}/teams_iscritti/${formato}/${giocatore}/datiTeams/${k}`;
-                    modifiche[`${base}/pokemon/${dellaCopia[j][0]}/shiny`] = true;
+                    modifiche[`${base}/pokemon/${dellaCopia[j][0]}/shiny`] = attivo ? true : null;
                     if (copia.testoShowdown && String(copia.testoShowdown).trim()) {
-                        const testoCopia = testoConShiny(copia.testoShowdown, j, pokemon.nome, dellaCopia.map(([, p]) => (p && p.nome) || ''));
+                        const testoCopia = testoConShiny(copia.testoShowdown, j, pokemon.nome, dellaCopia.map(([, p]) => (p && p.nome) || ''), attivo);
                         if (testoCopia != null) modifiche[`${base}/testoShowdown`] = testoCopia;
                     }
                 }
             }
         }
-        if (!(await spendi(db, uid, prezzo, `Shiny: ${pokemon.nome}`, { adesso }))) return { ok: false, motivo: 'poor' };
+        if (prezzo > 0 && !(await spendi(db, uid, prezzo, `Shiny: ${pokemon.nome}`, { adesso }))) return { ok: false, motivo: 'poor' };
         try {
             await db.ref().update(modifiche);
         } catch (e) {
-            await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + prezzo);
-            await scriviMovimento(db, uid, prezzo, `Refund: Shiny ${pokemon.nome}`, adesso);
+            if (prezzo > 0) {
+                await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + prezzo);
+                await scriviMovimento(db, uid, prezzo, `Refund: Shiny ${pokemon.nome}`, adesso);
+            }
             throw e;
         }
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
-        return { ok: true, saldo, prezzo, fascia };
+        return { ok: true, saldo, prezzo, fascia, gratis, attivo };
     });
 }
 
