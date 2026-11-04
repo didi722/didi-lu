@@ -165,3 +165,9 @@ html.app-shell { --shop-testo: #fff; }
 .shop-saldo { box-shadow: var(--nb-sh-m-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
 .shop-scheda.attiva, .shop-squadra.attiva, .shop-miio-su { box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
 .shop-scheda.attiva:hover, .shop-scheda.attiva:focus-visible { box-shadow: var(--nb-sh-m-scuro, 5px 5px 0 rgba(0, 0, 0, .35)); }
+
+/* la conferma dello shiny di un Pokémon: normale e shiny in grande */
+.shop-pkm-coppia { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.shop-pkm-coppia i { font: 900 1.4rem sans-serif; font-style: normal; opacity: .5; }
+.shop-conferma img.shop-pkm-grande { width: 120px; height: 120px; border: 0; background: none; object-fit: contain; image-rendering: pixelated; }
+.shop-pagina .ng-carta .ng-bottone { margin-top: 2px; }

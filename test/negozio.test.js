@@ -120,41 +120,35 @@ test('cablaggio: lo Shop è una pagina (non sta più nella campanella); shiny ne
     assert.ok(!leggi('docs', 'style-public-editor.css').includes('.pe-bloccato'));
 });
 
-test('shinyTeamHtml: una riga per Pokémon; i shiny sono "Shiny ✓", gli altri hanno la fascia e il prezzo della loro specie (spento senza monete); un tocco arma ("Sure?"), il testo è protetto', () => {
+test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsante: prezzo (che apre la conferma), "Make shiny" gratis se già comprato, "Back to normal" se è shiny; il testo è protetto', () => {
     const prezzo = nome => C.prezzoShiny(nome).prezzo;
     const base = {
-        team: 'Alfa <b>', saldo: 500,
-        pokemon: [{ nome: 'Garchomp', shiny: true, brillante: 'https://x/g-s.gif' }, { nome: 'Incineroar', shiny: false, normale: 'https://x/i.gif', brillante: 'https://x/i-s.gif' },
-            { nome: 'Mewtwo', shiny: false }, { nome: 'Pichu', shiny: false }, { nome: '<i>X</i>', shiny: false }]
+        saldo: 500,
+        pokemon: [{ nome: 'Garchomp', shiny: true, brillante: 'https://x/g-s.gif', normale: 'https://x/g.gif' }, { nome: 'Incineroar', shiny: false, normale: 'https://x/i.gif', brillante: 'https://x/i-s.gif' },
+            { nome: 'Mewtwo', shiny: false }, { nome: 'Pichu', shiny: false, comprato: true }, { nome: '<i>X</i>', shiny: false }]
     };
     const h = N.shinyTeamHtml(base);
-    assert.equal((h.match(/class="ng-voce ng-pkm/g) || []).length, 5);
-    assert.match(h, /Garchomp<\/b><small>Shiny for good<\/small><\/span><span class="ng-fatto">Shiny ✓/, 'chi è già shiny non ha fascia né prezzo');
-    // ogni Pokémon ha la fascia e il prezzo della sua specie
-    assert.match(h, new RegExp(`Incineroar<span class="ng-fascia" data-fascia="standard">Standard</span></b><small>Normal colours</small></span><button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="1">${prezzo('Incineroar')} 🪙</button>`));
-    assert.match(h, new RegExp(`Mewtwo<span class="ng-fascia" data-fascia="mitico">Legendary</span></b>[^]*?data-i="2" disabled>${prezzo('Mewtwo')} 🪙</button>`), 'un leggendario a 500 monete è spento');
-    assert.match(h, new RegExp(`Pichu<span class="ng-fascia" data-fascia="comune">Common</span></b>[^]*?data-i="3">${prezzo('Pichu')} 🪙</button>`), 'una specie comune costa meno ed è acquistabile');
-    assert.match(h, new RegExp(`data-i="4" disabled>${prezzo('Specie Mai Vista')} 🪙|data-i="4">${prezzo('Specie Mai Vista')} 🪙`), 'una specie sconosciuta vale il prezzo standard');
-    assert.match(h, /<img src="https:\/\/x\/i\.gif"[^>]*>(<i>→<\/i>)<img src="https:\/\/x\/i-s\.gif"/, 'prima/dopo');
+    assert.equal((h.match(/<li class="ng-carta/g) || []).length, 5);
+    // shiny: la gif shiny e il pulsante per tornare normale; niente prezzo
+    assert.match(h, /<li class="ng-carta ng-shiny" data-tipo="pokemon"><span class="ng-tondo"><img src="https:\/\/x\/g-s\.gif"[^>]*><\/span><b class="ng-tag">Garchomp<\/b><button type="button" class="ng-bottone" data-ng="shiny-off" data-i="0">Back to normal<\/button>/);
+    // non shiny: la gif normale, il nome nel tag e il prezzo della sua specie nel pulsante
+    assert.match(h, new RegExp(`<img src="https://x/i\\.gif"[^>]*></span><b class="ng-tag">Incineroar</b><button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="1">${prezzo('Incineroar')} 🪙</button>`));
+    assert.match(h, new RegExp(`Mewtwo</b><button[^>]*data-ng="shiny" data-i="2" disabled>${prezzo('Mewtwo')} 🪙`), 'un leggendario a 500 monete è spento');
+    // già comprato e poi tolto: si rimette gratis
+    assert.match(h, /Pichu<\/b><button type="button" class="ng-bottone ng-compra" data-ng="shiny-on" data-i="3">Make shiny · free<\/button>/);
     assert.doesNotMatch(h, /<i>X<\/i>/, 'il nome è protetto');
+    assert.doesNotMatch(h, /ng-fascia" data-fascia="[a-z]+">[A-Za-z]+<\/span><\/b>/, 'niente tag della rarità sulle carte');
     // la legenda delle fasce: nomi e prezzi, dalla più economica
     const legenda = /<p class="ng-fasce"[^>]*>(.*?)<\/p>/.exec(h)[1];
     assert.deepEqual([...legenda.matchAll(/data-fascia="(\w+)">([^<]+)</g)].map(m => [m[1], m[2]]), C.fasceShiny().map(f => [f.fascia, `${f.nome} ${f.prezzo}`]));
-    assert.match(h, /The price depends on the species/);
-    // un tocco arma il pulsante di quel Pokémon soltanto
-    const armato = N.shinyTeamHtml({ ...base, armato: 1 });
-    assert.match(armato, new RegExp(`class="ng-bottone ng-compra ng-sicuro" data-ng="shiny" data-i="1">Sure\\? ${prezzo('Incineroar')} 🪙`));
-    assert.match(armato, /Press again to confirm/);
-    assert.equal((armato.match(/ng-sicuro/g) || []).length, 1);
-    // senza monete o mentre si compra i pulsanti sono spenti: ognuno col suo prezzo
-    const spenti = stato => (N.shinyTeamHtml({ ...base, ...stato }).match(/data-ng="shiny"[^>]*disabled/g) || []).length;
+    assert.match(h, /go back to normal and make it shiny again for free/);
+    // senza monete o mentre si lavora i pulsanti sono spenti; quelli gratis si spengono solo mentre si lavora
+    const spenti = stato => (N.shinyTeamHtml({ ...base, ...stato }).match(/data-ng="shiny[^"]*" data-i="\d"[^>]*disabled/g) || []).length;
     assert.equal(spenti({ saldo: 500 }), 1, 'solo il leggendario');
     assert.equal(spenti({ saldo: prezzo('Mewtwo') }), 0);
-    assert.equal(spenti({ saldo: prezzo('Pichu') }), 3, 'con il prezzo di una specie comune: tutti gli altri sono spenti');
-    assert.equal(spenti({ saldo: prezzo('Pichu') - 1 }), 4);
-    assert.equal(spenti({ saldo: 99999, occupato: true }), 4);
+    assert.equal(spenti({ saldo: 0 }), 3, 'senza monete: i tre da pagare');
+    assert.equal(spenti({ saldo: 99999, occupato: true }), 5, 'mentre si lavora tutti');
     assert.match(N.shinyTeamHtml({ pokemon: [] }), /This team has no Pokémon yet/);
-    assert.match(N.shinyTeamHtml({ team: 'Vuoto', pokemon: [{ nome: 'A' }] }), new RegExp(`data-i="0"[^>]*>${C.PREZZI.shinyPokemon} 🪙`), 'senza una specie nota vale il prezzo base');
 });
 
 test('negozio: i guadagni nel testo vengono da PREMI, la guida dice dove si spendono avatar, canzoni e shiny; "free" nei movimenti a zero; le frasi degli errori nuovi', () => {
@@ -264,6 +258,8 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     assert.match(sh, /<div class="shop-rilascia" role="radiogroup" aria-label="Release one">/, 'a quota piena si sceglie quale rilasciare');
     assert.doesNotMatch(sh, /prezzoCambio|frasiCambio|chiediCambio|casaDi/, 'niente del vecchio cambio a pagamento');
     assert.match(N.frase('taken'), /Someone else already has it/);
+    assert.match(leggi('docs', 'shop.js'), /N\.chiama\(window, 'shinyPokemonTeam', \{ team: t\.id, indice: i, attivo \}\)/, 'tornare normale e rimettere shiny passano dal server');
+    assert.match(leggi('docs', 'shop.js'), /function chiediShiny\(i\)/, 'lo shiny si compra dopo una conferma con il Pokémon in grande');
     assert.match(leggi('docs', 'style-shop.css'), /\.shop-miio \{[^}]*display: flex/);
     assert.match(leggi('REGOLE-DATABASE.md'), /"cosmeticiPresi": \{ "\.read": true \}/);
     const idx = leggi('functions', 'index.js');

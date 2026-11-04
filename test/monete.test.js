@@ -413,7 +413,7 @@ function dbSquadre(extra = {}) {
 test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box, testo e iscrizioni alle stagioni non chiuse; si paga una volta; la stagione chiusa e gli altri restano come sono', async () => {
     const db = dbSquadre();
     const r = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 });
-    assert.deepEqual(r, { ok: true, saldo: SALDO_SQUADRE - P_GARCHOMP, prezzo: P_GARCHOMP, fascia: 'forte' });
+    assert.deepEqual(r, { ok: true, saldo: SALDO_SQUADRE - P_GARCHOMP, prezzo: P_GARCHOMP, fascia: 'forte', gratis: false, attivo: true });
     const box = db.albero.players.didi.teams.T1;
     assert.deepEqual(box.pokemon.map(p => p.shiny), [true, false]);
     assert.match(box.testoShowdown, /^Garchomp @ Rocky Helmet\nAbility: Rough Skin\nLevel: 50\nShiny: Yes\n- Protect\n\nIncineroar[^]*- Fake Out$/);
@@ -430,7 +430,7 @@ test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box,
     assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), { ok: false, motivo: 'already' });
     assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - P_GARCHOMP);
     // il secondo Pokémon è un altro acquisto, al prezzo della sua specie
-    assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1 }), { ok: true, saldo: 100, prezzo: P_INCINEROAR, fascia: 'standard' });
+    assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1 }), { ok: true, saldo: 100, prezzo: P_INCINEROAR, fascia: 'standard', gratis: false, attivo: true });
     assert.deepEqual(db.albero.players.didi.teams.T1.pokemon.map(p => p.shiny), [true, true]);
 });
 
@@ -467,7 +467,7 @@ test('shinyPokemon: il prezzo lo decide il server dalla specie nel team (da comu
         const prima = saldo(db, 'u1');
         // anche se il client prova a dire un altro prezzo, conta la specie
         const r = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: i, prezzo: 1, fascia: 'comune' });
-        assert.deepEqual(r, { ok: true, saldo: prima - prezzi[i], prezzo: prezzi[i], fascia }, nome);
+        assert.deepEqual(r, { ok: true, saldo: prima - prezzi[i], prezzo: prezzi[i], fascia, gratis: false, attivo: true }, nome);
     }
     assert.equal(saldo(db, 'u1'), 0);
     assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), specie.map(([nome], i) => [-prezzi[i], `Shiny: ${nome}`]));
@@ -796,4 +796,33 @@ test('spendi: come fa il vero database, la prima esecuzione parte con il valore 
     assert.equal(saldo(db, 'u1'), 1604);
     assert.equal(await M.spendi(db, 'u1', 5000, 'troppo'), false, 'con il saldo vero che non basta si annulla');
     assert.equal(saldo(db, 'u1'), 1604);
+});
+
+test('shinyPokemon: si può tornare normale (gratis) e, avendolo già comprato, rimetterlo shiny gratis; chi era shiny prima del conto lo ritrova gratis', async () => {
+    const db = dbSquadre();
+    const pagato = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 });
+    assert.equal(pagato.ok, true);
+    const dopo = saldo(db, 'u1');
+    assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1, attivo: false }), { ok: false, motivo: 'not-shiny' }, 'non è shiny: niente da togliere');
+    // tornare normale: gratis, via il segno nel team, nel testo e nella copia della stagione; il conto dell'acquisto resta
+    const normale = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0, attivo: false });
+    assert.deepEqual([normale.ok, normale.prezzo, normale.attivo], [true, 0, false]);
+    const box = db.albero.players.didi.teams.T1;
+    assert.deepEqual(box.pokemon.map(p => !!p.shiny), [false, false]);
+    assert.doesNotMatch(box.testoShowdown, /Shiny/);
+    assert.deepEqual(db.albero.seasons.s1.teams_iscritti['VGC Gen 8'].didi.datiTeams[0].pokemon.map(p => !!p.shiny), [false, false]);
+    assert.equal(saldo(db, 'u1'), dopo);
+    // rimetterlo: gratis, perché già comprato
+    const ancora = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 });
+    assert.deepEqual([ancora.ok, ancora.prezzo, ancora.gratis], [true, 0, true]);
+    assert.equal(saldo(db, 'u1'), dopo, 'nessun addebito');
+    assert.match(db.albero.players.didi.teams.T1.testoShowdown, /Level: 50\nShiny: Yes/);
+    assert.equal(movimenti(db, 'u1').length, 1, 'un solo movimento: quello dell\'acquisto');
+    // già shiny prima che si tenesse il conto: tornando normale si registra, e poi si ritrova gratis
+    const vecchio = dbSquadre();
+    vecchio.albero.players.didi.teams.T1.pokemon[0].shiny = true;
+    assert.equal((await M.shinyPokemon({ db: vecchio, uid: 'u1', team: 'T1', indice: 0, attivo: false })).ok, true);
+    const prima = saldo(vecchio, 'u1');
+    assert.equal((await M.shinyPokemon({ db: vecchio, uid: 'u1', team: 'T1', indice: 0 })).gratis, true);
+    assert.equal(saldo(vecchio, 'u1'), prima);
 });

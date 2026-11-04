@@ -335,7 +335,7 @@
      * coincide si prova con l'n-esimo blocco di quella specie (n = quante volte compare prima in `specieDegliAltri`, le specie del team in ordine). Ritorna null se non trova il blocco
      * giusto. Il resto del testo (a capo, spazi, righe vuote) resta com'è.
      */
-    function testoConShiny(testo, indice, nome, specieDegliAltri = []) {
+    function testoConShiny(testo, indice, nome, specieDegliAltri = [], attivo = true) {
         const { pezzi, blocchi } = bloccatura(testo);
         let k = blocchi[indice];
         if (k == null || specieDelBlocco(pezzi, k) !== idSpecie(nome)) {
@@ -346,7 +346,8 @@
         const eol = /\r\n/.test(pezzi[k]) ? '\r\n' : '\n';
         const righe = pezzi[k].split(/\r?\n/);
         const esistente = righe.findIndex(r => /^\s*Shiny\s*:/i.test(r));
-        if (esistente >= 0) righe[esistente] = 'Shiny: Yes';
+        if (!attivo) { if (esistente >= 0) righe.splice(esistente, 1); }        // tornare normale: via la riga "Shiny: Yes"
+        else if (esistente >= 0) righe[esistente] = 'Shiny: Yes';
         else {
             const dopo = [/^\s*Level\s*:/i, /^\s*Ability\s*:/i].map(re => righe.findIndex(r => re.test(r))).find(x => x >= 0);
             righe.splice(dopo == null ? righe.findIndex(r => r.trim()) + 1 : dopo + 1, 0, 'Shiny: Yes');
