@@ -20,7 +20,7 @@ import {
     bersagliScegliibili, candidatiCambio, mossaEffettiva, sceltaCasuale, setDaTeam
 } from './motore-battaglia.js';
 import { Dex as DexSim, Teams } from './pkmn-sim.js';
-import { caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra } from './team-sito.js';
+import { caricaMatch, caricaPerProva, caricaAmichevole, caricaTappaPalestra, caricaAspetto } from './team-sito.js';
 import { nuovoTeamCpu, nuovoCervello, meccanicheDelFormato, nomeNeutro } from './cpu-partita.js';
 import { BattagliaOnline } from './motore-online.js';
 import { TEAM_PROVA_1, TEAM_PROVA_2 } from './team-prova.js';
@@ -141,6 +141,7 @@ async function preparaDaSito(chiavi) {
     config = { formato: dati.formato, etichetta: dati.categoria, p1: { nome: dati.giocatori.p1.nome }, p2: { nome: dati.giocatori.p2.nome } };
     impostaPannelli();
 
+    vestiVersus(dati.giocatori.p1.nome, dati.giocatori.p2.nome);
     for (const lato of ['p1', 'p2']) {
         const g = dati.giocatori[lato];
         impostaNomeGiocatore(lato, g.nome);
@@ -591,6 +592,7 @@ async function preparaOnline(chiavi) {
     config = { formato: info.formato, etichetta: info.categoria, p1: { nome: info.p1.nome }, p2: { nome: info.p2.nome } };
     impostaNomeGiocatore('p1', info.p1.nome);
     impostaNomeGiocatore('p2', info.p2.nome);
+    vestiVersus(info.p1.nome, info.p2.nome);
     impostaPannelli();
     nuovoSet();
 
@@ -659,6 +661,7 @@ async function preparaAmichevole(idSfida) {
     config = { formato: info.formato, etichetta: `Friendly · ${info.categoria}`, p1: { nome: info.p1.nome }, p2: { nome: info.p2.nome } };
     impostaNomeGiocatore('p1', info.p1.nome);
     impostaNomeGiocatore('p2', info.p2.nome);
+    vestiVersus(info.p1.nome, info.p2.nome);
     impostaPannelli();
     nuovoSet();
 
@@ -1369,6 +1372,37 @@ function vestiPalestra(gym) {
         document.body.prepend(scritta);
     }
     return tema;
+}
+
+// Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
+// del primo (colore, motivo, nome gigante) con il suo avatar grande e il suo Pokémon compagno, a destra lo stesso per il secondo (stile in style-versus.css).
+async function vestiVersus(nomeP1, nomeP2) {
+    try {
+        if (document.body.classList.contains('palestra') || !window.firebase || !self.Palestra) return;
+        const db = firebase.database();
+        const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), caricaAspetto(db, nomeP2)]);
+        const SP = self.SpritePkm;
+        const lato = (a, nome, classe) => {
+            const t = self.Palestra.temaPalestra(a, self.PaginaPubblica, self.Cosmetici);
+            const box = el('div', { class: `vs-lato ${classe}` });
+            for (const [k, v] of Object.entries(t.variabili)) box.style.setProperty(k, v);
+            const testo = String(nome || a.nome || '').toUpperCase();
+            const righe = Array.from({ length: 6 }, (_, k) => el('div', { class: 'vs-scritta-riga', style: `--k:${k}`, testo: `${testo} ${testo} ${testo}` }));
+            box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
+            if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, onerror: ev => ev.target.remove() }));
+            if (a.compagno && SP) box.append(el('img', { class: 'vs-compagno', src: SP.gif(a.compagno.nome, a.compagno.shiny), alt: '', draggable: 'false', 'data-pkm': a.compagno.nome, onerror: ev => { if (!SP.ritenta(ev.target)) ev.target.remove(); } }));
+            return box;
+        };
+        const sinistra = lato(a1, nomeP1, 'vs-sx'), destra = lato(a2, nomeP2, 'vs-dx');
+        // chi gioca sta sempre a sinistra (come nelle colonne dei player): se è il secondo, i due lati si scambiano
+        const fondo = el('div', { class: 'vs-sfondo', 'aria-hidden': 'true' }, ...(mioLato === 'p2' ? [destra, sinistra] : [sinistra, destra]), el('div', { class: 'vs-taglio' }));
+        if (mioLato === 'p2') { sinistra.className = sinistra.className.replace('vs-sx', 'vs-dx'); destra.className = destra.className.replace('vs-dx', 'vs-sx'); }
+        document.querySelector('.vs-sfondo')?.remove();
+        document.body.prepend(fondo);
+        document.body.classList.add('versus');
+    } catch (e) {
+        console.warn('Versus background not drawn', e);
+    }
 }
 
 /** L'insegna in alto nel simulatore, in palestra: chi la tiene (faccia, aura, nome con il suo font e il suo effetto), la tappa e il vantaggio, sempre in vista */

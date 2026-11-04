@@ -1,0 +1,44 @@
+/* =====================================================================
+   SFONDO "SFIDA" DELLE PARTITE TRA DUE ALLENATORI (battle-ui.js, vestiVersus)
+   ---------------------------------------------------------------------
+   La pagina è tagliata in diagonale: a sinistra la carta del primo (chi gioca sta a sinistra), a destra quella del secondo. Ognuna prende lo sfondo della pagina pubblica del suo
+   allenatore (le variabili --pp-* sono scritte sul suo riquadro, Palestra.temaPalestra), con il nome gigante in contorno, il suo avatar grande e il suo Pokémon compagno.
+   Sta dietro a tutto (z-index -1) e non si tocca. Nell'app (telefono) la battaglia ha il suo sfondo scuro: lì non c'è.
+   ===================================================================== */
+body.versus { background: #1b1b22; }
+.vs-sfondo { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.vs-lato {
+    position: absolute; inset: 0; overflow: hidden;
+    background-color: var(--pp-sfondo);
+    background-image: var(--pp-sfondo-img);
+    background-size: var(--pp-sfondo-dim);
+    background-position: var(--pp-sfondo-pos);
+}
+.vs-sx { clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%); }
+.vs-dx { clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%); }
+/* il taglio: una banda nera lungo la diagonale */
+.vs-taglio { position: absolute; inset: 0; background: #000; clip-path: polygon(calc(60% - 5px) 0, calc(60% + 5px) 0, calc(40% + 5px) 100%, calc(40% - 5px) 100%); }
+
+.vs-scritta { position: absolute; top: 0; bottom: 0; width: 62%; display: flex; flex-direction: column; justify-content: center; opacity: .22; transform: rotate(-9deg) scale(1.3); }
+.vs-sx .vs-scritta { left: 0; }
+.vs-dx .vs-scritta { right: 0; align-items: flex-end; }
+.vs-scritta-riga {
+    font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+    font-size: clamp(70px, 12vw, 200px); line-height: .98; white-space: nowrap;
+    color: transparent; -webkit-text-stroke: 3px var(--pp-sfondo-ink);
+}
+.vs-sx .vs-scritta-riga { margin-left: calc(var(--k) * -9vw - 4vw); }
+.vs-dx .vs-scritta-riga { margin-right: calc(var(--k) * -9vw - 4vw); }
+
+.vs-avatar { position: absolute; bottom: 0; height: min(56vh, 560px); width: auto; image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--pal-aura, transparent)) drop-shadow(0 0 16px var(--pal-aura, transparent)) drop-shadow(6px 6px 0 rgba(0, 0, 0, .3)); }
+.vs-sx .vs-avatar { left: 1vw; }
+.vs-dx .vs-avatar { right: 1vw; transform: scaleX(-1); }
+.vs-compagno { position: absolute; bottom: 3vh; height: min(22vh, 220px); width: auto; max-width: 18vw; object-fit: contain; object-position: center bottom; filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, .3)); }
+.vs-sx .vs-compagno { left: 12vw; }
+.vs-dx .vs-compagno { right: 12vw; transform: scaleX(-1); }
+
+html.app .vs-sfondo { display: none; }
+@media (max-width: 720px) {
+    .vs-avatar { height: 40vh; }
+    .vs-compagno { height: 18vh; }
+}

@@ -309,3 +309,16 @@ test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si so
         assert.deepEqual(r.battle.sides[1].active[0].boosts.atk, 1);
     } finally { fs.unlinkSync(copia); }
 });
+
+test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagonale (avatar, nome gigante, compagno)', () => {
+    const bu = leggi('docs', 'battle-ui.js');
+    assert.match(bu, /async function vestiVersus\(nomeP1, nomeP2\)/);
+    assert.equal((bu.match(/vestiVersus\(info\.p1\.nome, info\.p2\.nome\);/g) || []).length, 2, 'ufficiale e amichevole');
+    assert.match(bu, /vestiVersus\(dati\.giocatori\.p1\.nome, dati\.giocatori\.p2\.nome\);/, 'prova dal sito');
+    assert.match(bu, /mioLato === 'p2' \? \[destra, sinistra\]/, 'chi gioca sta a sinistra');
+    assert.match(bu, /if \(document\.body\.classList\.contains\('palestra'\)/, 'la palestra ha il suo sfondo');
+    assert.match(leggi('docs', 'team-sito.js'), /export async function caricaAspetto\(db, nomeAllenatore\)/);
+    assert.match(leggi('docs', 'battle.html'), /href="style-versus\.css"/);
+    const css = leggi('docs', 'style-versus.css');
+    for (const re of [/\.vs-sx \{ clip-path: polygon/, /\.vs-dx \{ clip-path: polygon/, /\.vs-taglio/, /\.vs-scritta-riga/, /\.vs-avatar/, /\.vs-compagno/, /html\.app \.vs-sfondo \{ display: none; \}/]) assert.match(css, re);
+});
