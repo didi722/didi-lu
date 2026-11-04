@@ -70,6 +70,7 @@ export class BattagliaLocale {
     _preparaVantaggio(battle) {
         if (!battle || typeof battle.endTurn !== 'function' || !self.Palestra) return;
         const v = this.vantaggio, originale = battle.endTurn.bind(battle);
+        try { self.Palestra.proteggi(battle, v.id, v.lato || 'p2'); } catch (errore) { console.warn('Gym boost protection not set:', errore); }   // prima dei Pokémon d'apertura (Intimidate...)
         let fatto = false;
         battle.endTurn = function () {
             if (!fatto && this.turn === 0) {

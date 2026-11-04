@@ -17,6 +17,7 @@
 //   Palestra.nuovaSfida(squadre) / avanza(sfida) / azzera(sfida) / finita(sfida)   lo stato di chi sfida (puro)
 //   Palestra.chiaveSfida / leggiSfida / salvaSfida   i progressi di chi sfida, nel suo browser (localStorage passato da fuori)
 //   Palestra.applica(battle, vantaggio)    applica il vantaggio a una battaglia del simulatore appena iniziata (prima del turno 1), annunciandolo nel log
+//   Palestra.proteggi(battle, vantaggio)   i boost del vantaggio non si abbassano per abilità (da chiamare appena creata la partita)
 //   Palestra.testoAnnuncio(vantaggio, gen) il testo che avvisa chi sfida del vantaggio
 //   Palestra.temaPalestra(aspetto, PaginaPubblica, Cosmetici)   colori, sfondo ed effetti della palestra in battaglia (dalla pagina pubblica del capopalestra)
 //
@@ -30,22 +31,23 @@
 
     const TAPPE = 3;
 
-    // Un vantaggio di campo mette un effetto per `turni` turni, senza che nessuno l'abbia attivato; uno di boost alza le statistiche dei due Pokémon in campo all'inizio.
+    // Un vantaggio di campo vale per TUTTA la partita: nessuno lo può togliere né sostituire (Drizzle non spegne il sole, un altro Trick Room non annulla il primo, Psychic Surge non
+    // cancella il campo erboso...). Uno di boost alza le statistiche dei due Pokémon in campo all'inizio e le abilità (Intimidate...) non le possono abbassare, le mosse sì.
     // `cond`: l'id della condizione del simulatore; `dove`: 'meteo' | 'terreno' | 'campo' (effetto che vale per tutti) | 'lato' (solo per la palestra); `gen`: generazione minima.
     const VANTAGGI = [
-        { id: 'tailwind', tipo: 'campo', icona: '🌪️', nome: 'Tailwind', descr: 'Tailwind on the gym side for 3 turns', annuncio: "A roaring tailwind blows behind the gym's team: its Pokémon are twice as fast for 3 turns!", cond: 'tailwind', dove: 'lato', turni: 3, gen: 4 },
-        { id: 'rain', tipo: 'campo', icona: '🌧️', nome: 'Rain', descr: 'Rain for 5 turns', annuncio: 'Rain hammers the arena for 5 turns. Water moves get stronger, Fire moves get soaked!', cond: 'raindance', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'sun', tipo: 'campo', icona: '☀️', nome: 'Sun', descr: 'Harsh sunlight for 5 turns', annuncio: 'The sun blazes over the arena for 5 turns. Fire moves get stronger, Water moves fizzle!', cond: 'sunnyday', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'sand', tipo: 'campo', icona: '🏜️', nome: 'Sandstorm', descr: 'A sandstorm for 5 turns', annuncio: 'A sandstorm sweeps the arena for 5 turns. Everyone except Rock, Ground and Steel gets battered every turn!', cond: 'sandstorm', dove: 'meteo', turni: 5, gen: 2 },
-        { id: 'snow', tipo: 'campo', icona: '❄️', nome: 'Snow / Hail', descr: 'Snow (Hail before Gen 9) for 5 turns', annuncio: 'A blizzard rolls over the arena for 5 turns. Ice types toughen up, and Blizzard never misses!', annuncioAntica: 'A hailstorm pelts the arena for 5 turns. Everyone except Ice types gets battered every turn, and Blizzard never misses!', cond: 'snowscape', condAntica: 'hail', dove: 'meteo', turni: 5, gen: 3 },
-        { id: 'electric', tipo: 'campo', icona: '⚡', nome: 'Electric Terrain', descr: 'Electric Terrain for 5 turns', annuncio: 'The floor crackles with Electric Terrain for 5 turns: grounded Electric moves hit harder and nobody can fall asleep!', cond: 'electricterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'grassy', tipo: 'campo', icona: '🌿', nome: 'Grassy Terrain', descr: 'Grassy Terrain for 5 turns', annuncio: 'Grass sprouts across the arena for 5 turns: grounded Grass moves hit harder and grounded Pokémon heal a little each turn!', cond: 'grassyterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'psychic', tipo: 'campo', icona: '🔮', nome: 'Psychic Terrain', descr: 'Psychic Terrain for 5 turns', annuncio: 'A strange aura fills the arena for 5 turns: grounded Psychic moves hit harder and priority moves are blocked!', cond: 'psychicterrain', dove: 'terreno', turni: 5, gen: 7 },
-        { id: 'misty', tipo: 'campo', icona: '🌫️', nome: 'Misty Terrain', descr: 'Misty Terrain for 5 turns', annuncio: 'A soft mist covers the arena for 5 turns: grounded Pokémon cannot be put into a status condition and Dragon moves are weakened!', cond: 'mistyterrain', dove: 'terreno', turni: 5, gen: 6 },
-        { id: 'trickroom', tipo: 'campo', icona: '🌀', nome: 'Trick Room', descr: 'Trick Room for 5 turns', annuncio: 'The arena twists into a Trick Room for 5 turns: the slowest Pokémon move first!', cond: 'trickroom', dove: 'campo', turni: 5, gen: 4 },
-        { id: 'boost-att', tipo: 'boost', icona: '🗡️', nome: '+2 Attack & Sp. Atk', descr: '+2 Attack and Special Attack to the gym leads', annuncio: "The gym's lead Pokémon step in fired up: +2 Attack and +2 Sp. Atk from the very first turn!", boost: { atk: 2, spa: 2 }, gen: 1 },
-        { id: 'boost-dif', tipo: 'boost', icona: '🛡️', nome: '+2 Defense & Sp. Def', descr: '+2 Defense and Special Defense to the gym leads', annuncio: "The gym's lead Pokémon step in armoured up: +2 Defense and +2 Sp. Def from the very first turn!", boost: { def: 2, spd: 2 }, gen: 1 },
-        { id: 'boost-vel', tipo: 'boost', icona: '💨', nome: '+2 Speed', descr: '+2 Speed to the gym leads', annuncio: "The gym's lead Pokémon step in at full tilt: +2 Speed from the very first turn!", boost: { spe: 2 }, gen: 1 }
+        { id: 'tailwind', tipo: 'campo', icona: '🌪️', nome: 'Tailwind', descr: 'Tailwind on the gym side, all battle long', annuncio: "A roaring tailwind blows behind the gym's team for the whole battle: its Pokémon are twice as fast, and nothing can stop it!", cond: 'tailwind', dove: 'lato', gen: 4 },
+        { id: 'rain', tipo: 'campo', icona: '🌧️', nome: 'Rain', descr: 'Rain all battle long', annuncio: 'Rain pours over the arena for the whole battle. Water moves get stronger, Fire moves get soaked, and nobody can change the weather!', cond: 'raindance', dove: 'meteo', gen: 2 },
+        { id: 'sun', tipo: 'campo', icona: '☀️', nome: 'Sun', descr: 'Harsh sunlight all battle long', annuncio: 'The sun blazes over the arena for the whole battle. Fire moves get stronger, Water moves fizzle, and nobody can change the weather!', cond: 'sunnyday', dove: 'meteo', gen: 2 },
+        { id: 'sand', tipo: 'campo', icona: '🏜️', nome: 'Sandstorm', descr: 'A sandstorm all battle long', annuncio: 'A sandstorm sweeps the arena for the whole battle. Everyone except Rock, Ground and Steel gets battered every turn, and nobody can change the weather!', cond: 'sandstorm', dove: 'meteo', gen: 2 },
+        { id: 'snow', tipo: 'campo', icona: '❄️', nome: 'Snow / Hail', descr: 'Snow (Hail before Gen 9) all battle long', annuncio: 'A blizzard rolls over the arena for the whole battle. Ice types toughen up, Blizzard never misses, and nobody can change the weather!', annuncioAntica: 'A hailstorm pelts the arena for the whole battle. Everyone except Ice types gets battered every turn, Blizzard never misses, and nobody can change the weather!', cond: 'snowscape', condAntica: 'hail', dove: 'meteo', gen: 3 },
+        { id: 'electric', tipo: 'campo', icona: '⚡', nome: 'Electric Terrain', descr: 'Electric Terrain all battle long', annuncio: 'The floor crackles with Electric Terrain for the whole battle: grounded Electric moves hit harder, nobody can fall asleep, and no other terrain can take its place!', cond: 'electricterrain', dove: 'terreno', gen: 6 },
+        { id: 'grassy', tipo: 'campo', icona: '🌿', nome: 'Grassy Terrain', descr: 'Grassy Terrain all battle long', annuncio: 'Grass sprouts across the arena for the whole battle: grounded Grass moves hit harder, grounded Pokémon heal a little each turn, and no other terrain can take its place!', cond: 'grassyterrain', dove: 'terreno', gen: 6 },
+        { id: 'psychic', tipo: 'campo', icona: '🔮', nome: 'Psychic Terrain', descr: 'Psychic Terrain all battle long', annuncio: 'A strange aura fills the arena for the whole battle: grounded Psychic moves hit harder, priority moves are blocked, and no other terrain can take its place!', cond: 'psychicterrain', dove: 'terreno', gen: 7 },
+        { id: 'misty', tipo: 'campo', icona: '🌫️', nome: 'Misty Terrain', descr: 'Misty Terrain all battle long', annuncio: 'A soft mist covers the arena for the whole battle: grounded Pokémon cannot be put into a status condition, Dragon moves are weakened, and no other terrain can take its place!', cond: 'mistyterrain', dove: 'terreno', gen: 6 },
+        { id: 'trickroom', tipo: 'campo', icona: '🌀', nome: 'Trick Room', descr: 'Trick Room all battle long', annuncio: 'The arena twists into a Trick Room for the whole battle: the slowest Pokémon move first, and using Trick Room again will not undo it!', cond: 'trickroom', dove: 'campo', gen: 4 },
+        { id: 'boost-att', tipo: 'boost', icona: '🗡️', nome: '+2 Attack & Sp. Atk', descr: '+2 Attack and Special Attack to the gym leads', annuncio: "The gym's lead Pokémon step in fired up: +2 Attack and +2 Sp. Atk from the very first turn. Abilities like Intimidate can't bring them down!", boost: { atk: 2, spa: 2 }, gen: 1 },
+        { id: 'boost-dif', tipo: 'boost', icona: '🛡️', nome: '+2 Defense & Sp. Def', descr: '+2 Defense and Special Defense to the gym leads', annuncio: "The gym's lead Pokémon step in armoured up: +2 Defense and +2 Sp. Def from the very first turn. Abilities can't bring them down!", boost: { def: 2, spd: 2 }, gen: 1 },
+        { id: 'boost-vel', tipo: 'boost', icona: '💨', nome: '+2 Speed', descr: '+2 Speed to the gym leads', annuncio: "The gym's lead Pokémon step in at full tilt: +2 Speed from the very first turn. Abilities can't slow them down!", boost: { spe: 2 }, gen: 1 }
     ];
     const perId = id => VANTAGGI.find(v => v.id === id) || null;
     const vantaggiPer = gen => VANTAGGI.filter(v => v.gen <= (Number(gen) || 9));
@@ -170,10 +172,17 @@
     }
 
     // ---- il simulatore -----------------------------------------------------------------------------
+    /** Gli id delle condizioni del simulatore che un vantaggio di campo tiene fisse (per scrivere "all battle" invece dei turni che restano) */
+    function condizioniFisse(vantaggio) {
+        const v = typeof vantaggio === 'string' ? perId(vantaggio) : vantaggio;
+        return v && v.tipo === 'campo' ? [v.cond, v.condAntica].filter(Boolean) : [];
+    }
+
     /**
      * Applica il vantaggio a una battaglia del simulatore (Battle di @pkmn/sim) i cui Pokémon sono già in campo ma il turno 1 non è ancora cominciato.
-     * Il lato della palestra è `lato` ('p2' di solito). Ritorna { ok, righe? } (niente se il vantaggio non esiste in quella generazione).
-     * Gli effetti di campo partono come se nessuno li avesse attivati (si vede nel log come un effetto "naturale"); i boost vanno ai Pokémon in campo della palestra.
+     * Il lato della palestra è `lato` ('p2' di solito). Ritorna { ok } (ok: false se il vantaggio non esiste in quella generazione).
+     * Gli effetti di campo partono come se nessuno li avesse attivati, durano tutta la partita (durata 0 = infinita) e non si possono più togliere né sostituire; i boost vanno ai
+     * Pokémon in campo della palestra e le abilità (Intimidate...) non possono abbassarli, le mosse sì.
      * Prima dell'effetto scrive nel log una riga che lo annuncia ("GYM ADVANTAGE: ..."), così chi sfida non se lo perde: `nome` è il nome della palestra.
      */
     function applica(battle, vantaggio, lato = 'p2', nome = '') {
@@ -187,6 +196,7 @@
         if (v.tipo === 'boost') {
             annuncia();
             for (const p of attivi) battle.boost(v.boost, p, p, null, true, true);
+            proteggi(battle, v, lato);
             return { ok: true };
         }
         const gen = battle.gen || 9;
@@ -195,23 +205,72 @@
         const esiste = battle.dex.conditions.get(cond);
         if (!esiste || !esiste.exists) return { ok: false };
         annuncia();
+        const field = battle.field;
         if (v.dove === 'meteo') {
-            battle.field.setWeather(cond, fonte);
-            if (battle.field.weatherState) battle.field.weatherState.duration = v.turni;
+            field.setWeather(cond, fonte);
+            if (field.weatherState) field.weatherState.duration = 0;
+            // niente più cambi di meteo (Drizzle, Rain Dance, Sunny Day...) né fine anticipata
+            field.setWeather = () => false;
+            field.clearWeather = () => false;
         } else if (v.dove === 'terreno') {
-            battle.field.setTerrain(cond, fonte);
-            if (battle.field.terrainState) battle.field.terrainState.duration = v.turni;
+            field.setTerrain(cond, fonte);
+            if (field.terrainState) field.terrainState.duration = 0;
+            field.setTerrain = () => false;
+            field.clearTerrain = () => false;
         } else if (v.dove === 'campo') {
-            battle.field.addPseudoWeather(cond, fonte);
-            const st = battle.field.pseudoWeather && battle.field.pseudoWeather[cond];
-            if (st) st.duration = v.turni;
+            field.addPseudoWeather(cond, fonte);
+            const st = field.pseudoWeather && field.pseudoWeather[cond];
+            if (st) st.duration = 0;
+            // un secondo Trick Room di solito annulla il primo: qui non succede
+            const togli = field.removePseudoWeather.bind(field);
+            field.removePseudoWeather = id => (String(id).replace(/[^a-z0-9]/gi, '').toLowerCase() === cond ? false : togli(id));
         } else {
             side.addSideCondition(cond, fonte);
             const st = side.sideConditions && side.sideConditions[cond];
-            if (st) st.duration = v.turni;
+            if (st) st.duration = 0;
+            const togli = side.removeSideCondition.bind(side);
+            side.removeSideCondition = id => (String(id).replace(/[^a-z0-9]/gi, '').toLowerCase() === cond ? false : togli(id));
         }
         return { ok: true };
     }
 
-    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, testoAnnuncio, temaPalestra };
+    /**
+     * Da chiamare appena la partita è creata (i Pokémon d'apertura, con Intimidate, entrano in campo prima che il vantaggio parta): da lì le abilità avversarie non abbassano
+     * le statistiche che il vantaggio di boost alza. Per gli altri vantaggi non fa niente. Si può chiamare più volte.
+     */
+    function proteggi(battle, vantaggio, lato = 'p2') {
+        const v = typeof vantaggio === 'string' ? perId(vantaggio) : vantaggio;
+        if (!battle || !v || v.tipo !== 'boost' || battle.gymProtetto) return false;
+        const side = battle.sides.find(s => s.id === lato);
+        if (!side) return false;
+        battle.gymProtetto = true;
+        proteggiBoost(battle, side, Object.keys(v.boost));
+        return true;
+    }
+
+    /** Le statistiche alzate dal vantaggio non scendono per colpa di un'abilità avversaria (Intimidate...): sono le abilità a contare, le mosse (Parting Shot...) le abbassano lo stesso */
+    function proteggiBoost(battle, side, stat) {
+        const originale = battle.boost.bind(battle);
+        battle.boost = function (boost, target, source, effect, ...resto) {
+            const bersaglio = target || (this.event && this.event.target);
+            const chi = source || (this.event && this.event.source);
+            const causa = effect || this.effect;
+            if (bersaglio && bersaglio.side === side && chi && chi !== bersaglio && causa && causa.effectType === 'Ability' && boost) {
+                const resta = {};
+                let tolto = false;
+                for (const [k, n] of Object.entries(boost)) {
+                    if (n < 0 && stat.includes(k)) tolto = true;
+                    else resta[k] = n;
+                }
+                if (tolto) {
+                    this.add('-message', `${bersaglio.name}'s gym boost can't be shaken by abilities!`);
+                    if (!Object.keys(resta).length) return false;
+                    boost = resta;
+                }
+            }
+            return originale(boost, target, source, effect, ...resto);
+        };
+    }
+
+    return { TAPPE, VANTAGGI, perId, vantaggiPer, generazioneDi, eDoppio, tappeDi, problemi, nuovaSfida, avanza, azzera, finita, chiaveSfida, leggiSfida, salvaSfida, applica, proteggi, condizioniFisse, testoAnnuncio, temaPalestra };
 });

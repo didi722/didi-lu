@@ -28,11 +28,12 @@ test('vantaggi: id unici, campo o boost, con la loro descrizione; quelli che esi
     for (const v of P.VANTAGGI) {
         assert.ok(['campo', 'boost'].includes(v.tipo) && v.nome && v.descr, v.id);
         assert.ok(v.icona && v.annuncio && v.annuncio.length > 30, `${v.id}: icona e testo dell'annuncio`);
-        if (v.tipo === 'campo') assert.ok(v.cond && ['meteo', 'terreno', 'campo', 'lato'].includes(v.dove) && v.turni > 0, v.id);
+        if (v.tipo === 'campo') assert.ok(v.cond && ['meteo', 'terreno', 'campo', 'lato'].includes(v.dove) && v.turni === undefined, `${v.id}: dura tutta la partita, niente turni`);
         else assert.ok(v.boost && Object.values(v.boost).every(n => n === 2), v.id);
     }
-    assert.equal(P.perId('tailwind').turni, 3);
-    assert.equal(P.perId('rain').turni, 5);
+    assert.deepEqual(P.condizioniFisse('tailwind'), ['tailwind']);
+    assert.deepEqual(P.condizioniFisse('snow'), ['snowscape', 'hail']);
+    assert.deepEqual(P.condizioniFisse('boost-att'), []);
     assert.equal(P.perId('boh'), null);
     const gen3 = P.vantaggiPer(3).map(v => v.id);
     assert.ok(gen3.includes('rain') && gen3.includes('boost-vel') && !gen3.includes('tailwind') && !gen3.includes('electric'));
@@ -125,12 +126,15 @@ test('applica: nel simulatore vero gli effetti partono prima del turno 1 (meteo,
     assert.match(prima(await gioca('snow', 'gen8doublescustomgame@@@Picked Team Size = 4')).join('\n'), /\|-weather\|Hail/);
     const vecchia = await gioca('electric', 'gen5doublescustomgame@@@Picked Team Size = 4');
     assert.equal(vecchia.esito.ok, false);
-    // durata: Tailwind 3 turni, pioggia 5 (il meteo dura dal turno 1 fino al quinto compreso)
-    const tail = await gioca('tailwind', G9, 4);
-    assert.ok(tail.log.some(l => /\|-sideend\|p2: B\|move: Tailwind/.test(l)), 'Tailwind finisce');
-    assert.ok(tail.log.findIndex(l => /\|-sideend/.test(l)) > 0);
-    const pioggia = await gioca('rain', G9, 3);
-    assert.ok(!pioggia.log.some(l => /\|-weather\|none/.test(l)), 'dopo 3 turni la pioggia c\'è ancora');
+    // dura tutta la partita: dopo molti turni Tailwind, pioggia e Trick Room ci sono ancora, e non finiscono mai
+    const tail = await gioca('tailwind', G9, 6);
+    assert.ok(!tail.log.some(l => /\|-sideend\|p2: B/.test(l)), 'Tailwind della palestra non finisce');
+    assert.ok(tail.battle.sides[1].sideConditions.tailwind);
+    const pioggia = await gioca('rain', G9, 8);
+    assert.ok(!pioggia.log.some(l => /\|-weather\|none/.test(l)), 'la pioggia non finisce');
+    assert.equal(pioggia.battle.field.weather, 'raindance');
+    const stanza = await gioca('trickroom', G9, 8);
+    assert.ok(stanza.battle.field.pseudoWeather.trickroom && !stanza.log.some(l => /\|-fieldend/.test(l)), 'Trick Room non finisce');
     assert.deepEqual(P.applica(null, 'rain'), { ok: false });
     assert.deepEqual(P.applica(att.battle, 'non-esiste'), { ok: false });
 });
@@ -166,6 +170,17 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(ui, /Challengers never get to peek at your teams/);
     assert.match(ui, /against teams you've never seen/);
     assert.match(ui, /battle\.html\?cpu=1&palestra=/);
+    // ingresso a passi: un format alla volta, poi il riepilogo; i team si scelgono con le carte dei propri team (con i Pokémon)
+    assert.match(ui, /function passoIniziale\(\)/);
+    assert.match(ui, /Next: stage \$\{i \+ 2\} →/);
+    assert.match(ui, /class="pal-squadra\$\{S\.scelte\[i\] === x\.id \? ' pal-scelta' : ''\}"/);
+    assert.match(ui, /SP\.riserva\(img, SP\.id\(img\.dataset\.pkm\)\)/, 'le GIF che mancano ripiegano sul Pokédex');
+    assert.match(leggi('docs', 'palestra.html'), /<script src="sprites\/indice\.js"><\/script>\s*<script src="sprite-pkm\.js"><\/script>\s*<script src="palestra\.js">/);
+    assert.match(leggi('docs', 'style-palestra.css'), /\.pal-passi \{/);
+    // vantaggio di campo fisso: il campo mostra "all battle" invece dei turni
+    assert.match(bu, /permanenti: cpu && cpu\.palestra \? self\.Palestra\.condizioniFisse\(cpu\.palestra\.vantaggio\) : \[\]/);
+    assert.match(leggi('docs', 'battle-extra.js'), /S\.permanenti\.has\(idDi\(battle\.weather\)\) \? ALL_BATTLE/);
+    assert.match(mb, /self\.Palestra\.proteggi\(battle, v\.id, v\.lato \|\| 'p2'\)/, 'la protezione dei boost parte prima dei Pokémon d\'apertura');
     assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
     assert.match(leggi('docs', 'style-palestra.css'), /body\.pg-palestra \{ overflow-x: hidden; overflow-y: auto; \}/);
 });
@@ -250,4 +265,47 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /body\.palestra #campo \.backdrop/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
     // il nero ha ombre scure semitrasparenti (regola del sito)
     assert.match(css, /\.pal-annuncio \{[^}]*box-shadow: 8px 8px 0 rgba\(0, 0, 0, \.55\)/);
+});
+
+test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si sostituiscono; Intimidate non abbassa i boost (le mosse sì)', async () => {
+    const copia = path.join(os.tmpdir(), `pkmn-sim-perm-${process.pid}.mjs`);
+    fs.copyFileSync(path.join(__dirname, '..', 'docs', 'pkmn-sim.js'), copia);
+    try {
+        const { BattleStreams, Teams } = await import(pathToFileURL(copia).href);
+        const mk = t => Teams.pack(Teams.import(t));
+        const gym = mk('Snorlax\nLevel: 50\n- Protect\n- Splash\n\nBlissey\nLevel: 50\n- Protect\n- Splash\n\nChansey\nLevel: 50\n- Protect\n- Splash\n\nMunchlax\nLevel: 50\n- Protect\n- Splash');
+        const sfid = mk('Pelipper\nAbility: Drizzle\nLevel: 50\n- Trick Room\n- Tailwind\n- Sunny Day\n- Splash\n\nIncineroar\nAbility: Intimidate\nLevel: 50\n- Parting Shot\n- Splash\n\nIndeedee-F\nAbility: Psychic Surge\nLevel: 50\n- Protect\n- Splash\n\nTornadus\nLevel: 50\n- Protect\n- Splash');
+        const sfid2 = mk('Indeedee-F\nAbility: Psychic Surge\nLevel: 50\n- Protect\n- Splash\n\nIncineroar\nAbility: Intimidate\nLevel: 50\n- Parting Shot\n- Splash\n\nPelipper\nLevel: 50\n- Protect\n- Splash\n\nTornadus\nLevel: 50\n- Protect\n- Splash');
+        async function gioca(vantaggio, squadra, mosse) {
+            const flusso = new BattleStreams.BattleStream();
+            const s = BattleStreams.getPlayerStreams(flusso);
+            const log = []; (async () => { for await (const c of s.spectator) log.push(...c.split('\n')); })();
+            for (const l of ['p1', 'p2']) (async () => { for await (const c of s[l]) void c; })();
+            s.omniscient.write(`>start ${JSON.stringify({ formatid: 'gen9doublescustomgame@@@Picked Team Size = 4' })}\n>player p1 ${JSON.stringify({ name: 'A', team: squadra })}\n>player p2 ${JSON.stringify({ name: 'B', team: gym })}`);
+            P.proteggi(flusso.battle, vantaggio, 'p2');
+            const originale = flusso.battle.endTurn.bind(flusso.battle);
+            flusso.battle.endTurn = function () { if (this.turn === 0) P.applica(this, vantaggio, 'p2'); return originale(); };
+            s.p1.write('team 1234'); s.p2.write('team 1234');
+            await new Promise(r => setTimeout(r, 200));
+            for (const m of mosse) { s.p1.write(m); s.p2.write('move 2, move 2'); await new Promise(r => setTimeout(r, 120)); }
+            return { log, battle: flusso.battle };
+        }
+        // Pelipper (Drizzle) e Sunny Day non tolgono il sole
+        let r = await gioca('sun', sfid, ['move 3, move 2', 'move 3, move 2']);
+        assert.equal(r.battle.field.weather, 'sunnyday');
+        // un altro Trick Room non annulla quello della palestra
+        r = await gioca('trickroom', sfid, ['move 1, move 2', 'move 1, move 2']);
+        assert.ok(r.battle.field.pseudoWeather.trickroom);
+        assert.ok(!r.log.some(l => /\|-fieldend/.test(l)));
+        // Psychic Surge non toglie il campo erboso
+        r = await gioca('grassy', sfid2, ['move 2, move 2']);
+        assert.equal(r.battle.field.terrain, 'grassyterrain');
+        // Intimidate (abilità) non abbassa l'attacco, nemmeno quando entra prima che il vantaggio parta; Parting Shot (mossa) sì
+        r = await gioca('boost-att', sfid2, ['move 2, move 2']);
+        assert.deepEqual(r.battle.sides[1].active.map(p => [p.boosts.atk, p.boosts.spa]), [[2, 2], [2, 2]]);
+        assert.ok(r.log.some(l => /can't be shaken by abilities/.test(l)));
+        r = await gioca('boost-att', sfid2, ['move 2, move 1 1', 'move 2, move 1 1']);
+        assert.ok(r.log.some(l => /\|-unboost\|p2a: Snorlax\|atk\|1/.test(l)), 'Parting Shot abbassa');
+        assert.deepEqual(r.battle.sides[1].active[0].boosts.atk, 1);
+    } finally { fs.unlinkSync(copia); }
 });
