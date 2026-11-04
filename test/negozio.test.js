@@ -123,7 +123,7 @@ test('cablaggio: lo Shop è una pagina (non sta più nella campanella); shiny ne
 test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsante: prezzo (che apre la conferma), "Make shiny" gratis se già comprato, "Back to normal" se è shiny; il testo è protetto', () => {
     const prezzo = nome => C.prezzoShiny(nome).prezzo;
     const base = {
-        saldo: 500,
+        saldo: 1500,
         pokemon: [{ nome: 'Garchomp', shiny: true, brillante: 'https://x/g-s.gif', normale: 'https://x/g.gif' }, { nome: 'Incineroar', shiny: false, normale: 'https://x/i.gif', brillante: 'https://x/i-s.gif' },
             { nome: 'Mewtwo', shiny: false }, { nome: 'Pichu', shiny: false, comprato: true }, { nome: '<i>X</i>', shiny: false }]
     };
@@ -133,7 +133,7 @@ test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsa
     assert.match(h, /<li class="ng-carta ng-shiny" data-tipo="pokemon"><span class="ng-tondo"><img src="https:\/\/x\/g-s\.gif"[^>]*><\/span><b class="ng-tag">Garchomp<\/b><button type="button" class="ng-bottone" data-ng="shiny-off" data-i="0">Back to normal<\/button>/);
     // non shiny: la gif normale, il nome nel tag e il prezzo della sua specie nel pulsante
     assert.match(h, new RegExp(`<img src="https://x/i\\.gif"[^>]*></span><b class="ng-tag">Incineroar</b><button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="1">${prezzo('Incineroar')} 🪙</button>`));
-    assert.match(h, new RegExp(`Mewtwo</b><button[^>]*data-ng="shiny" data-i="2" disabled>${prezzo('Mewtwo')} 🪙`), 'un leggendario a 500 monete è spento');
+    assert.match(h, new RegExp(`Mewtwo</b><button[^>]*data-ng="shiny" data-i="2" disabled>${prezzo('Mewtwo')} 🪙`), 'un leggendario a 1500 monete è spento');
     // già comprato e poi tolto: si rimette gratis
     assert.match(h, /Pichu<\/b><button type="button" class="ng-bottone ng-compra" data-ng="shiny-on" data-i="3">Make shiny · free<\/button>/);
     assert.doesNotMatch(h, /<i>X<\/i>/, 'il nome è protetto');
@@ -144,7 +144,7 @@ test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsa
     assert.match(h, /go back to normal and make it shiny again for free/);
     // senza monete o mentre si lavora i pulsanti sono spenti; quelli gratis si spengono solo mentre si lavora
     const spenti = stato => (N.shinyTeamHtml({ ...base, ...stato }).match(/data-ng="shiny[^"]*" data-i="\d"[^>]*disabled/g) || []).length;
-    assert.equal(spenti({ saldo: 500 }), 1, 'solo il leggendario');
+    assert.equal(spenti({ saldo: 1500 }), 1, 'solo il leggendario');
     assert.equal(spenti({ saldo: prezzo('Mewtwo') }), 0);
     assert.equal(spenti({ saldo: 0 }), 3, 'senza monete: i tre da pagare');
     assert.equal(spenti({ saldo: 99999, occupato: true }), 5, 'mentre si lavora tutti');
