@@ -190,7 +190,7 @@ function descrivi(id, url, nome) {
     const c = Cosmetici.perId(id);
     if (!c || !ESCLUSIVI.includes(c.tipo)) return null;
     if (c.tipo === 'avatar') return { c, tipo: 'avatar', indirizzo: indirizzoAvatar(id), titolo: c.nome };
-    if (c.tipo === 'colore') return { c, tipo: 'colore', indirizzo: Cosmetici.coloreDaId(id), titolo: c.nome };
+    if (c.tipo === 'colore') return { c, tipo: 'colore', indirizzo: Cosmetici.coloreDaId(id), titolo: Cosmetici.coloreDaId(id) };
     const indirizzo = String(url || '').trim();
     if (!/^https?:\/\/\S{4,500}$/i.test(indirizzo) || Cosmetici.idCanzone(indirizzo) !== id) return null;
     return { c, tipo: 'canzone', indirizzo, titolo: String(nome || 'Song').replace(/[\r\n]+/g, ' ').trim().slice(0, 60) || 'Song' };
