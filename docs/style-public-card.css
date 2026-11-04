@@ -1105,6 +1105,7 @@ body.pp-modifica .pp-targhette { top: max(34px, calc(36 * var(--d))); }
     animation: pp-saluta 3.2s ease-in-out 1.2s 2;
 }
 
+a.pp-modifica-btn { text-decoration: none; color: inherit; }
 .pp-modifica-btn:hover { transform: rotate(0deg) translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
 .pp-modifica-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 .pp-modifica-icona { font-size: 1.1rem; line-height: 1; }

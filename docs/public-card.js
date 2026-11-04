@@ -900,10 +900,22 @@
 
     // ---- Proprietario -------------------------------------------------------------------------
 
+    /** Il tasto della palestra (palestra.js): sulla propria pagina per impostarla, su quella di un altro (se ne ha una) per sfidarla */
+    function montaTastoPalestra(mio, chiave) {
+        if (document.getElementById('pp-palestra-btn') || !window.Palestra) return;
+        const pronta = window.Palestra.tappeDi(stato.dati.info && stato.dati.info.palestra).length === window.Palestra.TAPPE;
+        if (!mio && !pronta) return;
+        (document.getElementById('pp-nav') || document.body).append(h('a', { id: 'pp-palestra-btn', class: 'pp-modifica-btn', href: mio ? 'palestra.html?edit=1' : `palestra.html?player=${encodeURIComponent(chiave)}` },
+            h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: mio ? '⚙' : '⚔' }), mio ? ' MY GYM' : ' CHALLENGE GYM'));
+    }
+
     /** Chi è loggato? Se è il proprietario di questa pagina compare il pulsante per modificarla. */
     function controllaProprietario() {
         const utente = String(window.__nomeUtente || '').toLowerCase().trim();
-        if (!stato.dati || !utente || utente !== String(stato.dati.chiave).toLowerCase()) return;
+        if (!stato.dati || !utente) return;
+        const mio = utente === String(stato.dati.chiave).toLowerCase();
+        montaTastoPalestra(mio, stato.dati.chiave);
+        if (!mio) return;
         stato.proprietario = true;
         if (document.getElementById('pp-modifica-btn')) return;
         // dal profilo si arriva con ?edit=1: l'editor si apre da solo, una volta

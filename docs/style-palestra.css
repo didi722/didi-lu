@@ -1,0 +1,36 @@
+/* =====================================================================
+   PALESTRA (palestra.html, palestra-ui.js): una pagina del sito come le altre, nello stile neubrutalista del tema (--nb-*)
+   ===================================================================== */
+/* il modello di base blocca lo scorrimento della pagina: qui si scorre normalmente */
+body.pg-palestra { overflow-x: hidden; overflow-y: auto; }
+body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); max-width: 1000px; margin: 0 auto 0 calc(var(--nb-ads, 220px) + 30px); padding: 34px 26px 90px; box-sizing: border-box; font-family: var(--nb-font-testo, 'Montserrat', sans-serif); color: var(--nb-ink, #000); }
+@media (max-width: 900px) { body.pg-palestra .ads-sidebar { display: none; } body.pg-palestra .pal-pagina { width: 100%; margin-left: 0; padding: 22px 14px 80px; } }
+
+.pal-pagina .ng-msg { margin: 0 0 18px; padding: 10px 12px; color: #000; background: #fff6d6; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 700 .85rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-pagina .ng-msg.shop-errore { background: #ffd9d6; }
+.pal-accedi { font: 700 1rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-titolo { margin: 0 0 8px; font: 900 1.5rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: var(--nb-spaziatura, .06em); text-transform: uppercase; }
+.pal-aiuto { max-width: 70ch; margin: 0 0 22px; font: 600 .85rem/1.45 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .85; }
+
+.pal-tappe { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
+.pal-tappa { display: grid; gap: 10px; padding: 14px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.pal-tappa header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pal-tappa h3 { margin: 0; font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
+.pal-ordine { display: flex; gap: 6px; }
+.pal-tappa label { display: grid; gap: 3px; font: 800 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; }
+.pal-tappa select { width: 100%; box-sizing: border-box; padding: 8px 9px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: 0; font: 600 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-tappa select:disabled { opacity: .5; }
+.pal-descr { margin: 0; font: 600 .75rem/1.35 var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
+.pal-formato { margin: 0; font: 900 1.05rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.pal-stato { padding: 2px 8px 0; background: var(--nb-ink, #000); color: #fff; font: 900 .68rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.pal-done { background: #e9ffe9; }
+.pal-next { background: var(--nb-giallo, #ffbd44); }
+.pal-lock { opacity: .85; }
+
+.pal-azioni { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.pal-pagina .ng-bottone, .pal-link { display: inline-block; box-sizing: border-box; padding: 9px 16px 7px; cursor: pointer; text-decoration: none; text-align: center; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .05em; text-transform: uppercase; transition: translate .1s ease, box-shadow .1s ease, background-color .1s ease; }
+.pal-pagina .ng-bottone.ng-compra { background: #47ea6a; }
+.pal-pagina .ng-bottone:hover:not(:disabled), .pal-link:hover { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); background-color: var(--nb-giallo, #ffbd44); }
+.pal-pagina .ng-bottone.ng-compra:hover:not(:disabled) { background-color: #7dff97; }
+.pal-pagina .ng-bottone:active:not(:disabled) { translate: 2px 2px; box-shadow: none; }
+.pal-pagina .ng-bottone:disabled { opacity: .45; cursor: default; box-shadow: none; }

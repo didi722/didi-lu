@@ -27,8 +27,9 @@ if (typeof globalThis.global === 'undefined') globalThis.global = globalThis;
 //   'errore'    (lato, messaggio)   scelta non valida
 //   'fine'      ({ vincitore })     nome del vincitore, null se pareggio
 export class BattagliaLocale {
-    constructor({ formato, p1, p2 }) {
+    constructor({ formato, p1, p2, vantaggio = null }) {
         this.formato = formato;
+        this.vantaggio = vantaggio;           // { id, lato }: un vantaggio della palestra (palestra.js), applicato prima del turno 1
         this.giocatori = { p1, p2 };          // { nome, team } — team in formato export o array di set
         this.righeLog = [];                    // log pubblico completo (servirà per il replay)
         this.ascoltatori = {};
@@ -45,7 +46,8 @@ export class BattagliaLocale {
     }
 
     avvia() {
-        this.streams = BattleStreams.getPlayerStreams(new BattleStreams.BattleStream());
+        const flusso = new BattleStreams.BattleStream();
+        this.streams = BattleStreams.getPlayerStreams(flusso);
 
         this._ascoltaSpettatore();
         this._ascoltaGiocatore('p1');
@@ -60,6 +62,22 @@ export class BattagliaLocale {
             `>player p1 ${JSON.stringify(g1)}\n` +
             `>player p2 ${JSON.stringify(g2)}`
         );
+        if (this.vantaggio) this._preparaVantaggio(flusso.battle);
+    }
+
+    // Il vantaggio parte quando i Pokémon sono in campo e il turno 1 sta per cominciare (endTurn con turno 0): gli effetti escono nel log prima di "|turn|1", così si vedono
+    // e la CPU decide già con il campo cambiato
+    _preparaVantaggio(battle) {
+        if (!battle || typeof battle.endTurn !== 'function' || !self.Palestra) return;
+        const v = this.vantaggio, originale = battle.endTurn.bind(battle);
+        let fatto = false;
+        battle.endTurn = function () {
+            if (!fatto && this.turn === 0) {
+                fatto = true;
+                try { self.Palestra.applica(this, v.id, v.lato || 'p2'); } catch (errore) { console.warn('Gym advantage not applied:', errore); }
+            }
+            return originale();
+        };
     }
 
     scegli(lato, scelta) {
