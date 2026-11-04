@@ -221,7 +221,11 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     assert.match(ed, /const r = await window\.Negozio\.cambia\(window, \{ tipo, id, \.\.\.\(extra \|\| \{\}\) \}\)/, 'indossare lo fa il server');
     assert.match(ed, /C\.profiloDalServer\(valori\)/);
     assert.match(ed, /for \(const f of storia\) Object\.assign\(f\.profilo, valori\)/, '"undo" non riporta indietro quello che ha già fatto il server');
-    assert.match(ed, /vaiAlloShop: \(\) => vaiAlloShop\('tab=allenatore'\)/);
+    assert.match(ed, /vaiAlloShop: \(dove = 'tab=allenatore'\) => vaiAlloShop\(dove\)/);
+    // aure, effetti e compagno shiny: solo quelli che hai, li mette il server
+    assert.match(ed, /window\.Negozio\.chiama\(window, 'equipaCosmetico', \{ id: c\.id, attivo \}\)/);
+    assert.match(ed, /C\.provaCosmetici\(c\.tipo === 'shiny' \? \{ pkmShiny: attivo \} : \{ \[c\.campo\]: attivo \? c\.id : null \}\)/);
+    assert.match(ed, /catalogo: tipo => .*window\.Cosmetici\.possiede\(c\.id, contestoCosmetici\(\)\)/);
     assert.doesNotMatch(ed, /acquistaCosmetico|rilasciaCosmetico|prezzoAcquisto|leggiRegistro|cosmeticiPresi/, 'dall\'editor non si compra né si rilascia');
     // SAVE non scrive mai avatar, colore e canzone
     assert.match(ed, /CAMPI_DEL_SERVER = \['avatar', 'color', 'musicName', 'musicaPreferita'\]/);
@@ -237,6 +241,8 @@ test('cablaggio: avatar, colore e canzone si comprano nello Shop (massimo per ti
     assert.match(tr, /indossa\('canzone', id, nome, \{ url: b\.url, nome: b\.nome \}\)/);
     assert.match(tr, /indossa\('canzone', '', '', null\)/, '"No song" toglie la canzone e resta tua');
     assert.match(tr, /Get more in the Shop →/);
+    assert.match(tr, /window\.PublicEditor\.estendi\(\{ id: 'oggetti', nome: 'Items', disegna: disegnaItems \}\)/, 'una scheda per quello che hai preso nello Shop');
+    for (const [titolo, tipo] of [['Aura', 'aura'], ['Name effect', 'nome'], ['Stage effect', 'palco'], ['Shiny companion', 'shiny']]) assert.match(tr, new RegExp(`sezioneEffetti\\(ctx, '${titolo}', '${tipo}'`), titolo);
     assert.match(tr, /Your first one is free: get it in the Shop\./);
     assert.doesNotMatch(tr, /elencoAvatar|PALETTE_FIRMA|canzoni === |caricaCanzoni|Negozio|prezzoCambio|chiediCambio/, 'nessun elenco di tutti gli avatar, colori o canzoni nell\'editor');
 
