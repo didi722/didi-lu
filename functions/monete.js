@@ -118,14 +118,6 @@ async function conLock(db, nome, adesso, fn) {
     try { return await fn(); } finally { await segno.remove(); }
 }
 
-/** Il compagno viene dal Box? (info.pkmBox = "idTeam|posizione", e quel Pokémon c'è ancora ed è il compagno): si legge solo quel team */
-async function compagnoDalBox(db, giocatore, info) {
-    const idTeam = String((info && info.pkmBox) || '').split('|')[0];
-    if (!giocatore || !/^[A-Za-z0-9_-]{1,60}$/.test(idTeam)) return null;
-    const team = (await db.ref(`players/${giocatore}/teams/${idTeam}`).once('value')).val();
-    return team ? Cosmetici.compagnoDelBox(info, [{ id: idTeam, ...team }]) : null;
-}
-
 /** Compra un cosmetico del catalogo (compagno shiny, aure, effetti del nome e del palco, motivi dello sfondo; avatar, colori e canzoni passano da prendi): deve esistere, non essere già suo (o in uso), essere in vendita (le edizioni limitate solo finché la loro
  *  stagione non è chiusa: motivo 'not-yet' o 'ended') e il saldo bastare.
  *  Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
@@ -139,8 +131,6 @@ async function acquista({ db, uid, id, url, nome, rilascia: daRilasciare = '', a
         giocatore ? db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}) : Promise.resolve({})
     ]);
     if (Cosmetici.possiede(id, { wallet, info, pagina: info.pagina })) return { ok: false, motivo: 'owned' };
-    // il compagno shiny vale solo per un compagno generico: uno scelto dal Box è shiny come quel Pokémon
-    if (c.tipo === 'shiny' && await compagnoDalBox(db, giocatore, info)) return { ok: false, motivo: 'box-companion' };
     // un'edizione limitata si compra solo finché la sua stagione non è chiusa (la decide il server, non la pagina)
     if (c.edizione) {
         const stato = (await db.ref(`seasons/${c.edizione.stagione}/info/status`).once('value')).val();
@@ -423,11 +413,10 @@ async function equipa({ db, uid, id, attivo }) {
     const nome = (await db.ref(`users/${uid}/name`).once('value')).val();
     const giocatore = String(nome || '').toLowerCase().trim();
     if (!giocatore) return { ok: false, motivo: 'no-profile' };
-    if (attivo && c.tipo === 'shiny' && await compagnoDalBox(db, giocatore, (await db.ref(`players/${giocatore}/info`).once('value')).val() || {})) return { ok: false, motivo: 'box-companion' };
     const percorso = `players/${giocatore}/info/${c.campo}`;
     // togliere una voce che non si porta (una pagina rimasta aperta) non deve cancellare quella che si porta adesso
-    if (!attivo && c.tipo !== 'shiny' && (await db.ref(percorso).once('value')).val() !== id) return { ok: true };
-    await db.ref(percorso).set(c.tipo === 'shiny' ? (attivo ? true : null) : (attivo ? id : null));
+    if (!attivo && (await db.ref(percorso).once('value')).val() !== id) return { ok: true };
+    await db.ref(percorso).set(attivo ? id : null);
     return { ok: true };
 }
 

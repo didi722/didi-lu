@@ -91,7 +91,7 @@
         return {
             tipo: 'allenatore', titolo: 'TRAINER', nome: testo(nome, 30) || 'Trainer',
             colore: coloreSicuro(colore, '#31c489'), avatar: avatar || '', aura: coloreSicuro(aura, ''),
-            motto: testo(info.motto, 70), compagno: testo(info.pkmPreferito, 30), compagnoShiny: compagnoShiny === undefined ? !!info.pkmShiny : !!compagnoShiny,
+            motto: testo(info.motto, 70), compagno: testo(info.pkmPreferito, 30), compagnoShiny: !!compagnoShiny,
             numeri: [voce('Rank', r.rank), voce('Matches', r.match), voce('Showdowns', r.sd), voce('Sets', r.set)],
             extra: [r.formato && r.formato.grande && r.formato.grande !== '\u2014' ? `Main format: ${testo(r.formato.grande, 30)} (${testo(r.formato.piccolo, 20)})` : '',
                 r.punti && r.punti.grande && r.punti.grande !== '0' ? `League points: ${testo(r.punti.grande, 10)}` : ''].filter(Boolean)

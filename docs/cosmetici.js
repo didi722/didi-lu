@@ -2,7 +2,7 @@
 // COSMETICI DEL NEGOZIO E ECONOMIA — Poké-Tournament
 //
 // Cose che si comprano con le monete (wallet/{uid}) e cambiano solo l'aspetto.
-//   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, gli effetti del nome e del palco, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita
+//   - Il catalogo fisso (CATALOGO): l'aura dell'allenatore, gli effetti del nome e del palco, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita
 //     (gli effetti grafici di una voce nuova stanno in effetti-pagina.css e style-public-card.css).
 //   - Le edizioni limitate: voci del catalogo con `edizione: { stagione, nome }`. Si comprano solo finché quella stagione non è chiusa (disponibilita); dopo restano solo a chi le ha comprate.
 //   - Le famiglie: avatar (avatar-<n>), colore firma (colore-<rrggbb>) e canzoni (canzone-<impronta dell'indirizzo>) si comprano come le altre cose (PREZZI) e sono UNICHE: quelle che hai sono tue,
@@ -31,7 +31,7 @@
 //   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa un cosmetico del catalogo, o prenderne un altro per gli id degli avatar, dei colori e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
 //   Cosmetici.compagnoDelBox(info, teams)              il Pokémon del Box che è il compagno (info.pkmBox = "idTeam|posizione"), se c'è ancora e è davvero lui; altrimenti null (compagno "generico")
-//   Cosmetici.compagnoShiny(info, teams)               il compagno è shiny? Se viene dal Box lo è se lo è quel Pokémon del Box; se è generico, se si è comprato e messo il compagno shiny (info.pkmShiny)
+//   Cosmetici.compagnoShiny(info, teams)               il compagno è shiny? Solo se viene dal Box ed è shiny quel Pokémon del team; se è generico (dalla lista) no, mai
 //   Cosmetici.prezzoShiny(specie)                      { fascia, nome, prezzo }: quanto costa lo shiny di un Pokémon di quella specie ("standard" se la specie non è nell'elenco delle rarità)
 //   Cosmetici.fasciaShiny(specie), Cosmetici.fasceShiny()   la fascia di una specie; l'elenco delle fasce, dalla più economica: [{ fascia, nome, prezzo }]
 //   Cosmetici.testoConShiny(testo, indice, nome, specie)  il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato (lo scrive il server dopo l'acquisto)
@@ -72,7 +72,6 @@
     };
 
     const TIPI = {
-        shiny: { nome: 'Shiny companion', frase: 'Your favourite Pokémon in its shiny colours.' },
         aura: { nome: 'Trainer aura', frase: 'A glow around your trainer on your page.' },
         nome: { nome: 'Name effects', frase: 'Make your name stand out on your page.' },
         palco: { nome: 'Stage effects', frase: 'Animated effects in front of your stage.' },
@@ -83,7 +82,6 @@
 
     // `campo`: dove si scrive quando si equipaggia (players/{id}/info/<campo>); per i motivi non c'è: li sceglie l'editor della pagina
     const CATALOGO = [
-        { id: 'shiny', tipo: 'shiny', nome: 'Shiny companion', prezzo: 800, campo: 'pkmShiny', descr: 'Your favourite Pokémon, when you pick it from the list, shows up shiny on your page, in the rankings and on share cards. A companion from your Box follows that Pokémon instead.' },
         { id: 'aura-oro', tipo: 'aura', nome: 'Gold aura', prezzo: 400, campo: 'aura', colore: '#ffcc33', descr: 'A warm golden glow around your trainer.' },
         { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 400, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
         { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 400, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
@@ -214,7 +212,6 @@
         if (!c) return false;
         if (objOr(objOr(wallet).posseduti)[id]) return true;
         const i = objOr(info);
-        if (c.tipo === 'shiny') return !!i.pkmShiny;
         if (c.tipo === 'aura') return i.aura === id;
         if (c.tipo === 'sfondo') return objOr(objOr(pagina).sfondo).motivo === c.motivo;
         // avatar, colori e canzoni: quelli che hai (comprati, o quello che porti: chi lo aveva già prima del negozio lo ha)
@@ -294,10 +291,10 @@
         return pokemon;
     }
 
-    /** Il compagno è shiny? Del Box: come quel Pokémon; generico: se ha il compagno shiny (info.pkmShiny) */
+    /** Il compagno è shiny? Solo se viene dal Box ed è shiny quel Pokémon del team; un compagno generico (scelto dalla lista) non è mai shiny */
     function compagnoShiny(info, teams) {
         const dalBox = compagnoDelBox(info, teams);
-        return dalBox ? !!dalBox.shiny : !!objOr(info).pkmShiny;
+        return dalBox ? !!dalBox.shiny : false;
     }
 
     // ---- Lo shiny di un Pokémon di un team: il prezzo ---------------------------------------------------

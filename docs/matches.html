@@ -908,7 +908,7 @@ async function inizializzaPaginaArchivio() {
         container.appendChild(sdCard);
         schedeFiltro.set(sdId, sdCard);
         if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
-        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(g, dataPlayers[String(nome || '').toLowerCase().trim()]?.teams) : !!g.pkmShiny, vinti }; };
+        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(g, dataPlayers[String(nome || '').toLowerCase().trim()]?.teams) : false, vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
@@ -1148,7 +1148,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : false, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">

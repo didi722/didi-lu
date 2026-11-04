@@ -154,7 +154,7 @@
 
         // il cosmetico "Shiny companion" (cosmetici.js): lo stesso Pokémon con i colori alternativi
         // (vale solo per il compagno generico: uno scelto dal Box è shiny o no come quel Pokémon del Box)
-        const brillante = !!(stato.dati && stato.dati.info && (window.Cosmetici ? window.Cosmetici.compagnoShiny(stato.dati.info, stato.dati.teams) : stato.dati.info.pkmShiny));
+        const brillante = !!(stato.dati && stato.dati.info && (window.Cosmetici ? window.Cosmetici.compagnoShiny(stato.dati.info, stato.dati.teams) : false));
         let gif = null, altezzaM = 1.2, vola = false;
         try {
             const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nome)}`);
@@ -996,15 +996,15 @@
     }
 
     /** Prova dei cosmetici dello Shop (anteprima): i campi del negozio si impostano in memoria e i blocchi che li mostrano si rifanno; avatar e colore passano da impostaProfilo; `sfondoMotivo` prova un motivo (null = quello salvato) */
-    const COSMETICI_IN_PROVA = ['aura', 'effettoNome', 'effettoPalco', 'pkmShiny'];
+    const COSMETICI_IN_PROVA = ['aura', 'effettoNome', 'effettoPalco'];
     function provaCosmetici(valori) {
         if (!stato.dati) return;
         const v = valori || {}, info = stato.dati.info;
         let rifare = false;
         for (const k of COSMETICI_IN_PROVA) {
             if (!(k in v)) continue;
-            const nuovo = k === 'pkmShiny' ? !!v[k] : (v[k] ? String(v[k]) : null);
-            if ((k === 'pkmShiny' ? !!info[k] : (info[k] || null)) === nuovo) continue;
+            const nuovo = v[k] ? String(v[k]) : null;
+            if ((info[k] || null) === nuovo) continue;
             if (nuovo) info[k] = nuovo; else delete info[k];
             rifare = true;
         }
@@ -1026,7 +1026,7 @@
         nav.append(h('button', { id: 'pp-condividi-btn', class: 'pp-modifica-btn pp-condividi-btn', type: 'button', onclick: () => {
             const dati = stato.dati;
             const info = dati.info || {};
-            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, compagnoShiny: window.Cosmetici ? window.Cosmetici.compagnoShiny(info, dati.teams) : !!info.pkmShiny, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
+            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, compagnoShiny: window.Cosmetici ? window.Cosmetici.compagnoShiny(info, dati.teams) : false, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
         } }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '\u2197' }), ' SHARE'));
     }
 
