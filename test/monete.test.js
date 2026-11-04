@@ -459,7 +459,7 @@ test('shinyPokemon: senza monete o con dati che non tornano non si addebita nien
 test('shinyPokemon: il prezzo lo decide il server dalla specie nel team (da comune a leggendario), mai dal client; stessa cifra per addebito e rimborso', async () => {
     const specie = [['Pichu', 'comune'], ['Incineroar', 'standard'], ['Garchomp', 'forte'], ['Urshifu', 'raro'], ['Mewtwo', 'mitico']];
     const prezzi = specie.map(([nome]) => C.prezzoShiny(nome).prezzo);
-    assert.deepEqual(prezzi, [200, 400, 600, 800, 1200], 'le cifre che il negozio promette');
+    assert.deepEqual(prezzi, [400, 800, 1000, 1300, 1800], 'le cifre che il negozio promette');
     const team = { id: 'T1', nome: 'Misto', pokemon: specie.map(([nome]) => ({ nome, shiny: false })), testoShowdown: specie.map(([nome]) => `${nome}\nAbility: X\n- Protect`).join('\n\n') };
     const totale = prezzi.reduce((a, b) => a + b, 0);
     const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: totale } }, players: { didi: { teams: { T1: team } } } });
@@ -556,15 +556,15 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     assert.ok(P.avatar >= media * 0.10 && P.avatar <= media * 0.15, `avatar ${P.avatar}`);
     assert.ok(P.colore >= media * 0.10 && P.colore <= media * 0.15, `colore ${P.colore}`);
     assert.ok(P.canzone >= media * 0.15 && P.canzone <= media * 0.22, `canzone ${P.canzone}`);
-    assert.ok(P.shinyPokemon >= media * 0.45 && P.shinyPokemon <= media * 0.60, `shiny di team ${P.shinyPokemon}`);
-    assert.ok(6 * P.shinyPokemon >= media * 2.5 && 6 * P.shinyPokemon <= media * 4, 'una squadra intera shiny: tre stagioni circa');
+    assert.ok(P.shinyPokemon >= media * 0.95 && P.shinyPokemon <= media * 1.15, `shiny di team ${P.shinyPokemon}: uno standard vale circa una stagione`);
+    assert.ok(6 * P.shinyPokemon >= media * 5 && 6 * P.shinyPokemon <= media * 7.5, 'una squadra intera di standard shiny: sei stagioni circa');
     // le fasce: la standard costa il prezzo base; una specie comune un quarto di stagione, una leggendaria una stagione e mezza
     const fasce = C.fasceShiny();
     assert.deepEqual(fasce.map(f => f.fascia), ['comune', 'standard', 'forte', 'raro', 'mitico']);
     assert.equal(fasce.find(f => f.fascia === 'standard').prezzo, P.shinyPokemon);
     assert.ok(fasce.every((f, k) => Number.isInteger(f.prezzo) && (k === 0 || f.prezzo > fasce[k - 1].prezzo)), 'prezzi interi e sempre più alti');
-    assert.ok(fasce[0].prezzo >= media * 0.2 && fasce[0].prezzo <= media * 0.35, `comune ${fasce[0].prezzo}`);
-    assert.ok(fasce[4].prezzo >= media * 1.3 && fasce[4].prezzo <= media * 1.8, `leggendario ${fasce[4].prezzo}`);
+    assert.ok(fasce[0].prezzo >= media * 0.4 && fasce[0].prezzo <= media * 0.6, `comune ${fasce[0].prezzo}`);
+    assert.ok(fasce[4].prezzo >= media * 2 && fasce[4].prezzo <= media * 2.6, `leggendario ${fasce[4].prezzo}`);
     assert.ok(fasce[0].prezzo > P.canzone, 'anche lo shiny più economico costa più di un cambio di canzone');
     // il catalogo fisso: un motivo il 25–40%, un'aura il 45–60%; l'arcobaleno e il compagno shiny tra 3/4 e una stagione; si completa in 4–6 stagioni
     const per = id => C.perId(id).prezzo;

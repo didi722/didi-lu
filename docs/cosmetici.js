@@ -59,16 +59,16 @@
     // ---- Quanto costa -------------------------------------------------------------------------
     // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar o di colore è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team "standard" il 51% (mezza stagione: uno shiny è
     // un trofeo; una squadra intera di standard ne costa tre). Il catalogo fisso (qui sotto) vale circa cinque stagioni: un motivo il 32%, un'aura il 51%; l'aura arcobaleno e il compagno shiny una stagione intera.
-    const PREZZI = { avatar: 100, colore: 100, canzone: 150, shinyPokemon: 400 };
+    const PREZZI = { avatar: 100, colore: 100, canzone: 150, shinyPokemon: 800 };
 
     // Lo shiny di un Pokémon di un team costa PREZZI.shinyPokemon × il moltiplicatore della fascia della specie (rarita-pkm.js): da un quarto di stagione (comune) a una stagione e mezza (leggendaria).
     // Le fasce sono in ordine, dalla più economica.
     const FASCE_SHINY = {
         comune: { nome: 'Common', moltiplicatore: 0.5 },
         standard: { nome: 'Standard', moltiplicatore: 1 },
-        forte: { nome: 'Strong', moltiplicatore: 1.5 },
-        raro: { nome: 'Rare', moltiplicatore: 2 },
-        mitico: { nome: 'Legendary', moltiplicatore: 3 }
+        forte: { nome: 'Strong', moltiplicatore: 1.25 },
+        raro: { nome: 'Rare', moltiplicatore: 1.625 },
+        mitico: { nome: 'Legendary', moltiplicatore: 2.25 }
     };
 
     const TIPI = {
