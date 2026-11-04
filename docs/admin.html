@@ -1399,43 +1399,50 @@ async function creaNuovoPlayerAdmin() {
     }
 }
 
+// Chiama una Function del server (europe-west1): l'SDK delle Functions si carica la prima volta
+async function chiamaFunzione(nome, dati) {
+    if (!(firebase.functions)) {
+        await new Promise((ok, no) => {
+            const sc = document.createElement('script');
+            sc.src = 'https://www.gstatic.com/firebasejs/9.17.1/firebase-functions-compat.js';
+            sc.onload = ok; sc.onerror = () => no(new Error('The Functions SDK did not load'));
+            document.head.appendChild(sc);
+        });
+    }
+    return (await firebase.app().functions('europe-west1').httpsCallable(nome)(dati || {})).data || {};
+}
+
 async function eliminaPlayer(nomePlayer) {
-    // 1. Pulizia del nome per sicurezza (minuscolo come nel database)
-    const nomeID = nomePlayer.toLowerCase().trim();
-    
-    const conferma = confirm(`PERMANENT DELETION: Do you want to permanently delete ${nomeID.toUpperCase()}?`);
-    
-    if (conferma) {
+    const nomeID = String(nomePlayer || '').toLowerCase().trim();
+    if (!nomeID) return;
+    const NOME = nomeID.toUpperCase();
+
+    // doppio controllo: due conferme distinte, la seconda più dura
+    if (!confirm(`PERMANENT DELETION: Do you want to permanently delete ${NOME}?\n\nHis profile, teams, stats and shop wallet will be erased, and his login account too.`)) return;
+    if (!confirm(`SECOND CHECK — this cannot be undone.\n\nAre you REALLY sure you want to delete ${NOME} forever?`)) return;
+
+    try {
+        const r = await chiamaFunzione('eliminaGiocatore', { nome: nomeID });
+        alert(`Player ${NOME} removed from all archives.\n` + (r.accountEliminato ? 'His login account (Authentication) was deleted too.' : (r.uid ? 'His login account was already gone.' : 'No login account was linked to this player.')));
+    } catch (e) {
+        console.error('Deletion error', e);
+        const nonRaggiungibile = !e || e.code === 'functions/not-found' || e.code === 'functions/unavailable' || /Functions SDK/.test(String(e.message));
+        if (!nonRaggiungibile) return alert(`Deletion failed: ${e.message || e}`);
+        // la Function non c'è ancora (non è stata pubblicata): si cancellano solo i dati nel database, come prima
+        if (!confirm('The server function is not available (deploy the Functions first).\n\nDelete ONLY the database data? The login account (Authentication) will stay and must be deleted by hand.')) return;
         try {
-            // 2. Leggiamo il nodo players per recuperare l'UID prima di cancellare
             const snap = await db.ref(`players/${nomeID}`).once('value');
             const data = snap.val();
-
-            // 3. CANCELLAZIONE NODO USERS (Auth reference)
-            if (data && data.stats && data.stats.uid_riferimento) {
-                const uid = data.stats.uid_riferimento;
-                await db.ref(`users/${uid}`).remove();
-                console.log(`Rimosso nodo users/${uid}`);
-            } else {
-                // Fallback: prova a rimuovere usando il nome (per vecchi record)
-                await db.ref(`users/${nomeID}`).remove();
-            }
-
-            // 4. CANCELLAZIONE NODO PLAYERS (Profilo completo)
-            // Usiamo .set(null) che è il modo più radicale di Firebase per dire "distruggi questo percorso e tutto ciò che contiene"
+            if (data && data.stats && data.stats.uid_riferimento) await db.ref(`users/${data.stats.uid_riferimento}`).remove();
+            else await db.ref(`users/${nomeID}`).remove();
             await db.ref(`players/${nomeID}`).set(null);
-            console.log(`Rimosso intero nodo players/${nomeID}`);
-
-            alert(`Player ${nomeID.toUpperCase()} removed successfully from all archives.`);
-            
-            // 5. Refresh tabella
-            if (typeof caricaListaPlayers === "function") caricaListaPlayers();
-
-        } catch (e) {
-            console.error("Critical Error during deletion:", e);
-            alert("Technical Error: The database did not respond correctly.");
+            alert(`Player ${NOME} removed from the database. His login account is still in Authentication.`);
+        } catch (e2) {
+            console.error('Critical Error during deletion:', e2);
+            return alert('Technical Error: The database did not respond correctly.');
         }
     }
+    if (typeof caricaListaPlayers === 'function') caricaListaPlayers();
 }
 
 // Avvia il caricamento quando la pagina è pronta

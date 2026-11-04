@@ -322,3 +322,16 @@ test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagona
     const css = leggi('docs', 'style-versus.css');
     for (const re of [/\.vs-sx \{ clip-path: polygon/, /\.vs-dx \{ clip-path: polygon/, /\.vs-taglio/, /\.vs-scritta-riga/, /\.vs-avatar/, /\.vs-compagno/, /html\.app \.vs-sfondo \{ display: none; \}/]) assert.match(css, re);
 });
+
+test('admin: eliminare un giocatore chiede due conferme e passa dalla Function che toglie anche l\'account Authentication', () => {
+    const a = leggi('docs', 'admin.html');
+    const f = a.slice(a.indexOf('async function eliminaPlayer'), a.indexOf('// Avvia il caricamento'));
+    assert.equal((f.match(/if \(!confirm\(/g) || []).length >= 2, true, 'due conferme prima di cancellare');
+    assert.match(f, /SECOND CHECK/);
+    assert.match(f, /chiamaFunzione\('eliminaGiocatore'/);
+    const fn = leggi('functions', 'index.js');
+    assert.match(fn, /exports\.eliminaGiocatore = onCall/);
+    assert.match(fn, /ruolo !== 'admin'/, 'solo un admin');
+    assert.match(fn, /getAuth\(\)\.deleteUser\(uid\)/);
+    assert.match(fn, /Non puoi eliminare te stesso/);
+});

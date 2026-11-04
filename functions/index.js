@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const { initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 const { getStorage } = require('firebase-admin/storage');
+const { getAuth } = require('firebase-admin/auth');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueWritten, onValueCreated } = require('firebase-functions/v2/database');
 const { getMessaging } = require('firebase-admin/messaging');
@@ -200,6 +201,41 @@ exports.provaNotifica = onCall({ region: REGIONE, memory: '256MiB', timeoutSecon
     } catch (e) {
         if (e && e.codice) throw new HttpsError(e.codice, e.message);
         console.error('provaNotifica', e);
+        throw new HttpsError('internal', 'Errore del server: riprova tra poco');
+    }
+});
+
+// Eliminare un giocatore (solo un admin): oltre ai dati nel database toglie anche il suo account da Firebase Authentication (così il suo UID non esiste più).
+// Dati toccati: players/<nome>, users/<uid>, wallet/<uid>, e i suoi avatar/colori/canzoni nel registro cosmeticiPresi (tornano liberi).
+exports.eliminaGiocatore = onCall({ region: REGIONE, memory: '256MiB', timeoutSeconds: 30, cors: true }, async richiesta => {
+    if (!richiesta.auth) throw new HttpsError('unauthenticated', 'Devi essere loggato');
+    const db = getDatabase();
+    const ruolo = (await db.ref(`users/${richiesta.auth.uid}/role`).once('value')).val();
+    if (ruolo !== 'admin') throw new HttpsError('permission-denied', 'Solo un admin può eliminare un giocatore');
+    const nome = String((richiesta.data || {}).nome || '').toLowerCase().trim();
+    if (!nome || /[.#$\[\]/]/.test(nome)) throw new HttpsError('invalid-argument', 'Nome non valido');
+    try {
+        const info = (await db.ref(`players/${nome}`).once('value')).val() || {};
+        let uid = (info.stats && info.stats.uid_riferimento) || '';
+        if (!uid) {      // vecchi record: si cerca in users il nome
+            const utenti = (await db.ref('users').once('value')).val() || {};
+            uid = Object.keys(utenti).find(k => String((utenti[k] || {}).name || '').toLowerCase().trim() === nome) || '';
+        }
+        if (uid && uid === richiesta.auth.uid) throw new HttpsError('failed-precondition', 'Non puoi eliminare te stesso');
+        let accountEliminato = false;
+        if (uid) {
+            try { await getAuth().deleteUser(uid); accountEliminato = true; }
+            catch (e) { if (!(e && e.code === 'auth/user-not-found')) throw e; }
+        }
+        const aggiornamenti = { [`players/${nome}`]: null };
+        if (uid) { aggiornamenti[`users/${uid}`] = null; aggiornamenti[`wallet/${uid}`] = null; }
+        const presi = (await db.ref('cosmeticiPresi').once('value')).val() || {};
+        for (const [id, chi] of Object.entries(presi)) if (String(chi).toLowerCase() === nome) aggiornamenti[`cosmeticiPresi/${id}`] = null;
+        await db.ref().update(aggiornamenti);
+        return { ok: true, uid, accountEliminato };
+    } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        console.error('eliminaGiocatore', e);
         throw new HttpsError('internal', 'Errore del server: riprova tra poco');
     }
 });
