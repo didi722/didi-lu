@@ -357,6 +357,7 @@
         el.innerHTML = conMoneta(S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete());
         $('shop-corpo').classList.toggle('senza-anteprima', !TAB_CON_ANTEPRIMA.includes(S.tab));
         adattaAnteprima();
+        if (S.tab === 'pokemon' && window.MedaglionePkm) window.MedaglionePkm.coloraMedaglioni(window, el);       // il colore del tipo dietro a ogni Pokémon
         document.querySelectorAll('.shop-scheda').forEach(b => { const su = b.dataset.tab === S.tab; b.classList.toggle('attiva', su); b.setAttribute('aria-selected', String(su)); });
         const r = $('shop-ricerca');
         if (r && document.activeElement === document.body && S.ricerca) { /* la ricerca si riscrive da sola: non si ruba il fuoco */ }

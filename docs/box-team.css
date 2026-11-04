@@ -251,6 +251,5 @@
     .card-header { padding-left: 10px; background: var(--nb-ink, #000); }
 }
 
-/* ✨ Lo shiny di un Pokémon del team (negozio.js): la scintilla accanto al nome, e il tasto sulla card */
-.pkm-box.is-shiny .pkm-name::after { content: ' ✨'; }
+/* ✨ Il tasto sulla card per rendere shiny un Pokémon del team (negozio.js) */
 .card-azione.azione-shiny { filter: saturate(1.2); }
