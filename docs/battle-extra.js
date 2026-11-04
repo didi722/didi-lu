@@ -35,6 +35,7 @@ const S = {
     info: { p1: {}, p2: {} },   // { id, nome, team, avatar }
     schede: { p1: null, p2: null, risultato: null },   // titolo, ELO, badge e fiocchi dei due allenatori (scheda-battaglia.js)
     schedeChiave: '',
+    permanenti: new Set(),      // id delle condizioni fisse per tutta la partita (il vantaggio di una palestra)
     battle: null,
     timerLati: null,
 };
@@ -63,7 +64,8 @@ const NOME_STAT = { hp: 'HP', atk: 'Atk', def: 'Def', spa: 'SpA', spd: 'SpD', sp
  *             candidati = i team registrati; quello in uso si riconosce dal team
  *             preview. Per un lato che non si può vedere basta { species } nei set.
  */
-export function impostaPartita({ openSheet, senzaAnteprima, latiNoti, p1, p2 } = {}) {
+export function impostaPartita({ openSheet, senzaAnteprima, latiNoti, permanenti, p1, p2 } = {}) {
+    if (permanenti !== undefined) S.permanenti = new Set((permanenti || []).map(idDi));      // effetti di campo che durano tutta la partita (palestra): al posto dei turni che restano
     if (openSheet !== undefined) S.openSheet = !!openSheet;
     if (senzaAnteprima !== undefined) S.senzaAnteprima = !!senzaAnteprima;
     if (latiNoti !== undefined) S.latiNoti = latiNoti || [];
@@ -947,6 +949,7 @@ function impostaAvatar(battle) {
 }
 
 // Meteo, terreni, Trick Room e condizioni dei lati, fuori dallo schermo
+const ALL_BATTLE = 'all battle';
 function turniRimasti(min, max) {
     if (min && max && min !== max) return `${min} or ${max} turns`;
     const n = min || max;
@@ -958,15 +961,15 @@ function aggiornaCampo(battle) {
     if (battle.weather) {
         const nome = window.BattleTextParser?.weatherName?.(battle.weather) || battle.weather;
         const annullato = !!battle.abilityActive?.(['Air Lock', 'Cloud Nine']);
-        globali.push({ classe: 'meteo' + (annullato ? ' annullato' : ''), nome, turni: turniRimasti(battle.weatherMinTimeLeft, battle.weatherTimeLeft) });
+        globali.push({ classe: 'meteo' + (annullato ? ' annullato' : ''), nome, turni: S.permanenti.has(idDi(battle.weather)) ? ALL_BATTLE : turniRimasti(battle.weatherMinTimeLeft, battle.weatherTimeLeft) });
     }
     for (const [nome, min, max] of battle.pseudoWeather || []) {
-        globali.push({ classe: /terrain/i.test(nome) ? 'terreno' : 'campo', nome: battle.dex.moves.get(nome).name || nome, turni: turniRimasti(min, max) });
+        globali.push({ classe: /terrain/i.test(nome) ? 'terreno' : 'campo', nome: battle.dex.moves.get(nome).name || nome, turni: S.permanenti.has(idDi(nome)) ? ALL_BATTLE : turniRimasti(min, max) });
     }
     for (const lato of ['p1', 'p2']) {
         for (const [nome, livelli, min, max] of Object.values(battle[lato]?.sideConditions || {})) {
             const strati = livelli > 1 ? ` ×${livelli}` : '';
-            deiLati[lato].push({ classe: 'lato-cond', nome: (battle.dex.moves.get(nome).name || nome) + strati, turni: turniRimasti(min, max) });
+            deiLati[lato].push({ classe: 'lato-cond', nome: (battle.dex.moves.get(nome).name || nome) + strati, turni: S.permanenti.has(idDi(nome)) ? ALL_BATTLE : turniRimasti(min, max) });
         }
     }
     scriviVoci(document.getElementById('cab-campo'), globali, '<span class="campo-vuoto">No field effects</span>');

@@ -18,7 +18,8 @@
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ricerca = new URLSearchParams(window.location.search);
 
-    const S = { uid: '', io: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null };
+    const S = { uid: '', io: '', regolamenti: {}, mieiTeam: [], bozza: [], gym: '', gymNome: '', gymConfig: null, passo: 0, scelte: [], tornaARiepilogo: false };
+    const SP = window.SpritePkm;
 
     function msg(testo, errore) {
         const m = $('pal-msg');
@@ -37,7 +38,8 @@
         S.regolamenti = regolamenti || {};
         const grezzi = (await leggi(`players/${S.io}/teams`)) || {};
         S.mieiTeam = Object.entries(grezzi).filter(([, t]) => t && typeof t === 'object').map(([id, t]) => ({
-            id, nome: nomeTeam(t), categoria: String(t.categoria || t.category || ''), quanti: elenco(t.pokemon).filter(p => p && p.nome).length
+            id, nome: nomeTeam(t), categoria: String(t.categoria || t.category || ''), quanti: elenco(t.pokemon).filter(p => p && p.nome).length,
+            pokemon: elenco(t.pokemon).filter(p => p && p.nome).map(p => ({ nome: String(p.nome), shiny: !!p.shiny }))
         }));
     }
     const formatiDoppi = () => Object.entries(S.regolamenti).filter(([, r]) => r && r.categoria && P.eDoppio(r)).sort((a, b) => String(a[1].categoria).localeCompare(String(b[1].categoria)));
@@ -110,54 +112,109 @@
     }
 
     // ---------------------------------------------------------------- sfidare la palestra di un altro
+    // Un passo per format: "Stage 1 · VGC Gen 9 → scegli il team", poi il 2 e il 3, e infine il riepilogo (passo 3) con i tre team scelti e il tasto per entrare.
+    // Con una sfida già cominciata (tappe vinte) si apre direttamente il riepilogo, da cui si può cambiare il team di una tappa e tornare qui.
+    const stagioneDa = () => P.leggiSfida(window.localStorage, P.chiaveSfida(S.io, S.gym)) || P.nuovaSfida([]);
+    const tappeGym = () => P.tappeDi(S.gymConfig);
+    const teamPerId = id => S.mieiTeam.find(t => t.id === id) || null;
+    const salvaScelte = () => {
+        const att = stagioneDa();
+        P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: att.vinte || 0 });
+    };
+    const sprites = (t, classe = '') => `<span class="pal-sprites ${classe}">${(t.pokemon || []).slice(0, 6).map(p => `<img src="${esc(SP ? SP.gif(p.nome, p.shiny) : '')}" alt="" loading="lazy" draggable="false" data-pkm="${esc(p.nome)}">`).join('')}</span>`;
+
     function disegnaSfida() {
-        const tappe = P.tappeDi(S.gymConfig);
-        const chiave = P.chiaveSfida(S.io, S.gym);
-        const sfida = P.leggiSfida(window.localStorage, chiave) || P.nuovaSfida([]);
-        const vinte = sfida.vinte;
-        const finita = P.finita(sfida);
-        const carte = tappe.map((t, i) => {
-            const stato = i < vinte ? 'done' : i === vinte ? 'next' : 'lock';
-            const miei = teamPer(t.categoria);
-            const scelto = sfida.squadre[i] && miei.some(x => x.id === sfida.squadre[i]) ? sfida.squadre[i] : '';
-            return `<article class="pal-tappa pal-${stato}" data-i="${i}">
-                <header><h3>Stage ${i + 1}</h3><span class="pal-stato">${stato === 'done' ? '✓ Cleared' : stato === 'next' ? '▶ Up next' : '🔒 Locked'}</span></header>
-                <p class="pal-formato">${esc(t.categoria)}</p>
-                <label>Your team<select data-squadra="${i}">${opzioni(miei.map(x => [x.id, `${x.nome} (${x.quanti})`]), scelto, miei.length ? 'Pick a team from your Box' : 'You have no team for this format')}</select></label>
-            </article>`;
+        const tappe = tappeGym();
+        const att = stagioneDa();
+        const vinte = att.vinte;
+        const finita = P.finita(att);
+        const validi = i => { const t = teamPerId(S.scelte[i]); return !!t && tappe[i] && teamPer(tappe[i].categoria).some(x => x.id === t.id); };
+        const pronte = tappe.every((_, i) => validi(i));
+        const intro = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2>`;
+        const passi = tappe.map((t, i) => {
+            const stato = S.passo === i ? 'ora' : validi(i) ? 'fatto' : 'resta';
+            return `<li class="pal-passo pal-passo-${stato}"><b>${i + 1}</b><span>${esc(t.categoria)}</span></li>`;
+        }).join('') + `<li class="pal-passo pal-passo-${S.passo === P.TAPPE ? 'ora' : 'resta'}"><b>★</b><span>Go!</span></li>`;
+        const barra = `<ol class="pal-passi" aria-label="Steps">${passi}</ol>`;
+
+        if (S.passo < P.TAPPE) {
+            const i = S.passo, t = tappe[i], miei = teamPer(t.categoria);
+            const carte = miei.length ? miei.map(x => `<button type="button" class="pal-squadra${S.scelte[i] === x.id ? ' pal-scelta' : ''}" data-team="${esc(x.id)}" aria-pressed="${S.scelte[i] === x.id}">
+                    <span class="pal-squadra-nome">${esc(x.nome)}</span>${sprites(x)}<span class="pal-squadra-spunta" aria-hidden="true">✔</span></button>`).join('')
+                : `<p class="pal-vuoto">You don't have a team for <b>${esc(t.categoria)}</b> yet. <a href="box.html">Build one in your Box</a>, then come back!</p>`;
+            const ultimo = i === P.TAPPE - 1;
+            $('pal-corpo').innerHTML = `${intro}${barra}
+                <section class="pal-passo-corpo">
+                    <p class="pal-passo-su">Stage ${i + 1} of ${P.TAPPE}</p>
+                    <h3 class="pal-passo-titolo">${esc(t.categoria)}</h3>
+                    <p class="pal-aiuto">${i === 0 ? "Doubles, bring 6 and pick 4 once you see the opposing team. You won't know what's coming, so choose the team you trust." : 'Now the next format: which team do you bring?'}</p>
+                    <div class="pal-squadre">${carte}</div>
+                </section>
+                <div class="pal-azioni">
+                    ${i > 0 || S.tornaARiepilogo ? `<button type="button" class="ng-bottone" data-az="indietro">← ${S.tornaARiepilogo ? 'Cancel' : 'Back'}</button>` : `<a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">← ${esc(S.gymNome)}'s page</a>`}
+                    <button type="button" class="ng-bottone ng-compra" data-az="avanti"${validi(i) ? '' : ' disabled'}>${S.tornaARiepilogo ? 'Done ✔' : ultimo ? 'Review →' : `Next: stage ${i + 2} →`}</button>
+                </div>`;
+            return;
+        }
+        const righe = tappe.map((t, i) => {
+            const stato = i < vinte ? 'done' : i === vinte && !finita ? 'next' : 'lock';
+            const x = teamPerId(S.scelte[i]);
+            return `<article class="pal-riga pal-${stato}"><span class="pal-riga-num">${i + 1}</span>
+                <div class="pal-riga-testo"><p class="pal-formato">${esc(t.categoria)}</p><p class="pal-riga-team">${x ? esc(x.nome) : '—'}</p></div>
+                ${x ? sprites(x, 'pal-sprites-piccoli') : ''}
+                <span class="pal-stato">${stato === 'done' ? '✓ Cleared' : stato === 'next' ? '▶ Up next' : '🔒 Locked'}</span>
+                <button type="button" class="ng-bottone" data-az="cambia" data-i="${i}">Change</button></article>`;
         }).join('');
-        $('pal-corpo').innerHTML = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2>
-            <p class="pal-aiuto">${P.TAPPE} stages, one after the other, against teams you've never seen. Every battle is doubles: bring 6, pick 4. And no pressure, but one defeat sends you right back to stage 1! Choose the team you'll bring for each format, then walk in.</p>
-            <div class="pal-tappe">${carte}</div>
+        $('pal-corpo').innerHTML = `${intro}${barra}
+            <section class="pal-passo-corpo">
+                <p class="pal-passo-su">${finita ? 'Gym conquered!' : vinte > 0 ? 'Your run so far' : 'Ready?'}</p>
+                <h3 class="pal-passo-titolo">${finita ? 'You beat every stage 🏆' : vinte > 0 ? `Stage ${vinte + 1} is waiting` : 'Your three teams'}</h3>
+                <p class="pal-aiuto">${P.TAPPE} stages, one after the other, against teams you've never seen. One defeat sends you right back to stage 1: no pressure!</p>
+                <div class="pal-righe">${righe}</div>
+            </section>
             <div class="pal-azioni">
-                <button type="button" class="ng-bottone ng-compra" id="pal-via">${finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym'}</button>
-                ${vinte > 0 && !finita ? '<button type="button" class="ng-bottone" id="pal-da-capo">Start over</button>' : ''}
+                <button type="button" class="ng-bottone ng-compra" data-az="via"${pronte ? '' : ' disabled'}>${finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym'}</button>
+                ${vinte > 0 && !finita ? '<button type="button" class="ng-bottone" data-az="da-capo">Start over</button>' : ''}
                 <a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">Back to ${esc(S.gymNome)}'s page</a>
             </div>`;
     }
 
     function collegaSfida() {
         const c = $('pal-corpo');
-        const squadreScelte = () => [...c.querySelectorAll('select[data-squadra]')].map(s => s.value);
-        const salva = vinte => {
-            const sfida = { squadre: squadreScelte(), vinte };
-            P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), sfida);
-            return sfida;
-        };
-        const parti = vinte => {
-            const sq = squadreScelte();
-            if (sq.some(x => !x)) return msg('Pick a team for every stage before you walk in!', true);
-            const sfida = salva(vinte);
-            window.location.href = `battle.html?cpu=1&palestra=${encodeURIComponent(S.gym)}&tappa=${vinte}&team=${encodeURIComponent(sfida.squadre[vinte])}`;
-        };
-        c.addEventListener('change', e => { if (e.target.matches('select[data-squadra]')) { const att = P.leggiSfida(window.localStorage, P.chiaveSfida(S.io, S.gym)); salva(att ? att.vinte : 0); } });
+        // le GIF che non si caricano ripiegano sull'immagine del Pokédex (come nel resto del sito)
+        c.addEventListener('error', e => { const img = e.target; if (img && img.tagName === 'IMG' && SP && img.dataset.pkm) SP.riserva(img, SP.id(img.dataset.pkm)); }, true);
         c.addEventListener('click', e => {
-            const b = e.target.closest('button');
+            const carta = e.target.closest('.pal-squadra');
+            if (carta) { S.scelte[S.passo] = carta.dataset.team; salvaScelte(); return disegnaSfida(); }
+            const b = e.target.closest('button[data-az]');
             if (!b) return;
-            const att = P.leggiSfida(window.localStorage, P.chiaveSfida(S.io, S.gym));
-            if (b.id === 'pal-via') parti(att && !P.finita(att) ? att.vinte : 0);
-            if (b.id === 'pal-da-capo') { salva(0); disegnaSfida(); msg('Back to stage 1: fresh start!'); }
+            const az = b.dataset.az;
+            if (az === 'avanti') {
+                if (S.tornaARiepilogo) { S.tornaARiepilogo = false; S.passo = P.TAPPE; }
+                else S.passo = Math.min(P.TAPPE, S.passo + 1);
+                disegnaSfida(); window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (az === 'indietro') {
+                if (S.tornaARiepilogo) { S.tornaARiepilogo = false; S.passo = P.TAPPE; } else S.passo = Math.max(0, S.passo - 1);
+                disegnaSfida();
+            } else if (az === 'cambia') { S.tornaARiepilogo = true; S.passo = Number(b.dataset.i) || 0; disegnaSfida(); }
+            else if (az === 'da-capo') { P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte: 0 }); disegnaSfida(); msg('Back to stage 1: fresh start!'); }
+            else if (az === 'via') {
+                if (S.scelte.slice(0, P.TAPPE).some(x => !x)) return msg('Pick a team for every stage before you walk in!', true);
+                const att = stagioneDa();
+                const vinte = P.finita(att) ? 0 : att.vinte;
+                P.salvaSfida(window.localStorage, P.chiaveSfida(S.io, S.gym), { squadre: S.scelte.slice(0, P.TAPPE), vinte });
+                window.location.href = `battle.html?cpu=1&palestra=${encodeURIComponent(S.gym)}&tappa=${vinte}&team=${encodeURIComponent(S.scelte[vinte])}`;
+            }
         });
+    }
+
+    /** Da dove si riparte: con i tre team già scelti (e magari tappe vinte) il riepilogo, altrimenti il primo format senza team */
+    function passoIniziale() {
+        const tappe = tappeGym(), att = stagioneDa();
+        S.scelte = tappe.map((t, i) => (att.squadre[i] && teamPer(t.categoria).some(x => x.id === att.squadre[i]) ? att.squadre[i] : ''));
+        const primo = S.scelte.findIndex(x => !x);
+        S.passo = primo === -1 ? P.TAPPE : primo;
+        S.tornaARiepilogo = false;
     }
 
     // ---------------------------------------------------------------- avvio
@@ -178,7 +235,7 @@
                 S.gymConfig = config; S.gymNome = String(nome || altro);
                 $('pal-corpo').hidden = false;
                 if (P.tappeDi(config).length !== P.TAPPE) $('pal-corpo').innerHTML = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2><p class="pal-aiuto">${esc(S.gymNome)} hasn't built a gym yet. Check back soon!</p><div class="pal-azioni"><a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(altro)}">Back to ${esc(S.gymNome)}'s page</a></div>`;
-                else { disegnaSfida(); collegaSfida(); }
+                else { passoIniziale(); disegnaSfida(); collegaSfida(); }
             }
         } catch (e) { msg("Couldn't load the gym. Check your connection and reload the page.", true); }
         fine();

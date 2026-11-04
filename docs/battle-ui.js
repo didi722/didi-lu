@@ -418,6 +418,7 @@ function schedeCpu() {
     impostaPartita({
         openSheet: false,
         latiNoti: ['p1'],
+        permanenti: cpu && cpu.palestra ? self.Palestra.condizioniFisse(cpu.palestra.vantaggio) : [],      // il vantaggio di campo non ha un conto alla rovescia: dura tutta la partita
         p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
         // in palestra l'avversario è il capopalestra, con il suo nome e la sua faccia anche dentro lo schermo
         p2: { nome: cpu && cpu.palestra ? config.p2.nome : 'CPU', avatar: (cpu && cpu.palestra && config.p2.avatar) || '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }

@@ -34,3 +34,50 @@ body.pg-palestra .pal-pagina { width: calc(100% - var(--nb-ads, 220px) - 30px); 
 .pal-pagina .ng-bottone.ng-compra:hover:not(:disabled) { background-color: #7dff97; }
 .pal-pagina .ng-bottone:active:not(:disabled) { translate: 2px 2px; box-shadow: none; }
 .pal-pagina .ng-bottone:disabled { opacity: .45; cursor: default; box-shadow: none; }
+
+/* ---------- Sfidare una palestra: un passo per format (palestra-ui.js, disegnaSfida) ---------- */
+.pal-passi { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
+.pal-passo { display: flex; align-items: center; gap: 8px; padding: 6px 14px 4px 6px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .78rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+.pal-passo b { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding-top: 2px; box-sizing: border-box; background: var(--nb-ink, #000); color: #fff; font-size: .85rem; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.pal-passo-ora { opacity: 1; background: var(--nb-giallo, #ffbd44); transform: rotate(-1.5deg); }
+.pal-passo-fatto { opacity: 1; background: #e9ffe9; }
+.pal-passo-fatto b { background: #1aa84a; }
+.pal-passo-corpo { margin: 0 0 8px; padding: 18px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
+.pal-passo-su { margin: 0; font: 900 .72rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .12em; opacity: .65; }
+.pal-passo-titolo { margin: 2px 0 6px; font: 900 1.9rem/1.05 var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; }
+.pal-passo-corpo .pal-aiuto { margin-bottom: 16px; }
+
+.pal-squadre { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.pal-squadra { position: relative; display: grid; gap: 8px; justify-items: stretch; padding: 12px; text-align: left; cursor: pointer; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); transition: translate .12s ease, box-shadow .12s ease, background-color .12s ease; }
+.pal-squadra:hover { translate: -3px -3px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); background: #fffbe6; }
+.pal-squadra:active { translate: 2px 2px; box-shadow: none; }
+.pal-squadra-nome { font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 30px; }
+.pal-squadra-spunta { position: absolute; top: -10px; right: -10px; display: none; width: 30px; height: 30px; align-items: center; justify-content: center; background: #1aa84a; color: #fff; border: 3px solid var(--nb-ink, #000); font-weight: 900; box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); transform: rotate(6deg); }
+.pal-scelta { background: #e9ffe9; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); }
+.pal-scelta .pal-squadra-spunta { display: inline-flex; }
+.pal-sprites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; background: rgba(0, 0, 0, .06); border: 2px solid rgba(0, 0, 0, .15); }
+.pal-sprites img { width: 100%; height: 56px; object-fit: contain; image-rendering: auto; }
+.pal-sprites-piccoli { grid-template-columns: repeat(6, 34px); gap: 0; padding: 2px; }
+.pal-sprites-piccoli img { height: 34px; }
+.pal-vuoto { grid-column: 1 / -1; margin: 0; padding: 14px; background: #fff6d6; border: 3px dashed var(--nb-ink, #000); font: 700 .9rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.pal-vuoto a { color: inherit; }
+
+.pal-righe { display: grid; gap: 14px; }
+.pal-riga { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 14px; padding: 12px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.pal-riga.pal-done { background: #e9ffe9; }
+.pal-riga.pal-next { background: var(--nb-giallo, #ffbd44); }
+.pal-riga-num { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding-top: 3px; box-sizing: border-box; background: var(--nb-ink, #000); color: #fff; font: 900 1.2rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); box-shadow: var(--nb-sh-s-scuro, 3px 3px 0 rgba(0, 0, 0, .35)); }
+.pal-riga-testo { min-width: 0; }
+.pal-riga-testo p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-riga-team { font: 700 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .8; }
+@media (max-width: 700px) {
+    .pal-riga { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
+    .pal-riga-testo p { white-space: normal; }
+    .pal-riga .pal-stato { grid-column: 3; grid-row: 1; }
+    .pal-riga .pal-sprites { grid-column: 1 / -1; grid-row: 2; }
+    .pal-riga .ng-bottone { grid-column: 1 / -1; grid-row: 3; }
+    .pal-passo-titolo { font-size: 1.5rem; }
+    .pal-passo span { display: none; }
+    .pal-passo-ora span { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) { .pal-squadra, .pal-passo-ora { transition: none; transform: none; } }
