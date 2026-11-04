@@ -1439,14 +1439,14 @@ body.pp-fisso .pp-coppa-gruppo .pp-coppa { width: 52px; height: 52px; }
     100% { filter: drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 18px #ff3b3b); }
 }
 @media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-arcobaleno"] img { animation: none; filter: drop-shadow(0 0 6px #ff66cc) drop-shadow(0 0 18px #ff66cc); } }
-/* edizione limitata "Lagoon": acqua e oro, che si danno il cambio */
-.pp-allenatore[data-aura="aura-laguna"] img { animation: pp-aura-laguna 5s ease-in-out infinite alternate; }
-@keyframes pp-aura-laguna {
-    from { filter: drop-shadow(0 0 6px #19c5b5) drop-shadow(0 0 18px #f2c94c); }
-    to   { filter: drop-shadow(0 0 6px #f2c94c) drop-shadow(0 0 18px #19c5b5); }
-}
-@media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-laguna"] img { animation: none; filter: drop-shadow(0 0 6px #19c5b5) drop-shadow(0 0 18px #f2c94c); } }
+/* aure di un solo colore */
+.pp-allenatore[data-aura="aura-smeraldo"] img { filter: drop-shadow(0 0 6px #2ee66b) drop-shadow(0 0 18px #6dffa0); }
+.pp-allenatore[data-aura="aura-viola"] img { filter: drop-shadow(0 0 6px #a855ff) drop-shadow(0 0 18px #d3a4ff); }
+.pp-allenatore[data-aura="aura-rosa"] img { filter: drop-shadow(0 0 6px #ff5fa8) drop-shadow(0 0 18px #ff9fcb); }
+.pp-allenatore[data-aura="aura-rosso"] img { filter: drop-shadow(0 0 6px #ff2d3d) drop-shadow(0 0 18px #ff6a5c); }
+.pp-allenatore[data-aura="aura-lime"] img { filter: drop-shadow(0 0 6px #b6ff2e) drop-shadow(0 0 18px #dcff7a); }
 
 /* ---------- Anteprima dello Shop (public.html?anteprima=1): solo la carta, senza menu, pulsanti, pubblicità né musica ---------- */
 html.pp-anteprima .top-auth-bar, html.pp-anteprima #menu-overlay, html.pp-anteprima #pp-nav, html.pp-anteprima .ads-sidebar, html.pp-anteprima .music-btn,
+html.pp-anteprima body { pointer-events: none; }   /* solo da guardare: niente hover né clic (tooltip, finestre) */
 html.pp-anteprima .sfide-btn, html.pp-anteprima .sfide-dropdown, html.pp-anteprima #pp-modifica-btn { display: none !important; }

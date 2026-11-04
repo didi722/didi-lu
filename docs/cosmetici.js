@@ -79,8 +79,7 @@
         sfondo: { nome: 'Page patterns', frase: 'More patterns for the background of your page.' }
     };
 
-    // Edizione limitata: la stagione a cui è legata (id in seasons/) e il nome dell'edizione. Per la prossima: cambia `stagione` (e `nome`) qui sotto, oppure aggiungi un'altra costante.
-    const EDIZIONE_LAGUNA = { stagione: 's1', nome: 'Lagoon' };
+    // Edizioni limitate: nessuna per ora. Una voce con `edizione: { stagione, nome }` si vende solo finché quella stagione non è chiusa (vedi disponibilita).
 
     // `campo`: dove si scrive quando si equipaggia (players/{id}/info/<campo>); per i motivi non c'è: li sceglie l'editor della pagina
     const CATALOGO = [
@@ -89,10 +88,20 @@
         { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 400, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
         { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 400, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
         { id: 'aura-arcobaleno', tipo: 'aura', nome: 'Rainbow aura', prezzo: 800, campo: 'aura', colore: '#ff66cc', descr: 'A glow that cycles through every colour.' },
+        { id: 'aura-smeraldo', tipo: 'aura', nome: 'Emerald aura', prezzo: 400, campo: 'aura', colore: '#2ee66b', descr: 'A fresh green glow.' },
+        { id: 'aura-viola', tipo: 'aura', nome: 'Violet aura', prezzo: 400, campo: 'aura', colore: '#a855ff', descr: 'A mysterious purple glow.' },
+        { id: 'aura-rosa', tipo: 'aura', nome: 'Rose aura', prezzo: 400, campo: 'aura', colore: '#ff5fa8', descr: 'A soft pink glow.' },
+        { id: 'aura-rosso', tipo: 'aura', nome: 'Crimson aura', prezzo: 400, campo: 'aura', colore: '#ff2d3d', descr: 'A fierce red glow.' },
+        { id: 'aura-lime', tipo: 'aura', nome: 'Lime aura', prezzo: 400, campo: 'aura', colore: '#b6ff2e', descr: 'An electric lime glow.' },
         { id: 'nome-oro', tipo: 'nome', nome: 'Gold name', prezzo: 400, campo: 'effettoNome', descr: 'Your name in shimmering gold.' },
         { id: 'nome-neon', tipo: 'nome', nome: 'Neon name', prezzo: 400, campo: 'effettoNome', descr: 'Your name glows in your own colour.' },
         { id: 'nome-fuoco', tipo: 'nome', nome: 'Flame name', prezzo: 400, campo: 'effettoNome', descr: 'Your name on fire.' },
         { id: 'nome-arcobaleno', tipo: 'nome', nome: 'Rainbow name', prezzo: 800, campo: 'effettoNome', descr: 'Colours flow through your name.' },
+        { id: 'nome-ghiaccio', tipo: 'nome', nome: 'Ice name', prezzo: 400, campo: 'effettoNome', descr: 'Your name in frosty blue and white.' },
+        { id: 'nome-viola', tipo: 'nome', nome: 'Galaxy name', prezzo: 400, campo: 'effettoNome', descr: 'Purple, pink and blue drifting through your name.' },
+        { id: 'nome-smeraldo', tipo: 'nome', nome: 'Emerald name', prezzo: 400, campo: 'effettoNome', descr: 'Your name in shimmering green.' },
+        { id: 'nome-tramonto', tipo: 'nome', nome: 'Sunset name', prezzo: 400, campo: 'effettoNome', descr: 'Orange, pink and purple, like the sky at dusk.' },
+        { id: 'nome-argento', tipo: 'nome', nome: 'Silver name', prezzo: 400, campo: 'effettoNome', descr: 'Polished silver with a passing flash.' },
         { id: 'palco-neve', tipo: 'palco', nome: 'Snowfall', prezzo: 500, campo: 'effettoPalco', descr: 'Snow drifting across your stage.' },
         { id: 'palco-scintille', tipo: 'palco', nome: 'Embers', prezzo: 500, campo: 'effettoPalco', descr: 'Sparks rising from the floor.' },
         { id: 'palco-coriandoli', tipo: 'palco', nome: 'Confetti', prezzo: 500, campo: 'effettoPalco', descr: 'A never-ending victory party.' },
@@ -101,11 +110,7 @@
         { id: 'sfondo-pokeball', tipo: 'sfondo', nome: 'Pokéballs', prezzo: 250, motivo: 'pokeball', descr: 'A field of tiny Poké Balls.' },
         { id: 'sfondo-anelli', tipo: 'sfondo', nome: 'Rings', prezzo: 250, motivo: 'anelli', descr: 'Overlapping rings.' },
         { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 250, motivo: 'stelle', descr: 'A sky of little stars.' },
-        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' },
-        // edizione limitata: costano un po' di più delle voci normali dello stesso tipo
-        { id: 'aura-laguna', tipo: 'aura', nome: 'Lagoon aura', prezzo: 600, campo: 'aura', colore: '#19c5b5', edizione: EDIZIONE_LAGUNA, descr: 'A teal and gold glow, like the lagoon at sunset.' },
-        { id: 'nome-laguna', tipo: 'nome', nome: 'Lagoon name', prezzo: 600, campo: 'effettoNome', edizione: EDIZIONE_LAGUNA, descr: 'Your name in lagoon waters.' },
-        { id: 'palco-laguna', tipo: 'palco', nome: 'Lagoon', prezzo: 700, campo: 'effettoPalco', edizione: EDIZIONE_LAGUNA, descr: 'Bubbles rising from the lagoon.' }
+        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' }
     ];
 
     // ---- Le famiglie: avatar e canzoni ---------------------------------------------------------

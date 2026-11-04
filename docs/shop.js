@@ -19,6 +19,8 @@
 
     const $ = id => document.getElementById(id);
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // l'icona delle monete (immagini/moneta.png) al posto dell'emoji, nel markup già protetto (mai dentro gli attributi)
+    const conMoneta = h => String(h).replace(/🪙/g, '<img class="shop-moneta" src="immagini/moneta.png" alt="coins">');
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const URL_PLAYLIST = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv';
     const MAX_RIGHE = 150;
@@ -26,7 +28,7 @@
 
     const S = {
         uid: '', giocatore: '', saldo: 0, posseduti: {}, casa: {}, info: {}, pagina: {}, movimenti: [], stagioni: {}, nomiStagioni: {}, registro: {}, teams: [],
-        tutti: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
+        tutti: null, scelta: null, canzoni: null, ricerca: '', anteprime: {}, tab: 'pagina', occupato: false, prova: {}, provando: '', squadra: '', armato: null
     };
     let ascolto = null;          // l'audio dell'anteprima di una canzone
 
@@ -74,7 +76,7 @@
         const m = $('shop-msg');
         m.textContent = testo || ''; m.hidden = !testo; m.classList.toggle('shop-errore', !!errore);
     }
-    const mostraSaldo = () => { $('shop-saldo').textContent = `🪙 ${S.saldo}`; };
+    const mostraSaldo = () => { $('shop-saldo').innerHTML = conMoneta(`🪙 ${S.saldo}`); };
 
     const base = () => ({
         aura: S.info.aura || null, effettoNome: S.info.effettoNome || null, effettoPalco: S.info.effettoPalco || null, pkmShiny: !!S.info.pkmShiny,
@@ -104,10 +106,12 @@
         const campo = c.tipo === 'shiny' ? 'pkmShiny' : c.tipo === 'aura' ? 'aura' : c.tipo === 'nome' ? 'effettoNome' : c.tipo === 'palco' ? 'effettoPalco' : c.tipo === 'sfondo' ? 'sfondoMotivo' : '';
         if (!campo) return;
         const valore = c.tipo === 'shiny' ? true : c.tipo === 'sfondo' ? c.motivo : c.id;
-        if (S.provando === id) { delete S.prova[campo]; S.provando = ''; } else { S.prova[campo] = valore; S.provando = id; }
+        // una prova alla volta: sceglierne un'altra toglie la precedente
+        S.scelta = null;
+        if (S.provando === id) { S.prova = {}; S.provando = ''; } else { S.prova = { [campo]: valore }; S.provando = id; }
         aggiornaAnteprima(); disegna(true);
     }
-    function azzeraProva() { S.prova = {}; S.provando = ''; aggiornaAnteprima(); disegna(true); }
+    function azzeraProva() { S.prova = {}; S.provando = ''; S.scelta = null; aggiornaAnteprima(); disegna(true); }
 
     // ---------------------------------------------------------------- Your page
     const compagnoBox = () => { const b = C.compagnoDelBox(S.info, S.teams); return b ? String(b.nome || b.name || 'that Pokémon') : ''; };
@@ -159,16 +163,27 @@
             : `A new ${cosaDi(tipo)} costs ${pr.prezzo} 🪙. You can have ${C.LIMITI[tipo]} at most: to get another one you release one of yours (free), and it goes back to the pool for everyone. Wearing the ones you have is free.`;
     };
 
+    /** Avatar e colore si provano sulla tua pagina (a destra) prima di comprare: un tocco li sceglie (il precedente si toglie), "Buy" apre la conferma */
+    function scegli(d) {
+        if (S.scelta && S.scelta.id === d.id) { S.scelta = null; S.prova = {}; }
+        else { S.scelta = d; S.provando = ''; S.prova = d.tipo === 'avatar' ? { avatar: d.immagine } : { color: d.colore }; }
+        aggiornaAnteprima(); disegna(true);
+    }
+    function barraScelta(tipo) {
+        if (!S.scelta || S.scelta.tipo !== tipo) return '';
+        const pr = C.prezzoAcquisto(tipo, contestoW());
+        return `<div class="shop-barra"><span><b>${esc(S.scelta.nome)}</b> on your page</span><button type="button" class="ng-bottone ng-compra" data-ng="compra-scelta">${pr.gratis ? 'Take it for free' : `Buy · ${pr.prezzo} 🪙`}</button><button type="button" class="ng-bottone" data-ng="annulla-scelta">Cancel</button></div>`;
+    }
     function htmlAvatar(presi) {
         const mie = new Set(possedute('avatar')), pr = C.prezzoAcquisto('avatar', contestoW());
         const bottoni = P.elencoAvatar().map(f => {
             const n = f.replace('.png', ''), id = `avatar-${n}`, chiave = `profile/${f}`.toLowerCase();
             if (mie.has(id)) return '';
             const altro = presi.avatar.has(chiave) || presoDa(id);
-            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
-            return `<button type="button" class="shop-av${altro ? ' is-preso' : ''}" data-ng="prendi" data-tipo="avatar" data-id="${id}" data-nome="Avatar ${n}" data-img="immagini/profile/${f}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
+            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
+            return `<button type="button" class="shop-av${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" data-ng="prendi" data-tipo="avatar" data-id="${id}" data-nome="Avatar ${n}" data-img="immagini/profile/${f}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
         }).join('');
-        return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4><div class="shop-avatar-griglia">${bottoni}</div></section>`;
+        return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('avatar')}<div class="shop-avatar-griglia">${bottoni}</div></section>`;
     }
 
     function htmlColore(presi) {
@@ -177,10 +192,10 @@
             const K = c.toUpperCase(), id = C.idColore(K);
             if (!id || mie.has(id)) return '';
             const altro = presi.colori.has(K) || presoDa(id);
-            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
-            return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
+            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
+            return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
         }).join('');
-        return `<section class="ng-gruppo"><h3>Signature colour ${conta('colore')}</h3><p>It colours your name, stats and trophy. ${notaCollezione('colore')}</p>${htmlMiei('colore')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4><div class="shop-colori">${bottoni}</div></section>`;
+        return `<section class="ng-gruppo"><h3>Signature colour ${conta('colore')}</h3><p>It colours your name, stats and trophy. ${notaCollezione('colore')}</p>${htmlMiei('colore')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('colore')}<div class="shop-colori">${bottoni}</div></section>`;
     }
 
     function htmlCanzone(presi) {
@@ -213,7 +228,7 @@
     function finestra(html, alClick, alloAnnullo) {
         const velo = document.createElement('div');
         velo.className = 'shop-conferma-velo';
-        velo.innerHTML = `<div class="shop-conferma" role="dialog" aria-modal="true">${html}</div>`;
+        velo.innerHTML = conMoneta(`<div class="shop-conferma" role="dialog" aria-modal="true">${html}</div>`);
         const togli = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
         const annulla = () => { togli(); if (alloAnnullo) alloAnnullo(); };
         const tasto = e => { if (e.key === 'Escape') annulla(); };
@@ -227,13 +242,10 @@
     /** Prendere un avatar, un colore o una canzone: quanto costa e, a quota piena, quale dei tuoi rilasciare (e intanto si vede sulla pagina a destra) */
     function chiediAcquisto({ tipo, id, nome, immagine, colore, extra }) {
         const pr = C.prezzoAcquisto(tipo, contestoW()), mie = possedute(tipo), limite = C.LIMITI[tipo], piena = mie.length >= limite;
-        const prova = tipo === 'avatar' ? { avatar: immagine } : tipo === 'colore' ? { color: colore } : null;
-        if (prova) { S.prova = { ...S.prova, ...prova }; aggiornaAnteprima(); }
         let scelta = '';
         const frasi = () => N.frasiAcquisto({ tipo, nome, prezzo: pr.prezzo, gratis: pr.gratis, saldo: S.saldo, piena, limite, scelta });
         const scelte = !piena ? '' : `<div class="shop-rilascia" role="radiogroup" aria-label="Release one">${mie.map(x => { const v = voceDi(tipo, x); return `<label><input type="radio" name="shop-rilascia" value="${esc(x)}"><span>${tipo === 'avatar' ? `<img src="${esc(v.immagine)}" alt="">` : tipo === 'colore' ? `<i style="--c:${esc(v.colore)}"></i>` : ''}${esc(v.nome)}${x === C.idCorrente(tipo, S.info) ? ' (you wear it)' : ''}</span></label>`; }).join('')}</div>`;
         const corpo = f => `${testaConferma({ immagine, colore })}<b>${esc(nome)}</b>${f.righe.map(r => `<p>${esc(r)}</p>`).join('')}${scelte}<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button><button type="button" class="ng-bottone ng-compra" data-x="ok"${f.ok ? '' : ' disabled'}>${esc(f.conferma)}</button></div>`;
-        const levaProva = () => { if (prova) { for (const k of Object.keys(prova)) delete S.prova[k]; aggiornaAnteprima(); } };
         finestra(corpo(frasi()), async (e, velo, togli) => {
             if (e.target.name === 'shop-rilascia') { scelta = e.target.value; velo.querySelector('[data-x=ok]').disabled = !frasi().ok; return; }
             if (!(e.target.dataset && e.target.dataset.x === 'ok') || e.target.disabled) return;
@@ -242,16 +254,15 @@
             try { r = await N.chiama(window, 'acquistaCosmetico', { id, ...(extra || {}), ...(scelta ? { rilascia: scelta } : {}) }); } catch (err) { r = { ok: false, motivo: 'error' }; }
             togli();
             if (r.ok) {
-                S.prova = {};
+                S.prova = {}; S.scelta = null;
                 await leggi(); mostraSaldo();
                 msg(r.gratis ? `${nome} is yours, for free!` : `${nome} is yours!${r.rilasciato ? ' The other one went back to the pool.' : ''}`);
                 aggiornaAnteprima(); disegna(true);
             } else {
-                levaProva();
                 msg(N.frase(r.motivo), true);
                 if (r.motivo === 'taken' || r.motivo === 'limit') { await leggi(); disegna(true); }
             }
-        }, levaProva);
+        });
     }
 
     /** Lasciare andare uno di quelli che si hanno */
@@ -296,17 +307,20 @@
     function disegna(tieniScorrimento) {
         const el = $('shop-contenuto');
         const y = window.scrollY;
-        el.innerHTML = S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete();
+        const interni = [...el.querySelectorAll('.shop-avatar-griglia, .shop-colori, .shop-canzoni')].map(x => x.scrollTop);
+        el.innerHTML = conMoneta(S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete());
         $('shop-corpo').classList.toggle('senza-anteprima', !TAB_CON_ANTEPRIMA.includes(S.tab));
         adattaAnteprima();
         document.querySelectorAll('.shop-scheda').forEach(b => { const su = b.dataset.tab === S.tab; b.classList.toggle('attiva', su); b.setAttribute('aria-selected', String(su)); });
         const r = $('shop-ricerca');
         if (r && document.activeElement === document.body && S.ricerca) { /* la ricerca si riscrive da sola: non si ruba il fuoco */ }
+        el.querySelectorAll('.shop-avatar-griglia, .shop-colori, .shop-canzoni').forEach((x, i) => { if (interni[i]) x.scrollTop = interni[i]; });
         if (tieniScorrimento) window.scrollTo(0, y);
     }
     function vai(tab) {
         S.tab = ['pagina', 'allenatore', 'pokemon', 'monete'].includes(tab) ? tab : 'pagina';
-        S.armato = null; msg('');
+        S.armato = null; S.scelta = null; S.prova = {}; S.provando = ''; msg('');
+        aggiornaAnteprima();
         if (ascolto) { ascolto.pause(); ascolto = null; }
         try { const u = new URL(window.location.href); u.searchParams.set('tab', S.tab); window.history.replaceState(null, '', u.toString()); } catch (e) { /* niente */ }
         if (S.tab === 'allenatore') caricaTutti();
@@ -334,7 +348,9 @@
             });
         }
         const dati = () => ({ tipo: b.dataset.tipo, id: b.dataset.id, nome: b.dataset.nome, immagine: b.dataset.img, colore: b.dataset.c, extra: b.dataset.url ? { url: b.dataset.url, nome: b.dataset.nome } : null });
-        if (ng === 'prendi') { if (ascolto) { ascolto.pause(); ascolto = null; } return chiediAcquisto(dati()); }
+        if (ng === 'prendi') { if (ascolto) { ascolto.pause(); ascolto = null; } return dati().tipo === 'canzone' ? chiediAcquisto(dati()) : scegli(dati()); }
+        if (ng === 'compra-scelta') return S.scelta && chiediAcquisto(S.scelta);
+        if (ng === 'annulla-scelta') return azzeraProva();
         if (ng === 'rilascia') return chiediRilascio(dati());
         if (ng === 'indossa') { const d = dati(); return indossa(d.tipo, d.id, d.extra); }
         if (ng === 'canzone-nessuna') return indossa('canzone', '', null);
@@ -360,13 +376,20 @@
     $('shop-contenuto').addEventListener('input', e => { if (e.target.id === 'shop-ricerca') { S.ricerca = e.target.value; const pos = e.target.selectionStart; disegna(true); const r = $('shop-ricerca'); if (r) { r.focus(); r.setSelectionRange(pos, pos); } } });
     $('shop-schede').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) vai(b.dataset.tab); });
     $('shop-reset').addEventListener('click', azzeraProva);
+    // l'anteprima si può ingrandire (la colonna della pagina diventa più larga)
+    $('shop-ingrandisci').addEventListener('click', () => {
+        const grande = $('shop-corpo').classList.toggle('grande');
+        $('shop-ingrandisci').textContent = grande ? 'Smaller' : 'Bigger';
+        $('shop-ingrandisci').setAttribute('aria-pressed', String(grande));
+        adattaAnteprima();
+    });
 
     // ---------------------------------------------------------------- avvio
     function avvia(utente) {
         const accedi = $('shop-accedi'), corpo = $('shop-corpo'), schede = $('shop-schede');
         const loader = $('poke-loader');
         const finito = () => { if (loader) loader.style.display = 'none'; };
-        if (!utente) { accedi.hidden = false; corpo.hidden = true; schede.hidden = true; $('shop-saldo').textContent = '🪙 –'; finito(); return; }
+        if (!utente) { accedi.hidden = false; corpo.hidden = true; schede.hidden = true; $('shop-saldo').innerHTML = conMoneta('🪙 –'); finito(); return; }
         accedi.hidden = true; schede.hidden = false;
         S.uid = utente.uid;
         if (!document.getElementById('ng-stile')) { const st = document.createElement('style'); st.id = 'ng-stile'; st.textContent = N.STILE; document.head.appendChild(st); }

@@ -131,7 +131,9 @@
         if (!lista || !lista.length) return '<p class="hof-vuoto">No records yet: they appear as the league plays.</p>';
         const gruppi = [];
         for (const rec of lista) { let g = gruppi.find(x => x.nome === rec.gruppo); if (!g) gruppi.push(g = { nome: rec.gruppo, lista: [] }); g.lista.push(rec); }
-        return gruppi.map(g => `<section class="hof-gruppo" aria-label="${esc(g.nome)}"><h3 class="hof-gruppo-titolo">${esc(g.nome)}</h3><div class="hof-griglia">`
+        // i tag per scegliere cosa vedere (Trainers, Teams, Pokémon), come quelli delle stagioni (palmares.js li fa funzionare)
+        const tag = `<div class="palm-filtri hof-filtri" role="group" aria-label="Records">${[['all', 'All'], ...gruppi.map(g => [g.nome, g.nome])].map(([id, testo]) => `<button type="button" class="palm-tasto${id === 'all' ? ' attivo' : ''}" data-gruppo="${esc(id)}">${esc(testo)}</button>`).join('')}</div>`;
+        return tag + gruppi.map(g => `<section class="hof-gruppo" data-gruppo="${esc(g.nome)}" aria-label="${esc(g.nome)}"><h3 class="hof-gruppo-titolo">${esc(g.nome)}</h3><div class="hof-griglia">`
             + g.lista.map(rec => `<article class="hof-record"><h4 class="hof-etichetta">${esc(rec.titolo)}</h4>${rec.nota ? `<p class="hof-nota">${esc(rec.nota)}</p>` : ''}<ol>`
                 + rec.voci.map((v, i) => {
                     const av = (giocatori[idDi(v.nome)] || {}).avatar || v.avatar;

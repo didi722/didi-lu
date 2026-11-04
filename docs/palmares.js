@@ -136,6 +136,14 @@
             } catch (e) { console.warn('Hall of Fame:', e); el.innerHTML = '<p class="hof-vuoto">Couldn\'t load this section. Try again later.</p>'; }
         };
         nav.addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) mostra(b.dataset.vista); });
+        // Records: i tag Trainers / Teams / Pokémon mostrano un gruppo alla volta
+        document.getElementById('palm-vista-records').addEventListener('click', e => {
+            const b = e.target.closest('[data-gruppo].palm-tasto');
+            if (!b) return;
+            const vista = document.getElementById('palm-vista-records');
+            vista.querySelectorAll('.hof-filtri .palm-tasto').forEach(x => x.classList.toggle('attivo', x === b));
+            vista.querySelectorAll('.hof-gruppo').forEach(g => { g.hidden = b.dataset.gruppo !== 'all' && g.dataset.gruppo !== b.dataset.gruppo; });
+        });
         // ?sezione=records apre direttamente una sezione
         const scelta = new URLSearchParams(location.search).get('sezione');
         if (viste.includes(scelta)) mostra(scelta);
