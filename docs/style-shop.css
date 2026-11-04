@@ -151,3 +151,12 @@ html.app-shell { --shop-testo: #fff; }
 .shop-grande .ng-anteprima { flex: none; zoom: 2; }
 /* la moneta dentro le frasi della conferma resta piccola (le immagini della conferma sono grandi) */
 .shop-conferma img.shop-moneta { width: 1.1em; height: 1.1em; border: 0; background: none; }
+
+/* hover e pressione di tutti i pulsanti dello Shop (acquisto, conferma, indossa, rilascia, annulla, ascolta, squadre...) come le schede */
+.shop-pagina .ng-bottone, .shop-conferma .ng-bottone, .shop-reset, .shop-squadra, .shop-ascolta, .shop-scelta { transition: translate .1s ease, box-shadow .1s ease, background-color .1s ease; }
+.shop-pagina .ng-bottone:hover:not(:disabled), .shop-conferma .ng-bottone:hover:not(:disabled), .shop-reset:hover, .shop-squadra:hover, .shop-ascolta:hover, .shop-scelta:hover:not(:disabled),
+.shop-pagina .ng-bottone:focus-visible, .shop-conferma .ng-bottone:focus-visible, .shop-reset:focus-visible, .shop-squadra:focus-visible, .shop-ascolta:focus-visible, .shop-scelta:focus-visible { translate: -2px -2px; box-shadow: var(--nb-sh-m, 5px 5px 0 #000); outline: none; }
+.shop-pagina .ng-bottone:hover:not(:disabled):not(.ng-compra):not(.ng-sicuro), .shop-conferma .ng-bottone:hover:not(:disabled):not(.ng-compra), .shop-reset:hover, .shop-ascolta:hover, .shop-scelta:hover:not(:disabled) { background-color: var(--nb-giallo, #ffbd44); }
+.shop-pagina .ng-bottone.ng-compra:hover:not(:disabled), .shop-conferma .ng-bottone.ng-compra:hover:not(:disabled) { background-color: #7dff97; }
+.shop-pagina .ng-bottone:active:not(:disabled), .shop-conferma .ng-bottone:active:not(:disabled), .shop-reset:active, .shop-squadra:active, .shop-ascolta:active, .shop-scelta:active:not(:disabled) { translate: 2px 2px; box-shadow: none; }
+.shop-squadra:not(.attiva):hover { background-color: var(--nb-giallo, #ffbd44); }
