@@ -541,8 +541,9 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
 }
 
 /* i giganti (Kyogre, Wailord): grandi com'è giusto, senza il limite di larghezza, e spostati a destra: il palco ne taglia il bordo */
-.pp-pkm.pp-enorme { right: calc(-70 * var(--d)); }
-.pp-pkm.pp-enorme .pp-pkm-img { max-width: none; width: auto; }
+.pp-pkm.pp-enorme { right: calc(-150 * var(--d)); }
+/* larghezza fissa (400) e altezza che ne segue: si vede solo la parte davanti (da x 150 in poi), l'allenatore (fino a x ~130) resta scoperto */
+.pp-pkm.pp-enorme .pp-pkm-img { max-width: none; width: calc(400 * var(--d)); height: auto; }
 .pp-pkm.pp-enorme::after { left: 20%; right: 20%; }
 
 .pp-pkm::after {
