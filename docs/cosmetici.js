@@ -5,10 +5,10 @@
 //   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, gli effetti del nome e del palco, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita
 //     (gli effetti grafici di una voce nuova stanno in effetti-pagina.css e style-public-card.css).
 //   - Le edizioni limitate: voci del catalogo con `edizione: { stagione, nome }`. Si comprano solo finché quella stagione non è chiusa (disponibilita); dopo restano solo a chi le ha comprate.
-//   - Le famiglie: avatar (avatar-<n>), colore firma (colore-<rrggbb>) e canzoni (canzone-<impronta dell'indirizzo>) non si comprano, si CAMBIANO (functions/monete.js: cambia). Ogni cambio costa
-//     (PREZZI) e il server lo fa subito, scrivendo il profilo. Il primo avatar, il primo colore e la prima canzone sono "di casa", l'unica cosa personale: si scelgono gratis (chi ha ancora quello
-//     di partenza) o, per chi ne aveva già uno, è quello che aveva; restano suoi PER SEMPRE, nessun altro li può prendere e tornarci non costa mai. Quello che si porta, invece, è riservato
-//     solo finché lo si porta: cambiando di nuovo torna libero per tutti. Così l'unicità, com'è sempre stata, non si rompe e non si paga mai qualcosa che poi non si può usare.
+//   - Le famiglie: avatar (avatar-<n>), colore firma (colore-<rrggbb>) e canzoni (canzone-<impronta dell'indirizzo>) si comprano come le altre cose (PREZZI) e sono UNICHE: quelle che hai sono tue,
+//     nessun altro le può avere. Per non lasciare gli altri senza, ognuno ne può avere al massimo LIMITI per tipo: per prenderne un'altra a quota piena se ne rilascia una (gratis), che torna libera
+//     per tutti. Il primo avatar, il primo colore e la prima canzone sono gratis per chi ha ancora quello di partenza; chi ne aveva già uno lo ha già (conta come il primo). Si indossa solo
+//     quello che si ha, e indossarlo non costa (functions/monete.js: prendi, rilascia, cambia).
 //   - Lo shiny di un Pokémon di un team: si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js). Il prezzo dipende dalla specie: PREZZI.shinyPokemon per una
 //     "standard", meno per le comuni (Pichu, Magikarp), di più per le forti (pseudo-leggendari, OU), le rare (sub-leggendari) e le leggendarie (FASCE_SHINY; la fascia di ogni specie sta in rarita-pkm.js).
 //   - L'economia: PREMI (quanto si guadagna) e PREZZI (quanto costano le famiglie), calibrati sulla stagione tipo con stimaStagione().
@@ -16,7 +16,7 @@
 // Modificane una e copiala sull'altra (lo controlla test/monete.test.js). Lo stesso vale per rarita-pkm.js, che questo file legge (nel sito va caricato prima: <script src="rarita-pkm.js">).
 //
 //   Cosmetici.CATALOGO, Cosmetici.perId(id), Cosmetici.TIPI, Cosmetici.PREMI, Cosmetici.PREZZI
-//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quello che porti o quello di casa
+//   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quelli che hai (comprati o in uso)
 //   Cosmetici.possedutiDa({ wallet, info, pagina })    l'insieme degli id posseduti del catalogo fisso
 //   Cosmetici.motivoBloccato(motivo, contesto)         true se quel motivo dello sfondo è a pagamento e non è posseduto
 //   Cosmetici.disponibilita(voce, stagioni)            'si' (si compra), 'presto' (la stagione dell'edizione non c'è ancora) o 'finita' (è chiusa); stagioni = { <idStagione>: <info/status> }; le voci normali: sempre 'si'
@@ -25,10 +25,13 @@
 //   Cosmetici.COLORI_FIRMA, coloreDaId(id)             i colori che si possono scegliere (gli stessi di PALETTE_FIRMA in pagina-pubblica.js) e il colore di un id
 //   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / il colore / la canzone di partenza?
 //   Cosmetici.idCorrente(tipo, info)                   l'id dell'avatar / del colore / della canzone che porta adesso ('' se è quello di partenza o nessuno)
-//   Cosmetici.prezzoCambio(tipo, { wallet, info }, id) { prezzo, gratis, ritorno }: quanto costa cambiare avatar, colore o canzone, oggi (0 la prima volta, se ha ancora quello di partenza; 0 anche
-//                                                      tornando a quello di casa)
-//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis, ritorno }: quanto costa un cosmetico del catalogo, o un cambio per gli id degli avatar, dei colori e delle canzoni
+//   Cosmetici.LIMITI                                   quanti avatar, colori e canzoni al massimo ha un allenatore: { avatar, colore, canzone }
+//   Cosmetici.possedutiDiTipo(tipo, { wallet, info })  gli id di avatar / colori / canzoni che ha: comprati (wallet.posseduti), "di casa" delle versioni precedenti (wallet.casa) e quello che porta
+//   Cosmetici.prezzoAcquisto(tipo, { wallet, info })   { prezzo, gratis }: quanto costa prenderne un altro (0 il primo, per chi ha ancora quello di partenza)
+//   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis }: quanto costa un cosmetico del catalogo, o prenderne un altro per gli id degli avatar, dei colori e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
+//   Cosmetici.compagnoDelBox(info, teams)              il Pokémon del Box che è il compagno (info.pkmBox = "idTeam|posizione"), se c'è ancora e è davvero lui; altrimenti null (compagno "generico")
+//   Cosmetici.compagnoShiny(info, teams)               il compagno è shiny? Se viene dal Box lo è se lo è quel Pokémon del Box; se è generico, se si è comprato e messo il compagno shiny (info.pkmShiny)
 //   Cosmetici.prezzoShiny(specie)                      { fascia, nome, prezzo }: quanto costa lo shiny di un Pokémon di quella specie ("standard" se la specie non è nell'elenco delle rarità)
 //   Cosmetici.fasciaShiny(specie), Cosmetici.fasceShiny()   la fascia di una specie; l'elenco delle fasce, dalla più economica: [{ fascia, nome, prezzo }]
 //   Cosmetici.testoConShiny(testo, indice, nome, specie)  il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato (lo scrive il server dopo l'acquisto)
@@ -81,7 +84,7 @@
 
     // `campo`: dove si scrive quando si equipaggia (players/{id}/info/<campo>); per i motivi non c'è: li sceglie l'editor della pagina
     const CATALOGO = [
-        { id: 'shiny', tipo: 'shiny', nome: 'Shiny companion', prezzo: 800, campo: 'pkmShiny', descr: 'Your favourite Pokémon shows up shiny on your page, in the rankings and on share cards.' },
+        { id: 'shiny', tipo: 'shiny', nome: 'Shiny companion', prezzo: 800, campo: 'pkmShiny', descr: 'Your favourite Pokémon, when you pick it from the list, shows up shiny on your page, in the rankings and on share cards. A companion from your Box follows that Pokémon instead.' },
         { id: 'aura-oro', tipo: 'aura', nome: 'Gold aura', prezzo: 400, campo: 'aura', colore: '#ffcc33', descr: 'A warm golden glow around your trainer.' },
         { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 400, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
         { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 400, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
@@ -182,8 +185,13 @@
         return tipo === 'avatar' ? idAvatar(i.avatar) : tipo === 'canzone' ? idCanzone(i.musicaPreferita) : '';
     }
 
-    /** I tipi che si cambiano a pagamento (famiglie) */
+    /** I tipi unici che si comprano e si indossano (famiglie) */
     const FAMIGLIE = ['avatar', 'colore', 'canzone'];
+    /**
+     * Quanti ne può avere al massimo un allenatore (comprati o già suoi): per prenderne un altro, a quota piena, se ne rilascia uno (gratis, torna libero per tutti). I colori sono i più rari (56 nella
+     * palette): con pochi per testa bastano anche a una lega grande; gli avatar sono 290, le canzoni quelle della playlist. Si cambiano qui.
+     */
+    const LIMITI = { avatar: 3, colore: 2, canzone: 3 };
 
     /** Comprato (wallet.posseduti), oppure già in uso: chi usava un motivo che ora è a pagamento, ha già il compagno shiny o l'aura di adesso, li tiene. Avatar e canzoni non si comprano: vedi sotto */
     function possiede(id, { wallet, info, pagina } = {}) {
@@ -194,8 +202,8 @@
         if (c.tipo === 'shiny') return !!i.pkmShiny;
         if (c.tipo === 'aura') return i.aura === id;
         if (c.tipo === 'sfondo') return objOr(objOr(pagina).sfondo).motivo === c.motivo;
-        // avatar, colori e canzoni: quello che porti, o quello di casa (il primo, tuo per sempre)
-        if (FAMIGLIE.includes(c.tipo)) return idCorrente(c.tipo, i) === id || objOr(objOr(wallet).casa)[c.tipo] === id;
+        // avatar, colori e canzoni: quelli che hai (comprati, o quello che porti: chi lo aveva già prima del negozio lo ha)
+        if (FAMIGLIE.includes(c.tipo)) return possedutiDiTipo(c.tipo, { wallet, info: i }).includes(id);
         return false;
     }
 
@@ -224,22 +232,57 @@
     const stagioniEdizioni = () => [...new Set(CATALOGO.filter(c => c.edizione).map(c => c.edizione.stagione))];
 
     /**
-     * Quanto costa cambiare avatar, colore o canzone, oggi: sempre PREZZI, tranne la prima volta per chi ha ancora quello di partenza (e non ha ancora un "di casa"): quella è gratis.
-     * Tornare a quello di casa (`id`) non costa mai: è l'unica cosa personale, e resta sempre tua.
+     * Gli id di avatar, colori o canzoni (`tipo`) che un allenatore ha: quelli comprati (wallet.posseduti), quello "di casa" delle versioni precedenti (wallet.casa) e quello che porta adesso
+     * (chi lo aveva prima del negozio, o lo ha scelto gratis, lo ha già).
      */
-    function prezzoCambio(tipo, { wallet, info } = {}, id = '') {
-        const casa = objOr(objOr(wallet).casa)[tipo];
-        if (!casa && eDiDefault(tipo, info)) return { prezzo: 0, gratis: true };
-        if (id && casa === id) return { prezzo: 0, gratis: false, ritorno: true };
-        return { prezzo: PREZZI[tipo] || 0, gratis: false };
+    function possedutiDiTipo(tipo, { wallet, info } = {}) {
+        const w = objOr(wallet), fuori = new Set();
+        for (const [id, v] of Object.entries(objOr(w.posseduti))) { const c = v && perId(id); if (c && c.tipo === tipo) fuori.add(id); }
+        const casa = objOr(w.casa)[tipo];
+        if (casa && perId(casa) && perId(casa).tipo === tipo) fuori.add(casa);
+        const corrente = idCorrente(tipo, info);
+        if (corrente) fuori.add(corrente);
+        return [...fuori];
     }
 
-    /** Quanto costa un cosmetico del catalogo; per gli id degli avatar, dei colori e delle canzoni, quanto costa cambiare */
+    /** Quanto costa prenderne un altro: PREZZI, tranne il primo avatar, il primo colore e la prima canzone di chi ha ancora quello di partenza (gratis) */
+    function prezzoAcquisto(tipo, contesto = {}) {
+        const gratis = !possedutiDiTipo(tipo, contesto).length;
+        return { prezzo: gratis ? 0 : PREZZI[tipo] || 0, gratis };
+    }
+
+    /** Quanto costa un cosmetico del catalogo; per gli id degli avatar, dei colori e delle canzoni, quanto costa prenderne un altro (se già lo hai, niente) */
     function prezzoPer(id, contesto = {}) {
         const c = perId(id);
         if (!c) return null;
-        if (FAMIGLIE.includes(c.tipo)) return prezzoCambio(c.tipo, contesto, id);
+        if (FAMIGLIE.includes(c.tipo)) return prezzoAcquisto(c.tipo, contesto);
         return { prezzo: c.prezzo, gratis: false };
+    }
+
+    // ---- Il compagno: del Box o generico --------------------------------------------------------------
+    // Il compagno (info.pkmPreferito) si sceglie dalla lista (generico) o dal proprio Box (info.pkmBox = "idTeam|posizione"). Se viene dal Box è proprio quel Pokémon: è shiny o no come
+    // quel Pokémon del team. Il "Shiny companion" del negozio vale solo per il compagno generico.
+    const chiaveSpecie = n => String(n == null ? '' : n).toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');      // come pulisci() di public-card.js
+    const elencoDi = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
+
+    /** Il Pokémon del Box che è il compagno: `teams` è l'elenco dei team ({ id, pokemon }) o l'oggetto id → team. null se il compagno è generico o il Box è cambiato (non è più lui) */
+    function compagnoDelBox(info, teams) {
+        const i = objOr(info);
+        const [idTeam, pos] = String(i.pkmBox == null ? '' : i.pkmBox).split('|');
+        const indice = Number(pos);
+        if (!idTeam || !Number.isInteger(indice) || indice < 0) return null;
+        const lista = Array.isArray(teams) ? teams : Object.entries(objOr(teams)).map(([id, t]) => (t && typeof t === 'object' ? { id, ...t } : null));
+        const team = lista.find(t => t && t.id === idTeam);
+        const pokemon = team ? elencoDi(team.pokemon)[indice] : null;
+        const nome = pokemon && (pokemon.nome || pokemon.name);
+        if (!nome || chiaveSpecie(nome) !== chiaveSpecie(i.pkmPreferito)) return null;
+        return pokemon;
+    }
+
+    /** Il compagno è shiny? Del Box: come quel Pokémon; generico: se ha il compagno shiny (info.pkmShiny) */
+    function compagnoShiny(info, teams) {
+        const dalBox = compagnoDelBox(info, teams);
+        return dalBox ? !!dalBox.shiny : !!objOr(info).pkmShiny;
     }
 
     // ---- Lo shiny di un Pokémon di un team: il prezzo ---------------------------------------------------
@@ -344,5 +387,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, LIMITI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, possedutiDiTipo, prezzoAcquisto, prezzoPer, stimaStagione, compagnoDelBox, compagnoShiny, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

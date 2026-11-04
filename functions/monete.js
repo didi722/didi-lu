@@ -11,13 +11,13 @@
 // Ogni premio ha una chiave: lo stesso fatto (un set, un badge, una stagione) paga una volta sola (walletEventi/{chiave}).
 // Non si guadagna contro la CPU (nessun controllo possibile da qui).
 //
-// Come si spendono: i cosmetici del catalogo; il cambio di avatar, di colore e di canzone (costa sempre, tranne la prima volta per chi ha ancora quello di partenza e tornando al primo; il primo
-// resta tuo per sempre, gli altri tornano liberi quando li cambi); lo shiny di un Pokémon di un team (il prezzo dipende dalla specie: Cosmetici.prezzoShiny).
+// Come si spendono: i cosmetici del catalogo; avatar, colori e canzoni (unici, comprati: al massimo LIMITI per tipo, si rilascia gratis per prenderne un altro; il primo è gratis per chi ha
+// ancora quello di partenza); lo shiny di un Pokémon di un team (il prezzo dipende dalla specie: Cosmetici.prezzoShiny).
 //
 //   premioSet({ ufficiale, vinto }), premioBadge(prima, dopo)           pure
 //   accredita(db, uid, importo, motivo, { chiave, tettoGiorno, adesso }) → monete date davvero (0 se già dato o oltre il tetto)
 //   spendi(db, uid, importo, motivo, { adesso })                         → true / false (saldo insufficiente)
-//   premiaSet / acquista / equipa / cambia / shinyPokemon                le operazioni usate da index.js
+//   premiaSet / acquista (prendi) / rilascia / equipa / cambia / shinyPokemon   le operazioni usate da index.js
 //   testoConShiny(testo, indice, nome)                                   pure: il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato
 // =====================================================
 'use strict';
@@ -108,18 +108,29 @@ async function conLock(db, nome, adesso, fn) {
     try { return await fn(); } finally { await segno.remove(); }
 }
 
-/** Compra un cosmetico del catalogo (compagno shiny, aure, effetti del nome e del palco, motivi dello sfondo): deve esistere, non essere già suo (o in uso), essere in vendita (le edizioni limitate solo finché la loro
- *  stagione non è chiusa: motivo 'not-yet' o 'ended') e il saldo bastare. Avatar e canzoni non si comprano: si cambiano (vedi sotto).
+/** Il compagno viene dal Box? (info.pkmBox = "idTeam|posizione", e quel Pokémon c'è ancora ed è il compagno): si legge solo quel team */
+async function compagnoDalBox(db, giocatore, info) {
+    const idTeam = String((info && info.pkmBox) || '').split('|')[0];
+    if (!giocatore || !/^[A-Za-z0-9_-]{1,60}$/.test(idTeam)) return null;
+    const team = (await db.ref(`players/${giocatore}/teams/${idTeam}`).once('value')).val();
+    return team ? Cosmetici.compagnoDelBox(info, [{ id: idTeam, ...team }]) : null;
+}
+
+/** Compra un cosmetico del catalogo (compagno shiny, aure, effetti del nome e del palco, motivi dello sfondo; avatar, colori e canzoni passano da prendi): deve esistere, non essere già suo (o in uso), essere in vendita (le edizioni limitate solo finché la loro
+ *  stagione non è chiusa: motivo 'not-yet' o 'ended') e il saldo bastare.
  *  Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
-async function acquista({ db, uid, id, adesso = Date.now() }) {
+async function acquista({ db, uid, id, url, nome, rilascia: daRilasciare = '', adesso = Date.now() }) {
     const c = Cosmetici.perId(id);
-    if (!c || c.tipo === 'avatar' || c.tipo === 'canzone') return { ok: false, motivo: 'unknown' };
+    if (!c) return { ok: false, motivo: 'unknown' };
+    if (Cosmetici.FAMIGLIE.includes(c.tipo)) return prendi({ db, uid, id, url, nome, rilascia: daRilasciare, adesso });       // avatar, colori e canzoni: unici, con il massimo per tipo
     const giocatore = await giocatoreDi(db, uid);
     const [wallet, info] = await Promise.all([
         db.ref(`wallet/${uid}`).once('value').then(x => x.val() || {}),
         giocatore ? db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}) : Promise.resolve({})
     ]);
     if (Cosmetici.possiede(id, { wallet, info, pagina: info.pagina })) return { ok: false, motivo: 'owned' };
+    // il compagno shiny vale solo per un compagno generico: uno scelto dal Box è shiny come quel Pokémon
+    if (c.tipo === 'shiny' && await compagnoDalBox(db, giocatore, info)) return { ok: false, motivo: 'box-companion' };
     // un'edizione limitata si compra solo finché la sua stagione non è chiusa (la decide il server, non la pagina)
     if (c.edizione) {
         const stato = (await db.ref(`seasons/${c.edizione.stagione}/info/status`).once('value')).val();
@@ -140,20 +151,22 @@ async function acquista({ db, uid, id, adesso = Date.now() }) {
     return { ok: true, saldo };
 }
 
-// ---------------------------------------------------------------- avatar, colore e canzone: si cambiano, non si comprano
-// Avatar, colore firma e canzone sono unici, com'è sempre stato: nessun altro può avere quello che hai. Cambiarli costa sempre (PREZZI), tranne la prima volta per chi ha ancora quello di partenza.
-//   - il primo avatar, il primo colore e la prima canzone sono "di casa" (wallet/{uid}/casa/<tipo>), l'unica cosa personale: quello scelto gratis, o per chi ne aveva già uno quello che aveva,
-//     resta tuo per sempre, nessun altro lo può prendere e tornarci non costa mai;
-//   - quello che porti è riservato finché lo porti; cambiando di nuovo torna libero per tutti (tranne quello di casa);
-//   - il server fa il cambio e scrive il profilo: pagare e portarlo sono un'unica operazione, quindi non si paga mai qualcosa che poi non si può usare.
-// cosmeticiPresi/<id> = l'id dell'allenatore che lo tiene riservato (di casa o addosso): lo legge chiunque (per mostrare "già preso" nell'editor), lo scrive solo il server.
+// ---------------------------------------------------------------- avatar, colore e canzone: si comprano, sono unici, ognuno ne ha al massimo LIMITI
+// Avatar, colore firma e canzone sono unici, com'è sempre stato: nessun altro può avere quello che hai. Ora si COMPRANO e si hanno (wallet.posseduti), fino a un massimo per tipo (LIMITI, in
+// cosmetici.js): così uno non se ne prende un sacco lasciando gli altri senza. A quota piena, per prenderne un altro se ne rilascia uno (gratis): torna libero per tutti. Il primo avatar,
+// il primo colore e la prima canzone sono gratis per chi ha ancora quello di partenza; chi ne aveva già uno lo ha già (conta come il primo: quello che porta, o il "di casa" delle versioni
+// precedenti, wallet/{uid}/casa, che qui si trasforma in un posseduto). Si indossa solo quello che si ha, e indossarlo non costa.
+//   prendi     compra un avatar, un colore o una canzone (e lo indossa); a quota piena serve `rilascia`: cosa lasciare
+//   rilascia   lascia andare uno di quelli che si hanno (gratis); non quello che si indossa
+//   cambia     indossa uno di quelli che si hanno (gratis), o toglie la canzone
+// cosmeticiPresi/<id> = l'id dell'allenatore che lo ha: lo legge chiunque (per mostrare "già preso" nell'editor e nello Shop), lo scrive solo il server.
 // Il colore firma è uno dei COLORI_FIRMA (cosmetici.js), scritto in players/{id}/info/color.
 const ESCLUSIVI = Cosmetici.FAMIGLIE;          // avatar, colore, canzone
 // il sito dove stanno le immagini degli avatar (come li salva l'editor della pagina); il server compone l'indirizzo da sé, senza fidarsi di quello che arriva
 const SITO_AVATAR = process.env.SITO_AVATAR_URL || 'https://didi722.github.io/didi-lu/';
 const indirizzoAvatar = id => `${SITO_AVATAR}immagini/profile/${String(id).replace('avatar-', '')}.png`;
 
-/** Chi, tra gli altri, porta adesso questo avatar o questa canzone? Ritorna l'id dell'allenatore, o '' */
+/** Chi, tra gli altri, porta adesso questo avatar o questa canzone? Ritorna l'id dell'allenatore, o '' (serve per chi li aveva già prima che esistesse il registro) */
 function chiUsa(giocatori, io, c) {
     for (const [g, v] of Object.entries(giocatori && typeof giocatori === 'object' ? giocatori : {})) {
         if (g === io) continue;
@@ -172,81 +185,142 @@ async function riserva(db, id, giocatore) {
 /** Rimette libero un id, ma solo se lo teneva questo allenatore */
 const libera = (db, id, giocatore) => db.ref(`cosmeticiPresi/${id}`).transaction(v => (v === giocatore ? null : undefined));
 
+/** Cosa si sta chiedendo, controllato: { c, tipo, indirizzo, titolo } oppure null. Per una canzone servono `url` e `nome` e l'id deve essere quello dell'indirizzo; il server compone da sé l'indirizzo degli avatar */
+function descrivi(id, url, nome) {
+    const c = Cosmetici.perId(id);
+    if (!c || !ESCLUSIVI.includes(c.tipo)) return null;
+    if (c.tipo === 'avatar') return { c, tipo: 'avatar', indirizzo: indirizzoAvatar(id), titolo: c.nome };
+    if (c.tipo === 'colore') return { c, tipo: 'colore', indirizzo: Cosmetici.coloreDaId(id), titolo: c.nome };
+    const indirizzo = String(url || '').trim();
+    if (!/^https?:\/\/\S{4,500}$/i.test(indirizzo) || Cosmetici.idCanzone(indirizzo) !== id) return null;
+    return { c, tipo: 'canzone', indirizzo, titolo: String(nome || 'Song').replace(/[\r\n]+/g, ' ').trim().slice(0, 60) || 'Song' };
+}
+const campiDi = (tipo, d) => (tipo === 'avatar' ? { avatar: d.indirizzo } : tipo === 'colore' ? { color: d.indirizzo } : { musicaPreferita: d.indirizzo, musicName: d.titolo });
+const etichetta = tipo => (tipo === 'canzone' ? 'Song' : tipo === 'colore' ? 'Colour' : 'Avatar');
+
 /**
- * Cambia l'avatar, il colore o la canzone di chi chiama. `id` è avatar-<n>, colore-<rrggbb> o canzone-<impronta>; per una canzone servono anche `url` e `nome` (l'id deve essere quello
- * dell'indirizzo); `id` vuoto con tipo 'canzone' toglie la canzone (gratis). Tornare a quello di casa è gratis. Ritorna { ok, saldo, gratis, ritorno, casa, liberato, avatar | color |
- * musicaPreferita + musicName } oppure { ok: false, motivo }: unknown, no-profile, same (è già quello che porti), taken (di un altro o lo porta un altro), poor, busy.
+ * Quello che un allenatore ha già ma non è ancora scritto come suo (l'avatar che portava prima del negozio, il "di casa" delle versioni precedenti): lo riserva e prepara le scritture che lo
+ * mettono tra i suoi posseduti (e tolgono "casa"). `escludi`: un id che sta per essere rilasciato. → { <percorso>: valore } da unire alle altre scritture.
+ */
+async function fissa(db, uid, giocatore, tipo, wallet, info, adesso, escludi = '') {
+    const scritture = {}, gia = wallet.posseduti || {}, corrente = Cosmetici.idCorrente(tipo, info);
+    for (const x of Cosmetici.possedutiDiTipo(tipo, { wallet, info })) {
+        if (x === escludi) continue;
+        await riserva(db, x, giocatore);
+        if (!gia[x]) scritture[`wallet/${uid}/posseduti/${x}`] = tipo === 'canzone' && x === corrente ? { t: adesso, url: String(info.musicaPreferita || ''), nome: String(info.musicName || 'Song') } : adesso;
+    }
+    if ((wallet.casa || {})[tipo]) scritture[`wallet/${uid}/casa/${tipo}`] = null;
+    return scritture;
+}
+
+const leggiTutto = (db, uid, giocatore, id, conTutti = true) => Promise.all([
+    db.ref(`wallet/${uid}`).once('value').then(x => x.val() || {}),
+    db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}),
+    conTutti ? db.ref('players').once('value').then(x => x.val() || {}) : Promise.resolve({}),
+    id ? db.ref(`cosmeticiPresi/${id}`).once('value').then(x => x.val() || '') : Promise.resolve('')
+]);
+
+/**
+ * Compra un avatar, un colore o una canzone (`id`: avatar-<n>, colore-<rrggbb>, canzone-<impronta>; per una canzone anche `url` e `nome`) e lo indossa. Il primo di ogni tipo è gratis per chi ha
+ * ancora quello di partenza. A quota piena (Cosmetici.LIMITI) serve `rilascia`: uno di quelli che si hanno, che si lascia (gratis) e torna libero per tutti.
+ * → { ok, saldo, gratis, rilasciato?, avatar | color | musicaPreferita + musicName } oppure { ok: false, motivo }: unknown, no-profile, owned, taken (di un altro o lo porta un altro), limit (con
+ * `possedute` e `limite`: scegliere cosa rilasciare), not-owned (quello da rilasciare non è suo), poor, busy.
+ */
+async function prendi({ db, uid, id, url, nome, rilascia: daRilasciare = '', adesso = Date.now() }) {
+    const d = descrivi(id, url, nome);
+    if (!d) return { ok: false, motivo: 'unknown' };
+    const { tipo } = d;
+    const giocatore = await giocatoreDi(db, uid);
+    if (!giocatore) return { ok: false, motivo: 'no-profile' };
+    return conLock(db, `collezione-${tipo}-${giocatore}`, adesso, async () => {
+        const [wallet, info, giocatori, titolare] = await leggiTutto(db, uid, giocatore, id);
+        const contesto = { wallet, info };
+        const possedute = Cosmetici.possedutiDiTipo(tipo, contesto);
+        if (possedute.includes(id)) return { ok: false, motivo: 'owned' };
+        // è di un altro (lo ha comprato) o lo porta un altro (anche se ancora non risulta nel registro): non si prende, e non si addebita niente
+        if ((titolare && titolare !== giocatore) || chiUsa(giocatori, giocatore, d.c)) return { ok: false, motivo: 'taken' };
+        const limite = Cosmetici.LIMITI[tipo];
+        if (daRilasciare && !possedute.includes(daRilasciare)) return { ok: false, motivo: 'not-owned' };
+        if (possedute.length >= limite && !daRilasciare) return { ok: false, motivo: 'limit', possedute, limite };
+
+        const { prezzo, gratis } = Cosmetici.prezzoAcquisto(tipo, contesto);
+        const riservato = await riserva(db, id, giocatore);
+        if (!riservato.ok) return { ok: false, motivo: 'taken' };
+        let pagato = false;
+        try {
+            if (prezzo > 0) {
+                if (!(await spendi(db, uid, prezzo, `${etichetta(tipo)}: ${d.titolo}`, { adesso }))) {
+                    if (riservato.nuovo) await libera(db, id, giocatore);
+                    return { ok: false, motivo: 'poor' };
+                }
+                pagato = true;
+            } else await scriviMovimento(db, uid, 0, `Free: ${d.titolo}`, adesso);
+            const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso, daRilasciare);
+            scritture[`wallet/${uid}/posseduti/${id}`] = tipo === 'canzone' ? { t: adesso, url: d.indirizzo, nome: d.titolo } : adesso;
+            if (daRilasciare) scritture[`wallet/${uid}/posseduti/${daRilasciare}`] = null;
+            for (const [k, v] of Object.entries(campiDi(tipo, d))) scritture[`players/${giocatore}/info/${k}`] = v;
+            await db.ref().update(scritture);
+        } catch (e) {
+            if (pagato) {
+                await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + prezzo);
+                await scriviMovimento(db, uid, prezzo, `Refund: ${d.titolo}`, adesso);
+            }
+            if (riservato.nuovo) await libera(db, id, giocatore);
+            throw e;
+        }
+        if (daRilasciare) await libera(db, daRilasciare, giocatore);
+        const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
+        const esito = { ok: true, saldo, gratis };
+        if (daRilasciare) esito.rilasciato = daRilasciare;
+        return Object.assign(esito, campiDi(tipo, d));
+    });
+}
+
+/** Lascia andare uno di quelli che si hanno (gratis): torna libero per tutti. Non quello che si indossa (prima se ne indossa un altro, o si toglie la canzone). → { ok, rilasciato } oppure { ok: false, motivo }: unknown, no-profile, not-owned, worn, busy */
+async function rilascia({ db, uid, id, adesso = Date.now() }) {
+    const c = Cosmetici.perId(id);
+    if (!c || !ESCLUSIVI.includes(c.tipo)) return { ok: false, motivo: 'unknown' };
+    const tipo = c.tipo;
+    const giocatore = await giocatoreDi(db, uid);
+    if (!giocatore) return { ok: false, motivo: 'no-profile' };
+    return conLock(db, `collezione-${tipo}-${giocatore}`, adesso, async () => {
+        const [wallet, info] = await leggiTutto(db, uid, giocatore, '', false);
+        if (!Cosmetici.possedutiDiTipo(tipo, { wallet, info }).includes(id)) return { ok: false, motivo: 'not-owned' };
+        if (Cosmetici.idCorrente(tipo, info) === id) return { ok: false, motivo: 'worn' };
+        const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso, id);
+        scritture[`wallet/${uid}/posseduti/${id}`] = null;
+        await db.ref().update(scritture);
+        await libera(db, id, giocatore);
+        await scriviMovimento(db, uid, 0, `Released: ${c.nome}`, adesso);
+        return { ok: true, rilasciato: id };
+    });
+}
+
+/**
+ * Indossa uno di quelli che si hanno (gratis); `id` vuoto con tipo 'canzone' toglie la canzone. Per una canzone servono anche `url` e `nome` (l'id deve essere quello dell'indirizzo).
+ * → { ok, saldo, avatar | color | musicaPreferita + musicName } oppure { ok: false, motivo }: unknown, no-profile, same (è già quello che porti), not-owned (prima si compra), busy.
  */
 async function cambia({ db, uid, tipo, id, url, nome, adesso = Date.now() }) {
     if (!ESCLUSIVI.includes(tipo)) return { ok: false, motivo: 'unknown' };
     const giocatore = await giocatoreDi(db, uid);
     if (!giocatore) return { ok: false, motivo: 'no-profile' };
     const vuota = tipo === 'canzone' && !id;
-    let c = null, indirizzo = '', titolo = '';
+    let d = null;
     if (!vuota) {
-        c = Cosmetici.perId(id);
-        if (!c || c.tipo !== tipo) return { ok: false, motivo: 'unknown' };
-        if (tipo === 'avatar') { indirizzo = indirizzoAvatar(id); titolo = c.nome; }
-        else if (tipo === 'colore') { indirizzo = Cosmetici.coloreDaId(id); titolo = c.nome; }
-        else {
-            indirizzo = String(url || '').trim();
-            if (!/^https?:\/\/\S{4,500}$/i.test(indirizzo) || Cosmetici.idCanzone(indirizzo) !== id) return { ok: false, motivo: 'unknown' };
-            titolo = String(nome || 'Song').replace(/[\r\n]+/g, ' ').trim().slice(0, 60) || 'Song';
-        }
+        d = descrivi(id, url, nome);
+        if (!d || d.tipo !== tipo) return { ok: false, motivo: 'unknown' };
     }
-    return conLock(db, `cambia-${tipo}-${giocatore}`, adesso, async () => {
-        const [wallet, info, giocatori, titolare] = await Promise.all([
-            db.ref(`wallet/${uid}`).once('value').then(x => x.val() || {}),
-            db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}),
-            vuota ? Promise.resolve({}) : db.ref('players').once('value').then(x => x.val() || {}),
-            vuota ? Promise.resolve('') : db.ref(`cosmeticiPresi/${id}`).once('value').then(x => x.val() || '')
-        ]);
-        const corrente = Cosmetici.idCorrente(tipo, info);
-        if (vuota ? Cosmetici.eDiDefault('canzone', info) : corrente === id) return { ok: false, motivo: 'same' };
-        // è riservato a un altro (di casa o addosso) o lo porta un altro (anche se ancora non risulta riservato): non si cambia, e non si addebita niente
-        if (!vuota && ((titolare && titolare !== giocatore) || chiUsa(giocatori, giocatore, c))) return { ok: false, motivo: 'taken' };
-
-        const casaPrima = String((wallet.casa || {})[tipo] || '');
-        const { prezzo, gratis, ritorno } = vuota ? { prezzo: 0, gratis: false } : Cosmetici.prezzoCambio(tipo, { wallet, info }, id);
-        // il "di casa": chi ha ancora quello di partenza sceglie gratis e quello diventa suo; chi ne aveva già uno tiene quello che aveva (al primo cambio)
-        const casa = casaPrima || (gratis ? id : corrente);
-
-        let riservato = { ok: true, nuovo: false };
-        if (!vuota) {
-            riservato = await riserva(db, id, giocatore);
-            if (!riservato.ok) return { ok: false, motivo: 'taken' };
-        }
-        let pagato = false;
-        try {
-            if (prezzo > 0) {
-                if (!(await spendi(db, uid, prezzo, `${tipo === 'canzone' ? 'Song' : tipo === 'colore' ? 'Colour' : 'Avatar'}: ${titolo}`, { adesso }))) {
-                    if (riservato.nuovo) await libera(db, id, giocatore);
-                    return { ok: false, motivo: 'poor' };
-                }
-                pagato = true;
-            } else if (gratis) await scriviMovimento(db, uid, 0, `Free: ${titolo}`, adesso);
-            else if (ritorno) await scriviMovimento(db, uid, 0, `Back to: ${titolo}`, adesso);
-            const campi = tipo === 'avatar' ? { avatar: indirizzo } : tipo === 'colore' ? { color: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo };
-            await db.ref(`players/${giocatore}/info`).update(campi);
-        } catch (e) {
-            if (pagato) {
-                await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + prezzo);
-                await scriviMovimento(db, uid, prezzo, `Refund: ${titolo}`, adesso);
-            }
-            if (riservato.nuovo) await libera(db, id, giocatore);
-            throw e;
-        }
-        // fatto: il di casa si ricorda (e resta riservato per sempre) e quello che portavi prima torna libero, se non è di casa
-        if (casa && casa !== casaPrima) {
-            await db.ref(`wallet/${uid}/casa/${tipo}`).set(casa);
-            await riserva(db, casa, giocatore);
-        }
-        if (corrente && corrente !== id && corrente !== casa) await libera(db, corrente, giocatore);
+    return conLock(db, `collezione-${tipo}-${giocatore}`, adesso, async () => {
+        const [wallet, info] = await leggiTutto(db, uid, giocatore, '', false);
+        if (vuota ? Cosmetici.eDiDefault('canzone', info) : Cosmetici.idCorrente(tipo, info) === id) return { ok: false, motivo: 'same' };
+        if (!vuota && !Cosmetici.possedutiDiTipo(tipo, { wallet, info }).includes(id)) return { ok: false, motivo: 'not-owned' };
+        // quello che portavi prima del negozio resta tuo anche se ne indossi un altro: lo si scrive ora, prima del cambio
+        const scritture = await fissa(db, uid, giocatore, tipo, wallet, info, adesso);
+        const campi = vuota ? { musicaPreferita: '', musicName: '' } : campiDi(tipo, d);
+        for (const [k, v] of Object.entries(campi)) scritture[`players/${giocatore}/info/${k}`] = v;
+        await db.ref().update(scritture);
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
-        const esito = { ok: true, saldo, gratis, casa };
-        if (ritorno) esito.ritorno = true;
-        if (corrente && corrente !== id && corrente !== casa) esito.liberato = corrente;
-        return Object.assign(esito, tipo === 'avatar' ? { avatar: indirizzo } : tipo === 'colore' ? { color: indirizzo } : { musicaPreferita: indirizzo, musicName: vuota ? '' : titolo });
+        return Object.assign({ ok: true, saldo }, campi);
     });
 }
 
@@ -329,6 +403,7 @@ async function equipa({ db, uid, id, attivo }) {
     const nome = (await db.ref(`users/${uid}/name`).once('value')).val();
     const giocatore = String(nome || '').toLowerCase().trim();
     if (!giocatore) return { ok: false, motivo: 'no-profile' };
+    if (attivo && c.tipo === 'shiny' && await compagnoDalBox(db, giocatore, (await db.ref(`players/${giocatore}/info`).once('value')).val() || {})) return { ok: false, motivo: 'box-companion' };
     const percorso = `players/${giocatore}/info/${c.campo}`;
     // togliere una voce che non si porta (una pagina rimasta aperta) non deve cancellare quella che si porta adesso
     if (!attivo && c.tipo !== 'shiny' && (await db.ref(percorso).once('value')).val() !== id) return { ok: true };
@@ -336,4 +411,4 @@ async function equipa({ db, uid, id, attivo }) {
     return { ok: true };
 }
 
-module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, equipa, cambia, shinyPokemon, testoConShiny, uidDi, giornoDi };
+module.exports = { PREMI, PREZZI, MAX_MOVIMENTI, premioSet, premioBadge, accredita, spendi, premiaSet, premiaBadge, acquista, prendi, rilascia, equipa, cambia, shinyPokemon, testoConShiny, uidDi, giornoDi };

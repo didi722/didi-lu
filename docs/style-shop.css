@@ -81,13 +81,11 @@ html.app-shell { --shop-testo: #fff; }
 .shop-av img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .shop-av:hover:not(:disabled) { translate: -2px -2px; }
 .shop-av.is-on { background: var(--nb-giallo, #ffbd44); cursor: default; }
-.shop-av.is-casa::after, .shop-col.is-casa::after { content: '★'; position: absolute; top: -9px; right: -7px; z-index: 2; font: 900 15px/1 sans-serif; color: #ffbd44; -webkit-text-stroke: 1.5px #000; paint-order: stroke fill; }
 .shop-av.is-preso, .shop-col.is-preso, .shop-canzone.is-preso { opacity: .35; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
 .shop-colori { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 9px; padding: 8px 6px 10px; }
 .shop-col { position: relative; box-sizing: border-box; aspect-ratio: 1; cursor: pointer; background: var(--c, #ccc); border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
 .shop-col:hover:not(:disabled) { translate: -2px -2px; }
 .shop-col.is-on { outline: 4px solid #fff; outline-offset: -7px; cursor: default; }
-.shop-attuale { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 10px; font: 700 .85rem var(--nb-font-testo, 'Montserrat', sans-serif); }
 .shop-ricerca { box-sizing: border-box; width: 100%; margin: 0 0 8px; padding: 9px 12px; background: #fff; color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); font: 600 .9rem var(--nb-font-testo, 'Montserrat', sans-serif); }
 .shop-canzoni { display: grid; gap: 7px; max-height: 380px; overflow: auto; padding: 4px 6px 8px; }
 .shop-canzone { display: flex; gap: 7px; }
@@ -96,6 +94,22 @@ html.app-shell { --shop-testo: #fff; }
 .shop-scelta small { flex: none; font: 700 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .75; }
 .shop-canzone.is-on .shop-scelta { background: var(--nb-giallo, #ffbd44); }
 .shop-ascolta { flex: none; width: 38px; cursor: pointer; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); font: 900 .8rem sans-serif; }
+
+/* quelli che hai (avatar, colori, canzoni): si indossano o si rilasciano */
+.shop-conta { display: inline-block; margin-left: 6px; padding: 2px 8px 1px; vertical-align: middle; background: var(--nb-giallo, #ffbd44); color: #000; border: 2px solid var(--nb-ink, #000); font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); letter-spacing: .04em; }
+.shop-sotto { margin: 14px 0 2px; font: 900 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .06em; color: var(--shop-testo, var(--nb-ink, #000)); }
+.shop-miei { list-style: none; display: grid; gap: 8px; margin: 8px 0 4px; padding: 0; }
+.shop-miio { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 9px; background: var(--nb-carta, #fff); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-miio.is-on { background: var(--nb-giallo, #ffbd44); }
+.shop-miio-img { flex: none; width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; border: 2px solid var(--nb-ink, #000); background: #f3f4f8; }
+.shop-miio-col { flex: none; width: 44px; height: 44px; background: var(--c, #ccc); border: 2px solid var(--nb-ink, #000); }
+.shop-miio-nota { flex: none; display: grid; place-items: center; width: 44px; height: 44px; font: 900 1.3rem sans-serif; border: 2px solid var(--nb-ink, #000); background: #f3f4f8; }
+.shop-miio-nome { flex: 1; min-width: 90px; display: grid; gap: 1px; overflow-wrap: anywhere; }
+.shop-miio-nome b { font: 800 .85rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.shop-miio-nome small { font: 600 .7rem var(--nb-font-testo, 'Montserrat', sans-serif); opacity: .7; }
+.shop-miio-su { flex: none; padding: 3px 9px 2px; background: #000; color: #fff; font: 900 .7rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .05em; }
+.shop-miio .ng-bottone { flex: none; padding: 6px 12px 4px; font-size: .75rem; }
+.shop-miio .shop-ascolta { width: 34px; height: 34px; }
 
 /* Pokémon */
 .shop-squadre { display: flex; flex-wrap: wrap; gap: 9px; margin: 8px 0 12px; }
@@ -109,4 +123,12 @@ html.app-shell { --shop-testo: #fff; }
 .shop-conferma-colore { display: block; width: 76px; height: 76px; background: var(--c, #ccc); border: 3px solid var(--nb-ink, #000); }
 .shop-conferma b { font: 900 1rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); text-transform: uppercase; letter-spacing: .05em; }
 .shop-conferma p { margin: 0; font: 600 .8rem/1.4 var(--nb-font-testo, 'Montserrat', sans-serif); }
+.shop-rilascia { width: 100%; display: grid; gap: 6px; text-align: left; }
+.shop-rilascia label { display: block; cursor: pointer; }
+.shop-rilascia input { position: absolute; opacity: 0; pointer-events: none; }
+.shop-rilascia span { display: flex; align-items: center; gap: 9px; padding: 6px 9px; background: #fff; border: 3px solid var(--nb-ink, #000); font: 800 .8rem var(--nb-font-titoli, 'Josefin Sans', sans-serif); }
+.shop-rilascia input:checked + span { background: var(--nb-giallo, #ffbd44); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
+.shop-rilascia input:focus-visible + span { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.shop-conferma .shop-rilascia img { width: 34px; height: 34px; border-width: 2px; }
+.shop-rilascia i { flex: none; width: 34px; height: 34px; background: var(--c, #ccc); border: 2px solid var(--nb-ink, #000); }
 .shop-conferma-azioni { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px; }

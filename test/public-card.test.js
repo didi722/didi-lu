@@ -170,7 +170,7 @@ test('musica: il tasto del volume in alto non c\'è più; la musica va dal widge
     assert.match(card, /window\.toggleMusic\(\)/);
 });
 
-test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo (avatar, colore e canzone rimandano allo Shop) e segna in grigio (non selezionabili) le scelte degli altri', () => {
+test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo (avatar, colore e canzone: solo quelli che hai, il resto è nello Shop) e segna in grigio (non selezionabili) le scelte degli altri', () => {
     assert.match(card, /public-editor\.js'\)\.then\(\(\) => caricaScript\('public-editor-trainer\.js'\)/);
     assert.match(trainer, /PublicEditor\.estendi\(\{ id: 'trainer'/);
     assert.doesNotMatch(trainer, /innerHTML|insertAdjacentHTML|outerHTML/);
@@ -178,11 +178,11 @@ test('scheda Trainer: si carica con l\'editor, copre i sette campi del profilo (
     // le liste partono da quello che hanno già gli altri
     assert.match(trainer, /P\.scelteDegliAltri\(/);
     assert.ok(trainer.includes('presi.pokemon'), 'presi.pokemon');
-    // avatar, colore e canzone si cambiano nello Shop (shop.js), che parte da quello che hanno già gli altri e tiene sempre il colore di chi sceglie
+    // avatar, colore e canzone si prendono nello Shop (shop.js), che parte da quello che hanno già gli altri e toglie dall'elenco quello che hai già
     const shop = fs.readFileSync(path.join(__dirname, '..', 'docs', 'shop.js'), 'utf8');
     assert.match(shop, /P\.scelteDegliAltri\(/);
     for (const insieme of ['presi.avatar', 'presi.colori', 'presi.canzoniUrl', 'presi.canzoniNomi']) assert.ok(shop.includes(insieme), insieme);
-    assert.match(shop, /colori\.unshift\(attuale\)/);
+    assert.match(shop, /if \(!id \|\| mie\.has\(id\)\) return '';/, 'i colori che hai non sono più in vendita');
     // le scelte degli altri restano in lista ma disabilitate e grigie (nell'editor: i Pokémon, passano da comePresa(); nello Shop: avatar, colori e canzoni, is-preso)
     assert.match(trainer, /function comePresa\(bottone, titolo, motivo\) \{[^}]*bottone\.disabled = true;[^}]*classList\.add\('is-preso'\)/);
     assert.equal((trainer.match(/comePresa\(/g) || []).length, 3, 'definizione + Pokémon, Pokémon del Box');

@@ -35,6 +35,7 @@
 <script src="nome-scorrevole.js"></script>
 <script src="sprites/indice.js"></script>
     <script src="sprite-pkm.js"></script>
+<script src="cosmetici.js"></script>
 <script src="ordine-showdown.js"></script>
 <script src="filtro-showdown.js"></script>
 <script src="scheda-condivisione.js"></script>
@@ -907,7 +908,7 @@ async function inizializzaPaginaArchivio() {
         container.appendChild(sdCard);
         schedeFiltro.set(sdId, sdCard);
         if (window.FiltroShowdown) vociFiltro.push(FiltroShowdown.voce(sdId, sd, chiVince));
-        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: !!g.pkmShiny, vinti }; };
+        const latoApp = (nome, vinti) => { const g = dataPlayers[String(nome || '').toLowerCase().trim()]?.info || {}; return { nome, colore: g.color || '', avatar: g.avatar || '', pkm: g.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(g, dataPlayers[String(nome || '').toLowerCase().trim()]?.teams) : !!g.pkmShiny, vinti }; };
         perAppSd.push({ id: sdId, formato: info.categoria || '', data: info.data || '', partite: Object.keys(matches).length, vince: chiVince, p1: latoApp(p1Name, vintiP1), p2: latoApp(p2Name, vintiP2), apri: () => apriModaleShowdown(sdId, sd) });
     });
     if (window.AppSito) AppSito.pubblica('showdowns', { stagione: stagioneAttiva, lista: perAppSd, riepilogo: !!riepilogoIniziale });
@@ -1134,6 +1135,10 @@ async function renderRankings(leaderboardData) {
         const nameClean = player.name.toLowerCase().trim();
         const snapInfo = await db.ref(`players/${nameClean}/info`).once('value');
         const infoPlayer = snapInfo.val() || {};
+        // un compagno scelto dal Box è shiny come quel Pokémon: si legge solo quel team
+        let teamBox = [];
+        const idTeamBox = String(infoPlayer.pkmBox || '').split('|')[0];
+        if (idTeamBox && window.Cosmetici) { try { const t = (await db.ref(`players/${nameClean}/teams/${idTeamBox}`).once('value')).val(); if (t) teamBox = [{ id: idTeamBox, ...t }]; } catch (e) { /* senza: si vale come compagno generico */ } }
         const color = String(infoPlayer.color || "#31c489").replace(/[^#0-9a-zA-Z(),.%\s-]/g, '');
         const avatarHtml = infoPlayer.avatar
             ? `<img src="${escClassifica(infoPlayer.avatar)}" class="cl-avatar" alt="" loading="lazy">`
@@ -1142,7 +1147,7 @@ async function renderRankings(leaderboardData) {
         const sdWon = player.sdWon || 0;
         const sdLost = player.sdLost || 0;
         const playerUrlParam = encodeURIComponent(player.name.trim());
-        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
+        perApp[index] = { nome: player.name, posizione: index + 1, colore: color, avatar: infoPlayer.avatar || '', pkm: infoPlayer.pkmPreferito || '', pkmShiny: window.Cosmetici ? Cosmetici.compagnoShiny(infoPlayer, teamBox) : !!infoPlayer.pkmShiny, sdWon, sdLost, won: player.won || 0, lost: player.lost || 0, punti: player.points || 0 };
 
         return `
        <div class="rank-riga">

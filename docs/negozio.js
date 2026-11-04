@@ -7,8 +7,8 @@
 //   Negozio.catalogoHtml(stato)   le edizioni limitate in cima e i gruppi del catalogo (cosmetici.js): stato = { saldo, posseduti, info, pagina, anteprime, stagioni, nomiStagioni, occupato, provando }
 //   Negozio.notaPremi() / guidaHtml() / movimentiHtml(movimenti)    come si guadagna, dove si spende il resto, gli ultimi movimenti
 //   Negozio.shinyTeamHtml(stato)  i Pokémon di un team con fascia e prezzo dello shiny: stato = { pokemon: [{ nome, shiny, normale, brillante }], saldo, occupato, armato }
-//   Negozio.frasiCambio(...)      le frasi della conferma di un cambio di avatar, colore o canzone
-//   Negozio.chiama / cambia / frase / creaAnteprime / STILE
+//   Negozio.frasiAcquisto / frasiRilascio   le frasi della conferma di un acquisto (a quota piena si rilascia un altro) o di un rilascio di avatar, colore o canzone
+//   Negozio.chiama / cambia (indossa) / frase / creaAnteprime / STILE
 // =====================================================
 (function (radice, fabbrica) {
     const inNode = typeof module === 'object' && module.exports;
@@ -113,10 +113,12 @@
         const mio = Cosmetici.possiede(c.id, contesto);
         const disp = Cosmetici.disponibilita(c, s.stagioni);
         const attivo = c.tipo === 'shiny' ? !!info.pkmShiny : c.campo ? info[c.campo] === c.id : false;
+        // il compagno shiny vale solo per un compagno generico: se viene dal Box è shiny come quel Pokémon (stato.compagnoBox = il suo nome)
+        const delBox = c.tipo === 'shiny' && !!s.compagnoBox;
         const bottone = mio
-            ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
-            : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
-        const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
+            ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato || (delBox && !attivo) ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
+            : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' || delBox ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
+        const nota = delBox ? `Your companion comes from your Box: make ${esc(s.compagnoBox)} shiny in the Pokémon tab. This one is for a companion picked from the list.` : mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
         return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="Tap to see it on your page">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b><small>${nota}</small></span>${bottone}</li>`;
     }
 
@@ -150,8 +152,9 @@
 
     /** Dove si spende il resto, e come funzionano i cambi di avatar, colore e canzone (puro) */
     function guidaHtml() {
-        return `<p class="ng-guida"><b>How it works.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙), colour (${Cosmetici.PREZZI.colore} 🪙) or song (${Cosmetici.PREZZI.canzone} 🪙) is in the <b>Trainer</b> tab. Your first avatar, colour and song are free and stay yours for good, and coming back to them is always free; `
-            + `the one you wear is yours while you wear it, then it goes back to the pool for everyone. `
+        const L = Cosmetici.LIMITI, Z = Cosmetici.PREZZI;
+        return `<p class="ng-guida"><b>How it works.</b> Avatars (${Z.avatar} 🪙), colours (${Z.colore} 🪙) and songs (${Z.canzone} 🪙) are in the <b>Trainer</b> tab. Your first one of each is free, and each one belongs to a single trainer. `
+            + `You can have ${L.avatar} avatars, ${L.colore} colours and ${L.canzone} songs at most: to get another one you release one of yours (free) and it goes back to the pool for everyone. Wearing one you already have is always free. `
             + `Shiny Pokémon (${intervalloShiny()} 🪙, the rarer the species the more it costs) are in the <b>Pokémon</b> tab; they work on locked teams too.</p>`;
     }
 
@@ -161,31 +164,24 @@
         return `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section>`;
     }
 
+    const cosaDi = tipo => (tipo === 'avatar' ? 'avatar' : tipo === 'colore' ? 'colour' : 'song');
+
     /**
-     * Le frasi della conferma di un cambio di avatar, di colore o di canzone (pura). `corrente` e `casa` sono gli id di quello che porti e di quello "di casa" (il primo, l'unico
-     * personale: tuo per sempre e tornarci non costa mai; '' se non ci sono); `id` vuoto con tipo 'canzone' = togliere la canzone. → { righe, conferma, ok } (ok = si può confermare: bastano le monete)
+     * Le frasi della conferma di un acquisto di avatar, colore o canzone (pura). `piena`: ne ha già il massimo (`limite`) e per prenderne un altro deve rilasciarne uno (`scelta`: l'id scelto
+     * da lasciare, '' se ancora non ha scelto). → { righe, conferma, ok } (ok = si può confermare: bastano le monete e, a quota piena, c'è la scelta)
      */
-    function frasiCambio({ tipo, id, prezzo, gratis, ritorno, saldo, corrente, casa, nomeCorrente }) {
-        const cosa = tipo === 'avatar' ? 'avatar' : tipo === 'colore' ? 'colour' : 'song';
-        const quale = nomeCorrente || `your current ${cosa}`;
-        const Quale = quale.charAt(0).toUpperCase() + quale.slice(1);
+    function frasiAcquisto({ tipo, nome, prezzo, gratis, saldo, piena, limite, scelta }) {
+        const cosa = cosaDi(tipo);
         const righe = [];
-        const sorteDiQuelloCheHai = corrente && corrente !== id ? [corrente === casa ? `${Quale} stays yours for good.` : `${Quale} goes back to the pool: anyone can take it.`] : [];
-        if (!id) {
-            righe.push('You will have no song.', ...sorteDiQuelloCheHai);
-            return { righe, conferma: 'Remove it', ok: true };
-        }
-        if (gratis) {
-            righe.push(`Your first ${cosa} is free, and it stays yours for good: nobody else can take it, even when you wear another one later, and coming back to it is always free.`);
-            return { righe, conferma: 'Choose for free', ok: true };
-        }
-        if (ritorno) {
-            righe.push(`It is your first ${cosa}: coming back to it is free, and it stays yours for good.`, ...sorteDiQuelloCheHai);
-            return { righe, conferma: 'Go back for free', ok: true };
-        }
-        righe.push(`Changing your ${cosa} costs ${prezzo} 🪙, and you have ${saldo} 🪙.${saldo < prezzo ? ' Play some sets to earn more coins.' : ''}`);
-        righe.push('The new one is yours while you wear it.', ...sorteDiQuelloCheHai);
-        return { righe, conferma: `Change · ${prezzo} 🪙`, ok: saldo >= prezzo };
+        if (gratis) righe.push(`Your first ${cosa} is free. It is yours: nobody else can take it. You wear it right away.`);
+        else righe.push(`${nome} costs ${prezzo} 🪙, and you have ${saldo} 🪙.${saldo < prezzo ? ' Play some sets to earn more coins.' : ''}`, 'It is yours: nobody else can take it. You wear it right away.');
+        if (piena) righe.push(`You already have ${limite} ${cosa}s, the most you can have. To get this one, release one of yours (free): it goes back to the pool for everyone.`);
+        return { righe, conferma: gratis ? 'Take it for free' : `Buy · ${prezzo} 🪙`, ok: (gratis || saldo >= prezzo) && (!piena || !!scelta) };
+    }
+
+    /** Le frasi della conferma di un rilascio (pura): gratis, torna libero per tutti, e per riaverlo si ricompra (se nel frattempo non lo prende un altro) */
+    function frasiRilascio({ tipo, nome }) {
+        return { righe: [`${nome} goes back to the pool: anyone can take it. Releasing is free, but to get this ${cosaDi(tipo)} back you would have to buy it again, if nobody takes it first.`], conferma: 'Release it' };
     }
 
     /**
@@ -215,7 +211,7 @@
     // ---------------------------------------------------------------- nel browser
     const FRASI = {
         owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
-        taken: 'Someone else already has it: every avatar and song belongs to one trainer only.', same: 'It is already the one you are wearing.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged.", 'not-yet': 'This limited edition is not on sale yet: it arrives with the next season.', ended: 'This limited edition has ended: it can no longer be bought.'
+        taken: 'Someone else already has it: every avatar, colour and song belongs to one trainer only.', same: 'It is already the one you are wearing.', limit: 'You already have the most you can have: release one of yours to get this.', worn: "You are wearing it: wear another one first, then release this.", already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged.", 'box-companion': 'Your companion comes from your Box, so it is shiny or not like that Pokémon: make it shiny in the Pokémon tab. The shiny companion is for a Pokémon picked from the list.', 'not-yet': 'This limited edition is not on sale yet: it arrives with the next season.', ended: 'This limited edition has ended: it can no longer be bought.'
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 
@@ -225,7 +221,7 @@
         const f = win.firebase.app().functions('europe-west1');
         return (await f.httpsCallable(nome)(dati || {})).data || {};
     }
-    /** Cambia l'avatar, il colore o la canzone (il server fa il cambio e scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
+    /** Indossa un avatar, un colore o una canzone che si ha (gratis; il server scrive il profilo): { tipo, id, url?, nome? }. Per togliere la canzone: tipo 'canzone' e id ''. */
     const cambia = (win, dati) => chiama(win, 'cambiaCosmetico', dati);
 
     function caricaFunzioni(win) {
@@ -257,5 +253,5 @@
         return fuori;
     }
 
-    return { catalogoHtml, guidaHtml, movimentiHtml, notaPremi, shinyTeamHtml, frasiCambio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
+    return { catalogoHtml, guidaHtml, movimentiHtml, notaPremi, shinyTeamHtml, frasiAcquisto, frasiRilascio, anteprima, voceHtml, edizioniHtml, creaAnteprime, cambia, chiama, frase, STILE };
 });

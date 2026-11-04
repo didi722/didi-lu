@@ -110,65 +110,97 @@
     function azzeraProva() { S.prova = {}; S.provando = ''; aggiornaAnteprima(); disegna(true); }
 
     // ---------------------------------------------------------------- Your page
-    const statoCatalogo = () => ({ saldo: S.saldo, posseduti: S.posseduti, info: S.info, pagina: S.pagina, anteprime: S.anteprime, stagioni: S.stagioni, nomiStagioni: S.nomiStagioni, occupato: S.occupato, provando: S.provando });
+    const compagnoBox = () => { const b = C.compagnoDelBox(S.info, S.teams); return b ? String(b.nome || b.name || 'that Pokémon') : ''; };
+    const statoCatalogo = () => ({ saldo: S.saldo, posseduti: S.posseduti, info: S.info, pagina: S.pagina, anteprime: S.anteprime, stagioni: S.stagioni, nomiStagioni: S.nomiStagioni, occupato: S.occupato, provando: S.provando, compagnoBox: compagnoBox() });
     const htmlPagina = () => `<p class="shop-aiuto">Tap anything to see it on your page. <a href="public.html?player=${encodeURIComponent(S.giocatore)}&amp;edit=1">Customize your page →</a></p>${N.catalogoHtml(statoCatalogo())}`;
 
     // ---------------------------------------------------------------- Trainer: avatar, colore, canzone
-    const casaDi = tipo => S.casa[tipo] || (!C.eDiDefault(tipo, S.info) ? C.idCorrente(tipo, S.info) : '');
+    // Si comprano e si hanno (massimo C.LIMITI per tipo): quelli che hai si indossano gratis o si rilasciano; per prenderne un altro a quota piena se ne rilascia uno. Sono unici: gli altri li vedono grigi.
+    const contestoW = () => ({ wallet: { posseduti: S.posseduti, casa: S.casa }, info: S.info });
+    const possedute = tipo => C.possedutiDiTipo(tipo, contestoW());
     const presoDa = id => { const o = S.registro[id]; return o && o !== S.giocatore ? String(o) : ''; };
     const bello = t => String(t).replace(/(^|\s)([a-z])/g, (m, a, b) => a + b.toUpperCase());
-    const prezzoDi = (tipo, id) => C.prezzoCambio(tipo, { wallet: { casa: S.casa }, info: S.info }, id || '');
+    /** Indirizzo e nome di una canzone che si ha: dal portafoglio, da quella che si porta o dalla playlist */
+    function brano(id) {
+        const v = S.posseduti[id];
+        if (v && typeof v === 'object' && v.url) return { url: String(v.url), nome: String(v.nome || 'Song') };
+        if (S.info.musicaPreferita && C.idCanzone(S.info.musicaPreferita) === id) return { url: S.info.musicaPreferita, nome: S.info.musicName || 'Song' };
+        const c = Array.isArray(S.canzoni) ? S.canzoni.find(x => C.idCanzone(x.url) === id) : null;
+        return c ? { url: c.url, nome: c.nome } : null;
+    }
+    /** Come si presenta un avatar, un colore o una canzone che si ha: { nome, immagine?, colore?, extra? } */
+    function voceDi(tipo, id) {
+        if (tipo === 'avatar') return { nome: `Avatar ${id.replace('avatar-', '')}`, immagine: `immagini/profile/${id.replace('avatar-', '')}.png` };
+        if (tipo === 'colore') return { nome: C.coloreDaId(id), colore: C.coloreDaId(id) };
+        const b = brano(id);
+        return { nome: b ? b.nome : 'Song', extra: b ? { url: b.url, nome: b.nome } : null };
+    }
+    const attributiDi = (tipo, id) => { const v = voceDi(tipo, id); return `data-tipo="${tipo}" data-id="${esc(id)}" data-nome="${esc(v.nome)}"${v.extra ? ` data-url="${esc(v.extra.url)}"` : ''}${v.immagine ? ` data-img="${esc(v.immagine)}"` : ''}${v.colore ? ` data-c="${esc(v.colore)}"` : ''}`; };
+
+    /** Quelli che hai: chi è addosso, e per gli altri "Wear" (gratis) e "Release" */
+    function htmlMiei(tipo) {
+        const portato = C.idCorrente(tipo, S.info);
+        const righe = possedute(tipo).map(id => {
+            const v = voceDi(tipo, id), su = id === portato;
+            const testa = tipo === 'avatar' ? `<img class="shop-miio-img" src="${esc(v.immagine)}" alt="">` : tipo === 'colore' ? `<span class="shop-miio-col" style="--c:${esc(v.colore)}"></span>` : '<span class="shop-miio-nota">♪</span>';
+            const ascolta = tipo === 'canzone' && v.extra ? `<button type="button" class="shop-ascolta" data-ng="ascolta" data-url="${esc(v.extra.url)}" title="Listen" aria-label="Listen to ${esc(v.nome)}">▶</button>` : '';
+            return `<li class="shop-miio${su ? ' is-on' : ''}">${testa}<span class="shop-miio-nome"><b>${esc(v.nome)}</b><small>${su ? 'You wear it' : 'Yours'}</small></span>${ascolta}`
+                + (su ? '<span class="shop-miio-su">On now</span>' : `<button type="button" class="ng-bottone" data-ng="indossa" ${attributiDi(tipo, id)}>Wear</button><button type="button" class="ng-bottone" data-ng="rilascia" ${attributiDi(tipo, id)}>Release</button>`) + '</li>';
+        }).join('');
+        const nessuna = tipo === 'canzone' ? '<p class="ng-nota">No song. Your first one is free.</p>' : `<p class="ng-nota">You have no ${cosaDi(tipo)} of your own yet. Your first one is free.</p>`;
+        const senza = tipo === 'canzone' && S.info.musicaPreferita ? '<button type="button" class="ng-bottone" data-ng="canzone-nessuna" title="Play no song (free)">No song</button>' : '';
+        return `<ul class="shop-miei">${righe || ''}</ul>${righe ? '' : nessuna}${senza}`;
+    }
+    const cosaDi = tipo => (tipo === 'avatar' ? 'avatar' : tipo === 'colore' ? 'colour' : 'song');
+    const conta = tipo => `<span class="shop-conta" title="The most you can have">${possedute(tipo).length}/${C.LIMITI[tipo]}</span>`;
+    const notaCollezione = tipo => {
+        const pr = C.prezzoAcquisto(tipo, contestoW());
+        return pr.gratis ? `Your first ${cosaDi(tipo)} is free. Every ${cosaDi(tipo)} belongs to one trainer only: the ones you have are yours, nobody else can take them.`
+            : `A new ${cosaDi(tipo)} costs ${pr.prezzo} 🪙. You can have ${C.LIMITI[tipo]} at most: to get another one you release one of yours (free), and it goes back to the pool for everyone. Wearing the ones you have is free.`;
+    };
 
     function htmlAvatar(presi) {
-        const attuale = P.chiaveAvatar(S.info.avatar), casa = casaDi('avatar'), pr = prezzoDi('avatar');
-        const tutti = P.elencoAvatar();
-        const bottoni = tutti.map(f => {
-            const n = f.replace('.png', ''), id = `avatar-${n}`, chiave = `profile/${f}`.toLowerCase(), portato = chiave === attuale, casaMia = id === casa;
-            const altro = !portato && (presi.avatar.has(chiave) || presoDa(id));
-            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : casaMia ? `Avatar ${n} · your first avatar, yours for good · coming back is free` : portato ? `Avatar ${n} · you wear it` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `change for ${pr.prezzo} 🪙`}`;
-            return `<button type="button" class="shop-av${portato ? ' is-on' : ''}${casaMia ? ' is-casa' : ''}${altro ? ' is-preso' : ''}" data-ng="avatar" data-id="${id}" data-n="${n}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro || portato ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
+        const mie = new Set(possedute('avatar')), pr = C.prezzoAcquisto('avatar', contestoW());
+        const bottoni = P.elencoAvatar().map(f => {
+            const n = f.replace('.png', ''), id = `avatar-${n}`, chiave = `profile/${f}`.toLowerCase();
+            if (mie.has(id)) return '';
+            const altro = presi.avatar.has(chiave) || presoDa(id);
+            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
+            return `<button type="button" class="shop-av${altro ? ' is-preso' : ''}" data-ng="prendi" data-tipo="avatar" data-id="${id}" data-nome="Avatar ${n}" data-img="immagini/profile/${f}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
         }).join('');
-        const nota = pr.gratis ? 'Your first avatar is free and stays yours for good (coming back to it is always free). Every avatar belongs to one trainer only.'
-            : `Changing your avatar costs ${pr.prezzo} 🪙 and happens right away. Your first avatar (★) is the only personal one: yours for good, and coming back to it is free. The one you wear is yours while you wear it, then it goes back to the pool.`;
-        return `<section class="ng-gruppo"><h3>Avatar</h3><p>${nota}</p><div class="shop-avatar-griglia">${bottoni}</div></section>`;
+        return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4><div class="shop-avatar-griglia">${bottoni}</div></section>`;
     }
 
     function htmlColore(presi) {
-        const attuale = String(S.info.color || '').toUpperCase(), casa = casaDi('colore'), pr = prezzoDi('colore');
-        const colori = P.PALETTE_FIRMA.slice();
-        if (attuale && !colori.some(c => c.toUpperCase() === attuale)) colori.unshift(attuale);
-        const bottoni = colori.map(c => {
-            const K = c.toUpperCase(), id = C.idColore(K), portato = K === attuale, casaMia = !!id && id === casa;
-            const altro = !portato && (presi.colori.has(K) || (id && presoDa(id)));
-            const titolo = altro ? `${K} · taken` : casaMia ? `${K} · your first colour, yours for good · coming back is free` : portato ? `${K} · you wear it` : `${K} · ${pr.gratis ? 'free (your first one)' : `change for ${pr.prezzo} 🪙`}`;
-            return `<button type="button" class="shop-col${portato ? ' is-on' : ''}${casaMia ? ' is-casa' : ''}${altro ? ' is-preso' : ''}" style="--c:${esc(K)}" data-ng="colore" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro || portato || !id ? ' disabled' : ''}></button>`;
+        const mie = new Set(possedute('colore')), pr = C.prezzoAcquisto('colore', contestoW());
+        const bottoni = P.PALETTE_FIRMA.map(c => {
+            const K = c.toUpperCase(), id = C.idColore(K);
+            if (!id || mie.has(id)) return '';
+            const altro = presi.colori.has(K) || presoDa(id);
+            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
+            return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
         }).join('');
-        const nota = pr.gratis ? 'Your first colour is free and stays yours for good (coming back to it is always free). Every colour belongs to one trainer only.'
-            : `Changing your colour costs ${pr.prezzo} 🪙 and happens right away. Your first colour (★) is the only personal one: yours for good, and coming back to it is free.`;
-        return `<section class="ng-gruppo"><h3>Signature colour</h3><p>It colours your name, stats and trophy. Greyed out colours belong to other trainers. ${nota}</p><div class="shop-colori">${bottoni}</div></section>`;
+        return `<section class="ng-gruppo"><h3>Signature colour ${conta('colore')}</h3><p>It colours your name, stats and trophy. ${notaCollezione('colore')}</p>${htmlMiei('colore')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4><div class="shop-colori">${bottoni}</div></section>`;
     }
 
     function htmlCanzone(presi) {
-        const casa = casaDi('canzone'), pr = prezzoDi('canzone'), mio = S.info.musicaPreferita;
+        const mie = new Set(possedute('canzone')), pr = C.prezzoAcquisto('canzone', contestoW());
         let corpo;
         if (S.canzoni === 'errore') corpo = '<p class="ng-nota">Could not load the playlist. Check your connection and reopen this tab.</p>';
         else if (!S.canzoni || S.canzoni === 'carico') corpo = '<p class="ng-nota">Loading the playlist…</p>';
         else {
             const q = S.ricerca.trim().toLowerCase();
-            const trovate = S.canzoni.filter(c => !q || c.nome.toLowerCase().includes(q));
+            const trovate = S.canzoni.filter(c => !mie.has(C.idCanzone(c.url)) && (!q || c.nome.toLowerCase().includes(q)));
             corpo = trovate.slice(0, MAX_RIGHE).map(c => {
-                const id = C.idCanzone(c.url), casaMia = !!id && id === casa, portata = c.url === mio;
-                const altro = !portata && (presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()) || presoDa(id));
-                return `<div class="shop-canzone${altro ? ' is-preso' : ''}${portata ? ' is-on' : ''}"><button type="button" class="shop-scelta" data-ng="canzone" data-url="${esc(c.url)}" data-nome="${esc(c.nome)}"${altro || portata ? ' disabled' : ''}>`
-                    + `<span>${casaMia ? '★ ' : ''}${esc(c.nome)}</span>${portata ? '<small>on now</small>' : altro ? '<small>taken</small>' : `<small>${pr.gratis || casaMia ? 'free' : `${pr.prezzo} 🪙`}</small>`}</button>`
+                const id = C.idCanzone(c.url);
+                const altro = presi.canzoniUrl.has(c.url.trim()) || presi.canzoniNomi.has(c.nome.trim().toLowerCase()) || presoDa(id);
+                return `<div class="shop-canzone${altro ? ' is-preso' : ''}"><button type="button" class="shop-scelta" data-ng="prendi" data-tipo="canzone" data-id="${id}" data-nome="${esc(c.nome)}" data-url="${esc(c.url)}"${altro ? ' disabled' : ''}>`
+                    + `<span>${esc(c.nome)}</span><small>${altro ? 'taken' : pr.gratis ? 'free' : `${pr.prezzo} 🪙`}</small></button>`
                     + `<button type="button" class="shop-ascolta" data-ng="ascolta" data-url="${esc(c.url)}" title="Listen" aria-label="Listen to ${esc(c.nome)}">▶</button></div>`;
             }).join('') + (trovate.length > MAX_RIGHE ? `<p class="ng-nota">${trovate.length - MAX_RIGHE} more: type in the search box to narrow it down.</p>` : '') + (trovate.length ? '' : '<p class="ng-nota">No songs found.</p>');
         }
-        const nota = pr.gratis ? 'Your first song is free and stays yours for good (coming back to it is always free). Every song belongs to one trainer only. Tap ▶ to listen before you choose.'
-            : `Changing your song costs ${pr.prezzo} 🪙 and happens right away; "None" is free. Your first song (★) is the only personal one: yours for good, and coming back to it is free. The song plays from the Music block of your card.`;
-        return `<section class="ng-gruppo"><h3>Favourite song</h3><div class="shop-attuale">Now: <b>${esc(S.info.musicName || (mio ? 'Favourite song' : 'None'))}</b>`
-            + `<button type="button" class="ng-bottone" data-ng="canzone-nessuna"${mio ? '' : ' disabled'} title="Play no song (free)">None</button></div>`
-            + `<input type="search" class="shop-ricerca" id="shop-ricerca" placeholder="Search a song…" aria-label="Search a song" value="${esc(S.ricerca)}"><div class="shop-canzoni">${corpo}</div><p class="ng-nota">${nota}</p></section>`;
+        return `<section class="ng-gruppo"><h3>Favourite song ${conta('canzone')}</h3><p>${notaCollezione('canzone')} Tap ▶ to listen before you choose. The song plays from the Music block of your card.</p>${htmlMiei('canzone')}`
+            + `<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4><input type="search" class="shop-ricerca" id="shop-ricerca" placeholder="Search a song…" aria-label="Search a song" value="${esc(S.ricerca)}"><div class="shop-canzoni">${corpo}</div></section>`;
     }
 
     function htmlAllenatore() {
@@ -177,41 +209,71 @@
         return htmlAvatar(presi) + htmlColore(presi) + htmlCanzone(presi);
     }
 
-    // la conferma di un cambio: una finestrella con quanto costa e che fine fa quello di adesso (e intanto lo si vede sulla pagina a destra)
-    function chiediCambio({ tipo, id, nome, immagine, colore, extra, prova }) {
-        const p = id ? prezzoDi(tipo, id) : { prezzo: 0, gratis: false };
-        const corrente = C.idCorrente(tipo, S.info);
-        const nomeCorrente = !corrente ? '' : tipo === 'avatar' ? `Avatar ${corrente.replace('avatar-', '')}` : tipo === 'colore' ? `Colour ${C.coloreDaId(corrente)}` : '';
-        const f = N.frasiCambio({ tipo, id, prezzo: p.prezzo, gratis: p.gratis, ritorno: p.ritorno, saldo: S.saldo, corrente, casa: casaDi(tipo), nomeCorrente });
-        if (prova) { S.prova = { ...S.prova, ...prova }; aggiornaAnteprima(); }
-        const chiudi = () => { velo.remove(); document.removeEventListener('keydown', tasto); if (prova) { for (const k of Object.keys(prova)) delete S.prova[k]; aggiornaAnteprima(); } };
-        const tasto = e => { if (e.key === 'Escape') chiudi(); };
+    // ---- le finestrelle: comprare (a quota piena, scegliendo cosa rilasciare) e rilasciare
+    function finestra(html, alClick, alloAnnullo) {
         const velo = document.createElement('div');
         velo.className = 'shop-conferma-velo';
-        velo.innerHTML = `<div class="shop-conferma" role="dialog" aria-modal="true" aria-label="${esc(id ? `Change to ${nome}` : 'Remove the song')}">`
-            + (immagine ? `<img src="${esc(immagine)}" alt="">` : colore ? `<span class="shop-conferma-colore" style="--c:${esc(colore)}"></span>` : '')
-            + `<b>${esc(nome)}</b>${f.righe.map(r => `<p>${esc(r)}</p>`).join('')}<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button>`
-            + `<button type="button" class="ng-bottone ng-compra" data-x="ok"${f.ok ? '' : ' disabled'}>${esc(f.conferma)}</button></div></div>`;
-        velo.addEventListener('click', async e => {
-            if (e.target === velo || (e.target.dataset && e.target.dataset.x === 'annulla')) return chiudi();
+        velo.innerHTML = `<div class="shop-conferma" role="dialog" aria-modal="true">${html}</div>`;
+        const togli = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
+        const annulla = () => { togli(); if (alloAnnullo) alloAnnullo(); };
+        const tasto = e => { if (e.key === 'Escape') annulla(); };
+        velo.addEventListener('click', e => { if (e.target === velo || (e.target.dataset && e.target.dataset.x === 'annulla')) return annulla(); alClick(e, velo, togli); });
+        document.addEventListener('keydown', tasto);
+        document.body.append(velo);
+        return velo;
+    }
+    const testaConferma = d => (d.immagine ? `<img src="${esc(d.immagine)}" alt="">` : d.colore ? `<span class="shop-conferma-colore" style="--c:${esc(d.colore)}"></span>` : '');
+
+    /** Prendere un avatar, un colore o una canzone: quanto costa e, a quota piena, quale dei tuoi rilasciare (e intanto si vede sulla pagina a destra) */
+    function chiediAcquisto({ tipo, id, nome, immagine, colore, extra }) {
+        const pr = C.prezzoAcquisto(tipo, contestoW()), mie = possedute(tipo), limite = C.LIMITI[tipo], piena = mie.length >= limite;
+        const prova = tipo === 'avatar' ? { avatar: immagine } : tipo === 'colore' ? { color: colore } : null;
+        if (prova) { S.prova = { ...S.prova, ...prova }; aggiornaAnteprima(); }
+        let scelta = '';
+        const frasi = () => N.frasiAcquisto({ tipo, nome, prezzo: pr.prezzo, gratis: pr.gratis, saldo: S.saldo, piena, limite, scelta });
+        const scelte = !piena ? '' : `<div class="shop-rilascia" role="radiogroup" aria-label="Release one">${mie.map(x => { const v = voceDi(tipo, x); return `<label><input type="radio" name="shop-rilascia" value="${esc(x)}"><span>${tipo === 'avatar' ? `<img src="${esc(v.immagine)}" alt="">` : tipo === 'colore' ? `<i style="--c:${esc(v.colore)}"></i>` : ''}${esc(v.nome)}${x === C.idCorrente(tipo, S.info) ? ' (you wear it)' : ''}</span></label>`; }).join('')}</div>`;
+        const corpo = f => `${testaConferma({ immagine, colore })}<b>${esc(nome)}</b>${f.righe.map(r => `<p>${esc(r)}</p>`).join('')}${scelte}<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button><button type="button" class="ng-bottone ng-compra" data-x="ok"${f.ok ? '' : ' disabled'}>${esc(f.conferma)}</button></div>`;
+        const levaProva = () => { if (prova) { for (const k of Object.keys(prova)) delete S.prova[k]; aggiornaAnteprima(); } };
+        finestra(corpo(frasi()), async (e, velo, togli) => {
+            if (e.target.name === 'shop-rilascia') { scelta = e.target.value; velo.querySelector('[data-x=ok]').disabled = !frasi().ok; return; }
             if (!(e.target.dataset && e.target.dataset.x === 'ok') || e.target.disabled) return;
-            e.target.disabled = true; e.target.textContent = 'Changing…';
+            e.target.disabled = true; e.target.textContent = 'Working…';
             let r;
-            try { r = await N.cambia(window, { tipo, id, ...(extra || {}) }); } catch (err) { r = { ok: false, motivo: 'error' }; }
-            document.removeEventListener('keydown', tasto); velo.remove();
+            try { r = await N.chiama(window, 'acquistaCosmetico', { id, ...(extra || {}), ...(scelta ? { rilascia: scelta } : {}) }); } catch (err) { r = { ok: false, motivo: 'error' }; }
+            togli();
             if (r.ok) {
                 S.prova = {};
                 await leggi(); mostraSaldo();
-                msg(!id ? 'Song removed.' : r.gratis ? `${nome} is yours for good!` : r.ritorno ? `Welcome back to ${nome}!` : `${nome} it is!`);
+                msg(r.gratis ? `${nome} is yours, for free!` : `${nome} is yours!${r.rilasciato ? ' The other one went back to the pool.' : ''}`);
                 aggiornaAnteprima(); disegna(true);
             } else {
-                if (prova) { for (const k of Object.keys(prova)) delete S.prova[k]; aggiornaAnteprima(); }
+                levaProva();
                 msg(N.frase(r.motivo), true);
-                if (r.motivo === 'taken') { await leggi(); disegna(true); }
+                if (r.motivo === 'taken' || r.motivo === 'limit') { await leggi(); disegna(true); }
             }
+        }, levaProva);
+    }
+
+    /** Lasciare andare uno di quelli che si hanno */
+    function chiediRilascio({ tipo, id, nome, immagine, colore }) {
+        const f = N.frasiRilascio({ tipo, nome });
+        finestra(`${testaConferma({ immagine, colore })}<b>${esc(nome)}</b>${f.righe.map(r => `<p>${esc(r)}</p>`).join('')}<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button><button type="button" class="ng-bottone ng-compra" data-x="ok">${esc(f.conferma)}</button></div>`, async (e, velo, togli) => {
+            if (!(e.target.dataset && e.target.dataset.x === 'ok') || e.target.disabled) return;
+            e.target.disabled = true; e.target.textContent = 'Working…';
+            let r;
+            try { r = await N.chiama(window, 'rilasciaCosmetico', { id }); } catch (err) { r = { ok: false, motivo: 'error' }; }
+            togli();
+            msg(r.ok ? `${nome} is free again for everyone.` : N.frase(r.motivo), !r.ok);
+            await leggi(); disegna(true);
         });
-        document.addEventListener('keydown', tasto);
-        document.body.append(velo);
+    }
+
+    /** Indossare uno di quelli che si hanno (gratis): si vede subito sulla pagina a destra */
+    async function indossa(tipo, id, extra) {
+        await operazione(() => N.cambia(window, { tipo, id, ...(extra || {}) }), async r => {
+            msg(r.ok ? (id ? 'Done: you wear it now.' : 'Song removed.') : N.frase(r.motivo), !r.ok);
+            await leggi(); mostraSaldo(); aggiornaAnteprima();
+        });
     }
 
     // ---------------------------------------------------------------- Pokémon: lo shiny di ogni Pokémon dei team
@@ -254,7 +316,7 @@
     async function operazione(fn, ok) {
         if (S.occupato) return;
         S.occupato = true; msg(''); disegna(true);
-        try { const r = await fn(); ok(r); } catch (e) { msg("Couldn't do that. Try again in a moment.", true); }
+        try { const r = await fn(); await ok(r); } catch (e) { msg("Couldn't do that. Try again in a moment.", true); }
         S.occupato = false; disegna(true);
     }
 
@@ -271,10 +333,11 @@
                 await leggi(); mostraSaldo(); aggiornaAnteprima();
             });
         }
-        if (ng === 'avatar') return chiediCambio({ tipo: 'avatar', id: b.dataset.id, nome: `Avatar ${b.dataset.n}`, immagine: `immagini/profile/${b.dataset.n}.png`, prova: { avatar: `immagini/profile/${b.dataset.n}.png` } });
-        if (ng === 'colore') { const K = b.dataset.c; return chiediCambio({ tipo: 'colore', id: C.idColore(K), nome: `Colour ${K}`, colore: K, prova: { color: K } }); }
-        if (ng === 'canzone') { if (ascolto) { ascolto.pause(); ascolto = null; } return chiediCambio({ tipo: 'canzone', id: C.idCanzone(b.dataset.url), nome: b.dataset.nome, extra: { url: b.dataset.url, nome: b.dataset.nome } }); }
-        if (ng === 'canzone-nessuna') return chiediCambio({ tipo: 'canzone', id: '', nome: 'No song', extra: {} });
+        const dati = () => ({ tipo: b.dataset.tipo, id: b.dataset.id, nome: b.dataset.nome, immagine: b.dataset.img, colore: b.dataset.c, extra: b.dataset.url ? { url: b.dataset.url, nome: b.dataset.nome } : null });
+        if (ng === 'prendi') { if (ascolto) { ascolto.pause(); ascolto = null; } return chiediAcquisto(dati()); }
+        if (ng === 'rilascia') return chiediRilascio(dati());
+        if (ng === 'indossa') { const d = dati(); return indossa(d.tipo, d.id, d.extra); }
+        if (ng === 'canzone-nessuna') return indossa('canzone', '', null);
         if (ng === 'ascolta') {
             const gia = ascolto && ascolto.src === b.dataset.url;
             if (ascolto) { ascolto.pause(); ascolto = null; }

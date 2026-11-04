@@ -153,7 +153,8 @@
         if (FORME_SPECIALI[nome]) nome = FORME_SPECIALI[nome];
 
         // il cosmetico "Shiny companion" (cosmetici.js): lo stesso Pokémon con i colori alternativi
-        const brillante = !!(stato.dati && stato.dati.info && stato.dati.info.pkmShiny);
+        // (vale solo per il compagno generico: uno scelto dal Box è shiny o no come quel Pokémon del Box)
+        const brillante = !!(stato.dati && stato.dati.info && (window.Cosmetici ? window.Cosmetici.compagnoShiny(stato.dati.info, stato.dati.teams) : stato.dati.info.pkmShiny));
         let gif = null, altezzaM = 1.2, vola = false;
         try {
             const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nome)}`);
@@ -1025,7 +1026,7 @@
         nav.append(h('button', { id: 'pp-condividi-btn', class: 'pp-modifica-btn pp-condividi-btn', type: 'button', onclick: () => {
             const dati = stato.dati;
             const info = dati.info || {};
-            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
+            window.SchedaCondivisione.condividi(window, window.SchedaCondivisione.allenatore({ nome: dati.nome, colore: dati.colore, avatar: info.avatar, info, compagnoShiny: window.Cosmetici ? window.Cosmetici.compagnoShiny(info, dati.teams) : !!info.pkmShiny, riepilogo: stato.riepilogo, aura: window.Cosmetici && window.Cosmetici.perId(info.aura) ? window.Cosmetici.perId(info.aura).colore : '' }));
         } }, h('span', { class: 'pp-modifica-icona', 'aria-hidden': 'true', testo: '\u2197' }), ' SHARE'));
     }
 

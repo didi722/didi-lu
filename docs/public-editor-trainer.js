@@ -5,12 +5,11 @@
 // colore firma, titolo, motto, Pokémon preferito e canzone. Si vedono subito sulla carta e si salvano
 // con SAVE (players/{id}/info, insieme alla configurazione della pagina).
 //
-// Colore, avatar, Pokémon preferito e canzone sono unici: quelli che un altro allenatore ha già
-// scelto restano nella lista ma in grigio e non si possono scegliere (P.scelteDegliAltri); quello che si ha
-// già resta sempre selezionabile. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
+// Il Pokémon preferito è unico: quelli che un altro allenatore ha già scelto restano nella lista ma in grigio
+// e non si possono scegliere (P.scelteDegliAltri); quello che si ha già resta sempre selezionabile. Al salvataggio la regola si ricontrolla sui dati di adesso (public-editor.js).
 //
-// Avatar, colore e canzone non si scelgono più qui: costano monete e si cambiano nello Shop (shop.html, scheda Trainer), dove si provano sulla tua pagina prima di scegliere. Qui restano
-// titolo, motto e Pokémon preferito, che sono gratis e si salvano con SAVE.
+// Avatar, colore e canzone: qui compaiono solo quelli che hai (si comprano nello Shop, shop.html, scheda Trainer, dove si provano sulla tua pagina). Indossarne uno è gratis ma lo scrive il server,
+// quindi è subito e non fa parte di SAVE. Titolo, motto e Pokémon preferito sono gratis e si salvano con SAVE.
 // =====================================================
 (function () {
     'use strict';
@@ -23,6 +22,8 @@
     let ricerca = { pokemon: '' };
     let boxAperto = false;           // "From my Box" aperto o chiuso (resta così se il pannello si ridisegna)
     let teamAperto = null;           // l'id del team aperto, uno solo alla volta
+    let ascolto = null;              // l'audio dell'anteprima di una canzone
+    const fermaAscolto = () => { if (ascolto) { ascolto.pause(); ascolto = null; } };
 
     // ---- Dati che vengono da fuori ------------------------------------------------------------
 
@@ -49,7 +50,7 @@
     // ---- Disegno ------------------------------------------------------------------------------
 
     function disegna(ctx) {
-        const { C, h, sezione, cambiaProfilo, ridisegna, cosmetici } = ctx;
+        const { C, h, sezione, cambiaProfilo, ridisegna } = ctx;
         const dati = C.stato.dati;
         const profilo = C.profilo();
         const presi = P.scelteDegliAltri(dati.chiave, dati.tutti);
@@ -58,14 +59,9 @@
         // il valore scelto in questo momento, per segnare la voce giusta senza ridisegnare tutto
         const scegli = (nuovi, opzioni) => { cambiaProfilo(nuovi, { senzaPannello: true, ...opzioni }); segna(); };
 
-        // ---- avatar, colore e canzone: si cambiano nello Shop
-        const sezioneShop = sezione('Avatar, colour & song',
-            h('div', { class: 'pe-attuale' },
-                h('span', { class: 'pe-avatar-grande' }, h('img', { id: 'pe-avatar-attuale', src: profilo.avatar || 'immagini/profile/1.png', alt: 'Current avatar' })),
-                h('span', { class: 'pe-conferma-colore', id: 'pe-colore-attuale', stile: { '--c': profilo.color || '#31c489', width: '28px', height: '28px' }, title: 'Your colour' }),
-                h('b', { id: 'pe-canzone-attuale', testo: profilo.musicName || 'No song' })),
-            h('p', { class: 'pe-nota', testo: 'They cost coins (your first of each is free) and are changed in the Shop, where you can try them on this page before you choose.' }),
-            h('button', { type: 'button', class: 'pe-bottone pe-primario', onclick: () => cosmetici.vaiAlloShop(), testo: 'Change them in the Shop →' }));
+        // ---- avatar, colore e canzone: solo quelli che hai
+        fermaAscolto();
+        const mie = sezioniMie(ctx);
 
         // ---- titolo: quelli sbloccati
         const titoli = ['No Title', ...Titoli.titoliSbloccati(dati.tipi, dati.pokemon).map(t => t.testo)];
@@ -82,8 +78,8 @@
         motto.value = profilo.bio;
 
         return [
-            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE. Avatar, colour and song are changed in the Shop. Pokémon that another trainer has already picked stay in the list, greyed out.' }),
-            sezioneShop,
+            h('p', { class: 'pe-nota', testo: 'Everything you pick here shows on your card straight away and is saved with SAVE, except avatar, colour and song: those change right away. You only see what you have; the rest is in the Shop. Pokémon that another trainer has already picked stay in the list, greyed out.' }),
+            ...mie,
             sezione('Title', selettore, h('p', { class: 'pe-nota', testo: 'Only the titles you have earned.' })),
             sezione('Motto', motto, conto),
             sezionePokemon(ctx, presi, scegli)
@@ -97,6 +93,78 @@
             const nomePkm = document.getElementById('pe-pokemon-attuale');
             if (nomePkm) nomePkm.textContent = p.pkmPreferito ? p.pkmPreferito.toUpperCase() : 'None';
         }
+    }
+
+    // ---- Avatar, colore e canzone: solo quelli che hai ----------------------------------------
+
+    /** Le tre sezioni: ognuna mostra quelli che hai (al massimo Cosmetici.LIMITI), si indossa con un tocco (gratis, lo fa il server) e rimanda allo Shop per averne altri */
+    function sezioniMie(ctx) {
+        const { C, h, sezione, campione, avvisa, cosmetici } = ctx;
+        const profilo = C.profilo();
+        const Z = window.Cosmetici;
+        const indossa = async (tipo, id, nome, extra) => {
+            fermaAscolto();
+            let r;
+            try { r = await cosmetici.indossa(tipo, id, extra); } catch (e) { r = { ok: false, motivo: 'error' }; }
+            avvisa(r.ok ? (id ? `${nome}: you wear it now.` : 'Song removed.') : cosmetici.frase(r.motivo), !r.ok);
+        };
+        const conta = tipo => `${cosmetici.possedute(tipo).length}/${cosmetici.limite(tipo)}`;
+        const alloShop = testo => h('button', { type: 'button', class: 'pe-bottone pe-piccolo pe-vai-shop', onclick: () => cosmetici.vaiAlloShop(), testo });
+        const nessuno = (cosa, primo) => h('p', { class: 'pe-nota', testo: `You have no ${cosa} of your own yet. ${primo}` });
+        const PRIMO = 'Your first one is free: get it in the Shop.';
+
+        // ---- avatar
+        const avatarPortato = cosmetici.corrente('avatar');
+        const avatar = cosmetici.possedute('avatar');
+        const sezioneAvatar = sezione(`Avatar (${conta('avatar')})`,
+            h('div', { class: 'pe-avatar-riga' },
+                h('span', { class: 'pe-avatar-grande' }, h('img', { id: 'pe-avatar-attuale', src: profilo.avatar || 'immagini/profile/1.png', alt: 'Current avatar' })),
+                h('span', { class: 'pe-nota', testo: avatar.length ? 'Tap one of yours to wear it.' : '' })),
+            avatar.length ? h('div', { class: 'pe-avatar-griglia', id: 'pe-avatar-griglia' }, avatar.map(id => {
+                const n = id.replace('avatar-', ''), su = id === avatarPortato;
+                return h('button', { type: 'button', class: `pe-avatar-item${su ? ' is-on' : ''}`, 'data-id': id, 'aria-pressed': String(su), 'aria-label': `Avatar ${n}${su ? ' (you wear it)' : ''}`, title: su ? `Avatar ${n} · you wear it` : `Avatar ${n} · wear it`,
+                    onclick: () => { if (!su) indossa('avatar', id, `Avatar ${n}`); } },
+                h('img', { src: `immagini/profile/${n}.png`, alt: '', loading: 'lazy' }));
+            })) : nessuno('avatar', PRIMO),
+            alloShop('Get more in the Shop →'));
+
+        // ---- colore firma
+        const colorePortato = cosmetici.corrente('colore');
+        const colori = cosmetici.possedute('colore');
+        const sezioneColore = sezione(`Signature colour (${conta('colore')})`,
+            colori.length ? h('div', { class: 'pe-campioni pe-campioni-fitti', id: 'pe-colori' }, colori.map(id => {
+                const c = Z.coloreDaId(id), su = id === colorePortato;
+                const b = campione(c, su, su ? `${c} · you wear it` : `${c} · wear it`, () => { if (!su) indossa('colore', id, c); }, null);
+                b.dataset.id = id;
+                return b;
+            })) : nessuno('colour', PRIMO),
+            h('p', { class: 'pe-nota', testo: 'It colours your name, stats and trophy.' }),
+            alloShop('Get more in the Shop →'));
+
+        // ---- canzone
+        const cantata = cosmetici.corrente('canzone');
+        const canzoni = cosmetici.possedute('canzone');
+        const righe = canzoni.map(id => {
+            const b = cosmetici.brano(id), nome = b ? b.nome : 'Song', su = id === cantata;
+            return h('div', { class: 'pe-canzone' },
+                h('button', { type: 'button', class: `pe-scelta${su ? ' is-on' : ''}`, 'data-id': id, 'aria-pressed': String(su), title: su ? `${nome} · you wear it` : `${nome} · wear it`,
+                    onclick: () => { if (!su && b) indossa('canzone', id, nome, { url: b.url, nome: b.nome }); } },
+                h('span', { testo: nome }), su ? h('small', { class: 'pe-prezzo', testo: 'on now' }) : null),
+                b ? h('button', { type: 'button', class: 'pe-icona', title: 'Listen', 'aria-label': `Listen to ${nome}`, onclick: ev => {
+                    ev.stopPropagation();
+                    const gia = ascolto && ascolto.src === b.url;
+                    fermaAscolto();
+                    if (gia) return;
+                    ascolto = new Audio(b.url); ascolto.volume = 0.4; ascolto.play().catch(() => {});
+                }, testo: '▶' }) : null);
+        });
+        const sezioneCanzone = sezione(`Favourite song (${conta('canzone')})`,
+            h('div', { class: 'pe-attuale' }, h('span', { testo: 'Now: ' }), h('b', { id: 'pe-canzone-attuale', testo: profilo.musicName || 'No song' }),
+                profilo.musicaPreferita ? h('button', { type: 'button', class: 'pe-bottone pe-piccolo', onclick: () => indossa('canzone', '', '', null), testo: 'No song' }) : null),
+            canzoni.length ? h('div', { class: 'pe-scorri', id: 'pe-lista-canzoni' }, righe) : nessuno('song', PRIMO),
+            alloShop('Get more in the Shop →'));
+
+        return [sezioneAvatar, sezioneColore, sezioneCanzone];
     }
 
     // ---- Pokémon preferito --------------------------------------------------------------------

@@ -188,32 +188,73 @@
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
-    // ---- I cosmetici a pagamento (cosmetici.js): i motivi dello sfondo ---------------------------------------------
-    // Si comprano nello Shop (shop.html), non qui: il portafoglio (wallet/{uid}) si legge una volta solo per sapere quali motivi sono bloccati, e toccarne uno porta allo Shop su quella voce
-    // (che si prova sulla tua pagina). Avatar, colore e canzone si cambiano nello Shop, scheda Trainer.
-    let portafoglio = null;          // null finché non si legge; poi { posseduti }
+    // ---- I cosmetici a pagamento (cosmetici.js) -------------------------------------------------------------------
+    // Qui compare solo quello che hai già: i motivi dello sfondo che hai comprato e gli avatar, i colori e le canzoni che hai (nella scheda Trainer). Per averne altri c'è lo Shop (shop.html),
+    // dove si provano sulla tua pagina prima di comprare. Indossare uno di quelli che hai è gratis ma lo fa il server (avatar, colore e canzone non si scrivono da qui): è subito, fuori da SAVE/Cancel/undo.
+    // Il portafoglio (wallet/{uid}) si legge una volta; negozio.js (la chiamata al server) si carica solo quando serve.
+    let portafoglio = null;          // null finché non si legge; poi { posseduti, casa, pronto }
     function leggiPortafoglio(forza) {
         if ((portafoglio && !forza) || !window.firebase || !window.firebase.auth) return Promise.resolve();
         const u = window.firebase.auth().currentUser;
         if (!u) return Promise.resolve();
-        if (!portafoglio) portafoglio = { posseduti: {} };
+        if (!portafoglio) portafoglio = { posseduti: {}, casa: {}, pronto: false };
         return window.firebase.database().ref(`wallet/${u.uid}`).once('value')
-            .then(snap => { const w = snap.val() || {}; portafoglio = { posseduti: w.posseduti || {} }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
-            .catch(() => { /* senza: resta bloccato ciò che non usi già */ });
+            .then(snap => { const w = snap.val() || {}; portafoglio = { posseduti: w.posseduti || {}, casa: w.casa || {}, pronto: true }; if (typeof disegnaPannello === 'function') disegnaPannello(); })
+            .catch(() => { /* senza: si vede solo ciò che usi già */ });
     }
 
     // quello che si usa nella pagina SALVATA (non l'anteprima di una scelta ancora da salvare)
     const infoSalvata = () => ({ ...C.stato.dati.info, ...C.stato.infoSalvata });
     const contestoCosmetici = () => ({ wallet: portafoglio || {}, info: infoSalvata(), pagina: C.stato.salvata });
     const motivoBloccato = motivo => !!window.Cosmetici && window.Cosmetici.motivoBloccato(motivo, contestoCosmetici());
-    /** Lo Shop su quel motivo (o sulla scheda Trainer): chiede conferma se ci sono modifiche non salvate, perché lascia la pagina */
+    /** Lo Shop (su una voce o su una scheda): lascia la pagina, e di modifiche non salvate si avvisa con beforeunload */
     const vaiAlloShop = (dove = '') => {
         const url = `shop.html?${dove || 'tab=pagina'}`;
         if (typeof window !== 'undefined' && window.location) window.location.href = url;
     };
+
+    function caricaNegozio() {
+        if (window.Negozio) return Promise.resolve();
+        const mio = Array.from(document.scripts).find(x => /(^|\/)public-editor\.js(\?|#|$)/.test(x.getAttribute('src') || ''));
+        const base = mio ? mio.getAttribute('src').replace(/public-editor\.js.*$/, '') : '';
+        return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = `${base}negozio.js`; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
+    }
+
+    /** Quello che le schede (Trainer) usano per avatar, colore e canzone che hai */
     const cosmetici = {
-        /** Lo Shop, sulla scheda Trainer: avatar, colore e canzone si cambiano lì */
-        vaiAlloShop: () => vaiAlloShop('tab=allenatore')
+        pronto: () => !!(portafoglio && portafoglio.pronto),
+        /** Gli id di quelli che hai (avatar-<n>, colore-<rrggbb>, canzone-<impronta>), compreso quello che porti */
+        possedute: tipo => (window.Cosmetici ? window.Cosmetici.possedutiDiTipo(tipo, contestoCosmetici()) : []),
+        limite: tipo => (window.Cosmetici ? window.Cosmetici.LIMITI[tipo] : 0),
+        /** L'id di quello che porti adesso ('' se è quello di partenza) */
+        corrente: tipo => (window.Cosmetici ? window.Cosmetici.idCorrente(tipo, infoSalvata()) : ''),
+        /** Indirizzo e nome di una canzone che hai (dal portafoglio, o da quella che porti) */
+        brano: id => {
+            const v = portafoglio && portafoglio.posseduti && portafoglio.posseduti[id];
+            if (v && typeof v === 'object' && v.url) return { url: String(v.url), nome: String(v.nome || 'Song') };
+            const i = infoSalvata();
+            return i.musicaPreferita && window.Cosmetici && window.Cosmetici.idCanzone(i.musicaPreferita) === id ? { url: i.musicaPreferita, nome: i.musicName || 'Song' } : null;
+        },
+        frase: motivo => (motivo === 'loading' ? 'Still loading what you have: try again in a moment.' : window.Negozio ? window.Negozio.frase(motivo) : "Couldn't do that."),
+        /** Lo Shop, sulla scheda Trainer: per averne altri */
+        vaiAlloShop: () => vaiAlloShop('tab=allenatore'),
+        /**
+         * Indossa uno di quelli che hai (gratis): avatar (id avatar-<n>), colore (id colore-<rrggbb>) o canzone (id canzone-<impronta>, con url e nome; id '' = nessuna canzone).
+         * Lo scrive il server: qui si aggiorna la carta, che conta già come salvata. Ritorna { ok, ... } oppure { ok: false, motivo }.
+         */
+        async indossa(tipo, id, extra) {
+            if (!cosmetici.pronto()) return { ok: false, motivo: 'loading' };
+            await caricaNegozio();
+            const r = await window.Negozio.cambia(window, { tipo, id, ...(extra || {}) });
+            if (r.ok) {
+                const valori = tipo === 'avatar' ? { avatar: r.avatar } : tipo === 'colore' ? { color: r.color } : { musicaPreferita: r.musicaPreferita, musicName: r.musicName };
+                C.profiloDalServer(valori);
+                for (const f of storia) Object.assign(f.profilo, valori);          // "undo" non deve riportare indietro quello che il server ha già cambiato
+                await leggiPortafoglio(true);
+                disegnaPannello();
+            }
+            return r;
+        }
     };
 
     function schedaSfondo() {
@@ -223,6 +264,9 @@
             const css = P.sfondoCss({ ...s, motivo }, colore());
             return { 'background-color': css.colore, 'background-image': css.immagine, 'background-size': css.dimensione === 'auto' ? 'auto' : css.dimensione, 'background-position': css.posizione };
         };
+        // solo i motivi che puoi usare: quelli liberi, quelli comprati e quello che la pagina usa già
+        const motiviMostrati = Object.entries(P.MOTIVI).filter(([id]) => id === s.motivo || !motivoBloccato(id));
+        const altriMotivi = motiviMostrati.length < Object.keys(P.MOTIVI).length;
         const proprio = P.esadecimale(colore(), '#31c489');
         const nellaPalette = s.colore !== 'giocatore' && P.PALETTE_SFONDO.some(x => x.toLowerCase() === s.colore);
         const personalizzato = s.colore !== 'giocatore' && !nellaPalette;
@@ -230,11 +274,10 @@
             oninput: e => cambia(c => { c.sfondo.colore = e.target.value; return c; }, { chiave: 'sfondo-colore', senzaPannello: true }),
             onchange: () => disegnaPannello() });
         return [
-            sezione('Pattern', h('div', { class: 'pe-motivi' }, Object.entries(P.MOTIVI).map(([id, nome]) =>
-                h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}${motivoBloccato(id) ? ' pe-bloccato' : ''}`, 'aria-pressed': String(s.motivo === id),
-                    title: motivoBloccato(id) ? `${nome}: get it in the Shop` : null,
-                    onclick: () => (motivoBloccato(id) ? vaiAlloShop(`tab=pagina&item=sfondo-${id}`) : cambia(c => { c.sfondo.motivo = id; return c; })) },
-                    h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: motivoBloccato(id) ? `🔒 ${nome}` : nome }))))),
+            sezione('Pattern', h('div', { class: 'pe-motivi' }, motiviMostrati.map(([id, nome]) =>
+                h('button', { type: 'button', class: `pe-motivo${s.motivo === id ? ' is-on' : ''}`, 'aria-pressed': String(s.motivo === id), onclick: () => cambia(c => { c.sfondo.motivo = id; return c; }) },
+                    h('span', { class: 'pe-motivo-prova', stile: anteprima(id) }), h('small', { testo: nome })))),
+            altriMotivi ? h('p', { class: 'pe-nota pe-sotto' }, 'There are more patterns to get. ', h('button', { type: 'button', class: 'pe-bottone pe-piccolo pe-vai-shop', onclick: () => vaiAlloShop('tab=pagina'), testo: 'See them in the Shop →' })) : null),
             sezione('Colour', h('div', { class: 'pe-campioni pe-campioni-fitti' },
                 campione(proprio, s.colore === 'giocatore', 'My signature colour', () => cambia(c => { c.sfondo.colore = 'giocatore'; return c; }), h('span', { class: 'pe-campione-etichetta', testo: 'ME' })),
                 P.PALETTE_SFONDO.map(x => campione(x, s.colore === x.toLowerCase(), x, () => cambia(c => { c.sfondo.colore = x.toLowerCase(); return c; }))),
