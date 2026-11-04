@@ -994,7 +994,7 @@ async function openTeamPicker(format, nomeUtenteClean) {
 
                 // Stessa normalizzazione e stesso fallback usati in renderizza()
                 const pkmNameUrl = pkmnName.toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
-                const pkmSprite = SpritePkm.gif(pkmnName);
+                const pkmSprite = SpritePkm.gif(pkmnName, !!(p && typeof p === 'object' && p.shiny));
 
                 return `<figure class="tp-pkm"><img src="${pkmSprite}" alt="${escapeHtmlFormato(pkmnName)}"
                         class="preview-pkmn-img"
@@ -1425,9 +1425,9 @@ async function caricaTipi(pkmName, elementId, direzione) {
 }    
 
 // Funzione globale per generare l'URL della GIF
-function getGifUrl(pName) {
+function getGifUrl(pName, shiny) {
     if (!pName) return "";
-    return SpritePkm.gif(pName);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
+    return SpritePkm.gif(pName, !!shiny);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
 }
 
 

@@ -697,7 +697,7 @@ async function apriPkmDettaglio(pokemonData, pkmNameUrl, indice) {
 
     content.innerHTML = `
         <div class="pp-pkm-scheda">
-            <img id="pkm-hero-sprite" class="pp-pkm-hero" src="${SpritePkm.gif(nome || pkmNameUrl)}" alt="" onerror="SpritePkm.riserva(this, '${SpritePkm.id(nome || pkmNameUrl)}')">
+            <img id="pkm-hero-sprite" class="pp-pkm-hero" src="${SpritePkm.gif(nome || pkmNameUrl, pokemonData.shiny)}" alt=""${pokemonData.shiny ? ' data-shiny="1"' : ''} onerror="SpritePkm.riserva(this, '${SpritePkm.id(nome || pkmNameUrl)}')">
             <h2 class="pp-pkm-nome">${escHtml(nome)}</h2>
             ${team && team.nome ? `<p class="pp-pkm-team">${escHtml(team.nome)}</p>` : ''}
             <h4 class="pp-pkm-etichetta">RIBBONS</h4>

@@ -117,6 +117,15 @@ test('cablaggio: lo Shop è una pagina (non sta più nella campanella); compagno
     assert.ok(!leggi('docs', 'style-public-editor.css').includes('.pe-bloccato'));
 });
 
+test('shiny ovunque: ogni punto del sito che mostra un Pokémon di un team passa il suo segno shiny allo sprite (e tornando normale sparisce, perché si legge dal team)', () => {
+    const attesi = [['box.html', /SpritePkm\.gif\(nomePkm, p\.shiny\)/], ['box.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['box.html', /SpritePkm\.gif\(nomeP?kmHero?|pokemonData\.shiny\)/],
+        ['hub.html', /SpritePkm\.gif\(pkmnName, !!\(p && typeof p === 'object' && p\.shiny\)\)/], ['hub.html', /SpritePkm\.gif\(p\.nome \|\| '', p\.shiny\)/],
+        ['matches.html', /getGifUrl\(p\.nome, p\.shiny\)/], ['matches.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['matches.html', /SpritePkm\.gif\(pName, !!shiny\)/],
+        ['public.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['public.html', /SpritePkm\.gif\(nome \|\| pkmNameUrl, pokemonData\.shiny\)/],
+        ['public-card.js', /gifShowdown\(nomePkm, p\.shiny\)/], ['app-practice.js', /dex\(s, !!shiny\[i\]\)/]];
+    for (const [f, re] of attesi) assert.match(leggi('docs', f), re, `${f}: ${re}`);
+});
+
 test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsante: prezzo (che apre la conferma), "Make shiny" gratis se già comprato, "Back to normal" se è shiny; il testo è protetto', () => {
     const prezzo = nome => C.prezzoShiny(nome).prezzo;
     const base = {

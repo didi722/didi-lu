@@ -3190,7 +3190,7 @@ function renderGifs(nomeTeam, containerId, categoria) {
         pkmList.forEach(p => {
             if (p.nome) {
                 const img = document.createElement('img');
-                img.src = typeof getGifUrl === "function" ? getGifUrl(p.nome) : `immagini/pokemon/${p.nome.toLowerCase()}.gif`;
+                img.src = typeof getGifUrl === "function" ? getGifUrl(p.nome, p.shiny) : `immagini/pokemon/${p.nome.toLowerCase()}.gif`;
                 img.className = 'header-gif';
                 container.appendChild(img);
             }
@@ -3371,9 +3371,9 @@ async function caricaTipi(pkmName, elementId, direzione) {
 }    
 
 // Funzione globale per generare l'URL della GIF
-function getGifUrl(pName) {
+function getGifUrl(pName, shiny) {
     if (!pName) return "";
-    return SpritePkm.gif(pName);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
+    return SpritePkm.gif(pName, !!shiny);     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime, Urshifu-Rapid-Strike → urshifu-rapidstrike)
 }
 
 
