@@ -534,7 +534,7 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
     display: block;
     height: calc(var(--h, 150) * var(--d));
     width: auto;
-    max-width: calc(264 * var(--d));
+    max-width: calc(224 * var(--d));   /* a destra dell'allenatore: un Pokémon largo si rimpicciolisce invece di coprirlo */
     object-fit: contain;
     filter: var(--pp-adesivo-sprite);
 }
