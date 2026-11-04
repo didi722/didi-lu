@@ -141,3 +141,7 @@ html.app-shell { --shop-testo: #fff; }
 .shop-av.is-prova, .shop-col.is-prova { outline: 4px solid var(--nb-giallo, #ffbd44); outline-offset: 2px; }
 .shop-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 6px 0 4px; padding: 8px 10px; background: var(--nb-giallo, #ffbd44); color: #000; border: 3px solid var(--nb-ink, #000); border-radius: var(--nb-raggio, 0); box-shadow: var(--nb-sh-s, 3px 3px 0 #000); }
 .shop-barra span { flex: 1; min-width: 120px; font: 700 .8rem var(--nb-font-testo, 'Montserrat', sans-serif); }
+
+/* l'icona delle monete, alta come il testo */
+.shop-moneta { height: 1.1em; width: 1.1em; vertical-align: -.2em; image-rendering: pixelated; }
+.shop-saldo .shop-moneta { height: 1.05em; width: 1.05em; vertical-align: -.1em; }

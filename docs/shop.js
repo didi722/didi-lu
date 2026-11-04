@@ -19,6 +19,8 @@
 
     const $ = id => document.getElementById(id);
     const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // l'icona delle monete (immagini/moneta.png) al posto dell'emoji, nel markup già protetto (mai dentro gli attributi)
+    const conMoneta = h => String(h).replace(/🪙/g, '<img class="shop-moneta" src="immagini/moneta.png" alt="coins">');
     const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
     const URL_PLAYLIST = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRBD7fZsWUtQ-UqcSaG-2lzeQnbxUdCUlTc8D6b4dCmSLq4-sDpIJGVzKmwwZF0p1uF-Ln3--4jpGk/pub?gid=775181727&single=true&output=csv';
     const MAX_RIGHE = 150;
@@ -74,7 +76,7 @@
         const m = $('shop-msg');
         m.textContent = testo || ''; m.hidden = !testo; m.classList.toggle('shop-errore', !!errore);
     }
-    const mostraSaldo = () => { $('shop-saldo').textContent = `🪙 ${S.saldo}`; };
+    const mostraSaldo = () => { $('shop-saldo').innerHTML = conMoneta(`🪙 ${S.saldo}`); };
 
     const base = () => ({
         aura: S.info.aura || null, effettoNome: S.info.effettoNome || null, effettoPalco: S.info.effettoPalco || null, pkmShiny: !!S.info.pkmShiny,
@@ -178,7 +180,7 @@
             const n = f.replace('.png', ''), id = `avatar-${n}`, chiave = `profile/${f}`.toLowerCase();
             if (mie.has(id)) return '';
             const altro = presi.avatar.has(chiave) || presoDa(id);
-            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
+            const titolo = altro ? `Avatar ${n} · taken${presoDa(id) ? ` by ${bello(presoDa(id))}` : ' by another trainer'}` : `Avatar ${n} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
             return `<button type="button" class="shop-av${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" data-ng="prendi" data-tipo="avatar" data-id="${id}" data-nome="Avatar ${n}" data-img="immagini/profile/${f}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}><img src="immagini/profile/${f}" alt="" loading="lazy"></button>`;
         }).join('');
         return `<section class="ng-gruppo"><h3>Avatar ${conta('avatar')}</h3><p>${notaCollezione('avatar')}</p>${htmlMiei('avatar')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('avatar')}<div class="shop-avatar-griglia">${bottoni}</div></section>`;
@@ -190,7 +192,7 @@
             const K = c.toUpperCase(), id = C.idColore(K);
             if (!id || mie.has(id)) return '';
             const altro = presi.colori.has(K) || presoDa(id);
-            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} 🪙`}`;
+            const titolo = altro ? `${K} · taken` : `${K} · ${pr.gratis ? 'free (your first one)' : `${pr.prezzo} coins`}`;
             return `<button type="button" class="shop-col${altro ? ' is-preso' : ''}${S.scelta && S.scelta.id === id ? ' is-prova' : ''}" style="--c:${esc(K)}" data-ng="prendi" data-tipo="colore" data-id="${id}" data-nome="${esc(K)}" data-c="${esc(K)}" title="${esc(titolo)}" aria-label="${esc(titolo)}"${altro ? ' disabled' : ''}></button>`;
         }).join('');
         return `<section class="ng-gruppo"><h3>Signature colour ${conta('colore')}</h3><p>It colours your name, stats and trophy. ${notaCollezione('colore')}</p>${htmlMiei('colore')}<h4 class="shop-sotto">${pr.gratis ? 'Pick your first one' : 'Get another'}</h4>${barraScelta('colore')}<div class="shop-colori">${bottoni}</div></section>`;
@@ -226,7 +228,7 @@
     function finestra(html, alClick, alloAnnullo) {
         const velo = document.createElement('div');
         velo.className = 'shop-conferma-velo';
-        velo.innerHTML = `<div class="shop-conferma" role="dialog" aria-modal="true">${html}</div>`;
+        velo.innerHTML = conMoneta(`<div class="shop-conferma" role="dialog" aria-modal="true">${html}</div>`);
         const togli = () => { velo.remove(); document.removeEventListener('keydown', tasto); };
         const annulla = () => { togli(); if (alloAnnullo) alloAnnullo(); };
         const tasto = e => { if (e.key === 'Escape') annulla(); };
@@ -306,7 +308,7 @@
         const el = $('shop-contenuto');
         const y = window.scrollY;
         const interni = [...el.querySelectorAll('.shop-avatar-griglia, .shop-colori, .shop-canzoni')].map(x => x.scrollTop);
-        el.innerHTML = S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete();
+        el.innerHTML = conMoneta(S.tab === 'pagina' ? htmlPagina() : S.tab === 'allenatore' ? htmlAllenatore() : S.tab === 'pokemon' ? htmlPokemon() : htmlMonete());
         $('shop-corpo').classList.toggle('senza-anteprima', !TAB_CON_ANTEPRIMA.includes(S.tab));
         adattaAnteprima();
         document.querySelectorAll('.shop-scheda').forEach(b => { const su = b.dataset.tab === S.tab; b.classList.toggle('attiva', su); b.setAttribute('aria-selected', String(su)); });
@@ -387,7 +389,7 @@
         const accedi = $('shop-accedi'), corpo = $('shop-corpo'), schede = $('shop-schede');
         const loader = $('poke-loader');
         const finito = () => { if (loader) loader.style.display = 'none'; };
-        if (!utente) { accedi.hidden = false; corpo.hidden = true; schede.hidden = true; $('shop-saldo').textContent = '🪙 –'; finito(); return; }
+        if (!utente) { accedi.hidden = false; corpo.hidden = true; schede.hidden = true; $('shop-saldo').innerHTML = conMoneta('🪙 –'); finito(); return; }
         accedi.hidden = true; schede.hidden = false;
         S.uid = utente.uid;
         if (!document.getElementById('ng-stile')) { const st = document.createElement('style'); st.id = 'ng-stile'; st.textContent = N.STILE; document.head.appendChild(st); }
