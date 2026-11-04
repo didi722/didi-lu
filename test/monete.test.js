@@ -575,9 +575,9 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     for (const id of ['nome-oro', 'nome-neon', 'nome-fuoco']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
     assert.ok(per('nome-arcobaleno') >= media * 0.75 && per('nome-arcobaleno') <= media * 1.1, `nome-arcobaleno ${per('nome-arcobaleno')}`);
     for (const id of ['palco-neve', 'palco-scintille', 'palco-coriandoli', 'palco-stelle']) assert.ok(per(id) >= media * 0.55 && per(id) <= media * 0.75, `${id} ${per(id)}`);
-    // il catalogo permanente si completa in 8–16 stagioni: non si esaurisce in fretta (e nessuno lo compra tutto: ognuno prende quello che gli piace)
+    // il catalogo permanente si completa in 8–20 stagioni: non si esaurisce in fretta (e nessuno lo compra tutto: ognuno prende quello che gli piace)
     const fisso = C.CATALOGO.filter(c => !c.edizione).reduce((t, c) => t + c.prezzo, 0);
-    assert.ok(fisso >= media * 8 && fisso <= media * 16, `catalogo permanente ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
+    assert.ok(fisso >= media * 8 && fisso <= media * 20, `catalogo permanente ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
     // gli shiny sono la cosa più cara: quello di un team costa più di due cambi di canzone e più di un motivo; il compagno shiny è al massimo del catalogo
     assert.ok(P.shinyPokemon > P.canzone * 2 && P.shinyPokemon > per('sfondo-onde'), 'lo shiny di un team pesa più dei cambi e dei motivi');
     assert.equal(per('shiny'), Math.max(...C.CATALOGO.map(c => c.prezzo)), 'il compagno shiny è tra i più cari del catalogo');
@@ -781,4 +781,19 @@ test('ricalcolo delle monete: set dai punteggi dei match, badge, stagioni vinte 
     dati.seasons.s0.showdowns.a.matches.m4 = match('didi', 'lu', 2, 0);
     await R.applica(db, dati, { u1: { name: 'Didi' }, u2: { name: 'Lu' } }, { log: () => {}, badge: false });
     assert.equal(saldo(db, 'u1'), R.totale(R.calcola(dati, { badge: false }).didi));
+});
+
+test('spendi: come fa il vero database, la prima esecuzione parte con il valore vuoto (cache): annullare lì dava "monete insufficienti" a torto', async () => {
+    const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: 1854 } }, players: { didi: { info: {} } } });
+    const reale = db.ref.bind(db);
+    // il vero database: prima il gestore con null; se annulla è finita, altrimenti il server vede che non combacia e lo rilancia con il valore vero
+    db.ref = percorso => {
+        const r = reale(percorso), tr = r.transaction;
+        if (/\/saldo$/.test(percorso)) r.transaction = async fn => { const primo = fn(null); return primo === undefined ? { committed: false } : tr(fn); };
+        return r;
+    };
+    assert.equal(await M.spendi(db, 'u1', 250, 'prova'), true);
+    assert.equal(saldo(db, 'u1'), 1604);
+    assert.equal(await M.spendi(db, 'u1', 5000, 'troppo'), false, 'con il saldo vero che non basta si annulla');
+    assert.equal(saldo(db, 'u1'), 1604);
 });

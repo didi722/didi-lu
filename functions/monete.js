@@ -67,8 +67,18 @@ async function accredita(db, uid, importo, motivo, { chiave = '', tettoGiorno = 
 /** Toglie monete se ci sono (il saldo non scende sotto zero) */
 async function spendi(db, uid, importo, motivo, { adesso = Date.now() } = {}) {
     if (!uid || !(importo > 0)) return false;
-    const esito = await db.ref(`wallet/${uid}/saldo`).transaction(v => ((Number(v) || 0) >= importo ? (Number(v) || 0) - importo : undefined));
-    if (!esito.committed) return false;
+    // La prima volta la transazione parte con v = null (il valore vero ancora non è arrivato): abortire lì sarebbe "monete insufficienti" a torto.
+    // Su null si restituisce null (nessun cambiamento): il server vede che non combacia e la riesegue con il saldo vero. `tolto` dice se l'ultima esecuzione ha pagato.
+    let tolto = false;
+    const esito = await db.ref(`wallet/${uid}/saldo`).transaction(v => {
+        tolto = false;
+        if (v == null) return v;
+        const n = Number(v) || 0;
+        if (n < importo) return undefined;
+        tolto = true;
+        return n - importo;
+    });
+    if (!esito.committed || !tolto) return false;
     await scriviMovimento(db, uid, -importo, motivo, adesso);
     return true;
 }
@@ -144,7 +154,7 @@ async function acquista({ db, uid, id, url, nome, rilascia: daRilasciare = '', a
     try {
         fatto = await spendi(db, uid, c.prezzo, `Bought: ${c.nome}`, { adesso });
     } finally {
-        if (!fatto) await mio.transaction(v => (v === adesso ? null : undefined));
+        if (!fatto) await mio.transaction(v => (v === adesso ? null : v));
     }
     if (!fatto) return { ok: false, motivo: 'poor' };
     const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
@@ -183,7 +193,7 @@ async function riserva(db, id, giocatore) {
     return { ok: !!r.committed, nuovo: !!r.committed && !prima };
 }
 /** Rimette libero un id, ma solo se lo teneva questo allenatore */
-const libera = (db, id, giocatore) => db.ref(`cosmeticiPresi/${id}`).transaction(v => (v === giocatore ? null : undefined));
+const libera = (db, id, giocatore) => db.ref(`cosmeticiPresi/${id}`).transaction(v => (v === giocatore ? null : v));
 
 /** Cosa si sta chiedendo, controllato: { c, tipo, indirizzo, titolo } oppure null. Per una canzone servono `url` e `nome` e l'id deve essere quello dell'indirizzo; il server compone da sé l'indirizzo degli avatar */
 function descrivi(id, url, nome) {
