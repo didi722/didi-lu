@@ -116,7 +116,7 @@
     // ---------------------------------------------------------------- Your page
     const compagnoBox = () => { const b = C.compagnoDelBox(S.info, S.teams); return b ? String(b.nome || b.name || 'that Pokémon') : ''; };
     const statoCatalogo = () => ({ saldo: S.saldo, posseduti: S.posseduti, info: S.info, pagina: S.pagina, anteprime: S.anteprime, stagioni: S.stagioni, nomiStagioni: S.nomiStagioni, occupato: S.occupato, provando: S.provando, compagnoBox: compagnoBox() });
-    const htmlPagina = () => `<p class="shop-aiuto">Tap anything to see it on your page. <a href="public.html?player=${encodeURIComponent(S.giocatore)}&amp;edit=1">Customize your page →</a></p>${N.catalogoHtml(statoCatalogo())}`;
+    const htmlPagina = () => `<p class="shop-aiuto">Tap anything to see it on your page.</p>${N.catalogoHtml(statoCatalogo())}`;
 
     // ---------------------------------------------------------------- Trainer: avatar, colore, canzone
     // Si comprano e si hanno (massimo C.LIMITI per tipo): quelli che hai si indossano gratis o si rilasciano; per prenderne un altro a quota piena se ne rilascia uno. Sono unici: gli altri li vedono grigi.
@@ -435,6 +435,8 @@
         leggi().then(() => {
             mostraSaldo();
             corpo.hidden = false;
+            const modifica = $('shop-edit-card');
+            modifica.href = `public.html?player=${encodeURIComponent(S.giocatore)}&edit=1`; modifica.hidden = false;
             $('shop-iframe').src = `public.html?player=${encodeURIComponent(S.giocatore)}&anteprima=1`;
             const q = new URLSearchParams(window.location.search);
             if (q.get('team') && S.teams.some(t => t.id === q.get('team'))) S.squadra = q.get('team');
