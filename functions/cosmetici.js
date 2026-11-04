@@ -7,10 +7,11 @@
 //     (PREZZI) e il server lo fa subito, scrivendo il profilo. Il primo avatar, il primo colore e la prima canzone sono "di casa", l'unica cosa personale: si scelgono gratis (chi ha ancora quello
 //     di partenza) o, per chi ne aveva già uno, è quello che aveva; restano suoi PER SEMPRE, nessun altro li può prendere e tornarci non costa mai. Quello che si porta, invece, è riservato
 //     solo finché lo si porta: cambiando di nuovo torna libero per tutti. Così l'unicità, com'è sempre stata, non si rompe e non si paga mai qualcosa che poi non si può usare.
-//   - Lo shiny di un Pokémon di un team: costa PREZZI.shinyPokemon e si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js).
+//   - Lo shiny di un Pokémon di un team: si compra dal Box (non ha un id: il segno sta nel team, vedi functions/monete.js). Il prezzo dipende dalla specie: PREZZI.shinyPokemon per una
+//     "standard", meno per le comuni (Pichu, Magikarp), di più per le forti (pseudo-leggendari, OU), le rare (sub-leggendari) e le leggendarie (FASCE_SHINY; la fascia di ogni specie sta in rarita-pkm.js).
 //   - L'economia: PREMI (quanto si guadagna) e PREZZI (quanto costano le famiglie), calibrati sulla stagione tipo con stimaStagione().
 // ATTENZIONE: questo file esiste in due copie identiche, functions/cosmetici.js (il server controlla prezzi e acquisti) e docs/cosmetici.js (il sito).
-// Modificane una e copiala sull'altra (lo controlla test/monete.test.js).
+// Modificane una e copiala sull'altra (lo controlla test/monete.test.js). Lo stesso vale per rarita-pkm.js, che questo file legge (nel sito va caricato prima: <script src="rarita-pkm.js">).
 //
 //   Cosmetici.CATALOGO, Cosmetici.perId(id), Cosmetici.TIPI, Cosmetici.PREMI, Cosmetici.PREZZI
 //   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quello che porti o quello di casa
@@ -24,15 +25,17 @@
 //                                                      tornando a quello di casa)
 //   Cosmetici.prezzoPer(id, { wallet, info })          { prezzo, gratis, ritorno }: quanto costa un cosmetico del catalogo, o un cambio per gli id degli avatar, dei colori e delle canzoni
 //   Cosmetici.stimaStagione({ ... })                   quante monete fa una stagione, per tarare i prezzi
+//   Cosmetici.prezzoShiny(specie)                      { fascia, nome, prezzo }: quanto costa lo shiny di un Pokémon di quella specie ("standard" se la specie non è nell'elenco delle rarità)
+//   Cosmetici.fasciaShiny(specie), Cosmetici.fasceShiny()   la fascia di una specie; l'elenco delle fasce, dalla più economica: [{ fascia, nome, prezzo }]
 //   Cosmetici.testoConShiny(testo, indice, nome, specie)  il testo Showdown di un team con "Shiny: Yes" nel Pokémon indicato (lo scrive il server dopo l'acquisto)
 //   Cosmetici.senzaShinyAbusivi(testo, teamPrecedente)    toglie "Shiny: Yes" ai Pokémon che non erano già shiny: lo shiny si compra, non si scrive (il Box lo usa al salvataggio)
 //
 // Funziona nel browser (window.Cosmetici) e in Node (require).
 // =====================================================
 (function (radice, fabbrica) {
-    if (typeof module === 'object' && module.exports) module.exports = fabbrica();
-    else radice.Cosmetici = fabbrica();
-})(typeof self !== 'undefined' ? self : this, function () {
+    if (typeof module === 'object' && module.exports) module.exports = fabbrica(require('./rarita-pkm.js'));
+    else radice.Cosmetici = fabbrica(radice.RaritaPkm);
+})(typeof self !== 'undefined' ? self : this, function (RaritaPkm) {
     'use strict';
 
     // ---- Quanto si guadagna -------------------------------------------------------------------
@@ -47,9 +50,19 @@
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------
-    // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar o di colore è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team il 51% (mezza stagione: uno shiny è un trofeo, e
-    // una squadra intera ne costa tre di stagioni). Il catalogo fisso (qui sotto) vale circa cinque stagioni: un motivo il 32%, un'aura il 51%; l'aura arcobaleno e il compagno shiny una stagione intera.
+    // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar o di colore è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team "standard" il 51% (mezza stagione: uno shiny è
+    // un trofeo; una squadra intera di standard ne costa tre). Il catalogo fisso (qui sotto) vale circa cinque stagioni: un motivo il 32%, un'aura il 51%; l'aura arcobaleno e il compagno shiny una stagione intera.
     const PREZZI = { avatar: 100, colore: 100, canzone: 150, shinyPokemon: 400 };
+
+    // Lo shiny di un Pokémon di un team costa PREZZI.shinyPokemon × il moltiplicatore della fascia della specie (rarita-pkm.js): da un quarto di stagione (comune) a una stagione e mezza (leggendaria).
+    // Le fasce sono in ordine, dalla più economica.
+    const FASCE_SHINY = {
+        comune: { nome: 'Common', moltiplicatore: 0.5 },
+        standard: { nome: 'Standard', moltiplicatore: 1 },
+        forte: { nome: 'Strong', moltiplicatore: 1.5 },
+        raro: { nome: 'Rare', moltiplicatore: 2 },
+        mitico: { nome: 'Legendary', moltiplicatore: 3 }
+    };
 
     const TIPI = {
         shiny: { nome: 'Shiny companion', frase: 'Your favourite Pokémon in its shiny colours.' },
@@ -194,6 +207,21 @@
         return { prezzo: c.prezzo, gratis: false };
     }
 
+    // ---- Lo shiny di un Pokémon di un team: il prezzo ---------------------------------------------------
+    /** La fascia di una specie ("Garchomp", "Mr. Mime", "calyrexshadow"): 'standard' se l'elenco delle rarità non c'è o non la conosce */
+    function fasciaShiny(specie) {
+        const f = RaritaPkm && typeof RaritaPkm.fascia === 'function' ? RaritaPkm.fascia(specie) : 'standard';
+        return FASCE_SHINY[f] ? f : 'standard';
+    }
+    const prezzoFascia = fascia => Math.round(PREZZI.shinyPokemon * FASCE_SHINY[fascia].moltiplicatore);
+    /** Quanto costa lo shiny di un Pokémon di quella specie: { fascia, nome, prezzo } */
+    function prezzoShiny(specie) {
+        const fascia = fasciaShiny(specie);
+        return { fascia, nome: FASCE_SHINY[fascia].nome, prezzo: prezzoFascia(fascia) };
+    }
+    /** Le fasce, dalla più economica: [{ fascia, nome, prezzo }] */
+    const fasceShiny = () => Object.keys(FASCE_SHINY).map(fascia => ({ fascia, nome: FASCE_SHINY[fascia].nome, prezzo: prezzoFascia(fascia) }));
+
     // ---- Lo shiny di un Pokémon di un team: il testo Showdown -----------------------------------------
     // Il simulatore legge il testo Showdown del team (campo testoShowdown): lo shiny è una riga "Shiny: Yes" nel blocco del Pokémon. Qui si aggiunge (dopo l'acquisto) e si toglie
     // quando non è stato comprato (al salvataggio di un team dal Box).
@@ -281,5 +309,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

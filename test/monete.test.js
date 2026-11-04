@@ -416,7 +416,8 @@ test('senzaShinyAbusivi: lo shiny si compra, non si scrive: resta solo ai Pokém
     assert.equal(C.senzaShinyAbusivi('Shinx\nAbility: Intimidate\n- Shiny Tackle', null), 'Shinx\nAbility: Intimidate\n- Shiny Tackle');
 });
 
-const SALDO_SQUADRE = 2 * C.PREZZI.shinyPokemon + 100;      // basta per due shiny e un po' di resto
+const P_GARCHOMP = C.prezzoShiny('Garchomp').prezzo, P_INCINEROAR = C.prezzoShiny('Incineroar').prezzo;      // il team di prova: una specie forte e una standard
+const SALDO_SQUADRE = P_GARCHOMP + P_INCINEROAR + 100;      // basta per i due shiny e un po' di resto
 function dbSquadre(extra = {}) {
     const team = nome => ({ id: 'T1', nome, pokemon: [{ nome: 'Garchomp', shiny: false }, { nome: 'Incineroar', shiny: false }], testoShowdown: 'Garchomp @ Rocky Helmet\nAbility: Rough Skin\nLevel: 50\n- Protect\n\nIncineroar @ Safety Goggles\nAbility: Intimidate\nLevel: 50\n- Fake Out' });
     return dbFinto({
@@ -435,7 +436,7 @@ function dbSquadre(extra = {}) {
 test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box, testo e iscrizioni alle stagioni non chiuse; si paga una volta; la stagione chiusa e gli altri restano come sono', async () => {
     const db = dbSquadre();
     const r = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 });
-    assert.deepEqual(r, { ok: true, saldo: SALDO_SQUADRE - C.PREZZI.shinyPokemon });
+    assert.deepEqual(r, { ok: true, saldo: SALDO_SQUADRE - P_GARCHOMP, prezzo: P_GARCHOMP, fascia: 'forte' });
     const box = db.albero.players.didi.teams.T1;
     assert.deepEqual(box.pokemon.map(p => p.shiny), [true, false]);
     assert.match(box.testoShowdown, /^Garchomp @ Rocky Helmet\nAbility: Rough Skin\nLevel: 50\nShiny: Yes\n- Protect\n\nIncineroar[^]*- Fake Out$/);
@@ -446,22 +447,23 @@ test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box,
     assert.equal(db.albero.seasons['VGC Gen 8'], undefined);
     assert.deepEqual(db.albero.seasons.s0.teams_iscritti['VGC Gen 8'].didi.datiTeams[0].pokemon.map(p => p.shiny), [false, false], 'la stagione chiusa resta com\'era');
     assert.deepEqual(db.albero.seasons.s1.teams_iscritti['VGC Gen 8'].lukiani.datiTeams[0].pokemon.map(p => p.shiny), [false, false], 'il team di un altro allenatore con lo stesso nome non si tocca');
-    assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), [[-C.PREZZI.shinyPokemon, 'Shiny: Garchomp']]);
+    assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), [[-P_GARCHOMP, 'Shiny: Garchomp']]);
     assert.equal(Object.keys(db.albero.walletEventi || {}).length, 0, 'il segno di "acquisto in corso" è caduto');
     // già shiny: niente addebito
     assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), { ok: false, motivo: 'already' });
-    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - C.PREZZI.shinyPokemon);
-    // il secondo Pokémon è un altro acquisto
-    assert.equal((await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1 })).ok, true);
+    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - P_GARCHOMP);
+    // il secondo Pokémon è un altro acquisto, al prezzo della sua specie
+    assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1 }), { ok: true, saldo: 100, prezzo: P_INCINEROAR, fascia: 'standard' });
     assert.deepEqual(db.albero.players.didi.teams.T1.pokemon.map(p => p.shiny), [true, true]);
 });
 
 test('shinyPokemon: senza monete o con dati che non tornano non si addebita niente e non si scrive niente', async () => {
-    const povero = dbSquadre({ wallet: { u1: { saldo: C.PREZZI.shinyPokemon - 1 } } });
+    const povero = dbSquadre({ wallet: { u1: { saldo: P_GARCHOMP - 1 } } });
     assert.deepEqual(await M.shinyPokemon({ db: povero, uid: 'u1', team: 'T1', indice: 0 }), { ok: false, motivo: 'poor' });
     assert.equal(povero.albero.players.didi.teams.T1.pokemon[0].shiny, false);
     assert.doesNotMatch(povero.albero.players.didi.teams.T1.testoShowdown, /Shiny/);
-    assert.equal(saldo(povero, 'u1'), C.PREZZI.shinyPokemon - 1);
+    assert.equal(saldo(povero, 'u1'), P_GARCHOMP - 1);
+    assert.equal((await M.shinyPokemon({ db: povero, uid: 'u1', team: 'T1', indice: 1 })).ok, true, 'con le stesse monete la specie standard sì: il prezzo dipende dalla specie');
 
     const db = dbSquadre();
     for (const [team, indice] of [['T404', 0], ['T1', 5], ['T1', -1], ['T1', 'x'], ['../x', 0], ['', 0]]) assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team, indice }), { ok: false, motivo: 'unknown' }, `${team}/${indice}`);
@@ -477,12 +479,36 @@ test('shinyPokemon: senza monete o con dati che non tornano non si addebita nien
     assert.equal(db.albero.players.didi.teams.T1.pokemon[0].shiny, true);
 });
 
+test('shinyPokemon: il prezzo lo decide il server dalla specie nel team (da comune a leggendario), mai dal client; stessa cifra per addebito e rimborso', async () => {
+    const specie = [['Pichu', 'comune'], ['Incineroar', 'standard'], ['Garchomp', 'forte'], ['Urshifu', 'raro'], ['Mewtwo', 'mitico']];
+    const prezzi = specie.map(([nome]) => C.prezzoShiny(nome).prezzo);
+    assert.deepEqual(prezzi, [200, 400, 600, 800, 1200], 'le cifre che il negozio promette');
+    const team = { id: 'T1', nome: 'Misto', pokemon: specie.map(([nome]) => ({ nome, shiny: false })), testoShowdown: specie.map(([nome]) => `${nome}\nAbility: X\n- Protect`).join('\n\n') };
+    const totale = prezzi.reduce((a, b) => a + b, 0);
+    const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: totale } }, players: { didi: { teams: { T1: team } } } });
+    for (const [i, [nome, fascia]] of specie.entries()) {
+        const prima = saldo(db, 'u1');
+        // anche se il client prova a dire un altro prezzo, conta la specie
+        const r = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: i, prezzo: 1, fascia: 'comune' });
+        assert.deepEqual(r, { ok: true, saldo: prima - prezzi[i], prezzo: prezzi[i], fascia }, nome);
+    }
+    assert.equal(saldo(db, 'u1'), 0);
+    assert.deepEqual(movimenti(db, 'u1').map(m => [m.importo, m.motivo]), specie.map(([nome], i) => [-prezzi[i], `Shiny: ${nome}`]));
+    assert.ok(db.albero.players.didi.teams.T1.pokemon.every(p => p.shiny === true));
+    // un leggendario a un soldo dal prezzo non si vende
+    const quasi = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: prezzi[4] - 1 } }, players: { didi: { teams: { T1: { ...team, pokemon: team.pokemon.map(p => ({ ...p })) } } } } });
+    assert.deepEqual(await M.shinyPokemon({ db: quasi, uid: 'u1', team: 'T1', indice: 4 }), { ok: false, motivo: 'poor' });
+    assert.equal(saldo(quasi, 'u1'), prezzi[4] - 1);
+    // la stessa specie scritta in un altro modo (soprannome nel nome, forma, accenti) cade nella stessa fascia
+    for (const [nome, fascia] of [['Mewtwo', 'mitico'], ['Calyrex-Shadow', 'mitico'], ['Urshifu-Rapid-Strike', 'raro'], ['Flabébé', 'comune'], ['Mr. Mime', 'standard'], ['Specie Mai Vista', 'standard'], ['', 'standard'], [null, 'standard']]) assert.equal(C.prezzoShiny(nome).fascia, fascia, String(nome));
+});
+
 test('shinyPokemon: due richieste insieme lo pagano una volta; un segno vecchio non blocca, uno recente sì; se la scrittura fallisce le monete tornano', async () => {
     const db = dbSquadre();
     const [x, y] = await Promise.all([M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 })]);
     assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
     assert.ok(['busy', 'already'].includes([x, y].find(r => !r.ok).motivo));
-    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - C.PREZZI.shinyPokemon, 'addebitato una volta');
+    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - P_GARCHOMP, 'addebitato una volta');
 
     const adesso = Date.UTC(2026, 10, 3, 12);
     const lock = 'walletEventi/lock-shiny-didi-T1-0';
@@ -497,7 +523,7 @@ test('shinyPokemon: due richieste insieme lo pagano una volta; un segno vecchio 
     rotto.ref = (p = '') => { const r = ref(p); if (p === '') r.update = async () => { throw new Error('scrittura fallita'); }; return r; };
     await assert.rejects(M.shinyPokemon({ db: rotto, uid: 'u1', team: 'T1', indice: 0 }), /scrittura fallita/);
     assert.equal(saldo(rotto, 'u1'), SALDO_SQUADRE, 'le monete tornano');
-    assert.deepEqual(movimenti(rotto, 'u1').map(m => m.importo), [-C.PREZZI.shinyPokemon, C.PREZZI.shinyPokemon]);
+    assert.deepEqual(movimenti(rotto, 'u1').map(m => m.importo), [-P_GARCHOMP, P_GARCHOMP]);
     assert.equal(rotto.albero.players.didi.teams.T1.pokemon[0].shiny, false);
     assert.equal(Object.keys(rotto.albero.walletEventi || {}).length, 0, 'e il segno cade');
 });
@@ -555,6 +581,14 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     assert.ok(P.canzone >= media * 0.15 && P.canzone <= media * 0.22, `canzone ${P.canzone}`);
     assert.ok(P.shinyPokemon >= media * 0.45 && P.shinyPokemon <= media * 0.60, `shiny di team ${P.shinyPokemon}`);
     assert.ok(6 * P.shinyPokemon >= media * 2.5 && 6 * P.shinyPokemon <= media * 4, 'una squadra intera shiny: tre stagioni circa');
+    // le fasce: la standard costa il prezzo base; una specie comune un quarto di stagione, una leggendaria una stagione e mezza
+    const fasce = C.fasceShiny();
+    assert.deepEqual(fasce.map(f => f.fascia), ['comune', 'standard', 'forte', 'raro', 'mitico']);
+    assert.equal(fasce.find(f => f.fascia === 'standard').prezzo, P.shinyPokemon);
+    assert.ok(fasce.every((f, k) => Number.isInteger(f.prezzo) && (k === 0 || f.prezzo > fasce[k - 1].prezzo)), 'prezzi interi e sempre più alti');
+    assert.ok(fasce[0].prezzo >= media * 0.2 && fasce[0].prezzo <= media * 0.35, `comune ${fasce[0].prezzo}`);
+    assert.ok(fasce[4].prezzo >= media * 1.3 && fasce[4].prezzo <= media * 1.8, `leggendario ${fasce[4].prezzo}`);
+    assert.ok(fasce[0].prezzo > P.canzone, 'anche lo shiny più economico costa più di un cambio di canzone');
     // il catalogo fisso: un motivo il 25–40%, un'aura il 45–60%; l'arcobaleno e il compagno shiny tra 3/4 e una stagione; si completa in 4–6 stagioni
     const per = id => C.perId(id).prezzo;
     for (const id of ['sfondo-raggi', 'sfondo-pokeball', 'sfondo-anelli', 'sfondo-stelle', 'sfondo-onde']) assert.ok(per(id) >= media * 0.25 && per(id) <= media * 0.40, `${id} ${per(id)}`);
@@ -596,8 +630,64 @@ test('cosmetici: possesso per acquisto o per uso (chi usava un motivo ora a paga
     assert.equal(new Set(C.CATALOGO.map(c => c.id)).size, C.CATALOGO.length, 'id unici');
 });
 
+test('rarita-pkm: le fasce delle specie (comune, forte, raro, mitico; il resto è standard), senza doppioni e senza maiuscole; i nomi si leggono anche con accenti e forme', () => {
+    const R = require('../docs/rarita-pkm.js');
+    assert.deepEqual(Object.keys(R.ELENCHI), ['comune', 'forte', 'raro', 'mitico']);
+    const visti = new Map();
+    for (const [fascia, ids] of Object.entries(R.ELENCHI)) {
+        const lista = ids.split(' ');
+        assert.ok(lista.length >= 50, `${fascia}: ${lista.length} specie`);
+        for (const id of lista) {
+            assert.match(id, /^[a-z0-9]+$/, `${fascia}: ${id}`);
+            assert.ok(!visti.has(id), `${id} sta in due fasce: ${visti.get(id)} e ${fascia}`);
+            visti.set(id, fascia);
+        }
+    }
+    const attese = {
+        comune: ['pichu', 'magikarp', 'ditto', 'pikachu', 'eevee', 'dwebble', 'ponytagalar'],
+        standard: ['incineroar', 'torkoal', 'mrmime', 'whimsicott', 'charizard'],
+        forte: ['garchomp', 'dragonite', 'tyranitar', 'dragapult', 'greattusk', 'fluttermane', 'kingambit', 'rillaboom'],
+        raro: ['urshifu', 'urshifurapidstrike', 'landorustherian', 'zapdos', 'cresselia', 'nihilego', 'tapukoko', 'regieleki', 'ogerpon'],
+        mitico: ['mew', 'mewtwo', 'arceus', 'zacian', 'calyrexshadow', 'koraidon', 'eternatus', 'zygarde', 'jirachi', 'rayquaza']
+    };
+    for (const [fascia, specie] of Object.entries(attese)) for (const id of specie) assert.equal(R.fascia(id), fascia, id);
+    // nomi come li scrive un team: maiuscole, trattini, punti, accenti, spazi
+    assert.equal(R.fascia('Calyrex-Shadow'), 'mitico');
+    assert.equal(R.fascia('Urshifu-Rapid-Strike'), 'raro');
+    assert.equal(R.fascia('Mr. Mime'), 'standard');
+    assert.equal(R.fascia('Flabébé'), 'comune');
+    assert.equal(R.fascia('  GARCHOMP  '), 'forte');
+    for (const x of ['Missingno', '', '   ', null, undefined, 42, {}]) assert.equal(R.fascia(x), 'standard', String(x));
+    // la fascia vale per ogni forma (mega, regionale), non solo per la specie base
+    assert.equal(R.fascia('Charizard-Mega-X'), 'forte');
+    assert.equal(R.fascia('Mewtwo-Mega-Y'), 'mitico');
+});
+
+test('rarita-pkm: le regole delle fasce (il generatore) e il file generato è aggiornato rispetto al simulatore del sito', async () => {
+    const G = await import(require('url').pathToFileURL(path.join(__dirname, '..', 'tools', 'rarita-pkm', 'genera.mjs')).href);
+    const f = (tags, extra = {}) => G.fasciaDi({ tier: 'NU', bst: 500, nfe: false, tags, ...extra });
+    assert.equal(f(['Mythical']), 'mitico');
+    assert.equal(f(['Restricted Legendary']), 'mitico');
+    assert.equal(f(['Mythical'], { nfe: true }), 'mitico', 'la categoria vince su tutto');
+    assert.equal(f(['Sub-Legendary']), 'raro');
+    assert.equal(f(['Ultra Beast']), 'raro');
+    assert.equal(f([], { nfe: true, bst: 700 }), 'comune', 'non completamente evoluto');
+    assert.equal(f([], { bst: 440 }), 'comune');
+    assert.equal(f([], { bst: 450 }), 'standard');
+    assert.equal(f([], { bst: 599 }), 'standard');
+    assert.equal(f([], { bst: 600 }), 'forte');
+    assert.equal(f(['Paradox'], { bst: 570 }), 'forte');
+    for (const tier of ['OU', 'UUBL', 'Uber', 'AG']) assert.equal(f([], { tier }), 'forte', tier);
+    assert.equal(f([], { tier: 'UU' }), 'standard');
+    // il file del sito e quello del server sono quelli che il generatore produce adesso con docs/pkmn-sim.js: se il simulatore si aggiorna, `node tools/rarita-pkm/genera.mjs`
+    const generato = G.sorgente(await G.costruisci());
+    assert.equal(leggi('docs', 'rarita-pkm.js'), generato, 'docs/rarita-pkm.js è vecchio: rilancia node tools/rarita-pkm/genera.mjs');
+    assert.equal(leggi('functions', 'rarita-pkm.js'), generato, 'functions/rarita-pkm.js è vecchio: rilancia node tools/rarita-pkm/genera.mjs');
+});
+
 test('le due copie di cosmetici.js sono identiche e il server ha i collegamenti (set, badge, stagione, MVP, negozio)', () => {
     assert.equal(leggi('functions', 'cosmetici.js'), leggi('docs', 'cosmetici.js'));
+    assert.equal(leggi('functions', 'rarita-pkm.js'), leggi('docs', 'rarita-pkm.js'));
     const p = leggi('functions', 'partita.js');
     assert.match(p, /await premiaSetConcluso\(id, info, stato, vincitore, true\);/);
     assert.match(p, /await premiaSetConcluso\(id, info, stato, vincitore, false\);/);

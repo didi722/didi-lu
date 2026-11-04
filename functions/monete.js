@@ -12,7 +12,7 @@
 // Non si guadagna contro la CPU (nessun controllo possibile da qui).
 //
 // Come si spendono: i cosmetici del catalogo; il cambio di avatar, di colore e di canzone (costa sempre, tranne la prima volta per chi ha ancora quello di partenza e tornando al primo; il primo
-// resta tuo per sempre, gli altri tornano liberi quando li cambi); lo shiny di un Pokémon di un team.
+// resta tuo per sempre, gli altri tornano liberi quando li cambi); lo shiny di un Pokémon di un team (il prezzo dipende dalla specie: Cosmetici.prezzoShiny).
 //
 //   premioSet({ ufficiale, vinto }), premioBadge(prima, dopo)           pure
 //   accredita(db, uid, importo, motivo, { chiave, tettoGiorno, adesso }) → monete date davvero (0 se già dato o oltre il tetto)
@@ -250,7 +250,8 @@ const vociDi = x => (Array.isArray(x) ? x.map((v, k) => [String(k), v]) : Object
 /**
  * Rende shiny il Pokémon numero `indice` di un team del Box. Lo shiny è solo estetico, quindi vale anche per i team bloccati (iscritti a una stagione iniziata): si scrive nel team
  * del Box e nelle iscrizioni alle stagioni non chiuse (dove il team è una copia), compreso il testo Showdown, che è quello che il simulatore legge. La stagione chiusa resta com'era.
- * Si paga solo se tutte le modifiche si possono fare; se la scrittura fallisce le monete tornano.
+ * Il prezzo lo decide il server dalla specie del Pokémon nel team (Cosmetici.prezzoShiny: da comune a leggendario), mai dal client. Si paga solo se tutte le modifiche si possono fare; se la
+ * scrittura fallisce le monete tornano. → { ok, saldo, prezzo, fascia } oppure { ok: false, motivo: unknown | no-profile | already | busy | cannot-apply | poor }
  */
 async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
     const giocatore = await giocatoreDi(db, uid);
@@ -263,6 +264,7 @@ async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
     if (!t || !voci[i] || !voci[i][1] || !voci[i][1].nome) return { ok: false, motivo: 'unknown' };
     const [chiave, pokemon] = voci[i];
     if (pokemon.shiny) return { ok: false, motivo: 'already' };
+    const { prezzo, fascia } = Cosmetici.prezzoShiny(pokemon.nome);
     const specieTeam = voci.map(([, p]) => (p && p.nome) || '');
 
     // un solo acquisto alla volta per questo Pokémon (due richieste insieme non lo pagano due volte)
@@ -298,16 +300,16 @@ async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
                 }
             }
         }
-        if (!(await spendi(db, uid, PREZZI.shinyPokemon, `Shiny: ${pokemon.nome}`, { adesso }))) return { ok: false, motivo: 'poor' };
+        if (!(await spendi(db, uid, prezzo, `Shiny: ${pokemon.nome}`, { adesso }))) return { ok: false, motivo: 'poor' };
         try {
             await db.ref().update(modifiche);
         } catch (e) {
-            await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + PREZZI.shinyPokemon);
-            await scriviMovimento(db, uid, PREZZI.shinyPokemon, `Refund: Shiny ${pokemon.nome}`, adesso);
+            await db.ref(`wallet/${uid}/saldo`).transaction(v => (Number(v) || 0) + prezzo);
+            await scriviMovimento(db, uid, prezzo, `Refund: Shiny ${pokemon.nome}`, adesso);
             throw e;
         }
         const saldo = Number((await db.ref(`wallet/${uid}/saldo`).once('value')).val()) || 0;
-        return { ok: true, saldo };
+        return { ok: true, saldo, prezzo, fascia };
     });
 }
 

@@ -57,6 +57,9 @@
 .ng-voce[data-tipo=pokemon]{grid-template-columns:88px minmax(0,1fr) auto}
 .ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
 .ng-bottone.ng-sicuro{background:#ffbd44}
+.ng-fascia{display:inline-block;margin:0 0 0 7px;padding:2px 6px 0;border:2px solid #000;background:#e3e6ee;color:#000;font:900 .6rem/1.4 'Josefin Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;vertical-align:2px}
+.ng-fascia[data-fascia=standard]{background:#cfeedd}.ng-fascia[data-fascia=forte]{background:#ffe08a}.ng-fascia[data-fascia=raro]{background:#ffb08f}.ng-fascia[data-fascia=mitico]{background:#d6b8ff}
+.ng-fasce{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.ng-fasce .ng-fascia{margin:0}
 .ng-guida{margin:14px 0 0;padding:10px 12px;border:3px dashed #000;background:#fafafa;font:600 .76rem/1.45 'Montserrat',sans-serif}
 .ng-guida b{font-weight:800}
 .ng-bottone{padding:7px 12px 5px;background:#fff;color:#000;border:3px solid #000;box-shadow:3px 3px 0 #000;font:900 .76rem 'Josefin Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
@@ -65,6 +68,12 @@
 .ng-movimenti{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px;font:600 .76rem 'Montserrat',sans-serif}
 .ng-movimenti li{display:flex;justify-content:space-between;gap:10px}
 .ng-movimenti .ng-piu{color:#0a7d2a;font-weight:800}.ng-movimenti .ng-meno{color:#b3261e;font-weight:800}`;
+
+    /** "200–1200": dal prezzo dello shiny di una specie comune a quello di una leggendaria */
+    function intervalloShiny() {
+        const prezzi = Cosmetici.fasceShiny().map(f => f.prezzo);
+        return `${Math.min(...prezzi)}–${Math.max(...prezzi)}`;
+    }
 
     /** Il paragrafo sui guadagni: i numeri vengono da PREMI (cosmetici.js), così non si disallineano */
     function notaPremi() {
@@ -113,7 +122,7 @@
             + gruppi
             + `<p class="ng-guida"><b>More to spend on.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙), colour (${Cosmetici.PREZZI.colore} 🪙) or song (${Cosmetici.PREZZI.canzone} 🪙) is in <b>Customize → Trainer</b>. Your first avatar, colour and song are free and stay yours for good, and coming back to them is always free; `
             + `the one you wear is yours while you wear it, then it goes back to the pool for everyone. `
-            + `Shiny Pokémon (${Cosmetici.PREZZI.shinyPokemon} 🪙 each): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
+            + `Shiny Pokémon (${intervalloShiny()} 🪙, the rarer the species the more it costs): the ✨ button on a team in your <b>Box</b>; it works on locked teams too.</p>`
             + `<section class="ng-gruppo"><h3>Recent coins</h3>${mov ? `<ul class="ng-movimenti">${mov}</ul>` : '<p>Nothing yet: play a set!</p>'}</section></div>`;
     }
 
@@ -144,22 +153,29 @@
         return { righe, conferma: `Change · ${prezzo} 🪙`, ok: saldo >= prezzo };
     }
 
-    /** Il markup della finestra del Box per rendere shiny i Pokémon di un team (puro): stato = { team, pokemon: [{ nome, shiny, normale, brillante }], saldo, prezzo, messaggio, occupato, armato } */
+    /**
+     * Il markup della finestra del Box per rendere shiny i Pokémon di un team (puro): stato = { team, pokemon: [{ nome, shiny, normale, brillante }], saldo, messaggio, occupato, armato }.
+     * Il prezzo di ogni Pokémon dipende dalla sua specie (Cosmetici.prezzoShiny); il server lo calcola allo stesso modo, quindi quello che si legge qui è quello che si paga.
+     */
     function htmlShinyTeam(stato) {
         const s = stato || {};
-        const prezzo = num(s.prezzo) || Cosmetici.PREZZI.shinyPokemon;
         const saldo = num(s.saldo);
         const img = src => (src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '');
+        const pillola = (fascia, testo) => `<span class="ng-fascia" data-fascia="${esc(fascia)}">${esc(testo)}</span>`;
         const righe = (s.pokemon || []).map((p, i) => {
             const armato = s.armato === i;
+            const f = Cosmetici.prezzoShiny(p.nome);
             const anteprima = p.shiny ? `<span class="ng-anteprima">${img(p.brillante)}</span>` : `<span class="ng-anteprima">${img(p.normale)}<i>→</i>${img(p.brillante)}</span>`;
             const bottone = p.shiny ? '<span class="ng-fatto">Shiny ✓</span>'
-                : `<button type="button" class="ng-bottone ng-compra${armato ? ' ng-sicuro' : ''}" data-ng="shiny" data-i="${i}"${s.occupato || saldo < prezzo ? ' disabled' : ''}>${armato ? 'Sure? ' : ''}${prezzo} 🪙</button>`;
-            return `<li class="ng-voce ng-pkm${p.shiny ? ' ng-mio' : ''}" data-tipo="pokemon">${anteprima}<span><b>${esc(p.nome)}</b><small>${p.shiny ? 'Shiny for good' : (armato ? 'Press again to confirm' : 'Normal colours')}</small></span>${bottone}</li>`;
+                : `<button type="button" class="ng-bottone ng-compra${armato ? ' ng-sicuro' : ''}" data-ng="shiny" data-i="${i}"${s.occupato || saldo < f.prezzo ? ' disabled' : ''}>${armato ? 'Sure? ' : ''}${f.prezzo} 🪙</button>`;
+            const nome = `${esc(p.nome)}${p.shiny ? '' : pillola(f.fascia, f.nome)}`;
+            return `<li class="ng-voce ng-pkm${p.shiny ? ' ng-mio' : ''}" data-tipo="pokemon">${anteprima}<span><b>${nome}</b><small>${p.shiny ? 'Shiny for good' : (armato ? 'Press again to confirm' : 'Normal colours')}</small></span>${bottone}</li>`;
         }).join('');
+        const fasce = Cosmetici.fasceShiny().map(f => pillola(f.fascia, `${f.nome} ${f.prezzo}`)).join('');
         return `<div class="ng-finestra" role="dialog" aria-modal="true" aria-label="Shiny Pokémon"><button type="button" class="ng-chiudi" data-ng="chiudi" aria-label="Close">×</button>`
             + `<div class="ng-testa"><h2>✨ Shiny · ${esc(s.team)}</h2><span class="ng-saldo" title="Your coins">🪙 ${saldo}</span></div>`
-            + `<p class="ng-nota">Pick the Pokémon to make shiny: ${prezzo} 🪙 each. It only changes the colours, so it works on locked teams too, it shows in battle and on the site, and it stays for good.</p>`
+            + `<p class="ng-nota">Pick the Pokémon to make shiny. The price depends on the species: the rarer it is, the more it costs. It only changes the colours, so it works on locked teams too, it shows in battle and on the site, and it stays for good.</p>`
+            + `<p class="ng-fasce" aria-label="Prices by rarity">${fasce}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
             + (righe ? `<ul class="ng-lista">${righe}</ul>` : '<p class="ng-nota">This team has no Pokémon yet.</p>')
             + '</div>';
@@ -280,7 +296,7 @@
         const SP = win.SpritePkm;
         const gif = (nome, shiny) => (SP && SP.gif ? SP.gif(nome, shiny) : '');
         const stato = {
-            team: team.nome, saldo: 0, prezzo: Cosmetici.PREZZI.shinyPokemon, messaggio: '', occupato: false, armato: null,
+            team: team.nome, saldo: 0, messaggio: '', occupato: false, armato: null,
             pokemon: (team.pokemon || []).map(p => ({ nome: (p && p.nome) || '?', shiny: !!(p && p.shiny), normale: gif(p && p.nome, false), brillante: gif(p && p.nome, true) }))
         };
         const velo = doc.createElement('div');
