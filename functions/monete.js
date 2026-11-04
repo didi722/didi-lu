@@ -108,7 +108,8 @@ async function conLock(db, nome, adesso, fn) {
     try { return await fn(); } finally { await segno.remove(); }
 }
 
-/** Compra un cosmetico del catalogo (compagno shiny, aure, motivi dello sfondo): deve esistere, non essere già suo (o in uso) e il saldo bastare. Avatar e canzoni non si comprano: si cambiano (vedi sotto).
+/** Compra un cosmetico del catalogo (compagno shiny, aure, effetti del nome e del palco, motivi dello sfondo): deve esistere, non essere già suo (o in uso), essere in vendita (le edizioni limitate solo finché la loro
+ *  stagione non è chiusa: motivo 'not-yet' o 'ended') e il saldo bastare. Avatar e canzoni non si comprano: si cambiano (vedi sotto).
  *  Prima lo si "prenota" con una transazione (due richieste insieme non possono pagarlo due volte), poi si paga; se il saldo non basta la prenotazione torna indietro. */
 async function acquista({ db, uid, id, adesso = Date.now() }) {
     const c = Cosmetici.perId(id);
@@ -119,6 +120,12 @@ async function acquista({ db, uid, id, adesso = Date.now() }) {
         giocatore ? db.ref(`players/${giocatore}/info`).once('value').then(x => x.val() || {}) : Promise.resolve({})
     ]);
     if (Cosmetici.possiede(id, { wallet, info, pagina: info.pagina })) return { ok: false, motivo: 'owned' };
+    // un'edizione limitata si compra solo finché la sua stagione non è chiusa (la decide il server, non la pagina)
+    if (c.edizione) {
+        const stato = (await db.ref(`seasons/${c.edizione.stagione}/info/status`).once('value')).val();
+        const d = Cosmetici.disponibilita(c, { [c.edizione.stagione]: stato });
+        if (d !== 'si') return { ok: false, motivo: d === 'presto' ? 'not-yet' : 'ended' };
+    }
     const mio = db.ref(`wallet/${uid}/posseduti/${id}`);
     const preso = await mio.transaction(v => (v ? undefined : adesso));
     if (!preso.committed) return { ok: false, motivo: 'owned' };
@@ -313,7 +320,7 @@ async function shinyPokemon({ db, uid, team, indice, adesso = Date.now() }) {
     });
 }
 
-/** Mette (o toglie) un cosmetico: shiny e aure si scrivono nel profilo pubblico; i motivi dello sfondo li sceglie l'editor della pagina */
+/** Mette (o toglie) un cosmetico: shiny, aure e effetti del nome e del palco si scrivono nel profilo pubblico (uno per campo: il nuovo prende il posto del vecchio); i motivi dello sfondo li sceglie l'editor della pagina */
 async function equipa({ db, uid, id, attivo }) {
     const c = Cosmetici.perId(id);
     if (!c || !c.campo) return { ok: false, motivo: 'unknown' };
@@ -323,6 +330,8 @@ async function equipa({ db, uid, id, attivo }) {
     const giocatore = String(nome || '').toLowerCase().trim();
     if (!giocatore) return { ok: false, motivo: 'no-profile' };
     const percorso = `players/${giocatore}/info/${c.campo}`;
+    // togliere una voce che non si porta (una pagina rimasta aperta) non deve cancellare quella che si porta adesso
+    if (!attivo && c.tipo !== 'shiny' && (await db.ref(percorso).once('value')).val() !== id) return { ok: true };
     await db.ref(percorso).set(c.tipo === 'shiny' ? (attivo ? true : null) : (attivo ? id : null));
     return { ok: true };
 }

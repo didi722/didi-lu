@@ -2,7 +2,9 @@
 // COSMETICI DEL NEGOZIO E ECONOMIA — Poké-Tournament
 //
 // Cose che si comprano con le monete (wallet/{uid}) e cambiano solo l'aspetto.
-//   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita.
+//   - Il catalogo fisso (CATALOGO): il Pokémon compagno shiny, l'aura dell'allenatore, gli effetti del nome e del palco, i motivi dello sfondo della pagina pubblica. Aggiungere una voce basta a metterla in vendita
+//     (gli effetti grafici di una voce nuova stanno in effetti-pagina.css e style-public-card.css).
+//   - Le edizioni limitate: voci del catalogo con `edizione: { stagione, nome }`. Si comprano solo finché quella stagione non è chiusa (disponibilita); dopo restano solo a chi le ha comprate.
 //   - Le famiglie: avatar (avatar-<n>), colore firma (colore-<rrggbb>) e canzoni (canzone-<impronta dell'indirizzo>) non si comprano, si CAMBIANO (functions/monete.js: cambia). Ogni cambio costa
 //     (PREZZI) e il server lo fa subito, scrivendo il profilo. Il primo avatar, il primo colore e la prima canzone sono "di casa", l'unica cosa personale: si scelgono gratis (chi ha ancora quello
 //     di partenza) o, per chi ne aveva già uno, è quello che aveva; restano suoi PER SEMPRE, nessun altro li può prendere e tornarci non costa mai. Quello che si porta, invece, è riservato
@@ -17,6 +19,8 @@
 //   Cosmetici.possiede(id, { wallet, info, pagina })   comprato, oppure già in uso (chi usava un motivo che ora è a pagamento lo tiene); per avatar, colori e canzoni: quello che porti o quello di casa
 //   Cosmetici.possedutiDa({ wallet, info, pagina })    l'insieme degli id posseduti del catalogo fisso
 //   Cosmetici.motivoBloccato(motivo, contesto)         true se quel motivo dello sfondo è a pagamento e non è posseduto
+//   Cosmetici.disponibilita(voce, stagioni)            'si' (si compra), 'presto' (la stagione dell'edizione non c'è ancora) o 'finita' (è chiusa); stagioni = { <idStagione>: <info/status> }; le voci normali: sempre 'si'
+//   Cosmetici.stagioniEdizioni()                       gli id delle stagioni a cui sono legate le edizioni limitate (il negozio ne legge lo stato)
 //   Cosmetici.idAvatar(testo), idColore(testo), idCanzone(url)   l'id di un avatar (da "…/profile/12.png"), di un colore (da "#FF8800") o di una canzone (dal suo indirizzo)
 //   Cosmetici.COLORI_FIRMA, coloreDaId(id)             i colori che si possono scegliere (gli stessi di PALETTE_FIRMA in pagina-pubblica.js) e il colore di un id
 //   Cosmetici.eDiDefault(tipo, info)                   ha ancora l'avatar / il colore / la canzone di partenza?
@@ -67,8 +71,13 @@
     const TIPI = {
         shiny: { nome: 'Shiny companion', frase: 'Your favourite Pokémon in its shiny colours.' },
         aura: { nome: 'Trainer aura', frase: 'A glow around your trainer on your page.' },
+        nome: { nome: 'Name effects', frase: 'Make your name stand out on your page.' },
+        palco: { nome: 'Stage effects', frase: 'Animated effects in front of your stage.' },
         sfondo: { nome: 'Page patterns', frase: 'More patterns for the background of your page.' }
     };
+
+    // Edizione limitata: la stagione a cui è legata (id in seasons/) e il nome dell'edizione. Per la prossima: cambia `stagione` (e `nome`) qui sotto, oppure aggiungi un'altra costante.
+    const EDIZIONE_LAGUNA = { stagione: 's1', nome: 'Lagoon' };
 
     // `campo`: dove si scrive quando si equipaggia (players/{id}/info/<campo>); per i motivi non c'è: li sceglie l'editor della pagina
     const CATALOGO = [
@@ -77,11 +86,23 @@
         { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 400, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
         { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 400, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
         { id: 'aura-arcobaleno', tipo: 'aura', nome: 'Rainbow aura', prezzo: 800, campo: 'aura', colore: '#ff66cc', descr: 'A glow that cycles through every colour.' },
+        { id: 'nome-oro', tipo: 'nome', nome: 'Gold name', prezzo: 400, campo: 'effettoNome', descr: 'Your name in shimmering gold.' },
+        { id: 'nome-neon', tipo: 'nome', nome: 'Neon name', prezzo: 400, campo: 'effettoNome', descr: 'Your name glows in your own colour.' },
+        { id: 'nome-fuoco', tipo: 'nome', nome: 'Flame name', prezzo: 400, campo: 'effettoNome', descr: 'Your name on fire.' },
+        { id: 'nome-arcobaleno', tipo: 'nome', nome: 'Rainbow name', prezzo: 800, campo: 'effettoNome', descr: 'Colours flow through your name.' },
+        { id: 'palco-neve', tipo: 'palco', nome: 'Snowfall', prezzo: 500, campo: 'effettoPalco', descr: 'Snow drifting across your stage.' },
+        { id: 'palco-scintille', tipo: 'palco', nome: 'Embers', prezzo: 500, campo: 'effettoPalco', descr: 'Sparks rising from the floor.' },
+        { id: 'palco-coriandoli', tipo: 'palco', nome: 'Confetti', prezzo: 500, campo: 'effettoPalco', descr: 'A never-ending victory party.' },
+        { id: 'palco-stelle', tipo: 'palco', nome: 'Starlight', prezzo: 500, campo: 'effettoPalco', descr: 'Twinkling stars in front of your stage.' },
         { id: 'sfondo-raggi', tipo: 'sfondo', nome: 'Sunburst', prezzo: 250, motivo: 'raggi', descr: 'Rays from the stage.' },
         { id: 'sfondo-pokeball', tipo: 'sfondo', nome: 'Pokéballs', prezzo: 250, motivo: 'pokeball', descr: 'A field of tiny Poké Balls.' },
         { id: 'sfondo-anelli', tipo: 'sfondo', nome: 'Rings', prezzo: 250, motivo: 'anelli', descr: 'Overlapping rings.' },
         { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 250, motivo: 'stelle', descr: 'A sky of little stars.' },
-        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' }
+        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' },
+        // edizione limitata: costano un po' di più delle voci normali dello stesso tipo
+        { id: 'aura-laguna', tipo: 'aura', nome: 'Lagoon aura', prezzo: 600, campo: 'aura', colore: '#19c5b5', edizione: EDIZIONE_LAGUNA, descr: 'A teal and gold glow, like the lagoon at sunset.' },
+        { id: 'nome-laguna', tipo: 'nome', nome: 'Lagoon name', prezzo: 600, campo: 'effettoNome', edizione: EDIZIONE_LAGUNA, descr: 'Your name in lagoon waters.' },
+        { id: 'palco-laguna', tipo: 'palco', nome: 'Lagoon', prezzo: 700, campo: 'effettoPalco', edizione: EDIZIONE_LAGUNA, descr: 'Bubbles rising from the lagoon.' }
     ];
 
     // ---- Le famiglie: avatar e canzoni ---------------------------------------------------------
@@ -187,6 +208,20 @@
         const c = CATALOGO.find(x => x.tipo === 'sfondo' && x.motivo === motivo);
         return !!c && !possiede(c.id, contesto);
     }
+
+    /**
+     * Le edizioni limitate si comprano solo finché la loro stagione non è chiusa; poi restano solo a chi le ha già (e si possono mettere e togliere come le altre).
+     * `stagioni` = { <idStagione>: <seasons/<id>/info/status> }. → 'si' (si può comprare), 'presto' (la stagione non c'è ancora) o 'finita' (la stagione è chiusa). Le voci normali: sempre 'si'.
+     */
+    function disponibilita(c, stagioni) {
+        const e = c && c.edizione;
+        if (!e) return 'si';
+        const stato = objOr(stagioni)[e.stagione];
+        if (stato == null || String(stato).trim() === '') return 'presto';
+        return String(stato).trim().toLowerCase() === 'closed' ? 'finita' : 'si';
+    }
+    /** Gli id delle stagioni a cui sono legate le edizioni limitate */
+    const stagioniEdizioni = () => [...new Set(CATALOGO.filter(c => c.edizione).map(c => c.edizione.stagione))];
 
     /**
      * Quanto costa cambiare avatar, colore o canzone, oggi: sempre PREZZI, tranne la prima volta per chi ha ancora quello di partenza (e non ha ancora un "di casa"): quella è gratis.
@@ -309,5 +344,5 @@
         return { set, amichevoli, badge, stagione, mvp, totale: set + amichevoli + badge + stagione + mvp };
     }
 
-    return { PREMI, PREZZI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
+    return { PREMI, PREZZI, FASCE_SHINY, CATALOGO, TIPI, FAMIGLIE, COLORI_FIRMA, COLORE_DEFAULT, perId, possiede, possedutiDa, motivoBloccato, disponibilita, stagioniEdizioni, idAvatar, idColore, coloreDaId, idCanzone, eDiDefault, idCorrente, prezzoCambio, prezzoPer, stimaStagione, fasciaShiny, prezzoShiny, fasceShiny, idSpecie, testoConShiny, senzaShinyAbusivi, AVATAR_MAX, AVATAR_MANCANTI };
 });

@@ -57,6 +57,12 @@
 .ng-voce[data-tipo=pokemon]{grid-template-columns:88px minmax(0,1fr) auto}
 .ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
 .ng-bottone.ng-sicuro{background:#ffbd44}
+.ng-voce[data-tipo=nome] .ng-anteprima,.ng-voce[data-tipo=palco] .ng-anteprima{border-radius:0;width:64px;height:52px}
+.ng-voce[data-tipo=nome] .ng-anteprima{display:flex;align-items:center;justify-content:center;background:#f3f4f8}
+.ng-nome-prova{font:900 1.2rem/1 'Josefin Sans',sans-serif;letter-spacing:-.01em;text-transform:uppercase;color:var(--pp-nome,#31c489);-webkit-text-stroke:.075em #000;paint-order:stroke fill;text-shadow:.07em .07em 0 #000}
+.ng-voce[data-tipo=palco] .ng-anteprima{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh}
+.ng-edizione{margin-top:16px;padding:2px 12px 12px;border:3px solid #000;background:#fff6d6;box-shadow:5px 5px 0 #000}
+.ng-edizione h3{margin-top:10px}.ng-edizione .ng-voce.ng-mio{background:#e9ffe9}
 .ng-fascia{display:inline-block;margin:0 0 0 7px;padding:2px 6px 0;border:2px solid #000;background:#e3e6ee;color:#000;font:900 .6rem/1.4 'Josefin Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;vertical-align:2px}
 .ng-fascia[data-fascia=standard]{background:#cfeedd}.ng-fascia[data-fascia=forte]{background:#ffe08a}.ng-fascia[data-fascia=raro]{background:#ffb08f}.ng-fascia[data-fascia=mitico]{background:#d6b8ff}
 .ng-fasce{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.ng-fasce .ng-fascia{margin:0}
@@ -82,9 +88,15 @@
             + `A new bronze/silver/gold badge pays ${P.badge[1]}/${P.badge[2]}/${P.badge[3]}, winning a season ${P.stagioneVinta} and an MVP ${P.mvp}.`;
     }
 
-    /** L'anteprima di una voce. `a` (facoltativo, da stato.anteprime): per gli sfondi lo stile vero del motivo; per lo shiny l'indirizzo dello sprite del compagno. */
-    function anteprima(c, a) {
+    /**
+     * L'anteprima di una voce. `a` (facoltativo, da stato.anteprime): per gli sfondi lo stile vero del motivo; per lo shiny l'indirizzo dello sprite del compagno.
+     * `colorePersona` (facoltativo): il colore firma di chi guarda, per gli effetti del nome (neon) e del palco. Gli effetti veri stanno in effetti-pagina.css.
+     */
+    function anteprima(c, a, colorePersona) {
         const colore = esc(c.colore || '#d9dde6');
+        const suo = esc(/^#[0-9a-f]{6}$/i.test(String(colorePersona || '')) ? colorePersona : '#6b93b0');
+        if (c.tipo === 'nome') return `<span class="ng-anteprima" style="--pp-nome:${suo}"><span class="ng-nome-prova" data-effetto-nome="${esc(c.id)}" data-testo="NAME">NAME</span></span>`;
+        if (c.tipo === 'palco') return `<span class="ng-anteprima" data-effetto-palco="${esc(c.id)}" style="--ng-c:${suo}"></span>`;
         if (c.tipo === 'sfondo' && a && a.immagine) {
             const stile = `background-color:${a.colore};background-image:${a.immagine};background-size:${a.dimensione};background-position:${a.posizione}`;
             return `<span class="ng-anteprima" style="${esc(stile)}"></span>`;
@@ -97,21 +109,43 @@
         return `<span class="ng-anteprima" style="--ng-c:${colore}"></span>`;
     }
 
+    /** Una riga del negozio (pura): la voce, com'è per chi guarda (sua, da comprare, in arrivo, finita) */
+    function voceHtml(c, s, contesto) {
+        const saldo = num(s.saldo), info = s.info || {};
+        const mio = Cosmetici.possiede(c.id, contesto);
+        const disp = Cosmetici.disponibilita(c, s.stagioni);
+        const attivo = c.tipo === 'shiny' ? !!info.pkmShiny : c.campo ? info[c.campo] === c.id : false;
+        const bottone = mio
+            ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
+            : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
+        const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
+        return `<li class="ng-voce${mio ? ' ng-mio' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b><small>${nota}</small></span>${bottone}</li>`;
+    }
+
+    /**
+     * Le edizioni limitate (pura), una sezione per stagione, in cima al negozio: ci sono le voci in vendita o in arrivo e quelle che già si hanno; le finite che non si hanno non si vedono.
+     * stato.stagioni = { <idStagione>: <info/status> }, stato.nomiStagioni = { <idStagione>: <nome> }.
+     */
+    function edizioniHtml(s, contesto) {
+        return Cosmetici.stagioniEdizioni().map(stagione => {
+            const voci = Cosmetici.CATALOGO.filter(c => c.edizione && c.edizione.stagione === stagione && (Cosmetici.possiede(c.id, contesto) || Cosmetici.disponibilita(c, s.stagioni) !== 'finita'));
+            if (!voci.length) return '';
+            const nomeStagione = (s.nomiStagioni || {})[stagione];
+            const disp = Cosmetici.disponibilita(voci[0], s.stagioni);
+            const frase = disp === 'presto' ? 'Coming with the next season: save your coins!'
+                : disp === 'si' ? `On sale only until ${nomeStagione ? esc(nomeStagione) : 'the season'} ends: after that nobody can buy them again. What you buy stays yours.`
+                    : 'The sale has ended. What you bought stays yours.';
+            return `<section class="ng-gruppo ng-edizione"><h3>Limited edition · ${esc(voci[0].edizione.nome)}</h3><p>${frase}</p><ul class="ng-lista">${voci.map(c => voceHtml(c, s, contesto)).join('')}</ul></section>`;
+        }).join('');
+    }
+
     /** Il markup della finestra (puro). */
     function html(stato) {
         const s = stato || {};
         const saldo = num(s.saldo);
         const contesto = { wallet: { posseduti: s.posseduti || {} }, info: s.info || {}, pagina: s.pagina || {} };
         const gruppi = Object.keys(Cosmetici.TIPI).map(tipo => {
-            const voci = Cosmetici.CATALOGO.filter(c => c.tipo === tipo).map(c => {
-                const mio = Cosmetici.possiede(c.id, contesto);
-                const attivo = c.tipo === 'shiny' ? !!(s.info || {}).pkmShiny : c.tipo === 'aura' ? (s.info || {}).aura === c.id : false;
-                const bottone = mio
-                    ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
-                    : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo ? ' disabled' : ''}>${c.prezzo} 🪙</button>`;
-                const nota = mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
-                return `<li class="ng-voce${mio ? ' ng-mio' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}">${anteprima(c, (s.anteprime || {})[c.id])}<span><b>${esc(c.nome)}</b><small>${nota}</small></span>${bottone}</li>`;
-            }).join('');
+            const voci = Cosmetici.CATALOGO.filter(c => c.tipo === tipo && !c.edizione).map(c => voceHtml(c, s, contesto)).join('');
             return `<section class="ng-gruppo"><h3>${esc(Cosmetici.TIPI[tipo].nome)}</h3><p>${esc(Cosmetici.TIPI[tipo].frase)}</p><ul class="ng-lista">${voci}</ul></section>`;
         }).join('');
         const mov = (s.movimenti || []).slice(-8).reverse().map(m => `<li><span>${esc(data(m.t))} · ${esc(m.motivo)}</span><b class="${num(m.importo) >= 0 ? 'ng-piu' : 'ng-meno'}">${num(m.importo) === 0 ? 'free' : `${num(m.importo) > 0 ? '+' : ''}${num(m.importo)}`}</b></li>`).join('');
@@ -119,6 +153,7 @@
             + `<div class="ng-testa"><h2>Shop</h2><span class="ng-saldo" title="Your coins">🪙 ${saldo}</span></div>`
             + `<p class="ng-nota">${esc(notaPremi())}</p>`
             + (s.messaggio ? `<p class="ng-msg" role="status">${esc(s.messaggio)}</p>` : '')
+            + edizioniHtml(s, contesto)
             + gruppi
             + `<p class="ng-guida"><b>More to spend on.</b> Changing your avatar (${Cosmetici.PREZZI.avatar} 🪙), colour (${Cosmetici.PREZZI.colore} 🪙) or song (${Cosmetici.PREZZI.canzone} 🪙) is in <b>Customize → Trainer</b>. Your first avatar, colour and song are free and stay yours for good, and coming back to them is always free; `
             + `the one you wear is yours while you wear it, then it goes back to the pool for everyone. `
@@ -184,7 +219,7 @@
     // ---------------------------------------------------------------- nel browser
     const FRASI = {
         owned: 'You already have it.', poor: 'Not enough coins.', unknown: "That item doesn't exist.", 'not-owned': "You don't have it yet.", 'no-profile': "Your trainer profile wasn't found.",
-        taken: 'Someone else already has it: every avatar and song belongs to one trainer only.', same: 'It is already the one you are wearing.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged."
+        taken: 'Someone else already has it: every avatar and song belongs to one trainer only.', same: 'It is already the one you are wearing.', already: 'It is already shiny.', busy: 'Another purchase of this Pokémon is still going through: try again in a moment.', 'cannot-apply': "Couldn't update this team's text, so nothing was charged.", 'not-yet': 'This limited edition is not on sale yet: it arrives with the next season.', ended: 'This limited edition has ended: it can no longer be bought.'
     };
     const frase = motivo => FRASI[motivo] || "Couldn't do that.";
 
@@ -241,18 +276,25 @@
         const utente = fb.auth().currentUser;
         if (!utente) return null;
         if (!doc.getElementById('ng-stile')) { const st = doc.createElement('style'); st.id = 'ng-stile'; st.textContent = STILE; doc.head.appendChild(st); }
+        // gli effetti del nome e del palco nelle anteprime: lo stesso foglio della pagina pubblica (se la pagina non lo ha già)
+        if (![...doc.styleSheets].some(f => /effetti-pagina\.css/.test(f.href || ''))) { const l = doc.createElement('link'); l.rel = 'stylesheet'; l.href = 'effetti-pagina.css'; doc.head.appendChild(l); }
         const db = fb.database();
         const velo = doc.createElement('div');
         velo.className = 'ng-velo';
         doc.body.appendChild(velo);
-        const stato = { saldo: 0, posseduti: {}, info: {}, pagina: {}, movimenti: [], anteprime: {}, messaggio: '', occupato: false };
+        const stato = { saldo: 0, posseduti: {}, info: {}, pagina: {}, movimenti: [], anteprime: {}, stagioni: {}, nomiStagioni: {}, messaggio: '', occupato: false };
         const chiudi = () => { velo.remove(); doc.removeEventListener('keydown', tasto); };
         const tasto = e => { if (e.key === 'Escape') chiudi(); };
         doc.addEventListener('keydown', tasto);
         const disegna = () => { velo.innerHTML = html(stato); };
         const leggi = async () => {
             const nome = String((await db.ref(`users/${utente.uid}/name`).once('value')).val() || '').toLowerCase().trim();
-            const [w, info] = await Promise.all([db.ref(`wallet/${utente.uid}`).once('value'), nome ? db.ref(`players/${nome}/info`).once('value') : Promise.resolve({ val: () => ({}) })]);
+            // le stagioni delle edizioni limitate: quando una è chiusa, la sua edizione non si compra più
+            const idStagioni = Cosmetici.stagioniEdizioni();
+            const [w, info, ...stagioni] = await Promise.all([db.ref(`wallet/${utente.uid}`).once('value'), nome ? db.ref(`players/${nome}/info`).once('value') : Promise.resolve({ val: () => ({}) }),
+                ...idStagioni.map(id => db.ref(`seasons/${id}/info`).once('value').then(x => x.val() || {}, () => ({})))]);
+            stato.stagioni = {}; stato.nomiStagioni = {};
+            idStagioni.forEach((id, k) => { if (stagioni[k].status != null) stato.stagioni[id] = stagioni[k].status; if (stagioni[k].name) stato.nomiStagioni[id] = stagioni[k].name; });
             const wallet = w.val() || {};
             stato.saldo = num(wallet.saldo);
             stato.posseduti = wallet.posseduti || {};

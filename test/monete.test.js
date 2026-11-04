@@ -594,8 +594,18 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     for (const id of ['sfondo-raggi', 'sfondo-pokeball', 'sfondo-anelli', 'sfondo-stelle', 'sfondo-onde']) assert.ok(per(id) >= media * 0.25 && per(id) <= media * 0.40, `${id} ${per(id)}`);
     for (const id of ['aura-oro', 'aura-fiamma', 'aura-ghiaccio']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
     for (const id of ['aura-arcobaleno', 'shiny']) assert.ok(per(id) >= media * 0.75 && per(id) <= media * 1.1, `${id} ${per(id)}`);
-    const fisso = C.CATALOGO.reduce((t, c) => t + c.prezzo, 0);
-    assert.ok(fisso >= media * 4 && fisso <= media * 6, `catalogo fisso ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
+    // gli effetti del nome come le aure; quelli del palco, animati, un po' di più
+    for (const id of ['nome-oro', 'nome-neon', 'nome-fuoco']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
+    assert.ok(per('nome-arcobaleno') >= media * 0.75 && per('nome-arcobaleno') <= media * 1.1, `nome-arcobaleno ${per('nome-arcobaleno')}`);
+    for (const id of ['palco-neve', 'palco-scintille', 'palco-coriandoli', 'palco-stelle']) assert.ok(per(id) >= media * 0.55 && per(id) <= media * 0.75, `${id} ${per(id)}`);
+    // il catalogo permanente (senza le edizioni limitate) si completa in 8–12 stagioni: non si esaurisce in fretta
+    const fisso = C.CATALOGO.filter(c => !c.edizione).reduce((t, c) => t + c.prezzo, 0);
+    assert.ok(fisso >= media * 8 && fisso <= media * 12, `catalogo permanente ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
+    // un'edizione limitata (3 voci) vale 2–3 stagioni, e ogni sua voce costa più di quella normale dello stesso tipo
+    const edizione = C.CATALOGO.filter(c => c.edizione);
+    const totEdizione = edizione.reduce((t, c) => t + c.prezzo, 0);
+    assert.ok(totEdizione >= media * 2 && totEdizione <= media * 3, `edizione ${totEdizione} = ${(totEdizione / media).toFixed(1)} stagioni`);
+    for (const c of edizione) assert.ok(c.prezzo > Math.min(...C.CATALOGO.filter(x => !x.edizione && x.tipo === c.tipo).map(x => x.prezzo)), `${c.id} costa più delle voci normali`);
     // gli shiny sono la cosa più cara: quello di un team costa più di due cambi di canzone e più di un motivo; il compagno shiny è al massimo del catalogo
     assert.ok(P.shinyPokemon > P.canzone * 2 && P.shinyPokemon > per('sfondo-onde'), 'lo shiny di un team pesa più dei cambi e dei motivi');
     assert.equal(per('shiny'), Math.max(...C.CATALOGO.map(c => c.prezzo)), 'il compagno shiny è tra i più cari del catalogo');
@@ -612,6 +622,81 @@ test('equipa: solo ciò che si possiede; shiny e aura finiscono nel profilo pubb
     assert.equal(db.albero.players.didi.info.pkmShiny, undefined);
     assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'sfondo-raggi', attivo: true }), { ok: false, motivo: 'unknown' }, 'i motivi non si equipaggiano da qui');
     assert.deepEqual(await M.equipa({ db: dbFinto({ wallet: { u2: { posseduti: { shiny: 1 } } } }), uid: 'u2', id: 'shiny', attivo: true }), { ok: false, motivo: 'no-profile' });
+});
+
+test('edizioni limitate: si comprano finché la stagione non è chiusa (prima "in arrivo", dopo "finita"); chi le ha comprate le tiene e le può mettere', async () => {
+    const aura = C.perId('aura-laguna');
+    assert.deepEqual(C.stagioniEdizioni(), ['s1']);
+    for (const [stato, atteso] of [[undefined, 'presto'], [null, 'presto'], ['', 'presto'], ['open', 'si'], ['playing', 'si'], ['PLAYING', 'si'], ['closed', 'finita'], [' Closed ', 'finita']]) assert.equal(C.disponibilita(aura, stato === undefined ? {} : { s1: stato }), atteso, String(stato));
+    assert.equal(C.disponibilita(aura), 'presto', 'senza dati sulle stagioni');
+    assert.equal(C.disponibilita(aura, { s2: 'playing' }), 'presto', 'un\'altra stagione non conta');
+    assert.equal(C.disponibilita(C.perId('aura-oro'), {}), 'si', 'le voci normali sono sempre in vendita');
+    assert.equal(C.disponibilita(null, {}), 'si');
+    // il server decide lui, leggendo lo stato della stagione dal database
+    const prezzo = aura.prezzo;
+    const prova = async seasons => {
+        const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { saldo: prezzo * 2 } }, players: { didi: { info: {} } }, seasons });
+        return [db, await M.acquista({ db, uid: 'u1', id: 'aura-laguna' })];
+    };
+    let [db, r] = await prova({});
+    assert.deepEqual(r, { ok: false, motivo: 'not-yet' });
+    assert.equal(saldo(db, 'u1'), prezzo * 2, 'niente addebito');
+    assert.equal((db.albero.wallet.u1.posseduti || {})['aura-laguna'], undefined, 'e nessuna prenotazione');
+    [db, r] = await prova({ s1: { info: { status: 'closed' } }, s0: { info: { status: 'playing' } } });
+    assert.deepEqual(r, { ok: false, motivo: 'ended' }, 'conta la stagione dell\'edizione, non un\'altra aperta');
+    assert.equal(saldo(db, 'u1'), prezzo * 2);
+    for (const stato of ['open', 'playing']) {
+        [db, r] = await prova({ s1: { info: { status: stato } } });
+        assert.deepEqual(r, { ok: true, saldo: prezzo }, stato);
+    }
+    // chi l'ha comprata la tiene anche a stagione chiusa: non si ricompra, si mette e si toglie
+    db.albero.seasons.s1.info.status = 'closed';
+    assert.deepEqual(await M.acquista({ db, uid: 'u1', id: 'aura-laguna' }), { ok: false, motivo: 'owned' });
+    assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'aura-laguna', attivo: true }), { ok: true });
+    assert.equal(db.albero.players.didi.info.aura, 'aura-laguna');
+    // le voci normali non dipendono dalle stagioni
+    const normale = dbFinto({ wallet: { u1: { saldo: 1000 } } });
+    assert.equal((await M.acquista({ db: normale, uid: 'u1', id: 'aura-oro' })).ok, true);
+});
+
+test('equipa: gli effetti del nome e del palco vanno nei loro campi del profilo (uno per campo: il nuovo prende il posto del vecchio); togliere una voce che non si porta non cancella quella che si porta', async () => {
+    const db = dbFinto({ users: { u1: { name: 'Didi' } }, wallet: { u1: { posseduti: { 'nome-oro': 1, 'nome-neon': 1, 'palco-neve': 1, 'aura-oro': 1 } } }, players: { didi: { info: {} } } });
+    const info = () => db.albero.players.didi.info;
+    await M.equipa({ db, uid: 'u1', id: 'nome-oro', attivo: true });
+    await M.equipa({ db, uid: 'u1', id: 'palco-neve', attivo: true });
+    assert.deepEqual([info().effettoNome, info().effettoPalco], ['nome-oro', 'palco-neve']);
+    await M.equipa({ db, uid: 'u1', id: 'nome-neon', attivo: true });
+    assert.equal(info().effettoNome, 'nome-neon', 'un altro effetto del nome prende il posto del primo');
+    assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'nome-fuoco', attivo: true }), { ok: false, motivo: 'not-owned' });
+    assert.equal(info().effettoNome, 'nome-neon');
+    // una pagina rimasta aperta chiede di togliere l'oro, ma ora si porta il neon: resta il neon
+    assert.deepEqual(await M.equipa({ db, uid: 'u1', id: 'nome-oro', attivo: false }), { ok: true });
+    assert.equal(info().effettoNome, 'nome-neon');
+    await M.equipa({ db, uid: 'u1', id: 'nome-neon', attivo: false });
+    assert.equal(info().effettoNome, undefined);
+    assert.equal(info().effettoPalco, 'palco-neve', 'l\'altro campo non si tocca');
+    // lo stesso vale per l'aura
+    await M.equipa({ db, uid: 'u1', id: 'aura-oro', attivo: true });
+    await M.equipa({ db, uid: 'u1', id: 'aura-fiamma', attivo: false });
+    assert.equal(info().aura, 'aura-oro');
+});
+
+test('catalogo: effetti del nome e del palco e edizioni sono coerenti: campo e prefisso giusti, edizione legata a una stagione, ogni voce ha il suo aspetto nei fogli di stile e la sua regola nel database', () => {
+    const css = leggi('docs', 'effetti-pagina.css'), pagina = leggi('docs', 'style-public-card.css'), regole = leggi('REGOLE-DATABASE.md');
+    const per = tipo => C.CATALOGO.filter(c => c.tipo === tipo);
+    assert.ok(per('nome').length >= 4 && per('palco').length >= 4, 'ce n\'è una buona scelta');
+    for (const c of per('nome')) { assert.equal(c.campo, 'effettoNome', c.id); assert.match(c.id, /^nome-[a-z]+$/, c.id); assert.ok(css.includes(`data-effetto-nome="${c.id}"`), `${c.id} non ha il suo aspetto in effetti-pagina.css`); }
+    for (const c of per('palco')) { assert.equal(c.campo, 'effettoPalco', c.id); assert.match(c.id, /^palco-[a-z]+$/, c.id); assert.ok(css.includes(`data-effetto-palco="${c.id}"`), `${c.id} non ha il suo aspetto in effetti-pagina.css`); }
+    for (const c of per('aura')) { assert.equal(c.campo, 'aura', c.id); assert.ok(pagina.includes(`data-aura="${c.id}"`), `${c.id} non ha il suo aspetto in style-public-card.css`); }
+    for (const campo of new Set(C.CATALOGO.map(c => c.campo).filter(Boolean))) assert.ok(regole.includes(`"${campo}": { ".validate"`), `REGOLE-DATABASE.md non protegge info/${campo}`);
+    for (const c of C.CATALOGO.filter(x => x.edizione)) {
+        assert.match(c.edizione.stagione, /^s\d+$/, c.id);
+        assert.ok(String(c.edizione.nome).length >= 3, c.id);
+    }
+    assert.ok(C.CATALOGO.filter(c => c.edizione).length >= 3, 'un\'edizione ha qualche voce');
+    // le animazioni rispettano chi non le vuole
+    assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*?\[data-effetto-palco\]::before/);
+    assert.match(pagina, /@media \(prefers-reduced-motion: reduce\) \{ \.pp-allenatore\[data-aura="aura-laguna"\] img \{ animation: none/);
 });
 
 test('cosmetici: possesso per acquisto o per uso (chi usava un motivo ora a pagamento lo tiene); motivi bloccati', () => {

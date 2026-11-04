@@ -26,8 +26,64 @@ test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano mon
     assert.match(h, /-150/);
     assert.match(N.html({ saldo: 0 }), /Nothing yet: play a set!/);
     assert.match(N.html({ saldo: 5, messaggio: 'Not enough coins.' }), /role="status">Not enough coins\./);
-    assert.doesNotMatch(N.html({ saldo: 1000, occupato: false }), /disabled/);
+    assert.doesNotMatch(N.html({ saldo: 1000, occupato: false, stagioni: { s1: 'playing' } }), /disabled/);
     assert.match(N.html({ saldo: 1000, occupato: true }), /disabled/);
+});
+
+test('html: le edizioni limitate stanno in cima e fuori dai gruppi normali; in vendita finché la stagione non è chiusa; prima "Soon"; dopo si vede solo quello che si ha', () => {
+    const sezione = h => (/<section class="ng-gruppo ng-edizione">[^]*?<\/section>/.exec(h) || [''])[0];
+    const ids = C.CATALOGO.filter(c => c.edizione).map(c => c.id);
+    const prezzo = id => C.perId(id).prezzo;
+    // in vendita
+    const h = N.html({ saldo: 1000, stagioni: { s1: 'playing' }, nomiStagioni: { s1: "Sant'Alvise II" } });
+    const ed = sezione(h);
+    assert.match(ed, /<h3>Limited edition · Lagoon<\/h3>/);
+    assert.match(ed, /On sale only until Sant&#39;Alvise II ends: after that nobody can buy them again/);
+    assert.ok(h.indexOf('ng-edizione') < h.indexOf('<h3>Shiny companion</h3>'), 'in cima, prima del resto');
+    for (const id of ids) {
+        assert.match(ed, new RegExp(`data-ng="compra" data-id="${id}">${prezzo(id)} 🪙`), id);
+        assert.equal((h.match(new RegExp(`<li class="ng-voce[^"]*" data-tipo="[a-z]+" data-id="${id}">`, 'g')) || []).length, 1, `${id} ha una riga sola: non anche nel suo gruppo`);
+    }
+    // senza il nome della stagione
+    assert.match(sezione(N.html({ saldo: 0, stagioni: { s1: 'open' } })), /On sale only until the season ends/);
+    // poche monete: il prezzo c'è, il tasto è spento
+    assert.match(sezione(N.html({ saldo: 100, stagioni: { s1: 'playing' } })), new RegExp(`data-id="aura-laguna" disabled>${prezzo('aura-laguna')} 🪙`));
+    // la stagione non c'è ancora: "Soon", spento anche con tante monete
+    const presto = sezione(N.html({ saldo: 99999, stagioni: {} }));
+    assert.match(presto, /Coming with the next season/);
+    for (const id of ids) assert.match(presto, new RegExp(`data-id="${id}" disabled>Soon<`), id);
+    // la stagione è chiusa: chi non ha niente non vede niente; chi ha una voce la vede, con "Put on", e il resto della sezione non c'è
+    assert.equal(sezione(N.html({ saldo: 99999, stagioni: { s1: 'closed' } })), '', 'nessuna sezione se non si ha niente');
+    const chiusa = sezione(N.html({ saldo: 99999, stagioni: { s1: 'closed' }, posseduti: { 'nome-laguna': 1 } }));
+    assert.match(chiusa, /The sale has ended\. What you bought stays yours\./);
+    assert.match(chiusa, /data-ng="equipa" data-id="nome-laguna" data-attivo="1">Put on/);
+    assert.doesNotMatch(chiusa, /data-ng="compra"|aura-laguna|palco-laguna/);
+    // quello che si ha si mette e si toglie come le altre cose, anche in vendita
+    const mie = N.html({ saldo: 0, stagioni: { s1: 'playing' }, posseduti: { 'aura-laguna': 1 }, info: { aura: 'aura-laguna' } });
+    assert.match(sezione(mie), /data-ng="equipa" data-id="aura-laguna" data-attivo="0">Take off/);
+    // il testo ostile non esce dal tag
+    assert.doesNotMatch(N.html({ saldo: 0, stagioni: { s1: 'open' }, nomiStagioni: { s1: '<script>x</script>' } }), /<script>x/);
+});
+
+test('html e anteprime: gli effetti del nome e del palco hanno il loro gruppo, l\'anteprima con l\'effetto vero (attributi di effetti-pagina.css) e si mettono e tolgono dal campo giusto', () => {
+    const h = N.html({ saldo: 5000, posseduti: { 'nome-neon': 1, 'palco-neve': 1 }, info: { effettoNome: 'nome-neon', color: '#FF8800' }, stagioni: { s1: 'playing' } });
+    for (const t of ['Name effects', 'Stage effects']) assert.ok(h.includes(`<h3>${t}</h3>`), t);
+    for (const c of C.CATALOGO.filter(x => x.tipo === 'nome' && !x.edizione)) assert.match(h, new RegExp(`data-id="${c.id}"><span class="ng-anteprima" style="--pp-nome:#FF8800"><span class="ng-nome-prova" data-effetto-nome="${c.id}" data-testo="NAME">NAME</span>`), c.id);
+    for (const c of C.CATALOGO.filter(x => x.tipo === 'palco' && !x.edizione)) assert.match(h, new RegExp(`data-id="${c.id}"><span class="ng-anteprima" data-effetto-palco="${c.id}" style="--ng-c:#FF8800"></span>`), c.id);
+    assert.match(h, /data-ng="equipa" data-id="nome-neon" data-attivo="0">Take off/, 'quello che porti si toglie');
+    assert.match(h, /data-ng="equipa" data-id="palco-neve" data-attivo="1">Put on/, 'quello che hai ma non porti si mette');
+    assert.match(h, new RegExp(`data-ng="compra" data-id="nome-oro">${C.perId('nome-oro').prezzo} 🪙`));
+    assert.match(h, /On now/);
+    // il colore di chi guarda è solo un colore: altro (o niente) cade sul blu di riserva e non entra nel tag
+    assert.match(N.html({ saldo: 0, info: { color: '"><script>x</script>' } }), /--pp-nome:#6b93b0/);
+    assert.doesNotMatch(N.html({ saldo: 0, info: { color: '"><script>x</script>' } }), /<script>x/);
+    assert.match(N.html({ saldo: 0 }), /--ng-c:#6b93b0/);
+    // il foglio degli effetti si carica nella finestra e le anteprime hanno lo spazio per mostrarli
+    const sorgente = leggi('docs', 'negozio.js');
+    assert.match(sorgente, /effetti-pagina\\\.css/);
+    assert.match(N.STILE, /\.ng-voce\[data-tipo=palco\] \.ng-anteprima\{position:relative;overflow:hidden;container-type:size;--ef-u:3cqh\}/, 'il palco in miniatura è un container e i puntini sono più grandi');
+    assert.match(N.frase('not-yet'), /next season/);
+    assert.match(N.frase('ended'), /has ended/);
 });
 
 test('html: un motivo dello sfondo in uso nella pagina resta di chi lo usa; i motivi non si "mettono" da qui', () => {
@@ -80,7 +136,13 @@ test('cablaggio: il campanello apre il negozio; shiny nella pagina, nell\'app e 
     assert.match(sf, /carica\('cosmetici\.js', \(\) => window\.Cosmetici\)\.then\(\(\) => carica\('negozio\.js'/);
     const pc = leggi('docs', 'public-card.js');
     assert.match(pc, /const brillante = !!\(stato\.dati && stato\.dati\.info && stato\.dati\.info\.pkmShiny\)/);
-    assert.match(pc, /'data-aura':/);
+    assert.match(pc, /'data-aura': cosmeticoDi\(d\.info\.aura, 'aura'\)/);
+    assert.match(pc, /const cosmeticoDi = \(id, tipo\) => \{ const c = window\.Cosmetici && window\.Cosmetici\.perId\(id\); return c && c\.tipo === tipo \? id : null; \};/, 'un id vale solo se è di quel tipo');
+    assert.match(pc, /'data-effetto-palco': cosmeticoDi\(d\.info\.effettoPalco, 'palco'\)/);
+    assert.match(pc, /'data-effetto-nome': effettoNome, 'data-testo': effettoNome \? nome : null/, 'l\'effetto del nome ridisegna il testo: serve data-testo');
+    assert.match(leggi('docs', 'public.html'), /<link rel="stylesheet" href="style-public-card\.css">\s*<link rel="stylesheet" href="effetti-pagina\.css">/);
+    assert.match(leggi('functions', 'index.js'), /exports\.equipaCosmetico = negozio\('equipa'\)/);
+    assert.match(leggi('functions', 'monete.js'), /motivo: d === 'presto' \? 'not-yet' : 'ended'/, 'le edizioni le controlla il server');
     assert.match(pc, /aura: window\.Cosmetici && window\.Cosmetici\.perId\(info\.aura\)/);
     assert.match(leggi('docs', 'public.html'), /<script src="cosmetici\.js"><\/script>\s*<script src="public-card\.js">/);
     assert.match(leggi('docs', 'matches.html'), /pkmShiny: !!g\.pkmShiny/);

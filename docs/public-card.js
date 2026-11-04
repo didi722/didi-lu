@@ -71,6 +71,8 @@
     }
 
     const pulisci = nome => String(nome || '').toLowerCase().replace(/ /g, '-').replace(/[.'é]/g, '');
+    /** Un cosmetico del negozio (aura, effetto del nome o del palco) si mostra solo se l'id è davvero di quel tipo: quello che sta nel profilo lo scrive il server, ma il testo non è un permesso */
+    const cosmeticoDi = (id, tipo) => { const c = window.Cosmetici && window.Cosmetici.perId(id); return c && c.tipo === tipo ? id : null; };
     // il nome del file lo decide sprite-pkm.js (Mr. Mime → mrmime); senza il modulo si usa il vecchio nome con i trattini
     const gifShowdown = (nome, shiny) => (window.SpritePkm ? window.SpritePkm.gif(nome, shiny) : `https://play.pokemonshowdown.com/sprites/ani${shiny ? '-shiny' : ''}/${pulisci(nome)}.gif`);
     const elenco = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
@@ -96,13 +98,13 @@
     function costruisciPalco(d) {
         const set = h('div', { class: 'pp-set' });
         set.append(d.info.avatar
-            ? h('div', { class: 'pp-allenatore', 'data-aura': (window.Cosmetici && window.Cosmetici.perId(d.info.aura) && window.Cosmetici.perId(d.info.aura).tipo === 'aura') ? d.info.aura : null }, h('img', { src: d.info.avatar, alt: '' }))
+            ? h('div', { class: 'pp-allenatore', 'data-aura': cosmeticoDi(d.info.aura, 'aura') }, h('img', { src: d.info.avatar, alt: '' }))
             : h('div', { class: 'pp-allenatore pp-allenatore-vuoto', testo: '?' }));
         const posto = h('div', { class: 'pp-pkm' });
         set.append(posto);
         if (d.info.pkmPreferito) montaPokemonPreferito(set, posto, d.info.pkmPreferito);
         montaBadgeCompagno(set, d);
-        return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro' },
+        return blocco('palco', 'pp-palco', h('div', { class: 'pp-quadro', 'data-effetto-palco': cosmeticoDi(d.info.effettoPalco, 'palco') },
             h('div', { class: 'pp-raggi' }),
             h('div', { class: 'pp-puntini' }),
             h('div', { class: 'pp-pavimento' }),
@@ -244,10 +246,11 @@
     function costruisciIdentita(d) {
         const nome = String(d.nome || '').toUpperCase();
         const motto = d.info.bio ? h('p', { class: 'pp-motto' }, h('span', { testo: String(d.info.bio).toUpperCase() })) : null;
+        const effettoNome = cosmeticoDi(d.info.effettoNome, 'nome');       // l'effetto ridisegna il testo (data-testo) sopra il nome: vedi effetti-pagina.css
         const posizione = stato.riepilogo && stato.riepilogo.rank && /^#\d+$/.test(stato.riepilogo.rank.grande) ? stato.riepilogo.rank.grande : '\u2605';
         return blocco('identita', 'pp-identita',
             costruisciSigillo(posizione),
-            h('h1', { class: 'pp-nome', stile: { '--len': nome.length || 1 } }, h('span', { id: 'player-name-display', testo: nome })),
+            h('h1', { class: 'pp-nome', stile: { '--len': nome.length || 1 }, 'data-effetto-nome': effettoNome, 'data-testo': effettoNome ? nome : null }, h('span', { id: 'player-name-display', testo: nome })),
             h('div', { class: 'pp-titolo-riga', hidden: true }),     // le targhette scelte per questo blocco (riempiTarghe)
             motto);
     }

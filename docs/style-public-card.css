@@ -1439,3 +1439,10 @@ body.pp-fisso .pp-coppa-gruppo .pp-coppa { width: 52px; height: 52px; }
     100% { filter: drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 18px #ff3b3b); }
 }
 @media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-arcobaleno"] img { animation: none; filter: drop-shadow(0 0 6px #ff66cc) drop-shadow(0 0 18px #ff66cc); } }
+/* edizione limitata "Lagoon": acqua e oro, che si danno il cambio */
+.pp-allenatore[data-aura="aura-laguna"] img { animation: pp-aura-laguna 5s ease-in-out infinite alternate; }
+@keyframes pp-aura-laguna {
+    from { filter: drop-shadow(0 0 6px #19c5b5) drop-shadow(0 0 18px #f2c94c); }
+    to   { filter: drop-shadow(0 0 6px #f2c94c) drop-shadow(0 0 18px #19c5b5); }
+}
+@media (prefers-reduced-motion: reduce) { .pp-allenatore[data-aura="aura-laguna"] img { animation: none; filter: drop-shadow(0 0 6px #19c5b5) drop-shadow(0 0 18px #f2c94c); } }
