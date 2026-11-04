@@ -256,7 +256,7 @@ test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista 
     assert.match(bu, /document\.body\.classList\.add\('palestra'\)/);
     assert.match(bu, /voci = cpu && cpu\.palestra \? vociInsegnaPalestra\(\)/, 'l\'insegna mostra chi tiene la palestra e il vantaggio');
     assert.match(bu, /if \(cpu && cpu\.palestra\) mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
-    assert.match(bu, /r\.startsWith\('\|turn\|1'\)\)\) mostraAnnuncioPalestra\(true\);/, 'cartello breve quando l\'effetto entra in gioco');
+    assert.ok(!/mostraAnnuncioPalestra\(true\)/.test(bu), 'il cartello non ricompare a inizio partita');
     assert.match(bu, /nome: cpu && cpu\.palestra \? config\.p2\.nome : 'CPU'/, 'nelle colonne l\'avversario è il capopalestra, non "CPU"');
     const ts = leggi('docs', 'team-sito.js');
     assert.match(ts, /players\/\$\{id\}\/info`/);

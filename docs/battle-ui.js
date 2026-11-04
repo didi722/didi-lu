@@ -1500,7 +1500,6 @@ function nuovoSet(numero) {
 function collegaEventi(b) {
     b.on('log', righe => {
         if (cpu && cpu.cerebro) cpu.cerebro.osserva(righe);     // la CPU legge il log com'è uscito dal simulatore
-        if (cpu && cpu.palestra && righe.some(r => r.startsWith('|turn|1'))) mostraAnnuncioPalestra(true);
         righe = riscrittoreLog.riscrivi(righe);
         stato.aggiorna(righe);
         aggiungiAScena(righe);
