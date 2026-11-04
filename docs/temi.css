@@ -419,6 +419,8 @@ body.nb .top-bar > .music-btn.muted .onda { display: none; }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(6) { --mi: #b88cff; transform: rotate(calc(var(--nb-rot) * .8deg)); }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(7) { --mi: #52d6c3; transform: rotate(calc(var(--nb-rot) * -1.2deg)); }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(8) { --mi: var(--nb-rosso); transform: rotate(calc(var(--nb-rot) * 1deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(9) { --mi: #c9e265; transform: rotate(calc(var(--nb-rot) * -.8deg)); }
+:is(body.nb, body.pg-public) .user-dropdown .menu-item:nth-child(10) { --mi: #7aa2ff; transform: rotate(calc(var(--nb-rot) * 1.2deg)); }
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:hover,
 :is(body.nb, body.pg-public) .user-dropdown .menu-item:focus-visible {
     background: var(--mi) !important;
