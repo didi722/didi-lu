@@ -51,11 +51,12 @@
 .ng-voce[data-tipo=shiny] .ng-anteprima.ng-scintilla::before{content:'✦';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 1.5rem sans-serif;color:#e0a800}
 .ng-voce b{display:block;font:900 .85rem 'Josefin Sans',sans-serif;text-transform:uppercase}
 .ng-voce small{display:block;font:600 .7rem/1.3 'Montserrat',sans-serif;opacity:.7}
-.ng-schiera{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:30px 18px}
+.ng-schiera{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:30px 14px}
+@media (max-width:1100px){.ng-schiera{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.ng-schiera{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ng-carta{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
-.ng-tondo{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:176px;height:176px;border:4px solid #000;border-radius:50%;background:#e6e9f2;box-shadow:4px 4px 0 rgba(0,0,0,.35);overflow:hidden}
-.ng-shiny .ng-tondo{background:#fff1a8}
-.ng-tondo img{max-width:136px;max-height:136px;object-fit:contain;image-rendering:pixelated}
+.ng-tondo{position:relative;display:grid;place-items:center;box-sizing:border-box;width:100%;max-width:176px;aspect-ratio:1;border:4px solid #000;border-radius:50%;background:radial-gradient(rgba(0,0,0,.17) 1.4px,transparent 1.7px) 0 0/9px 9px,var(--tipo,#cfd3dc);box-shadow:4px 4px 0 rgba(0,0,0,.35);overflow:hidden}
+.ng-tondo img{max-width:78%;max-height:78%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(2px 3px 0 rgba(0,0,0,.35))}
 .ng-tag{position:relative;z-index:1;margin:-16px 0 10px;max-width:100%;box-sizing:border-box;padding:4px 12px 2px;background:#000;color:#fff;border:3px solid #000;box-shadow:3px 3px 0 rgba(0,0,0,.35);font:700 14px/1.15 'Josefin Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;text-align:center;overflow-wrap:anywhere;rotate:-1.5deg}
 .ng-fatto{font:900 .8rem 'Josefin Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#8a6500;white-space:nowrap}
 .ng-voce[data-tipo=nome] .ng-anteprima,.ng-voce[data-tipo=palco] .ng-anteprima{border-radius:0;width:64px;height:52px}
@@ -189,7 +190,7 @@
             const bottone = p.shiny ? `<button type="button" class="ng-bottone" data-ng="shiny-off" data-i="${i}"${dis}>Back to normal</button>`
                 : p.comprato ? `<button type="button" class="ng-bottone ng-compra" data-ng="shiny-on" data-i="${i}"${dis}>Make shiny · free</button>`
                     : `<button type="button" class="ng-bottone ng-compra" data-ng="shiny" data-i="${i}"${s.occupato || saldo < f.prezzo ? ' disabled' : ''}>${f.prezzo} 🪙</button>`;
-            return `<li class="ng-carta${p.shiny ? ' ng-shiny' : ''}" data-tipo="pokemon"><span class="ng-tondo">${img(p.shiny ? p.brillante : p.normale)}</span><b class="ng-tag">${esc(p.nome)}</b>${bottone}</li>`;
+            return `<li class="ng-carta${p.shiny ? ' ng-shiny' : ''}" data-tipo="pokemon"><span class="ng-tondo" data-pkm="${esc(p.nome)}">${img(p.shiny ? p.brillante : p.normale)}</span><b class="ng-tag">${esc(p.nome)}</b>${bottone}</li>`;
         }).join('');
         const fasce = Cosmetici.fasceShiny().map(f => pillola(f.fascia, `${f.nome} ${f.prezzo}`)).join('');
         return `<p class="ng-nota">Pick the Pokémon to make shiny. The price depends on the species: the rarer it is, the more it costs. It only changes the colours, so it works on locked teams too, it shows in battle and on the site. Once bought it is yours: you can go back to normal and make it shiny again for free.</p>`
