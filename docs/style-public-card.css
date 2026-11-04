@@ -540,6 +540,11 @@ body.pp-modifica :is(.pp-blocco, .pp-testata, .pp-piede)::after { display: none;
     filter: var(--pp-adesivo-sprite);
 }
 
+/* i giganti (Kyogre, Wailord): grandi com'è giusto, senza il limite di larghezza, e spostati a destra: il palco ne taglia il bordo */
+.pp-pkm.pp-enorme { right: calc(-70 * var(--d)); }
+.pp-pkm.pp-enorme .pp-pkm-img { max-width: none; width: auto; }
+.pp-pkm.pp-enorme::after { left: 20%; right: 20%; }
+
 .pp-pkm::after {
     content: '';
     position: absolute;

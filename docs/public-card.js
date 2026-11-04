@@ -186,7 +186,7 @@
         else dietro = vola || altezzaM >= P.SCENA.ALTEZZA_ALLENATORE_M * 1.2;
 
         set.style.setProperty('--ht', String(misure.allenatore));
-        posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}`;
+        posto.className = `pp-pkm ${dietro ? 'pp-dietro' : 'pp-davanti'}${vola ? ' pp-vola' : ''}${regola === 'rimpicciolisci' ? ' pp-enorme' : ''}`;      // i giganti (Kyogre, Wailord) escono dal bordo destro del palco
         posto.style.setProperty('--h', String(misure.pokemon));
         // Il nome non è scritto sul palco (lo si riconosce a vista): resta solo nell'alt per chi legge lo schermo
         posto.replaceChildren(h('img', { src: gif, alt: nomeGrezzo, class: 'pp-pkm-img' }));
