@@ -118,8 +118,8 @@
         const bottone = mio
             ? (c.campo ? `<button type="button" class="ng-bottone" data-ng="equipa" data-id="${esc(c.id)}" data-attivo="${attivo ? '0' : '1'}"${s.occupato || (delBox && !attivo) ? ' disabled' : ''}>${attivo ? 'Take off' : 'Put on'}</button>` : '<span class="ng-bottone" style="opacity:.6;box-shadow:none">Owned</span>')
             : `<button type="button" class="ng-bottone ng-compra" data-ng="compra" data-id="${esc(c.id)}"${s.occupato || saldo < c.prezzo || disp !== 'si' || delBox ? ' disabled' : ''}>${disp === 'si' ? `${c.prezzo} 🪙` : disp === 'presto' ? 'Soon' : 'Ended'}</button>`;
-        const nota = delBox ? `Your companion comes from your Box: make ${esc(s.compagnoBox)} shiny in the Pokémon tab. This one is for a companion picked from the list.` : mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : esc(c.descr);
-        return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="Tap to see it on your page">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b><small>${nota}</small></span>${bottone}</li>`;
+        const nota = delBox ? `Your companion comes from your Box: make ${esc(s.compagnoBox)} shiny in the Pokémon tab. This one is for a companion picked from the list.` : mio ? (c.campo ? (attivo ? 'On now' : 'Yours') : 'Yours: pick it in Customize on your page') : c.tipo === 'shiny' ? esc(c.descr) : '';
+        return `<li class="ng-voce${mio ? ' ng-mio' : ''}${s.provando === c.id ? ' ng-prova' : ''}" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}" data-ng="prova" title="Tap to see it on your page">${anteprima(c, (s.anteprime || {})[c.id], info.color)}<span><b>${esc(c.nome)}</b>${nota ? `<small>${nota}</small>` : ''}</span>${bottone}</li>`;
     }
 
     /**
