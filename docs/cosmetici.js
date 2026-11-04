@@ -45,8 +45,9 @@
     };
 
     // ---- Quanto costa -------------------------------------------------------------------------
-    // Le famiglie: tanti pezzi piccoli (un cambio di avatar è il 4% di una stagione, di canzone il 6%, uno shiny di team il 10%); il catalogo fisso sta nel 10–45% (vedi CATALOGO).
-    const PREZZI = { avatar: 40, canzone: 60, shinyPokemon: 100 };
+    // Rispetto alla stagione tipo (~780 monete di soli set): un cambio di avatar è il 13%, di canzone il 19%, uno shiny di un Pokémon di un team il 51% (mezza stagione: uno shiny è un trofeo, e
+    // una squadra intera ne costa tre di stagioni). Il catalogo fisso (qui sotto) vale circa cinque stagioni: un motivo il 32%, un'aura il 51%; l'aura arcobaleno e il compagno shiny una stagione intera.
+    const PREZZI = { avatar: 100, canzone: 150, shinyPokemon: 400 };
 
     const TIPI = {
         shiny: { nome: 'Shiny companion', frase: 'Your favourite Pokémon in its shiny colours.' },
@@ -56,16 +57,16 @@
 
     // `campo`: dove si scrive quando si equipaggia (players/{id}/info/<campo>); per i motivi non c'è: li sceglie l'editor della pagina
     const CATALOGO = [
-        { id: 'shiny', tipo: 'shiny', nome: 'Shiny companion', prezzo: 200, campo: 'pkmShiny', descr: 'Your favourite Pokémon shows up shiny on your page, in the rankings and on share cards.' },
-        { id: 'aura-oro', tipo: 'aura', nome: 'Gold aura', prezzo: 200, campo: 'aura', colore: '#ffcc33', descr: 'A warm golden glow around your trainer.' },
-        { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 200, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
-        { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 200, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
-        { id: 'aura-arcobaleno', tipo: 'aura', nome: 'Rainbow aura', prezzo: 350, campo: 'aura', colore: '#ff66cc', descr: 'A glow that cycles through every colour.' },
-        { id: 'sfondo-raggi', tipo: 'sfondo', nome: 'Sunburst', prezzo: 100, motivo: 'raggi', descr: 'Rays from the stage.' },
-        { id: 'sfondo-pokeball', tipo: 'sfondo', nome: 'Pokéballs', prezzo: 100, motivo: 'pokeball', descr: 'A field of tiny Poké Balls.' },
-        { id: 'sfondo-anelli', tipo: 'sfondo', nome: 'Rings', prezzo: 100, motivo: 'anelli', descr: 'Overlapping rings.' },
-        { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 100, motivo: 'stelle', descr: 'A sky of little stars.' },
-        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 100, motivo: 'onde', descr: 'Soft rolling waves.' }
+        { id: 'shiny', tipo: 'shiny', nome: 'Shiny companion', prezzo: 800, campo: 'pkmShiny', descr: 'Your favourite Pokémon shows up shiny on your page, in the rankings and on share cards.' },
+        { id: 'aura-oro', tipo: 'aura', nome: 'Gold aura', prezzo: 400, campo: 'aura', colore: '#ffcc33', descr: 'A warm golden glow around your trainer.' },
+        { id: 'aura-fiamma', tipo: 'aura', nome: 'Flame aura', prezzo: 400, campo: 'aura', colore: '#ff5a1f', descr: 'A fiery orange glow.' },
+        { id: 'aura-ghiaccio', tipo: 'aura', nome: 'Ice aura', prezzo: 400, campo: 'aura', colore: '#5fd4ff', descr: 'A cold blue glow.' },
+        { id: 'aura-arcobaleno', tipo: 'aura', nome: 'Rainbow aura', prezzo: 800, campo: 'aura', colore: '#ff66cc', descr: 'A glow that cycles through every colour.' },
+        { id: 'sfondo-raggi', tipo: 'sfondo', nome: 'Sunburst', prezzo: 250, motivo: 'raggi', descr: 'Rays from the stage.' },
+        { id: 'sfondo-pokeball', tipo: 'sfondo', nome: 'Pokéballs', prezzo: 250, motivo: 'pokeball', descr: 'A field of tiny Poké Balls.' },
+        { id: 'sfondo-anelli', tipo: 'sfondo', nome: 'Rings', prezzo: 250, motivo: 'anelli', descr: 'Overlapping rings.' },
+        { id: 'sfondo-stelle', tipo: 'sfondo', nome: 'Stars', prezzo: 250, motivo: 'stelle', descr: 'A sky of little stars.' },
+        { id: 'sfondo-onde', tipo: 'sfondo', nome: 'Waves', prezzo: 250, motivo: 'onde', descr: 'Soft rolling waves.' }
     ];
 
     // ---- Le famiglie: avatar e canzoni ---------------------------------------------------------

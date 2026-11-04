@@ -13,11 +13,12 @@ const C = require('../docs/cosmetici.js');
 const leggi = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
 
 test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano monete), "Put on"/"Take off" per ciò che si ha, i movimenti più recenti prima; testo protetto', () => {
-    const h = N.html({ saldo: 220, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro', pkmShiny: false }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
-    assert.match(h, /🪙 220/);
+    const h = N.html({ saldo: 650, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro', pkmShiny: false }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
+    assert.match(h, /🪙 650/);
     for (const t of ['Shiny companion', 'Trainer aura', 'Page patterns']) assert.ok(h.includes(t), t);
-    assert.match(h, new RegExp(`data-ng="compra" data-id="shiny">${C.perId('shiny').prezzo} 🪙`));
-    assert.match(h, new RegExp(`data-ng="compra" data-id="aura-arcobaleno" disabled>${C.perId('aura-arcobaleno').prezzo} 🪙`), '220 monete: l\'arcobaleno costa di più');
+    assert.match(h, new RegExp(`data-ng="compra" data-id="aura-fiamma">${C.perId('aura-fiamma').prezzo} 🪙`), '650 monete: l\'aura da 400 si può comprare');
+    assert.match(h, new RegExp(`data-ng="compra" data-id="shiny" disabled>${C.perId('shiny').prezzo} 🪙`), 'il compagno shiny (800) no');
+    assert.match(h, new RegExp(`data-ng="compra" data-id="aura-arcobaleno" disabled>${C.perId('aura-arcobaleno').prezzo} 🪙`), 'e nemmeno l\'arcobaleno');
     assert.match(h, /data-ng="equipa" data-id="aura-oro" data-attivo="0">Take off/, 'l\'aura in uso si toglie');
     assert.match(h, /On now/);
     assert.match(h, /&lt;b&gt;Bought&lt;\/b&gt;/);
@@ -32,7 +33,7 @@ test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano mon
 test('html: un motivo dello sfondo in uso nella pagina resta di chi lo usa; i motivi non si "mettono" da qui', () => {
     const h = N.html({ saldo: 0, pagina: { sfondo: { motivo: 'raggi' } } });
     assert.match(h, /Sunburst<\/b><small>Yours: pick it in Customize on your page/);
-    assert.match(h, /Stars<\/b>[\s\S]*?data-id="sfondo-stelle" disabled>100 🪙/);
+    assert.match(h, new RegExp(`Stars</b>[\\s\\S]*?data-id="sfondo-stelle" disabled>${C.perId('sfondo-stelle').prezzo} 🪙`));
     assert.doesNotMatch(h, /data-ng="equipa" data-id="sfondo/);
 });
 

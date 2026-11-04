@@ -262,9 +262,10 @@ test('cambia canzone: il primo è gratis e resta tuo, poi costa; "None" è grati
 });
 
 test('avatar e canzoni non si comprano: acquista li rifiuta; il resto del catalogo non è esclusivo (due allenatori possono avere la stessa aura)', async () => {
-    const db = dbGiocatori();
+    const aura = C.perId('aura-oro').prezzo;
+    const db = dbGiocatori({ wallet: { u1: { saldo: aura }, u2: { saldo: aura } } });
     for (const id of ['avatar-5', C.idCanzone('https://x.test/a.mp3')]) assert.deepEqual(await M.acquista({ db, uid: 'u1', id }), { ok: false, motivo: 'unknown' });
-    assert.equal(saldo(db, 'u1'), 300);
+    assert.equal(saldo(db, 'u1'), aura);
     assert.equal((await M.acquista({ db, uid: 'u1', id: 'aura-oro' })).ok, true);
     assert.equal((await M.acquista({ db, uid: 'u2', id: 'aura-oro' })).ok, true);
     assert.equal(presi(db)['aura-oro'], undefined);
@@ -347,11 +348,12 @@ test('senzaShinyAbusivi: lo shiny si compra, non si scrive: resta solo ai Pokém
     assert.equal(C.senzaShinyAbusivi('Shinx\nAbility: Intimidate\n- Shiny Tackle', null), 'Shinx\nAbility: Intimidate\n- Shiny Tackle');
 });
 
+const SALDO_SQUADRE = 2 * C.PREZZI.shinyPokemon + 100;      // basta per due shiny e un po' di resto
 function dbSquadre(extra = {}) {
     const team = nome => ({ id: 'T1', nome, pokemon: [{ nome: 'Garchomp', shiny: false }, { nome: 'Incineroar', shiny: false }], testoShowdown: 'Garchomp @ Rocky Helmet\nAbility: Rough Skin\nLevel: 50\n- Protect\n\nIncineroar @ Safety Goggles\nAbility: Intimidate\nLevel: 50\n- Fake Out' });
     return dbFinto({
         users: { u1: { name: 'Didi' } },
-        wallet: { u1: { saldo: 250 } },
+        wallet: { u1: { saldo: SALDO_SQUADRE } },
         players: { didi: { teams: { T1: team('Alfa') } } },
         seasons: {
             s0: { info: { status: 'closed' }, teams_iscritti: { 'VGC Gen 8': { didi: { datiTeams: [team('Alfa')] } } } },
@@ -365,7 +367,7 @@ function dbSquadre(extra = {}) {
 test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box, testo e iscrizioni alle stagioni non chiuse; si paga una volta; la stagione chiusa e gli altri restano come sono', async () => {
     const db = dbSquadre();
     const r = await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 });
-    assert.deepEqual(r, { ok: true, saldo: 250 - C.PREZZI.shinyPokemon });
+    assert.deepEqual(r, { ok: true, saldo: SALDO_SQUADRE - C.PREZZI.shinyPokemon });
     const box = db.albero.players.didi.teams.T1;
     assert.deepEqual(box.pokemon.map(p => p.shiny), [true, false]);
     assert.match(box.testoShowdown, /^Garchomp @ Rocky Helmet\nAbility: Rough Skin\nLevel: 50\nShiny: Yes\n- Protect\n\nIncineroar[^]*- Fake Out$/);
@@ -380,7 +382,7 @@ test('shinyPokemon: un Pokémon del team diventa shiny (anche se bloccato): Box,
     assert.equal(Object.keys(db.albero.walletEventi || {}).length, 0, 'il segno di "acquisto in corso" è caduto');
     // già shiny: niente addebito
     assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), { ok: false, motivo: 'already' });
-    assert.equal(saldo(db, 'u1'), 250 - C.PREZZI.shinyPokemon);
+    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - C.PREZZI.shinyPokemon);
     // il secondo Pokémon è un altro acquisto
     assert.equal((await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 1 })).ok, true);
     assert.deepEqual(db.albero.players.didi.teams.T1.pokemon.map(p => p.shiny), [true, true]);
@@ -399,7 +401,7 @@ test('shinyPokemon: senza monete o con dati che non tornano non si addebita nien
     // il testo non ha il Pokémon: non si saprebbe come renderlo shiny in battaglia, quindi non si vende
     db.albero.players.didi.teams.T1.testoShowdown = 'Incineroar @ Safety Goggles\nAbility: Intimidate\n- Fake Out';
     assert.deepEqual(await M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), { ok: false, motivo: 'cannot-apply' });
-    assert.equal(saldo(db, 'u1'), 250);
+    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE);
     assert.equal(movimenti(db, 'u1').length, 0);
     // un team salvato solo come elenco (senza testo) si aggiorna lo stesso
     delete db.albero.players.didi.teams.T1.testoShowdown;
@@ -412,13 +414,13 @@ test('shinyPokemon: due richieste insieme lo pagano una volta; un segno vecchio 
     const [x, y] = await Promise.all([M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 }), M.shinyPokemon({ db, uid: 'u1', team: 'T1', indice: 0 })]);
     assert.deepEqual([x.ok, y.ok].sort(), [false, true]);
     assert.ok(['busy', 'already'].includes([x, y].find(r => !r.ok).motivo));
-    assert.equal(saldo(db, 'u1'), 250 - C.PREZZI.shinyPokemon, 'addebitato una volta');
+    assert.equal(saldo(db, 'u1'), SALDO_SQUADRE - C.PREZZI.shinyPokemon, 'addebitato una volta');
 
     const adesso = Date.UTC(2026, 10, 3, 12);
     const lock = 'walletEventi/lock-shiny-didi-T1-0';
     const fresco = dbSquadre({ walletEventi: { 'lock-shiny-didi-T1-0': adesso - 5000 } });
     assert.deepEqual(await M.shinyPokemon({ db: fresco, uid: 'u1', team: 'T1', indice: 0, adesso }), { ok: false, motivo: 'busy' });
-    assert.equal(saldo(fresco, 'u1'), 250);
+    assert.equal(saldo(fresco, 'u1'), SALDO_SQUADRE);
     const vecchio = dbSquadre({ walletEventi: { 'lock-shiny-didi-T1-0': adesso - 120000 } });
     assert.equal((await M.shinyPokemon({ db: vecchio, uid: 'u1', team: 'T1', indice: 0, adesso })).ok, true, 'il segno di più di un minuto fa è scaduto');
 
@@ -426,13 +428,13 @@ test('shinyPokemon: due richieste insieme lo pagano una volta; un segno vecchio 
     const ref = rotto.ref;
     rotto.ref = (p = '') => { const r = ref(p); if (p === '') r.update = async () => { throw new Error('scrittura fallita'); }; return r; };
     await assert.rejects(M.shinyPokemon({ db: rotto, uid: 'u1', team: 'T1', indice: 0 }), /scrittura fallita/);
-    assert.equal(saldo(rotto, 'u1'), 250, 'le monete tornano');
+    assert.equal(saldo(rotto, 'u1'), SALDO_SQUADRE, 'le monete tornano');
     assert.deepEqual(movimenti(rotto, 'u1').map(m => m.importo), [-C.PREZZI.shinyPokemon, C.PREZZI.shinyPokemon]);
     assert.equal(rotto.albero.players.didi.teams.T1.pokemon[0].shiny, false);
     assert.equal(Object.keys(rotto.albero.walletEventi || {}).length, 0, 'e il segno cade');
 });
 
-test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a stagione (media ~780); i prezzi sono una frazione di quella stagione tipo', () => {
+test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a stagione (media ~780); i prezzi sono una frazione o un multiplo di quella stagione tipo, gli shiny i più cari', () => {
     // [set ufficiali, set vinti] a testa nei dati reali della stagione (5 allenatori, 27 showdown, 3 set a match)
     const stagione = { lukiani: [108, 79], didi: [99, 64], hilblacky: [99, 45], ilaria: [90, 38], dodo: [90, 17] };
     const soloSet = Object.values(stagione).map(([setUfficiali, setVinti]) => C.stimaStagione({ setUfficiali, setVinti }).set);
@@ -446,15 +448,22 @@ test('calibrazione: con i set di Sant\'Alvise I si fanno 550–1000 monete a sta
     // le amichevoli sono un extra: mai più del tetto al giorno
     assert.equal(C.stimaStagione({ amichevoliSet: 500, amichevoliVinti: 500, giorniAmichevoli: 3 }).amichevoli, 3 * C.PREMI.tettoAmichevoliGiorno);
     assert.ok(42 * C.PREMI.tettoAmichevoliGiorno < media, 'anche giocando amichevoli ogni giorno di una stagione di sei settimane non si supera quello dei set');
-    // i prezzi: l'avatar è il 4–6% di una stagione, la canzone il 6–9%, lo shiny di un team il 10–15%; il catalogo fisso si completa in circa due stagioni
+    // i prezzi: un cambio di avatar è il 10–15% di una stagione, di canzone il 15–22%; uno shiny di un Pokémon di un team metà stagione (45–60%): una squadra intera ne costa ~tre
     const P = C.PREZZI;
-    assert.ok(P.avatar <= media * 0.06 && P.avatar >= media * 0.03, `avatar ${P.avatar}`);
-    assert.ok(P.canzone <= media * 0.09 && P.canzone >= media * 0.05, `canzone ${P.canzone}`);
-    assert.ok(P.shinyPokemon <= media * 0.15 && P.shinyPokemon >= media * 0.1, `shiny ${P.shinyPokemon}`);
+    assert.ok(P.avatar >= media * 0.10 && P.avatar <= media * 0.15, `avatar ${P.avatar}`);
+    assert.ok(P.canzone >= media * 0.15 && P.canzone <= media * 0.22, `canzone ${P.canzone}`);
+    assert.ok(P.shinyPokemon >= media * 0.45 && P.shinyPokemon <= media * 0.60, `shiny di team ${P.shinyPokemon}`);
+    assert.ok(6 * P.shinyPokemon >= media * 2.5 && 6 * P.shinyPokemon <= media * 4, 'una squadra intera shiny: tre stagioni circa');
+    // il catalogo fisso: un motivo il 25–40%, un'aura il 45–60%; l'arcobaleno e il compagno shiny tra 3/4 e una stagione; si completa in 4–6 stagioni
+    const per = id => C.perId(id).prezzo;
+    for (const id of ['sfondo-raggi', 'sfondo-pokeball', 'sfondo-anelli', 'sfondo-stelle', 'sfondo-onde']) assert.ok(per(id) >= media * 0.25 && per(id) <= media * 0.40, `${id} ${per(id)}`);
+    for (const id of ['aura-oro', 'aura-fiamma', 'aura-ghiaccio']) assert.ok(per(id) >= media * 0.45 && per(id) <= media * 0.60, `${id} ${per(id)}`);
+    for (const id of ['aura-arcobaleno', 'shiny']) assert.ok(per(id) >= media * 0.75 && per(id) <= media * 1.1, `${id} ${per(id)}`);
     const fisso = C.CATALOGO.reduce((t, c) => t + c.prezzo, 0);
-    assert.ok(fisso >= media * 1.5 && fisso <= media * 3, `catalogo fisso ${fisso}`);
-    assert.ok(Math.min(...C.CATALOGO.map(c => c.prezzo)) >= media * 0.1, 'la cosa più economica del catalogo fisso non si compra in una serata');
-    assert.ok(Math.max(...C.CATALOGO.map(c => c.prezzo)) <= media * 0.5, 'e la più cara si raggiunge in una stagione');
+    assert.ok(fisso >= media * 4 && fisso <= media * 6, `catalogo fisso ${fisso} = ${(fisso / media).toFixed(1)} stagioni`);
+    // gli shiny sono la cosa più cara: quello di un team costa più di due cambi di canzone e più di un motivo; il compagno shiny è al massimo del catalogo
+    assert.ok(P.shinyPokemon > P.canzone * 2 && P.shinyPokemon > per('sfondo-onde'), 'lo shiny di un team pesa più dei cambi e dei motivi');
+    assert.equal(per('shiny'), Math.max(...C.CATALOGO.map(c => c.prezzo)), 'il compagno shiny è tra i più cari del catalogo');
 });
 
 test('equipa: solo ciò che si possiede; shiny e aura finiscono nel profilo pubblico, togliere li pulisce', async () => {
