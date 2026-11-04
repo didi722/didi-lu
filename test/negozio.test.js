@@ -283,7 +283,10 @@ test('Shop: la pagina, le schede, l\'anteprima della tua pagina, il menu del sit
     assert.match(pc, /const COSMETICI_IN_PROVA = \['aura', 'effettoNome', 'effettoPalco', 'pkmShiny'\];/);
     assert.match(leggi('docs', 'style-public-card.css'), /html\.pp-anteprima \.top-auth-bar/);
     // le voci della pagina si comprano e si mettono dal server; lo shiny dei Pokémon pure; tutto da qui
-    assert.match(sh, /'acquistaCosmetico' : 'equipaCosmetico'/);
+    assert.match(sh, /N\.chiama\(window, 'equipaCosmetico'/);
+    assert.match(sh, /if \(ng === 'compra'\) return chiediCatalogo\(C\.perId\(b\.dataset\.id\)\);/, 'prima di comprare dal catalogo si chiede conferma, con la voce in grande');
+    assert.match(sh, /Are you sure you want to buy it\?/);
+    assert.match(sh, /N\.chiama\(window, 'acquistaCosmetico', \{ id: c\.id \}\)/);
     assert.match(sh, /'shinyPokemonTeam', \{ team: t\.id, indice: i \}/);
     // il menu di tutte le pagine ha SHOP; l'app ha la tessera
     for (const f of fs.readdirSync(path.join(__dirname, '..', 'docs')).filter(n => n.endsWith('.html'))) {

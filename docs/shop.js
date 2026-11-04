@@ -265,6 +265,23 @@
         });
     }
 
+    /** Comprare una voce del catalogo: prima una finestra con la voce in grande e la domanda "sei sicuro?" */
+    function chiediCatalogo(c) {
+        if (!c) return;
+        const grande = `<div class="ng-voce shop-grande" data-tipo="${esc(c.tipo)}" data-id="${esc(c.id)}">${N.anteprima(c, S.anteprime[c.id], S.info.color)}</div>`;
+        const poco = S.saldo < c.prezzo;
+        finestra(`${grande}<b>${esc(c.nome)}</b><p>${esc(c.descr || '')}</p><p>It costs ${c.prezzo} 🪙 and you have ${S.saldo} 🪙.${poco ? ' Play some sets to earn more coins.' : ''}</p>${poco ? '' : '<p><b>Are you sure you want to buy it?</b></p>'}`
+            + `<div class="shop-conferma-azioni"><button type="button" class="ng-bottone" data-x="annulla">Cancel</button><button type="button" class="ng-bottone ng-compra" data-x="ok"${poco ? ' disabled' : ''}>Yes, buy · ${c.prezzo} 🪙</button></div>`, (e, velo, togli) => {
+            if (!(e.target.dataset && e.target.dataset.x === 'ok') || e.target.disabled) return;
+            togli();
+            operazione(() => N.chiama(window, 'acquistaCosmetico', { id: c.id }), async r => {
+                msg(r.ok ? `${c.nome} is yours! Put it on whenever you like.` : N.frase(r.motivo), !r.ok);
+                if (r.ok) { S.prova = {}; S.provando = ''; }
+                await leggi(); mostraSaldo(); aggiornaAnteprima();
+            });
+        });
+    }
+
     /** Lasciare andare uno di quelli che si hanno */
     function chiediRilascio({ tipo, id, nome, immagine, colore }) {
         const f = N.frasiRilascio({ tipo, nome });
@@ -340,10 +357,10 @@
         if (!b || b.disabled) { if (S.armato) { S.armato = null; disegna(true); } return; }
         const ng = b.dataset.ng;
         if (ng === 'prova') return provaVoce(b.dataset.id);
-        if (ng === 'compra' || ng === 'equipa') {
-            return operazione(() => N.chiama(window, ng === 'compra' ? 'acquistaCosmetico' : 'equipaCosmetico', { id: b.dataset.id, attivo: b.dataset.attivo !== '0' }), async r => {
-                msg(r.ok ? (ng === 'compra' ? 'Bought! Put it on whenever you like.' : 'Done.') : N.frase(r.motivo), !r.ok);
-                if (r.ok) { S.prova = {}; S.provando = ''; }
+        if (ng === 'compra') return chiediCatalogo(C.perId(b.dataset.id));
+        if (ng === 'equipa') {
+            return operazione(() => N.chiama(window, 'equipaCosmetico', { id: b.dataset.id, attivo: b.dataset.attivo !== '0' }), async r => {
+                msg(r.ok ? 'Done.' : N.frase(r.motivo), !r.ok);
                 await leggi(); mostraSaldo(); aggiornaAnteprima();
             });
         }

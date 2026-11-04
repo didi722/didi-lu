@@ -145,3 +145,9 @@ html.app-shell { --shop-testo: #fff; }
 /* l'icona delle monete, alta come il testo */
 .shop-moneta { height: 1.1em; width: 1.1em; vertical-align: -.2em; image-rendering: pixelated; }
 .shop-saldo .shop-moneta { height: 1.05em; width: 1.05em; vertical-align: -.1em; }
+
+/* la voce in grande nella conferma di un acquisto del catalogo */
+.shop-conferma .shop-grande { display: flex; justify-content: center; align-items: center; width: 100%; padding: 14px 0; margin: 0; background: none; border: 0; box-shadow: none; }
+.shop-grande .ng-anteprima { flex: none; zoom: 2; }
+/* la moneta dentro le frasi della conferma resta piccola (le immagini della conferma sono grandi) */
+.shop-conferma img.shop-moneta { width: 1.1em; height: 1.1em; border: 0; background: none; }
