@@ -357,6 +357,7 @@ function versionePubblica(id, t) {
         vittorie: Number(stats.won || 0),
         pokemon: Object.values(t.pokemon || {}).filter(p => p && p.nome).map(p => ({
             nome: String(p.nome),
+            shiny: !!p.shiny,
             amicizia: !!(p.badges && (p.badges.loyaltybadge === true || p.badges.loyaltyBadge === true))
         }))
     };

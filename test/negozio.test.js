@@ -121,7 +121,7 @@ test('shiny ovunque: ogni punto del sito che mostra un Pokémon di un team passa
     const attesi = [['box.html', /SpritePkm\.gif\(nomePkm, p\.shiny\)/], ['box.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['box.html', /SpritePkm\.gif\(nomeP?kmHero?|pokemonData\.shiny\)/],
         ['hub.html', /SpritePkm\.gif\(pkmnName, !!\(p && typeof p === 'object' && p\.shiny\)\)/], ['hub.html', /SpritePkm\.gif\(p\.nome \|\| '', p\.shiny\)/],
         ['matches.html', /getGifUrl\(p\.nome, p\.shiny\)/], ['matches.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['matches.html', /SpritePkm\.gif\(pName, !!shiny\)/],
-        ['public.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['public.html', /SpritePkm\.gif\(nome \|\| pkmNameUrl, pokemonData\.shiny\)/],
+        ['public.html', /SpritePkm\.gif\(p\.nome, p\.shiny\)/], ['public.html', /nome: String\(p\.nome\),\s*shiny: !!p\.shiny,/], ['public.html', /SpritePkm\.gif\(nome \|\| pkmNameUrl, pokemonData\.shiny\)/],
         ['public-card.js', /gifShowdown\(nomePkm, p\.shiny\)/], ['app-practice.js', /dex\(s, !!shiny\[i\]\)/]];
     for (const [f, re] of attesi) assert.match(leggi('docs', f), re, `${f}: ${re}`);
 });
