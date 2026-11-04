@@ -1356,7 +1356,10 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
 // La palestra sembra la palestra di chi la tiene: sfondo, colori, font ed effetti della sua pagina pubblica (Palestra.temaPalestra).
 // Le variabili finiscono sul <html>; il resto (sfondo del campo, insegna, cartelli) lo fa style-palestra-battaglia.css con body.palestra.
 function vestiPalestra(gym) {
-    const tema = self.Palestra.temaPalestra(gym.aspetto, self.PaginaPubblica, self.Cosmetici);
+    // sfondo come nelle partite tra due allenatori: il suo colore principale con il motivo che ha scelto (il resto della sua pagina, font e carta, resta)
+    const pagina = (gym.aspetto && gym.aspetto.pagina && typeof gym.aspetto.pagina === 'object') ? gym.aspetto.pagina : {};
+    const aspetto = { ...gym.aspetto, pagina: { ...pagina, sfondo: { ...((typeof pagina.sfondo === 'object' && pagina.sfondo) || {}), colore: 'giocatore' } } };
+    const tema = self.Palestra.temaPalestra(aspetto, self.PaginaPubblica, self.Cosmetici);
     const radice = document.documentElement;
     for (const [nome, valore] of Object.entries(tema.variabili)) radice.style.setProperty(nome, valore);
     radice.style.setProperty('--colore-p2', tema.colore);
