@@ -140,7 +140,9 @@ function risolviSquadre() {
         if (S.squadre[lato].length) continue;
         const candidati = S.candidati[lato] || [];
         if (!candidati.length) continue;
-        let scelto = candidati.length === 1 ? candidati[0] : null;
+        // con un solo team registrato si sa già qual è, ma solo di chi si può vedere (il proprio lato, o una partita a team aperti): quello dell'avversario si scopre dall'anteprima, non prima
+        const visibile = S.latiNoti.includes(lato) || S.openSheet;
+        let scelto = candidati.length === 1 && visibile ? candidati[0] : null;
         const anteprima = S.battle?.[lato]?.pokemon || [];
         if (!scelto && anteprima.length && window.Dex) {
             const firma = specie => specie.map(x => idDi(window.Dex.species.get(x).baseSpecies)).sort().join('|');
