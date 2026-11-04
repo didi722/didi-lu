@@ -80,7 +80,7 @@ test('ogni layout e ogni blocco della configurazione ha il suo stile', () => {
     }
     // l'editor ha il disegnino di ogni layout e un componente per ogni scheda
     for (const id of Object.keys(P.LAYOUT)) assert.match(editor, new RegExp(`\\b${id}: \\[\\[`), `disegno del layout ${id}`);
-    for (const scheda of ['layout', 'blocchi', 'sfondo', 'carta', 'adesivi', 'contenuto']) {
+    for (const scheda of ['layout', 'sfondo', 'carta', 'adesivi', 'contenuto']) {
         assert.match(editor, new RegExp(`${scheda}: scheda[A-Z]\\w*`), scheda);
     }
 });
@@ -374,9 +374,9 @@ test('blocchi affiancati: l\'editor li propone (ancore di fianco), ha il tasto �
     assert.match(editor, /P\.senzaBlocco\(cfg\(\), idEscluso\)/);
     // di fianco solo a schermo intero
     assert.match(editor, /const affiancabile = !!C\.stato\.lineeIntero/);
-    // il tasto nel pannello
-    assert.match(editor, /P\.affianca\(c, b\.id, !b\.accanto\)/);
-    assert.match(editor, /'Beside the previous block'/);
+    // la scheda Blocks non c'è più: si trascina e si nasconde direttamente sulla carta (barra di ogni blocco, blocchi spenti come fantasmi)
+    assert.doesNotMatch(editor, /rigaBlocco|schedaBlocchi|\['blocchi', 'Blocks'\]/);
+    assert.match(editor, /sezione\('Blocks',/, 'il suggerimento sta nella scheda Layout');
     // le maniglie: tra due righe di blocchi ('linee') e tra due blocchi della stessa riga ('blocchi')
     assert.match(editor, /tipo: 'linee', quale: \[z, i\]/);
     assert.match(editor, /tipo: 'blocchi', quale: \[linea\[j\], linea\[j \+ 1\]\]/);
@@ -426,9 +426,8 @@ test('personalità: public.html la calcola dai numeri di tutta la lega e la pass
     assert.match(blocco, /stato\.vuoti\.personalita = !pronta;/);
     assert.match(blocco, /radar\(window\.Personalita\.ASSI, p\.assi\.map\(a => a\.valore\), \{ piccolo: true \}\)/);
     for (const vietato of ['innerHTML', 'outerHTML', 'insertAdjacentHTML']) assert.ok(!blocco.includes(vietato), vietato);
-    // in modifica un blocco vuoto dice perché (BLOCCHI.personalita.vuoto) e l'editor lo scrive nella lista dei blocchi
+    // in modifica un blocco vuoto dice perché (BLOCCHI.personalita.vuoto) e la carta lo scrive nel fantasma del blocco
     assert.match(card, /NOMI_BLOCCHI\[b\.id\]\.vuoto \|\| 'nothing to show yet'/);
-    assert.match(editor, /def\.vuoto \|\| 'Nothing to show yet'/);
 });
 
 test('targhette: il titolo e il nome della personalità stanno nel blocco del nome o sul palco, e si rifanno solo quando cambia qualcosa', () => {
@@ -453,15 +452,16 @@ test('targhette: il titolo e il nome della personalità stanno nel blocco del no
     assert.match(cssCard, /\.pp-titolo-riga\[hidden\] \{ display: none; \}/);
 });
 
-test('editor: la scheda Content ha le targhette (nome, palco, nascoste) e il blocco Personality si accende dalla scheda Blocks', () => {
+test('editor: la scheda Content ha le targhette (nome, palco, nascoste) e il blocco Personality si accende dalla carta (fantasma "hidden — click to show")', () => {
     const contenuto = editor.slice(editor.indexOf('function schedaContenuto'), editor.indexOf('// ---- Il pannello'));
     assert.match(contenuto, /sezione\('Tags'/);
     assert.match(contenuto, /Object\.entries\(P\.TARGHETTE\)/);
     assert.match(contenuto, /segmentato\(Object\.entries\(P\.POSTI_TARGHETTA\), cfg\(\)\.targhette\[id\]/);
     assert.match(contenuto, /c\.targhette\[id\] = posto;/);
     assert.match(cssEditor, /\.pe-targhetta \{/);
-    // la scheda Blocks elenca tutti i blocchi dello schema: Personality compare da sola
-    assert.match(editor, /per\[z\]\.map\(\(b, i\) => rigaBlocco\(b, i, per\[z\]\.length\)\)/);
+    // in modifica la carta mostra tutti i blocchi dello schema, anche quelli spenti (fantasma): Personality si accende con un clic
+    assert.match(card, /hidden — click to show/);
+    assert.match(card, /window\.PublicEditor\.accendi\(id\)/);
     assert.ok(Object.keys(P.BLOCCHI).includes('personalita'));
     // le targhette stanno nel campo pagina: l'editor salva la configurazione intera (e non la scrive se è quella di partenza)
     assert.match(editor, /const daSalvare = P\.copia\(cfg\(\)\);/);

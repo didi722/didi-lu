@@ -33,11 +33,10 @@
     let storia = [];              // com'era prima di ogni modifica (configurazione e profilo), per "undo"
     let ultimaChiave = '';
     let ultimoTempo = 0;
-    let trascinato = null;        // id del blocco che si sta trascinando
     let ascoltatori = [];         // [bersaglio, evento, funzione] da togliere alla chiusura
     let avviso = null;
 
-    const SCHEDE = [['layout', 'Layout'], ['blocchi', 'Blocks'], ['sfondo', 'Background'], ['carta', 'Card'], ['adesivi', 'Stickers'], ['contenuto', 'Content']];
+    const SCHEDE = [['layout', 'Layout'], ['sfondo', 'Background'], ['carta', 'Card'], ['adesivi', 'Stickers'], ['contenuto', 'Content']];
     const estensioni = [];        // schede aggiunte da altri file (la scheda Trainer): { id, nome, disegna(contesto) }
     const cfg = () => C.stato.config;
     const colore = () => C.stato.dati.colore;
@@ -141,6 +140,8 @@
                 onclick: () => cambia(c => P.impostaLayout(c, id)) },
             disegno(id), h('b', { testo: l.nome }), h('small', { testo: l.desc }))))),
         h('p', { class: 'pe-nota', testo: 'The blocks stay where you put them: switching layout only changes how the three zones are drawn (and brings the sizes back to the layout\'s own). Whatever you pick, the Stage stays the biggest block.' }),
+        sezione('Blocks',
+            h('p', { class: 'pe-nota', testo: 'Grab a block by its handle (⠇) on the card and drop it where it fits: the spots it can take light up. Drop it next to another block (a bar along its side) to put the two on the same row. The eye (◉) hides a block; a hidden block stays on the card as a ghost: click it to show it again.' })),
         sezione('Sizes',
             h('p', { class: 'pe-nota', testo: 'On a computer, drag the handles between blocks on the card to resize them: one grows, its neighbours shrink, down to the smallest size where everything is still readable. Double-click a handle to reset that pair. On a phone the blocks fit themselves.' }),
             h('button', { type: 'button', class: 'pe-bottone', id: 'pe-azzera-misure', disabled: P.uguali(cfg().misure, P.predefinita().misure),
@@ -157,34 +158,6 @@
     }
 
     // ---- Scheda: blocchi ----------------------------------------------------------------------
-
-    function schedaBlocchi() {
-        const per = P.blocchiPerZona(cfg());
-        const zone = P.LAYOUT[cfg().layout].zone;
-        return [
-            h('p', { class: 'pe-nota', testo: 'Show, hide and move the blocks. You can also grab a block right on the card and drop it where it fits: the spots it can take light up. Drop it next to another block (a bar along its side) to put the two on the same row, or use ⇄ to put a block beside the one before it. To make a block bigger or smaller, drag the handles on the card between blocks (Layout tab › Sizes).' }),
-            ...P.ZONE.map(z => h('section', { class: 'pe-zona', 'data-zona': z },
-                h('h3', {}, h('span', { class: 'pe-zona-lettera', testo: z.toUpperCase() }), zone[z]),
-                h('ul', { class: 'pe-lista', 'data-zona': z }, per[z].length
-                    ? per[z].map((b, i) => rigaBlocco(b, i, per[z].length))
-                    : h('li', { class: 'pe-vuota', testo: 'Empty — drop a block here' }))))
-        ];
-    }
-
-    function rigaBlocco(b, i, quanti) {
-        const def = P.BLOCCHI[b.id];
-        const vuoto = !!C.stato.vuoti[b.id];
-        const icona = (titolo, testo, attivo, fn, disabilitato) => h('button', { type: 'button', class: 'pe-icona', title: titolo, 'aria-label': titolo, disabled: disabilitato, 'aria-pressed': attivo === undefined ? null : String(attivo), onclick: fn, testo });
-        return h('li', { class: `pe-riga${b.on ? '' : ' is-spento'}`, 'data-id': b.id, draggable: 'true' },
-            h('span', { class: 'pe-presa', 'aria-hidden': 'true', testo: '⠇' }),
-            h('span', { class: 'pe-riga-nome' }, h('b', { testo: def.nome }), h('small', { testo: vuoto ? (def.vuoto || 'Nothing to show yet') : def.desc })),
-            icona(b.on ? 'Hide' : 'Show', b.on ? '◉' : '○', b.on, () => cambia(c => P.accendi(c, b.id, !b.on))),
-            icona('Move up', '▲', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i - 1)), i === 0),
-            icona('Move down', '▼', undefined, () => cambia(c => P.sposta(c, b.id, b.zona, i + 1)), i === quanti - 1),
-            icona(b.accanto ? 'On its own row' : 'Beside the previous block', '⇄', !!b.accanto, () => cambia(c => P.affianca(c, b.id, !b.accanto)), i === 0),
-            h('span', { class: 'pe-zone', role: 'group', 'aria-label': 'Zone' }, P.ZONE.map(z =>
-                h('button', { type: 'button', class: z === b.zona ? 'is-on' : '', title: `Move to zone ${z.toUpperCase()}`, onclick: () => z !== b.zona && cambia(c => P.sposta(c, b.id, z, 999)), testo: z.toUpperCase() }))));
-    }
 
     // ---- Scheda: sfondo -----------------------------------------------------------------------
 
@@ -415,7 +388,7 @@
 
     // ---- Il pannello --------------------------------------------------------------------------
 
-    const CONTENUTI = { layout: schedaLayout, blocchi: schedaBlocchi, sfondo: schedaSfondo, carta: schedaCarta, adesivi: schedaAdesivi, contenuto: schedaContenuto };
+    const CONTENUTI = { layout: schedaLayout, sfondo: schedaSfondo, carta: schedaCarta, adesivi: schedaAdesivi, contenuto: schedaContenuto };
 
     // Le schede aggiunte da altri file (Trainer) vengono prima delle altre
     const esciDallaScheda = () => estensioni.forEach(x => { if (x.esci) x.esci(); });
@@ -458,7 +431,6 @@
             t.classList.toggle('is-on', attiva);
             t.setAttribute('aria-selected', String(attiva));
         }
-        collegaTrascinamentoPannello(corpo);
         aggiornaPiede();
     }
 
@@ -692,7 +664,6 @@
     }
 
     function fineTrascinamento() {
-        trascinato = null;
         document.querySelectorAll('.pp-sopra, .pp-in-volo, .pe-sopra, .pe-in-volo').forEach(e => e.classList.remove('pp-sopra', 'pp-in-volo', 'pe-sopra', 'pe-in-volo'));
         document.getElementById('pp-ancore')?.remove();
         document.body.classList.remove('pp-trascina');
@@ -723,36 +694,6 @@
 
     function togliBarre() {
         document.querySelectorAll('.pp-barra-blocco').forEach(e => e.remove());
-    }
-
-    // Anche le righe del pannello si trascinano tra le zone
-    function collegaTrascinamentoPannello(corpo) {
-        for (const riga of corpo.querySelectorAll('.pe-riga[data-id]')) {
-            riga.addEventListener('dragstart', e => {
-                trascinato = riga.dataset.id;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', trascinato);
-                setTimeout(() => riga.classList.add('pe-in-volo'), 0);
-            });
-            riga.addEventListener('dragend', fineTrascinamento);
-        }
-        for (const lista of corpo.querySelectorAll('.pe-lista[data-zona]')) {
-            lista.addEventListener('dragover', e => { if (!trascinato) return; e.preventDefault(); lista.classList.add('pe-sopra'); });
-            lista.addEventListener('dragleave', e => { if (!lista.contains(e.relatedTarget)) lista.classList.remove('pe-sopra'); });
-            lista.addEventListener('drop', e => {
-                if (!trascinato) return;
-                e.preventDefault();
-                const id = trascinato, zona = lista.dataset.zona;
-                const righe = Array.from(lista.querySelectorAll('.pe-riga[data-id]')).filter(r => r.dataset.id !== id);
-                let indice = righe.length;
-                for (let i = 0; i < righe.length; i++) {
-                    const r = righe[i].getBoundingClientRect();
-                    if (e.clientY < r.top + r.height / 2) { indice = i; break; }
-                }
-                trascinato = null;
-                cambia(c => P.sposta(c, id, zona, indice));
-            });
-        }
     }
 
     // ---- Ridimensionare i blocchi -------------------------------------------------------------
