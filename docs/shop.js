@@ -348,7 +348,7 @@
     }
 
     // ---------------------------------------------------------------- Coins
-    const htmlMonete = () => `<section class="ng-gruppo"><h3>Earning coins</h3><p>${esc(N.notaPremi())}</p></section>${N.guidaHtml()}${N.movimentiHtml(S.movimenti)}`;
+    const htmlMonete = () => `<section class="ng-gruppo"><h3>Earning coins</h3>${N.premiHtml()}</section>${N.movimentiHtml(S.movimenti)}`;
 
     // ---------------------------------------------------------------- disegno
     function disegna(tieniScorrimento) {

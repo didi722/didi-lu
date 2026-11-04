@@ -12,7 +12,7 @@ const C = require('../docs/cosmetici.js');
 
 const leggi = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
 // la pagina dello Shop vista come un testo solo (le sezioni le mette shop.js): catalogo, guida e ultimi movimenti
-const pagina = s => N.catalogoHtml(s) + N.guidaHtml() + N.movimentiHtml((s || {}).movimenti);
+const pagina = s => N.catalogoHtml(s) + N.movimentiHtml((s || {}).movimenti);
 
 test('html: saldo, le tre categorie, compra con il prezzo (spento se mancano monete), "Put on"/"Take off" per ciò che si ha, i movimenti più recenti prima; testo protetto', () => {
     const h = pagina({ saldo: 650, posseduti: { 'aura-oro': 1 }, info: { aura: 'aura-oro', pkmShiny: false }, movimenti: [{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }] });
@@ -153,15 +153,15 @@ test('shinyTeamHtml: una carta per Pokémon con gif grande, tag col nome e pulsa
 
 test('negozio: i guadagni nel testo vengono da PREMI, la guida dice dove si spendono avatar, canzoni e shiny; "free" nei movimenti a zero; le frasi degli errori nuovi', () => {
     const P = C.PREMI;
-    const nota = N.notaPremi();
-    assert.match(nota, new RegExp(`a season set pays ${P.set.ufficiale.giocato}, or ${P.set.ufficiale.giocato + P.set.ufficiale.vinto} if you win it`));
-    assert.match(nota, new RegExp(`a friendly pays ${P.set.amichevole.giocato} or ${P.set.amichevole.giocato + P.set.amichevole.vinto} \\(up to ${P.tettoAmichevoliGiorno} a day\\)`));
-    const g = N.guidaHtml();
-    const L = C.LIMITI;
-    assert.match(g, new RegExp(`Avatars \\(${C.PREZZI.avatar} 🪙\\), colours \\(${C.PREZZI.colore} 🪙\\) and songs \\(${C.PREZZI.canzone} 🪙\\) are in the <b>Trainer</b> tab`));
-    assert.match(g, new RegExp(`Your first one of each is free, and each one belongs to a single trainer\\. You can have ${L.avatar} avatars, ${L.colore} colours and ${L.canzone} songs at most: to get another one you release one of yours \\(free\\) and it goes back to the pool for everyone\\. Wearing one you already have is always free`));
-    const fasce = C.fasceShiny().map(f => f.prezzo);
-    assert.match(g, new RegExp(`Shiny Pokémon \\(${Math.min(...fasce)}–${Math.max(...fasce)} 🪙, the rarer the species the more it costs\\) are in the <b>Pokémon</b> tab`));
+    const nota = N.premiHtml();
+    const li = (testo, n) => assert.ok(nota.includes(`<li><span>${testo}</span><b>+${n} 🪙</b></li>`), testo);
+    li('Season set played', P.set.ufficiale.giocato); li('Season set won', P.set.ufficiale.giocato + P.set.ufficiale.vinto);
+    li('Friendly set played', P.set.amichevole.giocato); li('Friendly set won', P.set.amichevole.giocato + P.set.amichevole.vinto);
+    li('New bronze badge', P.badge[1]); li('New silver badge', P.badge[2]); li('New gold badge', P.badge[3]);
+    li('Season won', P.stagioneVinta); li('Season MVP', P.mvp);
+    assert.match(nota, new RegExp(`^<ul class="ng-premi">`));
+    assert.match(nota, new RegExp(`Friendly sets pay up to ${P.tettoAmichevoliGiorno} 🪙 a day`));
+    assert.equal(N.guidaHtml, undefined, 'il blocco "How it works" non c\'è più');
     const m = N.movimentiHtml([{ t: Date.UTC(2026, 10, 2), importo: 20, motivo: 'Season set won' }, { t: Date.UTC(2026, 10, 3), importo: -150, motivo: '<b>Bought</b>' }, { t: Date.UTC(2026, 10, 3), importo: 0, motivo: 'Free: Avatar 12' }]);
     assert.match(m, /Free: Avatar 12<\/span><b class="ng-piu">free<\/b>/);
     assert.match(m, /&lt;b&gt;Bought&lt;\/b&gt;/);
