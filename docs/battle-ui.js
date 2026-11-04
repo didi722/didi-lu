@@ -1375,22 +1375,21 @@ function vestiPalestra(gym) {
 }
 
 // Partite tra due allenatori (ufficiali, amichevoli, prove dal sito): lo sfondo è la "carta di sfida" dei due. La pagina è divisa in diagonale: a sinistra lo sfondo della pagina pubblica
-// del primo (colore, motivo, nome gigante) con il suo avatar grande e il suo Pokémon compagno, a destra lo stesso per il secondo (stile in style-versus.css).
+// del primo (colore, motivo, nome gigante) con il suo avatar grande, a destra lo stesso per il secondo (stile in style-versus.css).
 async function vestiVersus(nomeP1, nomeP2) {
     try {
         if (document.body.classList.contains('palestra') || !window.firebase || !self.Palestra) return;
         const db = firebase.database();
         const [a1, a2] = await Promise.all([caricaAspetto(db, nomeP1), caricaAspetto(db, nomeP2)]);
-        const SP = self.SpritePkm;
         const lato = (a, nome, classe) => {
-            const t = self.Palestra.temaPalestra(a, self.PaginaPubblica, self.Cosmetici);
+            // lo sfondo è il colore principale dell'allenatore (con i puntini), non lo sfondo della sua pagina pubblica
+            const t = self.Palestra.temaPalestra({ ...a, pagina: null }, self.PaginaPubblica, self.Cosmetici);
             const box = el('div', { class: `vs-lato ${classe}` });
             for (const [k, v] of Object.entries(t.variabili)) box.style.setProperty(k, v);
             const testo = String(nome || a.nome || '').toUpperCase();
             const righe = Array.from({ length: 6 }, (_, k) => el('div', { class: 'vs-scritta-riga', style: `--k:${k}`, testo: `${testo} ${testo} ${testo}` }));
             box.append(el('div', { class: 'vs-scritta', 'aria-hidden': 'true' }, righe));
             if (t.avatar) box.append(el('img', { class: 'vs-avatar', src: t.avatar, alt: '', draggable: 'false', style: t.aura ? `--pal-aura:${t.aura.colore}` : null, onerror: ev => ev.target.remove() }));
-            if (a.compagno && SP) box.append(el('img', { class: 'vs-compagno', src: SP.gif(a.compagno.nome, a.compagno.shiny), alt: '', draggable: 'false', 'data-pkm': a.compagno.nome, onerror: ev => { if (!SP.ritenta(ev.target)) ev.target.remove(); } }));
             return box;
         };
         const sinistra = lato(a1, nomeP1, 'vs-sx'), destra = lato(a2, nomeP2, 'vs-dx');
@@ -1400,6 +1399,21 @@ async function vestiVersus(nomeP1, nomeP2) {
         document.querySelector('.vs-sfondo')?.remove();
         document.body.prepend(fondo);
         document.body.classList.add('versus');
+        // gli avatar stanno centrati sotto le colonne dei player (le griglie dei 6 Pokémon): così si vedono a ogni misura di schermo
+        const posiziona = () => {
+            for (const [classe, colonna] of [['vs-sx', 'left'], ['vs-dx', 'right']]) {
+                const avatar = fondo.querySelector(`.${classe} .vs-avatar`);
+                if (!avatar) continue;
+                const colonne = ['lato-p1', 'lato-p2'].map(id => $(id)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width > 0);
+                if (colonne.length < 2) continue;
+                colonne.sort((x, y) => x.left - y.left);
+                const r = colonna === 'left' ? colonne[0] : colonne[1];
+                avatar.style.setProperty('--vs-x', `${Math.round(r.left + r.width / 2)}px`);
+            }
+        };
+        posiziona();
+        window.addEventListener('resize', posiziona);
+        setInterval(posiziona, 700);       // il tavolo si rimisura da solo (battle-layout.js)
     } catch (e) {
         console.warn('Versus background not drawn', e);
     }

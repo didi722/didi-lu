@@ -310,7 +310,7 @@ test('permanente: meteo, terreno, Trick Room e Tailwind non si tolgono né si so
     } finally { fs.unlinkSync(copia); }
 });
 
-test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagonale (avatar, nome gigante, compagno)', () => {
+test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagonale (avatar, nome gigante)', () => {
     const bu = leggi('docs', 'battle-ui.js');
     assert.match(bu, /async function vestiVersus\(nomeP1, nomeP2\)/);
     assert.equal((bu.match(/vestiVersus\(info\.p1\.nome, info\.p2\.nome\);/g) || []).length, 2, 'ufficiale e amichevole');
@@ -320,7 +320,7 @@ test('sfondo "sfida": partite tra due allenatori con lo sfondo diviso in diagona
     assert.match(leggi('docs', 'team-sito.js'), /export async function caricaAspetto\(db, nomeAllenatore\)/);
     assert.match(leggi('docs', 'battle.html'), /href="style-versus\.css"/);
     const css = leggi('docs', 'style-versus.css');
-    for (const re of [/\.vs-sx \{ clip-path: polygon/, /\.vs-dx \{ clip-path: polygon/, /\.vs-taglio/, /\.vs-scritta-riga/, /\.vs-avatar/, /\.vs-compagno/, /html\.app \.vs-sfondo \{ display: none; \}/]) assert.match(css, re);
+    for (const re of [/\.vs-sx \{ clip-path: polygon/, /\.vs-dx \{ clip-path: polygon/, /\.vs-taglio/, /\.vs-scritta-riga/, /\.vs-avatar/, /html\.app \.vs-sfondo \{ display: none; \}/]) assert.match(css, re);
 });
 
 test('admin: eliminare un giocatore chiede due conferme e passa dalla Function che toglie anche l\'account Authentication', () => {
@@ -334,4 +334,10 @@ test('admin: eliminare un giocatore chiede due conferme e passa dalla Function c
     assert.match(fn, /ruolo !== 'admin'/, 'solo un admin');
     assert.match(fn, /getAuth\(\)\.deleteUser\(uid\)/);
     assert.match(fn, /Non puoi eliminare te stesso/);
+});
+
+test('anteprima: con un solo team registrato l\'avversario non si svela prima del team preview (solo il proprio lato o i team aperti)', () => {
+    const be = leggi('docs', 'battle-extra.js');
+    assert.match(be, /const visibile = S\.latiNoti\.includes\(lato\) \|\| S\.openSheet;/);
+    assert.match(be, /candidati\.length === 1 && visibile \? candidati\[0\] : null/);
 });

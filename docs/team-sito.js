@@ -328,22 +328,16 @@ export async function caricaTappaPalestra(db, idGym, numeroTappa) {
 // -----------------------------------------------------
 // 7. L'ASPETTO DI UN ALLENATORE (lo sfondo "sfida" delle partite)
 // -----------------------------------------------------
-// Dalla sua pagina pubblica: colore, avatar, sfondo, aura e il Pokémon compagno (shiny se lo è nel suo Box). Ritorna { nome, colore, avatar, pagina, aura, effettoNome, effettoPalco, compagno: { nome, shiny } | null }.
+// Dalla sua pagina pubblica: colore, avatar, sfondo, aura ed effetti. Ritorna { nome, colore, avatar, pagina, aura, effettoNome, effettoPalco }.
 // Non lancia mai: se qualcosa manca si usano i valori di partenza (Palestra.temaPalestra li gestisce).
 export async function caricaAspetto(db, nomeAllenatore) {
     const id = String(nomeAllenatore || '').toLowerCase().trim();
-    const vuoto = { nome: String(nomeAllenatore || ''), colore: '', avatar: '', pagina: null, aura: '', effettoNome: '', effettoPalco: '', compagno: null };
+    const vuoto = { nome: String(nomeAllenatore || ''), colore: '', avatar: '', pagina: null, aura: '', effettoNome: '', effettoPalco: '', };
     if (!id) return vuoto;
     try {
         const info = (await db.ref(`players/${id}/info`).once('value')).val() || {};
-        let shiny = false;
-        if (info.pkmBox && info.pkmPreferito && self.Cosmetici) {
-            const teams = (await db.ref(`players/${id}/teams`).once('value')).val() || {};
-            shiny = !!self.Cosmetici.compagnoShiny(info, teams);
-        }
         return {
-            nome: String(info.name || nomeAllenatore), colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco,
-            compagno: info.pkmPreferito ? { nome: String(info.pkmPreferito), shiny } : null
+            nome: String(info.name || nomeAllenatore), colore: info.color, avatar: info.avatar, pagina: info.pagina, aura: info.aura, effettoNome: info.effettoNome, effettoPalco: info.effettoPalco
         };
     } catch (e) {
         return vuoto;
