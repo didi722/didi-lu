@@ -1,0 +1,212 @@
+/* =====================================================================
+   BATTLE IN UNA PALESTRA — il simulatore vestito come la palestra di chi la tiene
+   ---------------------------------------------------------------------
+   Si attiva solo con body.palestra (battle-ui.js, vestiPalestra). I colori, lo sfondo e il font sono quelli della pagina pubblica del capopalestra: le variabili
+   --pp-* arrivano da PaginaPubblica.variabiliCss, quelle --pal-* da Palestra.temaPalestra (cielo, pavimento, colore firma). Gli effetti del nome e del palco sono
+   quelli del negozio (effetti-pagina.css), l'aura è il bagliore intorno alla sua faccia.
+   Cosa cambia: lo sfondo della pagina, l'insegna, lo sfondo dello schermo (muro + pavimento al posto del paesaggio di Showdown), il cartello del vantaggio e quello di fine tappa.
+   ===================================================================== */
+
+/* ---------- Lo sfondo della pagina: quello della pagina pubblica del capopalestra ---------- */
+body.palestra { background: var(--pp-sfondo); }
+body.palestra::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1;
+    pointer-events: none;
+    background-color: var(--pp-sfondo);
+    background-image: var(--pp-sfondo-img);
+    background-size: var(--pp-sfondo-dim);
+    background-position: var(--pp-sfondo-pos);
+}
+/* il motivo scorre di una misura intera alla volta: il ciclo non si vede */
+body.palestra.pal-scorre::before {
+    inset: calc(var(--pp-periodo) * -1) 0 0 calc(var(--pp-periodo) * -1);
+    animation: pal-scorri 7s linear infinite;
+}
+@keyframes pal-scorri { to { transform: translate(var(--pp-periodo), var(--pp-periodo)); } }
+
+/* il nome gigante, solo contorno, dietro a tutto */
+.pal-scritta {
+    position: fixed; inset: 0; z-index: -1;
+    overflow: hidden; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: center;
+    opacity: 0.2;
+    transform: rotate(-9deg) scale(1.35);
+}
+.pal-scritta-riga {
+    font-family: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+    font-size: clamp(90px, 16vw, 250px);
+    line-height: 0.98;
+    white-space: nowrap;
+    color: transparent;
+    -webkit-text-stroke: 3px var(--pp-sfondo-ink);
+    margin-left: calc(var(--k) * -11vw - 6vw);
+}
+
+/* ---------- L'insegna: chi la tiene, la tappa, il vantaggio ---------- */
+html:not(.app) body.palestra .cab-insegna {
+    background-color: var(--pp-sfondo);
+    background-image: var(--pp-sfondo-img);
+    background-size: var(--pp-sfondo-dim);
+    background-position: var(--pp-sfondo-pos);
+    gap: 10px 12px;
+}
+html:not(.app) body.palestra .info-turno { gap: 10px 14px; align-items: center; }
+.ins-palestra {
+    display: inline-flex; align-items: center; gap: 10px;
+    box-sizing: border-box; max-width: 100%; min-width: 0;
+    padding: 5px 16px 5px 8px;
+    background: var(--pp-sup); color: var(--pp-ink);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    transform: rotate(-1.5deg);
+    font-family: var(--pp-font);
+}
+.pal-ins-faccia {
+    flex: none; width: 46px; height: 46px; object-fit: contain;
+    filter: drop-shadow(0 0 4px var(--pal-aura, transparent)) drop-shadow(0 0 12px var(--pal-aura, transparent));
+}
+.pal-ins-faccia[data-aura="aura-arcobaleno"] { animation: pal-aura-arcobaleno 4s linear infinite; }
+@keyframes pal-aura-arcobaleno {
+    0%, 100% { filter: drop-shadow(0 0 4px #ff3b3b) drop-shadow(0 0 12px #ff3b3b); }
+    25%      { filter: drop-shadow(0 0 4px #f4e03a) drop-shadow(0 0 12px #f4e03a); }
+    50%      { filter: drop-shadow(0 0 4px #3be07a) drop-shadow(0 0 12px #3be07a); }
+    75%      { filter: drop-shadow(0 0 4px #b04dff) drop-shadow(0 0 12px #b04dff); }
+}
+.pal-ins-testi { display: flex; flex-direction: column; min-width: 0; line-height: 1; }
+.pal-ins-piccolo {
+    font: 700 .62rem 'Josefin Sans', sans-serif; letter-spacing: .12em;
+    opacity: .75;
+}
+.pal-ins-nome {
+    --pp-nome: var(--pal-colore);
+    display: block; margin-top: 3px;
+    font-family: var(--pp-font);
+    font-size: calc(1.3rem / var(--pp-font-w, 1));
+    font-weight: 700; line-height: 1.05; text-transform: uppercase;
+    color: var(--pp-nome);
+    -webkit-text-stroke: 1.5px var(--pp-ink);
+    paint-order: stroke fill;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html:not(.app) body.palestra .ins-formato { background: var(--pp-ink); color: var(--pp-sup); transform: rotate(1.5deg); }
+
+/* il vantaggio, sempre in vista: tocca per rileggere cosa fa */
+.ins-vantaggio {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 14px 5px 8px;
+    background: var(--pal-colore); color: var(--pal-colore-ink);
+    border: var(--bordo); box-shadow: 4px 4px 0 var(--inchiostro);
+    font-family: 'Josefin Sans', sans-serif; text-align: left;
+    cursor: pointer;
+    transform: rotate(1.2deg);
+    transition: transform .12s ease, box-shadow .12s ease;
+    animation: pal-vantaggio-pulsa 1.6s ease-in-out 3;
+}
+.ins-vantaggio:hover { transform: translate(-3px, -3px) rotate(0deg); box-shadow: 7px 7px 0 var(--inchiostro); }
+.ins-vantaggio:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--inchiostro); }
+.ins-vantaggio-icona { font-size: 1.5rem; line-height: 1; }
+.ins-vantaggio-testi { display: flex; flex-direction: column; line-height: 1.05; text-transform: uppercase; }
+.ins-vantaggio-testi small { font-size: .6rem; font-weight: 700; letter-spacing: .12em; opacity: .8; }
+.ins-vantaggio-testi b { font-size: .95rem; white-space: nowrap; }
+@keyframes pal-vantaggio-pulsa { 0%, 100% { transform: rotate(1.2deg) scale(1); } 50% { transform: rotate(1.2deg) scale(1.08); } }
+
+/* ---------- Lo schermo: muro e pavimento della palestra al posto del paesaggio di Showdown ---------- */
+/* Il .backdrop di Showdown è 700x500 e sporge dallo schermo (640x360): l'orizzonte sta al 36% della sua altezza, dietro al Pokémon avversario. */
+body.palestra #campo .backdrop {
+    opacity: 1 !important;
+    background-color: var(--pal-cielo-a);
+    background-image:
+        linear-gradient(to bottom, transparent calc(100% - 4px), rgba(0, 0, 0, .55) calc(100% - 4px)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .1) 0 58px, transparent 58px 116px),
+        linear-gradient(to bottom, var(--pal-cielo-a), var(--pal-cielo-b)),
+        repeating-linear-gradient(to bottom, rgba(0, 0, 0, .12) 0 3px, transparent 3px 52px),
+        linear-gradient(to bottom, var(--pal-pavimento-a), var(--pal-pavimento-b)) !important;
+    background-size: 100% 36%, 100% 36%, 100% 36%, 100% 64%, 100% 64% !important;
+    background-position: 0 0, 0 0, 0 0, 0 100%, 0 100% !important;
+    background-repeat: no-repeat !important;
+}
+/* il motivo scelto dal capopalestra (punti, stelle, onde...) sul muro e sul pavimento */
+body.palestra #campo .backdrop::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: var(--pp-sfondo-img);
+    background-size: var(--pp-sfondo-dim);
+    background-position: var(--pp-sfondo-pos);
+    opacity: .7;
+}
+body.palestra #campo .battle { background: var(--pal-cielo-a); }
+
+/* l'effetto del palco del suo allenatore, davanti al campo (le regole degli effetti sono in effetti-pagina.css) */
+.pal-effetto {
+    position: absolute; inset: 0; z-index: 10;
+    overflow: hidden; pointer-events: none;
+    container-type: size;
+}
+.pal-effetto[hidden] { display: none; }
+
+/* ---------- Il cartello del vantaggio, sul campo ---------- */
+.pal-annuncio {
+    position: absolute; left: 50%; top: 50%; z-index: 22;
+    box-sizing: border-box; width: min(86%, 430px);
+    padding: 24px 22px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-align: center;
+    background: var(--pp-sup); color: var(--pp-ink);
+    border: var(--bordo-forte); box-shadow: 8px 8px 0 rgba(0, 0, 0, .55);
+    transform: translate(-50%, -50%) rotate(-1.5deg);
+    animation: pal-annuncio-entra .28s cubic-bezier(.175, .885, .32, 1.275);
+    font-family: var(--pp-font);
+}
+.pal-annuncio[hidden] { display: none; }
+@keyframes pal-annuncio-entra {
+    from { opacity: 0; transform: translate(-50%, -42%) rotate(-1.5deg) scale(.88); }
+    to   { opacity: 1; transform: translate(-50%, -50%) rotate(-1.5deg) scale(1); }
+}
+.pal-annuncio-nastro {
+    position: absolute; top: -14px; left: 50%;
+    max-width: 92%; box-sizing: border-box;
+    padding: 5px 14px 3px;
+    background: var(--pal-colore); color: var(--pal-colore-ink);
+    border: var(--bordo);
+    font: 700 .74rem 'Josefin Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transform: translateX(-50%) rotate(1.5deg);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .35);
+}
+.pal-annuncio-icona { font-size: 3rem; line-height: 1; margin-top: 4px; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, .25)); animation: pal-icona-balza 1.4s ease-in-out infinite; }
+@keyframes pal-icona-balza { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+.pal-annuncio-nome { margin: 0; font-size: 1.7rem; font-weight: 700; line-height: 1; text-transform: uppercase; color: var(--pp-nome); -webkit-text-stroke: 1.5px var(--pp-ink); paint-order: stroke fill; }
+.pal-annuncio-testo { margin: 2px 0 6px; font: 600 .86rem/1.35 'Montserrat', sans-serif; }
+.pal-annuncio .btn { margin-top: 2px; }
+.pal-annuncio.breve { padding: 20px 18px 12px; pointer-events: none; animation: pal-annuncio-entra .28s cubic-bezier(.175, .885, .32, 1.275), pal-annuncio-esce .5s ease-in 4s forwards; }
+.pal-annuncio.breve .pal-annuncio-icona { font-size: 2.2rem; }
+.pal-annuncio.breve .pal-annuncio-nome { font-size: 1.35rem; }
+.pal-annuncio.breve .pal-annuncio-testo { font-size: .78rem; margin-bottom: 2px; }
+@keyframes pal-annuncio-esce { to { opacity: 0; transform: translate(-50%, -58%) rotate(-1.5deg) scale(.95); } }
+
+/* ---------- Fine tappa: il cartello nei colori della palestra ---------- */
+html:not(.app) body.palestra .esito-card { background: var(--pp-sup); color: var(--pp-ink); }
+html:not(.app) body.palestra .esito-card h2 { background: var(--pal-colore); color: var(--pal-colore-ink); font-family: var(--pp-font); }
+
+/* ---------- Le colonne dei player: il lato della palestra nel suo colore ---------- */
+html:not(.app) body.palestra .lato-nome { font-family: var(--pp-font); }
+
+@media (max-width: 720px), (max-height: 520px) {
+    .pal-ins-faccia { width: 38px; height: 38px; }
+    .pal-ins-nome { font-size: calc(1.05rem / var(--pp-font-w, 1)); }
+    .ins-vantaggio-testi b { font-size: .8rem; }
+    /* lo schermo è basso (circa 190px): il cartello deve starci tutto */
+    .pal-annuncio { width: calc(100% - 20px); padding: 18px 12px 8px; gap: 2px; }
+    .pal-annuncio-nastro { font-size: .6rem; padding: 4px 10px 2px; top: -11px; }
+    .pal-annuncio-icona { font-size: 1.7rem; margin-top: 0; }
+    .pal-annuncio-nome { font-size: 1.1rem; }
+    .pal-annuncio-testo { font-size: .66rem; line-height: 1.25; margin: 0 0 4px; }
+    .pal-annuncio .btn { padding: 5px 12px 3px; font-size: .7rem; }
+    .pal-annuncio.breve .pal-annuncio-testo { display: none; }
+    .pal-annuncio.breve .pal-annuncio-icona { font-size: 1.5rem; }
+    .pal-annuncio.breve .pal-annuncio-nome { font-size: 1.05rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pal-annuncio, .pal-annuncio-icona, .ins-vantaggio, .pal-ins-faccia, body.palestra.pal-scorre::before { animation: none; }
+}

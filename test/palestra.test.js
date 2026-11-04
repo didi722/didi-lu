@@ -27,6 +27,7 @@ test('vantaggi: id unici, campo o boost, con la loro descrizione; quelli che esi
     assert.equal(new Set(P.VANTAGGI.map(v => v.id)).size, P.VANTAGGI.length);
     for (const v of P.VANTAGGI) {
         assert.ok(['campo', 'boost'].includes(v.tipo) && v.nome && v.descr, v.id);
+        assert.ok(v.icona && v.annuncio && v.annuncio.length > 30, `${v.id}: icona e testo dell'annuncio`);
         if (v.tipo === 'campo') assert.ok(v.cond && ['meteo', 'terreno', 'campo', 'lato'].includes(v.dove) && v.turni > 0, v.id);
         else assert.ok(v.boost && Object.values(v.boost).every(n => n === 2), v.id);
     }
@@ -138,19 +139,20 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     const mb = leggi('docs', 'motore-battaglia.js');
     assert.match(mb, /constructor\(\{ formato, p1, p2, vantaggio = null \}\)/);
     assert.match(mb, /if \(!fatto && this\.turn === 0\) \{/);
-    assert.match(mb, /self\.Palestra\.applica\(this, v\.id, v\.lato \|\| 'p2'\)/);
+    assert.match(mb, /self\.Palestra\.applica\(this, v\.id, v\.lato \|\| 'p2', v\.nome \|\| ''\)/);
     assert.match(mb, /if \(this\.vantaggio\) this\._preparaVantaggio\(flusso\.battle\);/);
     const bu = leggi('docs', 'battle-ui.js');
     assert.match(bu, /else if \(parametri\.get\('palestra'\)\) preparaPalestra\(parametri\.get\('palestra'\), parseInt\(parametri\.get\('tappa'\), 10\) \|\| 0, parametri\.get\('team'\)\);/);
-    assert.match(bu, /vantaggio: cpu && cpu\.palestra && cpu\.palestra\.vantaggio \? \{ id: cpu\.palestra\.vantaggio\.id, lato: 'p2' \} : null/);
+    assert.match(bu, /vantaggio: cpu && cpu\.palestra && cpu\.palestra\.vantaggio \? \{ id: cpu\.palestra\.vantaggio\.id, lato: 'p2', nome: cpu\.palestra\.nome \} : null/);
     assert.match(bu, /if \(cpu\.palestra\) return mostraFinePalestra\(vincitore\);/);
-    assert.match(bu, /A defeat sends you back to the first stage: the gym starts over\./);
+    assert.match(bu, /the challenge starts over from stage 1/, 'una sconfitta ricomincia da capo, con parole che incoraggiano');
+    assert.ok(!/A defeat sends you back to the first stage/.test(bu), 'niente più il testo freddo di prima');
     assert.match(bu, /String\(dati\.categoria[^\n]*\) !== String\(gym\.categoria[^\n]*\)\) throw new Error\(`That team is not for/);
-    assert.match(bu, /nomeTeam: 'Gym team'/, 'il team della palestra non si presenta col suo nome');
+    assert.match(bu, /nomeTeam: `\$\{gym\.nome\}'s gym team`/, 'il team della palestra non si presenta col nome del team del Box');
     assert.match(leggi('docs', 'battle.html'), /<script src="palestra\.js"><\/script>/);
     const ts = leggi('docs', 'team-sito.js');
     assert.match(ts, /export async function caricaTappaPalestra\(db, idGym, numeroTappa\)/);
-    assert.match(ts, /players\/\$\{id\}\/info\/palestra/);
+    assert.match(ts, /self\.Palestra\.tappeDi\(info\.palestra\)/, 'la configurazione della palestra viene da players/<id>/info');
     assert.match(ts, /players\/\$\{id\}\/teams\/\$\{tappa\.team\}/, 'il team segue il Box');
     const pc = leggi('docs', 'public-card.js');
     assert.match(pc, /function montaTastoPalestra\(mio, chiave\)/);
@@ -161,9 +163,91 @@ test('cablaggio: motore (vantaggio prima del turno 1), battle.html?cpu=1&palestr
     assert.match(leggi('docs', 'profile.html'), /href="palestra\.html\?edit=1">Set up your gym<\/a>/);
     const ui = leggi('docs', 'palestra-ui.js');
     assert.match(ui, /players\/\$\{S\.io\}\/info\/palestra/);
-    assert.match(ui, /Challengers never see your teams/);
-    assert.match(ui, /You don't know the gym's teams/);
+    assert.match(ui, /Challengers never get to peek at your teams/);
+    assert.match(ui, /against teams you've never seen/);
     assert.match(ui, /battle\.html\?cpu=1&palestra=/);
     assert.match(leggi('docs', 'palestra.html'), /<script src="palestra\.js"><\/script>\s*<script src="palestra-ui\.js"><\/script>/);
     assert.match(leggi('docs', 'style-palestra.css'), /body\.pg-palestra \{ overflow-x: hidden; overflow-y: auto; \}/);
+});
+
+test('annuncio: ogni vantaggio ha il suo testo (la neve diventa grandine prima della Gen 9) e il log lo scrive prima dell\'effetto', async () => {
+    assert.match(P.testoAnnuncio('tailwind', 9), /tailwind/i);
+    assert.match(P.testoAnnuncio('snow', 9), /blizzard/i);
+    assert.match(P.testoAnnuncio('snow', 8), /hailstorm/i);
+    assert.equal(P.testoAnnuncio('boh', 9), '');
+    // nel simulatore vero: una riga |-message| con "GYM ADVANTAGE" subito prima dell'effetto, il nome della palestra ripulito dai separatori del protocollo
+    const copia = path.join(os.tmpdir(), `pkmn-sim-annuncio-${process.pid}.mjs`);
+    fs.copyFileSync(path.join(__dirname, '..', 'docs', 'pkmn-sim.js'), copia);
+    try {
+        const { BattleStreams, Teams } = await import(pathToFileURL(copia).href);
+        const team = Teams.pack(Teams.import('Garchomp\nAbility: Rough Skin\nLevel: 50\n- Protect\n- Earthquake\n\nIncineroar\nAbility: Intimidate\nLevel: 50\n- Fake Out\n- Flare Blitz\n\nRillaboom\nLevel: 50\n- Fake Out\n- U-turn\n\nAmoonguss\nLevel: 50\n- Spore\n- Protect'));
+        for (const [id, nome, effetto] of [['tailwind', "Dodo|'s\nclub", /\|-sidestart\|p2: B\|move: Tailwind/], ['boost-att', 'Dodo', /\|-boost\|p2a: Garchomp\|atk\|2/]]) {
+            const flusso = new BattleStreams.BattleStream();
+            const s = BattleStreams.getPlayerStreams(flusso);
+            const log = []; (async () => { for await (const c of s.spectator) log.push(...c.split('\n')); })();
+            for (const l of ['p1', 'p2']) (async () => { for await (const c of s[l]) void c; })();
+            s.omniscient.write(`>start ${JSON.stringify({ formatid: 'gen9doublescustomgame@@@Picked Team Size = 4' })}\n>player p1 ${JSON.stringify({ name: 'A', team })}\n>player p2 ${JSON.stringify({ name: 'B', team })}`);
+            const originale = flusso.battle.endTurn.bind(flusso.battle);
+            flusso.battle.endTurn = function () { if (this.turn === 0) P.applica(this, id, 'p2', nome); return originale(); };
+            s.p1.write('team 1234'); s.p2.write('team 1234');
+            await new Promise(r => setTimeout(r, 150));
+            const prima = log.slice(0, log.findIndex(l => l.startsWith('|turn|1')));
+            const iMsg = prima.findIndex(l => l.startsWith('|-message|') && /GYM ADVANTAGE/.test(l));
+            assert.ok(iMsg >= 0, `${id}: la riga dell'annuncio c'è`);
+            assert.ok(iMsg < prima.findIndex(l => effetto.test(l)), `${id}: viene prima dell'effetto`);
+            assert.equal(prima[iMsg].split('|').length, 3, 'il nome non rompe il protocollo (nessun | in più)');
+            assert.match(prima[iMsg], /Dodo/);
+            assert.match(prima[iMsg], new RegExp(P.perId(id).nome.replace(/[+&.]/g, '.')));
+        }
+    } finally { fs.unlinkSync(copia); }
+});
+
+test('tema: i colori e gli effetti della pagina del capopalestra, solo da liste ammesse', () => {
+    const PP = require('../docs/pagina-pubblica.js'), C = require('../docs/cosmetici.js');
+    const t = P.temaPalestra({ colore: '#3399FF', avatar: 'immagini/profile/7.png', aura: 'aura-oro', effettoNome: 'nome-neon', effettoPalco: 'palco-neve',
+        pagina: { sfondo: { colore: '#17171C', motivo: 'stelle', forza: 3, scritta: true, animato: true } } }, PP, C);
+    assert.equal(t.colore, '#3399ff');
+    assert.deepEqual(t.aura, { id: 'aura-oro', colore: '#ffcc33' });
+    assert.equal(t.effettoNome, 'nome-neon');
+    assert.equal(t.effettoPalco, 'palco-neve');
+    assert.equal(t.scritta, 'on');
+    assert.equal(t.scorre, true, 'le stelle si ripetono: scorrono');
+    assert.equal(t.variabili['--pp-sfondo'], '#17171c');
+    assert.match(t.variabili['--pp-sfondo-img'], /^url\(/);
+    for (const k of ['--pal-colore', '--pal-colore-ink', '--pal-cielo-a', '--pal-cielo-b', '--pal-pavimento-a', '--pal-pavimento-b', '--pp-font', '--pp-nome']) assert.ok(t.variabili[k], k);
+    for (const k of ['--pal-cielo-a', '--pal-cielo-b', '--pal-pavimento-a', '--pal-pavimento-b']) assert.match(t.variabili[k], /^#[0-9a-f]{6}$/, k);
+    // niente di strano dal database: un cosmetico che non esiste o di un altro tipo, colori e motivi fuori lista, tutto torna alle scelte sicure
+    const sporco = P.temaPalestra({ colore: 'red; background:url(x)', avatar: 42, aura: 'palco-neve', effettoNome: 'aura-oro', effettoPalco: '"><img src=x>', pagina: { sfondo: { colore: 'expression(1)', motivo: '../../x', scritta: 1 } } }, PP, C);
+    assert.equal(sporco.aura, null); assert.equal(sporco.effettoNome, null); assert.equal(sporco.effettoPalco, null); assert.equal(sporco.avatar, '');
+    assert.match(sporco.colore, /^#[0-9a-f]{6}$/);
+    for (const [k, v] of Object.entries(sporco.variabili)) assert.ok(!/[;<>"]|expression|url\(x/.test(v) || k === '--pp-sfondo-img', `${k}: ${v}`);
+    // senza niente (un allenatore che non ha mai toccato la sua pagina): il suo colore con i puntini, come la sua pagina
+    const vuoto = P.temaPalestra({ colore: '#FF7B6B' }, PP, C);
+    assert.equal(vuoto.variabili['--pp-sfondo'], '#ff7b6b');
+    assert.equal(vuoto.effettoPalco, null);
+    // sfondo scuro: il muro non si schiarisce troppo, il pavimento è più scuro del muro
+    const lum = h => PP.luminanza(h);
+    assert.ok(lum(t.variabili['--pal-pavimento-b']) < lum(t.variabili['--pal-cielo-b']));
+});
+
+test('cablaggio del tema: pagina di battaglia, stili, vantaggio sempre in vista e cartello all\'ingresso e alla partenza', () => {
+    const html = leggi('docs', 'battle.html');
+    assert.match(html, /<link rel="stylesheet" href="style-battle\.css">\s*<link rel="stylesheet" href="effetti-pagina\.css">\s*<link rel="stylesheet" href="style-palestra-battaglia\.css">/, 'gli stili della palestra vengono dopo quelli della battaglia');
+    assert.match(html, /<script src="cosmetici\.js"><\/script>\s*<script src="pagina-pubblica\.js"><\/script>/);
+    assert.match(html, /id="pal-effetto"/); assert.match(html, /id="pal-annuncio"/);
+    const bu = leggi('docs', 'battle-ui.js');
+    assert.match(bu, /cpu\.palestra\.tema = vestiPalestra\(gym\);/);
+    assert.match(bu, /self\.Palestra\.temaPalestra\(gym\.aspetto, self\.PaginaPubblica, self\.Cosmetici\)/);
+    assert.match(bu, /document\.body\.classList\.add\('palestra'\)/);
+    assert.match(bu, /voci = cpu && cpu\.palestra \? vociInsegnaPalestra\(\)/, 'l\'insegna mostra chi tiene la palestra e il vantaggio');
+    assert.match(bu, /if \(cpu && cpu\.palestra\) mostraAnnuncioPalestra\(false\);/, 'cartello intero quando si entra');
+    assert.match(bu, /r\.startsWith\('\|turn\|1'\)\)\) mostraAnnuncioPalestra\(true\);/, 'cartello breve quando l\'effetto entra in gioco');
+    assert.match(bu, /nome: cpu && cpu\.palestra \? config\.p2\.nome : 'CPU'/, 'nelle colonne l\'avversario è il capopalestra, non "CPU"');
+    const ts = leggi('docs', 'team-sito.js');
+    assert.match(ts, /players\/\$\{id\}\/info`/);
+    assert.match(ts, /const aspetto = \{ colore: info\.color, avatar: info\.avatar, pagina: info\.pagina, aura: info\.aura, effettoNome: info\.effettoNome, effettoPalco: info\.effettoPalco \};/);
+    const css = leggi('docs', 'style-palestra-battaglia.css');
+    for (const re of [/body\.palestra \{ background: var\(--pp-sfondo\); \}/, /body\.palestra \.cab-insegna/, /body\.palestra #campo \.backdrop/, /\.pal-annuncio \{/, /\.ins-vantaggio \{/, /\.pal-effetto \{/, /prefers-reduced-motion/, /max-width: 720px/]) assert.match(css, re);
+    // il nero ha ombre scure semitrasparenti (regola del sito)
+    assert.match(css, /\.pal-annuncio \{[^}]*box-shadow: 8px 8px 0 rgba\(0, 0, 0, \.55\)/);
 });

@@ -61,8 +61,8 @@
                 <p class="pal-descr">${v ? esc(v.descr) : 'It starts at the beginning of the battle, before turn 1.'}</p>
             </article>`;
         }).join('');
-        $('pal-corpo').innerHTML = `<h2 class="pal-titolo">Your gym</h2>
-            <p class="pal-aiuto">Pick 3 doubles formats and a team from your Box for each, in the order challengers will face them. Every battle is doubles, bring 6 pick 4, played by the CPU. Each stage gives you an advantage that starts with the battle. Your teams follow your Box: if you edit them, the gym changes too. Challengers never see your teams.</p>
+        $('pal-corpo').innerHTML = `<h2 class="pal-titolo">Build your gym</h2>
+            <p class="pal-aiuto">Three stages, three doubles formats, one team each: pick them, and the order challengers will face them in. Every stage also hands you an edge that kicks in before turn 1 (a tailwind, a storm, a power-up…). The CPU plays your teams straight from your Box, so tweak a team and the gym changes with it. Challengers never get to peek at your teams. Make it tough!</p>
             <div class="pal-tappe">${tappe}</div>
             <div class="pal-azioni"><button type="button" class="ng-bottone ng-compra" id="pal-salva">Save my gym</button><button type="button" class="ng-bottone" id="pal-togli">Remove my gym</button><a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.io)}">Back to my page</a></div>`;
     }
@@ -101,10 +101,10 @@
                 const config = { tappe: S.bozza.map(t => ({ ...t, categoria: (S.regolamenti[t.formato] || {}).categoria || '' })) };
                 const problemi = P.problemi(config, { regolamenti: S.regolamenti, teams: S.mieiTeam.map(t => ({ id: t.id, categoria: t.categoria })) });
                 if (problemi.length) return msg(problemi[0], true);
-                try { await firebase.database().ref(`players/${S.io}/info/palestra`).set(config); msg('Your gym is saved.'); } catch (err) { msg("Couldn't save: check your connection and try again.", true); }
+                try { await firebase.database().ref(`players/${S.io}/info/palestra`).set(config); msg('Your gym is open for business. Challengers, beware!'); } catch (err) { msg("Couldn't save: check your connection and try again.", true); }
             }
             if (b.id === 'pal-togli') {
-                try { await firebase.database().ref(`players/${S.io}/info/palestra`).remove(); S.bozza = bozzaDa(null); msg('Your gym is removed.'); disegnaImposta(); } catch (err) { msg("Couldn't remove it: try again.", true); }
+                try { await firebase.database().ref(`players/${S.io}/info/palestra`).remove(); S.bozza = bozzaDa(null); msg('Your gym is closed. See you next time!'); disegnaImposta(); } catch (err) { msg("Couldn't remove it: try again.", true); }
             }
         });
     }
@@ -121,16 +121,16 @@
             const miei = teamPer(t.categoria);
             const scelto = sfida.squadre[i] && miei.some(x => x.id === sfida.squadre[i]) ? sfida.squadre[i] : '';
             return `<article class="pal-tappa pal-${stato}" data-i="${i}">
-                <header><h3>Stage ${i + 1}</h3><span class="pal-stato">${stato === 'done' ? 'Cleared ✓' : stato === 'next' ? 'Next' : 'Locked'}</span></header>
+                <header><h3>Stage ${i + 1}</h3><span class="pal-stato">${stato === 'done' ? '✓ Cleared' : stato === 'next' ? '▶ Up next' : '🔒 Locked'}</span></header>
                 <p class="pal-formato">${esc(t.categoria)}</p>
                 <label>Your team<select data-squadra="${i}">${opzioni(miei.map(x => [x.id, `${x.nome} (${x.quanti})`]), scelto, miei.length ? 'Pick a team from your Box' : 'You have no team for this format')}</select></label>
             </article>`;
         }).join('');
         $('pal-corpo').innerHTML = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2>
-            <p class="pal-aiuto">${P.TAPPE} stages, played in order against the CPU. Every battle is doubles, bring 6 pick 4. You don't know the gym's teams. If you lose a battle, you start over from the first stage. Pick the team you bring for each format now.</p>
+            <p class="pal-aiuto">${P.TAPPE} stages, one after the other, against teams you've never seen. Every battle is doubles: bring 6, pick 4. And no pressure, but one defeat sends you right back to stage 1! Choose the team you'll bring for each format, then walk in.</p>
             <div class="pal-tappe">${carte}</div>
             <div class="pal-azioni">
-                <button type="button" class="ng-bottone ng-compra" id="pal-via">${finita ? 'Challenge again' : vinte > 0 ? `Continue · stage ${vinte + 1}` : 'Start the gym'}</button>
+                <button type="button" class="ng-bottone ng-compra" id="pal-via">${finita ? 'Take it on again' : vinte > 0 ? `On to stage ${vinte + 1}` : 'Enter the gym'}</button>
                 ${vinte > 0 && !finita ? '<button type="button" class="ng-bottone" id="pal-da-capo">Start over</button>' : ''}
                 <a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(S.gym)}">Back to ${esc(S.gymNome)}'s page</a>
             </div>`;
@@ -146,7 +146,7 @@
         };
         const parti = vinte => {
             const sq = squadreScelte();
-            if (sq.some(x => !x)) return msg('Pick a team for every format before you start.', true);
+            if (sq.some(x => !x)) return msg('Pick a team for every stage before you walk in!', true);
             const sfida = salva(vinte);
             window.location.href = `battle.html?cpu=1&palestra=${encodeURIComponent(S.gym)}&tappa=${vinte}&team=${encodeURIComponent(sfida.squadre[vinte])}`;
         };
@@ -156,7 +156,7 @@
             if (!b) return;
             const att = P.leggiSfida(window.localStorage, P.chiaveSfida(S.io, S.gym));
             if (b.id === 'pal-via') parti(att && !P.finita(att) ? att.vinte : 0);
-            if (b.id === 'pal-da-capo') { salva(0); disegnaSfida(); msg('Back to the first stage.'); }
+            if (b.id === 'pal-da-capo') { salva(0); disegnaSfida(); msg('Back to stage 1: fresh start!'); }
         });
     }
 
@@ -177,7 +177,7 @@
                 const [config, nome] = await Promise.all([leggi(`players/${altro}/info/palestra`), leggi(`players/${altro}/info/name`)]);
                 S.gymConfig = config; S.gymNome = String(nome || altro);
                 $('pal-corpo').hidden = false;
-                if (P.tappeDi(config).length !== P.TAPPE) $('pal-corpo').innerHTML = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2><p class="pal-aiuto">This trainer has no gym yet.</p><div class="pal-azioni"><a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(altro)}">Back to ${esc(S.gymNome)}'s page</a></div>`;
+                if (P.tappeDi(config).length !== P.TAPPE) $('pal-corpo').innerHTML = `<h2 class="pal-titolo">${esc(S.gymNome)}'s gym</h2><p class="pal-aiuto">${esc(S.gymNome)} hasn't built a gym yet. Check back soon!</p><div class="pal-azioni"><a class="ng-bottone pal-link" href="public.html?player=${encodeURIComponent(altro)}">Back to ${esc(S.gymNome)}'s page</a></div>`;
                 else { disegnaSfida(); collegaSfida(); }
             }
         } catch (e) { msg("Couldn't load the gym. Check your connection and reload the page.", true); }

@@ -74,7 +74,7 @@ export class BattagliaLocale {
         battle.endTurn = function () {
             if (!fatto && this.turn === 0) {
                 fatto = true;
-                try { self.Palestra.applica(this, v.id, v.lato || 'p2'); } catch (errore) { console.warn('Gym advantage not applied:', errore); }
+                try { self.Palestra.applica(this, v.id, v.lato || 'p2', v.nome || ''); } catch (errore) { console.warn('Gym advantage not applied:', errore); }
             }
             return originale();
         };

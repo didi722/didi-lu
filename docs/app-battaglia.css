@@ -89,6 +89,22 @@
     html.app .ins-punti:first-child { border-right: 2px solid #000; }
     html.app .ins-punti:last-child { border-left: 2px solid #000; }
     html.app .ins-set { padding: 3px 6px 1px; font-size: .62rem; color: #fff; }
+    /* Palestra (style-palestra-battaglia.css): chi la tiene e il vantaggio, piccoli come le altre voci dell'insegna. Lo sfondo della pagina è quello del capopalestra */
+    html.app body.palestra { background: transparent; }
+    html.app .ins-palestra { flex: none; min-width: 0; padding: 2px 6px 2px 3px; gap: 5px; transform: none; border: 2px solid #000; border-radius: 6px; box-shadow: none; }
+    html.app .pal-ins-faccia { width: 24px; height: 24px; }
+    html.app .pal-ins-piccolo { display: none; }
+    html.app .pal-ins-nome { margin: 0; font-size: .74rem; -webkit-text-stroke: 1px var(--pp-ink); }
+    html.app .ins-vantaggio { flex: none; min-width: 0; padding: 2px 6px 2px 4px; gap: 5px; transform: none; border: 2px solid #000; border-radius: 6px; box-shadow: none; }
+    html.app .ins-vantaggio:hover, html.app .ins-vantaggio:active { transform: none; box-shadow: none; }
+    html.app .ins-vantaggio-icona { font-size: 1rem; }
+    html.app .ins-vantaggio-testi small { display: none; }
+    html.app .ins-vantaggio-testi b { font-size: .64rem; white-space: normal; line-height: 1.1; }
+    /* il cartello del vantaggio sta in alto sullo schermo (in basso ci sono i comandi, che a telefono coprono parte del campo) e sopra di loro, così "Got it!" si tocca */
+    html.app .pal-annuncio { top: 12px; transform: translateX(-50%) rotate(-1deg); z-index: 40; animation: pal-annuncio-entra-app .25s ease-out; }
+    html.app .pal-annuncio.breve { animation: pal-annuncio-entra-app .25s ease-out, pal-annuncio-esce-app .5s ease-in 4s forwards; }
+    @keyframes pal-annuncio-entra-app { from { opacity: 0; transform: translateX(-50%) translateY(-12px) rotate(-1deg); } to { opacity: 1; transform: translateX(-50%) rotate(-1deg); } }
+    @keyframes pal-annuncio-esce-app { to { opacity: 0; transform: translateX(-50%) translateY(-12px) rotate(-1deg); } }
     html.app .badge-live { flex: none; padding: 3px 6px 1px; font-size: .6rem; transform: none; border-radius: 6px; box-shadow: none; }
     html.app .cab-campo { height: auto; min-height: 0; margin: 0; flex-wrap: wrap; overflow: visible; }
     html.app .cab-campo .campo-voce { padding: 3px 7px 1px; font-size: .62rem; color: #000; border: 2px solid #000; border-radius: 6px; }

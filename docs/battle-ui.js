@@ -419,7 +419,8 @@ function schedeCpu() {
         openSheet: false,
         latiNoti: ['p1'],
         p1: { id: config.p1.id || '', nome: config.p1.nome, avatar: config.p1.avatar || '', candidati: [{ nome: config.p1.nomeTeam, set: setDaTeam(config.p1.team) }] },
-        p2: { nome: 'CPU', avatar: '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
+        // in palestra l'avversario è il capopalestra, con il suo nome e la sua faccia anche dentro lo schermo
+        p2: { nome: cpu && cpu.palestra ? config.p2.nome : 'CPU', avatar: (cpu && cpu.palestra && config.p2.avatar) || '', candidati: [{ nome: config.p2.nomeTeam, set: setDaTeam(config.p2.team).map(x => ({ species: x.species, name: x.name })) }] }
     });
 }
 
@@ -1333,44 +1334,118 @@ async function preparaPalestra(idGym, numeroTappa, chiaveTeam) {
     cpu = {
         cerebro: null, team: { testo: gym.team.testo, specie, piano: null, numero: 1 }, giocatore: dati, errori: 0, rqid: null,
         chiaveTeam, modificabile: false, avviso: '', problemi: [], ultimoVincitore: null, generando: false,
-        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio }
+        palestra: { id: gym.id, nome: gym.nome, tappa: numeroTappa, categoria: gym.categoria, vantaggio: gym.vantaggio, generazione: self.Palestra.generazioneDi(gym.regolamento), tema: null, timerAnnuncio: 0 }
     };
     config = {
         formato: dati.formato,
-        etichetta: `${gym.nome}'s gym · stage ${numeroTappa + 1}/${self.Palestra.TAPPE} · ${gym.categoria}`,
+        etichetta: `Stage ${numeroTappa + 1}/${self.Palestra.TAPPE} · ${gym.categoria}`,
         p1: { nome: dati.nome, id: dati.id, team: dati.team.testo, nomeTeam: dati.team.nome, avatar: dati.avatar },
-        p2: { nome: gym.nome, team: gym.team.testo, nomeTeam: 'Gym team' }
+        p2: { nome: gym.nome, team: gym.team.testo, nomeTeam: `${gym.nome}'s gym team`, avatar: gym.aspetto && gym.aspetto.avatar || '' }
     };
     if (dati.colore) document.documentElement.style.setProperty('--colore-p1', dati.colore);
+    cpu.palestra.tema = vestiPalestra(gym);
     impostaPannelli();
     schedeCpu();
     avviaBattaglia();
 }
 
+// La palestra sembra la palestra di chi la tiene: sfondo, colori, font ed effetti della sua pagina pubblica (Palestra.temaPalestra).
+// Le variabili finiscono sul <html>; il resto (sfondo del campo, insegna, cartelli) lo fa style-palestra-battaglia.css con body.palestra.
+function vestiPalestra(gym) {
+    const tema = self.Palestra.temaPalestra(gym.aspetto, self.PaginaPubblica, self.Cosmetici);
+    const radice = document.documentElement;
+    for (const [nome, valore] of Object.entries(tema.variabili)) radice.style.setProperty(nome, valore);
+    radice.style.setProperty('--colore-p2', tema.colore);
+    document.body.classList.add('palestra');
+    document.body.classList.toggle('pal-scorre', tema.scorre);
+    const effetto = $('pal-effetto');
+    effetto.dataset.effettoPalco = tema.effettoPalco || '';
+    effetto.hidden = !tema.effettoPalco;
+    // il nome gigante dietro a tutto, come sulla sua pagina (solo contorno)
+    if (tema.scritta) {
+        const nome = String(gym.nome || '').toUpperCase();
+        const scritta = el('div', { class: 'pal-scritta', 'aria-hidden': 'true' }, Array.from({ length: 7 }, (_, k) => el('div', { class: 'pal-scritta-riga', style: `--k:${k}`, testo: `${nome} ${nome} ${nome}` })));
+        document.body.prepend(scritta);
+    }
+    return tema;
+}
+
+/** L'insegna in alto nel simulatore, in palestra: chi la tiene (faccia, aura, nome con il suo font e il suo effetto), la tappa e il vantaggio, sempre in vista */
+function vociInsegnaPalestra() {
+    const g = cpu.palestra, t = g.tema, v = g.vantaggio;
+    const nome = String(g.nome || '').toUpperCase();
+    const faccia = t && t.avatar ? el('img', {
+        class: 'pal-ins-faccia', src: t.avatar, alt: '', draggable: 'false',
+        style: t.aura ? `--pal-aura:${t.aura.colore}` : null, 'data-aura': t.aura ? t.aura.id : null,
+        onerror: ev => ev.target.remove()
+    }) : null;
+    const insegna = el('span', { class: 'ins-palestra', title: `${g.nome}'s gym` },
+        faccia,
+        el('span', { class: 'pal-ins-testi' },
+            el('span', { class: 'pal-ins-piccolo', testo: 'GYM LEADER' }),
+            el('span', { class: 'pal-ins-nome', testo: nome, 'data-effetto-nome': t && t.effettoNome, 'data-testo': t && t.effettoNome ? nome : null })));
+    const tappa = el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta });
+    const vantaggio = v ? el('button', {
+        type: 'button', class: 'ins-vantaggio', title: self.Palestra.testoAnnuncio(v, g.generazione), 'aria-label': `Gym advantage: ${v.nome}. Tap for details`,
+        onclick: () => mostraAnnuncioPalestra(false)
+    }, el('span', { class: 'ins-vantaggio-icona', 'aria-hidden': 'true', testo: v.icona }), el('span', { class: 'ins-vantaggio-testi' }, el('small', { testo: 'Gym advantage' }), el('b', { testo: v.nome }))) : null;
+    return [insegna, tappa, vantaggio];
+}
+
+/**
+ * Il cartello sul campo che dice quale vantaggio ha la palestra. Intero (con "Got it!") quando si entra; breve (si spegne da solo) quando la partita parte e l'effetto
+ * entra davvero in gioco. Il vantaggio si riprende a ogni momento dal tasto nell'insegna.
+ */
+function mostraAnnuncioPalestra(breve) {
+    const g = cpu && cpu.palestra, v = g && g.vantaggio;
+    if (!v) return;
+    clearTimeout(g.timerAnnuncio);
+    const box = $('pal-annuncio');
+    box.className = `pal-annuncio${breve ? ' breve' : ''}`;
+    box.replaceChildren(
+        el('div', { class: 'pal-annuncio-nastro', testo: breve ? 'Gym advantage in play!' : `${g.nome}'s gym has an edge` }),
+        el('div', { class: 'pal-annuncio-icona', 'aria-hidden': 'true', testo: v.icona }),
+        el('h3', { class: 'pal-annuncio-nome', testo: v.nome }),
+        el('p', { class: 'pal-annuncio-testo', testo: self.Palestra.testoAnnuncio(v, g.generazione) }),
+        breve ? null : el('button', { type: 'button', class: 'btn primario', onclick: nascondiAnnuncioPalestra }, 'Got it!'));
+    box.hidden = false;
+    if (breve) g.timerAnnuncio = setTimeout(nascondiAnnuncioPalestra, 4500);
+}
+function nascondiAnnuncioPalestra() {
+    if (cpu && cpu.palestra) clearTimeout(cpu.palestra.timerAnnuncio);
+    $('pal-annuncio').hidden = true;
+}
+
 /** Alla fine di una tappa: si salvano i progressi e si propone cosa fare (la tappa dopo, o ricominciare) */
 function mostraFinePalestra(vincitore) {
     const P = self.Palestra, g = cpu.palestra;
+    nascondiAnnuncioPalestra();
     const vinto = !!vincitore && vincitore === config.p1.nome;
     const chiave = P.chiaveSfida(config.p1.id, g.id);
     let sfida = P.leggiSfida(localStorage, chiave) || P.nuovaSfida([cpu.chiaveTeam]);
     const alla = (testo, href, primario) => el('a', { class: `btn ${primario ? 'primario' : 'secondario'}`, href }, testo);
     const paginaPalestra = `palestra.html?player=${encodeURIComponent(g.id)}`;
+    const capo = String(g.nome || 'The gym leader');
     if (vinto) {
         sfida = { ...sfida, vinte: Math.max(sfida.vinte, g.tappa + 1) };
         P.salvaSfida(localStorage, chiave, sfida);
-        if (P.finita(sfida)) return mostraEsito('Gym cleared!', { sotto: `You beat all ${P.TAPPE} stages of ${g.nome}'s gym.`, azioni: [alla('Back to the gym', paginaPalestra, true)] });
+        if (P.finita(sfida)) return mostraEsito('🏆 Gym conquered!', { sotto: `${capo} bows to the new champion: all ${P.TAPPE} stages beaten. What a run!`, azioni: [alla('Back to the gym', paginaPalestra, true)] });
         const prossima = g.tappa + 1;
         const squadra = sfida.squadre[prossima];
-        return mostraEsito(`Stage ${g.tappa + 1} won!`, {
-            sotto: `${g.categoria} done · ${P.TAPPE - sfida.vinte} to go`,
-            azioni: [squadra ? alla('Next stage', `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=${prossima}&team=${encodeURIComponent(squadra)}`, true) : null, alla('Back to the gym', paginaPalestra, !squadra)].filter(Boolean)
+        const mancano = P.TAPPE - sfida.vinte;
+        return mostraEsito(`Stage ${g.tappa + 1} cleared!`, {
+            sotto: mancano === 1 ? `One more stage and ${capo}'s gym is yours. Don't blink!` : `${capo} is sweating already: ${mancano} stages to go. Keep the streak alive!`,
+            azioni: [squadra ? alla(`On to stage ${prossima + 1} →`, `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=${prossima}&team=${encodeURIComponent(squadra)}`, true) : null, alla('Back to the gym', paginaPalestra, !squadra)].filter(Boolean)
         });
     }
     sfida = P.azzera(sfida);
     P.salvaSfida(localStorage, chiave, sfida);
-    mostraEsito(!vincitore ? "It's a tie!" : `${g.nome}'s gym wins!`, {
-        sotto: 'A defeat sends you back to the first stage: the gym starts over.',
-        azioni: [alla('Start over', sfida.squadre[0] ? `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=0&team=${encodeURIComponent(sfida.squadre[0])}` : paginaPalestra, true), alla('Back to the gym', paginaPalestra, false)]
+    const ripartenza = sfida.squadre[0] ? `battle.html?cpu=1&palestra=${encodeURIComponent(g.id)}&tappa=0&team=${encodeURIComponent(sfida.squadre[0])}` : paginaPalestra;
+    mostraEsito(vincitore ? `${capo} holds the gym!` : 'A draw? Not good enough!', {
+        sotto: vincitore
+            ? 'Ouch, that one hurt. The gym gates slam shut: the challenge starts over from stage 1. Shake it off, tweak your plan and come back stronger!'
+            : "Nobody wins a draw in this gym: the gates slam shut and the challenge starts over from stage 1. Go again!",
+        azioni: [alla('Try again · stage 1', ripartenza, true), alla('Back to the gym', paginaPalestra, false)]
     });
 }
 
@@ -1389,9 +1464,10 @@ function avviaBattaglia() {
         cpu.cerebro = nuovoCervello('p2', { piano: cpu.team && cpu.team.piano, meccaniche: meccanicheDelFormato(cpu.giocatore && cpu.giocatore.regolamento) });
         cpu.errori = 0; cpu.rqid = null;
     }
-    battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2' } : null });
+    battaglia = new BattagliaLocale({ formato: config.formato, p1: config.p1, p2: config.p2, vantaggio: cpu && cpu.palestra && cpu.palestra.vantaggio ? { id: cpu.palestra.vantaggio.id, lato: 'p2', nome: cpu.palestra.nome } : null });
     collegaEventi(battaglia);
     battaglia.avvia();
+    if (cpu && cpu.palestra) mostraAnnuncioPalestra(false);      // chi sfida deve accorgersi del vantaggio prima di scegliere i lead
 }
 
 // Nuovo set: la logica riparte subito, il campo solo quando il set
@@ -1423,6 +1499,7 @@ function nuovoSet(numero) {
 function collegaEventi(b) {
     b.on('log', righe => {
         if (cpu && cpu.cerebro) cpu.cerebro.osserva(righe);     // la CPU legge il log com'è uscito dal simulatore
+        if (cpu && cpu.palestra && righe.some(r => r.startsWith('|turn|1'))) mostraAnnuncioPalestra(true);
         righe = riscrittoreLog.riscrivi(righe);
         stato.aggiorna(righe);
         aggiungiAScena(righe);
@@ -1992,7 +2069,7 @@ function aggiornaVistoInsegna() {
 function disegnaInfo() {
     if (!config) return;
     aggiornaVistoInsegna();
-    const voci = [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
+    const voci = cpu && cpu.palestra ? vociInsegnaPalestra().filter(Boolean) : [el('span', { class: 'ins-formato', testo: config.etichetta, title: config.etichetta })];
     if (online) {
         if (!online.amichevole) voci.push(el('span', { class: 'ins-match' }, 'Match ', el('b', { testo: `${online.info.match}/${MATCH_PER_SHOWDOWN}` })));
         if (vistoInsegna.set && !(online.amichevole && online.info.bestOf === 1)) {
